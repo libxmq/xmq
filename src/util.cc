@@ -155,13 +155,10 @@ bool loadStdin(vector<char> *buf)
     return true;
 }
 
-
 const char *manual = R"MANUAL(
-Usage: xml2xmq {options} <input> {<output>}
-       xmq2xml {options} <input> {<output>}
+Usage: xmq <input>
 
-As <options> you can use:
-  --compress
+As input, supply a file name or - for stdin.
 
 )MANUAL";
 

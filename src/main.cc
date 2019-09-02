@@ -22,27 +22,64 @@
  SOFTWARE.
 */
 
+#include "util.h"
+
 #include <string.h>
 #include <stdio.h>
 
+#include <vector>
 #define VERSION "0.1"
 
-int main_xml2xmq(int argc, char **argv);
-int main_xmq2xml(int argc, char **argv);
+using namespace std;
+
+int main_xml2xmq(vector<char> *buffer);
+int main_xmq2xml(const char *filename, vector<char> *buffer);
 
 int main(int argc, char **argv)
 {
-    char *name = strrchr(argv[0], '/');
-    if (name == NULL) name = argv[0];
-    else name++;
-    if (!strcmp("xml2xmq", name))
+    vector<char> buffer;
+    const char *file = argv[1];
+
+    if (file == NULL)
     {
-        return main_xml2xmq(argc, argv);
+        puts(manual);
+        exit(0);
     }
-    if (!strcmp("xmq2xml", name))
+    if (!strcmp(file, "-"))
     {
-        return main_xmq2xml(argc, argv);
+        bool rc = loadStdin(&buffer);
+        if (!rc)
+        {
+            exit(1);
+        }
     }
-    fprintf(stderr, "Binary must be named xml2xmq or xmq2xml!\n");
-    return 1;
+    else
+    {
+        string files = string(file);
+        bool rc = loadFile(files, &buffer);
+        if (!rc)
+        {
+            exit(1);
+        }
+    }
+    buffer.push_back('\0');
+
+    bool input_is_xml = false;
+
+    for (char c : buffer)
+    {
+        if (!isWhiteSpace(c))
+        {
+            // Look at the first non-whitespace character in the file.
+            // If it is a <, then it must be an xml file, since
+            // it cannot be an xmq file.
+            input_is_xml = c == '<';
+            break;
+        }
+    }
+
+    if (input_is_xml)
+        return main_xml2xmq(&buffer);
+    else
+        return main_xmq2xml(file, &buffer);
 }

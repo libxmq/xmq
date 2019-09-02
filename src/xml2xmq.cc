@@ -404,42 +404,11 @@ void find_all_prefixes(xml_node<> *i, StringCount &c)
 
 #define VERSION "0.1"
 
-int main_xml2xmq(int argc, char **argv)
+int main_xml2xmq(vector<char> *buffer)
 {
     xml_document<> doc;
-    //bool compress = false;
-    if (argc < 2) {
-        puts(manual);
-        exit(0);
-    }
-    const char *file = argv[1];
-    if (file == NULL) {
-        fprintf(stderr, "You must supply an input file or a single - to read from stdin.\n");
-        exit(1);
-    }
 
-    vector<char> buffer;
-
-    if (!strcmp(file, "-"))
-    {
-        bool rc = loadStdin(&buffer);
-        if (!rc)
-        {
-            exit(1);
-        }
-    }
-    else
-    {
-        string files = string(file);
-        bool rc = loadFile(files, &buffer);
-        if (!rc)
-        {
-            exit(1);
-        }
-    }
-    buffer.push_back('\0');
-
-    doc.parse<parse_comment_nodes>(&buffer[0]);
+    doc.parse<parse_comment_nodes>(&(*buffer)[0]);
 
     xml_node<> *root = doc.first_node();
 
@@ -457,6 +426,7 @@ int main_xml2xmq(int argc, char **argv)
 
     printf("\n");
     */
+
     render(root, 0, false);
     printf("\n");
     return 0;

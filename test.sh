@@ -2,13 +2,12 @@
 
 BUILDDIR="$1"
 
-PROG1="$BUILDDIR/xml2xmq"
-PROG2="$BUILDDIR/xmq2xml"
+PROG="$BUILDDIR/xmq"
 TESTDIR=test_output
 
 TESTS=$(ls tests/test*.sh)
 
 for i in $TESTS; do
-    $i $PROG1 $PROG2 $TESTDIR
+    $i $PROG $TESTDIR
     if [ $? == "0" ]; then echo OK; fi
 done

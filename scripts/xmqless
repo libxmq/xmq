@@ -4,4 +4,4 @@ then
     echo "Usage: xmless <filename.xml>"
     exit 0
 fi
-xml2xmq $1 | less
+xmq $1 | less
