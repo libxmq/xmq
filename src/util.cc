@@ -156,10 +156,7 @@ bool loadStdin(vector<char> *buf)
 }
 
 const char *manual = R"MANUAL(
-Usage: xmq <input>
-
-As input, supply a file name or - for stdin.
-
+usage: xmq <input>
 )MANUAL";
 
 bool isWhiteSpace(char c)

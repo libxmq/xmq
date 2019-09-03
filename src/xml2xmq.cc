@@ -254,6 +254,11 @@ void render(xml_node<> *node, int indent, bool newline=true)
     size_t align = 0;
     vector<pair<xml_node<>*,const char *>> lines;
 
+    if (node->type() == node_comment)
+    {
+        printAligned(node, node->value(), indent, 0, newline);
+        return;
+    }
     printIndent(indent, newline);
     printf("%s", node->name());
     if (hasAttributes(node))
@@ -412,22 +417,17 @@ int main_xml2xmq(vector<char> *buffer)
 
     xml_node<> *root = doc.first_node();
 
-    /*
-    if (compress)
+    // Xml usually only have a single root data node,
+    // but xml with comments can have multiple root
+    // nodes where some are comment nodes.
+    bool newline = false;
+    while (root != NULL)
     {
-        find_all_strings(root, string_count_);
-        find_all_prefixes(root, string_count_);
+        render(root, 0, newline);
+        newline = true;
+        root = root->next_sibling();
     }
 
-    for (auto &p : prefixes_)
-    {
-        printf("\n# [%d]=%s", p.second, p.first.c_str());
-    }
-
-    printf("\n");
-    */
-
-    render(root, 0, false);
     printf("\n");
     return 0;
 }

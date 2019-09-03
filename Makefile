@@ -101,6 +101,9 @@ testdebug:
 	@./test.sh build_debug
 
 install:
+	rm -f /usr/share/man/man1/wmbusmeters.1.gz
+	mkdir -p /usr/share/man/man1
+	gzip -c xmq.1 > /usr/share/man/man1/xmq.1.gz
 	cp build/xmq /usr/local/bin
 	cp scripts/xmqless /usr/local/bin
 
