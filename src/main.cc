@@ -26,19 +26,36 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include <vector>
 #define VERSION "0.1"
 
 using namespace std;
 
-int main_xml2xmq(vector<char> *buffer);
+int main_xml2xmq(vector<char> *buffer, bool color);
 int main_xmq2xml(const char *filename, vector<char> *buffer);
 
 int main(int argc, char **argv)
 {
     vector<char> buffer;
-    const char *file = argv[1];
+
+    // Display using color of the output is a terminal.
+    bool use_color = isatty(1);
+
+    int i = 1;
+    if (argc >= 2 && !strcmp(argv[i], "--color"))
+    {
+        use_color = true;
+        i++;
+    }
+    if (use_color)
+    {
+        // printf("GURKA \033]11;?\033\\\n");
+        // Detect background color of terminal
+    }
+
+    const char *file = argv[i];
 
     if (file == NULL)
     {
@@ -79,7 +96,7 @@ int main(int argc, char **argv)
     }
 
     if (input_is_xml)
-        return main_xml2xmq(&buffer);
+        return main_xml2xmq(&buffer, use_color);
     else
         return main_xmq2xml(file, &buffer);
 }

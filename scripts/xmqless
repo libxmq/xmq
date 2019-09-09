@@ -4,4 +4,4 @@ then
     echo "Usage: xmless <filename.xml>"
     exit 0
 fi
-xmq $1 | less
+xmq --color $1 | less -R

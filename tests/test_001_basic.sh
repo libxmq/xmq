@@ -26,11 +26,11 @@ $XMQ $OUT/out.xmq > $OUT/back.xml
 cat > $OUT/expectedback.xml <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <a>
-	<b>
-		<c>CCC</c>
-		<d/>
-		<e/>
-	</b>
+  <b>
+    <c>CCC</c>
+    <d/>
+    <e/>
+  </b>
 </a>
 
 EOF

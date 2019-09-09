@@ -41,6 +41,37 @@ map<string,int> prefixes_;
 
 size_t attr_max_width = 80;
 
+bool use_color_ = false;
+
+#define green "\033[0;32m"
+#define yellow "\033[0;33m"
+#define light_blue  "\033[1;34m"
+#define dark_blue  "\033[0;34m"
+#define magenta "\033[0;35m"
+#define red "\033[0;31m"
+#define reset_color "\033[0m"
+
+void printTag(const char *tag)
+{
+    if (use_color_) printf(dark_blue);
+    printf("%s", tag);
+    if (use_color_) printf(reset_color);
+}
+
+void printKeyTag(const char *tag)
+{
+    if (use_color_) printf(green);
+    printf("%s", tag);
+    if (use_color_) printf(reset_color);
+}
+
+void printAttributeKey(const char *key)
+{
+    if (use_color_) printf(green);
+    printf("%s", key);
+    if (use_color_) printf(reset_color);
+}
+
 bool needsEscaping(const char *s, bool is_attribute)
 {
     size_t n = 0;
@@ -70,10 +101,10 @@ void printIndent(int i, bool newline=true)
     while (--i >= 0) printf(" ");
 }
 
-size_t trimWhiteSpace(const char **datap)
+size_t trimWhiteSpace(const char **datap, int len = 0)
 {
     const char *data = *datap;
-    size_t len = strlen(data);
+    if (len == 0) len = strlen(data);
     // Trim away whitespace at the beginning.
     while (len > 0 && *data != 0)
     {
@@ -92,15 +123,68 @@ size_t trimWhiteSpace(const char **datap)
     return len;
 }
 
+void printComment(int len, const char *comment, int indent)
+{
+    bool single_line = true;
+    for (int i=0; i<len; ++i)
+    {
+        if (comment[i] == '\n') single_line = false;
+    }
+    if (single_line) {
+        if (use_color_) printf(yellow);
+        printf("// %.*s", len, comment);
+        if (use_color_) printf(reset_color);
+        return;
+    }
+    const char *p = comment;
+    int prev_i = 0;
+    for (int i=0; i<len; ++i)
+    {
+        if (comment[i] == '\n' || i == len-1)
+        {
+            int n = i - prev_i;
+            if (p == comment)
+            {
+                if (use_color_) printf(yellow);
+                printf("/* %.*s", n, p);
+            }
+            else if (i == len-1)
+            {
+                printIndent(indent);
+                const char *pp = p;
+                size_t nn = trimWhiteSpace(&pp, n);
+                if (use_color_) printf(yellow);
+                printf("   %.*s */", (int)nn, pp);
+            }
+            else
+            {
+                printIndent(indent);
+                const char *pp = p;
+                size_t nn = trimWhiteSpace(&pp, n);
+                if (use_color_) printf(yellow);
+                printf("   %.*s", (int)nn, pp);
+            }
+            if (use_color_) printf(reset_color);
+            p = comment+i+1;
+            prev_i = i+1;
+        }
+    }
+
+}
+
 void printEscaped(const char *s, bool is_attribute, int indent, bool must_quote)
 {
+
     if (!must_quote && !needsEscaping(s, is_attribute))
     {
+        if (use_color_) printf(red);
         printf("%s", s);
+        if (use_color_) printf(reset_color);
     }
     else
     {
         size_t n = 0;
+        if (use_color_) printf(red);
         printf("'");
         while (*s != 0)
         {
@@ -117,10 +201,12 @@ void printEscaped(const char *s, bool is_attribute, int indent, bool must_quote)
                 n -= attr_max_width;
                 printf("'");
                 printIndent(indent);
+                if (use_color_) printf(red);
                 printf("'");
             }
         }
         printf("'");
+        if (use_color_) printf(reset_color);
     }
 }
 
@@ -205,7 +291,7 @@ void printAligned(xml_node<> *i,
     if (i->type() == node_comment)
     {
         size_t l = trimWhiteSpace(&value);
-        printf("// %.*s", (int)l, value);
+        printComment(l, value, indent);
     }
     else
     if (i->type() == node_data)
@@ -215,7 +301,7 @@ void printAligned(xml_node<> *i,
     else
     {
         const char *key = i->name();
-        printf("%s", key);
+        printKeyTag(key);
         if (hasAttributes(i))
         {
             printAttributes(i, indent);
@@ -237,7 +323,7 @@ void printAlignedAttribute(xml_attribute<> *i,
 {
     if (do_indent) printIndent(indent);
     const char *key = i->name();
-    printf("%s", key);
+    printAttributeKey(key);
     if (value != NULL) {
         size_t len = strlen(key);
         printAlign(align-len+1);
@@ -260,7 +346,7 @@ void render(xml_node<> *node, int indent, bool newline=true)
         return;
     }
     printIndent(indent, newline);
-    printf("%s", node->name());
+    printTag(node->name());
     if (hasAttributes(node))
     {
         printAttributes(node, indent);
@@ -409,8 +495,9 @@ void find_all_prefixes(xml_node<> *i, StringCount &c)
 
 #define VERSION "0.1"
 
-int main_xml2xmq(vector<char> *buffer)
+int main_xml2xmq(vector<char> *buffer, bool color)
 {
+    use_color_ = color;
     xml_document<> doc;
 
     doc.parse<parse_comment_nodes>(&(*buffer)[0]);

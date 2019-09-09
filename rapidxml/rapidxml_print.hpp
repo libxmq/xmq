@@ -84,6 +84,15 @@ namespace rapidxml
         template<class OutIt, class Ch>
         inline OutIt fill_chars(OutIt out, int n, Ch ch)
         {
+            if (ch == (Ch)'\t')
+            {
+                // Do not indent with tabs, instead use 2 spaces for each tab.
+                // This is consistent with the pom.xml standard.
+                int nn = n*2;
+                for (int i = 0; i < nn; ++i)
+                    *out++ = ' ';
+                return out;
+            }
             for (int i = 0; i < n; ++i)
                 *out++ = ch;
             return out;

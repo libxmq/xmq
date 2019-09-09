@@ -68,10 +68,12 @@ struct Parser
     Token eatToken();
 
     Token eatToEndOfLine();
+    Token eatMultipleCommentLines();
     Token eatToEndOfText();
     Token eatToEndOfQuotedText();
     Token eatToEndOfData();
 
+    void parseComment(xml_node<> *parent);
     void parseNode(xml_node<> *parent);
     void parseNodeContent(xml_node<> *parent);
     void parseAttributes(xml_node<> *parent);
@@ -210,9 +212,17 @@ Token Parser::eatToken()
         {
             error("expected // or /* for comment");
         }
+        bool single_line = *s == '/';
         s++;
-        Token t = eatToEndOfLine();
-        trimTokenWhiteSpace(&t);
+        if (single_line)
+        {
+            Token t = eatToEndOfLine();
+            trimTokenWhiteSpace(&t);
+            //t.type = TokenType::comment;
+            return t;
+        }
+        Token t = eatMultipleCommentLines();
+//        t.type = TokenType::comment;
         return t;
     }
     case TokenType::equals:
@@ -309,6 +319,41 @@ Token Parser::eatToEndOfLine()
     return Token(TokenType::text, start, p-start);
 }
 
+Token Parser::eatMultipleCommentLines()
+{
+    char *start = s + 1;
+    char *p = start;
+    while (true)
+    {
+        char c = *p;
+        if (c == 0)
+        {
+            error("unexpected eof in comment");
+        }
+        if (c == '\n')
+        {
+            line++;
+            col = 1;
+        }
+        if (c == '*' && *(p+1) == '/')
+        {
+            s = p+2;
+            break;
+        }
+        p++;
+    }
+    return Token(TokenType::text, start, p-start);
+}
+
+void Parser::parseComment(xml_node<> *parent)
+{
+    Token val = eatToken();
+    char *value = doc->allocate_string(val.data, val.len+1);
+    strncpy(value, val.data, val.len);
+    value[val.len] = 0;
+    parent->append_node(doc->allocate_node(node_comment, NULL, value));
+}
+
 void Parser::parseNodeContent(xml_node<> *parent)
 {
     eatToken();
@@ -318,11 +363,7 @@ void Parser::parseNodeContent(xml_node<> *parent)
 
         if (t == TokenType::comment)
         {
-            Token val = eatToken();
-            char *value = doc->allocate_string(val.data, val.len+1);
-            strncpy(value, val.data, val.len);
-            value[val.len] = 0;
-            parent->append_node(doc->allocate_node(node_comment, NULL, value));
+            parseComment(parent);
         }
         else
         if (t == TokenType::text)
@@ -443,11 +484,24 @@ void parse(const char *filename, char *xml, xml_document<> *doc)
     parser.line = 1;
     parser.col = 1;
     parser.file = filename;
+
+    // Handle early comments.
+    while (TokenType::comment == parser.peekToken())
+    {
+        parser.parseComment(doc);
+    }
+
     parser.parseNode(doc);
+
+    // Handle trailing comments.
+    while (TokenType::comment == parser.peekToken())
+    {
+        parser.parseComment(doc);
+    }
 
     if (TokenType::none != parser.peekToken())
     {
         printf("Syntax error, no more data is allowed after last closing brace.\n");
-        exit(1);
+        //exit(1);
     }
 }

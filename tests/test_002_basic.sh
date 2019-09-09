@@ -10,6 +10,7 @@ mkdir -p $OUT
 
 $XMQ tests/${TEST}.xml > $OUT/out.xmq
 cat > $OUT/expected.xmq <<EOF
+// comment1
 a {
     // comment2
     b {
@@ -23,6 +24,7 @@ a {
     }
     // comment7
 }
+// comment8
 EOF
 
 diff $OUT/out.xmq $OUT/expected.xmq
@@ -31,19 +33,21 @@ if [ "$?" != "0" ]; then exit 1; fi
 $XMQ $OUT/out.xmq > $OUT/back.xml
 cat > $OUT/expectedback.xml <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
+<!--comment1-->
 <a>
-	<!--comment2-->
-	<b>
-		<!--comment3-->
-		<c>CCC</c>
-		<!--comment4-->
-		<d/>
-		<!--comment5-->
-		<e/>
-		<!--comment6-->
-	</b>
-	<!--comment7-->
+  <!--comment2-->
+  <b>
+    <!--comment3-->
+    <c>CCC</c>
+    <!--comment4-->
+    <d/>
+    <!--comment5-->
+    <e/>
+    <!--comment6-->
+  </b>
+  <!--comment7-->
 </a>
+<!--comment8-->
 
 EOF
 
