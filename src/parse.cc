@@ -53,6 +53,7 @@ struct Parser
 {
     const char *file;
 
+    char *beginning;
     char *s;
     int line;
     int col;
@@ -70,7 +71,7 @@ struct Parser
     Token eatToEndOfLine();
     Token eatMultipleCommentLines();
     Token eatToEndOfText();
-    Token eatToEndOfQuotedText();
+    Token eatToEndOfQuotedText(int indent);
     Token eatToEndOfData();
 
     void parseComment(xml_node<> *parent);
@@ -204,7 +205,7 @@ Token Parser::eatToken()
     {
     case TokenType::none: return Token(TokenType::none, "", 0);
     case TokenType::text: return eatToEndOfText();
-    case TokenType::quote: return eatToEndOfQuotedText();
+    case TokenType::quote: return eatToEndOfQuotedText(col-1);
     case TokenType::comment:
     {
         s++;
@@ -268,10 +269,21 @@ Token Parser::eatToEndOfText()
     return Token(TokenType::text, start, p-start);
 }
 
-Token Parser::eatToEndOfQuotedText()
+void addNewline(vector<char> *buffer)
+{
+    buffer->push_back('&');
+    buffer->push_back('#');
+    buffer->push_back('1');
+    buffer->push_back('0');
+    buffer->push_back(';');
+}
+
+Token Parser::eatToEndOfQuotedText(int indent)
 {
     char *start = s + 1;
     char *p = start;
+    vector<char> *buffer  = new vector<char>();
+
     while (true)
     {
         char c = *p;
@@ -281,17 +293,31 @@ Token Parser::eatToEndOfQuotedText()
         }
         if (c == '\n')
         {
+            buffer->push_back('\n');
             line++;
             col = 1;
+            int count = indent;
+            // Skip indentation
+            p++;
+            while (*p == ' ' && count > 0 )
+            {
+                p++;
+                count--;
+                col++;
+            }
+            continue;
         }
         if (c == '\'')
         {
             s = p+1;
             break;
         }
+        buffer->push_back(c);
+        col++;
         p++;
     }
-    return Token(TokenType::text, start, p-start);
+    buffer->push_back(0);
+    return Token(TokenType::text, &((*buffer)[0]), (int)buffer->size());
 }
 
 Token Parser::eatToEndOfLine()
@@ -341,6 +367,7 @@ Token Parser::eatMultipleCommentLines()
             break;
         }
         p++;
+        col++;
     }
     return Token(TokenType::text, start, p-start);
 }
@@ -481,6 +508,7 @@ void parse(const char *filename, char *xml, xml_document<> *doc)
 
     parser.doc = doc;
     parser.s = xml;
+    parser.beginning = parser.s;
     parser.line = 1;
     parser.col = 1;
     parser.file = filename;

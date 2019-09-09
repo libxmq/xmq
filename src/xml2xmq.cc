@@ -95,6 +95,17 @@ bool needsEscaping(const char *s, bool is_attribute)
     return false;
 }
 
+bool containsNewlines(const char *s)
+{
+    if (s == NULL) return false;
+    while (*s != 0)
+    {
+        if (*s == '\n') return true;
+        s++;
+    }
+    return false;
+}
+
 void printIndent(int i, bool newline=true)
 {
     if (newline) printf("\n");
@@ -191,14 +202,20 @@ void printEscaped(const char *s, bool is_attribute, int indent, bool must_quote)
             switch (*s) {
                 case '\\' : printf("\\\\"); break;
                 case '\'' : printf("\\'"); break;
-                case '\n' : printIndent(indent); break;
+                case '\n' :
+                    //printf("\\n'");
+                    printIndent(indent+1); // Add one for the '
+                    n = 0;
+                    if (use_color_) printf(red);
+                    //printf("'");
+                    break;
                 default:    printf("%c", *s);
             }
             s++;
             n++;
             if (is_attribute && n > attr_max_width)
             {
-                n -= attr_max_width;
+                n = 0;
                 printf("'");
                 printIndent(indent);
                 if (use_color_) printf(red);
@@ -309,8 +326,17 @@ void printAligned(xml_node<> *i,
         if (value != NULL) {
             size_t len = strlen(key);
             printAlign(align-len+1);
-            printf("= ");
-            printEscaped(value, false, indent+align+3, false);
+            int ind = indent+align+3;
+            if (containsNewlines(value))
+            {
+                printf("=");
+                ind = indent;
+            }
+            else
+            {
+                printf("= ");
+            }
+            printEscaped(value, false, ind, false);
         }
     }
 }
@@ -327,8 +353,18 @@ void printAlignedAttribute(xml_attribute<> *i,
     if (value != NULL) {
         size_t len = strlen(key);
         printAlign(align-len+1);
-        printf("= ");
-        printEscaped(value, true, indent+align+3, false);
+        int ind = indent+align+3;
+        if (containsNewlines(value))
+        {
+            printf("=");
+            ind = indent+4;
+            printIndent(ind);
+        }
+        else
+        {
+            printf("= ");
+        }
+        printEscaped(value, false, ind, false);
     }
 }
 
