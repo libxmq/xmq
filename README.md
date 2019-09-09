@@ -34,24 +34,4 @@ and there is a utility to view xml files: `xmqless pom.xml`
 Do `make && sudo make install` to have xmq and xmqless installed
 into /usr/local/bin.
 
-# Example xml and xmq
-
-```
-<?xml version="1.0" encoding="UTF-8"?>
-<project>
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>com.example</groupId>
-  <artifactId>mylib</artifactId>
-  <version>1.0</version>
-</project>
-```
-
-```
-project {
-    modelVersion = 4.0.0
-    groupId      = com.example
-    artifactId   = mylib
-    version      = 1.0
-}
-
-```
+![XML vs XMQ](/doc/xml_vs_xmq.png)
