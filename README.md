@@ -36,8 +36,15 @@ switch the buffer back and forth between xmq and xml.
 Do `make && sudo make install` to have xmq and xmqless installed
 into /usr/local/bin.
 
-# Example
+# Terminal example
 
 Xml to the left. Colored XMQ (using xmqless) to the right.
 
 ![XML vs XMQ](/doc/xml_vs_xmq.png)
+
+# Emacs example
+
+Assuming xmq-buffer is bound to ctrl-t, pressing ctrl-t
+will flip between xml and xmq as can be seen below.
+
+![XML vs XMQ](/doc/emacs_xml_xmq.png)
