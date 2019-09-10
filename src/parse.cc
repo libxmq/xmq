@@ -464,13 +464,13 @@ void Parser::parseAttributes(xml_node<> *parent)
 
 }
 
-
 void Parser::parseNode(xml_node<> *parent)
 {
     Token t = eatToken();
     if (t.type != TokenType::text) error("expected tag");
 
-    const char *name = doc->allocate_string(t.data, t.len);
+    char *name = doc->allocate_string(t.data, t.len+1);
+    name[t.len] = 0;
     xml_node<> *node = doc->allocate_node(node_element, name);
     parent->append_node(node);
 
@@ -498,6 +498,7 @@ void Parser::parseNode(xml_node<> *parent)
         char *value = doc->allocate_string(val.data, val.len+1);
         strncpy(value, val.data, val.len);
         value[val.len] = 0;
+
         node->append_node(doc->allocate_node(node_data, NULL, value));
     }
 }
