@@ -61,12 +61,24 @@
   (call-process-region b e "xmq" t t nil "-")
   (xmq-mode))
 
+(defun buffer-contains-substring (string)
+(save-excursion
+  (save-match-data
+    (goto-char (point-min))
+    (search-forward string nil t))))
+
+;; Very rudimentary check if the buffer contains xml or not.
+;; Simply look for "<" "</" and ">". If all three are found,
+;; then the buffer contains xml formatted code.
 (defun xmq-buffer ()
   "Switch back and forth between xml and xmq."
   (interactive "")
   (let ((pos (point)))
+    (if (and
+         (buffer-contains-substring "<")
+         (buffer-contains-substring "</")
+         (buffer-contains-substring ">")) (xmq-mode) (xml-mode))
     (call-process-region (point-min) (point-max) "xmq" t t nil "-")
-    (xmq-mode)
     (goto-char pos)
   ))
 
