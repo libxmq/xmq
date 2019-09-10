@@ -131,7 +131,6 @@ bool Parser::isTokenIdentifier(char c)
 {
     return
         c == 0 ||
-        c == '#' ||
         c == '\'' ||
         c == '=' ||
         c == '{' ||
