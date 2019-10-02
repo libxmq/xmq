@@ -23,7 +23,7 @@ Make your desired changes in the xml file and then
 do `xmq pom.xmq > pom.xml` to convert it back.
 
 You can read form stdin like this:  `cat pom.xml | xmq -`
-and there is a utility to view xml files: `xmqless pom.xml`
+and there is a utility to view xml files: `xmq-less pom.xml`
 
 There is an xmq major mode for emacs in xmq-mode.el.
 Put it into your `.emacs.d/site-lisp` directory and
@@ -33,12 +33,12 @@ You can also bind xmq to for example ctrl-t `(global-set-key (kbd "C-t") 'xmq-bu
 When you have an xml file in the buffer and you press ctrl-t, you will
 switch the buffer back and forth between xmq and xml.
 
-Do `make && sudo make install` to have xmq and xmqless installed
+Do `make && sudo make install` to have xmq and xmq-less installed
 into /usr/local/bin.
 
 # Terminal example
 
-Xml to the left. Colored XMQ (using xmqless) to the right.
+Xml to the left. Colored XMQ (using xmq-less) to the right.
 
 ![XML vs XMQ](/doc/xml_vs_xmq.png)
 
