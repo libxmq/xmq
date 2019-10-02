@@ -227,6 +227,27 @@ void printEscaped(const char *s, bool is_attribute, int indent, bool must_quote)
     }
 }
 
+void printCdataEscaped(const char *s)
+{
+    size_t n = 0;
+    if (use_color_) printf(red);
+    printf("'''");
+    while (*s != 0)
+    {
+        switch (*s) {
+        case '\n' :
+            printf("\n");
+            if (use_color_) printf(red);
+            break;
+        default:    printf("%c", *s);
+        }
+        s++;
+        n++;
+    }
+    printf("'''");
+    if (use_color_) printf(reset_color);
+}
+
 bool nodeHasNoChildren(xml_node<> *node)
 {
     return node->first_node() == NULL;
@@ -314,6 +335,11 @@ void printAligned(xml_node<> *i,
     if (i->type() == node_data)
     {
         printEscaped(value, false, indent, true);
+    }
+    else
+    if (i->type() == node_cdata)
+    {
+        printCdataEscaped(i->value());
     }
     else
     {

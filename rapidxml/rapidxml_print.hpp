@@ -21,6 +21,7 @@ namespace rapidxml
     // Printing flags
 
     const int print_no_indenting = 0x1;   //!< Printer flag instructing the printer to suppress indenting of XML. See print() function.
+    const int no_final_newline = 0x2;   // Do not print the final newline
 
     ///////////////////////////////////////////////////////////////////////
     // Internal
@@ -145,6 +146,13 @@ namespace rapidxml
         template<class OutIt, class Ch>
         inline OutIt print_node(OutIt out, const xml_node<Ch> *node, int flags, int indent)
         {
+            bool print_newline = true;
+            if (flags & no_final_newline)
+            {
+                print_newline = false;
+                flags = flags & ~(no_final_newline);
+            }
+
             // Print proper node type
             switch (node->type())
             {
@@ -196,7 +204,7 @@ namespace rapidxml
             }
 
             // If indenting not disabled, add line break after node
-            if (!(flags & print_no_indenting))
+            if (!(flags & print_no_indenting) && print_newline)
                 *out = Ch('\n'), ++out;
 
             // Return modified iterator
@@ -426,7 +434,7 @@ namespace rapidxml
     template<class OutIt, class Ch>
     inline OutIt print(OutIt out, const xml_node<Ch> &node, int flags = 0)
     {
-        return internal::print_node(out, &node, flags, 0);
+        return internal::print_node(out, &node, flags | no_final_newline, 0);
     }
 
 #ifndef RAPIDXML_NO_STREAMS

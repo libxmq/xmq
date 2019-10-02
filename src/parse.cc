@@ -67,11 +67,13 @@ struct Parser
     void eatWhiteSpace();
     TokenType peekToken();
     Token eatToken();
+    void padWithSingleSpaces(Token *t);
 
     Token eatToEndOfLine();
     Token eatMultipleCommentLines();
     Token eatToEndOfText();
     Token eatToEndOfQuotedText(int indent);
+    Token eatToEndOfCdata();
     Token eatToEndOfData();
 
     void parseComment(xml_node<> *parent);
@@ -95,19 +97,32 @@ void Parser::error(const char* fmt, ...)
 
 void trimTokenWhiteSpace(Token *t)
 {
+    size_t len = strlen(t->value);
     // Trim away whitespace at the beginning.
-    while (t->len > 0 && *t->data != 0)
+    while (len > 0 && *t->value != 0)
     {
-        if (!isWhiteSpace(*t->data)) break;
-        t->data++;
+        if (!isWhiteSpace(*t->value)) break;
+        t->value++;
+        len--;
     }
 
     // Trim away whitespace at the end.
-    while (t->len >= 1)
+    while (len >= 1)
     {
-        if (!isWhiteSpace(t->data[t->len-1])) break;
-        t->len--;
+        if (!isWhiteSpace(t->value[len-1])) break;
+        len--;
     }
+}
+
+void Parser::padWithSingleSpaces(Token *t)
+{
+    size_t len = strlen(t->value);
+    char buf[len+3]; // Two spaces and zero terminator.
+    buf[0] = ' ';
+    memcpy(buf+1, t->value, len);
+    buf[1+len] = ' ';
+    buf[2+len] = 0;
+    t->value = doc->allocate_string(buf, len+3);
 }
 
 TokenType Parser::tokenType(char c)
@@ -147,6 +162,7 @@ const char *tokenTypeText(TokenType t)
     {
     case TokenType::none: return "end of file";
     case TokenType::quote: return "quoted text";
+    case TokenType::cdata: return "cdata";
     case TokenType::equals: return "=";
     case TokenType::brace_open: return "{";
     case TokenType::brace_close: return "}";
@@ -194,6 +210,13 @@ TokenType Parser::peekToken()
         s++;
         col++;
     }
+    if (*s == '\'' &&
+        *(s+1) == '\'' &&
+        *(s+2) == '\'')
+    {
+        return TokenType::cdata;
+    }
+
     return tokenType(*s);
 }
 
@@ -202,9 +225,10 @@ Token Parser::eatToken()
     TokenType tt = peekToken();
     switch (tt)
     {
-    case TokenType::none: return Token(TokenType::none, "", 0);
+    case TokenType::none: return Token(TokenType::none, "");
     case TokenType::text: return eatToEndOfText();
     case TokenType::quote: return eatToEndOfQuotedText(col-1);
+    case TokenType::cdata: return eatToEndOfCdata();
     case TokenType::comment:
     {
         s++;
@@ -218,11 +242,11 @@ Token Parser::eatToken()
         {
             Token t = eatToEndOfLine();
             trimTokenWhiteSpace(&t);
-            //t.type = TokenType::comment;
+            padWithSingleSpaces(&t);
+
             return t;
         }
         Token t = eatMultipleCommentLines();
-//        t.type = TokenType::comment;
         return t;
     }
     case TokenType::equals:
@@ -230,11 +254,10 @@ Token Parser::eatToken()
     case TokenType::brace_close:
     case TokenType::paren_open:
     case TokenType::paren_close:
-        const char *tok = s;
         s++;
-        return Token(tt, tok, 1);
+        return Token(tt, ""); // Do not bother to store the string of the char itself.
     }
-    return Token(TokenType::none, "", 0);
+    return Token(TokenType::none, "");
 }
 
 Token Parser::eatToEndOfText()
@@ -265,7 +288,10 @@ Token Parser::eatToEndOfText()
         p++;
         col++;
     }
-    return Token(TokenType::text, start, p-start);
+    size_t len = p-start;
+    char *value = doc->allocate_string(start, len+1);
+
+    return Token(TokenType::text, value);
 }
 
 void addNewline(vector<char> *buffer)
@@ -281,7 +307,7 @@ Token Parser::eatToEndOfQuotedText(int indent)
 {
     char *start = s + 1;
     char *p = start;
-    vector<char> *buffer  = new vector<char>();
+    vector<char> buffer;
 
     while (true)
     {
@@ -292,7 +318,7 @@ Token Parser::eatToEndOfQuotedText(int indent)
         }
         if (c == '\n')
         {
-            buffer->push_back('\n');
+            buffer.push_back('\n');
             line++;
             col = 1;
             int count = indent;
@@ -311,12 +337,50 @@ Token Parser::eatToEndOfQuotedText(int indent)
             s = p+1;
             break;
         }
-        buffer->push_back(c);
+        buffer.push_back(c);
         col++;
         p++;
     }
-    buffer->push_back(0);
-    return Token(TokenType::text, &((*buffer)[0]), (int)buffer->size());
+    char *value = doc->allocate_string(&(buffer[0]), buffer.size()+1);
+
+    return Token(TokenType::text, value);
+}
+
+Token Parser::eatToEndOfCdata()
+{
+    char *start = s + 3;
+    char *p = start;
+    vector<char> buffer;
+
+    while (true)
+    {
+        char c = *p;
+        if (c == 0)
+        {
+            error("unexpected eof in quoted text");
+        }
+        if (c == '\n')
+        {
+            buffer.push_back('\n');
+            line++;
+            col = 1;
+            p++;
+            continue;
+        }
+        if (c == '\'' &&
+            *(p+1) == '\'' &&
+            *(p+2) == '\'')
+        {
+            s = p+3;
+            break;
+        }
+        buffer.push_back(c);
+        col++;
+        p++;
+    }
+    char *value = doc->allocate_string(&(buffer[0]), buffer.size()+1);
+
+    return Token(TokenType::cdata, value);
 }
 
 Token Parser::eatToEndOfLine()
@@ -341,7 +405,10 @@ Token Parser::eatToEndOfLine()
         p++;
         col++;
     }
-    return Token(TokenType::text, start, p-start);
+    size_t len = p-start;
+    char *value = doc->allocate_string(start, len+1);
+
+    return Token(TokenType::text, value);
 }
 
 Token Parser::eatMultipleCommentLines()
@@ -368,16 +435,17 @@ Token Parser::eatMultipleCommentLines()
         p++;
         col++;
     }
-    return Token(TokenType::text, start, p-start);
+    size_t len = p-start;
+    char *value = doc->allocate_string(start, len+1);
+
+    return Token(TokenType::text, value);
 }
 
 void Parser::parseComment(xml_node<> *parent)
 {
     Token val = eatToken();
-    char *value = doc->allocate_string(val.data, val.len+1);
-    strncpy(value, val.data, val.len);
-    value[val.len] = 0;
-    parent->append_node(doc->allocate_node(node_comment, NULL, value));
+
+    parent->append_node(doc->allocate_node(node_comment, NULL, val.value));
 }
 
 void Parser::parseNodeContent(xml_node<> *parent)
@@ -400,10 +468,13 @@ void Parser::parseNodeContent(xml_node<> *parent)
         if (t == TokenType::quote)
         {
             Token val = eatToken();
-            char *value = doc->allocate_string(val.data, val.len+1);
-            strncpy(value, val.data, val.len);
-            value[val.len] = 0;
-            parent->append_node(doc->allocate_node(node_data, NULL, value));
+            parent->append_node(doc->allocate_node(node_data, NULL, val.value));
+        }
+        else
+        if (t == TokenType::cdata)
+        {
+            Token val = eatToken();
+            parent->append_node(doc->allocate_node(node_cdata, NULL, val.value));
         }
         else
         if (t == TokenType::brace_close ||
@@ -437,10 +508,7 @@ void Parser::parseAttributes(xml_node<> *parent)
             nt == TokenType::paren_close)
         {
             // This attribute is completed, it has no data.
-            char *name = doc->allocate_string(t.data, t.len+1);
-            strncpy(name, t.data, t.len);
-            name[t.len] = 0;
-            parent->append_attribute(doc->allocate_attribute(name,"true"));
+            parent->append_attribute(doc->allocate_attribute(t.value, "true"));
             continue;
         }
 
@@ -448,16 +516,15 @@ void Parser::parseAttributes(xml_node<> *parent)
         eatToken();
 
         Token val = eatToken();
+
         if (val.type == TokenType::text ||
             val.type == TokenType::quote)
         {
-            char *name = doc->allocate_string(t.data, t.len+1);
-            strncpy(name, t.data, t.len);
-            name[t.len] = 0;
-            char *value = doc->allocate_string(val.data, val.len+1);
-            strncpy(value, val.data, val.len);
-            value[val.len] = 0;
-            parent->append_attribute(doc->allocate_attribute(name, value));
+            parent->append_attribute(doc->allocate_attribute(t.value, val.value));
+        }
+        else
+        {
+            error("expected text or quoted text");
         }
     }
 
@@ -468,9 +535,7 @@ void Parser::parseNode(xml_node<> *parent)
     Token t = eatToken();
     if (t.type != TokenType::text) error("expected tag");
 
-    char *name = doc->allocate_string(t.data, t.len+1);
-    name[t.len] = 0;
-    xml_node<> *node = doc->allocate_node(node_element, name);
+    xml_node<> *node = doc->allocate_node(node_element, t.value);
     parent->append_node(node);
 
     TokenType tt = peekToken();
@@ -490,15 +555,12 @@ void Parser::parseNode(xml_node<> *parent)
         eatToken();
         Token val = eatToken();
         if (val.type != TokenType::text &&
-            val.type != TokenType::quote)
+            val.type != TokenType::quote &&
+            val.type != TokenType::cdata)
         {
-            error("expected text or quote");
+            error("expected text, quote or cdata");
         }
-        char *value = doc->allocate_string(val.data, val.len+1);
-        strncpy(value, val.data, val.len);
-        value[val.len] = 0;
-
-        node->append_node(doc->allocate_node(node_data, NULL, value));
+        node->append_node(doc->allocate_node(node_data, NULL, val.value));
     }
 }
 

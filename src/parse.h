@@ -38,22 +38,21 @@ enum class TokenType
     paren_open,    // (
     paren_close,   // )
     quote,         // '....'
+    cdata,         // '''cdata content'''
     comment,       // / starts either // or /*
     text           // Not quoted text, can be tag or content.
 };
 
 struct Token
 {
-    Token(TokenType t, const char *d, size_t l) : type(t), data(d), len(l) { }
+    Token(TokenType t, const char *v) : type(t), value(v) { }
 
     TokenType type;
-    const char *data;
-    size_t len;
+    const char *value; // Zero terminated string allocated by rapid_xml allocate_string.
 
     void print(const char *pre, const char *post)
     {
-        int l = (int)len;
-        printf("%s%.*s%s", pre, l, data, post);
+        printf("%s%s%s", pre, value, post);
     }
 };
 

@@ -10,11 +10,12 @@ mkdir -p $OUT
 
 $XMQ tests/${TEST}.xml > $OUT/out.xmq
 cat > $OUT/expected.xmq <<EOF
-a {
-    b {
-        c = CCC
-        d
-        e
+info {
+    ''' x  y   z    w     '''
+    sub {
+        '''Hejsan
+             Hoppsan
+             Svejsan'''
     }
 }
 EOF
@@ -23,5 +24,6 @@ diff $OUT/out.xmq $OUT/expected.xmq
 if [ "$?" != "0" ]; then exit 1; fi
 
 $XMQ $OUT/out.xmq > $OUT/back.xml
+
 diff $OUT/back.xml tests/${TEST}.xml
 if [ "$?" != "0" ]; then exit 1; fi

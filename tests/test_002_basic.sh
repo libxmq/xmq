@@ -31,25 +31,6 @@ diff $OUT/out.xmq $OUT/expected.xmq
 if [ "$?" != "0" ]; then exit 1; fi
 
 $XMQ $OUT/out.xmq > $OUT/back.xml
-cat > $OUT/expectedback.xml <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!--comment1-->
-<a>
-  <!--comment2-->
-  <b>
-    <!--comment3-->
-    <c>CCC</c>
-    <!--comment4-->
-    <d/>
-    <!--comment5-->
-    <e/>
-    <!--comment6-->
-  </b>
-  <!--comment7-->
-</a>
-<!--comment8-->
 
-EOF
-
-diff $OUT/back.xml $OUT/expectedback.xml
+diff $OUT/back.xml tests/${TEST}.xml
 if [ "$?" != "0" ]; then exit 1; fi
