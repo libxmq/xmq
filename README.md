@@ -33,8 +33,8 @@ You can also bind xmq to for example ctrl-t `(global-set-key (kbd "C-t") 'xmq-bu
 When you have an xml file in the buffer and you press ctrl-t, you will
 switch the buffer back and forth between xmq and xml.
 
-Do `make && sudo make install` to have xmq and xmq-less installed
-into /usr/local/bin.
+Do `make && sudo make install` to have xmq, xmq-less, xmq-diff, xmq-git-diff and xmq-meld
+installed into /usr/local/bin.
 
 # Terminal example
 
@@ -56,3 +56,24 @@ You can diff two xml files: 'xmq-diff old.xml new.xml'
 You can diff an xml file against its git repo: 'xmq-git-diff file.xml'
 
 You can meld two xml files: 'xmq-meld old.xml new.xml'
+
+# Excluding attributes
+
+You can exclude the attribute 'foo' in every node: 'xmq-less -x @foo foo.xml'
+
+# Compressing
+
+If the node names are very long and have consistent prefixes
+you can compress the output: 'xmq-less -c foo.xml'
+
+This will replace a long prefix 'abc.def.ghi' with for example '0:'
+depending on how many prefixes are found. The prefix is printed
+at the top of the file:
+
+'''
+# 0=abc.def.gfi
+root {
+...
+..
+.
+'''
