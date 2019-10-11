@@ -4,6 +4,20 @@ then
     echo "Usage: xmq-git-diff <filename.xml>"
     exit 0
 fi
-xmq "$1" > /tmp/aa
-git show "HEAD:$1" | xmq - > /tmp/bb
+
+if [ "$1" = "-c" ]
+then
+    shift 1
+    compress="-c"
+fi
+
+if [ "$1" = "-x" ]
+then
+    shift 1
+    exclude="-x $1"
+    shift 1
+fi
+
+xmq $compress $exclude "$1" > /tmp/aa
+git show "HEAD:$1" | xmq $compress $exclude - > /tmp/bb
 diff -c /tmp/bb /tmp/aa | colordiff

@@ -4,4 +4,18 @@ then
     echo "Usage: xmless [--compress] [-x node@attr] <filename.xml>"
     exit 0
 fi
-xmq --color $1 | less -R
+
+if [ "$1" = "-c" ]
+then
+    shift 1
+    compress="-c"
+fi
+
+if [ "$1" = "-x" ]
+then
+    shift 1
+    exclude="-x $1"
+    shift 1
+fi
+
+xmq --color $compress $exclude $1 | less -R

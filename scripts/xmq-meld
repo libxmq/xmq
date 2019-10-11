@@ -5,10 +5,23 @@ then
     exit 0
 fi
 
+if [ "$1" = "-c" ]
+then
+    shift 1
+    compress="-c"
+fi
+
+if [ "$1" = "-x" ]
+then
+    shift 1
+    exclude="-x $1"
+    shift 1
+fi
+
 
 oldfile=$(mktemp /tmp/xmq-diff.old.XXXXXX)
 newfile=$(mktemp /tmp/xmq-diff.new.XXXXXX)
 
-xmq "$1" > $oldfile
-xmq "$2" > $newfile
+xmq $compress $exclude "$1" > $oldfile
+xmq $compress $exclude "$2" > $newfile
 meld $oldfile $newfile
