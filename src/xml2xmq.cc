@@ -27,10 +27,12 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <set>
 #include <vector>
 #include "rapidxml/rapidxml.hpp"
 
 #include "util.h"
+#include "settings.h"
 
 using namespace rapidxml;
 using namespace std;
@@ -41,7 +43,7 @@ map<string,int> prefixes_;
 
 size_t attr_max_width = 80;
 
-bool use_color_ = false;
+Settings *settings_;
 
 #define green "\033[0;32m"
 #define yellow "\033[0;33m"
@@ -53,23 +55,23 @@ bool use_color_ = false;
 
 void printTag(const char *tag)
 {
-    if (use_color_) printf(dark_blue);
+    if (settings_->use_color) printf(dark_blue);
     printf("%s", tag);
-    if (use_color_) printf(reset_color);
+    if (settings_->use_color) printf(reset_color);
 }
 
 void printKeyTag(const char *tag)
 {
-    if (use_color_) printf(green);
+    if (settings_->use_color) printf(green);
     printf("%s", tag);
-    if (use_color_) printf(reset_color);
+    if (settings_->use_color) printf(reset_color);
 }
 
 void printAttributeKey(const char *key)
 {
-    if (use_color_) printf(green);
+    if (settings_->use_color) printf(green);
     printf("%s", key);
-    if (use_color_) printf(reset_color);
+    if (settings_->use_color) printf(reset_color);
 }
 
 bool needsEscaping(const char *s, bool is_attribute)
@@ -142,9 +144,9 @@ void printComment(int len, const char *comment, int indent)
         if (comment[i] == '\n') single_line = false;
     }
     if (single_line) {
-        if (use_color_) printf(yellow);
+        if (settings_->use_color) printf(yellow);
         printf("// %.*s", len, comment);
-        if (use_color_) printf(reset_color);
+        if (settings_->use_color) printf(reset_color);
         return;
     }
     const char *p = comment;
@@ -156,7 +158,7 @@ void printComment(int len, const char *comment, int indent)
             int n = i - prev_i;
             if (p == comment)
             {
-                if (use_color_) printf(yellow);
+                if (settings_->use_color) printf(yellow);
                 printf("/* %.*s", n, p);
             }
             else if (i == len-1)
@@ -164,7 +166,7 @@ void printComment(int len, const char *comment, int indent)
                 printIndent(indent);
                 const char *pp = p;
                 size_t nn = trimWhiteSpace(&pp, n);
-                if (use_color_) printf(yellow);
+                if (settings_->use_color) printf(yellow);
                 printf("   %.*s */", (int)nn, pp);
             }
             else
@@ -172,10 +174,10 @@ void printComment(int len, const char *comment, int indent)
                 printIndent(indent);
                 const char *pp = p;
                 size_t nn = trimWhiteSpace(&pp, n);
-                if (use_color_) printf(yellow);
+                if (settings_->use_color) printf(yellow);
                 printf("   %.*s", (int)nn, pp);
             }
-            if (use_color_) printf(reset_color);
+            if (settings_->use_color) printf(reset_color);
             p = comment+i+1;
             prev_i = i+1;
         }
@@ -188,14 +190,14 @@ void printEscaped(const char *s, bool is_attribute, int indent, bool must_quote)
 
     if (!must_quote && !needsEscaping(s, is_attribute))
     {
-        if (use_color_) printf(red);
+        if (settings_->use_color) printf(red);
         printf("%s", s);
-        if (use_color_) printf(reset_color);
+        if (settings_->use_color) printf(reset_color);
     }
     else
     {
         size_t n = 0;
-        if (use_color_) printf(red);
+        if (settings_->use_color) printf(red);
         printf("'");
         while (*s != 0)
         {
@@ -206,7 +208,7 @@ void printEscaped(const char *s, bool is_attribute, int indent, bool must_quote)
                     //printf("\\n'");
                     printIndent(indent+1); // Add one for the '
                     n = 0;
-                    if (use_color_) printf(red);
+                    if (settings_->use_color) printf(red);
                     //printf("'");
                     break;
                 default:    printf("%c", *s);
@@ -218,26 +220,26 @@ void printEscaped(const char *s, bool is_attribute, int indent, bool must_quote)
                 n = 0;
                 printf("'");
                 printIndent(indent);
-                if (use_color_) printf(red);
+                if (settings_->use_color) printf(red);
                 printf("'");
             }
         }
         printf("'");
-        if (use_color_) printf(reset_color);
+        if (settings_->use_color) printf(reset_color);
     }
 }
 
 void printCdataEscaped(const char *s)
 {
     size_t n = 0;
-    if (use_color_) printf(red);
+    if (settings_->use_color) printf(red);
     printf("'''");
     while (*s != 0)
     {
         switch (*s) {
         case '\n' :
             printf("\n");
-            if (use_color_) printf(red);
+            if (settings_->use_color) printf(red);
             break;
         default:    printf("%c", *s);
         }
@@ -245,7 +247,7 @@ void printCdataEscaped(const char *s)
         n++;
     }
     printf("'''");
-    if (use_color_) printf(reset_color);
+    if (settings_->use_color) printf(reset_color);
 }
 
 bool nodeHasNoChildren(xml_node<> *node)
@@ -298,10 +300,16 @@ void printAttributes(xml_node<> *node,
     {
         const char *key = i->name();
         const char *value;
-        lines.push_back( { i, value });
-        size_t len = strlen(key);
-        if (len > align) {
-            align = len;
+        string checka = string("@")+key;
+        string checkb = string(node->name())+"@"+key;
+        if (settings_->excludes.count(checka) == 0 &&
+            settings_->excludes.count(checkb) == 0)
+        {
+            lines.push_back( { i, value });
+            size_t len = strlen(key);
+            if (len > align) {
+                align = len;
+            }
         }
         i = i->next_attribute();
     }
@@ -311,9 +319,16 @@ void printAttributes(xml_node<> *node,
     bool do_indent = false;
     while (i)
     {
+        const char *key = i->name();
         const char *value = i->value();
-        printAlignedAttribute(i, value, indent+strlen(node->name())+1, align, do_indent);
-        do_indent = true;
+        string checka = string("@")+key;
+        string checkb = string(node->name())+"@"+key;
+        if (settings_->excludes.count(checka) == 0 &&
+            settings_->excludes.count(checkb) == 0)
+        {
+            printAlignedAttribute(i, value, indent+strlen(node->name())+1, align, do_indent);
+            do_indent = true;
+        }
         i = i->next_attribute();
     }
     printf(")");
@@ -516,10 +531,9 @@ void find_all_prefixes(xml_node<> *i, StringCount &c)
                 prefixes_[p] = pn;
                 num_prefixes_++;
             }
-            shiftLeft(i->name(), p.length()-3);
-            i->name()[0] = '[';
-            i->name()[1] = 48+pn;
-            i->name()[2] = ']';
+            shiftLeft(i->name(), p.length()-2);
+            i->name()[0] = 48+pn;
+            i->name()[1] = ':';
         }
         xml_attribute<> *a = i->first_attribute();
         while (a != NULL)
@@ -538,10 +552,9 @@ void find_all_prefixes(xml_node<> *i, StringCount &c)
                     prefixes_[p] = pn;
                     num_prefixes_++;
                 }
-                shiftLeft(a->name(), p.length()-3);
-                a->name()[0] = '[';
-                a->name()[1] = 48+pn;
-                a->name()[2] = ']';
+                shiftLeft(a->name(), p.length()-2);
+                a->name()[0] = 48+pn;
+                a->name()[1] = ':';
             }
 
             a = a->next_attribute();
@@ -557,14 +570,25 @@ void find_all_prefixes(xml_node<> *i, StringCount &c)
 
 #define VERSION "0.1"
 
-int main_xml2xmq(vector<char> *buffer, bool color)
+int main_xml2xmq(vector<char> *buffer, Settings *provided_settings)
 {
-    use_color_ = color;
+    settings_ = provided_settings;
     xml_document<> doc;
 
     doc.parse<parse_comment_nodes>(&(*buffer)[0]);
-
     xml_node<> *root = doc.first_node();
+
+    if (settings_->compress)
+    {
+        // This will find common prefixes.
+        find_all_strings(root, string_count_);
+        find_all_prefixes(root, string_count_);
+
+        for (auto &p : prefixes_)
+        {
+            printf("# %d=%s\n", p.second, p.first.c_str());
+        }
+    }
 
     // Xml usually only have a single root data node,
     // but xml with comments can have multiple root

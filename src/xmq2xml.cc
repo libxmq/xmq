@@ -34,13 +34,14 @@
 
 #include "util.h"
 #include "parse.h"
+#include "settings.h"
 
 using namespace std;
 using namespace rapidxml;
 
 #define VERSION "0.1"
 
-int main_xmq2xml(const char *filename, vector<char> *buffer)
+int main_xmq2xml(const char *filename, vector<char> *buffer, Settings *settings)
 {
     xml_document<> doc;
 

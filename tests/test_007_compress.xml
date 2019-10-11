@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<org.eventb.core.contextFile org.eventb.core.configuration="org.eventb.core.fwd" org.eventb.core.generated="false" org.eventb.texttools.text_lastmodified="1566054895570" version="3">
+  <org.eventb.core.carrierSet org.eventb.core.comment="Comment" org.eventb.core.generated="false" org.eventb.core.identifier="VIF_STATES"/>
+  <org.eventb.core.constant org.eventb.core.generated="false" org.eventb.core.identifier="DecodeVIF"/>
+  <org.eventb.core.axiom org.eventb.core.generated="false" org.eventb.core.label="axm1" org.eventb.core.predicate="partition(VIF_STATES, {DecodeVIF}, {DecodeCombinable}, {DecodeCombinableExtension}, {DoneVIB} )"/>
+  <org.eventb.core.constant org.eventb.core.generated="false" org.eventb.core.identifier="DecodeCombinable"/>
+  <org.eventb.core.constant org.eventb.core.generated="false" org.eventb.core.identifier="DecodeCombinableExtension"/>
+  <org.eventb.core.constant org.eventb.core.generated="false" org.eventb.core.identifier="DoneVIB"/>
+</org.eventb.core.contextFile>

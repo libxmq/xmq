@@ -1,7 +1,7 @@
 #!/bin/sh
 if [ "$1" = "" ]
 then
-    echo "Usage: xmless <filename.xml>"
+    echo "Usage: xmless [--compress] [-x node@attr] <filename.xml>"
     exit 0
 fi
 xmq --color $1 | less -R

@@ -48,3 +48,11 @@ Assuming xmq-buffer is bound to ctrl-t, pressing ctrl-t
 will flip between xml and xmq as can be seen below.
 
 ![XML vs XMQ](/doc/emacs_xml_xmq.png)
+
+# Diffing
+
+You can diff two xml files: 'xmq-diff old.xml new.xml'
+
+You can diff an xml file against its git repo: 'xmq-git-diff file.xml'
+
+You can meld two xml files: 'xmq-meld old.xml new.xml'

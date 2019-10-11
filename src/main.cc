@@ -23,36 +23,63 @@
 */
 
 #include "util.h"
+#include "settings.h"
 
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
-
 #include <vector>
+#include <set>
 #define VERSION "0.1"
 
 using namespace std;
 
-int main_xml2xmq(vector<char> *buffer, bool color);
-int main_xmq2xml(const char *filename, vector<char> *buffer);
+int main_xml2xmq(vector<char> *buffer, Settings *settings);
+int main_xmq2xml(const char *filename, vector<char> *buffer, Settings *settings);
 
 int main(int argc, char **argv)
 {
     vector<char> buffer;
+    set<string> excludes;
 
     // Display using color of the output is a terminal.
-    bool use_color = isatty(1);
+    Settings settings;
+    settings.use_color = isatty(1);
+    settings.compress = false;
 
     int i = 1;
-    if (argc >= 2 && !strcmp(argv[i], "--color"))
+    for (;;)
     {
-        use_color = true;
-        i++;
+        bool found = false;
+        if (argc >= 2 && !strcmp(argv[i], "--color"))
+        {
+            settings.use_color = true;
+            i++;
+            argc--;
+            found = true;
+        }
+        if (argc >= 2 && !strcmp(argv[i], "-c"))
+        {
+            settings.compress = true;
+            i++;
+            argc--;
+            found = true;
+        }
+        if (argc >= 3 && !strcmp(argv[i], "-x"))
+        {
+            settings.excludes.insert(argv[i+1]);
+            i+=2;
+            argc-=2;
+            found = true;
+        }
+        if (!found) break;
     }
-    if (use_color)
+    if (settings.use_color)
     {
-        // printf("GURKA \033]11;?\033\\\n");
+        // printf("\033]11;?\033\\\n");
         // Detect background color of terminal
+        // To change the color theme....
+        // Now it defaults to colors suitable for a light background.
     }
 
     const char *file = argv[i];
@@ -96,7 +123,7 @@ int main(int argc, char **argv)
     }
 
     if (input_is_xml)
-        return main_xml2xmq(&buffer, use_color);
+        return main_xml2xmq(&buffer, &settings);
     else
-        return main_xmq2xml(file, &buffer);
+        return main_xmq2xml(file, &buffer, &settings);
 }

@@ -1,0 +1,14 @@
+#!/bin/sh
+if [ "$1" = "" ]
+then
+    echo "Usage: xmq-diff <old.xml> <new.xml>"
+    exit 0
+fi
+
+
+oldfile=$(mktemp /tmp/xmq-diff.old.XXXXXX)
+newfile=$(mktemp /tmp/xmq-diff.new.XXXXXX)
+
+xmq "$1" > $oldfile
+xmq "$2" > $newfile
+diff $oldfile $newfile | colordiff
