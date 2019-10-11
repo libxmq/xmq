@@ -53,7 +53,7 @@ will flip between xml and xmq as can be seen below.
 
 You can diff two xml files: 'xmq-diff old.xml new.xml'
 
-You can diff an xml file against its git repo: 'xmq-git-diff file.xml'
+You can diff an xml file against its git repo: 'xmq-git-diff file.xml' or using 'xmq-git-meld file.xml'
 
 You can meld two xml files: 'xmq-meld old.xml new.xml'
 
@@ -64,7 +64,7 @@ You can exclude the attribute 'foo' in every node: 'xmq-less -x @foo foo.xml'
 # Compressing
 
 If the node names are very long and have consistent prefixes
-you can compress the output: 'xmq-less -c foo.xml'
+you can compress the output: 'xmq-less -c foo.xml' 'xmq-git-diff -c -x @name foo.xml'
 
 This will replace a long prefix 'abc.def.ghi' with for example '0:'
 depending on how many prefixes are found. The prefix is printed

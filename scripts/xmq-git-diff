@@ -20,4 +20,4 @@ fi
 
 xmq $compress $exclude "$1" > /tmp/aa
 git show "HEAD:$1" | xmq $compress $exclude - > /tmp/bb
-diff -c /tmp/bb /tmp/aa | colordiff
+diff /tmp/bb /tmp/aa | colordiff
