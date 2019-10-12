@@ -33,6 +33,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 
 #if defined(__APPLE__) && defined(__MACH__)
 #include <mach/error.h>
