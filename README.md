@@ -1,6 +1,10 @@
 # xmq
 Convert xml to a human readable/editable format and back.
 
+| OS           | Status           |
+| ------------ |:-------------:|
+|GNU/Linux & MacOSX| [![Build Status](https://travis-ci.org/weetmuts/xmq.svg?branch=master)](https://travis-ci.org/weetmuts/xmq) |
+
 Xml can be human readable/editable if it is used for markup of longer
 human language texts, ie books, articles and other documents etc. In
 these cases the xml-tags represent a minor part of the whole xml-file.
@@ -19,7 +23,7 @@ whitespace trimmings.)
 
 Type `xmq pom.xml > pom.xmq` to convert your pom.xml file into an xmq file.
 
-Make your desired changes in the xml file and then
+Make your desired changes in the xmq file and then
 do `xmq pom.xmq > pom.xml` to convert it back.
 
 You can read form stdin like this:  `cat pom.xml | xmq -`
