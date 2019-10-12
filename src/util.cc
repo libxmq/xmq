@@ -34,6 +34,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#if defined(__APPLE__) && defined(__MACH__)
+#include <mach/error.h>
+#endif
+
 using namespace std;
 
 void add_string(char *s, StringCount &c)
