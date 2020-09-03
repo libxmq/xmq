@@ -78,6 +78,8 @@ bool needsEscaping(const char *s, bool is_attribute)
 {
     size_t n = 0;
     if (s == NULL) return false;
+    if (*s == '/' && *(s+1) == '/') return true;
+    if (*s == '/' && *(s+1) == '*') return true;
     while (*s != 0)
     {
         if (*s == ' ') return true;
@@ -89,7 +91,6 @@ bool needsEscaping(const char *s, bool is_attribute)
         if (*s == ')') return true;
         if (*s == '{') return true;
         if (*s == '}') return true;
-        if (*s == '/') return true;
         s++;
         n++;
         if (is_attribute && n > attr_max_width) return true;

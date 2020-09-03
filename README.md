@@ -21,6 +21,14 @@ The xmq format exactly represents the xml format and can therefore be
 converted back to xml after any editing has been done. (Caveat
 whitespace trimmings.)
 
+The xmq format reserves these characters: `= <EQUALS> '<SINGLE QUOTE> { } <BRACES> ( ) <PARENTHESES>` and `<SPACE>`.
+xmq follows xml in that key names (tags) are not allowed to contain these.
+Value strings (tag content or attributes) that contain the reserved characters must be quoted with the `' <SINGLE QUOTE>`.
+A single quote must be is typed \\' inside a quoted string.
+
+A comment starts with `//` or `/*` and ends with eol or `*/`.
+Thus a value string that starts with the comment starters, must be quoted with the `' <SINGLE QUOTE>`.
+
 Type `xmq pom.xml > pom.xmq` to convert your pom.xml file into an xmq file.
 
 Make your desired changes in the xmq file and then

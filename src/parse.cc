@@ -231,11 +231,12 @@ Token Parser::eatToken()
     case TokenType::cdata: return eatToEndOfCdata();
     case TokenType::comment:
     {
-        s++;
-        if (*s != '*' && *s != '/')
+        if (*(s+1) != '*' && *(s+1) != '/')
         {
-            error("expected // or /* for comment");
+            // This is text!
+            return eatToEndOfText();
         }
+        s++;
         bool single_line = *s == '/';
         s++;
         if (single_line)
@@ -279,7 +280,7 @@ Token Parser::eatToEndOfText()
             col = 1;
             break;
         }
-        if (isTokenIdentifier(c) ||
+        if ((isTokenIdentifier(c) && c != '/') ||
             isWhiteSpace(c))
         {
             s = p;

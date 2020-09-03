@@ -34,12 +34,12 @@
 (defvar xmq-font-lock-keywords)
 (setq xmq-font-lock-keywords `(
                                ("\\('.*'\\)" . (1 font-lock-string-face))
+                               ("^\\([^ =()]*\\) *[({$]" . (1 font-lock-function-name-face))
+                               (" \\([^ =()]*\\) *[({$]" . (1 font-lock-function-name-face))
+                               ("^\\([^ =()]*\\) *=" . (1 font-lock-variable-name-face))
+                               ("[ ({]\\([^ =()]*\\) *=" . (1 font-lock-variable-name-face))
+                               (" *= *\\([^ ={}()]*\\)" . (1 font-lock-string-face))
                                ("\\(//.*\\)$" . (1 font-lock-comment-face))
-                               ("^\\([^ /=()]*\\) *[({$]" . (1 font-lock-function-name-face))
-                               (" \\([^ /=()]*\\) *[({$]" . (1 font-lock-function-name-face))
-                               ("^\\([^ /=()]*\\) *=" . (1 font-lock-variable-name-face))
-                               ("[ ({]\\([^ /=()]*\\) *=" . (1 font-lock-variable-name-face))
-                               (" *= *\\([^ /={}()]*\\)" . (1 font-lock-string-face))
                                )
 )
 

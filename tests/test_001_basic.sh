@@ -13,8 +13,14 @@ cat > $OUT/expected.xmq <<EOF
 a {
     b {
         c = CCC
-        d
-        e
+        d = http://alfa.beta.gamma/index.html
+        e = '// This is not a comment'
+        f = 'Neither is // this'
+        // But this is a comment
+        g
+        h
+        i = '/* Nor is this a comment */'
+        j = /this/is/a/path
     }
 }
 EOF
