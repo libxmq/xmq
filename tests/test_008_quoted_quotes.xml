@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<a>
+  hejsan='alfa'
+  <b attr="iggo-'foo'">svejsan 'beta' 'gamma'</b>
+  gamma svejsan testing
+  export import report
+</a>
