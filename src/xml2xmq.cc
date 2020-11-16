@@ -576,7 +576,7 @@ int main_xml2xmq(vector<char> *buffer, Settings *provided_settings)
     settings_ = provided_settings;
     xml_document<> doc;
 
-    doc.parse<parse_comment_nodes>(&(*buffer)[0]);
+    doc.parse<parse_comment_nodes|parse_trim_whitespace>(&(*buffer)[0]);
     xml_node<> *root = doc.first_node();
 
     if (settings_->compress)

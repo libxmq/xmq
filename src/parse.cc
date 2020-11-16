@@ -1,5 +1,5 @@
 /*
- Copyright (c) 2019 Fredrik Öhrström
+ Copyright (c) 2019-2020 Fredrik Öhrström
 
  MIT License
 
@@ -41,7 +41,7 @@ using namespace std;
   Then you have text which is any text string containing none of the reserved characters.
 
   Then you have quoted text that is surrounded with ', and is allowed to contain
-  the reserved characters.
+  the reserved characters and \' quoted quotes.
 
   Data is text or quoted text.
 
@@ -317,6 +317,7 @@ Token Parser::eatToEndOfQuotedText(int indent)
         {
             error("unexpected eof in quoted text");
         }
+        else
         if (c == '\n')
         {
             buffer.push_back('\n');
@@ -333,6 +334,15 @@ Token Parser::eatToEndOfQuotedText(int indent)
             }
             continue;
         }
+        else
+        if (c == '\\' && *(p+1) == '\'')
+        {
+            // Quoted \' inside quoted data becomes just a single '.
+            c = '\'';
+            p++;
+            col++;
+        }
+        else
         if (c == '\'')
         {
             s = p+1;

@@ -53,6 +53,23 @@ namespace rapidxml
                 {
                     *out++ = *begin;    // No expansion, copy character
                 }
+                else if (noexpand == -1) // Only expand the dangerous: & < >
+                {
+                    switch (*begin)
+                    {
+                    case Ch('<'):
+                        *out++ = Ch('&'); *out++ = Ch('l'); *out++ = Ch('t'); *out++ = Ch(';');
+                        break;
+                    case Ch('>'):
+                        *out++ = Ch('&'); *out++ = Ch('g'); *out++ = Ch('t'); *out++ = Ch(';');
+                        break;
+                    case Ch('&'):
+                        *out++ = Ch('&'); *out++ = Ch('a'); *out++ = Ch('m'); *out++ = Ch('p'); *out++ = Ch(';');
+                        break;
+                    default:
+                        *out++ = *begin;    // No expansion, copy character
+                    }
+                }
                 else
                 {
                     switch (*begin)
@@ -257,7 +274,7 @@ namespace rapidxml
             assert(node->type() == node_data);
             if (!(flags & print_no_indenting))
                 out = fill_chars(out, indent, Ch('\t'));
-            out = copy_and_expand_chars(node->value(), node->value() + node->value_size(), Ch(0), out);
+            out = copy_and_expand_chars(node->value(), node->value() + node->value_size(), Ch(-1), out);
             return out;
         }
 
@@ -314,12 +331,12 @@ namespace rapidxml
                 if (!child)
                 {
                     // If node has no children, only print its value without indenting
-                    out = copy_and_expand_chars(node->value(), node->value() + node->value_size(), Ch(0), out);
+                    out = copy_and_expand_chars(node->value(), node->value() + node->value_size(), Ch(-1), out);
                 }
                 else if (child->next_sibling() == 0 && child->type() == node_data)
                 {
                     // If node has a sole data child, only print its value without indenting
-                    out = copy_and_expand_chars(child->value(), child->value() + child->value_size(), Ch(0), out);
+                    out = copy_and_expand_chars(child->value(), child->value() + child->value_size(), Ch(-1), out);
                 }
                 else
                 {
