@@ -373,6 +373,7 @@ void printAligned(xml_node<> *i,
             {
                 printf("=");
                 ind = indent;
+                printIndent(indent);
             }
             else
             {
