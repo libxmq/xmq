@@ -26,6 +26,7 @@
 #define UTIL_H
 
 #include <map>
+#include <string>
 #include <vector>
 
 typedef std::map<std::string,int> StringCount;
