@@ -25,6 +25,7 @@
 #ifndef PARSE_H
 #define PARSE_H
 
+#include <cstdio>
 #include <map>
 #include <vector>
 #include "rapidxml/rapidxml.hpp"
