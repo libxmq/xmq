@@ -54,6 +54,10 @@ Xml to the left. Colored XMQ (using xmq-less) to the right.
 
 ![XML vs XMQ](/doc/xml_vs_xmq.png)
 
+Multiline content is quoted:
+
+![Multiline](/doc/multiline.png)
+
 # Emacs example
 
 Assuming xmq-buffer is bound to ctrl-t, pressing ctrl-t
