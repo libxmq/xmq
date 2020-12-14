@@ -50,4 +50,4 @@ RIGHT leading_newline.xmq leading_newline.xml
 BOTH feature.xmq feature.xml
 
 # Example pom.xml
-RIGHT pom.xmq pom.xml
+RIGHT oom.xmq oom.xml

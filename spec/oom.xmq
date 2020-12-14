@@ -22,7 +22,7 @@ project(xmlns              = http://maven.apache.org/POM/4.0.0
         dependency {
             groupId    = org.dom4j
             artifactId = dom4j
-            version    = 2.1.1
+            version    = 99.9.1
         }
     }
     build {
