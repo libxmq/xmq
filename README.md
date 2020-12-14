@@ -16,6 +16,7 @@ files hard to read and edit directly by hand.
 
 The xmq format is simply a restructuring of the xml that (to me at
 least) makes config files written in xml easier to read and edit.
+In particular the xmq format makes significant whitespace explicit and visible.
 
 The xmq format exactly represents the xml format and can therefore be
 converted back to xml after any editing has been done. (Caveat
