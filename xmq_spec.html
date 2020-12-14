@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<header>
+<link type="text/css" href="xmq_spec.css" rel="stylesheet"/>
+<body>
+
+    <h1>XMQ specification</h1>
+
+    <p>
+    <b>safe text</b> consists of all valid utf8 exluding
+    these 6 characters <b>= ' ( ) { }</b>
+    and whitespace and the nul character.
+    </p>
+
+    <p>
+    <b>name</b> is an xml tag, ie it is safe text with the
+    additional xml 1.0 tag name restrictions.
+    (I.e. start with letter or underscore etc.)
+    </p>
+
+    <p>
+    <b>unquoted content</b> consists of safe text.
+    </p>
+
+    <p>
+    <b>quoted content</b> can contain all valid utf8 except the nul character.
+    </p>
+
+    <p>
+    <b>whitespace</b> is a separator that is irrelevant except:
+       <ol>
+          <li>when separating unquoted content from the next name.</li>
+          <li>when separating quoted content from quoted content.</li>
+          <li>inside quoted content</li>
+       </ol>
+    </p>
+
+    <p>
+       However, inside quoted content:
+       <ol>
+       <li>A leading or ending sequence of Whitespace_NewLine_Whitespace will always be trimmed.</li>
+       <li>Incidental whitespace will always be trimmed, when there is at least one newline.</li>
+       </ol>
+    </p>
+
+    <p>A newline is implicitly inserted between two standalone quoted contents.</p>
+
+    <p>To avoid cluttering the examples below with xml/html5 declarations, --nodec is used.</p>
+<div class="info"> Build a node with unquoted content (safe text) and ignore unnecessary whitespace.</div>
+<div class="row">
+<pre class="box">
+a = 12.3
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;a&gt;12.3&lt;/a&gt;
+</pre></div>
+<div class="row">
+<pre class="box">
+a=12.3
+</pre><pre class="spacing">↗</pre></div>
+<div class="info"> Build a node with children, and ignore unnecessary whitespace.</div>
+<div class="row">
+<pre class="box">
+order {
+    date  = 2020-12-13
+    price = 424.5$
+    file  = /imagefiles/1234.png
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;order&gt;
+  &lt;date&gt;2020-12-13&lt;/date&gt;
+  &lt;price&gt;424.5$&lt;/price&gt;
+  &lt;file&gt;/imagefiles/1234.png&lt;/file&gt;
+&lt;/order&gt;
+</pre></div>
+<div class="row">
+<pre class="box">
+order{date=2020-12-13 price=424.5$ file=/imagefiles/1234.png}
+</pre><pre class="spacing">↗</pre></div>
+<div class="info"> Build a node with quoted content, remember that leading/ending ws-nl-ws is trimmed from quotes.</div>
+<div class="row">
+<pre class="box">
+alfa = 'Hello World!'
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;alfa&gt;Hello World!&lt;/alfa&gt;
+</pre></div>
+<div class="row">
+<pre class="box">
+alfa =   '
+      Hello World!
+                    '</pre><pre class="spacing">↗</pre></div>
+<div class="info"> Standalone quoted content is added as text to the parent node.</div>
+<div class="row">
+<pre class="box">
+alfa {
+    'Hello World!'
+}
+</pre><pre class="spacing">↗</pre></div>
+<div class="info"> Build a node with leading/ending whitespace not trimmed! Note! xmq by default strips leading/ending whitespace when moving from xml to xmq. Add opion -p to preserve whitespace, like this: "xmq -p foo.xml > foo.xmq".</div>
+<div class="row">
+<pre class="box">
+alfa = '  Hello World!  '
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;alfa&gt;  Hello World!  &lt;/alfa&gt;
+</pre></div>
+<div class="info"> Incidental whitespace is removed.</div>
+<div class="row">
+<pre class="box">
+block =
+'Line 1
+ Line 2
+ Line 3'
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;block&gt;Line 1
+Line 2
+Line 3&lt;/block&gt;
+</pre></div>
+<div class="row">
+<pre class="box">
+block = '
+      Line 1
+      Line 2
+      Line 3
+         '
+</pre><pre class="spacing">↗</pre></div>
+<div class="info"> To make indentation explicit, quote each line.</div>
+<div class="row">
+<pre class="box">
+block {
+    '        Line 1'
+    '        Line 2'
+    '        Line 3'
+}
+</pre><pre class="spacing">↗</pre><pre class="box">
+&lt;block&gt;        Line 1
+        Line 2
+        Line 3&lt;/block&gt;
+</pre></div>
+<div class="info"> Build a self closing node. Note! An empty string must always be ''. Multiline empty strings are not allowed anywhere.</div>
+<div class="row">
+<pre class="box">
+nothing
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;nothing/&gt;
+</pre></div>
+<div class="row">
+<pre class="box">
+nothing = ''</pre><pre class="spacing">↗</pre></div>
+<div class="info"> Build a node with a multple text data lines.</div>
+<div class="row">
+<pre class="box">
+html {
+    body {
+        'Greetings weary '
+        b = traveller
+        ' we meet again!'
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;html&gt;
+  &lt;body&gt;Greetings weary &lt;b&gt;traveller&lt;/b&gt; we meet again!&lt;/body&gt;
+&lt;/html&gt;
+</pre></div>
+<div class="info"> Build a node with attributes.</div>
+<div class="row">
+<pre class="box">
+block(id = 123)
+{
+    alfa(x = y) = z
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;block id="123"&gt;
+  &lt;alfa x="y"&gt;z&lt;/alfa&gt;
+&lt;/block&gt;
+</pre></div>
+<div class="info"> Use triple quotes to quote content containing quotes! Remember that double quotes is the empty string.</div>
+<div class="row">
+<pre class="box">
+div(id = 123)
+{
+    button(onClick = '''alert('Warning!'+'');''') = Warn
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;div id="123"&gt;
+  &lt;button onClick="alert('Warning!'+'');"&gt;Warn&lt;/button&gt;
+&lt;/div&gt;
+</pre></div>
+<div class="info"> Use quadruple quotes to quote content containing triple quotes! I.e. use n+1 quotes to quote content with n quotes.</div>
+<div class="row">
+<pre class="box">
+quoting_xmq =
+''''
+    div(id = 123)
+    {
+        button(onClick = '''alert('Warning!'+'');''') = Warn
+    }
+''''
+</pre><pre class="spacing">↗</pre><pre class="box">
+&lt;quoting_xmq&gt;div(id = 123)
+{
+   button(onClick = '''alert('Warning!'+'');''') = Warn
+}&lt;/quoting_xmq&gt;
+</pre></div>
+<div class="info"> To quote strings that start or  end with quotes, add a newline that will be trimmed away.</div>
+<div class="row">
+<pre class="box">
+node(print = '''
+                'Quoted string'
+             ''')
+</pre><pre class="spacing">↗</pre><pre class="box">
+&lt;node print="'Quoted string'"/&gt;
+</pre></div>
+<div class="info"> To make an explicit leading newline use an empty string and multiple childs.</div>
+<div class="row">
+<pre class="box">
+info {
+    ''
+    '      x'
+    '       y'
+    '        z'
+    '         w'
+}
+</pre><pre class="spacing">↗</pre><pre class="box">
+&lt;info&gt;
+      x
+       y
+        z
+         w&lt;/info&gt;
+</pre></div>
+<div class="info"> Example feature.xml</div>
+<div class="row">
+<pre class="box">
+feature(id    = org.eventb.texteditor.feature
+        label = TextEditor)
+{
+    description =
+    'Release History:
+     ----------------------
+     3.3.0 - Compatibility with core 3.3
+     3.1.2 - Fix some more bugs regarding theory parsing,
+     changes to seen contexts.
+     3.1.1 - Fix parsing of theory operators.'
+    copyright   =
+    'Copyright (c) 1971-1973 University AB
+     All rights reserved.'
+    url {
+        update(label = 'University AB'
+               url   = http://www.uniab.cde/)
+        discovery(label = 'Update Site'
+                  url   = file:/home/repository/)
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;feature id="org.eventb.texteditor.feature" label="TextEditor"&gt;
+  &lt;description&gt;Release History:
+----------------------
+3.3.0 - Compatibility with core 3.3
+3.1.2 - Fix some more bugs regarding theory parsing,
+changes to seen contexts.
+3.1.1 - Fix parsing of theory operators.&lt;/description&gt;
+  &lt;copyright&gt;Copyright (c) 1971-1973 University AB
+All rights reserved.&lt;/copyright&gt;
+  &lt;url&gt;
+    &lt;update label="University AB" url="http://www.uniab.cde/"/&gt;
+    &lt;discovery label="Update Site" url="file:/home/repository/"/&gt;
+  &lt;/url&gt;
+&lt;/feature&gt;
+</pre></div>
+<div class="info"> Example pom.xml</div>
+<div class="row">
+<pre class="box">
+project(xmlns              = http://maven.apache.org/POM/4.0.0
+        xmlns:xsi          = http://....
+        xsi:schemaLocation = 'http://.... http://....')
+{
+    modelVersion = 4.0.0
+    properties {
+        project.build.sourceEncoding = UTF-8
+        maven.compiler.source        = 8
+        maven.compiler.target        = 8
+    }
+    groupId    = bar.foo
+    artifactId = Software
+    version    = 1.0-SNAPSHOT
+    // Inherit defaults from Spring Boot
+    parent {
+        groupId    = org.springframework.boot
+        artifactId = spring-boot-starter-parent
+        version    = 2.2.2.RELEASE
+    }
+    dependencies {
+        // https://mvnrepository.com/artifact/org.dom4j/dom4j
+        dependency {
+            groupId    = org.dom4j
+            artifactId = dom4j
+            version    = 2.1.1
+        }
+    }
+    build {
+        plugins {
+            plugin {
+                groupId    = org.apache.maven.plugins
+                artifactId = maven-compiler-plugin
+                version    = 3.8.0
+                configuration {
+                    release = 8
+                }
+            }
+        }
+    }
+}
+</pre><pre class="spacing">↗</pre><pre class="box">
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://...." xsi:schemaLocation="http://.... http://...."&gt;
+  &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+  &lt;properties&gt;
+    &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+    &lt;maven.compiler.source&gt;8&lt;/maven.compiler.source&gt;
+    &lt;maven.compiler.target&gt;8&lt;/maven.compiler.target&gt;
+  &lt;/properties&gt;
+  &lt;groupId&gt;bar.foo&lt;/groupId&gt;
+  &lt;artifactId&gt;Software&lt;/artifactId&gt;
+  &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+  &lt;!-- Inherit defaults from Spring Boot --&gt;
+  &lt;parent&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-parent&lt;/artifactId&gt;
+    &lt;version&gt;2.2.2.RELEASE&lt;/version&gt;
+  &lt;/parent&gt;
+  &lt;dependencies&gt;
+    &lt;!-- https://mvnrepository.com/artifact/org.dom4j/dom4j --&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.dom4j&lt;/groupId&gt;
+      &lt;artifactId&gt;dom4j&lt;/artifactId&gt;
+      &lt;version&gt;2.1.1&lt;/version&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+  &lt;build&gt;
+    &lt;plugins&gt;
+      &lt;plugin&gt;
+        &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+        &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+        &lt;version&gt;3.8.0&lt;/version&gt;
+        &lt;configuration&gt;
+          &lt;release&gt;8&lt;/release&gt;
+        &lt;/configuration&gt;
+      &lt;/plugin&gt;
+    &lt;/plugins&gt;
+  &lt;/build&gt;
+&lt;/project&gt;
+</pre></div>
+</body>
+</html>

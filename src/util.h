@@ -42,4 +42,7 @@ bool isWhiteSpace(char c);
 
 bool isNewLine(char c);
 
+bool isHtml(std::vector<char> &buffer);
+bool firstWordIsHtml(std::vector<char> &buffer);
+
 #endif

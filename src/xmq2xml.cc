@@ -41,18 +41,37 @@ using namespace rapidxml;
 
 #define VERSION "0.1"
 
-int main_xmq2xml(const char *filename, vector<char> *buffer, Settings *settings)
+int main_xmq2xml(const char *filename, Settings *settings)
 {
+    vector<char> *buffer = settings->in;
     xml_document<> doc;
 
-    xml_node<> *node = doc.allocate_node(node_declaration, "?xml");
-    doc.append_node(node);
-    node->append_attribute(doc.allocate_attribute("version", "1.0"));
-    node->append_attribute(doc.allocate_attribute("encoding", "UTF-8"));
+    if (!settings->no_declaration)
+    {
+        if (firstWordIsHtml(*buffer))
+        {
+            xml_node<> *node = doc.allocate_node(node_doctype, "!DOCTYPE", "html");
+            doc.append_node(node);
+        }
+        else
+        {
+            xml_node<> *node = doc.allocate_node(node_declaration, "?xml");
+            doc.append_node(node);
+            node->append_attribute(doc.allocate_attribute("version", "1.0"));
+            node->append_attribute(doc.allocate_attribute("encoding", "UTF-8"));
+        }
+    }
 
     parse(filename, &(*buffer)[0], &doc);
 
-    std::cout << doc;
+    string s;
+    int flags = 0;
+    if (settings->preserve_ws)
+    {
+        flags |= rapidxml::print_no_indenting;
+    }
+    print(back_inserter(s), doc, flags);
+    std::cout << s;
 
     return 0;
 }

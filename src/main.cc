@@ -34,12 +34,13 @@
 
 using namespace std;
 
-int main_xml2xmq(vector<char> *buffer, Settings *settings);
-int main_xmq2xml(const char *filename, vector<char> *buffer, Settings *settings);
+int main_xml2xmq(Settings *settings);
+int main_xmq2xml(const char *filename, Settings *settings);
 
 int main(int argc, char **argv)
 {
-    vector<char> buffer;
+    vector<char> in;
+    vector<char> out;
     set<string> excludes;
 
     // Display using color of the output is a terminal.
@@ -54,6 +55,21 @@ int main(int argc, char **argv)
         if (argc >= 2 && !strcmp(argv[i], "--color"))
         {
             settings.use_color = true;
+            i++;
+            argc--;
+            found = true;
+        }
+        if (argc >= 2 && !strcmp(argv[i], "--nodec"))
+        {
+            // Do not print <?xml...> nor <!DOCTYPe...>
+            settings.no_declaration = true;
+            i++;
+            argc--;
+            found = true;
+        }
+        if (argc >= 2 && !strcmp(argv[i], "-p"))
+        {
+            settings.preserve_ws = true;
             i++;
             argc--;
             found = true;
@@ -91,7 +107,7 @@ int main(int argc, char **argv)
     }
     if (!strcmp(file, "-"))
     {
-        bool rc = loadStdin(&buffer);
+        bool rc = loadStdin(&in);
         if (!rc)
         {
             exit(1);
@@ -100,17 +116,17 @@ int main(int argc, char **argv)
     else
     {
         string files = string(file);
-        bool rc = loadFile(files, &buffer);
+        bool rc = loadFile(files, &in);
         if (!rc)
         {
             exit(1);
         }
     }
-    buffer.push_back('\0');
+    in.push_back('\0');
 
     bool input_is_xml = false;
 
-    for (char c : buffer)
+    for (char c : in)
     {
         if (!isWhiteSpace(c))
         {
@@ -123,7 +139,29 @@ int main(int argc, char **argv)
     }
 
     if (input_is_xml)
-        return main_xml2xmq(&buffer, &settings);
+    {
+        settings.in = &in;
+        settings.out = &out;
+        settings.html = isHtml(in);
+        int rc = main_xml2xmq(&settings);
+        if (rc == 0)
+        {
+            out.push_back('\0');
+            printf("%s", &out[0]);
+        }
+        return rc;
+    }
     else
-        return main_xmq2xml(file, &buffer, &settings);
+    {
+        settings.in = &in;
+        settings.out = &out;
+        settings.html = false;
+        int rc = main_xmq2xml(file, &settings);
+        if (rc == 0)
+        {
+            out.push_back('\0');
+            printf("%s", &out[0]);
+        }
+        return rc;
+    }
 }

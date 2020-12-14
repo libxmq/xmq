@@ -93,7 +93,7 @@ clean:
 
 test:
 	@./build/testinternals
-	@./test.sh build
+	@./spec/genspechtml.sh ./build/xmq
 
 testdebug:
 	@echo Test internals

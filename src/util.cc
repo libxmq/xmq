@@ -26,6 +26,7 @@
 
 #include <assert.h>
 #include <string>
+#include <string.h>
 #include <map>
 #include <vector>
 
@@ -176,4 +177,53 @@ bool isNewLine(char c)
 {
     return
         c == '\n';
+}
+
+const char *doctype = "<!DOCTYPE html>";
+const char *html = "<html";
+
+bool isHtml(vector<char> &buffer)
+{
+    size_t i=0;
+    for (; i<buffer.size(); ++i)
+    {
+        // Skip any whitespace
+        if (isWhiteSpace(buffer[i])) continue;
+        // First non-whitespace character.
+        if (i+strlen(doctype) < buffer.size() &&
+            !strncasecmp(&buffer[i], doctype, strlen(doctype)))
+        {
+            return true;
+        }
+        if (i+strlen(html) < buffer.size() &&
+            (!strncasecmp(&buffer[i], html, strlen(html))))
+        {
+            return true;
+        }
+        break;
+    }
+    return false;
+}
+
+bool firstWordIsHtml(vector<char> &buffer)
+{
+    size_t i=0;
+    size_t len = strlen("html");
+
+    for (; i<buffer.size(); ++i)
+    {
+        // Skip any whitespace
+        if (isWhiteSpace(buffer[i])) continue;
+        // First non-whitespace character.
+        if (i+len+1 < buffer.size() && (!strncasecmp(&buffer[i], "html", len)))
+        {
+            // Check that we have "html " "html=123" or "html{"
+            if (buffer[i+len] == ' ' || buffer[i+len] == '=' || buffer[i+len] == '{')
+            {
+                return true;
+            }
+        }
+        break;
+    }
+    return false;
 }

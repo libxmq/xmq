@@ -39,7 +39,6 @@ enum class TokenType
     paren_open,    // (
     paren_close,   // )
     quote,         // '....'
-    cdata,         // '''cdata content'''
     comment,       // / starts either // or /*
     text           // Not quoted text, can be tag or content.
 };
@@ -57,6 +56,6 @@ struct Token
     }
 };
 
-void parse(const char *filename, char *text, rapidxml::xml_document<> *doc);
+void parse(const char *filename, char *xmq, rapidxml::xml_document<> *doc);
 
 #endif

@@ -1,0 +1,53 @@
+# Build a node with unquoted content (safe text) and ignore unnecessary whitespace.
+BOTH single_node.xmq single_node.xml
+RIGHT single_node_no_ws.xmq single_node.xml
+
+# Build a node with children, and ignore unnecessary whitespace.
+BOTH children.xmq children.xml
+RIGHT children_no_ws.xmq children.xml
+
+# Build a node with quoted content, remember that leading/ending ws-nl-ws is trimmed from quotes.
+BOTH quoted_content.xmq quoted_content.xml
+RIGHT quoted_content_newlines.xmq quoted_content.xml
+
+# Standalone quoted content is added as text to the parent node.
+RIGHT quoted_content_child.xmq quoted_content.xml
+
+# Build a node with leading/ending whitespace not trimmed! Note! xmq by default strips leading/ending whitespace when moving from xml to xmq. Add opion -p to preserve whitespace, like this: "xmq -p foo.xml > foo.xmq".
+BOTH quoted_content_with_ws.xmq quoted_content_with_ws.xml -p
+
+# Incidental whitespace is removed.
+BOTH node_with_text_block.xmq node_with_text_block.xml
+RIGHT node_with_text_block_more.xmq node_with_text_block.xml
+
+# To make indentation explicit, quote each line.
+RIGHT node_with_forced_indents.xmq node_with_forced_indents.xml
+
+
+# Build a self closing node. Note! An empty string must always be ''. Multiline empty strings are not allowed anywhere.
+BOTH empty_node.xmq empty_node.xml
+RIGHT empty_node_explicit.xmq empty_node.xml
+
+# Build a node with a multple text data lines.
+BOTH node_with_lines.xmq node_with_lines.xml -p
+
+# Build a node with attributes.
+BOTH node_with_attr.xmq node_with_attr.xml
+
+# Use triple quotes to quote content containing quotes! Remember that double quotes is the empty string.
+BOTH node_click.xmq node_click.xml
+
+# Use quadruple quotes to quote content containing triple quotes! I.e. use n+1 quotes to quote content with n quotes.
+RIGHT quoting_quotes.xmq quoting_quotes.xml
+
+# To quote strings that start or  end with quotes, add a newline that will be trimmed away.
+RIGHT quote_leading_quote.xmq quote_leading_quote.xml
+
+# To make an explicit leading newline use an empty string and multiple childs.
+RIGHT leading_newline.xmq leading_newline.xml
+
+# Example feature.xml
+BOTH feature.xmq feature.xml
+
+# Example pom.xml
+RIGHT pom.xmq pom.xml

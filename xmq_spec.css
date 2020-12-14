@@ -1,0 +1,27 @@
+html { box-sizing: border-box; }
+*, *:before, *:after { box-sizing: inherit; }
+.info {
+  font-style: italic;
+  width: 80%;
+}
+.row {
+  display: flex;
+  align-items: stretch;
+  margin:0;
+  padding:0;
+}
+.arrow {
+  display: inline-block;
+}
+.box {
+  width:40%;
+  padding:10px;
+  border: solid 1px black;
+  align-self: center;
+  display: inline-block;
+}
+.spacing {
+  padding:10px;
+  align-self: center;
+  display: inline-block;
+}

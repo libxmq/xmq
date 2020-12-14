@@ -1,0 +1,20 @@
+feature(id    = org.eventb.texteditor.feature
+        label = TextEditor)
+{
+    description =
+    'Release History:
+     ----------------------
+     3.3.0 - Compatibility with core 3.3
+     3.1.2 - Fix some more bugs regarding theory parsing,
+     changes to seen contexts.
+     3.1.1 - Fix parsing of theory operators.'
+    copyright   =
+    'Copyright (c) 1971-1973 University AB
+     All rights reserved.'
+    url {
+        update(label = 'University AB'
+               url   = http://www.uniab.cde/)
+        discovery(label = 'Update Site'
+                  url   = file:/home/repository/)
+    }
+}
