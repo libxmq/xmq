@@ -46,6 +46,9 @@ RIGHT quote_leading_quote.xmq quote_leading_quote.xml
 # To make an explicit leading newline use an empty string and multiple childs.
 RIGHT leading_newline.xmq leading_newline.xml
 
+# You can add newlines inside an attribute.
+RIGHT attr_with_newlines.xmq attr_with_newlines.xml
+
 # Example feature.xml
 BOTH feature.xmq feature.xml
 

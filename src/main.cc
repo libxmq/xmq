@@ -59,6 +59,13 @@ int main(int argc, char **argv)
             argc--;
             found = true;
         }
+        if (argc >= 2 && !strcmp(argv[i], "--html"))
+        {
+            settings.html = true;
+            i++;
+            argc--;
+            found = true;
+        }
         if (argc >= 2 && !strcmp(argv[i], "--nodec"))
         {
             // Do not print <?xml...> nor <!DOCTYPe...>
@@ -74,14 +81,14 @@ int main(int argc, char **argv)
             argc--;
             found = true;
         }
-        if (argc >= 2 && !strcmp(argv[i], "-c"))
+        if (argc >= 2 && !strcmp(argv[i], "--compress"))
         {
             settings.compress = true;
             i++;
             argc--;
             found = true;
         }
-        if (argc >= 3 && !strcmp(argv[i], "-x"))
+        if (argc >= 3 && !strcmp(argv[i], "--exclude"))
         {
             settings.excludes.insert(argv[i+1]);
             i+=2;
@@ -138,11 +145,15 @@ int main(int argc, char **argv)
         }
     }
 
+    settings.filename = file;
     if (input_is_xml)
     {
         settings.in = &in;
         settings.out = &out;
-        settings.html = isHtml(in);
+        if (!settings.html)
+        {
+            settings.html = isHtml(in);
+        }
         int rc = main_xml2xmq(&settings);
         if (rc == 0)
         {
@@ -155,7 +166,10 @@ int main(int argc, char **argv)
     {
         settings.in = &in;
         settings.out = &out;
-        settings.html = false;
+        if (!settings.html)
+        {
+            settings.html = firstWordIsHtml(in);
+        }
         int rc = main_xmq2xml(file, &settings);
         if (rc == 0)
         {

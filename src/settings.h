@@ -31,6 +31,7 @@
 
 struct Settings
 {
+    const char *filename;
     std::vector<char> *in;
     std::vector<char> *out;
     bool use_color {};

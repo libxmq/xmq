@@ -722,10 +722,41 @@ void find_all_prefixes(xml_node<> *i, StringCount &c)
     }
 }
 
+const char *findStartingNewline(const char *where, const char *start)
+{
+    while (where > start && *(where-1) != '\n') where--;
+    return where;
+}
+
+
+const char *findEndingNewline(const char *where)
+{
+    while (*where && *where != '\n') where++;
+    return where;
+}
+
+void findLineAndColumn(const char *from, const char *where, int *line, int *col)
+{
+    *line = 1;
+    *col = 1;
+    for (const char *i = from; *i != 0; ++i)
+    {
+        (*col)++;
+        if (*i == '\n')
+        {
+            (*line)++;
+            (*col)=1;
+        }
+        if (i == where) break;
+    }
+}
+
 #define VERSION "0.1"
 
 int main_xml2xmq(Settings *provided_settings)
 {
+    // Parsing is destructive, store a copy for error messages here.
+    vector<char> original = *provided_settings->in;
     if (provided_settings->out == NULL)
     {
         output = printf;
@@ -738,6 +769,8 @@ int main_xml2xmq(Settings *provided_settings)
     vector<char> *buffer = provided_settings->in;
     settings_ = provided_settings;
     xml_document<> doc;
+    try
+    {
     // This looks kind of silly, doesnt it? Is there another way to configure the rapidxml parser?
     if (provided_settings->preserve_ws)
     {
@@ -760,6 +793,27 @@ int main_xml2xmq(Settings *provided_settings)
         {
             doc.parse<parse_doctype_node|parse_comment_nodes|parse_trim_whitespace>(&(*buffer)[0]);
         }
+    }
+    } catch (rapidxml::parse_error pe)
+    {
+        const char *where = pe.where<const char>();
+        //size_t offset = where - &(*buffer)[0];
+        const char *from = findStartingNewline(where, &(*buffer)[0]);
+        const char *to = findEndingNewline(where);
+        int line, col;
+        findLineAndColumn(&(*buffer)[0], where, &line, &col);
+
+        size_t count = to-from;
+
+        // src/xml2xmq.cc: In function ‘int main_xml2xmq(Settings*)’:
+        // src/xml2xmq.cc:789:1: error: ‘d’ was not declared in this scope
+        // d fprintf(stderr, "Parse error \"%s\"\n%.*s\n", pe.what(), (int)count, from);
+        // ^
+
+        fprintf(stderr, "%s:%d:%d Parse error \"%s\"\n%.*s\n",
+                provided_settings->filename, line, col, pe.what(), (int)count, from);
+        for (int i=2; i<col; ++i) fprintf(stderr, " ");
+        fprintf(stderr, "^\n");
     }
     xml_node<> *root = doc.first_node();
 
