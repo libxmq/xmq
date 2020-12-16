@@ -69,40 +69,42 @@ int outputText(const char *fmt, ...)
     return 0;
 }
 
-void printTag(const char *tag)
+void printTag(str tag)
 {
     if (settings_->use_color) output(dark_blue);
-    output("%s", tag);
+    output("%.*s", tag.l, tag.s);
     if (settings_->use_color) output(reset_color);
 }
 
-void printKeyTag(const char *tag)
+void printKeyTag(str tag)
 {
     if (settings_->use_color) output(green);
-    output("%s", tag);
+    output("%.*s", tag.l, tag.s);
     if (settings_->use_color) output(reset_color);
 }
 
-void printAttributeKey(const char *key)
+void printAttributeKey(str key)
 {
     if (settings_->use_color) output(green);
-    output("%s", key);
+    output("%.*s", key.l, key.s);
     if (settings_->use_color) output(reset_color);
 }
 
 // Returns the number of single quotes necessary
 // to quote this string.
-int escapingDepth(const char *s, bool *add_start_newline, bool *add_end_newline, bool is_attribute)
+int escapingDepth(str value, bool *add_start_newline, bool *add_end_newline, bool is_attribute)
 {
     size_t n = 0;
-    if (s == NULL) return 0; // No escaping neseccary.
+    if (value.l == 0) return 0; // No escaping neseccary.
+    const char *s = value.s;
+    const char *end = s+value.l;
     bool escape = false;
     int depth = 0;
     if (*s == '/' && *(s+1) == '/') escape = true;
     if (*s == '/' && *(s+1) == '*') escape = true;
     const char *q = NULL; // Start of most recently found single quote sequence.
     if (*s == '\'') *add_start_newline = true;
-    while (*s != 0)
+    while (s < end)
     {
         if (*s == '=' ||
             *s == '(' ||
@@ -152,10 +154,12 @@ int escapingDepth(const char *s, bool *add_start_newline, bool *add_end_newline,
     return depth;
 }
 
-bool containsNewlines(const char *s)
+bool containsNewlines(str value)
 {
-    if (s == NULL) return false;
-    while (*s != 0)
+    if (value.l == 0) return false;
+    const char *s = value.s;
+    const char *end = s+value.l;
+    while (s < end)
     {
         if (*s == '\n') return true;
         if (*s == '\r') return true;
@@ -170,10 +174,12 @@ void printIndent(int i, bool newline=true)
     while (--i >= 0) output(" ");
 }
 
-size_t trimWhiteSpace(const char **datap, int len = 0)
+size_t trimWhiteSpace(str *v)
 {
-    const char *data = *datap;
-    if (len == 0) len = strlen(data)+1;
+    const char *data = v->s;
+    size_t len = v->l;
+    if (len == 0) len = strlen(v->s)+1;
+
     // Trim away whitespace at the beginning.
     while (len > 0 && *data != 0)
     {
@@ -188,32 +194,36 @@ size_t trimWhiteSpace(const char **datap, int len = 0)
         if (!isWhiteSpace(data[len-1])) break;
         len--;
     }
-    *datap = data;
+    v->s = data;
+    v->l = len;
     return len;
 }
 
-void printComment(int len, const char *comment, int indent)
+void printComment(str comment, int indent)
 {
+    const char *c = comment.s;
+    size_t len = comment.l;
     bool single_line = true;
-    for (int i=0; i<len; ++i)
+
+    for (size_t i=0; i<len; ++i)
     {
-        if (comment[i] == '\n') single_line = false;
+        if (c[i] == '\n') single_line = false;
     }
     if (single_line)
     {
         if (settings_->use_color) output(yellow);
-        output("// %.*s", len, comment);
+        output("// %.*s", len, c);
         if (settings_->use_color) output(reset_color);
         return;
     }
-    const char *p = comment;
+    const char *p = c;
     int prev_i = 0;
-    for (int i=0; i<len; ++i)
+    for (size_t i=0; i<len; ++i)
     {
-        if (comment[i] == '\n' || i == len-1)
+        if (c[i] == '\n' || i == len-1)
         {
             int n = i - prev_i;
-            if (p == comment)
+            if (p == c)
             {
                 if (settings_->use_color) output(yellow);
                 output("/* %.*s", n, p);
@@ -221,29 +231,32 @@ void printComment(int len, const char *comment, int indent)
             else if (i == len-1)
             {
                 printIndent(indent);
-                const char *pp = p;
-                int nn = trimWhiteSpace(&pp, n);
+                str pp(p, n);
+                int nn = trimWhiteSpace(&pp);
                 if (settings_->use_color) output(yellow);
                 output("   %.*s */", (int)nn, pp);
             }
             else
             {
                 printIndent(indent);
-                const char *pp = p;
-                size_t nn = trimWhiteSpace(&pp, n);
+                str pp(p, n);
+                size_t nn = trimWhiteSpace(&pp);
                 if (settings_->use_color) output(yellow);
                 output("   %.*s", (int)nn, pp);
             }
             if (settings_->use_color) output(reset_color);
-            p = comment+i+1;
+            p = c+i+1;
             prev_i = i+1;
         }
     }
 
 }
 
-void printEscaped(const char *s, bool is_attribute, int indent, bool must_quote)
+void printEscaped(str value, bool is_attribute, int indent, bool must_quote)
 {
+    const char *s = value.s;
+    const char *end = s+value.l;
+
     if (s[0] == 0)
     {
         // Generate the empty '' string.
@@ -253,7 +266,7 @@ void printEscaped(const char *s, bool is_attribute, int indent, bool must_quote)
     bool add_end_newline = false;
 
     // Check how many (if any) single quotes are needed to protect the content properly.
-    int escape_depth = escapingDepth(s, &add_start_newline, &add_end_newline, is_attribute);
+    int escape_depth = escapingDepth(value, &add_start_newline, &add_end_newline, is_attribute);
 
     if (escape_depth > 0)
     {
@@ -270,7 +283,7 @@ void printEscaped(const char *s, bool is_attribute, int indent, bool must_quote)
         // There are no single quotes inside the content s.
         // We can safely print it.
         if (settings_->use_color) output(red);
-        output("%s", s);
+        output("%.*s", value.l, value.s);
         if (settings_->use_color) output(reset_color);
     }
     else
@@ -285,7 +298,7 @@ void printEscaped(const char *s, bool is_attribute, int indent, bool must_quote)
         {
             printIndent(indent+escape_depth);
         }
-        while (*s != 0)
+        while (s < end)
         {
             switch (*s) {
                 case '\n' :
@@ -352,16 +365,18 @@ bool nodeHasNoChildren(xml_node<> *node)
     Such nodes should be rendered as node = data
 */
 bool nodeHasSingleDataChild(xml_node<> *node,
-                            const char **data)
+                            str *data)
 {
-    *data = NULL;
+    data->s = "";
+    data->l = 0;
     xml_node<> *i = node->first_node();
 
     if (i != NULL &&
         i->type() == node_data &&
         i->next_sibling() == NULL)
     {
-        *data = node->value();
+        data->s = node->value();
+        data->l = node->value_size();
          return true;
     }
 
@@ -383,7 +398,7 @@ void printAlign(int i)
 }
 
 void printAlignedAttribute(xml_attribute<> *i,
-                           const char *value,
+                           str value,
                            int indent,
                            int align,
                            bool do_indent);
@@ -392,47 +407,22 @@ void printAttributes(xml_node<> *node,
                      int indent)
 {
     if (node->first_attribute() == NULL) return;
-    vector<pair<xml_attribute<>*,const char *>> lines;
+    vector<pair<xml_attribute<>*,str>> lines;
     size_t align = 0;
 
-    // XML rules state attribute names must be unique within the tag.
-    // Thus <something _="foo" id="bar" /> is legal
-    // and <something _="foo" _="bar" /> is not legal.
-    // The syntatic sugar for xmq renders this as:
-    // something('foo')
-    xml_attribute<> *underscore {};
-
     xml_attribute<> *i = node->first_attribute();
-    while (i)
-    {
-        const char *key = i->name();
-        const char *value = i->value();
-        if (key[0] == '_' && key[1] == 0)
-        {
-            underscore = i;
-            // Here we should not just add 2 for the quotes, but also
-            // handle any internal back slashes etc. TODO
-            size_t len = strlen(value)+2;
-            if (len > align)
-            {
-                align = len;
-            }
-        }
-        i = i->next_attribute();
-    }
 
     i = node->first_attribute();
     while (i)
     {
-        const char *key = i->name();
-        const char *value;
+        string key = string(i->name(), i->name_size());
         string checka = string("@")+key;
         string checkb = string(node->name())+"@"+key;
         if (settings_->excludes.count(checka) == 0 &&
             settings_->excludes.count(checkb) == 0)
         {
-            lines.push_back( { i, value });
-            size_t len = strlen(key);
+            lines.push_back( { i, str("",0) });
+            size_t len = key.size();
             if (len > align) {
                 align = len;
             }
@@ -443,29 +433,18 @@ void printAttributes(xml_node<> *node,
     output("(");
     bool do_indent = false;
 
-    if (underscore)
-    {
-        printAlignedAttribute(underscore, underscore->value(), indent, align, do_indent);
-        do_indent = true;
-    }
-
     i = node->first_attribute();
     while (i)
     {
-        const char *key = i->name();
-        // Skip the underscore.
-        if (key[0] == '_' && key[1] == 0)
-        {
-            i = i->next_attribute();
-            continue;
-        }
-        const char *value = i->value();
+        string key = string(i->name(), i->name_size());
+        str value = str(i->value(), i->value_size());
+
         string checka = string("@")+key;
         string checkb = string(node->name())+"@"+key;
         if (settings_->excludes.count(checka) == 0 &&
             settings_->excludes.count(checkb) == 0)
         {
-            printAlignedAttribute(i, value, indent+strlen(node->name())+1, align, do_indent);
+            printAlignedAttribute(i, value, indent+node->name_size()+1, align, do_indent);
             do_indent = true;
         }
         i = i->next_attribute();
@@ -474,7 +453,7 @@ void printAttributes(xml_node<> *node,
 }
 
 void printAligned(xml_node<> *i,
-                  const char *value,
+                  str value,
                   int indent,
                   int align,
                   bool do_indent)
@@ -482,8 +461,8 @@ void printAligned(xml_node<> *i,
     if (do_indent) printIndent(indent);
     if (i->type() == node_comment)
     {
-        int l = trimWhiteSpace(&value);
-        printComment(l, value, indent);
+        trimWhiteSpace(&value);
+        printComment(value, indent);
     }
     else
     if (i->type() == node_data)
@@ -497,15 +476,15 @@ void printAligned(xml_node<> *i,
     }
     else
     {
-        const char *key = i->name();
+        str key(i->name(), i->name_size());
         printKeyTag(key);
         if (hasAttributes(i))
         {
             printAttributes(i, indent);
         }
-        if (value != NULL)
+        if (value.l != 0)
         {
-            size_t len = strlen(key);
+            size_t len = key.l;
             printAlign(align-len+1);
             int ind = indent+align+3;
             if (containsNewlines(value))
@@ -524,20 +503,20 @@ void printAligned(xml_node<> *i,
 }
 
 void printAlignedAttribute(xml_attribute<> *i,
-                           const char *value,
+                           str value,
                            int indent,
                            int align,
                            bool do_indent)
 {
     if (do_indent) printIndent(indent);
-    const char *key = i->name();
+    str key(i->name(), i->name_size());
     printAttributeKey(key);
     // Print the value if it exists, and is different
     // from the key. I.e. boolean xml values must be stored as:
     // hidden="hidden" this will translate into just hidden in xmq.
-    if (value != NULL && strcmp(key, value))
+    if (value.l > 0 && !value.equals(key))
     {
-        size_t len = strlen(key);
+        size_t len = key.l;
         printAlign(align-len+1);
         int ind = indent+align+3;
         if (containsNewlines(value))
@@ -556,24 +535,24 @@ void printAlignedAttribute(xml_attribute<> *i,
 
 void render(xml_node<> *node, int indent, bool newline=true);
 
-void renderNode(xml_node<> *i, int indent, bool newline, vector<pair<xml_node<>*,const char *>> *lines, size_t *align)
+void renderNode(xml_node<> *i, int indent, bool newline, vector<pair<xml_node<>*,str>> *lines, size_t *align)
 {
-    const char *key = i->name();
-    const char *value;
+    string key = string(i->name(), i->name_size());
+    str value = str(i->value(), i->value_size());
     if (i->type() == node_data || i->type() == node_comment)
     {
-        lines->push_back( { i, i->value() });
+        lines->push_back( { i, value });
     }
     else
     if (nodeHasNoChildren(i))
     {
-        lines->push_back( { i, NULL });
+        lines->push_back( { i, str("",0) });
     }
     else
     if (nodeHasSingleDataChild(i, &value))
     {
         lines->push_back( { i, value });
-        size_t len = strlen(key);
+        size_t len = key.size();
         if (len > *align)
         {
             *align = len;
@@ -600,15 +579,17 @@ void render(xml_node<> *node, int indent, bool newline)
 {
     assert(node != NULL);
     size_t align = 0;
-    vector<pair<xml_node<>*,const char *>> lines;
+    vector<pair<xml_node<>*,str>> lines;
 
     if (node->type() == node_comment)
     {
-        printAligned(node, node->value(), indent, 0, newline);
+        str value(node->value(), node->value_size());
+        printAligned(node, value, indent, 0, newline);
         return;
     }
     printIndent(indent, newline);
-    printTag(node->name());
+    str name(node->name(), node->name_size());
+    printTag(name);
     if (hasAttributes(node))
     {
         printAttributes(node, indent);
@@ -776,22 +757,22 @@ int main_xml2xmq(Settings *provided_settings)
     {
         if (provided_settings->html)
         {
-            doc.parse<parse_void_elements|parse_doctype_node|parse_comment_nodes>(&(*buffer)[0]);
+            doc.parse<parse_void_elements|parse_doctype_node|parse_comment_nodes|parse_no_string_terminators>(&(*buffer)[0]);
         }
         else
         {
-            doc.parse<parse_doctype_node|parse_comment_nodes>(&(*buffer)[0]);
+            doc.parse<parse_doctype_node|parse_comment_nodes|parse_no_string_terminators>(&(*buffer)[0]);
         }
     }
     else
     {
         if (provided_settings->html)
         {
-            doc.parse<parse_void_elements|parse_doctype_node|parse_comment_nodes|parse_trim_whitespace>(&(*buffer)[0]);
+            doc.parse<parse_void_elements|parse_doctype_node|parse_comment_nodes|parse_trim_whitespace|parse_no_string_terminators>(&(*buffer)[0]);
         }
         else
         {
-            doc.parse<parse_doctype_node|parse_comment_nodes|parse_trim_whitespace>(&(*buffer)[0]);
+            doc.parse<parse_doctype_node|parse_comment_nodes|parse_trim_whitespace|parse_no_string_terminators>(&(*buffer)[0]);
         }
     }
     } catch (rapidxml::parse_error pe)
@@ -810,7 +791,7 @@ int main_xml2xmq(Settings *provided_settings)
         // d fprintf(stderr, "Parse error \"%s\"\n%.*s\n", pe.what(), (int)count, from);
         // ^
 
-        fprintf(stderr, "%s:%d:%d Parse error \"%s\"\n%.*s\n",
+        fprintf(stderr, "%s:%d:%d Parse error %s\n%.*s\n",
                 provided_settings->filename, line, col, pe.what(), (int)count, from);
         for (int i=2; i<col; ++i) fprintf(stderr, " ");
         fprintf(stderr, "^\n");
@@ -839,18 +820,18 @@ int main_xml2xmq(Settings *provided_settings)
         {
             // Do not print the doctype.
             // This is assumed to be <!DOCTYPE html>
-            if (strcmp(root->value(), "html"))
+            if (strncmp(root->value(), "html", 4))
             {
                 fprintf(stderr, "Warning! Unexpected doctype %s\n", root->value());
             }
             root = root->next_sibling();
             continue;
         }
-        const char *tmp;
+        str tmp;
         // Handle the special cases, single empty node and single node with data content.
         if (nodeHasSingleDataChild(root, &tmp)|| nodeHasNoChildren(root))
         {
-            vector<pair<xml_node<>*,const char *>> lines;
+            vector<pair<xml_node<>*,str>> lines;
             size_t align;
             renderNode(root, 0, false, &lines, &align);
             // Flush any accumulated key:value lines with proper alignment.

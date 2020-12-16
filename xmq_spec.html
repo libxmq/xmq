@@ -236,6 +236,38 @@ delta(code =
 </pre><pre class="spacing">↗</pre><pre class="box">
 &lt;delta code="Line1&amp;#10;Line2&amp;#10;Line3"/&gt;
 </pre></div>
+<div class="info"> XMQ attributes having no value are allowed and for xml translates into attr="attr"</div>
+<div class="row">
+<pre class="box">
+alfa {
+    body {
+        div(gurka
+            lemon) = Texten!
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;alfa&gt;
+  &lt;body&gt;
+    &lt;div gurka="gurka" lemon="lemon"&gt;Texten!&lt;/div&gt;
+  &lt;/body&gt;
+&lt;/alfa&gt;
+</pre></div>
+<div class="info"> Translates into the same single attribute for html.</div>
+<div class="row">
+<pre class="box">
+html {
+    body {
+        div(gurka
+            lemon) = Texten!
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;html&gt;
+  &lt;body&gt;
+    &lt;div gurka lemon&gt;Texten!&lt;/div&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</pre></div>
 <div class="info"> Example feature.xml</div>
 <div class="row">
 <pre class="box">

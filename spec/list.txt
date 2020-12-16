@@ -49,6 +49,12 @@ RIGHT leading_newline.xmq leading_newline.xml
 # You can add newlines inside an attribute.
 RIGHT attr_with_newlines.xmq attr_with_newlines.xml
 
+# XMQ attributes having no value are allowed and for xml translates into attr="attr"
+BOTH xml_attr.xmq xml_attr.xml
+
+# Translates into the same single attribute for html.
+BOTH html_attr.xmq html_attr.html
+
 # Example feature.xml
 BOTH feature.xmq feature.xml
 

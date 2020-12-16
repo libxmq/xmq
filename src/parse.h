@@ -56,6 +56,6 @@ struct Token
     }
 };
 
-void parse(const char *filename, char *xmq, rapidxml::xml_document<> *doc);
+void parse(const char *filename, char *xmq, rapidxml::xml_document<> *doc, bool generate_html);
 
 #endif

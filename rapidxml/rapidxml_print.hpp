@@ -21,7 +21,8 @@ namespace rapidxml
     // Printing flags
 
     const int print_no_indenting = 0x1;   //!< Printer flag instructing the printer to suppress indenting of XML. See print() function.
-    const int no_final_newline = 0x2;   // Do not print the final newline
+    const int no_final_newline = 0x2;     // Do not print the final newline
+    const int print_html = 0x4;           // Translate attr alfa="alfa" into just alfa. Also void elements are printed without ending /.
 
     ///////////////////////////////////////////////////////////////////////
     // Internal
@@ -281,19 +282,34 @@ namespace rapidxml
                     // Print attribute name
                     *out = Ch(' '), ++out;
                     out = copy_chars(attribute->name(), attribute->name() + attribute->name_size(), out);
-                    *out = Ch('='), ++out;
-                    // Print attribute value using appropriate quote type
-                    if (find_char<Ch, Ch('"')>(attribute->value(), attribute->value() + attribute->value_size()))
+                    bool print_equals = true;
+                    if (flags & print_html)
                     {
-                        *out = Ch('\''), ++out;
-                        out = copy_and_expand_chars(attribute->value(), attribute->value() + attribute->value_size(), Ch('"'), out);
-                        *out = Ch('\''), ++out;
+                        if (attribute->value_size() == attribute->name_size() &&
+                            !strncmp(attribute->name(), attribute->value(), attribute->value_size()))
+                        {
+                            // We have found alfa="alfa" and we are generating html.
+                            // Skip printing ="alfa" only alfa remains.
+                            print_equals = false;
+                        }
                     }
-                    else
+
+                    if (print_equals)
                     {
-                        *out = Ch('"'), ++out;
-                        out = copy_and_expand_chars(attribute->value(), attribute->value() + attribute->value_size(), Ch('\''), out);
-                        *out = Ch('"'), ++out;
+                        *out = Ch('='), ++out;
+                        // Print attribute value using appropriate quote type
+                        if (find_char<Ch, Ch('"')>(attribute->value(), attribute->value() + attribute->value_size()))
+                        {
+                            *out = Ch('\''), ++out;
+                            out = copy_and_expand_chars(attribute->value(), attribute->value() + attribute->value_size(), Ch('"'), out);
+                            *out = Ch('\''), ++out;
+                        }
+                        else
+                        {
+                            *out = Ch('"'), ++out;
+                            out = copy_and_expand_chars(attribute->value(), attribute->value() + attribute->value_size(), Ch('\''), out);
+                            *out = Ch('"'), ++out;
+                        }
                     }
                 }
             }

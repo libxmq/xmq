@@ -247,7 +247,7 @@ namespace rapidxml
     //! See xml_document::parse() function.
     const int parse_normalize_whitespace = 0x800;
 
-    //! Accept html void tags, br,col,p etc.
+    //! Accept html void tags, br,col,p etc as well as single attributes without equal sign.
     const int parse_void_elements = 0x1000;
 
     // Compound flags
@@ -2315,46 +2315,63 @@ namespace rapidxml
                 // Skip whitespace after attribute name
                 skip<whitespace_pred, Flags>(text);
 
-                // Skip =
                 if (*text != Ch('='))
-                    RAPIDXML_PARSE_ERROR("expected =", text);
-                ++text;
+                {
+                    if (!(Flags & parse_void_elements))
+                    {
+                        // If parsing xml, then fail if there is no = sign here.
+                        RAPIDXML_PARSE_ERROR("expected =", text);
+                    }
+                    // We are parsing html. Lack of = sign is ok.
+                    // Set attribute value to the name!
+                    attribute->value(attribute->name(), attribute->name_size());
+                    // Add terminating zero after name
+                    if (!(Flags & parse_no_string_terminators))
+                        attribute->name()[attribute->name_size()] = 0;
 
-                // Add terminating zero after name
-                if (!(Flags & parse_no_string_terminators))
-                    attribute->name()[attribute->name_size()] = 0;
-
-                // Skip whitespace after =
-                skip<whitespace_pred, Flags>(text);
-
-                // Skip quote and remember if it was ' or "
-                Ch quote = *text;
-                if (quote != Ch('\'') && quote != Ch('"'))
-                    RAPIDXML_PARSE_ERROR("expected ' or \"", text);
-                ++text;
-
-                // Extract attribute value and expand char refs in it
-                Ch *value = text, *end;
-                const int AttFlags = Flags & ~parse_normalize_whitespace;   // No whitespace normalization in attributes
-                if (quote == Ch('\''))
-                    end = skip_and_expand_character_refs<attribute_value_pred<Ch('\'')>, attribute_value_pure_pred<Ch('\'')>, AttFlags>(text);
+                    // Skip whitespace after attribute.
+                    skip<whitespace_pred, Flags>(text);
+                }
                 else
-                    end = skip_and_expand_character_refs<attribute_value_pred<Ch('"')>, attribute_value_pure_pred<Ch('"')>, AttFlags>(text);
+                {
+                    ++text;
 
-                // Set attribute value
-                attribute->value(value, end - value);
+                    // Add terminating zero after name
+                    if (!(Flags & parse_no_string_terminators))
+                        attribute->name()[attribute->name_size()] = 0;
 
-                // Make sure that end quote is present
-                if (*text != quote)
-                    RAPIDXML_PARSE_ERROR("expected ' or \"", text);
-                ++text;     // Skip quote
+                    // Skip whitespace after =
+                    skip<whitespace_pred, Flags>(text);
 
-                // Add terminating zero after value
-                if (!(Flags & parse_no_string_terminators))
-                    attribute->value()[attribute->value_size()] = 0;
+                    // Skip quote and remember if it was ' or "
+                    Ch quote = *text;
+                    if (quote != Ch('\'') && quote != Ch('"'))
+                        RAPIDXML_PARSE_ERROR("expected ' or \"", text);
+                    ++text;
 
-                // Skip whitespace after attribute value
-                skip<whitespace_pred, Flags>(text);
+                    // Extract attribute value and expand char refs in it
+                    Ch *value = text, *end;
+                    const int AttFlags = Flags & ~parse_normalize_whitespace;   // No whitespace normalization in attributes
+                    if (quote == Ch('\''))
+                        end = skip_and_expand_character_refs<attribute_value_pred<Ch('\'')>, attribute_value_pure_pred<Ch('\'')>, AttFlags>(text);
+                    else
+                        end = skip_and_expand_character_refs<attribute_value_pred<Ch('"')>, attribute_value_pure_pred<Ch('"')>, AttFlags>(text);
+
+                    // Set attribute value
+                    attribute->value(value, end - value);
+
+                    // Make sure that end quote is present
+                    if (*text != quote)
+                        RAPIDXML_PARSE_ERROR("expected ' or \"", text);
+                    ++text;     // Skip quote
+
+                    // Add terminating zero after value
+                    if (!(Flags & parse_no_string_terminators))
+                        attribute->value()[attribute->value_size()] = 0;
+
+                    // Skip whitespace after attribute value
+                    skip<whitespace_pred, Flags>(text);
+                }
             }
         }
 

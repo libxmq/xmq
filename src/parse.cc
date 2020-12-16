@@ -60,6 +60,7 @@ struct Parser
     bool peek_skipped_whitespace;
     xml_document<> *doc;
     xml_node<> *root;
+    bool generate_html {};
 
     void error(const char* fmt, ...);
 
@@ -695,7 +696,7 @@ void Parser::parseAttributes(xml_node<> *parent)
             nt == TokenType::paren_close)
         {
             // This attribute is completed, it has no data.
-            parent->append_attribute(doc->allocate_attribute(t.value, "true"));
+            parent->append_attribute(doc->allocate_attribute(t.value, t.value));
             continue;
         }
 
@@ -753,7 +754,7 @@ void Parser::parseNode(xml_node<> *parent)
     }
 }
 
-void parse(const char *filename, char *xmq, xml_document<> *doc)
+void parse(const char *filename, char *xmq, xml_document<> *doc, bool generate_html)
 {
     Parser parser;
 
@@ -763,6 +764,7 @@ void parse(const char *filename, char *xmq, xml_document<> *doc)
     parser.line = 1;
     parser.col = 1;
     parser.file = filename;
+    parser.generate_html = generate_html;
 
     // Handle early comments.
     while (TokenType::comment == parser.peekToken())

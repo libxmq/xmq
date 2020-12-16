@@ -45,10 +45,16 @@ int main_xmq2xml(const char *filename, Settings *settings)
 {
     vector<char> *buffer = settings->in;
     xml_document<> doc;
+    bool generate_html {};
+
+    if (firstWordIsHtml(*buffer))
+    {
+        generate_html = true;
+    }
 
     if (!settings->no_declaration)
     {
-        if (firstWordIsHtml(*buffer))
+        if (generate_html)
         {
             xml_node<> *node = doc.allocate_node(node_doctype, "!DOCTYPE", "html");
             doc.append_node(node);
@@ -62,13 +68,17 @@ int main_xmq2xml(const char *filename, Settings *settings)
         }
     }
 
-    parse(filename, &(*buffer)[0], &doc);
+    parse(filename, &(*buffer)[0], &doc, generate_html);
 
     string s;
     int flags = 0;
     if (settings->preserve_ws)
     {
         flags |= rapidxml::print_no_indenting;
+    }
+    if (generate_html)
+    {
+        flags |= rapidxml::print_html;
     }
     print(back_inserter(s), doc, flags);
     std::cout << s;
