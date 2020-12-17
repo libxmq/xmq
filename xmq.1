@@ -18,17 +18,29 @@ After the edit is done, you use xmq to convert the xmq back to xml.
 
 .SH OPTIONS
 
-\fB\--color\fR force color output.
+\fB\--color\fR force coloring.
+
+\fB\--mono\fR prevent coloring.
 
 \fB\--compress\fR find common prefixes in tag names.
 
 \fB\--exclude\fR exlude tags.
 
-\fB\--html\fR work on html data.
+\fB\--html\fR assume that data is html, even though it does not start with an html tag.
 
-\fB\--nodec\fR do not att the xml/html5 declaration.
+\fB\--nodec\fR do not add the xml/html5 declaration.
+
+\fB\--output=html\fR produce output suitable inclusion between <pre>...</pre> tags.
+
+\fB\--output=terminal\fR write on terminal, use ansi colors if necessary.
+
+\fB\--output=tex\fR produce output suitable for inclusion in tex documents.
+
+\fB\--output=plain\fR produce plain utf8 text.
 
 \fB\-p\fR preserve whitespace when converting from xml to xmq.
+
+\fB\-v\fR view only, do not convert between xmq and xml/html.
 
 .SH AUTHOR
 Written by Fredrik Öhrström.

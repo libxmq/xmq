@@ -1,5 +1,5 @@
 /*
- Copyright (c) 2019 Fredrik Öhrström
+ Copyright (c) 2019-2020 Fredrik Öhrström
 
  MIT License
 
@@ -24,6 +24,7 @@
 
 #include "util.h"
 #include "settings.h"
+#include "xmq.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -33,9 +34,6 @@
 #define VERSION "0.1"
 
 using namespace std;
-
-int main_xml2xmq(Settings *settings);
-int main_xmq2xml(const char *filename, Settings *settings);
 
 int main(int argc, char **argv)
 {
@@ -48,6 +46,15 @@ int main(int argc, char **argv)
     settings.use_color = isatty(1);
     settings.compress = false;
 
+    if (isatty(1))
+    {
+        settings.output = OutputType::terminal;
+    }
+    else
+    {
+        settings.output = OutputType::plain;
+    }
+
     int i = 1;
     for (;;)
     {
@@ -55,6 +62,41 @@ int main(int argc, char **argv)
         if (argc >= 2 && !strcmp(argv[i], "--color"))
         {
             settings.use_color = true;
+            i++;
+            argc--;
+            found = true;
+        }
+        if (argc >= 2 && !strcmp(argv[i], "--mono"))
+        {
+            settings.use_color = false;
+            i++;
+            argc--;
+            found = true;
+        }
+        if (argc >= 2 && !strcmp(argv[i], "--output=plain"))
+        {
+            settings.output = OutputType::plain;
+            i++;
+            argc--;
+            found = true;
+        }
+        if (argc >= 2 && !strcmp(argv[i], "--output=terminal"))
+        {
+            settings.output = OutputType::terminal;
+            i++;
+            argc--;
+            found = true;
+        }
+        if (argc >= 2 && !strcmp(argv[i], "--output=html"))
+        {
+            settings.output = OutputType::html;
+            i++;
+            argc--;
+            found = true;
+        }
+        if (argc >= 2 && !strcmp(argv[i], "--output=tex"))
+        {
+            settings.output = OutputType::tex;
             i++;
             argc--;
             found = true;
@@ -93,6 +135,13 @@ int main(int argc, char **argv)
             settings.excludes.insert(argv[i+1]);
             i+=2;
             argc-=2;
+            found = true;
+        }
+        if (argc >= 2 && !strcmp(argv[i], "-v"))
+        {
+            settings.view = true;
+            i++;
+            argc--;
             found = true;
         }
         if (!found) break;

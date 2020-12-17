@@ -6,6 +6,8 @@
 
     <h1>XMQ specification</h1>
 
+    As of 2020-12-17 and in flux. By Fredrik Öhrström oehrstroem@gmail.com
+
     <p>
     <b>safe text</b> consists of all valid utf8 exluding
     these 6 characters <b>= ' ( ) { }</b>
@@ -49,7 +51,7 @@
 <div class="info"> Build a node with unquoted content (safe text) and ignore unnecessary whitespace.</div>
 <div class="row">
 <pre class="box">
-a = 12.3
+<span style="color:#00aa00">a</span> = <span style="color:#aa0000">12.3</span>
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;a&gt;12.3&lt;/a&gt;
 </pre></div>
@@ -60,10 +62,10 @@ a=12.3
 <div class="info"> Build a node with children, and ignore unnecessary whitespace.</div>
 <div class="row">
 <pre class="box">
-order {
-    date  = 2020-12-13
-    price = 424.5$
-    file  = /imagefiles/1234.png
+<span style="color:#000088">order</span> {
+    <span style="color:#00aa00">date</span>  = <span style="color:#aa0000">2020-12-13</span>
+    <span style="color:#00aa00">price</span> = <span style="color:#aa0000">424.5$</span>
+    <span style="color:#00aa00">file</span>  = <span style="color:#aa0000">/imagefiles/1234.png</span>
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;order&gt;
@@ -79,7 +81,7 @@ order{date=2020-12-13 price=424.5$ file=/imagefiles/1234.png}
 <div class="info"> Build a node with quoted content, remember that leading/ending ws-nl-ws is trimmed from quotes.</div>
 <div class="row">
 <pre class="box">
-alfa = 'Hello World!'
+<span style="color:#00aa00">alfa</span> = <span style="color:#aa0000">'Hello World!'</span>
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;alfa&gt;Hello World!&lt;/alfa&gt;
 </pre></div>
@@ -98,17 +100,17 @@ alfa {
 <div class="info"> Build a node with leading/ending whitespace not trimmed! Note! xmq by default strips leading/ending whitespace when moving from xml to xmq. Add opion -p to preserve whitespace, like this: "xmq -p foo.xml > foo.xmq".</div>
 <div class="row">
 <pre class="box">
-alfa = '  Hello World!  '
+<span style="color:#00aa00">alfa</span> = <span style="color:#aa0000">'  Hello World!  '</span>
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;alfa&gt;  Hello World!  &lt;/alfa&gt;
 </pre></div>
 <div class="info"> Incidental whitespace is removed.</div>
 <div class="row">
 <pre class="box">
-block =
-'Line 1
- Line 2
- Line 3'
+<span style="color:#00aa00">block</span> =
+<span style="color:#aa0000">'Line 1
+ <span style="color:#aa0000">Line 2
+ <span style="color:#aa0000">Line 3'</span>
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;block&gt;Line 1
 Line 2
@@ -138,7 +140,7 @@ block {
 <div class="info"> Build a self closing node. Note! An empty string must always be ''. Multiline empty strings are not allowed anywhere.</div>
 <div class="row">
 <pre class="box">
-nothing
+<span style="color:#00aa00">nothing</span>
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;nothing/&gt;
 </pre></div>
@@ -148,11 +150,11 @@ nothing = ''</pre><pre class="spacing">↗</pre></div>
 <div class="info"> Build a node with a multple text data lines.</div>
 <div class="row">
 <pre class="box">
-html {
-    body {
-        'Greetings weary '
-        b = traveller
-        ' we meet again!'
+<span style="color:#000088">html</span> {
+    <span style="color:#000088">body</span> {
+        <span style="color:#aa0000">'Greetings weary '</span>
+        <span style="color:#00aa00">b</span> = <span style="color:#aa0000">traveller</span>
+        <span style="color:#aa0000">' we meet again!'</span>
     }
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
@@ -163,9 +165,9 @@ html {
 <div class="info"> Build a node with attributes.</div>
 <div class="row">
 <pre class="box">
-block(id = 123)
+<span style="color:#000088">block</span>(<span style="color:#00aa00">id</span> = <span style="color:#aa0000">123</span>)
 {
-    alfa(x = y) = z
+    <span style="color:#00aa00">alfa</span>(<span style="color:#00aa00">x</span> = <span style="color:#aa0000">y</span>) = <span style="color:#aa0000">z</span>
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;block id="123"&gt;
@@ -175,9 +177,9 @@ block(id = 123)
 <div class="info"> Use triple quotes to quote content containing quotes! Remember that double quotes is the empty string.</div>
 <div class="row">
 <pre class="box">
-div(id = 123)
+<span style="color:#000088">div</span>(<span style="color:#00aa00">id</span> = <span style="color:#aa0000">123</span>)
 {
-    button(onClick = '''alert('Warning!'+'');''') = Warn
+    <span style="color:#00aa00">button</span>(<span style="color:#00aa00">onClick</span> = <span style="color:#aa0000">'''alert('Warning!'+'');'''</span>) = <span style="color:#aa0000">Warn</span>
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;div id="123"&gt;
@@ -239,10 +241,10 @@ delta(code =
 <div class="info"> XMQ attributes having no value are allowed and for xml translates into attr="attr"</div>
 <div class="row">
 <pre class="box">
-alfa {
-    body {
-        div(gurka
-            lemon) = Texten!
+<span style="color:#000088">alfa</span> {
+    <span style="color:#000088">body</span> {
+        <span style="color:#00aa00">div</span>(<span style="color:#00aa00">gurka</span>
+            <span style="color:#00aa00">lemon</span>) = <span style="color:#aa0000">Texten!</span>
     }
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
@@ -255,10 +257,10 @@ alfa {
 <div class="info"> Translates into the same single attribute for html.</div>
 <div class="row">
 <pre class="box">
-html {
-    body {
-        div(gurka
-            lemon) = Texten!
+<span style="color:#000088">html</span> {
+    <span style="color:#000088">body</span> {
+        <span style="color:#00aa00">div</span>(<span style="color:#00aa00">gurka</span>
+            <span style="color:#00aa00">lemon</span>) = <span style="color:#aa0000">Texten!</span>
     }
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
@@ -271,24 +273,24 @@ html {
 <div class="info"> Example feature.xml</div>
 <div class="row">
 <pre class="box">
-feature(id    = org.eventb.texteditor.feature
-        label = TextEditor)
+<span style="color:#000088">feature</span>(<span style="color:#00aa00">id</span>    = <span style="color:#aa0000">org.eventb.texteditor.feature</span>
+        <span style="color:#00aa00">label</span> = <span style="color:#aa0000">TextEditor</span>)
 {
-    description =
-    'Release History:
-     ----------------------
-     3.3.0 - Compatibility with core 3.3
-     3.1.2 - Fix some more bugs regarding theory parsing,
-     changes to seen contexts.
-     3.1.1 - Fix parsing of theory operators.'
-    copyright   =
-    'Copyright (c) 1971-1973 University AB
-     All rights reserved.'
-    url {
-        update(label = 'University AB'
-               url   = http://www.uniab.cde/)
-        discovery(label = 'Update Site'
-                  url   = file:/home/repository/)
+    <span style="color:#00aa00">description</span> =
+    <span style="color:#aa0000">'Release History:
+     <span style="color:#aa0000">----------------------
+     <span style="color:#aa0000">3.3.0 - Compatibility with core 3.3
+     <span style="color:#aa0000">3.1.2 - Fix some more bugs regarding theory parsing,
+     <span style="color:#aa0000">changes to seen contexts.
+     <span style="color:#aa0000">3.1.1 - Fix parsing of theory operators.'</span>
+    <span style="color:#00aa00">copyright</span>   =
+    <span style="color:#aa0000">'Copyright (c) 1971-1973 University AB
+     <span style="color:#aa0000">All rights reserved.'</span>
+    <span style="color:#000088">url</span> {
+        <span style="color:#00aa00">update</span>(<span style="color:#00aa00">label</span> = <span style="color:#aa0000">'University AB'</span>
+               <span style="color:#00aa00">url</span>   = <span style="color:#aa0000">http://www.uniab.cde/</span>)
+        <span style="color:#00aa00">discovery</span>(<span style="color:#00aa00">label</span> = <span style="color:#aa0000">'Update Site'</span>
+                  <span style="color:#00aa00">url</span>   = <span style="color:#aa0000">file:/home/repository/</span>)
     }
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">

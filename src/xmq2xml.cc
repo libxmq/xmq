@@ -1,5 +1,5 @@
 /*
- Copyright (c) 2019 Fredrik Öhrström
+ Copyright (c) 2019-2020 Fredrik Öhrström
 
  MIT License
 
@@ -35,15 +35,16 @@
 #include "util.h"
 #include "parse.h"
 #include "settings.h"
+#include "xmq.h"
 
 using namespace std;
 using namespace rapidxml;
 
 #define VERSION "0.1"
 
-int main_xmq2xml(const char *filename, Settings *settings)
+int main_xmq2xml(const char *filename, Settings *provided_settings)
 {
-    vector<char> *buffer = settings->in;
+    vector<char> *buffer = provided_settings->in;
     xml_document<> doc;
     bool generate_html {};
 
@@ -52,7 +53,7 @@ int main_xmq2xml(const char *filename, Settings *settings)
         generate_html = true;
     }
 
-    if (!settings->no_declaration)
+    if (!provided_settings->no_declaration)
     {
         if (generate_html)
         {
@@ -70,18 +71,31 @@ int main_xmq2xml(const char *filename, Settings *settings)
 
     parse(filename, &(*buffer)[0], &doc, generate_html);
 
-    string s;
-    int flags = 0;
-    if (settings->preserve_ws)
+    if (provided_settings->view)
     {
-        flags |= rapidxml::print_no_indenting;
+        xml_node<> *node = &doc;
+        node = node->first_node();
+        if (node->type() == node_doctype || node->type() == node_declaration)
+        {
+            node = node->next_sibling();
+        }
+        renderDoc(node, provided_settings);
     }
-    if (generate_html)
+    else
     {
-        flags |= rapidxml::print_html;
+        string s;
+        int flags = 0;
+        if (provided_settings->preserve_ws)
+        {
+            flags |= rapidxml::print_no_indenting;
+        }
+        if (generate_html)
+        {
+            flags |= rapidxml::print_html;
+        }
+        print(back_inserter(s), doc, flags);
+        std::cout << s;
     }
-    print(back_inserter(s), doc, flags);
-    std::cout << s;
 
     return 0;
 }

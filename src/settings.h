@@ -1,5 +1,5 @@
 /*
- Copyright (c) 2019 Fredrik Öhrström
+ Copyright (c) 2019-2020 Fredrik Öhrström
 
  MIT License
 
@@ -29,17 +29,21 @@
 #include <set>
 #include <vector>
 
+enum class OutputType { plain, terminal, html, tex };
+
 struct Settings
 {
     const char *filename;
     std::vector<char> *in;
     std::vector<char> *out;
     bool use_color {};
+    OutputType output {};
     bool compress {};
     std::set<std::string> excludes;
     bool html {};
     bool no_declaration {};
     bool preserve_ws {};
+    bool view {};
 };
 
 #endif

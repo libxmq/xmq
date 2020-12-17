@@ -92,6 +92,7 @@ html { box-sizing: border-box; }
   border: solid 1px black;
   align-self: center;
   display: inline-block;
+  overflow: hidden;
 }
 .spacing {
   padding:10px;
@@ -99,6 +100,8 @@ html { box-sizing: border-box; }
   display: inline-block;
 }
 EOF
+
+TODAY=$(date +%Y-%m-%d)
 
 cat > $OUT <<EOF
 <!DOCTYPE html>
@@ -108,6 +111,8 @@ cat > $OUT <<EOF
 <body>
 
     <h1>XMQ specification</h1>
+
+    As of ${TODAY} and in flux. By Fredrik Öhrström oehrstroem@gmail.com
 
     <p>
     <b>safe text</b> consists of all valid utf8 exluding
@@ -170,7 +175,7 @@ do
         echo "<div class=\"row\">" >> $OUT
 
         echo "<pre class=\"box\">" >> $OUT
-        cat spec/$FROM | sed 's/&/\&amp;/g' | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g' >> $OUT
+        $PROG --color --nodec -v --output=html spec/$FROM >> $OUT
         echo -n "</pre>" >> $OUT
 
         echo -n "<pre class=\"spacing\">⟷</pre>" >> $OUT

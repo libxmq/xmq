@@ -1,5 +1,5 @@
 /*
- Copyright (c) 2019 Fredrik Öhrström
+ Copyright (c) 2019-2020 Fredrik Öhrström
 
  MIT License
 
@@ -34,6 +34,7 @@
 
 #include "util.h"
 #include "settings.h"
+#include "xmq.h"
 
 using namespace rapidxml;
 using namespace std;
@@ -46,48 +47,113 @@ size_t attr_max_width = 80;
 
 Settings *settings_;
 
-#define green "\033[0;32m"
-#define yellow "\033[0;33m"
-#define light_blue  "\033[1;34m"
-#define dark_blue  "\033[0;34m"
-#define magenta "\033[0;35m"
-#define red "\033[0;31m"
-#define reset_color "\033[0m"
+const char *green;
+const char *yellow;
+const char *light_blue;
+const char *dark_blue;
+const char *magenta;
+const char *red;
+const char *reset_color;
+
+void render(xml_node<> *node, int indent, bool newline = true);
+
+void useAnsiColors()
+{
+    green = "\033[0;32m";
+    yellow = "\033[0;33m";
+    light_blue = "\033[1;34m";
+    dark_blue = "\033[0;34m";
+    magenta = "\033[0;35m";
+    red = "\033[0;31m";
+    reset_color = "\033[0m";
+}
+
+void useHtmlColors()
+{
+    green = "<span style=\"color:#00aa00\">";
+    yellow = "<span style=\"color:yellow\">";
+    light_blue = "<span style=\"color:#aaaaff\">";
+    dark_blue = "<span style=\"color:#000088\">";
+    magenta = "<span style=\"color:#00aaaa\">";
+    red = "<span style=\"color:#aa0000\">";
+    reset_color = "</span>";
+}
+
 
 thread_local int (*output)(const char* fmt, ...);
+thread_local int (*outputNoEscape)(const char* fmt, ...);
 thread_local vector<char> *out_buffer;
 
-int outputText(const char *fmt, ...)
+int outputTextTerminal(const char *fmt, ...)
 {
     va_list args;
-    char buffer[1024];
-    buffer[1023] = 0;
+    char buffer[65536];
+    buffer[65535] = 0;
     va_start(args, fmt);
-    vsnprintf(buffer, 1024, fmt, args);
+    vsnprintf(buffer, 65356, fmt, args);
     va_end(args);
     out_buffer->insert(out_buffer->end(), buffer, buffer+strlen(buffer));
     return 0;
 }
 
+bool escapeHtml(char c, string *escape)
+{
+    if (c  == '<')
+    {
+        *escape = "&lt;";
+        return true;
+    }
+    if (c  == '>')
+    {
+        *escape = "&gt;";
+        return true;
+    }
+    return false;
+}
+
+int outputTextHtml(const char *fmt, ...)
+{
+    va_list args;
+    char buffer[65536];
+    buffer[65535] = 0;
+    va_start(args, fmt);
+    vsnprintf(buffer, 65536, fmt, args);
+    va_end(args);
+    size_t len = strlen(buffer);
+    for (size_t i=0; i<len; ++i)
+    {
+        string escape;
+        if (!escapeHtml(buffer[i], &escape))
+        {
+            out_buffer->insert(out_buffer->end(), buffer[i]);
+        }
+        else
+        {
+            out_buffer->insert(out_buffer->end(), escape.begin(), escape.end());
+        }
+    }
+    return 0;
+}
+
 void printTag(str tag)
 {
-    if (settings_->use_color) output(dark_blue);
+    if (settings_->use_color) outputNoEscape(dark_blue);
     output("%.*s", tag.l, tag.s);
-    if (settings_->use_color) output(reset_color);
+    if (settings_->use_color) outputNoEscape(reset_color);
 }
 
 void printKeyTag(str tag)
 {
-    if (settings_->use_color) output(green);
+    if (settings_->use_color) outputNoEscape(green);
     output("%.*s", tag.l, tag.s);
-    if (settings_->use_color) output(reset_color);
+    if (settings_->use_color) outputNoEscape(reset_color);
 }
 
 void printAttributeKey(str key)
 {
-    if (settings_->use_color) output(green);
+    if (settings_->use_color) outputNoEscape(green);
     output("%.*s", key.l, key.s);
-    if (settings_->use_color) output(reset_color);
+    if (settings_->use_color) outputNoEscape(reset_color);
 }
 
 // Returns the number of single quotes necessary
@@ -211,9 +277,9 @@ void printComment(str comment, int indent)
     }
     if (single_line)
     {
-        if (settings_->use_color) output(yellow);
+        if (settings_->use_color) outputNoEscape(yellow);
         output("// %.*s", len, c);
-        if (settings_->use_color) output(reset_color);
+        if (settings_->use_color) outputNoEscape(reset_color);
         return;
     }
     const char *p = c;
@@ -225,7 +291,7 @@ void printComment(str comment, int indent)
             int n = i - prev_i;
             if (p == c)
             {
-                if (settings_->use_color) output(yellow);
+                if (settings_->use_color) outputNoEscape(yellow);
                 output("/* %.*s", n, p);
             }
             else if (i == len-1)
@@ -233,7 +299,7 @@ void printComment(str comment, int indent)
                 printIndent(indent);
                 str pp(p, n);
                 int nn = trimWhiteSpace(&pp);
-                if (settings_->use_color) output(yellow);
+                if (settings_->use_color) outputNoEscape(yellow);
                 output("   %.*s */", (int)nn, pp);
             }
             else
@@ -241,10 +307,10 @@ void printComment(str comment, int indent)
                 printIndent(indent);
                 str pp(p, n);
                 size_t nn = trimWhiteSpace(&pp);
-                if (settings_->use_color) output(yellow);
+                if (settings_->use_color) outputNoEscape(yellow);
                 output("   %.*s", (int)nn, pp);
             }
-            if (settings_->use_color) output(reset_color);
+            if (settings_->use_color) outputNoEscape(reset_color);
             p = c+i+1;
             prev_i = i+1;
         }
@@ -282,14 +348,14 @@ void printEscaped(str value, bool is_attribute, int indent, bool must_quote)
     {
         // There are no single quotes inside the content s.
         // We can safely print it.
-        if (settings_->use_color) output(red);
+        if (settings_->use_color) outputNoEscape(red);
         output("%.*s", value.l, value.s);
-        if (settings_->use_color) output(reset_color);
+        if (settings_->use_color) outputNoEscape(reset_color);
     }
     else
     {
         size_t n = 0;
-        if (settings_->use_color) output(red);
+        if (settings_->use_color) outputNoEscape(red);
         for (int i=0; i<escape_depth; ++i)
         {
             output("'");
@@ -304,7 +370,7 @@ void printEscaped(str value, bool is_attribute, int indent, bool must_quote)
                 case '\n' :
                     printIndent(indent+escape_depth);
                     n = 0;
-                    if (settings_->use_color) output(red);
+                    if (settings_->use_color) outputNoEscape(red);
                     break;
                 default:    output("%c", *s);
             }
@@ -315,7 +381,7 @@ void printEscaped(str value, bool is_attribute, int indent, bool must_quote)
                 n = 0;
                 output("'");
                 printIndent(indent);
-                if (settings_->use_color) output(red);
+                if (settings_->use_color) outputNoEscape(red);
                 output("'");
             }
         }
@@ -327,29 +393,21 @@ void printEscaped(str value, bool is_attribute, int indent, bool must_quote)
         {
             output("'");
         }
-        if (settings_->use_color) output(reset_color);
+        if (settings_->use_color) outputNoEscape(reset_color);
     }
 }
 
-void printCdataEscaped(const char *s)
+void printCdataEscaped(str value, int indent)
 {
-    size_t n = 0;
-    if (settings_->use_color) output(red);
-    output("'''");
-    while (*s != 0)
-    {
-        switch (*s) {
-        case '\n' :
-            output("\n");
-            if (settings_->use_color) output(red);
-            break;
-        default:    output("%c", *s);
-        }
-        s++;
-        n++;
-    }
-    output("'''");
-    if (settings_->use_color) output(reset_color);
+    if (settings_->use_color) outputNoEscape(red);
+    output("cdata{[ ");
+    if (settings_->use_color) outputNoEscape(reset_color);
+
+    printEscaped(value, false, indent, true);
+
+    if (settings_->use_color) outputNoEscape(red);
+    output(" ]}");
+    if (settings_->use_color) outputNoEscape(reset_color);
 }
 
 /*
@@ -375,8 +433,8 @@ bool nodeHasSingleDataChild(xml_node<> *node,
         i->type() == node_data &&
         i->next_sibling() == NULL)
     {
-        data->s = node->value();
-        data->l = node->value_size();
+        data->s = i->value();
+        data->l = i->value_size();
          return true;
     }
 
@@ -472,7 +530,8 @@ void printAligned(xml_node<> *i,
     else
     if (i->type() == node_cdata)
     {
-        printCdataEscaped(i->value());
+        str cdata(i->value(), i->value_size());
+        printCdataEscaped(cdata, indent);
     }
     else
     {
@@ -511,6 +570,7 @@ void printAlignedAttribute(xml_attribute<> *i,
     if (do_indent) printIndent(indent);
     str key(i->name(), i->name_size());
     printAttributeKey(key);
+
     // Print the value if it exists, and is different
     // from the key. I.e. boolean xml values must be stored as:
     // hidden="hidden" this will translate into just hidden in xmq.
@@ -532,8 +592,6 @@ void printAlignedAttribute(xml_attribute<> *i,
         printEscaped(value, false, ind, false);
     }
 }
-
-void render(xml_node<> *node, int indent, bool newline=true);
 
 void renderNode(xml_node<> *i, int indent, bool newline, vector<pair<xml_node<>*,str>> *lines, size_t *align)
 {
@@ -732,50 +790,125 @@ void findLineAndColumn(const char *from, const char *where, int *line, int *col)
     }
 }
 
+void renderDoc(xml_node<> *root, Settings *provided_settings)
+{
+    settings_ = provided_settings;
+    if (provided_settings->out == NULL)
+    {
+        output = printf;
+        assert(0);
+    }
+    else
+    {
+        out_buffer = provided_settings->out;
+        if (provided_settings->output == OutputType::html)
+        {
+            output = outputTextHtml;
+        }
+        else
+        {
+            output = outputTextTerminal;
+        }
+    }
+
+    outputNoEscape = outputTextTerminal;
+
+    if (provided_settings->use_color)
+    {
+        if (provided_settings->output == OutputType::terminal)
+        {
+            useAnsiColors();
+        }
+        if (provided_settings->output == OutputType::html)
+        {
+            useHtmlColors();
+        }
+    }
+    // Xml usually only have a single root data node,
+    // but xml with comments can have multiple root
+    // nodes where some are comment nodes.
+    bool newline = false;
+    while (root != NULL)
+    {
+        if (root->type() == node_doctype)
+        {
+            // Do not print the doctype.
+            // This is assumed to be <!DOCTYPE html>
+            if (strncmp(root->value(), "html", 4))
+            {
+                fprintf(stderr, "Warning! Unexpected doctype %s\n", root->value());
+            }
+            root = root->next_sibling();
+            continue;
+        }
+        str tmp;
+        // Handle the special cases, single empty node and single node with data content.
+        if (nodeHasSingleDataChild(root, &tmp) || nodeHasNoChildren(root))
+        {
+            vector<pair<xml_node<>*,str>> lines;
+            size_t align = 0;
+            renderNode(root, 0, false, &lines, &align);
+            // Flush any accumulated key:value lines with proper alignment.
+            for (auto &p : lines)
+            {
+                printAligned(p.first, p.second, 0, align, false);
+            }
+        }
+        else
+        {
+            render(root, 0, newline);
+        }
+        newline = true;
+        if (root->parent())
+        {
+            root = root->next_sibling();
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    output("\n");
+}
+
 #define VERSION "0.1"
 
 int main_xml2xmq(Settings *provided_settings)
 {
     // Parsing is destructive, store a copy for error messages here.
     vector<char> original = *provided_settings->in;
-    if (provided_settings->out == NULL)
-    {
-        output = printf;
-    }
-    else
-    {
-        out_buffer = provided_settings->out;
-        output = outputText;
-    }
+
     vector<char> *buffer = provided_settings->in;
     settings_ = provided_settings;
     xml_document<> doc;
     try
     {
-    // This looks kind of silly, doesnt it? Is there another way to configure the rapidxml parser?
-    if (provided_settings->preserve_ws)
-    {
-        if (provided_settings->html)
+        // This looks kind of silly, doesnt it? Is there another way to configure the rapidxml parser?
+        if (provided_settings->preserve_ws)
         {
-            doc.parse<parse_void_elements|parse_doctype_node|parse_comment_nodes|parse_no_string_terminators>(&(*buffer)[0]);
+            if (provided_settings->html)
+            {
+                doc.parse<parse_void_elements|parse_doctype_node|parse_comment_nodes|parse_no_string_terminators>(&(*buffer)[0]);
+            }
+            else
+            {
+                doc.parse<parse_doctype_node|parse_comment_nodes|parse_no_string_terminators>(&(*buffer)[0]);
+            }
         }
         else
         {
-            doc.parse<parse_doctype_node|parse_comment_nodes|parse_no_string_terminators>(&(*buffer)[0]);
+            if (provided_settings->html)
+            {
+                doc.parse<parse_void_elements|parse_doctype_node|parse_comment_nodes|parse_trim_whitespace|parse_no_string_terminators>(&(*buffer)[0]);
+            }
+            else
+            {
+                doc.parse<parse_doctype_node|parse_comment_nodes|parse_trim_whitespace|parse_no_string_terminators>(&(*buffer)[0]);
+            }
         }
     }
-    else
-    {
-        if (provided_settings->html)
-        {
-            doc.parse<parse_void_elements|parse_doctype_node|parse_comment_nodes|parse_trim_whitespace|parse_no_string_terminators>(&(*buffer)[0]);
-        }
-        else
-        {
-            doc.parse<parse_doctype_node|parse_comment_nodes|parse_trim_whitespace|parse_no_string_terminators>(&(*buffer)[0]);
-        }
-    }
-    } catch (rapidxml::parse_error pe)
+    catch (rapidxml::parse_error pe)
     {
         const char *where = pe.where<const char>();
         //size_t offset = where - &(*buffer)[0];
@@ -786,10 +919,9 @@ int main_xml2xmq(Settings *provided_settings)
 
         size_t count = to-from;
 
-        // src/xml2xmq.cc: In function ‘int main_xml2xmq(Settings*)’:
-        // src/xml2xmq.cc:789:1: error: ‘d’ was not declared in this scope
-        // d fprintf(stderr, "Parse error \"%s\"\n%.*s\n", pe.what(), (int)count, from);
-        // ^
+        // bad.xml:2:16 Parse error expected =
+        //     <block clean>
+        //                 ^
 
         fprintf(stderr, "%s:%d:%d Parse error %s\n%.*s\n",
                 provided_settings->filename, line, col, pe.what(), (int)count, from);
@@ -810,44 +942,6 @@ int main_xml2xmq(Settings *provided_settings)
         }
     }
 
-    // Xml usually only have a single root data node,
-    // but xml with comments can have multiple root
-    // nodes where some are comment nodes.
-    bool newline = false;
-    while (root != NULL)
-    {
-        if (root->type() == node_doctype)
-        {
-            // Do not print the doctype.
-            // This is assumed to be <!DOCTYPE html>
-            if (strncmp(root->value(), "html", 4))
-            {
-                fprintf(stderr, "Warning! Unexpected doctype %s\n", root->value());
-            }
-            root = root->next_sibling();
-            continue;
-        }
-        str tmp;
-        // Handle the special cases, single empty node and single node with data content.
-        if (nodeHasSingleDataChild(root, &tmp)|| nodeHasNoChildren(root))
-        {
-            vector<pair<xml_node<>*,str>> lines;
-            size_t align;
-            renderNode(root, 0, false, &lines, &align);
-            // Flush any accumulated key:value lines with proper alignment.
-            for (auto &p : lines)
-            {
-                printAligned(p.first, p.second, 0, align, false);
-            }
-        }
-        else
-        {
-            render(root, 0, newline);
-        }
-        newline = true;
-        root = root->next_sibling();
-    }
-
-    output("\n");
+    renderDoc(root, provided_settings);
     return 0;
 }

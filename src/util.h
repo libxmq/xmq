@@ -1,5 +1,5 @@
 /*
- Copyright (c) 2019 Fredrik Öhrström
+ Copyright (c) 2019-2020 Fredrik Öhrström
 
  MIT License
 

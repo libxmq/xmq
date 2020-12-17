@@ -19,6 +19,7 @@ html { box-sizing: border-box; }
   border: solid 1px black;
   align-self: center;
   display: inline-block;
+  overflow: hidden;
 }
 .spacing {
   padding:10px;

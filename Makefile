@@ -21,10 +21,12 @@ else
 endif
 
 ifeq "$(DEBUG)" "true"
-    DEBUG_FLAGS=-O0 -ggdb -fsanitize=address -fno-omit-frame-pointer
+    DEBUG_FLAGS=-O0 -ggdb
+#-fsanitize=address -fno-omit-frame-pointer
     STRIP_BINARY=
     BUILD:=$(BUILD)_debug
-    DEBUG_LDFLAGS=-lasan
+    DEBUG_LDFLAGS=
+#-lasan
 else
     DEBUG_FLAGS=-Os
     STRIP_BINARY=$(STRIP) $(BUILD)/xmq
@@ -68,8 +70,9 @@ $(info Building $(VERSION))
 
 CXXFLAGS := $(DEBUG_FLAGS) -fPIC -fmessage-length=0 -std=c++11 -Wall -Wno-unused-function -I$(BUILD) -I.
 
+#	$(CXX) $(CXXFLAGS) $< -c -E > $@.src
+
 $(BUILD)/%.o: src/%.cc $(wildcard src/%.h)
-	$(CXX) $(CXXFLAGS) $< -c -E > $@.src
 	$(CXX) $(CXXFLAGS) $< -MMD -c -o $@
 
 XMQ_OBJS:=\
