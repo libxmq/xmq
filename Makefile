@@ -21,12 +21,10 @@ else
 endif
 
 ifeq "$(DEBUG)" "true"
-    DEBUG_FLAGS=-O0 -ggdb
-#-fsanitize=address -fno-omit-frame-pointer
+    DEBUG_FLAGS=-O0 -ggdb -fsanitize=address -fno-omit-frame-pointer
     STRIP_BINARY=
     BUILD:=$(BUILD)_debug
-    DEBUG_LDFLAGS=
-#-lasan
+    DEBUG_LDFLAGS=-lasan
 else
     DEBUG_FLAGS=-Os
     STRIP_BINARY=$(STRIP) $(BUILD)/xmq
