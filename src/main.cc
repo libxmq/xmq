@@ -62,6 +62,11 @@ int main(int argc, char **argv)
         if (argc >= 2 && !strcmp(argv[i], "--color"))
         {
             settings.use_color = true;
+            if (settings.output == OutputType::plain)
+            {
+                settings.output = OutputType::terminal;
+            }
+
             i++;
             argc--;
             found = true;
