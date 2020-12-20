@@ -71,7 +71,7 @@ void useAnsiColors()
 void useHtmlColors()
 {
     green = "<span style=\"color:#00aa00\">";
-    yellow = "<span style=\"color:yellow\">";
+    yellow = "<span style=\"color:#888800\">";
     light_blue = "<span style=\"color:#aaaaff\">";
     dark_blue = "<span style=\"color:#000088\">";
     magenta = "<span style=\"color:#00aaaa\">";

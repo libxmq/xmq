@@ -67,7 +67,7 @@ struct Parser
     int findIndent(const char *p);
 
     TokenType tokenType(char c);
-    bool isTokenIdentifier(char c);
+    bool isReservedCharacter(char c);
     void eatWhiteSpace();
     TokenType peekToken();
     Token eatToken();
@@ -133,30 +133,51 @@ void removeIncidentalWhiteSpace(vector<char> *buffer, int first_indent)
     if (!found_nl) return;
 
     // There is at least one newline!
-    int common = first_indent;
-    int curr = 0;
+    int common = -1;
+    int curr = first_indent;
+    bool looking = true;
     vector<char> copy;
+    // Simulate the indentation in the copy by pushing spaces first.
     for (int i = 0; i < first_indent-1; ++i)
     {
         copy.push_back(' ');
     }
     for (size_t i = 0; i < buffer->size(); ++i)
     {
-        copy.push_back((*buffer)[i]);
-        if ((*buffer)[i] == '\n')
+        char c = (*buffer)[i];
+//        fprintf(stderr, "%c(%d)\n", c, c);
+        copy.push_back(c);
+        if (c == '\n')
         {
-            if (curr < common)
+            // We reached end of line.
+            if (curr < common || common == -1)
             {
+                // We found a shorter sequence of spaces, use this number
+                // as the future commonly shared sequence of spaces.
                 common = curr;
+//                fprintf(stderr, "common %d\n", common);
             }
             curr = 0;
+            looking = true;
         }
         else
         {
-            curr++;
+            if (looking)
+            {
+                if (c == ' ')
+                {
+                    curr++;
+//                    fprintf(stderr, "curr++ %d\n", curr);
+                }
+                else
+                {
+                    looking = false;
+                }
+            }
         }
     }
     buffer->clear();
+
     curr = common+1;
     for (size_t i = 0; i < copy.size(); ++i)
     {
@@ -220,7 +241,7 @@ TokenType Parser::tokenType(char c)
 }
 
 
-bool Parser::isTokenIdentifier(char c)
+bool Parser::isReservedCharacter(char c)
 {
     return
         c == 0 ||
@@ -230,7 +251,10 @@ bool Parser::isTokenIdentifier(char c)
         c == '}' ||
         c == '(' ||
         c == ')' ||
-        c == '/';
+        c == ' ' ||
+        c == '\t' ||
+        c == '\r' ||
+        c == '\n';
 }
 
 
@@ -356,8 +380,7 @@ Token Parser::eatToEndOfText()
             col = 1;
             break;
         }
-        if ((isTokenIdentifier(c) && c != '/') ||
-            isWhiteSpace(c))
+        if (isReservedCharacter(c))
         {
             s = p;
             break;
@@ -532,45 +555,6 @@ Token Parser::eatToEndOfQuotedText(int indent)
 
     return Token(TokenType::text, value);
 }
-
-/*
-Token Parser::eatToEndOfCdata()
-{
-    char *start = s + 3;
-    char *p = start;
-    vector<char> buffer;
-
-    while (true)
-    {
-        char c = *p;
-        if (c == 0)
-        {
-            error("unexpected eof in quoted text");
-        }
-        if (c == '\n')
-        {
-            buffer.push_back('\n');
-            line++;
-            col = 1;
-            p++;
-            continue;
-        }
-        if (c == '\'' &&
-            *(p+1) == '\'' &&
-            *(p+2) == '\'')
-        {
-            s = p+3;
-            break;
-        }
-        buffer.push_back(c);
-        col++;
-        p++;
-    }
-    char *value = doc->allocate_string(&(buffer[0]), buffer.size()+1);
-
-    return Token(TokenType::cdata, value);
-}
-*/
 
 Token Parser::eatToEndOfLine()
 {

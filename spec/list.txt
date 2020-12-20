@@ -23,8 +23,7 @@ RIGHT node_with_text_block_more.xmq node_with_text_block.xml
 # To make indentation explicit, quote each line.
 RIGHT node_with_forced_indents.xmq node_with_forced_indents.xml
 
-
-# Build a self closing node. Note! An empty string must always be ''. Multiline empty strings are not allowed anywhere.
+# Build a self closing node.
 BOTH empty_node.xmq empty_node.xml
 RIGHT empty_node_explicit.xmq empty_node.xml
 
@@ -47,7 +46,7 @@ RIGHT quote_leading_quote.xmq quote_leading_quote.xml
 RIGHT leading_newline.xmq leading_newline.xml
 
 # You can add newlines inside an attribute.
-RIGHT attr_with_newlines.xmq attr_with_newlines.xml
+BOTH attr_with_newlines.xmq attr_with_newlines.xml
 
 # XMQ attributes having no value are allowed and for xml translates into attr="attr"
 BOTH xml_attr.xmq xml_attr.xml
@@ -59,4 +58,4 @@ BOTH html_attr.xmq html_attr.html
 BOTH feature.xmq feature.xml
 
 # Example pom.xml
-RIGHT oom.xmq oom.xml
+BOTH oom.xmq oom.xml

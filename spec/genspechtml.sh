@@ -115,36 +115,49 @@ cat > $OUT <<EOF
     As of ${TODAY} and in flux. By Fredrik Öhrström oehrstroem@gmail.com
 
     <p>
-    <b>safe text</b> consists of all valid utf8 exluding
-    these 6 characters <b>= ' ( ) { }</b>
-    and whitespace and the nul character.
+    <b>text</b> consists of all valid utf8 exluding
+    these 6 reserved characters <b>= ' ( ) { }</b>
+    as well as whitespace (SPACE,TAB,LF,CR) and the <b>nul</b> character.
+    (Examples of text are: 123.4 $U\P$ http://www.zzz.yyy/index.html /file/help.txt C:\adir)
     </p>
 
     <p>
-    <b>name</b> is an xml tag, ie it is safe text with the
-    additional xml 1.0 tag name restrictions.
-    (I.e. start with letter or underscore etc.)
+    <b>key</b> is <b>text</b> but with the additional xml 1.0 tag name restrictions.
+    (Examples of keys are: name age speed INFO order)
     </p>
 
     <p>
-    <b>unquoted content</b> consists of safe text.
+    <b>quoted content</b> starts with one, three or more single quotes <b>'</b> and ends with an equal
+     amount of singel quotes. Use n+1 quotes to quote an utf8 string containing at most n consecutive quotes.
+     Two single quotes are always the empty string.
+     (Examples of quoted contents are: '' 'John Doe' '5+(8*9)' '''(&gt;'&lt;)''' )
     </p>
 
     <p>
-    <b>quoted content</b> can contain all valid utf8 except the nul character.
+    Text that starts with <b>//</b> or <b>/*</b> is a comment, and will end with <b>eol</b> or <b>*/</b>
+    Quote such text to prevent it from being a comment.
+    </p>
+
+    <p>
+    A <b>key</b> can be standalone, or followed by <b>=</b> or <b>{...}</b>.
+    </p>
+
+    <p>
+    A <b>key</b> kan be followed by parentheses <b>(...)</b> within which there are attributes.
+    (Examples of attributes are: div(id=123) )
     </p>
 
     <p>
     <b>whitespace</b> is a separator that is irrelevant except:
        <ol>
-          <li>when separating unquoted content from the next name.</li>
-          <li>when separating quoted content from quoted content.</li>
-          <li>inside quoted content</li>
+          <li>when separating <b>text</b> from the next <b>key</b>.</li>
+          <li>when separating <b>quoted content</b> from the following standalone <b>quoted content</b>.</li>
+          <li>inside <b>quoted content</b></li>
        </ol>
     </p>
 
     <p>
-       However, inside quoted content:
+       However, inside <b>quoted content</b>:
        <ol>
        <li>A leading or ending sequence of Whitespace_NewLine_Whitespace will always be trimmed.</li>
        <li>Incidental whitespace will always be trimmed, when there is at least one newline.</li>
@@ -152,6 +165,7 @@ cat > $OUT <<EOF
     </p>
 
     <p>A newline is implicitly inserted between two standalone quoted contents.</p>
+
 
     <p>To avoid cluttering the examples below with xml/html5 declarations, --nodec is used.</p>
 EOF
