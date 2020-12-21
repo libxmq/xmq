@@ -27,6 +27,42 @@
 
 #include "rapidxml/rapidxml.hpp"
 
+#include <string>
+#include <vector>
+#include <set>
+
+enum class OutputType { plain, terminal, html, tex };
+
+struct Settings
+{
+    // You can specify a filename for xml2xmq and it will be loaded
+    // automatically if in is NULL.
+    // For xmq2xml a filename is necessary when there are multiple root nodes
+    // in the xmq file/buffer. Since xml only allows for a single root node,
+    // for such xmq files, an implicit root node with the name of the file will be created.
+    std::string filename;
+    std::vector<char> *in;
+    std::vector<char> *out;
+
+    // You can generate plain text, terminal output potentially with ansi colors,
+    // html output potentially with html colors and tex output potentially with tex colors.
+    OutputType output {};
+    // Set to true to produce colors. Color is never enable with the plain output type.
+    bool use_color {};
+    // Set to true to allow parsing and generation of void elements (br,img,input etc).
+    bool html {};
+    // Do not print any xml-declaration <? ?> nor doctype <!DOCTYPE html>.
+    bool no_declaration {};
+    // When converting from xml to xmq. Preserve whitespace as much as possible.
+    bool preserve_ws {};
+    // Do not convert, just view the input, potentially adding color and formatting.
+    bool view {};
+    // Find common prefixes of the tags.
+    bool compress {};
+
+    std::set<std::string> excludes;
+};
+
 int main_xml2xmq(Settings *settings);
 int main_xmq2xml(const char *filename, Settings *settings);
 void renderDoc(rapidxml::xml_node<> *node, Settings *provided_settings);

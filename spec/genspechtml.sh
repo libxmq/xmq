@@ -115,6 +115,20 @@ cat > $OUT <<EOF
     As of ${TODAY} and in flux. By Fredrik Öhrström oehrstroem@gmail.com
 
     <p>
+    XMQ can represent a tree of tagged content and each tag can have attributes.
+    The XMQ functions can be bound to your XML-parser/generator of choice and
+    therefore be converted back and forth from/to XML. If your parser/generator is
+    able to parse/generate html5/sgml, then you can convert back and forth with
+    these as well. However there is no guarantee that there is an exact mapping back.
+    </p>
+
+    <p>
+    If you do not need to work with XML, then you can also use XMQ directly
+    without binding to a XML-parser/generator. If you later need full XML-support,
+    for schema validation etc, then you can simply bind at a later time.
+    </p>
+
+    <p>
     <b>text</b> consists of all valid utf8 exluding
     these 6 reserved characters <b>= ' ( ) { }</b>
     as well as whitespace (SPACE,TAB,LF,CR) and the <b>nul</b> character.
@@ -122,8 +136,8 @@ cat > $OUT <<EOF
     </p>
 
     <p>
-    <b>key</b> is <b>text</b> but with the additional xml 1.0 tag name restrictions.
-    (Examples of keys are: name age speed INFO order)
+    <b>tag</b> is <b>text</b> but with the additional xml tag name restrictions.
+    (Examples of tags are: name age speed INFO order)
     </p>
 
     <p>
@@ -134,23 +148,45 @@ cat > $OUT <<EOF
     </p>
 
     <p>
-    Text that starts with <b>//</b> or <b>/*</b> is a comment, and will end with <b>eol</b> or <b>*/</b>
-    Quote such text to prevent it from being a comment.
+     <b>tag</b> is a self-closing node <b>&lt;tag/&gt;</b>
     </p>
 
     <p>
-    A <b>key</b> can be standalone, or followed by <b>=</b> or <b>{...}</b>.
+     <b>tag { ... }</b> is a node with children <b>&lt;tag&gt; ... &lt;/tag&gt;</b>
     </p>
 
     <p>
-    A <b>key</b> kan be followed by parentheses <b>(...)</b> within which there are attributes.
-    (Examples of attributes are: div(id=123) )
+     <b>'utf8'</b> is standalone quoted content, inserted as is into the xml with &amp;&lt; et.al. protected.
+    </p>
+
+    <p>
+    <b>tag = 'utf8'</b> is syntactic sugar for <b>tag { 'utf8' }</b> which is <b>&lt;tag&gt;utf8&lt;/tag&gt;</b>
+    </p>
+
+    <p>
+     <b>tag = text</b> is syntactic sugar for <b>tag { 'text' }</b> which is <b>&lt;tag&gt;text&lt;/tag&gt;</b>
+    </p>
+
+    <p>
+     <b>tag(id=123 class='x y') { ... }</b> is  <b>&lt;tag id="123" class="x y" &gt; ... &lt;/tag&gt;</b>
+    </p>
+
+    <p>
+    Text that starts with <b>//</b> or <b>/*</b> is a comment, and will end with <b>eol</b> or <b>*/</b>.
+    Quote such text to prevent it from being a comment. Comments are not permitted just
+    before an <b>=</b> or a <b>{</b>, nor are they permitted inside parentheses.
+    </p>
+
+    <p>
+    XMQ permits multiple root nodes in a single XMQ file. This is contrary to XML which only permits a single
+    root node. An implicit root node will therefore be inserted when converting to XML. The root node tag will be the
+    tag-safe version of the filename of the file containing the XMQ, or simply <b>root</b>.
     </p>
 
     <p>
     <b>whitespace</b> is a separator that is irrelevant except:
        <ol>
-          <li>when separating <b>text</b> from the next <b>key</b>.</li>
+          <li>when separating <b>text</b> from the next <b>tag</b>.</li>
           <li>when separating <b>quoted content</b> from the following standalone <b>quoted content</b>.</li>
           <li>inside <b>quoted content</b></li>
        </ol>
@@ -166,8 +202,22 @@ cat > $OUT <<EOF
 
     <p>A newline is implicitly inserted between two standalone quoted contents.</p>
 
+    <p>
+    Three reasons for possible differences in the XML when converting XML->XMQ->XML.
+    <ol>
+    <li>CDATA will disappear when converting XML to XMQ. Thus documents containing CDATA,
+    converted to XMQ and back TO XML will have lost their CDATA nodes. Still the content
+    will be properly encoded using normal XML escapes, instead of CDATA.</li>
+    <li>XML permits two types of quotation marks. XMQ defaults to " when generating XML,
+    but might switch to ' for content containing ". Thus XMQ might not use the same quote character
+    as the original XML.</li>
+    <li>Leading/ending whitespace of content, is by default trimmed when loading XML for conversion into XMQ.
+    To preserve whitespace add <b>-p</b></li>
+    </ol>
+    </p>
 
-    <p>To avoid cluttering the examples below with xml/html5 declarations, --nodec is used.</p>
+    <p>To avoid cluttering the examples below with xml declarations/html5 doctypes, <b>--nodec</b> is used.</p>
+
 EOF
 
 RIGHT=""

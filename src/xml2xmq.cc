@@ -33,7 +33,6 @@
 #include "rapidxml/rapidxml.hpp"
 
 #include "util.h"
-#include "settings.h"
 #include "xmq.h"
 
 using namespace rapidxml;
@@ -924,7 +923,7 @@ int main_xml2xmq(Settings *provided_settings)
         //                 ^
 
         fprintf(stderr, "%s:%d:%d Parse error %s\n%.*s\n",
-                provided_settings->filename, line, col, pe.what(), (int)count, from);
+                provided_settings->filename.c_str(), line, col, pe.what(), (int)count, from);
         for (int i=2; i<col; ++i) fprintf(stderr, " ");
         fprintf(stderr, "^\n");
     }

@@ -34,7 +34,6 @@
 
 #include "util.h"
 #include "parse.h"
-#include "settings.h"
 #include "xmq.h"
 
 using namespace std;

@@ -1,30 +1,33 @@
-# Build a node with unquoted content (safe text) and ignore unnecessary whitespace.
+# Build a node using the syntactic sugar, tag=text.
 BOTH single_node.xmq single_node.xml
+# Whitespace is ignored.
 RIGHT single_node_no_ws.xmq single_node.xml
 
-# Build a node with children, and ignore unnecessary whitespace.
+# Build a node with children, tag{ ... }.
 BOTH children.xmq children.xml
 RIGHT children_no_ws.xmq children.xml
 
-# Build a node with quoted content, remember that leading/ending ws-nl-ws is trimmed from quotes.
+# Build a node with the syntactic sugar, tag='utf8'. Remember that leading/ending ws-nl-ws is always trimmed from quotes.
 BOTH quoted_content.xmq quoted_content.xml
 RIGHT quoted_content_newlines.xmq quoted_content.xml
 
-# Standalone quoted content is added as text to the parent node.
+# Without the syntactic sugar, the same node can be created with standalone quoted content added as text to the parent node.
 RIGHT quoted_content_child.xmq quoted_content.xml
 
-# Build a node with leading/ending whitespace not trimmed! Note! xmq by default strips leading/ending whitespace when moving from xml to xmq. Add opion -p to preserve whitespace, like this: "xmq -p foo.xml > foo.xmq".
+# Build a node with leading/ending whitespace not trimmed! Note! xmq by default strips leading/ending whitespace when moving from XML to XMQ. Add opion -p to preserve whitespace, like this: "xmq -p foo.xml > foo.xmq".
 BOTH quoted_content_with_ws.xmq quoted_content_with_ws.xml -p
 
-# Incidental whitespace is removed.
+# Incidental whitespace is always removed.
 BOTH node_with_text_block.xmq node_with_text_block.xml
 RIGHT node_with_text_block_more.xmq node_with_text_block.xml
 
-# To make indentation explicit, quote each line.
+# To make indentation explicit, quote each line. An implicit newline is inserted between two standalone quoted contents.
 RIGHT node_with_forced_indents.xmq node_with_forced_indents.xml
 
 # Build a self closing node.
 BOTH empty_node.xmq empty_node.xml
+
+# Two single quotes are always the empty string.
 RIGHT empty_node_explicit.xmq empty_node.xml
 
 # Build a node with a multple text data lines.

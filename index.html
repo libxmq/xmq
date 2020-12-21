@@ -6,37 +6,88 @@
 
     <h1>XMQ specification</h1>
 
+    As of 2020-12-21 and in flux. By Fredrik Öhrström oehrstroem@gmail.com
+
     <p>
-    <b>safe text</b> consists of all valid utf8 exluding
-    these 6 characters <b>= ' ( ) { }</b>
-    and whitespace and the nul character.
+    XMQ can represent a tree of tagged content and each tag can have attributes.
+    The XMQ functions can be bound to your XML-parser/generator of choice and
+    therefore be converted back and forth from/to XML. If your parser/generator is
+    able to parse/generate html5/sgml, then you can convert back and forth with
+    these as well. However there is no guarantee that there is an exact mapping back.
     </p>
 
     <p>
-    <b>name</b> is an xml tag, ie it is safe text with the
-    additional xml 1.0 tag name restrictions.
-    (I.e. start with letter or underscore etc.)
+    If you do not need to work with XML, then you can also use XMQ directly
+    without binding to a XML-parser/generator. If you later need full XML-support,
+    for schema validation etc, then you can simply bind at a later time.
     </p>
 
     <p>
-    <b>unquoted content</b> consists of safe text.
+    <b>text</b> consists of all valid utf8 exluding
+    these 6 reserved characters <b>= ' ( ) { }</b>
+    as well as whitespace (SPACE,TAB,LF,CR) and the <b>nul</b> character.
+    (Examples of text are: 123.4 \P$ http://www.zzz.yyy/index.html /file/help.txt C:\adir)
     </p>
 
     <p>
-    <b>quoted content</b> can contain all valid utf8 except the nul character.
+    <b>tag</b> is <b>text</b> but with the additional xml tag name restrictions.
+    (Examples of tags are: name age speed INFO order)
+    </p>
+
+    <p>
+    <b>quoted content</b> starts with one, three or more single quotes <b>'</b> and ends with an equal
+     amount of singel quotes. Use n+1 quotes to quote an utf8 string containing at most n consecutive quotes.
+     Two single quotes are always the empty string.
+     (Examples of quoted contents are: '' 'John Doe' '5+(8*9)' '''(&gt;'&lt;)''' )
+    </p>
+
+    <p>
+     <b>tag</b> is a self-closing node <b>&lt;tag/&gt;</b>
+    </p>
+
+    <p>
+     <b>tag { ... }</b> is a node with children <b>&lt;tag&gt; ... &lt;/tag&gt;</b>
+    </p>
+
+    <p>
+     <b>'utf8'</b> is standalone quoted content, inserted as is into the xml with &amp;&lt; et.al. protected.
+    </p>
+
+    <p>
+    <b>tag = 'utf8'</b> is syntactic sugar for <b>tag { 'utf8' }</b> which is <b>&lt;tag&gt;utf8&lt;/tag&gt;</b>
+    </p>
+
+    <p>
+     <b>tag = text</b> is syntactic sugar for <b>tag { 'text' }</b> which is <b>&lt;tag&gt;text&lt;/tag&gt;</b>
+    </p>
+
+    <p>
+     <b>tag(id=123 class='x y') { ... }</b> is  <b>&lt;tag id="123" class="x y" &gt; ... &lt;/tag&gt;</b>
+    </p>
+
+    <p>
+    Text that starts with <b>//</b> or <b>/*</b> is a comment, and will end with <b>eol</b> or <b>*/</b>.
+    Quote such text to prevent it from being a comment. Comments are not permitted just
+    before an <b>=</b> or a <b>{</b>, nor are they permitted inside parentheses.
+    </p>
+
+    <p>
+    XMQ permits multiple root nodes in a single XMQ file. This is contrary to XML which only permits a single
+    root node. An implicit root node will therefore be inserted when converting to XML. The root node tag will be the
+    tag-safe version of the filename of the file containing the XMQ, or simply <b>root</b>.
     </p>
 
     <p>
     <b>whitespace</b> is a separator that is irrelevant except:
        <ol>
-          <li>when separating unquoted content from the next name.</li>
-          <li>when separating quoted content from quoted content.</li>
-          <li>inside quoted content</li>
+          <li>when separating <b>text</b> from the next <b>tag</b>.</li>
+          <li>when separating <b>quoted content</b> from the following standalone <b>quoted content</b>.</li>
+          <li>inside <b>quoted content</b></li>
        </ol>
     </p>
 
     <p>
-       However, inside quoted content:
+       However, inside <b>quoted content</b>:
        <ol>
        <li>A leading or ending sequence of Whitespace_NewLine_Whitespace will always be trimmed.</li>
        <li>Incidental whitespace will always be trimmed, when there is at least one newline.</li>
@@ -45,27 +96,45 @@
 
     <p>A newline is implicitly inserted between two standalone quoted contents.</p>
 
-    <p>To avoid cluttering the examples below with xml/html5 declarations, --nodec is used.</p>
-<div class="info"> Build a node with unquoted content (safe text) and ignore unnecessary whitespace.</div>
+    <p>
+    Three reasons for possible differences in the XML when converting XML->XMQ->XML.
+    <ol>
+    <li>CDATA will disappear when converting XML to XMQ. Thus documents containing CDATA,
+    converted to XMQ and back TO XML will have lost their CDATA nodes. Still the content
+    will be properly encoded using normal XML escapes, instead of CDATA.</li>
+    <li>XML permits two types of quotation marks. XMQ defaults to " when generating XML,
+    but might switch to ' for content containing ". Thus XMQ might not use the same quote character
+    as the original XML.</li>
+    <li>Leading/ending whitespace of content, is by default trimmed when loading XML for conversion into XMQ.
+    To preserve whitespace add <b>-p</b></li>
+    </ol>
+    </p>
+
+    <p>To avoid cluttering the examples below with xml declarations/html5 doctypes, <b>--nodec</b> is used.</p>
+
+<div class="info"> Build a node using the syntactic sugar, tag=text.</div>
 <div class="row">
 <pre class="box">
-a = 12.3
+<span style="color:#00aa00">a</span> = <span style="color:#aa0000">12.3</span>
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;a&gt;12.3&lt;/a&gt;
 </pre></div>
+<div class="info"> Whitespace is ignored.</div>
 <div class="row">
 <pre class="box">
 a=12.3
 </pre><pre class="spacing">↗</pre></div>
-<div class="info"> Build a node with children, and ignore unnecessary whitespace.</div>
+<div class="info"> Build a node with children, tag{ ... }.</div>
 <div class="row">
 <pre class="box">
-order {
-    date  = 2020-12-13
-    price = 424.5$
-    file  = /imagefiles/1234.png
+<span style="color:#888800">// This is an example order.</span>
+<span style="color:#000088">order</span> {
+    <span style="color:#00aa00">date</span>  = <span style="color:#aa0000">2020-12-13</span>
+    <span style="color:#00aa00">price</span> = <span style="color:#aa0000">424.5$</span>
+    <span style="color:#00aa00">file</span>  = <span style="color:#aa0000">/imagefiles/1234.png</span>
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;!-- This is an example order. --&gt;
 &lt;order&gt;
   &lt;date&gt;2020-12-13&lt;/date&gt;
   &lt;price&gt;424.5$&lt;/price&gt;
@@ -74,12 +143,13 @@ order {
 </pre></div>
 <div class="row">
 <pre class="box">
+// This is an example order.
 order{date=2020-12-13 price=424.5$ file=/imagefiles/1234.png}
 </pre><pre class="spacing">↗</pre></div>
-<div class="info"> Build a node with quoted content, remember that leading/ending ws-nl-ws is trimmed from quotes.</div>
+<div class="info"> Build a node with the syntactic sugar, tag='utf8'. Remember that leading/ending ws-nl-ws is always trimmed from quotes.</div>
 <div class="row">
 <pre class="box">
-alfa = 'Hello World!'
+<span style="color:#00aa00">alfa</span> = <span style="color:#aa0000">'Hello World!'</span>
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;alfa&gt;Hello World!&lt;/alfa&gt;
 </pre></div>
@@ -88,27 +158,27 @@ alfa = 'Hello World!'
 alfa =   '
       Hello World!
                     '</pre><pre class="spacing">↗</pre></div>
-<div class="info"> Standalone quoted content is added as text to the parent node.</div>
+<div class="info"> Without the syntactic sugar, the same node can be created with standalone quoted content added as text to the parent node.</div>
 <div class="row">
 <pre class="box">
 alfa {
     'Hello World!'
 }
 </pre><pre class="spacing">↗</pre></div>
-<div class="info"> Build a node with leading/ending whitespace not trimmed! Note! xmq by default strips leading/ending whitespace when moving from xml to xmq. Add opion -p to preserve whitespace, like this: "xmq -p foo.xml > foo.xmq".</div>
+<div class="info"> Build a node with leading/ending whitespace not trimmed! Note! xmq by default strips leading/ending whitespace when moving from XML to XMQ. Add opion -p to preserve whitespace, like this: "xmq -p foo.xml > foo.xmq".</div>
 <div class="row">
 <pre class="box">
-alfa = '  Hello World!  '
+<span style="color:#00aa00">alfa</span> = <span style="color:#aa0000">'  Hello World!  '</span>
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;alfa&gt;  Hello World!  &lt;/alfa&gt;
 </pre></div>
-<div class="info"> Incidental whitespace is removed.</div>
+<div class="info"> Incidental whitespace is always removed.</div>
 <div class="row">
 <pre class="box">
-block =
-'Line 1
- Line 2
- Line 3'
+<span style="color:#00aa00">block</span> =
+<span style="color:#aa0000">'Line 1
+ <span style="color:#aa0000">Line 2
+ <span style="color:#aa0000">Line 3'</span>
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;block&gt;Line 1
 Line 2
@@ -122,7 +192,7 @@ block = '
       Line 3
          '
 </pre><pre class="spacing">↗</pre></div>
-<div class="info"> To make indentation explicit, quote each line.</div>
+<div class="info"> To make indentation explicit, quote each line. An implicit newline is inserted between two standalone quoted contents.</div>
 <div class="row">
 <pre class="box">
 block {
@@ -135,24 +205,25 @@ block {
         Line 2
         Line 3&lt;/block&gt;
 </pre></div>
-<div class="info"> Build a self closing node. Note! An empty string must always be ''. Multiline empty strings are not allowed anywhere.</div>
+<div class="info"> Build a self closing node.</div>
 <div class="row">
 <pre class="box">
-nothing
+<span style="color:#00aa00">nothing</span>
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;nothing/&gt;
 </pre></div>
+<div class="info"> Two single quotes are always the empty string.</div>
 <div class="row">
 <pre class="box">
 nothing = ''</pre><pre class="spacing">↗</pre></div>
 <div class="info"> Build a node with a multple text data lines.</div>
 <div class="row">
 <pre class="box">
-html {
-    body {
-        'Greetings weary '
-        b = traveller
-        ' we meet again!'
+<span style="color:#000088">html</span> {
+    <span style="color:#000088">body</span> {
+        <span style="color:#aa0000">'Greetings weary '</span>
+        <span style="color:#00aa00">b</span> = <span style="color:#aa0000">traveller</span>
+        <span style="color:#aa0000">' we meet again!'</span>
     }
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
@@ -163,9 +234,9 @@ html {
 <div class="info"> Build a node with attributes.</div>
 <div class="row">
 <pre class="box">
-block(id = 123)
+<span style="color:#000088">block</span>(<span style="color:#00aa00">id</span> = <span style="color:#aa0000">123</span>)
 {
-    alfa(x = y) = z
+    <span style="color:#00aa00">alfa</span>(<span style="color:#00aa00">x</span> = <span style="color:#aa0000">y</span>) = <span style="color:#aa0000">z</span>
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;block id="123"&gt;
@@ -175,9 +246,9 @@ block(id = 123)
 <div class="info"> Use triple quotes to quote content containing quotes! Remember that double quotes is the empty string.</div>
 <div class="row">
 <pre class="box">
-div(id = 123)
+<span style="color:#000088">div</span>(<span style="color:#00aa00">id</span> = <span style="color:#aa0000">123</span>)
 {
-    button(onClick = '''alert('Warning!'+'');''') = Warn
+    <span style="color:#00aa00">button</span>(<span style="color:#00aa00">onClick</span> = <span style="color:#aa0000">'''alert('Warning!'+'');'''</span>) = <span style="color:#aa0000">Warn</span>
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;div id="123"&gt;
@@ -197,7 +268,7 @@ quoting_xmq =
 </pre><pre class="spacing">↗</pre><pre class="box">
 &lt;quoting_xmq&gt;div(id = 123)
 {
-   button(onClick = '''alert('Warning!'+'');''') = Warn
+    button(onClick = '''alert('Warning!'+'');''') = Warn
 }&lt;/quoting_xmq&gt;
 </pre></div>
 <div class="info"> To quote strings that start or  end with quotes, add a newline that will be trimmed away.</div>
@@ -229,20 +300,20 @@ info {
 <div class="info"> You can add newlines inside an attribute.</div>
 <div class="row">
 <pre class="box">
-delta(code =
-    'Line1
-     Line2
-     Line3')
-</pre><pre class="spacing">↗</pre><pre class="box">
+<span style="color:#00aa00">delta</span>(<span style="color:#00aa00">code</span> =
+          <span style="color:#aa0000">'Line1
+           <span style="color:#aa0000">Line2
+           <span style="color:#aa0000">Line3'</span>)
+</pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;delta code="Line1&amp;#10;Line2&amp;#10;Line3"/&gt;
 </pre></div>
 <div class="info"> XMQ attributes having no value are allowed and for xml translates into attr="attr"</div>
 <div class="row">
 <pre class="box">
-alfa {
-    body {
-        div(gurka
-            lemon) = Texten!
+<span style="color:#000088">alfa</span> {
+    <span style="color:#000088">body</span> {
+        <span style="color:#00aa00">div</span>(<span style="color:#00aa00">gurka</span>
+            <span style="color:#00aa00">lemon</span>) = <span style="color:#aa0000">Texten!</span>
     }
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
@@ -255,10 +326,10 @@ alfa {
 <div class="info"> Translates into the same single attribute for html.</div>
 <div class="row">
 <pre class="box">
-html {
-    body {
-        div(gurka
-            lemon) = Texten!
+<span style="color:#000088">html</span> {
+    <span style="color:#000088">body</span> {
+        <span style="color:#00aa00">div</span>(<span style="color:#00aa00">gurka</span>
+            <span style="color:#00aa00">lemon</span>) = <span style="color:#aa0000">Texten!</span>
     }
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
@@ -271,24 +342,24 @@ html {
 <div class="info"> Example feature.xml</div>
 <div class="row">
 <pre class="box">
-feature(id    = org.eventb.texteditor.feature
-        label = TextEditor)
+<span style="color:#000088">feature</span>(<span style="color:#00aa00">id</span>    = <span style="color:#aa0000">org.eventb.texteditor.feature</span>
+        <span style="color:#00aa00">label</span> = <span style="color:#aa0000">TextEditor</span>)
 {
-    description =
-    'Release History:
-     ----------------------
-     3.3.0 - Compatibility with core 3.3
-     3.1.2 - Fix some more bugs regarding theory parsing,
-     changes to seen contexts.
-     3.1.1 - Fix parsing of theory operators.'
-    copyright   =
-    'Copyright (c) 1971-1973 University AB
-     All rights reserved.'
-    url {
-        update(label = 'University AB'
-               url   = http://www.uniab.cde/)
-        discovery(label = 'Update Site'
-                  url   = file:/home/repository/)
+    <span style="color:#00aa00">description</span> =
+    <span style="color:#aa0000">'Release History:
+     <span style="color:#aa0000">----------------------
+     <span style="color:#aa0000">3.3.0 - Compatibility with core 3.3
+     <span style="color:#aa0000">3.1.2 - Fix some more bugs regarding theory parsing,
+     <span style="color:#aa0000">changes to seen contexts.
+     <span style="color:#aa0000">3.1.1 - Fix parsing of theory operators.'</span>
+    <span style="color:#00aa00">copyright</span>   =
+    <span style="color:#aa0000">'Copyright (c) 1971-1973 University AB
+     <span style="color:#aa0000">All rights reserved.'</span>
+    <span style="color:#000088">url</span> {
+        <span style="color:#00aa00">update</span>(<span style="color:#00aa00">label</span> = <span style="color:#aa0000">'University AB'</span>
+               <span style="color:#00aa00">url</span>   = <span style="color:#aa0000">http://www.uniab.cde/</span>)
+        <span style="color:#00aa00">discovery</span>(<span style="color:#00aa00">label</span> = <span style="color:#aa0000">'Update Site'</span>
+                  <span style="color:#00aa00">url</span>   = <span style="color:#aa0000">file:/home/repository/</span>)
     }
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
@@ -310,47 +381,47 @@ All rights reserved.&lt;/copyright&gt;
 <div class="info"> Example pom.xml</div>
 <div class="row">
 <pre class="box">
-project(xmlns              = http://maven.apache.org/POM/4.0.0
-        xmlns:xsi          = http://....
-        xsi:schemaLocation = 'http://.... http://....')
+<span style="color:#000088">project</span>(<span style="color:#00aa00">xmlns</span>              = <span style="color:#aa0000">http://maven.apache.org/POM/4.0.0</span>
+        <span style="color:#00aa00">xmlns:xsi</span>          = <span style="color:#aa0000">http://....</span>
+        <span style="color:#00aa00">xsi:schemaLocation</span> = <span style="color:#aa0000">'http://.... http://....'</span>)
 {
-    modelVersion = 4.0.0
-    properties {
-        project.build.sourceEncoding = UTF-8
-        maven.compiler.source        = 8
-        maven.compiler.target        = 8
+    <span style="color:#00aa00">modelVersion</span> = <span style="color:#aa0000">4.0.0</span>
+    <span style="color:#000088">properties</span> {
+        <span style="color:#00aa00">project.build.sourceEncoding</span> = <span style="color:#aa0000">UTF-8</span>
+        <span style="color:#00aa00">maven.compiler.source</span>        = <span style="color:#aa0000">8</span>
+        <span style="color:#00aa00">maven.compiler.target</span>        = <span style="color:#aa0000">8</span>
     }
-    groupId    = bar.foo
-    artifactId = Software
-    version    = 1.0-SNAPSHOT
-    // Inherit defaults from Spring Boot
-    parent {
-        groupId    = org.springframework.boot
-        artifactId = spring-boot-starter-parent
-        version    = 2.2.2.RELEASE
+    <span style="color:#00aa00">groupId</span>    = <span style="color:#aa0000">bar.foo</span>
+    <span style="color:#00aa00">artifactId</span> = <span style="color:#aa0000">Software</span>
+    <span style="color:#00aa00">version</span>    = <span style="color:#aa0000">1.0-SNAPSHOT</span>
+    <span style="color:#888800">// Inherit defaults from Spring Boot</span>
+    <span style="color:#000088">parent</span> {
+        <span style="color:#00aa00">groupId</span>    = <span style="color:#aa0000">org.springframework.boot</span>
+        <span style="color:#00aa00">artifactId</span> = <span style="color:#aa0000">spring-boot-starter-parent</span>
+        <span style="color:#00aa00">version</span>    = <span style="color:#aa0000">2.2.2.RELEASE</span>
     }
-    dependencies {
-        // https://mvnrepository.com/artifact/org.dom4j/dom4j
-        dependency {
-            groupId    = org.dom4j
-            artifactId = dom4j
-            version    = 99.9.1
+    <span style="color:#000088">dependencies</span> {
+        <span style="color:#888800">// https://mvnrepository.com/artifact/org.dom4j/dom4j</span>
+        <span style="color:#000088">dependency</span> {
+            <span style="color:#00aa00">groupId</span>    = <span style="color:#aa0000">org.dom4j</span>
+            <span style="color:#00aa00">artifactId</span> = <span style="color:#aa0000">dom4j</span>
+            <span style="color:#00aa00">version</span>    = <span style="color:#aa0000">99.9.1</span>
         }
     }
-    build {
-        plugins {
-            plugin {
-                groupId    = org.apache.maven.plugins
-                artifactId = maven-compiler-plugin
-                version    = 3.8.0
-                configuration {
-                    release = 8
+    <span style="color:#000088">build</span> {
+        <span style="color:#000088">plugins</span> {
+            <span style="color:#000088">plugin</span> {
+                <span style="color:#00aa00">groupId</span>    = <span style="color:#aa0000">org.apache.maven.plugins</span>
+                <span style="color:#00aa00">artifactId</span> = <span style="color:#aa0000">maven-compiler-plugin</span>
+                <span style="color:#00aa00">version</span>    = <span style="color:#aa0000">3.8.0</span>
+                <span style="color:#000088">configuration</span> {
+                    <span style="color:#00aa00">release</span> = <span style="color:#aa0000">8</span>
                 }
             }
         }
     }
 }
-</pre><pre class="spacing">↗</pre><pre class="box">
+</pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://...." xsi:schemaLocation="http://.... http://...."&gt;
   &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
   &lt;properties&gt;

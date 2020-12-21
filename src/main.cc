@@ -23,7 +23,6 @@
 */
 
 #include "util.h"
-#include "settings.h"
 #include "xmq.h"
 
 #include <string.h>

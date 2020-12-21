@@ -49,7 +49,7 @@ using namespace std;
 
 bool isWhiteSpace(char c);
 
-struct Parser
+struct ParserImplementation
 {
     const char *file;
 
@@ -90,7 +90,7 @@ struct Parser
     void potentiallyRemoveEnding_WS_NL_WS(vector<char> *buffer);
 };
 
-void Parser::error(const char* fmt, ...)
+void ParserImplementation::error(const char* fmt, ...)
 {
     printf("%s:%d:%d: error: ", file, line, col);
     va_list args;
@@ -202,7 +202,7 @@ void removeIncidentalWhiteSpace(vector<char> *buffer, int first_indent)
     }
 }
 
-void Parser::padWithSingleSpaces(Token *t)
+void ParserImplementation::padWithSingleSpaces(Token *t)
 {
     size_t len = strlen(t->value);
     char buf[len+3]; // Two spaces and zero terminator.
@@ -213,7 +213,7 @@ void Parser::padWithSingleSpaces(Token *t)
     t->value = doc->allocate_string(buf, len+3);
 }
 
-int Parser::findIndent(const char *p)
+int ParserImplementation::findIndent(const char *p)
 {
     int count = 0;
     while (p > beginning && *p != '\n')
@@ -224,7 +224,7 @@ int Parser::findIndent(const char *p)
     return count;
 }
 
-TokenType Parser::tokenType(char c)
+TokenType ParserImplementation::tokenType(char c)
 {
     switch (c)
     {
@@ -241,7 +241,7 @@ TokenType Parser::tokenType(char c)
 }
 
 
-bool Parser::isReservedCharacter(char c)
+bool ParserImplementation::isReservedCharacter(char c)
 {
     return
         c == 0 ||
@@ -275,7 +275,7 @@ const char *tokenTypeText(TokenType t)
     assert(0);
 }
 
-void Parser::eatWhiteSpace()
+void ParserImplementation::eatWhiteSpace()
 {
     while (true)
     {
@@ -294,7 +294,7 @@ void Parser::eatWhiteSpace()
     }
 }
 
-TokenType Parser::peekToken()
+TokenType ParserImplementation::peekToken()
 {
     peek_skipped_whitespace = true;
     while (true)
@@ -321,7 +321,7 @@ TokenType Parser::peekToken()
     return tokenType(*s);
 }
 
-Token Parser::eatToken()
+Token ParserImplementation::eatToken()
 {
     TokenType tt = peekToken();
     switch (tt)
@@ -361,7 +361,7 @@ Token Parser::eatToken()
     return Token(TokenType::none, "");
 }
 
-Token Parser::eatToEndOfText()
+Token ParserImplementation::eatToEndOfText()
 {
     char *start = s;
     char *p = start;
@@ -403,7 +403,7 @@ void addNewline(vector<char> *buffer)
     buffer->push_back(';');
 }
 
-char *Parser::findDepth(char *p, int *depth)
+char *ParserImplementation::findDepth(char *p, int *depth)
 {
     while (*p == '\'')
     {
@@ -413,7 +413,7 @@ char *Parser::findDepth(char *p, int *depth)
     return p;
 }
 
-bool Parser::isEndingWithDepth(char *p, int depth)
+bool ParserImplementation::isEndingWithDepth(char *p, int depth)
 {
     while (*p == '\'')
     {
@@ -428,7 +428,7 @@ bool Parser::isEndingWithDepth(char *p, int depth)
     return false;
 }
 
-char *Parser::potentiallySkipLeading_WS_NL_WS(char *p)
+char *ParserImplementation::potentiallySkipLeading_WS_NL_WS(char *p)
 {
     char *org_p = p;
     bool nl_found = false;
@@ -459,7 +459,7 @@ char *Parser::potentiallySkipLeading_WS_NL_WS(char *p)
     return org_p;
 }
 
-void Parser::potentiallyRemoveEnding_WS_NL_WS(vector<char> *buffer)
+void ParserImplementation::potentiallyRemoveEnding_WS_NL_WS(vector<char> *buffer)
 {
     char *start = &(*buffer)[0];
     char *p = &(*buffer)[buffer->size()-1];
@@ -493,7 +493,7 @@ void Parser::potentiallyRemoveEnding_WS_NL_WS(vector<char> *buffer)
     }
 }
 
-Token Parser::eatToEndOfQuotedText(int indent)
+Token ParserImplementation::eatToEndOfQuotedText(int indent)
 {
     if (*s == '\'' && *(s+1) == '\'' && *(s+2) != '\'')
     {
@@ -556,7 +556,7 @@ Token Parser::eatToEndOfQuotedText(int indent)
     return Token(TokenType::text, value);
 }
 
-Token Parser::eatToEndOfLine()
+Token ParserImplementation::eatToEndOfLine()
 {
     char *start = s;
     char *p = start;
@@ -584,7 +584,7 @@ Token Parser::eatToEndOfLine()
     return Token(TokenType::text, value);
 }
 
-Token Parser::eatMultipleCommentLines()
+Token ParserImplementation::eatMultipleCommentLines()
 {
     char *start = s + 1;
     char *p = start;
@@ -619,14 +619,14 @@ Token Parser::eatMultipleCommentLines()
     return Token(TokenType::text, value);
 }
 
-void Parser::parseComment(xml_node<> *parent)
+void ParserImplementation::parseComment(xml_node<> *parent)
 {
     Token val = eatToken();
 
     parent->append_node(doc->allocate_node(node_comment, NULL, val.value));
 }
 
-void Parser::parseNodeContent(xml_node<> *parent)
+void ParserImplementation::parseNodeContent(xml_node<> *parent)
 {
     eatToken();
     while (true)
@@ -662,7 +662,7 @@ void Parser::parseNodeContent(xml_node<> *parent)
     }
 }
 
-void Parser::parseAttributes(xml_node<> *parent)
+void ParserImplementation::parseAttributes(xml_node<> *parent)
 {
     Token po = eatToken();
     assert(po.type == TokenType::paren_open);
@@ -702,7 +702,7 @@ void Parser::parseAttributes(xml_node<> *parent)
 
 }
 
-void Parser::parseNode(xml_node<> *parent)
+void ParserImplementation::parseNode(xml_node<> *parent)
 {
     Token t = eatToken();
     if (t.type != TokenType::text) error("expected tag");
@@ -740,7 +740,7 @@ void Parser::parseNode(xml_node<> *parent)
 
 void parse(const char *filename, char *xmq, xml_document<> *doc, bool generate_html)
 {
-    Parser parser;
+    ParserImplementation parser;
 
     parser.doc = doc;
     parser.s = xmq;
