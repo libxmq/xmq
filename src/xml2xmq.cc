@@ -396,19 +396,6 @@ void printEscaped(str value, bool is_attribute, int indent, bool must_quote)
     }
 }
 
-void printCdataEscaped(str value, int indent)
-{
-    if (settings_->use_color) outputNoEscape(red);
-    output("cdata{[ ");
-    if (settings_->use_color) outputNoEscape(reset_color);
-
-    printEscaped(value, false, indent, true);
-
-    if (settings_->use_color) outputNoEscape(red);
-    output(" ]}");
-    if (settings_->use_color) outputNoEscape(reset_color);
-}
-
 /*
     Test if the node has no children.
 */
@@ -529,8 +516,9 @@ void printAligned(xml_node<> *i,
     else
     if (i->type() == node_cdata)
     {
+        // CData becomes just quoted content. The cdata node is not preserved.
         str cdata(i->value(), i->value_size());
-        printCdataEscaped(cdata, indent);
+        printEscaped(cdata, false, indent, true);
     }
     else
     {
