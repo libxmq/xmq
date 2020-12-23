@@ -1,0 +1,72 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage{rail}
+\usepackage{parskip}
+\usepackage{changepage}
+\usepackage{geometry}
+
+\geometry{a4paper, layoutwidth=20cm, layoutheight=30cm}
+
+\newcommand{\shiftleft}[2]{\makebox[0pt][r]{\makebox[#1][l]{#2}}}
+\newcommand{\shiftright}[2]{\makebox[#1][r]{\makebox[0pt][l]{#2}}}
+
+\railoptions{-t}
+\relax
+
+\pagestyle{empty}
+
+\railalias{lbrace}{\{}
+\railalias{rbrace}{\}}
+
+\begin{document}
+
+\textbf{XMQ syntax, whitespace is a separator, ignored except within quotes.}
+
+\begin{rail}
+  xmq : (node | quote | comment) +
+\end{rail}
+
+\begin{rail}
+  text : utf8[excluding whitespace and ' = ( ) $\lbrace$ $\rbrace$]
+\end{rail}
+
+\begin{rail}
+  quote : "'" "'"
+  | "'" utf8[with no '] "'"
+  | "'" "'" "'" utf8[with at most 2 consecutive '] "'" "'" "'"
+  | "'"[$\times$ n] utf8[with at most n-1 consecutive '] "'"[$\times$ n]
+\end{rail}
+
+\begin{rail}
+  comment :  '//' utf8 "0x0a"
+  | '/*' utf8 '*/'
+\end{rail}
+
+\begin{rail}
+  node :  text[tag] ( | attributes? ('=' ( text[sugar] | quote[sugar]) | lbrace xmq rbrace ))
+\end{rail}
+
+\begin{rail}
+  attributes : '(' (text[attribute] ('=' ( text | quote ))? +) ')'
+\end{rail}
+
+\newpage
+
+\textbf{XMQ rules.}
+
+text[tag] is text (ie utf8 excluding whitespace and = ( ) \{ \})
+but must also conform to the XML element name rules:
+\begin{enumerate}
+  \item{must start with a letter or underscore}
+  \item{cannot start with the letters xml (or XML, or Xml, etc)}
+  \item{can contain letters, digits, hyphens, underscores, and periods}
+\end{enumerate}
+
+After a quote has been found, the utf8 is trimmed according to these rules:
+\begin{enumerate}
+\item{Any leading/ending whitespace newline whitespace is removed.}
+\item{Incidental whitespace will always be trimmed, when there is at least one newline left.}
+\end{enumerate}
+
+Two consequtive quotes are joined with a newline.
+
+\end{document}

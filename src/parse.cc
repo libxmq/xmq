@@ -31,22 +31,6 @@
 using namespace rapidxml;
 using namespace std;
 
-/*
-
-  The xmq format is very easy to parse:
-
-  You got the character delimiters {}=()' and whitespace that are reserved
-  for the xmq format.
-
-  Then you have text which is any text string containing none of the reserved characters.
-
-  Then you have quoted text that is surrounded with ', and is allowed to contain
-  the reserved characters and \' quoted quotes.
-
-  Data is text or quoted text.
-
-*/
-
 bool isWhiteSpace(char c);
 
 struct ParserImplementation
@@ -57,7 +41,6 @@ struct ParserImplementation
     char *s;
     int line;
     int col;
-    bool peek_skipped_whitespace;
     xml_document<> *doc;
     xml_node<> *root;
     bool generate_html {};
@@ -66,18 +49,16 @@ struct ParserImplementation
 
     int findIndent(const char *p);
 
-    TokenType tokenType(char c);
     bool isReservedCharacter(char c);
     void eatWhiteSpace();
+
     TokenType peekToken();
     Token eatToken();
-    void padWithSingleSpaces(Token *t);
-
+    Token eatToEndOfComment();
     Token eatToEndOfLine();
     Token eatMultipleCommentLines();
     Token eatToEndOfText();
-    Token eatToEndOfQuotedText(int indent);
-    Token eatToEndOfData();
+    Token eatToEndOfQuote(int indent);
 
     void parseComment(xml_node<> *parent);
     void parseNode(xml_node<> *parent);
@@ -88,6 +69,7 @@ struct ParserImplementation
     bool isEndingWithDepth(char *p, int depth);
     char *potentiallySkipLeading_WS_NL_WS(char *p);
     void potentiallyRemoveEnding_WS_NL_WS(vector<char> *buffer);
+    void padWithSingleSpaces(Token *t);
 };
 
 void ParserImplementation::error(const char* fmt, ...)
@@ -224,23 +206,6 @@ int ParserImplementation::findIndent(const char *p)
     return count;
 }
 
-TokenType ParserImplementation::tokenType(char c)
-{
-    switch (c)
-    {
-    case 0: return TokenType::none;
-    case '\'': return TokenType::quote;
-    case '=': return TokenType::equals;
-    case '{': return TokenType::brace_open;
-    case '}': return TokenType::brace_close;
-    case '(': return TokenType::paren_open;
-    case ')': return TokenType::paren_close;
-    case '/': return TokenType::comment;
-    default: return TokenType::text;
-    }
-}
-
-
 bool ParserImplementation::isReservedCharacter(char c)
 {
     return
@@ -257,38 +222,17 @@ bool ParserImplementation::isReservedCharacter(char c)
         c == '\n';
 }
 
-
-const char *tokenTypeText(TokenType t)
-{
-    switch (t)
-    {
-    case TokenType::none: return "end of file";
-    case TokenType::quote: return "quoted text";
-    case TokenType::equals: return "=";
-    case TokenType::brace_open: return "{";
-    case TokenType::brace_close: return "}";
-    case TokenType::paren_open: return "(";
-    case TokenType::paren_close: return ")";
-    case TokenType::comment: return "/";
-    case TokenType::text: return "text";
-    }
-    assert(0);
-}
-
 void ParserImplementation::eatWhiteSpace()
 {
     while (true)
     {
         if (*s == 0) break;
-        else
-        if (isNewLine(*s))
+        else if (isNewLine(*s))
         {
             col = 1;
             line++;
         }
-        else
-        if (!isWhiteSpace(*s)) break;
-        // Eat whitespace...
+        else if (!isWhiteSpace(*s)) break;
         s++;
         col++;
     }
@@ -296,29 +240,20 @@ void ParserImplementation::eatWhiteSpace()
 
 TokenType ParserImplementation::peekToken()
 {
-    peek_skipped_whitespace = true;
-    while (true)
-    {
-        if (*s == 0)
-        {
-            break;
-        }
-        else if (isNewLine(*s))
-        {
-            col = 1;
-            line++;
-        }
-        else if (!isWhiteSpace(*s))
-        {
-            break;
-        }
-        // Eat whitespace...
-        peek_skipped_whitespace = true;
-        s++;
-        col++;
-    }
+    eatWhiteSpace();
 
-    return tokenType(*s);
+    switch (*s)
+    {
+    case 0: return TokenType::none;
+    case '\'': return TokenType::quote;
+    case '=': return TokenType::equals;
+    case '{': return TokenType::brace_open;
+    case '}': return TokenType::brace_close;
+    case '(': return TokenType::paren_open;
+    case ')': return TokenType::paren_close;
+    }
+    if (*s == '/' && (*(s+1) == '/' || *(s+1) == '*')) return TokenType::comment;
+    return TokenType::text;
 }
 
 Token ParserImplementation::eatToken()
@@ -328,28 +263,8 @@ Token ParserImplementation::eatToken()
     {
     case TokenType::none: return Token(TokenType::none, "");
     case TokenType::text: return eatToEndOfText();
-    case TokenType::quote: return eatToEndOfQuotedText(col-1);
-    case TokenType::comment:
-    {
-        if (*(s+1) != '*' && *(s+1) != '/')
-        {
-            // This is text!
-            return eatToEndOfText();
-        }
-        s++;
-        bool single_line = *s == '/';
-        s++;
-        if (single_line)
-        {
-            Token t = eatToEndOfLine();
-            trimTokenWhiteSpace(&t);
-            padWithSingleSpaces(&t);
-
-            return t;
-        }
-        Token t = eatMultipleCommentLines();
-        return t;
-    }
+    case TokenType::quote: return eatToEndOfQuote(col);
+    case TokenType::comment: return eatToEndOfComment();
     case TokenType::equals:
     case TokenType::brace_open:
     case TokenType::brace_close:
@@ -358,6 +273,7 @@ Token ParserImplementation::eatToken()
         s++;
         return Token(tt, ""); // Do not bother to store the string of the char itself.
     }
+    assert(0);
     return Token(TokenType::none, "");
 }
 
@@ -493,7 +409,7 @@ void ParserImplementation::potentiallyRemoveEnding_WS_NL_WS(vector<char> *buffer
     }
 }
 
-Token ParserImplementation::eatToEndOfQuotedText(int indent)
+Token ParserImplementation::eatToEndOfQuote(int indent)
 {
     if (*s == '\'' && *(s+1) == '\'' && *(s+2) != '\'')
     {
@@ -554,6 +470,23 @@ Token ParserImplementation::eatToEndOfQuotedText(int indent)
     char *value = doc->allocate_string(&(buffer[0]), buffer.size()+1);
 
     return Token(TokenType::text, value);
+}
+
+Token ParserImplementation::eatToEndOfComment()
+{
+    assert(*s == '/');
+    s++;
+    bool single_line = *s == '/';
+    s++;
+    if (single_line)
+    {
+        Token t = eatToEndOfLine();
+        trimTokenWhiteSpace(&t);
+        padWithSingleSpaces(&t);
+        return t;
+    }
+    Token t = eatMultipleCommentLines();
+    return t;
 }
 
 Token ParserImplementation::eatToEndOfLine()
@@ -628,7 +561,6 @@ void ParserImplementation::parseComment(xml_node<> *parent)
 
 void ParserImplementation::parseNodeContent(xml_node<> *parent)
 {
-    eatToken();
     while (true)
     {
         TokenType t = peekToken();
@@ -720,6 +652,7 @@ void ParserImplementation::parseNode(xml_node<> *parent)
 
     if (tt == TokenType::brace_open)
     {
+        eatToken();
         parseNodeContent(node);
     }
     else if (tt == TokenType::equals)
