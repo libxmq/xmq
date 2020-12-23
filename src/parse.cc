@@ -37,8 +37,9 @@ struct ParserImplementation
 {
     const char *file;
 
-    char *beginning;
-    char *s;
+    char *buf;
+    size_t buf_len;
+    size_t pos;
     int line;
     int col;
     xml_document<> *doc;
@@ -47,7 +48,7 @@ struct ParserImplementation
 
     void error(const char* fmt, ...);
 
-    int findIndent(const char *p);
+    int findIndent(int p);
 
     bool isReservedCharacter(char c);
     void eatWhiteSpace();
@@ -65,9 +66,9 @@ struct ParserImplementation
     void parseNodeContent(xml_node<> *parent);
     void parseAttributes(xml_node<> *parent);
 
-    char *findDepth(char *p, int *depth);
-    bool isEndingWithDepth(char *p, int depth);
-    char *potentiallySkipLeading_WS_NL_WS(char *p);
+    size_t findDepth(size_t p, int *depth);
+    bool isEndingWithDepth(size_t p, int depth);
+    size_t potentiallySkipLeading_WS_NL_WS(size_t p);
     void potentiallyRemoveEnding_WS_NL_WS(vector<char> *buffer);
     void padWithSingleSpaces(Token *t);
 };
@@ -81,7 +82,7 @@ void ParserImplementation::error(const char* fmt, ...)
     va_end(args);
     printf("\n");
 
-    printf("%.*s\n", col, s-col+1);
+    printf("%.*s\n", col, &buf[pos-col+1]);
     exit(1);
 }
 
@@ -195,10 +196,10 @@ void ParserImplementation::padWithSingleSpaces(Token *t)
     t->value = doc->allocate_string(buf, len+3);
 }
 
-int ParserImplementation::findIndent(const char *p)
+int ParserImplementation::findIndent(int p)
 {
     int count = 0;
-    while (p > beginning && *p != '\n')
+    while (p >= 0 && buf[p] != '\n')
     {
         p--;
         count++;
@@ -226,14 +227,15 @@ void ParserImplementation::eatWhiteSpace()
 {
     while (true)
     {
-        if (*s == 0) break;
-        else if (isNewLine(*s))
+        char c = buf[pos];
+        if (c == 0) break;
+        else if (isNewLine(c))
         {
             col = 1;
             line++;
         }
-        else if (!isWhiteSpace(*s)) break;
-        s++;
+        else if (!isWhiteSpace(c)) break;
+        pos++;
         col++;
     }
 }
@@ -242,7 +244,9 @@ TokenType ParserImplementation::peekToken()
 {
     eatWhiteSpace();
 
-    switch (*s)
+    char c = buf[pos];
+
+    switch (c)
     {
     case 0: return TokenType::none;
     case '\'': return TokenType::quote;
@@ -252,7 +256,7 @@ TokenType ParserImplementation::peekToken()
     case '(': return TokenType::paren_open;
     case ')': return TokenType::paren_close;
     }
-    if (*s == '/' && (*(s+1) == '/' || *(s+1) == '*')) return TokenType::comment;
+    if (c == '/' && (buf[pos+1] == '/' || buf[pos+1] == '*')) return TokenType::comment;
     return TokenType::text;
 }
 
@@ -270,7 +274,7 @@ Token ParserImplementation::eatToken()
     case TokenType::brace_close:
     case TokenType::paren_open:
     case TokenType::paren_close:
-        s++;
+        pos++;
         return Token(tt, ""); // Do not bother to store the string of the char itself.
     }
     assert(0);
@@ -279,33 +283,33 @@ Token ParserImplementation::eatToken()
 
 Token ParserImplementation::eatToEndOfText()
 {
-    char *start = s;
-    char *p = start;
+    size_t start = pos;
+    size_t i = pos;
     while (true)
     {
-        char c = *p;
+        char c = buf[i];
         if (c == 0)
         {
-            s = p;
+            pos = i;
             break;
         }
         if (c == '\n')
         {
-            s = p+1;
+            pos = i+1;
             line++;
             col = 1;
             break;
         }
         if (isReservedCharacter(c))
         {
-            s = p;
+            pos = i;
             break;
         }
-        p++;
+        i++;
         col++;
     }
-    size_t len = p-start;
-    char *value = doc->allocate_string(start, len+1);
+    size_t len = i-start;
+    char *value = doc->allocate_string(buf+start, len+1);
 
     return Token(TokenType::text, value);
 }
@@ -319,48 +323,50 @@ void addNewline(vector<char> *buffer)
     buffer->push_back(';');
 }
 
-char *ParserImplementation::findDepth(char *p, int *depth)
+size_t ParserImplementation::findDepth(size_t p, int *depth)
 {
-    while (*p == '\'')
+    int count = 0;
+    while (buf[p] == '\'')
     {
         p++;
-        (*depth)++;
+        count++;
     }
+    *depth = count;
     return p;
 }
 
-bool ParserImplementation::isEndingWithDepth(char *p, int depth)
+bool ParserImplementation::isEndingWithDepth(size_t p, int depth)
 {
-    while (*p == '\'')
+    while (buf[p] == '\'')
     {
         p++;
         depth--;
+        if (depth < 0)
+        {
+            error("too many quotes");
+        }
     }
     if (depth == 0) return true;
-    if (depth < 0)
-    {
-        error("too many quotes");
-    }
     return false;
 }
 
-char *ParserImplementation::potentiallySkipLeading_WS_NL_WS(char *p)
+size_t ParserImplementation::potentiallySkipLeading_WS_NL_WS(size_t p)
 {
-    char *org_p = p;
+    size_t org_p = p;
     bool nl_found = false;
     for (;;)
     {
-        if (*p == 0)
+        if (buf[p] == 0)
         {
             p = org_p;
             break;
         }
-        if (*p == ' ')
+        if (buf[p] == ' ')
         {
             p++;
             continue;
         }
-        if (*p == '\n')
+        if (buf[p] == '\n')
         {
             if (nl_found) break;
             nl_found = true;
@@ -411,20 +417,20 @@ void ParserImplementation::potentiallyRemoveEnding_WS_NL_WS(vector<char> *buffer
 
 Token ParserImplementation::eatToEndOfQuote(int indent)
 {
-    if (*s == '\'' && *(s+1) == '\'' && *(s+2) != '\'')
+    if (buf[pos] == '\'' && buf[pos+1] == '\'' && buf[pos+2] != '\'')
     {
         // This is the empty string! ''
-        s += 2;
+        pos += 2;
         char *value = doc->allocate_string("", 1);
         return Token(TokenType::text, value);
     }
 
     // How many ' single quotes are there?
     int depth = 0;
-    char *start = findDepth(s, &depth);
+    size_t start = findDepth(pos, &depth);
 
     // p now points the first character after the quotes.
-    char *p = start;
+    size_t p = start;
     // If there is ws nl ws, then skip it.
     p = potentiallySkipLeading_WS_NL_WS(p);
 
@@ -434,7 +440,7 @@ Token ParserImplementation::eatToEndOfQuote(int indent)
     vector<char> buffer;
     while (true)
     {
-        char c = *p;
+        char c = buf[p];
         if (c == 0)
         {
             error("unexpected eof in quoted text");
@@ -452,7 +458,7 @@ Token ParserImplementation::eatToEndOfQuote(int indent)
         if (isEndingWithDepth(p, depth))
         {
             // We found the ending quote!
-            s = p+depth;
+            pos  = p + depth;
             break;
         }
         buffer.push_back(c);
@@ -474,10 +480,10 @@ Token ParserImplementation::eatToEndOfQuote(int indent)
 
 Token ParserImplementation::eatToEndOfComment()
 {
-    assert(*s == '/');
-    s++;
-    bool single_line = *s == '/';
-    s++;
+    assert(buf[pos] == '/');
+    pos++;
+    bool single_line = buf[pos] == '/';
+    pos++;
     if (single_line)
     {
         Token t = eatToEndOfLine();
@@ -491,19 +497,19 @@ Token ParserImplementation::eatToEndOfComment()
 
 Token ParserImplementation::eatToEndOfLine()
 {
-    char *start = s;
-    char *p = start;
+    size_t start = pos;
+    size_t p = pos;
     while (true)
     {
-        char c = *p;
+        char c = buf[p];
         if (c == 0)
         {
-            s = p;
+            pos = p;
             break;
         }
         if (c == '\n')
         {
-            s = p+1;
+            pos = p + 1;
             line++;
             col = 1;
             break;
@@ -512,21 +518,21 @@ Token ParserImplementation::eatToEndOfLine()
         col++;
     }
     size_t len = p-start;
-    char *value = doc->allocate_string(start, len+1);
+    char *value = doc->allocate_string(buf+start, len+1);
 
     return Token(TokenType::text, value);
 }
 
 Token ParserImplementation::eatMultipleCommentLines()
 {
-    char *start = s + 1;
-    char *p = start;
+    size_t p = pos;
+
     int first_indent = findIndent(p);
     vector<char> buffer;
 
     while (true)
     {
-        char c = *p;
+        char c = buf[p];
         if (c == 0)
         {
             error("unexpected eof in comment");
@@ -536,9 +542,9 @@ Token ParserImplementation::eatMultipleCommentLines()
             line++;
             col = 1;
         }
-        if (c == '*' && *(p+1) == '/')
+        if (buf[p] == '*' && buf[p+1] == '/')
         {
-            s = p+2;
+            pos = p + 2;
             break;
         }
         buffer.push_back(c);
@@ -676,8 +682,9 @@ void parse(const char *filename, char *xmq, xml_document<> *doc, bool generate_h
     ParserImplementation parser;
 
     parser.doc = doc;
-    parser.s = xmq;
-    parser.beginning = parser.s;
+    parser.buf = xmq;
+    parser.buf_len = strlen(xmq);
+    parser.pos = 0;
     parser.line = 1;
     parser.col = 1;
     parser.file = filename;
