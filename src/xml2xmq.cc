@@ -777,8 +777,9 @@ void findLineAndColumn(const char *from, const char *where, int *line, int *col)
     }
 }
 
-void renderDoc(xml_node<> *root, Settings *provided_settings)
+void renderDoc(void *rroot, Settings *provided_settings)
 {
+    xml_node<> *root = (xml_node<>*)rroot;
     settings_ = provided_settings;
     if (provided_settings->out == NULL)
     {

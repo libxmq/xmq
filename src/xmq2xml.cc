@@ -41,6 +41,48 @@ using namespace rapidxml;
 
 #define VERSION "0.1"
 
+struct ActionsRapidXML : ActionsXMQ
+{
+    xml_document<> *doc;
+
+    void *root()
+    {
+        return doc;
+    }
+
+    char *allocateCopy(const char *content, size_t len)
+    {
+        return doc->allocate_string(content, len);
+    }
+
+    void *appendElement(void *parent, Token t)
+    {
+        xml_node<> *p = (xml_node<>*)parent;
+        xml_node<> *n = doc->allocate_node(node_element, t.value);
+        p->append_node(n);
+        return n;
+    }
+
+    void appendComment(void *parent, Token t)
+    {
+        xml_node<> *p = (xml_node<>*)parent;
+        p->append_node(doc->allocate_node(node_comment, NULL, t.value));
+    }
+
+    void appendData(void *parent, Token t)
+    {
+        xml_node<> *p = (xml_node<>*)parent;
+        p->append_node(doc->allocate_node(node_data, NULL, t.value));
+    }
+
+    void appendAttribute(void *parent, Token key, Token val)
+    {
+        xml_node<> *p = (xml_node<>*)parent;
+        p->append_attribute(doc->allocate_attribute(key.value, val.value));
+    }
+
+};
+
 int main_xmq2xml(const char *filename, Settings *provided_settings)
 {
     vector<char> *buffer = provided_settings->in;
@@ -68,7 +110,10 @@ int main_xmq2xml(const char *filename, Settings *provided_settings)
         }
     }
 
-    parse(filename, &(*buffer)[0], &doc, generate_html);
+    ActionsRapidXML actions;
+    actions.doc = &doc;
+
+    parse(filename, &(*buffer)[0], &actions, generate_html);
 
     if (provided_settings->view)
     {

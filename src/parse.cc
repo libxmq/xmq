@@ -26,15 +26,14 @@
 #include "util.h"
 #include <string.h>
 #include <stdarg.h>
-#include "rapidxml/rapidxml.hpp"
 
-using namespace rapidxml;
 using namespace std;
 
 bool isWhiteSpace(char c);
 
 struct ParserImplementation
 {
+    ActionsXMQ *actions;
     const char *file;
 
     char *buf;
@@ -42,8 +41,6 @@ struct ParserImplementation
     size_t pos;
     int line;
     int col;
-    xml_document<> *doc;
-    xml_node<> *root;
     bool generate_html {};
 
     void error(const char* fmt, ...);
@@ -61,10 +58,10 @@ struct ParserImplementation
     Token eatToEndOfText();
     Token eatToEndOfQuote(int indent);
 
-    void parseComment(xml_node<> *parent);
-    void parseNode(xml_node<> *parent);
-    void parseNodeContent(xml_node<> *parent);
-    void parseAttributes(xml_node<> *parent);
+    void parseComment(void *parent);
+    void parseNode(void *parent);
+    void parseNodeContent(void *parent);
+    void parseAttributes(void *parent);
 
     size_t findDepth(size_t p, int *depth);
     bool isEndingWithDepth(size_t p, int depth);
@@ -135,9 +132,12 @@ void removeIncidentalWhiteSpace(vector<char> *buffer, int first_indent)
             // We reached end of line.
             if (curr < common || common == -1)
             {
-                // We found a shorter sequence of spaces, use this number
-                // as the future commonly shared sequence of spaces.
-                common = curr;
+                // We found a shorter sequence of spaces followed by non-whitespace,
+                // use this number as the future commonly shared sequence of spaces.
+/*                if (found_non_ws)
+                  {*/
+                    common = curr;
+//                }
 //                fprintf(stderr, "common %d\n", common);
             }
             curr = 0;
@@ -193,7 +193,7 @@ void ParserImplementation::padWithSingleSpaces(Token *t)
     memcpy(buf+1, t->value, len);
     buf[1+len] = ' ';
     buf[2+len] = 0;
-    t->value = doc->allocate_string(buf, len+3);
+    t->value = actions->allocateCopy(buf, len+3);
 }
 
 int ParserImplementation::findIndent(int p)
@@ -309,7 +309,7 @@ Token ParserImplementation::eatToEndOfText()
         col++;
     }
     size_t len = i-start;
-    char *value = doc->allocate_string(buf+start, len+1);
+    char *value = actions->allocateCopy(buf+start, len+1);
 
     return Token(TokenType::text, value);
 }
@@ -421,7 +421,7 @@ Token ParserImplementation::eatToEndOfQuote(int indent)
     {
         // This is the empty string! ''
         pos += 2;
-        char *value = doc->allocate_string("", 1);
+        char *value = actions->allocateCopy("", 1);
         return Token(TokenType::text, value);
     }
 
@@ -473,7 +473,7 @@ Token ParserImplementation::eatToEndOfQuote(int indent)
     {
         error("empty string must always be two single quotes ''.");
     }
-    char *value = doc->allocate_string(&(buffer[0]), buffer.size()+1);
+    char *value = actions->allocateCopy(&(buffer[0]), buffer.size()+1);
 
     return Token(TokenType::text, value);
 }
@@ -518,7 +518,7 @@ Token ParserImplementation::eatToEndOfLine()
         col++;
     }
     size_t len = p-start;
-    char *value = doc->allocate_string(buf+start, len+1);
+    char *value = actions->allocateCopy(buf+start, len+1);
 
     return Token(TokenType::text, value);
 }
@@ -553,19 +553,19 @@ Token ParserImplementation::eatMultipleCommentLines()
     }
 
     removeIncidentalWhiteSpace(&buffer, first_indent);
-    char *value = doc->allocate_string(&(buffer[0]), buffer.size()+1);
+    char *value = actions->allocateCopy(&(buffer[0]), buffer.size()+1);
 
     return Token(TokenType::text, value);
 }
 
-void ParserImplementation::parseComment(xml_node<> *parent)
+void ParserImplementation::parseComment(void *parent)
 {
     Token val = eatToken();
 
-    parent->append_node(doc->allocate_node(node_comment, NULL, val.value));
+    actions->appendComment(parent, val);
 }
 
-void ParserImplementation::parseNodeContent(xml_node<> *parent)
+void ParserImplementation::parseNodeContent(void *parent)
 {
     while (true)
     {
@@ -584,7 +584,7 @@ void ParserImplementation::parseNodeContent(xml_node<> *parent)
         if (t == TokenType::quote)
         {
             Token val = eatToken();
-            parent->append_node(doc->allocate_node(node_data, NULL, val.value));
+            actions->appendData(parent, val);
         }
         else
         if (t == TokenType::brace_close ||
@@ -600,7 +600,7 @@ void ParserImplementation::parseNodeContent(xml_node<> *parent)
     }
 }
 
-void ParserImplementation::parseAttributes(xml_node<> *parent)
+void ParserImplementation::parseAttributes(void *parent)
 {
     Token po = eatToken();
     assert(po.type == TokenType::paren_open);
@@ -618,7 +618,7 @@ void ParserImplementation::parseAttributes(xml_node<> *parent)
             nt == TokenType::paren_close)
         {
             // This attribute is completed, it has no data.
-            parent->append_attribute(doc->allocate_attribute(t.value, t.value));
+            actions->appendAttribute(parent, t, t);
             continue;
         }
 
@@ -630,7 +630,7 @@ void ParserImplementation::parseAttributes(xml_node<> *parent)
         if (val.type == TokenType::text ||
             val.type == TokenType::quote)
         {
-            parent->append_attribute(doc->allocate_attribute(t.value, val.value));
+            actions->appendAttribute(parent, t, val);
         }
         else
         {
@@ -640,13 +640,12 @@ void ParserImplementation::parseAttributes(xml_node<> *parent)
 
 }
 
-void ParserImplementation::parseNode(xml_node<> *parent)
+void ParserImplementation::parseNode(void *parent)
 {
     Token t = eatToken();
     if (t.type != TokenType::text) error("expected tag");
 
-    xml_node<> *node = doc->allocate_node(node_element, t.value);
-    parent->append_node(node);
+    void *node = actions->appendElement(parent, t);
 
     TokenType tt = peekToken();
 
@@ -672,16 +671,16 @@ void ParserImplementation::parseNode(xml_node<> *parent)
         }
         if (val.value[0] != 0)
         {
-            node->append_node(doc->allocate_node(node_data, NULL, val.value));
+            actions->appendData(node, val);
         }
     }
 }
 
-void parse(const char *filename, char *xmq, xml_document<> *doc, bool generate_html)
+void parse(const char *filename, char *xmq, ActionsXMQ *actions, bool generate_html)
 {
     ParserImplementation parser;
 
-    parser.doc = doc;
+    parser.actions = actions;
     parser.buf = xmq;
     parser.buf_len = strlen(xmq);
     parser.pos = 0;
@@ -693,18 +692,18 @@ void parse(const char *filename, char *xmq, xml_document<> *doc, bool generate_h
     // Handle early comments.
     while (TokenType::comment == parser.peekToken())
     {
-        parser.parseComment(doc);
+        parser.parseComment(actions->root());
     }
 
     if (TokenType::none != parser.peekToken())
     {
-        parser.parseNode(doc);
+        parser.parseNode(actions->root());
     }
 
     // Handle trailing comments.
     while (TokenType::comment == parser.peekToken())
     {
-        parser.parseComment(doc);
+        parser.parseComment(actions->root());
     }
 
     if (TokenType::none != parser.peekToken())

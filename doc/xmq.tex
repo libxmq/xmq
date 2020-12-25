@@ -64,14 +64,14 @@ UTF8[excluding whitespace and ' = ( ) $\lbrace$ $\rbrace$]
 \raisebox{32pt}{node:}
 \begin{minipage}{15cm}
 \begin{rail}
-  TEXT[tag] ( | attributes? ('=' ( TEXT[sugar] | QUOTE[sugar]) | lbrace xmq rbrace ))
+  TEXT[tag] ( | attributes? ('=' ( TEXT | QUOTE) | lbrace xmq rbrace ))
 \end{rail}
 \end{minipage}
 
-\raisebox{44pt}{attributes:}
+\raisebox{45pt}{attributes:}
 \begin{minipage}{15cm}
 \begin{rail}
-'(' (TEXT[attribute] ('=' ( TEXT | QUOTE+ ))? +) ')'
+'(' (TEXT[attribute] ('=' ( TEXT | QUOTE + '+' ))? +) ')'
 \end{rail}
 \end{minipage}
 

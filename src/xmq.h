@@ -25,8 +25,6 @@
 #ifndef XMQ_H
 #define XMQ_H
 
-#include "rapidxml/rapidxml.hpp"
-
 #include <string>
 #include <vector>
 #include <set>
@@ -65,6 +63,6 @@ struct Settings
 
 int main_xml2xmq(Settings *settings);
 int main_xmq2xml(const char *filename, Settings *settings);
-void renderDoc(rapidxml::xml_node<> *node, Settings *provided_settings);
+void renderDoc(void *node, Settings *provided_settings);
 
 #endif

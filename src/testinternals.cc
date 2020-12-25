@@ -119,8 +119,14 @@ void test_incidental()
     buffer.insert(buffer.end(), ex6, ex6+strlen(ex6));
     removeIncidentalWhiteSpace(&buffer, 0);
     checkEquals(&buffer, "   alfa\n  beta\n gamma\ndelta\n");
+    buffer.clear();
 
-
+    /*
+    const char *ex7 = "     alfa\n\n     beta\n     gamma\n     delta\n";
+    buffer.insert(buffer.end(), ex7, ex7+strlen(ex7));
+    removeIncidentalWhiteSpace(&buffer, 0);
+    checkEquals(&buffer, "alfa\n\nbeta\ngamma\ndelta\n");
+    buffer.clear();*/
 }
 
 int main(int argc, char **argv)

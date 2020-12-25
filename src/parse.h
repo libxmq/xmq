@@ -56,6 +56,16 @@ struct Token
     }
 };
 
-void parse(const char *filename, char *xmq, rapidxml::xml_document<> *doc, bool generate_html);
+struct ActionsXMQ
+{
+    virtual void *root() = 0;
+    virtual char *allocateCopy(const char *content, size_t len) = 0;
+    virtual void *appendElement(void *parent, Token t) = 0;
+    virtual void appendComment(void *parent, Token t) = 0;
+    virtual void appendData(void *parent, Token t) = 0;
+    virtual void appendAttribute(void *parent, Token key, Token value) = 0;
+};
+
+void parse(const char *filename, char *xmq, ActionsXMQ *actions, bool generate_html);
 
 #endif
