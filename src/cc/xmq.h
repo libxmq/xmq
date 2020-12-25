@@ -41,13 +41,9 @@ enum class RenderType { plain, terminal, html, tex };
 // Xmq can be converted between the selected or auto tree type.
 enum class TreeType { auto_detect, xml, html };
 
-struct Settings
+class Settings
 {
-    // You can specify a filename for xml2xmq and it will be loaded
-    // automatically if in is NULL.
-    // For xmq2xml a filename is necessary when there are multiple root nodes
-    // in the xmq file/buffer. Since xml only allows for a single root node,
-    // for such xmq files, an implicit root node with the name of the file will be created.
+public:
     std::string filename;
     std::vector<char> *in;
     std::vector<char> *out;
@@ -59,8 +55,6 @@ struct Settings
     RenderType output {};
     // Set to true to produce colors. Color can never be enabled with the plain output type.
     bool use_color {};
-    // Set to true to allow parsing and generation of void elements (br,img,input etc).
-    bool html {};
     // Do not print any xml-declaration <? ?> nor doctype <!DOCTYPE html>.
     bool no_declaration {};
     // When converting from xml to xmq. Preserve whitespace as much as possible.

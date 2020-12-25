@@ -44,7 +44,6 @@ int main(int argc, char **argv)
     // Display using color of the output is a terminal.
     Settings settings;
     settings.use_color = isatty(1);
-    settings.compress = false;
 
     if (isatty(1))
     {
@@ -108,7 +107,7 @@ int main(int argc, char **argv)
         }
         if (argc >= 2 && !strcmp(argv[i], "--html"))
         {
-            settings.html = true;
+            settings.tree_type = TreeType::html;
             i++;
             argc--;
             found = true;
@@ -204,9 +203,16 @@ int main(int argc, char **argv)
     {
         settings.in = &in;
         settings.out = &out;
-        if (!settings.html)
+        if (settings.tree_type == TreeType::auto_detect)
         {
-            settings.html = isHtml(in);
+            if (isHtml(in))
+            {
+                settings.tree_type = TreeType::html;
+            }
+            else
+            {
+                settings.tree_type = TreeType::xml;
+            }
         }
         int rc = main_xml2xmq(&settings);
         if (rc == 0)
@@ -220,9 +226,16 @@ int main(int argc, char **argv)
     {
         settings.in = &in;
         settings.out = &out;
-        if (!settings.html)
+        if (settings.tree_type == TreeType::auto_detect)
         {
-            settings.html = firstWordIsHtml(in);
+            if (firstWordIsHtml(in))
+            {
+                settings.tree_type = TreeType::html;
+            }
+            else
+            {
+                settings.tree_type = TreeType::xml;
+            }
         }
         int rc = main_xmq2xml(file, &settings);
         if (rc == 0)

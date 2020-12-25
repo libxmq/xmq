@@ -876,7 +876,7 @@ int xmq::main_xml2xmq(Settings *provided_settings)
         // This looks kind of silly, doesnt it? Is there another way to configure the rapidxml parser?
         if (provided_settings->preserve_ws)
         {
-            if (provided_settings->html)
+            if (provided_settings->tree_type == TreeType::html)
             {
                 doc.parse<parse_void_elements|parse_doctype_node|parse_comment_nodes|parse_no_string_terminators>(&(*buffer)[0]);
             }
@@ -887,7 +887,7 @@ int xmq::main_xml2xmq(Settings *provided_settings)
         }
         else
         {
-            if (provided_settings->html)
+            if (provided_settings->tree_type == TreeType::html)
             {
                 doc.parse<parse_void_elements|parse_doctype_node|parse_comment_nodes|parse_trim_whitespace|parse_no_string_terminators>(&(*buffer)[0]);
             }
