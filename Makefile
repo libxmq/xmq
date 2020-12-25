@@ -70,7 +70,7 @@ CXXFLAGS := $(DEBUG_FLAGS) -fPIC -fmessage-length=0 -std=c++11 -Wall -Wno-unused
 
 #	$(CXX) $(CXXFLAGS) $< -c -E > $@.src
 
-$(BUILD)/%.o: src/%.cc $(wildcard src/%.h)
+$(BUILD)/%.o: src/cc/%.cc $(wildcard src/%.h)
 	$(CXX) $(CXXFLAGS) $< -MMD -c -o $@
 
 XMQ_OBJS:=\
