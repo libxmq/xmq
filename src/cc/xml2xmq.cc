@@ -789,7 +789,7 @@ void renderDoc(void *rroot, Settings *provided_settings)
     else
     {
         out_buffer = provided_settings->out;
-        if (provided_settings->output == OutputType::html)
+        if (provided_settings->output == RenderType::html)
         {
             output = outputTextHtml;
         }
@@ -803,11 +803,11 @@ void renderDoc(void *rroot, Settings *provided_settings)
 
     if (provided_settings->use_color)
     {
-        if (provided_settings->output == OutputType::terminal)
+        if (provided_settings->output == RenderType::terminal)
         {
             useAnsiColors();
         }
-        if (provided_settings->output == OutputType::html)
+        if (provided_settings->output == RenderType::html)
         {
             useHtmlColors();
         }

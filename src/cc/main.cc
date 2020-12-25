@@ -47,11 +47,11 @@ int main(int argc, char **argv)
 
     if (isatty(1))
     {
-        settings.output = OutputType::terminal;
+        settings.output = RenderType::terminal;
     }
     else
     {
-        settings.output = OutputType::plain;
+        settings.output = RenderType::plain;
     }
 
     int i = 1;
@@ -61,9 +61,9 @@ int main(int argc, char **argv)
         if (argc >= 2 && !strcmp(argv[i], "--color"))
         {
             settings.use_color = true;
-            if (settings.output == OutputType::plain)
+            if (settings.output == RenderType::plain)
             {
-                settings.output = OutputType::terminal;
+                settings.output = RenderType::terminal;
             }
 
             i++;
@@ -79,28 +79,28 @@ int main(int argc, char **argv)
         }
         if (argc >= 2 && !strcmp(argv[i], "--output=plain"))
         {
-            settings.output = OutputType::plain;
+            settings.output = RenderType::plain;
             i++;
             argc--;
             found = true;
         }
         if (argc >= 2 && !strcmp(argv[i], "--output=terminal"))
         {
-            settings.output = OutputType::terminal;
+            settings.output = RenderType::terminal;
             i++;
             argc--;
             found = true;
         }
         if (argc >= 2 && !strcmp(argv[i], "--output=html"))
         {
-            settings.output = OutputType::html;
+            settings.output = RenderType::html;
             i++;
             argc--;
             found = true;
         }
         if (argc >= 2 && !strcmp(argv[i], "--output=tex"))
         {
-            settings.output = OutputType::tex;
+            settings.output = RenderType::tex;
             i++;
             argc--;
             found = true;

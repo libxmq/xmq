@@ -22,10 +22,11 @@
  SOFTWARE.
 */
 
-#include "parse.h"
+#include "xmq.h"
 #include "util.h"
 #include <string.h>
 #include <stdarg.h>
+#include <assert.h>
 
 using namespace std;
 
@@ -58,9 +59,10 @@ struct ParserImplementation
     Token eatToEndOfText();
     Token eatToEndOfQuote(int indent);
 
+    // Syntax
+    void parseXMQ(void *parent);
     void parseComment(void *parent);
     void parseNode(void *parent);
-    void parseNodeContent(void *parent);
     void parseAttributes(void *parent);
 
     size_t findDepth(size_t p, int *depth);
@@ -565,7 +567,7 @@ void ParserImplementation::parseComment(void *parent)
     actions->appendComment(parent, val);
 }
 
-void ParserImplementation::parseNodeContent(void *parent)
+void ParserImplementation::parseXMQ(void *parent)
 {
     while (true)
     {
@@ -587,15 +589,8 @@ void ParserImplementation::parseNodeContent(void *parent)
             actions->appendData(parent, val);
         }
         else
-        if (t == TokenType::brace_close ||
-            t == TokenType::none)
         {
-            eatToken();
             break;
-        }
-        else
-        {
-            error("unexpected token");
         }
     }
 }
@@ -658,7 +653,16 @@ void ParserImplementation::parseNode(void *parent)
     if (tt == TokenType::brace_open)
     {
         eatToken();
-        parseNodeContent(node);
+        parseXMQ(node);
+        tt = peekToken();
+        if (tt == TokenType::brace_close)
+        {
+            eatToken();
+        }
+        else
+        {
+            error("expecte brace close");
+        }
     }
     else if (tt == TokenType::equals)
     {
@@ -689,26 +693,5 @@ void parse(const char *filename, char *xmq, ActionsXMQ *actions, bool generate_h
     parser.file = filename;
     parser.generate_html = generate_html;
 
-    // Handle early comments.
-    while (TokenType::comment == parser.peekToken())
-    {
-        parser.parseComment(actions->root());
-    }
-
-    if (TokenType::none != parser.peekToken())
-    {
-        parser.parseNode(actions->root());
-    }
-
-    // Handle trailing comments.
-    while (TokenType::comment == parser.peekToken())
-    {
-        parser.parseComment(actions->root());
-    }
-
-    if (TokenType::none != parser.peekToken())
-    {
-        printf("Syntax error, no more data is allowed after last closing brace.\n");
-        //exit(1);
-    }
+    parser.parseXMQ(actions->root());
 }
