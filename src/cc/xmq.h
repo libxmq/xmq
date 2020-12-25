@@ -29,6 +29,8 @@
 #include <vector>
 #include <set>
 
+namespace xmq
+{
 // The render type is how the output from the xmq command is presented.
 // Plain is the exact xmq/xml/html input/output.
 // Terminal means that it will inject ansi color sequences.
@@ -90,11 +92,6 @@ struct Token
 
     TokenType type;
     const char *value; // Zero terminated string allocated by rapid_xml allocate_string.
-
-    void print(const char *pre, const char *post)
-    {
-        printf("%s%s%s", pre, value, post);
-    }
 };
 
 struct ActionsXMQ
@@ -112,5 +109,7 @@ int main_xmq2xml(const char *filename, Settings *settings);
 void renderDoc(void *node, Settings *provided_settings);
 
 void parse(const char *filename, char *xmq, ActionsXMQ *actions, bool generate_html);
+
+}
 
 #endif

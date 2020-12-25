@@ -37,6 +37,7 @@
 
 using namespace std;
 using namespace rapidxml;
+using namespace xmq;
 
 #define VERSION "0.1"
 
@@ -82,7 +83,7 @@ struct ActionsRapidXML : ActionsXMQ
 
 };
 
-int main_xmq2xml(const char *filename, Settings *provided_settings)
+int xmq::main_xmq2xml(const char *filename, Settings *provided_settings)
 {
     vector<char> *buffer = provided_settings->in;
     xml_document<> doc;

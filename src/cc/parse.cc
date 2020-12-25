@@ -29,6 +29,7 @@
 #include <assert.h>
 
 using namespace std;
+using namespace xmq;
 
 bool isWhiteSpace(char c);
 
@@ -680,7 +681,7 @@ void ParserImplementation::parseNode(void *parent)
     }
 }
 
-void parse(const char *filename, char *xmq, ActionsXMQ *actions, bool generate_html)
+void xmq::parse(const char *filename, char *xmq, ActionsXMQ *actions, bool generate_html)
 {
     ParserImplementation parser;
 

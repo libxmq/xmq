@@ -33,6 +33,7 @@
 #define VERSION "0.1"
 
 using namespace std;
+using namespace xmq;
 
 int main(int argc, char **argv)
 {

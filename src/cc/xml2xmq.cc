@@ -37,6 +37,7 @@
 
 using namespace rapidxml;
 using namespace std;
+using namespace xmq;
 
 StringCount string_count_;
 int num_prefixes_ {};
@@ -44,7 +45,7 @@ map<string,int> prefixes_;
 
 size_t attr_max_width = 80;
 
-Settings *settings_;
+xmq::Settings *settings_;
 
 const char *green;
 const char *yellow;
@@ -777,7 +778,7 @@ void findLineAndColumn(const char *from, const char *where, int *line, int *col)
     }
 }
 
-void renderDoc(void *rroot, Settings *provided_settings)
+void xmq::renderDoc(void *rroot, xmq::Settings *provided_settings)
 {
     xml_node<> *root = (xml_node<>*)rroot;
     settings_ = provided_settings;
@@ -862,7 +863,7 @@ void renderDoc(void *rroot, Settings *provided_settings)
 
 #define VERSION "0.1"
 
-int main_xml2xmq(Settings *provided_settings)
+int xmq::main_xml2xmq(Settings *provided_settings)
 {
     // Parsing is destructive, store a copy for error messages here.
     vector<char> original = *provided_settings->in;
@@ -930,6 +931,6 @@ int main_xml2xmq(Settings *provided_settings)
         }
     }
 
-    renderDoc(root, provided_settings);
+    xmq::renderDoc(root, provided_settings);
     return 0;
 }
