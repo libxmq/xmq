@@ -90,6 +90,10 @@ namespace xmq
             if (l != st.l) return false;
             return !strncmp(st.s, s, l);
         }
+        bool equals(const char *st)
+        {
+            return !strncmp(st, s, l);
+        }
 
         str() : s(""), l(0) {}
     };
@@ -106,6 +110,17 @@ namespace xmq
     {
         virtual void *root() = 0;
         virtual void *firstNode(void *node) = 0;
+        virtual void *nextSibling(void *node) = 0;
+        virtual bool hasAttributes(void *node) = 0;
+        virtual void *firstAttribute(void *node) = 0;
+        virtual void *nextAttribute(void *attr) = 0;
+        virtual void *parent(void *node) = 0;
+        virtual bool isNodeData(void *node) = 0;
+        virtual bool isNodeComment(void *node) = 0;
+        virtual bool isNodeCData(void *node) = 0;
+        virtual bool isNodeDocType(void *node) = 0;
+        virtual void loadName(void *node, xmq::str *name) = 0;
+        virtual void loadValue(void *node, xmq::str *data) = 0;
     };
 
     struct ParseActions
