@@ -612,10 +612,10 @@ void ParserImplementation::parseNode(void *parent)
     }
 }
 
-void xmq::parseXMQ(const char *filename, char *xmq, ParseActions *parse_actions)
+void xmq::parseXMQ(ParseActions *actions, const char *filename, char *xmq)
 {
     ParserImplementation parser;
 
-    parser.setup(parse_actions, filename, xmq);
-    parser.parseXMQ(parse_actions->root());
+    parser.setup(actions, filename, xmq);
+    parser.parseXMQ(actions->root());
 }

@@ -26,6 +26,8 @@
 #include "util.h"
 #include "xmq.h"
 #include "xmq_implementation.h"
+#include "xmq_rapidxml.h"
+
 #include "rapidxml/rapidxml.hpp"
 
 #include <string.h>
@@ -39,7 +41,7 @@ using namespace std;
 using namespace rapidxml;
 
 bool detectTreeType(xmq::Settings *settings);
-int main_xml2xmq(xmq::Settings *settings);
+int xml2xmq(xmq::Settings *settings);
 
 int main(int argc, char **argv)
 {
@@ -65,7 +67,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        rc = main_xml2xmq(&settings);
+        rc = xml2xmq(&settings);
     }
 
     if (rc == 0)
@@ -184,7 +186,7 @@ void find_all_prefixes(xml_node<> *i, StringCount &c)
     }
 }
 
-int main_xml2xmq(xmq::Settings *settings)
+int xml2xmq(xmq::Settings *settings)
 {
     vector<char> *buffer = settings->in;
     xml_document<> doc;
@@ -248,6 +250,8 @@ int main_xml2xmq(xmq::Settings *settings)
         }
     }
 
-    xmq::renderXMQ(root, settings);
+    RenderActionsRapidXML ractions;
+    ractions.setRoot(root);
+    xmq::renderXMQ(&ractions, settings);
     return 0;
 }

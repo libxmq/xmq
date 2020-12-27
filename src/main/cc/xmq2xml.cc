@@ -35,59 +35,15 @@
 #include "util.h"
 #include "xmq.h"
 #include "xmq_implementation.h"
+#include "xmq_rapidxml.h"
 
 using namespace std;
-using namespace rapidxml;
 using namespace xmq;
-
-#define VERSION "0.1"
-
-struct ParseActionsRapidXML : ParseActions
-{
-    xml_document<> *doc;
-
-    void *root()
-    {
-        return doc;
-    }
-
-    char *allocateCopy(const char *content, size_t len)
-    {
-        return doc->allocate_string(content, len);
-    }
-
-    void *appendElement(void *parent, Token t)
-    {
-        xml_node<> *p = (xml_node<>*)parent;
-        xml_node<> *n = doc->allocate_node(node_element, t.value);
-        p->append_node(n);
-        return n;
-    }
-
-    void appendComment(void *parent, Token t)
-    {
-        xml_node<> *p = (xml_node<>*)parent;
-        p->append_node(doc->allocate_node(node_comment, NULL, t.value));
-    }
-
-    void appendData(void *parent, Token t)
-    {
-        xml_node<> *p = (xml_node<>*)parent;
-        p->append_node(doc->allocate_node(node_data, NULL, t.value));
-    }
-
-    void appendAttribute(void *parent, Token key, Token val)
-    {
-        xml_node<> *p = (xml_node<>*)parent;
-        p->append_attribute(doc->allocate_attribute(key.value, val.value));
-    }
-
-};
 
 int xmq::main_xmq2xml(Settings *settings)
 {
     vector<char> *buffer = settings->in;
-    xml_document<> doc;
+    rapidxml::xml_document<> doc;
     bool generate_html {};
 
     if (xmq_implementation::firstWordIsHtml(*buffer))
@@ -99,32 +55,34 @@ int xmq::main_xmq2xml(Settings *settings)
     {
         if (generate_html)
         {
-            xml_node<> *node = doc.allocate_node(node_doctype, "!DOCTYPE", "html");
+            rapidxml::xml_node<> *node = doc.allocate_node(rapidxml::node_doctype, "!DOCTYPE", "html");
             doc.append_node(node);
         }
         else
         {
-            xml_node<> *node = doc.allocate_node(node_declaration, "?xml");
+            rapidxml::xml_node<> *node = doc.allocate_node(rapidxml::node_declaration, "?xml");
             doc.append_node(node);
             node->append_attribute(doc.allocate_attribute("version", "1.0"));
             node->append_attribute(doc.allocate_attribute("encoding", "UTF-8"));
         }
     }
 
-    ParseActionsRapidXML actions;
-    actions.doc = &doc;
+    ParseActionsRapidXML pactions;
+    pactions.doc = &doc;
 
-    parseXMQ(settings->filename.c_str(), &(*buffer)[0], &actions);
+    parseXMQ(&pactions, settings->filename.c_str(), &(*buffer)[0]);
 
     if (settings->view)
     {
-        xml_node<> *node = &doc;
+        rapidxml::xml_node<> *node = &doc;
         node = node->first_node();
-        if (node->type() == node_doctype || node->type() == node_declaration)
+        if (node->type() == rapidxml::node_doctype || node->type() == rapidxml::node_declaration)
         {
             node = node->next_sibling();
         }
-        renderXMQ(node, settings);
+        RenderActionsRapidXML ractions;
+        ractions.setRoot(node);
+        renderXMQ(&ractions, settings);
     }
     else
     {

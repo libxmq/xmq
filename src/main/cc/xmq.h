@@ -104,6 +104,7 @@ namespace xmq
 
     struct RenderActions
     {
+        virtual void *root() = 0;
         virtual void *firstNode(void *node) = 0;
     };
 
@@ -119,8 +120,8 @@ namespace xmq
 
     int main_xmq2xml(Settings *settings);
 
-    void renderXMQ(void *node, Settings *provided_settings);
-    void parseXMQ(const char *filename, char *xmq, ParseActions *actions);
+    void renderXMQ(RenderActions *actions, Settings *settings);
+    void parseXMQ(ParseActions *actions, const char *filename, char *xmq);
 }
 
 #endif

@@ -22,29 +22,19 @@
  SOFTWARE.
 */
 
-#include <string.h>
-#include <stdio.h>
-#include <iostream>
-#include <fstream>
-#include <map>
-#include <set>
 #include <stdarg.h>
-#include <vector>
 #include "rapidxml/rapidxml.hpp"
 
-#include "util.h"
 #include "xmq.h"
 #include "xmq_implementation.h"
 
 using namespace rapidxml;
 using namespace std;
-using namespace xmq;
-using namespace xmq_implementation;
 
 struct RenderImplementation
 {
-    RenderImplementation(xmq::Settings *s) : settings_(s) {}
-    void render(xml_node<> *root);
+    RenderImplementation(xmq::RenderActions *ra, xmq::Settings *s) : settings_(s), actions(ra) {}
+    void render();
 
     xmq::Settings *settings_;
     const char *green;
@@ -56,36 +46,36 @@ struct RenderImplementation
     const char *reset_color;
     vector<char> *out_buffer;
 
-    RenderActions *render_actions {};
+    xmq::RenderActions *actions {};
 
     int output(const char* fmt, ...);
     int outputNoEscape(const char* fmt, ...);
     void useAnsiColors();
     void useHtmlColors();
     bool escapeHtml(char c, string *escape);
-    void printTag(str tag);
-    void printKeyTag(str tag);
-    void printAttributeKey(str key);
-    bool containsNewlines(str value);
+    void printTag(xmq::str tag);
+    void printKeyTag(xmq::str tag);
+    void printAttributeKey(xmq::str key);
+    bool containsNewlines(xmq::str value);
     void printIndent(int i, bool newline=true);
-    size_t trimWhiteSpace(str *v);
-    void printComment(str comment, int indent);
-    void printEscaped(str value, bool is_attribute, int indent, bool must_quote);
+    size_t trimWhiteSpace(xmq::str *v);
+    void printComment(xmq::str comment, int indent);
+    void printEscaped(xmq::str value, bool is_attribute, int indent, bool must_quote);
     bool nodeHasNoChildren(xml_node<> *node);
-    bool nodeHasSingleDataChild(xml_node<> *node, str *data);
+    bool nodeHasSingleDataChild(xml_node<> *node, xmq::str *data);
     void printAlign(int i);
     void printAttributes(xml_node<> *node, int indent);
     void printAlignedAttribute(xml_attribute<> *i,
-                               str value,
+                               xmq::str value,
                                int indent,
                                int align,
                                bool do_indent);
     void printAligned(xml_node<> *i,
-                      str value,
+                      xmq::str value,
                       int indent,
                       int align,
                       bool do_indent);
-    void renderNode(xml_node<> *i, int indent, bool newline, vector<pair<xml_node<>*,str>> *lines, size_t *align);
+    void renderNode(xml_node<> *i, int indent, bool newline, vector<pair<xml_node<>*,xmq::str>> *lines, size_t *align);
     void render(xml_node<> *node, int indent, bool newline = true);
 };
 
@@ -132,21 +122,21 @@ bool RenderImplementation::escapeHtml(char c, string *escape)
     return false;
 }
 
-void RenderImplementation::printTag(str tag)
+void RenderImplementation::printTag(xmq::str tag)
 {
     if (settings_->use_color) outputNoEscape(dark_blue);
     output("%.*s", tag.l, tag.s);
     if (settings_->use_color) outputNoEscape(reset_color);
 }
 
-void RenderImplementation::printKeyTag(str tag)
+void RenderImplementation::printKeyTag(xmq::str tag)
 {
     if (settings_->use_color) outputNoEscape(green);
     output("%.*s", tag.l, tag.s);
     if (settings_->use_color) outputNoEscape(reset_color);
 }
 
-void RenderImplementation::printAttributeKey(str key)
+void RenderImplementation::printAttributeKey(xmq::str key)
 {
     if (settings_->use_color) outputNoEscape(green);
     output("%.*s", key.l, key.s);
@@ -154,7 +144,7 @@ void RenderImplementation::printAttributeKey(str key)
 }
 
 
-bool RenderImplementation::containsNewlines(str value)
+bool RenderImplementation::containsNewlines(xmq::str value)
 {
     if (value.l == 0) return false;
     const char *s = value.s;
@@ -174,7 +164,7 @@ void RenderImplementation::printIndent(int i, bool newline)
     while (--i >= 0) output(" ");
 }
 
-size_t RenderImplementation::trimWhiteSpace(str *v)
+size_t RenderImplementation::trimWhiteSpace(xmq::str *v)
 {
     const char *data = v->s;
     size_t len = v->l;
@@ -199,7 +189,7 @@ size_t RenderImplementation::trimWhiteSpace(str *v)
     return len;
 }
 
-void RenderImplementation::printComment(str comment, int indent)
+void RenderImplementation::printComment(xmq::str comment, int indent)
 {
     const char *c = comment.s;
     size_t len = comment.l;
@@ -231,7 +221,7 @@ void RenderImplementation::printComment(str comment, int indent)
             else if (i == len-1)
             {
                 printIndent(indent);
-                str pp(p, n);
+                xmq::str pp(p, n);
                 int nn = trimWhiteSpace(&pp);
                 if (settings_->use_color) outputNoEscape(yellow);
                 output("   %.*s */", (int)nn, pp);
@@ -239,7 +229,7 @@ void RenderImplementation::printComment(str comment, int indent)
             else
             {
                 printIndent(indent);
-                str pp(p, n);
+                xmq::str pp(p, n);
                 size_t nn = trimWhiteSpace(&pp);
                 if (settings_->use_color) outputNoEscape(yellow);
                 output("   %.*s", (int)nn, pp);
@@ -252,7 +242,7 @@ void RenderImplementation::printComment(str comment, int indent)
 
 }
 
-void RenderImplementation::printEscaped(str value, bool is_attribute, int indent, bool must_quote)
+void RenderImplementation::printEscaped(xmq::str value, bool is_attribute, int indent, bool must_quote)
 {
     const char *s = value.s;
     const char *end = s+value.l;
@@ -266,7 +256,7 @@ void RenderImplementation::printEscaped(str value, bool is_attribute, int indent
     bool add_end_newline = false;
 
     // Check how many (if any) single quotes are needed to protect the content properly.
-    int escape_depth = escapingDepth(value, &add_start_newline, &add_end_newline, is_attribute);
+    int escape_depth = xmq_implementation::escapingDepth(value, &add_start_newline, &add_end_newline, is_attribute);
 
     if (escape_depth > 0)
     {
@@ -336,7 +326,7 @@ void RenderImplementation::printEscaped(str value, bool is_attribute, int indent
 */
 bool RenderImplementation::nodeHasNoChildren(xml_node<> *node)
 {
-    return node->first_node() == NULL;
+    return actions->firstNode(node) == NULL;
 }
 
 /*
@@ -344,7 +334,7 @@ bool RenderImplementation::nodeHasNoChildren(xml_node<> *node)
     Such nodes should be rendered as node = data
 */
 bool RenderImplementation::nodeHasSingleDataChild(xml_node<> *node,
-                                                  str *data)
+                                                  xmq::str *data)
 {
     data->s = "";
     data->l = 0;
@@ -380,7 +370,7 @@ void RenderImplementation::printAttributes(xml_node<> *node,
                                            int indent)
 {
     if (node->first_attribute() == NULL) return;
-    vector<pair<xml_attribute<>*,str>> lines;
+    vector<pair<xml_attribute<>*,xmq::str>> lines;
     size_t align = 0;
 
     xml_attribute<> *i = node->first_attribute();
@@ -394,7 +384,7 @@ void RenderImplementation::printAttributes(xml_node<> *node,
         if (settings_->excludes.count(checka) == 0 &&
             settings_->excludes.count(checkb) == 0)
         {
-            lines.push_back( { i, str("",0) });
+            lines.push_back( { i, xmq::str("",0) });
             size_t len = key.size();
             if (len > align) {
                 align = len;
@@ -410,7 +400,7 @@ void RenderImplementation::printAttributes(xml_node<> *node,
     while (i)
     {
         string key = string(i->name(), i->name_size());
-        str value = str(i->value(), i->value_size());
+        xmq::str value = xmq::str(i->value(), i->value_size());
 
         string checka = string("@")+key;
         string checkb = string(node->name())+"@"+key;
@@ -426,7 +416,7 @@ void RenderImplementation::printAttributes(xml_node<> *node,
 }
 
 void RenderImplementation::printAligned(xml_node<> *i,
-                                        str value,
+                                        xmq::str value,
                                         int indent,
                                         int align,
                                         bool do_indent)
@@ -446,12 +436,12 @@ void RenderImplementation::printAligned(xml_node<> *i,
     if (i->type() == node_cdata)
     {
         // CData becomes just quoted content. The cdata node is not preserved.
-        str cdata(i->value(), i->value_size());
+        xmq::str cdata(i->value(), i->value_size());
         printEscaped(cdata, false, indent, true);
     }
     else
     {
-        str key(i->name(), i->name_size());
+        xmq::str key(i->name(), i->name_size());
         printKeyTag(key);
         if (hasAttributes(i))
         {
@@ -478,13 +468,13 @@ void RenderImplementation::printAligned(xml_node<> *i,
 }
 
 void RenderImplementation::printAlignedAttribute(xml_attribute<> *i,
-                                                 str value,
+                                                 xmq::str value,
                                                  int indent,
                                                  int align,
                                                  bool do_indent)
 {
     if (do_indent) printIndent(indent);
-    str key(i->name(), i->name_size());
+    xmq::str key(i->name(), i->name_size());
     printAttributeKey(key);
 
     // Print the value if it exists, and is different
@@ -509,10 +499,10 @@ void RenderImplementation::printAlignedAttribute(xml_attribute<> *i,
     }
 }
 
-void RenderImplementation::renderNode(xml_node<> *i, int indent, bool newline, vector<pair<xml_node<>*,str>> *lines, size_t *align)
+void RenderImplementation::renderNode(xml_node<> *i, int indent, bool newline, vector<pair<xml_node<>*,xmq::str>> *lines, size_t *align)
 {
     string key = string(i->name(), i->name_size());
-    str value = str(i->value(), i->value_size());
+    xmq::str value = xmq::str(i->value(), i->value_size());
     if (i->type() == node_data || i->type() == node_comment)
     {
         lines->push_back( { i, value });
@@ -520,7 +510,7 @@ void RenderImplementation::renderNode(xml_node<> *i, int indent, bool newline, v
     else
     if (nodeHasNoChildren(i))
     {
-        lines->push_back( { i, str("",0) });
+        lines->push_back( { i, xmq::str("",0) });
     }
     else
     if (nodeHasSingleDataChild(i, &value))
@@ -553,16 +543,16 @@ void RenderImplementation::render(xml_node<> *node, int indent, bool newline)
 {
     assert(node != NULL);
     size_t align = 0;
-    vector<pair<xml_node<>*,str>> lines;
+    vector<pair<xml_node<>*,xmq::str>> lines;
 
     if (node->type() == node_comment)
     {
-        str value(node->value(), node->value_size());
+        xmq::str value(node->value(), node->value_size());
         printAligned(node, value, indent, 0, newline);
         return;
     }
     printIndent(indent, newline);
-    str name(node->name(), node->name_size());
+    xmq::str name(node->name(), node->name_size());
     printTag(name);
     if (hasAttributes(node))
     {
@@ -591,7 +581,7 @@ void RenderImplementation::render(xml_node<> *node, int indent, bool newline)
 
 int RenderImplementation::output(const char* fmt, ...)
 {
-    if (settings_->output == RenderType::html)
+    if (settings_->output == xmq::RenderType::html)
     {
         va_list args;
         char buffer[65536];
@@ -637,17 +627,18 @@ int RenderImplementation::outputNoEscape(const char* fmt, ...)
     return 0;
 }
 
-void RenderImplementation::render(xml_node<> *root)
+void RenderImplementation::render()
 {
+    xml_node<> *root = (xml_node<>*)actions->root();
     out_buffer = settings_->out;
 
     if (settings_->use_color)
     {
-        if (settings_->output == RenderType::terminal)
+        if (settings_->output == xmq::RenderType::terminal)
         {
             useAnsiColors();
         }
-        if (settings_->output == RenderType::html)
+        if (settings_->output == xmq::RenderType::html)
         {
             useHtmlColors();
         }
@@ -669,11 +660,11 @@ void RenderImplementation::render(xml_node<> *root)
             root = root->next_sibling();
             continue;
         }
-        str tmp;
+        xmq::str tmp;
         // Handle the special cases, single empty node and single node with data content.
         if (nodeHasSingleDataChild(root, &tmp) || nodeHasNoChildren(root))
         {
-            vector<pair<xml_node<>*,str>> lines;
+            vector<pair<xml_node<>*,xmq::str>> lines;
             size_t align = 0;
             renderNode(root, 0, false, &lines, &align);
             // Flush any accumulated key:value lines with proper alignment.
@@ -700,9 +691,8 @@ void RenderImplementation::render(xml_node<> *root)
     output("\n");
 }
 
-void xmq::renderXMQ(void *rroot, xmq::Settings *settings)
+void xmq::renderXMQ(RenderActions *actions, xmq::Settings *settings)
 {
-    xml_node<> *root = (xml_node<>*)rroot;
-    RenderImplementation ri(settings);
-    ri.render(root);
+    RenderImplementation ri(actions, settings);
+    ri.render();
 }
