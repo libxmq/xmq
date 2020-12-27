@@ -57,6 +57,12 @@ BOTH xml_attr.xmq xml_attr.xml
 # Translates into the same single attribute for html.
 BOTH html_attr.xmq html_attr.html
 
+# When generating html, do not self-close non-void tags.
+BOTH html_voids.xmq html_voids.html
+
+# Unnecessary extras are allowed.
+RIGHT html_voids_extra.xmq html_voids.html
+
 # Example feature.xml
 BOTH feature.xmq feature.xml
 

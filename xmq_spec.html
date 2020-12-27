@@ -339,6 +339,45 @@ info {
   &lt;/body&gt;
 &lt;/html&gt;
 </pre></div>
+<div class="info"> When generating html, do not self-close non-void tags.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">html</span>(<span style="color:#00aa00">lang</span> = <span style="color:#aa0000">de</span>)
+{
+    <span style="color:#00aa00">head</span>
+    <span style="color:#000088">body</span> {
+        <span style="color:#00aa00">br</span>
+        <span style="color:#00aa00">img</span>(<span style="color:#00aa00">src</span> = <span style="color:#aa0000">abc.png</span>
+            <span style="color:#00aa00">alt</span> = <span style="color:#aa0000">zapf</span>)
+        <span style="color:#00aa00">input</span>(<span style="color:#00aa00">required</span>)
+        <span style="color:#00aa00">p</span>
+        <span style="color:#00aa00">hr</span>
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;html lang="de"&gt;
+  &lt;head&gt;&lt;/head&gt;
+  &lt;body&gt;
+    &lt;br/&gt;
+    &lt;img src="abc.png" alt="zapf"/&gt;
+    &lt;input required/&gt;
+    &lt;p&gt;&lt;/p&gt;
+    &lt;hr/&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</pre></div>
+<div class="info"> Unnecessary extras are allowed.</div>
+<div class="row">
+<pre class="box">
+html(lang=de) {
+	head{}
+	body {
+	br()
+	img(src=abc.png alt=zapf)
+	input(required)
+	p()
+	hr()}
+}</pre><pre class="spacing">↗</pre></div>
 <div class="info"> Example feature.xml</div>
 <div class="row">
 <pre class="box">

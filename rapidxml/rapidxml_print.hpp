@@ -30,7 +30,6 @@ namespace rapidxml
     //! \cond internal
     namespace internal
     {
-
         ///////////////////////////////////////////////////////////////////////////
         // Internal character operations
 
@@ -354,6 +353,53 @@ namespace rapidxml
             return out;
         }
 
+        template<class Ch>Ch locase(const Ch c)
+        {
+            if (c >= 65 && c <= 90) return c+32;
+            return c;
+        }
+
+        template<class Ch>bool is_equal(const Ch *tag, size_t len, Ch *&text)
+        {
+            size_t i;
+            for (i=0; i<len; ++i)
+            {
+                if (locase(text[i]) != tag[i]) {
+                    return false;
+                }
+            }
+            return true;
+            /*
+            if (text[i] == ' ' || text[i] == '>') {
+                return true;
+            }
+            return false;*/
+        }
+
+#define EQ(s, t) is_equal(s, strlen(s), t)
+
+        template<class Ch>bool is_void_element(Ch *text)
+        {
+            // area, base, br, col, command, embed, hr, img, input, keygen, link, meta, param, source, track, wbr
+            if (EQ("area", text)) return true;
+            if (EQ("base", text)) return true;
+            if (EQ("br", text)) return true;
+            if (EQ("col", text)) return true;
+            if (EQ("command", text)) return true;
+            if (EQ("embed", text)) return true;
+            if (EQ("hr", text)) return true;
+            if (EQ("img", text)) return true;
+            if (EQ("input", text)) return true;
+            if (EQ("keygen", text)) return true;
+            if (EQ("link", text)) return true;
+            if (EQ("meta", text)) return true;
+            if (EQ("param", text)) return true;
+            if (EQ("source", text)) return true;
+            if (EQ("track", text)) return true;
+            if (EQ("wbr", text)) return true;
+            return false;
+        }
+
         // Print element node
         template<class OutIt, class Ch>
         inline OutIt print_element_node(OutIt out, const xml_node<Ch> *node, int flags, int indent, const xml_node<Ch> *prev)
@@ -377,9 +423,29 @@ namespace rapidxml
             // If node is childless
             if (node->value_size() == 0 && !node->first_node())
             {
-                // Print childless node tag ending
-                *out = Ch('/'), ++out;
-                *out = Ch('>'), ++out;
+                if (flags & print_html)
+                {
+                    if (is_void_element(node->name()))
+                    {
+                        // Print childless node tag ending
+                        *out = Ch('/'), ++out;
+                        *out = Ch('>'), ++out;
+                    }
+                    else
+                    {
+                        *out = Ch('>'), ++out;
+                        *out = Ch('<'), ++out;
+                        *out = Ch('/'), ++out;
+                        out = copy_chars(node->name(), node->name() + node->name_size(), out);
+                        *out = Ch('>'), ++out;
+                    }
+                }
+                else
+                {
+                    // Print childless node tag ending
+                    *out = Ch('/'), ++out;
+                    *out = Ch('>'), ++out;
+                }
             }
             else
             {
