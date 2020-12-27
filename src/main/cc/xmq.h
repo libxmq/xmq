@@ -29,6 +29,8 @@
 #include <vector>
 #include <set>
 
+#include "string.h"
+
 namespace xmq
 {
     // The render type is how the output from the xmq command is presented.
@@ -38,7 +40,7 @@ namespace xmq
     // Tex means that it will inject tex color sequences and formatting.
     enum class RenderType { plain, terminal, html, tex };
 
-    // Xmq can be converted between the selected or auto tree type.
+    // When converting, detect the from/to type or set it accordingly.
     enum class TreeType { auto_detect, xml, html };
 
     class Settings
@@ -69,8 +71,28 @@ namespace xmq
         paren_close,   // )
         quote,         // '....'
         comment,       // / starts either // or /*
-        text           // Not quoted text, can be tag or content.
-     };
+        text           // Not quoted text, can be name or content.
+    };
+
+    struct str
+    {
+        const char *s; // Start of string.
+        size_t l; // Length of string.
+
+        str(const char *st, size_t le) : s(st), l(le) {}
+        bool equals(std::string &st)
+        {
+            if (l != st.size()) return false;
+            return !strncmp(st.c_str(), s, l);
+        }
+        bool equals(str &st)
+        {
+            if (l != st.l) return false;
+            return !strncmp(st.s, s, l);
+        }
+
+        str() : s(""), l(0) {}
+    };
 
     struct Token
     {
@@ -78,6 +100,11 @@ namespace xmq
 
         TokenType type;
         const char *value; // Zero terminated string allocated by rapid_xml allocate_string.
+    };
+
+    struct RenderActions
+    {
+        virtual void *firstNode(void *node) = 0;
     };
 
     struct ParseActions
@@ -90,11 +117,10 @@ namespace xmq
         virtual void appendAttribute(void *parent, Token key, Token value) = 0;
     };
 
-    int main_xml2xmq(Settings *settings);
     int main_xmq2xml(Settings *settings);
 
     void renderXMQ(void *node, Settings *provided_settings);
-    void parse(const char *filename, char *xmq, ParseActions *actions);
+    void parseXMQ(const char *filename, char *xmq, ParseActions *actions);
 }
 
 #endif

@@ -114,7 +114,7 @@ int xmq::main_xmq2xml(Settings *settings)
     ParseActionsRapidXML actions;
     actions.doc = &doc;
 
-    parse(settings->filename.c_str(), &(*buffer)[0], &actions);
+    parseXMQ(settings->filename.c_str(), &(*buffer)[0], &actions);
 
     if (settings->view)
     {

@@ -36,31 +36,61 @@
 #include "xmq.h"
 #include "xmq_implementation.h"
 
-
 using namespace rapidxml;
 using namespace std;
 using namespace xmq;
-using xmq_implementation::str;
+using namespace xmq_implementation;
 
-StringCount string_count_;
-int num_prefixes_ {};
-map<string,int> prefixes_;
+struct RenderImplementation
+{
+    RenderImplementation(xmq::Settings *s) : settings_(s) {}
+    void render(xml_node<> *root);
 
-size_t attr_max_width = 80;
+    xmq::Settings *settings_;
+    const char *green;
+    const char *yellow;
+    const char *light_blue;
+    const char *dark_blue;
+    const char *magenta;
+    const char *red;
+    const char *reset_color;
+    vector<char> *out_buffer;
 
-xmq::Settings *settings_;
+    RenderActions *render_actions {};
 
-const char *green;
-const char *yellow;
-const char *light_blue;
-const char *dark_blue;
-const char *magenta;
-const char *red;
-const char *reset_color;
+    int output(const char* fmt, ...);
+    int outputNoEscape(const char* fmt, ...);
+    void useAnsiColors();
+    void useHtmlColors();
+    bool escapeHtml(char c, string *escape);
+    void printTag(str tag);
+    void printKeyTag(str tag);
+    void printAttributeKey(str key);
+    bool containsNewlines(str value);
+    void printIndent(int i, bool newline=true);
+    size_t trimWhiteSpace(str *v);
+    void printComment(str comment, int indent);
+    void printEscaped(str value, bool is_attribute, int indent, bool must_quote);
+    bool nodeHasNoChildren(xml_node<> *node);
+    bool nodeHasSingleDataChild(xml_node<> *node, str *data);
+    void printAlign(int i);
+    void printAttributes(xml_node<> *node, int indent);
+    void printAlignedAttribute(xml_attribute<> *i,
+                               str value,
+                               int indent,
+                               int align,
+                               bool do_indent);
+    void printAligned(xml_node<> *i,
+                      str value,
+                      int indent,
+                      int align,
+                      bool do_indent);
+    void renderNode(xml_node<> *i, int indent, bool newline, vector<pair<xml_node<>*,str>> *lines, size_t *align);
+    void render(xml_node<> *node, int indent, bool newline = true);
+};
 
-void render(xml_node<> *node, int indent, bool newline = true);
 
-void useAnsiColors()
+void RenderImplementation::useAnsiColors()
 {
     green = "\033[0;32m";
     yellow = "\033[0;33m";
@@ -71,7 +101,7 @@ void useAnsiColors()
     reset_color = "\033[0m";
 }
 
-void useHtmlColors()
+void RenderImplementation::useHtmlColors()
 {
     green = "<span style=\"color:#00aa00\">";
     yellow = "<span style=\"color:#888800\">";
@@ -82,25 +112,13 @@ void useHtmlColors()
     reset_color = "</span>";
 }
 
-
-thread_local int (*output)(const char* fmt, ...);
-thread_local int (*outputNoEscape)(const char* fmt, ...);
-thread_local vector<char> *out_buffer;
-
-int outputTextTerminal(const char *fmt, ...)
+bool RenderImplementation::escapeHtml(char c, string *escape)
 {
-    va_list args;
-    char buffer[65536];
-    buffer[65535] = 0;
-    va_start(args, fmt);
-    vsnprintf(buffer, 65356, fmt, args);
-    va_end(args);
-    out_buffer->insert(out_buffer->end(), buffer, buffer+strlen(buffer));
-    return 0;
-}
-
-bool escapeHtml(char c, string *escape)
-{
+    if (c  == '&')
+    {
+        *escape = "&amp;";
+        return true;
+    }
     if (c  == '<')
     {
         *escape = "&lt;";
@@ -114,116 +132,29 @@ bool escapeHtml(char c, string *escape)
     return false;
 }
 
-int outputTextHtml(const char *fmt, ...)
-{
-    va_list args;
-    char buffer[65536];
-    buffer[65535] = 0;
-    va_start(args, fmt);
-    vsnprintf(buffer, 65536, fmt, args);
-    va_end(args);
-    size_t len = strlen(buffer);
-    for (size_t i=0; i<len; ++i)
-    {
-        string escape;
-        if (!escapeHtml(buffer[i], &escape))
-        {
-            out_buffer->insert(out_buffer->end(), buffer[i]);
-        }
-        else
-        {
-            out_buffer->insert(out_buffer->end(), escape.begin(), escape.end());
-        }
-    }
-    return 0;
-}
-
-void printTag(str tag)
+void RenderImplementation::printTag(str tag)
 {
     if (settings_->use_color) outputNoEscape(dark_blue);
     output("%.*s", tag.l, tag.s);
     if (settings_->use_color) outputNoEscape(reset_color);
 }
 
-void printKeyTag(str tag)
+void RenderImplementation::printKeyTag(str tag)
 {
     if (settings_->use_color) outputNoEscape(green);
     output("%.*s", tag.l, tag.s);
     if (settings_->use_color) outputNoEscape(reset_color);
 }
 
-void printAttributeKey(str key)
+void RenderImplementation::printAttributeKey(str key)
 {
     if (settings_->use_color) outputNoEscape(green);
     output("%.*s", key.l, key.s);
     if (settings_->use_color) outputNoEscape(reset_color);
 }
 
-// Returns the number of single quotes necessary
-// to quote this string.
-int escapingDepth(str value, bool *add_start_newline, bool *add_end_newline, bool is_attribute)
-{
-    size_t n = 0;
-    if (value.l == 0) return 0; // No escaping neseccary.
-    const char *s = value.s;
-    const char *end = s+value.l;
-    bool escape = false;
-    int depth = 0;
-    if (*s == '/' && *(s+1) == '/') escape = true;
-    if (*s == '/' && *(s+1) == '*') escape = true;
-    const char *q = NULL; // Start of most recently found single quote sequence.
-    if (*s == '\'') *add_start_newline = true;
-    while (s < end)
-    {
-        if (*s == '=' ||
-            *s == '(' ||
-            *s == ')' ||
-            *s == '{' ||
-            *s == '}' ||
-            *s == ' ' ||
-            *s == '\n' ||
-            *s == '\r' ||
-            *s == '\t')
-        {
-            escape = true;
-        }
-        else
-        if (*s == '\'')
-        {
-            escape = true;
-            if (q == NULL)
-            {
-                q = s;
-                depth = 1;
-            }
-            else
-            {
-                int d = s-q+1;
-                if (d > depth) depth = d;
-            }
-        }
-        else
-        {
-            q = NULL;
-        }
-        s++;
-        n++;
-        if (is_attribute && n > attr_max_width)
-        {
-            escape = true;
-        }
-    }
-    if (*(s-1) == '\'') *add_end_newline = true;
 
-    if (escape)
-    {
-        if (depth == 0) depth = 1;
-        if (depth == 2) depth = 3;
-    }
-    return depth;
-}
-
-bool containsNewlines(str value)
+bool RenderImplementation::containsNewlines(str value)
 {
     if (value.l == 0) return false;
     const char *s = value.s;
@@ -237,18 +168,13 @@ bool containsNewlines(str value)
     return false;
 }
 
-void printIndent(int i, bool newline=true)
+void RenderImplementation::printIndent(int i, bool newline)
 {
     if (newline) output("\n");
     while (--i >= 0) output(" ");
 }
 
-static bool is_white_space(char c)
-{
-    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
-}
-
-size_t trimWhiteSpace(str *v)
+size_t RenderImplementation::trimWhiteSpace(str *v)
 {
     const char *data = v->s;
     size_t len = v->l;
@@ -257,7 +183,7 @@ size_t trimWhiteSpace(str *v)
     // Trim away whitespace at the beginning.
     while (len > 0 && *data != 0)
     {
-        if (!is_white_space(*data)) break;
+        if (!xmq_implementation::isWhiteSpace(*data)) break;
         data++;
         len--;
     }
@@ -265,7 +191,7 @@ size_t trimWhiteSpace(str *v)
     // Trim away whitespace at the end.
     while (len >= 1)
     {
-        if (!is_white_space(data[len-1])) break;
+        if (!xmq_implementation::isWhiteSpace(data[len-1])) break;
         len--;
     }
     v->s = data;
@@ -273,7 +199,7 @@ size_t trimWhiteSpace(str *v)
     return len;
 }
 
-void printComment(str comment, int indent)
+void RenderImplementation::printComment(str comment, int indent)
 {
     const char *c = comment.s;
     size_t len = comment.l;
@@ -326,7 +252,7 @@ void printComment(str comment, int indent)
 
 }
 
-void printEscaped(str value, bool is_attribute, int indent, bool must_quote)
+void RenderImplementation::printEscaped(str value, bool is_attribute, int indent, bool must_quote)
 {
     const char *s = value.s;
     const char *end = s+value.l;
@@ -384,7 +310,7 @@ void printEscaped(str value, bool is_attribute, int indent, bool must_quote)
             }
             s++;
             n++;
-            if (is_attribute && n > attr_max_width)
+            if (is_attribute && n > 80)
             {
                 n = 0;
                 output("'");
@@ -408,7 +334,7 @@ void printEscaped(str value, bool is_attribute, int indent, bool must_quote)
 /*
     Test if the node has no children.
 */
-bool nodeHasNoChildren(xml_node<> *node)
+bool RenderImplementation::nodeHasNoChildren(xml_node<> *node)
 {
     return node->first_node() == NULL;
 }
@@ -417,8 +343,8 @@ bool nodeHasNoChildren(xml_node<> *node)
     Test if the node has a single data child.
     Such nodes should be rendered as node = data
 */
-bool nodeHasSingleDataChild(xml_node<> *node,
-                            str *data)
+bool RenderImplementation::nodeHasSingleDataChild(xml_node<> *node,
+                                                  str *data)
 {
     data->s = "";
     data->l = 0;
@@ -445,19 +371,13 @@ bool hasAttributes(xml_node<> *node)
     return node->first_attribute() != NULL;
 }
 
-void printAlign(int i)
+void RenderImplementation::printAlign(int i)
 {
     while (--i >= 0) output(" ");
 }
 
-void printAlignedAttribute(xml_attribute<> *i,
-                           str value,
-                           int indent,
-                           int align,
-                           bool do_indent);
-
-void printAttributes(xml_node<> *node,
-                     int indent)
+void RenderImplementation::printAttributes(xml_node<> *node,
+                                           int indent)
 {
     if (node->first_attribute() == NULL) return;
     vector<pair<xml_attribute<>*,str>> lines;
@@ -505,11 +425,11 @@ void printAttributes(xml_node<> *node,
     output(")");
 }
 
-void printAligned(xml_node<> *i,
-                  str value,
-                  int indent,
-                  int align,
-                  bool do_indent)
+void RenderImplementation::printAligned(xml_node<> *i,
+                                        str value,
+                                        int indent,
+                                        int align,
+                                        bool do_indent)
 {
     if (do_indent) printIndent(indent);
     if (i->type() == node_comment)
@@ -557,11 +477,11 @@ void printAligned(xml_node<> *i,
     }
 }
 
-void printAlignedAttribute(xml_attribute<> *i,
-                           str value,
-                           int indent,
-                           int align,
-                           bool do_indent)
+void RenderImplementation::printAlignedAttribute(xml_attribute<> *i,
+                                                 str value,
+                                                 int indent,
+                                                 int align,
+                                                 bool do_indent)
 {
     if (do_indent) printIndent(indent);
     str key(i->name(), i->name_size());
@@ -589,7 +509,7 @@ void printAlignedAttribute(xml_attribute<> *i,
     }
 }
 
-void renderNode(xml_node<> *i, int indent, bool newline, vector<pair<xml_node<>*,str>> *lines, size_t *align)
+void RenderImplementation::renderNode(xml_node<> *i, int indent, bool newline, vector<pair<xml_node<>*,str>> *lines, size_t *align)
 {
     string key = string(i->name(), i->name_size());
     str value = str(i->value(), i->value_size());
@@ -629,7 +549,7 @@ void renderNode(xml_node<> *i, int indent, bool newline, vector<pair<xml_node<>*
     Render is only invoked on nodes that have children nodes
     other than a single content node.
 */
-void render(xml_node<> *node, int indent, bool newline)
+void RenderImplementation::render(xml_node<> *node, int indent, bool newline)
 {
     assert(node != NULL);
     size_t align = 0;
@@ -669,154 +589,65 @@ void render(xml_node<> *node, int indent, bool newline)
     output("}");
 }
 
-
-void find_all_strings(xml_node<> *i, StringCount &c)
+int RenderImplementation::output(const char* fmt, ...)
 {
-    if (i->type() == node_element)
+    if (settings_->output == RenderType::html)
     {
-        add_string(i->name(), c);
-        xml_attribute<> *a = i->first_attribute();
-        while (a != NULL)
+        va_list args;
+        char buffer[65536];
+        buffer[65535] = 0;
+        va_start(args, fmt);
+        vsnprintf(buffer, 65536, fmt, args);
+        va_end(args);
+        size_t len = strlen(buffer);
+        for (size_t i=0; i<len; ++i)
         {
-            add_string(a->name(), c);
-            a = a->next_attribute();
-        }
-        xml_node<> *n = i->first_node();
-        while (n != NULL)
-        {
-            find_all_strings(n, c);
-            n = n->next_sibling();
-        }
-    }
-}
-
-void shiftLeft(char *s, size_t l)
-{
-    size_t len = strlen(s);
-    assert(l <= len);
-    size_t newlen = len - l;
-    for (size_t i=0; i<newlen; ++i)
-    {
-        s[i] = s[i+l];
-    }
-    s[newlen] = 0;
-}
-
-void find_all_prefixes(xml_node<> *i, StringCount &c)
-{
-    if (i->type() == node_element)
-    {
-        string p = find_prefix(i->name(), c);
-        if (p.length() > 5)
-        {
-            int pn = 0;
-            if (prefixes_.count(p) > 0)
+            string escape;
+            if (!escapeHtml(buffer[i], &escape))
             {
-                pn = prefixes_[p];
+                out_buffer->insert(out_buffer->end(), buffer[i]);
             }
             else
             {
-                pn = num_prefixes_;
-                prefixes_[p] = pn;
-                num_prefixes_++;
+                out_buffer->insert(out_buffer->end(), escape.begin(), escape.end());
             }
-            shiftLeft(i->name(), p.length()-2);
-            i->name()[0] = 48+pn;
-            i->name()[1] = ':';
         }
-        xml_attribute<> *a = i->first_attribute();
-        while (a != NULL)
-        {
-            string p = find_prefix(a->name(), c);
-            if (p.length() > 5)
-            {
-                int pn = 0;
-                if (prefixes_.count(p) > 0)
-                {
-                    pn = prefixes_[p];
-                }
-                else
-                {
-                    pn = num_prefixes_;
-                    prefixes_[p] = pn;
-                    num_prefixes_++;
-                }
-                shiftLeft(a->name(), p.length()-2);
-                a->name()[0] = 48+pn;
-                a->name()[1] = ':';
-            }
-
-            a = a->next_attribute();
-        }
-        xml_node<> *n = i->first_node();
-        while (n != NULL)
-        {
-            find_all_prefixes(n, c);
-            n = n->next_sibling();
-        }
-    }
-}
-
-const char *findStartingNewline(const char *where, const char *start)
-{
-    while (where > start && *(where-1) != '\n') where--;
-    return where;
-}
-
-
-const char *findEndingNewline(const char *where)
-{
-    while (*where && *where != '\n') where++;
-    return where;
-}
-
-void findLineAndColumn(const char *from, const char *where, int *line, int *col)
-{
-    *line = 1;
-    *col = 1;
-    for (const char *i = from; *i != 0; ++i)
-    {
-        (*col)++;
-        if (*i == '\n')
-        {
-            (*line)++;
-            (*col)=1;
-        }
-        if (i == where) break;
-    }
-}
-
-void xmq::renderXMQ(void *rroot, xmq::Settings *provided_settings)
-{
-    xml_node<> *root = (xml_node<>*)rroot;
-    settings_ = provided_settings;
-    if (provided_settings->out == NULL)
-    {
-        output = printf;
-        assert(0);
-    }
-    else
-    {
-        out_buffer = provided_settings->out;
-        if (provided_settings->output == RenderType::html)
-        {
-            output = outputTextHtml;
-        }
-        else
-        {
-            output = outputTextTerminal;
-        }
+        return 0;
     }
 
-    outputNoEscape = outputTextTerminal;
+    va_list args;
+    char buffer[65536];
+    buffer[65535] = 0;
+    va_start(args, fmt);
+    vsnprintf(buffer, 65356, fmt, args);
+    va_end(args);
+    out_buffer->insert(out_buffer->end(), buffer, buffer+strlen(buffer));
+    return 0;
+}
 
-    if (provided_settings->use_color)
+int RenderImplementation::outputNoEscape(const char* fmt, ...)
+{
+    va_list args;
+    char buffer[65536];
+    buffer[65535] = 0;
+    va_start(args, fmt);
+    vsnprintf(buffer, 65356, fmt, args);
+    va_end(args);
+    out_buffer->insert(out_buffer->end(), buffer, buffer+strlen(buffer));
+    return 0;
+}
+
+void RenderImplementation::render(xml_node<> *root)
+{
+    out_buffer = settings_->out;
+
+    if (settings_->use_color)
     {
-        if (provided_settings->output == RenderType::terminal)
+        if (settings_->output == RenderType::terminal)
         {
             useAnsiColors();
         }
-        if (provided_settings->output == RenderType::html)
+        if (settings_->output == RenderType::html)
         {
             useHtmlColors();
         }
@@ -869,76 +700,9 @@ void xmq::renderXMQ(void *rroot, xmq::Settings *provided_settings)
     output("\n");
 }
 
-#define VERSION "0.1"
-
-int xmq::main_xml2xmq(Settings *provided_settings)
+void xmq::renderXMQ(void *rroot, xmq::Settings *settings)
 {
-    // Parsing is destructive, store a copy for error messages here.
-    vector<char> original = *provided_settings->in;
-
-    vector<char> *buffer = provided_settings->in;
-    settings_ = provided_settings;
-    xml_document<> doc;
-    try
-    {
-        // This looks kind of silly, doesnt it? Is there another way to configure the rapidxml parser?
-        if (provided_settings->preserve_ws)
-        {
-            if (provided_settings->tree_type == TreeType::html)
-            {
-                doc.parse<parse_void_elements|parse_doctype_node|parse_comment_nodes|parse_no_string_terminators>(&(*buffer)[0]);
-            }
-            else
-            {
-                doc.parse<parse_doctype_node|parse_comment_nodes|parse_no_string_terminators>(&(*buffer)[0]);
-            }
-        }
-        else
-        {
-            if (provided_settings->tree_type == TreeType::html)
-            {
-                doc.parse<parse_void_elements|parse_doctype_node|parse_comment_nodes|parse_trim_whitespace|parse_no_string_terminators>(&(*buffer)[0]);
-            }
-            else
-            {
-                doc.parse<parse_doctype_node|parse_comment_nodes|parse_trim_whitespace|parse_no_string_terminators>(&(*buffer)[0]);
-            }
-        }
-    }
-    catch (rapidxml::parse_error pe)
-    {
-        const char *where = pe.where<const char>();
-        //size_t offset = where - &(*buffer)[0];
-        const char *from = findStartingNewline(where, &(*buffer)[0]);
-        const char *to = findEndingNewline(where);
-        int line, col;
-        findLineAndColumn(&(*buffer)[0], where, &line, &col);
-
-        size_t count = to-from;
-
-        // bad.xml:2:16 Parse error expected =
-        //     <block clean>
-        //                 ^
-
-        fprintf(stderr, "%s:%d:%d Parse error %s\n%.*s\n",
-                provided_settings->filename.c_str(), line, col, pe.what(), (int)count, from);
-        for (int i=2; i<col; ++i) fprintf(stderr, " ");
-        fprintf(stderr, "^\n");
-    }
-    xml_node<> *root = doc.first_node();
-
-    if (settings_->compress)
-    {
-        // This will find common prefixes.
-        find_all_strings(root, string_count_);
-        find_all_prefixes(root, string_count_);
-
-        for (auto &p : prefixes_)
-        {
-            output("# %d=%s\n", p.second, p.first.c_str());
-        }
-    }
-
-    xmq::renderXMQ(root, provided_settings);
-    return 0;
+    xml_node<> *root = (xml_node<>*)rroot;
+    RenderImplementation ri(settings);
+    ri.render(root);
 }

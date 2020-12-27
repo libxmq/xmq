@@ -179,3 +179,93 @@ void xmq_implementation::removeIncidentalWhiteSpace(std::vector<char> *buffer, i
         }
     }
 }
+
+int xmq_implementation::escapingDepth(xmq::str value, bool *add_start_newline, bool *add_end_newline, bool is_attribute)
+{
+    size_t n = 0;
+    if (value.l == 0) return 0; // No escaping neseccary.
+    const char *s = value.s;
+    const char *end = s+value.l;
+    bool escape = false;
+    int depth = 0;
+    if (*s == '/' && *(s+1) == '/') escape = true;
+    if (*s == '/' && *(s+1) == '*') escape = true;
+    const char *q = NULL; // Start of most recently found single quote sequence.
+    if (*s == '\'') *add_start_newline = true;
+    while (s < end)
+    {
+        if (*s == '=' ||
+            *s == '(' ||
+            *s == ')' ||
+            *s == '{' ||
+            *s == '}' ||
+            *s == ' ' ||
+            *s == '\n' ||
+            *s == '\r' ||
+            *s == '\t')
+        {
+            escape = true;
+        }
+        else
+        if (*s == '\'')
+        {
+            escape = true;
+            if (q == NULL)
+            {
+                q = s;
+                depth = 1;
+            }
+            else
+            {
+                int d = s-q+1;
+                if (d > depth) depth = d;
+            }
+        }
+        else
+        {
+            q = NULL;
+        }
+        s++;
+        n++;
+        if (is_attribute)
+        {
+            escape = true;
+        }
+    }
+    if (*(s-1) == '\'') *add_end_newline = true;
+
+    if (escape)
+    {
+        if (depth == 0) depth = 1;
+        if (depth == 2) depth = 3;
+    }
+    return depth;
+}
+
+const char *xmq_implementation::findStartingNewline(const char *where, const char *start)
+{
+    while (where > start && *(where-1) != '\n') where--;
+    return where;
+}
+
+const char *xmq_implementation::findEndingNewline(const char *where)
+{
+    while (*where && *where != '\n') where++;
+    return where;
+}
+
+void xmq_implementation::findLineAndColumn(const char *from, const char *where, int *line, int *col)
+{
+    *line = 1;
+    *col = 1;
+    for (const char *i = from; *i != 0; ++i)
+    {
+        (*col)++;
+        if (*i == '\n')
+        {
+            (*line)++;
+            (*col)=1;
+        }
+        if (i == where) break;
+    }
+}

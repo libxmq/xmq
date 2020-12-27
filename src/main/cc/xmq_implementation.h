@@ -25,37 +25,24 @@
 #ifndef XMQ_IMPLEMENTATION_H
 #define XMQ_IMPLEMENTATION_H
 
+#include "xmq.h"
+
 #include<vector>
 #include<string.h>
 
 namespace xmq_implementation
 {
-    struct str
-    {
-        const char *s; // Start of string.
-        size_t l; // Length of string.
-
-        str(const char *st, size_t le) : s(st), l(le) {}
-        bool equals(std::string &st)
-        {
-            if (l != st.size()) return false;
-            return !strncmp(st.c_str(), s, l);
-        }
-        bool equals(str &st)
-        {
-            if (l != st.l) return false;
-            return !strncmp(st.s, s, l);
-        }
-
-        str() : s(""), l(0) {}
-    };
-
     bool startsWithLessThan(std::vector<char> &buffer);
     bool isWhiteSpace(char c);
     bool isNewLine(char c);
     bool isHtml(std::vector<char> &buffer);
     bool firstWordIsHtml(std::vector<char> &buffer);
     void removeIncidentalWhiteSpace(std::vector<char> *buffer, int first_indent);
+    int  escapingDepth(xmq::str value, bool *add_start_newline, bool *add_end_newline, bool is_attribute);
+    const char *findStartingNewline(const char *where, const char *start);
+    const char *findEndingNewline(const char *where);
+    void findLineAndColumn(const char *from, const char *where, int *line, int *col);
+
 }
 
 #endif
