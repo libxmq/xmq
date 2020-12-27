@@ -116,7 +116,7 @@ test:
 	@./spec/genspechtml.sh ./build/xmq
 
 testur: dist testur.cc
-	g++ testur.cc -o testur -Idist -I. -Ldist -lxmq
+	g++ $(CXXFLAGS) testur.cc -o $@ -Idist -I. -Ldist -lxmq
 
 run_testur: testur
 	LD_LIBRARY_PATH=dist ./testur
