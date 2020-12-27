@@ -40,16 +40,16 @@
 
 using namespace std;
 
-bool detectTreeType(xmq::Settings *settings);
-int xml2xmq(xmq::Settings *settings);
-int xmq2xml(xmq::Settings *settings);
+bool detectTreeType(Settings *settings);
+int xml2xmq(Settings *settings);
+int xmq2xml(Settings *settings);
 
 int main(int argc, char **argv)
 {
     vector<char> in;
     vector<char> out;
 
-    xmq::Settings settings(&in, &out);
+    Settings settings(&in, &out);
 
     if (isatty(1))
     {
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
     return rc;
 }
 
-bool detectTreeType(xmq::Settings *settings)
+bool detectTreeType(Settings *settings)
 {
     bool is_xmq = false == xmq_implementation::startsWithLessThan(*settings->in);
 
@@ -187,7 +187,7 @@ void find_all_prefixes(rapidxml::xml_node<> *i, StringCount &c)
     }
 }
 
-int xml2xmq(xmq::Settings *settings)
+int xml2xmq(Settings *settings)
 {
     vector<char> *buffer = settings->in;
     rapidxml::xml_document<> doc;
@@ -251,13 +251,12 @@ int xml2xmq(xmq::Settings *settings)
         }
     }
 
-    RenderActionsRapidXML ractions;
-    ractions.setRoot(root);
+    RenderActionsRapidXML ractions(root);
     xmq::renderXMQ(&ractions, settings->output, settings->use_color, settings->out);
     return 0;
 }
 
-int xmq2xml(xmq::Settings *settings)
+int xmq2xml(Settings *settings)
 {
     vector<char> *buffer = settings->in;
     rapidxml::xml_document<> doc;
@@ -284,15 +283,13 @@ int xmq2xml(xmq::Settings *settings)
         }
     }
 
-    ParseActionsRapidXML pactions;
-    pactions.setDocument(&doc);
+    ParseActionsRapidXML pactions(&doc);
 
     parseXMQ(&pactions, settings->filename.c_str(), &(*buffer)[0]);
 
     if (settings->view)
     {
-        RenderActionsRapidXML ractions;
-        ractions.setRoot(doc.first_node());
+        RenderActionsRapidXML ractions(doc.first_node());
         renderXMQ(&ractions, settings->output, settings->use_color, settings->out);
     }
     else

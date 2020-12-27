@@ -1,26 +1,27 @@
 
 #include<stdio.h>
-
 #include<xmq.h>
+// We use rapidxml for managing the xml.
 #include<xmq_rapidxml.h>
 
 int main()
 {
+    // Create an empty document, into which we load an xmq file.
     rapidxml::xml_document<> document;
 
-    ParseActionsRapidXML pa;
+    // Create the parser binding between xmq and rapidxml.
+    ParseActionsRapidXML pa(&document);
 
-    pa.setDocument(&document);
-
+    // Parse the xmq using the binding.
     xmq::parseXMQ(&pa, "", "alfa=123");
 
-    RenderActionsRapidXML ra;
-    ra.setRoot(document.first_node());
+    // Now create render binding between xml and xmq.
+    RenderActionsRapidXML ra(document.first_node());
 
-    std::vector<char> in, out;
-    xmq::Settings settings(&in, &out);
+    std::vector<char> out;
+    // Render the xml as xmq into the out buffer.
+    xmq::renderXMQ(&ra, xmq::RenderType::plain, false, &out);
 
-    xmq::renderXMQ(&ra, settings.output, settings.use_color, &out);
-
+    // Print it.
     printf("%.*s", (int)out.size(), &(out[0]));
 }

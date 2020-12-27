@@ -35,10 +35,7 @@ private:
     rapidxml::xml_document<> *doc;
 
 public:
-    void setDocument(rapidxml::xml_document<> *d)
-    {
-        doc = d;
-    }
+    ParseActionsRapidXML(rapidxml::xml_document<> *d) : doc(d) {}
 
     void *root()
     {
@@ -85,10 +82,7 @@ private:
 
 public:
 
-    void setRoot(rapidxml::xml_node<>* r)
-    {
-        root_ = r;
-    }
+    RenderActionsRapidXML(rapidxml::xml_node<>* r) : root_(r) {}
 
     void *root()
     {

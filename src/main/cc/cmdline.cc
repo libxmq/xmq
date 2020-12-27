@@ -31,7 +31,7 @@ const char *manual = R"MANUAL(
 usage: xmq <input>
 )MANUAL";
 
-void parseCommandLine(xmq::Settings *settings, int argc, char **argv)
+void parseCommandLine(Settings *settings, int argc, char **argv)
 {
     int i = 1;
     for (;;)

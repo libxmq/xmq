@@ -43,24 +43,6 @@ namespace xmq
     // When converting, detect the from/to type or set it accordingly.
     enum class TreeType { auto_detect, xml, html };
 
-    class Settings
-    {
-    public:
-        Settings(std::vector<char> *i, std::vector<char> *o) : in(i), out(o) {}
-        std::vector<char> *in;
-        std::vector<char> *out;
-
-        std::string filename;
-        TreeType tree_type {};  // Set input type to: auto_detect, xml or html.
-        RenderType output {};   // Write plain text, text+ansi, text+html or text+tex.
-        bool use_color {};      // Set to true to produce colors. Color can never be enabled with the plain output type.
-        bool no_declaration {}; // Do not print any xml-declaration <? ?> nor doctype <!DOCTYPE html>.
-        bool preserve_ws {};    // When converting from xml to xmq. Preserve whitespace as much as possible.
-        bool view {};           // Do not convert, just view the input, potentially adding color and formatting.
-        bool compress {};       // Find common prefixes of the tags.
-        std::set<std::string> excludes; // Exclude these attributes
-    };
-
     enum class TokenType
     {
         none,          // eof
