@@ -693,7 +693,7 @@ void RenderImplementation::render()
     output("\n");
 }
 
-void xmq::renderXMQ(RenderActions *actions, xmq::Settings *settings)
+void xmq::renderXMQ(xmq::RenderActions *actions, xmq::Settings *settings)
 {
     RenderImplementation ri(actions, settings);
     ri.render();

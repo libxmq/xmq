@@ -78,8 +78,7 @@ XMQ_OBJS:=\
 	$(BUILD)/util.o \
 	$(BUILD)/parse.o \
 	$(BUILD)/render.o \
-	$(BUILD)/xmq_implementation.o \
-	$(BUILD)/xmq2xml.o
+	$(BUILD)/xmq_implementation.o
 
 all: $(BUILD)/xmq $(BUILD)/testinternals
 	@$(STRIP_BINARY)

@@ -29,19 +29,21 @@
 #include "xmq_rapidxml.h"
 
 #include "rapidxml/rapidxml.hpp"
+#include "rapidxml/rapidxml_print.hpp"
 
 #include <string.h>
 #include <stdio.h>
+#include <iostream>
 #include <unistd.h>
 #include <vector>
 #include <set>
 #define VERSION "0.1"
 
 using namespace std;
-using namespace rapidxml;
 
 bool detectTreeType(xmq::Settings *settings);
 int xml2xmq(xmq::Settings *settings);
+int xmq2xml(xmq::Settings *settings);
 
 int main(int argc, char **argv)
 {
@@ -63,7 +65,7 @@ int main(int argc, char **argv)
 
     if (is_xmq)
     {
-        rc = main_xmq2xml(&settings);
+        rc = xmq2xml(&settings);
     }
     else
     {
@@ -111,18 +113,18 @@ void shiftLeft(char *s, size_t l)
     s[newlen] = 0;
 }
 
-void find_all_strings(xml_node<> *i, StringCount &c)
+void find_all_strings(rapidxml::xml_node<> *i, StringCount &c)
 {
-    if (i->type() == node_element)
+    if (i->type() == rapidxml::node_element)
     {
         add_string(i->name(), c);
-        xml_attribute<> *a = i->first_attribute();
+        rapidxml::xml_attribute<> *a = i->first_attribute();
         while (a != NULL)
         {
             add_string(a->name(), c);
             a = a->next_attribute();
         }
-        xml_node<> *n = i->first_node();
+        rapidxml::xml_node<> *n = i->first_node();
         while (n != NULL)
         {
             find_all_strings(n, c);
@@ -131,9 +133,9 @@ void find_all_strings(xml_node<> *i, StringCount &c)
     }
 }
 
-void find_all_prefixes(xml_node<> *i, StringCount &c)
+void find_all_prefixes(rapidxml::xml_node<> *i, StringCount &c)
 {
-    if (i->type() == node_element)
+    if (i->type() == rapidxml::node_element)
     {
         string p = find_prefix(i->name(), c);
         if (p.length() > 5)
@@ -153,7 +155,7 @@ void find_all_prefixes(xml_node<> *i, StringCount &c)
             i->name()[0] = 48+pn;
             i->name()[1] = ':';
         }
-        xml_attribute<> *a = i->first_attribute();
+        rapidxml::xml_attribute<> *a = i->first_attribute();
         while (a != NULL)
         {
             string p = find_prefix(a->name(), c);
@@ -177,7 +179,7 @@ void find_all_prefixes(xml_node<> *i, StringCount &c)
 
             a = a->next_attribute();
         }
-        xml_node<> *n = i->first_node();
+        rapidxml::xml_node<> *n = i->first_node();
         while (n != NULL)
         {
             find_all_prefixes(n, c);
@@ -189,7 +191,7 @@ void find_all_prefixes(xml_node<> *i, StringCount &c)
 int xml2xmq(xmq::Settings *settings)
 {
     vector<char> *buffer = settings->in;
-    xml_document<> doc;
+    rapidxml::xml_document<> doc;
     try
     {
         // This looks kind of silly, doesnt it? Is there another way to configure the rapidxml parser?
@@ -197,22 +199,22 @@ int xml2xmq(xmq::Settings *settings)
         {
             if (settings->tree_type == xmq::TreeType::html)
             {
-                doc.parse<parse_void_elements|parse_doctype_node|parse_comment_nodes|parse_no_string_terminators>(&(*buffer)[0]);
+                doc.parse<rapidxml::parse_void_elements|rapidxml::parse_doctype_node|rapidxml::parse_comment_nodes|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
             }
             else
             {
-                doc.parse<parse_doctype_node|parse_comment_nodes|parse_no_string_terminators>(&(*buffer)[0]);
+                doc.parse<rapidxml::parse_doctype_node|rapidxml::parse_comment_nodes|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
             }
         }
         else
         {
             if (settings->tree_type == xmq::TreeType::html)
             {
-                doc.parse<parse_void_elements|parse_doctype_node|parse_comment_nodes|parse_trim_whitespace|parse_no_string_terminators>(&(*buffer)[0]);
+                doc.parse<rapidxml::parse_void_elements|rapidxml::parse_doctype_node|rapidxml::parse_comment_nodes|rapidxml::parse_trim_whitespace|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
             }
             else
             {
-                doc.parse<parse_doctype_node|parse_comment_nodes|parse_trim_whitespace|parse_no_string_terminators>(&(*buffer)[0]);
+                doc.parse<rapidxml::parse_doctype_node|rapidxml::parse_comment_nodes|rapidxml::parse_trim_whitespace|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
             }
         }
     }
@@ -236,7 +238,7 @@ int xml2xmq(xmq::Settings *settings)
         for (int i=2; i<col; ++i) fprintf(stderr, " ");
         fprintf(stderr, "^\n");
     }
-    xml_node<> *root = doc.first_node();
+    rapidxml::xml_node<> *root = doc.first_node();
 
     if (settings->compress)
     {
@@ -253,5 +255,68 @@ int xml2xmq(xmq::Settings *settings)
     RenderActionsRapidXML ractions;
     ractions.setRoot(root);
     xmq::renderXMQ(&ractions, settings);
+    return 0;
+}
+
+int xmq2xml(xmq::Settings *settings)
+{
+    vector<char> *buffer = settings->in;
+    rapidxml::xml_document<> doc;
+    bool generate_html {};
+
+    if (xmq_implementation::firstWordIsHtml(*buffer))
+    {
+        generate_html = true;
+    }
+
+    if (!settings->no_declaration)
+    {
+        if (generate_html)
+        {
+            rapidxml::xml_node<> *node = doc.allocate_node(rapidxml::node_doctype, "!DOCTYPE", "html");
+            doc.append_node(node);
+        }
+        else
+        {
+            rapidxml::xml_node<> *node = doc.allocate_node(rapidxml::node_declaration, "?xml");
+            doc.append_node(node);
+            node->append_attribute(doc.allocate_attribute("version", "1.0"));
+            node->append_attribute(doc.allocate_attribute("encoding", "UTF-8"));
+        }
+    }
+
+    ParseActionsRapidXML pactions;
+    pactions.doc = &doc;
+
+    parseXMQ(&pactions, settings->filename.c_str(), &(*buffer)[0]);
+
+    if (settings->view)
+    {
+        rapidxml::xml_node<> *node = &doc;
+        node = node->first_node();
+        if (node->type() == rapidxml::node_doctype || node->type() == rapidxml::node_declaration)
+        {
+            node = node->next_sibling();
+        }
+        RenderActionsRapidXML ractions;
+        ractions.setRoot(node);
+        renderXMQ(&ractions, settings);
+    }
+    else
+    {
+        string s;
+        int flags = 0;
+        if (settings->preserve_ws)
+        {
+            flags |= rapidxml::print_no_indenting;
+        }
+        if (generate_html)
+        {
+            flags |= rapidxml::print_html;
+        }
+        print(back_inserter(s), doc, flags);
+        std::cout << s;
+    }
+
     return 0;
 }
