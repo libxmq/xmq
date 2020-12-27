@@ -31,7 +31,14 @@
 
 struct ParseActionsRapidXML : xmq::ParseActions
 {
+private:
     rapidxml::xml_document<> *doc;
+
+public:
+    void setDocument(rapidxml::xml_document<> *d)
+    {
+        doc = d;
+    }
 
     void *root()
     {
@@ -73,9 +80,12 @@ struct ParseActionsRapidXML : xmq::ParseActions
 
 struct RenderActionsRapidXML : xmq::RenderActions
 {
+private:
     rapidxml::xml_node<> *root_;
 
-    void setRoot(rapidxml::xml_node<> *r)
+public:
+
+    void setRoot(rapidxml::xml_node<>* r)
     {
         root_ = r;
     }
@@ -137,6 +147,12 @@ struct RenderActionsRapidXML : xmq::RenderActions
     {
         rapidxml::xml_node<> *n = (rapidxml::xml_node<>*)node;
         return n->type() == rapidxml::node_doctype;
+    }
+
+    bool isNodeDeclaration(void *node)
+    {
+        rapidxml::xml_node<> *n = (rapidxml::xml_node<>*)node;
+        return n->type() == rapidxml::node_declaration;
     }
 
     void loadName(void *node, xmq::str *name)

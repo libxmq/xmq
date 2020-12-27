@@ -34,9 +34,13 @@ using namespace xmq;
 
 class ParserImplementation
 {
+public:
+    ParserImplementation(xmq::ParseActions *pa) : parse_actions(pa) {}
+
+private:
     ParseActions *parse_actions {};
     const char *file {};
-    char *buf {};
+    const char *buf {};
     size_t buf_len {};
     size_t pos {};
     int line {};
@@ -72,7 +76,7 @@ class ParserImplementation
     void padWithSingleSpaces(Token *t);
 
 public:
-    void setup(ParseActions *a, const char *f, char *b)
+    void setup(ParseActions *a, const char *f, const char *b)
     {
         parse_actions = a;
         file = f;
@@ -82,8 +86,8 @@ public:
         line = 1;
         col = 1;
     }
-    void parseXMQ(void *parent);
-
+    void parseXMQ(void *node);
+    void parse();
 };
 
 void ParserImplementation::error(const char* fmt, ...)
@@ -499,6 +503,11 @@ void ParserImplementation::parseComment(void *parent)
     parse_actions->appendComment(parent, val);
 }
 
+void ParserImplementation::parse()
+{
+    parseXMQ(parse_actions->root());
+}
+
 void ParserImplementation::parseXMQ(void *parent)
 {
     while (true)
@@ -612,10 +621,9 @@ void ParserImplementation::parseNode(void *parent)
     }
 }
 
-void xmq::parseXMQ(ParseActions *actions, const char *filename, char *xmq)
+void xmq::parseXMQ(ParseActions *actions, const char *filename, const char *xmq)
 {
-    ParserImplementation parser;
-
-    parser.setup(actions, filename, xmq);
-    parser.parseXMQ(actions->root());
+    ParserImplementation pi(actions);
+    pi.setup(actions, filename, xmq);
+    pi.parse();
 }

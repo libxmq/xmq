@@ -32,18 +32,21 @@ using namespace std;
 
 struct RenderImplementation
 {
-    RenderImplementation(xmq::RenderActions *ra, xmq::Settings *s) : settings_(s), actions(ra) {}
+    RenderImplementation(xmq::RenderActions *ra,
+                         xmq::RenderType rt,
+                         bool use_color,
+                         std::vector<char> *out) : out_buffer(out), render_type_(rt), use_color_(use_color), actions(ra) {}
     void render();
 
-    xmq::Settings *settings_;
-    const char *green;
-    const char *yellow;
-    const char *light_blue;
-    const char *dark_blue;
-    const char *magenta;
-    const char *red;
+    std::vector<char> *out_buffer;
+    xmq::RenderType render_type_ {};
+    bool use_color_ {};
+    const char *element_name_color; // blue
+    const char *element_name_sugar_color; // green
+    const char *attribute_name_sugar_color; // green
+    const char *comment_color; // yellow
+    const char *data_color; // red
     const char *reset_color;
-    vector<char> *out_buffer;
 
     xmq::RenderActions *actions {};
 
@@ -52,8 +55,8 @@ struct RenderImplementation
     void useAnsiColors();
     void useHtmlColors();
     bool escapeHtml(char c, string *escape);
-    void printTag(xmq::str tag);
-    void printKeyTag(xmq::str tag);
+    void renderElementName(xmq::str name);
+    void renderElementNameSugar(xmq::str tag);
     void printAttributeKey(xmq::str key);
     bool containsNewlines(xmq::str value);
     void printIndent(int i, bool newline=true);
@@ -81,23 +84,21 @@ struct RenderImplementation
 
 void RenderImplementation::useAnsiColors()
 {
-    green = "\033[0;32m";
-    yellow = "\033[0;33m";
-    light_blue = "\033[1;34m";
-    dark_blue = "\033[0;34m";
-    magenta = "\033[0;35m";
-    red = "\033[0;31m";
+    element_name_color = "\033[0;34m";
+    element_name_sugar_color = "\033[0;32m";
+    attribute_name_sugar_color = "\033[0;32m";
+    comment_color = "\033[0;33m";
+    data_color = "\033[0;31m";
     reset_color = "\033[0m";
 }
 
 void RenderImplementation::useHtmlColors()
 {
-    green = "<span style=\"color:#00aa00\">";
-    yellow = "<span style=\"color:#888800\">";
-    light_blue = "<span style=\"color:#aaaaff\">";
-    dark_blue = "<span style=\"color:#000088\">";
-    magenta = "<span style=\"color:#00aaaa\">";
-    red = "<span style=\"color:#aa0000\">";
+    element_name_color = "<span style=\"color:#000088\">";
+    element_name_sugar_color = "<span style=\"color:#00aa00\">";
+    attribute_name_sugar_color = "<span style=\"color:#00aa00\">";
+    comment_color = "<span style=\"color:#888800\">";
+    data_color = "<span style=\"color:#aa0000\">";
     reset_color = "</span>";
 }
 
@@ -121,25 +122,25 @@ bool RenderImplementation::escapeHtml(char c, string *escape)
     return false;
 }
 
-void RenderImplementation::printTag(xmq::str tag)
+void RenderImplementation::renderElementName(xmq::str name)
 {
-    if (settings_->use_color) outputNoEscape(dark_blue);
-    output("%.*s", tag.l, tag.s);
-    if (settings_->use_color) outputNoEscape(reset_color);
+    if (use_color_) outputNoEscape(element_name_color);
+    output("%.*s", name.l, name.s);
+    if (use_color_) outputNoEscape(reset_color);
 }
 
-void RenderImplementation::printKeyTag(xmq::str tag)
+void RenderImplementation::renderElementNameSugar(xmq::str tag)
 {
-    if (settings_->use_color) outputNoEscape(green);
+    if (use_color_) outputNoEscape(element_name_sugar_color);
     output("%.*s", tag.l, tag.s);
-    if (settings_->use_color) outputNoEscape(reset_color);
+    if (use_color_) outputNoEscape(reset_color);
 }
 
 void RenderImplementation::printAttributeKey(xmq::str key)
 {
-    if (settings_->use_color) outputNoEscape(green);
+    if (use_color_) outputNoEscape(attribute_name_sugar_color);
     output("%.*s", key.l, key.s);
-    if (settings_->use_color) outputNoEscape(reset_color);
+    if (use_color_) outputNoEscape(reset_color);
 }
 
 
@@ -200,9 +201,9 @@ void RenderImplementation::printComment(xmq::str comment, int indent)
     }
     if (single_line)
     {
-        if (settings_->use_color) outputNoEscape(yellow);
+        if (use_color_) outputNoEscape(comment_color);
         output("// %.*s", len, c);
-        if (settings_->use_color) outputNoEscape(reset_color);
+        if (use_color_) outputNoEscape(reset_color);
         return;
     }
     const char *p = c;
@@ -214,7 +215,7 @@ void RenderImplementation::printComment(xmq::str comment, int indent)
             int n = i - prev_i;
             if (p == c)
             {
-                if (settings_->use_color) outputNoEscape(yellow);
+                if (use_color_) outputNoEscape(comment_color);
                 output("/* %.*s", n, p);
             }
             else if (i == len-1)
@@ -222,7 +223,7 @@ void RenderImplementation::printComment(xmq::str comment, int indent)
                 printIndent(indent);
                 xmq::str pp(p, n);
                 int nn = trimWhiteSpace(&pp);
-                if (settings_->use_color) outputNoEscape(yellow);
+                if (use_color_) outputNoEscape(comment_color);
                 output("   %.*s */", (int)nn, pp);
             }
             else
@@ -230,10 +231,10 @@ void RenderImplementation::printComment(xmq::str comment, int indent)
                 printIndent(indent);
                 xmq::str pp(p, n);
                 size_t nn = trimWhiteSpace(&pp);
-                if (settings_->use_color) outputNoEscape(yellow);
+                if (use_color_) outputNoEscape(comment_color);
                 output("   %.*s", (int)nn, pp);
             }
-            if (settings_->use_color) outputNoEscape(reset_color);
+            if (use_color_) outputNoEscape(reset_color);
             p = c+i+1;
             prev_i = i+1;
         }
@@ -271,14 +272,14 @@ void RenderImplementation::printEscaped(xmq::str value, bool is_attribute, int i
     {
         // There are no single quotes inside the content s.
         // We can safely print it.
-        if (settings_->use_color) outputNoEscape(red);
+        if (use_color_) outputNoEscape(data_color);
         output("%.*s", value.l, value.s);
-        if (settings_->use_color) outputNoEscape(reset_color);
+        if (use_color_) outputNoEscape(reset_color);
     }
     else
     {
         size_t n = 0;
-        if (settings_->use_color) outputNoEscape(red);
+        if (use_color_) outputNoEscape(data_color);
         for (int i=0; i<escape_depth; ++i)
         {
             output("'");
@@ -293,7 +294,7 @@ void RenderImplementation::printEscaped(xmq::str value, bool is_attribute, int i
                 case '\n' :
                     printIndent(indent+escape_depth);
                     n = 0;
-                    if (settings_->use_color) outputNoEscape(red);
+                    if (use_color_) outputNoEscape(data_color);
                     break;
                 default:    output("%c", *s);
             }
@@ -304,7 +305,7 @@ void RenderImplementation::printEscaped(xmq::str value, bool is_attribute, int i
                 n = 0;
                 output("'");
                 printIndent(indent);
-                if (settings_->use_color) outputNoEscape(red);
+                if (use_color_) outputNoEscape(data_color);
                 output("'");
             }
         }
@@ -316,7 +317,7 @@ void RenderImplementation::printEscaped(xmq::str value, bool is_attribute, int i
         {
             output("'");
         }
-        if (settings_->use_color) outputNoEscape(reset_color);
+        if (use_color_) outputNoEscape(reset_color);
     }
 }
 
@@ -438,7 +439,7 @@ void RenderImplementation::printAligned(void *i,
     {
         xmq::str key;
         actions->loadName(i, &key);
-        printKeyTag(key);
+        renderElementNameSugar(key);
         if (actions->hasAttributes(i))
         {
             printAttributes(i, indent);
@@ -550,10 +551,13 @@ void RenderImplementation::render(void *node, int indent, bool newline)
         printAligned(node, value, indent, 0, newline);
         return;
     }
+
     printIndent(indent, newline);
+
     xmq::str name;
     actions->loadName(node, &name);
-    printTag(name);
+    renderElementName(name);
+
     if (actions->hasAttributes(node))
     {
         printAttributes(node, indent);
@@ -581,7 +585,7 @@ void RenderImplementation::render(void *node, int indent, bool newline)
 
 int RenderImplementation::output(const char* fmt, ...)
 {
-    if (settings_->output == xmq::RenderType::html)
+    if (render_type_ == xmq::RenderType::html)
     {
         va_list args;
         char buffer[65536];
@@ -630,15 +634,14 @@ int RenderImplementation::outputNoEscape(const char* fmt, ...)
 void RenderImplementation::render()
 {
     void *root = actions->root();
-    out_buffer = settings_->out;
 
-    if (settings_->use_color)
+    if (use_color_)
     {
-        if (settings_->output == xmq::RenderType::terminal)
+        if (render_type_ == xmq::RenderType::terminal)
         {
             useAnsiColors();
         }
-        if (settings_->output == xmq::RenderType::html)
+        if (render_type_ == xmq::RenderType::html)
         {
             useHtmlColors();
         }
@@ -693,8 +696,8 @@ void RenderImplementation::render()
     output("\n");
 }
 
-void xmq::renderXMQ(xmq::RenderActions *actions, xmq::Settings *settings)
+void xmq::renderXMQ(xmq::RenderActions *actions, xmq::RenderType rt, bool use_color, vector<char> *out)
 {
-    RenderImplementation ri(actions, settings);
+    RenderImplementation ri(actions, rt, use_color, out);
     ri.render();
 }

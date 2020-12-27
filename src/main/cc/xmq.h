@@ -119,6 +119,7 @@ namespace xmq
         virtual bool isNodeComment(void *node) = 0;
         virtual bool isNodeCData(void *node) = 0;
         virtual bool isNodeDocType(void *node) = 0;
+        virtual bool isNodeDeclaration(void *node) = 0;
         virtual void loadName(void *node, xmq::str *name) = 0;
         virtual void loadValue(void *node, xmq::str *data) = 0;
     };
@@ -133,10 +134,8 @@ namespace xmq
         virtual void appendAttribute(void *parent, Token key, Token value) = 0;
     };
 
-    int main_xmq2xml(Settings *settings);
-
-    void renderXMQ(RenderActions *actions, Settings *settings);
-    void parseXMQ(ParseActions *actions, const char *filename, char *xmq);
+    void renderXMQ(RenderActions *actions, RenderType rt, bool use_color, std::vector<char> *out);
+    void parseXMQ(ParseActions *actions, const char *filename, const char *xmq);
 }
 
 #endif

@@ -71,7 +71,7 @@ CXXFLAGS := $(DEBUG_FLAGS) -fPIC -fmessage-length=0 -std=c++11 -Wall -Wno-unused
 #	$(CXX) $(CXXFLAGS) $< -c -E > $@.src
 
 $(BUILD)/%.o: src/main/cc/%.cc $(wildcard src/%.h)
-	$(CXX) $(CXXFLAGS) $< -MMD -c -o $@
+	$(CXX) $(CXXFLAGS) $< -MMD -fPIC -c -o $@
 
 XMQ_OBJS:=\
 	$(BUILD)/cmdline.o \
@@ -80,14 +80,33 @@ XMQ_OBJS:=\
 	$(BUILD)/render.o \
 	$(BUILD)/xmq_implementation.o
 
-all: $(BUILD)/xmq $(BUILD)/testinternals
+XMQ_LIB_OBJS:=\
+	$(BUILD)/parse.o \
+	$(BUILD)/render.o \
+	$(BUILD)/xmq_implementation.o
+
+all: $(BUILD)/xmq $(BUILD)/libxmq.so $(BUILD)/libxmq.a $(BUILD)/testinternals testur
 	@$(STRIP_BINARY)
 
+.PHONY: dist
+dist: $(BUILD)/libxmq.so $(BUILD)/libxmq.a src/main/cc/xmq.h src/main/cc/xmq_rapidxml.h
+	@mkdir -p dist
+	@cp build/libxmq.so dist
+	@cp build/libxmq.a dist
+	@cp src/main/cc/xmq.h dist
+	@cp src/main/cc/xmq_rapidxml.h dist
+
 $(BUILD)/xmq: $(XMQ_OBJS) $(BUILD)/main.o
-	$(CXX) -o $(BUILD)/xmq $(XMQ_OBJS) $(BUILD)/main.o $(DEBUG_LDFLAGS) -lpthread
+	$(CXX) -o $(BUILD)/xmq $(XMQ_OBJS) $(BUILD)/main.o $(DEBUG_LDFLAGS)
+
+$(BUILD)/libxmq.so: $(XMQ_LIB_OBJS)
+	$(CXX) -shared -o $(BUILD)/libxmq.so $(XMQ_LIB_OBJS) $(DEBUG_LDFLAGS)
+
+$(BUILD)/libxmq.a: $(XMQ_LIB_OBJS)
+	ar rcs $@ $^
 
 $(BUILD)/testinternals: $(XMQ_OBJS) $(BUILD)/testinternals.o
-	$(CXX) -o $(BUILD)/testinternals $(XMQ_OBJS) $(BUILD)/testinternals.o $(DEBUG_LDFLAGS) -lpthread
+	$(CXX) -o $(BUILD)/testinternals $(XMQ_OBJS) $(BUILD)/testinternals.o $(DEBUG_LDFLAGS)
 
 clean:
 	rm -rf build/* build_arm/* build_debug/* build_arm_debug/* *~
@@ -95,6 +114,12 @@ clean:
 test:
 	@./build/testinternals
 	@./spec/genspechtml.sh ./build/xmq
+
+testur: dist testur.cc
+	g++ testur.cc -o testur -Idist -I. -Ldist -lxmq
+
+run_testur: testur
+	LD_LIBRARY_PATH=dist ./testur
 
 testdebug:
 	@echo Test internals

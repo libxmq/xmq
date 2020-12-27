@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 #include "util.h"
+#include "xmq.h"
 #include "xmq_implementation.h"
 
 #include <string>

@@ -37,7 +37,6 @@
 #include <unistd.h>
 #include <vector>
 #include <set>
-#define VERSION "0.1"
 
 using namespace std;
 
@@ -254,7 +253,7 @@ int xml2xmq(xmq::Settings *settings)
 
     RenderActionsRapidXML ractions;
     ractions.setRoot(root);
-    xmq::renderXMQ(&ractions, settings);
+    xmq::renderXMQ(&ractions, settings->output, settings->use_color, settings->out);
     return 0;
 }
 
@@ -286,21 +285,15 @@ int xmq2xml(xmq::Settings *settings)
     }
 
     ParseActionsRapidXML pactions;
-    pactions.doc = &doc;
+    pactions.setDocument(&doc);
 
     parseXMQ(&pactions, settings->filename.c_str(), &(*buffer)[0]);
 
     if (settings->view)
     {
-        rapidxml::xml_node<> *node = &doc;
-        node = node->first_node();
-        if (node->type() == rapidxml::node_doctype || node->type() == rapidxml::node_declaration)
-        {
-            node = node->next_sibling();
-        }
         RenderActionsRapidXML ractions;
-        ractions.setRoot(node);
-        renderXMQ(&ractions, settings);
+        ractions.setRoot(doc.first_node());
+        renderXMQ(&ractions, settings->output, settings->use_color, settings->out);
     }
     else
     {
@@ -315,7 +308,7 @@ int xmq2xml(xmq::Settings *settings)
             flags |= rapidxml::print_html;
         }
         print(back_inserter(s), doc, flags);
-        std::cout << s;
+        settings->out->insert(settings->out->end(), s.begin(), s.end());
     }
 
     return 0;
