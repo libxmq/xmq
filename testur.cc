@@ -1,4 +1,6 @@
 
+#include<stdio.h>
+
 #include<xmq.h>
 #include<xmq_rapidxml.h>
 
