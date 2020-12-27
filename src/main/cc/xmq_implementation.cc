@@ -87,7 +87,7 @@ bool xmq_implementation::firstWordIsHtml(std::vector<char> &buffer)
         if (i+len+1 < buffer.size() && (!strncasecmp(&buffer[i], "html", len)))
         {
             // Check that we have "html " "html=123" or "html{"
-            if (buffer[i+len] == ' ' || buffer[i+len] == '=' || buffer[i+len] == '{')
+            if (buffer[i+len] == ' ' || buffer[i+len] == '=' || buffer[i+len] == '{' || buffer[i+len] == '(')
             {
                 return true;
             }

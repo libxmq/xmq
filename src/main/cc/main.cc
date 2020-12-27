@@ -84,15 +84,28 @@ bool detectTreeType(Settings *settings)
 {
     bool is_xmq = false == xmq_implementation::startsWithLessThan(*settings->in);
 
-    if (settings->tree_type == xmq::TreeType::auto_detect)
+    if (is_xmq)
     {
-        settings->tree_type = xmq::TreeType::xml;
-        if (xmq_implementation::isHtml(*settings->in))
+        if (settings->tree_type == xmq::TreeType::auto_detect)
         {
-            settings->tree_type = xmq::TreeType::html;
+            settings->tree_type = xmq::TreeType::xml;
+            if (xmq_implementation::firstWordIsHtml(*settings->in))
+            {
+                settings->tree_type = xmq::TreeType::html;
+            }
         }
     }
-
+    else
+    {
+        if (settings->tree_type == xmq::TreeType::auto_detect)
+        {
+            settings->tree_type = xmq::TreeType::xml;
+            if (xmq_implementation::isHtml(*settings->in))
+            {
+                settings->tree_type = xmq::TreeType::html;
+            }
+        }
+    }
     return is_xmq;
 }
 
@@ -260,16 +273,10 @@ int xmq2xml(Settings *settings)
 {
     vector<char> *buffer = settings->in;
     rapidxml::xml_document<> doc;
-    bool generate_html {};
-
-    if (xmq_implementation::firstWordIsHtml(*buffer))
-    {
-        generate_html = true;
-    }
 
     if (!settings->no_declaration)
     {
-        if (generate_html)
+        if (settings->tree_type == xmq::TreeType::html)
         {
             rapidxml::xml_node<> *node = doc.allocate_node(rapidxml::node_doctype, "!DOCTYPE", "html");
             doc.append_node(node);
@@ -300,7 +307,7 @@ int xmq2xml(Settings *settings)
         {
             flags |= rapidxml::print_no_indenting;
         }
-        if (generate_html)
+        if (settings->tree_type == xmq::TreeType::html)
         {
             flags |= rapidxml::print_html;
         }
