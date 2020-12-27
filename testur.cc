@@ -15,7 +15,7 @@ int main()
     xmq::parseXMQ(&pa, "", "alfa=123");
 
     RenderActionsRapidXML ra;
-    ra.setRoot(&document);
+    ra.setRoot(document.first_node());
 
     std::vector<char> in, out;
     xmq::Settings settings(&in, &out);

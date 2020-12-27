@@ -91,8 +91,8 @@ all: $(BUILD)/xmq $(BUILD)/libxmq.so $(BUILD)/libxmq.a $(BUILD)/testinternals te
 .PHONY: dist
 dist: $(BUILD)/libxmq.so $(BUILD)/libxmq.a src/main/cc/xmq.h src/main/cc/xmq_rapidxml.h
 	@mkdir -p dist
-	@cp build/libxmq.so dist
-	@cp build/libxmq.a dist
+	@cp $(BUILD)/libxmq.so dist
+	@cp $(BUILD)/libxmq.a dist
 	@cp src/main/cc/xmq.h dist
 	@cp src/main/cc/xmq_rapidxml.h dist
 
@@ -116,7 +116,7 @@ test:
 	@./spec/genspechtml.sh ./build/xmq
 
 testur: dist testur.cc
-	g++ $(CXXFLAGS) testur.cc -o $@ -Idist -I. -Ldist -lxmq
+	@$(CXX) $(CXXFLAGS) testur.cc -o $@ -Idist -I. -Ldist -lxmq
 
 run_testur: testur
 	LD_LIBRARY_PATH=dist ./testur
