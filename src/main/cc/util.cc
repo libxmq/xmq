@@ -160,7 +160,3 @@ bool loadStdin(vector<char> *buf)
     close(fd);
     return true;
 }
-
-const char *manual = R"MANUAL(
-usage: xmq <input>
-)MANUAL";

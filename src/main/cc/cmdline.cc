@@ -22,12 +22,16 @@
  SOFTWARE.
 */
 
-
 #include "cmdline.h"
+#include "util.h"
 
 #include<string.h>
 
-int parseCommandLine(xmq::Settings *settings, int argc, char **argv)
+const char *manual = R"MANUAL(
+usage: xmq <input>
+)MANUAL";
+
+void parseCommandLine(xmq::Settings *settings, int argc, char **argv)
 {
     int i = 1;
     for (;;)
@@ -125,5 +129,32 @@ int parseCommandLine(xmq::Settings *settings, int argc, char **argv)
         }
         if (!found) break;
     }
-    return i;
+
+    const char *file = argv[i];
+
+    if (file == NULL)
+    {
+        puts(manual);
+        exit(0);
+    }
+
+    if (!strcmp(file, "-"))
+    {
+        bool rc = loadStdin(settings->in);
+        if (!rc)
+        {
+            exit(1);
+        }
+    }
+    else
+    {
+        std::string files = std::string(file);
+        bool rc = loadFile(files, settings->in);
+        if (!rc)
+        {
+            // Error message already printed by loadFile.
+            exit(1);
+        }
+    }
+    settings->in->push_back('\0');
 }

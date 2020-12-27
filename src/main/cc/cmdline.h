@@ -27,6 +27,6 @@
 
 #include "xmq.h"
 
-int parseCommandLine(xmq::Settings *settings, int argc, char **argv);
+void parseCommandLine(xmq::Settings *settings, int argc, char **argv);
 
 #endif

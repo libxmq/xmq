@@ -35,127 +35,55 @@
 #define VERSION "0.1"
 
 using namespace std;
-using namespace xmq;
 
-static bool is_white_space(char c)
+bool detectTreeType(xmq::Settings *settings)
 {
-    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
+    bool is_xmq = false == xmq_implementation::startsWithLessThan(*settings->in);
+
+    if (settings->tree_type == xmq::TreeType::auto_detect)
+    {
+        settings->tree_type = xmq::TreeType::xml;
+        if (xmq_implementation::isHtml(*settings->in))
+        {
+            settings->tree_type = xmq::TreeType::html;
+        }
+    }
+
+    return is_xmq;
 }
 
 int main(int argc, char **argv)
 {
     vector<char> in;
     vector<char> out;
-    set<string> excludes;
 
-    // Display using color of the output is a terminal.
-    Settings settings;
-    settings.use_color = isatty(1);
+    xmq::Settings settings(&in, &out);
 
     if (isatty(1))
     {
-        settings.output = RenderType::terminal;
+        settings.use_color = true;
+        settings.output = xmq::RenderType::terminal;
+    }
+
+    parseCommandLine(&settings, argc, argv);
+
+    bool is_xmq = detectTreeType(&settings);
+    int rc = 0;
+
+    if (is_xmq)
+    {
+        rc = main_xmq2xml(&settings);
     }
     else
     {
-        settings.output = RenderType::plain;
+        rc = main_xml2xmq(&settings);
     }
 
-    int i = parseCommandLine(&settings, argc, argv);
-
-    if (settings.use_color)
+    if (rc == 0)
     {
-        // printf("\033]11;?\033\\\n");
-        // Detect background color of terminal
-        // To change the color theme....
-        // Now it defaults to colors suitable for a light background.
+        out.push_back('\0');
+        printf("%s", &out[0]);
     }
 
-    const char *file = argv[i];
-
-    if (file == NULL)
-    {
-        puts(manual);
-        exit(0);
-    }
-    if (!strcmp(file, "-"))
-    {
-        bool rc = loadStdin(&in);
-        if (!rc)
-        {
-            exit(1);
-        }
-    }
-    else
-    {
-        string files = string(file);
-        bool rc = loadFile(files, &in);
-        if (!rc)
-        {
-            exit(1);
-        }
-    }
-    in.push_back('\0');
-
-    bool input_is_xml = false;
-
-    for (char c : in)
-    {
-        if (!is_white_space(c))
-        {
-            // Look at the first non-whitespace character in the file.
-            // If it is a <, then it must be an xml file, since
-            // it cannot be an xmq file.
-            input_is_xml = c == '<';
-            break;
-        }
-    }
-
-    settings.filename = file;
-    if (input_is_xml)
-    {
-        settings.in = &in;
-        settings.out = &out;
-        if (settings.tree_type == TreeType::auto_detect)
-        {
-            if (xmq_implementation::isHtml(in))
-            {
-                settings.tree_type = TreeType::html;
-            }
-            else
-            {
-                settings.tree_type = TreeType::xml;
-            }
-        }
-        int rc = main_xml2xmq(&settings);
-        if (rc == 0)
-        {
-            out.push_back('\0');
-            printf("%s", &out[0]);
-        }
-        return rc;
-    }
-    else
-    {
-        settings.in = &in;
-        settings.out = &out;
-        if (settings.tree_type == TreeType::auto_detect)
-        {
-            if (xmq_implementation::isHtml(in))
-            {
-                settings.tree_type = TreeType::html;
-            }
-            else
-            {
-                settings.tree_type = TreeType::xml;
-            }
-        }
-        int rc = main_xmq2xml(file, &settings);
-        if (rc == 0)
-        {
-            out.push_back('\0');
-            printf("%s", &out[0]);
-        }
-        return rc;
-    }
+    return rc;
 }

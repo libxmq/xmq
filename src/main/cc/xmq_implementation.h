@@ -26,9 +26,31 @@
 #define XMQ_IMPLEMENTATION_H
 
 #include<vector>
+#include<string.h>
 
 namespace xmq_implementation
 {
+    struct str
+    {
+        const char *s; // Start of string.
+        size_t l; // Length of string.
+
+        str(const char *st, size_t le) : s(st), l(le) {}
+        bool equals(std::string &st)
+        {
+            if (l != st.size()) return false;
+            return !strncmp(st.c_str(), s, l);
+        }
+        bool equals(str &st)
+        {
+            if (l != st.l) return false;
+            return !strncmp(st.s, s, l);
+        }
+
+        str() : s(""), l(0) {}
+    };
+
+    bool startsWithLessThan(std::vector<char> &buffer);
     bool isWhiteSpace(char c);
     bool isNewLine(char c);
     bool isHtml(std::vector<char> &buffer);

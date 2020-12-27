@@ -84,9 +84,9 @@ struct ParseActionsRapidXML : ParseActions
 
 };
 
-int xmq::main_xmq2xml(const char *filename, Settings *provided_settings)
+int xmq::main_xmq2xml(Settings *settings)
 {
-    vector<char> *buffer = provided_settings->in;
+    vector<char> *buffer = settings->in;
     xml_document<> doc;
     bool generate_html {};
 
@@ -95,7 +95,7 @@ int xmq::main_xmq2xml(const char *filename, Settings *provided_settings)
         generate_html = true;
     }
 
-    if (!provided_settings->no_declaration)
+    if (!settings->no_declaration)
     {
         if (generate_html)
         {
@@ -114,9 +114,9 @@ int xmq::main_xmq2xml(const char *filename, Settings *provided_settings)
     ParseActionsRapidXML actions;
     actions.doc = &doc;
 
-    parse(filename, &(*buffer)[0], &actions);
+    parse(settings->filename.c_str(), &(*buffer)[0], &actions);
 
-    if (provided_settings->view)
+    if (settings->view)
     {
         xml_node<> *node = &doc;
         node = node->first_node();
@@ -124,13 +124,13 @@ int xmq::main_xmq2xml(const char *filename, Settings *provided_settings)
         {
             node = node->next_sibling();
         }
-        renderXMQ(node, provided_settings);
+        renderXMQ(node, settings);
     }
     else
     {
         string s;
         int flags = 0;
-        if (provided_settings->preserve_ws)
+        if (settings->preserve_ws)
         {
             flags |= rapidxml::print_no_indenting;
         }

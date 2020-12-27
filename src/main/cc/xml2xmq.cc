@@ -34,10 +34,13 @@
 
 #include "util.h"
 #include "xmq.h"
+#include "xmq_implementation.h"
+
 
 using namespace rapidxml;
 using namespace std;
 using namespace xmq;
+using xmq_implementation::str;
 
 StringCount string_count_;
 int num_prefixes_ {};

@@ -39,6 +39,18 @@ bool xmq_implementation::isNewLine(char c)
 const char *doctype = "<!DOCTYPE html>";
 const char *html = "<html";
 
+bool xmq_implementation::startsWithLessThan(std::vector<char> &buffer)
+{
+    for (char c : buffer)
+    {
+        if (!xmq_implementation::isWhiteSpace(c))
+        {
+            return c == '<';
+        }
+    }
+    return false;
+}
+
 bool xmq_implementation::isHtml(std::vector<char> &buffer)
 {
     size_t i=0;

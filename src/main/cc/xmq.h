@@ -44,10 +44,11 @@ namespace xmq
     class Settings
     {
     public:
-        std::string filename;
+        Settings(std::vector<char> *i, std::vector<char> *o) : in(i), out(o) {}
         std::vector<char> *in;
         std::vector<char> *out;
 
+        std::string filename;
         TreeType tree_type {};  // Set input type to: auto_detect, xml or html.
         RenderType output {};   // Write plain text, text+ansi, text+html or text+tex.
         bool use_color {};      // Set to true to produce colors. Color can never be enabled with the plain output type.
@@ -90,7 +91,7 @@ namespace xmq
     };
 
     int main_xml2xmq(Settings *settings);
-    int main_xmq2xml(const char *filename, Settings *settings);
+    int main_xmq2xml(Settings *settings);
 
     void renderXMQ(void *node, Settings *provided_settings);
     void parse(const char *filename, char *xmq, ParseActions *actions);
