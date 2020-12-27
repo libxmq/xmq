@@ -240,6 +240,11 @@ void printIndent(int i, bool newline=true)
     while (--i >= 0) output(" ");
 }
 
+static bool is_white_space(char c)
+{
+    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
+}
+
 size_t trimWhiteSpace(str *v)
 {
     const char *data = v->s;
@@ -249,7 +254,7 @@ size_t trimWhiteSpace(str *v)
     // Trim away whitespace at the beginning.
     while (len > 0 && *data != 0)
     {
-        if (!isWhiteSpace(*data)) break;
+        if (!is_white_space(*data)) break;
         data++;
         len--;
     }
@@ -257,7 +262,7 @@ size_t trimWhiteSpace(str *v)
     // Trim away whitespace at the end.
     while (len >= 1)
     {
-        if (!isWhiteSpace(data[len-1])) break;
+        if (!is_white_space(data[len-1])) break;
         len--;
     }
     v->s = data;
@@ -778,7 +783,7 @@ void findLineAndColumn(const char *from, const char *where, int *line, int *col)
     }
 }
 
-void xmq::renderDoc(void *rroot, xmq::Settings *provided_settings)
+void xmq::renderXMQ(void *rroot, xmq::Settings *provided_settings)
 {
     xml_node<> *root = (xml_node<>*)rroot;
     settings_ = provided_settings;
@@ -931,6 +936,6 @@ int xmq::main_xml2xmq(Settings *provided_settings)
         }
     }
 
-    xmq::renderDoc(root, provided_settings);
+    xmq::renderXMQ(root, provided_settings);
     return 0;
 }

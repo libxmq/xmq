@@ -34,6 +34,7 @@
 
 #include "util.h"
 #include "xmq.h"
+#include "xmq_implementation.h"
 
 using namespace std;
 using namespace rapidxml;
@@ -41,7 +42,7 @@ using namespace xmq;
 
 #define VERSION "0.1"
 
-struct ActionsRapidXML : ActionsXMQ
+struct ParseActionsRapidXML : ParseActions
 {
     xml_document<> *doc;
 
@@ -89,7 +90,7 @@ int xmq::main_xmq2xml(const char *filename, Settings *provided_settings)
     xml_document<> doc;
     bool generate_html {};
 
-    if (firstWordIsHtml(*buffer))
+    if (xmq_implementation::firstWordIsHtml(*buffer))
     {
         generate_html = true;
     }
@@ -110,10 +111,10 @@ int xmq::main_xmq2xml(const char *filename, Settings *provided_settings)
         }
     }
 
-    ActionsRapidXML actions;
+    ParseActionsRapidXML actions;
     actions.doc = &doc;
 
-    parse(filename, &(*buffer)[0], &actions, generate_html);
+    parse(filename, &(*buffer)[0], &actions);
 
     if (provided_settings->view)
     {
@@ -123,7 +124,7 @@ int xmq::main_xmq2xml(const char *filename, Settings *provided_settings)
         {
             node = node->next_sibling();
         }
-        renderDoc(node, provided_settings);
+        renderXMQ(node, provided_settings);
     }
     else
     {

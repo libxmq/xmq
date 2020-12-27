@@ -22,8 +22,10 @@
  SOFTWARE.
 */
 
+#include "cmdline.h"
 #include "util.h"
 #include "xmq.h"
+#include "xmq_implementation.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -34,6 +36,11 @@
 
 using namespace std;
 using namespace xmq;
+
+static bool is_white_space(char c)
+{
+    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
+}
 
 int main(int argc, char **argv)
 {
@@ -54,102 +61,8 @@ int main(int argc, char **argv)
         settings.output = RenderType::plain;
     }
 
-    int i = 1;
-    for (;;)
-    {
-        bool found = false;
-        if (argc >= 2 && !strcmp(argv[i], "--color"))
-        {
-            settings.use_color = true;
-            if (settings.output == RenderType::plain)
-            {
-                settings.output = RenderType::terminal;
-            }
+    int i = parseCommandLine(&settings, argc, argv);
 
-            i++;
-            argc--;
-            found = true;
-        }
-        if (argc >= 2 && !strcmp(argv[i], "--mono"))
-        {
-            settings.use_color = false;
-            i++;
-            argc--;
-            found = true;
-        }
-        if (argc >= 2 && !strcmp(argv[i], "--output=plain"))
-        {
-            settings.output = RenderType::plain;
-            i++;
-            argc--;
-            found = true;
-        }
-        if (argc >= 2 && !strcmp(argv[i], "--output=terminal"))
-        {
-            settings.output = RenderType::terminal;
-            i++;
-            argc--;
-            found = true;
-        }
-        if (argc >= 2 && !strcmp(argv[i], "--output=html"))
-        {
-            settings.output = RenderType::html;
-            i++;
-            argc--;
-            found = true;
-        }
-        if (argc >= 2 && !strcmp(argv[i], "--output=tex"))
-        {
-            settings.output = RenderType::tex;
-            i++;
-            argc--;
-            found = true;
-        }
-        if (argc >= 2 && !strcmp(argv[i], "--html"))
-        {
-            settings.tree_type = TreeType::html;
-            i++;
-            argc--;
-            found = true;
-        }
-        if (argc >= 2 && !strcmp(argv[i], "--nodec"))
-        {
-            // Do not print <?xml...> nor <!DOCTYPe...>
-            settings.no_declaration = true;
-            i++;
-            argc--;
-            found = true;
-        }
-        if (argc >= 2 && !strcmp(argv[i], "-p"))
-        {
-            settings.preserve_ws = true;
-            i++;
-            argc--;
-            found = true;
-        }
-        if (argc >= 2 && !strcmp(argv[i], "--compress"))
-        {
-            settings.compress = true;
-            i++;
-            argc--;
-            found = true;
-        }
-        if (argc >= 3 && !strcmp(argv[i], "--exclude"))
-        {
-            settings.excludes.insert(argv[i+1]);
-            i+=2;
-            argc-=2;
-            found = true;
-        }
-        if (argc >= 2 && !strcmp(argv[i], "-v"))
-        {
-            settings.view = true;
-            i++;
-            argc--;
-            found = true;
-        }
-        if (!found) break;
-    }
     if (settings.use_color)
     {
         // printf("\033]11;?\033\\\n");
@@ -188,7 +101,7 @@ int main(int argc, char **argv)
 
     for (char c : in)
     {
-        if (!isWhiteSpace(c))
+        if (!is_white_space(c))
         {
             // Look at the first non-whitespace character in the file.
             // If it is a <, then it must be an xml file, since
@@ -205,7 +118,7 @@ int main(int argc, char **argv)
         settings.out = &out;
         if (settings.tree_type == TreeType::auto_detect)
         {
-            if (isHtml(in))
+            if (xmq_implementation::isHtml(in))
             {
                 settings.tree_type = TreeType::html;
             }
@@ -228,7 +141,7 @@ int main(int argc, char **argv)
         settings.out = &out;
         if (settings.tree_type == TreeType::auto_detect)
         {
-            if (firstWordIsHtml(in))
+            if (xmq_implementation::isHtml(in))
             {
                 settings.tree_type = TreeType::html;
             }

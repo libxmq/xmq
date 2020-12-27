@@ -23,6 +23,7 @@
 */
 
 #include "xmq.h"
+#include "xmq_implementation.h"
 #include "util.h"
 #include <string.h>
 #include <stdarg.h>
@@ -31,26 +32,23 @@
 using namespace std;
 using namespace xmq;
 
-bool isWhiteSpace(char c);
-
-struct ParserImplementation
+class ParserImplementation
 {
-    ActionsXMQ *actions;
-    const char *file;
+    ParseActions *parse_actions {};
+    const char *file {};
+    char *buf {};
+    size_t buf_len {};
+    size_t pos {};
+    int line {};
+    int col {};
 
-    char *buf;
-    size_t buf_len;
-    size_t pos;
-    int line;
-    int col;
-    bool generate_html {};
+    void eatWhiteSpace();
 
     void error(const char* fmt, ...);
 
     int findIndent(int p);
 
     bool isReservedCharacter(char c);
-    void eatWhiteSpace();
 
     TokenType peekToken();
     Token eatToken();
@@ -61,7 +59,6 @@ struct ParserImplementation
     Token eatToEndOfQuote(int indent);
 
     // Syntax
-    void parseXMQ(void *parent);
     void parseComment(void *parent);
     void parseNode(void *parent);
     void parseAttributes(void *parent);
@@ -70,7 +67,23 @@ struct ParserImplementation
     bool isEndingWithDepth(size_t p, int depth);
     size_t potentiallySkipLeading_WS_NL_WS(size_t p);
     void potentiallyRemoveEnding_WS_NL_WS(vector<char> *buffer);
+    void trimTokenWhiteSpace(Token *t);
+
     void padWithSingleSpaces(Token *t);
+
+public:
+    void setup(ParseActions *a, const char *f, char *b)
+    {
+        parse_actions = a;
+        file = f;
+        buf = b;
+        buf_len = strlen(buf);
+        pos = 0;
+        line = 1;
+        col = 1;
+    }
+    void parseXMQ(void *parent);
+
 };
 
 void ParserImplementation::error(const char* fmt, ...)
@@ -86,13 +99,13 @@ void ParserImplementation::error(const char* fmt, ...)
     exit(1);
 }
 
-void trimTokenWhiteSpace(Token *t)
+void ParserImplementation::trimTokenWhiteSpace(Token *t)
 {
     size_t len = strlen(t->value);
     // Trim away whitespace at the beginning.
     while (len > 0 && *t->value != 0)
     {
-        if (!isWhiteSpace(*t->value)) break;
+        if (!xmq_implementation::isWhiteSpace(*t->value)) break;
         t->value++;
         len--;
     }
@@ -100,93 +113,11 @@ void trimTokenWhiteSpace(Token *t)
     // Trim away whitespace at the end.
     while (len >= 1)
     {
-        if (!isWhiteSpace(t->value[len-1])) break;
+        if (!xmq_implementation::isWhiteSpace(t->value[len-1])) break;
         len--;
     }
 }
 
-void removeIncidentalWhiteSpace(vector<char> *buffer, int first_indent)
-{
-    // Check that there are newlines in here!
-    bool found_nl = false;
-    for (size_t i=0; i<buffer->size(); ++i)
-    {
-        if ((*buffer)[i] == '\n') { found_nl = true; break; }
-    }
-    if (!found_nl) return;
-
-    // There is at least one newline!
-    int common = -1;
-    int curr = first_indent;
-    bool looking = true;
-    vector<char> copy;
-    // Simulate the indentation in the copy by pushing spaces first.
-    for (int i = 0; i < first_indent-1; ++i)
-    {
-        copy.push_back(' ');
-    }
-    for (size_t i = 0; i < buffer->size(); ++i)
-    {
-        char c = (*buffer)[i];
-//        fprintf(stderr, "%c(%d)\n", c, c);
-        copy.push_back(c);
-        if (c == '\n')
-        {
-            // We reached end of line.
-            if (curr < common || common == -1)
-            {
-                // We found a shorter sequence of spaces followed by non-whitespace,
-                // use this number as the future commonly shared sequence of spaces.
-/*                if (found_non_ws)
-                  {*/
-                    common = curr;
-//                }
-//                fprintf(stderr, "common %d\n", common);
-            }
-            curr = 0;
-            looking = true;
-        }
-        else
-        {
-            if (looking)
-            {
-                if (c == ' ')
-                {
-                    curr++;
-//                    fprintf(stderr, "curr++ %d\n", curr);
-                }
-                else
-                {
-                    looking = false;
-                }
-            }
-        }
-    }
-    buffer->clear();
-
-    curr = common+1;
-    for (size_t i = 0; i < copy.size(); ++i)
-    {
-        if (copy[i] == '\n')
-        {
-            curr = common+1;
-            buffer->push_back('\n');
-            continue;
-        }
-        if (copy[i] != ' ')
-        {
-            curr = 0;
-        }
-        else
-        {
-            if (curr > 0) curr--;
-        }
-        if (curr == 0)
-        {
-            buffer->push_back(copy[i]);
-        }
-    }
-}
 
 void ParserImplementation::padWithSingleSpaces(Token *t)
 {
@@ -196,7 +127,7 @@ void ParserImplementation::padWithSingleSpaces(Token *t)
     memcpy(buf+1, t->value, len);
     buf[1+len] = ' ';
     buf[2+len] = 0;
-    t->value = actions->allocateCopy(buf, len+3);
+    t->value = parse_actions->allocateCopy(buf, len+3);
 }
 
 int ParserImplementation::findIndent(int p)
@@ -232,12 +163,12 @@ void ParserImplementation::eatWhiteSpace()
     {
         char c = buf[pos];
         if (c == 0) break;
-        else if (isNewLine(c))
+        else if (xmq_implementation::isNewLine(c))
         {
             col = 1;
             line++;
         }
-        else if (!isWhiteSpace(c)) break;
+        else if (!xmq_implementation::isWhiteSpace(c)) break;
         pos++;
         col++;
     }
@@ -312,7 +243,7 @@ Token ParserImplementation::eatToEndOfText()
         col++;
     }
     size_t len = i-start;
-    char *value = actions->allocateCopy(buf+start, len+1);
+    char *value = parse_actions->allocateCopy(buf+start, len+1);
 
     return Token(TokenType::text, value);
 }
@@ -424,7 +355,7 @@ Token ParserImplementation::eatToEndOfQuote(int indent)
     {
         // This is the empty string! ''
         pos += 2;
-        char *value = actions->allocateCopy("", 1);
+        char *value = parse_actions->allocateCopy("", 1);
         return Token(TokenType::text, value);
     }
 
@@ -470,13 +401,13 @@ Token ParserImplementation::eatToEndOfQuote(int indent)
     }
 
     potentiallyRemoveEnding_WS_NL_WS(&buffer);
-    removeIncidentalWhiteSpace(&buffer, first_indent);
+    xmq_implementation::removeIncidentalWhiteSpace(&buffer, first_indent);
 
     if (buffer.size() == 0)
     {
         error("empty string must always be two single quotes ''.");
     }
-    char *value = actions->allocateCopy(&(buffer[0]), buffer.size()+1);
+    char *value = parse_actions->allocateCopy(&(buffer[0]), buffer.size()+1);
 
     return Token(TokenType::text, value);
 }
@@ -521,7 +452,7 @@ Token ParserImplementation::eatToEndOfLine()
         col++;
     }
     size_t len = p-start;
-    char *value = actions->allocateCopy(buf+start, len+1);
+    char *value = parse_actions->allocateCopy(buf+start, len+1);
 
     return Token(TokenType::text, value);
 }
@@ -555,8 +486,8 @@ Token ParserImplementation::eatMultipleCommentLines()
         col++;
     }
 
-    removeIncidentalWhiteSpace(&buffer, first_indent);
-    char *value = actions->allocateCopy(&(buffer[0]), buffer.size()+1);
+    xmq_implementation::removeIncidentalWhiteSpace(&buffer, first_indent);
+    char *value = parse_actions->allocateCopy(&(buffer[0]), buffer.size()+1);
 
     return Token(TokenType::text, value);
 }
@@ -565,7 +496,7 @@ void ParserImplementation::parseComment(void *parent)
 {
     Token val = eatToken();
 
-    actions->appendComment(parent, val);
+    parse_actions->appendComment(parent, val);
 }
 
 void ParserImplementation::parseXMQ(void *parent)
@@ -587,7 +518,7 @@ void ParserImplementation::parseXMQ(void *parent)
         if (t == TokenType::quote)
         {
             Token val = eatToken();
-            actions->appendData(parent, val);
+            parse_actions->appendData(parent, val);
         }
         else
         {
@@ -614,7 +545,7 @@ void ParserImplementation::parseAttributes(void *parent)
             nt == TokenType::paren_close)
         {
             // This attribute is completed, it has no data.
-            actions->appendAttribute(parent, t, t);
+            parse_actions->appendAttribute(parent, t, t);
             continue;
         }
 
@@ -626,7 +557,7 @@ void ParserImplementation::parseAttributes(void *parent)
         if (val.type == TokenType::text ||
             val.type == TokenType::quote)
         {
-            actions->appendAttribute(parent, t, val);
+            parse_actions->appendAttribute(parent, t, val);
         }
         else
         {
@@ -641,7 +572,7 @@ void ParserImplementation::parseNode(void *parent)
     Token t = eatToken();
     if (t.type != TokenType::text) error("expected tag");
 
-    void *node = actions->appendElement(parent, t);
+    void *node = parse_actions->appendElement(parent, t);
 
     TokenType tt = peekToken();
 
@@ -676,23 +607,15 @@ void ParserImplementation::parseNode(void *parent)
         }
         if (val.value[0] != 0)
         {
-            actions->appendData(node, val);
+            parse_actions->appendData(node, val);
         }
     }
 }
 
-void xmq::parse(const char *filename, char *xmq, ActionsXMQ *actions, bool generate_html)
+void xmq::parse(const char *filename, char *xmq, ParseActions *parse_actions)
 {
     ParserImplementation parser;
 
-    parser.actions = actions;
-    parser.buf = xmq;
-    parser.buf_len = strlen(xmq);
-    parser.pos = 0;
-    parser.line = 1;
-    parser.col = 1;
-    parser.file = filename;
-    parser.generate_html = generate_html;
-
-    parser.parseXMQ(actions->root());
+    parser.setup(parse_actions, filename, xmq);
+    parser.parseXMQ(parse_actions->root());
 }

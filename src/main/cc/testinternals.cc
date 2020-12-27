@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 #include "util.h"
+#include "xmq_implementation.h"
 
 #include <string>
 #include <string.h>
@@ -66,8 +67,6 @@ void test_add_string()
 }
 
 
-void removeIncidentalWhiteSpace(vector<char> *buffer, int first_indent);
-
 bool checkEquals(vector<char> *alfa, const char *beta)
 {
     size_t len = alfa->size();
@@ -90,34 +89,34 @@ void test_incidental()
     vector<char> buffer;
     const char *ex1 = "alfa\nbeta\ngamma\n";
     buffer.insert(buffer.end(), ex1, ex1+strlen(ex1));
-    removeIncidentalWhiteSpace(&buffer, 0);
+    xmq_implementation::removeIncidentalWhiteSpace(&buffer, 0);
     checkEquals(&buffer, ex1);
     buffer.clear();
     const char *ex2 = " alfa\n beta\n gamma";
     buffer.insert(buffer.end(), ex2, ex2+strlen(ex2));
-    removeIncidentalWhiteSpace(&buffer, 0);
+    xmq_implementation::removeIncidentalWhiteSpace(&buffer, 0);
     checkEquals(&buffer, "alfa\nbeta\ngamma");
     buffer.clear();
     const char *ex3 = "  alfa\n  beta\n  gamma";
     buffer.insert(buffer.end(), ex3, ex3+strlen(ex3));
-    removeIncidentalWhiteSpace(&buffer, 0);
+    xmq_implementation::removeIncidentalWhiteSpace(&buffer, 0);
     checkEquals(&buffer, "alfa\nbeta\ngamma");
     buffer.clear();
     const char *ex4 = "alfa\n   beta\n   gamma\n";
     buffer.insert(buffer.end(), ex4, ex4+strlen(ex4));
-    removeIncidentalWhiteSpace(&buffer, 3);
+    xmq_implementation::removeIncidentalWhiteSpace(&buffer, 3);
     checkEquals(&buffer, "alfa\nbeta\ngamma\n");
     buffer.clear();
 
     const char *ex5 = "alfa\n    beta\n   gamma\n  delta\n";
     buffer.insert(buffer.end(), ex5, ex5+strlen(ex5));
-    removeIncidentalWhiteSpace(&buffer, 6);
+    xmq_implementation::removeIncidentalWhiteSpace(&buffer, 6);
     checkEquals(&buffer, "   alfa\n  beta\n gamma\ndelta\n");
     buffer.clear();
 
     const char *ex6 = "      alfa\n     beta\n    gamma\n   delta\n";
     buffer.insert(buffer.end(), ex6, ex6+strlen(ex6));
-    removeIncidentalWhiteSpace(&buffer, 0);
+    xmq_implementation::removeIncidentalWhiteSpace(&buffer, 0);
     checkEquals(&buffer, "   alfa\n  beta\n gamma\ndelta\n");
     buffer.clear();
 
