@@ -1,3 +1,5 @@
 build/
+target/
+project-deps/
 dist/
 testur
