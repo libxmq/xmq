@@ -9,12 +9,8 @@ xmq \- convert a file in xml format to the xmq format and vice versa.
 
 .SH DESCRIPTION
 
-Xmq reads an xml/xmq file or from stdin and converts it to the xmq/xml
+Xmq reads an xml/html/xmq file or from stdin and converts it to the xmq/html/xml
 format and writes it to stdout.
-
-For configuration xml files, the xmq format is easier to read and edit
-manually than raw xml. Thus you use xmq to view and edit an xml file.
-After the edit is done, you use xmq to convert the xmq back to xml.
 
 .SH OPTIONS
 
@@ -28,7 +24,9 @@ After the edit is done, you use xmq to convert the xmq back to xml.
 
 \fB\--html\fR assume that data is html, even though it does not start with an html tag.
 
-\fB\--nodec\fR do not add the xml/html5 declaration.
+\fB\--nodec\fR do not add the xml/html5 declaration/doctype.
+
+\fB\--nopp\fR do not pretty print xml/html.
 
 \fB\--output=html\fR produce output suitable inclusion between <pre>...</pre> tags.
 

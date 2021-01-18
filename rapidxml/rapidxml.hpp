@@ -1385,8 +1385,7 @@ namespace rapidxml
         //! Document can be parsed into multiple times.
         //! Each new call to parse removes previous nodes and attributes (if any), but does not clear memory pool.
         //! \param text XML data to parse; pointer is non-const to denote fact that this data may be modified by the parser.
-        template<int Flags>
-        void parse(Ch *text)
+        void parse(Ch *text, int Flags)
         {
             assert(text);
 
@@ -1395,13 +1394,13 @@ namespace rapidxml
             this->remove_all_attributes();
 
             // Parse BOM, if any
-            parse_bom<Flags>(text);
+            parse_bom(text, Flags);
 
             // Parse children
             while (1)
             {
                 // Skip whitespace before node
-                skip<whitespace_pred, Flags>(text);
+                skip<whitespace_pred>(text, Flags);
                 if (*text == 0)
                     break;
 
@@ -1409,7 +1408,7 @@ namespace rapidxml
                 if (*text == Ch('<'))
                 {
                     ++text;     // Skip '<'
-                    if (xml_node<Ch> *node = parse_node<Flags>(text))
+                    if (xml_node<Ch> *node = parse_node(text, Flags))
                         this->append_node(node);
                 }
                 else
@@ -1515,8 +1514,7 @@ namespace rapidxml
         };
 
         // Insert coded character, using UTF8 or 8-bit ASCII
-        template<int Flags>
-        static void insert_coded_character(Ch *&text, unsigned long code)
+        static void insert_coded_character(Ch *&text, unsigned long code, int Flags)
         {
             if (Flags & parse_no_utf8)
             {
@@ -1562,8 +1560,8 @@ namespace rapidxml
         }
 
         // Skip characters until predicate evaluates to true
-        template<class StopPred, int Flags>
-        static void skip(Ch *&text)
+        template<class StopPred>
+        static void skip(Ch *&text, int Flags)
         {
             Ch *tmp = text;
             while (StopPred::test(*tmp))
@@ -1574,20 +1572,20 @@ namespace rapidxml
         // Skip characters until predicate evaluates to true while doing the following:
         // - replacing XML character entity references with proper characters (&apos; &amp; &quot; &lt; &gt; &#...;)
         // - condensing whitespace sequences to single space character
-        template<class StopPred, class StopPredPure, int Flags>
-        static Ch *skip_and_expand_character_refs(Ch *&text)
+        template<class StopPred, class StopPredPure>
+        static Ch *skip_and_expand_character_refs(Ch *&text, int Flags)
         {
             // If entity translation, whitespace condense and whitespace trimming is disabled, use plain skip
             if (Flags & parse_no_entity_translation &&
                 !(Flags & parse_normalize_whitespace) &&
                 !(Flags & parse_trim_whitespace))
             {
-                skip<StopPred, Flags>(text);
+                skip<StopPred>(text, Flags);
                 return text;
             }
 
             // Use simple skip until first modification is detected
-            skip<StopPredPure, Flags>(text);
+            skip<StopPredPure>(text, Flags);
 
             // Use translation skip
             Ch *src = text;
@@ -1668,7 +1666,7 @@ namespace rapidxml
                                     code = code * 16 + digit;
                                     ++src;
                                 }
-                                insert_coded_character<Flags>(dest, code);    // Put character in output
+                                insert_coded_character(dest, code, Flags);    // Put character in output
                             }
                             else
                             {
@@ -1682,7 +1680,7 @@ namespace rapidxml
                                     code = code * 10 + digit;
                                     ++src;
                                 }
-                                insert_coded_character<Flags>(dest, code);    // Put character in output
+                                insert_coded_character(dest, code, Flags);    // Put character in output
                             }
                             if (*src == Ch(';'))
                                 ++src;
@@ -1729,8 +1727,7 @@ namespace rapidxml
         // Internal parsing functions
 
         // Parse BOM, if any
-        template<int Flags>
-        void parse_bom(Ch *&text)
+        void parse_bom(Ch *&text, int Flags)
         {
             // UTF-8?
             if (static_cast<unsigned char>(text[0]) == 0xEF &&
@@ -1742,8 +1739,7 @@ namespace rapidxml
         }
 
         // Parse XML declaration (<?xml...)
-        template<int Flags>
-        xml_node<Ch> *parse_xml_declaration(Ch *&text)
+        xml_node<Ch> *parse_xml_declaration(Ch *&text, int Flags)
         {
             // If parsing of declaration is disabled
             if (!(Flags & parse_declaration_node))
@@ -1763,10 +1759,10 @@ namespace rapidxml
             xml_node<Ch> *declaration = this->allocate_node(node_declaration);
 
             // Skip whitespace before attributes or ?>
-            skip<whitespace_pred, Flags>(text);
+            skip<whitespace_pred>(text, Flags);
 
             // Parse declaration attributes
-            parse_node_attributes<Flags>(text, declaration);
+            parse_node_attributes(text, declaration, Flags);
 
             // Skip ?>
             if (text[0] != Ch('?') || text[1] != Ch('>'))
@@ -1777,8 +1773,7 @@ namespace rapidxml
         }
 
         // Parse XML comment (<!--...)
-        template<int Flags>
-        xml_node<Ch> *parse_comment(Ch *&text)
+        xml_node<Ch> *parse_comment(Ch *&text, int Flags)
         {
             // If parsing of comments is disabled
             if (!(Flags & parse_comment_nodes))
@@ -1818,8 +1813,7 @@ namespace rapidxml
         }
 
         // Parse DOCTYPE
-        template<int Flags>
-        xml_node<Ch> *parse_doctype(Ch *&text)
+        xml_node<Ch> *parse_doctype(Ch *&text, int Flags)
         {
             // Remember value start
             Ch *value = text;
@@ -1884,8 +1878,7 @@ namespace rapidxml
         }
 
         // Parse PI
-        template<int Flags>
-        xml_node<Ch> *parse_pi(Ch *&text)
+        xml_node<Ch> *parse_pi(Ch *&text, int Flags)
         {
             // If creation of PI nodes is enabled
             if (Flags & parse_pi_nodes)
@@ -1895,13 +1888,13 @@ namespace rapidxml
 
                 // Extract PI target name
                 Ch *name = text;
-                skip<node_name_pred, Flags>(text);
+                skip<node_name_pred>(text, Flags);
                 if (text == name)
                     RAPIDXML_PARSE_ERROR("expected PI target", text);
                 pi->name(name, text - name);
 
                 // Skip whitespace between pi target and pi
-                skip<whitespace_pred, Flags>(text);
+                skip<whitespace_pred>(text, Flags);
 
                 // Remember start of pi
                 Ch *value = text;
@@ -1944,8 +1937,7 @@ namespace rapidxml
         // Parse and append data
         // Return character that ends data.
         // This is necessary because this character might have been overwritten by a terminating 0
-        template<int Flags>
-        Ch parse_and_append_data(xml_node<Ch> *node, Ch *&text, Ch *contents_start)
+        Ch parse_and_append_data(xml_node<Ch> *node, Ch *&text, Ch *contents_start, int Flags)
         {
             // Backup to contents start if whitespace trimming is disabled
             if (!(Flags & parse_trim_whitespace))
@@ -1954,9 +1946,9 @@ namespace rapidxml
             // Skip until end of data
             Ch *value = text, *end;
             if (Flags & parse_normalize_whitespace)
-                end = skip_and_expand_character_refs<text_pred, text_pure_with_ws_pred, Flags>(text);
+                end = skip_and_expand_character_refs<text_pred, text_pure_with_ws_pred>(text, Flags);
             else
-                end = skip_and_expand_character_refs<text_pred, text_pure_no_ws_pred, Flags>(text);
+                end = skip_and_expand_character_refs<text_pred, text_pure_no_ws_pred>(text, Flags);
 
             // Trim trailing whitespace if flag is set; leading was already trimmed by whitespace skip after >
             if (Flags & parse_trim_whitespace)
@@ -2002,8 +1994,7 @@ namespace rapidxml
         }
 
         // Parse CDATA
-        template<int Flags>
-        xml_node<Ch> *parse_cdata(Ch *&text)
+        xml_node<Ch> *parse_cdata(Ch *&text, int Flags)
         {
             // If CDATA is disabled
             if (Flags & parse_no_data_nodes)
@@ -2092,24 +2083,23 @@ namespace rapidxml
         }
 
         // Parse element node
-        template<int Flags>
-        xml_node<Ch> *parse_element(Ch *&text)
+        xml_node<Ch> *parse_element(Ch *&text, int Flags)
         {
             // Create element node
             xml_node<Ch> *element = this->allocate_node(node_element);
 
             // Extract element name
             Ch *name = text;
-            skip<node_name_pred, Flags>(text);
+            skip<node_name_pred>(text, Flags);
             if (text == name)
                 RAPIDXML_PARSE_ERROR("expected element name", text);
             element->name(name, text - name);
 
             // Skip whitespace between element name and attributes or >
-            skip<whitespace_pred, Flags>(text);
+            skip<whitespace_pred>(text, Flags);
 
             // Parse attributes, if any
-            parse_node_attributes<Flags>(text, element);
+            parse_node_attributes(text, element, Flags);
 
             // Determine ending type
             if (*text == Ch('>'))
@@ -2120,7 +2110,7 @@ namespace rapidxml
                 if (!(Flags & parse_void_elements) // void elements are not ebabled
                     || !is_void_element(name, text - name))     // enabled, but its not a void element.
                 {
-                    parse_node_contents<Flags>(text, element);
+                    parse_node_contents(text, element, Flags);
                 }
             }
             else if (*text == Ch('/'))
@@ -2142,8 +2132,7 @@ namespace rapidxml
         }
 
         // Determine node type, and parse it
-        template<int Flags>
-        xml_node<Ch> *parse_node(Ch *&text)
+        xml_node<Ch> *parse_node(Ch *&text, int Flags)
         {
             // Parse proper node type
             switch (text[0])
@@ -2152,7 +2141,7 @@ namespace rapidxml
             // <...
             default:
                 // Parse and append element node
-                return parse_element<Flags>(text);
+                return parse_element(text, Flags);
 
             // <?...
             case Ch('?'):
@@ -2164,12 +2153,12 @@ namespace rapidxml
                 {
                     // '<?xml ' - xml declaration
                     text += 4;      // Skip 'xml '
-                    return parse_xml_declaration<Flags>(text);
+                    return parse_xml_declaration(text, Flags);
                 }
                 else
                 {
                     // Parse PI
-                    return parse_pi<Flags>(text);
+                    return parse_pi(text, Flags);
                 }
 
             // <!...
@@ -2185,7 +2174,7 @@ namespace rapidxml
                     {
                         // '<!--' - xml comment
                         text += 3;     // Skip '!--'
-                        return parse_comment<Flags>(text);
+                        return parse_comment(text, Flags);
                     }
                     break;
 
@@ -2196,7 +2185,7 @@ namespace rapidxml
                     {
                         // '<![CDATA[' - cdata
                         text += 8;     // Skip '![CDATA['
-                        return parse_cdata<Flags>(text);
+                        return parse_cdata(text, Flags);
                     }
                     break;
 
@@ -2208,7 +2197,7 @@ namespace rapidxml
                     {
                         // '<!DOCTYPE ' - doctype
                         text += 9;      // skip '!DOCTYPE '
-                        return parse_doctype<Flags>(text);
+                        return parse_doctype(text, Flags);
                     }
 
                 }   // switch
@@ -2228,15 +2217,14 @@ namespace rapidxml
         }
 
         // Parse contents of the node - children, data etc.
-        template<int Flags>
-        void parse_node_contents(Ch *&text, xml_node<Ch> *node)
+        void parse_node_contents(Ch *&text, xml_node<Ch> *node, int Flags)
         {
             // For all children and text
             while (1)
             {
                 // Skip whitespace between > and node contents
                 Ch *contents_start = text;      // Store start of node contents before whitespace is skipped
-                skip<whitespace_pred, Flags>(text);
+                skip<whitespace_pred>(text, Flags);
                 Ch next_char = *text;
 
             // After data nodes, instead of continuing the loop, control jumps here.
@@ -2259,17 +2247,17 @@ namespace rapidxml
                         {
                             // Skip and validate closing tag name
                             Ch *closing_name = text;
-                            skip<node_name_pred, Flags>(text);
+                            skip<node_name_pred>(text, Flags);
                             if (!internal::compare(node->name(), node->name_size(), closing_name, text - closing_name, true))
                                 RAPIDXML_PARSE_ERROR("invalid closing tag name", text);
                         }
                         else
                         {
                             // No validation, just skip name
-                            skip<node_name_pred, Flags>(text);
+                            skip<node_name_pred>(text, Flags);
                         }
                         // Skip remaining whitespace after node name
-                        skip<whitespace_pred, Flags>(text);
+                        skip<whitespace_pred>(text, Flags);
                         if (*text != Ch('>'))
                             RAPIDXML_PARSE_ERROR("expected >", text);
                         ++text;     // Skip '>'
@@ -2279,7 +2267,7 @@ namespace rapidxml
                     {
                         // Child node
                         ++text;     // Skip '<'
-                        if (xml_node<Ch> *child = parse_node<Flags>(text))
+                        if (xml_node<Ch> *child = parse_node(text, Flags))
                             node->append_node(child);
                     }
                     break;
@@ -2290,7 +2278,7 @@ namespace rapidxml
 
                 // Data node
                 default:
-                    next_char = parse_and_append_data<Flags>(node, text, contents_start);
+                    next_char = parse_and_append_data(node, text, contents_start, Flags);
                     goto after_data_node;   // Bypass regular processing after data nodes
 
                 }
@@ -2298,8 +2286,7 @@ namespace rapidxml
         }
 
         // Parse XML attributes of the node
-        template<int Flags>
-        void parse_node_attributes(Ch *&text, xml_node<Ch> *node)
+        void parse_node_attributes(Ch *&text, xml_node<Ch> *node, int Flags)
         {
             // For all attributes
             while (attribute_name_pred::test(*text))
@@ -2307,7 +2294,7 @@ namespace rapidxml
                 // Extract attribute name
                 Ch *name = text;
                 ++text;     // Skip first character of attribute name
-                skip<attribute_name_pred, Flags>(text);
+                skip<attribute_name_pred>(text, Flags);
                 if (text == name)
                     RAPIDXML_PARSE_ERROR("expected attribute name", name);
 
@@ -2317,7 +2304,7 @@ namespace rapidxml
                 node->append_attribute(attribute);
 
                 // Skip whitespace after attribute name
-                skip<whitespace_pred, Flags>(text);
+                skip<whitespace_pred>(text, Flags);
 
                 if (*text != Ch('='))
                 {
@@ -2334,7 +2321,7 @@ namespace rapidxml
                         attribute->name()[attribute->name_size()] = 0;
 
                     // Skip whitespace after attribute.
-                    skip<whitespace_pred, Flags>(text);
+                    skip<whitespace_pred>(text, Flags);
                 }
                 else
                 {
@@ -2345,7 +2332,7 @@ namespace rapidxml
                         attribute->name()[attribute->name_size()] = 0;
 
                     // Skip whitespace after =
-                    skip<whitespace_pred, Flags>(text);
+                    skip<whitespace_pred>(text, Flags);
 
                     // Skip quote and remember if it was ' or "
                     Ch quote = *text;
@@ -2357,9 +2344,9 @@ namespace rapidxml
                     Ch *value = text, *end;
                     const int AttFlags = Flags & ~parse_normalize_whitespace;   // No whitespace normalization in attributes
                     if (quote == Ch('\''))
-                        end = skip_and_expand_character_refs<attribute_value_pred<Ch('\'')>, attribute_value_pure_pred<Ch('\'')>, AttFlags>(text);
+                        end = skip_and_expand_character_refs<attribute_value_pred<Ch('\'')>, attribute_value_pure_pred<Ch('\'')>>(text, AttFlags);
                     else
-                        end = skip_and_expand_character_refs<attribute_value_pred<Ch('"')>, attribute_value_pure_pred<Ch('"')>, AttFlags>(text);
+                        end = skip_and_expand_character_refs<attribute_value_pred<Ch('"')>, attribute_value_pure_pred<Ch('"')>>(text, AttFlags);
 
                     // Set attribute value
                     attribute->value(value, end - value);
@@ -2374,7 +2361,7 @@ namespace rapidxml
                         attribute->value()[attribute->value_size()] = 0;
 
                     // Skip whitespace after attribute value
-                    skip<whitespace_pred, Flags>(text);
+                    skip<whitespace_pred>(text, Flags);
                 }
             }
         }

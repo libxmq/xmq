@@ -106,6 +106,13 @@ void parseCommandLine(Settings *settings, int argc, char **argv)
             argc--;
             found = true;
         }
+        if (argc >= 2 && !strcmp(argv[i], "--nopp"))
+        {
+            settings->no_pp = true;
+            i++;
+            argc--;
+            found = true;
+        }
         if (argc >= 2 && !strcmp(argv[i], "--compress"))
         {
             settings->compress = true;

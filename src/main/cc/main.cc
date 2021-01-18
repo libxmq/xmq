@@ -206,29 +206,22 @@ int xml2xmq(Settings *settings)
     rapidxml::xml_document<> doc;
     try
     {
-        // This looks kind of silly, doesnt it? Is there another way to configure the rapidxml parser?
-        if (settings->preserve_ws)
+        int flags =
+            rapidxml::parse_doctype_node |
+            rapidxml::parse_pi_nodes |
+            rapidxml::parse_comment_nodes |
+            rapidxml::parse_no_string_terminators;
+
+        if (!settings->preserve_ws)
         {
-            if (settings->tree_type == xmq::TreeType::html)
-            {
-                doc.parse<rapidxml::parse_void_elements|rapidxml::parse_doctype_node|rapidxml::parse_pi_nodes|rapidxml::parse_comment_nodes|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
-            }
-            else
-            {
-                doc.parse<rapidxml::parse_doctype_node|rapidxml::parse_pi_nodes|rapidxml::parse_comment_nodes|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
-            }
+            flags |= rapidxml::parse_trim_whitespace;
         }
-        else
+        if (settings->tree_type == xmq::TreeType::html)
         {
-            if (settings->tree_type == xmq::TreeType::html)
-            {
-                doc.parse<rapidxml::parse_void_elements|rapidxml::parse_doctype_node|rapidxml::parse_pi_nodes|rapidxml::parse_comment_nodes|rapidxml::parse_trim_whitespace|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
-            }
-            else
-            {
-                doc.parse<rapidxml::parse_doctype_node|rapidxml::parse_pi_nodes|rapidxml::parse_comment_nodes|rapidxml::parse_trim_whitespace|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
-            }
+            flags |= rapidxml::parse_void_elements;
         }
+        doc.parse(&(*buffer)[0], flags);
+
     }
     catch (rapidxml::parse_error pe)
     {
@@ -303,7 +296,7 @@ int xmq2xml(Settings *settings)
     {
         string s;
         int flags = 0;
-        if (settings->preserve_ws)
+        if (settings->no_pp)
         {
             flags |= rapidxml::print_no_indenting;
         }
