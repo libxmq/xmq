@@ -211,22 +211,22 @@ int xml2xmq(Settings *settings)
         {
             if (settings->tree_type == xmq::TreeType::html)
             {
-                doc.parse<rapidxml::parse_void_elements|rapidxml::parse_doctype_node|rapidxml::parse_comment_nodes|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
+                doc.parse<rapidxml::parse_void_elements|rapidxml::parse_doctype_node|rapidxml::parse_pi_nodes|rapidxml::parse_comment_nodes|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
             }
             else
             {
-                doc.parse<rapidxml::parse_doctype_node|rapidxml::parse_comment_nodes|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
+                doc.parse<rapidxml::parse_doctype_node|rapidxml::parse_pi_nodes|rapidxml::parse_comment_nodes|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
             }
         }
         else
         {
             if (settings->tree_type == xmq::TreeType::html)
             {
-                doc.parse<rapidxml::parse_void_elements|rapidxml::parse_doctype_node|rapidxml::parse_comment_nodes|rapidxml::parse_trim_whitespace|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
+                doc.parse<rapidxml::parse_void_elements|rapidxml::parse_doctype_node|rapidxml::parse_pi_nodes|rapidxml::parse_comment_nodes|rapidxml::parse_trim_whitespace|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
             }
             else
             {
-                doc.parse<rapidxml::parse_doctype_node|rapidxml::parse_comment_nodes|rapidxml::parse_trim_whitespace|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
+                doc.parse<rapidxml::parse_doctype_node|rapidxml::parse_pi_nodes|rapidxml::parse_comment_nodes|rapidxml::parse_trim_whitespace|rapidxml::parse_no_string_terminators>(&(*buffer)[0]);
             }
         }
     }

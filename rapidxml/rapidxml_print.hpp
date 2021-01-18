@@ -130,6 +130,100 @@ namespace rapidxml
         }
 
         ///////////////////////////////////////////////////////////////////////////
+        // HTML helpers
+
+        template<class Ch>Ch locase(const Ch c)
+        {
+            if (c >= 65 && c <= 90) return c+32;
+            return c;
+        }
+
+        template<class Ch>bool is_equal(const Ch *tag, size_t len, Ch *&text, size_t text_len)
+        {
+            if (len > text_len) return false;
+            size_t i;
+            for (i=0; i<len; ++i)
+            {
+                if (locase(text[i]) != tag[i]) {
+                    return false;
+                }
+            }
+            if (i == text_len) return true;
+            if (i < text_len)
+            {
+                if (text[i] == 0 || text[i] == ' ' || text[i] == '>')
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+#define EQ(s, t, tl) is_equal(s, strlen(s), t, tl)
+
+        template<class Ch>bool is_void_element(Ch *text, size_t tl)
+        {
+            // area, base, br, col, command, embed, hr, img, input, keygen, link, meta, param, source, track, wbr
+            if (EQ("area", text, tl)) return true;
+            if (EQ("base", text, tl)) return true;
+            if (EQ("br", text, tl)) return true;
+            if (EQ("col", text, tl)) return true;
+            if (EQ("command", text, tl)) return true;
+            if (EQ("embed", text, tl)) return true;
+            if (EQ("hr", text, tl)) return true;
+            if (EQ("img", text, tl)) return true;
+            if (EQ("input", text, tl)) return true;
+            if (EQ("keygen", text, tl)) return true;
+            if (EQ("link", text, tl)) return true;
+            if (EQ("meta", text, tl)) return true;
+            if (EQ("param", text, tl)) return true;
+            if (EQ("source", text, tl)) return true;
+            if (EQ("track", text, tl)) return true;
+            if (EQ("wbr", text, tl)) return true;
+            return false;
+        }
+
+        template<class Ch>bool is_inline_element(Ch *text, size_t tl)
+        {
+            // a abbr acronym b bdo big br button cite code dfn em i img input
+            // kbd label map object output q samp script select small span strong sub sup textarea time tt var
+            if (EQ("a", text, tl)) return true;
+            if (EQ("abbr", text, tl)) return true;
+            if (EQ("acronym", text, tl)) return true;
+            if (EQ("b", text, tl)) return true;
+            if (EQ("bdo", text, tl)) return true;
+            if (EQ("big", text, tl)) return true;
+            if (EQ("br", text, tl)) return true;
+            if (EQ("button", text, tl)) return true;
+            if (EQ("cite", text, tl)) return true;
+            if (EQ("code", text, tl)) return true;
+            if (EQ("dfn", text, tl)) return true;
+            if (EQ("em", text, tl)) return true;
+            if (EQ("i", text, tl)) return true;
+            if (EQ("img", text, tl)) return true;
+            if (EQ("input", text, tl)) return true;
+            if (EQ("kbd", text, tl)) return true;
+            if (EQ("label", text, tl)) return true;
+            if (EQ("map", text, tl)) return true;
+            if (EQ("object", text, tl)) return true;
+            if (EQ("output", text, tl)) return true;
+            if (EQ("q", text, tl)) return true;
+            if (EQ("samp", text, tl)) return true;
+            if (EQ("script", text, tl)) return true;
+            if (EQ("select", text, tl)) return true;
+            if (EQ("small", text, tl)) return true;
+            if (EQ("span", text, tl)) return true;
+            if (EQ("strong", text, tl)) return true;
+            if (EQ("sub", text, tl)) return true;
+            if (EQ("sup", text, tl)) return true;
+            if (EQ("textarea", text, tl)) return true;
+            if (EQ("time", text, tl)) return true;
+            if (EQ("tt", text, tl)) return true;
+            return false;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////
         // Internal printing operations
 
         template<class OutIt, class Ch>
@@ -231,6 +325,17 @@ namespace rapidxml
             default:
                 assert(0);
                 break;
+            }
+
+            if (print_newline)
+            {
+                if ((flags & print_html) && is_inline_element(node->name(), node->name_size()))
+                {
+                    // To prevent introduction of spurios whitespace in the rendered
+                    // html output, it is important not to generate: ...</span><span>...
+                    // Instead it must be ...</span><span>...
+                    print_newline = false;
+                }
             }
 
             // If indenting not disabled, add line break after node
@@ -353,61 +458,26 @@ namespace rapidxml
             return out;
         }
 
-        template<class Ch>Ch locase(const Ch c)
-        {
-            if (c >= 65 && c <= 90) return c+32;
-            return c;
-        }
-
-        template<class Ch>bool is_equal(const Ch *tag, size_t len, Ch *&text)
-        {
-            size_t i;
-            for (i=0; i<len; ++i)
-            {
-                if (locase(text[i]) != tag[i]) {
-                    return false;
-                }
-            }
-            return true;
-            /*
-            if (text[i] == ' ' || text[i] == '>') {
-                return true;
-            }
-            return false;*/
-        }
-
-#define EQ(s, t) is_equal(s, strlen(s), t)
-
-        template<class Ch>bool is_void_element(Ch *text)
-        {
-            // area, base, br, col, command, embed, hr, img, input, keygen, link, meta, param, source, track, wbr
-            if (EQ("area", text)) return true;
-            if (EQ("base", text)) return true;
-            if (EQ("br", text)) return true;
-            if (EQ("col", text)) return true;
-            if (EQ("command", text)) return true;
-            if (EQ("embed", text)) return true;
-            if (EQ("hr", text)) return true;
-            if (EQ("img", text)) return true;
-            if (EQ("input", text)) return true;
-            if (EQ("keygen", text)) return true;
-            if (EQ("link", text)) return true;
-            if (EQ("meta", text)) return true;
-            if (EQ("param", text)) return true;
-            if (EQ("source", text)) return true;
-            if (EQ("track", text)) return true;
-            if (EQ("wbr", text)) return true;
-            return false;
-        }
-
         // Print element node
         template<class OutIt, class Ch>
         inline OutIt print_element_node(OutIt out, const xml_node<Ch> *node, int flags, int indent, const xml_node<Ch> *prev)
         {
             assert(node->type() == node_element);
 
+            bool print_indent = true;
+
+            if ((flags & print_html) && is_inline_element(node->name(), node->name_size()))
+            {
+                print_indent = false;
+            }
+
+            if (prev && (flags & print_html) && is_inline_element(prev->name(), prev->name_size()))
+            {
+                print_indent = false;
+            }
+
             // Print element name and attributes, if any
-            if (!(flags & print_no_indenting))
+            if (!(flags & print_no_indenting) && print_indent)
             {
                 // indent
                 if (prev == NULL || (prev && prev->type() != node_data))
@@ -425,7 +495,7 @@ namespace rapidxml
             {
                 if (flags & print_html)
                 {
-                    if (is_void_element(node->name()))
+                    if (is_void_element(node->name(), node->name_size()))
                     {
                         // Print childless node tag ending
                         *out = Ch('/'), ++out;
@@ -466,8 +536,18 @@ namespace rapidxml
                 }
                 else
                 {
+                    bool print_newline_indent = true;
+
+                    if ((flags & print_html) && is_inline_element(node->name(), node->name_size()))
+                    {
+                        // To prevent introduction of spurios whitespace in the rendered
+                        // html output, it is important not to generate: ...</span><span>...
+                        // Instead it must be ...</span><span>...
+                        print_newline_indent = false;
+                    }
+
                     // Print all children with full indenting
-                    if (!(flags & print_no_indenting))
+                    if (!(flags & print_no_indenting) && print_newline_indent)
                     {
                         if (node->first_node() && node->first_node()->type() != node_data)
                         {
@@ -479,7 +559,7 @@ namespace rapidxml
                     const xml_node<Ch> *last;
                     out = print_children(out, node, flags, indent + 1, node, &last);
 
-                    if (!(flags & print_no_indenting))
+                    if (!(flags & print_no_indenting) && print_newline_indent)
                     {
                         // Indent
                         if (last && last->type() != node_data)

@@ -137,6 +137,12 @@ public:
         return n->type() == rapidxml::node_cdata;
     }
 
+    bool isNodePI(void *node)
+    {
+        rapidxml::xml_node<> *n = (rapidxml::xml_node<>*)node;
+        return n->type() == rapidxml::node_pi;
+    }
+
     bool isNodeDocType(void *node)
     {
         rapidxml::xml_node<> *n = (rapidxml::xml_node<>*)node;

@@ -2046,8 +2046,9 @@ namespace rapidxml
             return c;
         }
 
-        bool is_equal(const Ch *tag, size_t len, Ch *&text)
+        bool is_equal(const Ch *tag, size_t len, Ch *&text, size_t text_len)
         {
+            if (len > text_len) return false;
             size_t i;
             for (i=0; i<len; ++i)
             {
@@ -2055,35 +2056,38 @@ namespace rapidxml
                     return false;
                 }
             }
-            return true;
-            /*
-            if (text[i] == ' ' || text[i] == '>') {
-                return true;
+            if (i == text_len) return true;
+            if (i < text_len)
+            {
+                if (text[i] == 0 || text[i] == ' ' || text[i] == '>')
+                {
+                    return true;
+                }
             }
-            return false;*/
+            return false;
         }
 
-#define EQ(s, t) is_equal(s, strlen(s), t)
+#define EQ(s, t, tl) is_equal(s, strlen(s), t, tl)
 
-        bool is_void_element(Ch *&text)
+        bool is_void_element(Ch *&text, size_t tl)
         {
             // area, base, br, col, command, embed, hr, img, input, keygen, link, meta, param, source, track, wbr
-            if (EQ("area", text)) return true;
-            if (EQ("base", text)) return true;
-            if (EQ("br", text)) return true;
-            if (EQ("col", text)) return true;
-            if (EQ("command", text)) return true;
-            if (EQ("embed", text)) return true;
-            if (EQ("hr", text)) return true;
-            if (EQ("img", text)) return true;
-            if (EQ("input", text)) return true;
-            if (EQ("keygen", text)) return true;
-            if (EQ("link", text)) return true;
-            if (EQ("meta", text)) return true;
-            if (EQ("param", text)) return true;
-            if (EQ("source", text)) return true;
-            if (EQ("track", text)) return true;
-            if (EQ("wbr", text)) return true;
+            if (EQ("area", text, tl)) return true;
+            if (EQ("base", text, tl)) return true;
+            if (EQ("br", text, tl)) return true;
+            if (EQ("col", text, tl)) return true;
+            if (EQ("command", text, tl)) return true;
+            if (EQ("embed", text, tl)) return true;
+            if (EQ("hr", text, tl)) return true;
+            if (EQ("img", text, tl)) return true;
+            if (EQ("input", text, tl)) return true;
+            if (EQ("keygen", text, tl)) return true;
+            if (EQ("link", text, tl)) return true;
+            if (EQ("meta", text, tl)) return true;
+            if (EQ("param", text, tl)) return true;
+            if (EQ("source", text, tl)) return true;
+            if (EQ("track", text, tl)) return true;
+            if (EQ("wbr", text, tl)) return true;
             return false;
         }
 
@@ -2114,7 +2118,7 @@ namespace rapidxml
                 // If void elements are enabled (br,img,hr,input etc) then
                 // prevent recursion into the tag content, since there is none!
                 if (!(Flags & parse_void_elements) // void elements are not ebabled
-                    || !is_void_element(name))     // enabled, but its not a void element.
+                    || !is_void_element(name, text - name))     // enabled, but its not a void element.
                 {
                     parse_node_contents<Flags>(text, element);
                 }

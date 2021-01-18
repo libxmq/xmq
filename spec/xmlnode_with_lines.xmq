@@ -1,7 +1,7 @@
-html {
+nothtml {
     body {
         span = 'Greetings weary'
         b    = traveller
-        span = ' we meet again!'
+        span = 'we meet again!'
     }
 }

@@ -1,0 +1,7 @@
+nothtml {
+    body {
+        'Greetings weary'
+        b = traveller
+        'we meet again!'
+    }
+}

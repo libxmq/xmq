@@ -1,3 +1,2 @@
 <div id="123">
-  <button onClick="alert('Warning!'+'');">Warn</button>
-</div>
+<button onClick="alert('Warning!'+'');">Warn</button></div>

@@ -27,13 +27,14 @@ function testcase () {
     fi
 
     local OPTIONS=$4
+    local OPTIONSS=$5
 
     RC=true
 
     if [ "$DIR" = "BOTH" ] || [ "$DIR" = "RIGHT" ]
     then
         # From xmq to xml
-        $PROG --nodec spec/$1 > $GENXML
+        $PROG $OPTIONSS --nodec spec/$1 > $GENXML
 
         diff -q spec/$2 $GENXML
         if [ $? != "0" ]
@@ -50,7 +51,7 @@ function testcase () {
     if [ "$DIR" = "BOTH" ] || [ "$DIR" = "LEFT" ]
     then
         # From xml back to xmq
-        $PROG $OPTIONS spec/$2 > $GENXMQ
+        $PROG $OPTIONS $OPTIONSS spec/$2 > $GENXMQ
 
         diff -q spec/$1 $GENXMQ
         if [ $? != "0" ]
@@ -233,7 +234,8 @@ do
     then
         FROM=$(echo "$line" | cut -f 2 -d ' ')
         TO=$(echo "$line" | cut -f 3 -d ' ')
-        OPTIONS=$(echo "$line" | cut -f 4- -d ' ')
+        OPTIONS=$(echo "$line" | cut -f 4 -d ' ')
+        OPTIONSS=$(echo "$line" | cut -f 5 -d ' ')
         LEFT=$TO
         RIGHT=$TO
         echo "<div class=\"row\">" >> $OUT
@@ -250,13 +252,14 @@ do
 
         echo "</div>" >> $OUT
 
-        testcase $FROM $TO BOTH $OPTIONS
+        testcase $FROM $TO BOTH "$OPTIONS" "$OPTIONSS"
 
     elif [[ $line == RIGHT* ]]
     then
         FROM=$(echo "$line" | cut -f 2 -d ' ')
         TO=$(echo "$line" | cut -f 3 -d ' ')
-        OPTIONS=$(echo "$line" | cut -f 3- -d ' ')
+        OPTIONS=$(echo "$line" | cut -f 3 -d ' ')
+        OPTIONSS=$(echo "$line" | cut -f 4 -d ' ')
 
         echo "<div class=\"row\">" >> $OUT
 
@@ -275,7 +278,7 @@ do
 
         echo "</div>" >> $OUT
 
-        testcase $FROM $TO RIGHT $OPTIONS
+        testcase $FROM $TO RIGHT "$OPTIONS" "$OPTIONSS"
     fi
 done < "spec/list.txt"
 

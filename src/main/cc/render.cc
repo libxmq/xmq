@@ -57,6 +57,8 @@ struct RenderImplementation
     bool escapeHtml(char c, string *escape);
     void renderElementName(xmq::str name);
     void renderElementNameSugar(xmq::str tag);
+    void renderElementNameSugarPI(xmq::str tag);
+    void renderElementNameSugarDT();
     void printAttributeKey(xmq::str key);
     bool containsNewlines(xmq::str value);
     void printIndent(int i, bool newline=true);
@@ -136,13 +138,26 @@ void RenderImplementation::renderElementNameSugar(xmq::str tag)
     if (use_color_) outputNoEscape(reset_color);
 }
 
+void RenderImplementation::renderElementNameSugarPI(xmq::str tag)
+{
+    if (use_color_) outputNoEscape(element_name_sugar_color);
+    output("?%.*s?", tag.l, tag.s);
+    if (use_color_) outputNoEscape(reset_color);
+}
+
+void RenderImplementation::renderElementNameSugarDT()
+{
+    if (use_color_) outputNoEscape(element_name_sugar_color);
+    output("!DOCTYPE");
+    if (use_color_) outputNoEscape(reset_color);
+}
+
 void RenderImplementation::printAttributeKey(xmq::str key)
 {
     if (use_color_) outputNoEscape(attribute_name_sugar_color);
     output("%.*s", key.l, key.s);
     if (use_color_) outputNoEscape(reset_color);
 }
-
 
 bool RenderImplementation::containsNewlines(xmq::str value)
 {
@@ -436,6 +451,29 @@ void RenderImplementation::printAligned(void *i,
         printEscaped(cdata, false, indent, true);
     }
     else
+    if (actions->isNodeDocType(i))
+    {
+        renderElementNameSugarDT();
+        xmq::str pi_data;
+        actions->loadValue(i, &pi_data);
+        output(" = ");
+        printEscaped(pi_data, false, indent, false);
+    }
+    else
+    if (actions->isNodePI(i))
+    {
+        xmq::str key;
+        actions->loadName(i, &key);
+        renderElementNameSugarPI(key);
+        xmq::str pi_data;
+        actions->loadValue(i, &pi_data);
+        if (pi_data.l > 0)
+        {
+            output(" = ");
+            printEscaped(pi_data, false, indent, false);
+        }
+    }
+    else
     {
         xmq::str key;
         actions->loadName(i, &key);
@@ -503,7 +541,7 @@ void RenderImplementation::renderNode(void *i, int indent, bool newline, vector<
     actions->loadName(i, &key);
     xmq::str value;
     actions->loadValue(i, &value);
-    if (actions->isNodeData(i) || actions->isNodeComment(i))
+    if (actions->isNodeData(i) || actions->isNodeComment(i) || actions->isNodePI(i) || actions->isNodeDocType(i))
     {
         lines->push_back( { i, value });
     }
@@ -652,19 +690,6 @@ void RenderImplementation::render()
     bool newline = false;
     while (root != NULL)
     {
-        if (actions->isNodeDocType(root))
-        {
-            // Do not print the doctype.
-            // This is assumed to be <!DOCTYPE html>
-            xmq::str value;
-            actions->loadValue(root, &value);
-            if (!value.equals("html"))
-            {
-                fprintf(stderr, "Warning! Unexpected doctype %.*s\n", (int)value.l, value.s);
-            }
-            root = actions->nextSibling(root);
-            continue;
-        }
         xmq::str tmp;
         // Handle the special cases, single empty node and single node with data content.
         if (nodeHasSingleDataChild(root, &tmp) || nodeHasNoChildren(root))

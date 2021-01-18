@@ -24,15 +24,32 @@
 
 \railalias{lbrace}{\{}
 \railalias{rbrace}{\}}
+\railalias{BSLASH}{\textbackslash}
+
+\railterm{BSLASH}
 
 \begin{document}
 
-\textbf{XMQ syntax, whitespace is a separator, ignored except within quotes.}
+\textbf{Specification for XMQ by Fredrik Öhrström 2021 \texttt{oehrstroem@gmail.com}}
 
-\raisebox{32pt}{xmq:}
+\vspace{5mm}
+
+XMQ offers a more terse way of representing XML/HTML. Whitespace is an
+ignored separator unless quoted. Therefore significant
+whitespace will always be easy to spot in xmq since it requires
+quoting.
+
+\raisebox{45pt}{xmq:}
 \begin{minipage}{15cm}
 \begin{rail}
-  (node | quote | comment) +
+  doctype? ((node | QUOTE | COMMENT | pi) +)
+\end{rail}
+\end{minipage}
+
+\raisebox{8pt}{node:}
+\begin{minipage}{15cm}
+\begin{rail}
+  TEXT[tag] attributes? assignnode?
 \end{rail}
 \end{minipage}
 
@@ -43,13 +60,41 @@ UTF8[excluding whitespace and ' = ( ) $\lbrace$ $\rbrace$]
 \end{rail}
 \end{minipage}
 
+\raisebox{20pt}{assignnode:}
+\begin{minipage}{15cm}
+\begin{rail}
+  ('=' ( TEXT[content] | QUOTE)) | lbrace xmq rbrace
+\end{rail}
+\end{minipage}
+
 \raisebox{32pt}{QUOTE:}
 \begin{minipage}{15cm}
 \begin{rail}
-  "'" "'"
-  | "'" UTF8[with no '] "'"
-  | "'" "'" "'" UTF8[with at most 2 consecutive '] "'" "'" "'"
-  | "'"[$\times$ n] UTF8[with at most n-1 consecutive '] "'"[$\times$ n]
+  ("'" "'"
+  |"'" UTF8[with no '] "'"
+  | "'" "'" "'" UTF8[max 2 consec '] "'" "'" "'"
+  | "'"[$\times$ n] UTF8[max n-1 consec '] "'"[$\times$ n])
+\end{rail}
+\end{minipage}
+
+\raisebox{20pt}{attributes:}
+\begin{minipage}{15cm}
+\begin{rail}
+'(' (TEXT[attribute] assignattr? +)  ')'
+\end{rail}
+\end{minipage}
+
+\raisebox{32pt}{assignattr:}
+\begin{minipage}{15cm}
+\begin{rail}
+  ('=' ( TEXT[content] | QUOTE )) | lbrace (QUOTE+) rbrace
+\end{rail}
+\end{minipage}
+
+\raisebox{8pt}{pi:}
+\begin{minipage}{15cm}
+\begin{rail}
+'?' TEXT[tag] assignattr?
 \end{rail}
 \end{minipage}
 
@@ -60,22 +105,6 @@ UTF8[excluding whitespace and ' = ( ) $\lbrace$ $\rbrace$]
   | '/*' UTF8 '*/'
 \end{rail}
 \end{minipage}
-
-\raisebox{32pt}{node:}
-\begin{minipage}{15cm}
-\begin{rail}
-  TEXT[tag] ( | attributes? ('=' ( TEXT | QUOTE) | lbrace xmq rbrace ))
-\end{rail}
-\end{minipage}
-
-\raisebox{45pt}{attributes:}
-\begin{minipage}{15cm}
-\begin{rail}
-'(' (TEXT[attribute] ('=' ( TEXT | QUOTE + '+' ))? +) ')'
-\end{rail}
-\end{minipage}
-
-\newpage
 
 \textbf{XMQ rules.}
 

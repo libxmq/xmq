@@ -30,14 +30,20 @@ BOTH empty_node.xmq empty_node.xml
 # Two single quotes are always the empty string.
 RIGHT empty_node_explicit.xmq empty_node.xml
 
-# Build a node with a multple text data lines.
-BOTH node_with_lines.xmq node_with_lines.xml -p
+# Build an xml node with multple children. Observe that newlines and indentantion is always inserted between elements!
+BOTH xmlnode_with_lines.xmq xmlnode_with_lines.xml -p
+
+# Detect html output and this will prevent newline+indentation before and after html inline elements. Observe that no whitespace is inserted before &lt;traveller&gt; but is inserted after, accordin to the explicit whitespace in xmq.
+BOTH node_with_lines.xmq node_with_lines.html -p
+
+# Build an xml node with multple data lines. Note that xmq always joins standalone quotes without newlines to the nearest tags. Irrespective if it is xml or html.
+BOTH node_with_data_lines.xmq node_with_data_lines.xml -p
 
 # Build a node with attributes.
 BOTH node_with_attr.xmq node_with_attr.xml
 
 # Use triple quotes to quote content containing quotes! Remember that double quotes is the empty string.
-BOTH node_click.xmq node_click.xml
+BOTH node_click.xmq node_click.xml --html --html
 
 # Use quadruple quotes to quote content containing triple quotes! I.e. use n+1 quotes to quote content with n quotes.
 RIGHT quoting_quotes.xmq quoting_quotes.xml

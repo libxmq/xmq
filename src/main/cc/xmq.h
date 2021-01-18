@@ -100,6 +100,7 @@ namespace xmq
         virtual bool isNodeData(void *node) = 0;
         virtual bool isNodeComment(void *node) = 0;
         virtual bool isNodeCData(void *node) = 0;
+        virtual bool isNodePI(void *node) = 0;
         virtual bool isNodeDocType(void *node) = 0;
         virtual bool isNodeDeclaration(void *node) = 0;
         virtual void loadName(void *node, xmq::str *name) = 0;

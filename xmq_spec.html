@@ -6,7 +6,7 @@
 
     <h1>XMQ specification</h1>
 
-    As of 2020-12-27 and in flux. By Fredrik Öhrström oehrstroem@gmail.com
+    As of 2021-01-18 and in flux. By Fredrik Öhrström oehrstroem@gmail.com
 
     <p>
     XMQ can represent a tree of tagged content and each tag can have attributes.
@@ -115,14 +115,14 @@
 <div class="info"> Build a node using the syntactic sugar, tag=text.</div>
 <div class="row">
 <pre class="box">
-<span style="color:#00aa00">a</span> = <span style="color:#aa0000">12.3</span>
+<span style="color:#00aa00">value</span> = <span style="color:#aa0000">12.3</span>
 </pre><pre class="spacing">⟷</pre><pre class="box">
-&lt;a&gt;12.3&lt;/a&gt;
+&lt;value&gt;12.3&lt;/value&gt;
 </pre></div>
 <div class="info"> Whitespace is ignored.</div>
 <div class="row">
 <pre class="box">
-a=12.3
+value=12.3
 </pre><pre class="spacing">↗</pre></div>
 <div class="info"> Build a node with children, tag{ ... }.</div>
 <div class="row">
@@ -216,20 +216,55 @@ block {
 <div class="row">
 <pre class="box">
 nothing = ''</pre><pre class="spacing">↗</pre></div>
-<div class="info"> Build a node with a multple text data lines.</div>
+<div class="info"> Build an xml node with multple children. Observe that newlines and indentantion is always inserted between elements!</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">nothtml</span> {
+    <span style="color:#000088">body</span> {
+        <span style="color:#00aa00">span</span> = <span style="color:#aa0000">'Greetings weary'</span>
+        <span style="color:#00aa00">b</span>    = <span style="color:#aa0000">traveller</span>
+        <span style="color:#00aa00">span</span> = <span style="color:#aa0000">'we meet again!'</span>
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;nothtml&gt;
+  &lt;body&gt;
+    &lt;span&gt;Greetings weary&lt;/span&gt;
+    &lt;b&gt;traveller&lt;/b&gt;
+    &lt;span&gt;we meet again!&lt;/span&gt;
+  &lt;/body&gt;
+&lt;/nothtml&gt;
+</pre></div>
+<div class="info"> Detect html output and this will prevent newline+indentation before and after html inline elements. Observe that no whitespace is inserted before &lt;traveller&gt; but is inserted after, accordin to the explicit whitespace in xmq.</div>
 <div class="row">
 <pre class="box">
 <span style="color:#000088">html</span> {
     <span style="color:#000088">body</span> {
-        <span style="color:#aa0000">'Greetings weary '</span>
-        <span style="color:#00aa00">b</span> = <span style="color:#aa0000">traveller</span>
-        <span style="color:#aa0000">' we meet again!'</span>
+        <span style="color:#00aa00">span</span> = <span style="color:#aa0000">'Greetings weary'</span>
+        <span style="color:#00aa00">b</span>    = <span style="color:#aa0000">traveller</span>
+        <span style="color:#00aa00">span</span> = <span style="color:#aa0000">' we meet again!'</span>
     }
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;html&gt;
-  &lt;body&gt;Greetings weary &lt;b&gt;traveller&lt;/b&gt; we meet again!&lt;/body&gt;
+  &lt;body&gt;
+&lt;span&gt;Greetings weary&lt;/span&gt;&lt;b&gt;traveller&lt;/b&gt;&lt;span&gt; we meet again!&lt;/span&gt;  &lt;/body&gt;
 &lt;/html&gt;
+</pre></div>
+<div class="info"> Build an xml node with multple data lines. Note that xmq always joins standalone quotes without newlines to the nearest tags. Irrespective if it is xml or html.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">nothtml</span> {
+    <span style="color:#000088">body</span> {
+        <span style="color:#aa0000">'Greetings weary'</span>
+        <span style="color:#00aa00">b</span> = <span style="color:#aa0000">traveller</span>
+        <span style="color:#aa0000">'we meet again!'</span>
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;nothtml&gt;
+  &lt;body&gt;Greetings weary&lt;b&gt;traveller&lt;/b&gt;we meet again!&lt;/body&gt;
+&lt;/nothtml&gt;
 </pre></div>
 <div class="info"> Build a node with attributes.</div>
 <div class="row">
@@ -252,8 +287,7 @@ nothing = ''</pre><pre class="spacing">↗</pre></div>
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;div id="123"&gt;
-  &lt;button onClick="alert('Warning!'+'');"&gt;Warn&lt;/button&gt;
-&lt;/div&gt;
+&lt;button onClick="alert('Warning!'+'');"&gt;Warn&lt;/button&gt;&lt;/div&gt;
 </pre></div>
 <div class="info"> Use quadruple quotes to quote content containing triple quotes! I.e. use n+1 quotes to quote content with n quotes.</div>
 <div class="row">
@@ -358,10 +392,7 @@ info {
 &lt;html lang="de"&gt;
   &lt;head&gt;&lt;/head&gt;
   &lt;body&gt;
-    &lt;br/&gt;
-    &lt;img src="abc.png" alt="zapf"/&gt;
-    &lt;input required/&gt;
-    &lt;p&gt;&lt;/p&gt;
+&lt;br/&gt;&lt;img src="abc.png" alt="zapf"/&gt;&lt;input required/&gt;&lt;p&gt;&lt;/p&gt;
     &lt;hr/&gt;
   &lt;/body&gt;
 &lt;/html&gt;
