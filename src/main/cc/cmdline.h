@@ -42,6 +42,7 @@ public:
     bool preserve_ws {};    // When converting from xml to xmq. Preserve whitespace as much as possible.
     bool view {};           // Do not convert, just view the input, potentially adding color and formatting.
     bool compress {};       // Find common prefixes of the tags.
+    bool pp {};             // Do pretty print the xml/html.
     bool no_pp {};          // Do not pretty print the xml/html.
     std::set<std::string> excludes; // Exclude these attributes
 };

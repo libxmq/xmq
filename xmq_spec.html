@@ -6,7 +6,7 @@
 
     <h1>XMQ specification</h1>
 
-    As of 2021-01-18 and in flux. By Fredrik Öhrström oehrstroem@gmail.com
+    As of 2021-01-20 and in flux. By Fredrik Öhrström oehrstroem@gmail.com
 
     <p>
     XMQ can represent a tree of tagged content and each tag can have attributes.
@@ -168,6 +168,414 @@ alfa {
 <div class="info"> Build a node with leading/ending whitespace not trimmed! Note! xmq by default strips leading/ending whitespace when moving from XML to XMQ. Add opion -p to preserve whitespace, like this: "xmq -p foo.xml > foo.xmq".</div>
 <div class="row">
 <pre class="box">
+<span style="color:#00aa00">alfa</span> = <span style="color:#aa0000">'  Hello World!  '</span>
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;alfa&gt;  Hello World!  &lt;/alfa&gt;
 </pre></div>
+<div class="info"> Incidental whitespace is always removed.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#00aa00">block</span> =
+<span style="color:#aa0000">'Line 1
+ <span style="color:#aa0000">Line 2
+ <span style="color:#aa0000">Line 3'</span>
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;block&gt;Line 1
+Line 2
+Line 3&lt;/block&gt;
+</pre></div>
+<div class="row">
+<pre class="box">
+block = '
+      Line 1
+      Line 2
+      Line 3
+         '
+</pre><pre class="spacing">↗</pre></div>
+<div class="info"> To make indentation explicit, quote each line. An implicit newline is inserted between two standalone quoted contents.</div>
+<div class="row">
+<pre class="box">
+block {
+    '        Line 1'
+    '        Line 2'
+    '        Line 3'
+}
+</pre><pre class="spacing">↗</pre><pre class="box">
+&lt;block&gt;        Line 1
+        Line 2
+        Line 3&lt;/block&gt;
+</pre></div>
+<div class="info"> You can prevent newlines by joining quotes with the suffix \&lt;NL&gt;. You can explicitly join quotes with newlines with \n&lt;NL&gt;.</div>
+<div class="row">
+<pre class="box">
+long {
+    lines {
+        'xxxxxxxxxxxxxxxxxxxxx'
+        'yyyyyyyyyyyyyyyyyyyyy'
+        'zzzzzzzzzzzzzzzzzzzzz'
+    }
+
+    line = 'xxxxxxxxxxxxxxxxxxxxx'\
+           'yyyyyyyyyyyyyyyyyyyyy'\
+           'zzzzzzzzzzzzzzzzzzzzz'
+
+    again(lines = 'xxxxxxxxxxxxxxxxxxxxx'\n
+                  'yyyyyyyyyyyyyyyyyyyyy'\n
+                  'zzzzzzzzzzzzzzzzzzzzz')
+}
+</pre><pre class="spacing">↗</pre><pre class="box">
+&lt;long&gt;
+  &lt;lines&gt;xxxxxxxxxxxxxxxxxxxxx
+yyyyyyyyyyyyyyyyyyyyy
+zzzzzzzzzzzzzzzzzzzzz&lt;/lines&gt;
+  &lt;line&gt;xxxxxxxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyyyyyyyzzzzzzzzzzzzzzzzzzzzz&lt;/line&gt;
+  &lt;again lines="xxxxxxxxxxxxxxxxxxxxx&amp;#10;yyyyyyyyyyyyyyyyyyyyy&amp;#10;zzzzzzzzzzzzzzzzzzzzz"/&gt;
+&lt;/long&gt;
+</pre></div>
+<div class="info"> The existence of the \n&lt;NL&gt; suffix is only to cater for when you really need to have a leading whitespace+NL in an attribute.</div>
+<div class="row">
+<pre class="box">
+info(text='    '\n
+          '    exact spacing'\n
+          '    ')</pre><pre class="spacing">↗</pre><pre class="box">
+&lt;info text="    &amp;#10;    exact spacing&amp;#10;    "/&gt;
+</pre></div>
+<div class="info"> Build a self closing node.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#00aa00">nothing</span>
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;nothing/&gt;
+</pre></div>
+<div class="info"> Two single quotes are always the empty string.</div>
+<div class="row">
+<pre class="box">
+nothing = ''</pre><pre class="spacing">↗</pre></div>
+<div class="info"> Build an xml node with multple children. Observe that newlines and indentantion is always inserted between elements!</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">nothtml</span> {
+    <span style="color:#000088">body</span> {
+        <span style="color:#00aa00">span</span> = <span style="color:#aa0000">'Greetings weary'</span>
+        <span style="color:#00aa00">b</span>    = <span style="color:#aa0000">traveller</span>
+        <span style="color:#00aa00">span</span> = <span style="color:#aa0000">'we meet again!'</span>
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;nothtml&gt;
+  &lt;body&gt;
+    &lt;span&gt;Greetings weary&lt;/span&gt;
+    &lt;b&gt;traveller&lt;/b&gt;
+    &lt;span&gt;we meet again!&lt;/span&gt;
+  &lt;/body&gt;
+&lt;/nothtml&gt;
+</pre></div>
+<div class="info"> Detect html output and this will prevent newline+indentation before and after html inline elements. Observe that no whitespace is inserted before &lt;traveller&gt; but is inserted after, accordin to the explicit whitespace in xmq.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">html</span> {
+    <span style="color:#000088">body</span> {
+        <span style="color:#00aa00">span</span> = <span style="color:#aa0000">'Greetings weary'</span>
+        <span style="color:#00aa00">b</span>    = <span style="color:#aa0000">traveller</span>
+        <span style="color:#00aa00">span</span> = <span style="color:#aa0000">' we meet again!'</span>
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;html&gt;
+  &lt;body&gt;
+&lt;span&gt;Greetings weary&lt;/span&gt;&lt;b&gt;traveller&lt;/b&gt;&lt;span&gt; we meet again!&lt;/span&gt;  &lt;/body&gt;
+&lt;/html&gt;
+</pre></div>
+<div class="info"> Build an xml node with multple data lines. Note that xmq always joins standalone quotes without newlines to the nearest tags. Irrespective if it is xml or html.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">nothtml</span> {
+    <span style="color:#000088">body</span> {
+        <span style="color:#aa0000">'Greetings weary'</span>
+        <span style="color:#00aa00">b</span> = <span style="color:#aa0000">traveller</span>
+        <span style="color:#aa0000">'we meet again!'</span>
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;nothtml&gt;
+  &lt;body&gt;Greetings weary&lt;b&gt;traveller&lt;/b&gt;we meet again!&lt;/body&gt;
+&lt;/nothtml&gt;
+</pre></div>
+<div class="info"> Add --nopp to generate xml which is not pretty printed. Useful to debug if those pretty printed newlines/indentation actually causes other xml-routines to behave strangely.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">a</span> {
+    <span style="color:#00aa00">b</span>
+    <span style="color:#00aa00">c</span> = <span style="color:#aa0000">1</span>
+    <span style="color:#000088">d</span> {
+        <span style="color:#00aa00">e</span> = <span style="color:#aa0000">2</span>
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;a&gt;&lt;b/&gt;&lt;c&gt;1&lt;/c&gt;&lt;d&gt;&lt;e&gt;2&lt;/e&gt;&lt;/d&gt;&lt;/a&gt;</pre></div>
+<div class="info"> Build a node with attributes.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">block</span>(<span style="color:#00aa00">id</span> = <span style="color:#aa0000">123</span>)
+{
+    <span style="color:#00aa00">alfa</span>(<span style="color:#00aa00">x</span> = <span style="color:#aa0000">y</span>) = <span style="color:#aa0000">z</span>
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;block id="123"&gt;
+  &lt;alfa x="y"&gt;z&lt;/alfa&gt;
+&lt;/block&gt;
+</pre></div>
+<div class="info"> Use triple quotes to quote content containing quotes! Remember that double quotes is the empty string.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">div</span>(<span style="color:#00aa00">id</span> = <span style="color:#aa0000">123</span>)
+{
+    <span style="color:#00aa00">button</span>(<span style="color:#00aa00">onClick</span> = <span style="color:#aa0000">'''alert('Warning!'+'');'''</span>) = <span style="color:#aa0000">Warn</span>
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;div id="123"&gt;
+&lt;button onClick="alert('Warning!'+'');"&gt;Warn&lt;/button&gt;&lt;/div&gt;
+</pre></div>
+<div class="info"> Use quadruple quotes to quote content containing triple quotes! I.e. use n+1 quotes to quote content with n quotes.</div>
+<div class="row">
+<pre class="box">
+quoting_xmq =
+''''
+    div(id = 123)
+    {
+        button(onClick = '''alert('Warning!'+'');''') = Warn
+    }
+''''
+</pre><pre class="spacing">↗</pre><pre class="box">
+&lt;quoting_xmq&gt;div(id = 123)
+{
+    button(onClick = '''alert('Warning!'+'');''') = Warn
+}&lt;/quoting_xmq&gt;
+</pre></div>
+<div class="info"> To quote strings that start or  end with quotes, add a newline that will be trimmed away.</div>
+<div class="row">
+<pre class="box">
+node(print = '''
+                'Quoted string'
+             ''')
+</pre><pre class="spacing">↗</pre><pre class="box">
+&lt;node print="'Quoted string'"/&gt;
+</pre></div>
+<div class="info"> To make an explicit leading newline use an empty string and multiple childs.</div>
+<div class="row">
+<pre class="box">
+info {
+    ''
+    '      x'
+    '       y'
+    '        z'
+    '         w'
+}
+</pre><pre class="spacing">↗</pre><pre class="box">
+&lt;info&gt;
+      x
+       y
+        z
+         w&lt;/info&gt;
+</pre></div>
+<div class="info"> You can add newlines inside an attribute.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#00aa00">delta</span>(<span style="color:#00aa00">code</span> =
+          <span style="color:#aa0000">'Line1
+           <span style="color:#aa0000">Line2
+           <span style="color:#aa0000">Line3'</span>)
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;delta code="Line1&amp;#10;Line2&amp;#10;Line3"/&gt;
+</pre></div>
+<div class="info"> XMQ attributes having no value are allowed and for xml translates into attr="attr"</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">alfa</span> {
+    <span style="color:#000088">body</span> {
+        <span style="color:#00aa00">div</span>(<span style="color:#00aa00">gurka</span>
+            <span style="color:#00aa00">lemon</span>) = <span style="color:#aa0000">Texten!</span>
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;alfa&gt;
+  &lt;body&gt;
+    &lt;div gurka="gurka" lemon="lemon"&gt;Texten!&lt;/div&gt;
+  &lt;/body&gt;
+&lt;/alfa&gt;
+</pre></div>
+<div class="info"> Translates into the same single attribute for html.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">html</span> {
+    <span style="color:#000088">body</span> {
+        <span style="color:#00aa00">div</span>(<span style="color:#00aa00">gurka</span>
+            <span style="color:#00aa00">lemon</span>) = <span style="color:#aa0000">Texten!</span>
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;html&gt;
+  &lt;body&gt;
+    &lt;div gurka lemon&gt;Texten!&lt;/div&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</pre></div>
+<div class="info"> When generating html, do not self-close non-void tags.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">html</span>(<span style="color:#00aa00">lang</span> = <span style="color:#aa0000">de</span>)
+{
+    <span style="color:#00aa00">head</span>
+    <span style="color:#000088">body</span> {
+        <span style="color:#00aa00">br</span>
+        <span style="color:#00aa00">img</span>(<span style="color:#00aa00">src</span> = <span style="color:#aa0000">abc.png</span>
+            <span style="color:#00aa00">alt</span> = <span style="color:#aa0000">zapf</span>)
+        <span style="color:#00aa00">input</span>(<span style="color:#00aa00">required</span>)
+        <span style="color:#00aa00">p</span>
+        <span style="color:#00aa00">hr</span>
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;html lang="de"&gt;
+  &lt;head&gt;&lt;/head&gt;
+  &lt;body&gt;
+&lt;br/&gt;&lt;img src="abc.png" alt="zapf"/&gt;&lt;input required/&gt;&lt;p&gt;&lt;/p&gt;
+    &lt;hr/&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</pre></div>
+<div class="info"> Unnecessary extras are allowed.</div>
+<div class="row">
+<pre class="box">
+html(lang=de) {
+	head{}
+	body {
+	br()
+	img(src=abc.png alt=zapf)
+	input(required)
+	p()
+	hr()}
+}</pre><pre class="spacing">↗</pre></div>
+<div class="info"> Example feature.xml</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">feature</span>(<span style="color:#00aa00">id</span>    = <span style="color:#aa0000">org.eventb.texteditor.feature</span>
+        <span style="color:#00aa00">label</span> = <span style="color:#aa0000">TextEditor</span>)
+{
+    <span style="color:#00aa00">description</span> =
+    <span style="color:#aa0000">'Release History:
+     <span style="color:#aa0000">----------------------
+     <span style="color:#aa0000">3.3.0 - Compatibility with core 3.3
+     <span style="color:#aa0000">3.1.2 - Fix some more bugs regarding theory parsing,
+     <span style="color:#aa0000">changes to seen contexts.
+     <span style="color:#aa0000">3.1.1 - Fix parsing of theory operators.'</span>
+    <span style="color:#00aa00">copyright</span>   =
+    <span style="color:#aa0000">'Copyright (c) 1971-1973 University AB
+     <span style="color:#aa0000">All rights reserved.'</span>
+    <span style="color:#000088">url</span> {
+        <span style="color:#00aa00">update</span>(<span style="color:#00aa00">label</span> = <span style="color:#aa0000">'University AB'</span>
+               <span style="color:#00aa00">url</span>   = <span style="color:#aa0000">http://www.uniab.cde/</span>)
+        <span style="color:#00aa00">discovery</span>(<span style="color:#00aa00">label</span> = <span style="color:#aa0000">'Update Site'</span>
+                  <span style="color:#00aa00">url</span>   = <span style="color:#aa0000">file:/home/repository/</span>)
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;feature id="org.eventb.texteditor.feature" label="TextEditor"&gt;
+  &lt;description&gt;Release History:
+----------------------
+3.3.0 - Compatibility with core 3.3
+3.1.2 - Fix some more bugs regarding theory parsing,
+changes to seen contexts.
+3.1.1 - Fix parsing of theory operators.&lt;/description&gt;
+  &lt;copyright&gt;Copyright (c) 1971-1973 University AB
+All rights reserved.&lt;/copyright&gt;
+  &lt;url&gt;
+    &lt;update label="University AB" url="http://www.uniab.cde/"/&gt;
+    &lt;discovery label="Update Site" url="file:/home/repository/"/&gt;
+  &lt;/url&gt;
+&lt;/feature&gt;
+</pre></div>
+<div class="info"> Example pom.xml</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">project</span>(<span style="color:#00aa00">xmlns</span>              = <span style="color:#aa0000">http://maven.apache.org/POM/4.0.0</span>
+        <span style="color:#00aa00">xmlns:xsi</span>          = <span style="color:#aa0000">http://....</span>
+        <span style="color:#00aa00">xsi:schemaLocation</span> = <span style="color:#aa0000">'http://.... http://....'</span>)
+{
+    <span style="color:#00aa00">modelVersion</span> = <span style="color:#aa0000">4.0.0</span>
+    <span style="color:#000088">properties</span> {
+        <span style="color:#00aa00">project.build.sourceEncoding</span> = <span style="color:#aa0000">UTF-8</span>
+        <span style="color:#00aa00">maven.compiler.source</span>        = <span style="color:#aa0000">8</span>
+        <span style="color:#00aa00">maven.compiler.target</span>        = <span style="color:#aa0000">8</span>
+    }
+    <span style="color:#00aa00">groupId</span>    = <span style="color:#aa0000">bar.foo</span>
+    <span style="color:#00aa00">artifactId</span> = <span style="color:#aa0000">Software</span>
+    <span style="color:#00aa00">version</span>    = <span style="color:#aa0000">1.0-SNAPSHOT</span>
+    <span style="color:#888800">// Inherit defaults from Spring Boot</span>
+    <span style="color:#000088">parent</span> {
+        <span style="color:#00aa00">groupId</span>    = <span style="color:#aa0000">org.springframework.boot</span>
+        <span style="color:#00aa00">artifactId</span> = <span style="color:#aa0000">spring-boot-starter-parent</span>
+        <span style="color:#00aa00">version</span>    = <span style="color:#aa0000">2.2.2.RELEASE</span>
+    }
+    <span style="color:#000088">dependencies</span> {
+        <span style="color:#888800">// https://mvnrepository.com/artifact/org.dom4j/dom4j</span>
+        <span style="color:#000088">dependency</span> {
+            <span style="color:#00aa00">groupId</span>    = <span style="color:#aa0000">org.dom4j</span>
+            <span style="color:#00aa00">artifactId</span> = <span style="color:#aa0000">dom4j</span>
+            <span style="color:#00aa00">version</span>    = <span style="color:#aa0000">99.9.1</span>
+        }
+    }
+    <span style="color:#000088">build</span> {
+        <span style="color:#000088">plugins</span> {
+            <span style="color:#000088">plugin</span> {
+                <span style="color:#00aa00">groupId</span>    = <span style="color:#aa0000">org.apache.maven.plugins</span>
+                <span style="color:#00aa00">artifactId</span> = <span style="color:#aa0000">maven-compiler-plugin</span>
+                <span style="color:#00aa00">version</span>    = <span style="color:#aa0000">3.8.0</span>
+                <span style="color:#000088">configuration</span> {
+                    <span style="color:#00aa00">release</span> = <span style="color:#aa0000">8</span>
+                }
+            }
+        }
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://...." xsi:schemaLocation="http://.... http://...."&gt;
+  &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+  &lt;properties&gt;
+    &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+    &lt;maven.compiler.source&gt;8&lt;/maven.compiler.source&gt;
+    &lt;maven.compiler.target&gt;8&lt;/maven.compiler.target&gt;
+  &lt;/properties&gt;
+  &lt;groupId&gt;bar.foo&lt;/groupId&gt;
+  &lt;artifactId&gt;Software&lt;/artifactId&gt;
+  &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+  &lt;!-- Inherit defaults from Spring Boot --&gt;
+  &lt;parent&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-parent&lt;/artifactId&gt;
+    &lt;version&gt;2.2.2.RELEASE&lt;/version&gt;
+  &lt;/parent&gt;
+  &lt;dependencies&gt;
+    &lt;!-- https://mvnrepository.com/artifact/org.dom4j/dom4j --&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.dom4j&lt;/groupId&gt;
+      &lt;artifactId&gt;dom4j&lt;/artifactId&gt;
+      &lt;version&gt;99.9.1&lt;/version&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+  &lt;build&gt;
+    &lt;plugins&gt;
+      &lt;plugin&gt;
+        &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+        &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+        &lt;version&gt;3.8.0&lt;/version&gt;
+        &lt;configuration&gt;
+          &lt;release&gt;8&lt;/release&gt;
+        &lt;/configuration&gt;
+      &lt;/plugin&gt;
+    &lt;/plugins&gt;
+  &lt;/build&gt;
+&lt;/project&gt;
+</pre></div>
+</body>
+</html>

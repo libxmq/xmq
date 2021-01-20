@@ -22,79 +22,59 @@
 
 \pagestyle{empty}
 
-\railalias{lbrace}{\{}
-\railalias{rbrace}{\}}
-\railalias{BSLASH}{\textbackslash}
+\railalias{LBRACE}{\{}
+\railalias{RBRACE}{\}}
+\railalias{BA}{\textbackslash}
 
-\railterm{BSLASH}
+\railterm{BA}
+\railterm{LBRACE}
+\railterm{RBRACE}
 
 \begin{document}
 
-\textbf{Specification for XMQ by Fredrik Öhrström 2021 \texttt{oehrstroem@gmail.com}}
+\texttt{Specification for XMQ by Fredrik Öhrström 2021-01-19 \texttt{oehrstroem@gmail.com} \hfill 1/3}
 
 \vspace{5mm}
 
-XMQ offers a more terse way of representing XML/HTML. Whitespace is an
-ignored separator unless quoted. Therefore significant
-whitespace will always be easy to spot in xmq since it requires
-quoting.
+\texttt{Lexer}
 
-\raisebox{45pt}{xmq:}
+\vspace{5mm}
+
+\raisebox{32pt}{WS:}
 \begin{minipage}{15cm}
 \begin{rail}
-  doctype? ((node | QUOTE | COMMENT | pi) +)
+'0x20 space' | '0x09 tab' | '0x0a lf' | '0x0d cr'
 \end{rail}
 \end{minipage}
 
-\raisebox{8pt}{node:}
+\raisebox{55pt}{TOKS:}
 \begin{minipage}{15cm}
 \begin{rail}
-  TEXT[tag] attributes? assignnode?
+"'" | "=" | "(" | ")" | LBRACE | RBRACE
 \end{rail}
 \end{minipage}
 
 \raisebox{-4pt}{TEXT:}
 \begin{minipage}{15cm}
 \begin{rail}
-UTF8[excluding whitespace and ' = ( ) $\lbrace$ $\rbrace$]
-\end{rail}
-\end{minipage}
-
-\raisebox{20pt}{assignnode:}
-\begin{minipage}{15cm}
-\begin{rail}
-  ('=' ( TEXT[content] | QUOTE)) | lbrace xmq rbrace
+"UTF8 excluding WS and TOKS and NULL"
 \end{rail}
 \end{minipage}
 
 \raisebox{32pt}{QUOTE:}
 \begin{minipage}{15cm}
 \begin{rail}
-  ("'" "'"
-  |"'" UTF8[with no '] "'"
-  | "'" "'" "'" UTF8[max 2 consec '] "'" "'" "'"
-  | "'"[$\times$ n] UTF8[max n-1 consec '] "'"[$\times$ n])
+  "''"
+  |"'" "UTF8 with no '" "'"
+  | "'''" "UTF8 max 2 consec '" "'''"
+  | "'"[$\times$ n] "UTF8 max n-1 consec '" "'"[$\times$ n]
 \end{rail}
 \end{minipage}
 
-\raisebox{20pt}{attributes:}
+\raisebox{20pt}{QUOTES:}
 \begin{minipage}{15cm}
-\begin{rail}
-'(' (TEXT[attribute] assignattr? +)  ')'
-\end{rail}
-\end{minipage}
-
-\raisebox{32pt}{assignattr:}
-\begin{minipage}{15cm}
-\begin{rail}
-  ('=' ( TEXT[content] | QUOTE )) | lbrace (QUOTE+) rbrace
-\end{rail}
-\end{minipage}
-
-\raisebox{8pt}{pi:}
-\begin{minipage}{15cm}
-\begin{rail}
-'?' TEXT[tag] assignattr?
+  \begin{rail}
+  QUOTE + (BA 'n'? '0x0d'? '0x0a' WS)
 \end{rail}
 \end{minipage}
 
@@ -106,22 +86,100 @@ UTF8[excluding whitespace and ' = ( ) $\lbrace$ $\rbrace$]
 \end{rail}
 \end{minipage}
 
-\textbf{XMQ rules.}
+\pagebreak
 
-TEXT[tag] is text (ie UTF8 excluding whitespace and = ( ) \{ \})
-but must also conform to the XML element name rules:
-\begin{enumerate}
-  \item{must start with a letter or underscore}
-  \item{cannot start with the letters xml (or XML, or Xml, etc)}
-  \item{can contain letters, digits, hyphens, underscores, and periods}
-\end{enumerate}
+\texttt{Parser \hfill 2/3}
 
-After a quote has been found, the UTF8 is trimmed according to these rules:
-\begin{enumerate}
-\item{Any leading/ending whitespace newline whitespace is removed.}
-\item{Incidental whitespace will always be trimmed, when there is at least one newline left.}
-\end{enumerate}
+\vspace{5mm}
 
-Two consequtive quotes are joined with a newline.
+\raisebox{8pt}{xmq:}
+\begin{minipage}{15cm}
+\begin{rail}
+  doctype? nodes
+\end{rail}
+\end{minipage}
+
+\raisebox{45pt}{nodes:}
+\begin{minipage}{15cm}
+\begin{rail}
+  (node | QUOTES | COMMENT | pi) +
+\end{rail}
+\end{minipage}
+
+\raisebox{33pt}{node:}
+\begin{minipage}{15cm}
+\begin{rail}
+  TEXT[tag] attributes? ( | ('=' ( TEXT | QUOTES) | LBRACE nodes RBRACE))
+\end{rail}
+\end{minipage}
+
+\raisebox{32pt}{attributes:}
+\begin{minipage}{15cm}
+\begin{rail}
+'(' (TEXT[attribute] ( | '=' ( TEXT | QUOTES ) ) +) ')'
+\end{rail}
+\end{minipage}
+
+\raisebox{20pt}{pi:}
+\begin{minipage}{15cm}
+\begin{rail}
+'?' TEXT[tag] ( | '=' ( TEXT | QUOTES ))
+\end{rail}
+\end{minipage}
+
+\raisebox{8pt}{doctype:}
+\begin{minipage}{15cm}
+\begin{rail}
+'!DOCTYPE' '=' ( TEXT | QUOTES )
+\end{rail}
+\end{minipage}
+
+\pagebreak
+
+\texttt{Rules \hfill 3/3}
+
+\vspace{5mm}
+
+\verb|TEXT tag and attribute must conform to the XML element naming rules:|\\
+\verb|    1. must start with a letter or underscore| \\
+\verb|    2. cannot start with the letters xml (or XML, or Xml, etc)| \\
+\verb|    3. can contain letters, digits, hyphens, underscores, and periods|
+
+\vspace{5mm}
+
+\verb|QUOTE content is trimmed according to these rules:|\\
+\verb!    1. Any leading/ending (space|cr|tab)* nl (space|cr|tab)* is removed.! \\
+\verb|    2. Incidental whitespace will always be trimmed, when there is at least one nl left.|
+
+\vspace{5mm}
+
+\verb|QUOTES can combine multiple QUOTE(s):|\\
+\verb|    1. A suffix \ joins the next QUOTE seamlessly.|\\
+\verb|    2. A suffix \n inserts a newline before joining.|
+
+\vspace{5mm}
+
+\verb|Joining children inside the xmq rule:|\\
+\verb|    1. All children are joined seamlessly.|\\
+\verb|    2. Except two consecutive QUOTE are joined with a newline.|
+
+\vspace{5mm}
+
+\verb|Pretty printing introduces whitespace for div{a{span=' hi '}}|\\
+\verb|    1. Default XML output will insert newlines+indentation.|\\
+\verb|       <div>|\\
+\verb|           <a>|\\
+\verb|               <span> hi </span>|\\
+\verb|           </a>|\\
+\verb|       </div>|\\
+\\
+\verb|    2. Default HTML output will prevent newlines+indentation next to known|\\
+\verb|       inline elements where whitespace is significant.|\\
+\verb|       <div>|\\
+\verb|           <a><span> hi </span></a></div>|\\
+\\
+\verb|    3. The option --nopp will prevent all pretty printing and|\\
+\verb|       this can be necessary when the DTD/CSS has tailored significant whitespace.|\\
+\verb|       <div><a><span> hi </span></a></div>|\\
 
 \end{document}

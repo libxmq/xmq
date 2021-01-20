@@ -24,6 +24,13 @@ RIGHT node_with_text_block_more.xmq node_with_text_block.xml
 # To make indentation explicit, quote each line. An implicit newline is inserted between two standalone quoted contents.
 RIGHT node_with_forced_indents.xmq node_with_forced_indents.xml
 
+# You can prevent newlines by joining quotes with the suffix \&lt;NL&gt;. You can explicitly join quotes with newlines with \n&lt;NL&gt;.
+RIGHT joining_quotes.xmq joining_quotes.xml
+
+# The existence of the \n&lt;NL&gt; suffix is only to cater for when you really need to have a leading whitespace+NL in an attribute.
+Such leading whitespace would otherwise always be trimmed by the ws*,nl,ws* rule.
+RIGHT necessary_join.xmq necessary_join.xml
+
 # Build a self closing node.
 BOTH empty_node.xmq empty_node.xml
 

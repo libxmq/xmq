@@ -60,7 +60,8 @@ private:
     Token eatToEndOfLine();
     Token eatMultipleCommentLines();
     Token eatToEndOfText();
-    Token eatToEndOfQuote(int indent);
+    void eatToEndOfQuote(int indent, vector<char> *buffer);
+    Token eatToEndOfQuotes(int indent);
 
     // Syntax
     void parseComment(void *parent);
@@ -205,7 +206,7 @@ Token ParserImplementation::eatToken()
     {
     case TokenType::none: return Token(TokenType::none, "");
     case TokenType::text: return eatToEndOfText();
-    case TokenType::quote: return eatToEndOfQuote(col);
+    case TokenType::quote: return eatToEndOfQuotes(col);
     case TokenType::comment: return eatToEndOfComment();
     case TokenType::equals:
     case TokenType::brace_open:
@@ -353,14 +354,74 @@ void ParserImplementation::potentiallyRemoveEnding_WS_NL_WS(vector<char> *buffer
     }
 }
 
-Token ParserImplementation::eatToEndOfQuote(int indent)
+Token ParserImplementation::eatToEndOfQuotes(int indent)
+{
+    assert(buf[pos] == '\'');
+
+    vector<char> buffer;
+    for (;;)
+    {
+        assert(buf[pos] == '\'');
+        eatToEndOfQuote(indent, &buffer);
+
+        // Now check if a \ is suffixed!
+        if (buf[pos] != '\\')
+        {
+            // No quote joinging happening, lest stop.
+            break;
+        }
+
+        assert(buf[pos] == '\\');
+        if (buf[pos+1] != 'n' && buf[pos+1] != '\n')
+        {
+            error("expected n or newline after quote suffixed with \\.");
+        }
+        if (buf[pos+1] == 'n' && buf[pos+2] != '\n')
+        {
+            error("expected newline after quote suffixed with \\n.");
+        }
+        assert(buf[pos+1] == '\n' || (buf[pos+1] == 'n' && buf[pos+2] == '\n'));
+
+        pos++; // Skip
+        if (buf[pos] == 'n')
+        {
+            pos++; // Skip n
+            buffer.push_back('\n');
+        }
+
+        assert(buf[pos] == '\n');
+        // Detected '.....'\ followed by newline
+        // or       '.....'\n followed by newline
+        // Now skip whitespace.
+        eatWhiteSpace();
+        // Now we must have reached another quote.
+        if (buf[pos] != '\'')
+        {
+            error("expected quote after quote suffixed with \\ or \\n.");
+        }
+    }
+
+    char *value;
+    if (buffer.size() == 0)
+    {
+        value = parse_actions->allocateCopy("", 1);
+    }
+    else
+    {
+        value = parse_actions->allocateCopy(&buffer[0], buffer.size()+1);
+    }
+    return Token(TokenType::text, value);
+
+}
+
+void ParserImplementation::eatToEndOfQuote(int indent, vector<char> *buffer)
 {
     if (buf[pos] == '\'' && buf[pos+1] == '\'' && buf[pos+2] != '\'')
     {
         // This is the empty string! ''
         pos += 2;
-        char *value = parse_actions->allocateCopy("", 1);
-        return Token(TokenType::text, value);
+        // Nothing needs to be added to the buffer.
+        return;
     }
 
     // How many ' single quotes are there?
@@ -375,7 +436,7 @@ Token ParserImplementation::eatToEndOfQuote(int indent)
     // Remember the first lines offset into the line.
     int first_indent = findIndent(p);
 
-    vector<char> buffer;
+    vector<char> quote;
     while (true)
     {
         char c = buf[p];
@@ -386,7 +447,7 @@ Token ParserImplementation::eatToEndOfQuote(int indent)
         else
         if (c == '\n')
         {
-            buffer.push_back('\n');
+            quote.push_back('\n');
             line++;
             col = 1;
             p++;
@@ -399,21 +460,15 @@ Token ParserImplementation::eatToEndOfQuote(int indent)
             pos  = p + depth;
             break;
         }
-        buffer.push_back(c);
+        quote.push_back(c);
         col++;
         p++;
     }
 
-    potentiallyRemoveEnding_WS_NL_WS(&buffer);
-    xmq_implementation::removeIncidentalWhiteSpace(&buffer, first_indent);
+    potentiallyRemoveEnding_WS_NL_WS(&quote);
+    xmq_implementation::removeIncidentalWhiteSpace(&quote, first_indent);
 
-    if (buffer.size() == 0)
-    {
-        error("empty string must always be two single quotes ''.");
-    }
-    char *value = parse_actions->allocateCopy(&(buffer[0]), buffer.size()+1);
-
-    return Token(TokenType::text, value);
+    buffer->insert(buffer->end(), quote.begin(), quote.end());
 }
 
 Token ParserImplementation::eatToEndOfComment()
