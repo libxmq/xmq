@@ -40,9 +40,8 @@ Quotes needed for spaces: `'My Name'` code: `'x=call(1,2)'` quotes: `'''alert('W
 A comment starts with `//` or `/*` and ends with eol or `*/`. Thus a value string that starts with the
 comment starters, must be quoted.
 
-The only encoding allowed for Xmq files is UTF8 and any CRLF is converted to LF before lexing/parsing.
+Grammar is here: [xmq.pdf](https://github.com/weetmuts/xmq/blob/master/doc/xmq.pdf)
 
-Grammar is here: [https://github.com/weetmuts/xmq/blob/master/doc/xmq.pdf](xmq.pdf)
 Check the specification tests here: [https://weetmuts.github.io/xmq](https://weetmuts.github.io/xmq)
 
 # Usage
@@ -54,6 +53,9 @@ do `xmq pom.xmq > pom.xml` to convert it back.
 
 You can read form stdin like this:  `cat pom.xml | xmq -`
 and there is a utility to view xml files: `xmq-less pom.xml`
+
+You can view colorify and pretty print an xmq file without converting it to xml:
+`xmq -v config.xmq`
 
 There is an xmq major mode for emacs in xmq-mode.el.
 Put it into your `.emacs.d/site-lisp` directory and
