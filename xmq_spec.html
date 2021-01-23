@@ -112,7 +112,7 @@
 
     <p>To avoid cluttering the examples below with xml declarations/html5 doctypes, <b>--nodec</b> is used.</p>
 
-<div class="info"> Build a node using the syntactic sugar, tag=text.</div>
+<div class="info"> Build a node using the syntactic sugar: tag=text</div>
 <div class="row">
 <pre class="box">
 <span style="color:#00aa00">value</span> = <span style="color:#aa0000">12.3</span>
@@ -146,7 +146,7 @@ value=12.3
 // This is an example order.
 order{date=2020-12-13 price=424.5$ file=/imagefiles/1234.png}
 </pre><pre class="spacing">↗</pre></div>
-<div class="info"> Build a node with the syntactic sugar, tag='utf8'. Remember that leading/ending ws-nl-ws is always trimmed from quotes.</div>
+<div class="info"> Build a node with the syntactic sugar: tag='utf8' Remember that leading/ending ws-nl-ws is always trimmed from quotes.</div>
 <div class="row">
 <pre class="box">
 <span style="color:#00aa00">alfa</span> = <span style="color:#aa0000">'Hello World!'</span>
@@ -205,34 +205,29 @@ block {
         Line 2
         Line 3&lt;/block&gt;
 </pre></div>
-<div class="info"> You can prevent newlines by joining quotes with the suffix \&lt;NL&gt;. You can explicitly join quotes with newlines with \n&lt;NL&gt;.</div>
+<div class="info"> The leading whitespace+&lt;NL&gt; is obvious in the xmq but impossible to spot in the xml/html.</div>
 <div class="row">
 <pre class="box">
-long {
-    lines {
-        'xxxxxxxxxxxxxxxxxxxxx'
-        'yyyyyyyyyyyyyyyyyyyyy'
-        'zzzzzzzzzzzzzzzzzzzzz'
-    }
-
-    line = 'xxxxxxxxxxxxxxxxxxxxx'\
-           'yyyyyyyyyyyyyyyyyyyyy'\
-           'zzzzzzzzzzzzzzzzzzzzz'
-
-    again(lines = 'xxxxxxxxxxxxxxxxxxxxx'\n
-                  'yyyyyyyyyyyyyyyyyyyyy'\n
-                  'zzzzzzzzzzzzzzzzzzzzz')
-}
-</pre><pre class="spacing">↗</pre><pre class="box">
-&lt;long&gt;
-  &lt;lines&gt;xxxxxxxxxxxxxxxxxxxxx
-yyyyyyyyyyyyyyyyyyyyy
-zzzzzzzzzzzzzzzzzzzzz&lt;/lines&gt;
-  &lt;line&gt;xxxxxxxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyyyyyyyzzzzzzzzzzzzzzzzzzzzz&lt;/line&gt;
-  &lt;again lines="xxxxxxxxxxxxxxxxxxxxx&amp;#10;yyyyyyyyyyyyyyyyyyyyy&amp;#10;zzzzzzzzzzzzzzzzzzzzz"/&gt;
-&lt;/long&gt;
+tricky {
+   '   '
+   'yes'
+   '   '
+}</pre><pre class="spacing">↗</pre><pre class="box">
+&lt;tricky&gt;   
+yes
+   &lt;/tricky&gt;
 </pre></div>
-<div class="info"> The existence of the \n&lt;NL&gt; suffix is only to cater for when you really need to have a leading whitespace+NL in an attribute.</div>
+<div class="info"> You can join several shorter lines into a very long line with the quote suffix \&lt;NL&gt;</div>
+<div class="row">
+<pre class="box">
+long = '   '\
+       'xxx'\
+       'yyy'\
+       '   '
+</pre><pre class="spacing">↗</pre><pre class="box">
+&lt;long&gt;   xxxyyy   &lt;/long&gt;
+</pre></div>
+<div class="info"> Avoid using the other quote suffix \n&lt;NL&gt; which joins and adds a newline. It is only there to offer you the ability write an attribute value with a leading whitespace+&lt;NL&gt;.</div>
 <div class="row">
 <pre class="box">
 info(text='    '\n

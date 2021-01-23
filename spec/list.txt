@@ -1,4 +1,4 @@
-# Build a node using the syntactic sugar, tag=text.
+# Build a node using the syntactic sugar: tag=text
 BOTH single_node.xmq single_node.xml
 # Whitespace is ignored.
 RIGHT single_node_no_ws.xmq single_node.xml
@@ -7,7 +7,7 @@ RIGHT single_node_no_ws.xmq single_node.xml
 BOTH children.xmq children.xml
 RIGHT children_no_ws.xmq children.xml
 
-# Build a node with the syntactic sugar, tag='utf8'. Remember that leading/ending ws-nl-ws is always trimmed from quotes.
+# Build a node with the syntactic sugar: tag='utf8' Remember that leading/ending ws-nl-ws is always trimmed from quotes.
 BOTH quoted_content.xmq quoted_content.xml
 RIGHT quoted_content_newlines.xmq quoted_content.xml
 
@@ -24,11 +24,13 @@ RIGHT node_with_text_block_more.xmq node_with_text_block.xml
 # To make indentation explicit, quote each line. An implicit newline is inserted between two standalone quoted contents.
 RIGHT node_with_forced_indents.xmq node_with_forced_indents.xml
 
-# You can prevent newlines by joining quotes with the suffix \&lt;NL&gt;. You can explicitly join quotes with newlines with \n&lt;NL&gt;.
+# The leading whitespace+&lt;NL&gt; is obvious in the xmq but impossible to spot in the xml/html.
+RIGHT leading_wsnl.xmq leading_wsnl.xml
+
+# You can join several shorter lines into a very long line with the quote suffix \&lt;NL&gt;
 RIGHT joining_quotes.xmq joining_quotes.xml
 
-# The existence of the \n&lt;NL&gt; suffix is only to cater for when you really need to have a leading whitespace+NL in an attribute.
-Such leading whitespace would otherwise always be trimmed by the ws*,nl,ws* rule.
+# Avoid using the other quote suffix \n&lt;NL&gt; which joins and adds a newline. It is only there to offer you the ability write an attribute value with a leading whitespace+&lt;NL&gt;.
 RIGHT necessary_join.xmq necessary_join.xml
 
 # Build a self closing node.
