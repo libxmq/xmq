@@ -3,9 +3,13 @@ BOTH single_node.xmq single_node.xml
 # Whitespace is ignored.
 RIGHT single_node_no_ws.xmq single_node.xml
 
-# Build a node with children, tag{ ... }.
+# Build a node with children, The to and info string must be quoted since they contain reserved characters. Quotes can contain newlines and incidental indentation is always removed.
 BOTH children.xmq children.xml
+# Non-quoted whitespace is a separator.
 RIGHT children_no_ws.xmq children.xml
+
+# Quoting strings containing single quotes use three or more single quotes. Use n+1 quotes to quote a string with n consecutive quotes.
+BOTH quotes.xmq quotes.xml
 
 # Build a node with the syntactic sugar: tag='utf8' Remember that leading/ending ws-nl-ws is always trimmed from quotes.
 BOTH quoted_content.xmq quoted_content.xml
@@ -42,7 +46,7 @@ RIGHT empty_node_explicit.xmq empty_node.xml
 # Build an xml node with multple children. Observe that newlines and indentantion is always inserted between elements!
 BOTH xmlnode_with_lines.xmq xmlnode_with_lines.xml -p
 
-# Detect html output and this will prevent newline+indentation before and after html inline elements. Observe that no whitespace is inserted before &lt;traveller&gt; but is inserted after, accordin to the explicit whitespace in xmq.
+# Detect html output and this will prevent pretty printing. Observe that no whitespace is inserted before &lt;traveller&gt; but is inserted after, accordin to the explicit whitespace in xmq.
 BOTH node_with_lines.xmq node_with_lines.html -p
 
 # Build an xml node with multple data lines. Note that xmq always joins standalone quotes without newlines to the nearest tags. Irrespective if it is xml or html.
@@ -80,6 +84,9 @@ BOTH html_voids.xmq html_voids.html
 
 # Unnecessary extras are allowed.
 RIGHT html_voids_extra.xmq html_voids.html
+
+# Using xmq to generate html is beneficial since whitespace is explicit, there will be no whitespace between the img tags, despite them being spread out over multiple lines. If you try to do the same when writing html directly you will get whitespace in the rendered page. When xmq generates html it will not pretty print. If pretty printing is requested anyway, then xmq will try to avoid to add pretty printing that introduces visible whitespace in the rendered page.
+BOTH html_link.xmq html_link.html -p
 
 # Example feature.xml
 BOTH feature.xmq feature.xml

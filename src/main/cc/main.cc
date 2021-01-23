@@ -307,13 +307,24 @@ int xmq2xml(Settings *settings)
     {
         string s;
         int flags = 0;
-        if (settings->no_pp)
-        {
-            flags |= rapidxml::print_no_indenting;
-        }
         if (settings->tree_type == xmq::TreeType::html)
         {
             flags |= rapidxml::print_html;
+            // Html generation defaults to no pretty printing.
+            if (!settings->pp)
+            {
+                // Force pretty printing.
+                flags |= rapidxml::print_no_indenting;
+            }
+        }
+        else
+        {
+            // Xml generation defaults to pretty printing.
+            if (settings->no_pp)
+            {
+                // Force disable of pretty printing.
+                flags |= rapidxml::print_no_indenting;
+            }
         }
         print(back_inserter(s), doc, flags);
         settings->out->insert(settings->out->end(), s.begin(), s.end());

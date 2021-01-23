@@ -44,6 +44,14 @@ Grammar is here: [xmq.pdf](https://github.com/weetmuts/xmq/blob/master/doc/xmq.p
 
 Check the specification tests here: [https://weetmuts.github.io/xmq](https://weetmuts.github.io/xmq)
 
+# Examples
+
+![Example1](/doc/ex1.png)
+
+![Example1](/doc/ex2.png)
+
+![Example1](/doc/ex3.png)
+
 # Usage
 
 Type `xmq pom.xml > pom.xmq` to convert your pom.xml file into an xmq file.
@@ -67,16 +75,6 @@ switch the buffer back and forth between xmq and xml.
 
 Do `make && sudo make install` to have xmq, xmq-less, xmq-diff, xmq-git-diff and xmq-meld
 installed into /usr/local/bin.
-
-# Terminal example
-
-Xml to the left. Colored XMQ (using xmq-less) to the right.
-
-![XML vs XMQ](/doc/xml_vs_xmq.png)
-
-Multiline content is quoted:
-
-![Multiline](/doc/multiline.png)
 
 # Emacs example
 

@@ -111,6 +111,10 @@ $(BUILD)/testinternals: $(XMQ_OBJS) $(BUILD)/testinternals.o
 clean:
 	rm -rf build/* build_arm/* build_debug/* build_arm_debug/* *~
 
+intro:
+	@./intro/genintro.sh ./build/xmq
+.PHONY: intro
+
 test:
 	@./build/testinternals
 	@./spec/genspechtml.sh ./build/xmq

@@ -11,12 +11,6 @@ project(xmlns              = http://maven.apache.org/POM/4.0.0
     groupId    = bar.foo
     artifactId = Software
     version    = 1.0-SNAPSHOT
-    // Inherit defaults from Spring Boot
-    parent {
-        groupId    = org.springframework.boot
-        artifactId = spring-boot-starter-parent
-        version    = 2.2.2.RELEASE
-    }
     dependencies {
         // https://mvnrepository.com/artifact/org.dom4j/dom4j
         dependency {

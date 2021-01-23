@@ -124,7 +124,7 @@
 <pre class="box">
 value=12.3
 </pre><pre class="spacing">↗</pre></div>
-<div class="info"> Build a node with children, tag{ ... }.</div>
+<div class="info"> Build a node with children, The to and info string must be quoted since they contain reserved characters. Quotes can contain newlines and incidental indentation is always removed.</div>
 <div class="row">
 <pre class="box">
 <span style="color:#888800">// This is an example order.</span>
@@ -132,6 +132,10 @@ value=12.3
     <span style="color:#00aa00">date</span>  = <span style="color:#aa0000">2020-12-13</span>
     <span style="color:#00aa00">price</span> = <span style="color:#aa0000">424.5$</span>
     <span style="color:#00aa00">file</span>  = <span style="color:#aa0000">/imagefiles/1234.png</span>
+    <span style="color:#00aa00">to</span>    = <span style="color:#aa0000">'Bertil Nilsson'</span>
+    <span style="color:#00aa00">info</span>  =
+    <span style="color:#aa0000">'Delivery by noon. (floor 5)
+     <span style="color:#aa0000">Use elevator 3.'</span>
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;!-- This is an example order. --&gt;
@@ -139,13 +143,39 @@ value=12.3
   &lt;date&gt;2020-12-13&lt;/date&gt;
   &lt;price&gt;424.5$&lt;/price&gt;
   &lt;file&gt;/imagefiles/1234.png&lt;/file&gt;
+  &lt;to&gt;Bertil Nilsson&lt;/to&gt;
+  &lt;info&gt;Delivery by noon. (floor 5)
+Use elevator 3.&lt;/info&gt;
 &lt;/order&gt;
 </pre></div>
+<div class="info"> Non-quoted whitespace is a separator.</div>
 <div class="row">
 <pre class="box">
 // This is an example order.
-order{date=2020-12-13 price=424.5$ file=/imagefiles/1234.png}
+order{date=2020-12-13 price=424.5$ file=/imagefiles/1234.png
+to='Bertil Nilsson' info='Delivery by noon. (floor 5)
+                          Use elevator 3.'}
 </pre><pre class="spacing">↗</pre></div>
+<div class="info"> Quoting strings containing single quotes use three or more single quotes. Use n+1 quotes to quote a string with n consecutive quotes.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">person</span> {
+    <span style="color:#00aa00">name</span>  = <span style="color:#aa0000">'Ella Fitzgerald'</span>
+    <span style="color:#00aa00">born</span>  = <span style="color:#aa0000">1917</span>
+    <span style="color:#00aa00">quote</span> =
+    <span style="color:#aa0000">'''It isn't where you came from;
+       <span style="color:#aa0000">it's where you're going that counts.'''</span>
+    <span style="color:#00aa00">js</span>    = <span style="color:#aa0000">''''console.log("EF '''1917'''");''''</span>
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;person&gt;
+  &lt;name&gt;Ella Fitzgerald&lt;/name&gt;
+  &lt;born&gt;1917&lt;/born&gt;
+  &lt;quote&gt;It isn't where you came from;
+it's where you're going that counts.&lt;/quote&gt;
+  &lt;js&gt;console.log("EF '''1917'''");&lt;/js&gt;
+&lt;/person&gt;
+</pre></div>
 <div class="info"> Build a node with the syntactic sugar: tag='utf8' Remember that leading/ending ws-nl-ws is always trimmed from quotes.</div>
 <div class="row">
 <pre class="box">
@@ -265,7 +295,7 @@ nothing = ''</pre><pre class="spacing">↗</pre></div>
   &lt;/body&gt;
 &lt;/nothtml&gt;
 </pre></div>
-<div class="info"> Detect html output and this will prevent newline+indentation before and after html inline elements. Observe that no whitespace is inserted before &lt;traveller&gt; but is inserted after, accordin to the explicit whitespace in xmq.</div>
+<div class="info"> Detect html output and this will prevent pretty printing. Observe that no whitespace is inserted before &lt;traveller&gt; but is inserted after, accordin to the explicit whitespace in xmq.</div>
 <div class="row">
 <pre class="box">
 <span style="color:#000088">html</span> {
@@ -276,11 +306,7 @@ nothing = ''</pre><pre class="spacing">↗</pre></div>
     }
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
-&lt;html&gt;
-  &lt;body&gt;
-&lt;span&gt;Greetings weary&lt;/span&gt;&lt;b&gt;traveller&lt;/b&gt;&lt;span&gt; we meet again!&lt;/span&gt;  &lt;/body&gt;
-&lt;/html&gt;
-</pre></div>
+&lt;html&gt;&lt;body&gt;&lt;span&gt;Greetings weary&lt;/span&gt;&lt;b&gt;traveller&lt;/b&gt;&lt;span&gt; we meet again!&lt;/span&gt;&lt;/body&gt;&lt;/html&gt;</pre></div>
 <div class="info"> Build an xml node with multple data lines. Note that xmq always joins standalone quotes without newlines to the nearest tags. Irrespective if it is xml or html.</div>
 <div class="row">
 <pre class="box">
@@ -328,9 +354,7 @@ nothing = ''</pre><pre class="spacing">↗</pre></div>
     <span style="color:#00aa00">button</span>(<span style="color:#00aa00">onClick</span> = <span style="color:#aa0000">'''alert('Warning!'+'');'''</span>) = <span style="color:#aa0000">Warn</span>
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
-&lt;div id="123"&gt;
-&lt;button onClick="alert('Warning!'+'');"&gt;Warn&lt;/button&gt;&lt;/div&gt;
-</pre></div>
+&lt;div id="123"&gt;&lt;button onClick="alert('Warning!'+'');"&gt;Warn&lt;/button&gt;&lt;/div&gt;</pre></div>
 <div class="info"> Use quadruple quotes to quote content containing triple quotes! I.e. use n+1 quotes to quote content with n quotes.</div>
 <div class="row">
 <pre class="box">
@@ -409,12 +433,7 @@ info {
     }
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
-&lt;html&gt;
-  &lt;body&gt;
-    &lt;div gurka lemon&gt;Texten!&lt;/div&gt;
-  &lt;/body&gt;
-&lt;/html&gt;
-</pre></div>
+&lt;html&gt;&lt;body&gt;&lt;div gurka lemon&gt;Texten!&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;</pre></div>
 <div class="info"> When generating html, do not self-close non-void tags.</div>
 <div class="row">
 <pre class="box">
@@ -431,14 +450,7 @@ info {
     }
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
-&lt;html lang="de"&gt;
-  &lt;head&gt;&lt;/head&gt;
-  &lt;body&gt;
-&lt;br/&gt;&lt;img src="abc.png" alt="zapf"/&gt;&lt;input required/&gt;&lt;p&gt;&lt;/p&gt;
-    &lt;hr/&gt;
-  &lt;/body&gt;
-&lt;/html&gt;
-</pre></div>
+&lt;html lang="de"&gt;&lt;head&gt;&lt;/head&gt;&lt;body&gt;&lt;br/&gt;&lt;img src="abc.png" alt="zapf"/&gt;&lt;input required/&gt;&lt;p&gt;&lt;/p&gt;&lt;hr/&gt;&lt;/body&gt;&lt;/html&gt;</pre></div>
 <div class="info"> Unnecessary extras are allowed.</div>
 <div class="row">
 <pre class="box">
@@ -451,6 +463,22 @@ html(lang=de) {
 	p()
 	hr()}
 }</pre><pre class="spacing">↗</pre></div>
+<div class="info"> Using xmq to generate html is beneficial since whitespace is explicit, there will be no whitespace between the img tags, despite them being spread out over multiple lines. If you try to do the same when writing html directly you will get whitespace in the rendered page. When xmq generates html it will not pretty print. If pretty printing is requested anyway, then xmq will try to avoid to add pretty printing that introduces visible whitespace in the rendered page.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">html</span> {
+    <span style="color:#000088">body</span> {
+        <span style="color:#000088">p</span> {
+            <span style="color:#00aa00">img</span>(<span style="color:#00aa00">src</span> = <span style="color:#aa0000">a.png</span>)
+            <span style="color:#00aa00">img</span>(<span style="color:#00aa00">src</span> = <span style="color:#aa0000">a.png</span>)
+            <span style="color:#aa0000">' to '</span>
+            <span style="color:#00aa00">img</span>(<span style="color:#00aa00">src</span> = <span style="color:#aa0000">a.png</span>)
+            <span style="color:#00aa00">img</span>(<span style="color:#00aa00">src</span> = <span style="color:#aa0000">a.png</span>)
+        }
+    }
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;html&gt;&lt;body&gt;&lt;p&gt;&lt;img src="a.png"/&gt;&lt;img src="a.png"/&gt; to &lt;img src="a.png"/&gt;&lt;img src="a.png"/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</pre></div>
 <div class="info"> Example feature.xml</div>
 <div class="row">
 <pre class="box">
@@ -506,12 +534,6 @@ All rights reserved.&lt;/copyright&gt;
     <span style="color:#00aa00">groupId</span>    = <span style="color:#aa0000">bar.foo</span>
     <span style="color:#00aa00">artifactId</span> = <span style="color:#aa0000">Software</span>
     <span style="color:#00aa00">version</span>    = <span style="color:#aa0000">1.0-SNAPSHOT</span>
-    <span style="color:#888800">// Inherit defaults from Spring Boot</span>
-    <span style="color:#000088">parent</span> {
-        <span style="color:#00aa00">groupId</span>    = <span style="color:#aa0000">org.springframework.boot</span>
-        <span style="color:#00aa00">artifactId</span> = <span style="color:#aa0000">spring-boot-starter-parent</span>
-        <span style="color:#00aa00">version</span>    = <span style="color:#aa0000">2.2.2.RELEASE</span>
-    }
     <span style="color:#000088">dependencies</span> {
         <span style="color:#888800">// https://mvnrepository.com/artifact/org.dom4j/dom4j</span>
         <span style="color:#000088">dependency</span> {
@@ -544,12 +566,6 @@ All rights reserved.&lt;/copyright&gt;
   &lt;groupId&gt;bar.foo&lt;/groupId&gt;
   &lt;artifactId&gt;Software&lt;/artifactId&gt;
   &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
-  &lt;!-- Inherit defaults from Spring Boot --&gt;
-  &lt;parent&gt;
-    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-boot-starter-parent&lt;/artifactId&gt;
-    &lt;version&gt;2.2.2.RELEASE&lt;/version&gt;
-  &lt;/parent&gt;
   &lt;dependencies&gt;
     &lt;!-- https://mvnrepository.com/artifact/org.dom4j/dom4j --&gt;
     &lt;dependency&gt;

@@ -3,4 +3,8 @@ order {
     date  = 2020-12-13
     price = 424.5$
     file  = /imagefiles/1234.png
+    to    = 'Bertil Nilsson'
+    info  =
+    'Delivery by noon. (floor 5)
+     Use elevator 3.'
 }

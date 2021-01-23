@@ -1,0 +1,11 @@
+# Build a node with children, The to and info string must be quoted since they contain reserved characters. Quotes can contain newlines and incidental indentation is always removed.
+BOTH children.xmq children.xml
+
+# Quoting strings containing single quotes use three or more single quotes. Use n+1 quotes to quote a string with n consecutive quotes.
+BOTH quotes.xmq quotes.xml
+
+# Example pom.xml
+BOTH oom.xmq oom.xml
+
+# Using xmq to generate html is beneficial since whitespace is explicit, there will be no whitespace between the img tags, despite them being spread out over multiple lines. If you try to do the same when writing html directly you will get whitespace in the rendered page. When xmq generates html it will not pretty print. If pretty printing is requested anyway, then xmq will try to avoid to add pretty printing that introduces visible whitespace in the rendered page.
+BOTH html_link.xmq html_link.html -p

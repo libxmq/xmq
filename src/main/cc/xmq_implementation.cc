@@ -187,6 +187,7 @@ int xmq_implementation::escapingDepth(xmq::str value, bool *add_start_newline, b
     const char *s = value.s;
     const char *end = s+value.l;
     bool escape = false;
+    bool found_quote = false;
     int depth = 0;
     if (*s == '/' && *(s+1) == '/') escape = true;
     if (*s == '/' && *(s+1) == '*') escape = true;
@@ -209,6 +210,7 @@ int xmq_implementation::escapingDepth(xmq::str value, bool *add_start_newline, b
         else
         if (*s == '\'')
         {
+            found_quote = true;
             escape = true;
             if (q == NULL)
             {
@@ -236,8 +238,21 @@ int xmq_implementation::escapingDepth(xmq::str value, bool *add_start_newline, b
 
     if (escape)
     {
-        if (depth == 0) depth = 1;
-        if (depth == 2) depth = 3;
+        if (depth == 0)
+        {
+            depth = 1;
+        }
+        if (found_quote)
+        {
+            if (depth < 3)
+            {
+                depth = 3;
+            }
+            else
+            {
+                depth = depth+1;
+            }
+        }
     }
     return depth;
 }
