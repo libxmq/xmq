@@ -296,7 +296,7 @@ int xmq2xml(Settings *settings)
 
     ParseActionsRapidXML pactions(&doc);
 
-    parseXMQ(&pactions, settings->filename.c_str(), &(*buffer)[0]);
+    parseXMQ(&pactions, settings->filename.c_str(), &(*buffer)[0], settings->root.c_str());
 
     if (settings->view)
     {

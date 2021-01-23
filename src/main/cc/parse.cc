@@ -41,6 +41,7 @@ private:
     ParseActions *parse_actions {};
     const char *file {};
     const char *buf {};
+    const char *root {};
     size_t buf_len {};
     size_t pos {};
     int line {};
@@ -49,6 +50,7 @@ private:
     void eatWhiteSpace();
 
     void error(const char* fmt, ...);
+    void errornoline(const char* fmt, ...);
 
     int findIndent(int p);
 
@@ -77,12 +79,13 @@ private:
     void padWithSingleSpaces(Token *t);
 
 public:
-    void setup(ParseActions *a, const char *f, const char *b)
+    void setup(ParseActions *a, const char *f, const char *b, const char *r)
     {
         parse_actions = a;
         file = f;
         buf = b;
         buf_len = strlen(buf);
+        root = r;
         pos = 0;
         line = 1;
         col = 1;
@@ -101,6 +104,18 @@ void ParserImplementation::error(const char* fmt, ...)
     printf("\n");
 
     printf("%.*s\n", col, &buf[pos-col+1]);
+    exit(1);
+}
+
+void ParserImplementation::errornoline(const char* fmt, ...)
+{
+    printf("%s:%d:%d: error: ", file, line, col);
+    va_list args;
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
+    printf("\n");
+
     exit(1);
 }
 
@@ -251,15 +266,6 @@ Token ParserImplementation::eatToEndOfText()
     char *value = parse_actions->allocateCopy(buf+start, len+1);
 
     return Token(TokenType::text, value);
-}
-
-void addNewline(vector<char> *buffer)
-{
-    buffer->push_back('&');
-    buffer->push_back('#');
-    buffer->push_back('1');
-    buffer->push_back('0');
-    buffer->push_back(';');
 }
 
 size_t ParserImplementation::findDepth(size_t p, int *depth)
@@ -560,11 +566,26 @@ void ParserImplementation::parseComment(void *parent)
 
 void ParserImplementation::parse()
 {
-    parseXMQ(parse_actions->root());
+    void *root_node = parse_actions->root();
+    if (root != NULL && *root != 0)
+    {
+        if (!xmq_implementation::firstWordIs(buf, buf_len, root))
+        {
+            // We expect a specific root node, it does not seem to exist!
+            // Lets add it!
+            Token t(TokenType::text, root);
+            root_node = parse_actions->appendElement(parse_actions->root(), t);
+        }
+    }
+
+    parseXMQ(root_node);
 }
 
 void ParserImplementation::parseXMQ(void *parent)
 {
+    bool is_root = (parent == parse_actions->root());
+    int  num_contents = 0;
+
     while (true)
     {
         TokenType t = peekToken();
@@ -576,19 +597,27 @@ void ParserImplementation::parseXMQ(void *parent)
         else
         if (t == TokenType::text)
         {
+            if (is_root && num_contents >= 1) goto err;
             parseNode(parent);
+            num_contents++;
         }
         else
         if (t == TokenType::quote)
         {
-            Token val = eatToken();
-            parse_actions->appendData(parent, val);
+            if (is_root && num_contents >= 1) goto err;
+            parse_actions->appendData(parent, eatToken());
+            num_contents++;
         }
         else
         {
             break;
         }
     }
+
+    return;
+
+err:
+    errornoline("multiple root nodes are not allowed unless for example: --root=config is added.");
 }
 
 void ParserImplementation::parseAttributes(void *parent)
@@ -676,9 +705,9 @@ void ParserImplementation::parseNode(void *parent)
     }
 }
 
-void xmq::parseXMQ(ParseActions *actions, const char *filename, const char *xmq)
+void xmq::parseXMQ(ParseActions *actions, const char *filename, const char *xmq, const char *root)
 {
     ParserImplementation pi(actions);
-    pi.setup(actions, filename, xmq);
+    pi.setup(actions, filename, xmq, root);
     pi.parse();
 }

@@ -479,6 +479,27 @@ html(lang=de) {
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;html&gt;&lt;body&gt;&lt;p&gt;&lt;img src="a.png"/&gt;&lt;img src="a.png"/&gt; to &lt;img src="a.png"/&gt;&lt;img src="a.png"/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</pre></div>
+<div class="info"> Normally all xmq files have a single document root node, just like xml.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">config</span> {
+    <span style="color:#00aa00">pi</span>  = <span style="color:#aa0000">3.14</span>
+    <span style="color:#00aa00">dir</span> = <span style="color:#aa0000">c:\hello</span>
+    <span style="color:#00aa00">url</span> = <span style="color:#aa0000">https://a.b.c/work.html</span>
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;config&gt;
+  &lt;pi&gt;3.14&lt;/pi&gt;
+  &lt;dir&gt;c:\hello&lt;/dir&gt;
+  &lt;url&gt;https://a.b.c/work.html&lt;/url&gt;
+&lt;/config&gt;
+</pre></div>
+<div class="info"> But XMQ actually allows you to have multiple root nodes, if you specify the option --root=config With this option, the config root node will only be added if the first node in the xmq, is not config. Having multiple root nodes without --root=<something> is an error.</div>
+<div class="row">
+<pre class="box">
+pi=3.14
+dir=c:\hello
+url=https://a.b.c/work.html</pre><pre class="spacing">↗</pre></div>
 <div class="info"> Example feature.xml</div>
 <div class="row">
 <pre class="box">

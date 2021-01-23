@@ -37,6 +37,7 @@ namespace xmq_implementation
     bool isNewLine(char c);
     bool isHtml(std::vector<char> &buffer);
     bool firstWordIsHtml(std::vector<char> &buffer);
+    bool firstWordIs(const char *b, size_t len, const char *word);
     void removeIncidentalWhiteSpace(std::vector<char> *buffer, int first_indent);
     int  escapingDepth(xmq::str value, bool *add_start_newline, bool *add_end_newline, bool is_attribute);
     const char *findStartingNewline(const char *where, const char *start);

@@ -45,6 +45,7 @@ public:
     bool pp {};             // Do pretty print the xml/html.
     bool no_pp {};          // Do not pretty print the xml/html.
     std::set<std::string> excludes; // Exclude these attributes
+    std::string root;       // If non-empty, check that the xmq has this root tag, if not then add it.
 };
 
 void parseCommandLine(Settings *settings, int argc, char **argv);

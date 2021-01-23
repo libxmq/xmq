@@ -118,7 +118,7 @@ namespace xmq
     };
 
     void renderXMQ(RenderActions *actions, RenderType rt, bool use_color, std::vector<char> *out);
-    void parseXMQ(ParseActions *actions, const char *filename, const char *xmq);
+    void parseXMQ(ParseActions *actions, const char *filename, const char *xmq, const char *root = NULL);
 }
 
 #endif

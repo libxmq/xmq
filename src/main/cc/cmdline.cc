@@ -134,6 +134,13 @@ void parseCommandLine(Settings *settings, int argc, char **argv)
             argc-=2;
             found = true;
         }
+        if (argc >= 2 && !strncmp(argv[i], "--root=", 7))
+        {
+            settings->root = std::string(argv[i]+7, argv[i]+strlen(argv[i]));
+            i+=1;
+            argc-=1;
+            found = true;
+        }
         if (argc >= 2 && !strcmp(argv[i], "-v"))
         {
             settings->view = true;

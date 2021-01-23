@@ -1,0 +1,5 @@
+<config>
+  <pi>3.14</pi>
+  <dir>c:\hello</dir>
+  <url>https://a.b.c/work.html</url>
+</config>

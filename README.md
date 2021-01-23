@@ -76,6 +76,40 @@ switch the buffer back and forth between xmq and xml.
 Do `make && sudo make install` to have xmq, xmq-less, xmq-diff, xmq-git-diff and xmq-meld
 installed into /usr/local/bin.
 
+# Command line options
+
+```
+
+--color force coloring.
+
+--mono  prevent coloring.
+
+--compress find common prefixes in tag names.
+
+--exclude  exlude tags.
+
+--html  assume that data is html, even though it does not start with an html tag.
+
+--nodec do not add the xml/html5 declaration/doctype.
+
+--nopp  do not pretty print xml/html.
+
+--output=html produce output suitable inclusion between <pre>...</pre> tags.
+
+--output=terminal write on terminal, use ansi colors if necessary.
+
+--output=tex  produce output suitable for inclusion in tex documents.
+
+--output=plain produce plain utf8 text.
+
+-p   preserve whitespace when converting from xml to xmq.
+
+--pp pretty print.
+
+--root=<foo> if the xmq does not already have a single root node foo, then add it.
+
+-v   view only, do not convert between xmq and xml/html.
+
 # Emacs example
 
 Assuming xmq-buffer is bound to ctrl-t, pressing ctrl-t

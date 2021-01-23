@@ -97,6 +97,31 @@ bool xmq_implementation::firstWordIsHtml(std::vector<char> &buffer)
     return false;
 }
 
+bool xmq_implementation::firstWordIs(const char *buffer, size_t buf_len, const char *word)
+{
+    if (!word) return false;
+
+    size_t i=0;
+    size_t len = strlen(word);
+
+    for (; i<len; ++i)
+    {
+        // Skip any whitespace
+        if (isWhiteSpace(buffer[i])) continue;
+        // First non-whitespace character.
+        if (i+len+1 < buf_len && (!strncasecmp(&buffer[i], word, len)))
+        {
+            // Check that we have "html " "html=123" or "html{"
+            if (buffer[i+len] == ' ' || buffer[i+len] == '=' || buffer[i+len] == '{' || buffer[i+len] == '(')
+            {
+                return true;
+            }
+        }
+        break;
+    }
+    return false;
+}
+
 void xmq_implementation::removeIncidentalWhiteSpace(std::vector<char> *buffer, int first_indent)
 {
     // Check that there are newlines in here!

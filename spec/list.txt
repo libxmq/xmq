@@ -88,6 +88,12 @@ RIGHT html_voids_extra.xmq html_voids.html
 # Using xmq to generate html is beneficial since whitespace is explicit, there will be no whitespace between the img tags, despite them being spread out over multiple lines. If you try to do the same when writing html directly you will get whitespace in the rendered page. When xmq generates html it will not pretty print. If pretty printing is requested anyway, then xmq will try to avoid to add pretty printing that introduces visible whitespace in the rendered page.
 BOTH html_link.xmq html_link.html -p
 
+# Normally all xmq files have a single document root node, just like xml.
+BOTH multi_with_config.xmq multi.xml --root=config
+
+# But XMQ actually allows you to have multiple root nodes, if you specify the option --root=config With this option, the config root node will only be added if the first node in the xmq, is not config. Having multiple root nodes without --root=<something> is an error.
+RIGHT multi.xmq multi.xml --root=config
+
 # Example feature.xml
 BOTH feature.xmq feature.xml
 
