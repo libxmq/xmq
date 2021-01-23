@@ -1,4 +1,5 @@
-# xmq
+# XMQ
+
 Convert xml to a human readable/editable format and back.
 
 | OS           | Status           |
@@ -16,21 +17,35 @@ files hard to read and edit directly by hand.
 
 The xmq format is simply a restructuring of the xml that (to me at
 least) makes config files written in xml easier to read and edit.
-In particular the xmq format makes significant whitespace explicit and visible.
 
 The xmq format exactly represents the xml format and can therefore be
 converted back to xml after any editing has been done. (Caveat
 whitespace trimmings.)
 
-The xmq format reserves these characters: `= <EQUALS> '<SINGLE QUOTE> { } <BRACES> ( ) <PARENTHESES>` and `<SPACE>`.
-xmq follows xml in that key names (tags) are not allowed to contain these.
-Value strings (tag content or attributes) that contain the reserved characters must be quoted with the `' <SINGLE QUOTE>`.
-Two single quotes is the empty string, three or more single quotes quote content containing quotes.
+Xmq can also be used as a configuration language directly without
+converting to xml.
 
-A comment starts with `//` or `/*` and ends with eol or `*/`.
-Thus a value string that starts with the comment starters, must be quoted with the `' <SINGLE QUOTE>`.
+Xmq is also a surprisingly convenient way of writing html as well,
+not just because the html-tags are nowadays a majority of
+html pages, but because xmq makes significant whitespace explicit!
 
-Check the full spec here: [https://weetmuts.github.io/xmq](https://weetmuts.github.io/xmq)
+Xmq reserves six single character tokens `='(){}` and whitespace `space tab lf cr`, and
+whenever a text string, be it a  key or value, contains the reserved characters, it has to be quoted
+with single quotes. A double quote is the empty string. Use n+1 quotes (minimum 3) to quote strings with n quotes.
+
+No quotes needed for numbers: `12.4` files: `/alfa/beta.txt` backslashes: `"info%d\n"` tags: `<info>`
+
+Quotes needed for spaces: `'My Name'` code: `'x=call(1,2)'` quotes: `'''alert('Warning!'+'');'''`
+
+A comment starts with `//` or `/*` and ends with eol or `*/`. Thus a value string that starts with the
+comment starters, must be quoted.
+
+The only encoding allowed for Xmq files is UTF8 and any CRLF is converted to LF before lexing/parsing.
+
+Grammar is here: [https://github.com/weetmuts/xmq/blob/master/doc/xmq.pdf](xmq.pdf)
+Check the specification tests here: [https://weetmuts.github.io/xmq](https://weetmuts.github.io/xmq)
+
+# Usage
 
 Type `xmq pom.xml > pom.xmq` to convert your pom.xml file into an xmq file.
 

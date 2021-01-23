@@ -36,5 +36,7 @@ void add_string(char *s, StringCount &c);
 std::string find_prefix(char *s, StringCount &c);
 bool loadFile(std::string file, std::vector<char> *buf);
 bool loadStdin(std::vector<char> *buf);
+bool isValidUtf8(std::vector<char> *data);
+bool removeCrs(std::vector<char> *data);
 
 #endif

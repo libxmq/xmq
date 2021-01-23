@@ -34,11 +34,15 @@
 
 \texttt{Specification for XMQ by Fredrik Öhrström 2021-01-19 \texttt{oehrstroem@gmail.com} \hfill 1/3}
 
-\vspace{5mm}
+\vspace{2mm}
+
+\texttt{An xmq file must be valid UTF8 and any CRLF is changed into LF before lexing/parsing.}
+
+\vspace{2mm}
 
 \texttt{Lexer}
 
-\vspace{5mm}
+\vspace{2mm}
 
 \raisebox{32pt}{WS:}
 \begin{minipage}{15cm}
@@ -74,7 +78,7 @@
 \raisebox{20pt}{QUOTES:}
 \begin{minipage}{15cm}
   \begin{rail}
-  QUOTE + (BA 'n'? '0x0d'? '0x0a' WS)
+  QUOTE + (BA 'n'? '0x0a' WS)
 \end{rail}
 \end{minipage}
 
@@ -90,7 +94,7 @@
 
 \texttt{Parser \hfill 2/3}
 
-\vspace{5mm}
+\vspace{2mm}
 
 \raisebox{8pt}{xmq:}
 \begin{minipage}{15cm}
@@ -102,7 +106,7 @@
 \raisebox{45pt}{nodes:}
 \begin{minipage}{15cm}
 \begin{rail}
-  (node | QUOTES | COMMENT | pi) +
+  (node | QUOTES[standalone] | COMMENT | pi) +
 \end{rail}
 \end{minipage}
 
@@ -159,27 +163,29 @@
 
 \vspace{5mm}
 
-\verb|Joining children inside the xmq rule:|\\
+\verb|Joining children inside the nodes rule:|\\
 \verb|    1. All children are joined seamlessly.|\\
-\verb|    2. Except two consecutive QUOTE are joined with a newline.|
+\verb|    2. Except, two consecutive standalone QUOTEs are joined with a newline.|
 
 \vspace{5mm}
 
 \verb|Pretty printing introduces whitespace for div{a{span=' hi '}}|\\
-\verb|    1. Default XML output will insert newlines+indentation.|\\
+\verb|    1. Default XML output will pretty print and insert newlines+indentation.|\\
+\verb|       This is usually safe, use --nopp to not pretty print.|\\
 \verb|       <div>|\\
 \verb|           <a>|\\
 \verb|               <span> hi </span>|\\
 \verb|           </a>|\\
 \verb|       </div>|\\
 \\
-\verb|    2. Default HTML output will prevent newlines+indentation next to known|\\
-\verb|       inline elements where whitespace is significant.|\\
+\verb|    2. Default HTML output is without pretty printing since|\\
+\verb|       introducing newlines+indentation in HTML requires DTD/CSS knowledge|\\
+\verb|       where it is possible to safely introduce whitespace.|\\
+\verb|       <div><a><span> hi </span></a></div>|\\
+\\
+\verb|    3. It is possible to pretty print HTML with --pp and get a best effort guess of|\\
+\verb|       where it is safe to introduce newlines+indentation.|\\
 \verb|       <div>|\\
 \verb|           <a><span> hi </span></a></div>|\\
-\\
-\verb|    3. The option --nopp will prevent all pretty printing and|\\
-\verb|       this can be necessary when the DTD/CSS has tailored significant whitespace.|\\
-\verb|       <div><a><span> hi </span></a></div>|\\
 
 \end{document}

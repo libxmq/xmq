@@ -1,0 +1,11 @@
+long {
+    lines =
+    'xxxxxxxxxxxxxxxxxxxxx
+     yyyyyyyyyyyyyyyyyyyyy
+     zzzzzzzzzzzzzzzzzzzzz'
+    line  = xxxxxxxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyyyyyyyzzzzzzzzzzzzzzzzzzzzz
+    again(lines =
+              'xxxxxxxxxxxxxxxxxxxxx
+               yyyyyyyyyyyyyyyyyyyyy
+               zzzzzzzzzzzzzzzzzzzzz')
+}

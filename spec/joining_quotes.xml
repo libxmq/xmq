@@ -1,0 +1,7 @@
+<long>
+  <lines>xxxxxxxxxxxxxxxxxxxxx
+yyyyyyyyyyyyyyyyyyyyy
+zzzzzzzzzzzzzzzzzzzzz</lines>
+  <line>xxxxxxxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyyyyyyyzzzzzzzzzzzzzzzzzzzzz</line>
+  <again lines="xxxxxxxxxxxxxxxxxxxxx&#10;yyyyyyyyyyyyyyyyyyyyy&#10;zzzzzzzzzzzzzzzzzzzzz"/>
+</long>

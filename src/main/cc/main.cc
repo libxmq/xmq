@@ -267,6 +267,17 @@ int xmq2xml(Settings *settings)
     vector<char> *buffer = settings->in;
     rapidxml::xml_document<> doc;
 
+    // Check its valid utf8.
+    if (!isValidUtf8(buffer))
+    {
+        fprintf(stderr, "%s:%d:%d Invalid UTF8!\n",
+                settings->filename.c_str(), 0/*line*/, 0/*col*/);
+        return 1;
+    }
+
+    // Change any \r\n to \n.
+    removeCrs(buffer);
+
     if (!settings->no_declaration)
     {
         if (settings->tree_type == xmq::TreeType::html)

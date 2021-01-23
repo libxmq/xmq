@@ -1,0 +1,15 @@
+long {
+    lines {
+        'xxxxxxxxxxxxxxxxxxxxx'
+        'yyyyyyyyyyyyyyyyyyyyy'
+        'zzzzzzzzzzzzzzzzzzzzz'
+    }
+
+    line = 'xxxxxxxxxxxxxxxxxxxxx'\
+           'yyyyyyyyyyyyyyyyyyyyy'\
+           'zzzzzzzzzzzzzzzzzzzzz'
+
+    again(lines = 'xxxxxxxxxxxxxxxxxxxxx'\n
+                  'yyyyyyyyyyyyyyyyyyyyy'\n
+                  'zzzzzzzzzzzzzzzzzzzzz')
+}

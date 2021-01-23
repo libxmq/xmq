@@ -160,3 +160,66 @@ bool loadStdin(vector<char> *buf)
     close(fd);
     return true;
 }
+
+bool isValidUtf8(vector<char> *data)
+{
+    int n = 0; // Number of utf8 suffix bytes expected.
+
+    for(size_t i = 0; i < data->size(); i++)
+    {
+        char c = (*data)[i];
+        if (n > 0)
+        {
+            // We are expecting suffix bytes
+            if ((c >> 6) != 0b10) return false;
+            n--;
+            continue;
+        }
+
+        if ((c >> 5) == 0b110)
+        {
+            // The start byte with top bits 110 means we expect 1 suffix byte.
+            n = 1;
+            continue;
+        }
+        if ((c >> 4) == 0b1110)
+        {
+            // Top bits 1110 means expect 2 bytes.
+            c = 2;
+            continue;
+        }
+        if ((c >> 3) == 0b11110)
+        {
+            // Top bits 11110 means expect 3 bytes.
+            n = 3;
+            continue;
+        }
+        if ((c >> 7) != 0) return false;
+    }
+    return n == 0;
+}
+
+bool removeCrs(vector<char> *data)
+{
+    size_t i, j, n = data->size();
+
+    for(i = j = 0; i < n; i++, j++)
+    {
+        if ((*data)[i] == '\r'
+            && i+1 < n &&
+            (*data)[i+1] == '\n')
+        {
+            i++;
+        }
+        if (i > j)
+        {
+            (*data)[j] = (*data)[i];
+        }
+    }
+
+    n = i-j;
+
+    while (n--) data->pop_back();
+
+    return i > j;
+}

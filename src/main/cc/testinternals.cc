@@ -129,9 +129,60 @@ void test_incidental()
     buffer.clear();*/
 }
 
+void test_utf8_check()
+{
+}
+
+void print_buf(vector<char> &b)
+{
+    for (char c : b) printf("%d ", c);
+    printf("\n");
+}
+
+void test_a_cr_removal(const char *from, const char *to)
+{
+    vector<char> f(from, from+strlen(from));
+    vector<char> t(to, to+strlen(to));
+    removeCrs(&f);
+
+    if (f.size() != t.size())
+    {
+        goto err;
+    }
+
+    for (size_t i = 0; i < f.size(); ++i)
+    {
+        if (f[i] != t[i]) goto err;
+    }
+
+    return;
+
+err:
+    printf("ERROR! Expected:\n");
+    print_buf(t);
+    printf("but got:\n");
+    print_buf(f);
+}
+
+void test_cr_removal()
+{
+    // Test proper removal \r\n becomes \n
+    test_a_cr_removal("aa\r\nbbb\r\n", "aa\nbbb\n");
+    // Test that final \r remains.
+    test_a_cr_removal("aa\r\nbbb\r",   "aa\nbbb\r");
+    // Test that only \r remains.
+    test_a_cr_removal("aa\rbbb\r",     "aa\rbbb\r");
+    // Test no change for \n\r.
+    test_a_cr_removal("aa\n\rbbb\n\r", "aa\n\rbbb\n\r");
+    // Odd sequence.
+    test_a_cr_removal("\n\r\n\r\n\r", "\n\n\n\r");
+}
+
 int main(int argc, char **argv)
 {
     test_add_string();
     test_incidental();
+    test_utf8_check();
+    test_cr_removal();
     printf("OK\n");
 }
