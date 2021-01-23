@@ -31,11 +31,11 @@ html pages, but because xmq makes significant whitespace explicit!
 
 Xmq reserves six single character tokens `='(){}` and whitespace `space tab lf cr`, and
 whenever a text string, be it a  key or value, contains the reserved characters, it has to be quoted
-with single quotes. A double quote is the empty string. Use n+1 quotes (minimum 3) to quote strings with n quotes.
+with single quotes. Two consecutive single quote are an empty string. Use n+1 quotes (minimum 3) to quote strings with n quotes.
 
 No quotes needed for numbers: `12.4` files: `/alfa/beta.txt` backslashes: `"info%d\n"` tags: `<info>`
 
-Quotes needed for spaces: `'My Name'` code: `'x=call(1,2)'` quotes: `'''alert('Warning!'+'');'''`
+Quotes needed for spaces: `'My Name'` code: `'x=call(1,2)'` quotes: `'''alert('Warning!'+'');'''` empty string: `''`
 
 A comment starts with `//` or `/*` and ends with eol or `*/`. Thus a value string that starts with the
 comment starters, must be quoted.
