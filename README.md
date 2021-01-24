@@ -18,9 +18,10 @@ files hard to read and edit directly by hand.
 The xmq format is simply a restructuring of the xml that (to me at
 least) makes config files written in xml easier to read and edit.
 
-The xmq format exactly represents the xml format and can therefore be
-converted back to xml after any editing has been done. (Caveat
-whitespace trimmings.)
+The xmq format can exactly represent the content of the xml file and
+can therefore be converted back to xml after any editing has been done.
+It might not however generate exactly the same xml file, byte per byte,
+because xmq uses its own set of choices for: pretty printing, quotes and escaping.
 
 Xmq can also be used as a configuration language directly without
 converting to xml.
