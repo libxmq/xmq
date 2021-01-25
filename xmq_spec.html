@@ -6,47 +6,37 @@
 
     <h1>XMQ specification</h1>
 
-    As of 2021-01-23 and in flux. By Fredrik Öhrström oehrstroem@gmail.com
+    As of 2021-01-25 and in flux. By Fredrik Öhrström oehrstroem@gmail.com
 
     <p>
-    XMQ can represent a tree of tagged content and each tag can have attributes.
-    The XMQ functions can be bound to your XML-parser/generator of choice and
-    therefore be converted back and forth from/to XML. If your parser/generator is
-    able to parse/generate html5/sgml, then you can convert back and forth with
-    these as well. However there is no guarantee that there is an exact mapping back.
-    </p>
-
-    <p>
-    If you do not need to work with XML, then you can also use XMQ directly
-    without binding to a XML-parser/generator. If you later need full XML-support,
-    for schema validation etc, then you can simply bind at a later time.
-    </p>
-
-    <p>
-    <b>text</b> consists of all valid utf8 exluding
+    <b>TEXT</b> consists of all valid utf8 exluding
     these 6 reserved characters <b>= ' ( ) { }</b>
     as well as whitespace (SPACE,TAB,LF,CR) and the <b>nul</b> character.
     (Examples of text are: 123.4 \P$ http://www.zzz.yyy/index.html /file/help.txt C:\adir)
     </p>
 
     <p>
-    <b>tag</b> is <b>text</b> but with the additional xml tag name restrictions.
+    <b>TEXT tag</b> is TEXT but with the additional xml tag name restrictions.
     (Examples of tags are: name age speed INFO order)
     </p>
 
     <p>
-    <b>quoted content</b> starts with one, three or more single quotes <b>'</b> and ends with an equal
+    <b>TEXT attribute</b> is TEXT but with the additional xml attribute name restrictions.
+    </p>
+
+    <p>
+    <b>QUOTE</b> starts with one, three or more single quotes <b>'</b> and ends with an equal
      amount of singel quotes. Use n+1 quotes to quote an utf8 string containing at most n consecutive quotes.
      Two single quotes are always the empty string.
      (Examples of quoted contents are: '' 'John Doe' '5+(8*9)' '''(&gt;'&lt;)''' )
     </p>
 
     <p>
-     <b>tag</b> is a self-closing node <b>&lt;tag/&gt;</b>
+     <b>xyz</b> is the self-closing node <b>&lt;xyz/&gt;</b>
     </p>
 
     <p>
-     <b>tag { ... }</b> is a node with children <b>&lt;tag&gt; ... &lt;/tag&gt;</b>
+     <b>xyz { ... }</b> is a node with children <b>&lt;tag&gt; ... &lt;/tag&gt;</b>
     </p>
 
     <p>
@@ -72,9 +62,9 @@
     </p>
 
     <p>
-    XMQ permits multiple root nodes in a single XMQ file. This is contrary to XML which only permits a single
-    root node. An implicit root node will therefore be inserted when converting to XML. The root node tag will be the
-    tag-safe version of the filename of the file containing the XMQ, or simply <b>root</b>.
+    XMQ permits multiple root nodes in a single XMQ file if you have supplied the --root=xyz option.
+    If the xmq file already has a root node xyz, then nothing happens. If not, then an xyz root node is added
+    wrapping the multiple root nodes in the xmq file.
     </p>
 
     <p>
@@ -202,6 +192,18 @@ alfa {
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;alfa&gt;  Hello World!  &lt;/alfa&gt;
 </pre></div>
+<div class="info"> Build a node with attributes.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#000088">block</span>(<span style="color:#00aa00">id</span> = <span style="color:#aa0000">123</span>)
+{
+    <span style="color:#00aa00">alfa</span>(<span style="color:#00aa00">x</span> = <span style="color:#aa0000">y</span>) = <span style="color:#aa0000">z</span>
+}
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;block id="123"&gt;
+  &lt;alfa x="y"&gt;z&lt;/alfa&gt;
+&lt;/block&gt;
+</pre></div>
 <div class="info"> Incidental whitespace is always removed.</div>
 <div class="row">
 <pre class="box">
@@ -222,6 +224,17 @@ block = '
       Line 3
          '
 </pre><pre class="spacing">↗</pre></div>
+<div class="info"> Multiple lines in attribute is just as easy.</div>
+<div class="row">
+<pre class="box">
+<span style="color:#00aa00">info</span>(<span style="color:#00aa00">text</span> =
+         <span style="color:#aa0000">'Hello
+          <span style="color:#aa0000">There
+          <span style="color:#aa0000">Dear
+          <span style="color:#aa0000">Friend!'</span>)
+</pre><pre class="spacing">⟷</pre><pre class="box">
+&lt;info text="Hello&amp;#10;There&amp;#10;Dear&amp;#10;Friend!"/&gt;
+</pre></div>
 <div class="info"> To make indentation explicit, quote each line. An implicit newline is inserted between two standalone quoted contents.</div>
 <div class="row">
 <pre class="box">
@@ -334,18 +347,6 @@ nothing = ''</pre><pre class="spacing">↗</pre></div>
 }
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;a&gt;&lt;b/&gt;&lt;c&gt;1&lt;/c&gt;&lt;d&gt;&lt;e&gt;2&lt;/e&gt;&lt;/d&gt;&lt;/a&gt;</pre></div>
-<div class="info"> Build a node with attributes.</div>
-<div class="row">
-<pre class="box">
-<span style="color:#000088">block</span>(<span style="color:#00aa00">id</span> = <span style="color:#aa0000">123</span>)
-{
-    <span style="color:#00aa00">alfa</span>(<span style="color:#00aa00">x</span> = <span style="color:#aa0000">y</span>) = <span style="color:#aa0000">z</span>
-}
-</pre><pre class="spacing">⟷</pre><pre class="box">
-&lt;block id="123"&gt;
-  &lt;alfa x="y"&gt;z&lt;/alfa&gt;
-&lt;/block&gt;
-</pre></div>
 <div class="info"> Use triple quotes to quote content containing quotes! Remember that double quotes is the empty string.</div>
 <div class="row">
 <pre class="box">

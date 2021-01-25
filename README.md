@@ -80,7 +80,6 @@ installed into /usr/local/bin.
 # Command line options
 
 ```
-
 --color force coloring.
 
 --mono  prevent coloring.
@@ -110,6 +109,7 @@ installed into /usr/local/bin.
 --root=<foo> if the xmq does not already have a single root node foo, then add it.
 
 -v   view only, do not convert between xmq and xml/html.
+```
 
 # Emacs example
 

@@ -268,10 +268,11 @@ int xmq2xml(Settings *settings)
     rapidxml::xml_document<> doc;
 
     // Check its valid utf8.
-    if (!isValidUtf8(buffer))
+    int line, col;
+    if (!isValidUtf8(buffer, &line, &col))
     {
         fprintf(stderr, "%s:%d:%d Invalid UTF8!\n",
-                settings->filename.c_str(), 0/*line*/, 0/*col*/);
+                settings->filename.c_str(), line, col);
         return 1;
     }
 

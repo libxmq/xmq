@@ -161,21 +161,30 @@ bool loadStdin(vector<char> *buf)
     return true;
 }
 
-bool isValidUtf8(vector<char> *data)
+bool isValidUtf8(vector<char> *data, int *line, int *col)
 {
     int n = 0; // Number of utf8 suffix bytes expected.
-
+    *col = 0;
+    *line = 1;
     for(size_t i = 0; i < data->size(); i++)
     {
-        char c = (*data)[i];
+        unsigned char c = (*data)[i];
+        if (c == '\n')
+        {
+            *col = 0;
+            (*line) ++;
+        }
         if (n > 0)
         {
             // We are expecting suffix bytes
-            if ((c >> 6) != 0b10) return false;
+            if ((c >> 6) != 0b10) {
+                return false;
+            }
             n--;
             continue;
         }
 
+        (*col)++;
         if ((c >> 5) == 0b110)
         {
             // The start byte with top bits 110 means we expect 1 suffix byte.
@@ -194,7 +203,9 @@ bool isValidUtf8(vector<char> *data)
             n = 3;
             continue;
         }
-        if ((c >> 7) != 0) return false;
+        if ((c >> 7) != 0) {
+            return false;
+        }
     }
     return n == 0;
 }

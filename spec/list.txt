@@ -21,9 +21,15 @@ RIGHT quoted_content_child.xmq quoted_content.xml
 # Build a node with leading/ending whitespace not trimmed! Note! xmq by default strips leading/ending whitespace when moving from XML to XMQ. Add opion -p to preserve whitespace, like this: "xmq -p foo.xml > foo.xmq".
 BOTH quoted_content_with_ws.xmq quoted_content_with_ws.xml -p
 
+# Build a node with attributes.
+BOTH node_with_attr.xmq node_with_attr.xml
+
 # Incidental whitespace is always removed.
 BOTH node_with_text_block.xmq node_with_text_block.xml
 RIGHT node_with_text_block_more.xmq node_with_text_block.xml
+
+# Multiple lines in attribute is just as easy.
+BOTH multi_line_attr.xmq multi_line_attr.xml
 
 # To make indentation explicit, quote each line. An implicit newline is inserted between two standalone quoted contents.
 RIGHT node_with_forced_indents.xmq node_with_forced_indents.xml
@@ -54,9 +60,6 @@ BOTH node_with_data_lines.xmq node_with_data_lines.xml -p
 
 # Add --nopp to generate xml which is not pretty printed. Useful to debug if those pretty printed newlines/indentation actually causes other xml-routines to behave strangely.
 BOTH nopp.xmq nopp.xml --nopp --nopp
-
-# Build a node with attributes.
-BOTH node_with_attr.xmq node_with_attr.xml
 
 # Use triple quotes to quote content containing quotes! Remember that double quotes is the empty string.
 BOTH node_click.xmq node_click.xml --html --html
