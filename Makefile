@@ -78,12 +78,14 @@ XMQ_OBJS:=\
 	$(BUILD)/util.o \
 	$(BUILD)/parse.o \
 	$(BUILD)/render.o \
-	$(BUILD)/xmq_implementation.o
+	$(BUILD)/xmq_implementation.o \
+	$(BUILD)/parse_xmlhtml.o
 
 XMQ_LIB_OBJS:=\
 	$(BUILD)/parse.o \
 	$(BUILD)/render.o \
-	$(BUILD)/xmq_implementation.o
+	$(BUILD)/xmq_implementation.o \
+	$(BUILD)/parse_xmlhtml.o
 
 all: $(BUILD)/xmq $(BUILD)/libxmq.so $(BUILD)/libxmq.a $(BUILD)/testinternals testur
 	@$(STRIP_BINARY)

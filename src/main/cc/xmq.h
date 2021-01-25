@@ -88,6 +88,34 @@ namespace xmq
         const char *value; // Zero terminated string allocated by rapid_xml allocate_string.
     };
 
+    enum class NodeType
+    {
+        none,    // Unknown, not set.
+        tag,     // Markup tag.
+        text,    // Text content.
+        comment, // Comment.
+        pi,      // Processing instruction.
+        doctype  // Doctype specification.
+    };
+
+    struct Attribute
+    {
+        str key;
+        str value;
+        Attribute *next_sibling;
+    };
+
+    struct Node
+    {
+        NodeType type;
+        str name;
+        Node *next_sibling;
+        Node *first_child;
+        Node *last_child;
+        Attribute *first_attribute;
+        Attribute *last_attribute;
+    };
+
     struct RenderActions
     {
         virtual void *root() = 0;
@@ -119,6 +147,9 @@ namespace xmq
 
     void renderXMQ(RenderActions *actions, RenderType rt, bool use_color, std::vector<char> *out);
     void parseXMQ(ParseActions *actions, const char *filename, const char *xmq, const char *root = NULL);
+
+    void renderXML(RenderActions *actions, RenderType rt, bool use_color, std::vector<char> *out);
+    void parseXML(ParseActions *actions, const char *filename, const char *xmq, const char *root = NULL);
 }
 
 #endif
