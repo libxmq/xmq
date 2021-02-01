@@ -411,15 +411,14 @@ void RenderImplementation::printAttributes(void *node,
         xmq::str value;
         actions->loadValue(i, &value);
 
-        /*
-        string checka = string("@")+key;
-        string checkb = string(node->name())+"@"+key;
+        string checka = string("@")+key.to_str();
+        string checkb = node_name.to_str()+"@"+key.to_str();
         if (settings_->excludes.count(checka) == 0 &&
             settings_->excludes.count(checkb) == 0)
-            {*/
-
-        printAlignedAttribute(i, value, indent+node_name.l+1, align, do_indent);
-        do_indent = true;
+        {
+            printAlignedAttribute(i, value, indent+node_name.l+1, align, do_indent);
+            do_indent = true;
+        }
         i = actions->nextAttribute(i);
     }
     output(")");

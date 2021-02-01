@@ -203,6 +203,11 @@ void find_all_prefixes(rapidxml::xml_node<> *i, StringCount &c)
 int xml2xmq(Settings *settings)
 {
     vector<char> *buffer = settings->in;
+
+    xmq::Document ddoc;
+
+    parseXML(&ddoc, "", &(*buffer)[0], "");
+
     rapidxml::xml_document<> doc;
     try
     {

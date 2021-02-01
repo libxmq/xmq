@@ -78,6 +78,9 @@ namespace xmq
         }
 
         str() : s(""), l(0) {}
+        std::string to_str() {
+            return std::string(s, s+l);
+        }
     };
 
     struct Token
@@ -145,11 +148,37 @@ namespace xmq
         virtual void appendAttribute(void *parent, Token key, Token value) = 0;
     };
 
-    void renderXMQ(RenderActions *actions, RenderType rt, bool use_color, std::vector<char> *out);
-    void parseXMQ(ParseActions *actions, const char *filename, const char *xmq, const char *root = NULL);
+    struct Document : ParseActions
+    {
+    private:
+        std::vector<Node> nodes;
+        std::vector<Attribute> attrs;
+        std::string texts;
+        Node *root_ {};
+    public:
+        Document();
+        void *root();
+        char *allocateCopy(const char *content, size_t len);
+        void *appendElement(void *parent, Token t);
+        void appendComment(void *parent, Token t);
+        void appendData(void *parent, Token t);
+        void appendAttribute(void *parent, Token key, Token value);
+    };
 
-    void renderXML(RenderActions *actions, RenderType rt, bool use_color, std::vector<char> *out);
-    void parseXML(ParseActions *actions, const char *filename, const char *xmq, const char *root = NULL);
+    struct Settings
+    {
+        // When rendering, generate plain utf8, html suitable
+        RenderType rt {};
+        bool use_color {};
+        std::set<std::string> excludes; // Exclude these attributes
+        const char *root {};
+    };
+
+    void renderXMQ(RenderActions *actions, std::vector<char> *out, Settings *settings);
+    void parseXMQ(ParseActions *actions, const char *filename, const char *xmq, Settings *settings);
+
+    void renderXML(RenderActions *actions, RenderType rt, bool use_color, std::vector<char> *out, Settings *settings);
+    void parseXML(ParseActions *actions, const char *filename, const char *xmq, Settings *settings);
 }
 
 #endif

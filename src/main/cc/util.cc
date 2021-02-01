@@ -161,6 +161,17 @@ bool loadStdin(vector<char> *buf)
     return true;
 }
 
+#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
+#define BYTE_TO_BINARY(byte)  \
+  (byte & 0x80 ? '1' : '0'), \
+  (byte & 0x40 ? '1' : '0'), \
+  (byte & 0x20 ? '1' : '0'), \
+  (byte & 0x10 ? '1' : '0'), \
+  (byte & 0x08 ? '1' : '0'), \
+  (byte & 0x04 ? '1' : '0'), \
+  (byte & 0x02 ? '1' : '0'), \
+  (byte & 0x01 ? '1' : '0')
+
 bool isValidUtf8(vector<char> *data, int *line, int *col)
 {
     int n = 0; // Number of utf8 suffix bytes expected.
@@ -169,18 +180,22 @@ bool isValidUtf8(vector<char> *data, int *line, int *col)
     for(size_t i = 0; i < data->size(); i++)
     {
         unsigned char c = (*data)[i];
+        //printf("C " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(c));
         if (c == '\n')
         {
             *col = 0;
             (*line) ++;
         }
+
         if (n > 0)
         {
             // We are expecting suffix bytes
             if ((c >> 6) != 0b10) {
+                //printf("err1\n");
                 return false;
             }
             n--;
+            //printf("now expecting %d\n", n);
             continue;
         }
 
@@ -188,25 +203,30 @@ bool isValidUtf8(vector<char> *data, int *line, int *col)
         if ((c >> 5) == 0b110)
         {
             // The start byte with top bits 110 means we expect 1 suffix byte.
+            //printf("new utf8 char expecting 1\n");
             n = 1;
             continue;
         }
         if ((c >> 4) == 0b1110)
         {
             // Top bits 1110 means expect 2 bytes.
+            //printf("new utf8 char expecting 2\n");
             c = 2;
             continue;
         }
         if ((c >> 3) == 0b11110)
         {
             // Top bits 11110 means expect 3 bytes.
+            //printf("new utf8 char expecting 3\n");
             n = 3;
             continue;
         }
-        if ((c >> 7) != 0) {
+        if ((c >> 7) == 1) {
+            //printf("Bad top bit!\n");
             return false;
         }
     }
+    //printf("n == %d\n", n);
     return n == 0;
 }
 
