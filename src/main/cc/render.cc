@@ -35,7 +35,8 @@ struct RenderImplementation
     RenderImplementation(xmq::RenderActions *ra,
                          xmq::RenderType rt,
                          bool use_color,
-                         std::vector<char> *out) : out_buffer(out), render_type_(rt), use_color_(use_color), actions(ra) {}
+                         std::vector<char> *out,
+                         xmq::Config &s) : out_buffer(out), render_type_(rt), use_color_(use_color), actions(ra), settings(s) {}
     void render();
 
     std::vector<char> *out_buffer;
@@ -47,8 +48,9 @@ struct RenderImplementation
     const char *comment_color; // yellow
     const char *data_color; // red
     const char *reset_color;
-
     xmq::RenderActions *actions {};
+    xmq::Config settings;
+
 
     int output(const char* fmt, ...);
     int outputNoEscape(const char* fmt, ...);
@@ -413,8 +415,8 @@ void RenderImplementation::printAttributes(void *node,
 
         string checka = string("@")+key.to_str();
         string checkb = node_name.to_str()+"@"+key.to_str();
-        if (settings_->excludes.count(checka) == 0 &&
-            settings_->excludes.count(checkb) == 0)
+        if (settings.excludes.count(checka) == 0 &&
+            settings.excludes.count(checkb) == 0)
         {
             printAlignedAttribute(i, value, indent+node_name.l+1, align, do_indent);
             do_indent = true;
@@ -720,8 +722,8 @@ void RenderImplementation::render()
     output("\n");
 }
 
-void xmq::renderXMQ(xmq::RenderActions *actions, xmq::RenderType rt, bool use_color, vector<char> *out)
+void xmq::renderXMQ(xmq::RenderActions *actions, vector<char> *out, xmq::Config &settings)
 {
-    RenderImplementation ri(actions, rt, use_color, out);
+    RenderImplementation ri(actions, settings.render_type, settings.use_color, out, settings);
     ri.render();
 }

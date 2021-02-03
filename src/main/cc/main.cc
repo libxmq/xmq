@@ -40,35 +40,35 @@
 
 using namespace std;
 
-bool detectTreeType(Settings *settings);
-int xml2xmq(Settings *settings);
-int xmq2xml(Settings *settings);
+bool detectTreeType(CmdLineOptions *options);
+int xml2xmq(CmdLineOptions *options);
+int xmq2xml(CmdLineOptions *options);
 
 int main(int argc, char **argv)
 {
     vector<char> in;
     vector<char> out;
 
-    Settings settings(&in, &out);
+    CmdLineOptions options(&in, &out);
 
     if (isatty(1))
     {
-        settings.use_color = true;
-        settings.output = xmq::RenderType::terminal;
+        options.use_color = true;
+        options.output = xmq::RenderType::terminal;
     }
 
-    parseCommandLine(&settings, argc, argv);
+    parseCommandLine(&options, argc, argv);
 
-    bool is_xmq = detectTreeType(&settings);
+    bool is_xmq = detectTreeType(&options);
     int rc = 0;
 
     if (is_xmq)
     {
-        rc = xmq2xml(&settings);
+        rc = xmq2xml(&options);
     }
     else
     {
-        rc = xml2xmq(&settings);
+        rc = xml2xmq(&options);
     }
 
     if (rc == 0)
@@ -80,29 +80,29 @@ int main(int argc, char **argv)
     return rc;
 }
 
-bool detectTreeType(Settings *settings)
+bool detectTreeType(CmdLineOptions *options)
 {
-    bool is_xmq = false == xmq_implementation::startsWithLessThan(*settings->in);
+    bool is_xmq = false == xmq_implementation::startsWithLessThan(*options->in);
 
     if (is_xmq)
     {
-        if (settings->tree_type == xmq::TreeType::auto_detect)
+        if (options->tree_type == xmq::TreeType::auto_detect)
         {
-            settings->tree_type = xmq::TreeType::xml;
-            if (xmq_implementation::firstWordIsHtml(*settings->in))
+            options->tree_type = xmq::TreeType::xml;
+            if (xmq_implementation::firstWordIsHtml(*options->in))
             {
-                settings->tree_type = xmq::TreeType::html;
+                options->tree_type = xmq::TreeType::html;
             }
         }
     }
     else
     {
-        if (settings->tree_type == xmq::TreeType::auto_detect)
+        if (options->tree_type == xmq::TreeType::auto_detect)
         {
-            settings->tree_type = xmq::TreeType::xml;
-            if (xmq_implementation::isHtml(*settings->in))
+            options->tree_type = xmq::TreeType::xml;
+            if (xmq_implementation::isHtml(*options->in))
             {
-                settings->tree_type = xmq::TreeType::html;
+                options->tree_type = xmq::TreeType::html;
             }
         }
     }
@@ -200,13 +200,13 @@ void find_all_prefixes(rapidxml::xml_node<> *i, StringCount &c)
     }
 }
 
-int xml2xmq(Settings *settings)
+int xml2xmq(CmdLineOptions *options)
 {
-    vector<char> *buffer = settings->in;
+    vector<char> *buffer = options->in;
 
     xmq::Document ddoc;
-
-    parseXML(&ddoc, "", &(*buffer)[0], "");
+    xmq::Config s;
+    parseXML(&ddoc, "", &(*buffer)[0], s);
 
     rapidxml::xml_document<> doc;
     try
@@ -217,11 +217,11 @@ int xml2xmq(Settings *settings)
             rapidxml::parse_comment_nodes |
             rapidxml::parse_no_string_terminators;
 
-        if (!settings->preserve_ws)
+        if (!options->preserve_ws)
         {
             flags |= rapidxml::parse_trim_whitespace;
         }
-        if (settings->tree_type == xmq::TreeType::html)
+        if (options->tree_type == xmq::TreeType::html)
         {
             flags |= rapidxml::parse_void_elements;
         }
@@ -244,13 +244,13 @@ int xml2xmq(Settings *settings)
         //                 ^
 
         fprintf(stderr, "%s:%d:%d Parse error %s\n%.*s\n",
-                settings->filename.c_str(), line, col, pe.what(), (int)count, from);
+                options->filename.c_str(), line, col, pe.what(), (int)count, from);
         for (int i=2; i<col; ++i) fprintf(stderr, " ");
         fprintf(stderr, "^\n");
     }
     rapidxml::xml_node<> *root = doc.first_node();
 
-    if (settings->compress)
+    if (options->compress)
     {
         // This will find common prefixes.
         find_all_strings(root, string_count_);
@@ -263,13 +263,16 @@ int xml2xmq(Settings *settings)
     }
 
     RenderActionsRapidXML ractions(root);
-    xmq::renderXMQ(&ractions, settings->output, settings->use_color, settings->out);
+    xmq::Config config;
+    config.render_type = options->output;
+    config.use_color = options->use_color;
+    xmq::renderXMQ(&ractions, options->out, config);
     return 0;
 }
 
-int xmq2xml(Settings *settings)
+int xmq2xml(CmdLineOptions *options)
 {
-    vector<char> *buffer = settings->in;
+    vector<char> *buffer = options->in;
     rapidxml::xml_document<> doc;
 
     // Check its valid utf8.
@@ -277,16 +280,16 @@ int xmq2xml(Settings *settings)
     if (!isValidUtf8(buffer, &line, &col))
     {
         fprintf(stderr, "%s:%d:%d Invalid UTF8!\n",
-                settings->filename.c_str(), line, col);
+                options->filename.c_str(), line, col);
         return 1;
     }
 
     // Change any \r\n to \n.
     removeCrs(buffer);
 
-    if (!settings->no_declaration)
+    if (!options->no_declaration)
     {
-        if (settings->tree_type == xmq::TreeType::html)
+        if (options->tree_type == xmq::TreeType::html)
         {
             rapidxml::xml_node<> *node = doc.allocate_node(rapidxml::node_doctype, "!DOCTYPE", "html");
             doc.append_node(node);
@@ -302,22 +305,26 @@ int xmq2xml(Settings *settings)
 
     ParseActionsRapidXML pactions(&doc);
 
-    parseXMQ(&pactions, settings->filename.c_str(), &(*buffer)[0], settings->root.c_str());
+    xmq::Config config;
+    config.root = options->root.c_str();
+    config.render_type = options->output;
+    config.use_color = options->use_color;
+    parseXMQ(&pactions, options->filename.c_str(), &(*buffer)[0], config);
 
-    if (settings->view)
+    if (options->view)
     {
         RenderActionsRapidXML ractions(doc.first_node());
-        renderXMQ(&ractions, settings->output, settings->use_color, settings->out);
+        renderXMQ(&ractions, options->out, config);
     }
     else
     {
         string s;
         int flags = 0;
-        if (settings->tree_type == xmq::TreeType::html)
+        if (options->tree_type == xmq::TreeType::html)
         {
             flags |= rapidxml::print_html;
             // Html generation defaults to no pretty printing.
-            if (!settings->pp)
+            if (!options->pp)
             {
                 // Force pretty printing.
                 flags |= rapidxml::print_no_indenting;
@@ -326,14 +333,14 @@ int xmq2xml(Settings *settings)
         else
         {
             // Xml generation defaults to pretty printing.
-            if (settings->no_pp)
+            if (options->no_pp)
             {
                 // Force disable of pretty printing.
                 flags |= rapidxml::print_no_indenting;
             }
         }
         print(back_inserter(s), doc, flags);
-        settings->out->insert(settings->out->end(), s.begin(), s.end());
+        options->out->insert(options->out->end(), s.begin(), s.end());
     }
 
     return 0;

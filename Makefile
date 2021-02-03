@@ -75,19 +75,22 @@ $(BUILD)/%.o: src/main/cc/%.cc $(wildcard src/%.h)
 
 XMQ_OBJS:=\
 	$(BUILD)/cmdline.o \
-	$(BUILD)/util.o \
+	$(BUILD)/document.o \
 	$(BUILD)/parse.o \
 	$(BUILD)/render.o \
+	$(BUILD)/util.o \
 	$(BUILD)/xmq_implementation.o \
 	$(BUILD)/parse_xmlhtml.o \
-	$(BUILD)/document.o
+
 
 XMQ_LIB_OBJS:=\
+	$(BUILD)/document.o \
 	$(BUILD)/parse.o \
 	$(BUILD)/render.o \
+	$(BUILD)/util.o \
 	$(BUILD)/xmq_implementation.o \
 	$(BUILD)/parse_xmlhtml.o \
-	$(BUILD)/document.o
+
 
 all: $(BUILD)/xmq $(BUILD)/libxmq.so $(BUILD)/libxmq.a $(BUILD)/testinternals testur
 	@$(STRIP_BINARY)

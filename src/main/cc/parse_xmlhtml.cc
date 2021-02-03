@@ -39,6 +39,7 @@ public:
 
 private:
     ParseActions *parse_actions {};
+    bool html {};
     const char *file {};
     const char *buf {};
     const char *root {};
@@ -47,6 +48,7 @@ private:
     int line {};
     int col {};
 
+    int ws_start {};
     void eatWhiteSpace();
 
     void error(const char* fmt, ...);
@@ -56,14 +58,14 @@ private:
 
     bool isReservedCharacter(char c);
 
-    TokenType peekToken();
-    Token eatToken();
-    Token eatToEndOfComment();
-    Token eatToEndOfLine();
-    Token eatMultipleCommentLines();
-    Token eatToEndOfText();
+    NodeType peekNodeToken();
+    NodeToken eatNodeToken();
+    NodeToken eatToEndOfComment();
+    NodeToken eatToEndOfLine();
+    NodeToken eatMultipleCommentLines();
+    NodeToken eatToEndOfText();
     void eatToEndOfQuote(int indent, vector<char> *buffer);
-    Token eatToEndOfQuotes(int indent);
+    NodeToken eatToEndOfQuotes(int indent);
 
     // Syntax
     void parseComment(void *parent);
@@ -74,9 +76,9 @@ private:
     bool isEndingWithDepth(size_t p, int depth);
     size_t potentiallySkipLeading_WS_NL_WS(size_t p);
     void potentiallyRemoveEnding_WS_NL_WS(vector<char> *buffer);
-    void trimTokenWhiteSpace(Token *t);
+    void trimTokenWhiteSpace(NodeToken *t);
 
-    void padWithSingleSpaces(Token *t);
+    void padWithSingleSpaces(NodeToken *t);
 
 public:
     void setup(ParseActions *a, const char *f, const char *b, const char *r)
@@ -119,17 +121,68 @@ void XMLHTMLParserImplementation::errornoline(const char* fmt, ...)
     exit(1);
 }
 
+void XMLHTMLParserImplementation::eatWhiteSpace()
+{
+    ws_start = pos;
+    while (true)
+    {
+        char c = buf[pos];
+        if (c == 0) break;
+        else if (xmq_implementation::isNewLine(c))
+        {
+            col = 1;
+            line++;
+        }
+        else if (!xmq_implementation::isWhiteSpace(c)) break;
+        pos++;
+        col++;
+    }
+}
+
+NodeType XMLHTMLParserImplementation::peekNodeToken()
+{
+    eatWhiteSpace();
+
+    char c = buf[pos];
+
+    if (c == 0) return NodeType::none;
+    if (c == '<')
+    {
+        char cc = buf[pos+1];
+        if (cc == '?')
+        {
+            return NodeType::pi;
+        }
+        if (cc == '!')
+        {
+            char ccc = buf[pos+1];
+            if (ccc == '-')
+            {
+                return NodeType::comment;
+            }
+            return NodeType::doctype;
+        }
+        if (cc == '-')
+        {
+            return NodeType::comment;
+        }
+    }
+    return NodeType::none;
+}
+
 void XMLHTMLParserImplementation::parseXML(void *node)
 {
+
 }
 
 void XMLHTMLParserImplementation::parse()
 {
+    parseXML(parse_actions->root());
 }
 
-void xmq::parseXML(ParseActions *actions, const char *filename, const char *xml, const char *root)
+void xmq::parseXML(ParseActions *actions, const char *filename, const char *xml, xmq::Config &config)
 {
     XMLHTMLParserImplementation pi(actions);
-    pi.setup(actions, filename, xml, root);
+    pi.setup(actions, filename, xml, config.root);
     pi.parse();
 }

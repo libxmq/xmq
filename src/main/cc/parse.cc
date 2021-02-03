@@ -705,9 +705,9 @@ void ParserImplementation::parseNode(void *parent)
     }
 }
 
-void xmq::parseXMQ(ParseActions *actions, const char *filename, const char *xmq, const char *root)
+void xmq::parseXMQ(ParseActions *actions, const char *filename, const char *xmq, xmq::Config &config)
 {
     ParserImplementation pi(actions);
-    pi.setup(actions, filename, xmq, root);
+    pi.setup(actions, filename, xmq, config.root);
     pi.parse();
 }

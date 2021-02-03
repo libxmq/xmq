@@ -88,17 +88,27 @@ namespace xmq
         Token(TokenType t, const char *v) : type(t), value(v) { }
 
         TokenType type;
-        const char *value; // Zero terminated string allocated by rapid_xml allocate_string.
+        const char *value; // Zero terminated string allocated by ParseActions::allocateCopy
     };
 
     enum class NodeType
     {
         none,    // Unknown, not set.
-        tag,     // Markup tag.
+        open,    // Markup tag. <foo>
+        close,   // Closing tag. </foo>
         text,    // Text content.
         comment, // Comment.
         pi,      // Processing instruction.
-        doctype  // Doctype specification.
+        doctype, // Doctype specification. <!DOCTYPE
+        declaration // Declaration <?xml version="1.0" encoding="UTF-8"?>
+    };
+
+    struct NodeToken
+    {
+        NodeToken(NodeType t, const char *v) : type(t), value(v) { }
+
+        NodeType type;
+        const char *value; // Zero terminated string allocated by ParseActions::allocateCopy
     };
 
     struct Attribute
@@ -165,20 +175,20 @@ namespace xmq
         void appendAttribute(void *parent, Token key, Token value);
     };
 
-    struct Settings
+    struct Config
     {
         // When rendering, generate plain utf8, html suitable
-        RenderType rt {};
+        RenderType render_type {};
         bool use_color {};
         std::set<std::string> excludes; // Exclude these attributes
         const char *root {};
     };
 
-    void renderXMQ(RenderActions *actions, std::vector<char> *out, Settings *settings);
-    void parseXMQ(ParseActions *actions, const char *filename, const char *xmq, Settings *settings);
+    void renderXMQ(RenderActions *actions, std::vector<char> *out, xmq::Config &settings);
+    void parseXMQ(ParseActions *actions, const char *filename, const char *xmq, xmq::Config &config);
 
-    void renderXML(RenderActions *actions, RenderType rt, bool use_color, std::vector<char> *out, Settings *settings);
-    void parseXML(ParseActions *actions, const char *filename, const char *xmq, Settings *settings);
+    void renderXML(RenderActions *actions, RenderType rt, bool use_color, std::vector<char> *out, xmq::Config &settings);
+    void parseXML(ParseActions *actions, const char *filename, const char *xmq, xmq::Config &config);
 }
 
 #endif

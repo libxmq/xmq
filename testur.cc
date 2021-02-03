@@ -13,14 +13,17 @@ int main()
     ParseActionsRapidXML pa(&document);
 
     // Parse the xmq using the binding.
-    xmq::parseXMQ(&pa, "", "alfa=123");
+    xmq::Config config;
+    xmq::parseXMQ(&pa, "", "alfa=123", config);
 
     // Now create render binding between xml and xmq.
     RenderActionsRapidXML ra(document.first_node());
 
     std::vector<char> out;
     // Render the xml as xmq into the out buffer.
-    xmq::renderXMQ(&ra, xmq::RenderType::plain, false, &out);
+    config.render_type = xmq::RenderType::plain;
+    config.use_color = false;
+    xmq::renderXMQ(&ra, &out, config);
 
     // Print it.
     printf("%.*s", (int)out.size(), &(out[0]));

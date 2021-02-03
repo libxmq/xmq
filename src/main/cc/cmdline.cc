@@ -31,7 +31,7 @@ const char *manual = R"MANUAL(
 usage: xmq <input>
 )MANUAL";
 
-void parseCommandLine(Settings *settings, int argc, char **argv)
+void parseCommandLine(CmdLineOptions *options, int argc, char **argv)
 {
     int i = 1;
     for (;;)
@@ -39,10 +39,10 @@ void parseCommandLine(Settings *settings, int argc, char **argv)
         bool found = false;
         if (argc >= 2 && !strcmp(argv[i], "--color"))
         {
-            settings->use_color = true;
-            if (settings->output == xmq::RenderType::plain)
+            options->use_color = true;
+            if (options->output == xmq::RenderType::plain)
             {
-                settings->output = xmq::RenderType::terminal;
+                options->output = xmq::RenderType::terminal;
             }
 
             i++;
@@ -51,42 +51,42 @@ void parseCommandLine(Settings *settings, int argc, char **argv)
         }
         if (argc >= 2 && !strcmp(argv[i], "--mono"))
         {
-            settings->use_color = false;
+            options->use_color = false;
             i++;
             argc--;
             found = true;
         }
         if (argc >= 2 && !strcmp(argv[i], "--output=plain"))
         {
-            settings->output = xmq::RenderType::plain;
+            options->output = xmq::RenderType::plain;
             i++;
             argc--;
             found = true;
         }
         if (argc >= 2 && !strcmp(argv[i], "--output=terminal"))
         {
-            settings->output = xmq::RenderType::terminal;
+            options->output = xmq::RenderType::terminal;
             i++;
             argc--;
             found = true;
         }
         if (argc >= 2 && !strcmp(argv[i], "--output=html"))
         {
-            settings->output = xmq::RenderType::html;
+            options->output = xmq::RenderType::html;
             i++;
             argc--;
             found = true;
         }
         if (argc >= 2 && !strcmp(argv[i], "--output=tex"))
         {
-            settings->output = xmq::RenderType::tex;
+            options->output = xmq::RenderType::tex;
             i++;
             argc--;
             found = true;
         }
         if (argc >= 2 && !strcmp(argv[i], "--html"))
         {
-            settings->tree_type = xmq::TreeType::html;
+            options->tree_type = xmq::TreeType::html;
             i++;
             argc--;
             found = true;
@@ -94,56 +94,56 @@ void parseCommandLine(Settings *settings, int argc, char **argv)
         if (argc >= 2 && !strcmp(argv[i], "--nodec"))
         {
             // Do not print <?xml...> nor <!DOCTYPe...>
-            settings->no_declaration = true;
+            options->no_declaration = true;
             i++;
             argc--;
             found = true;
         }
         if (argc >= 2 && !strcmp(argv[i], "-p"))
         {
-            settings->preserve_ws = true;
+            options->preserve_ws = true;
             i++;
             argc--;
             found = true;
         }
         if (argc >= 2 && !strcmp(argv[i], "--nopp"))
         {
-            settings->no_pp = true;
+            options->no_pp = true;
             i++;
             argc--;
             found = true;
         }
         if (argc >= 2 && !strcmp(argv[i], "--pp"))
         {
-            settings->pp = true;
+            options->pp = true;
             i++;
             argc--;
             found = true;
         }
         if (argc >= 2 && !strcmp(argv[i], "--compress"))
         {
-            settings->compress = true;
+            options->compress = true;
             i++;
             argc--;
             found = true;
         }
         if (argc >= 3 && !strcmp(argv[i], "--exclude"))
         {
-            settings->excludes.insert(argv[i+1]);
+            options->excludes.insert(argv[i+1]);
             i+=2;
             argc-=2;
             found = true;
         }
         if (argc >= 2 && !strncmp(argv[i], "--root=", 7))
         {
-            settings->root = std::string(argv[i]+7, argv[i]+strlen(argv[i]));
+            options->root = std::string(argv[i]+7, argv[i]+strlen(argv[i]));
             i+=1;
             argc-=1;
             found = true;
         }
         if (argc >= 2 && !strcmp(argv[i], "-v"))
         {
-            settings->view = true;
+            options->view = true;
             i++;
             argc--;
             found = true;
@@ -161,7 +161,7 @@ void parseCommandLine(Settings *settings, int argc, char **argv)
 
     if (!strcmp(file, "-"))
     {
-        bool rc = loadStdin(settings->in);
+        bool rc = loadStdin(options->in);
         if (!rc)
         {
             exit(1);
@@ -170,12 +170,12 @@ void parseCommandLine(Settings *settings, int argc, char **argv)
     else
     {
         std::string files = std::string(file);
-        bool rc = loadFile(files, settings->in);
+        bool rc = loadFile(files, options->in);
         if (!rc)
         {
             // Error message already printed by loadFile.
             exit(1);
         }
     }
-    settings->in->push_back('\0');
+    options->in->push_back('\0');
 }

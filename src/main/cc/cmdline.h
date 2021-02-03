@@ -27,10 +27,10 @@
 
 #include "xmq.h"
 
-class Settings
+class CmdLineOptions
 {
 public:
-    Settings(std::vector<char> *i, std::vector<char> *o) : in(i), out(o) {}
+    CmdLineOptions(std::vector<char> *i, std::vector<char> *o) : in(i), out(o) {}
     std::vector<char> *in;
     std::vector<char> *out;
 
@@ -48,6 +48,6 @@ public:
     std::string root;       // If non-empty, check that the xmq has this root tag, if not then add it.
 };
 
-void parseCommandLine(Settings *settings, int argc, char **argv);
+void parseCommandLine(CmdLineOptions *options, int argc, char **argv);
 
 #endif
