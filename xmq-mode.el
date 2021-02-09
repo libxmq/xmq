@@ -43,11 +43,16 @@
                                )
 )
 
+(require 'hideshow)
+
 ;;;###autoload
 (define-derived-mode xmq-mode fundamental-mode
   "xmq"
   "Major mode for xmq output."
   (setq font-lock-defaults '((xmq-font-lock-keywords)))
+  (setq comment-start "/*")
+  (setq comment-end "*/")
+  (hs-minor-mode 1)
 )
 
 ;;;###autoload
