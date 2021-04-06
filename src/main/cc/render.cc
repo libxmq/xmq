@@ -82,7 +82,7 @@ struct RenderImplementation
                       int align,
                       bool do_indent);
     void renderNode(void *i, int indent, bool newline, vector<pair<void*,xmq::str>> *lines, size_t *align);
-    void render(void *node, int indent, bool newline = true);
+    void renderWithChildren(void *node, int indent, bool newline = true);
 };
 
 
@@ -143,7 +143,7 @@ void RenderImplementation::renderElementNameSugar(xmq::str tag)
 void RenderImplementation::renderElementNameSugarPI(xmq::str tag)
 {
     if (use_color_) outputNoEscape(element_name_sugar_color);
-    output("?%.*s?", tag.l, tag.s);
+    output("?%.*s", tag.l, tag.s);
     if (use_color_) outputNoEscape(reset_color);
 }
 
@@ -569,15 +569,14 @@ void RenderImplementation::renderNode(void *i, int indent, bool newline, vector<
         }
         lines->clear();
         *align = 0;
-        render(i, indent+4);
+        renderWithChildren(i, indent+4);
     }
 }
 
 /*
-    Render is only invoked on nodes that have children nodes
-    other than a single content node.
+    Render is only invoked on nodes that have children nodes other than a single content node.
 */
-void RenderImplementation::render(void *node, int indent, bool newline)
+void RenderImplementation::renderWithChildren(void *node, int indent, bool newline)
 {
     assert(node != NULL);
     size_t align = 0;
@@ -706,7 +705,7 @@ void RenderImplementation::render()
         }
         else
         {
-            render(root, 0, newline);
+            renderWithChildren(root, 0, newline);
         }
         newline = true;
         if (actions->parent(root))

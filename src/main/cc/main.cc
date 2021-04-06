@@ -1,5 +1,5 @@
 /*
- Copyright (c) 2019-2020 Fredrik Öhrström
+ Copyright (c) 2019-2021 Fredrik Öhrström
 
  MIT License
 
@@ -149,9 +149,11 @@ void find_all_prefixes(rapidxml::xml_node<> *i, StringCount &c)
 {
     if (i->type() == rapidxml::node_element)
     {
+        fprintf(stderr, "A1\n");
         string p = find_prefix(i->name(), c);
         if (p.length() > 5)
         {
+            fprintf(stderr, "A2\n");
             int pn = 0;
             if (prefixes_.count(p) > 0)
             {
@@ -170,9 +172,12 @@ void find_all_prefixes(rapidxml::xml_node<> *i, StringCount &c)
         rapidxml::xml_attribute<> *a = i->first_attribute();
         while (a != NULL)
         {
+            fprintf(stderr, "x1\n");
             string p = find_prefix(a->name(), c);
+            fprintf(stderr, "x2\n");
             if (p.length() > 5)
             {
+                fprintf(stderr, "x3\n");
                 int pn = 0;
                 if (prefixes_.count(p) > 0)
                 {
@@ -190,12 +195,16 @@ void find_all_prefixes(rapidxml::xml_node<> *i, StringCount &c)
             }
 
             a = a->next_attribute();
+            fprintf(stderr, "x4\n");
         }
         rapidxml::xml_node<> *n = i->first_node();
         while (n != NULL)
         {
+            fprintf(stderr, "Na\n");
             find_all_prefixes(n, c);
+            fprintf(stderr, "Nb\n");
             n = n->next_sibling();
+            fprintf(stderr, "Nc\n");
         }
     }
 }
@@ -253,8 +262,11 @@ int xml2xmq(CmdLineOptions *options)
     if (options->compress)
     {
         // This will find common prefixes.
+        fprintf(stderr, "UGKRA1\n");
         find_all_strings(root, string_count_);
+        fprintf(stderr, "UGKRA2\n");
         find_all_prefixes(root, string_count_);
+        fprintf(stderr, "UGKRA3\n");
 
         for (auto &p : prefixes_)
         {
@@ -276,13 +288,14 @@ int xmq2xml(CmdLineOptions *options)
     rapidxml::xml_document<> doc;
 
     // Check its valid utf8.
-    int line, col;
+//    int line, col;
+    /*
     if (!isValidUtf8(buffer, &line, &col))
     {
         fprintf(stderr, "%s:%d:%d Invalid UTF8!\n",
                 options->filename.c_str(), line, col);
         return 1;
-    }
+        }*/
 
     // Change any \r\n to \n.
     removeCrs(buffer);

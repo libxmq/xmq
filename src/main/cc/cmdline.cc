@@ -27,8 +27,22 @@
 
 #include<string.h>
 
-const char *manual = R"MANUAL(
-usage: xmq <input>
+const char *manual = R"MANUAL(xmq - commandline xml-xmq converter [version ]
+Usage: xmq [options] <input>
+  --color force coloring.
+  --mono prevent coloring.
+  --compress find common prefixes in tag names.
+  --exclude exlude tags.
+  --html assume that data is html, even though it does not start with an html tag.
+  --nodec do not add the xml/html5 declaration/doctype.
+  --nopp do not pretty print xml/html.
+  --output=html produce output suitable inclusion between <pre>...</pre> tags.
+  --output=terminal write on terminal, use ansi colors if necessary.
+  --output=tex produce output suitable for inclusion in tex documents.
+  --output=plain produce plain utf8 text.
+  -p preserve whitespace when converting from xml to xmq.
+  --pp pretty print.
+  -v view only, do not convert between xmq and xml/html.
 )MANUAL";
 
 void parseCommandLine(CmdLineOptions *options, int argc, char **argv)
@@ -120,14 +134,20 @@ void parseCommandLine(CmdLineOptions *options, int argc, char **argv)
             argc--;
             found = true;
         }
-        if (argc >= 2 && !strcmp(argv[i], "--compress"))
+        if (argc >= 2 &&
+            (!strcmp(argv[i], "--compress")
+             ||
+             !strcmp(argv[i], "-c")))
         {
             options->compress = true;
             i++;
             argc--;
             found = true;
         }
-        if (argc >= 3 && !strcmp(argv[i], "--exclude"))
+        if (argc >= 3 &&
+            (!strcmp(argv[i], "--exclude")
+             ||
+             !strcmp(argv[i], "-x")))
         {
             options->excludes.insert(argv[i+1]);
             i+=2;
