@@ -686,7 +686,7 @@ void ParserImplementation::parseNode(void *parent)
         }
         else
         {
-            error("expecte brace close");
+            error("expected closing brace");
         }
     }
     else if (tt == TokenType::equals)

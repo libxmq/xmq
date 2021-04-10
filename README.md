@@ -89,7 +89,7 @@ You can read form stdin like this:  `cat pom.xml | xmq -`
 and there is a utility to view xml files: `xmq-less pom.xml`
 
 You can view colorify and pretty print an xmq file without converting it to xml:
-`xmq -v config.xmq`
+`xmq -v config.xmq` or `xmq-less -v config.xmq`
 
 There is an xmq major mode for emacs in xmq-mode.el.
 Put it into your `.emacs.d/site-lisp` directory and
@@ -106,33 +106,19 @@ installed into /usr/local/bin.
 
 ```
 --color force coloring.
-
 --mono  prevent coloring.
-
 --compress find common prefixes in tag names.
-
 --exclude  exlude tags.
-
 --html  assume that data is html, even though it does not start with an html tag.
-
 --nodec do not add the xml/html5 declaration/doctype.
-
 --nopp  do not pretty print xml/html.
-
 --output=html produce output suitable inclusion between <pre>...</pre> tags.
-
 --output=terminal write on terminal, use ansi colors if necessary.
-
 --output=tex  produce output suitable for inclusion in tex documents.
-
 --output=plain produce plain utf8 text.
-
 -p   preserve whitespace when converting from xml to xmq.
-
 --pp pretty print.
-
 --root=<foo> if the xmq does not already have a single root node foo, then add it.
-
 -v   view only, do not convert between xmq and xml/html.
 ```
 
