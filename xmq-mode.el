@@ -57,6 +57,7 @@
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.xmq\\'" . xmq-mode))
+(add-to-list 'auto-mode-alist '("\\.hxmq\\'" . xmq-mode))
 
 ;; add the mode to the `features' list
 (provide 'xmq-mode)
