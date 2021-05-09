@@ -40,7 +40,7 @@ and can therefore be converted back to xml/html after any editing has
 been done.  It might not however generate exactly the same xml/html
 file, byte per byte, because xmq uses its own set of choices for:
 pretty printing, quotes and escaping. For html you can use the suffix
-hxmq to indicate that you have written html using the xmq format.
+htmq to indicate that you have written html using the xmq format.
 
 Xmq cannot represent broken html and will give up on broken html since
 the tags must always balance or be self-closing. Use a tool like
@@ -52,10 +52,14 @@ Xmq can of course also be used as a configuration language directly.
 # Rules
 
 Xmq reserves six single character tokens `='(){}` and whitespace
-`space tab lf cr` + unicode whitespace, and whenever a text string, be
-it a key or value, contains the reserved characters, it has to be
-quoted with single quotes. Two consecutive single quotes are an empty
-string. Use n+1 quotes (minimum 3) to quote strings with n quotes.
+`space tab lf cr` + unicode whitespace, and whenever a text string,
+contains the reserved characters, it has to be quoted with single
+quotes. Two consecutive single quotes are an empty string. Use n+1
+quotes (minimum 3) to quote strings with n quotes.
+
+Only value strings have to be quoted. The keys (aka the tag names are
+limited to the standard xml tag rules, which prohibits the reserved
+characters anyway.
 
 No quotes needed for numbers: `12.4` files with slashes: `/alfa/beta.txt` files with backslashes: `C:\Foo\bar.png`
 strings with backslashes: `"info%d\n"` tags: `<info>`
