@@ -26,6 +26,11 @@
 #include "xmq_implementation.h"
 
 #include<string.h>
+
+#ifndef strncasecmp
+#define strncasecmp strncmp 
+#endif
+
 bool xmq_implementation::isWhiteSpace(char c)
 {
     return c == ' ' || c == '\t' || c == '\r' || c == '\n';
