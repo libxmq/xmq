@@ -30,6 +30,10 @@ else
     STRIP_BINARY=$(STRIP) $(BUILD)/xmq
 endif
 
+ifeq ($(OS),Windows_NT)
+	STRIP_BINARY=
+endif
+
 $(shell mkdir -p $(BUILD) target)
 
 COMMIT_HASH:=$(shell git log --pretty=format:'%H' -n 1)
