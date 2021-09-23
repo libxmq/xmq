@@ -237,7 +237,7 @@ int xml2xmq(CmdLineOptions *options)
         doc.parse(&(*buffer)[0], flags);
 
     }
-    catch (rapidxml::parse_error pe)
+    catch (rapidxml::parse_error &pe)
     {
         const char *where = pe.where<const char>();
         //size_t offset = where - &(*buffer)[0];
