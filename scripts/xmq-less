@@ -17,6 +17,12 @@ then
     compress="-c"
 fi
 
+if [ "$1" = "--sort-attributes" ]
+then
+    shift 1
+    sort="--sort-attributes"
+fi
+
 if [ "$1" = "-x" ]
 then
     shift 1
@@ -24,4 +30,4 @@ then
     shift 1
 fi
 
-xmq --color $view $compress $exclude $1 | less -R
+xmq --color $view $compress $exclude $sort $1 | less -R
