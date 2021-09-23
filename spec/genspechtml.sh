@@ -186,12 +186,13 @@ cat > $OUT <<EOF
     <p>
        However, inside <b>quoted content</b>:
        <ol>
-       <li>A leading or ending sequence of Whitespace_NewLine_Whitespace will always be trimmed.</li>
+       <li>A leading or ending sequence of Whitespace*_NewLine_Whitespace* will always be trimmed.</li>
        <li>Incidental whitespace will always be trimmed, when there is at least one newline.</li>
        </ol>
     </p>
 
-    <p>A newline is implicitly inserted between two standalone quoted contents.</p>
+    <p>You can join two quoted contents by suffixing the quote with <b>\n</b> or <b>\</b>.
+    This is used to inserted controlled whitespace that would otherwise be timmed away.</p>
 
     <p>
     Three reasons for possible differences in the XML when converting XML->XMQ->XML.

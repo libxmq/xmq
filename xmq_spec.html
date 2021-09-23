@@ -79,12 +79,13 @@
     <p>
        However, inside <b>quoted content</b>:
        <ol>
-       <li>A leading or ending sequence of Whitespace_NewLine_Whitespace will always be trimmed.</li>
+       <li>A leading or ending sequence of Whitespace*_NewLine_Whitespace* will always be trimmed.</li>
        <li>Incidental whitespace will always be trimmed, when there is at least one newline.</li>
        </ol>
     </p>
 
-    <p>A newline is implicitly inserted between two standalone quoted contents.</p>
+    <p>You can join two quoted contents by suffixing the quote with <b>\n</b> or <b>\</b>.
+    This is used to inserted controlled whitespace that would otherwise be timmed away.</p>
 
     <p>
     Three reasons for possible differences in the XML when converting XML->XMQ->XML.
@@ -235,7 +236,7 @@ block = '
 </pre><pre class="spacing">⟷</pre><pre class="box">
 &lt;info text="Hello&amp;#10;There&amp;#10;Dear&amp;#10;Friend!"/&gt;
 </pre></div>
-<div class="info"> To make indentation explicit, quote each line. An implicit newline is inserted between two standalone quoted contents.</div>
+<div class="info"> To make indentation explicit, quote each line and suffix the string with \n to insert a newline.</div>
 <div class="row">
 <pre class="box">
 block {
@@ -270,7 +271,7 @@ long = '   '\
 </pre><pre class="spacing">↗</pre><pre class="box">
 &lt;long&gt;   xxxyyy   &lt;/long&gt;
 </pre></div>
-<div class="info"> Avoid using the other quote suffix \n&lt;NL&gt; which joins and adds a newline. It is only there to offer you the ability write an attribute value with a leading whitespace+&lt;NL&gt;.</div>
+<div class="info"> You use the suffix \n&lt;NL&gt; which joins and adds a newline to create attribute values leading/ending whitespace.</div>
 <div class="row">
 <pre class="box">
 info(text='    '\n

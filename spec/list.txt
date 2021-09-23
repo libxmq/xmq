@@ -31,7 +31,7 @@ RIGHT node_with_text_block_more.xmq node_with_text_block.xml
 # Multiple lines in attribute is just as easy.
 BOTH multi_line_attr.xmq multi_line_attr.xml
 
-# To make indentation explicit, quote each line. An implicit newline is inserted between two standalone quoted contents.
+# To make indentation explicit, quote each line and suffix the string with \n to insert a newline.
 RIGHT node_with_forced_indents.xmq node_with_forced_indents.xml
 
 # The leading whitespace+&lt;NL&gt; is obvious in the xmq but impossible to spot in the xml/html.
@@ -40,7 +40,7 @@ RIGHT leading_wsnl.xmq leading_wsnl.xml
 # You can join several shorter lines into a very long line with the quote suffix \&lt;NL&gt;
 RIGHT joining_quotes.xmq joining_quotes.xml
 
-# Avoid using the other quote suffix \n&lt;NL&gt; which joins and adds a newline. It is only there to offer you the ability write an attribute value with a leading whitespace+&lt;NL&gt;.
+# You use the suffix \n&lt;NL&gt; which joins and adds a newline to create attribute values leading/ending whitespace.
 RIGHT necessary_join.xmq necessary_join.xml
 
 # Build a self closing node.
