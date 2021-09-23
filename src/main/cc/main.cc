@@ -278,6 +278,7 @@ int xml2xmq(CmdLineOptions *options)
     xmq::Config config;
     config.render_type = options->output;
     config.use_color = options->use_color;
+    config.sort_attributes = options->sort_attributes;
     xmq::renderXMQ(&ractions, options->out, config);
     return 0;
 }

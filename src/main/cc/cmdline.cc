@@ -42,6 +42,7 @@ Usage: xmq [options] <input>
   --output=plain produce plain utf8 text.
   -p preserve whitespace when converting from xml to xmq.
   --pp pretty print.
+  --sort-attributes when rendering sort the attributes
   -v view only, do not convert between xmq and xml/html.
 )MANUAL";
 
@@ -134,6 +135,13 @@ void parseCommandLine(CmdLineOptions *options, int argc, char **argv)
             argc--;
             found = true;
         }
+        if (argc >= 2 && !strcmp(argv[i], "--sort-attributes"))
+        {
+            options->sort_attributes = true;
+            i++;
+            argc--;
+            found = true;
+        }
         if (argc >= 2 &&
             (!strcmp(argv[i], "--compress")
              ||
@@ -177,6 +185,12 @@ void parseCommandLine(CmdLineOptions *options, int argc, char **argv)
     {
         puts(manual);
         exit(0);
+    }
+
+    if (!strncmp(file, "--", 2))
+    {
+        printf("Unknown option %s\n", file);
+        exit(1);
     }
 
     if (!strcmp(file, "-"))

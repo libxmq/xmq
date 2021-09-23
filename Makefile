@@ -125,6 +125,7 @@ intro:
 test:
 	@./build/testinternals
 	@./spec/genspechtml.sh ./build/xmq
+	@./test.sh ./build
 
 testur: dist testur.cc
 	@$(CXX) $(CXXFLAGS) testur.cc -o $@ -Idist -I. -Ldist -lxmq

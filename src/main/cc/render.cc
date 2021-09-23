@@ -24,6 +24,7 @@
 
 #include <assert.h>
 #include <stdarg.h>
+#include <algorithm>
 
 #include "xmq.h"
 #include "xmq_implementation.h"
@@ -382,9 +383,11 @@ void RenderImplementation::printAttributes(void *node,
     xmq::str node_name;
     actions->loadName(node, &node_name);
 
-    void *i = actions->firstAttribute(node);
+    vector<void*> attributes;
 
-    while (i)
+    // First find longest attribute name so
+    // that we can align the equal signs.
+    for (void *i = actions->firstAttribute(node); i != NULL; i = actions->nextAttribute(i))
     {
         /*
         string key = string(i->name(), i->name_size());
@@ -399,29 +402,38 @@ void RenderImplementation::printAttributes(void *node,
         {
             align = name.l;
         }
-        i = actions->nextAttribute(i);
+        attributes.push_back(i);
+    }
+
+    if (settings.sort_attributes)
+    {
+        std::sort(attributes.begin(), attributes.end(), [&](void *a, void* b)
+             {
+                 xmq::str as, bs;
+                 actions->loadName(a, &as);
+                 actions->loadName(b, &bs);
+                 return xmq_implementation::strCompare(as, bs);
+             });
     }
 
     output("(");
     bool do_indent = false;
 
-    i = actions->firstAttribute(node);
-    while (i)
+    for (void *a : attributes)
     {
         xmq::str key;
-        actions->loadName(i, &key);
+        actions->loadName(a, &key);
         xmq::str value;
-        actions->loadValue(i, &value);
+        actions->loadValue(a, &value);
 
         string checka = string("@")+key.to_str();
         string checkb = node_name.to_str()+"@"+key.to_str();
         if (settings.excludes.count(checka) == 0 &&
             settings.excludes.count(checkb) == 0)
         {
-            printAlignedAttribute(i, value, indent+node_name.l+1, align, do_indent);
+            printAlignedAttribute(a, value, indent+node_name.l+1, align, do_indent);
             do_indent = true;
         }
-        i = actions->nextAttribute(i);
     }
     output(")");
 }

@@ -123,6 +123,7 @@ installed into /usr/local/bin.
 -p   preserve whitespace when converting from xml to xmq.
 --pp pretty print.
 --root=<foo> if the xmq does not already have a single root node foo, then add it.
+--sort-attributes when rendering sort the attributes.
 -v   view only, do not convert between xmq and xml/html.
 ```
 

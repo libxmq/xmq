@@ -309,3 +309,30 @@ void xmq_implementation::findLineAndColumn(const char *from, const char *where, 
         if (i == where) break;
     }
 }
+
+bool xmq_implementation::strCompare(const xmq::str &a, const xmq::str &b)
+{
+    size_t len = std::min(a.l, b.l);
+
+    // How should we handle unicode and locales? For now we just compare the bytes.
+    int c = strncmp(a.s, b.s, len);
+
+    // There is a difference up to the common length, return true of a is "less" than b ie strncmp returned -1.
+    if (c != 0)
+    {
+        return c < 0;
+    }
+
+    // The strings are identical up to the common length, lets check the lengths.
+
+    if (a.l < b.l)
+    {
+        // Ah, a is shorter, therefore a is less than b.
+        return true;
+    }
+
+    // Ok, then either the strings are identical (same lengths) or a is longer than b.
+    // In any case the comparison should return false, since a is NOT clearly less than b.
+
+    return false;
+}

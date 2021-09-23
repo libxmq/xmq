@@ -182,6 +182,7 @@ namespace xmq
         bool use_color {};
         std::set<std::string> excludes; // Exclude these attributes
         const char *root {};
+        bool sort_attributes {};
     };
 
     void renderXMQ(RenderActions *actions, std::vector<char> *out, xmq::Config &settings);

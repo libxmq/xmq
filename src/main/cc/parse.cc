@@ -373,14 +373,14 @@ Token ParserImplementation::eatToEndOfQuotes(int indent)
         // Now check if a \ is suffixed!
         if (buf[pos] != '\\')
         {
-            // No quote joinging happening, lest stop.
+            // No quote new line adding, lest stop.
             break;
         }
 
         assert(buf[pos] == '\\');
         if (buf[pos+1] != 'n' && buf[pos+1] != '\n')
         {
-            error("expected n or newline after quote suffixed with \\.");
+            error("expected n after quote suffixed with \\.");
         }
         if (buf[pos+1] == 'n' && buf[pos+2] != '\n')
         {

@@ -43,7 +43,7 @@ namespace xmq_implementation
     const char *findStartingNewline(const char *where, const char *start);
     const char *findEndingNewline(const char *where);
     void findLineAndColumn(const char *from, const char *where, int *line, int *col);
-
+    bool strCompare(const xmq::str &a, const xmq::str &b);
 }
 
 #endif

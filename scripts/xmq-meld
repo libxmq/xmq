@@ -18,10 +18,16 @@ then
     shift 1
 fi
 
+if [ "$1" = "--sort-attributes" ]
+then
+    shift 1
+    sort="--sort-attributes"
+fi
+
 
 oldfile=$(mktemp /tmp/xmq-diff.old.XXXXXX)
 newfile=$(mktemp /tmp/xmq-diff.new.XXXXXX)
 
-xmq $compress $exclude "$1" > $oldfile
-xmq $compress $exclude "$2" > $newfile
+xmq $compress $exclude $sort "$1" > $oldfile
+xmq $compress $exclude $sort "$2" > $newfile
 meld $oldfile $newfile

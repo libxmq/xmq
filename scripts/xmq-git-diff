@@ -18,6 +18,12 @@ then
     shift 1
 fi
 
-xmq $compress $exclude "$1" > /tmp/aa
-git show "HEAD:$1" | xmq $compress $exclude - > /tmp/bb
+if [ "$1" = "--sort-attributes" ]
+then
+    shift 1
+    sort="--sort-attributes"
+fi
+
+xmq $compress $exclude $sort "$1" > /tmp/aa
+git show "HEAD:$1" | xmq $compress $exclude $sort - > /tmp/bb
 diff /tmp/bb /tmp/aa | colordiff

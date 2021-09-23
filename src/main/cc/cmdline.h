@@ -44,6 +44,7 @@ public:
     bool compress {};       // Find common prefixes of the tags.
     bool pp {};             // Do pretty print the xml/html.
     bool no_pp {};          // Do not pretty print the xml/html.
+    bool sort_attributes {}; // When rendering sort attributes.
     std::set<std::string> excludes; // Exclude these attributes
     std::string root;       // If non-empty, check that the xmq has this root tag, if not then add it.
 };
