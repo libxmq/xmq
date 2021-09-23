@@ -128,8 +128,10 @@ intro:
 
 test:
 	@./build/testinternals
+ifneq ($(OS),Windows_NT)
 	@./spec/genspechtml.sh ./build/xmq
 	@./test.sh ./build
+endif
 
 testur: dist testur.cc
 	@$(CXX) $(CXXFLAGS) testur.cc -o $@ -Idist -I. -Ldist -lxmq
