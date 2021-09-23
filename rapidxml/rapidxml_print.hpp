@@ -357,14 +357,6 @@ namespace rapidxml
             const xml_node<Ch> *prev = NULL;
             for (xml_node<Ch> *child = node->first_node(); child; child = child->next_sibling())
             {
-                if (prev && prev->type() == node_data &&
-                     child && child->type() == node_data)
-                {
-                    // The previous and this node are data nodes!
-                    // Force a newline in between!
-                    *out = Ch('\n');
-                    ++out;
-                }
                 out = print_node(out, child, flags, indent, prev);
                 prev = child;
             }

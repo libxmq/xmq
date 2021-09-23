@@ -6,7 +6,7 @@
 
     <h1>XMQ specification</h1>
 
-    As of 2021-04-10 and in flux. By Fredrik Öhrström oehrstroem@gmail.com
+    As of 2021-09-23 and in flux. By Fredrik Öhrström oehrstroem@gmail.com
 
     <p>
     <b>TEXT</b> consists of all valid utf8 exluding
@@ -239,8 +239,8 @@ block = '
 <div class="row">
 <pre class="box">
 block {
-    '        Line 1'
-    '        Line 2'
+    '        Line 1'\n
+    '        Line 2'\n
     '        Line 3'
 }
 </pre><pre class="spacing">↗</pre><pre class="box">
@@ -252,8 +252,8 @@ block {
 <div class="row">
 <pre class="box">
 tricky {
-   '   '
-   'yes'
+   '   '\n
+   'yes'\n
    '   '
 }</pre><pre class="spacing">↗</pre><pre class="box">
 &lt;tricky&gt;   
@@ -385,10 +385,10 @@ node(print = '''
 <div class="row">
 <pre class="box">
 info {
-    ''
-    '      x'
-    '       y'
-    '        z'
+    ''\n
+    '      x'\n
+    '       y'\n
+    '        z'\n
     '         w'
 }
 </pre><pre class="spacing">↗</pre><pre class="box">
