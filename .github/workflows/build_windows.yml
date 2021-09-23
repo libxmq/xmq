@@ -9,9 +9,9 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Set up MinGW
-        uses: egor-tensin/setup-mingw@v2
-        with:
-            platform: x64
+      uses: egor-tensin/setup-mingw@v2
+      with:
+          platform: x64
     - uses: actions/checkout@v2
     - run: make
     - run: make test
