@@ -14,7 +14,7 @@ html {
             &nbsp;&nbsp;
             a(href=xmq.pdf) = Grammar
             &nbsp;&nbsp;
-            a(href=gtkdoc/index.html) = API
+            a(href=api/index.html) = API
             &nbsp;&nbsp;
             'by Fredrik Öhrström 2023-10-08'
         }
