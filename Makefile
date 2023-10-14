@@ -199,20 +199,22 @@ build/gtkdoc: build/gtkdocentities.ent
 
 .PHONY: all release debug asan test test_release test_debug clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc
 
+TODAY:=$(shell date +%Y-%m-%d)
+
 web: $(wildcard web/*) $(wildcard web/resources/*)
-	@rm -rf build/web _EX1_.html _EX1_.htmq
+	@rm -rf build/web build/_EX1_.html build/_EX1_.htmq build/tmp*.htmq
 	@mkdir -p build/web/resources
 	@xmq web/50x.htmq to_html > build/web/50x.html
 	@xmq web/404.htmq to_html > build/web/404.html
 	@xmq web/config.xml render_html --onlystyle > build/web/resources/xmq.css
-	@xmq web/config.xml render_html --darkbg --nostyle  > _EX1_.html
-	@xmq --trim=none _EX1_.html to_xmq --compact  > _EX1_.htmq
-	@cat web/index.htmq | sed -e "s/_EX1_/$$(sed 's:/:\\/:g' _EX1_.htmq | sed 's/\&/\\\&/g')/g" > tmp.htmq
-	@xmq tmp.htmq to_html > build/web/index.html
+	@xmq web/config.xml render_html --darkbg --nostyle  > build/_EX1_.html
+	@xmq --trim=none build/_EX1_.html to_xmq --compact  > build/_EX1_.htmq
+	@cat web/index.htmq | sed -e "s/_EX1_/$$(sed 's:/:\\/:g' build/_EX1_.htmq | sed 's/\&/\\\&/g')/g" > build/tmp.htmq
+	@sed 's/_DATE_/$(TODAY)/g' build/tmp.htmq > build/tmp2.htmq
+	@xmq build/tmp2.htmq to_html > build/web/index.html
 	@(cd doc; make)
-	@cp doc/xmq.pdf build/web/resources
+	@cp doc/xmq.pdf build/web
 	@cp web/resources/* build/web/resources
-	@cp doc/xmq.pdf build/web/resources
 	@echo "Generated build/web/index.html"
 
 .PHONY: web

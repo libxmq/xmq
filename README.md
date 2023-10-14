@@ -2,9 +2,9 @@
 
 Homepage [https://libxmq.org](https://libxmq.org)
 
-API [https://libxmq.org](https://libxmq.org/api/index.html)
+API [https://libxmq.org/api/](https://libxmq.org/api/)
 
-Grammar [https://libxmq.org](https://libxmq.org/resources/xmq.pdf)
+Grammar [https://libxmq.org/xmq.pdf](https://libxmq.org/xmq.pdf)
 
 If you want to add support for xmq to your program,
 just place xmq.h and xmq.c in your source code directory.

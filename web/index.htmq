@@ -16,7 +16,7 @@ html {
             &nbsp;&nbsp;
             a(href=api/index.html) = API
             &nbsp;&nbsp;
-            'by Fredrik Öhrström 2023-10-08'
+            'by Fredrik Öhrström _DATE_'
         }
 
         h2 = 'Quick Summary'
