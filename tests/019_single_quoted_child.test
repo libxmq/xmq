@@ -1,0 +1,9 @@
+START
+alfa {
+    'beta'
+}
+DEBUG
+[element_name "alfa" 1:1][whitespace " " 1:5][brace_left "{" 1:1][whitespace "\n    " 1:7][quote "'beta'" 2:5][whitespace "\n" 2:11][brace_right "}" 1:1][whitespace "\n" 3:2]
+CONTENT
+{quote "beta"}
+END

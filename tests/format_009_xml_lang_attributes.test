@@ -1,0 +1,30 @@
+START
+<root>
+  <p xml:lang="en">The quick brown fox jumps over the lazy dog.</p>
+  <p xml:lang="en-GB">What colour is it?</p>
+  <p xml:lang="en-US">What color is it?</p>
+  <sp who="Faust" desc='leise' xml:lang="de">
+    <l>Habe nun, ach! Philosophie,</l>
+    <l>Juristerei, und Medizin</l>
+    <l>und leider auch Theologie</l>
+    <l>durchaus studiert mit heißem Bemüh'n.</l>
+  </sp>
+</root>
+COMPACT
+root{p(xml:lang=en)='The quick brown fox jumps over the lazy dog.'p(xml:lang=en-GB)='What colour is it?'p(xml:lang=en-US)='What color is it?'sp(who=Faust desc=leise xml:lang=de){l='Habe nun, ach! Philosophie,'l='Juristerei, und Medizin'l='und leider auch Theologie'l='''durchaus studiert mit heißem Bemüh'n.'''}}
+XMQ
+root {
+    p(xml:lang = en) = 'The quick brown fox jumps over the lazy dog.'
+    p(xml:lang = en-GB) = 'What colour is it?'
+    p(xml:lang = en-US) = 'What color is it?'
+    sp(who      = Faust
+       desc     = leise
+       xml:lang = de)
+    {
+        l = 'Habe nun, ach! Philosophie,'
+        l = 'Juristerei, und Medizin'
+        l = 'und leider auch Theologie'
+        l = '''durchaus studiert mit heißem Bemüh'n.'''
+    }
+}
+END

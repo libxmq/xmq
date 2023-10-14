@@ -1,0 +1,9 @@
+START
+!DOCTYPE = html html{body{p=Howdy}}
+COMPACT
+IGNORE
+XMQ
+<!DOCTYPE html><html><body><p>Howdy</p></body></html>
+END
+ARGS
+CMDS to_html

@@ -1,0 +1,11 @@
+START
+'''''''''''
+    x
+  y
+    z
+'''''''''''
+DEBUG
+[quote "'''''''''''\n    x\n  y\n    z\n'''''''''''" 1:1][whitespace "\n" 5:12]
+CONTENT
+{quote "  x\ny\n  z"}
+END

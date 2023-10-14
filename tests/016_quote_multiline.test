@@ -1,0 +1,10 @@
+START
+'
+one
+two
+'
+DEBUG
+[quote "'\none\ntwo\n'" 1:1][whitespace "\n" 4:2]
+CONTENT
+{quote "one\ntwo"}
+END

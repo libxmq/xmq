@@ -1,0 +1,11 @@
+START
+alfa {
+     beta = 'aaaaaaaaaaaa
+             bbbbbbbbbbbb
+             cccccccccccc'
+}
+DEBUG
+[element_name "alfa" 1:1][whitespace " " 1:5][brace_left "{" 1:1][whitespace "\n     " 1:7][element_key "beta" 2:6][whitespace " " 2:10][equals "=" 2:6][whitespace " " 2:12][element_value_quote "'aaaaaaaaaaaa\n             bbbbbbbbbbbb\n             cccccccccccc'" 2:13][whitespace "\n" 4:27][brace_right "}" 1:1][whitespace "\n" 5:2]
+CONTENT
+{quote "aaaaaaaaaaaa\nbbbbbbbbbbbb\ncccccccccccc"}
+END

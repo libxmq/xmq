@@ -1,0 +1,7 @@
+START
+'a_quote'
+DEBUG
+[quote "'a_quote'" 1:1][whitespace "\n" 1:10]
+CONTENT
+{quote "a_quote"}
+END

@@ -1,0 +1,8 @@
+START
+<hello>"world"</hello>
+COMPACT
+hello='"world"'
+XMQ
+hello = '"world"'
+END
+ARGS

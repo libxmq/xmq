@@ -1,9 +1,0 @@
-<!-- This is an example order. -->
-<order>
-  <date>2020-12-13</date>
-  <price>424.5$</price>
-  <file>/imagefiles/1234.png</file>
-  <to>Bertil Nilsson</to>
-  <info>Delivery by noon. (floor 5)
-Use elevator 3.</info>
-</order>

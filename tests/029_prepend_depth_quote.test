@@ -1,0 +1,9 @@
+START
+''''x
+   y
+  z''''
+DEBUG
+[quote "''''x\n   y\n  z''''" 1:1][whitespace "\n" 3:8]
+CONTENT
+{quote "  x\n y\nz"}
+END

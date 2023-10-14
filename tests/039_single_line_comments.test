@@ -1,0 +1,15 @@
+START
+howdy {
+///* //* /* ALFA */ *// *///
+///* //* /* ALFA ***//******///
+///*//*/*ALFA*/*//*///
+/////////// ALFA /* */
+/* foo */* bar */* zoo */
+////* foo *////* bar *////* zoo *////
+'foo'
+}
+DEBUG
+[element_name "howdy" 1:1][whitespace " " 1:6][brace_left "{" 1:1][whitespace "\n" 1:8][comment "///* //* /* ALFA */ *// *///" 2:1][whitespace "\n" 2:29][comment "///* //* /* ALFA ***//******///" 3:1][whitespace "\n" 3:32][comment "///*//*/*ALFA*/*//*///" 4:1][whitespace "\n" 4:23][comment "/////////// ALFA /* */\n" 5:1][comment "/* foo */" 6:1][comment_continuation "* bar */" 6:10][comment_continuation "* zoo */" 6:18][whitespace "\n" 6:26][comment "////* foo *////" 7:1][comment_continuation "* bar *////" 7:16][comment_continuation "* zoo *////" 7:27][whitespace "\n" 7:38][quote "'foo'" 8:1][whitespace "\n" 8:6][brace_right "}" 1:1][whitespace "\n" 9:2]
+CONTENT
+{comment "//* /* ALFA */ *//"}{comment "//* /* ALFA ***//*****"}{comment "//*/*ALFA*/*//"}{comment "ALFA /* */"}{comment "foo"}{comment "foo"}{quote "foo"}
+END

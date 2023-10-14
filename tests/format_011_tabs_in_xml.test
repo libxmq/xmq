@@ -1,0 +1,12 @@
+START
+<alfa><beta>			</beta></alfa>
+COMPACT
+alfa{beta=(&#9;&#9;&#9;)}
+XMQ
+alfa {
+    beta = ( &#9;
+             &#9;
+             &#9; )
+}
+END
+ARGS --trim=none

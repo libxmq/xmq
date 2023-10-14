@@ -1,0 +1,9 @@
+START
+atag
+   /* testing testing
+atag
+ERROR
+.../error_005_comment_not_closed.input:2:4: error: comment is not closed
+   /* testing testing
+   ^
+END

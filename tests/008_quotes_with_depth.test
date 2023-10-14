@@ -1,0 +1,7 @@
+START
+'one' '''three''' ''''four'''' '''''five'''''
+DEBUG
+[quote "'one'" 1:1][whitespace " " 1:6][quote "'''three'''" 1:7][whitespace " " 1:18][quote "''''four''''" 1:19][whitespace " " 1:31][quote "'''''five'''''" 1:32][whitespace "\n" 1:46]
+CONTENT
+{quote "one"}{quote "three"}{quote "four"}{quote "five"}
+END

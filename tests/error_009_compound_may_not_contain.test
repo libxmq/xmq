@@ -1,0 +1,10 @@
+START
+hello {
+    info = ( alfa )
+    there
+}
+ERROR
+.../error_009_compound_may_not_contain.input:2:14: error: compound may only contain quotes and entities
+    info = ( alfa )
+             ^
+END

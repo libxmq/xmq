@@ -1,0 +1,7 @@
+START
+key=xyzw
+DEBUG
+[element_key "key" 1:1][equals "=" 1:1][element_value_text "xyzw" 1:5][whitespace "\n" 1:9]
+CONTENT
+{value "xyzw"}
+END

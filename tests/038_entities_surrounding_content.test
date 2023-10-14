@@ -1,0 +1,7 @@
+START
+alfa{&#39;&#39;&#39;'    '&#39;&#39;&#39;}
+DEBUG
+[element_name "alfa" 1:1][brace_left "{" 1:1][entity "&#39;" 1:6][entity "&#39;" 1:11][entity "&#39;" 1:16][quote "'    '" 1:21][entity "&#39;" 1:27][entity "&#39;" 1:32][entity "&#39;" 1:37][brace_right "}" 1:1][whitespace "\n" 1:43]
+CONTENT
+{quote "    "}
+END

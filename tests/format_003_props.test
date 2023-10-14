@@ -1,0 +1,12 @@
+START
+alfa ( x =1 yyy=2    ) { hello = '123'     bananana=' h o w d y ' }
+COMPACT
+alfa(x=1 yyy=2){hello=123 bananana=' h o w d y '}
+XMQ
+alfa(x   = 1
+     yyy = 2)
+{
+    hello    = 123
+    bananana = ' h o w d y '
+}
+END

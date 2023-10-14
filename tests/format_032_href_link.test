@@ -1,0 +1,15 @@
+START
+<!DOCTYPE html><html><body><a href="http://github.com?x=3&y=5">Hej</a><bose64>667788=</bose64>alfa</body></html>
+COMPACT
+!DOCTYPE=html html{body{a(href=http://github.com?x=3&y=5)=Hej bose64=667788='alfa'}}
+XMQ
+!DOCTYPE = html
+html {
+    body {
+        a(href = http://github.com?x=3&y=5) = Hej
+        bose64 = 667788=
+        'alfa'
+    }
+}
+END
+ARGS

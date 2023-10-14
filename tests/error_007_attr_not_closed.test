@@ -1,0 +1,10 @@
+START
+tag(attr=123 beta
+{
+  element
+}
+ERROR
+.../error_007_attr_not_closed.input:1:4: error: attributes are not closed
+tag(attr=123 beta
+   ^
+END

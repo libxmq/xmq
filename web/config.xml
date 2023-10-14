@@ -1,0 +1,10 @@
+<shiporder id="889923">
+  <type>container</type>
+  <shipto>
+    <address>Trellevegen 17
+             3400 Stavanger
+             Norway</address>
+    <!-- Remember to update coord. -->
+    <coord>41°24'N 2°10'E</coord>
+  </shipto>
+</shiporder>

@@ -1,0 +1,9 @@
+START
+<!DOCTYPE html><html><body><script>xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</script>howdy<script>yyyyyyyyyyyy</script></body></html>
+COMPACT
+IGNORE
+XMQ
+!DOCTYPE=html html{body=howdy}
+END
+ARGS
+CMDS delete //script to_xmq --compact

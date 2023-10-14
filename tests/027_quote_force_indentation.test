@@ -1,0 +1,9 @@
+START
+'    xxx
+     yyy
+     zzz'
+DEBUG
+[quote "'    xxx\n     yyy\n     zzz'" 1:1][whitespace "\n" 3:10]
+CONTENT
+{quote "    xxx\n    yyy\n    zzz"}
+END

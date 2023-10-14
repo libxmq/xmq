@@ -1,0 +1,11 @@
+START
+!DOCTYPE = 'row [<!ENTITY yes "YES">]' row{&yes;}
+COMPACT
+IGNORE
+XMQ
+<!DOCTYPE row [
+<!ENTITY yes "YES">
+]><row>&yes;</row>
+END
+ARGS
+CMDS to_html

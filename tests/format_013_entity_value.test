@@ -1,0 +1,22 @@
+START
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE row [<!ENTITY yes "YES">]>
+<row xmlns="http://docbook.org/ns/docbook"
+	 xmlns:xl="http://www.w3.org/1999/xlink"
+	 version="5.0" xml:lang="en">
+	<entry info="&yes;">&yes;</entry>
+</row>
+COMPACT
+!DOCTYPE='row [ <!ENTITY yes "YES"> ]'row(version=5.0 xml:lang=en xmlns=http://docbook.org/ns/docbook xmlns:xl=http://www.w3.org/1999/xlink){entry(info=&yes;)=&yes;}
+XMQ
+!DOCTYPE = 'row [
+            <!ENTITY yes "YES">
+            ]'
+row(version  = 5.0
+    xml:lang = en
+    xmlns    = http://docbook.org/ns/docbook
+    xmlns:xl = http://www.w3.org/1999/xlink)
+{
+    entry(info = &yes;) = &yes;
+}
+END

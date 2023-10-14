@@ -1,0 +1,22 @@
+config {
+    driver {
+        name = walker
+        trigger = 0x4756
+        field {
+            name = speed
+        }
+        field {
+            name = weight
+        }
+        field {
+            name = power
+        }
+    }
+    driver {
+        name = runner
+        trigger = 0x3022
+        field {
+            name = light
+        }
+    }
+}

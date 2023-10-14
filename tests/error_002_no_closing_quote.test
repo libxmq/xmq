@@ -1,0 +1,10 @@
+START
+alfa {
+    beta = '''gurka''
+    yyy = 123
+}
+ERROR
+.../error_002_no_closing_quote.input:2:12: error: quote is not closed
+    beta = '''gurka''
+           ^
+END

@@ -1,0 +1,7 @@
+START
+alfa(x=1) { 'xyz' }
+DEBUG
+[element_name "alfa" 1:1][apar_left "(" 1:1][attr_key "x" 1:6][equals "=" 1:6][attr_value_text "1" 1:8][apar_right ")" 1:1][whitespace " " 1:10][brace_left "{" 1:1][whitespace " " 1:12][quote "'xyz'" 1:13][whitespace " " 1:18][brace_right "}" 1:1][whitespace "\n" 1:20]
+CONTENT
+{value "1"}{quote "xyz"}
+END

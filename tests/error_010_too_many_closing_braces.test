@@ -1,0 +1,8 @@
+START
+hello {
+    'there' } } }
+ERROR
+.../error_010_too_many_closing_braces.input:2:15: error: unexpected closing brace
+    'there' } } }
+              ^
+END

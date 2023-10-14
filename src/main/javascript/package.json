@@ -1,0 +1,21 @@
+{
+    "name": "libxmq",
+    "version": "0.0.1",
+    "description": "Work with xmq/xml/json files.",
+    "main": "index.js",
+    "files": [
+        "index.js"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/libxmq/libxmq.git"
+    },
+    "author": "Fredrik Öhrström",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/libxmq/libxmq/issues"
+    },
+    "homepage": "https://github.com/libxmq",
+    "devDependencies": {},
+    "dependencies": {}
+}

@@ -1,0 +1,23 @@
+START
+a{b='123'c='123'f eeee=123 ffff=123 g=123 alfaeta { x y z w } zam_goo=123 zam=123 zam_gooboo=123}
+COMPACT
+a{b=123 c=123 f eeee=123 ffff=123 g=123 alfaeta{x y z w}zam_goo=123 zam=123 zam_gooboo=123}
+XMQ
+a {
+    b = 123
+    c = 123
+    f
+    eeee = 123
+    ffff = 123
+    g    = 123
+    alfaeta {
+        x
+        y
+        z
+        w
+    }
+    zam_goo    = 123
+    zam        = 123
+    zam_gooboo = 123
+}
+END

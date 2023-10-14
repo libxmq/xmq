@@ -1,0 +1,95 @@
+.TH XMQ 1
+.SH NAME
+
+xmq \- Command-line xmq/htmq/xml/html/json processor
+
+.SH SYNOPSIS
+.B xmq [options]
+.B xmq [options] <file>
+.B xmq [options] <file> ( <command> [cmd-options-args] )+
+
+.B xmq [options] <file> to_xmq
+.B xmq [options] <file> to_html
+.B xmq [options] <file> to_xml
+.B xmq [options] <file> to_json
+.B xmq [options] <file> render_terminal
+.B xmq [options] <file> render_htmq
+.B xmq [options] <file> render_html
+.B xmq [options] <file> render_tex
+.B xmq [options] <file> select //table
+.B xmq [options] <file> remove //script
+
+.B xmq page.html remove //script render_terminal
+
+.SH DESCRIPTION
+
+The xmq tool can extract data from xmq/htmq/xml/html/json files and convert between them.
+It can also pretty print, tidy, colorize, tokenize and apply xslt transforms on these files.
+
+.SH OPTIONS
+
+.TP
+.BR \--color-output / \-C\ \--monochrome-output / \-M
+By default, xmq generates syntax colored output if writing to a terminal.
+You can force it to produce color even if writing to a pipe or a file using -C, and disable color with -M.
+Colors can be configured with the XMQ_COLORS environment variable (see below).
+
+.TP
+.BR \--compact-output / -c
+By default, xmq pretty-prints the output. Using this option will result in more compact xmq/json output using a single line.
+
+.TP
+.BR \--indent\ n
+Use the given number of spaces for indentation. Default is 4 indentations.
+
+.TP
+.BR \--xmq|--xml|--html|--json
+Select input format. The default is to auto detect.
+
+.TP
+.BR \--asxmq|--asxml|--ashtml|-asjson}
+Select output format.
+
+.TP
+.BR \--escape-newlines
+.BR \-l
+Use &#10; instead of actual newlines in xmq quotes.
+
+.TP
+.BR \--escape-non-7bit
+.BR \-e
+Escape all non-7bit chars using entities like  &#160;
+
+.TP
+.BR \--renderto={plain|terminal|html|tex}
+Render to different targets, default is terminal when writing to a tty, otherwise plain.
+Html is suitable for inclusion in a web page and tex can be included in (la)tex documents.
+
+.TP
+.BR \--tokenize=color
+Tokenize only and mark found tokens using ansi color.
+
+.TP
+.BR \--version
+Output the xmq version and exit with zero.
+
+.SH EXAMPLES
+.TP
+
+Pretty print an xmq/xml/json document as xmq.
+
+% xmq file.xmq
+% xmq-less file.xml
+% xmq file.json
+
+.SH AUTHOR
+Written by Fredrik Öhrström.
+
+.SH COPYRIGHT
+Copyright \(co 2018-2023 Fredrik Öhrström.
+.br
+License MIT
+.br
+This is free software: you are free to change and redistribute it.
+.br
+There is NO WARRANTY, to the extent permitted by law.

@@ -3,6 +3,39 @@
 \usepackage{parskip}
 \usepackage{changepage}
 \usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage[absolute,overlay]{textpos}
+
+\definecolor{Brown}{rgb}{0.86,0.38,0.0}
+\definecolor{Blue}{rgb}{0.0,0.37,1.0}
+\definecolor{DarkSlateBlue}{rgb}{0.28,0.24,0.55} % 483d8b
+\definecolor{Green}{rgb}{0.0,0.46,0.0}
+\definecolor{Red}{rgb}{0.77,0.13,0.09}
+\definecolor{LightBlue}{rgb}{0.40,0.68,0.89} %67ade5
+\definecolor{MediumBlue}{rgb}{0.21,0.51,0.84} %3681d5
+\definecolor{LightGreen}{rgb}{0.54,0.77,0.43} %89c56d
+\definecolor{Grey}{rgb}{0.5,0.5,0.5}
+\definecolor{Purple}{rgb}{0.69,0.02,0.97}
+\definecolor{Yellow}{rgb}{0.5,0.5,0.1}
+\definecolor{Cyan}{rgb}{0.3,0.7,0.7}
+
+\newcommand{\xmqCom}[1]{{\color{Cyan}#1}}
+\newcommand{\xmqName}[1]{{\color{Brown}#1}}
+\newcommand{\xmqKey}[1]{{\color{Blue}#1}}
+\newcommand{\xmqAttrKey}[1]{{\color{Grey}#1}}
+\newcommand{\xmqAttrVal}[1]{{\color{Green}#1}}
+\newcommand{\xmqEq}[0]{{\color{DarkSlateBlue}=}}
+\newcommand{\xmqQ}[0]{{\color{Purple}'}}
+\newcommand{\xmqLB}[0]{{\color{DarkSlateBlue}\{}}
+\newcommand{\xmqRB}[0]{{\color{DarkSlateBlue}\}}}
+\newcommand{\xmqLP}[0]{{\color{Purple}(}}
+\newcommand{\xmqRP}[0]{{\color{Purple})}}
+\newcommand{\xmqE}[1]{{\color{Purple}\&#1}}
+\newcommand{\s}[0]{\mbox{~}}
+\newcommand{\xmqs}[0]{\s\s\s\s}
+\newcommand{\POS}[3]{\raisebox{#1}[0mm][0mm]{\makebox[0mm][l]{\rule{#2}{0mm}#3}}}
+\setlength{\unitlength}{1mm}
 
 \makeatletter
 \newcommand*{\shifttext}[2]{%
@@ -12,7 +45,7 @@
 }
 \makeatother
 
-\geometry{a4paper, layoutwidth=20cm, layoutheight=30cm}
+\geometry{a4paper, layoutwidth=20cm, layoutheight=32cm}
 
 \newcommand{\shiftleft}[2]{\makebox[0pt][r]{\makebox[#1][l]{#2}}}
 \newcommand{\shiftright}[2]{\makebox[#1][r]{\makebox[0pt][l]{#2}}}
@@ -25,47 +58,41 @@
 \railalias{LBRACE}{\{}
 \railalias{RBRACE}{\}}
 \railalias{BA}{\textbackslash}
+\railalias{AMP}{{\tt\&}}
+\railalias{DQUOTE}{{\tt\"}}
+\railalias{VALUE}{{\tt value}}
 
 \railterm{BA}
+\railterm{AMP}
 \railterm{LBRACE}
 \railterm{RBRACE}
+\railterm{VALUE}
 
 \begin{document}
 
-\texttt{Specification for XMQ by Fredrik Öhrström 2021-01-19 \texttt{oehrstroem@gmail.com} \hfill 1/3}
+{\color{Red}\texttt{Specification for XMQ by Fredrik Öhrström 2023-10-07 \texttt{oehrstroem@gmail.com}}}
 
-\vspace{2mm}
+\texttt{Input must be valid UTF8 (0x9 | 0xa | 0xd | [20-d7ff] | [e000-fffd] | [10000-10ffff]) \\
+  CRLF pairs (0xd 0xa) and standalone CR (0xd) are treated as LF (0xa) when parsing.}
 
-\texttt{An xmq file must be valid UTF8 and any CRLF is changed into LF before lexing/parsing.}
+\shifttext{-20mm}{\raisebox{-10cm}{\smash{\rotatebox{90}{\rule{50mm}{0.5pt}\ \texttt{LEXER}\ \rule{40mm}{.5pt}}}}}
+\hbox{
+  \raisebox{-4pt}{\hspace{-1em}\texttt{WS:}}
+  \begin{minipage}{5cm}
+    \begin{rail}
+      '0x9 0xa 0xd 0x20'
+    \end{rail}
+  \end{minipage}
+  \ \ \ \ \
+  \raisebox{-4pt}{\hspace{-1em}\texttt{UWS:}}
+  \begin{minipage}{5cm}
+    \begin{rail}
+      'any unicode whitespace'
+    \end{rail}
+  \end{minipage}
+}
 
-\vspace{2mm}
-
-\texttt{Lexer}
-
-\vspace{2mm}
-
-\raisebox{32pt}{WS:}
-\begin{minipage}{15cm}
-\begin{rail}
-'0x20 space' | '0x09 tab' | '0x0a lf' | '0x0d cr'
-\end{rail}
-\end{minipage}
-
-\raisebox{55pt}{TOKS:}
-\begin{minipage}{15cm}
-\begin{rail}
-"'" | "=" | "(" | ")" | LBRACE | RBRACE
-\end{rail}
-\end{minipage}
-
-\raisebox{-4pt}{TEXT:}
-\begin{minipage}{15cm}
-\begin{rail}
-"UTF8 excluding WS and TOKS and NULL"
-\end{rail}
-\end{minipage}
-
-\raisebox{32pt}{QUOTE:}
+\raisebox{32pt}{\texttt{QUOTE:}}
 \begin{minipage}{15cm}
 \begin{rail}
   "''"
@@ -75,116 +102,180 @@
 \end{rail}
 \end{minipage}
 
-\raisebox{20pt}{QUOTES:}
+\raisebox{-4pt}{\texttt{ENTITY:}}
+\begin{minipage}{15cm}
+\begin{rail}
+   AMP "TEXT:entity" ';'
+\end{rail}
+\end{minipage}
+
+\raisebox{32pt}{\texttt{COMMENT:}}
+\begin{minipage}{15cm}
+\begin{rail}
+  "/"[$\times$ n] '*' "UTF8" (('*' "/"[$\times$ n] '*' "UTF8")*) '*' "/"[$\times$ n]
+  | '//' "UTF8" "0xa"
+\end{rail}
+\end{minipage}
+
+\raisebox{-4pt}{\texttt{TEXT:}}
+\begin{minipage}{15cm}
+\begin{rail}
+"UTF8 excluding UWS and ' '\!\!' ( ) \{ \} must not start with = \& // /*"
+\end{rail}
+\end{minipage}
+
+\shifttext{-20mm}{\raisebox{-10.2cm}{\smash{\rotatebox{90}{\rule{43mm}{0.5pt}\ \texttt{PARSER}\ \rule{43mm}{.5pt}}}}}
+
+\vspace{-10pt}
+\begin{minipage}{6cm}
+  \raisebox{9pt}{\texttt{xmq:}}
+  \begin{minipage}{5cm}
+    \begin{rail}
+      "node"+
+    \end{rail}
+  \end{minipage}
+\end{minipage}
+\raisebox{8pt}{\texttt{attr:}}
 \begin{minipage}{15cm}
   \begin{rail}
-  QUOTE + (BA 'n'? '0x0a' WS)
-\end{rail}
+    "TEXT:key" ( | '=' VALUE )
+  \end{rail}
 \end{minipage}
 
-\raisebox{8pt}{COMMENT:}
+\vspace{-8pt}
+\begin{minipage}{7cm}
+  \raisebox{21pt}{\texttt{node:}}
+  \begin{minipage}{6cm}
+    \begin{rail}
+      "COMMENT" | "qe" | "element"
+    \end{rail}
+  \end{minipage}
+
+  \begin{minipage}{7cm}
+    \raisebox{8pt}{\texttt{qe:}}
+    \begin{minipage}{6cm}
+      \begin{rail}
+        "QUOTE" | "ENTITY"
+      \end{rail}
+    \end{minipage}
+  \end{minipage}
+\end{minipage}
+\begin{minipage}{7cm}
+  \begin{minipage}{7cm}
+    \raisebox{44pt}{\texttt{value:}}
+    \begin{minipage}{6cm}
+      \begin{rail}
+        "TEXT" | "qe" | '(' ')' | '(' ( "qe"+) ')'
+      \end{rail}
+    \end{minipage}
+  \end{minipage}
+\end{minipage}
+
+\raisebox{44pt}{\texttt{element:}}
 \begin{minipage}{15cm}
-\begin{rail}
-  '//' UTF8 "0x0a"
-  | '/*' UTF8 '*/'
-\end{rail}
+  \begin{rail}
+    "TEXT:namekey" ( | '(' ')' | '(' ( "attr"+) ')' ) ( | '=' VALUE | LBRACE RBRACE | LBRACE ( "node" + ) RBRACE)
+  \end{rail}
 \end{minipage}
 
 \pagebreak
 
-\texttt{Parser \hfill 2/3}
+\shifttext{-20mm}{\raisebox{-9.5cm}{\smash{\rotatebox{90}{\rule{40mm}{0.5pt}\ \texttt{RULES}\ \rule{40mm}{.5pt}}}}}
 
-\vspace{2mm}
+\verb|TEXT:namekey TEXT:key and TEXT:entity| \\
+\verb|r1. must start with a letter or underscore| \\
+\verb|r2. cannot start with the letters xml (or XML, or Xml, etc)| \\
+\verb|r3. can contain letters, digits, hyphens, underscores, periods and a single colon.|
 
-\raisebox{8pt}{xmq:}
-\begin{minipage}{15cm}
-\begin{rail}
-  doctype? nodes
-\end{rail}
+\verb|TEXT:namekey is either a name or a key.| \\
+\verb|r4. it is a key if '=' follows immediately (ie no attributes), otherwise it is a name.|
+
+\verb|Two permitted exceptions to TEXT:namekey rule r1 and r3.| \\
+\verb|r5. ?pi-nodes and !DOCTYPE|
+
+\verb|If quoted content contains at least one newline then:|\\
+\verb|r6. All leading and ending spaces/tabs/newlines are removed.| \\
+\verb|r7. Spaces/tabs before a newline are removed.| \\
+\verb|r8. Incidental indentation is removed.|\\
+\verb|r9. The indent to be removed is the minimum source code indentation for text within|\\
+\verb|    the block where empty lines are ignored.|\\
+\verb|r10. The first line is prefixed with spaces if the following lines have lesser|\\
+\verb|     source code indentation.|\\
+\verb||\\
+\verb|A quote with only spaces and at least one newline is equivalent to the empty string.|
+\texttt{The expression \xmqKey{age}\xmqEq 123    is shorthand for   \xmqName{age}\xmqLB\xmqQ 123\xmqQ\xmqRB}\\
+\texttt{Use \xmqLP ...\xmqRP\ for attributes with newlines and explicit leading/ending spaces.} \\
+\texttt{Inside a comment \xmqCom{*/*} means a newline, used for compact xmq without newlines.}\\
+
+\shifttext{-20mm}{\raisebox{-6.7cm}{\smash{\rotatebox{90}{\rule{25mm}{0.5pt}\ \texttt{EXAMPLES}\ \rule{25mm}{.5pt}}}}}
+
+\hbox{
+\begin{minipage}{6cm}
+\texttt{\xmqName{car} \xmqLB\\
+\xmqs\xmqCom{// An example structure.}\\
+\xmqs\xmqKey{regnr} \xmqEq\ \xmqQ ABC 123\xmqQ\\
+\xmqs\xmqKey{color} \xmqEq\ red\\
+\xmqs\xmqKey{img}\ \ \ \xmqEq\ /www/y.png\\
+\xmqs\xmqKey{tag}\ \ \ \xmqEq\ <car>\\
+\xmqRB
+}
 \end{minipage}
 
-\raisebox{45pt}{nodes:}
-\begin{minipage}{15cm}
-\begin{rail}
-  (node | QUOTES[standalone] | COMMENT | pi) +
-\end{rail}
+\rule{2cm}{0cm}
+
+\begin{minipage}{6cm}
+\verb|<car>|\\
+\verb|  <!-- An example structure. -->|\\
+\verb|  <regnr>ABC 123</regnr>|\\
+\verb|  <color>red</color>|\\
+\verb|  <img>/www/y.png</img>|\\
+\verb|  <tag>&lt;car&gt;</tag>|\\
+\verb|</car>|
 \end{minipage}
-
-\raisebox{33pt}{node:}
-\begin{minipage}{15cm}
-\begin{rail}
-  TEXT[tag] attributes? ( | ('=' ( TEXT | QUOTES) | LBRACE nodes RBRACE))
-\end{rail}
-\end{minipage}
-
-\raisebox{32pt}{attributes:}
-\begin{minipage}{15cm}
-\begin{rail}
-'(' (TEXT[attribute] ( | '=' ( TEXT | QUOTES ) ) +) ')'
-\end{rail}
-\end{minipage}
-
-\raisebox{20pt}{pi:}
-\begin{minipage}{15cm}
-\begin{rail}
-'?' TEXT[tag] ( | '=' ( TEXT | QUOTES ))
-\end{rail}
-\end{minipage}
-
-\raisebox{8pt}{doctype:}
-\begin{minipage}{15cm}
-\begin{rail}
-'!DOCTYPE' '=' ( TEXT | QUOTES )
-\end{rail}
-\end{minipage}
-
-\pagebreak
-
-\texttt{Rules \hfill 3/3}
+}
 
 \vspace{5mm}
 
-\verb|TEXT tag and attribute must conform to the XML element naming rules:|\\
-\verb|    1. must start with a letter or underscore| \\
-\verb|    2. cannot start with the letters xml (or XML, or Xml, etc)| \\
-\verb|    3. can contain letters, digits, hyphens, underscores, and periods|
+\hbox{
+\begin{minipage}{6cm}
+\texttt{\xmqName{div}(\xmqAttrKey{id} \xmqEq\ \xmqAttrVal{32}) \{\\
+\xmqs\xmqKey{h1}\ \xmqEq\ Welcome!\\
+\xmqs\xmqQ Rest here weary\\
+\xmqs \ traveller:\xmqQ\\
+\xmqs \xmqName{a}(\xmqAttrKey{href} \xmqEq\ \xmqAttrVal{https://a.b.c}) \{\\
+\xmqs\xmqs \xmqName{img}(\xmqAttrKey{url} \xmqEq\ \xmqAttrVal{/img/i.png})\\
+\xmqs\xmqs\xmqQ Click here!\xmqQ\\
+\xmqs\}\\
+\}\\
+}
+\end{minipage}
 
-\vspace{5mm}
+\rule{2cm}{0cm}
 
-\verb|QUOTE content is trimmed according to these rules:|\\
-\verb!    1. Any leading/ending (space|cr|tab)* nl (space|cr|tab)* is removed.! \\
-\verb|    2. Incidental whitespace will always be trimmed, when there is at least one nl left.|
+\begin{minipage}{6cm}
+\verb|<div id="32">|\\
+\verb|  <h1>Welcome!</h1>|\\
+\verb|    Rest here weary|\\
+\verb|traveller:<a href="https://a.b.c">|$\hookleftarrow$\\
+$\hookrightarrow$\verb|<img url="/img/i.png">Click here!</a>|\\
+\verb|</div>| \\
+\verb||\\
+\verb||\\
+\verb||
+\end{minipage}
+\POS{-12mm}{-47mm}{\begin{picture}(10,10)\color{Grey}\put(0,0){\vector(-1,1){11}}\put(0,0){\vector(1,4){4}}\put(0,0){\vector(3,1){30}}\put(-40,-3){\texttt{\small Html cannot be pretty printed with newlines here,}}\put(-40,-7){\texttt{\small whereas xmq can be pretty printed without introducing whitespace.}}\end{picture}}%
+}
 
-\vspace{5mm}
+\shifttext{-20mm}{\raisebox{-3.7cm}{\smash{\rotatebox{90}{\rule{10mm}{0.5pt}\ \texttt{CORNERS}\ \rule{10mm}{.5pt}}}}}
 
-\verb|Joining children inside the nodes rule:|\\
-\verb|    1. All children are joined seamlessly when generating xml/html.|\\
-
-\vspace{5mm}
-
-\verb|QUOTES can combine multiple QUOTE(s):|\\
-\verb|    1. A suffix \ joins the next QUOTE seamlessly.|\\
-\verb|    2. A suffix \n inserts a newline before joining.|
-
-\vspace{5mm}
-
-\verb|Pretty printing introduces whitespace for div{a{span=' hi '}}|\\
-\verb|    1. Default XML output will pretty print and insert newlines+indentation.|\\
-\verb|       This is usually safe, use --nopp to not pretty print.|\\
-\verb|       <div>|\\
-\verb|           <a>|\\
-\verb|               <span> hi </span>|\\
-\verb|           </a>|\\
-\verb|       </div>|\\
-\\
-\verb|    2. Default HTML output is without pretty printing since|\\
-\verb|       introducing newlines+indentation in HTML requires DTD/CSS knowledge|\\
-\verb|       where it is possible to safely introduce whitespace.|\\
-\verb|       <div><a><span> hi </span></a></div>|\\
-\\
-\verb|    3. It is possible to pretty print HTML with --pp and get a best effort guess of|\\
-\verb|       where it is safe to introduce newlines+indentation.|\\
-\verb|       <div>|\\
-\verb|           <a><span> hi </span></a></div>|\\
+\texttt{Explicit spaces:  \xmqKey{abc} \xmqEq\ \xmqQ \ \ \ \ \xmqQ \ \ \ \  \xmqName{abc} \xmqLB \xmqQ\ \ \ \ \xmqQ \xmqRB \\
+A single newline: \xmqKey{abc} \xmqEq\ \xmqE{\#10;}\ \ \ \ \ \ \ \xmqName{abc} \xmqLB\ \xmqE{\#10;} \xmqRB \\
+Spaces surrounding newline: \xmqKey{abc} \xmqEq\ \xmqLP\xmqQ\ \xmqQ\ \xmqE{\#10;} \xmqQ\ \xmqQ \xmqRP\ \ \ \xmqName{abc} \xmqLB \xmqQ\ \xmqQ\ \xmqE{\#10;} \xmqQ\ \xmqQ \xmqRB \\
+Quote starting with quote characters: \xmqLP\ \xmqE{\#39;} \xmqQ quoted quote\xmqQ\ \xmqE{\#39;} \xmqRP\ or: \\
+\xmqQ\xmqQ\xmqQ\\
+\ \ 'quoted quote'\\
+\xmqQ\xmqQ\xmqQ \\
+When highlighting: \xmqKey{p} \xmqEq\ 123 is a key value and \xmqName{p}(\xmqKey{x}) \xmqEq\ 123 is a name value.
+}
 
 \end{document}

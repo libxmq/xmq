@@ -1,0 +1,14 @@
+START
+<!DOCTYPE html><html><body><main a b></main></body></html>
+COMPACT
+!DOCTYPE=html html{body{main(a b)}}
+XMQ
+!DOCTYPE = html
+html {
+    body {
+        main(a
+             b)
+    }
+}
+END
+ARGS

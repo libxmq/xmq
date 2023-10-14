@@ -1,0 +1,11 @@
+START
+agoodtag(alfa = 2)
+{
+   gurka {
+      sdfsfd
+}
+ERROR
+.../error_001_no_closing_brace.input:3:10: error: body is not closed
+   gurka {
+         ^
+END

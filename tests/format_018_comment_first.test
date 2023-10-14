@@ -1,0 +1,9 @@
+START
+<!-- en kommentar -->
+<foo/>
+COMPACT
+/*en kommentar*/foo
+XMQ
+// en kommentar
+foo
+END

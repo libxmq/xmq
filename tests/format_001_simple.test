@@ -1,0 +1,9 @@
+START
+an_element  {   foo }
+COMPACT
+an_element{foo}
+XMQ
+an_element {
+    foo
+}
+END

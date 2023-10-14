@@ -1,0 +1,11 @@
+START
+x1 =
+'''aaa
+  bbb
+ ccc
+ddd'''
+DEBUG
+[element_key "x1" 1:1][whitespace " " 1:3][equals "=" 1:1][whitespace "\n" 1:5][element_value_quote "'''aaa\n  bbb\n ccc\nddd'''" 2:1][whitespace "\n" 5:7]
+CONTENT
+{quote "   aaa\n  bbb\n ccc\nddd"}
+END

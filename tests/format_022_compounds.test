@@ -1,0 +1,33 @@
+START
+alfa(a = howdy
+     b = 'hello world'
+     c = &nbsp;
+     d = ( 'cc' &nbsp; 'dd') )
+{
+    A = howdy
+    B = 'hello world'
+    C = &nbsp;
+    D = ( 'cc' &nbsp; 'dd' )
+}
+COMPACT
+alfa(a=howdy b='hello world'c=&nbsp;d=('cc'&nbsp;'dd')){A=howdy B='hello world'C=&nbsp;D{'cc'&nbsp;'dd'}}
+XMQ
+alfa(a = howdy
+     b = 'hello world'
+     c = &nbsp;
+     d = ( 'cc'
+           &nbsp;
+           'dd' ))
+{
+    A = howdy
+    B = 'hello world'
+    C = &nbsp;
+    D {
+        'cc'
+        &nbsp;
+        'dd'
+    }
+}
+END
+ARGS
+CMDS

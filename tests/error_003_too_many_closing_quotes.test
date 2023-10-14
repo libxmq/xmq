@@ -1,0 +1,10 @@
+START
+Helpful {
+          foo = 'xxx''
+          bar = 'yy'
+}
+ERROR
+.../error_003_too_many_closing_quotes.input:2:17: error: quote closed with too many quotes
+          foo = 'xxx''
+                ^
+END

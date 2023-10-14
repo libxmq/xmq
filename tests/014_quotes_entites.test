@@ -1,0 +1,7 @@
+START
+' '&#10;''&#10;'''  '  '''
+DEBUG
+[quote "' '" 1:1][entity "&#10;" 1:4][quote "''" 1:9][entity "&#10;" 1:11][quote "'''  '  '''" 1:16][whitespace "\n" 1:27]
+CONTENT
+{quote " "}{quote ""}{quote "  '  "}
+END

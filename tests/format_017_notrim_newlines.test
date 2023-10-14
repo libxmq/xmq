@@ -1,0 +1,29 @@
+START
+<aaaa>
+  <bbbb>
+    <cccc>MocVook</cccc>
+
+    <dddd>2099-96-96</dddd>
+  </bbbb>
+</aaaa>
+COMPACT
+aaaa{&#10;'  'bbbb{&#10;'    'cccc=MocVook &#10;&#10;'    'dddd=2099-96-96 &#10;'  '}&#10;}
+XMQ
+aaaa {
+    &#10;
+    '  '
+    bbbb {
+        &#10;
+        '    '
+        cccc = MocVook
+        &#10;
+        &#10;
+        '    '
+        dddd = 2099-96-96
+        &#10;
+        '  '
+    }
+    &#10;
+}
+END
+ARGS --trim=none

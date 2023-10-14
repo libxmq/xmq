@@ -1,0 +1,16 @@
+START
+alfa {
+///* foo
+     beta *//
+     gamma
+         *///
+}
+COMPACT
+alfa{///* foo*///*beta *//*///*gamma*///}
+XMQ
+alfa {
+    ///*  foo
+         beta *//
+         gamma *///
+}
+END

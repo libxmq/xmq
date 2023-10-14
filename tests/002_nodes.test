@@ -1,0 +1,7 @@
+START
+an_element another_element
+DEBUG
+[element_name "an_element" 1:1][whitespace " " 1:11][element_name "another_element" 1:12][whitespace "\n" 1:27]
+CONTENT
+
+END

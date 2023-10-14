@@ -1,0 +1,11 @@
+START
+<girka>
+  <td>x x</td>
+</girka>
+COMPACT
+girka{td='x x'}
+XMQ
+girka {
+    td = 'x x'
+}
+END

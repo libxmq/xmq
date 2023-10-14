@@ -1,0 +1,12 @@
+START
+values{alfa=SGVqc2FuCg== beta=SGVqc2FuSEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEgK
+gamma='SGVqc2FuSEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhI
+SEh5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eWhoaGhoaGhoaGhoaGhoaGho
+aGhoaGhoaGhoaGhoaHl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXloaGhoaGhoaGhoaGho
+aGhoaGhoaGhoaGhoaGhoCg=='
+}
+DEBUG
+[element_name "values" 1:1][brace_left "{" 1:1][element_key "alfa" 1:8][equals "=" 1:8][element_value_text "SGVqc2FuCg==" 1:13][whitespace " " 1:25][element_key "beta" 1:26][equals "=" 1:26][element_value_text "SGVqc2FuSEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEgK" 1:31][whitespace "\n" 1:111][element_key "gamma" 2:1][equals "=" 2:1][element_value_quote "'SGVqc2FuSEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhI\nSEh5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eWhoaGhoaGhoaGhoaGhoaGho\naGhoaGhoaGhoaGhoaHl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXloaGhoaGhoaGhoaGho\naGhoaGhoaGhoaGhoaGhoCg=='" 2:7][whitespace "\n" 5:26][brace_right "}" 1:1][whitespace "\n" 6:2]
+CONTENT
+{value "SGVqc2FuCg=="}{value "SGVqc2FuSEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEgK"}{quote "       SGVqc2FuSEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhI\nSEh5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eWhoaGhoaGhoaGhoaGhoaGho\naGhoaGhoaGhoaGhoaHl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXloaGhoaGhoaGhoaGho\naGhoaGhoaGhoaGhoaGhoCg=="}
+END

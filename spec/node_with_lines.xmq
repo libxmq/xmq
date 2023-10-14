@@ -1,7 +1,0 @@
-html {
-    body {
-        span = 'Greetings weary'
-        b    = traveller
-        span = ' we meet again!'
-    }
-}

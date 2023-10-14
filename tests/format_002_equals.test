@@ -1,0 +1,7 @@
+START
+ alfa {   '123' }
+COMPACT
+alfa=123
+XMQ
+alfa = 123
+END

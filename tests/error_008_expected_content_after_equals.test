@@ -1,0 +1,13 @@
+START
+info {
+   name = 'foo'
+   age =
+   bar {
+       more = 'more'
+   }
+}
+ERROR
+.../error_008_expected_content_after_equals.input:3:8: error: expected content after equals
+   age =
+       ^
+END

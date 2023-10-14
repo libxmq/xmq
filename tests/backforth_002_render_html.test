@@ -1,0 +1,14 @@
+# Note that the &nbsp; turns in to a unicode char.
+INPUT
+foo{bar}
+FIRST
+<pre class="xmq xmq_light"><xmq_en>foo</xmq_en> {
+    <xmq_en>bar</xmq_en>
+}</pre>
+SECOND
+pre(class='xmq xmq_light'){xmq_en=foo' {'&#10;'    'xmq_en=bar &#10;'}'}
+END
+ARGS_FIRST
+CMDS_FIRST render_html --nostyle
+ARGS_SECOND --trim=none
+CMDS_SECOND to_xmq --compact

@@ -1,0 +1,3 @@
+SPEC:=@OUTPUT_ROOT@/spec.mk
+include $(SPEC)
+include @SRC_ROOT@/make/Main.mk

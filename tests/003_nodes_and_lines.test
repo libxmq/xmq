@@ -1,0 +1,11 @@
+START
+alfa beta
+
+gamma
+
+delta
+DEBUG
+[element_name "alfa" 1:1][whitespace " " 1:5][element_name "beta" 1:6][whitespace "\n\n" 1:10][element_name "gamma" 3:1][whitespace "\n\n" 3:6][element_name "delta" 5:1][whitespace "\n" 5:6]
+CONTENT
+
+END

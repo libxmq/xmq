@@ -1,33 +1,25 @@
 #!/bin/sh
+
 if [ "$1" = "" ]
 then
-    echo "Usage: xmq-less [-v] [--compress] [-x node@attr] <filename.xm[lq]>"
+    xmq
     exit 0
 fi
 
-if [ "$1" = "-v" ]
+if [ -z "$2" ]
 then
-    shift 1
-    view="-v"
+    if [ -t 0 ]
+    then
+        if xmq --is-dark-bg
+        then
+            xmq "$1" render_terminal --color --darkbg | less -R
+        else
+            xmq "$1" render_terminal --color --lightbg | less -R
+        fi
+    else
+        xmq "$1" render_terminal --color | less -R
+    fi
+    exit 0
 fi
 
-if [ "$1" = "-c" ]
-then
-    shift 1
-    compress="-c"
-fi
-
-if [ "$1" = "--sort-attributes" ]
-then
-    shift 1
-    sort="--sort-attributes"
-fi
-
-if [ "$1" = "-x" ]
-then
-    shift 1
-    exclude="-x $1"
-    shift 1
-fi
-
-xmq --color $view $compress $exclude $sort $1 | less -R
+xmq "$@" | less -R

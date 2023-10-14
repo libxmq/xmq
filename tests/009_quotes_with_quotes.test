@@ -1,0 +1,7 @@
+START
+'zero' '''one ' one''' '''two '' two''' ''''three ''' three'''' '''''four '''' four'''''
+DEBUG
+[quote "'zero'" 1:1][whitespace " " 1:7][quote "'''one ' one'''" 1:8][whitespace " " 1:23][quote "'''two '' two'''" 1:24][whitespace " " 1:40][quote "''''three ''' three''''" 1:41][whitespace " " 1:64][quote "'''''four '''' four'''''" 1:65][whitespace "\n" 1:89]
+CONTENT
+{quote "zero"}{quote "one ' one"}{quote "two '' two"}{quote "three ''' three"}{quote "four '''' four"}
+END

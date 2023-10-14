@@ -1,0 +1,13 @@
+START
+alfa {
+    /* foo */* bar */* zoo */
+}
+COMPACT
+alfa{/*foo*/*bar*/*zoo*/}
+XMQ
+alfa {
+    /* foo
+       bar
+       zoo */
+}
+END

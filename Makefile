@@ -1,45 +1,41 @@
-# Copyright (C) 2019-2020 Fredrik Öhrström
-
-# To compile for Raspberry PI ARM:
-# make HOST=arm
+# Copyright (C) 2017-2023 Fredrik Öhrström
 #
-# To build with debug information:
-# make DEBUG=true
-# make DEBUG=true HOST=arm
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 
-ifeq "$(HOST)" "arm"
-    CXX=arm-linux-gnueabihf-g++
-    STRIP=arm-linux-gnueabihf-strip
-    BUILD=build_arm
-	DEBARCH=armhf
-else
-    CXX=g++
-    STRIP=strip
-#--strip-unneeded --remove-section=.comment --remove-section=.note
-    BUILD=build
-	DEBARCH=amd64
+$(shell mkdir -p build)
+
+define DQUOTE
+"
+endef
+
+#' make editor quote matching happy.
+
+SUPRE=
+SUPOST=
+ifneq ($(SUDO_USER),)
+# Git has a security check to prevent the wrong user from running inside the git repository.
+# When we run "sudo make install" this will create problems since git is running as root instead.
+# Use SUPRE/SUPOST to use su to switch back to the user for the git commands.
+SUPRE=su -c $(DQUOTE)
+SUPOST=$(DQUOTE) $(SUDO_USER)
 endif
 
-ifeq "$(DEBUG)" "true"
-    DEBUG_FLAGS=-O0 -ggdb -fsanitize=address -fno-omit-frame-pointer
-    STRIP_BINARY=
-    BUILD:=$(BUILD)_debug
-    DEBUG_LDFLAGS=-lasan
-else
-    DEBUG_FLAGS=-Os
-    STRIP_BINARY=$(STRIP) $(BUILD)/xmq
-endif
-
-ifeq ($(OS),Windows_NT)
-	STRIP_BINARY=
-endif
-
-$(shell mkdir -p $(BUILD) target)
-
-COMMIT_HASH:=$(shell git log --pretty=format:'%H' -n 1)
-TAG:=$(shell git describe --tags)
-CHANGES:=$(shell git status -s | grep -v '?? ')
-TAG_COMMIT_HASH:=$(shell git show-ref --tags | grep $(TAG) | cut -f 1 -d ' ')
+COMMIT_HASH?=$(shell $(SUPRE) git log --pretty=format:'%H' -n 1 $(SUPOST))
+TAG?=$(shell $(SUPRE) git describe --tags $(SUPOST))
+BRANCH?=$(shell $(SUPRE) git rev-parse --abbrev-ref HEAD $(SUPOST))
+CHANGES?=$(shell $(SUPRE) git status -s | grep -v '?? ' $(SUPOST))
 
 ifeq ($(COMMIT),$(TAG_COMMIT))
   # Exactly on the tagged commit. The version is the tag!
@@ -52,150 +48,190 @@ endif
 
 ifneq ($(strip $(CHANGES)),)
   # There are changes, signify that with a +changes
-  VERSION:=$(VERSION) with local changes
-  COMMIT_HASH:=$(COMMIT_HASH) with local changes
+  VERSION:=$(VERSION) with uncommitted changes
+  COMMIT_HASH:=$(COMMIT_HASH) but with uncommitted changes
   DEBVERSION:=$(DEBVERSION)l
-endif
-
-$(shell echo "#define VERSION \"$(VERSION)\"" > $(BUILD)/version.h.tmp)
-$(shell echo "#define COMMIT \"$(COMMIT_HASH)\"" >> $(BUILD)/version.h.tmp)
-
-PREV_VERSION=$(shell cat -n $(BUILD)/version.h 2> /dev/null)
-CURR_VERSION=$(shell cat -n $(BUILD)/version.h.tmp 2>/dev/null)
-ifneq ($(PREV_VERSION),$(CURR_VERSION))
-$(shell mv -f $(BUILD)/version.h.tmp $(BUILD)/version.h)
-else
-$(shell rm -f $(BUILD)/version.h.tmp)
 endif
 
 $(info Building $(VERSION))
 
-CXXFLAGS := $(DEBUG_FLAGS) -fPIC -fmessage-length=0 -std=c++11 -Wall -Wno-unused-function -I$(BUILD) -I.
+$(shell echo "#define VERSION \"$(VERSION)\"" > build/version.h.tmp)
+$(shell echo "#define COMMIT \"$(COMMIT_HASH)\"" >> build/version.h.tmp)
 
-#	$(CXX) $(CXXFLAGS) $< -c -E > $@.src
-
-$(BUILD)/%.o: src/main/cc/%.cc $(wildcard src/%.h)
-	$(CXX) $(CXXFLAGS) $< -MMD -fPIC -c -o $@
-
-XMQ_OBJS:=\
-	$(BUILD)/cmdline.o \
-	$(BUILD)/document.o \
-	$(BUILD)/parse.o \
-	$(BUILD)/render.o \
-	$(BUILD)/util.o \
-	$(BUILD)/xmq_implementation.o \
-	$(BUILD)/parse_xmlhtml.o \
-
-
-XMQ_LIB_OBJS:=\
-	$(BUILD)/document.o \
-	$(BUILD)/parse.o \
-	$(BUILD)/render.o \
-	$(BUILD)/util.o \
-	$(BUILD)/xmq_implementation.o \
-	$(BUILD)/parse_xmlhtml.o \
-
-
-all: $(BUILD)/xmq $(BUILD)/libxmq.so $(BUILD)/libxmq.a $(BUILD)/testinternals testur
-	@$(STRIP_BINARY)
-
-.PHONY: dist
-dist: $(BUILD)/libxmq.so $(BUILD)/libxmq.a src/main/cc/xmq.h src/main/cc/xmq_rapidxml.h
-	@mkdir -p dist
-	@cp $(BUILD)/libxmq.so dist
-	@cp $(BUILD)/libxmq.a dist
-	@cp src/main/cc/xmq.h dist
-	@cp src/main/cc/xmq_rapidxml.h dist
-
-$(BUILD)/xmq: $(XMQ_OBJS) $(BUILD)/main.o
-	$(CXX) -o $(BUILD)/xmq $(XMQ_OBJS) $(BUILD)/main.o $(DEBUG_LDFLAGS)
-
-$(BUILD)/libxmq.so: $(XMQ_LIB_OBJS)
-	$(CXX) -shared -o $(BUILD)/libxmq.so $(XMQ_LIB_OBJS) $(DEBUG_LDFLAGS)
-
-$(BUILD)/libxmq.a: $(XMQ_LIB_OBJS)
-	ar rcs $@ $^
-
-$(BUILD)/testinternals: $(XMQ_OBJS) $(BUILD)/testinternals.o
-	$(CXX) -o $(BUILD)/testinternals $(XMQ_OBJS) $(BUILD)/testinternals.o $(DEBUG_LDFLAGS)
-
-clean:
-	rm -rf build/* build_arm/* build_debug/* build_arm_debug/* *~
-
-intro:
-	@./intro/genintro.sh ./build/xmq
-.PHONY: intro
-
-test:
-	@./build/testinternals
-ifneq ($(OS),Windows_NT)
-	@./spec/genspechtml.sh ./build/xmq
-	@./test.sh ./build
+PREV_VERSION=$(shell cat -n build/version.h 2> /dev/null)
+CURR_VERSION=$(shell cat -n build/version.h.tmp 2>/dev/null)
+ifneq ($(PREV_VERSION),$(CURR_VERSION))
+$(shell mv build/version.h.tmp build/version.h)
+else
+$(shell rm build/version.h.tmp)
 endif
 
-testur: dist testur.cc
-	@$(CXX) $(CXXFLAGS) testur.cc -o $@ -Idist -I. -Ldist -lxmq
+all: release
 
-run_testur: testur
-	LD_LIBRARY_PATH=dist ./testur
+help:
+	@echo "Usage: make (release|debug|asan|clean|clean-all)"
+	@echo "       if you have both linux64, winapi64 and arm32 configured builds,"
+	@echo "       then add linux64, winapi64 or arm32 to build only for that particular host."
+	@echo "E.g.:  make debug winapi64"
+	@echo "       make asan"
+	@echo "       make release linux64"
 
-testdebug:
-	@echo Test internals
-	@./build_debug/testinternals
-	@./test.sh build_debug
+BUILDDIRS:=$(dir $(realpath $(wildcard build/*/spec.mk)))
 
+ifeq (,$(BUILDDIRS))
+    ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+       $(error Run configure first!)
+    endif
+endif
+
+VERBOSE?=@
+
+ifeq (winapi64,$(findstring winapi64,$(MAKECMDGOALS)))
+BUILDDIRS:=$(filter %x86_64-w64-mingw32%,$(BUILDDIRS))
+endif
+
+ifeq (linux64,$(findstring linux64,$(MAKECMDGOALS)))
+BUILDDIRS:=$(filter %x86_64-pc-linux-gnu%,$(BUILDDIRS))
+endif
+
+ifeq (osx64,$(findstring osx64,$(MAKECMDGOALS)))
+BUILDDIRS:=$(filter %x86_64-apple-darwin%,$(BUILDDIRS))
+endif
+
+ifeq (arm32,$(findstring arm32,$(MAKECMDGOALS)))
+BUILDDIRS:=$(filter %arm-unknown-linux-gnueabihf%,$(BUILDDIRS))
+endif
+
+release:
+	@echo Building release for $(words $(BUILDDIRS)) host\(s\).
+	@for x in $(BUILDDIRS); do echo; echo Bulding $$(basename $$x) ; $(MAKE) --no-print-directory -C $$x release ; done
+
+debug:
+	@echo Building debug for $(words $(BUILDDIRS)) host\(s\).
+	@for x in $(BUILDDIRS); do echo; echo Bulding $$(basename $$x) ; $(MAKE) --no-print-directory -C $$x debug ; done
+
+asan:
+	@echo Building asan for $(words $(BUILDDIRS)) host\(s\).
+	@for x in $(BUILDDIRS); do echo; echo Bulding $$(basename $$x) ; $(MAKE) --no-print-directory -C $$x asan ; done
+
+lcov:
+	@echo Generating code coverage $(words $(BUILDDIRS)) host\(s\).
+	@for x in $(BUILDDIRS); do echo; echo Bulding $$(basename $$x) ; $(MAKE) --no-print-directory -C $$x debug lcov ; done
+
+test: test_release
+testd: test_debug
+testa: test_asan
+
+test_release:
+	@echo "Running release tests"
+	@for x in $(BUILDDIRS); do echo; $$x/release/testinternals ; done
+	@for x in $(BUILDDIRS); do echo; ./tests/test.sh $$x/release $$x/release/test_output ; done
+
+test_debug:
+	@echo "Running debug tests"
+	@for x in $(BUILDDIRS); do echo; $$x/debug/testinternals ; done
+	@for x in $(BUILDDIRS); do echo; ./tests/test.sh $$x/debug $$x/debug/test_output ; done
+
+test_asan:
+	@echo "Running asan tests"
+	@for x in $(BUILDDIRS); do echo; $$x/asan/testinternals ; done
+	@for x in $(BUILDDIRS); do echo; ./tests/test.sh $$x/asan $$x/asan/test_output ; done
+
+clean:
+	@echo "Removing release, debug, asan, gtkdoc build dirs."
+	@for x in $(BUILDDIRS); do echo; rm -rf $$x/release $$x/debug $$x/asan $$x/generated_autocomplete.h; done
+	@rm -rf build/gtkdoc
+	@rm -f build/version.h
+
+clean-all:
+	@echo "Removing build directory containing configuration and artifacts."
+	$(VERBOSE)rm -rf build
+
+DESTDIR?=/usr/local
 install:
-	rm -f /usr/share/man/man1/wmbusmeters.1.gz
-	mkdir -p /usr/share/man/man1
-	gzip -c xmq.1 > /usr/share/man/man1/xmq.1.gz
-	cp build/xmq /usr/local/bin
-	cp scripts/xmq-less /usr/local/bin
-	cp scripts/xmq-diff /usr/local/bin
-	cp scripts/xmq-meld /usr/local/bin
-	cp scripts/xmq-git-diff /usr/local/bin
-	cp scripts/xmq-git-meld /usr/local/bin
+	install -Dm 755 -s build/x86_64-pc-linux-gnu/release/xmq $(DESTDIR)/bin/xmq
+	install -Dm 755 scripts/xmq-less $(DESTDIR)/bin/xmq-less
+	install -Dm 644 doc/xmq.1 $(DESTDIR)/man/man1/xmq.1
+	install -Dm 644 scripts/autocompletion_for_xmq.sh /etc/bash_completion.d/xmq
 
-install_emacs:
-	mkdir -p ~/.emacs.d/lisp
-	cp xmq-mode.el ~/.emacs.d/lisp/xmq-mode.el
+uninstall:
+	rm -f $(DESTDIR)/bin/xmq
+	rm -f $(DESTDIR)/bin/xmq-less
+	rm -f $(DESTDIR)/man/man1/xmq.1
+	rm -f /etc/bash_completion.d/xmq
 
-# The mvn tree command generates lines like this:
-# [INFO] \- org.jsoup:jsoup:jar:1.11.3:compile
-# from this info build the path:
-# ~/.m2/repository/org/jsoup/jsoup/1.11.3/jsoup-1.11.3.jar
-project-deps/updated: pom.xml
-	@rm -rf project-deps
-	@mkdir -p project-deps
-	@echo Storing java dependencies locally...
-	@mvn dependency:resolve
-	@DEPS=`mvn dependency:tree | grep INFO | grep compile | grep -oE '[^ ]+$$'` ; \
-    for DEP in $$DEPS ; do \
-        GROU=$$(echo $$DEP | cut -f 1 -d ':' | sed 's|\.|/|g') ; \
-        ARTI=$$(echo $$DEP | cut -f 2 -d ':') ; \
-        SUFF=$$(echo $$DEP | cut -f 3 -d ':') ; \
-        VERS=$$(echo $$DEP | cut -f 4 -d ':') ; \
-        JAR="$$GROU/$$ARTI/$$VERS/$$ARTI-$$VERS.$$SUFF" ; \
-        echo Stored $$JAR ; \
-        cp ~/.m2/repository/$$JAR project-deps ; \
-    done
-	@touch project-deps/updated
+linux64:
 
-mvn:
-	mvn -B compile
+arm32:
 
-JAVA_SOURCES=$(wildcard src/main/java/org/ammunde/xmq/*)
-JAVA_DEPS=$(shell find project-deps/ -name "*.jar" | tr '\n' ':')
+winapi64:
 
-javac: $(JAVA_SOURCES) project-deps/updated
-	@javac -cp $(JAVA_DEPS) $(JAVA_SOURCES) -d target/classes
+PACKAGE:=libxmq
+PACKAGE_BUGREPORT:=
+PACKAGE_NAME:=libxmq_name
+PACKAGE_STRING:=libxmq_string
+PACKAGE_TARNAME:=libxmq_tar
+PACKAGE_URL:=https://libxmq.org/releases/libxmq.tgz
+PACKAGE_VERSION:=0.9
 
-xmqj: $(JAVA_SOURCES) project-deps/updated
-	@VM=`java -version 2>&1 | grep Runtime | grep -o "GraalVM"` ; \
-	    if [ "$$VM" != "GraalVM" ]; then echo Please install Graal VM to build native image; exit 1; fi
-	@echo Compiling to native image
-	native-image --verbose -cp target/classes:$(JAVA_DEPS) org.ammunde.xmq.Main build/xmqj
+build/gtkdocentities.ent:
+	@echo '<!ENTITY package "$(PACKAGE)">' > $@
+	@echo '<!ENTITY package_bugreport "$(PACKAGE_BUGREPORT)">' >> $@
+	@echo '<!ENTITY package_name "$(PACKAGE_NAME)">' >> $@
+	@echo '<!ENTITY package_string "$(PACKAGE_STRING)">' >> $@
+	@echo '<!ENTITY package_tarname "$(PACKAGE_TARNAME)">' >> $@
+	@echo '<!ENTITY package_url "$(PACKAGE_URL)">' >> $@
+	@echo '<!ENTITY package_version "$(PACKAGE_VERSION)">' >> $@
+	echo Created $@
 
-gencompare: $(BUILD)/xmq
+gtkdoc: build/gtkdoc
 
-# Include dependency information generated by gcc in a previous compile.
-include $(wildcard $(patsubst %.o,%.d,$(XMQ_OBJS)))
+build/gtkdoc: build/gtkdocentities.ent
+	rm -rf build/gtkdoc
+	mkdir -p build/gtkdoc
+	mkdir -p build/gtkdoc/html
+	cp scripts/libxmq-docs.xml build/gtkdoc
+	(cd build/gtkdoc; gtkdoc-scan --module=libxmq --source-dir ../../src/main/c/)
+	(cd build/gtkdoc; gtkdoc-mkdb --module libxmq --sgml-mode --source-dir ../../src/main/c --source-suffixes h  --ignore-files "xmq.c testinternals.c xmq-cli.c")
+	cp build/gtkdocentities.ent build/gtkdoc/xml
+	(cd build/gtkdoc/html; gtkdoc-mkhtml libxmq ../libxmq-docs.xml)
+	(cd build/gtkdoc; gtkdoc-fixxref --module=libxmq --module-dir=html --html-dir=html)
+
+.PHONY: all release debug asan test test_release test_debug clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc
+
+server:
+	(cd sdf; node ../templates/server.js)
+
+foof:
+	./xmqr --darkbg entry.xml fo --render=html --onlystyle > simple.html
+	./xmqr --darkbg entry.xml fo --render=html --renderraw >> simple.html
+	./xmqr --lightbg entry.xml fo --render=html --renderraw >> simple.html
+#    ./xmqr --darkbg entry.xml fo --render=tex --onlyheader > simple.tex#
+#	./xmqr --darkbg entry.xml fo --render=tex --renderraw >> simple.tex
+#	./xmqr --lightbg entry.xml fo --render=tex --renderraw >> simple.tex
+#	./xmqr --lightbg entry.xml fo --render=tex --onlyfooter >> simple.tex
+	xelatex simple.tex
+
+#baab:
+#	./xmqr --lightbg config.xml fo --render=html --renderraw >> simple.html
+
+web: $(wildcard web/*) $(wildcard web/resources/*)
+	@rm -rf build/web _EX1_.html _EX1_.htmq
+	@mkdir -p build/web/resources
+	@./xmqr web/config.xml render_html --onlystyle > build/web/resources/xmq.css
+	@./xmqr web/config.xml render_html --darkbg --nostyle  > _EX1_.html
+	@./xmqr --trim=none _EX1_.html to_xmq --compact  > _EX1_.htmq
+	@cat web/index.htmq | sed -e "s/_EX1_/$$(sed 's:/:\\/:g' _EX1_.htmq | sed 's/\&/\\\&/g')/g" > tmp.htmq
+	@./xmqr tmp.htmq to_html > build/web/index.html
+	@cp web/resources/* build/web/resources
+	@cp doc/xmq.pdf build/web/resources
+	@echo "Generated build/web/index.html"
+
+.PHONY: web
+
+test_config:
+	./xmqr --darkbg config.xml fo --render=html > config.html
+	./xmqr --trim=none config.html > config.htmq
+	./xmqr config.htmq fo --html > config_again.html
+
+.PHONY: test_config

@@ -1,0 +1,7 @@
+START
+alfa { } ( 'alfa'
+ERROR
+.../error_011_unexpected_par_left.input:1:10: error: unexpected character "(" U+28
+alfa { } ( 'alfa'
+         ^
+END

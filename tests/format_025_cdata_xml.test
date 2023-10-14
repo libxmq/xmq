@@ -1,0 +1,15 @@
+START
+<tml>
+    <body>
+        Howdy x<![CDATA[cdata '</cdata>]]>x
+    </body>
+</tml>
+COMPACT
+tml{body='''Howdy xcdata '</cdata>x'''}
+XMQ
+tml {
+    body = '''Howdy xcdata '</cdata>x'''
+}
+END
+ARGS
+CMDS

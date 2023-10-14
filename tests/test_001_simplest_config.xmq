@@ -1,0 +1,9 @@
+car {
+    model = Saab
+    speed = 123
+    weight = 500.123
+    registration = 'ABC 999'
+    color=red
+    history='''Bought 1983
+               Sold   1999'''
+}

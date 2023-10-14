@@ -1,0 +1,12 @@
+# Note that the &nbsp; turns in to a unicode char.
+INPUT
+!DOCTYPE=html html{body{'Howdy'&nbsp;'There'}}
+FIRST
+<!DOCTYPE html><html><body>Howdy&nbsp;There</body></html>
+SECOND
+!DOCTYPE=html html{body='Howdy There'}
+END
+ARGS_FIRST
+CMDS_FIRST to_html
+ARGS_SECOND
+CMDS_SECOND to_xmq --compact

@@ -1,0 +1,26 @@
+START
+a {
+    b {
+        d = 'row
+            row
+           row
+          row
+         row
+        row'
+    }
+}
+COMPACT
+a{b{d=('     row'&#10;'    row'&#10;'   row'&#10;'  row'&#10;' row'&#10;'row')}}
+XMQ
+a {
+    b {
+        d = '     row
+                 row
+                row
+               row
+              row
+             row'
+    }
+}
+END
+ARGS

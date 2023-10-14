@@ -1,0 +1,19 @@
+START
+<mf comment="We first define the sequence:&#10;One two three four"
+    text="machine Testing&#10;/* A code comment */&#10;Some code();">
+  <info>Another setting of information
+        that goes here....</info>
+</mf>
+COMPACT
+mf(comment=('We first define the sequence:'&#10;'One two three four')text=('machine Testing'&#10;'/* A code comment */'&#10;'Some code();')){info=('Another setting of information'&#10;'that goes here....')}
+XMQ
+mf(comment = 'We first define the sequence:
+              One two three four'
+   text    = 'machine Testing
+              /* A code comment */
+              Some code();')
+{
+    info = 'Another setting of information
+            that goes here....'
+}
+END

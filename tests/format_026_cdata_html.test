@@ -1,0 +1,18 @@
+# Testing that cdata becomes hard comments, ie do not show up in the parsed DOM.
+START
+<!DOCTYPE html>
+<html>
+    <body>
+        Howdy x<![CDATA[disappears]]>x
+    </body>
+</html>
+COMPACT
+!DOCTYPE=html html{body='Howdy xx'}
+XMQ
+!DOCTYPE = html
+html {
+    body = 'Howdy xx'
+}
+END
+ARGS
+CMDS

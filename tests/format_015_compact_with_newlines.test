@@ -1,0 +1,17 @@
+START
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<question id="1">
+  <questionname>
+    What is java?
+    A great language?
+  </questionname>
+</question>
+COMPACT
+question(id=1){questionname=('What is java?'&#10;'A great language?')}
+XMQ
+question(id = 1)
+{
+    questionname = 'What is java?
+                    A great language?'
+}
+END

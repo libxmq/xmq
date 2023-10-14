@@ -1,0 +1,9 @@
+START
+   'alfa
+     beta
+    gamma'
+DEBUG
+[whitespace "   " 1:1][quote "'alfa\n     beta\n    gamma'" 1:4][whitespace "\n" 3:11]
+CONTENT
+{quote "alfa\n beta\ngamma"}
+END

@@ -1,4 +1,0 @@
-block(id = 123)
-{
-    alfa(x = y) = z
-}

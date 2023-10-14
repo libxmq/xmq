@@ -1,0 +1,14 @@
+START
+a{bbb='123'c='123' f(a=1)=123 zam_goo=123 zam=123 zam_gooboo=123}
+COMPACT
+a{bbb=123 c=123 f(a=1)=123 zam_goo=123 zam=123 zam_gooboo=123}
+XMQ
+a {
+    bbb = 123
+    c   = 123
+    f(a = 1) = 123
+    zam_goo    = 123
+    zam        = 123
+    zam_gooboo = 123
+}
+END

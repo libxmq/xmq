@@ -1,0 +1,7 @@
+START
+hello = &nbsp
+ERROR
+.../error_004_entity_not_closed.input:1:9: error: entity is not closed
+hello = &nbsp
+        ^
+END

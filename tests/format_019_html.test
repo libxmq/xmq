@@ -1,0 +1,11 @@
+START
+<!-- en kommentar -->
+<foo/>
+COMPACT
+<pre class="xmq xmq_light"><xmq_c>/*en kommentar*/</xmq_c><xmq_en>foo</xmq_en></pre>
+XMQ
+<pre class="xmq xmq_light"><xmq_c>// en kommentar</xmq_c>
+<xmq_en>foo</xmq_en></pre>
+END
+ARGS
+CMDS render_html --nostyle --lightbg

@@ -1,0 +1,7 @@
+START
+agoodtag -abadtag
+ERROR
+.../error_006_illegal_tag_name.input:1:10: error: unexpected character "-" U+2D
+agoodtag -abadtag
+         ^
+END
