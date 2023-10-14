@@ -8,5 +8,9 @@ jobs:
     runs-on: macOS-latest
     steps:
     - uses: actions/checkout@v2
-    - run: make
-    - run: make test
+    - id: CONFIGURE
+      run: ./configure
+    - id: MAKE
+      run: make
+    - id: TEST
+      run: make test

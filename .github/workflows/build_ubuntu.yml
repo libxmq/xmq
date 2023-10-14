@@ -1,12 +1,19 @@
 name: Build Ubuntu
 on:
   push:
-    branches:
-      - master
+  pull_request:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - run: make
-    - run: make test
+    - uses: actions/checkout@v3
+    - id: INSTALL_ADDITIONAL_BUILD_DEPENDENCIES
+      run: |
+         sudo apt install -y eatmydata libtidy-dev libxml2-dev
+    - id: CONFIGURE
+      run: eatmydata ./configure
+    - id: MAKE
+      run: eatmydata make
+    - id: TEST
+      run: eatmydata make test

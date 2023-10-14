@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - master
-      - TestWindowsBuild
+
 jobs:
   build:
     runs-on: windows-latest
@@ -13,5 +13,6 @@ jobs:
       with:
           platform: x64
     - uses: actions/checkout@v2
+    - run: ./configure
     - run: make
     - run: make test
