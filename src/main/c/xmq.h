@@ -490,10 +490,11 @@ void xmqFreeParseState(XMQParseState *state);
 
 /**
     xmqSetStateSourceName:
-    @state: the parse state to inform.
-    @source_name: the name of the file being parsed.
+    @doq: Parser which source file name should be set.
+    @source_name: The document source location.
 
-    To improve the error message the name of the file being parsed can be supplied.
+    Set the source name to make error message more readable when parsing fails.
+    The source name is often the file name, but can be "-" for stdin or anything you like.
 */
 void xmqSetStateSourceName(XMQParseState *state, const char *source_name);
 
@@ -521,11 +522,14 @@ const char *xmqStateErrorMsg(XMQParseState *state);
 XMQDoc *xmqNewDoc();
 
 /**
-    xmqSetSourceName:
+    xmqSetDocSourceName:
+    @doq: Document which source file name should be set.
+    @source_name: The document source location.
 
     Set the source name to make error message more readable when parsing fails.
+    The source name is often the file name, but can be "-" for stdin or anything you like.
 */
-void xmqSetDocSourceName(XMQDoc *doq, const char *file_name);
+void xmqSetDocSourceName(XMQDoc *doq, const char *source_name);
 
 /**
     xmqGetRootNode:

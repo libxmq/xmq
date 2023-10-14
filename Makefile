@@ -199,39 +199,20 @@ build/gtkdoc: build/gtkdocentities.ent
 
 .PHONY: all release debug asan test test_release test_debug clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc
 
-server:
-	(cd sdf; node ../templates/server.js)
-
-foof:
-	./xmqr --darkbg entry.xml fo --render=html --onlystyle > simple.html
-	./xmqr --darkbg entry.xml fo --render=html --renderraw >> simple.html
-	./xmqr --lightbg entry.xml fo --render=html --renderraw >> simple.html
-#    ./xmqr --darkbg entry.xml fo --render=tex --onlyheader > simple.tex#
-#	./xmqr --darkbg entry.xml fo --render=tex --renderraw >> simple.tex
-#	./xmqr --lightbg entry.xml fo --render=tex --renderraw >> simple.tex
-#	./xmqr --lightbg entry.xml fo --render=tex --onlyfooter >> simple.tex
-	xelatex simple.tex
-
-#baab:
-#	./xmqr --lightbg config.xml fo --render=html --renderraw >> simple.html
-
 web: $(wildcard web/*) $(wildcard web/resources/*)
 	@rm -rf build/web _EX1_.html _EX1_.htmq
 	@mkdir -p build/web/resources
-	@./xmqr web/config.xml render_html --onlystyle > build/web/resources/xmq.css
-	@./xmqr web/config.xml render_html --darkbg --nostyle  > _EX1_.html
-	@./xmqr --trim=none _EX1_.html to_xmq --compact  > _EX1_.htmq
+	@xmq web/50x.htmq to_html > build/web/50x.html
+	@xmq web/404.htmq to_html > build/web/404.html
+	@xmq web/config.xml render_html --onlystyle > build/web/resources/xmq.css
+	@xmq web/config.xml render_html --darkbg --nostyle  > _EX1_.html
+	@xmq --trim=none _EX1_.html to_xmq --compact  > _EX1_.htmq
 	@cat web/index.htmq | sed -e "s/_EX1_/$$(sed 's:/:\\/:g' _EX1_.htmq | sed 's/\&/\\\&/g')/g" > tmp.htmq
-	@./xmqr tmp.htmq to_html > build/web/index.html
+	@xmq tmp.htmq to_html > build/web/index.html
+	@(cd doc; make)
+	@cp doc/xmq.pdf build/web/resources
 	@cp web/resources/* build/web/resources
 	@cp doc/xmq.pdf build/web/resources
 	@echo "Generated build/web/index.html"
 
 .PHONY: web
-
-test_config:
-	./xmqr --darkbg config.xml fo --render=html > config.html
-	./xmqr --trim=none config.html > config.htmq
-	./xmqr config.htmq fo --html > config_again.html
-
-.PHONY: test_config

@@ -1,0 +1,24 @@
+html {
+    box-sizing: border-box;
+}
+
+*, *:before, *:after {
+    box-sizing: inherit;
+}
+
+body {
+    font-family: monospace;
+}
+
+h1 {
+    font-size: 32px;
+}
+
+a {
+    font-size: 16px;
+}
+
+p {
+    font-size: 16px;
+    width: 50em;
+}

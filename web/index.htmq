@@ -1,0 +1,56 @@
+!DOCTYPE = html
+html {
+    head {
+        meta(http-equiv=content-type content='text/html; charset=UTF-8')
+        title = libxmq
+        link(type=text/css href=resources/style.css rel=stylesheet)
+        link(type=text/css href=resources/xmq.css rel=stylesheet)
+    }
+    body {
+        h1 = 'XMQ - a new format for xml/html (+json)'
+
+        div {
+            a(href=https://github.com/libxmq/xmq) = Github
+            &nbsp;&nbsp;
+            a(href=xmq.pdf) = Grammar
+            &nbsp;&nbsp;
+            a(href=gtkdoc/index.html) = API
+            &nbsp;&nbsp;
+            'by Fredrik Öhrström 2023-10-08'
+        }
+
+        h2 = 'Quick Summary'
+
+        p = 'How about a new format to represent xml/html that makes it easier to read
+             can be pretty printed without having to worry about introducing significant whitespace?'
+
+        _EX1_
+        &nbsp;
+        pre(class = 'xmq xmq_dark')
+        {
+            '''<shiporder id="889923">
+                   <type>container</type>
+                   <shipto>
+                       <address>Trellevegen 17
+               3400 Stavanger
+               Norway</address>
+                       <!--Remember to update coord.-->
+                       <coord>41°24'N 2°10'E</coord>
+                   </shipto>
+               </shiporder>'''
+               &#10;
+               ' '
+        }
+
+        p = 'The hierarchical style looks familiar to C/Java etc. Note however:'
+
+        ul{
+            li = 'Safe values can be stored as plain text (eg 889923 container), no quoting needed!'
+            li = '''Unsafe values with newlines, whitespace or (){}' or leading = & // /* must be quoted.'''
+            li = 'Note that incindental indentaion is removed in the address.'
+            li = 'Comments use // and /* */.'
+            li = 'Quotes containing quotes are quoted using n+1 single quotes.'
+        }
+
+    }
+}
