@@ -1,8 +1,5 @@
 #!/bin/sh
 
-#sudo apt-get install gcc-mingw-w64
-#sudo apt-get install gcc-arm-linux-gnueabihf
-
 if [ ! -d libxml2 ]; then
     echo
     echo Fetching libxml2
@@ -20,3 +17,7 @@ if [ ! -f ./.libs/libxml2.so ]; then
     ./autogen.sh
     make
 fi
+
+mkdir libxml2_package
+cp libxml2/.libx/* libxml2_package
+cp -r libxml2/include/libxml libxml2_package

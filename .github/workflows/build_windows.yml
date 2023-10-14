@@ -13,6 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: gcc --version
-    - run: ./configure
+    - run: cd 3rdparty ; ./fetch_and_build.sh
+    - run: ./configure --with-libxml2=3rdparty/libxml2_package
     - run: make
     - run: make test
