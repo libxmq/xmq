@@ -214,6 +214,7 @@ web: $(wildcard web/*) $(wildcard web/resources/*)
 	@xmq build/tmp2.htmq to_html > build/web/index.html
 	@(cd doc; make)
 	@cp doc/xmq.pdf build/web
+	@cp web/favicon.ico build/web
 	@cp web/resources/* build/web/resources
 	@echo "Generated build/web/index.html"
 

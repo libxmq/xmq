@@ -817,7 +817,7 @@ void setup_html_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool re
         c->document.post =
             "</html>";
         c->header.pre =
-            "<head><style>";
+            "<head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"><style>";
         c->header.post =
             "</style></head>";
         c->style.pre =
