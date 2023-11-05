@@ -146,21 +146,32 @@ $(OUTPUT_ROOT)/$(TYPE)/%.o: $(SRC_ROOT)/src/main/c/%.c $(OUTPUT_ROOT)/grabbed_he
 	$(VERBOSE)$(CC) -fpic -g $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c -o $@
 	$(VERBOSE)$(CC) -E $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c > $@.source
 
+ifneq ($(PLATFORM),WINAPI)
 $(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(POSIX_OBJS)
 	@echo Linking libxmq.so
 	$(VERBOSE)$(CC) -shared -g -o $(OUTPUT_ROOT)/$(TYPE)/libxmq.so $(OUTPUT_ROOT)/$(TYPE)/xmq.o $(LIBXML2_LIBS) $(LDFLAGSBEGIN_$(TYPE)) $(DEBUG_LDFLAGS) $(LDFLAGSEND_$(TYPE))
+else
+$(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(WINAPI_OBJS)
+	touch $@
+endif
 
 $(OUTPUT_ROOT)/$(TYPE)/libxmq.a: $(POSIX_OBJS)
 	@echo Archiving libxmq.a
 	$(VERBOSE)ar rcs $@ $^
 
-
+ifeq ($(ENABLE_STATIC_XMQ),no)
 $(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS)
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
 	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS)  \
-                      $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread
+                      $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(VERBOSE)cp $@ $@.g
 	$(VERBOSE)$(STRIP_COMMAND) $@
+else
+$(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS)
+	@echo Linking static $(TYPE) $(CONF_MNEMONIC) $@
+	$(VERBOSE)$(CC) -static -o $@ $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS)  \
+                      $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
+endif
 
 $(OUTPUT_ROOT)/grabbed_headers.h: $(SRC_ROOT)/src/main/c/xmq.c
 	$(VERBOSE)$(SRC_ROOT)/scripts/grab_headers_for_testinternal.sh $< > $@
@@ -169,7 +180,7 @@ $(OUTPUT_ROOT)/grabbed_headers.h: $(SRC_ROOT)/src/main/c/xmq.c
 $(OUTPUT_ROOT)/$(TYPE)/testinternals: $(TESTINTERNALS_OBJS)
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
 	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(TESTINTERNALS_OBJS) \
-                      $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread
+                      $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(VERBOSE)$(STRIP_COMMAND) $@
 
 $(OUTPUT_ROOT)/$(TYPE)/libgcc_s_seh-1.dll: /usr/lib/gcc/x86_64-w64-mingw32/5.3-win32/libgcc_s_seh-1.dll

@@ -16,7 +16,7 @@ html {
             &nbsp;&nbsp;
             a(href=api/index.html) = API
             &nbsp;&nbsp;
-            'by Fredrik Öhrström _DATE_'
+            'by Fredrik Öhrström ' &DATE;
         }
 
         h2 = 'Quick Summary'
@@ -24,8 +24,12 @@ html {
         p = 'How about a new format to represent xml/html that makes it easier to read
              can be pretty printed without having to worry about introducing significant whitespace?'
 
-        _EX1_
+        &EXAMPLE1_XMQ;
+
         &nbsp;
+
+        &EXAMPLE1_XML;
+
         pre(class = 'xmq xmq_dark')
         {
             '''<shiporder id="889923">

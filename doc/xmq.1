@@ -8,34 +8,22 @@ xmq \- Command-line xmq/htmq/xml/html/json processor
 .B xmq [options] <file>
 .B xmq [options] <file> ( <command> [cmd-options-args] )+
 
-.B xmq [options] <file> to_xmq
-.B xmq [options] <file> to_html
-.B xmq [options] <file> to_xml
-.B xmq [options] <file> to_json
-.B xmq [options] <file> render_terminal
-.B xmq [options] <file> render_htmq
-.B xmq [options] <file> render_html
-.B xmq [options] <file> render_tex
-.B xmq [options] <file> select //table
-.B xmq [options] <file> remove //script
-
-.B xmq page.html remove //script render_terminal
-
 .SH DESCRIPTION
 
 The xmq tool can extract data from xmq/htmq/xml/html/json files and convert between them.
-It can also pretty print, tidy, colorize, tokenize and apply xslt transforms on these files.
+It can also pretty print, tidy, compact, colorize, tokenize and apply xslt transforms on xmq/htmq files.
+It can convert input files to xml/html/json files.
 
 .SH OPTIONS
 
 .TP
-.BR \--color-output / \-C\ \--monochrome-output / \-M
+.BR \--color / \-C\ \--mono / \-M
 By default, xmq generates syntax colored output if writing to a terminal.
-You can force it to produce color even if writing to a pipe or a file using -C, and disable color with -M.
+You can force it to produce color even if writing to a pipe or a file using --color, and disable color with --mono.
 Colors can be configured with the XMQ_COLORS environment variable (see below).
 
 .TP
-.BR \--compact-output / -c
+.BR \--compact / -c
 By default, xmq pretty-prints the output. Using this option will result in more compact xmq/json output using a single line.
 
 .TP
@@ -43,7 +31,7 @@ By default, xmq pretty-prints the output. Using this option will result in more 
 Use the given number of spaces for indentation. Default is 4 indentations.
 
 .TP
-.BR \--xmq|--xml|--html|--json
+.BR \--xmq|--xml|--htmq|--html|--json
 Select input format. The default is to auto detect.
 
 .TP
@@ -61,9 +49,9 @@ Use &#10; instead of actual newlines in xmq quotes.
 Escape all non-7bit chars using entities like  &#160;
 
 .TP
-.BR \--renderto={plain|terminal|html|tex}
+.BR \--renderto={plain|terminal|tex|html|htmq}
 Render to different targets, default is terminal when writing to a tty, otherwise plain.
-Html is suitable for inclusion in a web page and tex can be included in (la)tex documents.
+Html/htmq are suitable for inclusion in a web page and tex can be included in (La)TeX documents.
 
 .TP
 .BR \--tokenize=color
@@ -81,6 +69,20 @@ Pretty print an xmq/xml/json document as xmq.
 % xmq file.xmq
 % xmq-less file.xml
 % xmq file.json
+
+Replace nodes:
+
+% xmq input.xml replace --entity=Greeting --text='howdy' replace --entity=Page --xmqfile=pagecontent.xmq
+% xmq input.xml replace --xpath=//div --xmqfile=newdivs.xmq
+
+Delete nodes:
+
+% xmq input.xml delete --entity=Greeting
+% xmq input.xml delete --xpath=//div
+
+Select nodes:
+
+% xmq input.xml select --xpath=//button
 
 .SH AUTHOR
 Written by Fredrik Öhrström.

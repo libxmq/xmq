@@ -39,6 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<libxml/tree.h>
 #include<libxml/parser.h>
 #include<libxml/HTMLparser.h>
+#include<libxml/HTMLtree.h>
 #include<libxml/xmlreader.h>
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
@@ -271,7 +272,11 @@ struct XMQQuoteSettings
 };
 typedef struct XMQQuoteSettings XMQQuoteSettings;
 
-// An utf8 char is at most 4 bytes since the max unicode nr is capped at U+10FFFF:
+/**
+    UTF8Char: storage for 1 to 4 utf8 bytes
+
+    An utf8 char is at most 4 bytes since the max unicode nr is capped at U+10FFFF:
+*/
 #define MAX_NUM_UTF8_BYTES 4
 typedef struct
 {
@@ -280,73 +285,62 @@ typedef struct
 
 // UTILITY FUNCTION DECLARATIONS ///////////////////////////////////////////////////
 
+// Stack functions ////////////////
+
 Stack *new_stack();
 void free_stack(Stack *stack);
 void push_stack(Stack *s, void *);
 size_t size_stack();
 void *pop_stack(Stack *s);
 
-/**
-   decode_utf8: Peek 1 to 4 chars from start and calculate unicode codepoint.
-   @start: Read utf8 from this string.
-   @stop: Points to byte after last byte in string. If NULL assume start is null terminated.
-   @out_char: Store the unicode code point here.
-   @out_len: How many bytes the utf8 char used.
+// UTF8 functions /////////////////
 
-   Return true if valid utf8 char.
-*/
 bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
-
-/**
-   peek_utf8_char: Peek 1 to 4 chars from s belonging to the next utf8 code point and store them in uc.
-   @start: Read utf8 from this string.
-   @stop: Points to byte after last byte in string. If NULL assume start is null terminated.
-   @uc: Store the UTF8 char here.
-
-   Return the number of bytes peek UTF8 char, use this number to skip ahead to next char in s.
-*/
-size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc);
-
-/**
-   utf8_char_to_codepoint_string: Decode a utf8 char and store as a string "U+123"
-   @uc: The utf8 char to decode.
-   @buf: Store the codepoint string here.
-
-*/
 bool utf8_char_to_codepoint_string(UTF8Char *uc, char *buf);
+size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc);
+void str_b_u_len(const char *start, const char *stop, size_t *b_len, size_t *u_len);
 
-void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col);
-bool is_xml_whitespace(char c);
-bool is_all_xml_whitespace(const char *start);
-size_t count_whitespace(const char *i, const char *stop);
-bool is_unicode_whitespace(const char *start, const char *stop);
-const char *has_leading_nl_whitespace(const char *start, const char *stop);
-const char *has_ending_nl_whitespace(const char *start, const char *stop);
-bool has_newlines(const char *start, const char *stop);
+// Text functions ////////////////
+
 bool has_all_quotes(const char *start, const char *stop);
 bool has_all_whitespace(const char *start, const char *stop, bool *all_space);
+bool has_newlines(const char *start, const char *stop);
+bool is_all_xml_whitespace(const char *start);
 bool is_lowercase_hex(char c);
-bool is_xmq_quote_start(char c);
-bool is_xmq_entity_start(char c);
+bool is_unicode_whitespace(const char *start, const char *stop);
+const char *has_ending_nl_whitespace(const char *start, const char *stop);
+const char *has_leading_nl_whitespace(const char *start, const char *stop);
+size_t count_whitespace(const char *i, const char *stop);
+
+// XMQ parser utility functions //////////////////////////////////
+
+bool is_xml_whitespace(char c);
 bool is_xmq_attribute_key_start(char c);
-bool is_xmq_compound_start(char c);
 bool is_xmq_comment_start(char c, char cc);
+bool is_xmq_compound_start(char c);
 bool is_xmq_doctype_start(const char *start, const char *stop);
-bool is_xmq_text_value_char(const char *i, const char *stop);
-bool is_xmq_text_value(const char *i, const char *stop);
-bool is_xmq_text_name(char c);
 bool is_xmq_element_start(char c);
-static const char *build_error_message(const char *fmt, ...);
+bool is_xmq_entity_start(char c);
+bool is_xmq_quote_start(char c);
+bool is_xmq_text_name(char c);
+bool is_xmq_text_value(const char *i, const char *stop);
+bool is_xmq_text_value_char(const char *i, const char *stop);
 
 size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
 size_t count_necessary_quotes(const char *start, const char *stop, bool forbid_nl, bool *add_nls, bool *add_compound);
 size_t count_necessary_slashes(const char *start, const char *stop);
 
 bool contains_newline(const char *start, const char *stop);
+
+// Common parser functions ///////////////////////////////////////
+
+void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col);
+
+static const char *build_error_message(const char *fmt, ...);
+
 Level enter_compound_level(Level l);
 XMQColor level_to_quote_color(Level l);
 XMQColor level_to_entity_color(Level l);
-void str_b_u_len(const char *start, const char *stop, size_t *b_len, size_t *u_len);
 void attr_strlen_name_prefix(xmlAttr *attr, const char **name, const char **prefix, size_t *total_u_len);
 void element_strlen_name_prefix(xmlNode *attr, const char **name, const char **prefix, size_t *total_u_len);
 void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len);
@@ -817,7 +811,7 @@ void setup_html_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool re
         c->document.post =
             "</html>";
         c->header.pre =
-            "<head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"><style>";
+            "<head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"/><style>";
         c->header.post =
             "</style></head>";
         c->style.pre =
@@ -1444,6 +1438,14 @@ size_t num_utf8_bytes(char c)
     return 0; // Error
 }
 
+/**
+   peek_utf8_char: Peek 1 to 4 chars from s belonging to the next utf8 code point and store them in uc.
+   @start: Read utf8 from this string.
+   @stop: Points to byte after last byte in string. If NULL assume start is null terminated.
+   @uc: Store the UTF8 char here.
+
+   Return the number of bytes peek UTF8 char, use this number to skip ahead to next char in s.
+*/
 size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc)
 {
     char a = *start;
@@ -1491,6 +1493,11 @@ size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc)
     return 0;
 }
 
+/**
+   utf8_char_to_codepoint_string: Decode an utf8 char and store as a string "U+123"
+   @uc: The utf8 char to decode.
+   @buf: Store the codepoint string here must have space for 9 bytes, i.e. U+10FFFF and a NULL byte.
+*/
 bool utf8_char_to_codepoint_string(UTF8Char *uc, char *buf)
 {
     int cp = 0;
@@ -4245,6 +4252,15 @@ size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...)
     return b_len;
 }
 
+/**
+   decode_utf8: Peek 1 to 4 chars from start and calculate unicode codepoint.
+   @start: Read utf8 from this string.
+   @stop: Points to byte after last byte in string. If NULL assume start is null terminated.
+   @out_char: Store the unicode code point here.
+   @out_len: How many bytes the utf8 char used.
+
+   Return true if valid utf8 char.
+*/
 bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len)
 {
     int c = (int)(unsigned char)(*start);
@@ -5096,21 +5112,27 @@ void print_node(XMQPrintState *ps, xmlNode *node, size_t align)
 
 void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings)
 {
-    xmlNodePtr child = doq->docptr_.xml->children;
-    xmlBuffer *buffer = xmlBufferCreate();
-    while (child != NULL)
-    {
-        xmlNodeDump(buffer, doq->docptr_.xml, child, 0, 0);
-        child = child->next;
-    }
-    char *c = (char*)xmlBufferContent(buffer);
-    fputs(c, stdout);
-    xmlBufferFree(buffer);
+    xmlChar *buffer;
+    int size;
+    xmlDocDumpMemoryEnc(doq->docptr_.xml,
+                        &buffer,
+                        &size,
+                        "utf8");
+    fputs(buffer, stdout);
+    free(buffer);
 }
 
 void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
 {
     xmq_fixup_html_before_writeout(doq);
+/*
+    xmlOutputBufferPtr out = xmlAllocOutputBuffer(NULL);
+    if (out) {
+        htmlDocContentDumpOutput(out, doq->docptr_.html, "utf8");
+        const xmlChar *buffer = xmlBufferContent((xmlBuffer *) out->buffer);
+        fputs((char *) buffer, stdout);
+        xmlOutputBufferClose(out);
+        }*/
     xmlNodePtr child = doq->docptr_.xml->children;
     xmlBuffer *buffer = xmlBufferCreate();
     while (child != NULL)

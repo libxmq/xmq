@@ -1,0 +1,18 @@
+INPUT
+!DOCTYPE=html html{head{meta(http-equiv=Content-Type content='text/html; charset=UTF-8')}body='Howdy! åäö'}
+FIRST
+<!DOCTYPE html><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/></head><body>Howdy! åäö</body></html>
+SECOND
+!DOCTYPE = html
+html {
+    head {
+        meta(http-equiv = Content-Type
+             content    = 'text/html; charset=UTF-8')
+    }
+    body = 'Howdy! åäö'
+}
+END
+ARGS_FIRST
+CMDS_FIRST to_html
+ARGS_SECOND --trim=none
+CMDS_SECOND to_xmq

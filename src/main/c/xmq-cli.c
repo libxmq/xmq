@@ -28,8 +28,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<memory.h>
 #include<string.h>
 #include<stdio.h>
-#include<termios.h>
 #include<unistd.h>
+
+#ifndef PLATFORM_WINAPI
+#include<termios.h>
+#endif
+
+#define LIBXML_STATIC
+#define LIBXSLT_STATIC
+#define XMLSEC_STATIC
 
 #include<libxml/tree.h>
 #include <libxml/xpath.h>
@@ -56,6 +63,7 @@ typedef enum
     XMQ_CLI_CMD_RENDER_TEX,
     XMQ_CLI_CMD_TOK,
     XMQ_CLI_CMD_DELETE,
+    XMQ_CLI_CMD_ENTITY
 } XMQCliCmd;
 
 typedef enum {
@@ -64,6 +72,7 @@ typedef enum {
     XMQ_CLI_CMD_GROUP_RENDER,
     XMQ_CLI_CMD_GROUP_TOKENIZE,
     XMQ_CLI_CMD_GROUP_MATCHERS,
+    XMQ_CLI_CMD_GROUP_ENTITIES,
 } XMQCliCmdGroup;
 
 typedef struct XMQCliEnvironment XMQCliEnvironment;
@@ -83,6 +92,8 @@ struct XMQCliCommand
     char *in;
     char *out;
     const char *xpath;
+    const char *entity;
+    const char *content;
     XMQContentType in_format;
     XMQContentType out_format;
     XMQRenderFormat render_to;
@@ -144,6 +155,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "render_tex")) return XMQ_CLI_CMD_RENDER_TEX;
     if (!strcmp(s, "tok")) return XMQ_CLI_CMD_TOK;
     if (!strcmp(s, "delete")) return XMQ_CLI_CMD_DELETE;
+    if (!strcmp(s, "entity")) return XMQ_CLI_CMD_ENTITY;
     return XMQ_CLI_CMD_NONE;
 }
 
@@ -162,6 +174,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_RENDER_TEX: return "render_tex";
     case XMQ_CLI_CMD_TOK: return "tok";
     case XMQ_CLI_CMD_DELETE: return "delete";
+    case XMQ_CLI_CMD_ENTITY: return "entity";
     }
     return "?";
 }
@@ -185,6 +198,8 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
         return XMQ_CLI_CMD_GROUP_TOKENIZE;
     case XMQ_CLI_CMD_DELETE:
         return XMQ_CLI_CMD_GROUP_MATCHERS;
+    case XMQ_CLI_CMD_ENTITY:
+        return XMQ_CLI_CMD_GROUP_ENTITIES;
     case XMQ_CLI_CMD_NONE:
         return XMQ_CLI_CMD_GROUP_NONE;
     }
@@ -328,18 +343,38 @@ bool handle_option(const char *arg, XMQCliCommand *command)
         return true;
     }
 
+    if (group == XMQ_CLI_CMD_GROUP_ENTITIES)
+    {
+        if (command->entity == NULL)
+        {
+            command->entity = arg;
+            return true;
+        }
+
+        if (group == XMQ_CLI_CMD_GROUP_ENTITIES && command->entity != NULL)
+        {
+            command->content = arg;
+            return true;
+        }
+    }
+
     return false;
 }
 
+#ifndef PLATFORM_WINAPI
 struct termios orig_termios;
+#endif
 
 void disable_raw_mode()
 {
+#ifndef PLATFORM_WINAPI
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+#endif
 }
 
 void enable_raw_mode()
 {
+#ifndef PLATFORM_WINAPI
     tcgetattr(STDIN_FILENO, &orig_termios);
     atexit(disable_raw_mode);
 
@@ -348,10 +383,12 @@ void enable_raw_mode()
     raw.c_lflag &= ~ECHO;
     raw.c_lflag &= ~ICANON;
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+#endif
 }
 
 bool is_bg_dark()
 {
+#ifndef PLATFORM_WINAPI
     bool is_dark = true;
 
     char *colorfgbg = getenv("COLORFGBG");
@@ -410,6 +447,9 @@ bool is_bg_dark()
         disable_raw_mode();
     }
     return is_dark;
+#else
+    return false;
+#endif
 }
 
 bool handle_global_option(const char *arg, XMQCliCommand *command)
@@ -554,8 +594,7 @@ int tokenize_input(XMQCliCommand *command)
     XMQParseState *state = xmqNewParseState(callbacks, output_settings);
     xmqTokenizeFile(state, command->in);
 
-    int errno = xmqStateErrno(state);
-    if (errno)
+    if (xmqStateErrno(state))
     {
         fprintf(stderr, "%s\n", xmqStateErrorMsg(state));
     }
@@ -564,7 +603,7 @@ int tokenize_input(XMQCliCommand *command)
     xmqFreeParseCallbacks(callbacks);
     xmqFreeOutputSettings(output_settings);
 
-    return errno;
+    return xmqStateErrno(state);
 }
 
 void write_print(void *buffer, const char *content)
@@ -666,6 +705,33 @@ bool cmd_delete(XMQCliCommand *command)
     return true;
 }
 
+void replace_entities(xmlNodePtr node, const char *entity, const char *content)
+{
+    xmlNodePtr i = node;
+    if (!i) return;
+
+    if (i->type == XML_ENTITY_REF_NODE)
+    {
+        printf("ENTITY %s\n", i->name);
+        return;
+    }
+
+    while (i)
+    {
+        replace_entities(i->children, entity, content);
+        i = i->next;
+    }
+}
+
+bool cmd_entity(XMQCliCommand *command)
+{
+    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+
+    replace_entities((xmlNodePtr)doc, command->entity, command->content);
+
+    return true;
+}
+
 void prepare_command(XMQCliCommand *c)
 {
     switch (c->cmd) {
@@ -700,6 +766,8 @@ void prepare_command(XMQCliCommand *c)
         return;
     case XMQ_CLI_CMD_DELETE:
         return;
+    case XMQ_CLI_CMD_ENTITY:
+        return;
     case XMQ_CLI_CMD_NONE:
         return;
     }
@@ -726,6 +794,8 @@ bool perform_command(XMQCliCommand *c)
         return tokenize_input(c);
     case XMQ_CLI_CMD_DELETE:
         return cmd_delete(c);
+    case XMQ_CLI_CMD_ENTITY:
+        return cmd_entity(c);
     }
     assert(false);
 }

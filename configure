@@ -638,6 +638,7 @@ LIBXML2_LIBS
 LIBXML2_CFLAGS
 ZLIB_LIBS
 ZLIB_CFLAGS
+ENABLE_STATIC_XMQ
 ASAN_LIBS
 ASAN_LDFLAGS
 ASAN_CFLAGS
@@ -711,6 +712,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_asan
+enable_static_xmq
 with_zlib
 with_libxml2
 '
@@ -1346,6 +1348,7 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-asan-gcov     disable address sanitizer and code coverage for
                           debug builds [enabled]
+  --enable-static-xmq     build a statically linked xmq binary [enabled]
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -2407,6 +2410,7 @@ if test "${host_vendor}" = "w64"; then
    MNEMONIC="WINAPI64"
    CFLAGS_EXTRAS=""
    CXXFLAGS_EXTRAS=""
+   STATIC_XMQ_DEFAULT="yes"
 else
    PLATFORM=POSIX
    PATH_SEP=':'
@@ -2414,6 +2418,7 @@ else
    FUSE_DEFAULT="yes"
    MEDIA_DEFAULT="yes"
    ASAN_DEFAULT="yes"
+   STATIC_XMQ_DEFAULT="no"
    if test "${host_cpu}" = "arm"; then
        CONF_MNEMONIC="arm32"
        MNEMONIC="ARM32"
@@ -2435,7 +2440,6 @@ else
 fi
 
 PKG_CONFIG="$(which pkg-config)"
-echo PKG_CONFIG=$PKG_CONFIG
 if test "$PKG_CONFIG" = ""; then
     PKG_CONFIG=/bin/false
     as_fn_error $? "You need pkg-config to build. Please install." "$LINENO" 5
@@ -3952,12 +3956,34 @@ if test "x$ENABLE_ASAN" = xyes; then
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: using ${with_asan}" >&5
 printf "%s\n" "using ${with_asan}" >&6; }
 else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: explicitly disabled" >&5
-printf "%s\n" "explicitly disabled" >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
 fi
 
 
 
+
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking build static xmq binary" >&5
+printf %s "checking build static xmq binary... " >&6; }
+
+# Check whether --enable-static-xmq was given.
+if test ${enable_static_xmq+y}
+then :
+  enableval=$enable_static_xmq; ENABLE_STATIC_XMQ=${enable_static_xmq}
+else $as_nop
+  ENABLE_STATIC_XMQ=${STATIC_XMQ_DEFAULT}
+fi
+
+
+if test "x$ENABLE_STATIC_XMQ" = xyes; then
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+else
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
 
 
 
@@ -3972,14 +3998,26 @@ fi
 
 
 if test "x${with_zlib}" = "x"; then
+    if ! pkg-config zlib ; then
+        as_fn_error $? "not found using pkg-config" "$LINENO" 5
+        exit 0
+    fi
     ZLIB_CFLAGS="$($PKG_CONFIG zlib --cflags)"
     ZLIB_LIBS="$($PKG_CONFIG zlib --libs)"
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: found" >&5
-printf "%s\n" "found" >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: found using pkg-config" >&5
+printf "%s\n" "found using pkg-config" >&6; }
+    if test "x$ENABLE_STATIC_XMQ" = xyes; then
+        as_fn_error $? "You specified --enable-static-xmq so you must use --with-zlib=... to find a static libz.a" "$LINENO" 5
+    fi
 else
     with_zlib=$(realpath ${with_zlib})
     ZLIB_CFLAGS="-I${with_zlib}"
-    ZLIB_LIBS="${with_zlib}/libz.a"
+    LIBNAME="libz.a"
+    LIBF=$(find ${with_zlib} -name "${LIBNAME}")
+    if test -z "$LIBF"; then
+        as_fn_error $? "Could not find ${LIBNAME} below ${with_zlib}" "$LINENO" 5
+    fi
+    ZLIB_LIBS="${LIBF}"
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: using ${with_zlib}" >&5
 printf "%s\n" "using ${with_zlib}" >&6; }
 fi
@@ -3998,10 +4036,10 @@ fi
 
 
 if test "x${with_libxml2}" = "x"; then
-    LIBXML2_CFLAGS="-I/usr/include/libxml2"
+    LIBXML2_CFLAGS="-I /usr/include/libxml2"
     LIBXML2_LIBS="-lxml2"
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: found" >&5
-printf "%s\n" "found" >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: using -lxml2 and /usr/include/libxml2" >&5
+printf "%s\n" "using -lxml2 and /usr/include/libxml2" >&6; }
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for xmlSAXParseDoc in -lxml2" >&5
 printf %s "checking for xmlSAXParseDoc in -lxml2... " >&6; }
 if test ${ac_cv_lib_xml2_xmlSAXParseDoc+y}
@@ -4050,10 +4088,22 @@ else $as_nop
 
 fi
 
+    if test "x$ENABLE_STATIC_XMQ" = xyes; then
+        as_fn_error $? "You specified --enable-static-xmq  so you must use --with-libxml2=... to find a static libxml2.a" "$LINENO" 5
+    fi
 else
     with_libxml2=$(realpath ${with_libxml2})
-    LIBXML2_CFLAGS="-I${with_libxml2}"
-    LIBXML2_LIBS="${with_libxml2}/libxml2.a"
+    IDIR=$(find ${with_libxml2} -path "*/libxml/tree.h" | sed 's|/libxml/tree.h||')
+    LIBXML2_CFLAGS="-I${IDIR}"
+    if test -z "$IDIR"; then
+        as_fn_error $? "Could not find libxml/tree.h below ${with_libxml2}" "$LINENO" 5
+    fi
+    LIBNAME="libxml2.a"
+    LIBF=$(find ${with_libxml2} -name "${LIBNAME}")
+    if test -z "$LIBF"; then
+        as_fn_error $? "Could not find ${LIBNAME} below ${with_libxml2}" "$LINENO" 5
+    fi
+    LIBXML2_LIBS="${LIBF}"
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: using ${with_libxml2}" >&5
 printf "%s\n" "using ${with_libxml2}" >&6; }
 fi
@@ -4117,7 +4167,7 @@ CXXFLAGS_release="-Os"
 CXXFLAGS_debug="-O0 -g"
 CXXFLAGS_asan="-O0 -g ${ASAN_CFLAGS}"
 
-CFLAGS="-DPLATFORM_${PLATFORM} ${CFLAGS_EXTRAS} -D${MNEMONIC} -Wall -Wmissing-declarations -Wimplicit -Wno-error=deprecated-declarations -fmessage-length=0 -std=c++11 $GCC_EXTRA_CFLAGS -Wno-unused-function"
+CFLAGS="-DPLATFORM_${PLATFORM} ${CFLAGS_EXTRAS} -D${MNEMONIC} $GCC_EXTRA_CFLAGS"
 
 CFLAGS_release="-Os"
 CFLAGS_debug="-O0 -g"
@@ -4133,8 +4183,6 @@ LDFLAGSEND_debug=""
 LDFLAGS_asan="-g ${ASAN_LDFLAGS} ${MEDIA_LIBS}"
 LDFLAGSBEGIN_asan="${ASAN_LIBS} ${MEDIA_LIBS}"
 LDFLAGSEND_asan=""
-
-CFLAGS=""
 
 
 

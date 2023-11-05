@@ -667,7 +667,24 @@ const char *xmqGetString(XMQDoc *doc, XMQNode *node, const char *xpath);
 int xmqForeach(XMQDoc *doq, XMQNode *node, const char *xpath, NodeCallback cb, void *user_data);
 
 /**
+   xmqReplaceEntity: Replace the selected entity with the supplied content.
+   @entity: the entity
+   @content: the string content to be inserted
 
+   Returns the number of replacements.
+*/
+int xmqReplaceEntity(XMQDoc *doq, const char *entity, const char *content);
+
+/**
+   xmqReplaceEntity: Replace the selected entity with the supplied content node.
+   @entity: the entity
+   @content: the string content to be inserted
+
+   Returns the number of replacements.
+*/
+int xmqReplaceEntityWithNode(XMQDoc *doq, const char *entity, XMQDoc *idoq, XMQNode *inode);
+
+/**
     xmqVersion:
 
     Return the current xmq version in this library.

@@ -32,6 +32,10 @@ Convert any input to xml: `xmq input to_xml > output.xml`
 
 Convert any (suitable) input to html: `xmq input to_html > output.html`
 
+```
+xmq 'book { alfa = &ALFA; }' replace entity:ALFA "Howdy'''Dowdy" to_xmq
+```
+
 Render any input as a web page: `xmq input.xmq render_html > input_as_web_page.html`
 
 Render any input as a tex: `xmq input.xmq render_tex > input_as_tex.tex ; xelatex input_as_tex.tex`
@@ -53,3 +57,11 @@ make testa
 
 You can find the built asan binary here:
 `./build/x86_64-pc-linux-gnu/asan/xmq input.xml`
+
+## How to compile:
+
+Windows cross complation from GNU/Linux:
+```
+(cd 3rdparty; fetch_and_build.sh)
+./configure --host=x86_64-w64-mingw32 --with-libxml2=3rdparty/libxml2
+```
