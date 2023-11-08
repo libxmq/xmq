@@ -624,16 +624,18 @@ int tokenize_input(XMQCliCommand *command)
     XMQParseState *state = xmqNewParseState(callbacks, output_settings);
     xmqTokenizeFile(state, command->in);
 
+    int err = 0;
     if (xmqStateErrno(state))
     {
         fprintf(stderr, "%s\n", xmqStateErrorMsg(state));
+        err = xmqStateErrno(state);
     }
 
     xmqFreeParseState(state);
     xmqFreeParseCallbacks(callbacks);
     xmqFreeOutputSettings(output_settings);
 
-    return xmqStateErrno(state);
+    return err;
 }
 
 void write_print(void *buffer, const char *content)
