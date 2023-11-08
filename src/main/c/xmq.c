@@ -503,6 +503,7 @@ void json_check_comma_before_key(XMQPrintState *ps);
 void json_print_comma(XMQPrintState *ps);
 bool json_is_number(const char *start, const char *stop);
 bool json_is_keyword(const char *start, const char *stop);
+void json_print_leaf_node(XMQPrintState *ps, xmlNode *container, xmlNode *node);
 
 // DEFINITIONS ///////////////////////////////////////////////////////////////////////////////
 
@@ -7200,13 +7201,13 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node)
     {
         return json_print_doctype(ps, node);
     }
-
+*/
     // This is a node with no children, ie br
     if (is_leaf_node(node))
     {
-        return json_print_leaf_node(ps, node);
+        return json_print_leaf_node(ps, container, node);
     }
-*/
+
     // This is a key = value or key = 'value value' node and there are no attributes.
     if (is_key_value_node(node))
     {
@@ -7231,6 +7232,11 @@ void json_print_value(XMQPrintState *ps, xmlNode *container, xmlNode *node, Leve
         // This is a number(123), true,false or null.
         write(writer_state, xml_element_content(node), NULL);
         ps->last_char = content[strlen(content)-1];
+    }
+    else if (!xml_next_sibling(node) && content[0] == 0)
+    {
+        write(writer_state, "\"\"", NULL);
+        ps->last_char = '"';
     }
     else
     {
@@ -7363,12 +7369,13 @@ void json_print_comma(XMQPrintState *ps)
 
 bool json_is_number(const char *start, const char *stop)
 {
-    for (const char *i = start; *i && (stop == NULL || i < stop); ++i)
+    const char *i;
+    for (i = start; *i && (stop == NULL || i < stop); ++i)
     {
         char c = *i;
         if (c < '0' || c > '9')  return false;
     }
-    return true;
+    return i > start;
 }
 
 bool json_is_keyword(const char *start, const char *stop)
@@ -7377,4 +7384,11 @@ bool json_is_keyword(const char *start, const char *stop)
     if (!strcmp(start, "false")) return true;
     if (!strcmp(start, "null")) return true;
     return false;
+}
+
+void json_print_leaf_node(XMQPrintState *ps,
+                          xmlNode *container,
+                          xmlNode *node)
+{
+    json_print_element_name(ps, container, node);
 }
