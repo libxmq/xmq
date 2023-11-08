@@ -26,8 +26,8 @@ sed -n '/^DEBUG$/,/^CONTENT$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${T
 sed -n '/^CONTENT$/,/^END$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.expected_content
 
 
-$PROG $OUTPUT/${TEST_NAME}.input tok --tokenize=debugtokens > $OUTPUT/${TEST_NAME}.tokens
-$PROG $OUTPUT/${TEST_NAME}.input tok --tokenize=debugcontent > $OUTPUT/${TEST_NAME}.content
+$PROG $OUTPUT/${TEST_NAME}.input tokenize --type=debugtokens > $OUTPUT/${TEST_NAME}.tokens
+$PROG $OUTPUT/${TEST_NAME}.input tokenize --type=debugcontent > $OUTPUT/${TEST_NAME}.content
 
 if diff $OUTPUT/${TEST_NAME}.expected_tokens $OUTPUT/${TEST_NAME}.tokens > /dev/null
 then

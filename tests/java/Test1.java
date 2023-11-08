@@ -12,5 +12,6 @@ public class Test1
             """;
 
         XMQ.parse(input);
+        System.exit(0);
     }
 }

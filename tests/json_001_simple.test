@@ -1,0 +1,13 @@
+INPUT
+person {
+    age = 123
+    address {
+       street = 'le rue'
+       nr = 8
+    }
+}
+OUTPUT
+{"_":"person","age":123,"address":{"street":"le rue","nr":8}}
+COMPACT
+{"_":"person","age":123,"address":{"street":"le rue","nr":8}}
+END

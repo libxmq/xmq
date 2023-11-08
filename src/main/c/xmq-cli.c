@@ -47,7 +47,10 @@ typedef enum
     XMQ_CLI_TOKENIZE_NONE = 0,
     XMQ_CLI_TOKENIZE_DEBUG_TOKENS = 1,
     XMQ_CLI_TOKENIZE_DEBUG_CONTENT = 2,
-    XMQ_CLI_TOKENIZE_COLOR = 3
+    XMQ_CLI_TOKENIZE_TERMINAL = 3,
+    XMQ_CLI_TOKENIZE_HTML = 4,
+    XMQ_CLI_TOKENIZE_TEX = 5,
+    XMQ_CLI_TOKENIZE_LOCATION = 6
 } XMQCliTokenizeType;
 
 typedef enum
@@ -61,7 +64,7 @@ typedef enum
     XMQ_CLI_CMD_RENDER_TERMINAL,
     XMQ_CLI_CMD_RENDER_HTML,
     XMQ_CLI_CMD_RENDER_TEX,
-    XMQ_CLI_CMD_TOK,
+    XMQ_CLI_CMD_TOKENIZE,
     XMQ_CLI_CMD_DELETE,
     XMQ_CLI_CMD_ENTITY
 } XMQCliCmd;
@@ -153,7 +156,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "render_terminal")) return XMQ_CLI_CMD_RENDER_TERMINAL;
     if (!strcmp(s, "render_html")) return XMQ_CLI_CMD_RENDER_HTML;
     if (!strcmp(s, "render_tex")) return XMQ_CLI_CMD_RENDER_TEX;
-    if (!strcmp(s, "tok")) return XMQ_CLI_CMD_TOK;
+    if (!strcmp(s, "tokenize")) return XMQ_CLI_CMD_TOKENIZE;
     if (!strcmp(s, "delete")) return XMQ_CLI_CMD_DELETE;
     if (!strcmp(s, "entity")) return XMQ_CLI_CMD_ENTITY;
     return XMQ_CLI_CMD_NONE;
@@ -172,7 +175,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_RENDER_TERMINAL: return "render_terminal";
     case XMQ_CLI_CMD_RENDER_HTML: return "render_html";
     case XMQ_CLI_CMD_RENDER_TEX: return "render_tex";
-    case XMQ_CLI_CMD_TOK: return "tok";
+    case XMQ_CLI_CMD_TOKENIZE: return "tokenize";
     case XMQ_CLI_CMD_DELETE: return "delete";
     case XMQ_CLI_CMD_ENTITY: return "entity";
     }
@@ -194,7 +197,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_RENDER_HTML:
     case XMQ_CLI_CMD_RENDER_TEX:
         return XMQ_CLI_CMD_GROUP_RENDER;
-    case XMQ_CLI_CMD_TOK:
+    case XMQ_CLI_CMD_TOKENIZE:
         return XMQ_CLI_CMD_GROUP_TOKENIZE;
     case XMQ_CLI_CMD_DELETE:
         return XMQ_CLI_CMD_GROUP_MATCHERS;
@@ -238,7 +241,7 @@ bool handle_option(const char *arg, XMQCliCommand *command)
 
     XMQCliCmdGroup group = cmd_group(command->cmd);
 
-    if (command->cmd == XMQ_CLI_CMD_TO_XMQ ||
+    if (group == XMQ_CLI_CMD_GROUP_TO ||
         group == XMQ_CLI_CMD_GROUP_RENDER)
     {
         if (!strcmp(arg, "--compact"))
@@ -247,6 +250,10 @@ bool handle_option(const char *arg, XMQCliCommand *command)
             command->compact = true;
             return true;
         }
+    }
+    if (command->cmd == XMQ_CLI_CMD_TO_XMQ ||
+        group == XMQ_CLI_CMD_GROUP_RENDER)
+    {
         if (!strcmp(arg, "--escape-newlines"))
         {
             command->escape_newlines = true;
@@ -312,21 +319,36 @@ bool handle_option(const char *arg, XMQCliCommand *command)
 
     if (group == XMQ_CLI_CMD_GROUP_TOKENIZE)
     {
-        if (!strncmp(arg, "--tokenize=", 11))
+        if (!strncmp(arg, "--type=", 7))
         {
-            if (!strcmp(arg, "--tokenize=color"))
-            {
-                command->tok_type = XMQ_CLI_TOKENIZE_COLOR;
-                return true;
-            }
-            else if (!strcmp(arg, "--tokenize=debugtokens"))
+            if (!strcmp(arg, "--type=debugtokens"))
             {
                 command->tok_type = XMQ_CLI_TOKENIZE_DEBUG_TOKENS;
                 return true;
             }
-            else if (!strcmp(arg, "--tokenize=debugcontent"))
+            else if (!strcmp(arg, "--type=debugcontent"))
             {
                 command->tok_type = XMQ_CLI_TOKENIZE_DEBUG_CONTENT;
+                return true;
+            }
+            else if (!strcmp(arg, "--type=terminal"))
+            {
+                command->tok_type = XMQ_CLI_TOKENIZE_TERMINAL;
+                return true;
+            }
+            else if (!strcmp(arg, "--type=html"))
+            {
+                command->tok_type = XMQ_CLI_TOKENIZE_HTML;
+                return true;
+            }
+            else if (!strcmp(arg, "--type=tex"))
+            {
+                command->tok_type = XMQ_CLI_TOKENIZE_TEX;
+                return true;
+            }
+            else if (!strcmp(arg, "--type=location"))
+            {
+                command->tok_type = XMQ_CLI_TOKENIZE_LOCATION;
                 return true;
             }
             else
@@ -577,9 +599,17 @@ int tokenize_input(XMQCliCommand *command)
     XMQParseCallbacks *callbacks = xmqNewParseCallbacks();
 
     switch (command->tok_type) {
-    case XMQ_CLI_TOKENIZE_COLOR:
+    case XMQ_CLI_TOKENIZE_TERMINAL:
         xmqSetupDefaultColors(output_settings, command->dark_mode);
         xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_TERMINAL, command->dark_mode);
+        break;
+    case XMQ_CLI_TOKENIZE_HTML:
+        xmqSetupDefaultColors(output_settings, command->dark_mode);
+        xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_HTML, command->dark_mode);
+        break;
+    case XMQ_CLI_TOKENIZE_TEX:
+        xmqSetupDefaultColors(output_settings, command->dark_mode);
+        xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_TEX, command->dark_mode);
         break;
     case XMQ_CLI_TOKENIZE_DEBUG_TOKENS:
         xmqSetupParseCallbacksDebugTokens(callbacks);
@@ -762,7 +792,7 @@ void prepare_command(XMQCliCommand *c)
         c->out_format = XMQ_CONTENT_XMQ;
         c->render_to = XMQ_RENDER_TEX;
         return;
-    case XMQ_CLI_CMD_TOK:
+    case XMQ_CLI_CMD_TOKENIZE:
         return;
     case XMQ_CLI_CMD_DELETE:
         return;
@@ -790,7 +820,7 @@ bool perform_command(XMQCliCommand *c)
     case XMQ_CLI_CMD_RENDER_HTML:
     case XMQ_CLI_CMD_RENDER_TEX:
         return cmd_to(c);
-    case XMQ_CLI_CMD_TOK:
+    case XMQ_CLI_CMD_TOKENIZE:
         return tokenize_input(c);
     case XMQ_CLI_CMD_DELETE:
         return cmd_delete(c);

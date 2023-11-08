@@ -31,6 +31,11 @@ do
     tests/test_formatting.sh "$PROG" "$OUTPUT" "$i"
 done
 
+for i in tests/json_???_*.test
+do
+    tests/test_json.sh "$PROG" "$OUTPUT" "$i"
+done
+
 for i in tests/backforth_???_*.test
 do
     tests/test_backforth.sh "$PROG" "$OUTPUT" "$i"
@@ -45,3 +50,11 @@ for i in tests/test_???_*.c
 do
     tests/test_program.sh "$LIB" "$OUTPUT" "$i"
 done
+
+if [ -f build/XMQ-1.0-SNAPSHOT.jar ]
+then
+    for i in tests/java/*.java
+    do
+        tests/test_java.sh build/XMQ-1.0-SNAPSHOT.jar "$OUTPUT" "$i"
+    done
+fi

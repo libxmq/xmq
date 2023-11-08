@@ -199,6 +199,12 @@ build/gtkdoc: build/gtkdocentities.ent
 
 .PHONY: all release debug asan test test_release test_debug clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc
 
+pom.xml: pom.xmq
+	xmq pom.xmq to_xml > pom.xml
+
+mvn:
+	mvn package
+
 TODAY:=$(shell date +%Y-%m-%d)
 
 web: $(wildcard web/*) $(wildcard web/resources/*)

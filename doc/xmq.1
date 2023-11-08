@@ -4,85 +4,187 @@
 xmq \- Command-line xmq/htmq/xml/html/json processor
 
 .SH SYNOPSIS
-.B xmq [options]
-.B xmq [options] <file>
-.B xmq [options] <file> ( <command> [cmd-options-args] )+
+\fBxmq\fP [options]
+.br
+\fBxmq\fP [options] <file>
+.br
+\fBxmq\fP [options] <file> ( <\fIcommand\fP> [options] )+
+.br
 
 .SH DESCRIPTION
 
-The xmq tool can extract data from xmq/htmq/xml/html/json files and convert between them.
-It can also pretty print, tidy, compact, colorize, tokenize and apply xslt transforms on xmq/htmq files.
-It can convert input files to xml/html/json files.
+The xmq tool can extract data from xmq/htmq/xml/html/json files and
+convert between them.  It can also pretty print, compact, colorize,
+tokenize, apply xslt transforms and other commands to modify the
+content.
+
+If no commands are provided then xmq executes the command \fIrender_terminal\fP or \fIto_xmq\fP
+depending on whether stdout is a tty or a file/pipe.
+
+Xmq will read from stdin if a single minus \fB-\fP is provided as <file> or if neither <file> nor <command> is provided.
 
 .SH OPTIONS
 
 .TP
-.BR \--color / \-C\ \--mono / \-M
-By default, xmq generates syntax colored output if writing to a terminal.
-You can force it to produce color even if writing to a pipe or a file using --color, and disable color with --mono.
-Colors can be configured with the XMQ_COLORS environment variable (see below).
+.BR \--root=<name>
+Create a root node <name> unless the file starts with a node with this <name> already.
 
 .TP
-.BR \--compact / -c
-By default, xmq pretty-prints the output. Using this option will result in more compact xmq/json output using a single line.
-
-.TP
-.BR \--indent\ n
-Use the given number of spaces for indentation. Default is 4 indentations.
-
-.TP
-.BR \--xmq|--xml|--htmq|--html|--json
-Select input format. The default is to auto detect.
-
-.TP
-.BR \--asxmq|--asxml|--ashtml|-asjson}
-Select output format.
-
-.TP
-.BR \--escape-newlines
-.BR \-l
-Use &#10; instead of actual newlines in xmq quotes.
-
-.TP
-.BR \--escape-non-7bit
-.BR \-e
-Escape all non-7bit chars using entities like  &#160;
-
-.TP
-.BR \--renderto={plain|terminal|tex|html|htmq}
-Render to different targets, default is terminal when writing to a tty, otherwise plain.
-Html/htmq are suitable for inclusion in a web page and tex can be included in (La)TeX documents.
-
-.TP
-.BR \--tokenize=color
-Tokenize only and mark found tokens using ansi color.
+.BR --trim=[none|default|normal|extra|reshuffle}
+When reading the input data, the default setting for xml/html content is to trim whitespace using \fBnormal\fP.
+When reading xmq/htmq/json then default settings is \fBnone\fP since whitespace is explicit in xmq/htmq/json.
+.br
+\fBnone\fP Keep all whitespace as is.
+.br
+\fBdefault\fP Use normal for xml/html and none for xmq/htmq/json.
+.br
+\fBnormal\fP Remove leading ending whitespace and incindental indentation.
+.br
+\fBextra\fP Like normal but also squeeze multiple consecutive whitespaces int a single whitespace.
+.br
+\fBreshuffle\fP Like extra but also move words between lines to shrink line width.
 
 .TP
 .BR \--version
 Output the xmq version and exit with zero.
 
-.SH EXAMPLES
 .TP
+.BR \--xmq|--htmq|--xml|--html|--json
+The input format is normally auto detected but you can force the input format here.
 
-Pretty print an xmq/xml/json document as xmq.
+.SH COMMANDS
 
+.TP
+\fIto_xmq\fP / \fIto_htmq\fP
+Write the content as xmq/htmq on stdout. If stdout is a tty, then this command behaves as \fIrender_terminal\fP.
+
+.br
+\fB--compact\fP By default, \fIto_xmq\fP pretty-prints the output. Using this option will result in a single line compact xmq/htmq.
+
+.br
+\fB--indent=n\fP Use the given number of spaces for indentation. Default is 4.
+
+.br
+\fB--escape-newlines\fP Use the entity \fI&#10;\fP instead of actual newlines in xmq quotes. This is automatic in compact mode.
+
+\fB--escape-non-7bit\fP Escape all non-7bit chars using entities like \fI&#160;\fP.
+
+.TP
+\fIto_xml\fP/\fIto_html\FP/\fIto_json\fP
+Write the content as xml/html/json on stdout.
+
+.TP
+\fIrender_terminal\fP / \fIrender_html\fP / \fIrender_tex\fP
+This command will render the content as xmq/htmq for presentation at a terminal, as html or as LaTeX.
+
+.br
+\fB--color / --mono\fP By default, xmq generates syntax colored output if writing to a terminal.
+You can force it to produce color even if writing to a pipe or a file using --color, and disable color with --mono.
+Colors can be configured with the XMQ_COLORS environment variable (see below).
+
+.br
+\fB--lightbg / --darkbg\fP Use a colorscheme suitable for a light background or a dark background.
+
+.br
+\fB--nostyle\fP Do not output html/tex preamble/postamble.
+
+.br
+\fB--onlystyle\fP Output only the html/tex preamble.
+
+You can also use \fB--compact\fP, \fB--indent=n\fP, \fB--escape-newlines\fP and \fB--escape-non-7bit\fP with the render commands.
+
+.TP
+\fItokenize\fP
+Do not create a DOM tree for the content, just tokenize the input. Each token can be printed using colors for terminal/html/tex or with location information or with debug information. Location information is useful for editors to get help on syntax highlighting.
+
+.br
+\fB--type=[location|terminal|tex|debugtokens|debugcontent]\fP
+
+.TP
+\fIselect\fP / \fIdelete\fP
+Select or delete nodes in the DOM.
+
+.br
+\fB--xpath=<xpath-expression>\fP Select or delete nodes matching this xpath expression.
+
+.br
+\fB--entity=<entity-name>\fP Select or delete entity nodes matching this name.
+
+.TP
+\fIreplace\fP\fP
+Replace parts of the DOM.
+
+.br
+\fB--xpath=<xpath-expression>\fP Replace nodes matching this xpath expression.
+
+.br
+\fB--entity=<entity-name>\fP Replace entity nodes matching this name.
+
+.br
+\fB--text=<text>\fP Replace with this text. The text is safely quoted for insertion into the document.
+
+.br
+\fB--textfile=<file-name>\fP Replace with the text from this file. The text is safely quoted for insertion into the document.
+
+.br
+\fB--file=<file-name>\fP Replace with the content of this file which has to be proper xmq/htmq/xml/html/json.
+
+.TP
+\fItransform\fP\fP
+Transform the document using xslt. The xslt can of course be provided in xmq format.
+
+.br
+\fB--file=<xslt-file-name>\fP Use this style sheet to transform the document.
+
+.SH EXAMPLES
+
+.TP
+Pretty print a document as xmq to the terminal using colors.
+
+.br
 % xmq file.xmq
+.br
 % xmq-less file.xml
+.br
 % xmq file.json
 
-Replace nodes:
+.TP
+Delete nodes and pretty print.
 
-% xmq input.xml replace --entity=Greeting --text='howdy' replace --entity=Page --xmqfile=pagecontent.xmq
-% xmq input.xml replace --xpath=//div --xmqfile=newdivs.xmq
-
-Delete nodes:
-
+.br
 % xmq input.xml delete --entity=Greeting
-% xmq input.xml delete --xpath=//div
+.br
+% xmq-less input.html delete --xpath=//script to_html
+.br
+% xmq-less input.html delete --xpath=//script render_terminal
 
-Select nodes:
+.TP
+Replace nodes and print.
 
+.br
+% xmq input.xml \\
+.br
+    replace --entity=Greeting --text='howdy' \\
+.br
+    replace --entity=Page --file=pagecontent.xmq
+.br
+% xmq input.xml replace --xpath=//div --file=newdiv.xmq
+
+.TP
+Select nodes and print.
+
+.br
 % xmq input.xml select --xpath=//button
+
+.TP
+Transform document.
+
+.br
+% xmq input.xmq transform --xslt=toweb.xsltq to_html > index.html
+.br
+% xmq data.json replace --xpath=//work --textfile=work.txt \\
+.br
+                transform --xslt=restructure.xsltq to_json > work.json
 
 .SH AUTHOR
 Written by Fredrik Öhrström.
@@ -91,7 +193,3 @@ Written by Fredrik Öhrström.
 Copyright \(co 2018-2023 Fredrik Öhrström.
 .br
 License MIT
-.br
-This is free software: you are free to change and redistribute it.
-.br
-There is NO WARRANTY, to the extent permitted by law.

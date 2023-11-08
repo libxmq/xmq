@@ -1,0 +1,35 @@
+project(xsi:schemaLocation = 'http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd'
+        xmlns              = http://maven.apache.org/POM/4.0.0
+        xmlns:xsi          = http://www.w3.org/2001/XMLSchema-instance)
+{
+    modelVersion = 4.0.0
+    properties {
+        project.build.sourceEncoding = UTF-8
+        maven.compiler.source        = 17
+        maven.compiler.target        = 17
+    }
+    groupId    = org.libxmq
+    artifactId = XMQ
+    version    = 1.0-SNAPSHOT
+    build {
+        directory = build
+        plugins {
+            plugin {
+                groupId    = org.apache.maven.plugins
+                artifactId = maven-compiler-plugin
+                version    = 3.8.0
+                configuration {
+                    release = 17
+                }
+            }
+        }
+    }
+    dependencies {
+        dependency {
+            groupId    = junit
+            artifactId = junit
+            version    = 4.13.1
+            scope      = test
+        }
+    }
+}

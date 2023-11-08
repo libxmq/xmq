@@ -472,7 +472,6 @@ void print_white_spaces(XMQPrintState *ps, int n);
 void print_all_whitespace(XMQPrintState *ps, const char *start, const char *stop, Level level);
 
 void print_nodes(XMQPrintState *ps, xmlNode *from, xmlNode *to, size_t align);
-
 void print_node(XMQPrintState *ps, xmlNode *node, size_t align);
 void print_entity_node(XMQPrintState *ps, xmlNode *node);
 void print_content_node(XMQPrintState *ps, xmlNode *node);
@@ -480,13 +479,10 @@ void print_comment_node(XMQPrintState *ps, xmlNode *node);
 void print_doctype(XMQPrintState *ps, xmlNode *node);
 void print_key_node(XMQPrintState *ps, xmlNode *node, size_t align);
 void print_leaf_node(XMQPrintState *ps, xmlNode *node);
-
 void print_element_with_children(XMQPrintState *ps, xmlNode *node, size_t align);
-
 size_t print_element_name_and_attributes(XMQPrintState *ps, xmlNode *node);
 void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align);
 void print_attributes(XMQPrintState *ps, xmlNodePtr node);
-
 void print_value(XMQPrintState *ps, xmlNode *node, Level level);
 void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level);
 void print_value_internal(XMQPrintState *ps, xmlNode *node, Level level);
@@ -495,6 +491,18 @@ size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *sto
 size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...);
 size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop);
 void print_quote(XMQPrintState *ps, XMQColor c, const char *start, const char *stop);
+
+void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
+void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node);
+void json_print_value(XMQPrintState *ps, xmlNode *container, xmlNode *node, Level level);
+void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node);
+void json_print_element_with_children(XMQPrintState *ps, xmlNode *container, xmlNode *node);
+void json_print_key_node(XMQPrintState *ps, xmlNode *container, xmlNode *node);
+
+void json_check_comma_before_key(XMQPrintState *ps);
+void json_print_comma(XMQPrintState *ps);
+bool json_is_number(const char *start, const char *stop);
+bool json_is_keyword(const char *start, const char *stop);
 
 // DEFINITIONS ///////////////////////////////////////////////////////////////////////////////
 
@@ -4161,7 +4169,6 @@ inline size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *
 /**
    print_utf8_internal: Print a single string
    ps: The print state.
-   num_utf8: If non-zero then print this number of complete utf8 chars.
    start: Points to bytes to be printed.
    stop: Points to byte after last byte to be printed. If NULL then assume start is null-terminated.
 
@@ -4217,7 +4224,6 @@ size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *sto
    print_utf8:
    @ps: The print state.
    @c:  The color.
-   @num_utf8:  Number of unicode chars to print. If 0 print all between start and stop.
    @num_pairs:  Number of start, stop pairs.
    @start: First utf8 byte to print.
    @stop: Points to byte after the last utf8 content.
@@ -5145,6 +5151,24 @@ void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
     xmlBufferFree(buffer);
 }
 
+void xmq_print_json(XMQDoc *doq, XMQOutputSettings *output_settings)
+{
+    void *first = doq->docptr_.xml->children;
+    if (!doq || !first) return;
+    void *last = doq->docptr_.xml->last;
+
+    XMQPrintState ps = {};
+    ps.doq = doq;
+    if (output_settings->compact) output_settings->escape_newlines = true;
+    ps.output_settings = output_settings;
+    assert(output_settings->content.write);
+
+    XMQWrite write = output_settings->content.write;
+    void *writer_state = output_settings->content.writer_state;
+
+    json_print_nodes(&ps, NULL, (xmlNode*)first, (xmlNode*)last);
+}
+
 void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *output_settings)
 {
     void *first = doq->docptr_.xml->children;
@@ -5186,6 +5210,12 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
     if (output_settings->output_format == XMQ_CONTENT_HTML)
     {
         xmq_print_html(doq, output_settings);
+        return;
+    }
+
+    if (output_settings->output_format == XMQ_CONTENT_JSON)
+    {
+        xmq_print_json(doq, output_settings);
         return;
     }
 
@@ -6075,7 +6105,7 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
     }
 
     // Ok, normal content to be quoted. However we might need to split the content
-    // at chars that need to be replaced withcharacter entities. Normally no
+    // at chars that need to be replaced with character entities. Normally no
     // chars need to be replaced. But in compact mode, the \n newlines are replaced with &#10;
     // Also one can replace all non-ascii chars with their entities if so desired.
     bool compact = ps->output_settings->compact;
@@ -6106,7 +6136,7 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
 }
 
 /**
-   print_value:
+   print_value_internal:
    @ps: Print state.
    @node: Text node to be printed.
    @level: Printing node, key_value, kv_compound, attr_value, av_compound
@@ -6161,19 +6191,6 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
         if (non7bit && c > 126) return true;
     }
     return false;
-}
-
-/**
-    print_attribute_value:
-
-    Take the input and create an indented xmq quote using the XMQQuoteSettings.
-
-    Supply indent 0 to place the starting quote ' char first on the line.
-    Supply indent is 1 to get a single space before the starting quote ' char.
-    As a special case, if you want the content to have 0 indent, use indent = -1.
-*/
-void print_attribute_value(XMQPrintState *ps, xmlAttr *attr)
-{
 }
 
 void print_value(XMQPrintState *ps, xmlNode *node, Level level)
@@ -7144,4 +7161,220 @@ xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop)
     xmlFreeDoc(doc);
 
     return dtd;
+}
+
+void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to)
+{
+    xmlNode *i = from;
+
+    while (i)
+    {
+        json_print_node(ps, container, i);
+        i = xml_next_sibling(i);
+    }
+}
+
+void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node)
+{
+    // Standalone quote must be quoted: 'word' 'some words'
+    if (is_content_node(node))
+    {
+        json_print_value(ps, container, node, LEVEL_XMQ);
+        return;
+    }
+/*
+    // This is an entity reference node. &something;
+    if (is_entity_node(node))
+    {
+        return json_print_entity_node(ps, node);
+    }
+
+    // This is a comment // or /* ...
+    if (is_comment_node(node))
+    {
+        return json_print_comment_node(ps, node);
+    }
+
+    // This is doctype node.
+    if (is_doctype_node(node))
+    {
+        return json_print_doctype(ps, node);
+    }
+
+    // This is a node with no children, ie br
+    if (is_leaf_node(node))
+    {
+        return json_print_leaf_node(ps, node);
+    }
+*/
+    // This is a key = value or key = 'value value' node and there are no attributes.
+    if (is_key_value_node(node))
+    {
+        return json_print_key_node(ps, container, node);
+    }
+
+    // All other nodes are printed
+    json_print_element_with_children(ps, container, node);
+}
+
+void json_print_value(XMQPrintState *ps, xmlNode *container, xmlNode *node, Level level)
+{
+    XMQOutputSettings *output_settings = ps->output_settings;
+    XMQWrite write = output_settings->content.write;
+    void *writer_state = output_settings->content.writer_state;
+    const char *content = xml_element_content(node);
+
+    if (!xml_next_sibling(node) &&
+        (json_is_number(xml_element_content(node), NULL)
+         || json_is_keyword(xml_element_content(node), NULL)))
+    {
+        // This is a number(123), true,false or null.
+        write(writer_state, xml_element_content(node), NULL);
+        ps->last_char = content[strlen(content)-1];
+    }
+    else
+    {
+        print_utf8(ps, COLOR_none, 1, "\"", NULL);
+
+        for (xmlNode *i = node; i; i = xml_next_sibling(i))
+        {
+            if (is_entity_node(i))
+            {
+                write(writer_state, "&", NULL);
+                write(writer_state, i->name, NULL);
+                write(writer_state, ";", NULL);
+            }
+            else
+            {
+                write(writer_state, xml_element_content(node), NULL);
+            }
+        }
+
+        print_utf8(ps, COLOR_none, 1, "\"", NULL);
+        ps->last_char = '"';
+    }
+}
+
+void json_print_element_with_children(XMQPrintState *ps,
+                                      xmlNode *container,
+                                      xmlNode *node)
+{
+    if (container)
+    {
+        // We have a containing node, then we can print this using "name" : { ... }
+        json_check_comma_before_key(ps);
+        json_print_element_name(ps, container, node);
+        print_utf8(ps, COLOR_none, 1, ":", NULL);
+    }
+
+    void *from = xml_first_child(node);
+    void *to = xml_last_child(node);
+
+    print_utf8(ps, COLOR_brace_left, 1, "{", NULL);
+    ps->last_char = '{';
+
+    ps->line_indent += ps->output_settings->add_indent;
+
+    if (!container)
+    {
+        // Top level object or object inside array.
+        json_check_comma_before_key(ps);
+        print_utf8(ps, COLOR_none, 1, "\"_\":", NULL);
+        ps->last_char = ':';
+        json_print_element_name(ps, container, node);
+    }
+    while (xml_prev_sibling((xmlNode*)from)) from = xml_prev_sibling((xmlNode*)from);
+    assert(from != NULL);
+
+    json_print_nodes(ps, node, (xmlNode*)from, (xmlNode*)to);
+
+    ps->line_indent -= ps->output_settings->add_indent;
+
+    print_utf8(ps, COLOR_brace_right, 1, "}", NULL);
+    ps->last_char = '}';
+}
+
+void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node)
+{
+    const char *name = (const char*)node->name;
+    const char *prefix = NULL;
+
+    if (node->ns && node->ns->prefix)
+    {
+        prefix = (const char*)node->ns->prefix;
+    }
+
+    print_utf8(ps, COLOR_none, 1, "\"", NULL);
+
+    if (prefix)
+    {
+        print_utf8(ps, COLOR_none, 1, prefix, NULL);
+        print_utf8(ps, COLOR_none, 1, ":", NULL);
+    }
+
+    print_utf8(ps, COLOR_none, 1, name, NULL);
+
+    print_utf8(ps, COLOR_none, 1, "\"", NULL);
+
+    ps->last_char = '"';
+    /*
+    if (xml_first_attribute(node) || xml_first_namespace_def(node))
+    {
+        print_utf8(ps, COLOR_apar_left, 1, "(", NULL);
+        print_attributes(ps, node);
+        print_utf8(ps, COLOR_apar_right, 1, ")", NULL);
+    }
+    */
+}
+
+void json_print_key_node(XMQPrintState *ps,
+                         xmlNode *container,
+                         xmlNode *node)
+{
+    json_check_comma_before_key(ps);
+
+    json_print_element_name(ps, container, node);
+
+    print_utf8(ps, COLOR_equals, 1, ":", NULL);
+
+    json_print_value(ps, container, xml_first_child(node), LEVEL_ELEMENT_VALUE);
+}
+
+void json_check_comma_before_key(XMQPrintState *ps)
+{
+    char c = ps->last_char;
+    if (c == 0) return;
+
+    if (c != '{')
+    {
+        json_print_comma(ps);
+    }
+}
+
+void json_print_comma(XMQPrintState *ps)
+{
+    XMQOutputSettings *output_settings = ps->output_settings;
+    XMQColoring *coloring = &output_settings->coloring;
+    XMQWrite write = output_settings->content.write;
+    void *writer_state = output_settings->content.writer_state;
+    write(writer_state, ",", NULL);
+    ps->current_indent ++;
+}
+
+bool json_is_number(const char *start, const char *stop)
+{
+    for (const char *i = start; *i && (stop == NULL || i < stop); ++i)
+    {
+        char c = *i;
+        if (c < '0' || c > '9')  return false;
+    }
+    return true;
+}
+
+bool json_is_keyword(const char *start, const char *stop)
+{
+    if (!strcmp(start, "true")) return true;
+    if (!strcmp(start, "false")) return true;
+    if (!strcmp(start, "null")) return true;
+    return false;
 }
