@@ -43,7 +43,7 @@ ifeq ($(TYPE),)
     $(error You must specify "make release" or "make debug")
 endif
 
-$(shell mkdir -p $(OUTPUT_ROOT)/$(TYPE)/parts)
+$(shell mkdir -p $(OUTPUT_ROOT)/$(TYPE)/parts $(SRC_ROOT)/dist)
 
 SUPRE=
 SUPOST=
@@ -178,10 +178,6 @@ $(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS)
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 endif
 
-$(SRC_ROOT)/src/main/c/xmq.c: $(filter-out testinternal.c, $(PARTSSOURCES))
-	$(VERBOSE)$(SRC_ROOT)/scripts/build_xmq_from_parts.sh $@
-	@echo "Built xmqc from parts"
-
 $(OUTPUT_ROOT)/$(TYPE)/testinternals: $(TESTINTERNALS_OBJS)
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
 	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(TESTINTERNALS_OBJS) \
@@ -209,6 +205,20 @@ BINARIES:=$(OUTPUT_ROOT)/$(TYPE)/libxmq.a \
           $(OUTPUT_ROOT)/$(TYPE)/testinternals \
           $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals
 
+
+$(SRC_ROOT)/dist/xmq.h: $(SRC_ROOT)/src/main/c/xmq.h
+	@cp $< $@
+	@echo "Copied dist/xmq.h"
+
+$(SRC_ROOT)/dist/xmq.c: $(SRC_ROOT)/src/main/c/xmq.c
+	$(VERBOSE)$(SRC_ROOT)/scripts/build_xmq_from_parts.sh $(OUTPUT_ROOT) $<
+	$(VERBOSE)cp $(OUTPUT_ROOT)/xmq-in-progress $(SRC_ROOT)/dist/xmq.c
+	@echo "Generated dist/xmq.c"
+
+GENSRC:=$(SRC_ROOT)/dist/xmq.h \
+		$(SRC_ROOT)/dist/xmq.c
+
+
 ifeq ($(CLEAN),clean)
 # Clean!
 release debug asan:
@@ -217,7 +227,7 @@ release debug asan:
 	rm -f $(OUTPUT_ROOT)/$(TYPE)/generated_filetypes.h
 else
 # Build!
-release debug asan: $(BINARIES) $(EXTRA_LIBS)
+release debug asan: $(BINARIES) $(GENSRC) $(EXTRA_LIBS)
 ifeq ($(PLATFORM),winapi)
 	cp $(OUTPUT_ROOT)/$(TYPE)/xmq $(OUTPUT_ROOT)/$(TYPE)/xmq.exe
         cp $(OUTPUT_ROOT)/$(TYPE)/testinternals $(OUTPUT_ROOT)/$(TYPE)/testinternals.exe
