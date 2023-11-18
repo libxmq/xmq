@@ -51,6 +51,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // PART HEADERS //////////////////////////////////////////////////
 
 #include"parts/utils.h"
+#include"parts/hashmap.h"
 #include"parts/membuffer.h"
 #include"parts/stack.h"
 
@@ -467,6 +468,7 @@ void json_print_leaf_node(XMQPrintState *ps, xmlNode *container, xmlNode *node);
 // PARTS CODE ////////////////////////////////////////////////////////////////////////////////
 
 #include"parts/utils.c"
+#include"parts/hashmap.c"
 #include"parts/membuffer.c"
 #include"parts/stack.c"
 
