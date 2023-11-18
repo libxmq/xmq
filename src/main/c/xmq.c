@@ -293,6 +293,7 @@ void push_stack(Stack *s, void *);
 size_t size_stack();
 void *pop_stack(Stack *s);
 
+
 // UTF8 functions /////////////////
 
 bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
@@ -7177,6 +7178,7 @@ void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlN
 
 void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node)
 {
+
     // Standalone quote must be quoted: 'word' 'some words'
     if (is_content_node(node))
     {

@@ -477,7 +477,6 @@ beta
 
 void test_stack()
 {
-    /*
     Stack *stack = new_stack();
     push_stack(stack, (void*)42);
     assert(stack->size == 1);
@@ -487,8 +486,9 @@ void test_stack()
         all_ok_ = false;
     }
     free_stack(stack);
-    */
 }
+
+
 /*
 void test_quotec(int indent,
                  char *in,
