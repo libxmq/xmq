@@ -77,6 +77,7 @@ help:
 	@echo "       make release linux64"
 
 BUILDDIRS:=$(dir $(realpath $(wildcard build/*/spec.mk)))
+FIRSTDIR:=$(word 1,$(BUILDDIRS))
 
 ifeq (,$(BUILDDIRS))
     ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
@@ -117,6 +118,11 @@ asan:
 lcov:
 	@echo Generating code coverage $(words $(BUILDDIRS)) host\(s\).
 	@for x in $(BUILDDIRS); do echo; echo Bulding $$(basename $$x) ; $(MAKE) --no-print-directory -C $$x debug lcov ; done
+
+dist:
+	@$(MAKE) --no-print-directory -C $(FIRSTDIR) release $(shell pwd)/dist/xmq.c $(shell pwd)/dist/xmq.h
+
+.PHONY: dist
 
 test: test_release
 testd: test_debug

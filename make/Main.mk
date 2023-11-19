@@ -91,7 +91,7 @@ else
 $(shell rm $(OUTPUT_ROOT)/$(TYPE)/version.h.tmp)
 endif
 
-$(info Building $(VERSION))
+#(info Building $(VERSION))
 
 VERBOSE?=@
 
@@ -215,10 +215,6 @@ $(SRC_ROOT)/dist/xmq.c: $(SRC_ROOT)/src/main/c/xmq.c
 	$(VERBOSE)cp $(OUTPUT_ROOT)/xmq-in-progress $(SRC_ROOT)/dist/xmq.c
 	@echo "Generated dist/xmq.c"
 
-GENSRC:=$(SRC_ROOT)/dist/xmq.h \
-		$(SRC_ROOT)/dist/xmq.c
-
-
 ifeq ($(CLEAN),clean)
 # Clean!
 release debug asan:
@@ -227,7 +223,7 @@ release debug asan:
 	rm -f $(OUTPUT_ROOT)/$(TYPE)/generated_filetypes.h
 else
 # Build!
-release debug asan: $(BINARIES) $(GENSRC) $(EXTRA_LIBS)
+release debug asan: $(BINARIES) $(EXTRA_LIBS)
 ifeq ($(PLATFORM),winapi)
 	cp $(OUTPUT_ROOT)/$(TYPE)/xmq $(OUTPUT_ROOT)/$(TYPE)/xmq.exe
         cp $(OUTPUT_ROOT)/$(TYPE)/testinternals $(OUTPUT_ROOT)/$(TYPE)/testinternals.exe

@@ -2,6 +2,11 @@
 #include"xmq.h"
 
 #include<stdio.h>
+#include<string.h>
+
+void expect(const char *s, const char *e);
+void expect_int(int32_t i, int32_t e);
+void expect_double(double d, double e);
 
 int main(int argc, char **argv)
 {
@@ -10,17 +15,50 @@ int main(int argc, char **argv)
 
     bool ok = xmqParseFile(doc, file, "car");
     if (!ok) {
-        printf("Could not load file %s.\n", file);
+        printf("Parse error in %s\n%s",
+               file,
+               xmqDocError(doc));
         return 1;
     }
     const char *model = xmqGetString(doc, NULL, "/car/model");
-    int32_t speed = xmqGetInt(doc, NULL, "/car/speed");
+    int32_t num_wheels = xmqGetInt(doc, NULL, "/car/num_wheels");
     double weight = xmqGetDouble(doc, NULL, "/car/weight");
-    const char *registration = xmqGetString(doc, NULL, "/car/registration");
+    const char *not_found = xmqGetString(doc, NULL, "/car/not_found");
     const char *color = xmqGetString(doc, NULL, "/car/color");
     const char *history = xmqGetString(doc, NULL, "/car/history");
+
+    expect(model, "EsCarGo");
+    expect_int(num_wheels, 36);
+    expect_double(weight, 999.123);
 
     xmqFreeDoc(doc);
 
     return ok ? 0 : 1;
+}
+
+void expect(const char *s, const char *e)
+{
+    if (strcmp(s, e))
+    {
+        printf("Expected %s but got %s\n", e, s);
+        exit(1);
+    }
+}
+
+void expect_int(int32_t i, int32_t e)
+{
+    if (i != e)
+    {
+        printf("Expected %d but got %d\n", e, i);
+        exit(1);
+    }
+}
+
+void expect_double(double d, double e)
+{
+    if (d != e)
+    {
+        printf("Expected %f but got %f\n", e, d);
+        exit(1);
+    }
 }

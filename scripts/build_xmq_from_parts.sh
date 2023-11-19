@@ -33,6 +33,7 @@ do_part() {
 }
 
 do_part utils
+do_part json
 do_part membuffer
 do_part stack
 do_part hashmap

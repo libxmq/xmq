@@ -58,3 +58,5 @@ then
         tests/test_java.sh build/XMQ-1.0-SNAPSHOT.jar "$OUTPUT" "$i"
     done
 fi
+
+tests/test_dist.sh

@@ -1,0 +1,10 @@
+car {
+    model = 'EsCarGo'
+    num_wheels = 36
+    weight = 999.123
+    registration = 'abc 123'
+    quote = '''The 'slowest' "car" ´ever´  `sold`'''
+    history = '1911 Founded
+               1936 First car sold
+               1977 Second car sold'
+}
