@@ -1,8 +1,9 @@
 #!/bin/bash
 
-ROOT=$(pwd)
+SPEC="$1"
+. $SPEC
 
-rm -f $ROOT/dist/xmq.c $ROOT/dist/xmq.h
+rm -f $SRC_ROOT/dist/xmq.c $SRC_ROOT/dist/xmq.h
 make dist
 cd dist
 make

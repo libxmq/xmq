@@ -276,6 +276,7 @@ AC_SUBST(LDFLAGSBEGIN_asan)
 AC_SUBST(LDFLAGSEND_asan)
 
 AC_CONFIG_FILES([$OUTPUT_ROOT/spec.mk:$SRC_ROOT/autoconf/spec.mk.in])
+AC_CONFIG_FILES([$OUTPUT_ROOT/spec.inc:$SRC_ROOT/autoconf/spec.inc.in])
 AC_CONFIG_FILES([$OUTPUT_ROOT/Makefile:$SRC_ROOT/make/Makefile.in])
 # Make sure config.status ends up in the build directory instead of the src root.
 CONFIG_STATUS="$OUTPUT_ROOT/config.status"

@@ -4,6 +4,16 @@
 BUILD=$1
 OUTPUT=$2
 
+SPEC=$(dirname $1)/spec.inc
+if [ ! -f "$SPEC" ]
+then
+    echo "Cannot find spec.inc file: $SPEC"
+    echo "Please run configure."
+    exit 1
+fi
+
+. $SPEC
+
 PROG=$1/xmq
 LIB=$1/libxmq.so
 
@@ -59,4 +69,7 @@ then
     done
 fi
 
-tests/test_dist.sh
+if [ "$CONF_MNEMONIC" = "linux64" ]
+then
+    tests/test_dist.sh $SPEC
+fi

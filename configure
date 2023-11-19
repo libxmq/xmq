@@ -4208,6 +4208,8 @@ LDFLAGSEND_asan=""
 
 ac_config_files="$ac_config_files $OUTPUT_ROOT/spec.mk:$SRC_ROOT/autoconf/spec.mk.in"
 
+ac_config_files="$ac_config_files $OUTPUT_ROOT/spec.inc:$SRC_ROOT/autoconf/spec.inc.in"
+
 ac_config_files="$ac_config_files $OUTPUT_ROOT/Makefile:$SRC_ROOT/make/Makefile.in"
 
 # Make sure config.status ends up in the build directory instead of the src root.
@@ -4900,6 +4902,7 @@ do
   case $ac_config_target in
     "${OUTPUT_ROOT}/config.h") CONFIG_HEADERS="$CONFIG_HEADERS ${OUTPUT_ROOT}/config.h:autoconf/config.h.in" ;;
     "$OUTPUT_ROOT/spec.mk") CONFIG_FILES="$CONFIG_FILES $OUTPUT_ROOT/spec.mk:$SRC_ROOT/autoconf/spec.mk.in" ;;
+    "$OUTPUT_ROOT/spec.inc") CONFIG_FILES="$CONFIG_FILES $OUTPUT_ROOT/spec.inc:$SRC_ROOT/autoconf/spec.inc.in" ;;
     "$OUTPUT_ROOT/Makefile") CONFIG_FILES="$CONFIG_FILES $OUTPUT_ROOT/Makefile:$SRC_ROOT/make/Makefile.in" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
