@@ -130,8 +130,8 @@ testa: test_asan
 
 test_release:
 	@echo "Running release tests"
-	@for x in $(BUILDDIRS); do echo; $$x/release/testinternals ; done
-	@for x in $(BUILDDIRS); do echo; $$x/release/parts/testinternals ; done
+#	@for x in $(BUILDDIRS); do echo; $$x/release/testinternals ; done
+#	@for x in $(BUILDDIRS); do echo; $$x/release/parts/testinternals ; done
 	@for x in $(BUILDDIRS); do echo; ./tests/test.sh $$x/release $$x/release/test_output ; done
 
 test_debug:

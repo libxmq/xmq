@@ -586,7 +586,7 @@ void print_help_and_exit()
 
 void print_version_and_exit()
 {
-    printf("xmq: %s\n%s\n", xmqVersion(), xmqCommit());
+    printf("xmq: %s\n", xmqVersion());
     exit(0);
 }
 

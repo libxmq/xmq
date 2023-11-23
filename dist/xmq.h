@@ -692,13 +692,6 @@ int xmqReplaceEntityWithNode(XMQDoc *doq, const char *entity, XMQDoc *idoq, XMQN
 const char *xmqVersion();
 
 /**
-    xmqCommit:
-
-    Return the git commit used to build this library.
-*/
-const char *xmqCommit();
-
-/**
     xmqSetVerbose:
 
     Enable/Disable verbose logging.

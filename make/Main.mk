@@ -40,7 +40,7 @@ STRIP_COMMAND:=true
 endif
 
 ifeq ($(TYPE),)
-    $(error You must specify "make release" or "make debug")
+    $(error You must specify "make release" or "make debug" or "make asan")
 endif
 
 $(shell mkdir -p $(OUTPUT_ROOT)/$(TYPE)/parts $(SRC_ROOT)/dist)
@@ -143,13 +143,13 @@ $(OUTPUT_ROOT)/$(TYPE)/fileinfo.o: $(OUTPUT_ROOT)/generated_filetypes.h
 
 $(OUTPUT_ROOT)/$(TYPE)/%.o: $(SRC_ROOT)/src/main/c/%.c
 	@echo Compiling $(TYPE) $(CONF_MNEMONIC) $$(basename $<)
-	$(VERBOSE)$(CC) -fpic -g $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c -o $@
-	$(VERBOSE)$(CC) -E $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c > $@.source
+	$(VERBOSE)$(CC) -fpic -g $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c -o $@
+	$(VERBOSE)$(CC) -E $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c > $@.source
 
 $(OUTPUT_ROOT)/$(TYPE)/parts/%.o: $(SRC_ROOT)/src/main/c/parts/%.c
 	@echo Compiling part $(TYPE) $(CONF_MNEMONIC) $$(basename $<)
-	$(VERBOSE)$(CC) -fpic -g $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c -o $@
-	$(VERBOSE)$(CC) -E $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c > $@.source
+	$(VERBOSE)$(CC) -fpic -g $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c -o $@
+	$(VERBOSE)$(CC) -E $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c > $@.source
 
 ifneq ($(PLATFORM),WINAPI)
 $(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(POSIX_OBJS)

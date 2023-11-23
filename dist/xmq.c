@@ -24,27 +24,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"xmq.h"
 
 #define VERSION "1"
-#define COMMIT "xxyyxx"
-
-#include<assert.h>
-#include<ctype.h>
-#include<errno.h>
-#include<math.h>
-#include<setjmp.h>
-#include<stdarg.h>
-#include<stdbool.h>
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-#include<unistd.h>
-
-#include<libxml/tree.h>
-#include<libxml/parser.h>
-#include<libxml/HTMLparser.h>
-#include<libxml/HTMLtree.h>
-#include<libxml/xmlreader.h>
-#include<libxml/xpath.h>
-#include<libxml/xpathInternals.h>
 
 #define BUILDING_XMQ
 
@@ -73,14 +52,6 @@ void hashmap_remove(HashMap* map, const char* key);
 void hashmap_free(HashMap* map);
 
 #define HASHMAP_MODULE
-
-// PARTS JSON ////////////////////////////////////////
-
-#include"xmq.h"
-
-bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop);
-
-//define JSON_MODULE
 
 // PARTS MEMBUFFER ////////////////////////////////////////
 
@@ -140,6 +111,86 @@ void *pop_stack(Stack *s);
 
 #define STACK_MODULE
 
+// PARTS XML ////////////////////////////////////////
+
+#include<libxml/tree.h>
+
+xmlNode *xml_first_child(xmlNode *node);
+xmlNode *xml_last_child(xmlNode *node);
+xmlNode *xml_next_sibling(xmlNode *node);
+xmlNode *xml_prev_sibling(xmlNode *node);
+xmlAttr *xml_first_attribute(xmlNode *node);
+xmlAttr *xml_next_attribute(xmlAttr *attr);
+xmlNs *xml_first_namespace_def(xmlNode *node);
+xmlNs *xml_next_namespace_def(xmlNs *ns);
+const char*xml_element_name(xmlNode *node);
+const char*xml_element_content(xmlNode *node);
+const char *xml_element_ns_prefix(const xmlNode *node);
+const char *xml_attr_key(xmlAttr *attr);
+const char* xml_namespace_href(xmlNs *ns);
+bool is_entity_node(const xmlNode *node);
+bool is_content_node(const xmlNode *node);
+bool is_comment_node(const xmlNode *node);
+bool is_doctype_node(const xmlNode *node);
+bool is_element_node(const xmlNode *node);
+bool is_key_value_node(xmlNodePtr node);
+bool is_leaf_node(xmlNode *node);
+bool has_attributes(xmlNodePtr node);
+
+#define XML_MODULE
+
+
+// XMQ STRUCTURES ////////////////////////////////////////////////
+
+// PARTS XMQ_INTERNALS ////////////////////////////////////////
+
+#include<assert.h>
+#include<ctype.h>
+#include<errno.h>
+#include<math.h>
+#include<setjmp.h>
+#include<stdarg.h>
+#include<stdbool.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<unistd.h>
+
+#include"xmq.h"
+// PARTS STACK ////////////////////////////////////////
+
+#include<stdlib.h>
+
+typedef struct StackElement StackElement;
+struct StackElement
+{
+    void *data;
+    StackElement *below; // When this element is popped, below becomes top element.
+};
+
+struct Stack
+{
+    StackElement *bottom;
+    StackElement *top;
+    size_t size;
+};
+typedef struct Stack Stack;
+
+Stack *new_stack();
+void free_stack(Stack *stack);
+void push_stack(Stack *s, void *);
+size_t size_stack();
+void *pop_stack(Stack *s);
+
+#define STACK_MODULE
+
+#include<libxml/tree.h>
+#include<libxml/parser.h>
+#include<libxml/HTMLparser.h>
+#include<libxml/HTMLtree.h>
+#include<libxml/xmlreader.h>
+#include<libxml/xpath.h>
+#include<libxml/xpathInternals.h>
 
 // DEFAULT COLORS ///////////////////////////////////////////////
 
@@ -161,21 +212,7 @@ enum _ColorType
 };
 typedef enum _ColorType ColorType;
 
-const char *color_names[13] = {
-    "xmq_c",
-    "xmq_q",
-    "xmq_e",
-    "xmq_ens",
-    "xmq_en",
-    "xmq_ek",
-    "xmq_ekv",
-    "xmq_ans",
-    "xmq_ak",
-    "xmq_akv",
-    "xmq_cp",
-    "xmq_uw",
-    "xmq_tw",
-};
+extern const char *color_names[13];
 
 // DECLARATIONS /////////////////////////////////////////////////
 
@@ -236,7 +273,6 @@ enum Level {
     LEVEL_ATTR_VALUE_COMPOUND = 4
 };
 typedef enum Level Level;
-
 
 struct XMQParseState
 {
@@ -538,584 +574,6 @@ size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...);
 size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop);
 void print_quote(XMQPrintState *ps, XMQColor c, const char *start, const char *stop);
 
-void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
-void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node);
-void json_print_value(XMQPrintState *ps, xmlNode *container, xmlNode *node, Level level);
-void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node);
-void json_print_element_with_children(XMQPrintState *ps, xmlNode *container, xmlNode *node);
-void json_print_key_node(XMQPrintState *ps, xmlNode *container, xmlNode *node);
-
-void json_check_comma_before_key(XMQPrintState *ps);
-void json_print_comma(XMQPrintState *ps);
-bool json_is_number(const char *start, const char *stop);
-bool json_is_keyword(const char *start, const char *stop);
-void json_print_leaf_node(XMQPrintState *ps, xmlNode *container, xmlNode *node);
-
-// PARTS CODE ////////////////////////////////////////////////////////////////////////////////
-
-// PARTS UTILS_C ////////////////////////////////////////
-
-#ifdef UTILS_MODULE
-
-void check_malloc(void *a)
-{
-    if (!a)
-    {
-        PRINT_ERROR("libxmq: Out of memory!\n");
-        exit(1);
-    }
-}
-
-#endif // UTILS_MODULE
-
-// PARTS HASHMAP_C ////////////////////////////////////////
-
-#ifdef HASHMAP_MODULE
-
-typedef struct HashMapNode_
-{
-    const char *key_;
-    void *val_;
-    struct HashMapNode_ *next_;
-} HashMapNode;
-
-typedef struct HashMap_
-{
-    int size_;
-    int max_size_;
-    HashMapNode** nodes_;
-} HashMap;
-
-size_t hash_code(const char *str)
-{
-    size_t hash = 0;
-    size_t c;
-
-    while (c = *str++)
-    {
-        hash = c + (hash << 6) + (hash << 16) - hash; // sdbm
-        // hash = hash * 33 ^ c; // djb2a
-    }
-
-    return hash;
-}
-
-HashMapNode* hashmap_create_node(const char *key)
-{
-    HashMapNode* new_node = (HashMapNode*) malloc(sizeof(HashMapNode));
-    memset(new_node, 0, sizeof(*new_node));
-    new_node->key_ = key;
-
-    return new_node;
-}
-
-HashMap* hashmap_create(size_t max_size)
-{
-    HashMap* new_table = (HashMap*) malloc(sizeof(HashMap));
-    memset(new_table, 0, sizeof(*new_table));
-
-    new_table->nodes_ = (HashMapNode**)calloc(max_size, sizeof(HashMapNode*));
-    new_table->max_size_ = max_size;
-    new_table->size_ = 0;
-
-    return new_table;
-}
-
-void hashmap_put(HashMap* table, const char* key, void *val)
-{
-    assert(val != NULL);
-
-    size_t index = hash_code(key) % table->max_size_;
-    HashMapNode* slot = table->nodes_[index];
-    HashMapNode* prev_slot = NULL;
-
-    if (!slot)
-    {
-        // No hash in this position, create new node and fill slot.
-        HashMapNode* new_node = hashmap_create_node(key);
-        new_node->val_ = val;
-        table->nodes_[index] = new_node;
-        return;
-    }
-
-    // Look for a match...
-    while (slot)
-    {
-        if (strcmp(slot->key_, key) == 0)
-        {
-            slot->val_ = val;
-            return;
-        }
-        prev_slot = slot;
-        slot = slot->next_;
-    }
-
-    // No matching node found, append to prev_slot
-    HashMapNode* new_node = hashmap_create_node(key);
-    new_node->val_ = val;
-    prev_slot->next_ = new_node;
-    return;
-}
-
-void *hashmap_get(HashMap* table, const char* key)
-{
-    int index = hash_code(key) % table->max_size_;
-    HashMapNode* slot = table->nodes_[index];
-
-    while (slot)
-    {
-        if (!strcmp(slot->key_, key))
-        {
-            return slot->val_;
-        }
-        slot = slot->next_;
-    }
-
-    return NULL;
-}
-
-void hashmap_free(HashMap* table)
-{
-    for (size_t i=0; i < table->max_size_; i++)
-    {
-        HashMapNode* slot = table->nodes_[i];
-        while (slot != NULL)
-        {
-            HashMapNode* tmp = slot;
-            slot = slot ->next_;
-            free(tmp);
-        }
-    }
-
-    free(table->nodes_);
-    free(table);
-}
-
-#endif // HASHMAP_MODULE
-
-// PARTS JSON_C ////////////////////////////////////////
-
-#ifdef JSON_MODULE
-
-void handle_json_whitespace(XMQParseState *state)
-{
-    size_t start_line = state->line;
-    size_t start_col = state->col;
-    const char *start;
-    const char *stop;
-    eat_whitespace(state, &start, &stop);
-    //DO_CALLBACK(whitespace, state, start_line, start_col, start, start_col, start, stop, stop);
-}
-
-void handle_json_quote(XMQParseState *state)
-{
-    const char *start = state->i;
-    int start_line = state->line;
-    int start_col = state->col;
-    const char *content_start;
-    const char *content_stop;
-
-    size_t depth = eat_json_quote(state, &content_start, &content_stop);
-    const char *stop = state->i;
-    size_t content_start_col = start_col+depth;
-    //DO_CALLBACK(content_quote, state, start_line, start_col, start, content_start_col, content_start, content_stop, stop);
-
-}
-
-bool is_json_boolean(XMQParseState *state)
-{
-    const char *i = state->i;
-    const char *stop = state->buffer_stop;
-
-    if (i+4 <= stop && !strncmp("true", i, 4)) return true;
-    if (i+5 <= stop && !strncmp("false", i, 5)) return true;
-    return false;
-}
-
-void eat_json_boolean(XMQParseState *state, const char **content_start, const char **content_stop)
-{
-    const char *i = state->i;
-    const char *stop = state->buffer_stop;
-    size_t line = state->line;
-    size_t col = state->col;
-
-    if (*i == 't')
-    {
-        increment('t', 1, &i, &line, &col);
-        increment('r', 1, &i, &line, &col);
-        increment('u', 1, &i, &line, &col);
-        increment('e', 1, &i, &line, &col);
-    }
-    else
-    {
-        increment('f', 1, &i, &line, &col);
-        increment('a', 1, &i, &line, &col);
-        increment('l', 1, &i, &line, &col);
-        increment('s', 1, &i, &line, &col);
-        increment('e', 1, &i, &line, &col);
-    }
-
-    state->i = i;
-    state->line = line;
-    state->col = col;
-}
-
-void handle_json_boolean(XMQParseState *state)
-{
-    const char *start = state->i;
-    int start_line = state->line;
-    int start_col = state->col;
-    const char *content_start;
-    const char *content_stop;
-
-    eat_json_boolean(state, &content_start, &content_stop);
-    const char *stop = state->i;
-    //DO_CALLBACK(element_value_text, state, start_line, start_col, start, start_col, content_start, content_stop, stop);
-}
-
-bool is_json_number(XMQParseState *state)
-{
-    char c = *state->i;
-
-    return c >= '0' && c <='9';
-}
-
-void eat_json_number(XMQParseState *state, const char **content_start, const char **content_stop)
-{
-    const char *i = state->i;
-    const char *stop = state->buffer_stop;
-    size_t line = state->line;
-    size_t col = state->col;
-
-    while (i < stop)
-    {
-        char c = *i;
-        if (! (c >= '0' && c <= '9')) break;
-        increment(c, 1, &i, &line, &col);
-    }
-
-    state->i = i;
-    state->line = line;
-    state->col = col;
-}
-
-void handle_json_number(XMQParseState *state)
-{
-    const char *start = state->i;
-    int start_line = state->line;
-    int start_col = state->col;
-    const char *content_start;
-    const char *content_stop;
-
-    eat_json_number(state, &content_start, &content_stop);
-    const char *stop = state->i;
-    //DO_CALLBACK(element_value_text, state, start_line, start_col, start, start_col, content_start, content_stop, stop);
-}
-
-bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const char *stop)
-{
-    if (state->magic_cookie != MAGIC_COOKIE)
-    {
-        PRINT_ERROR("Parser state not initialized!\n");
-        assert(0);
-        exit(1);
-    }
-
-    state->buffer_start = start;
-    state->buffer_stop = stop;
-    state->i = start;
-    state->line = 1;
-    state->col = 1;
-    state->error_nr = 0;
-
-    if (state->parse->init) state->parse->init(state);
-
-    if (!setjmp(state->error_handler))
-    {
-        //handle_json_nodes(state);
-        if (state->i < state->buffer_stop)
-        {
-            state->error_nr = XMQ_ERROR_UNEXPECTED_CLOSING_BRACE;
-            longjmp(state->error_handler, 1);
-        }
-    }
-    else
-    {
-        // Error detected
-        PRINT_ERROR("Error while parsing json (errno %d) %s %zu:%zu\n", state->error_nr, state->generated_error_msg, state->line, state->col);
-    }
-
-    if (state->parse->done) state->parse->done(state);
-    return true;
-}
-
-bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop)
-{
-    XMQOutputSettings *output_settings = xmqNewOutputSettings();
-    XMQParseCallbacks *parse = xmqNewParseCallbacks();
-//    xmq_setup_parse_json_callbacks(parse);
-
-    XMQParseState *state = xmqNewParseState(parse, output_settings);
-    state->doq = doq;
-
-    xmlNodePtr root = xmlNewDocNode(state->doq->docptr_.xml, NULL, (const xmlChar *)("_"), NULL);
-    push_stack(state->element_stack, root);
-    xmlDocSetRootElement(state->doq->docptr_.xml, root);
-    state->element_last = state->element_stack->top->data;
-
-    // Tokenize the buffer and invoke the parse callbacks.
-    xmqTokenizeBuffer(state, start, stop);
-
-    xmqFreeParseState(state);
-    xmqFreeParseCallbacks(parse);
-    xmqFreeOutputSettings(output_settings);
-
-    return true;
-}
-
-void handle_json_array(XMQParseState *state)
-{
-    char c = *state->i;
-    assert(c == '[');
-    increment(c, 1, &state->i, &state->line, &state->col);
-
-    DO_CALLBACK_SIM(element_key, state, state->line, state->col, underline, state->col, underline, underline+1, underline+1);
-    DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, state->col, leftpar, leftpar+1, leftpar+1);
-    DO_CALLBACK_SIM(attr_key, state, state->line, state->col, array, state->col, array, array+1, array+1);
-    DO_CALLBACK_SIM(apar_right, state, state->line, state->col, rightpar, state->col, rightpar, rightpar+1, rightpar+1);
-
-    //handle_json_nodes(state);
-
-    c = *state->i;
-    assert(c == ']');
-    increment(c, 1, &state->i, &state->line, &state->col);
-}
-
-void handle_json_nodes(XMQParseState *state)
-{
-    const char *stop = state->buffer_stop;
-
-    while (state->i < stop)
-    {
-        char c = *(state->i);
-
-        if (is_xml_whitespace(c)) handle_json_whitespace(state);
-        else if (is_json_quote_start(c)) handle_json_quote(state);
-        else if (is_json_boolean(state)) handle_json_boolean(state);
-        else if (is_json_number(state)) handle_json_number(state);
-        else if (c == '[') handle_json_array(state);
-        else if (c == ']') break;
-        else
-        {
-            state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
-            longjmp(state->error_handler, 1);
-        }
-    }
-}
-
-void handle_json_node(XMQParseState *state)
-{
-    char c = 0;
-    const char *name = "_";
-    const char *name_start = name;
-    const char *name_stop = name+1;
-
-    const char *start = state->i;
-    int start_line = state->line;
-    int start_col = state->col;
-    eat_xmq_text_name(state, &name_start, &name_stop);
-    const char *stop = state->i;
-}
-
-#else
-
-bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop)
-{
-    return false;
-}
-
-#endif // JSON_MODULE
-
-// PARTS MEMBUFFER_C ////////////////////////////////////////
-
-#ifdef MEMBUFFER_MODULE
-
-/** Allocate a automatically growing membuffer. */
-MemBuffer *new_membuffer()
-{
-    MemBuffer *mb = (MemBuffer*)malloc(sizeof(MemBuffer));
-    check_malloc(mb);
-    memset(mb, 0, sizeof(*mb));
-    return mb;
-}
-
-/** Free the MemBuffer support struct but return the actual contents. */
-char *free_membuffer_but_return_trimmed_content(MemBuffer *mb)
-{
-    char *b = mb->buffer_;
-    b = (char*)realloc(b, mb->used_);
-    free(mb);
-    return b;
-}
-
-void free_membuffer_and_free_content(MemBuffer *mb)
-{
-    if (mb->buffer_) free(mb->buffer_);
-    mb->buffer_ = NULL;
-    free(mb);
-}
-
-size_t pick_buffer_new_size(size_t max, size_t used, size_t add)
-{
-    assert(used <= max);
-    if (used + add > max)
-    {
-        // Increment buffer with 1KiB.
-        max = max + 1024;
-    }
-    if (used + add > max)
-    {
-        // Still did not fit? The add was more than 1 Kib. Lets add that.
-        max = max + add;
-    }
-    assert(used + add <= max);
-
-    return max;
-}
-
-void membuffer_append_region(MemBuffer *mb, const char *start, const char *stop)
-{
-    if (!start) return;
-    if (!stop) stop = start + strlen(start);
-    size_t add = stop-start;
-    size_t max = pick_buffer_new_size(mb->max_, mb->used_, add);
-    if (max > mb->max_)
-    {
-        mb->buffer_ = (char*)realloc(mb->buffer_, max);
-        mb->max_ = max;
-    }
-    memcpy(mb->buffer_+mb->used_, start, add);
-    mb->used_ += add;
-}
-
-void membuffer_append(MemBuffer *mb, const char *start)
-{
-    const char *i = start;
-    char *to = mb->buffer_+mb->used_;
-    const char *stop = mb->buffer_+mb->max_;
-
-    while (*i)
-    {
-        if (to >= stop)
-        {
-            mb->used_ = to - mb->buffer_;
-            size_t max = pick_buffer_new_size(mb->max_, mb->used_, 1);
-            assert(max >= mb->max_);
-            mb->buffer_ = (char*)realloc(mb->buffer_, max);
-            mb->max_ = max;
-            stop = mb->buffer_+mb->max_;
-            to = mb->buffer_+mb->used_;
-        }
-        *to = *i;
-        i++;
-        to++;
-    }
-    mb->used_ = to-mb->buffer_;
-}
-
-void membuffer_append_char(MemBuffer *mb, char c)
-{
-    size_t max = pick_buffer_new_size(mb->max_, mb->used_, 1);
-    if (max > mb->max_)
-    {
-        mb->buffer_ = (char*)realloc(mb->buffer_, max);
-        mb->max_ = max;
-    }
-    memcpy(mb->buffer_+mb->used_, &c, 1);
-    mb->used_ ++;
-}
-
-void membuffer_append_null(MemBuffer *mb)
-{
-    membuffer_append_char(mb, 0);
-}
-
-void membuffer_append_entity(MemBuffer *mb, char c)
-{
-    if (c == ' ') membuffer_append(mb, "&#32;");
-    else if (c == '\n') membuffer_append(mb, "&#10;");
-    else if (c == '\t') membuffer_append(mb, "&#9;");
-    else if (c == '\r') membuffer_append(mb, "&#13;");
-    else
-    {
-        assert(false);
-    }
-}
-
-#endif // MEMBUFFER_MODULE
-
-// PARTS STACK_C ////////////////////////////////////////
-
-#ifdef STACK_MODULE
-
-Stack *new_stack()
-{
-    Stack *s = (Stack*)malloc(sizeof(Stack));
-    memset(s, 0, sizeof(Stack));
-    return s;
-}
-
-void free_stack(Stack *stack)
-{
-    if (!stack) return;
-
-    StackElement *e = stack->top;
-    while (e)
-    {
-        StackElement *next = e->below;
-        free(e);
-        e = next;
-    }
-
-    free(stack);
-}
-
-void push_stack(Stack *stack, void *data)
-{
-    assert(stack);
-    StackElement *element = (StackElement*)malloc(sizeof(StackElement));
-    memset(element, 0, sizeof(StackElement));
-    element->data = data;
-
-    if (stack->top == NULL) {
-        stack->top = stack->bottom = element;
-    }
-    else
-    {
-        element->below = stack->top;
-        stack->top = element;
-    }
-    stack->size++;
-}
-
-void *pop_stack(Stack *stack)
-{
-    assert(stack);
-    assert(stack->top);
-
-    void *data = stack->top->data;
-    StackElement *element = stack->top;
-    stack->top = element->below;
-    free(element);
-    stack->size--;
-    return data;
-}
-
-#endif // STACK_MODULE
-
-
-// DEFINITIONS ///////////////////////////////////////////////////////////////////////////////
-
 typedef void (*XMQContentCallback)(XMQParseState *state,
                                    size_t start_line,
                                    size_t start_col,
@@ -1167,8 +625,6 @@ bool debug_enabled();
 
 void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 
-char ansi_reset_color[] = "\033[0m";
-
 #define NOCOLOR      "\033[0m"
 #define GREEN        "\033[0;32m"
 #define DARK_GREEN   "\033[0;1;32m"
@@ -1189,9 +645,28 @@ char ansi_reset_color[] = "\033[0m";
 #define RED_UNDERLINE  "\033[0;4;31m"
 #define UNDERLINE    "\033[0;1;4m"
 
+void get_color(XMQColoring *coloring, XMQColor c, const char **pre, const char **post);
+
+
+// FUNCTIONALITY /////////////////////////////////////////////////
+
+// PARTS JSON ////////////////////////////////////////
+
+#include"xmq.h"
+#include<libxml/tree.h>
+
+struct XMQPrintState;
+typedef struct XMQPrintState XMQPrintState;
+
+void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
+bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop);
+
+#define JSON_MODULE
+
+
 //////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
+
+char ansi_reset_color[] = "\033[0m";
 
 void xmqSetupDefaultColors(XMQOutputSettings *output_settings, bool dark_mode)
 {
@@ -1504,25 +979,6 @@ void setup_tex_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool ren
 int xmqStateErrno(XMQParseState *state)
 {
     return (int)state->error_nr;
-}
-
-void get_color(XMQColoring *coloring, XMQColor c, const char **pre, const char **post)
-{
-    switch(c)
-    {
-#define X(TYPE) case COLOR_##TYPE: *pre = coloring->TYPE.pre; *post = coloring->TYPE.post; return;
-LIST_OF_XMQ_TOKENS
-#undef X
-    case COLOR_unicode_whitespace: *pre = coloring->unicode_whitespace.pre; *post = coloring->unicode_whitespace.post; return;
-    case COLOR_indentation_whitespace: *pre = coloring->indentation_whitespace.pre; *post = coloring->indentation_whitespace.post; return;
-    default:
-        *pre = NULL;
-        *post = NULL;
-        return;
-    }
-    assert(false);
-    *pre = "";
-    *post = "";
 }
 
 #define X(TYPE) \
@@ -1896,34 +1352,11 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
     return XMQ_CONTENT_XMQ;
 }
 
-void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col)
-{
-    if ((c & 0xc0) != 0x80) // Just ignore UTF8 parts since they do not change the line or col.
-    {
-        (*col)++;
-        if (c == '\n')
-        {
-            (*line)++;
-            (*col) = 1;
-        }
-    }
-    assert(num_bytes > 0);
-    (*i)+=num_bytes;
-}
-
 bool is_lowercase_hex(char c)
 {
     return
         (c >= '0' && c <= '9') ||
         (c >= 'a' && c <= 'f');
-}
-
-bool is_hex(char c)
-{
-    return
-        (c >= '0' && c <= '9') ||
-        (c >= 'a' && c <= 'f') ||
-        (c >= 'A' && c <= 'F');
 }
 
 size_t num_utf8_bytes(char c)
@@ -2027,62 +1460,6 @@ bool is_all_xml_whitespace(const char *s)
         if (!is_xml_whitespace(*i)) return false;
     }
     return true;
-}
-
-size_t count_whitespace(const char *i, const char *stop)
-{
-    unsigned char c = *i;
-    if (c == ' ' || c == '\n' || c == '\t' || c == '\r')
-    {
-        return 1;
-    }
-
-    if (i+1 >= stop) return 0;
-
-    unsigned char cc = *(i+1);
-
-    if (c == 0xC2 && cc == 0xA0)
-    {
-        // Unbreakable space. 0xA0
-        return 2;
-    }
-    if (c == 0xE2 && cc == 0x80)
-    {
-        if (i+2 >= stop) return 0;
-
-        unsigned char ccc = *(i+2);
-
-        if (ccc == 0x80)
-        {
-            // EN quad. &#8192; U+2000 utf8 E2 80 80
-            return 3;
-        }
-        if (ccc == 0x81)
-        {
-            // EM quad. &#8193; U+2001 utf8 E2 80 81
-            return 3;
-        }
-        if (ccc == 0x82)
-        {
-            // EN space. &#8194; U+2002 utf8 E2 80 82
-            return 3;
-        }
-        if (ccc == 0x83)
-        {
-            // EM space. &#8195; U+2003 utf8 E2 80 83
-            return 3;
-        }
-    }
-    return 0;
-}
-
-bool is_unicode_whitespace(const char *start, const char *stop)
-{
-    size_t n = count_whitespace(start, stop);
-
-    // Single char whitespace is ' ' '\t' '\n' '\r'
-    // First unicode whitespace is 160 nbsp require two or more chars.
-    return n > 1;
 }
 
 const char *has_leading_nl_whitespace(const char *start, const char *stop)
@@ -2238,28 +1615,6 @@ bool peek_xmq_next_is_equal(XMQParseState *state)
         i++;
     }
     return c == '=';
-}
-
-void eat_whitespace(XMQParseState *state, const char **start, const char **stop)
-{
-    const char *i = state->i;
-    const char *buffer_stop = state->buffer_stop;
-    size_t line = state->line;
-    size_t col = state->col;
-    *start = i;
-
-    while (i < buffer_stop)
-    {
-        size_t nw = count_whitespace(i, *stop);
-        if (!nw) break;
-        // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
-        increment(*i, nw, &i, &line, &col);
-    }
-
-    *stop = i;
-    state->i = i;
-    state->line = line;
-    state->col = col;
 }
 
 size_t count_xmq_quotes(const char *i, const char *stop)
@@ -3876,11 +3231,6 @@ const char *xmqVersion()
     return VERSION;
 }
 
-const char *xmqCommit()
-{
-    return COMMIT;
-}
-
 void do_whitespace(XMQParseState *state,
                    size_t line,
                    size_t col,
@@ -4557,196 +3907,6 @@ void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *post
     print_white_spaces(ps, ps->line_indent);
     if (ps->restart_line) write(writer_state, ps->restart_line, NULL);
     if (prefix) write(writer_state, prefix, NULL);
-}
-
-void print_color_pre(XMQPrintState *ps, XMQColor c)
-{
-    XMQColoring *coloring = &ps->output_settings->coloring;
-    const char *pre = NULL;
-    const char *post = NULL;
-    get_color(coloring, c, &pre, &post);
-
-    if (pre)
-    {
-        XMQWrite write = ps->output_settings->content.write;
-        void *writer_state = ps->output_settings->content.writer_state;
-        write(writer_state, pre, NULL);
-    }
-}
-
-void print_color_post(XMQPrintState *ps, XMQColor c)
-{
-    XMQColoring *coloring = &ps->output_settings->coloring;
-    const char *pre = NULL;
-    const char *post = NULL;
-    get_color(coloring, c, &pre, &post);
-
-    if (post)
-    {
-        XMQWrite write = ps->output_settings->content.write;
-        void *writer_state = ps->output_settings->content.writer_state;
-        write(writer_state, post, NULL);
-    }
-}
-
-const char *needs_escape(XMQRenderFormat f, const char *start, const char *stop)
-{
-    if (f == XMQ_RENDER_HTML)
-    {
-        char c = *start;
-        if (c == '&') return "&amp;";
-        if (c == '<') return "&lt;";
-        if (c == '>') return "&gt;";
-        return NULL;
-    }
-    else if (f == XMQ_RENDER_TEX)
-    {
-        char c = *start;
-        if (c == '\\') return "\\backslash;";
-        if (c == '&') return "\\&";
-        if (c == '#') return "\\#";
-        if (c == '{') return "\\{";
-        if (c == '}') return "\\}";
-        if (c == '_') return "\\_";
-        if (c == '\'') return "{'}";
-
-        return NULL;
-    }
-
-    return NULL;
-}
-
-inline size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop)
-{
-    XMQWrite write = ps->output_settings->content.write;
-    void *writer_state = ps->output_settings->content.writer_state;
-
-    const char *i = start;
-
-    // Find next utf8 char....
-    const char *j = i+1;
-    while (j < stop && (*j & 0xc0) == 0x80) j++;
-
-    // Is the utf8 char a unicode whitespace and not space,tab,cr,nl?
-    bool uw = is_unicode_whitespace(i, j);
-
-    // If so, then color it. This will typically red underline the non-breakable space.
-    if (uw) print_color_pre(ps, COLOR_unicode_whitespace);
-
-    if (*i == ' ')
-    {
-        write(writer_state, ps->output_settings->coloring.explicit_space, NULL);
-    }
-    else
-    {
-        const char *e = needs_escape(ps->output_settings->render_to, i, j);
-        if (!e)
-        {
-            write(writer_state, i, j);
-        }
-        else
-        {
-            write(writer_state, e, NULL);
-        }
-    }
-    if (uw) print_color_post(ps, COLOR_unicode_whitespace);
-
-    ps->last_char = *i;
-    ps->current_indent++;
-
-    return j-start;
-}
-
-/**
-   print_utf8_internal: Print a single string
-   ps: The print state.
-   start: Points to bytes to be printed.
-   stop: Points to byte after last byte to be printed. If NULL then assume start is null-terminated.
-
-   Returns number of bytes printed.
-*/
-size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *stop)
-{
-    XMQWrite write = ps->output_settings->content.write;
-    void *writer_state = ps->output_settings->content.writer_state;
-
-    size_t u_len = 0;
-
-    const char *i = start;
-    while (*i && (!stop || i < stop))
-    {
-        // Find next utf8 char....
-        const char *j = i+1;
-        while (j < stop && (*j & 0xc0) == 0x80) j++;
-
-        // Is the utf8 char a unicode whitespace and not space,tab,cr,nl?
-        bool uw = is_unicode_whitespace(i, j);
-
-        // If so, then color it. This will typically red underline the non-breakable space.
-        if (uw) print_color_pre(ps, COLOR_unicode_whitespace);
-
-        if (*i == ' ')
-        {
-            write(writer_state, ps->output_settings->coloring.explicit_space, NULL);
-        }
-        else
-        {
-            const char *e = needs_escape(ps->output_settings->render_to, i, j);
-            if (!e)
-            {
-                write(writer_state, i, j);
-            }
-            else
-            {
-                write(writer_state, e, NULL);
-            }
-        }
-        if (uw) print_color_post(ps, COLOR_unicode_whitespace);
-        u_len++;
-        i = j;
-    }
-
-    ps->last_char = *(i-1);
-    ps->current_indent += u_len;
-    return i-start;
-}
-
-/**
-   print_utf8:
-   @ps: The print state.
-   @c:  The color.
-   @num_pairs:  Number of start, stop pairs.
-   @start: First utf8 byte to print.
-   @stop: Points to byte after the last utf8 content.
-
-   Returns the number of bytes used after start.
-*/
-size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...)
-{
-    XMQWrite write = ps->output_settings->content.write;
-    void *writer_state = ps->output_settings->content.writer_state;
-    XMQColoring *coloring = &ps->output_settings->coloring;
-
-    const char *pre, *post;
-    get_color(coloring, c, &pre, &post);
-
-    if (pre) write(writer_state, pre, NULL);
-
-    size_t b_len = 0;
-
-    va_list ap;
-    va_start(ap, num_pairs);
-    for (size_t x = 0; x < num_pairs; ++x)
-    {
-        const char *start = va_arg(ap, const char *);
-        const char *stop = va_arg(ap, const char *);
-        b_len += print_utf8_internal(ps, start, stop);
-    }
-    va_end(ap);
-
-    if (post) write(writer_state, post, NULL);
-
-    return b_len;
 }
 
 /**
@@ -6735,117 +5895,6 @@ void trim_buffer(InternalBuffer *ib)
     }
 }
 
-xmlNode *xml_first_child(xmlNode *node)
-{
-    return node->children;
-}
-
-xmlNode *xml_last_child(xmlNode *node)
-{
-    return node->last;
-}
-
-xmlNode *xml_next_sibling(xmlNode *node)
-{
-    return node->next;
-}
-
-xmlNode *xml_prev_sibling(xmlNode *node)
-{
-    return node->prev;
-}
-
-xmlAttr *xml_first_attribute(xmlNode *node)
-{
-    return node->properties;
-}
-
-xmlAttr *xml_next_attribute(xmlAttr *attr)
-{
-    return attr->next;
-}
-
-xmlNs *xml_first_namespace_def(xmlNode *node)
-{
-    return node->nsDef;
-}
-
-xmlNs *xml_next_namespace_def(xmlNs *ns)
-{
-    return ns->next;
-}
-
-const char*xml_element_name(xmlNode *node)
-{
-    return (const char*)node->name;
-}
-
-const char*xml_element_content(xmlNode *node)
-{
-    return (const char*)node->content;
-}
-
-const char *xml_element_ns_prefix(const xmlNode *node)
-{
-    if (!node->ns) return NULL;
-    return (const char*)node->ns->prefix;
-}
-
-const char *xml_attr_key(xmlAttr *attr)
-{
-    return (const char*)attr->name;
-}
-
-const char* xml_namespace_href(xmlNs *ns)
-{
-    return (const char*)ns->href;
-}
-
-bool is_entity_node(const xmlNode *node)
-{
-    return node->type == XML_ENTITY_NODE ||
-        node->type == XML_ENTITY_REF_NODE;
-}
-
-bool is_content_node(const xmlNode *node)
-{
-    return node->type == XML_TEXT_NODE ||
-        node->type == XML_CDATA_SECTION_NODE;
-}
-
-bool is_comment_node(const xmlNode *node)
-{
-    return node->type == XML_COMMENT_NODE;
-}
-
-bool is_doctype_node(const xmlNode *node)
-{
-    return node->type == XML_DTD_NODE;
-}
-
-bool is_element_node(const xmlNode *node)
-{
-    return node->type == XML_ELEMENT_NODE;
-}
-
-bool is_key_value_node(xmlNodePtr node)
-{
-    void *from = xml_first_child(node);
-    void *to = xml_last_child(node);
-
-    return from && from == to && (is_content_node((xmlNode*)from) || is_entity_node((xmlNode*)from));
-}
-
-bool is_leaf_node(xmlNode *node)
-{
-    return xml_first_child(node) == NULL;
-}
-
-bool has_attributes(xmlNodePtr node)
-{
-    return NULL == xml_first_attribute(node);
-}
-
 int xmqForeach(XMQDoc *doq, XMQNode *xmq_node, const char *xpath, NodeCallback cb, void *user_data)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(doq);
@@ -6988,76 +6037,6 @@ double xmqGetDouble(XMQDoc *doq, XMQNode *node, const char *xpath)
 
     return atof(content);
 }
-
-char equals[] = "=";
-char underline[] = "_";
-char leftpar[] = "(";
-char rightpar[] = ")";
-char array[] = "A";
-char boolean[] = "B";
-char number[] = "N";
-
-bool is_json_quote_start(char c)
-{
-    return c == '"';
-}
-
-size_t eat_json_quote(XMQParseState *state, const char **content_start, const char **content_stop)
-{
-    const char *i = state->i;
-    const char *end = state->buffer_stop;
-    size_t line = state->line;
-    size_t col = state->col;
-
-    increment('"', 1, &i, &line, &col);
-    *content_start = i;
-
-    while (i < end)
-    {
-        char c = *i;
-        if (c == '\\')
-        {
-            increment(c, 1, &i, &line, &col);
-            c = *i;
-            if (c == '"' || c == '\\' || c == 'b' || c == 'f' || c == 'n' || c == 'r' || c == 't')
-            {
-                increment(c, 1, &i, &line, &col);
-                continue;
-            }
-            else if (c == 'u')
-            {
-                increment(c, 1, &i, &line, &col);
-                c = *i;
-                if (i+3 < end)
-                {
-                    if (is_hex(*(i+0)) && is_hex(*(i+1)) && is_hex(*(i+2)) && is_hex(*(i+3)))
-                    {
-                        increment(c, 1, &i, &line, &col);
-                        increment(c, 1, &i, &line, &col);
-                        increment(c, 1, &i, &line, &col);
-                        increment(c, 1, &i, &line, &col);
-                        continue;
-                    }
-                }
-            }
-            state->error_nr = XMQ_ERROR_JSON_INVALID_ESCAPE;
-            longjmp(state->error_handler, 1);
-        }
-        if (c == '"')
-        {
-            increment(c, 1, &i, &line, &col);
-            break;
-        }
-
-        increment(c, 1, &i, &line, &col);
-    }
-    state->i = i;
-    state->line = line;
-    state->col = col;
-
-    return 1;
-}
-
 
 bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, XMQTrimType tt)
 {
@@ -7360,6 +6339,487 @@ xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop)
     return dtd;
 }
 
+// PARTS STACK_C ////////////////////////////////////////
+
+#ifdef STACK_MODULE
+
+Stack *new_stack()
+{
+    Stack *s = (Stack*)malloc(sizeof(Stack));
+    memset(s, 0, sizeof(Stack));
+    return s;
+}
+
+void free_stack(Stack *stack)
+{
+    if (!stack) return;
+
+    StackElement *e = stack->top;
+    while (e)
+    {
+        StackElement *next = e->below;
+        free(e);
+        e = next;
+    }
+
+    free(stack);
+}
+
+void push_stack(Stack *stack, void *data)
+{
+    assert(stack);
+    StackElement *element = (StackElement*)malloc(sizeof(StackElement));
+    memset(element, 0, sizeof(StackElement));
+    element->data = data;
+
+    if (stack->top == NULL) {
+        stack->top = stack->bottom = element;
+    }
+    else
+    {
+        element->below = stack->top;
+        stack->top = element;
+    }
+    stack->size++;
+}
+
+void *pop_stack(Stack *stack)
+{
+    assert(stack);
+    assert(stack->top);
+
+    void *data = stack->top->data;
+    StackElement *element = stack->top;
+    stack->top = element->below;
+    free(element);
+    stack->size--;
+    return data;
+}
+
+#endif // STACK_MODULE
+
+// PARTS MEMBUFFER_C ////////////////////////////////////////
+
+#ifdef MEMBUFFER_MODULE
+
+/** Allocate a automatically growing membuffer. */
+MemBuffer *new_membuffer()
+{
+    MemBuffer *mb = (MemBuffer*)malloc(sizeof(MemBuffer));
+    check_malloc(mb);
+    memset(mb, 0, sizeof(*mb));
+    return mb;
+}
+
+/** Free the MemBuffer support struct but return the actual contents. */
+char *free_membuffer_but_return_trimmed_content(MemBuffer *mb)
+{
+    char *b = mb->buffer_;
+    b = (char*)realloc(b, mb->used_);
+    free(mb);
+    return b;
+}
+
+void free_membuffer_and_free_content(MemBuffer *mb)
+{
+    if (mb->buffer_) free(mb->buffer_);
+    mb->buffer_ = NULL;
+    free(mb);
+}
+
+size_t pick_buffer_new_size(size_t max, size_t used, size_t add)
+{
+    assert(used <= max);
+    if (used + add > max)
+    {
+        // Increment buffer with 1KiB.
+        max = max + 1024;
+    }
+    if (used + add > max)
+    {
+        // Still did not fit? The add was more than 1 Kib. Lets add that.
+        max = max + add;
+    }
+    assert(used + add <= max);
+
+    return max;
+}
+
+void membuffer_append_region(MemBuffer *mb, const char *start, const char *stop)
+{
+    if (!start) return;
+    if (!stop) stop = start + strlen(start);
+    size_t add = stop-start;
+    size_t max = pick_buffer_new_size(mb->max_, mb->used_, add);
+    if (max > mb->max_)
+    {
+        mb->buffer_ = (char*)realloc(mb->buffer_, max);
+        mb->max_ = max;
+    }
+    memcpy(mb->buffer_+mb->used_, start, add);
+    mb->used_ += add;
+}
+
+void membuffer_append(MemBuffer *mb, const char *start)
+{
+    const char *i = start;
+    char *to = mb->buffer_+mb->used_;
+    const char *stop = mb->buffer_+mb->max_;
+
+    while (*i)
+    {
+        if (to >= stop)
+        {
+            mb->used_ = to - mb->buffer_;
+            size_t max = pick_buffer_new_size(mb->max_, mb->used_, 1);
+            assert(max >= mb->max_);
+            mb->buffer_ = (char*)realloc(mb->buffer_, max);
+            mb->max_ = max;
+            stop = mb->buffer_+mb->max_;
+            to = mb->buffer_+mb->used_;
+        }
+        *to = *i;
+        i++;
+        to++;
+    }
+    mb->used_ = to-mb->buffer_;
+}
+
+void membuffer_append_char(MemBuffer *mb, char c)
+{
+    size_t max = pick_buffer_new_size(mb->max_, mb->used_, 1);
+    if (max > mb->max_)
+    {
+        mb->buffer_ = (char*)realloc(mb->buffer_, max);
+        mb->max_ = max;
+    }
+    memcpy(mb->buffer_+mb->used_, &c, 1);
+    mb->used_ ++;
+}
+
+void membuffer_append_null(MemBuffer *mb)
+{
+    membuffer_append_char(mb, 0);
+}
+
+void membuffer_append_entity(MemBuffer *mb, char c)
+{
+    if (c == ' ') membuffer_append(mb, "&#32;");
+    else if (c == '\n') membuffer_append(mb, "&#10;");
+    else if (c == '\t') membuffer_append(mb, "&#9;");
+    else if (c == '\r') membuffer_append(mb, "&#13;");
+    else
+    {
+        assert(false);
+    }
+}
+
+#endif // MEMBUFFER_MODULE
+
+// PARTS JSON_C ////////////////////////////////////////
+
+#ifdef JSON_MODULE
+
+bool is_json_whitespace(char c);
+
+void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
+void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node);
+void json_print_value(XMQPrintState *ps, xmlNode *container, xmlNode *node, Level level);
+void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node);
+void json_print_element_with_children(XMQPrintState *ps, xmlNode *container, xmlNode *node);
+void json_print_key_node(XMQPrintState *ps, xmlNode *container, xmlNode *node);
+
+void json_check_comma_before_key(XMQPrintState *ps);
+void json_print_comma(XMQPrintState *ps);
+bool json_is_number(const char *start, const char *stop);
+bool json_is_keyword(const char *start, const char *stop);
+void json_print_leaf_node(XMQPrintState *ps, xmlNode *container, xmlNode *node);
+
+char equals[] = "=";
+char underline[] = "_";
+char leftpar[] = "(";
+char rightpar[] = ")";
+char array[] = "A";
+char boolean[] = "B";
+char number[] = "N";
+
+bool is_json_whitespace(char c)
+{
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+}
+
+bool is_json_quote_start(char c)
+{
+    return c == '"';
+}
+
+size_t eat_json_quote(XMQParseState *state, const char **content_start, const char **content_stop)
+{
+    const char *i = state->i;
+    const char *end = state->buffer_stop;
+    size_t line = state->line;
+    size_t col = state->col;
+
+    increment('"', 1, &i, &line, &col);
+    *content_start = i;
+
+    while (i < end)
+    {
+        char c = *i;
+        if (c == '\\')
+        {
+            increment(c, 1, &i, &line, &col);
+            c = *i;
+            if (c == '"' || c == '\\' || c == 'b' || c == 'f' || c == 'n' || c == 'r' || c == 't')
+            {
+                increment(c, 1, &i, &line, &col);
+                continue;
+            }
+            else if (c == 'u')
+            {
+                increment(c, 1, &i, &line, &col);
+                c = *i;
+                if (i+3 < end)
+                {
+                    if (is_hex(*(i+0)) && is_hex(*(i+1)) && is_hex(*(i+2)) && is_hex(*(i+3)))
+                    {
+                        increment(c, 1, &i, &line, &col);
+                        increment(c, 1, &i, &line, &col);
+                        increment(c, 1, &i, &line, &col);
+                        increment(c, 1, &i, &line, &col);
+                        continue;
+                    }
+                }
+            }
+            state->error_nr = XMQ_ERROR_JSON_INVALID_ESCAPE;
+            longjmp(state->error_handler, 1);
+        }
+        if (c == '"')
+        {
+            increment(c, 1, &i, &line, &col);
+            break;
+        }
+
+        increment(c, 1, &i, &line, &col);
+    }
+    state->i = i;
+    state->line = line;
+    state->col = col;
+
+    return 1;
+}
+
+void handle_json_whitespace(XMQParseState *state)
+{
+    size_t start_line = state->line;
+    size_t start_col = state->col;
+    const char *start;
+    const char *stop;
+    eat_whitespace(state, &start, &stop);
+    //DO_CALLBACK(whitespace, state, start_line, start_col, start, start_col, start, stop, stop);
+}
+
+void handle_json_quote(XMQParseState *state)
+{
+    const char *start = state->i;
+    int start_line = state->line;
+    int start_col = state->col;
+    const char *content_start;
+    const char *content_stop;
+
+    size_t depth = eat_json_quote(state, &content_start, &content_stop);
+    const char *stop = state->i;
+    size_t content_start_col = start_col+depth;
+    //DO_CALLBACK(content_quote, state, start_line, start_col, start, content_start_col, content_start, content_stop, stop);
+
+}
+
+bool is_json_boolean(XMQParseState *state)
+{
+    const char *i = state->i;
+    const char *stop = state->buffer_stop;
+
+    if (i+4 <= stop && !strncmp("true", i, 4)) return true;
+    if (i+5 <= stop && !strncmp("false", i, 5)) return true;
+    return false;
+}
+
+void eat_json_boolean(XMQParseState *state, const char **content_start, const char **content_stop)
+{
+    const char *i = state->i;
+    const char *stop = state->buffer_stop;
+    size_t line = state->line;
+    size_t col = state->col;
+
+    if (*i == 't')
+    {
+        increment('t', 1, &i, &line, &col);
+        increment('r', 1, &i, &line, &col);
+        increment('u', 1, &i, &line, &col);
+        increment('e', 1, &i, &line, &col);
+    }
+    else
+    {
+        increment('f', 1, &i, &line, &col);
+        increment('a', 1, &i, &line, &col);
+        increment('l', 1, &i, &line, &col);
+        increment('s', 1, &i, &line, &col);
+        increment('e', 1, &i, &line, &col);
+    }
+
+    state->i = i;
+    state->line = line;
+    state->col = col;
+}
+
+void handle_json_boolean(XMQParseState *state)
+{
+    const char *start = state->i;
+    int start_line = state->line;
+    int start_col = state->col;
+    const char *content_start;
+    const char *content_stop;
+
+    eat_json_boolean(state, &content_start, &content_stop);
+    const char *stop = state->i;
+    //DO_CALLBACK(element_value_text, state, start_line, start_col, start, start_col, content_start, content_stop, stop);
+}
+
+bool is_json_number(XMQParseState *state)
+{
+    char c = *state->i;
+
+    return c >= '0' && c <='9';
+}
+
+void eat_json_number(XMQParseState *state, const char **content_start, const char **content_stop)
+{
+    const char *i = state->i;
+    const char *stop = state->buffer_stop;
+    size_t line = state->line;
+    size_t col = state->col;
+
+    while (i < stop)
+    {
+        char c = *i;
+        if (! (c >= '0' && c <= '9')) break;
+        increment(c, 1, &i, &line, &col);
+    }
+
+    state->i = i;
+    state->line = line;
+    state->col = col;
+}
+
+void handle_json_number(XMQParseState *state)
+{
+    const char *start = state->i;
+    int start_line = state->line;
+    int start_col = state->col;
+    const char *content_start;
+    const char *content_stop;
+
+    eat_json_number(state, &content_start, &content_stop);
+    const char *stop = state->i;
+    //DO_CALLBACK(element_value_text, state, start_line, start_col, start, start_col, content_start, content_stop, stop);
+}
+
+bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const char *stop)
+{
+    if (state->magic_cookie != MAGIC_COOKIE)
+    {
+        PRINT_ERROR("Parser state not initialized!\n");
+        assert(0);
+        exit(1);
+    }
+
+    state->buffer_start = start;
+    state->buffer_stop = stop;
+    state->i = start;
+    state->line = 1;
+    state->col = 1;
+    state->error_nr = 0;
+
+    if (state->parse->init) state->parse->init(state);
+
+    if (!setjmp(state->error_handler))
+    {
+        //handle_json_nodes(state);
+        if (state->i < state->buffer_stop)
+        {
+            state->error_nr = XMQ_ERROR_UNEXPECTED_CLOSING_BRACE;
+            longjmp(state->error_handler, 1);
+        }
+    }
+    else
+    {
+        // Error detected
+        PRINT_ERROR("Error while parsing json (errno %d) %s %zu:%zu\n", state->error_nr, state->generated_error_msg, state->line, state->col);
+    }
+
+    if (state->parse->done) state->parse->done(state);
+    return true;
+}
+
+bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop)
+{
+    return false;
+}
+
+void handle_json_array(XMQParseState *state)
+{
+    char c = *state->i;
+    assert(c == '[');
+    increment(c, 1, &state->i, &state->line, &state->col);
+
+    DO_CALLBACK_SIM(element_key, state, state->line, state->col, underline, state->col, underline, underline+1, underline+1);
+    DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, state->col, leftpar, leftpar+1, leftpar+1);
+    DO_CALLBACK_SIM(attr_key, state, state->line, state->col, array, state->col, array, array+1, array+1);
+    DO_CALLBACK_SIM(apar_right, state, state->line, state->col, rightpar, state->col, rightpar, rightpar+1, rightpar+1);
+
+    //handle_json_nodes(state);
+
+    c = *state->i;
+    assert(c == ']');
+    increment(c, 1, &state->i, &state->line, &state->col);
+}
+
+void handle_json_nodes(XMQParseState *state)
+{
+    const char *stop = state->buffer_stop;
+
+    while (state->i < stop)
+    {
+        char c = *(state->i);
+
+        if (is_json_whitespace(c)) handle_json_whitespace(state);
+        else if (is_json_quote_start(c)) handle_json_quote(state);
+        else if (is_json_boolean(state)) handle_json_boolean(state);
+        else if (is_json_number(state)) handle_json_number(state);
+        else if (c == '[') handle_json_array(state);
+        else if (c == ']') break;
+        else
+        {
+            state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
+            longjmp(state->error_handler, 1);
+        }
+    }
+}
+
+void handle_json_node(XMQParseState *state)
+{
+    char c = 0;
+    const char *name = "_";
+    const char *name_start = name;
+    const char *name_stop = name+1;
+
+    const char *start = state->i;
+    int start_line = state->line;
+    int start_col = state->col;
+    //eat_xmq_text_name(state, &name_start, &name_stop);
+    const char *stop = state->i;
+}
+
 void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to)
 {
     xmlNode *i = from;
@@ -7589,3 +7049,152 @@ void json_print_leaf_node(XMQPrintState *ps,
 {
     json_print_element_name(ps, container, node);
 }
+
+#else
+
+bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop)
+{
+    return false;
+}
+
+void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to)
+{
+}
+
+#endif // JSON_MODULE
+
+// PARTS UTILS_C ////////////////////////////////////////
+
+#ifdef UTILS_MODULE
+
+void check_malloc(void *a)
+{
+    if (!a)
+    {
+        PRINT_ERROR("libxmq: Out of memory!\n");
+        exit(1);
+    }
+}
+
+#endif // UTILS_MODULE
+
+// PARTS XML_C ////////////////////////////////////////
+
+#ifdef XML_MODULE
+
+xmlNode *xml_first_child(xmlNode *node)
+{
+    return node->children;
+}
+
+xmlNode *xml_last_child(xmlNode *node)
+{
+    return node->last;
+}
+
+xmlNode *xml_next_sibling(xmlNode *node)
+{
+    return node->next;
+}
+
+xmlNode *xml_prev_sibling(xmlNode *node)
+{
+    return node->prev;
+}
+
+xmlAttr *xml_first_attribute(xmlNode *node)
+{
+    return node->properties;
+}
+
+xmlAttr *xml_next_attribute(xmlAttr *attr)
+{
+    return attr->next;
+}
+
+xmlNs *xml_first_namespace_def(xmlNode *node)
+{
+    return node->nsDef;
+}
+
+xmlNs *xml_next_namespace_def(xmlNs *ns)
+{
+    return ns->next;
+}
+
+const char*xml_element_name(xmlNode *node)
+{
+    return (const char*)node->name;
+}
+
+const char*xml_element_content(xmlNode *node)
+{
+    return (const char*)node->content;
+}
+
+const char *xml_element_ns_prefix(const xmlNode *node)
+{
+    if (!node->ns) return NULL;
+    return (const char*)node->ns->prefix;
+}
+
+const char *xml_attr_key(xmlAttr *attr)
+{
+    return (const char*)attr->name;
+}
+
+const char* xml_namespace_href(xmlNs *ns)
+{
+    return (const char*)ns->href;
+}
+
+bool is_entity_node(const xmlNode *node)
+{
+    return node->type == XML_ENTITY_NODE ||
+        node->type == XML_ENTITY_REF_NODE;
+}
+
+bool is_content_node(const xmlNode *node)
+{
+    return node->type == XML_TEXT_NODE ||
+        node->type == XML_CDATA_SECTION_NODE;
+}
+
+bool is_comment_node(const xmlNode *node)
+{
+    return node->type == XML_COMMENT_NODE;
+}
+
+bool is_doctype_node(const xmlNode *node)
+{
+    return node->type == XML_DTD_NODE;
+}
+
+bool is_element_node(const xmlNode *node)
+{
+    return node->type == XML_ELEMENT_NODE;
+}
+
+bool is_key_value_node(xmlNodePtr node)
+{
+    void *from = xml_first_child(node);
+    void *to = xml_last_child(node);
+
+    return from && from == to && (is_content_node((xmlNode*)from) || is_entity_node((xmlNode*)from));
+}
+
+bool is_leaf_node(xmlNode *node)
+{
+    return xml_first_child(node) == NULL;
+}
+
+bool has_attributes(xmlNodePtr node)
+{
+    return NULL == xml_first_attribute(node);
+}
+
+#endif // XML_MODULE
+
+// PARTS XMQ_INTERNALS_C ////////////////////////////////////////
+
+

@@ -1,6 +1,9 @@
 #!/bin/sh
 # libxmq - Copyright 2023 Fredrik Öhrström (spdx: MIT)
 
+# Replace #include "parts/..." with the actual content of the included files, c and h files.
+# This is used to genereate the dist/xmq.c file which is a self-contained single source
+# file suitable for copy/pasting into your own project.
 
 if [ -z "$1" ] || [ -z "$2" ]
 then
@@ -38,8 +41,11 @@ do_part() {
     $SED -e "/${PART}\.c/ {" -e "r ${ROOT}/parts_${PART}_c" -e 'd }' ${ROOT}/tmp > ${ROOT}/xmq-in-progress
 }
 
+# Insert the xmq_internals first since it includes the other parts.
+do_part xmq_internals
 do_part utils
 do_part json
 do_part membuffer
 do_part stack
 do_part hashmap
+do_part xml

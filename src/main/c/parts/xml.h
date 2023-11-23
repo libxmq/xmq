@@ -21,18 +21,33 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef JSON_H
-#define JSON_H
+#ifndef XML_H
+#define XML_H
 
-#include"xmq.h"
 #include<libxml/tree.h>
 
-struct XMQPrintState;
-typedef struct XMQPrintState XMQPrintState;
+xmlNode *xml_first_child(xmlNode *node);
+xmlNode *xml_last_child(xmlNode *node);
+xmlNode *xml_next_sibling(xmlNode *node);
+xmlNode *xml_prev_sibling(xmlNode *node);
+xmlAttr *xml_first_attribute(xmlNode *node);
+xmlAttr *xml_next_attribute(xmlAttr *attr);
+xmlNs *xml_first_namespace_def(xmlNode *node);
+xmlNs *xml_next_namespace_def(xmlNs *ns);
+const char*xml_element_name(xmlNode *node);
+const char*xml_element_content(xmlNode *node);
+const char *xml_element_ns_prefix(const xmlNode *node);
+const char *xml_attr_key(xmlAttr *attr);
+const char* xml_namespace_href(xmlNs *ns);
+bool is_entity_node(const xmlNode *node);
+bool is_content_node(const xmlNode *node);
+bool is_comment_node(const xmlNode *node);
+bool is_doctype_node(const xmlNode *node);
+bool is_element_node(const xmlNode *node);
+bool is_key_value_node(xmlNodePtr node);
+bool is_leaf_node(xmlNode *node);
+bool has_attributes(xmlNodePtr node);
 
-void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
-bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop);
+#define XML_MODULE
 
-#define JSON_MODULE
-
-#endif // JSON_H
+#endif // XML_H
