@@ -4755,7 +4755,7 @@ void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings)
                         &buffer,
                         &size,
                         "utf8");
-    fputs(buffer, stdout);
+    fputs((char*)buffer, stdout);
     free(buffer);
 }
 
@@ -6827,7 +6827,7 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node)
         return json_print_entity_node(ps, node);
     }
 
-    // This is a comment // or /* ...
+    // This is a comment translated into "_//":"Comment text"
     if (is_comment_node(node))
     {
         return json_print_comment_node(ps, node);
@@ -6884,7 +6884,7 @@ void json_print_value(XMQPrintState *ps, xmlNode *container, xmlNode *node, Leve
             if (is_entity_node(i))
             {
                 write(writer_state, "&", NULL);
-                write(writer_state, i->name, NULL);
+                write(writer_state, (const char*)i->name, NULL);
                 write(writer_state, ";", NULL);
             }
             else

@@ -4154,7 +4154,7 @@ void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings)
                         &buffer,
                         &size,
                         "utf8");
-    fputs(buffer, stdout);
+    fputs((char*)buffer, stdout);
     free(buffer);
 }
 
