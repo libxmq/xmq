@@ -10,6 +10,10 @@
     X(test_quicksort) \
     X(test_stack) \
 
+#define X(name) void name();
+TESTS
+#undef X
+
 bool all_ok_ = true;
 
 void test_hashmap()

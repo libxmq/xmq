@@ -121,4 +121,15 @@ bool has_attributes(xmlNodePtr node)
     return NULL == xml_first_attribute(node);
 }
 
+void free_xml(xmlNode * node)
+{
+    while(node)
+    {
+        xmlNode *next = node->next;
+        free_xml(node->children);
+        xmlFreeNode(node);
+        node = next;
+    }
+}
+
 #endif // XML_MODULE

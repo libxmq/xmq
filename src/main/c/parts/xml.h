@@ -26,6 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include<libxml/tree.h>
 
+void free_xml(xmlNode * node);
 xmlNode *xml_first_child(xmlNode *node);
 xmlNode *xml_last_child(xmlNode *node);
 xmlNode *xml_next_sibling(xmlNode *node);

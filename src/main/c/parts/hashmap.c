@@ -17,13 +17,22 @@ typedef struct HashMap_
     HashMapNode** nodes_;
 } HashMap;
 
+// FUNCTION DECLARATIONS //////////////////////////////////////////////////
+
+size_t hash_code(const char *str);
+HashMapNode* hashmap_create_node(const char *key);
+
+///////////////////////////////////////////////////////////////////////////
+
 size_t hash_code(const char *str)
 {
     size_t hash = 0;
     size_t c;
 
-    while (c = *str++)
+    while (true)
     {
+        c = *str++;
+        if (!c) break;
         hash = c + (hash << 6) + (hash << 16) - hash; // sdbm
         // hash = hash * 33 ^ c; // djb2a
     }

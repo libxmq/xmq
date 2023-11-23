@@ -42,6 +42,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 // DEFINITIONS ///////////////////////////////////
 
+const char *content_type_to_string(XMQContentType t);
+void test_content(const char *content, XMQContentType expected_ct);
+void test_mem_buffer();
+void test_sl(const char *s, size_t expected_b_len, size_t expected_u_len);
+void test_trim_comment(int first_indent, char *in, char *expected);
+void test_trim_quote(int first_indent, char *in, char *expected);
+void test_trim_quote_special(char *in, char *expected);
+
 #define TESTS \
     X(test_indented_quotes) \
     X(test_buffer) \
@@ -53,6 +61,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     X(test_whitespaces) \
     X(test_strlen) \
     X(test_escaping) \
+
+#define X(name) void name();
+    TESTS
+#undef X
 
 bool all_ok_ = true;
 

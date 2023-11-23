@@ -4,6 +4,12 @@
 
 #ifdef QUICKSORT_STRINGS_MODULE
 
+// FUNCTION DECLARATIONS //////////////////////////////////////////
+
+void swap(const char **a, const char **b);
+
+///////////////////////////////////////////////////////////////////
+
 void swap(const char **a, const char **b)
 {
 	const char *temp = *a;

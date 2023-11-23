@@ -121,6 +121,36 @@ struct XMQCliCommand
     XMQCliCommand *next; // Point to next command to be executed.
 };
 
+
+// FUNCTION DECLARATIONS /////////////////////////////////////////////////////////////
+
+XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env);
+bool cmd_delete(XMQCliCommand *command);
+bool cmd_entity(XMQCliCommand *command);
+XMQCliCmd cmd_from(const char *s);
+XMQCliCmdGroup cmd_group(XMQCliCmd cmd);
+int cmd_load(XMQCliCommand *command);
+const char *cmd_name(XMQCliCmd cmd);
+bool cmd_to(XMQCliCommand *command);
+void cmd_unload(XMQCliCommand *command);
+void debug(const char* fmt, ...);
+void disable_raw_mode();
+void enable_raw_mode();
+bool handle_global_option(const char *arg, XMQCliCommand *command);
+bool handle_option(const char *arg, XMQCliCommand *command);
+bool perform_command(XMQCliCommand *c);
+void prepare_command(XMQCliCommand *c);
+void print_help_and_exit();
+void print_version_and_exit();
+void replace_entities(xmlNodePtr node, const char *entity, const char *content);
+bool is_bg_dark();
+int tokenize_input(XMQCliCommand *command);
+void verbose(const char* fmt, ...);
+void write_print(void *buffer, const char *content);
+bool xmq_parse_cmd_line(int argc, char **argv, XMQCliCommand *command);
+
+/////////////////////////////////////////////////////////////////////////////////////
+
 bool verbose_enabled_ = false;
 
 void verbose(const char* fmt, ...)
