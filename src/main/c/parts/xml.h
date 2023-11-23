@@ -24,6 +24,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef XML_H
 #define XML_H
 
+#include<stdbool.h>
 #include<libxml/tree.h>
 
 void free_xml(xmlNode * node);
