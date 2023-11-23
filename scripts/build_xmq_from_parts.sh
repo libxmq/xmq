@@ -32,7 +32,7 @@ do_part() {
 
     echo "// PARTS ${PART_UC} ////////////////////////////////////////" > ${ROOT}/parts_${PART}_h
     $SED -n "/define ${PART_UC}_H/,/endif \/\/ ${PART_UC}_H/p" ${PARTS}/${PART}.h | $SED '1d; $d' >> ${ROOT}/parts_${PART}_h
-    $SED -e "/${PART}\.h/ {" -e "r ${ROOT}/parts_${PART}_h" -e 'd }' ${ROOT}/xmq-in-progress > ${ROOT}/tmp
+    $SED -e "/${PART}\.h\"/ {" -e "r ${ROOT}/parts_${PART}_h" -e 'd }' ${ROOT}/xmq-in-progress > ${ROOT}/tmp
 
     echo "// PARTS ${PART_UC}_C ////////////////////////////////////////" > ${ROOT}/parts_${PART}_c
     echo >> ${ROOT}/parts_${PART}_c

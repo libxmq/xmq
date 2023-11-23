@@ -37,7 +37,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<unistd.h>
 
 #include"xmq.h"
-#include"parts/stack.h"
 #include<libxml/tree.h>
 #include<libxml/parser.h>
 #include<libxml/HTMLparser.h>
@@ -45,6 +44,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<libxml/xmlreader.h>
 #include<libxml/xpath.h>
 #include<libxml/xpathInternals.h>
+
+// STACK /////////////////////
+
+struct Stack;
+typedef struct Stack Stack;
 
 // DEFAULT COLORS ///////////////////////////////////////////////
 
@@ -500,5 +504,7 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define UNDERLINE    "\033[0;1;4m"
 
 void get_color(XMQColoring *coloring, XMQColor c, const char **pre, const char **post);
+
+#define XMQ_INTERNALS_MODULE
 
 #endif // XMQ_INTERNALS_H

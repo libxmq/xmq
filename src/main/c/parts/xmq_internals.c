@@ -4,6 +4,8 @@
 
 #endif
 
+#ifdef XMQ_INTERNALS_MODULE
+
 const char *color_names[13] = {
     "xmq_c",
     "xmq_q",
@@ -336,3 +338,5 @@ size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...)
 
     return b_len;
 }
+
+#endif // XMQ_INTERNALS_MODULE
