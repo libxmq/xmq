@@ -40,6 +40,11 @@ xmlAttr *xml_next_attribute(xmlAttr *attr)
     return attr->next;
 }
 
+xmlAttr *xml_get_attribute(xmlNode *node, const char *name)
+{
+    return xmlHasProp(node, (const xmlChar*)name);
+}
+
 xmlNs *xml_first_namespace_def(xmlNode *node)
 {
     return node->nsDef;

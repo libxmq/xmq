@@ -34,6 +34,7 @@ xmlNode *xml_next_sibling(xmlNode *node);
 xmlNode *xml_prev_sibling(xmlNode *node);
 xmlAttr *xml_first_attribute(xmlNode *node);
 xmlAttr *xml_next_attribute(xmlAttr *attr);
+xmlAttr *xml_get_attribute(xmlNode *node, const char *name);
 xmlNs *xml_first_namespace_def(xmlNode *node);
 xmlNs *xml_next_namespace_def(xmlNs *ns);
 const char*xml_element_name(xmlNode *node);

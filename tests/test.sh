@@ -46,6 +46,11 @@ do
     tests/test_json.sh "$PROG" "$OUTPUT" "$i"
 done
 
+for i in tests/parse_json_???_*.test
+do
+    tests/test_parse_json.sh "$PROG" "$OUTPUT" "$i"
+done
+
 for i in tests/backforth_???_*.test
 do
     tests/test_backforth.sh "$PROG" "$OUTPUT" "$i"

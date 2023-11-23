@@ -122,6 +122,7 @@ void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_json(XMQDoc *doq, XMQOutputSettings *output_settings);
 char *xmq_quote_with_entity_newlines(const char *start, const char *stop, XMQQuoteSettings *settings);
 char *xmq_quote_default(int indent, const char *start, const char *stop, XMQQuoteSettings *settings);
+bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root);
 
 // Declare colorize_whitespace colorize_name functions etc...
 #define X(TYPE) void colorize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start, size_t indent,const char *cstart, const char *cstop, const char *stop);
@@ -806,7 +807,7 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                     if (is_html) return XMQ_CONTENT_HTML;
                 }
                 // Otherwise we assume it is xml. If you are working with html content inside
-                // the html, then use --informat=html
+                // the html, then use --html
                 return XMQ_CONTENT_XML; // Or HTML...
             }
             if (c == '{' || c == '"' || c == '[' || (c >= '0' && c <= '9')) return XMQ_CONTENT_JSON;
@@ -5599,7 +5600,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     case XMQ_CONTENT_HTMQ: rc = xmqParseBuffer(doq, start, stop, implicit_root); break;
     case XMQ_CONTENT_XML: rc = xmq_parse_buffer_xml(doq, start, stop, tt); break;
     case XMQ_CONTENT_HTML: rc = xmq_parse_buffer_html(doq, start, stop, tt); break;
-    case XMQ_CONTENT_JSON: rc = xmq_parse_buffer_json(doq, start, stop); break;
+    case XMQ_CONTENT_JSON: rc = xmq_parse_buffer_json(doq, start, stop, implicit_root); break;
     default: break;
     }
 
@@ -5791,6 +5792,47 @@ xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop)
     xmlFreeDoc(doc);
 
     return dtd;
+}
+
+bool xmq_parse_buffer_json(XMQDoc *doq,
+                           const char *start,
+                           const char *stop,
+                           const char *implicit_root)
+{
+    bool rc = true;
+    XMQOutputSettings *output_settings = xmqNewOutputSettings();
+    XMQParseCallbacks *parse = xmqNewParseCallbacks();
+
+    xmq_setup_parse_callbacks(parse);
+
+    XMQParseState *state = xmqNewParseState(parse, output_settings);
+    state->doq = doq;
+    xmqSetStateSourceName(state, doq->source_name_);
+
+    if (implicit_root != NULL && implicit_root[0] == 0) implicit_root = NULL;
+
+    state->implicit_root = implicit_root;
+
+    push_stack(state->element_stack, doq->docptr_.xml);
+    // Now state->element_stack->top->data points to doq->docptr_;
+    state->element_last = NULL; // Will be set when the first node is created.
+    // The doc root will be set when the first element node is created.
+
+    // Time to tokenize the buffer and invoke the parse callbacks.
+    xmq_tokenize_buffer_json(state, start, stop);
+
+    if (xmqStateErrno(state))
+    {
+        rc = false;
+        doq->errno_ = xmqStateErrno(state);
+        doq->error_ = build_error_message("%s\n", xmqStateErrorMsg(state));
+    }
+
+    xmqFreeParseState(state);
+    xmqFreeParseCallbacks(parse);
+    xmqFreeOutputSettings(output_settings);
+
+    return rc;
 }
 
 #include"parts/stack.c"

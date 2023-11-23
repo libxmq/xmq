@@ -141,7 +141,7 @@ PARTS_TESTINTERNALS_OBJS:=$($(PLATFORM)_PARTS_TESTINTERNALS_OBJS)
 $(OUTPUT_ROOT)/$(TYPE)/xmq_genautocomp.o: $(OUTPUT_ROOT)/generated_autocomplete.h
 $(OUTPUT_ROOT)/$(TYPE)/fileinfo.o: $(OUTPUT_ROOT)/generated_filetypes.h
 
-$(OUTPUT_ROOT)/$(TYPE)/%.o: $(SRC_ROOT)/src/main/c/%.c
+$(OUTPUT_ROOT)/$(TYPE)/%.o: $(SRC_ROOT)/src/main/c/%.c $(PARTS_SOURCES)
 	@echo Compiling $(TYPE) $(CONF_MNEMONIC) $$(basename $<)
 	$(VERBOSE)$(CC) -fpic -g $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c -o $@
 	$(VERBOSE)$(CC) -E $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c > $@.source
@@ -156,7 +156,7 @@ $(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(POSIX_OBJS)
 	@echo Linking libxmq.so
 	$(VERBOSE)$(CC) -shared -g -o $(OUTPUT_ROOT)/$(TYPE)/libxmq.so $(OUTPUT_ROOT)/$(TYPE)/xmq.o $(LIBXML2_LIBS) $(LDFLAGSBEGIN_$(TYPE)) $(DEBUG_LDFLAGS) $(LDFLAGSEND_$(TYPE))
 else
-$(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(WINAPI_OBJS)
+$(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(WINAPI_OBJS) $(PARTS_SOURCES)
 	touch $@
 endif
 
@@ -172,7 +172,7 @@ $(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS)
 	$(VERBOSE)cp $@ $@.g
 	$(VERBOSE)$(STRIP_COMMAND) $@
 else
-$(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS)
+$(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(PARTS_SOURCES)
 	@echo Linking static $(TYPE) $(CONF_MNEMONIC) $@
 	$(VERBOSE)$(CC) -static -o $@ $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS)  \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
@@ -210,7 +210,7 @@ $(SRC_ROOT)/dist/xmq.h: $(SRC_ROOT)/src/main/c/xmq.h
 	@cp $< $@
 	@echo "Copied dist/xmq.h"
 
-$(SRC_ROOT)/dist/xmq.c: $(SRC_ROOT)/src/main/c/xmq.c
+$(SRC_ROOT)/dist/xmq.c: $(SRC_ROOT)/src/main/c/xmq.c $(PARTS_SOURCES)
 	$(VERBOSE)$(SRC_ROOT)/scripts/build_xmq_from_parts.sh $(OUTPUT_ROOT) $<
 	$(VERBOSE)cp $(OUTPUT_ROOT)/xmq-in-progress $(SRC_ROOT)/dist/xmq.c
 	@echo "Generated dist/xmq.c"

@@ -1,0 +1,11 @@
+INPUT
+[ true, false ]
+XMQ
+_(A)
+{
+    _(B) = true
+    _(B) = false
+}
+JSON
+[true,false]
+END
