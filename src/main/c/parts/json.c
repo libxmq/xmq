@@ -28,6 +28,7 @@ void parse_json_number(XMQParseState *state, const char *key_start, const char *
 void parse_json_object(XMQParseState *state, const char *key_start, const char *key_stop);
 void parse_json_quote(XMQParseState *state, const char *key_start, const char *key_stop);
 
+bool is_jnumber(const char *start, const char *stop);
 bool is_json_boolean(XMQParseState *state);
 bool is_json_null(XMQParseState *state);
 bool is_json_number(XMQParseState *state);
@@ -59,8 +60,7 @@ char rightpar[] = ")";
 char leftbrace[] = "{";
 char rightbrace[] = "}";
 char array[] = "A";
-char boolean[] = "B";
-char number[] = "N";
+char string[] = "S";
 
 bool is_json_whitespace(char c)
 {
@@ -85,7 +85,13 @@ size_t eat_json_quote(XMQParseState *state, const char **content_start, const ch
     while (i < end)
     {
         char c = *i;
-        if (c == '\\')
+        if (c == '"')
+        {
+            *content_stop = i;
+            increment(c, 1, &i, &line, &col);
+            break;
+        }
+/*        if (c == '\\')
         {
             increment(c, 1, &i, &line, &col);
             c = *i;
@@ -113,13 +119,7 @@ size_t eat_json_quote(XMQParseState *state, const char **content_start, const ch
             state->error_nr = XMQ_ERROR_JSON_INVALID_ESCAPE;
             longjmp(state->error_handler, 1);
         }
-        if (c == '"')
-        {
-            *content_stop = i;
-            increment(c, 1, &i, &line, &col);
-            break;
-        }
-
+*/
         increment(c, 1, &i, &line, &col);
     }
     state->i = i;
@@ -148,12 +148,12 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
 
     if (!memcmp(content_start, "true", content_stop-content_start) ||
         !memcmp(content_start, "false", content_stop-content_start) ||
-        !memcmp(content_start, "null", content_stop-content_start))
+        !memcmp(content_start, "null", content_stop-content_start) ||
+        is_jnumber(content_start, content_stop))
     {
         // Ah, this is the string "false" not the boolean false. Mark this with the attribute S to show that it is a string.
         DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, state->col, leftpar, leftpar+1, leftpar+1);
-        const char* s = "S";
-        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, s, state->col, s, s+1, s+1);
+        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, string, state->col, string, string+1, string+1);
         DO_CALLBACK_SIM(apar_right, state, state->line, state->col, rightpar, state->col, rightpar, rightpar+1, rightpar+1);
     }
 
@@ -205,6 +205,17 @@ void parse_json_null(XMQParseState *state, const char *key_start, const char *ke
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, state->col, key_start, key_stop, key_stop);
 
     DO_CALLBACK(element_value_text, state, start_line, start_col, start, start_col, content_start, content_stop, stop);
+}
+
+bool is_jnumber(const char *start, const char *stop)
+{
+    const char *i = start;
+    while (i < stop)
+    {
+        char c = *i;
+        if (c < '0' || c > '9') return false;
+    }
+    return true;
 }
 
 bool is_json_boolean(XMQParseState *state)
@@ -311,9 +322,6 @@ void parse_json_number(XMQParseState *state, const char *key_start, const char *
     }
 
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, state->col, key_start, key_stop, key_stop);
-    DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, state->col, leftpar, leftpar+1, leftpar+1);
-    DO_CALLBACK_SIM(attr_key, state, state->line, state->col, boolean, state->col, boolean, boolean+1, boolean+1);
-    DO_CALLBACK_SIM(apar_right, state, state->line, state->col, rightpar, state->col, rightpar, rightpar+1, rightpar+1);
 
     DO_CALLBACK(element_value_text, state, start_line, start_col, start, start_col, content_start, content_stop, stop);
 }
@@ -513,7 +521,11 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
         eat_whitespace(state, NULL, NULL);
         c = *(state->i);
 
-        if (c != ':')
+        if (c == ':')
+        {
+            increment(c, 1, &state->i, &state->line, &state->col);
+        }
+        else
         {
             state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
             longjmp(state->error_handler, 1);
@@ -544,7 +556,7 @@ void json_print_value(XMQPrintState *ps, xmlNode *container, xmlNode *node, Leve
          || json_is_keyword(xml_element_content(node), NULL)))
     {
         // This is a number(123), true,false or null.
-        write(writer_state, xml_element_content(node), NULL);
+        write(writer_state, content, NULL);
         ps->last_char = content[strlen(content)-1];
     }
     else if (!xml_next_sibling(node) && content[0] == 0)
@@ -581,7 +593,7 @@ void json_print_array_with_children(XMQPrintState *ps,
 {
     if (container)
     {
-        // We have a containing node, then we can print this using "name" : { ... }
+        // We have a containing node, then we can print this using "name" : [ ... ]
         json_check_comma_before_key(ps);
         json_print_element_name(ps, container, node);
         print_utf8(ps, COLOR_none, 1, ":", NULL);
@@ -597,7 +609,7 @@ void json_print_array_with_children(XMQPrintState *ps,
 
     if (!container)
     {
-        // Top level object or object inside array.
+        // Top level object or object inside array. [ {} {} ]
         // Dump the element name! It cannot be represented!
     }
     while (xml_prev_sibling((xmlNode*)from)) from = xml_prev_sibling((xmlNode*)from);
@@ -631,7 +643,8 @@ void json_print_element_with_children(XMQPrintState *ps,
 
     ps->line_indent += ps->output_settings->add_indent;
 
-    if (!container)
+    const char *name = xml_element_name(node);
+    if (!container && name && name[0] != '_' && name[1] != 0)
     {
         // Top level object or object inside array.
         json_check_comma_before_key(ps);
@@ -639,6 +652,7 @@ void json_print_element_with_children(XMQPrintState *ps,
         ps->last_char = ':';
         json_print_element_name(ps, container, node);
     }
+
     while (xml_prev_sibling((xmlNode*)from)) from = xml_prev_sibling((xmlNode*)from);
     assert(from != NULL);
 
@@ -694,8 +708,8 @@ void json_print_key_node(XMQPrintState *ps,
     {
         json_print_element_name(ps, container, node);
         print_utf8(ps, COLOR_equals, 1, ":", NULL);
+        ps->last_char = ':';
     }
-
     json_print_value(ps, container, xml_first_child(node), LEVEL_ELEMENT_VALUE);
 }
 
@@ -716,6 +730,7 @@ void json_print_comma(XMQPrintState *ps)
     XMQWrite write = output_settings->content.write;
     void *writer_state = output_settings->content.writer_state;
     write(writer_state, ",", NULL);
+    ps->last_char = ',';
     ps->current_indent ++;
 }
 
@@ -747,6 +762,8 @@ void json_print_leaf_node(XMQPrintState *ps,
     void *writer_state = output_settings->content.writer_state;
     const char *name = xml_element_name(node);
 
+    json_check_comma_before_key(ps);
+
     if (name &&
         name[0] != '_' &&
         name[1] != 0)
@@ -758,20 +775,24 @@ void json_print_leaf_node(XMQPrintState *ps,
     if (xml_get_attribute(node, "A"))
     {
         write(writer_state, "[]", NULL);
+        ps->last_char = ']';
     }
     else
     {
         write(writer_state, "{}", NULL);
+        ps->last_char = '}';
     }
 }
 
 #else
 
+// Empty function when XMQ_NO_JSON is defined.
 bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop)
 {
     return false;
 }
 
+// Empty function when XMQ_NO_JSON is defined.
 void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to)
 {
 }

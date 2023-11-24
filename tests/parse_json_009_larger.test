@@ -1,0 +1,68 @@
+INPUT
+{"settings":{"analysis":{"filter":{},"tokenizer":{"my_tokenizer":{"type":"ngram","min_gram":3,"max_gram":3,"token_chars":[]}},"analyzer":{"my_analyzer":{"tokenizer":"my_tokenizer","filter":["lowercase"]},"hiphen_analyzer":{"tokenizer":"whitespace","filter":["lowercase"]}}}},"mappings":{"test":{"properties":{"catch_all":{"type":"text","fields":{"keyword":{"type":"keyword","store":true,"ignore_above":256},"raw":{"type":"text","store":true,"analyzer":"hiphen_analyzer","search_analyzer":"whitespace"},"ngrams":{"type":"text","store":true,"analyzer":"my_analyzer"}}},"hostname":{"type":"text","copy_to":"catch_all"}}}}}
+XMQ
+_ {
+    settings {
+        analysis {
+            filter
+            tokenizer {
+                my_tokenizer {
+                    type     = ngram
+                    min_gram = 3
+                    max_gram = 3
+                    token_chars(A)
+                }
+            }
+            analyzer {
+                my_analyzer {
+                    tokenizer = my_tokenizer
+                    filter(A)
+                    {
+                        _ = lowercase
+                    }
+                }
+                hiphen_analyzer {
+                    tokenizer = whitespace
+                    filter(A)
+                    {
+                        _ = lowercase
+                    }
+                }
+            }
+        }
+    }
+    mappings {
+        test {
+            properties {
+                catch_all {
+                    type = text
+                    fields {
+                        keyword {
+                            type         = keyword
+                            store        = true
+                            ignore_above = 256
+                        }
+                        raw {
+                            type            = text
+                            store           = true
+                            analyzer        = hiphen_analyzer
+                            search_analyzer = whitespace
+                        }
+                        ngrams {
+                            type     = text
+                            store    = true
+                            analyzer = my_analyzer
+                        }
+                    }
+                }
+                hostname {
+                    type    = text
+                    copy_to = catch_all
+                }
+            }
+        }
+    }
+}
+JSON
+{"settings":{"analysis":{"filter":{},"tokenizer":{"my_tokenizer":{"type":"ngram","min_gram":3,"max_gram":3,"token_chars":[]}},"analyzer":{"my_analyzer":{"tokenizer":"my_tokenizer","filter":["lowercase"]},"hiphen_analyzer":{"tokenizer":"whitespace","filter":["lowercase"]}}}},"mappings":{"test":{"properties":{"catch_all":{"type":"text","fields":{"keyword":{"type":"keyword","store":true,"ignore_above":256},"raw":{"type":"text","store":true,"analyzer":"hiphen_analyzer","search_analyzer":"whitespace"},"ngrams":{"type":"text","store":true,"analyzer":"my_analyzer"}}},"hostname":{"type":"text","copy_to":"catch_all"}}}}}
+END
