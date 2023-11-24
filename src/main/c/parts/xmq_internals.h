@@ -255,10 +255,8 @@ bool is_xmq_attribute_key_start(char c);
 bool is_xmq_comment_start(char c, char cc);
 bool is_xmq_compound_start(char c);
 bool is_xmq_doctype_start(const char *start, const char *stop);
-bool is_xmq_element_start(char c);
 bool is_xmq_entity_start(char c);
 bool is_xmq_quote_start(char c);
-bool is_xmq_text_name(char c);
 bool is_xmq_text_value(const char *i, const char *stop);
 bool is_xmq_text_value_char(const char *i, const char *stop);
 
@@ -309,8 +307,6 @@ size_t eat_xmq_quote(XMQParseState *state, const char **content_start, const cha
 char *xmq_trim_quote(size_t indent, char space, const char *start, const char *stop);
 void xmq_fixup_html_before_writeout(XMQDoc *doq);
 
-char *xmq_quote_as_c(const char *start, const char *stop);
-char *xmq_unquote_as_c(const char *start, const char *stop);
 char *xmq_comment(int indent,
                  const char *start,
                  const char *stop,

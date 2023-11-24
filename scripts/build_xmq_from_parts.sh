@@ -41,11 +41,11 @@ do_part() {
     $SED -e "/${PART}\.c/ {" -e "r ${ROOT}/parts_${PART}_c" -e 'd }' ${ROOT}/tmp > ${ROOT}/xmq-in-progress
 }
 
-# Insert the xmq_internals first since it includes the other parts.
-do_part xmq_internals
-do_part utils
+do_part hashmap
 do_part json
 do_part membuffer
 do_part stack
-do_part hashmap
+do_part text
+do_part utils
 do_part xml
+do_part xmq_internals

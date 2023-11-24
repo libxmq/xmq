@@ -5,6 +5,7 @@
 #include"parts/xmq_internals.h"
 #include"json.h"
 #include"stack.h"
+#include"text.h"
 #include"xml.h"
 
 #include<assert.h>
@@ -139,22 +140,43 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
     size_t depth = eat_json_quote(state, &content_start, &content_stop);
     size_t content_start_col = start_col+depth;
 
+    const char *unsafe_key_start = NULL;
+    const char *unsafe_key_stop = NULL;
+
     if (!key_start)
     {
         key_start = underline;
         key_stop = underline+1;
     }
+    else if (!is_xmq_element_name(key_start, key_stop))
+    {
+        unsafe_key_start = key_start;
+        unsafe_key_stop = key_stop;
+        key_start = underline;
+        key_stop = underline+1;
+    }
+
 
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, state->col, key_start, key_stop, key_stop);
 
-    if (!strncmp(content_start, "true", content_stop-content_start) ||
+    bool need_string_type = !strncmp(content_start, "true", content_stop-content_start) ||
         !strncmp(content_start, "false", content_stop-content_start) ||
         !strncmp(content_start, "null", content_stop-content_start) ||
-        is_jnumber(content_start, content_stop))
+        is_jnumber(content_start, content_stop);
+
+    if (need_string_type || unsafe_key_start)
     {
         // Ah, this is the string "false" not the boolean false. Mark this with the attribute S to show that it is a string.
         DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, state->col, leftpar, leftpar+1, leftpar+1);
-        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, string, state->col, string, string+1, string+1);
+        if (unsafe_key_start)
+        {
+            DO_CALLBACK_SIM(attr_key, state, state->line, state->col, underline, state->col, underline, underline+1, underline+1);
+            DO_CALLBACK_SIM(attr_value_quote, state, state->line, state->col, unsafe_key_start, state->col, unsafe_key_start, unsafe_key_stop, unsafe_key_stop);
+        }
+        if (need_string_type)
+        {
+            DO_CALLBACK_SIM(attr_key, state, state->line, state->col, string, state->col, string, string+1, string+1);
+        }
         DO_CALLBACK_SIM(apar_right, state, state->line, state->col, rightpar, state->col, rightpar, rightpar+1, rightpar+1);
     }
 
@@ -772,6 +794,21 @@ void json_print_key_node(XMQPrintState *ps,
         json_print_element_name(ps, container, node);
         print_utf8(ps, COLOR_equals, 1, ":", NULL);
         ps->last_char = ':';
+    }
+    else if (name[1] == 0)
+    {
+        xmlAttr *a = xml_get_attribute(node, "_");
+        if (a)
+        {
+            // The key was stored inside the attribute because it could not
+            // be used as the element name.
+            char *value = (char*)xmlNodeListGetString(node->doc, a->children, 1);
+            char *quoted_value = xmq_quote_as_c(value, value+strlen(value));
+            print_utf8(ps, COLOR_none, 3, "\"", NULL, quoted_value, NULL, "\":", NULL);
+            free(quoted_value);
+            xmlFree(value);
+            ps->last_char = ':';
+        }
     }
     json_print_value(ps, container, xml_first_child(node), LEVEL_ELEMENT_VALUE);
 }

@@ -21,17 +21,36 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef TEXT_H
+#define TEXT_H
 
 #include<stdbool.h>
 #include<stdlib.h>
 
-void check_malloc(void *a);
+/**
+    UTF8Char: storage for 1 to 4 utf8 bytes
 
-#define PRINT_STDOUT(...) printf(__VA_ARGS__)
-#define PRINT_ERROR(...) fprintf(stderr, __VA_ARGS__)
+    An utf8 char is at most 4 bytes since the max unicode nr is capped at U+10FFFF:
+*/
+#define MAX_NUM_UTF8_BYTES 4
+typedef struct
+{
+    char bytes[MAX_NUM_UTF8_BYTES];
+} UTF8Char;
 
-#define UTILS_MODULE
+bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
+bool is_lowercase_hex(char c);
+bool is_xmq_element_name(const char *start, const char *stop);
+bool is_xmq_element_start(char c);
+bool is_xmq_text_name(char c);
+size_t num_utf8_bytes(char c);
+size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc);
+void str_b_u_len(const char *start, const char *stop, size_t *b_len, size_t *u_len);
+char to_hex(int c);
+bool utf8_char_to_codepoint_string(UTF8Char *uc, char *buf);
+char *xmq_quote_as_c(const char *start, const char *stop);
+char *xmq_unquote_as_c(const char *start, const char *stop);
 
-#endif // UTILS_H
+#define TEXT_MODULE
+
+#endif // TEXT_H

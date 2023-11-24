@@ -1,6 +1,7 @@
 #ifndef BUILDING_XMQ
 
 #include"parts/utils.h"
+#include"parts/text.h"
 #include"parts/xmq_internals.h"
 
 #endif

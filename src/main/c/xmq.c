@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/hashmap.h"
 #include"parts/membuffer.h"
 #include"parts/stack.h"
+#include"parts/text.h"
 #include"parts/xml.h"
 
 // XMQ STRUCTURES ////////////////////////////////////////////////
@@ -107,7 +108,6 @@ void reset_ansi_nl(XMQParseState *state);
 bool possibly_lost_content_after_equals(XMQParseState *state);
 void setup_htmq_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
 const char *skip_any_potential_bom(const char *start, const char *stop);
-char to_hex(int c);
 bool unsafe_start(char c, char cc);
 bool write_print_stderr(void *writer_state_ignored, const char *start, const char *stop);
 bool write_print_stdout(void *writer_state_ignored, const char *start, const char *stop);
@@ -891,22 +891,6 @@ bool is_xmq_text_value(const char *start, const char *stop)
     return true;
 }
 
-bool is_xmq_text_name(char c)
-{
-    if (c >= 'a' && c <= 'z') return true;
-    if (c >= 'A' && c <= 'Z') return true;
-    if (c >= '0' && c <= '9') return true;
-    if (c == '-' || c == '_' || c == '.' || c == ':' || c == '#') return true;
-    return false;
-}
-
-bool is_xmq_element_start(char c)
-{
-    if (c >= 'a' && c <= 'z') return true;
-    if (c >= 'A' && c <= 'Z') return true;
-    if (c == '_') return true;
-    return false;
-}
 
 bool peek_xmq_next_is_equal(XMQParseState *state)
 {
@@ -2106,102 +2090,6 @@ LIST_OF_XMQ_TOKENS
 #undef X
 
     callbacks->magic_cookie = MAGIC_COOKIE;
-}
-
-char to_hex(int c)
-{
-    if (c >= 0 && c <= 9) return '0'+c;
-    return 'A'-10+c;
-}
-/**
-    xmq_quote_as_c:
-
-    Escape the in string using c/json quotes. I.e. Surround with " and newline becomes \n and " become \" etc.
-*/
-
-char *xmq_quote_as_c(const char *start, const char *stop)
-{
-    if (!stop) stop = start+strlen(start);
-    if (stop == start)
-    {
-        char *tmp = (char*)malloc(1);
-        tmp[0] = 0;
-        return tmp;
-    }
-    assert(stop > start);
-    size_t len = 1+(stop-start)*4; // Worst case expansion of all chars.
-    char *buf = (char*)malloc(len);
-
-    const char *i = start;
-    char *o = buf;
-    size_t real = 0;
-
-    for (; i < stop; ++i)
-    {
-        char c = *i;
-        if (c >= ' ' && c <= 126 && c != '"') { *o++ = *i; real++;}
-        else if (c == '"') { *o++ = '\\'; *o++ = '"'; real+=2; }
-        else if (c == '\a') { *o++ = '\\'; *o++ = 'a'; real+=2; }
-        else if (c == '\b') { *o++ = '\\'; *o++ = 'b'; real+=2; }
-        else if (c == '\t') { *o++ = '\\'; *o++ = 't'; real+=2; }
-        else if (c == '\n') { *o++ = '\\'; *o++ = 'n'; real+=2; }
-        else if (c == '\v') { *o++ = '\\'; *o++ = 'v'; real+=2; }
-        else if (c == '\f') { *o++ = '\\'; *o++ = 'f'; real+=2; }
-        else if (c == '\r') { *o++ = '\\'; *o++ = 'r'; real+=2; }
-        else { *o++ = '\\'; *o++ = 'x'; *o++ = to_hex((c>>4)&0xf); *o++ = to_hex(c&0xf); real+=4; }
-    }
-    real++;
-    *o = 0;
-    buf = (char*)realloc(buf, real);
-    return buf;
-}
-/**
-    xmq_unquote_as_c:
-
-    Unescape the in string using c/json quotes. I.e. Replace \" with ", \n with newline etc.
-*/
-char *xmq_unquote_as_c(const char *start, const char *stop)
-{
-    if (stop == start)
-    {
-        char *tmp = (char*)malloc(1);
-        tmp[0] = 0;
-        return tmp;
-    }
-    assert(stop > start);
-    size_t len = 1+stop-start; // It gets shorter when unescaping. Worst case no escape was found.
-    char *buf = (char*)malloc(len);
-
-    const char *i = start;
-    char *o = buf;
-    size_t real = 0;
-
-    for (; i < stop; ++i, real++)
-    {
-        char c = *i;
-        if (c == '\\') {
-            i++;
-            if (i >= stop) break;
-            c = *i;
-            if (c == '"') *o++ = '"';
-            else if (c == 'n') *o++ = '\n';
-            else if (c == 'a') *o++ = '\a';
-            else if (c == 'b') *o++ = '\b';
-            else if (c == 't') *o++ = '\t';
-            else if (c == 'v') *o++ = '\v';
-            else if (c == 'f') *o++ = '\f';
-            else if (c == 'r') *o++ = '\r';
-            // Ignore or what?
-        }
-        else
-        {
-            *o++ = *i;
-        }
-    }
-    real++;
-    *o = 0;
-    buf = (char*)realloc(buf, real);
-    return buf;
 }
 
 #define X(TYPE) void debug_tokens_##TYPE(XMQParseState*state,size_t line,size_t col,const char*start,size_t indent,const char*cstart,const char*cstop,const char*stop) { PRINT_STDOUT("["#TYPE "%s ", state->simulated?" SIM":""); char *tmp = xmq_quote_as_c(start, stop); PRINT_STDOUT("\"%s\" %zu:%zu]", tmp, line, col); free(tmp); };
@@ -5535,6 +5423,7 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
 #include"parts/stack.c"
 #include"parts/membuffer.c"
 #include"parts/json.c"
+#include"parts/text.c"
 #include"parts/utils.c"
 #include"parts/xml.c"
 #include"parts/xmq_internals.c"

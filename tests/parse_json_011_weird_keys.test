@@ -1,0 +1,19 @@
+INPUT
+{
+    "a name with spaces.":"oliver alabaster",
+    "simple": "task",
+    "https://foo/bar?x=123.42.":"url",
+    "color": "red",
+    "😀😁":"😂🤣"
+}
+XMQ
+_ {
+    _(_ = 'a name with spaces.') = 'oliver alabaster'
+    simple = task
+    _(_ = https://foo/bar?x=123.42.) = url
+    color = red
+    _(_ = 😀😁) = 😂🤣
+}
+JSON
+{"a name with spaces.":"oliver alabaster","simple":"task","https://foo/bar?x=123.42.":"url","color":"red","😀😁":"😂🤣"}
+END

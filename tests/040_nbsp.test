@@ -3,7 +3,7 @@ girka {
     td = 'x x'
 }
 DEBUG
-[element_name "girka" 1:1][whitespace " " 1:6][brace_left "{" 1:1][whitespace "\n    " 1:8][element_key "td" 2:5][whitespace " " 2:7][equals "=" 2:5][whitespace " " 2:9][element_value_quote "'x\xC2\xA0x'" 2:10][whitespace "\n" 2:15][brace_right "}" 1:1][whitespace "\n" 3:2]
+[element_name "girka" 1:1][whitespace " " 1:6][brace_left "{" 1:1][whitespace "\n    " 1:8][element_key "td" 2:5][whitespace " " 2:7][equals "=" 2:5][whitespace " " 2:9][element_value_quote "'x x'" 2:10][whitespace "\n" 2:15][brace_right "}" 1:1][whitespace "\n" 3:2]
 CONTENT
-{quote "x\xC2\xA0x"}
+{quote "x x"}
 END
