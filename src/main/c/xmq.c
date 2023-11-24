@@ -811,8 +811,25 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                 return XMQ_CONTENT_XML; // Or HTML...
             }
             if (c == '{' || c == '"' || c == '[' || (c >= '0' && c <= '9')) return XMQ_CONTENT_JSON;
-            // The strings true, false and null are valid json, but are also valid xmq.
-            // We default to xmq here.
+            // Strictly speaking true,false and null are valid xmq files. But we assume
+            // it is json since it must be very rare with a single <true> <false> <null> tag in xml/xmq/html/htmq etc.
+            // Force xmq with --xmq for the cli command.
+            size_t l = 0;
+            if (c == 't' || c == 'n') l = 4;
+            else if (c == 'f') l = 5;
+
+            if (l != 0)
+            {
+                if (i+l-1 < stop)
+                {
+                    if (i+l == stop || (*(i+l) == '\n' && i+l+1 == stop))
+                    {
+                        if (!strncmp(i, "true", 4) ||
+                            !strncmp(i, "false", 5) ||
+                            !strncmp(i, "null", 4)) return XMQ_CONTENT_JSON;
+                    }
+                }
+            }
             return XMQ_CONTENT_XMQ;
         }
         i++;

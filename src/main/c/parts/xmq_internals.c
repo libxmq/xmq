@@ -32,6 +32,11 @@ size_t count_whitespace(const char *i, const char *stop)
 
     if (i+1 >= stop) return 0;
 
+    // If not a unbreakable space U+00A0 (utf8 0xc2a0)
+    // or the other unicode whitespaces (utf8 starts with 0xe2)
+    // then we have not whitespaces here.
+    if (c != 0xc2 && c != 0xe2) return 0;
+
     unsigned char cc = *(i+1);
 
     if (c == 0xC2 && cc == 0xA0)
@@ -75,17 +80,20 @@ void eat_whitespace(XMQParseState *state, const char **start, const char **stop)
     const char *buffer_stop = state->buffer_stop;
     size_t line = state->line;
     size_t col = state->col;
-    *start = i;
+    if (start) *start = i;
+
+    size_t nw = count_whitespace(i, buffer_stop);
+    if (!nw) return;
 
     while (i < buffer_stop)
     {
-        size_t nw = count_whitespace(i, *stop);
+        size_t nw = count_whitespace(i, buffer_stop);
         if (!nw) break;
         // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
         increment(*i, nw, &i, &line, &col);
     }
 
-    *stop = i;
+    if (stop) *stop = i;
     state->i = i;
     state->line = line;
     state->col = col;

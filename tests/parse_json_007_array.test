@@ -3,8 +3,8 @@ INPUT
 XMQ
 _(A)
 {
-    _(B) = true
-    _(B) = false
+    _ = true
+    _ = false
 }
 JSON
 [true,false]

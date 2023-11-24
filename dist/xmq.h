@@ -23,6 +23,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef XMQ_H
 #define XMQ_H
 
+// #define XMQ_NO_XMQ_PRINTING
+// #define XMQ_NO_LIBXML
+// #define XMQ_NO_JSON
+
 #define _hideLBfromEditor {
 #define _hideRBfromEditor }
 

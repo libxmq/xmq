@@ -1415,8 +1415,25 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                 return XMQ_CONTENT_XML; // Or HTML...
             }
             if (c == '{' || c == '"' || c == '[' || (c >= '0' && c <= '9')) return XMQ_CONTENT_JSON;
-            // The strings true, false and null are valid json, but are also valid xmq.
-            // We default to xmq here.
+            // Strictly speaking true,false and null are valid xmq files. But we assume
+            // it is json since it must be very rare with a single <true> <false> <null> tag in xml/xmq/html/htmq etc.
+            // Force xmq with --xmq for the cli command.
+            size_t l = 0;
+            if (c == 't' || c == 'n') l = 4;
+            else if (c == 'f') l = 5;
+
+            if (l != 0)
+            {
+                if (i+l-1 < stop)
+                {
+                    if (i+l == stop || (*(i+l) == '\n' && i+l+1 == stop))
+                    {
+                        if (!strncmp(i, "true", 4) ||
+                            !strncmp(i, "false", 5) ||
+                            !strncmp(i, "null", 4)) return XMQ_CONTENT_JSON;
+                    }
+                }
+            }
             return XMQ_CONTENT_XMQ;
         }
         i++;
@@ -6621,16 +6638,20 @@ void membuffer_append_entity(MemBuffer *mb, char c)
 #ifdef JSON_MODULE
 
 void eat_json_boolean(XMQParseState *state, const char **content_start, const char **content_stop);
+void eat_json_null(XMQParseState *state, const char **content_start, const char **content_stop);
 void eat_json_number(XMQParseState *state, const char **content_start, const char **content_stop);
 size_t eat_json_quote(XMQParseState *state, const char **content_start, const char **content_stop);
-void parse_json_array(XMQParseState *state);
-void parse_json_boolean(XMQParseState *state);
-void parse_json_node(XMQParseState *state);
-void parse_json(XMQParseState *state);
-void parse_json_number(XMQParseState *state);
-void parse_json_quote(XMQParseState *state);
-void parse_json_whitespace(XMQParseState *state);
+
+void parse_json(XMQParseState *state, const char *key_start, const char *key_stop);
+void parse_json_array(XMQParseState *state, const char *key_start, const char *key_stop);
+void parse_json_boolean(XMQParseState *state, const char *key_start, const char *key_stop);
+void parse_json_null(XMQParseState *state, const char *key_start, const char *key_stop);
+void parse_json_number(XMQParseState *state, const char *key_start, const char *key_stop);
+void parse_json_object(XMQParseState *state, const char *key_start, const char *key_stop);
+void parse_json_quote(XMQParseState *state, const char *key_start, const char *key_stop);
+
 bool is_json_boolean(XMQParseState *state);
+bool is_json_null(XMQParseState *state);
 bool is_json_number(XMQParseState *state);
 bool is_json_quote_start(char c);
 bool is_json_whitespace(char c);
@@ -6716,6 +6737,7 @@ size_t eat_json_quote(XMQParseState *state, const char **content_start, const ch
         }
         if (c == '"')
         {
+            *content_stop = i;
             increment(c, 1, &i, &line, &col);
             break;
         }
@@ -6729,27 +6751,82 @@ size_t eat_json_quote(XMQParseState *state, const char **content_start, const ch
     return 1;
 }
 
-void parse_json_whitespace(XMQParseState *state)
+void parse_json_quote(XMQParseState *state, const char *key_start, const char *key_stop)
 {
-    size_t start_line = state->line;
-    size_t start_col = state->col;
-    const char *start;
-    const char *stop;
-    eat_whitespace(state, &start, &stop);
-    DO_CALLBACK(whitespace, state, start_line, start_col, start, start_col, start, stop, stop);
+    int start_line = state->line;
+    int start_col = state->col;
+    const char *content_start;
+    const char *content_stop;
+    size_t depth = eat_json_quote(state, &content_start, &content_stop);
+    size_t content_start_col = start_col+depth;
+
+    if (!key_start)
+    {
+        key_start = underline;
+        key_stop = underline+1;
+    }
+
+    DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, state->col, key_start, key_stop, key_stop);
+
+    if (!memcmp(content_start, "true", content_stop-content_start) ||
+        !memcmp(content_start, "false", content_stop-content_start) ||
+        !memcmp(content_start, "null", content_stop-content_start))
+    {
+        // Ah, this is the string "false" not the boolean false. Mark this with the attribute S to show that it is a string.
+        DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, state->col, leftpar, leftpar+1, leftpar+1);
+        const char* s = "S";
+        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, s, state->col, s, s+1, s+1);
+        DO_CALLBACK_SIM(apar_right, state, state->line, state->col, rightpar, state->col, rightpar, rightpar+1, rightpar+1);
+    }
+
+    DO_CALLBACK(element_value_quote, state, start_line, start_col, content_start, content_start_col, content_start, content_stop, content_stop);
 }
 
-void parse_json_quote(XMQParseState *state)
+bool is_json_null(XMQParseState *state)
+{
+    const char *i = state->i;
+    const char *stop = state->buffer_stop;
+
+    if (i+4 <= stop && !strncmp("null", i, 4)) return true;
+    return false;
+}
+
+void eat_json_null(XMQParseState *state, const char **content_start, const char **content_stop)
+{
+    const char *i = state->i;
+    size_t line = state->line;
+    size_t col = state->col;
+
+    increment('n', 1, &i, &line, &col);
+    increment('u', 1, &i, &line, &col);
+    increment('l', 1, &i, &line, &col);
+    increment('l', 1, &i, &line, &col);
+
+    state->i = i;
+    state->line = line;
+    state->col = col;
+}
+
+void parse_json_null(XMQParseState *state, const char *key_start, const char *key_stop)
 {
     const char *start = state->i;
     int start_line = state->line;
     int start_col = state->col;
     const char *content_start;
     const char *content_stop;
-    size_t depth = eat_json_quote(state, &content_start, &content_stop);
+
+    eat_json_null(state, &content_start, &content_stop);
     const char *stop = state->i;
-    size_t content_start_col = start_col+depth;
-    DO_CALLBACK(element_value_quote, state, start_line, start_col, start, content_start_col, content_start, content_stop, stop);
+
+    if (!key_start)
+    {
+        key_start = underline;
+        key_stop = underline+1;
+    }
+
+    DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, state->col, key_start, key_stop, key_stop);
+
+    DO_CALLBACK(element_value_text, state, start_line, start_col, start, start_col, content_start, content_stop, stop);
 }
 
 bool is_json_boolean(XMQParseState *state)
@@ -6790,7 +6867,7 @@ void eat_json_boolean(XMQParseState *state, const char **content_start, const ch
     state->col = col;
 }
 
-void parse_json_boolean(XMQParseState *state)
+void parse_json_boolean(XMQParseState *state, const char *key_start, const char *key_stop)
 {
     const char *start = state->i;
     int start_line = state->line;
@@ -6800,10 +6877,14 @@ void parse_json_boolean(XMQParseState *state)
 
     eat_json_boolean(state, &content_start, &content_stop);
     const char *stop = state->i;
-    DO_CALLBACK_SIM(element_key, state, state->line, state->col, underline, state->col, underline, underline+1, underline+1);
-    DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, state->col, leftpar, leftpar+1, leftpar+1);
-    DO_CALLBACK_SIM(attr_key, state, state->line, state->col, boolean, state->col, boolean, boolean+1, boolean+1);
-    DO_CALLBACK_SIM(apar_right, state, state->line, state->col, rightpar, state->col, rightpar, rightpar+1, rightpar+1);
+
+    if (!key_start)
+    {
+        key_start = underline;
+        key_stop = underline+1;
+    }
+
+    DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, state->col, key_start, key_stop, key_stop);
 
     DO_CALLBACK(element_value_text, state, start_line, start_col, start, start_col, content_start, content_stop, stop);
 }
@@ -6834,9 +6915,8 @@ void eat_json_number(XMQParseState *state, const char **content_start, const cha
     state->col = col;
 }
 
-void parse_json_number(XMQParseState *state)
+void parse_json_number(XMQParseState *state, const char *key_start, const char *key_stop)
 {
-    /*
     const char *start = state->i;
     int start_line = state->line;
     int start_col = state->col;
@@ -6845,8 +6925,19 @@ void parse_json_number(XMQParseState *state)
 
     eat_json_number(state, &content_start, &content_stop);
     const char *stop = state->i;
-    */
-    //DO_CALLBACK(element_value_text, state, start_line, start_col, start, start_col, content_start, content_stop, stop);
+
+    if (!key_start)
+    {
+        key_start = underline;
+        key_stop = underline+1;
+    }
+
+    DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, state->col, key_start, key_stop, key_stop);
+    DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, state->col, leftpar, leftpar+1, leftpar+1);
+    DO_CALLBACK_SIM(attr_key, state, state->line, state->col, boolean, state->col, boolean, boolean+1, boolean+1);
+    DO_CALLBACK_SIM(apar_right, state, state->line, state->col, rightpar, state->col, rightpar, rightpar+1, rightpar+1);
+
+    DO_CALLBACK(element_value_text, state, start_line, start_col, start, start_col, content_start, content_stop, stop);
 }
 
 bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const char *stop)
@@ -6869,7 +6960,7 @@ bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const cha
 
     if (!setjmp(state->error_handler))
     {
-        parse_json(state);
+        parse_json(state, NULL, NULL);
         if (state->i < state->buffer_stop)
         {
             state->error_nr = XMQ_ERROR_UNEXPECTED_CLOSING_BRACE;
@@ -6886,25 +6977,39 @@ bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const cha
     return true;
 }
 
-void parse_json_array(XMQParseState *state)
+void parse_json_array(XMQParseState *state, const char *key_start, const char *key_stop)
 {
     char c = *state->i;
     assert(c == '[');
     increment(c, 1, &state->i, &state->line, &state->col);
 
-    DO_CALLBACK_SIM(element_key, state, state->line, state->col, underline, state->col, underline, underline+1, underline+1);
+    if (!key_start)
+    {
+        key_start = underline;
+        key_stop = underline+1;
+    }
+
+    DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, state->col, key_start, key_stop, key_stop);
+
     DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, state->col, leftpar, leftpar+1, leftpar+1);
     DO_CALLBACK_SIM(attr_key, state, state->line, state->col, array, state->col, array, array+1, array+1);
     DO_CALLBACK_SIM(apar_right, state, state->line, state->col, rightpar, state->col, rightpar, rightpar+1, rightpar+1);
     DO_CALLBACK_SIM(brace_left, state, state->line, state->col, leftbrace, state->col, leftbrace, leftbrace+1, leftbrace+1);
 
-    do
+    const char *stop = state->buffer_stop;
+
+    c = ',';
+
+    while (state->i < stop && c == ',')
     {
-        parse_json(state);
+        eat_whitespace(state, NULL, NULL);
+        c = *(state->i);
+        if (c == ']') break;
+
+        parse_json(state, NULL, NULL);
         c = *state->i;
         if (c == ',') increment(c, 1, &state->i, &state->line, &state->col);
     }
-    while (c == ',');
 
     assert(c == ']');
     increment(c, 1, &state->i, &state->line, &state->col);
@@ -6912,43 +7017,24 @@ void parse_json_array(XMQParseState *state)
     DO_CALLBACK_SIM(brace_right, state, state->line, state->col, rightbrace, state->col, rightbrace, rightbrace+1, rightbrace+1);
 }
 
-void parse_json(XMQParseState *state)
+void parse_json(XMQParseState *state, const char *key_start, const char *key_stop)
 {
-    const char *stop = state->buffer_stop;
+    eat_whitespace(state, NULL, NULL);
 
-    while (state->i < stop)
+    char c = *(state->i);
+
+    if (is_json_quote_start(c)) parse_json_quote(state, key_start, key_stop);
+    else if (is_json_boolean(state)) parse_json_boolean(state, key_start, key_stop);
+    else if (is_json_null(state)) parse_json_null(state, key_start, key_stop);
+    else if (is_json_number(state)) parse_json_number(state, key_start, key_stop);
+    else if (c == '{') parse_json_object(state, key_start, key_stop);
+    else if (c == '[') parse_json_array(state, key_start, key_stop);
+    else
     {
-        char c = *(state->i);
-
-        if (is_json_whitespace(c)) parse_json_whitespace(state);
-        else if (is_json_quote_start(c)) parse_json_quote(state);
-        else if (is_json_boolean(state)) parse_json_boolean(state);
-        else if (is_json_number(state)) parse_json_number(state);
-        else if (c == '[') parse_json_array(state);
-        else if (c == ']') break;
-        else if (c == ',') break;
-        else
-        {
-            state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
-            longjmp(state->error_handler, 1);
-        }
+        state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
+        longjmp(state->error_handler, 1);
     }
-}
-
-void parse_json_node(XMQParseState *state)
-{
-    /*
-    char c = 0;
-    const char *name = "_";
-    const char *name_start = name;
-    const char *name_stop = name+1;
-
-    const char *start = state->i;
-    int start_line = state->line;
-    int start_col = state->col;
-    //eat_xmq_text_name(state, &name_start, &name_stop);
-    const char *stop = state->i;
-    */
+    eat_whitespace(state, NULL, NULL);
 }
 
 void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to)
@@ -6965,11 +7051,11 @@ void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlN
 void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node)
 {
     // Standalone quote must be quoted: 'word' 'some words'
-    if (is_content_node(node))
+/*    if (is_content_node(node))
     {
         json_print_value(ps, container, node, LEVEL_XMQ);
         return;
-    }
+        }*/
 /*
     // This is an entity reference node. &something;
     if (is_entity_node(node))
@@ -6989,7 +7075,8 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node)
         return json_print_doctype(ps, node);
     }
 */
-    // This is a node with no children, ie br
+    // This is a node with no children, but the only such valid json nodes are
+    // the empty object _ ---> {} or _(A) ---> [].
     if (is_leaf_node(node))
     {
         return json_print_leaf_node(ps, container, node);
@@ -7008,6 +7095,63 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node)
     }
     // All other nodes are printed
     json_print_element_with_children(ps, container, node);
+}
+
+void parse_json_object(XMQParseState *state, const char *key_start, const char *key_stop)
+{
+    char c = *state->i;
+    assert(c == '{');
+    increment(c, 1, &state->i, &state->line, &state->col);
+
+    if (!key_start)
+    {
+        key_start = underline;
+        key_stop = underline+1;
+    }
+
+    DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, state->col, key_start, key_stop, key_stop);
+    DO_CALLBACK_SIM(brace_left, state, state->line, state->col, leftbrace, state->col, leftbrace, leftbrace+1, leftbrace+1);
+
+    const char *stop = state->buffer_stop;
+
+    c = ',';
+
+    while (state->i < stop && c == ',')
+    {
+        eat_whitespace(state, NULL, NULL);
+        c = *(state->i);
+        if (c == '}') break;
+
+        if (!is_json_quote_start(c))
+        {
+            state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
+            longjmp(state->error_handler, 1);
+        }
+
+        // Find the key string, ie speed in { "speed":123 }
+        const char *key_start, *key_stop;
+        eat_json_quote(state, &key_start, &key_stop);
+
+        eat_whitespace(state, NULL, NULL);
+        c = *(state->i);
+
+        if (c != ':')
+        {
+            state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
+            longjmp(state->error_handler, 1);
+        }
+
+        parse_json(state, key_start, key_stop);
+
+        c = *state->i;
+        if (c == ',') increment(c, 1, &state->i, &state->line, &state->col);
+    }
+    while (c == ',');
+
+    assert(c == '}');
+    increment(c, 1, &state->i, &state->line, &state->col);
+
+    DO_CALLBACK_SIM(brace_right, state, state->line, state->col, rightbrace, state->col, rightbrace, rightbrace+1, rightbrace+1);
 }
 
 void json_print_value(XMQPrintState *ps, xmlNode *container, xmlNode *node, Level level)
@@ -7220,7 +7364,27 @@ void json_print_leaf_node(XMQPrintState *ps,
                           xmlNode *container,
                           xmlNode *node)
 {
-    json_print_element_name(ps, container, node);
+    XMQOutputSettings *output_settings = ps->output_settings;
+    XMQWrite write = output_settings->content.write;
+    void *writer_state = output_settings->content.writer_state;
+    const char *name = xml_element_name(node);
+
+    if (name &&
+        name[0] != '_' &&
+        name[1] != 0)
+    {
+        json_print_element_name(ps, container, node);
+        write(writer_state, ":", NULL);
+    }
+
+    if (xml_get_attribute(node, "A"))
+    {
+        write(writer_state, "[]", NULL);
+    }
+    else
+    {
+        write(writer_state, "{}", NULL);
+    }
 }
 
 #else
@@ -7414,6 +7578,11 @@ size_t count_whitespace(const char *i, const char *stop)
 
     if (i+1 >= stop) return 0;
 
+    // If not a unbreakable space U+00A0 (utf8 0xc2a0)
+    // or the other unicode whitespaces (utf8 starts with 0xe2)
+    // then we have not whitespaces here.
+    if (c != 0xc2 && c != 0xe2) return 0;
+
     unsigned char cc = *(i+1);
 
     if (c == 0xC2 && cc == 0xA0)
@@ -7457,17 +7626,20 @@ void eat_whitespace(XMQParseState *state, const char **start, const char **stop)
     const char *buffer_stop = state->buffer_stop;
     size_t line = state->line;
     size_t col = state->col;
-    *start = i;
+    if (start) *start = i;
+
+    size_t nw = count_whitespace(i, buffer_stop);
+    if (!nw) return;
 
     while (i < buffer_stop)
     {
-        size_t nw = count_whitespace(i, *stop);
+        size_t nw = count_whitespace(i, buffer_stop);
         if (!nw) break;
         // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
         increment(*i, nw, &i, &line, &col);
     }
 
-    *stop = i;
+    if (stop) *stop = i;
     state->i = i;
     state->line = line;
     state->col = col;
