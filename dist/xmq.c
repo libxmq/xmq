@@ -31,10 +31,34 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 // PARTS UTILS ////////////////////////////////////////
 
+#include<stdbool.h>
+#include<stdlib.h>
+
+/**
+    UTF8Char: storage for 1 to 4 utf8 bytes
+
+    An utf8 char is at most 4 bytes since the max unicode nr is capped at U+10FFFF:
+*/
+#define MAX_NUM_UTF8_BYTES 4
+typedef struct
+{
+    char bytes[MAX_NUM_UTF8_BYTES];
+} UTF8Char;
+
 void check_malloc(void *a);
 
 #define PRINT_STDOUT(...) printf(__VA_ARGS__)
 #define PRINT_ERROR(...) fprintf(stderr, __VA_ARGS__)
+
+bool is_lowercase_hex(char c);
+
+// UTF8 functions /////////////////
+
+bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
+size_t num_utf8_bytes(char c);
+size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc);
+void str_b_u_len(const char *start, const char *stop, size_t *b_len, size_t *u_len);
+bool utf8_char_to_codepoint_string(UTF8Char *uc, char *buf);
 
 #define UTILS_MODULE
 
@@ -357,23 +381,7 @@ struct XMQQuoteSettings
 };
 typedef struct XMQQuoteSettings XMQQuoteSettings;
 
-/**
-    UTF8Char: storage for 1 to 4 utf8 bytes
-
-    An utf8 char is at most 4 bytes since the max unicode nr is capped at U+10FFFF:
-*/
-#define MAX_NUM_UTF8_BYTES 4
-typedef struct
-{
-    char bytes[MAX_NUM_UTF8_BYTES];
-} UTF8Char;
-
-// UTF8 functions /////////////////
-
-bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
-bool utf8_char_to_codepoint_string(UTF8Char *uc, char *buf);
-size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc);
-void str_b_u_len(const char *start, const char *stop, size_t *b_len, size_t *u_len);
+void build_state_error_message(XMQParseState *state, const char *start, const char *stop);
 
 // Text functions ////////////////
 
@@ -651,7 +659,6 @@ bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const cha
 
 void add_nl(XMQParseState *state);
 bool begins_with_spaces_or_tabs_then_nl(const char *start, const char *stop);
-void build_state_error_message(XMQParseState *state, const char *start, const char *stop);
 XMQProceed catch_single_content(XMQDoc *doc, XMQNode *node, void *user_data);
 size_t calculate_buffer_size(const char *start, const char *stop, int indent, const char *pre_line, const char *post_line);
 void copy_and_insert(MemBuffer *mb, const char *start, const char *stop, int num_prefix_spaces, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
@@ -1182,95 +1189,6 @@ XMQParseState *xmqNewParseState(XMQParseCallbacks *callbacks, XMQOutputSettings 
     return state;
 }
 
-void build_state_error_message(XMQParseState *state, const char *start, const char *stop)
-{
-    // Error detected during parsing and this is where the longjmp will end up!
-    state->generated_error_msg = (char*)malloc(2048);
-
-    XMQParseError error_nr = (XMQParseError)state->error_nr;
-    const char *error = xmqParseErrorToString(error_nr);
-
-    const char *statei = state->i;
-    size_t line = state->line;
-    size_t col = state->col;
-
-    if (error_nr == XMQ_ERROR_BODY_NOT_CLOSED)
-    {
-        statei = state->last_body_start;
-        line = state->last_body_start_line;
-        col = state->last_body_start_col;
-    }
-    if (error_nr == XMQ_ERROR_ATTRIBUTES_NOT_CLOSED)
-    {
-        statei = state->last_attr_start;
-        line = state->last_attr_start_line;
-        col = state->last_attr_start_col;
-    }
-    if (error_nr == XMQ_ERROR_QUOTE_NOT_CLOSED)
-    {
-        statei = state->last_quote_start;
-        line = state->last_quote_start_line;
-        col = state->last_quote_start_col;
-    }
-    if (error_nr == XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS)
-    {
-        statei = state->last_equals_start;
-        line = state->last_equals_start_line;
-        col = state->last_equals_start_col;
-    }
-
-    size_t n = 0;
-    size_t offset = 0;
-    const char *line_start = statei;
-    while (line_start > start && *(line_start-1) != '\n' && n < 1024)
-    {
-        n++;
-        offset++;
-        line_start--;
-    }
-
-    const char *i = statei;
-    while (i < stop && *i && *i != '\n' && n < 1024)
-    {
-        n++;
-        i++;
-    }
-    const char *char_error = "";
-    char buf[32];
-
-    if (error_nr == XMQ_ERROR_INVALID_CHAR)
-    {
-        UTF8Char utf8_char;
-        peek_utf8_char(statei, stop, &utf8_char);
-        char utf8_codepoint[8];
-        utf8_char_to_codepoint_string(&utf8_char, utf8_codepoint);
-
-        snprintf(buf, 32, " \"%s\" %s", utf8_char.bytes, utf8_codepoint);
-        char_error = buf;
-    }
-
-    char line_error[1024];
-    line_error[0] = 0;
-    if (statei < stop)
-    {
-        snprintf(line_error, 1024, "\n%.*s\n %*s",
-                 (int)n,
-                 line_start,
-                 (int)offset,
-                 "^");
-    }
-
-    snprintf(state->generated_error_msg, 2048,
-             "%s:%zu:%zu: error: %s%s%s",
-             state->source_name,
-             line, col,
-             error,
-             char_error,
-             line_error
-        );
-    state->generated_error_msg[2047] = 0;
-}
-
 bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop)
 {
     if (state->magic_cookie != MAGIC_COOKIE)
@@ -1440,96 +1358,6 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
     }
 
     return XMQ_CONTENT_XMQ;
-}
-
-bool is_lowercase_hex(char c)
-{
-    return
-        (c >= '0' && c <= '9') ||
-        (c >= 'a' && c <= 'f');
-}
-
-size_t num_utf8_bytes(char c)
-{
-    if ((c & 0x80) == 0) return 1;
-    if ((c & 0xe0) == 0xc0) return 2;
-    if ((c & 0xf0) == 0xe0) return 3;
-    if ((c & 0xf8) == 0xf0) return 4;
-    return 0; // Error
-}
-
-/**
-   peek_utf8_char: Peek 1 to 4 chars from s belonging to the next utf8 code point and store them in uc.
-   @start: Read utf8 from this string.
-   @stop: Points to byte after last byte in string. If NULL assume start is null terminated.
-   @uc: Store the UTF8 char here.
-
-   Return the number of bytes peek UTF8 char, use this number to skip ahead to next char in s.
-*/
-size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc)
-{
-    char a = *start;
-    size_t n = num_utf8_bytes(a);
-
-    if (n == 1)
-    {
-        uc->bytes[0] = a;
-        uc->bytes[1] = 0;
-        uc->bytes[2] = 0;
-        uc->bytes[3] = 0;
-        return 1;
-    }
-
-    char b = *(start+1);
-    if (n == 2)
-    {
-        uc->bytes[0] = a;
-        uc->bytes[1] = b;
-        uc->bytes[2] = 0;
-        uc->bytes[3] = 0;
-        return 2;
-    }
-
-    char c = *(start+2);
-    if (n == 3)
-    {
-        uc->bytes[0] = a;
-        uc->bytes[1] = b;
-        uc->bytes[2] = c;
-        uc->bytes[3] = 0;
-        return 3;
-    }
-
-    char d = *(start+3);
-    if (n == 4)
-    {
-        uc->bytes[0] = a;
-        uc->bytes[1] = b;
-        uc->bytes[2] = c;
-        uc->bytes[3] = d;
-        return 4;
-    }
-
-    return 0;
-}
-
-/**
-   utf8_char_to_codepoint_string: Decode an utf8 char and store as a string "U+123"
-   @uc: The utf8 char to decode.
-   @buf: Store the codepoint string here must have space for 9 bytes, i.e. U+10FFFF and a NULL byte.
-*/
-bool utf8_char_to_codepoint_string(UTF8Char *uc, char *buf)
-{
-    int cp = 0;
-    size_t len = 0;
-    bool ok = decode_utf8(uc->bytes, uc->bytes+4, &cp, &len);
-    if (!ok)
-    {
-        snprintf(buf, 16, "U+error");
-        return false;
-    }
-    snprintf(buf, 16, "U+%X", cp);
-    return true;
 }
 
 bool is_xml_whitespace(char c)
@@ -3080,40 +2908,6 @@ LIST_OF_XMQ_TOKENS
     callbacks->magic_cookie = MAGIC_COOKIE;
 }
 
-const char *xmqParseErrorToString(XMQParseError e)
-{
-    switch (e)
-    {
-    case XMQ_ERROR_CANNOT_READ_FILE: return "cannot read file";
-    case XMQ_ERROR_NOT_XMQ: return "input file is not xmq";
-    case XMQ_ERROR_QUOTE_NOT_CLOSED: return "quote is not closed";
-    case XMQ_ERROR_ENTITY_NOT_CLOSED: return "entity is not closed";
-    case XMQ_ERROR_COMMENT_NOT_CLOSED: return "comment is not closed";
-    case XMQ_ERROR_COMMENT_CLOSED_WITH_TOO_MANY_SLASHES: return "comment closed with too many slashes";
-    case XMQ_ERROR_BODY_NOT_CLOSED: return "body is not closed";
-    case XMQ_ERROR_ATTRIBUTES_NOT_CLOSED: return "attributes are not closed";
-    case XMQ_ERROR_COMPOUND_NOT_CLOSED: return "compound is not closed";
-    case XMQ_ERROR_COMPOUND_MAY_NOT_CONTAIN: return "compound may only contain quotes and entities";
-    case XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES: return "quote closed with too many quotes";
-    case XMQ_ERROR_UNEXPECTED_CLOSING_BRACE: return "unexpected closing brace";
-    case XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS: return "expected content after equals";
-    case XMQ_ERROR_INVALID_CHAR: return "unexpected character";
-    case XMQ_ERROR_BAD_DOCTYPE: return "doctype could not be parsed";
-    case XMQ_ERROR_CANNOT_HANDLE_XML: return "cannot handle xml use libxmq-all for this!";
-    case XMQ_ERROR_CANNOT_HANDLE_HTML: return "cannot handle html use libxmq-all for this!";
-    case XMQ_ERROR_CANNOT_HANDLE_JSON: return "cannot handle json use libxmq-all for this!";
-    case XMQ_ERROR_JSON_INVALID_ESCAPE: return "invalid json escape";
-    case XMQ_ERROR_JSON_INVALID_CHAR: return "json invalid char";
-    case XMQ_ERROR_EXPECTED_XMQ: return "expected xmq source";
-    case XMQ_ERROR_EXPECTED_HTMQ: return "expected htmlq source";
-    case XMQ_ERROR_EXPECTED_XML: return "expected xml source";
-    case XMQ_ERROR_EXPECTED_HTML: return "expected html source";
-    case XMQ_ERROR_EXPECTED_JSON: return "expected json source";
-    }
-    assert(false);
-    return "unknown error";
-}
-
 XMQDoc *xmqNewDoc()
 {
     XMQDoc *d = (XMQDoc*)malloc(sizeof(XMQDoc));
@@ -3988,75 +3782,6 @@ void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *post
     if (prefix) write(writer_state, prefix, NULL);
 }
 
-/**
-   decode_utf8: Peek 1 to 4 chars from start and calculate unicode codepoint.
-   @start: Read utf8 from this string.
-   @stop: Points to byte after last byte in string. If NULL assume start is null terminated.
-   @out_char: Store the unicode code point here.
-   @out_len: How many bytes the utf8 char used.
-
-   Return true if valid utf8 char.
-*/
-bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len)
-{
-    int c = (int)(unsigned char)(*start);
-
-    if ((c & 0x80) == 0)
-    {
-        *out_char = c;
-        *out_len = 1;
-        return true;
-    }
-
-    if ((c & 0xe0) == 0xc0)
-    {
-        if (start+1 < stop)
-        {
-            unsigned char cc = *(start+1);
-            if ((cc & 0xc0) == 0x80)
-            {
-                *out_char = ((c & 0x1f) << 6) | (cc & 0x3f);
-                *out_len = 2;
-                return true;
-            }
-        }
-    }
-    else if ((c & 0xf0) == 0xe0)
-    {
-        if (start+2 < stop)
-        {
-            unsigned char cc = *(start+1);
-            unsigned char ccc = *(start+2);
-            if (((cc & 0xc0) == 0x80) && ((ccc & 0xc0) == 0x80))
-            {
-                *out_char = ((c & 0x0f) << 12) | ((cc & 0x3f) << 6) | (ccc & 0x3f) ;
-                *out_len = 3;
-                return true;
-            }
-        }
-    }
-    else if ((c & 0xf8) == 0xf0)
-    {
-        if (start+3 < stop)
-        {
-            unsigned char cc = *(start+1);
-            unsigned char ccc = *(start+2);
-            unsigned char cccc = *(start+3);
-            if (((cc & 0xc0) == 0x80) && ((ccc & 0xc0) == 0x80) && ((cccc & 0xc0) == 0x80))
-            {
-                *out_char = ((c & 0x07) << 18) | ((cc & 0x3f) << 12) | ((ccc & 0x3f) << 6) | (cccc & 0x3f);
-                *out_len = 4;
-                return true;
-            }
-        }
-    }
-
-    // Illegal utf8.
-    *out_char = 1;
-    *out_len = 1;
-    return false;
-}
-
 size_t print_char_entity(XMQPrintState *ps, XMQColor c, const char *start, const char *stop)
 {
     XMQWrite write = ps->output_settings->content.write;
@@ -4458,43 +4183,6 @@ void node_strlen_name_prefix(xmlNode *node,
         *total_len = *name_len;
     }
     assert(*name != NULL);
-}
-
-/**
-    str_b_u_len: Count bytes and unicode characters.
-    @start:
-    @stop
-    @b_len:
-    @u_len:
-
-    Store the number of actual bytes. Which is stop-start, and strlen(start) if stop is NULL.
-    Count actual unicode characters between start and stop (ie all bytes not having the two msb bits set to 0x10xxxxxx).
-    This will have to be improved if we want to handle indentation with characters with combining diacritics.
-*/
-void str_b_u_len(const char *start, const char *stop, size_t *b_len, size_t *u_len)
-{
-    assert(start);
-    if (stop)
-    {
-        *b_len = stop - start;
-        size_t u = 0;
-        for (const char *i = start; i < stop; ++i)
-        {
-            if ((*i & 0xc0) != 0x80) u++;
-        }
-        *u_len = u;
-        return;
-    }
-
-    size_t b = 0;
-    size_t u = 0;
-    for (const char *i = start; *i != 0; ++i)
-    {
-        if ((*i & 0xc0) != 0x80) u++;
-        b++;
-    }
-    *b_len = b;
-    *u_len = u;
 }
 
 void attr_strlen_name_prefix(xmlAttr *attr, const char **name, const char **prefix, size_t *total_u_len)
@@ -6650,7 +6338,8 @@ void parse_json_number(XMQParseState *state, const char *key_start, const char *
 void parse_json_object(XMQParseState *state, const char *key_start, const char *key_stop);
 void parse_json_quote(XMQParseState *state, const char *key_start, const char *key_stop);
 
-bool is_jnumber(const char *start, const char *stop);
+bool has_number_ended(char c);
+const char *is_jnumber(const char *start, const char *stop);
 bool is_json_boolean(XMQParseState *state);
 bool is_json_null(XMQParseState *state);
 bool is_json_number(XMQParseState *state);
@@ -6768,9 +6457,9 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
 
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, state->col, key_start, key_stop, key_stop);
 
-    if (!memcmp(content_start, "true", content_stop-content_start) ||
-        !memcmp(content_start, "false", content_stop-content_start) ||
-        !memcmp(content_start, "null", content_stop-content_start) ||
+    if (!strncmp(content_start, "true", content_stop-content_start) ||
+        !strncmp(content_start, "false", content_stop-content_start) ||
+        !strncmp(content_start, "null", content_stop-content_start) ||
         is_jnumber(content_start, content_stop))
     {
         // Ah, this is the string "false" not the boolean false. Mark this with the attribute S to show that it is a string.
@@ -6829,15 +6518,80 @@ void parse_json_null(XMQParseState *state, const char *key_start, const char *ke
     DO_CALLBACK(element_value_text, state, start_line, start_col, start, start_col, content_start, content_stop, stop);
 }
 
-bool is_jnumber(const char *start, const char *stop)
+bool has_number_ended(char c)
 {
-    const char *i = start;
-    while (i < stop)
+    return c == ' ' || c == '\n' || c == ',' || c == '}' || c == ']';
+}
+
+const char *is_jnumber(const char *start, const char *stop)
+{
+    if (stop == NULL) stop = start+strlen(start);
+    if (start == stop) return NULL;
+
+    bool found_e = false;
+    bool found_e_sign = false;
+    bool leading_zero = false;
+    bool last_is_digit = false;
+    bool found_dot = false;
+
+    const char *i;
+    for (i = start; i < stop; ++i)
     {
         char c = *i;
-        if (c < '0' || c > '9') return false;
+
+        last_is_digit = false;
+        bool current_is_not_digit = (c < '0' || c > '9');
+
+        if (i == start)
+        {
+            if (current_is_not_digit && c != '-' ) return NULL;
+            if (c == '0') leading_zero = true;
+            if (c != '-') last_is_digit = true;
+            continue;
+        }
+
+        if (leading_zero)
+        {
+            leading_zero = false;
+            if (has_number_ended(c)) return i;
+            if (c != '.') return NULL;
+            found_dot = true;
+        }
+        else if (c == '.')
+        {
+            if (found_dot) return NULL;
+            found_dot = true;
+        }
+        else if (c == 'e' || c == 'E')
+        {
+            if (found_e) return NULL;
+            found_e = true;
+        }
+        else if (found_e && !found_e_sign)
+        {
+            if (has_number_ended(c)) return i;
+            if (current_is_not_digit && c != '-' && c != '+') return NULL;
+            if (c == '+' || c == '-')
+            {
+                found_e_sign = true;
+            }
+            else
+            {
+                last_is_digit = true;
+            }
+        }
+        else
+        {
+            found_e_sign = false;
+            if (has_number_ended(c)) return i;
+            if (current_is_not_digit) return NULL;
+            last_is_digit = true;
+        }
     }
-    return true;
+
+    if (last_is_digit == false) return NULL;
+
+    return i;
 }
 
 bool is_json_boolean(XMQParseState *state)
@@ -6902,24 +6656,20 @@ void parse_json_boolean(XMQParseState *state, const char *key_start, const char 
 
 bool is_json_number(XMQParseState *state)
 {
-    char c = *state->i;
-
-    return c >= '0' && c <='9';
+    return NULL != is_jnumber(state->i, state->buffer_stop);
 }
 
 void eat_json_number(XMQParseState *state, const char **content_start, const char **content_stop)
 {
-    const char *i = state->i;
+    const char *start = state->i;
     const char *stop = state->buffer_stop;
+    const char *i = start;
     size_t line = state->line;
     size_t col = state->col;
 
-    while (i < stop)
-    {
-        char c = *i;
-        if (! (c >= '0' && c <= '9')) break;
-        increment(c, 1, &i, &line, &col);
-    }
+    const char *end = is_jnumber(i, stop);
+    assert(end); // Must not call eat_json_number without check for a number before...
+    increment('?', end-start, &i, &line, &col);
 
     state->i = i;
     state->line = line;
@@ -6977,8 +6727,8 @@ bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const cha
     }
     else
     {
-        // Error detected
-        PRINT_ERROR("Error while parsing json (errno %d) %s %zu:%zu\n", state->error_nr, state->generated_error_msg, state->line, state->col);
+        build_state_error_message(state, start, stop);
+        return false;
     }
 
     if (state->parse->done) state->parse->done(state);
@@ -7039,6 +6789,7 @@ void parse_json(XMQParseState *state, const char *key_start, const char *key_sto
     else if (c == '[') parse_json_array(state, key_start, key_stop);
     else
     {
+        printf("PRUTT\n");
         state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
         longjmp(state->error_handler, 1);
     }
@@ -7177,7 +6928,7 @@ void json_print_value(XMQPrintState *ps, xmlNode *container, xmlNode *node, Leve
         (json_is_number(xml_element_content(node), NULL)
          || json_is_keyword(xml_element_content(node), NULL)))
     {
-        // This is a number(123), true,false or null.
+        // This is a number or a keyword. E.g. 123 true false null
         write(writer_state, content, NULL);
         ps->last_char = content[strlen(content)-1];
     }
@@ -7358,13 +7109,7 @@ void json_print_comma(XMQPrintState *ps)
 
 bool json_is_number(const char *start, const char *stop)
 {
-    const char *i;
-    for (i = start; *i && (stop == NULL || i < stop); ++i)
-    {
-        char c = *i;
-        if (c < '0' || c > '9')  return false;
-    }
-    return i > start;
+    return NULL != is_jnumber(start, stop);
 }
 
 bool json_is_keyword(const char *start, const char *stop)
@@ -7432,6 +7177,202 @@ void check_malloc(void *a)
         PRINT_ERROR("libxmq: Out of memory!\n");
         exit(1);
     }
+}
+
+bool is_lowercase_hex(char c)
+{
+    return
+        (c >= '0' && c <= '9') ||
+        (c >= 'a' && c <= 'f');
+}
+
+size_t num_utf8_bytes(char c)
+{
+    if ((c & 0x80) == 0) return 1;
+    if ((c & 0xe0) == 0xc0) return 2;
+    if ((c & 0xf0) == 0xe0) return 3;
+    if ((c & 0xf8) == 0xf0) return 4;
+    return 0; // Error
+}
+
+/**
+   peek_utf8_char: Peek 1 to 4 chars from s belonging to the next utf8 code point and store them in uc.
+   @start: Read utf8 from this string.
+   @stop: Points to byte after last byte in string. If NULL assume start is null terminated.
+   @uc: Store the UTF8 char here.
+
+   Return the number of bytes peek UTF8 char, use this number to skip ahead to next char in s.
+*/
+size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc)
+{
+    char a = *start;
+    size_t n = num_utf8_bytes(a);
+
+    if (n == 1)
+    {
+        uc->bytes[0] = a;
+        uc->bytes[1] = 0;
+        uc->bytes[2] = 0;
+        uc->bytes[3] = 0;
+        return 1;
+    }
+
+    char b = *(start+1);
+    if (n == 2)
+    {
+        uc->bytes[0] = a;
+        uc->bytes[1] = b;
+        uc->bytes[2] = 0;
+        uc->bytes[3] = 0;
+        return 2;
+    }
+
+    char c = *(start+2);
+    if (n == 3)
+    {
+        uc->bytes[0] = a;
+        uc->bytes[1] = b;
+        uc->bytes[2] = c;
+        uc->bytes[3] = 0;
+        return 3;
+    }
+
+    char d = *(start+3);
+    if (n == 4)
+    {
+        uc->bytes[0] = a;
+        uc->bytes[1] = b;
+        uc->bytes[2] = c;
+        uc->bytes[3] = d;
+        return 4;
+    }
+
+    return 0;
+}
+
+/**
+   utf8_char_to_codepoint_string: Decode an utf8 char and store as a string "U+123"
+   @uc: The utf8 char to decode.
+   @buf: Store the codepoint string here must have space for 9 bytes, i.e. U+10FFFF and a NULL byte.
+*/
+bool utf8_char_to_codepoint_string(UTF8Char *uc, char *buf)
+{
+    int cp = 0;
+    size_t len = 0;
+    bool ok = decode_utf8(uc->bytes, uc->bytes+4, &cp, &len);
+    if (!ok)
+    {
+        snprintf(buf, 16, "U+error");
+        return false;
+    }
+    snprintf(buf, 16, "U+%X", cp);
+    return true;
+}
+
+/**
+   decode_utf8: Peek 1 to 4 chars from start and calculate unicode codepoint.
+   @start: Read utf8 from this string.
+   @stop: Points to byte after last byte in string. If NULL assume start is null terminated.
+   @out_char: Store the unicode code point here.
+   @out_len: How many bytes the utf8 char used.
+
+   Return true if valid utf8 char.
+*/
+bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len)
+{
+    int c = (int)(unsigned char)(*start);
+
+    if ((c & 0x80) == 0)
+    {
+        *out_char = c;
+        *out_len = 1;
+        return true;
+    }
+
+    if ((c & 0xe0) == 0xc0)
+    {
+        if (start+1 < stop)
+        {
+            unsigned char cc = *(start+1);
+            if ((cc & 0xc0) == 0x80)
+            {
+                *out_char = ((c & 0x1f) << 6) | (cc & 0x3f);
+                *out_len = 2;
+                return true;
+            }
+        }
+    }
+    else if ((c & 0xf0) == 0xe0)
+    {
+        if (start+2 < stop)
+        {
+            unsigned char cc = *(start+1);
+            unsigned char ccc = *(start+2);
+            if (((cc & 0xc0) == 0x80) && ((ccc & 0xc0) == 0x80))
+            {
+                *out_char = ((c & 0x0f) << 12) | ((cc & 0x3f) << 6) | (ccc & 0x3f) ;
+                *out_len = 3;
+                return true;
+            }
+        }
+    }
+    else if ((c & 0xf8) == 0xf0)
+    {
+        if (start+3 < stop)
+        {
+            unsigned char cc = *(start+1);
+            unsigned char ccc = *(start+2);
+            unsigned char cccc = *(start+3);
+            if (((cc & 0xc0) == 0x80) && ((ccc & 0xc0) == 0x80) && ((cccc & 0xc0) == 0x80))
+            {
+                *out_char = ((c & 0x07) << 18) | ((cc & 0x3f) << 12) | ((ccc & 0x3f) << 6) | (cccc & 0x3f);
+                *out_len = 4;
+                return true;
+            }
+        }
+    }
+
+    // Illegal utf8.
+    *out_char = 1;
+    *out_len = 1;
+    return false;
+}
+
+/**
+    str_b_u_len: Count bytes and unicode characters.
+    @start:
+    @stop
+    @b_len:
+    @u_len:
+
+    Store the number of actual bytes. Which is stop-start, and strlen(start) if stop is NULL.
+    Count actual unicode characters between start and stop (ie all bytes not having the two msb bits set to 0x10xxxxxx).
+    This will have to be improved if we want to handle indentation with characters with combining diacritics.
+*/
+void str_b_u_len(const char *start, const char *stop, size_t *b_len, size_t *u_len)
+{
+    assert(start);
+    if (stop)
+    {
+        *b_len = stop - start;
+        size_t u = 0;
+        for (const char *i = start; i < stop; ++i)
+        {
+            if ((*i & 0xc0) != 0x80) u++;
+        }
+        *u_len = u;
+        return;
+    }
+
+    size_t b = 0;
+    size_t u = 0;
+    for (const char *i = start; *i != 0; ++i)
+    {
+        if ((*i & 0xc0) != 0x80) u++;
+        b++;
+    }
+    *b_len = b;
+    *u_len = u;
 }
 
 #endif // UTILS_MODULE
@@ -7588,6 +7529,96 @@ const char *color_names[13] = {
     "xmq_uw",
     "xmq_tw",
 };
+
+void build_state_error_message(XMQParseState *state, const char *start, const char *stop)
+{
+    // Error detected during parsing and this is where the longjmp will end up!
+    state->generated_error_msg = (char*)malloc(2048);
+
+    XMQParseError error_nr = (XMQParseError)state->error_nr;
+    const char *error = xmqParseErrorToString(error_nr);
+
+    const char *statei = state->i;
+    size_t line = state->line;
+    size_t col = state->col;
+
+    if (error_nr == XMQ_ERROR_BODY_NOT_CLOSED)
+    {
+        statei = state->last_body_start;
+        line = state->last_body_start_line;
+        col = state->last_body_start_col;
+    }
+    if (error_nr == XMQ_ERROR_ATTRIBUTES_NOT_CLOSED)
+    {
+        statei = state->last_attr_start;
+        line = state->last_attr_start_line;
+        col = state->last_attr_start_col;
+    }
+    if (error_nr == XMQ_ERROR_QUOTE_NOT_CLOSED)
+    {
+        statei = state->last_quote_start;
+        line = state->last_quote_start_line;
+        col = state->last_quote_start_col;
+    }
+    if (error_nr == XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS)
+    {
+        statei = state->last_equals_start;
+        line = state->last_equals_start_line;
+        col = state->last_equals_start_col;
+    }
+
+    size_t n = 0;
+    size_t offset = 0;
+    const char *line_start = statei;
+    while (line_start > start && *(line_start-1) != '\n' && n < 1024)
+    {
+        n++;
+        offset++;
+        line_start--;
+    }
+
+    const char *i = statei;
+    while (i < stop && *i && *i != '\n' && n < 1024)
+    {
+        n++;
+        i++;
+    }
+    const char *char_error = "";
+    char buf[32];
+
+    if (error_nr == XMQ_ERROR_INVALID_CHAR ||
+        error_nr == XMQ_ERROR_JSON_INVALID_CHAR)
+    {
+        UTF8Char utf8_char;
+        peek_utf8_char(statei, stop, &utf8_char);
+        char utf8_codepoint[8];
+        utf8_char_to_codepoint_string(&utf8_char, utf8_codepoint);
+
+        snprintf(buf, 32, " \"%s\" %s", utf8_char.bytes, utf8_codepoint);
+        char_error = buf;
+    }
+
+    char line_error[1024];
+    line_error[0] = 0;
+    if (statei < stop)
+    {
+        snprintf(line_error, 1024, "\n%.*s\n %*s",
+                 (int)n,
+                 line_start,
+                 (int)offset,
+                 "^");
+    }
+
+    snprintf(state->generated_error_msg, 2048,
+             "%s:%zu:%zu: error: %s%s%s",
+             state->source_name,
+             line, col,
+             error,
+             char_error,
+             line_error
+        );
+    state->generated_error_msg[2047] = 0;
+}
 
 size_t count_whitespace(const char *i, const char *stop)
 {
@@ -7912,6 +7943,40 @@ size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...)
     if (post) write(writer_state, post, NULL);
 
     return b_len;
+}
+
+const char *xmqParseErrorToString(XMQParseError e)
+{
+    switch (e)
+    {
+    case XMQ_ERROR_CANNOT_READ_FILE: return "cannot read file";
+    case XMQ_ERROR_NOT_XMQ: return "input file is not xmq";
+    case XMQ_ERROR_QUOTE_NOT_CLOSED: return "quote is not closed";
+    case XMQ_ERROR_ENTITY_NOT_CLOSED: return "entity is not closed";
+    case XMQ_ERROR_COMMENT_NOT_CLOSED: return "comment is not closed";
+    case XMQ_ERROR_COMMENT_CLOSED_WITH_TOO_MANY_SLASHES: return "comment closed with too many slashes";
+    case XMQ_ERROR_BODY_NOT_CLOSED: return "body is not closed";
+    case XMQ_ERROR_ATTRIBUTES_NOT_CLOSED: return "attributes are not closed";
+    case XMQ_ERROR_COMPOUND_NOT_CLOSED: return "compound is not closed";
+    case XMQ_ERROR_COMPOUND_MAY_NOT_CONTAIN: return "compound may only contain quotes and entities";
+    case XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES: return "quote closed with too many quotes";
+    case XMQ_ERROR_UNEXPECTED_CLOSING_BRACE: return "unexpected closing brace";
+    case XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS: return "expected content after equals";
+    case XMQ_ERROR_INVALID_CHAR: return "unexpected character";
+    case XMQ_ERROR_BAD_DOCTYPE: return "doctype could not be parsed";
+    case XMQ_ERROR_CANNOT_HANDLE_XML: return "cannot handle xml use libxmq-all for this!";
+    case XMQ_ERROR_CANNOT_HANDLE_HTML: return "cannot handle html use libxmq-all for this!";
+    case XMQ_ERROR_CANNOT_HANDLE_JSON: return "cannot handle json use libxmq-all for this!";
+    case XMQ_ERROR_JSON_INVALID_ESCAPE: return "invalid json escape";
+    case XMQ_ERROR_JSON_INVALID_CHAR: return "unexpected json character";
+    case XMQ_ERROR_EXPECTED_XMQ: return "expected xmq source";
+    case XMQ_ERROR_EXPECTED_HTMQ: return "expected htmlq source";
+    case XMQ_ERROR_EXPECTED_XML: return "expected xml source";
+    case XMQ_ERROR_EXPECTED_HTML: return "expected html source";
+    case XMQ_ERROR_EXPECTED_JSON: return "expected json source";
+    }
+    assert(false);
+    return "unknown error";
 }
 
 #endif // XMQ_INTERNALS_MODULE

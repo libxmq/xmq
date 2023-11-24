@@ -28,7 +28,8 @@ void parse_json_number(XMQParseState *state, const char *key_start, const char *
 void parse_json_object(XMQParseState *state, const char *key_start, const char *key_stop);
 void parse_json_quote(XMQParseState *state, const char *key_start, const char *key_stop);
 
-bool is_jnumber(const char *start, const char *stop);
+bool has_number_ended(char c);
+const char *is_jnumber(const char *start, const char *stop);
 bool is_json_boolean(XMQParseState *state);
 bool is_json_null(XMQParseState *state);
 bool is_json_number(XMQParseState *state);
@@ -146,9 +147,9 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
 
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, state->col, key_start, key_stop, key_stop);
 
-    if (!memcmp(content_start, "true", content_stop-content_start) ||
-        !memcmp(content_start, "false", content_stop-content_start) ||
-        !memcmp(content_start, "null", content_stop-content_start) ||
+    if (!strncmp(content_start, "true", content_stop-content_start) ||
+        !strncmp(content_start, "false", content_stop-content_start) ||
+        !strncmp(content_start, "null", content_stop-content_start) ||
         is_jnumber(content_start, content_stop))
     {
         // Ah, this is the string "false" not the boolean false. Mark this with the attribute S to show that it is a string.
@@ -207,15 +208,80 @@ void parse_json_null(XMQParseState *state, const char *key_start, const char *ke
     DO_CALLBACK(element_value_text, state, start_line, start_col, start, start_col, content_start, content_stop, stop);
 }
 
-bool is_jnumber(const char *start, const char *stop)
+bool has_number_ended(char c)
 {
-    const char *i = start;
-    while (i < stop)
+    return c == ' ' || c == '\n' || c == ',' || c == '}' || c == ']';
+}
+
+const char *is_jnumber(const char *start, const char *stop)
+{
+    if (stop == NULL) stop = start+strlen(start);
+    if (start == stop) return NULL;
+
+    bool found_e = false;
+    bool found_e_sign = false;
+    bool leading_zero = false;
+    bool last_is_digit = false;
+    bool found_dot = false;
+
+    const char *i;
+    for (i = start; i < stop; ++i)
     {
         char c = *i;
-        if (c < '0' || c > '9') return false;
+
+        last_is_digit = false;
+        bool current_is_not_digit = (c < '0' || c > '9');
+
+        if (i == start)
+        {
+            if (current_is_not_digit && c != '-' ) return NULL;
+            if (c == '0') leading_zero = true;
+            if (c != '-') last_is_digit = true;
+            continue;
+        }
+
+        if (leading_zero)
+        {
+            leading_zero = false;
+            if (has_number_ended(c)) return i;
+            if (c != '.') return NULL;
+            found_dot = true;
+        }
+        else if (c == '.')
+        {
+            if (found_dot) return NULL;
+            found_dot = true;
+        }
+        else if (c == 'e' || c == 'E')
+        {
+            if (found_e) return NULL;
+            found_e = true;
+        }
+        else if (found_e && !found_e_sign)
+        {
+            if (has_number_ended(c)) return i;
+            if (current_is_not_digit && c != '-' && c != '+') return NULL;
+            if (c == '+' || c == '-')
+            {
+                found_e_sign = true;
+            }
+            else
+            {
+                last_is_digit = true;
+            }
+        }
+        else
+        {
+            found_e_sign = false;
+            if (has_number_ended(c)) return i;
+            if (current_is_not_digit) return NULL;
+            last_is_digit = true;
+        }
     }
-    return true;
+
+    if (last_is_digit == false) return NULL;
+
+    return i;
 }
 
 bool is_json_boolean(XMQParseState *state)
@@ -280,24 +346,20 @@ void parse_json_boolean(XMQParseState *state, const char *key_start, const char 
 
 bool is_json_number(XMQParseState *state)
 {
-    char c = *state->i;
-
-    return c >= '0' && c <='9';
+    return NULL != is_jnumber(state->i, state->buffer_stop);
 }
 
 void eat_json_number(XMQParseState *state, const char **content_start, const char **content_stop)
 {
-    const char *i = state->i;
+    const char *start = state->i;
     const char *stop = state->buffer_stop;
+    const char *i = start;
     size_t line = state->line;
     size_t col = state->col;
 
-    while (i < stop)
-    {
-        char c = *i;
-        if (! (c >= '0' && c <= '9')) break;
-        increment(c, 1, &i, &line, &col);
-    }
+    const char *end = is_jnumber(i, stop);
+    assert(end); // Must not call eat_json_number without check for a number before...
+    increment('?', end-start, &i, &line, &col);
 
     state->i = i;
     state->line = line;
@@ -355,8 +417,8 @@ bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const cha
     }
     else
     {
-        // Error detected
-        PRINT_ERROR("Error while parsing json (errno %d) %s %zu:%zu\n", state->error_nr, state->generated_error_msg, state->line, state->col);
+        build_state_error_message(state, start, stop);
+        return false;
     }
 
     if (state->parse->done) state->parse->done(state);
@@ -417,6 +479,7 @@ void parse_json(XMQParseState *state, const char *key_start, const char *key_sto
     else if (c == '[') parse_json_array(state, key_start, key_stop);
     else
     {
+        printf("PRUTT\n");
         state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
         longjmp(state->error_handler, 1);
     }
@@ -555,7 +618,7 @@ void json_print_value(XMQPrintState *ps, xmlNode *container, xmlNode *node, Leve
         (json_is_number(xml_element_content(node), NULL)
          || json_is_keyword(xml_element_content(node), NULL)))
     {
-        // This is a number(123), true,false or null.
+        // This is a number or a keyword. E.g. 123 true false null
         write(writer_state, content, NULL);
         ps->last_char = content[strlen(content)-1];
     }
@@ -736,13 +799,7 @@ void json_print_comma(XMQPrintState *ps)
 
 bool json_is_number(const char *start, const char *stop)
 {
-    const char *i;
-    for (i = start; *i && (stop == NULL || i < stop); ++i)
-    {
-        char c = *i;
-        if (c < '0' || c > '9')  return false;
-    }
-    return i > start;
+    return NULL != is_jnumber(start, stop);
 }
 
 bool json_is_keyword(const char *start, const char *stop)

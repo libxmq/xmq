@@ -234,23 +234,7 @@ struct XMQQuoteSettings
 };
 typedef struct XMQQuoteSettings XMQQuoteSettings;
 
-/**
-    UTF8Char: storage for 1 to 4 utf8 bytes
-
-    An utf8 char is at most 4 bytes since the max unicode nr is capped at U+10FFFF:
-*/
-#define MAX_NUM_UTF8_BYTES 4
-typedef struct
-{
-    char bytes[MAX_NUM_UTF8_BYTES];
-} UTF8Char;
-
-// UTF8 functions /////////////////
-
-bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
-bool utf8_char_to_codepoint_string(UTF8Char *uc, char *buf);
-size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc);
-void str_b_u_len(const char *start, const char *stop, size_t *b_len, size_t *u_len);
+void build_state_error_message(XMQParseState *state, const char *start, const char *stop);
 
 // Text functions ////////////////
 

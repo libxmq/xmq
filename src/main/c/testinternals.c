@@ -564,8 +564,9 @@ void test_content(const char *content, XMQContentType expected_ct)
 void test_detect_content()
 {
     test_content("alfa { beta }", XMQ_CONTENT_XMQ);
-    // Yes, true and false are json nodes, but we default to xmq here.
-    test_content("true", XMQ_CONTENT_XMQ);
+    // true false and null could be valid xmq/xml nodes
+    // however it is much more likely that this is json...
+    test_content("true", XMQ_CONTENT_JSON);
 
     test_content("<alfa>foo</alfa>", XMQ_CONTENT_XML);
     test_content(" <!doctype   html><html>foo</html>", XMQ_CONTENT_HTML);
