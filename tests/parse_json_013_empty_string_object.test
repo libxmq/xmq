@@ -1,0 +1,13 @@
+INPUT
+{
+    "alfa": "",
+    "beta": {}
+}
+XMQ
+_ {
+    alfa = ''
+    beta
+}
+JSON
+{"alfa":"","beta":{}}
+END

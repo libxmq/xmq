@@ -47,7 +47,7 @@ void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *nod
 void json_print_element_with_children(XMQPrintState *ps, xmlNode *container, xmlNode *node);
 void json_print_key_node(XMQPrintState *ps, xmlNode *container, xmlNode *node);
 
-void json_check_comma_before_key(XMQPrintState *ps);
+void json_check_comma(XMQPrintState *ps);
 void json_print_comma(XMQPrintState *ps);
 bool json_is_number(const char *start, const char *stop);
 bool json_is_keyword(const char *start, const char *stop);
@@ -156,13 +156,14 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         key_stop = underline+1;
     }
 
-
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, state->col, key_start, key_stop, key_stop);
 
-    bool need_string_type = !strncmp(content_start, "true", content_stop-content_start) ||
+    bool need_string_type =
+        content_stop > content_start && (
+        !strncmp(content_start, "true", content_stop-content_start) ||
         !strncmp(content_start, "false", content_stop-content_start) ||
         !strncmp(content_start, "null", content_stop-content_start) ||
-        is_jnumber(content_start, content_stop);
+        is_jnumber(content_start, content_stop));
 
     if (need_string_type || unsafe_key_start)
     {
@@ -501,7 +502,6 @@ void parse_json(XMQParseState *state, const char *key_start, const char *key_sto
     else if (c == '[') parse_json_array(state, key_start, key_stop);
     else
     {
-        printf("PRUTT\n");
         state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
         longjmp(state->error_handler, 1);
     }
@@ -679,7 +679,7 @@ void json_print_array_with_children(XMQPrintState *ps,
     if (container)
     {
         // We have a containing node, then we can print this using "name" : [ ... ]
-        json_check_comma_before_key(ps);
+        json_check_comma(ps);
         json_print_element_name(ps, container, node);
         print_utf8(ps, COLOR_none, 1, ":", NULL);
     }
@@ -712,10 +712,11 @@ void json_print_element_with_children(XMQPrintState *ps,
                                       xmlNode *container,
                                       xmlNode *node)
 {
+    json_check_comma(ps);
+
     if (container)
     {
         // We have a containing node, then we can print this using "name" : { ... }
-        json_check_comma_before_key(ps);
         json_print_element_name(ps, container, node);
         print_utf8(ps, COLOR_none, 1, ":", NULL);
     }
@@ -732,7 +733,6 @@ void json_print_element_with_children(XMQPrintState *ps,
     if (!container && name && name[0] != '_' && name[1] != 0)
     {
         // Top level object or object inside array.
-        json_check_comma_before_key(ps);
         print_utf8(ps, COLOR_none, 1, "\"_\":", NULL);
         ps->last_char = ':';
         json_print_element_name(ps, container, node);
@@ -786,7 +786,7 @@ void json_print_key_node(XMQPrintState *ps,
                          xmlNode *container,
                          xmlNode *node)
 {
-    json_check_comma_before_key(ps);
+    json_check_comma(ps);
 
     const char *name = xml_element_name(node);
     if (name[0] != '_')
@@ -813,7 +813,7 @@ void json_print_key_node(XMQPrintState *ps,
     json_print_value(ps, container, xml_first_child(node), LEVEL_ELEMENT_VALUE);
 }
 
-void json_check_comma_before_key(XMQPrintState *ps)
+void json_check_comma(XMQPrintState *ps)
 {
     char c = ps->last_char;
     if (c == 0) return;
@@ -856,7 +856,7 @@ void json_print_leaf_node(XMQPrintState *ps,
     void *writer_state = output_settings->content.writer_state;
     const char *name = xml_element_name(node);
 
-    json_check_comma_before_key(ps);
+    json_check_comma(ps);
 
     if (name &&
         name[0] != '_' &&

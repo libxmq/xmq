@@ -34,11 +34,19 @@ for pretty printing inside an editor!
 The xmq format solves the first problem primarily by using braces to
 open and close tags and the second problem by forcing significant
 whitespace to be quoted. The xmq format also uses a trick where
-not all values need to be quoted this makes xmq even more readable.
+not all values need to be quoted and this also improves readability.
 
 This means that it is always possible to pretty print the xmq without
 having to worry if you introduce visible changes to your web document!
 This is very helpful when deciphering complicated html documents.
+
+```
+car {
+    speed = 50km/h
+    color = red
+    brand = 'Le roy'
+}
+```
 
 The xmq format can exactly represent the content of the xml/html file
 and can therefore be converted back to xml/html after any editing has
