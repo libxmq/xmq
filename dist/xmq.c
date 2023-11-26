@@ -23,8 +23,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include"xmq.h"
 
-#define VERSION "1"
-
 #define BUILDING_XMQ
 
 // PART HEADERS //////////////////////////////////////////////////
@@ -3025,7 +3023,7 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root)
 
 const char *xmqVersion()
 {
-    return VERSION;
+    return "1.99.1";
 }
 
 void do_whitespace(XMQParseState *state,

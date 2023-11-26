@@ -11,6 +11,10 @@ then
     exit 0
 fi
 
+# Assume this script is run from the source root where VERSION is stored.
+VERSION="\"$(cat ../../VERSION)\""
+echo "VERSION=${VERSION}"
+
 ROOT=$1
 XMQ=$2
 XMQ_H=$(dirname $XMQ)/xmq.h
@@ -41,6 +45,11 @@ do_part() {
     $SED -e "/${PART}\.c/ {" -e "r ${ROOT}/parts_${PART}_c" -e 'd }' ${ROOT}/tmp > ${ROOT}/xmq-in-progress
 }
 
+do_version() {
+    $SED "s/return VERSION;/return ${VERSION};/" ${ROOT}/xmq-in-progress > ${ROOT}/tmp
+    mv ${ROOT}/tmp ${ROOT}/xmq-in-progress
+}
+
 do_part hashmap
 do_part json
 do_part membuffer
@@ -49,3 +58,5 @@ do_part text
 do_part utils
 do_part xml
 do_part xmq_internals
+
+do_version
