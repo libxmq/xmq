@@ -81,6 +81,7 @@ const char *content_type_to_string(XMQContentType t)
     case XMQ_CONTENT_JSON: return "json";
     }
     assert(0);
+    return "?";
 }
 
 void test_buffer()

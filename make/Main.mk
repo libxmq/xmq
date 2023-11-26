@@ -108,11 +108,13 @@ WINAPI_OBJS:=\
 WINAPI_PARTS_OBJS:=\
     $(patsubst %.c,%.o,$(subst $(SRC_ROOT)/src/main/c,$(OUTPUT_ROOT)/$(TYPE),$(WINAPI_PARTS_SOURCES)))
 WINAPI_LIBXMQ_OBJS:=$(filter-out %testinternals.o,$(WINAPI_OBJS))
-WINAPI_TESTINTERNALS_OBJS:=$(filter-out %main.o,$(WINAPI_OBJS))
+WINAPI_TESTINTERNALS_OBJS:=$(filter-out %xmq-cli.o,$(WINAPI_OBJS))
 WINAPI_LIBS := \
 $(OUTPUT_ROOT)/$(TYPE)/libgcc_s_seh-1.dll \
 $(OUTPUT_ROOT)/$(TYPE)/libstdc++-6.dll \
-$(OUTPUT_ROOT)/$(TYPE)/libwinpthread-1.dll
+$(OUTPUT_ROOT)/$(TYPE)/libwinpthread-1.dll \
+$(OUTPUT_ROOT)/$(TYPE)/libxml2-2.dll
+WINAPI_SUFFIX:=.exe
 
 POSIX_SOURCES:=$(filter-out %winapi.c,$(SOURCES))
 POSIX_PARTS_SOURCES:=$(filter-out %winapi.c,$(PARTS_SOURCES))
@@ -120,7 +122,8 @@ POSIX_OBJS:=$(patsubst %.c,%.o,$(subst $(SRC_ROOT)/src/main/c,$(OUTPUT_ROOT)/$(T
 POSIX_PARTS_OBJS:=$(patsubst %.c,%.o,$(subst $(SRC_ROOT)/src/main/c,$(OUTPUT_ROOT)/$(TYPE),$(POSIX_PARTS_SOURCES)))
 POSIX_LIBXMQ_OBJS:=$(filter-out %testinternals.o,$(POSIX_OBJS))
 POSIX_TESTINTERNALS_OBJS:=$(filter-out %xmq-cli.o,$(POSIX_OBJS))
-POSIX_LIBS :=
+POSIX_LIBS:=
+POSIX_SUFFIX:=
 
 EXTRA_LIBS := $($(PLATFORM)_LIBS)
 
@@ -137,6 +140,7 @@ $(OUTPUT_ROOT)/generated_filetypes.h: $(SRC_ROOT)/scripts/filetypes.inc
 LIBXMQ_OBJS:=$($(PLATFORM)_LIBXMQ_OBJS)
 TESTINTERNALS_OBJS:=$($(PLATFORM)_TESTINTERNALS_OBJS)
 PARTS_TESTINTERNALS_OBJS:=$($(PLATFORM)_PARTS_TESTINTERNALS_OBJS)
+SUFFIX:=$($(PLATFORM)_SUFFIX)
 
 $(OUTPUT_ROOT)/$(TYPE)/xmq_genautocomp.o: $(OUTPUT_ROOT)/generated_autocomplete.h
 $(OUTPUT_ROOT)/$(TYPE)/fileinfo.o: $(OUTPUT_ROOT)/generated_filetypes.h
@@ -170,7 +174,7 @@ $(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS)
 	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS)  \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(VERBOSE)cp $@ $@.g
-	$(VERBOSE)$(STRIP_COMMAND) $@
+	$(VERBOSE)$(STRIP_COMMAND) $@$(SUFFIX)
 else
 $(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(PARTS_SOURCES)
 	@echo Linking static $(TYPE) $(CONF_MNEMONIC) $@
@@ -182,22 +186,29 @@ $(OUTPUT_ROOT)/$(TYPE)/testinternals: $(TESTINTERNALS_OBJS)
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
 	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(TESTINTERNALS_OBJS) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
-	$(VERBOSE)$(STRIP_COMMAND) $@
+	$(VERBOSE)$(STRIP_COMMAND) $@$(SUFFIX)
 
 $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals: $($(PLATFORM)_PARTS_OBJS)
 	@echo Linking parts $(TYPE) $(CONF_MNEMONIC) $@
 	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $($(PLATFORM)_PARTS_OBJS) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
-	$(VERBOSE)$(STRIP_COMMAND) $@
+	$(VERBOSE)$(STRIP_COMMAND) $@$(SUFFIX)
 
-$(OUTPUT_ROOT)/$(TYPE)/libgcc_s_seh-1.dll: /usr/lib/gcc/x86_64-w64-mingw32/5.3-win32/libgcc_s_seh-1.dll
-	cp /usr/lib/gcc/x86_64-w64-mingw32/5.3-win32/libgcc_s_seh-1.dll $@
+$(OUTPUT_ROOT)/$(TYPE)/libgcc_s_seh-1.dll:
+	$(VERBOSE)cp "$$(find /usr/lib/gcc -name libgcc_s_seh-1.dll | grep -m 1 win32)" $@
+	@echo "Installed $@"
 
-$(OUTPUT_ROOT)/$(TYPE)/libstdc++-6.dll: /usr/lib/gcc/x86_64-w64-mingw32/5.3-win32/libstdc++-6.dll
-	cp /usr/lib/gcc/x86_64-w64-mingw32/5.3-win32/libstdc++-6.dll $@
+$(OUTPUT_ROOT)/$(TYPE)/libstdc++-6.dll:
+	$(VERBOSE)cp "$$(find /usr/lib/gcc -name libstdc++-6.dll | grep -m 1 win32)" $@
+	@echo "Installed $@"
 
-$(OUTPUT_ROOT)/$(TYPE)/libwinpthread-1.dll: /usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll
-	cp $< $@
+$(OUTPUT_ROOT)/$(TYPE)/libwinpthread-1.dll:
+	$(VERBOSE)cp "$$(find /usr -name libwinpthread-1.dll | grep -m 1 x86_64)" $@
+	@echo "Installed $@"
+
+$(OUTPUT_ROOT)/$(TYPE)/libxml2-2.dll:
+	$(VERBOSE)cp "$$(find $(SRC_ROOT)/3rdparty/libxml2-winapi -name libxml2-2.dll | grep -m 1 libxml2-2.dll)" $@
+	@echo "Installed $@"
 
 BINARIES:=$(OUTPUT_ROOT)/$(TYPE)/libxmq.a \
           $(OUTPUT_ROOT)/$(TYPE)/libxmq.so \
@@ -224,10 +235,10 @@ release debug asan:
 else
 # Build!
 release debug asan: $(BINARIES) $(EXTRA_LIBS)
-ifeq ($(PLATFORM),winapi)
-	cp $(OUTPUT_ROOT)/$(TYPE)/xmq $(OUTPUT_ROOT)/$(TYPE)/xmq.exe
-        cp $(OUTPUT_ROOT)/$(TYPE)/testinternals $(OUTPUT_ROOT)/$(TYPE)/testinternals.exe
-endif
+#ifeq ($(PLATFORM),winapi)
+#	cp $(OUTPUT_ROOT)/$(TYPE)/xmq $(OUTPUT_ROOT)/$(TYPE)/xmq.exe
+#	cp $(OUTPUT_ROOT)/$(TYPE)/testinternals $(OUTPUT_ROOT)/$(TYPE)/testinternals.exe
+#endif
 endif
 
 clean_cc:

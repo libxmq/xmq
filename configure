@@ -4098,12 +4098,12 @@ else
     if test -z "$IDIR"; then
         as_fn_error $? "Could not find libxml/tree.h below ${with_libxml2}" "$LINENO" 5
     fi
-    LIBNAME="libxml2.a"
+    LIBNAME="libxml2-2.dll"
     LIBF=$(find ${with_libxml2} -name "${LIBNAME}")
     if test -z "$LIBF"; then
         as_fn_error $? "Could not find ${LIBNAME} below ${with_libxml2}" "$LINENO" 5
     fi
-    LIBXML2_LIBS="${LIBF}"
+    LIBXML2_LIBS="-Wl,-Bstatic ${LIBF}"
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: using ${with_libxml2}" >&5
 printf "%s\n" "using ${with_libxml2}" >&6; }
 fi
@@ -4161,13 +4161,13 @@ printf "%s\n" "checking type of compiler: using g++" >&6; }
     GCC_EXTRA_CFLAGS=""
 fi
 
-CXXFLAGS="-DPLATFORM_${PLATFORM} ${CXXFLAGS_EXTRAS} -D${MNEMONIC} -Wall -Wparentheses -Wmissing-declarations -Wimplicit -Wno-error=deprecated-declarations -fmessage-length=0 -std=c++11 $GCC_EXTRA_CXXFLAGS -Wno-unused-function"
+CXXFLAGS="-DPLATFORM_${PLATFORM} ${CXXFLAGS_EXTRAS} -D${MNEMONIC} -Wall -Wparentheses -Wmissing-declarations -Wimplicit -Wno-error=deprecated-declarations -fmessage-length=0 -std=c++11 $GCC_EXTRA_CXXFLAGS -Wno-unused-function -Wreturn-type"
 
 CXXFLAGS_release="-Os"
 CXXFLAGS_debug="-O0 -g"
 CXXFLAGS_asan="-O0 -g ${ASAN_CFLAGS}"
 
-CFLAGS="-DPLATFORM_${PLATFORM} ${CFLAGS_EXTRAS} -D${MNEMONIC} $GCC_EXTRA_CFLAGS -Wall -Wparentheses -Wmissing-declarations -Wimplicit -Wno-error=deprecated-declarations -fmessage-length=0 -Wno-unused-function"
+CFLAGS="-DPLATFORM_${PLATFORM} ${CFLAGS_EXTRAS} -D${MNEMONIC} $GCC_EXTRA_CFLAGS -Wall -Wparentheses -Wmissing-declarations -Wimplicit -Wno-error=deprecated-declarations -fmessage-length=0 -Wno-unused-function -Wreturn-type"
 
 CFLAGS_release="-Os"
 CFLAGS_debug="-O0 -g"

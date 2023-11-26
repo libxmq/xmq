@@ -4,6 +4,7 @@
 #include"quicksort_strings.h"
 
 #include<assert.h>
+#include<stdint.h>
 
 #define TESTS \
     X(test_hashmap) \

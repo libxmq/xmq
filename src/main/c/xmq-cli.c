@@ -860,6 +860,7 @@ bool perform_command(XMQCliCommand *c)
         return cmd_entity(c);
     }
     assert(false);
+    return false;
 }
 
 bool xmq_parse_cmd_line(int argc, char **argv, XMQCliCommand *command)

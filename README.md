@@ -165,5 +165,5 @@ You can find the built asan binary here:
 Windows cross complation from GNU/Linux:
 ```
 (cd 3rdparty; fetch_and_build.sh)
-./configure --host=x86_64-w64-mingw32 --with-libxml2=3rdparty/libxml2
+./configure --host=x86_64-w64-mingw32 --with-libxml2=3rdparty/libxml2-winapi --with-zlib=3rdparty/zlib-1.3-winapi
 ```

@@ -31,8 +31,7 @@ then
         echo
         echo Fetching libxml2 posix
         echo
-        git clone https://gitlab.gnome.org/GNOME/libxml2.git
-        mv libxml2 libxml2-posix
+        git clone https://gitlab.gnome.org/GNOME/libxml2.git libxml2-posix
     fi
 
     cd libxml2-posix
@@ -71,7 +70,7 @@ then
         echo
         echo Fetching libxml2 winapi
         echo
-        git clone https://gitlab.gnome.org/GNOME/libxml2.git
+        git clone https://gitlab.gnome.org/GNOME/libxml2.git libxml2-winapi
     fi
 
     cd libxml2-winapi
@@ -80,7 +79,7 @@ then
         echo Building static libxml2 winapi
         echo
 
-        ./autogen.sh --host=x86_64-w64-mingw32 --with-zlib=no --with-lzma=no --with-python=no --disable-shared
+        ./autogen.sh --host=x86_64-w64-mingw32 --with-zlib=no --with-lzma=no --with-python=no
         make
     fi
     cd ..

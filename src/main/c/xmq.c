@@ -5336,6 +5336,7 @@ XMQColor level_to_quote_color(Level level)
     case LEVEL_ATTR_VALUE_COMPOUND: return COLOR_attr_value_compound_quote;
     }
     assert(false);
+    return COLOR_none;
 }
 
 XMQColor level_to_entity_color(Level level)
@@ -5349,6 +5350,7 @@ XMQColor level_to_entity_color(Level level)
     case LEVEL_ATTR_VALUE_COMPOUND: return COLOR_attr_value_compound_entity;
     }
     assert(false);
+    return COLOR_none;
 }
 
 xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop)
