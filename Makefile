@@ -20,38 +20,51 @@ define DQUOTE
 "
 endef
 
-#' make editor quote matching happy.
+#" make editor quote matching happy.
 
-SUPRE=
-SUPOST=
-ifneq ($(SUDO_USER),)
-# Git has a security check to prevent the wrong user from running inside the git repository.
-# When we run "sudo make install" this will create problems since git is running as root instead.
-# Use SUPRE/SUPOST to use su to switch back to the user for the git commands.
-SUPRE=su -c $(DQUOTE)
-SUPOST=$(DQUOTE) $(SUDO_USER)
-endif
+HAS_GIT=$(shell git rev-parse --is-inside-work-tree >/dev/null 2>&1 ; echo $$?)
 
-COMMIT_HASH?=$(shell $(SUPRE) git log --pretty=format:'%H' -n 1 $(SUPOST))
-TAG?=$(shell $(SUPRE) git describe --tags $(SUPOST))
-BRANCH?=$(shell $(SUPRE) git rev-parse --abbrev-ref HEAD $(SUPOST))
-CHANGES?=$(shell $(SUPRE) git status -s | grep -v '?? ' $(SUPOST))
-
-ifeq ($(COMMIT),$(TAG_COMMIT))
-  # Exactly on the tagged commit. The version is the tag!
-  VERSION:=$(TAG)
-  DEBVERSION:=$(TAG)
+ifneq ($(HAS_GIT), 0)
+# We have no git used manually set version number.
+VERSION:=1.0.0
+COMMIT_HASH:=
+DEBVERSION:=1.0.0
 else
-  VERSION:=$(TAG)++
-  DEBVERSION:=$(TAG)++
+# We have git, extract information from it.
+    SUPRE=
+	SUPOST=
+
+	ifneq ($(SUDO_USER),)
+        # Git has a security check to prevent the wrong user from running inside the git repository.
+        # When we run "sudo make install" this will create problems since git is running as root instead.
+        # Use SUPRE/SUPOST to use su to switch back to the user for the git commands.
+        SUPRE=su -c $(DQUOTE)
+        SUPOST=$(DQUOTE) $(SUDO_USER)
+    endif
+
+    COMMIT_HASH?=$(shell $(SUPRE) git log --pretty=format:'%H' -n 1 $(SUPOST))
+    TAG?=$(shell $(SUPRE) git describe --tags $(SUPOST))
+    BRANCH?=$(shell $(SUPRE) git rev-parse --abbrev-ref HEAD $(SUPOST))
+    CHANGES?=$(shell $(SUPRE) git status -s | grep -v '?? ' $(SUPOST))
+
+    ifeq ($(COMMIT),$(TAG_COMMIT))
+        # Exactly on the tagged commit. The version is the tag!
+        VERSION:=$(TAG)
+        DEBVERSION:=$(TAG)
+    else
+        VERSION:=$(TAG)++
+        DEBVERSION:=$(TAG)++
+    endif
+
+    ifneq ($(strip $(CHANGES)),)
+        # There are changes, signify that with a +changes
+        VERSION:=$(VERSION) with uncommitted changes
+        COMMIT_HASH:=$(COMMIT_HASH) but with uncommitted changes
+        DEBVERSION:=$(DEBVERSION)l
+    endif
+
 endif
 
-ifneq ($(strip $(CHANGES)),)
-  # There are changes, signify that with a +changes
-  VERSION:=$(VERSION) with uncommitted changes
-  COMMIT_HASH:=$(COMMIT_HASH) but with uncommitted changes
-  DEBVERSION:=$(DEBVERSION)l
-endif
 
 $(info Building $(VERSION))
 

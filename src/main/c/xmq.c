@@ -23,7 +23,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include"xmq.h"
 
-#define VERSION "1"
+#include"version.h"
 
 #define BUILDING_XMQ
 

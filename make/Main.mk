@@ -45,54 +45,6 @@ endif
 
 $(shell mkdir -p $(OUTPUT_ROOT)/$(TYPE)/parts $(SRC_ROOT)/dist)
 
-SUPRE=
-SUPOST=
-ifneq ($(SUDO_USER),)
-# Git has a security check to prevent the wrong user from running inside the git repository.
-# When we run "sudo make install" this will create problems since git is running as root instead.
-# Use SUPRE/SUPOST to use su to switch back to the user for the git commands.
-SUPRE=su -c $(DQUOTE)
-SUPOST=$(DQUOTE) $(SUDO_USER)
-endif
-
-COMMIT_HASH?=$(shell $(SUPRE) git log --pretty=format:'%H' -n 1 $(SUPOST))
-TAG?=$(shell $(SUPRE) git describe --tags $(SUPOST))
-BRANCH?=$(shell $(SUPRE) git rev-parse --abbrev-ref HEAD $(SUPOST))
-CHANGES?=$(shell $(SUPRE) git status -s | grep -v '?? ' $(SUPOST))
-
-ifeq ($(BRANCH),master)
-  BRANCH:=
-else
-  BRANCH:=$(BRANCH)_
-endif
-
-VERSION:=$(BRANCH)$(TAG)
-DEBVERSION:=$(BRANCH)$(TAG)
-LOCALCHANGES:=
-
-ifneq ($(strip $(CHANGES)),)
-  # There are local un-committed changes.
-  VERSION:=$(VERSION) with local changes
-  COMMIT_HASH:=$(COMMIT_HASH) with local changes
-  DEBVERSION:=$(DEBVERSION)l
-  LOCALCHANGES:=true
-endif
-
-$(shell echo "#define VERSION \"$(VERSION)\"" > $(OUTPUT_ROOT)/$(TYPE)/version.h.tmp)
-$(shell echo "#define COMMIT \"$(COMMIT_HASH)\"" >> $(OUTPUT_ROOT)/$(TYPE)/version.h.tmp)
-
-PREV_VERSION:=$(shell cat -n $(OUTPUT_ROOT)/$(TYPE)/version.h 2> /dev/null)
-CURR_VERSION:=$(shell cat -n $(OUTPUT_ROOT)/$(TYPE)/version.h.tmp 2>/dev/null)
-
-ifneq ($(PREV_VERSION),$(CURR_VERSION))
-$(shell mv $(OUTPUT_ROOT)/$(TYPE)/version.h.tmp $(OUTPUT_ROOT)/$(TYPE)/version.h)
-$(info New version number generates new $(OUTPUT_ROOT)/$(TYPE)/version.h)
-else
-$(shell rm $(OUTPUT_ROOT)/$(TYPE)/version.h.tmp)
-endif
-
-#(info Building $(VERSION))
-
 VERBOSE?=@
 
 # The SOURCES are what makes up libxmq xmq.
