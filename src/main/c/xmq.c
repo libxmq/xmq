@@ -23,8 +23,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include"xmq.h"
 
-#include"version.h"
-
 #define BUILDING_XMQ
 
 // PART HEADERS //////////////////////////////////////////////////

@@ -1,4 +1,8 @@
 
+Added Windows build.
+Added MacOS build.
+Added JSON parsing/printing.
+
 2023-10-14: Version 1.0
 
 Complete rewrite from scratch.

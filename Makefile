@@ -65,19 +65,9 @@ else
 
 endif
 
-
 $(info Building $(VERSION))
 
-$(shell echo "#define VERSION \"$(VERSION)\"" > build/version.h.tmp)
-$(shell echo "#define COMMIT \"$(COMMIT_HASH)\"" >> build/version.h.tmp)
-
-PREV_VERSION=$(shell cat -n build/version.h 2> /dev/null)
-CURR_VERSION=$(shell cat -n build/version.h.tmp 2>/dev/null)
-ifneq ($(PREV_VERSION),$(CURR_VERSION))
-$(shell mv build/version.h.tmp build/version.h)
-else
-$(shell rm build/version.h.tmp)
-endif
+$(shell echo "$(VERSION)" > build/VERSION)
 
 all: release
 
@@ -163,7 +153,6 @@ clean:
 	@echo "Removing release, debug, asan, gtkdoc build dirs."
 	@for x in $(BUILDDIRS); do echo; rm -rf $$x/release $$x/debug $$x/asan $$x/generated_autocomplete.h; done
 	@rm -rf build/gtkdoc
-	@rm -f build/version.h
 
 clean-all:
 	@echo "Removing build directory containing configuration and artifacts."

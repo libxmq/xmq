@@ -45,7 +45,10 @@ endif
 
 $(shell mkdir -p $(OUTPUT_ROOT)/$(TYPE)/parts $(SRC_ROOT)/dist)
 
+VERSION=$(shell cat $(SRC_ROOT)/build/VERSION)
 VERBOSE?=@
+
+CFLAGS += -DVERSION='"$(VERSION)"'
 
 # The SOURCES are what makes up libxmq xmq.
 SOURCES:=$(wildcard $(SRC_ROOT)/src/main/c/*.c)
