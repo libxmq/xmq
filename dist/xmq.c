@@ -620,6 +620,10 @@ bool debug_enabled();
 
 void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 
+#ifndef PLATFORM_WINAPI
+
+// Multicolor terminals like gnome-term etc.
+
 #define NOCOLOR      "\033[0m"
 #define GREEN        "\033[0;32m"
 #define DARK_GREEN   "\033[0;1;32m"
@@ -639,6 +643,33 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define RED          "\033[0;31m"
 #define RED_UNDERLINE  "\033[0;4;31m"
 #define UNDERLINE    "\033[0;1;4m"
+
+#else
+
+// The more limited Windows console.
+
+#define NOCOLOR      "\033[0m\033[24m"
+#define GREEN        "\033[92m\033[24m"
+#define DARK_GREEN   "\033[32m\033[24m"
+#define BLUE         "\033[94m\033[24m"
+#define BLUE_UNDERLINE "\033[94m\033[4m"
+#define LIGHT_BLUE   "\033[36m\033[24m"
+#define LIGHT_BLUE_UNDERLINE   "\033[36m\033[4m"
+#define DARK_BLUE    "\033[34m\033[24m"
+#define ORANGE       "\033[93m\033[24m"
+#define ORANGE_UNDERLINE "\033[93m\033[4m"
+#define DARK_ORANGE  "\033[33m\033[24m"
+#define DARK_ORANGE_UNDERLINE  "\033[33m\033[4m"
+#define MAGENTA      "\033[95m\033[24m"
+#define CYAN         "\033[96m\033[24m"
+#define DARK_CYAN    "\033[36m\033[24m"
+#define DARK_RED     "\033[31m\033[24m"
+#define RED          "\033[91m\033[24m"
+#define RED_UNDERLINE  "\033[91m\033[4m"
+#define UNDERLINE    "\033[4m"
+#define NO_UNDERLINE "\033[24m"
+
+#endif
 
 void get_color(XMQColoring *coloring, XMQColor c, const char **pre, const char **post);
 
@@ -5953,6 +5984,7 @@ XMQColor level_to_quote_color(Level level)
     case LEVEL_ATTR_VALUE_COMPOUND: return COLOR_attr_value_compound_quote;
     }
     assert(false);
+    return COLOR_none;
 }
 
 XMQColor level_to_entity_color(Level level)
@@ -5966,6 +5998,7 @@ XMQColor level_to_entity_color(Level level)
     case LEVEL_ATTR_VALUE_COMPOUND: return COLOR_attr_value_compound_entity;
     }
     assert(false);
+    return COLOR_none;
 }
 
 xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop)

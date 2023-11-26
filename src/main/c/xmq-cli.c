@@ -30,7 +30,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<stdio.h>
 #include<unistd.h>
 
-#ifndef PLATFORM_WINAPI
+#ifdef PLATFORM_WINAPI
+#include<windows.h>
+#else
 #include<termios.h>
 #endif
 
@@ -136,6 +138,7 @@ void cmd_unload(XMQCliCommand *command);
 void debug(const char* fmt, ...);
 void disable_raw_mode();
 void enable_raw_mode();
+void enableAnsiColorsTerminal();
 bool handle_global_option(const char *arg, XMQCliCommand *command);
 bool handle_option(const char *arg, XMQCliCommand *command);
 bool perform_command(XMQCliCommand *c);
@@ -500,7 +503,8 @@ bool is_bg_dark()
     }
     return is_dark;
 #else
-    return false;
+
+    return true;
 #endif
 }
 
@@ -950,6 +954,25 @@ bool xmq_parse_cmd_line(int argc, char **argv, XMQCliCommand *command)
     return true;
 }
 
+#ifdef PLATFORM_WINAPI
+void enableAnsiColorsTerminal()
+{
+    HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hStdOut == INVALID_HANDLE_VALUE) return; // Fail
+
+    DWORD mode;
+    if (!GetConsoleMode(hStdOut, &mode)) return; // Fail
+
+    DWORD enabled = (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) ? true : false;
+
+    if (enabled) return; // Already enabled colors.
+
+    mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+
+    SetConsoleMode(hStdOut, mode);
+}
+#endif
+
 int main(int argc, char **argv)
 {
     if (argc < 2 && isatty(0)) print_help_and_exit();
@@ -960,11 +983,14 @@ int main(int argc, char **argv)
     if (isatty(1))
     {
         env.use_color = true;
-        env.dark_mode = false;
+        env.dark_mode = true; // false;
         if (isatty(0))
         {
             env.dark_mode = is_bg_dark();
         }
+#ifdef PLATFORM_WINAPI
+        enableAnsiColorsTerminal();
+#endif
     }
     XMQCliCommand *first_command = allocate_cli_command(&env);
 
