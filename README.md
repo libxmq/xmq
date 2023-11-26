@@ -10,6 +10,7 @@ Grammar [https://libxmq.org/xmq.pdf](https://libxmq.org/xmq.pdf)
 | ------------ |:-------------:|
 | Ubuntu | [![Build Ubuntu Status](https://github.com/libxmq/xmq/workflows/Build%20Ubuntu/badge.svg)](https://github.com/libxmq/xmq/actions)|
 | MacOSX | [![Build MacOSX Status](https://github.com/libxmq/xmq/workflows/Build%20MacOSX/badge.svg)](https://github.com/libxmq/xmq/actions)|
+| Windows | [![Build Windows Status](https://github.com/libxmq/xmq/workflows/Build%20Windows/badge.svg)](https://github.com/libxmq/xmq/actions)|
 
 # Rationale
 
