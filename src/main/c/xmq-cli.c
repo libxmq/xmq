@@ -970,6 +970,8 @@ void enableAnsiColorsTerminal()
     mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 
     SetConsoleMode(hStdOut, mode);
+
+    SetConsoleOutputCP(CP_UTF8);
 }
 #endif
 
