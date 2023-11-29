@@ -32,6 +32,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<stdbool.h>
 #include<stdlib.h>
 
+extern bool debug_enabled_;
+extern bool verbose_enabled_;
+
+void verbose(const char* fmt, ...);
+void debug(const char* fmt, ...);
 void check_malloc(void *a);
 
 #define PRINT_STDOUT(...) printf(__VA_ARGS__)
@@ -1605,9 +1610,6 @@ bool find_line(const char *start, // Start scanning the line from here.
     return has_nl;
 }
 
-static bool debug_enabled_ = false;
-static bool verbose_enabled_ = false;
-
 void xmqSetDebug(bool e)
 {
     debug_enabled_ = e;
@@ -1637,26 +1639,6 @@ static const char *build_error_message(const char* fmt, ...)
     buf[1023] = 0;
     buf = (char*)realloc(buf, strlen(buf)+1);
     return buf;
-}
-
-static void debug(const char* fmt, ...)
-{
-    if (debug_enabled_) {
-        va_list args;
-        va_start(args, fmt);
-        vfprintf(stderr, fmt, args);
-        va_end(args);
-    }
-}
-
-static void verbose(const char* fmt, ...)
-{
-    if (verbose_enabled_) {
-        va_list args;
-        va_start(args, fmt);
-        vfprintf(stderr, fmt, args);
-        va_end(args);
-    }
 }
 
 /** Check if the quote begins with a nl or spaces nl.
@@ -3023,7 +3005,7 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root)
 
 const char *xmqVersion()
 {
-    return "1.99.1";
+    return "1.99.2";
 }
 
 void do_whitespace(XMQParseState *state,
@@ -7480,6 +7462,30 @@ void check_malloc(void *a)
     {
         PRINT_ERROR("libxmq: Out of memory!\n");
         exit(1);
+    }
+}
+
+bool verbose_enabled_ = false;
+
+void verbose(const char* fmt, ...)
+{
+    if (verbose_enabled_) {
+        va_list args;
+        va_start(args, fmt);
+        vfprintf(stderr, fmt, args);
+        va_end(args);
+    }
+}
+
+bool debug_enabled_ = false;
+
+void debug(const char* fmt, ...)
+{
+    if (debug_enabled_) {
+        va_list args;
+        va_start(args, fmt);
+        vfprintf(stderr, fmt, args);
+        va_end(args);
     }
 }
 

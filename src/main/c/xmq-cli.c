@@ -80,10 +80,17 @@ typedef enum {
     XMQ_CLI_CMD_GROUP_ENTITIES,
 } XMQCliCmdGroup;
 
+typedef enum {
+    XMQ_RENDER_MONO = 0,
+    XMQ_RENDER_COLOR_DARKBG = 1,
+    XMQ_RENDER_COLOR_LIGHTBG= 2
+} XMQRenderStyle;
+
 typedef struct XMQCliEnvironment XMQCliEnvironment;
 struct XMQCliEnvironment
 {
     XMQDoc *doc;
+    bool use_detect;
     bool use_color;
     bool dark_mode;
 };
@@ -94,8 +101,8 @@ struct XMQCliCommand
 {
     XMQCliEnvironment *env;
     XMQCliCmd cmd;
-    char *in;
-    char *out;
+    const char *in;
+    const char *out;
     const char *xpath;
     const char *entity;
     const char *content;
@@ -135,10 +142,12 @@ int cmd_load(XMQCliCommand *command);
 const char *cmd_name(XMQCliCmd cmd);
 bool cmd_to(XMQCliCommand *command);
 void cmd_unload(XMQCliCommand *command);
-void debug(const char* fmt, ...);
+void debug_(const char* fmt, ...);
 void disable_raw_mode();
 void enable_raw_mode();
 void enableAnsiColorsTerminal();
+bool has_debug(int argc, const char **argv);
+bool has_verbose(int argc, const char **argv);
 bool handle_global_option(const char *arg, XMQCliCommand *command);
 bool handle_option(const char *arg, XMQCliCommand *command);
 bool perform_command(XMQCliCommand *c);
@@ -146,19 +155,21 @@ void prepare_command(XMQCliCommand *c);
 void print_help_and_exit();
 void print_version_and_exit();
 void replace_entities(xmlNodePtr node, const char *entity, const char *content);
-bool is_bg_dark();
+XMQRenderStyle render_style(bool *use_color, bool *dark_mode);
 int tokenize_input(XMQCliCommand *command);
-void verbose(const char* fmt, ...);
+void verbose_(const char* fmt, ...);
 void write_print(void *buffer, const char *content);
-bool xmq_parse_cmd_line(int argc, char **argv, XMQCliCommand *command);
+bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command);
 
 /////////////////////////////////////////////////////////////////////////////////////
 
-bool verbose_enabled_ = false;
+const char *error_to_print_on_exit = NULL;
 
-void verbose(const char* fmt, ...)
+bool verbose_enabled__ = false;
+
+void verbose_(const char* fmt, ...)
 {
-    if (verbose_enabled_) {
+    if (verbose_enabled__) {
         va_list args;
         va_start(args, fmt);
         vfprintf(stderr, fmt, args);
@@ -166,11 +177,11 @@ void verbose(const char* fmt, ...)
     }
 }
 
-bool debug_enabled_ = false;
+bool debug_enabled__ = false;
 
-void debug(const char* fmt, ...)
+void debug_(const char* fmt, ...)
 {
-    if (debug_enabled_) {
+    if (debug_enabled__) {
         va_list args;
         va_start(args, fmt);
         vfprintf(stderr, fmt, args);
@@ -316,6 +327,7 @@ bool handle_option(const char *arg, XMQCliCommand *command)
     {
         if (!strcmp(arg, "--color"))
         {
+            command->env->use_detect = false;
             command->use_color = true;
             if (command->render_to == XMQ_RENDER_PLAIN)
             {
@@ -325,16 +337,19 @@ bool handle_option(const char *arg, XMQCliCommand *command)
         }
         if (!strcmp(arg, "--mono"))
         {
+            command->env->use_detect = false;
             command->use_color = false;
             return true;
         }
         if (!strcmp(arg, "--lightbg"))
         {
+            command->env->use_detect = false;
             command->dark_mode = false;
             return true;
         }
         if (!strcmp(arg, "--darkbg"))
         {
+            command->env->use_detect = false;
             command->dark_mode = true;
             return true;
         }
@@ -441,23 +456,81 @@ void enable_raw_mode()
 #endif
 }
 
-bool is_bg_dark()
+XMQRenderStyle render_style(bool *use_color, bool *dark_mode)
 {
-#ifndef PLATFORM_WINAPI
-    bool is_dark = true;
+    // The Linux vt console is by default black. So dark-mode.
+    char *term = getenv("TERM");
+    if (!strcmp(term, "linux"))
+    {
+        *use_color = true;
+        *dark_mode = true;
+        verbose_("(xmq) assuming dark bg\n");
+        return XMQ_RENDER_COLOR_DARKBG;
+    }
+
+    char *xmq_mode = getenv("XMQ_BG");
+    if (xmq_mode != NULL)
+    {
+        if (!strcmp(xmq_mode, "MONO"))
+        {
+            *use_color = false;
+            *dark_mode = false;
+            verbose_("(xmq) XMQ_BG set to MONO\n");
+            return XMQ_RENDER_MONO;
+        }
+        if (!strcmp(xmq_mode, "LIGHT"))
+        {
+            *use_color = true;
+            *dark_mode = false;
+            verbose_("(xmq) XMQ_BG set to LIGHT\n");
+            return XMQ_RENDER_COLOR_LIGHTBG;
+        }
+        if (!strcmp(xmq_mode, "DARK"))
+        {
+            *use_color = true;
+            *dark_mode = true;
+            verbose_("(xmq) XMQ_BG set to DARK\n");
+            return XMQ_RENDER_COLOR_DARKBG;
+        }
+        *use_color = false;
+        *dark_mode = false;
+        verbose_("(xmq) XMQ_BG content is bad, using MONO\n");
+        return XMQ_RENDER_MONO;
+    }
 
     char *colorfgbg = getenv("COLORFGBG");
     if (colorfgbg != NULL)
     {
-        return true;
+        // Black text on white background: 0;default;15
+        // White text on black background: 15;default;0
+        *use_color = true;
+        *dark_mode = true;
+        verbose_("(xmq) COLORFGBG means DARK\n");
+        return XMQ_RENDER_COLOR_DARKBG;
     }
 
-    char *term = getenv("TERM");
-    if (!strcmp(term, "linux"))
+    if (!isatty(1))
     {
-        return true;
+        *use_color = false;
+        *dark_mode = false;
+        verbose_("(xmq) using mono since output is not a tty\n");
+        return XMQ_RENDER_MONO;
+    }
+    if (!isatty(0))
+    {
+        error_to_print_on_exit =
+            "xmq: stdin is not a tty so xmq cannot talk to the terminal to detect if "
+            "background dark/light, defaults to dark. To silence this warning please "
+            "set environment variable XMQ_BG=MONO|DARK|LIGHT or supply the options: "
+            "render_terminal --color --lightbg | --color --darkbg | --mono\n";
+        *use_color = true;
+        *dark_mode = true;
+        verbose_("(xmq) Cannot talk to terminal, assuming DARK background.\n");
+        return XMQ_RENDER_COLOR_DARKBG;
     }
 
+    bool is_dark = true;
+#ifndef PLATFORM_WINAPI
     if (!strcmp(term, "xterm-256color"))
     {
         enable_raw_mode();
@@ -499,18 +572,34 @@ bool is_bg_dark()
                 }
             }
         }
+        else
+        {
+            error_to_print_on_exit =
+                "xmq: no response from terminal whether background is dark/light, defaults to dark.\n"
+                "To silence this warning please set environment variable XMQ_BG=MONO|DARK|LIGHT.\n";
+            verbose_("(xmq) Terminal does not respond with background color within 100ms.\n");
+            is_dark = true;
+        }
         disable_raw_mode();
     }
-    return is_dark;
-#else
-
-    return true;
 #endif
+
+    if (is_dark)
+    {
+        *use_color = true;
+        *dark_mode = true;
+        verbose_("(xmq) Terminal responds with dark background.\n");
+        return XMQ_RENDER_COLOR_DARKBG;
+    }
+    *use_color = true;
+    *dark_mode = false;
+    verbose_("(xmq) Terminal responds with light background.\n");
+    return XMQ_RENDER_COLOR_LIGHTBG;
 }
 
 bool handle_global_option(const char *arg, XMQCliCommand *command)
 {
-    debug("(xmq) option %s\n", arg);
+    debug_("(xmq) option %s\n", arg);
     if (!strcmp(arg, "--help") ||
         !strcmp(arg, "-h"))
     {
@@ -520,14 +609,14 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     if (!strcmp(arg, "--debug"))
     {
         command->debug = true;
-        debug_enabled_ = true;
-        verbose_enabled_ = true;
+        debug_enabled__ = true;
+        verbose_enabled__ = true;
         return true;
     }
     if (!strcmp(arg, "--verbose"))
     {
         command->verbose = true;
-        verbose_enabled_ = true;
+        verbose_enabled__ = true;
         return true;
     }
     if (!strcmp(arg, "--version"))
@@ -535,9 +624,12 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->print_version = true;
         return true;
     }
-    if (!strcmp(arg, "--is-dark-bg"))
+    if (!strcmp(arg, "--render-style"))
     {
-        if (is_bg_dark()) exit(0); else exit(1);
+        bool c, d;
+        int rc = render_style(&c, &d);
+        if (error_to_print_on_exit) fprintf(stderr, "%s", error_to_print_on_exit);
+        exit(rc);
     }
     if (!strcmp(arg, "--xmq"))
     {
@@ -612,9 +704,86 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
 
 void print_help_and_exit()
 {
-    printf("xmq - xml/xmq/html/htmq/json processor [version %s]\n"
-           "....\n",
-           xmqVersion());
+    printf("Usage: xmq [options] <file> ( <command> [options] )*\n"
+           "\n"
+           "  --root=<name>\n"
+           "             Create a root node <name> unless the file starts with a node with this <name> already.\n"
+           "  --xmq|--htmq|--xml|--html|--json\n"
+           "             The input format is normally auto detected but you can force the input format here.\n"
+           "  --trim=none|default|normal|extra|reshuffle\n"
+           "             When reading the input data, the default setting for xml/html content is to trim whitespace using normal.\n"
+           "             For xmq/htmq/json the default settings is none since whitespace is explicit in xmq/htmq/json.\n"
+           "             none: Keep all whitespace as is.\n"
+           "             default: Use normal for xml/html and none for xmq/htmq/json.\n"
+           "             normal: Remove leading ending whitespace and incindental indentation.\n"
+           "             extra: Like normal but also squeeze multiple consecutive whitespaces int a single whitespace.\n"
+           "             reshuffle: Like extra but also move words between lines to shrink line width.\n"
+           "  --help     Display this help and exit.\n"
+           "  --verbose  Output extra information on stderr.\n"
+           "  --debug    Output debug information on stderr.\n"
+           "  --version  Output version information and exit.\n"
+           "\n"
+           "COMMANDS\n"
+           "to_xmq\n"
+           "to_htmq\n"
+           "             write the content as xmq/htmq on stdout. If stdout is a tty, then this command behaves as render_terminal.\n"
+           "  --compact\n"
+           "             by default, to_xmq pretty-prints the output. Using this option will result in a single line compact xmq/htmq.\n"
+           "  --indent=n\n"
+           "             use the given number of spaces for indentation. Default is 4.\n"
+           "  --escape-newlines\n"
+           "             use the entity &#10; instead of actual newlines in xmq quotes. This is automatic in compact mode.\n"
+           "  --escape-non-7bit\n"
+           "             escape all non-7bit chars using entities like &#160;\n"
+           "\n"
+           "render_terminal\n"
+           "render_html\n"
+           "render_tex\n"
+           "             Render the content as xmq/htmq for presentation on a terminal, as html or as LaTeX.\n"
+           "  --color\n"
+           "  --mono\n"
+           "             By default, xmq generates syntax colored output if writing to a terminal.\n"
+           "             You can force it to produce color even if writing to a pipe or a file using --color,\n"
+           "             and disable color with --mono.\n"
+           "             Colors can be configured with the XMQ_COLORS environment variable.\n"
+           "  --lightbg\n"
+           "  --darkbg\n"
+           "             Use a colorscheme suitable for a light background or a dark background.\n"
+           "  --nostyle\n"
+           "             Do not output html/tex preamble/postamble.\n"
+           "  --onlystyle\n"
+           "             Output only the html/tex preamble.\n"
+           "\n"
+           "  You can also use --compact, --indent=n, --escape-newlines and --escape-non-7bit with the render commands.\n"
+           "\n"
+           "tokenize\n"
+           "             Do not create a DOM tree for the content, just tokenize the input. Each token can be printed\n"
+           "             using colors for terminal/html/tex or with location information or with debug information.\n"
+           "             Location information is useful for editors to get help on syntax highlighting.\n"
+           "  --type=[location|terminal|tex|debugtokens|debugcontent]\n"
+           "\n"
+           "select\n"
+           "delete\n"
+           "             Select or delete nodes in the DOM.\n"
+           "  --xpath=<xpath-expression>\n"
+           "             Select or delete nodes matching this xpath expression.\n"
+           "  --entity=<entity-name>\n"
+           "             Select or delete entity nodes matching this name.\n"
+           "\n"
+           "replace\n"
+           "             Replace parts of the DOM.\n"
+           "  --xpath=<xpath-expression>\n"
+           "             Replace nodes matching this xpath expression.\n"
+           "  --entity=<entity-name>\n"
+           "             Replace entity nodes matching this name.\n"
+           "  --text=<text>\n"
+           "             Replace with this text. The text is safely quoted for insertion into the document.\n"
+           "  --textfile=<file-name>\n"
+           "             Replace with the text from this file. The text is safely quoted for insertion into the document.\n"
+           "  --file=<file-name>\n"
+           "             Replace with the content of this file which has to be proper xmq/htmq/xml/html/json.\n"
+           "\nIf a single minus is given as <file> then xmq reads from stdin.\n"
+           "If neither <file> nor <command> given, then the xmq reads from stdin.\n");
     exit(0);
 }
 
@@ -681,7 +850,7 @@ int cmd_load(XMQCliCommand *command)
 {
     command->env->doc = xmqNewDoc();
 
-    verbose("(xmq) loading %s\n", command->in);
+    verbose_("(xmq) loading %s\n", command->in);
 
     if (command &&
         command->in &&
@@ -709,7 +878,7 @@ void cmd_unload(XMQCliCommand *command)
 {
     if (command && command->env && command->env->doc)
     {
-        debug("(xmq) unloading document\n");
+        debug_("(xmq) unloading document\n");
         xmqFreeDoc(command->env->doc);
         command->env->doc = NULL;
     }
@@ -748,7 +917,7 @@ bool cmd_delete(XMQCliCommand *command)
 
     if(objects == NULL)
     {
-        verbose("xmq: no nodes deleted\n");
+        verbose_("xmq: no nodes deleted\n");
         xmlXPathFreeContext(ctx);
         return true;
     }
@@ -843,7 +1012,7 @@ bool perform_command(XMQCliCommand *c)
 {
     if (c->cmd == XMQ_CLI_CMD_NONE) return true;
 
-    debug("(xmq) perform %s\n", cmd_name(c->cmd));
+    debug_("(xmq) perform %s\n", cmd_name(c->cmd));
     switch (c->cmd) {
     case XMQ_CLI_CMD_NONE:
         return true;
@@ -867,13 +1036,13 @@ bool perform_command(XMQCliCommand *c)
     return false;
 }
 
-bool xmq_parse_cmd_line(int argc, char **argv, XMQCliCommand *command)
+bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command)
 {
     int i = 1;
 
     for (i = 1; argv[i]; ++i)
     {
-        char *arg = argv[i];
+        const char *arg = argv[i];
 
         // Stop handling options when arg does not start with - or is exactly "-"
         if (arg[0] != '-' || !strcmp(arg, "-")) break;
@@ -915,13 +1084,10 @@ bool xmq_parse_cmd_line(int argc, char **argv, XMQCliCommand *command)
 
     while (com->cmd != XMQ_CLI_CMD_NONE)
     {
-        //printf("COMMAND %d %s\n", com->cmd, cmd_name(com->cmd));
         for (; argv[i]; ++i)
         {
-            char *arg = argv[i];
-            //printf("ARGV %d %s use_color=%d\n", i, arg, com->use_color);
+            const char *arg = argv[i];
             bool ok = handle_option(arg, com);
-            //printf("ARGV post  %d %s use_color=%d\n", i, arg, com->use_color);
 
             if (!ok)
             {
@@ -945,7 +1111,7 @@ bool xmq_parse_cmd_line(int argc, char **argv, XMQCliCommand *command)
         (cmd_group(com->cmd) != XMQ_CLI_CMD_GROUP_RENDER &&
          cmd_group(com->cmd) != XMQ_CLI_CMD_GROUP_TO))
     {
-        debug("(xmq) added implicit to_xmq command\n");
+        debug_("(xmq) added implicit to_xmq command\n");
         com->next = allocate_cli_command(command->env);
         com->next->cmd = XMQ_CLI_CMD_TO_XMQ;
         prepare_command(com->next);
@@ -975,34 +1141,66 @@ void enableAnsiColorsTerminal()
 }
 #endif
 
-int main(int argc, char **argv)
+bool has_verbose(int argc, const char **argv)
+{
+
+    for (const char **i = argv; *i; ++i)
+    {
+        if (!strcmp(*i, "--verbose")) return true;
+        if (!strcmp(*i, "--debug")) return true;
+    }
+    return false;
+}
+
+bool has_debug(int argc, const char **argv)
+{
+    for (const char **i = argv; *i; ++i)
+    {
+        if (!strcmp(*i, "--debug")) return true;
+    }
+    return false;
+}
+
+int main(int argc, const char **argv)
 {
     if (argc < 2 && isatty(0)) print_help_and_exit();
+
+    verbose_enabled__ = has_verbose(argc, argv);
+    debug_enabled__ = has_debug(argc, argv);
 
     XMQCliEnvironment env;
     memset(&env, 0, sizeof(env));
 
     if (isatty(1))
     {
+        // Lets try to use detection of background. If any
+        // of --mono or --color --darkbg or --ligtbg is set, then do not detect.
+        env.use_detect = true;
+        // Output is a tty, lets use colors!
         env.use_color = true;
-        env.dark_mode = true; // false;
-        if (isatty(0))
-        {
-            env.dark_mode = is_bg_dark();
-        }
+        // Default to dark mode.
+        env.dark_mode = true;
+
 #ifdef PLATFORM_WINAPI
         enableAnsiColorsTerminal();
 #endif
     }
+
+    if (env.use_detect)
+    {
+        // See if we can find from the env variables or the terminal if it is dark mode or not.
+        render_style(&env.use_color, &env.dark_mode);
+    }
+
     XMQCliCommand *first_command = allocate_cli_command(&env);
 
     bool ok = xmq_parse_cmd_line(argc, argv, first_command);
     if (!ok) return 1;
 
-    debug_enabled_ = first_command->debug;
-    verbose_enabled_ = first_command->verbose || debug_enabled_;
-    xmqSetDebug(debug_enabled_);
-    xmqSetVerbose(verbose_enabled_);
+    debug_enabled__ = first_command->debug;
+    verbose_enabled__ = first_command->verbose || debug_enabled__;
+    xmqSetDebug(debug_enabled__);
+    xmqSetVerbose(verbose_enabled__);
 
     if (first_command->print_version) print_version_and_exit();
     if (first_command->print_help)  print_help_and_exit();
@@ -1035,6 +1233,8 @@ int main(int argc, char **argv)
         c = c->next;
         free(tmp);
     }
+
+    if (error_to_print_on_exit) fprintf(stderr, "%s", error_to_print_on_exit);
 
     return rc;
 }

@@ -1,25 +1,48 @@
 #!/bin/sh
 
-if [ "$1" = "" ]
+if [ "$1" = "" ] && [ -t 0 ]
 then
+    # If input is a tty and no arguments, then print help.
     xmq
     exit 0
 fi
 
-if [ -z "$2" ]
+if [ ! -t 1 ]
 then
-    if [ -t 0 ]
-    then
-        if xmq --is-dark-bg
-        then
-            xmq "$1" render_terminal --color --darkbg | less -R
-        else
-            xmq "$1" render_terminal --color --lightbg | less -R
-        fi
-    else
-        xmq "$1" render_terminal --color | less -R
-    fi
-    exit 0
+    # If not writing to a terminal, then print as is with the xmq command to stdout.
+    xmq $@
+    exit $?
 fi
 
-xmq "$@" | less -R
+if echo "$*" | grep -q to_xmq || echo "$*" | grep -q render_terminal
+then
+    # The command line has an explicit render_terminal command, lets use the command line as is.
+    xmq "$@" | less -R
+    exit $?
+fi
+
+# No explicit render command. Determine a suitable render command by asking xmq.
+# Warn if we want to print color but we cannot determine background dark/light.
+xmq --render-style
+RC="$?"
+
+if [ "$RC" = "0" ]
+then
+    RENDER_CMD="render_terminal --mono"
+elif [ "$RC" = "1" ]
+then
+    RENDER_CMD="render_terminal --color --darkbg"
+else
+    RENDER_CMD="render_terminal --color --lightbg"
+fi
+
+# No arguments provided, read from stdin.
+if [ "$1" = "2" ]
+then
+    xmq - $RENDER_CMD | less -R
+    exit $?
+fi
+
+# Some arguments provided, use them and add render command.
+xmq "$@" $RENDER_CMD | less -R
+exit $?

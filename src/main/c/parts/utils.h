@@ -27,6 +27,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<stdbool.h>
 #include<stdlib.h>
 
+extern bool debug_enabled_;
+extern bool verbose_enabled_;
+
+void verbose(const char* fmt, ...);
+void debug(const char* fmt, ...);
 void check_malloc(void *a);
 
 #define PRINT_STDOUT(...) printf(__VA_ARGS__)
