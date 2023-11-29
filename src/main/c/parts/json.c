@@ -4,6 +4,7 @@
 #include"utils.h"
 #include"parts/xmq_internals.h"
 #include"json.h"
+#include"hashmap.h"
 #include"stack.h"
 #include"text.h"
 #include"xml.h"
@@ -36,22 +37,26 @@ bool is_json_null(XMQParseState *state);
 bool is_json_number(XMQParseState *state);
 bool is_json_quote_start(char c);
 bool is_json_whitespace(char c);
+void json_print_attribute(XMQPrintState *ps, xmlAttrPtr a);
+void json_print_attributes(XMQPrintState *ps, xmlNodePtr node);
 void json_print_array_with_children(XMQPrintState *ps,
                                     xmlNode *container,
                                     xmlNode *node);
 void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
-void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node);
+void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 void json_print_value(XMQPrintState *ps, xmlNode *container, xmlNode *node, Level level);
 void json_print_boolean_value(XMQPrintState *ps, xmlNode *container, xmlNode *node);
-void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node);
-void json_print_element_with_children(XMQPrintState *ps, xmlNode *container, xmlNode *node);
-void json_print_key_node(XMQPrintState *ps, xmlNode *container, xmlNode *node);
+void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
+void json_print_element_with_children(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
+void json_print_key_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 
 void json_check_comma(XMQPrintState *ps);
 void json_print_comma(XMQPrintState *ps);
 bool json_is_number(const char *start, const char *stop);
 bool json_is_keyword(const char *start, const char *stop);
-void json_print_leaf_node(XMQPrintState *ps, xmlNode *container, xmlNode *node);
+void json_print_leaf_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
+
+void trim_index_suffix(const char *key_start, const char **stop);
 
 bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const char *stop);
 
@@ -131,6 +136,28 @@ size_t eat_json_quote(XMQParseState *state, const char **content_start, const ch
     return 1;
 }
 
+void trim_index_suffix(const char *key_start, const char **stop)
+{
+    const char *key_stop = *stop;
+
+    if (key_start && key_stop && *(key_stop-1) == ']')
+    {
+        // This is an indexed element name "path[32]":"123" ie the 32:nd xml element
+        // which has been indexed because json objects must have unique keys.
+        // Well strictly speaking the json permits multiple keys, but no implementation does....
+        //
+        // Lets drop the suffix [32].
+        const char *i = key_stop-2;
+        // Skip the digits stop at [ or key_start
+        while (i > key_start && *i >= '0' && *i <= '9' && *i != '[') i--;
+        if (i > key_start && *i == '[')
+        {
+            // We found a [ which is not at key_start. Trim off suffix!
+            *stop = i;
+        }
+    }
+}
+
 void parse_json_quote(XMQParseState *state, const char *key_start, const char *key_stop)
 {
     int start_line = state->line;
@@ -143,6 +170,22 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
 
+    if (key_start && *key_start == '_' && key_stop == key_start+1)
+    {
+        // This is the element name "_":"symbol" stored inside the json object,
+        // in situations where the name is not visible as a key. For example
+        // the root json object and any object in arrays.
+        xmlNodePtr container = state->element_last;
+        size_t len = content_stop-content_start;
+        char *name = malloc(len+1);
+        memcpy(name, content_start, len);
+        name[len] = 0;
+        xmlNodeSetName(container, (xmlChar*)name);
+        return;
+    }
+
+    trim_index_suffix(key_start, &key_stop);
+
     if (!key_start)
     {
         key_start = underline;
@@ -154,6 +197,14 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         unsafe_key_stop = key_stop;
         key_start = underline;
         key_stop = underline+1;
+    }
+
+    if (*key_start == '_' && key_stop > key_start+1)
+    {
+        // This is an attribute that was stored as "_attr":"value"
+        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, key_start+1, state->col, key_start+1, key_stop, key_stop);
+        DO_CALLBACK_SIM(attr_value_quote, state, start_line, start_col, content_start, content_start_col, content_start, content_stop, content_stop);
+        return;
     }
 
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, state->col, key_start, key_stop, key_stop);
@@ -181,7 +232,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         DO_CALLBACK_SIM(apar_right, state, state->line, state->col, rightpar, state->col, rightpar, rightpar+1, rightpar+1);
     }
 
-    DO_CALLBACK(element_value_quote, state, start_line, start_col, content_start, content_start_col, content_start, content_stop, content_stop);
+    DO_CALLBACK_SIM(element_value_quote, state, start_line, start_col, content_start, content_start_col, content_start, content_stop, content_stop);
 }
 
 bool is_json_null(XMQParseState *state)
@@ -508,18 +559,41 @@ void parse_json(XMQParseState *state, const char *key_start, const char *key_sto
     eat_whitespace(state, NULL, NULL);
 }
 
+typedef struct
+{
+    size_t total;
+    size_t used;
+} Counter;
+
 void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to)
 {
     xmlNode *i = from;
 
+    HashMap* map = hashmap_create(100);
     while (i)
     {
-        json_print_node(ps, container, i);
+        Counter *c = hashmap_get(map, (const char*)i->name);
+        if (!c)
+        {
+            c = malloc(sizeof(Counter));
+            memset(c, 0, sizeof(Counter));
+            hashmap_put(map, (const char*)i->name, c);
+        }
+        c->total++;
+        i = xml_next_sibling(i);
+    }
+
+    i = from;
+    while (i)
+    {
+        Counter *c = hashmap_get(map, (const char*)i->name);
+        json_print_node(ps, container, i, c->total, c->used);
+        c->used++;
         i = xml_next_sibling(i);
     }
 }
 
-void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node)
+void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used)
 {
     // Standalone quote must be quoted: 'word' 'some words'
 /*    if (is_content_node(node))
@@ -550,13 +624,13 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node)
     // the empty object _ ---> {} or _(A) ---> [].
     if (is_leaf_node(node))
     {
-        return json_print_leaf_node(ps, container, node);
+        return json_print_leaf_node(ps, container, node, total, used);
     }
 
     // This is a key = value or key = 'value value' node and there are no attributes.
     if (is_key_value_node(node))
     {
-        return json_print_key_node(ps, container, node);
+        return json_print_key_node(ps, container, node, total, used);
     }
 
     // The node is marked foo(A) { } translate this into: "foo":[ ]
@@ -565,7 +639,7 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node)
         return json_print_array_with_children(ps, container, node);
     }
     // All other nodes are printed
-    json_print_element_with_children(ps, container, node);
+    json_print_element_with_children(ps, container, node, total, used);
 }
 
 void parse_json_object(XMQParseState *state, const char *key_start, const char *key_stop)
@@ -573,6 +647,8 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
     char c = *state->i;
     assert(c == '{');
     increment(c, 1, &state->i, &state->line, &state->col);
+
+    trim_index_suffix(key_start, &key_stop);
 
     if (!key_start)
     {
@@ -680,7 +756,7 @@ void json_print_array_with_children(XMQPrintState *ps,
     {
         // We have a containing node, then we can print this using "name" : [ ... ]
         json_check_comma(ps);
-        json_print_element_name(ps, container, node);
+        json_print_element_name(ps, container, node, 1, 0);
         print_utf8(ps, COLOR_none, 1, ":", NULL);
     }
 
@@ -708,16 +784,65 @@ void json_print_array_with_children(XMQPrintState *ps,
     ps->last_char = ']';
 }
 
+void json_print_attribute(XMQPrintState *ps, xmlAttr *a)
+{
+    const char *key;
+    const char *prefix;
+    size_t total_u_len;
+    attr_strlen_name_prefix(a, &key, &prefix, &total_u_len);
+
+    json_check_comma(ps);
+
+    if (prefix)
+    {
+        print_utf8(ps, COLOR_none, 1, prefix, NULL);
+        print_utf8(ps, COLOR_none, 1, ":", NULL);
+    }
+    char *quoted_key = xmq_quote_as_c(key, key+strlen(key));
+    print_utf8(ps, COLOR_none, 3, "\"_", NULL, quoted_key, NULL, "\":", NULL);
+    free(quoted_key);
+
+    if (a->children != NULL)
+    {
+        char *value = (char*)xmlNodeListGetString(a->doc, a->children, 1);
+        char *quoted_value = xmq_quote_as_c(value, value+strlen(value));
+        print_utf8(ps, COLOR_none, 3, "\"", NULL, quoted_value, NULL, "\"", NULL);
+        free(quoted_value);
+        xmlFree(value);
+    }
+}
+
+void json_print_attributes(XMQPrintState *ps,
+                           xmlNodePtr node)
+{
+    xmlAttr *a = xml_first_attribute(node);
+    //xmlNs *ns = xml_first_namespace_def(node);
+
+    while (a)
+    {
+        json_print_attribute(ps, a);
+        a = xml_next_attribute(a);
+    }
+    /*
+    while (ns)
+    {
+        print_namespace(ps, ns, max);
+        ns = xml_next_namespace_def(ns);
+        }*/
+}
+
 void json_print_element_with_children(XMQPrintState *ps,
                                       xmlNode *container,
-                                      xmlNode *node)
+                                      xmlNode *node,
+                                      size_t total,
+                                      size_t used)
 {
     json_check_comma(ps);
 
     if (container)
     {
         // We have a containing node, then we can print this using "name" : { ... }
-        json_print_element_name(ps, container, node);
+        json_print_element_name(ps, container, node, total, used);
         print_utf8(ps, COLOR_none, 1, ":", NULL);
     }
 
@@ -735,8 +860,10 @@ void json_print_element_with_children(XMQPrintState *ps,
         // Top level object or object inside array.
         print_utf8(ps, COLOR_none, 1, "\"_\":", NULL);
         ps->last_char = ':';
-        json_print_element_name(ps, container, node);
+        json_print_element_name(ps, container, node, total, used);
     }
+
+    json_print_attributes(ps, node);
 
     while (xml_prev_sibling((xmlNode*)from)) from = xml_prev_sibling((xmlNode*)from);
     assert(from != NULL);
@@ -749,7 +876,7 @@ void json_print_element_with_children(XMQPrintState *ps,
     ps->last_char = '}';
 }
 
-void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node)
+void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used)
 {
     const char *name = (const char*)node->name;
     const char *prefix = NULL;
@@ -769,6 +896,13 @@ void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *nod
 
     print_utf8(ps, COLOR_none, 1, name, NULL);
 
+    if (total > 1)
+    {
+        char buf[32];
+        buf[31] = 0;
+        snprintf(buf, 32, "[%zu]", used);
+        print_utf8(ps, COLOR_none, 1, buf, NULL);
+    }
     print_utf8(ps, COLOR_none, 1, "\"", NULL);
 
     ps->last_char = '"';
@@ -784,14 +918,16 @@ void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *nod
 
 void json_print_key_node(XMQPrintState *ps,
                          xmlNode *container,
-                         xmlNode *node)
+                         xmlNode *node,
+                         size_t total,
+                         size_t used)
 {
     json_check_comma(ps);
 
     const char *name = xml_element_name(node);
     if (name[0] != '_')
     {
-        json_print_element_name(ps, container, node);
+        json_print_element_name(ps, container, node, total, used);
         print_utf8(ps, COLOR_equals, 1, ":", NULL);
         ps->last_char = ':';
     }
@@ -818,7 +954,7 @@ void json_check_comma(XMQPrintState *ps)
     char c = ps->last_char;
     if (c == 0) return;
 
-    if (c != '{' && c != '[')
+    if (c != '{' && c != '[' && c != ',')
     {
         json_print_comma(ps);
     }
@@ -849,7 +985,9 @@ bool json_is_keyword(const char *start, const char *stop)
 
 void json_print_leaf_node(XMQPrintState *ps,
                           xmlNode *container,
-                          xmlNode *node)
+                          xmlNode *node,
+                          size_t total,
+                          size_t used)
 {
     XMQOutputSettings *output_settings = ps->output_settings;
     XMQWrite write = output_settings->content.write;
@@ -862,7 +1000,7 @@ void json_print_leaf_node(XMQPrintState *ps,
         name[0] != '_' &&
         name[1] != 0)
     {
-        json_print_element_name(ps, container, node);
+        json_print_element_name(ps, container, node, total, used);
         write(writer_state, ":", NULL);
     }
 
@@ -873,8 +1011,19 @@ void json_print_leaf_node(XMQPrintState *ps,
     }
     else
     {
-        write(writer_state, "{}", NULL);
-        ps->last_char = '}';
+        if (xml_first_attribute(node))
+        {
+            write(writer_state, "{", NULL);
+            ps->last_char = '{';
+            json_print_attributes(ps, node);
+            write(writer_state, "}", NULL);
+            ps->last_char = '}';
+        }
+        else
+        {
+            write(writer_state, "{}", NULL);
+            ps->last_char = '}';
+        }
     }
 }
 

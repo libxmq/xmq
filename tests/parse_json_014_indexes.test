@@ -1,0 +1,16 @@
+INPUT
+<symbol id="arrow-left" viewbox="0 0 24 24"><g fill="#000" fill-rule="nonzero"><path d="M6.123 11.969l6.611 7.048-1.01.983-7.536-8 7.52-8 1.042.95z"></path><path d="M5.852 12.938v-1.5H20v1.5z"></path></g></symbol>
+XMQ
+symbol(id      = arrow-left
+       viewbox = '0 0 24 24')
+{
+    g(fill      = #000
+      fill-rule = nonzero)
+    {
+        path(d = 'M6.123 11.969l6.611 7.048-1.01.983-7.536-8 7.52-8 1.042.95z')
+        path(d = 'M5.852 12.938v-1.5H20v1.5z')
+    }
+}
+JSON
+{"_":"symbol","_id":"arrow-left","_viewbox":"0 0 24 24","g":{"_fill":"#000","_fill-rule":"nonzero","path[0]":{"_d":"M6.123 11.969l6.611 7.048-1.01.983-7.536-8 7.52-8 1.042.95z"},"path[1]":{"_d":"M5.852 12.938v-1.5H20v1.5z"}}}
+END

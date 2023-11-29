@@ -361,6 +361,8 @@ void trim_text_node(xmlNode *node, XMQTrimType tt);
 
 // Output buffer functions ////////////////////////////////////////////////////////
 
+void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
+
 bool need_separation_before_attribute_key(XMQPrintState *ps);
 bool need_separation_before_element_name(XMQPrintState *ps);
 bool need_separation_before_quote(XMQPrintState *ps);

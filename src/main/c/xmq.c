@@ -97,7 +97,6 @@ size_t line_length(const char *start, const char *stop, int *numq, int *lq, int 
 bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **out_buffer);
 bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer);
 bool need_separation_before_entity(XMQPrintState *ps);
-void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
 size_t num_utf8_bytes(char c);
 void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num);
 void print_namespace(XMQPrintState *ps, xmlNs *ns, size_t align);
@@ -3413,106 +3412,6 @@ bool has_all_whitespace(const char *start, const char *stop, bool *all_space)
     return true;
 }
 
-void node_strlen_name_prefix(xmlNode *node,
-                        const char **name, size_t *name_len,
-                        const char **prefix, size_t *prefix_len,
-                        size_t *total_len)
-{
-    *name_len = strlen((const char*)node->name);
-    *name = (const char*)node->name;
-
-    if (node->ns && node->ns->prefix)
-    {
-        *prefix = (const char*)node->ns->prefix;
-        *prefix_len = strlen((const char*)node->ns->prefix);
-        *total_len = *name_len + *prefix_len +1;
-    }
-    else
-    {
-        *prefix = NULL;
-        *prefix_len = 0;
-        *total_len = *name_len;
-    }
-    assert(*name != NULL);
-}
-
-void attr_strlen_name_prefix(xmlAttr *attr, const char **name, const char **prefix, size_t *total_u_len)
-{
-    *name = (const char*)attr->name;
-    size_t name_b_len;
-    size_t name_u_len;
-    size_t prefix_b_len;
-    size_t prefix_u_len;
-    str_b_u_len(*name, NULL, &name_b_len, &name_u_len);
-
-    if (attr->ns && attr->ns->prefix)
-    {
-        *prefix = (const char*)attr->ns->prefix;
-        str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
-        *total_u_len = name_u_len + prefix_u_len + 1;
-    }
-    else
-    {
-        *prefix = NULL;
-        prefix_b_len = 0;
-        prefix_u_len = 0;
-        *total_u_len = name_u_len;
-    }
-    assert(*name != NULL);
-}
-
-void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len)
-{
-    size_t prefix_b_len;
-    size_t prefix_u_len;
-
-    if (ns->prefix)
-    {
-        *prefix = (const char*)ns->prefix;
-        str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
-        *total_u_len = /* xmlns */ 5  + prefix_u_len + 1;
-    }
-    else
-    {
-        *prefix = NULL;
-        prefix_b_len = 0;
-        prefix_u_len = 0;
-        *total_u_len = /* xmlns */ 5;
-    }
-}
-
-void element_strlen_name_prefix(xmlNode *element, const char **name, const char **prefix, size_t *total_u_len)
-{
-    *name = (const char*)element->name;
-    if (!*name)
-    {
-        *name = "";
-        *prefix = "";
-        *total_u_len = 0;
-        return;
-    }
-    size_t name_b_len;
-    size_t name_u_len;
-    size_t prefix_b_len;
-    size_t prefix_u_len;
-    str_b_u_len(*name, NULL, &name_b_len, &name_u_len);
-
-    if (element->ns && element->ns->prefix)
-    {
-        *prefix = (const char*)element->ns->prefix;
-        str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
-        *total_u_len = name_u_len + prefix_u_len + 1;
-    }
-    else
-    {
-        *prefix = NULL;
-        prefix_b_len = 0;
-        prefix_u_len = 0;
-        *total_u_len = name_u_len;
-    }
-    assert(*name != NULL);
-}
-
 void print_entity_node(XMQPrintState *ps, xmlNode *node)
 {
     check_space_before_entity_node(ps);
@@ -5397,6 +5296,7 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
     return rc;
 }
 
+#include"parts/hashmap.c"
 #include"parts/stack.c"
 #include"parts/membuffer.c"
 #include"parts/json.c"

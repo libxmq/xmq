@@ -69,43 +69,19 @@ else
     exit 1
 fi
 
-# XMQ output was as expected.
-# XMQ compact output was as expected.
+$PROG $ARGS $OUTPUT/${TEST_NAME}.json_output > $OUTPUT/${TEST_NAME}.xmq_back
 
-# Now expand the compact output to normal xmq output and compare with the previous output.
-# Now compact the previous output and compare with the previous compact output.
-
-exit 0
-
-$PROG $ARGS $OUTPUT/${TEST_NAME}.output_json > $OUTPUT/${TEST_NAME}.output_expanded
-$PROG $ARGS $OUTPUT/${TEST_NAME}.output to_xmq > $OUTPUT/${TEST_NAME}.output_compressed
-
-if diff $OUTPUT/${TEST_NAME}.output $OUTPUT/${TEST_NAME}.output_expanded > /dev/null
+if diff $OUTPUT/${TEST_NAME}.expected_xmq $OUTPUT/${TEST_NAME}.xmq_back > /dev/null
 then
-    echo OK: $TEST_NAME
+    echo OK: xmq back from json $TEST_NAME
 else
-    echo ERR: $TEST_NAME
-    echo "Formatting differ:"
+    echo ERR: xmq back from json $TEST_NAME
+    echo "Formatting differ when returning from json to xmq:"
     if [ -n "$USE_MELD" ]
     then
-        meld $OUTPUT/${TEST_NAME}.output $OUTPUT/${TEST_NAME}.output_expanded
+        meld $OUTPUT/${TEST_NAME}.expected_xmq $OUTPUT/${TEST_NAME}.xmq_back
     else
-        diff $OUTPUT/${TEST_NAME}.output $OUTPUT/${TEST_NAME}.output_expanded
-    fi
-    exit 1
-fi
-
-if diff $OUTPUT/${TEST_NAME}.output_json $OUTPUT/${TEST_NAME}.output_compressed > /dev/null
-then
-    echo OK: $TEST_NAME
-else
-    echo ERR: $TEST_NAME
-    echo "Formatting differ:"
-    if [ -n "$USE_MELD" ]
-    then
-        meld $OUTPUT/${TEST_NAME}.output_json $OUTPUT/${TEST_NAME}.output_compressed
-    else
-        diff $OUTPUT/${TEST_NAME}.output_json $OUTPUT/${TEST_NAME}.output_compressed
+        diff $OUTPUT/${TEST_NAME}.expected_xmq $OUTPUT/${TEST_NAME}.xmq_back
     fi
     exit 1
 fi
