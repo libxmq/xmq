@@ -82,6 +82,28 @@ HashMap* hashmap_create(size_t max_size)
     return new_table;
 }
 
+void hashmap_free_and_values(HashMap *map)
+{
+    for (size_t i=0; i < map->max_size_; ++i)
+    {
+        HashMapNode *node = map->nodes_[i];
+        map->nodes_[i] = NULL;
+        while (node)
+        {
+            if (node->val_) free(node->val_);
+            node->val_ = NULL;
+            HashMapNode *next = node->next_;
+            free(node);
+            node = next;
+        }
+    }
+    map->size_ = 0;
+    map->max_size_ = 0;
+    free(map->nodes_);
+    free(map);
+}
+
+
 void hashmap_put(HashMap* table, const char* key, void *val)
 {
     assert(val != NULL);

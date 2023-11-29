@@ -1,0 +1,13 @@
+INPUT
+<prutt>
+      <howdy>123 urka</howdy>
+      <howdy>123 urka</howdy>
+</prutt>
+XMQ
+prutt {
+    howdy = '123 urka'
+    howdy = '123 urka'
+}
+JSON
+{"_":"prutt","howdy[0]":"123 urka","howdy[1]":"123 urka"}
+END

@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 typedef struct HashMap_ HashMap;
 
 HashMap *hashmap_create(size_t max_size);
+void hashmap_free_and_values();
 // Returns NULL if no key is found.
 void *hashmap_get(HashMap* map, const char* key);
 // Putting a non-NULL value.

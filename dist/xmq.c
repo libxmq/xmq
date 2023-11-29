@@ -49,6 +49,7 @@ void check_malloc(void *a);
 typedef struct HashMap_ HashMap;
 
 HashMap *hashmap_create(size_t max_size);
+void hashmap_free_and_values();
 // Returns NULL if no key is found.
 void *hashmap_get(HashMap* map, const char* key);
 // Putting a non-NULL value.
@@ -6013,6 +6014,28 @@ HashMap* hashmap_create(size_t max_size)
     return new_table;
 }
 
+void hashmap_free_and_values(HashMap *map)
+{
+    for (size_t i=0; i < map->max_size_; ++i)
+    {
+        HashMapNode *node = map->nodes_[i];
+        map->nodes_[i] = NULL;
+        while (node)
+        {
+            if (node->val_) free(node->val_);
+            node->val_ = NULL;
+            HashMapNode *next = node->next_;
+            free(node);
+            node = next;
+        }
+    }
+    map->size_ = 0;
+    map->max_size_ = 0;
+    free(map->nodes_);
+    free(map);
+}
+
+
 void hashmap_put(HashMap* table, const char* key, void *val)
 {
     assert(val != NULL);
@@ -6266,6 +6289,7 @@ void membuffer_append_entity(MemBuffer *mb, char c)
 
 #ifdef JSON_MODULE
 
+const char *decode_json_quote(const char *content_start, const char *content_stop);
 void eat_json_boolean(XMQParseState *state, const char **content_start, const char **content_stop);
 void eat_json_null(XMQParseState *state, const char **content_start, const char **content_stop);
 void eat_json_number(XMQParseState *state, const char **content_start, const char **content_stop);
@@ -6301,8 +6325,8 @@ void json_print_key_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, s
 
 void json_check_comma(XMQPrintState *ps);
 void json_print_comma(XMQPrintState *ps);
-bool json_is_number(const char *start, const char *stop);
-bool json_is_keyword(const char *start, const char *stop);
+bool json_is_number(const char *start);
+bool json_is_keyword(const char *start);
 void json_print_leaf_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 
 void trim_index_suffix(const char *key_start, const char **stop);
@@ -6328,6 +6352,62 @@ bool is_json_quote_start(char c)
     return c == '"';
 }
 
+const char *decode_json_quote(const char *content_start, const char *content_stop)
+{
+    size_t len = content_stop-content_start;
+    char *buf = malloc(len+1);
+    char *out = buf;
+
+    const char *i = content_start;
+    const char *end = content_stop;
+    size_t line = 0;
+    size_t col = 0;
+
+    increment('"', 1, &i, &line, &col);
+
+    while (i < end)
+    {
+        char c = *i;
+        if (c == '"')
+        {
+            increment(c, 1, &i, &line, &col);
+            break;
+        }
+        if (c == '\\')
+        {
+            increment(c, 1, &i, &line, &col);
+            c = *i;
+            if (c == '"' || c == '\\' || c == 'b' || c == 'f' || c == 'n' || c == 'r' || c == 't')
+            {
+                *out++ = c;
+                increment(c, 1, &i, &line, &col);
+                continue;
+            }
+            else if (c == 'u')
+            {
+                increment(c, 1, &i, &line, &col);
+                c = *i;
+                if (i+3 < end)
+                {
+                    if (is_hex(*(i+0)) && is_hex(*(i+1)) && is_hex(*(i+2)) && is_hex(*(i+3)))
+                    {
+                        increment(c, 1, &i, &line, &col);
+                        increment(c, 1, &i, &line, &col);
+                        increment(c, 1, &i, &line, &col);
+                        increment(c, 1, &i, &line, &col);
+                        continue;
+                    }
+                }
+            }
+        }
+        *out++ = c;
+        increment(c, 1, &i, &line, &col);
+    }
+    *out = 0;
+
+    return out;
+}
+
 size_t eat_json_quote(XMQParseState *state, const char **content_start, const char **content_stop)
 {
     const char *i = state->i;
@@ -6347,7 +6427,7 @@ size_t eat_json_quote(XMQParseState *state, const char **content_start, const ch
             increment(c, 1, &i, &line, &col);
             break;
         }
-/*        if (c == '\\')
+        if (c == '\\')
         {
             increment(c, 1, &i, &line, &col);
             c = *i;
@@ -6375,7 +6455,7 @@ size_t eat_json_quote(XMQParseState *state, const char **content_start, const ch
             state->error_nr = XMQ_ERROR_JSON_INVALID_ESCAPE;
             longjmp(state->error_handler, 1);
         }
-*/
+
         increment(c, 1, &i, &line, &col);
     }
     state->i = i;
@@ -6463,7 +6543,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         !strncmp(content_start, "true", content_stop-content_start) ||
         !strncmp(content_start, "false", content_stop-content_start) ||
         !strncmp(content_start, "null", content_stop-content_start) ||
-        is_jnumber(content_start, content_stop));
+        content_stop == is_jnumber(content_start, content_stop));
 
     if (need_string_type || unsafe_key_start)
     {
@@ -6819,16 +6899,20 @@ void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlN
     xmlNode *i = from;
 
     HashMap* map = hashmap_create(100);
+
     while (i)
     {
-        Counter *c = hashmap_get(map, (const char*)i->name);
-        if (!c)
+        if (!is_doctype_node(i))
         {
-            c = malloc(sizeof(Counter));
-            memset(c, 0, sizeof(Counter));
-            hashmap_put(map, (const char*)i->name, c);
+            Counter *c = hashmap_get(map, (const char*)i->name);
+            if (!c)
+            {
+                c = malloc(sizeof(Counter));
+                memset(c, 0, sizeof(Counter));
+                hashmap_put(map, (const char*)i->name, c);
+            }
+            c->total++;
         }
-        c->total++;
         i = xml_next_sibling(i);
     }
 
@@ -6840,6 +6924,8 @@ void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlN
         c->used++;
         i = xml_next_sibling(i);
     }
+
+    hashmap_free_and_values(map);
 }
 
 void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used)
@@ -6862,13 +6948,13 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_
     {
         return json_print_comment_node(ps, node);
     }
-
+*/
     // This is doctype node.
     if (is_doctype_node(node))
     {
-        return json_print_doctype(ps, node);
+        return ; // json_print_doctype(ps, node);
     }
-*/
+
     // This is a node with no children, but the only such valid json nodes are
     // the empty object _ ---> {} or _(A) ---> [].
     if (is_leaf_node(node))
@@ -6962,8 +7048,8 @@ void json_print_value(XMQPrintState *ps, xmlNode *container, xmlNode *node, Leve
     const char *content = xml_element_content(node);
 
     if (!xml_next_sibling(node) &&
-        (json_is_number(xml_element_content(node), NULL)
-         || json_is_keyword(xml_element_content(node), NULL)))
+        (json_is_number(xml_element_content(node))
+         || json_is_keyword(xml_element_content(node))))
     {
         // This is a number or a keyword. E.g. 123 true false null
         write(writer_state, content, NULL);
@@ -6988,7 +7074,12 @@ void json_print_value(XMQPrintState *ps, xmlNode *container, xmlNode *node, Leve
             }
             else
             {
-                write(writer_state, xml_element_content(node), NULL);
+                const char *value = xml_element_content(node);
+                //(char*)xmlNodeListGetString(i->doc, i->children, 1);
+                char *quoted_value = xmq_quote_as_c(value, value+strlen(value));
+                print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
+                free(quoted_value);
+                //xmlFree(value);
             }
         }
 
@@ -7219,12 +7310,13 @@ void json_print_comma(XMQPrintState *ps)
     ps->current_indent ++;
 }
 
-bool json_is_number(const char *start, const char *stop)
+bool json_is_number(const char *start)
 {
-    return NULL != is_jnumber(start, stop);
+    const char *stop = start+strlen(start);
+    return stop == is_jnumber(start, stop);
 }
 
-bool json_is_keyword(const char *start, const char *stop)
+bool json_is_keyword(const char *start)
 {
     if (!strcmp(start, "true")) return true;
     if (!strcmp(start, "false")) return true;
@@ -7245,12 +7337,13 @@ void json_print_leaf_node(XMQPrintState *ps,
 
     json_check_comma(ps);
 
-    if (name &&
-        name[0] != '_' &&
-        name[1] != 0)
+    if (name)
     {
-        json_print_element_name(ps, container, node, total, used);
-        write(writer_state, ":", NULL);
+        if (!(name[0] == '_' && name[1] == 0))
+        {
+            json_print_element_name(ps, container, node, total, used);
+            write(writer_state, ":", NULL);
+        }
     }
 
     if (xml_get_attribute(node, "A"))
