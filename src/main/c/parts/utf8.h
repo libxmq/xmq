@@ -21,22 +21,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef UTF8_H
+#define UTF8_H
 
-#include<stdbool.h>
-#include<stdlib.h>
+#include"xmq.h"
 
-extern bool debug_enabled_;
-extern bool verbose_enabled_;
+struct XMQPrintState;
+typedef struct XMQPrintState XMQPrintState;
 
-void verbose(const char* fmt, ...);
-void debug(const char* fmt, ...);
-void check_malloc(void *a);
+size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop);
+size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *stop);
+size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...);
 
-#define PRINT_STDOUT(...) printf(__VA_ARGS__)
-#define PRINT_ERROR(...) fprintf(stderr, __VA_ARGS__)
+#define UTF8_MODULE
 
-#define UTILS_MODULE
-
-#endif // UTILS_H
+#endif // UTF8_H

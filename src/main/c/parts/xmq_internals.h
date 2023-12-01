@@ -190,8 +190,7 @@ struct XMQPrintState
     size_t current_indent;
     size_t line_indent;
     int last_char;
-    const char *color_pre;
-    const char *prev_color_pre;
+    const char *replay_active_color_pre;
     const char *restart_line;
     XMQOutputSettings *output_settings;
     XMQDoc *doq;
@@ -487,6 +486,7 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define DARK_RED     "\033[0;31m"
 #define RED          "\033[0;31m"
 #define RED_UNDERLINE  "\033[0;4;31m"
+#define RED_BACKGROUND "\033[41m"
 #define UNDERLINE    "\033[0;1;4m"
 
 #else
@@ -511,6 +511,7 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define DARK_RED     "\033[31m\033[24m"
 #define RED          "\033[91m\033[24m"
 #define RED_UNDERLINE  "\033[91m\033[4m"
+#define RED_BACKGROUND "\033[91m\033[4m"
 #define UNDERLINE    "\033[4m"
 #define NO_UNDERLINE "\033[24m"
 

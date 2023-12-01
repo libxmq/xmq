@@ -21,7 +21,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 #ifndef BUILDING_XMQ
 
-#include"utils.h"
+#include"always.h"
 #include"membuffer.h"
 #include<assert.h>
 #include<stdbool.h>

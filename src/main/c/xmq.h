@@ -177,7 +177,8 @@ struct XMQColoring
     XMQColorStrings body; // <body></body> \begin{document}\end{document}
     XMQColorStrings content; // Wrapper around rendered code. Like <pre></pre>, \textt{...}
 
-    XMQColorStrings whitespace; // The normal whitespaces: tab=9, nl=10, cr=13, space=32. Normally not colored.
+    XMQColorStrings whitespace; // The normal whitespaces: space=32. Normally not colored.
+    XMQColorStrings tab_whitespace; // The tab, colored with red background.
     XMQColorStrings unicode_whitespace; // The remaining unicode whitespaces, like: nbsp=160 color as red underline.
     XMQColorStrings indentation_whitespace; // The xmq generated indentation spaces. Normally not colored.
     XMQColorStrings equals; // The key = value equal sign.
@@ -226,6 +227,7 @@ typedef struct XMQColoring XMQColoring;
 typedef enum XMQColor {
     COLOR_none,
     COLOR_whitespace,
+    COLOR_tab_whitespace,
     COLOR_unicode_whitespace,
     COLOR_indentation_whitespace,
     COLOR_equals,

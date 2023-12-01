@@ -50,12 +50,13 @@ do_version() {
     mv ${ROOT}/tmp ${ROOT}/xmq-in-progress
 }
 
+do_part always
 do_part hashmap
 do_part json
 do_part membuffer
 do_part stack
 do_part text
-do_part utils
+do_part utf8
 do_part xml
 do_part xmq_internals
 

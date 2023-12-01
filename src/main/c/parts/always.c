@@ -1,7 +1,7 @@
 
 #ifndef BUILDING_XMQ
 
-#include"utils.h"
+#include"always.h"
 #include<stdio.h>
 #include<stdlib.h>
 #include<assert.h>
@@ -10,7 +10,7 @@
 
 #endif
 
-#ifdef UTILS_MODULE
+#ifdef ALWAYS_MODULE
 
 void check_malloc(void *a)
 {
@@ -45,4 +45,4 @@ void debug(const char* fmt, ...)
     }
 }
 
-#endif // UTILS_MODULE
+#endif // ALWAYS_MODULE

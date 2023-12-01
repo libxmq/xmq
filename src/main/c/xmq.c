@@ -27,7 +27,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 // PART HEADERS //////////////////////////////////////////////////
 
-#include"parts/utils.h"
+#include"parts/always.h"
+#include"parts/utf8.h"
 #include"parts/hashmap.h"
 #include"parts/membuffer.h"
 #include"parts/stack.h"
@@ -174,6 +175,7 @@ void setup_terminal_coloring(XMQColoring *c, bool dark_mode, bool use_color, boo
     if (dark_mode)
     {
         c->whitespace.pre  = NOCOLOR;
+        c->tab_whitespace.pre  = RED_BACKGROUND;
         c->unicode_whitespace.pre  = RED_UNDERLINE;
         c->equals.pre      = NOCOLOR;
         c->brace_left.pre  = NOCOLOR;
@@ -206,6 +208,7 @@ void setup_terminal_coloring(XMQColoring *c, bool dark_mode, bool use_color, boo
     else
     {
         c->whitespace.pre  = NOCOLOR;
+        c->tab_whitespace.pre  = RED_BACKGROUND;
         c->unicode_whitespace.pre  = RED_UNDERLINE;
         c->equals.pre      = NOCOLOR;
         c->brace_left.pre  = NOCOLOR;
@@ -5296,11 +5299,12 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
     return rc;
 }
 
+#include"parts/always.c"
 #include"parts/hashmap.c"
 #include"parts/stack.c"
 #include"parts/membuffer.c"
 #include"parts/json.c"
 #include"parts/text.c"
-#include"parts/utils.c"
+#include"parts/utf8.c"
 #include"parts/xml.c"
 #include"parts/xmq_internals.c"
