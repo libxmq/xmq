@@ -68,7 +68,9 @@ typedef enum
     XMQ_CLI_CMD_RENDER_TEX,
     XMQ_CLI_CMD_TOKENIZE,
     XMQ_CLI_CMD_DELETE,
-    XMQ_CLI_CMD_ENTITY
+    XMQ_CLI_CMD_DELETE_ENTITY,
+    XMQ_CLI_CMD_REPLACE,
+    XMQ_CLI_CMD_REPLACE_ENTITY,
 } XMQCliCmd;
 
 typedef enum {
@@ -76,8 +78,8 @@ typedef enum {
     XMQ_CLI_CMD_GROUP_TO,
     XMQ_CLI_CMD_GROUP_RENDER,
     XMQ_CLI_CMD_GROUP_TOKENIZE,
-    XMQ_CLI_CMD_GROUP_MATCHERS,
-    XMQ_CLI_CMD_GROUP_ENTITIES,
+    XMQ_CLI_CMD_GROUP_XPATH,
+    XMQ_CLI_CMD_GROUP_ENTITY,
 } XMQCliCmdGroup;
 
 typedef enum {
@@ -105,7 +107,9 @@ struct XMQCliCommand
     const char *out;
     const char *xpath;
     const char *entity;
-    const char *content;
+    const char *content; // Content to replace something.
+    xmlDocPtr   node_doc;
+    xmlNodePtr  node_content; // Tree content to replace something.
     XMQContentType in_format;
     XMQContentType out_format;
     XMQRenderFormat render_to;
@@ -135,7 +139,7 @@ struct XMQCliCommand
 
 XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env);
 bool cmd_delete(XMQCliCommand *command);
-bool cmd_entity(XMQCliCommand *command);
+bool cmd_replace(XMQCliCommand *command);
 XMQCliCmd cmd_from(const char *s);
 XMQCliCmdGroup cmd_group(XMQCliCmd cmd);
 int cmd_load(XMQCliCommand *command);
@@ -156,7 +160,8 @@ void prepare_command(XMQCliCommand *c);
 void print_help_and_exit();
 void print_version_and_exit();
 const char *render_format_to_string(XMQRenderFormat rt);
-void replace_entities(xmlNodePtr node, const char *entity, const char *content);
+void replace_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, const char *content, xmlNodePtr node_content);
+void replace_entities(xmlDoc *doc, const char *entity, const char *content, xmlNodePtr node_content);
 XMQRenderStyle render_style(bool *use_color, bool *dark_mode);
 int tokenize_input(XMQCliCommand *command);
 void verbose_(const char* fmt, ...);
@@ -205,7 +210,9 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "render_tex")) return XMQ_CLI_CMD_RENDER_TEX;
     if (!strcmp(s, "tokenize")) return XMQ_CLI_CMD_TOKENIZE;
     if (!strcmp(s, "delete")) return XMQ_CLI_CMD_DELETE;
-    if (!strcmp(s, "entity")) return XMQ_CLI_CMD_ENTITY;
+    if (!strcmp(s, "delete_entity")) return XMQ_CLI_CMD_DELETE_ENTITY;
+    if (!strcmp(s, "replace")) return XMQ_CLI_CMD_REPLACE;
+    if (!strcmp(s, "replace_entity")) return XMQ_CLI_CMD_REPLACE_ENTITY;
     return XMQ_CLI_CMD_NONE;
 }
 
@@ -224,7 +231,9 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_RENDER_TEX: return "render_tex";
     case XMQ_CLI_CMD_TOKENIZE: return "tokenize";
     case XMQ_CLI_CMD_DELETE: return "delete";
-    case XMQ_CLI_CMD_ENTITY: return "entity";
+    case XMQ_CLI_CMD_DELETE_ENTITY: return "delete_entity";
+    case XMQ_CLI_CMD_REPLACE: return "replace";
+    case XMQ_CLI_CMD_REPLACE_ENTITY: return "replace_entity";
     }
     return "?";
 }
@@ -247,9 +256,11 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TOKENIZE:
         return XMQ_CLI_CMD_GROUP_TOKENIZE;
     case XMQ_CLI_CMD_DELETE:
-        return XMQ_CLI_CMD_GROUP_MATCHERS;
-    case XMQ_CLI_CMD_ENTITY:
-        return XMQ_CLI_CMD_GROUP_ENTITIES;
+    case XMQ_CLI_CMD_REPLACE:
+        return XMQ_CLI_CMD_GROUP_XPATH;
+    case XMQ_CLI_CMD_DELETE_ENTITY:
+    case XMQ_CLI_CMD_REPLACE_ENTITY:
+        return XMQ_CLI_CMD_GROUP_ENTITY;
     case XMQ_CLI_CMD_NONE:
         return XMQ_CLI_CMD_GROUP_NONE;
     }
@@ -426,21 +437,74 @@ bool handle_option(const char *arg, XMQCliCommand *command)
         }
     }
 
-    if (group == XMQ_CLI_CMD_GROUP_MATCHERS && command->xpath == NULL)
+    if (group == XMQ_CLI_CMD_GROUP_XPATH)
     {
-        command->xpath = arg;
-        return true;
+        if (command->xpath == NULL)
+        {
+            command->xpath = arg;
+            return true;
+        }
+        if (group == XMQ_CLI_CMD_GROUP_XPATH && command->content != NULL )
+        {
+            command->content = arg;
+            return true;
+        }
     }
 
-    if (group == XMQ_CLI_CMD_GROUP_ENTITIES)
+    if (group == XMQ_CLI_CMD_GROUP_ENTITY)
     {
+        if (!strncmp(arg, "--with-xml-file=", 12))
+        {
+            const char *file = arg+12;
+            XMQCliEnvironment env;
+            memset(&env, 0, sizeof(env));
+            XMQCliCommand cmd;
+            memset(&cmd, 0, sizeof(XMQCliCommand));
+            cmd.env = &env;
+            cmd.in = file;
+            cmd.in_format = XMQ_CONTENT_DETECT;
+            cmd.trim = XMQ_TRIM_NONE;
+            size_t len = strlen(file);
+            // .xml
+            if (len > 4 && !(strncmp(file+len-4, ".xml", 4)))
+            {
+                cmd.in_format = XMQ_CONTENT_XML;
+            }
+            if (len > 5 && !(strncmp(file+len-5, ".html", 5)))
+            {
+                cmd.in_format = XMQ_CONTENT_HTML;
+            }
+            cmd_load(&cmd);
+            xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(cmd.env->doc);
+            command->node_doc = doc;
+            command->node_content = doc->children;
+            return true;
+        }
+
+        if (!strncmp(arg, "--with-text-file=", 17))
+        {
+            const char *file = arg+17;
+            verbose_("(xmq) reading text file %s\n", file);
+            FILE *f = fopen(file, "rb");
+            fseek(f, 0L, SEEK_END);
+            size_t sz = ftell(f);
+            fseek(f, 0L, SEEK_SET);
+            char *buf = malloc(sz+1);
+            size_t n = fread(buf, 1, sz, f);
+            buf[sz] = 0;
+            if (n != sz) printf("ARRRRRGGGG\n");
+            fclose(f);
+            command->content = buf;
+            return true;
+        }
+
         if (command->entity == NULL)
         {
             command->entity = arg;
             return true;
         }
 
-        if (group == XMQ_CLI_CMD_GROUP_ENTITIES && command->entity != NULL)
+        if (group == XMQ_CLI_CMD_GROUP_ENTITY && command->content == NULL && command->node_content == NULL)
         {
             command->content = arg;
             return true;
@@ -986,29 +1050,70 @@ bool cmd_delete(XMQCliCommand *command)
     return true;
 }
 
-void replace_entities(xmlNodePtr node, const char *entity, const char *content)
+void replace_entity(xmlDoc *doc, xmlNode *node, const char *entity, const char *content, xmlNodePtr node_content)
 {
-    xmlNodePtr i = node;
-    if (!i) return;
+    if (!node) return;
 
-    if (i->type == XML_ENTITY_REF_NODE)
+    if (node->type == XML_ENTITY_REF_NODE)
     {
-        printf("ENTITY %s\n", i->name);
+        if (!strcmp((const char *)node->name, entity))
+        {
+            if (content)
+            {
+                xmlNodePtr new_node = xmlNewDocText(doc, (const xmlChar*)content);
+                xmlReplaceNode(node, new_node);
+                xmlFreeNode(node);
+            }
+            if (node_content)
+            {
+                xmlNodePtr new_node = xmlCopyNode(node_content, 1);
+                xmlReplaceNode(node, new_node);
+                xmlFreeNode(node);
+            }
+        }
         return;
     }
 
+    xmlNode *i = node->children;
     while (i)
     {
-        replace_entities(i->children, entity, content);
+        xmlNode *next = i->next;
+        replace_entity(doc, i, entity, content, node_content);
+        i = next;
+    }
+}
+
+void replace_entities(xmlDoc *doc, const char *entity, const char *content, xmlNodePtr node_content)
+{
+    xmlNodePtr i = doc->children;
+    if (!doc || !i) return;
+
+    while (i)
+    {
+        replace_entity(doc, i, entity, content, node_content);
         i = i->next;
     }
 }
 
-bool cmd_entity(XMQCliCommand *command)
+bool cmd_replace(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    xmlNodePtr root = xmlDocGetRootElement(doc);
 
-    replace_entities((xmlNodePtr)doc, command->entity, command->content);
+    while (root->prev) root = root->prev;
+    assert(root != NULL);
+
+    if (command->xpath)
+    {
+        verbose_("(xmq) replacing xpath %s\n", command->xpath);
+    }
+
+    if (command->entity)
+    {
+        verbose_("(xmq) replacing entity %s\n", command->entity);
+
+        replace_entities(doc, command->entity, command->content, command->node_content);
+    }
 
     return true;
 }
@@ -1047,7 +1152,11 @@ void prepare_command(XMQCliCommand *c)
         return;
     case XMQ_CLI_CMD_DELETE:
         return;
-    case XMQ_CLI_CMD_ENTITY:
+    case XMQ_CLI_CMD_DELETE_ENTITY:
+        return;
+    case XMQ_CLI_CMD_REPLACE:
+        return;
+    case XMQ_CLI_CMD_REPLACE_ENTITY:
         return;
     case XMQ_CLI_CMD_NONE:
         return;
@@ -1073,9 +1182,11 @@ bool perform_command(XMQCliCommand *c)
     case XMQ_CLI_CMD_TOKENIZE:
         return tokenize_input(c);
     case XMQ_CLI_CMD_DELETE:
+    case XMQ_CLI_CMD_DELETE_ENTITY:
         return cmd_delete(c);
-    case XMQ_CLI_CMD_ENTITY:
-        return cmd_entity(c);
+    case XMQ_CLI_CMD_REPLACE:
+    case XMQ_CLI_CMD_REPLACE_ENTITY:
+        return cmd_replace(c);
     }
     assert(false);
     return false;
@@ -1252,7 +1363,8 @@ int main(int argc, const char **argv)
     XMQCliCommand *c = first_command;
     int rc = cmd_load(c);
 
-    if (!rc) {
+    if (!rc)
+    {
         // Execute commands.
         while (c)
         {

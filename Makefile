@@ -218,21 +218,26 @@ mvn:
 
 TODAY:=$(shell date +%Y-%m-%d)
 
+WEBXMQ=./xmqr
 web: $(wildcard web/*) $(wildcard web/resources/*)
 	@rm -rf build/web build/_EX1_.html build/_EX1_.htmq build/tmp*.htmq
 	@mkdir -p build/web/resources
-	@xmq web/50x.htmq to_html > build/web/50x.html
-	@xmq web/404.htmq to_html > build/web/404.html
-	@xmq web/config.xml render_html --onlystyle > build/web/resources/xmq.css
-	@xmq web/config.xml render_html --darkbg --nostyle  > build/_EX1_.html
-	@xmq --trim=none build/_EX1_.html to_xmq --compact  > build/_EX1_.htmq
-	@cat web/index.htmq | sed -e "s/_EX1_/$$(sed 's:/:\\/:g' build/_EX1_.htmq | sed 's/\&/\\\&/g')/g" > build/tmp.htmq
-	@sed 's/_DATE_/$(TODAY)/g' build/tmp.htmq > build/tmp2.htmq
-	@xmq build/tmp2.htmq to_html > build/web/index.html
-	@(cd doc; make)
-	@cp doc/xmq.pdf build/web
-	@cp web/favicon.ico build/web
-	@cp web/resources/* build/web/resources
-	@echo "Generated build/web/index.html"
+	@$(WEBXMQ) web/50x.htmq to_html > build/web/50x.html
+	@$(WEBXMQ) web/404.htmq to_html > build/web/404.html
+	@$(WEBXMQ) web/example1.xml render_html --onlystyle > build/web/resources/xmq.css
+	@$(WEBXMQ) web/example1.xml render_html --darkbg --nostyle  > build/rendered_example1.xml
+	@$(WEBXMQ) web/index.htmq \
+		replace_entity EXAMPLE1_XMQ --with-file=build/rendered_example1.xml \
+		replace_entity EXAMPLE1_XML --with-text-file=web/example1.xml \
+		to_html > build/web/index.html
+
+#	@$(WEBXMQ) --trim=none build/_EX1_.html to_xmq --compact  > build/_EX1_.htmq
+#	@cat web/index.htmq | sed -e "s/_EX1_/$$(sed 's:/:\\/:g' build/_EX1_.htmq | sed 's/\&/\\\&/g')/g" > build/tmp.htmq
+#	@$(WEBXMQ) build/tmp2.htmq to_html > build/web/index.html
+#	@(cd doc; make)
+#	@cp doc/xmq.pdf build/web
+#	@cp web/favicon.ico build/web
+#	@cp web/resources/* build/web/resources
+#	@echo "Generated build/web/index.html"
 
 .PHONY: web

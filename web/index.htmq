@@ -28,22 +28,9 @@ html {
 
         &nbsp;
 
-        &EXAMPLE1_XML;
-
         pre(class = 'xmq xmq_dark')
         {
-            '''<shiporder id="889923">
-                   <type>container</type>
-                   <shipto>
-                       <address>Trellevegen 17
-               3400 Stavanger
-               Norway</address>
-                       <!--Remember to update coord.-->
-                       <coord>41°24'N 2°10'E</coord>
-                   </shipto>
-               </shiporder>'''
-               &#10;
-               ' '
+            &EXAMPLE1_XML;
         }
 
         p = 'The hierarchical style looks familiar to C/Java etc. Note however:'

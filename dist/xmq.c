@@ -956,7 +956,6 @@ void setup_html_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool re
     {
         c->content.pre = "<pre class=\"xmq xmq_light\">";
     }
-
     c->whitespace.pre  = NULL;
     c->indentation_whitespace.pre = NULL;
     c->unicode_whitespace.pre  = "<xmq_uw>";
@@ -5712,16 +5711,24 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     {
         if (ct != detected_ct)
         {
-            switch (ct) {
-            case XMQ_CONTENT_XMQ: doq->errno_ = XMQ_ERROR_EXPECTED_XMQ; break;
-            case XMQ_CONTENT_HTMQ: doq->errno_ = XMQ_ERROR_EXPECTED_HTMQ; break;
-            case XMQ_CONTENT_XML: doq->errno_ = XMQ_ERROR_EXPECTED_XML; break;
-            case XMQ_CONTENT_HTML: doq->errno_ = XMQ_ERROR_EXPECTED_HTML; break;
-            case XMQ_CONTENT_JSON: doq->errno_ = XMQ_ERROR_EXPECTED_JSON; break;
-            default: break;
+            if (detected_ct == XMQ_CONTENT_XML && ct == XMQ_CONTENT_HTML)
+            {
+                // This is fine! We might be loading a fragment of html
+                // that is detected as xml.
             }
-            rc = false;
-            goto exit;
+            else
+            {
+                switch (ct) {
+                case XMQ_CONTENT_XMQ: doq->errno_ = XMQ_ERROR_EXPECTED_XMQ; break;
+                case XMQ_CONTENT_HTMQ: doq->errno_ = XMQ_ERROR_EXPECTED_HTMQ; break;
+                case XMQ_CONTENT_XML: doq->errno_ = XMQ_ERROR_EXPECTED_XML; break;
+                case XMQ_CONTENT_HTML: doq->errno_ = XMQ_ERROR_EXPECTED_HTML; break;
+                case XMQ_CONTENT_JSON: doq->errno_ = XMQ_ERROR_EXPECTED_JSON; break;
+                default: break;
+                }
+                rc = false;
+                goto exit;
+            }
         }
     }
 
