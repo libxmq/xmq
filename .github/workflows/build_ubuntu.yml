@@ -10,7 +10,7 @@ jobs:
     - uses: actions/checkout@v3
     - id: INSTALL_ADDITIONAL_BUILD_DEPENDENCIES
       run: |
-         sudo apt install -y eatmydata libtidy-dev libxml2-dev
+         sudo apt install -y eatmydata libtidy-dev libxml2-dev libxslt1-dev
     - id: CONFIGURE
       run: eatmydata ./configure
     - id: MAKE

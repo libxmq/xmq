@@ -1046,6 +1046,9 @@ bool cmd_transform(XMQCliCommand *command)
     xmlFreeDoc(doc);
     xmqSetImplementationDoc(command->env->doc, new_doc);
 
+    xsltFreeStylesheet(command->xslt);
+    command->xslt = NULL;
+
     return true;
 }
 
