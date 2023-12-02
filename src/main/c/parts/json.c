@@ -238,6 +238,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         memcpy(name, content_start, len);
         name[len] = 0;
         xmlNodeSetName(container, (xmlChar*)name);
+        free(name);
         return;
     }
 

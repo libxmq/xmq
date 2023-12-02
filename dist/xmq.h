@@ -552,6 +552,13 @@ XMQNode *xmqGetRootNode(XMQDoc *doq);
 void *xmqGetImplementationDoc(XMQDoc *doq);
 
 /**
+    xmqSetImplementationDoc:
+
+    Set the underlying implementation doc, could be an xmlDocPtr from libxml2 for example.
+*/
+void xmqSetImplementationDoc(XMQDoc *doq, void *doc);
+
+/**
     xmqFreeDoc:
 
     Free the document object and all associated memory.

@@ -43,6 +43,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<libxml/tree.h>
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
+#include <libxslt/xslt.h>
+#include <libxslt/xsltInternals.h>
+#include <libxslt/transform.h>
+#include <libxslt/xsltutils.h>
 
 typedef enum
 {
@@ -71,6 +75,7 @@ typedef enum
     XMQ_CLI_CMD_DELETE_ENTITY,
     XMQ_CLI_CMD_REPLACE,
     XMQ_CLI_CMD_REPLACE_ENTITY,
+    XMQ_CLI_CMD_TRANSFORM,
 } XMQCliCmd;
 
 typedef enum {
@@ -80,6 +85,7 @@ typedef enum {
     XMQ_CLI_CMD_GROUP_TOKENIZE,
     XMQ_CLI_CMD_GROUP_XPATH,
     XMQ_CLI_CMD_GROUP_ENTITY,
+    XMQ_CLI_CMD_GROUP_TRANSFORM,
 } XMQCliCmdGroup;
 
 typedef enum {
@@ -108,6 +114,7 @@ struct XMQCliCommand
     const char *xpath;
     const char *entity;
     const char *content; // Content to replace something.
+    xsltStylesheetPtr xslt;
     xmlDocPtr   node_doc;
     xmlNodePtr  node_content; // Tree content to replace something.
     XMQContentType in_format;
@@ -145,6 +152,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd);
 int cmd_load(XMQCliCommand *command);
 const char *cmd_name(XMQCliCmd cmd);
 bool cmd_to(XMQCliCommand *command);
+bool cmd_transform(XMQCliCommand *command);
 void cmd_unload(XMQCliCommand *command);
 const char *content_type_to_string(XMQContentType ct);
 void debug_(const char* fmt, ...);
@@ -213,6 +221,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "delete_entity")) return XMQ_CLI_CMD_DELETE_ENTITY;
     if (!strcmp(s, "replace")) return XMQ_CLI_CMD_REPLACE;
     if (!strcmp(s, "replace_entity")) return XMQ_CLI_CMD_REPLACE_ENTITY;
+    if (!strcmp(s, "transform")) return XMQ_CLI_CMD_TRANSFORM;
     return XMQ_CLI_CMD_NONE;
 }
 
@@ -234,6 +243,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_DELETE_ENTITY: return "delete_entity";
     case XMQ_CLI_CMD_REPLACE: return "replace";
     case XMQ_CLI_CMD_REPLACE_ENTITY: return "replace_entity";
+    case XMQ_CLI_CMD_TRANSFORM: return "transform";
     }
     return "?";
 }
@@ -261,6 +271,8 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_DELETE_ENTITY:
     case XMQ_CLI_CMD_REPLACE_ENTITY:
         return XMQ_CLI_CMD_GROUP_ENTITY;
+    case XMQ_CLI_CMD_TRANSFORM:
+        return XMQ_CLI_CMD_GROUP_TRANSFORM;
     case XMQ_CLI_CMD_NONE:
         return XMQ_CLI_CMD_GROUP_NONE;
     }
@@ -507,6 +519,15 @@ bool handle_option(const char *arg, XMQCliCommand *command)
         if (group == XMQ_CLI_CMD_GROUP_ENTITY && command->content == NULL && command->node_content == NULL)
         {
             command->content = arg;
+            return true;
+        }
+    }
+
+    if (group == XMQ_CLI_CMD_GROUP_TRANSFORM)
+    {
+        if (command->xslt == NULL)
+        {
+            command->xslt = xsltParseStylesheetFile((const xmlChar *)arg);
             return true;
         }
     }
@@ -1015,6 +1036,19 @@ bool cmd_to(XMQCliCommand *command)
     return true;
 }
 
+bool cmd_transform(XMQCliCommand *command)
+{
+    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    verbose_("(xmq) transforming\n");
+
+    xmlDocPtr new_doc = xsltApplyStylesheet(command->xslt, doc, NULL);
+
+    xmlFreeDoc(doc);
+    xmqSetImplementationDoc(command->env->doc, new_doc);
+
+    return true;
+}
+
 bool cmd_delete(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
@@ -1158,6 +1192,8 @@ void prepare_command(XMQCliCommand *c)
         return;
     case XMQ_CLI_CMD_REPLACE_ENTITY:
         return;
+    case XMQ_CLI_CMD_TRANSFORM:
+        return;
     case XMQ_CLI_CMD_NONE:
         return;
     }
@@ -1187,6 +1223,8 @@ bool perform_command(XMQCliCommand *c)
     case XMQ_CLI_CMD_REPLACE:
     case XMQ_CLI_CMD_REPLACE_ENTITY:
         return cmd_replace(c);
+    case XMQ_CLI_CMD_TRANSFORM:
+        return cmd_transform(c);
     }
     assert(false);
     return false;

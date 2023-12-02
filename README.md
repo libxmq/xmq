@@ -34,12 +34,15 @@ for pretty printing inside an editor!
 
 The xmq format solves the first problem primarily by using braces to
 open and close tags and the second problem by forcing significant
-whitespace to be quoted. The xmq format also uses a trick where
+whitespace to be quoted. The xmq format also uses a shortcut where
 not all values need to be quoted and this also improves readability.
 
 This means that it is always possible to pretty print the xmq without
 having to worry if you introduce visible changes to your web document!
 This is very helpful when deciphering complicated html documents.
+
+Opposite pretty printing, any xmq/htmq document (including multiple
+line comments) can also be printed in a compact form on a single line.
 
 ```
 car {
@@ -166,5 +169,5 @@ You can find the built asan binary here:
 Windows cross complation from GNU/Linux:
 ```
 (cd 3rdparty; fetch_and_build.sh)
-./configure --host=x86_64-w64-mingw32 --with-libxml2=3rdparty/libxml2-winapi --with-zlib=3rdparty/zlib-1.3-winapi
+./configure --host=x86_64-w64-mingw32 --with-libxml2=3rdparty/libxml2-winapi --with-libxslt=3rdparty/libxslt-winapi --with-zlib=3rdparty/zlib-1.3-winapi
 ```

@@ -2842,6 +2842,11 @@ void *xmqGetImplementationDoc(XMQDoc *doq)
     return doq->docptr_.xml;
 }
 
+void xmqSetImplementationDoc(XMQDoc *doq, void *doc)
+{
+    doq->docptr_.xml = doc;
+}
+
 void xmqSetDocSourceName(XMQDoc *doq, const char *source_name)
 {
     if (source_name)
@@ -6572,6 +6577,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         memcpy(name, content_start, len);
         name[len] = 0;
         xmlNodeSetName(container, (xmlChar*)name);
+        free(name);
         return;
     }
 

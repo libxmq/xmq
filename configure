@@ -634,6 +634,8 @@ CFLAGS_asan
 CFLAGS_debug
 CFLAGS_release
 CLANG
+LIBXSLT_LIBS
+LIBXSLT_CFLAGS
 LIBXML2_LIBS
 LIBXML2_CFLAGS
 ZLIB_LIBS
@@ -715,6 +717,7 @@ enable_asan
 enable_static_xmq
 with_zlib
 with_libxml2
+with_libxslt
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1357,6 +1360,9 @@ Optional Packages:
                           (expecting the libraries under PATH and the headers
                           under PATH)
   --with-libxml2          specify prefix directory for the libxml2 package
+                          (expecting the libraries under PATH and the headers
+                          under PATH)
+  --with-libxslt          specify prefix directory for the libxslt package
                           (expecting the libraries under PATH and the headers
                           under PATH)
 
@@ -4106,6 +4112,92 @@ else
     LIBXML2_LIBS="-Wl,-Bstatic ${LIBF}"
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: using ${with_libxml2}" >&5
 printf "%s\n" "using ${with_libxml2}" >&6; }
+fi
+
+
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libxslt" >&5
+printf %s "checking for libxslt... " >&6; }
+
+# Check whether --with-libxslt was given.
+if test ${with_libxslt+y}
+then :
+  withval=$with_libxslt;
+fi
+
+
+if test "x${with_libxslt}" = "x"; then
+    LIBXSLT_CFLAGS="-I /usr/include/libxslt"
+    LIBXSLT_LIBS="-lxslt"
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: using -lxslt and /usr/include/libxslt" >&5
+printf "%s\n" "using -lxslt and /usr/include/libxslt" >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for xsltLibxmlVersion in -lxslt" >&5
+printf %s "checking for xsltLibxmlVersion in -lxslt... " >&6; }
+if test ${ac_cv_lib_xslt_xsltLibxmlVersion+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lxslt  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char xsltLibxmlVersion ();
+int
+main (void)
+{
+return xsltLibxmlVersion ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_xslt_xsltLibxmlVersion=yes
+else $as_nop
+  ac_cv_lib_xslt_xsltLibxmlVersion=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xslt_xsltLibxmlVersion" >&5
+printf "%s\n" "$ac_cv_lib_xslt_xsltLibxmlVersion" >&6; }
+if test "x$ac_cv_lib_xslt_xsltLibxmlVersion" = xyes
+then :
+  printf "%s\n" "#define HAVE_LIBXSLT 1" >>confdefs.h
+
+  LIBS="-lxslt $LIBS"
+
+else $as_nop
+
+        echo "Error! You need to have libxslt available."
+        exit -1
+
+fi
+
+    if test "x$ENABLE_STATIC_XMQ" = xyes; then
+        as_fn_error $? "You specified --enable-static-xmq  so you must use --with-libxslt=... to find a static libxslt.a" "$LINENO" 5
+    fi
+else
+    with_libxslt=$(realpath ${with_libxslt})
+    IDIR=$(find ${with_libxslt} -path "*/libxslt/xslt.h" | sed 's|/libxslt/xslt.h||')
+    LIBXSLT_CFLAGS="-I${IDIR}"
+    if test -z "$IDIR"; then
+        as_fn_error $? "Could not find libxslt/xslt.h below ${with_libxslt}" "$LINENO" 5
+    fi
+    LIBNAME="libxslt-1.dll"
+    LIBF=$(find ${with_libxslt} -name "${LIBNAME}")
+    if test -z "$LIBF"; then
+        as_fn_error $? "Could not find ${LIBNAME} below ${with_libxslt}" "$LINENO" 5
+    fi
+    LIBXSLT_LIBS="-Wl,-Bstatic ${LIBF}"
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: using ${with_libxslt}" >&5
+printf "%s\n" "using ${with_libxslt}" >&6; }
 fi
 
 

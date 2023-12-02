@@ -207,6 +207,41 @@ fi
 AC_SUBST(LIBXML2_CFLAGS)
 AC_SUBST(LIBXML2_LIBS)
 
+AC_MSG_CHECKING([for libxslt])
+AC_ARG_WITH(libxslt, [AS_HELP_STRING([--with-libxslt],
+      [specify prefix directory for the libxslt package
+      (expecting the libraries under PATH and the headers under PATH)])])
+
+if test "x${with_libxslt}" = "x"; then
+    LIBXSLT_CFLAGS="-I /usr/include/libxslt"
+    LIBXSLT_LIBS="-lxslt"
+    AC_MSG_RESULT([using -lxslt and /usr/include/libxslt])
+    AC_CHECK_LIB(xslt, xsltLibxmlVersion, [], [
+        echo "Error! You need to have libxslt available."
+        exit -1
+        ])
+    if test "x$ENABLE_STATIC_XMQ" = xyes; then
+        AC_MSG_ERROR([You specified --enable-static-xmq  so you must use --with-libxslt=... to find a static libxslt.a])
+    fi
+else
+    with_libxslt=$(realpath ${with_libxslt})
+    IDIR=$(find ${with_libxslt} -path "*/libxslt/xslt.h" | sed 's|/libxslt/xslt.h||')
+    LIBXSLT_CFLAGS="-I${IDIR}"
+    if test -z "$IDIR"; then
+        AC_MSG_ERROR([Could not find libxslt/xslt.h below ${with_libxslt}])
+    fi
+    LIBNAME="libxslt-1.dll"
+    LIBF=$(find ${with_libxslt} -name "${LIBNAME}")
+    if test -z "$LIBF"; then
+        AC_MSG_ERROR([Could not find ${LIBNAME} below ${with_libxslt}])
+    fi
+    LIBXSLT_LIBS="-Wl,-Bstatic ${LIBF}"
+    AC_MSG_RESULT([using ${with_libxslt}])
+fi
+
+AC_SUBST(LIBXSLT_CFLAGS)
+AC_SUBST(LIBXSLT_LIBS)
+
 AC_LANG_PUSH([C])
 AC_COMPILE_IFELSE(
 [AC_LANG_PROGRAM([], [[

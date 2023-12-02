@@ -2173,6 +2173,11 @@ void *xmqGetImplementationDoc(XMQDoc *doq)
     return doq->docptr_.xml;
 }
 
+void xmqSetImplementationDoc(XMQDoc *doq, void *doc)
+{
+    doq->docptr_.xml = doc;
+}
+
 void xmqSetDocSourceName(XMQDoc *doq, const char *source_name)
 {
     if (source_name)

@@ -8,6 +8,8 @@ then
     exit 0
 fi
 
+DIR=$(pwd)
+
 if [ "$1" = "x86_64-pc-linux-gnu" ]
 then
     if [ ! -d zlib-1.3-posix ]; then
@@ -34,16 +36,38 @@ then
         git clone https://gitlab.gnome.org/GNOME/libxml2.git libxml2-posix
     fi
 
+    # ./.libs/libxml2.a
     cd libxml2-posix
     if [ ! -f ./.libs/libxml2.a ]; then
         echo
-        echo Building static libxml2 posix
+        echo Building libxml2 posix
         echo
 
-        ./autogen.sh --with-zlib=no --with-lzma=no --with-python=no --disable-shared
+        ./autogen.sh  --with-zlib=no --with-lzma=no --with-python=no
+        # -disable-shared
         make
     fi
     cd ..
+
+    if [ ! -d libxslt-posix ]; then
+        echo
+        echo Fetching libxslt posix
+        echo
+        git clone https://gitlab.gnome.org/GNOME/libxslt.git libxslt-posix
+    fi
+
+    cd libxslt-posix
+    if [ ! -f ./.libs/libxslt.a ]; then
+        echo
+        echo Building static libxslt posix
+        echo
+
+        ./autogen.sh --with-libxml-src=${DIR}/libxml2-posix/ --with-python=no
+        #--disable-shared
+        make
+    fi
+    cd ..
+
     exit 0
 fi
 
@@ -74,14 +98,33 @@ then
     fi
 
     cd libxml2-winapi
-    if [ ! -f .libs/libxml2.a ]; then
+    if [ ! -f ./.libs/libxml2-2.dll ]; then
         echo
-        echo Building static libxml2 winapi
+        echo Building libxml2 winapi
         echo
 
         ./autogen.sh --host=x86_64-w64-mingw32 --with-zlib=no --with-lzma=no --with-python=no
         make
     fi
     cd ..
+
+    if [ ! -d libxslt-winapi ]; then
+        echo
+        echo Fetching libxslt winapi
+        echo
+        git clone https://gitlab.gnome.org/GNOME/libxslt.git libxslt-winapi
+    fi
+
+    cd libxslt-winapi
+    if [ ! -f ./.libs/libxslt.a ]; then
+        echo
+        echo Building libxslt winapi
+        echo
+
+        ./autogen.sh --host=x86_64-w64-mingw32  --with-libxml-src=${DIR}/libxml2-winapi --with-python=no
+        make
+    fi
+    cd ..
+
     exit 0
 fi
