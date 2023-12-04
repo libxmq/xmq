@@ -527,7 +527,26 @@ bool handle_option(const char *arg, XMQCliCommand *command)
     {
         if (command->xslt == NULL)
         {
-            command->xslt = xsltParseStylesheetFile((const xmlChar *)arg);
+            XMQDoc *doq = xmqNewDoc();
+
+            bool ok = xmqParseFileWithType(doq, arg, NULL, XMQ_CONTENT_DETECT, XMQ_TRIM_DEFAULT);
+
+            if (!ok)
+            {
+                int rc = xmqDocErrno(command->env->doc);
+                const char *error = xmqDocError(command->env->doc);
+                fprintf(stderr, error, command->in);
+                xmqFreeDoc(command->env->doc);
+                command->env->doc = NULL;
+                return rc;
+            }
+
+            verbose_("(xmq) loaded xslt %s\n", arg);
+
+            xmlDocPtr xslt = (xmlDocPtr)xmqGetImplementationDoc(doq);
+
+            command->xslt = xsltParseStylesheetDoc(xslt);
+            //command->xslt = xsltParseStylesheetFile((const xmlChar *)arg);
             return true;
         }
     }

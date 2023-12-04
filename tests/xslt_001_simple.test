@@ -1,0 +1,75 @@
+XML
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog>
+  <cd>
+    <title>Empire Burlesque</title>
+    <artist>Bob Dylan</artist>
+    <country>USA</country>
+    <company>Columbia</company>
+    <price>10.90</price>
+    <year>1985</year>
+  </cd>
+  <cd>
+    <title>Hide your heart</title>
+    <artist>Bonnie Tyler</artist>
+    <country>UK</country>
+    <company>CBS Records</company>
+    <price>9.90</price>
+    <year>1988</year>
+  </cd>
+</catalog>
+XSLT
+<?xml version="1.0"?>
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output
+      method="html"
+      doctype-system="about:legacy-compat"
+      encoding="UTF-8"
+      indent="yes" />
+
+  <xsl:template match="/">
+    <html>
+      <body>
+        <h2>My CD Collection</h2>
+        <table border="1">
+          <tr bgcolor="#9acd32">
+            <th>Title</th>
+            <th>Artist</th>
+          </tr>
+          <xsl:for-each select="catalog/cd">
+            <tr>
+              <td><xsl:value-of select="title"/></td>
+              <td><xsl:value-of select="artist"/></td>
+            </tr>
+          </xsl:for-each>
+        </table>
+      </body>
+    </html>
+  </xsl:template>
+
+</xsl:stylesheet>
+EXPECTED
+!DOCTYPE = 'html SYSTEM "about:legacy-compat"'
+html {
+    body {
+        h2 = 'My CD Collection'
+        table(border = 1)
+        {
+            tr(bgcolor = #9acd32)
+            {
+                th = Title
+                th = Artist
+            }
+            tr {
+                td = 'Empire Burlesque'
+                td = 'Bob Dylan'
+            }
+            tr {
+                td = 'Hide your heart'
+                td = 'Bonnie Tyler'
+            }
+        }
+    }
+}
+END

@@ -2623,6 +2623,10 @@ void do_attr_key(XMQParseState *state,
 
     xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
     xmlAttrPtr attr =  xmlNewProp(parent, (xmlChar*)key, NULL);
+
+    //xmlAttrPtr attr_with_ns = xmlNewNsProp(parent, ns, (xmlChar*)key, NULL);
+    //xmlAttrPtr an           = xmlNewNsProp(parent, ns, (xmlChar*)key, NULL);
+
     // The new attribute attr should now be added to the parent elements: properties list.
     // Remember this attr so that we can set the value.
     state->element_last = attr;

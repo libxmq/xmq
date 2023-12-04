@@ -56,6 +56,11 @@ do
     tests/test_backforth.sh "$PROG" "$OUTPUT" "$i"
 done
 
+for i in tests/xslt_???_*.test
+do
+    tests/test_xslt.sh "$PROG" "$OUTPUT" "$i"
+done
+
 for i in tests/test_special_???_*.sh
 do
     $i "$PROG" "$OUTPUT"
