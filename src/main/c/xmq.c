@@ -1,3 +1,4 @@
+
 /* libxmq - Copyright (C) 2023 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -3301,6 +3302,8 @@ void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align)
 
 void print_namespace(XMQPrintState *ps, xmlNs *ns, size_t align)
 {
+    if (!xml_non_empty_namespace(ns)) return;
+
     check_space_before_attribute(ps);
 
     const char *prefix;
@@ -3349,6 +3352,7 @@ void print_attributes(XMQPrintState *ps,
         print_attribute(ps, a, max);
         a = xml_next_attribute(a);
     }
+
     while (ns)
     {
         print_namespace(ps, ns, max);
@@ -3567,7 +3571,9 @@ size_t print_element_name_and_attributes(XMQPrintState *ps, xmlNode *node)
         print_utf8(ps, COLOR_element_name, 1, name, NULL);
     }
 
-    if (xml_first_attribute(node) || xml_first_namespace_def(node))
+    bool has_non_empty_ns = xml_has_non_empty_namespace_defs(node);
+
+    if (xml_first_attribute(node) || has_non_empty_ns)
     {
         print_utf8(ps, COLOR_apar_left, 1, "(", NULL);
         print_attributes(ps, node);

@@ -50,6 +50,29 @@ xmlNs *xml_first_namespace_def(xmlNode *node)
     return node->nsDef;
 }
 
+bool xml_non_empty_namespace(xmlNs *ns)
+{
+    const char *prefix = (const char*)ns->prefix;
+    const char *href = (const char*)ns->href;
+
+    // These three are non_empty.
+    //   xmlns = "something"
+    //   xmlns:something = ""
+    //   xmlns:something = "something"
+    return (href && href[0]) || (prefix && prefix[0]);
+}
+
+bool xml_has_non_empty_namespace_defs(xmlNode *node)
+{
+    xmlNs *ns = node->nsDef;
+    while (ns)
+    {
+        if (xml_non_empty_namespace(ns)) return true;
+        ns = xml_next_namespace_def(ns);
+    }
+    return false;
+}
+
 xmlNs *xml_next_namespace_def(xmlNs *ns)
 {
     return ns->next;

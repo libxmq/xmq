@@ -1,3 +1,4 @@
+
 /* libxmq - Copyright (C) 2023 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -177,6 +178,8 @@ xmlAttr *xml_next_attribute(xmlAttr *attr);
 xmlAttr *xml_get_attribute(xmlNode *node, const char *name);
 xmlNs *xml_first_namespace_def(xmlNode *node);
 xmlNs *xml_next_namespace_def(xmlNs *ns);
+bool xml_non_empty_namespace(xmlNs *ns);
+bool xml_has_non_empty_namespace_defs(xmlNode *node);
 const char*xml_element_name(xmlNode *node);
 const char*xml_element_content(xmlNode *node);
 const char *xml_element_ns_prefix(const xmlNode *node);
@@ -3970,6 +3973,8 @@ void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align)
 
 void print_namespace(XMQPrintState *ps, xmlNs *ns, size_t align)
 {
+    if (!xml_non_empty_namespace(ns)) return;
+
     check_space_before_attribute(ps);
 
     const char *prefix;
@@ -4018,6 +4023,7 @@ void print_attributes(XMQPrintState *ps,
         print_attribute(ps, a, max);
         a = xml_next_attribute(a);
     }
+
     while (ns)
     {
         print_namespace(ps, ns, max);
@@ -4236,7 +4242,9 @@ size_t print_element_name_and_attributes(XMQPrintState *ps, xmlNode *node)
         print_utf8(ps, COLOR_element_name, 1, name, NULL);
     }
 
-    if (xml_first_attribute(node) || xml_first_namespace_def(node))
+    bool has_non_empty_ns = xml_has_non_empty_namespace_defs(node);
+
+    if (xml_first_attribute(node) || has_non_empty_ns)
     {
         print_utf8(ps, COLOR_apar_left, 1, "(", NULL);
         print_attributes(ps, node);
@@ -8009,6 +8017,29 @@ xmlAttr *xml_get_attribute(xmlNode *node, const char *name)
 xmlNs *xml_first_namespace_def(xmlNode *node)
 {
     return node->nsDef;
+}
+
+bool xml_non_empty_namespace(xmlNs *ns)
+{
+    const char *prefix = (const char*)ns->prefix;
+    const char *href = (const char*)ns->href;
+
+    // These three are non_empty.
+    //   xmlns = "something"
+    //   xmlns:something = ""
+    //   xmlns:something = "something"
+    return (href && href[0]) || (prefix && prefix[0]);
+}
+
+bool xml_has_non_empty_namespace_defs(xmlNode *node)
+{
+    xmlNs *ns = node->nsDef;
+    while (ns)
+    {
+        if (xml_non_empty_namespace(ns)) return true;
+        ns = xml_next_namespace_def(ns);
+    }
+    return false;
 }
 
 xmlNs *xml_next_namespace_def(xmlNs *ns)

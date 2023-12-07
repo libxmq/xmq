@@ -37,6 +37,8 @@ xmlAttr *xml_next_attribute(xmlAttr *attr);
 xmlAttr *xml_get_attribute(xmlNode *node, const char *name);
 xmlNs *xml_first_namespace_def(xmlNode *node);
 xmlNs *xml_next_namespace_def(xmlNs *ns);
+bool xml_non_empty_namespace(xmlNs *ns);
+bool xml_has_non_empty_namespace_defs(xmlNode *node);
 const char*xml_element_name(xmlNode *node);
 const char*xml_element_content(xmlNode *node);
 const char *xml_element_ns_prefix(const xmlNode *node);
