@@ -143,81 +143,37 @@ typedef enum
 } XMQTrimType;
 
 /**
-    XMQColorStrings:
-    @pre: string to inserted before the token
-    @post: string to inserted after the token
-
-    A color string object is stored for each type of token.
-    It can store the ANSI color prefix, the html span etc.
-    If post is NULL then when the token ends, the pre of the containing color will be reprinted.
-    This is used for ansi codes where there is no stack memory (pop impossible) to the previous colors.
-    I.e. pre = "\033[0;1;32m" which means reset;bold;green but post = NULL.
-    For html/tex coloring we use the stack memory (pop possible) of tags.
-    I.e. pre = "<span class="red">" post = "</span>"
-    I.e. pre = "{\color{red}" post = "}"
+    XMQColorType: The normal coloring options for xmq.
+    @COLORTYPE_xmq_c: Comments
+    @COLORTYPE_xmq_q: Standalone quote.
+    @COLORTYPE_xmq_e: Entity
+    @COLORTYPE_xmq_ens: Element Namespace
+    @COLORTYPE_xmq_en: Element Name
+    @COLORTYPE_xmq_ek: Element Key
+    @COLORTYPE_xmq_ekv: Element Key Value
+    @COLORTYPE_xmq_ans: Attribute NameSpace
+    @COLORTYPE_xmq_ak: Attribute Key
+    @COLORTYPE_xmq_akv: Attribute Key Value
+    @COLORTYPE_xmq_cp: Compound Parentheses
+    @COLORTYPE_xmq_uw: Unicode Whitespace
+    @COLORTYPE_xmq_tw: Tab Whitespace
 */
-struct XMQColorStrings
+typedef enum
 {
-    const char *pre;
-    const char *post;
-};
-typedef struct XMQColorStrings XMQColorStrings;
-
-/**
-    XMQColoring:
-
-    The coloring struct is used to prefix/postfix ANSI/HTML/TEX strings for
-    XMQ tokens to colorize the printed xmq output.
-*/
-struct XMQColoring
-{
-    XMQColorStrings document; // <html></html>  \documentclass{...}... etc
-    XMQColorStrings header; // <head>..</head>
-    XMQColorStrings style;  // Stylesheet content inside header (html) or color(tex) definitions.
-    XMQColorStrings body; // <body></body> \begin{document}\end{document}
-    XMQColorStrings content; // Wrapper around rendered code. Like <pre></pre>, \textt{...}
-
-    XMQColorStrings whitespace; // The normal whitespaces: space=32. Normally not colored.
-    XMQColorStrings tab_whitespace; // The tab, colored with red background.
-    XMQColorStrings unicode_whitespace; // The remaining unicode whitespaces, like: nbsp=160 color as red underline.
-    XMQColorStrings indentation_whitespace; // The xmq generated indentation spaces. Normally not colored.
-    XMQColorStrings equals; // The key = value equal sign.
-    XMQColorStrings brace_left; // Left brace starting a list of childs.
-    XMQColorStrings brace_right; // Right brace ending a list of childs.
-    XMQColorStrings apar_left; // Left parentheses surrounding attributes. foo(x=1)
-    XMQColorStrings apar_right; // Right parentheses surrounding attributes.
-    XMQColorStrings cpar_left; // Left parentheses surrounding a compound value. foo = (&#10;' x '&#10;)
-    XMQColorStrings cpar_right; // Right parentheses surrounding a compound value.
-    XMQColorStrings quote; // A quote 'x y z' can be single or multiline.
-    XMQColorStrings entity; // A entity &#10;
-    XMQColorStrings comment; // A comment // foo or /* foo */
-    XMQColorStrings comment_continuation; // A comment containing newlines /* Hello */* there */
-    XMQColorStrings ns_colon; // The color of the colon separating a namespace from a name.
-    XMQColorStrings element_ns; // The namespace part of an element tag, i.e. the text before colon in foo:alfa.
-    XMQColorStrings element_name; // When an element tag has multiple children or attributes it is rendered using this color.
-    XMQColorStrings element_key; // When an element tag is suitable to be presented as a key value, this color is used.
-    XMQColorStrings element_value_text; // When an element is presented as a key and the value is presented as text, use this color.
-    XMQColorStrings element_value_quote; // When the value is a single quote, use this color.
-    XMQColorStrings element_value_entity; // When the value is a single entity, use this color.
-    XMQColorStrings element_value_compound_quote; // When the value is compounded and this is a quote in the compound.
-    XMQColorStrings element_value_compound_entity; // When the value is compounded and this is an entity in the compound.
-    XMQColorStrings attr_ns; // The namespace part of an attribute name, i.e. the text before colon in bar:speed.
-    XMQColorStrings attr_key; // The color of the attribute name, i.e. the key.
-    XMQColorStrings attr_value_text; // When the attribute value is text, use this color.
-    XMQColorStrings attr_value_quote; // When the attribute value is a quote, use this color.
-    XMQColorStrings attr_value_entity; // When the attribute value is an entity, use this color.
-    XMQColorStrings attr_value_compound_quote; // When the attribute value is a compound and this is a quote in the compound.
-    XMQColorStrings attr_value_compound_entity; // When the attribute value is a compound and this is an entity in the compound.
-
-    const char *indentation_space; // If NULL use " " can be replaced with any other string.
-    const char *explicit_space; // If NULL use " " can be replaced with any other string.
-    const char *explicit_tab; // If NULL use "\t" can be replaced with any other string.
-    const char *explicit_cr; // If NULL use "\t" can be replaced with any other string.
-    const char *explicit_nl; // If NULL use "\n" can be replaced with any other string.
-    const char *prefix_line; // If non-NULL print this as the leader before each line.
-    const char *postfix_line; // If non-NULL print this as the ending after each line.
-};
-typedef struct XMQColoring XMQColoring;
+    COLORTYPE_xmq_c = 0, // Comments
+    COLORTYPE_xmq_q = 1, // Standalone quote.
+    COLORTYPE_xmq_e = 2, // Entity
+    COLORTYPE_xmq_ens = 3, // Element Namespace
+    COLORTYPE_xmq_en = 4, // Element Name
+    COLORTYPE_xmq_ek = 5, // Element Key
+    COLORTYPE_xmq_ekv = 6, // Element Key Value
+    COLORTYPE_xmq_ans = 7, // Attribute NameSpace
+    COLORTYPE_xmq_ak = 8, // Attribute Key
+    COLORTYPE_xmq_akv = 9, // Attribute Key Value
+    COLORTYPE_xmq_cp = 10, // Compound Parentheses
+    COLORTYPE_xmq_uw = 11, // Unicode Whitespace
+    COLORTYPE_xmq_tw = 12, // Tab Whitespace
+} XMQColorType;
 
 /**
     XMQColor:
@@ -303,39 +259,8 @@ typedef struct XMQWriter XMQWriter;
 
 /**
     XMQOutputSettings:
-    @add_indent: Default is 4. Indentation starts at 0 which means no spaces prepended.
-    @compact: Print on a single line limiting whitespace to a minimum.
-    @escape_newlines: Replace newlines with &#10; this is implied if compact is set.
-    @escape_non_7bit: Replace all chars above 126 with char entities, ie &#10;
-    @output_format: Print xmq/xml/html/json
-    @coloring: Print prefixes/postfixes to colorize the output for ANSI/HTML/TEX.
-    @render_to: Render to terminal, html, tex.
-    @render_raw: If true do not write surrounding html and css colors, likewise for tex.
-    @only_style: Print only style sheet header.
-    @write_content: Write content to buffer.
-    @buffer_content: Supplied as buffer above.
-    @write_error: Write error to buffer.
-    @buffer_error: Supplied as buffer above.
 */
-struct XMQOutputSettings
-{
-    int  add_indent;
-    bool compact;
-    bool use_color;
-    bool escape_newlines;
-    bool escape_non_7bit;
-
-    XMQContentType output_format;
-    XMQColoring coloring;
-    XMQRenderFormat render_to;
-    bool render_raw;
-    bool only_style;
-
-    XMQWriter content;
-    XMQWriter error;
-};
 typedef struct XMQOutputSettings XMQOutputSettings;
-
 
 /**
     XMQProceed:
@@ -602,7 +527,20 @@ bool xmqParseReader(XMQDoc *doc, XMQReader *reader, const char *implicit_root);
 XMQOutputSettings *xmqNewOutputSettings();
 
 /** Free the print settings structure. */
-void xmqFreeOutputSettings(XMQOutputSettings *ps);
+void xmqFreeOutputSettings(XMQOutputSettings *os);
+
+void xmqSetAddIndent(XMQOutputSettings *os, int add_indent);
+void xmqSetCompact(XMQOutputSettings *os, bool compact);
+void xmqSetUseColor(XMQOutputSettings *os, bool use_color);
+void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines);
+void xmqSetEscapeNon7bit(XMQOutputSettings *os, bool escape_non_7bit);
+void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format);
+//void xmqSetColoring(XMQOutputSettings *os, XMQColoring coloring);
+void xmqSetRenderFormat(XMQOutputSettings *os, XMQRenderFormat render_to);
+void xmqSetRenderRaw(XMQOutputSettings *os, bool render_raw);
+void xmqSetRenderOnlyStyle(XMQOutputSettings *os, bool only_style);
+void xmqSetWriterContent(XMQOutputSettings *os, XMQWriter content);
+void xmqSetWriterError(XMQOutputSettings *os, XMQWriter error);
 
 /** Setup the printer to print content to stdout and errors to sderr. */
 void xmqSetupPrintStdOutStdErr(XMQOutputSettings *ps);

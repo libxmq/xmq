@@ -503,6 +503,66 @@ void xmqFreeOutputSettings(XMQOutputSettings *s)
     free(s);
 }
 
+void xmqSetAddIndent(XMQOutputSettings *os, int add_indent)
+{
+    os->add_indent = add_indent;
+}
+
+void xmqSetCompact(XMQOutputSettings *os, bool compact)
+{
+    os->compact = compact;
+}
+
+void xmqSetUseColor(XMQOutputSettings *os, bool use_color)
+{
+    os->use_color = use_color;
+}
+
+void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines)
+{
+    os->escape_newlines = escape_newlines;
+}
+
+void xmqSetEscapeNon7bit(XMQOutputSettings *os, bool escape_non_7bit)
+{
+    os->escape_non_7bit = escape_non_7bit;
+}
+
+void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format)
+{
+    os->output_format = output_format;
+}
+
+/*void xmqSetColoring(XMQOutputSettings *os, XMQColoring coloring)
+{
+    os->coloring = coloring;
+    }*/
+
+void xmqSetRenderFormat(XMQOutputSettings *os, XMQRenderFormat render_to)
+{
+    os->render_to = render_to;
+}
+
+void xmqSetRenderRaw(XMQOutputSettings *os, bool render_raw)
+{
+    os->render_raw = render_raw;
+}
+
+void xmqSetRenderOnlyStyle(XMQOutputSettings *os, bool only_style)
+{
+    os->only_style = only_style;
+}
+
+void xmqSetWriterContent(XMQOutputSettings *os, XMQWriter content)
+{
+    os->content = content;
+}
+
+void xmqSetWriterError(XMQOutputSettings *os, XMQWriter error)
+{
+    os->error = error;
+}
+
 bool write_print_stdout(void *writer_state_ignored, const char *start, const char *stop)
 {
     if (!start) return true;

@@ -1031,22 +1031,23 @@ void cmd_unload(XMQCliCommand *command)
 bool cmd_to(XMQCliCommand *command)
 {
     XMQOutputSettings *settings = xmqNewOutputSettings();
-    settings->compact = command->compact;
-    settings->escape_newlines = command->escape_newlines;
-    settings->escape_non_7bit = command->escape_non_7bit;
-    settings->add_indent = command->add_indent;
-    settings->use_color = command->use_color;
-    settings->output_format = command->out_format;
-    settings->render_to = command->render_to;
-    settings->render_raw = command->render_raw;
-    settings->only_style = command->only_style;
+    xmqSetCompact(settings, command->compact);
+    xmqSetEscapeNewlines(settings, command->escape_newlines);
+    xmqSetEscapeNon7bit(settings, command->escape_non_7bit);
+    xmqSetAddIndent(settings, command->add_indent);
+    xmqSetUseColor(settings, command->use_color);
+    xmqSetOutputFormat(settings, command->out_format);
+    xmqSetRenderFormat(settings, command->render_to);
+    xmqSetRenderRaw(settings, command->render_raw);
+    xmqSetRenderOnlyStyle(settings, command->only_style);
     xmqSetupDefaultColors(settings, command->dark_mode);
 
+    /*
     verbose_("(xmq) print %s render %s\n",
              content_type_to_string(settings->output_format),
              render_format_to_string(settings->render_to)
         );
-
+    */
     xmqSetupPrintStdOutStdErr(settings);
     xmqPrint(command->env->doc, settings);
     printf("\n");
