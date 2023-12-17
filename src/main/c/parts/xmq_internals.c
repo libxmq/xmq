@@ -198,16 +198,16 @@ void eat_whitespace(XMQParseState *state, const char **start, const char **stop)
    pre: Store a pointer to the start color string here.
    post: Store a pointer to the end color string here.
 */
-void get_color(XMQColoring *coloring, XMQColor c, const char **pre, const char **post)
+void get_color(XMQOutputSettings *os, XMQColor color, const char **pre, const char **post)
 {
-    switch(c)
+    XMQColoring *coloring = os->default_coloring;
+    switch(color)
     {
 
 #define X(TYPE) case COLOR_##TYPE: *pre = coloring->TYPE.pre; *post = coloring->TYPE.post; return;
 LIST_OF_XMQ_TOKENS
 #undef X
 
-    case COLOR_tab_whitespace: *pre = coloring->tab_whitespace.pre; *post = coloring->tab_whitespace.post; return;
     case COLOR_unicode_whitespace: *pre = coloring->unicode_whitespace.pre; *post = coloring->unicode_whitespace.post; return;
     case COLOR_indentation_whitespace: *pre = coloring->indentation_whitespace.pre; *post = coloring->indentation_whitespace.post; return;
     default:
@@ -279,30 +279,30 @@ const char *needs_escape(XMQRenderFormat f, const char *start, const char *stop)
     return NULL;
 }
 
-void print_color_pre(XMQPrintState *ps, XMQColor c)
+void print_color_pre(XMQPrintState *ps, XMQColor color)
 {
-    XMQColoring *coloring = &ps->output_settings->coloring;
+    XMQOutputSettings *os = ps->output_settings;
     const char *pre = NULL;
     const char *post = NULL;
-    get_color(coloring, c, &pre, &post);
+    get_color(os, color, &pre, &post);
 
     if (pre)
     {
-        XMQWrite write = ps->output_settings->content.write;
-        void *writer_state = ps->output_settings->content.writer_state;
+        XMQWrite write = os->content.write;
+        void *writer_state = os->content.writer_state;
         write(writer_state, pre, NULL);
     }
 }
 
-void print_color_post(XMQPrintState *ps, XMQColor c)
+void print_color_post(XMQPrintState *ps, XMQColor color)
 {
-    XMQColoring *coloring = &ps->output_settings->coloring;
+    XMQOutputSettings *os = ps->output_settings;
     const char *pre = NULL;
     const char *post = NULL;
-    get_color(coloring, c, &pre, &post);
+    get_color(os, color, &pre, &post);
 
-    XMQWrite write = ps->output_settings->content.write;
-    void *writer_state = ps->output_settings->content.writer_state;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
 
     if (post)
     {

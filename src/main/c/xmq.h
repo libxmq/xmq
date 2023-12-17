@@ -172,7 +172,6 @@ typedef enum
     COLORTYPE_xmq_akv = 9, // Attribute Key Value
     COLORTYPE_xmq_cp = 10, // Compound Parentheses
     COLORTYPE_xmq_uw = 11, // Unicode Whitespace
-    COLORTYPE_xmq_tw = 12, // Tab Whitespace
 } XMQColorType;
 
 /**
@@ -183,7 +182,6 @@ typedef enum
 typedef enum XMQColor {
     COLOR_none,
     COLOR_whitespace,
-    COLOR_tab_whitespace,
     COLOR_unicode_whitespace,
     COLOR_indentation_whitespace,
     COLOR_equals,
@@ -692,6 +690,20 @@ bool xmqParseFileWithType(XMQDoc *doc,
    Set the default colors for settings based on the background color.
 */
 void xmqSetupDefaultColors(XMQOutputSettings *settings, bool dark_mode);
+
+/**
+   xmqOverrideColorType:
+
+   Change the color strings for the given color type. You have to run xmqSetupDefaultColors first.
+*/
+void xmqOverrideColorType(XMQOutputSettings *settings, XMQColorType ct, const char *pre, const char *post, const char *namespace);
+
+/**
+   xmqOverrideColor:
+
+   Change the color strings for the given color. You have to run xmqSetupDefaultColors first.
+*/
+void xmqOverrideColor(XMQOutputSettings *settings, XMQColor c, const char *pre, const char *post, const char *namespace);
 
 #ifdef __cplusplus
 _hideRBfromEditor

@@ -10,8 +10,9 @@
 
 size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop)
 {
-    XMQWrite write = ps->output_settings->content.write;
-    void *writer_state = ps->output_settings->content.writer_state;
+    XMQOutputSettings *os = ps->output_settings;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
 
     const char *i = start;
 
@@ -21,20 +22,19 @@ size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop)
 
     // Is the utf8 char a unicode whitespace and not space,tab,cr,nl?
     bool uw = is_unicode_whitespace(i, j);
-    bool tw = *i == '\t';
+    //bool tw = *i == '\t';
 
     // If so, then color it. This will typically red underline the non-breakable space.
     if (uw) print_color_pre(ps, COLOR_unicode_whitespace);
-    if (tw) print_color_pre(ps, COLOR_tab_whitespace);
 
     if (*i == ' ')
     {
-        write(writer_state, ps->output_settings->coloring.explicit_space, NULL);
+        write(writer_state, os->explicit_space, NULL);
     }
     else
     if (*i == '\t')
     {
-        write(writer_state, ps->output_settings->coloring.explicit_tab, NULL);
+        write(writer_state, os->explicit_tab, NULL);
     }
     else
     {
@@ -49,7 +49,6 @@ size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop)
         }
     }
     if (uw) print_color_post(ps, COLOR_unicode_whitespace);
-    if (tw) print_color_post(ps, COLOR_tab_whitespace);
 
     ps->last_char = *i;
     ps->current_indent++;
@@ -67,8 +66,9 @@ size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop)
 */
 size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *stop)
 {
-    XMQWrite write = ps->output_settings->content.write;
-    void *writer_state = ps->output_settings->content.writer_state;
+    XMQOutputSettings *os = ps->output_settings;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
 
     size_t u_len = 0;
 
@@ -81,19 +81,18 @@ size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *sto
 
         // Is the utf8 char a unicode whitespace and not space,tab,cr,nl?
         bool uw = is_unicode_whitespace(i, j);
-        bool tw = *i == '\t';
+        //bool tw = *i == '\t';
 
         // If so, then color it. This will typically red underline the non-breakable space.
         if (uw) print_color_pre(ps, COLOR_unicode_whitespace);
-        if (tw) print_color_pre(ps, COLOR_tab_whitespace);
 
         if (*i == ' ')
         {
-            write(writer_state, ps->output_settings->coloring.explicit_space, NULL);
+            write(writer_state, os->explicit_space, NULL);
         }
         else if (*i == '\t')
         {
-            write(writer_state, ps->output_settings->coloring.explicit_tab, NULL);
+            write(writer_state, os->explicit_tab, NULL);
         }
         else
         {
@@ -108,7 +107,6 @@ size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *sto
             }
         }
         if (uw) print_color_post(ps, COLOR_unicode_whitespace);
-        if (tw) print_color_post(ps, COLOR_tab_whitespace);
         u_len++;
         i = j;
     }
@@ -128,14 +126,14 @@ size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *sto
 
    Returns the number of bytes used after start.
 */
-size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...)
+size_t print_utf8(XMQPrintState *ps, XMQColor color, size_t num_pairs, ...)
 {
-    XMQWrite write = ps->output_settings->content.write;
-    void *writer_state = ps->output_settings->content.writer_state;
-    XMQColoring *coloring = &ps->output_settings->coloring;
+    XMQOutputSettings *os = ps->output_settings;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
 
     const char *pre, *post;
-    get_color(coloring, c, &pre, &post);
+    get_color(os, color, &pre, &post);
     const char *previous_color = NULL;
 
     if (pre)

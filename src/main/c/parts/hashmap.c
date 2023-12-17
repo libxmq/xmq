@@ -24,19 +24,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 #ifdef HASHMAP_MODULE
 
-typedef struct HashMapNode_
+struct HashMapNode;
+typedef struct HashMapNode HashMapNode;
+
+struct HashMapNode
 {
     const char *key_;
     void *val_;
-    struct HashMapNode_ *next_;
-} HashMapNode;
+    struct HashMapNode *next_;
+};
 
-typedef struct HashMap_
+struct HashMap
 {
     int size_;
     int max_size_;
     HashMapNode** nodes_;
-} HashMap;
+};
 
 // FUNCTION DECLARATIONS //////////////////////////////////////////////////
 

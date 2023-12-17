@@ -50,6 +50,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct Stack;
 typedef struct Stack Stack;
 
+struct HashMap;
+typedef struct HashMap HashMap;
+
 extern const char *color_names[13];
 
 /**
@@ -118,14 +121,6 @@ struct XMQColoring
     XMQColorStrings attr_value_entity; // When the attribute value is an entity, use this color.
     XMQColorStrings attr_value_compound_quote; // When the attribute value is a compound and this is a quote in the compound.
     XMQColorStrings attr_value_compound_entity; // When the attribute value is a compound and this is an entity in the compound.
-
-    const char *indentation_space; // If NULL use " " can be replaced with any other string.
-    const char *explicit_space; // If NULL use " " can be replaced with any other string.
-    const char *explicit_tab; // If NULL use "\t" can be replaced with any other string.
-    const char *explicit_cr; // If NULL use "\t" can be replaced with any other string.
-    const char *explicit_nl; // If NULL use "\n" can be replaced with any other string.
-    const char *prefix_line; // If non-NULL print this as the leader before each line.
-    const char *postfix_line; // If non-NULL print this as the ending after each line.
 };
 typedef struct XMQColoring XMQColoring;
 
@@ -196,7 +191,6 @@ typedef enum Level Level;
     @escape_newlines: Replace newlines with &#10; this is implied if compact is set.
     @escape_non_7bit: Replace all chars above 126 with char entities, ie &#10;
     @output_format: Print xmq/xml/html/json
-    @coloring: Print prefixes/postfixes to colorize the output for ANSI/HTML/TEX.
     @render_to: Render to terminal, html, tex.
     @render_raw: If true do not write surrounding html and css colors, likewise for tex.
     @only_style: Print only style sheet header.
@@ -204,6 +198,7 @@ typedef enum Level Level;
     @buffer_content: Supplied as buffer above.
     @write_error: Write error to buffer.
     @buffer_error: Supplied as buffer above.
+    @colorings: Map from namespace (default is the empty string) to  prefixes/postfixes to colorize the output for ANSI/HTML/TEX.
 */
 struct XMQOutputSettings
 {
@@ -214,13 +209,23 @@ struct XMQOutputSettings
     bool escape_non_7bit;
 
     XMQContentType output_format;
-    XMQColoring coloring;
     XMQRenderFormat render_to;
     bool render_raw;
     bool only_style;
 
     XMQWriter content;
     XMQWriter error;
+
+    const char *indentation_space; // If NULL use " " can be replaced with any other string.
+    const char *explicit_space; // If NULL use " " can be replaced with any other string.
+    const char *explicit_tab; // If NULL use "\t" can be replaced with any other string.
+    const char *explicit_cr; // If NULL use "\t" can be replaced with any other string.
+    const char *explicit_nl; // If NULL use "\n" can be replaced with any other string.
+    const char *prefix_line; // If non-NULL print this as the leader before each line.
+    const char *postfix_line; // If non-NULL print this as the ending after each line.
+
+    XMQColoring *default_coloring; // Shortcut to the no namespace coloring inside colorings.
+    HashMap *colorings; // Map namespaces to unique colorings.
 };
 typedef struct XMQOutputSettings XMQOutputSettings;
 
@@ -274,6 +279,7 @@ struct XMQParseState
    @color_pre: The active color prefix.
    @prev_color_pre: The previous color prefix, used for restoring utf8 text after coloring unicode whitespace.
    @restart_line: after nl_and_indent print this to restart coloring of line.
+   @namespace: the last namespace reference.
    @output_settings: the output settings.
    @doc: The xmq document that is being printed.
 */
@@ -284,6 +290,7 @@ struct XMQPrintState
     int last_char;
     const char *replay_active_color_pre;
     const char *restart_line;
+    const char *namespace;
     XMQOutputSettings *output_settings;
     XMQDoc *doq;
 };
@@ -380,9 +387,9 @@ void xmqFreeParseState(XMQParseState *state);
 bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop);
 bool xmqTokenizeFile(XMQParseState *state, const char *file);
 
-void setup_terminal_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
-void setup_html_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
-void setup_tex_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_tex_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
 
 // XMQ tokenizer functions ///////////////////////////////////////////////////////////
 
@@ -609,7 +616,7 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 
 #endif
 
-void get_color(XMQColoring *coloring, XMQColor c, const char **pre, const char **post);
+void get_color(XMQOutputSettings *os, XMQColor c, const char **pre, const char **post);
 
 #define XMQ_INTERNALS_MODULE
 

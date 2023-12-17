@@ -135,34 +135,35 @@ LIST_OF_XMQ_TOKENS
 //////////////////////////////////////////////////////////////////////////////////
 char ansi_reset_color[] = "\033[0m";
 
-void xmqSetupDefaultColors(XMQOutputSettings *output_settings, bool dark_mode)
+void xmqSetupDefaultColors(XMQOutputSettings *os, bool dark_mode)
 {
-    XMQColoring *c = &output_settings->coloring;
+    XMQColoring *c = hashmap_get(os->colorings, "");
+    assert(c);
     memset(c, 0, sizeof(XMQColoring));
-    c->indentation_space = " ";
-    c->explicit_space = " ";
-    c->explicit_nl = "\n";
-    c->explicit_tab = "\t";
-    c->explicit_cr = "\r";
+    os->indentation_space = " ";
+    os->explicit_space = " ";
+    os->explicit_nl = "\n";
+    os->explicit_tab = "\t";
+    os->explicit_cr = "\r";
 
-    if (output_settings->render_to == XMQ_RENDER_PLAIN)
+    if (os->render_to == XMQ_RENDER_PLAIN)
     {
     }
     else
-    if (output_settings->render_to == XMQ_RENDER_TERMINAL)
+    if (os->render_to == XMQ_RENDER_TERMINAL)
     {
-        setup_terminal_coloring(c, dark_mode, output_settings->use_color, output_settings->render_raw);
+        setup_terminal_coloring(os, c, dark_mode, os->use_color, os->render_raw);
     }
-    else if (output_settings->render_to == XMQ_RENDER_HTML)
+    else if (os->render_to == XMQ_RENDER_HTML)
     {
-        setup_html_coloring(c, dark_mode, output_settings->use_color, output_settings->render_raw);
+        setup_html_coloring(os, c, dark_mode, os->use_color, os->render_raw);
     }
-    else if (output_settings->render_to == XMQ_RENDER_TEX)
+    else if (os->render_to == XMQ_RENDER_TEX)
     {
-        setup_tex_coloring(c, dark_mode, output_settings->use_color, output_settings->render_raw);
+        setup_tex_coloring(os, c, dark_mode, os->use_color, os->render_raw);
     }
 
-    if (output_settings->only_style)
+    if (os->only_style)
     {
         printf("%s\n", c->style.pre);
         exit(0);
@@ -170,7 +171,7 @@ void xmqSetupDefaultColors(XMQOutputSettings *output_settings, bool dark_mode)
 
 }
 
-void setup_terminal_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool render_raw)
+void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw)
 {
     if (!use_color) return;
     if (dark_mode)
@@ -241,10 +242,10 @@ void setup_terminal_coloring(XMQColoring *c, bool dark_mode, bool use_color, boo
     }
 }
 
-void setup_html_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool render_raw)
+void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw)
 {
-    c->indentation_space = " ";
-    c->explicit_nl = "\n";
+    os->indentation_space = " ";
+    os->explicit_nl = "\n";
     if (!render_raw)
     {
         c->document.pre =
@@ -346,11 +347,11 @@ void setup_htmq_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool re
 {
 }
 
-void setup_tex_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool render_raw)
+void setup_tex_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw)
 {
-    c->indentation_space = "\\xmqI ";
-    c->explicit_space = " ";
-    c->explicit_nl = "\\linebreak\n";
+    os->indentation_space = "\\xmqI ";
+    os->explicit_space = " ";
+    os->explicit_nl = "\\linebreak\n";
 
     if (!render_raw)
     {
@@ -444,6 +445,73 @@ void setup_tex_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool ren
     c->ns_colon.pre = NULL;
 }
 
+void xmqOverrideColorType(XMQOutputSettings *settings, XMQColorType ct, const char *pre, const char *post, const char *namespace)
+{
+    switch (ct)
+    {
+    case COLORTYPE_xmq_c:
+    case COLORTYPE_xmq_q:
+    case COLORTYPE_xmq_e:
+    case COLORTYPE_xmq_ens:
+    case COLORTYPE_xmq_en:
+    case COLORTYPE_xmq_ek:
+    case COLORTYPE_xmq_ekv:
+    case COLORTYPE_xmq_ans:
+    case COLORTYPE_xmq_ak:
+    case COLORTYPE_xmq_akv:
+    case COLORTYPE_xmq_cp:
+    case COLORTYPE_xmq_uw:
+    }
+}
+
+
+void xmqOverrideColor(XMQOutputSettings *os, XMQColor c, const char *pre, const char *post, const char *namespace)
+{
+    if (!os->colorings)
+    {
+        fprintf(stderr, "Internal error: you have to invoke xmqSetupDefaultColors first before overriding.\n");
+        exit(1);
+    }
+    if (!namespace) namespace = "";
+    XMQColoring *cols = hashmap_get(os->colorings, namespace);
+    assert(cols);
+
+    switch (c)
+    {
+    case COLOR_none: break;
+    case COLOR_whitespace: cols->whitespace.pre = pre; cols->whitespace.post = post;
+    case COLOR_unicode_whitespace:
+    case COLOR_indentation_whitespace:
+    case COLOR_equals:
+    case COLOR_brace_left:
+    case COLOR_brace_right:
+    case COLOR_apar_left:
+    case COLOR_apar_right:
+    case COLOR_cpar_left:
+    case COLOR_cpar_right:
+    case COLOR_quote:
+    case COLOR_entity:
+    case COLOR_comment:
+    case COLOR_comment_continuation:
+    case COLOR_ns_colon:
+    case COLOR_element_ns:
+    case COLOR_element_name:
+    case COLOR_element_key:
+    case COLOR_element_value_text:
+    case COLOR_element_value_quote:
+    case COLOR_element_value_entity:
+    case COLOR_element_value_compound_quote:
+    case COLOR_element_value_compound_entity:
+    case COLOR_attr_ns:
+    case COLOR_attr_key:
+    case COLOR_attr_value_text:
+    case COLOR_attr_value_quote:
+    case COLOR_attr_value_entity:
+    case COLOR_attr_value_compound_quote:
+    case COLOR_attr_value_compound_entity:
+    }
+}
+
 int xmqStateErrno(XMQParseState *state)
 {
     return (int)state->error_nr;
@@ -453,7 +521,7 @@ int xmqStateErrno(XMQParseState *state)
     void colorize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start, size_t indent,const char *cstart, const char *cstop, const char *stop) { \
         if (!state->simulated) { \
             const char *pre, *post;  \
-            get_color(&state->output_settings->coloring, COLOR_##TYPE, &pre, &post); \
+            get_color(state->output_settings, COLOR_##TYPE, &pre, &post); \
             if (pre) state->output_settings->content.write(state->output_settings->content.writer_state, pre, NULL); \
             state->output_settings->content.write(state->output_settings->content.writer_state, start, stop); \
             if (post) state->output_settings->content.write(state->output_settings->content.writer_state, post, NULL); \
@@ -486,21 +554,30 @@ void add_nl(XMQParseState *state)
 
 XMQOutputSettings *xmqNewOutputSettings()
 {
-    XMQOutputSettings *s = (XMQOutputSettings*)malloc(sizeof(XMQOutputSettings));
-    memset(s, 0, sizeof(XMQOutputSettings));
-    s->coloring.indentation_space = " ";
-    s->coloring.explicit_space = " ";
-    s->coloring.explicit_nl = "\n";
-    s->coloring.explicit_tab = "\t";
-    s->coloring.explicit_cr = "\r";
-    s->add_indent = 4;
-    s->use_color = false;
-    return s;
+    XMQOutputSettings *os = (XMQOutputSettings*)malloc(sizeof(XMQOutputSettings));
+    memset(os, 0, sizeof(XMQOutputSettings));
+    os->colorings = hashmap_create(11);
+    XMQColoring *c = malloc(sizeof(XMQColoring));
+    memset(c, 0, sizeof(XMQColoring));
+    hashmap_put(os->colorings, "", c);
+    os->default_coloring = c;
+
+    os->indentation_space = " ";
+    os->explicit_space = " ";
+    os->explicit_nl = "\n";
+    os->explicit_tab = "\t";
+    os->explicit_cr = "\r";
+    os->add_indent = 4;
+    os->use_color = false;
+
+    return os;
 }
 
-void xmqFreeOutputSettings(XMQOutputSettings *s)
+void xmqFreeOutputSettings(XMQOutputSettings *os)
 {
-    free(s);
+    hashmap_free_and_values(os->colorings);
+    os->colorings = NULL;
+    free(os);
 }
 
 void xmqSetAddIndent(XMQOutputSettings *os, int add_indent)
@@ -2994,17 +3071,17 @@ size_t find_element_key_max_width(xmlNodePtr element, xmlNodePtr *restart_find_a
 
 void print_white_spaces(XMQPrintState *ps, int num)
 {
-    XMQOutputSettings *output_settings = ps->output_settings;
-    XMQColoring *coloring = &output_settings->coloring;
-    XMQWrite write = output_settings->content.write;
-    void *writer_state = output_settings->content.writer_state;
-    if (coloring->whitespace.pre) write(writer_state, coloring->whitespace.pre, NULL);
+    XMQOutputSettings *os = ps->output_settings;
+    XMQColoring *c = os->default_coloring;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
+    if (c->whitespace.pre) write(writer_state, c->whitespace.pre, NULL);
     for (int i=0; i<num; ++i)
     {
-        write(writer_state, coloring->indentation_space, NULL);
+        write(writer_state, os->indentation_space, NULL);
     }
     ps->current_indent += num;
-    if (coloring->whitespace.post) write(writer_state, coloring->whitespace.post, NULL);
+    if (c->whitespace.post) write(writer_state, c->whitespace.post, NULL);
 }
 
 void print_all_whitespace(XMQPrintState *ps, const char *start, const char *stop, Level level)
@@ -3032,53 +3109,51 @@ void print_all_whitespace(XMQPrintState *ps, const char *start, const char *stop
 
 void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num)
 {
-    XMQOutputSettings *output_settings = ps->output_settings;
-    XMQColoring *coloring = &output_settings->coloring;
-    XMQWrite write = output_settings->content.write;
-    void *writer_state = output_settings->content.writer_state;
+    XMQOutputSettings *os = ps->output_settings;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
 
     const char *pre = NULL;
     const char *post = NULL;
-    get_color(coloring, c, &pre, &post);
+    get_color(os, c, &pre, &post);
 
     write(writer_state, pre, NULL);
     for (int i=0; i<num; ++i)
     {
-        write(writer_state, coloring->explicit_space, NULL);
+        write(writer_state, os->explicit_space, NULL);
     }
     ps->current_indent += num;
     write(writer_state, post, NULL);
 }
 
-void print_quoted_spaces(XMQPrintState *ps, XMQColor c, int num)
+void print_quoted_spaces(XMQPrintState *ps, XMQColor color, int num)
 {
-    XMQOutputSettings *output_settings = ps->output_settings;
-    XMQColoring *coloring = &output_settings->coloring;
-    XMQWrite write = output_settings->content.write;
-    void *writer_state = output_settings->content.writer_state;
+    XMQOutputSettings *os = ps->output_settings;
+    XMQColoring *c = os->default_coloring;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
 
-    if (coloring->whitespace.pre) write(writer_state, coloring->quote.pre, NULL);
+    if (c->whitespace.pre) write(writer_state, c->quote.pre, NULL);
     write(writer_state, "'", NULL);
     for (int i=0; i<num; ++i)
     {
-        write(writer_state, coloring->explicit_space, NULL);
+        write(writer_state, os->explicit_space, NULL);
     }
     ps->current_indent += num;
     ps->last_char = '\'';
     write(writer_state, "'", NULL);
-    if (coloring->whitespace.post) write(writer_state, coloring->quote.post, NULL);
+    if (c->whitespace.post) write(writer_state, c->quote.post, NULL);
 }
 
-void print_quotes(XMQPrintState *ps, size_t num, XMQColor c)
+void print_quotes(XMQPrintState *ps, size_t num, XMQColor color)
 {
-    XMQOutputSettings *output_settings = ps->output_settings;
-    XMQWrite write = output_settings->content.write;
-    void *writer_state = output_settings->content.writer_state;
+    XMQOutputSettings *os = ps->output_settings;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
 
-    XMQColoring *coloring = &output_settings->coloring;
     const char *pre = NULL;
     const char *post = NULL;
-    get_color(coloring, c, &pre, &post);
+    get_color(os, color, &pre, &post);
 
     if (pre) write(writer_state, pre, NULL);
     for (size_t i=0; i<num; ++i)
@@ -3092,11 +3167,12 @@ void print_quotes(XMQPrintState *ps, size_t num, XMQColor c)
 
 void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *postfix)
 {
-    XMQOutputSettings *output_settings = ps->output_settings;
-    XMQWrite write = output_settings->content.write;
-    void *writer_state = output_settings->content.writer_state;
+    XMQOutputSettings *os = ps->output_settings;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
+
     if (postfix) write(writer_state, postfix, NULL);
-    write(writer_state, output_settings->coloring.explicit_nl, NULL);
+    write(writer_state, os->explicit_nl, NULL);
     ps->current_indent = 0;
     ps->last_char = 0;
     print_white_spaces(ps, ps->line_indent);
@@ -3104,13 +3180,13 @@ void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *post
     if (prefix) write(writer_state, prefix, NULL);
 }
 
-size_t print_char_entity(XMQPrintState *ps, XMQColor c, const char *start, const char *stop)
+size_t print_char_entity(XMQPrintState *ps, XMQColor color, const char *start, const char *stop)
 {
-    XMQWrite write = ps->output_settings->content.write;
-    void *writer_state = ps->output_settings->content.writer_state;
-    XMQColoring *coloring = &ps->output_settings->coloring;
+    XMQOutputSettings *os = ps->output_settings;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
     const char *pre, *post;
-    get_color(coloring, c, &pre, &post);
+    get_color(os, color, &pre, &post);
 
     int uc = 0;
     size_t bytes = 0;
@@ -3140,12 +3216,12 @@ size_t print_char_entity(XMQPrintState *ps, XMQColor c, const char *start, const
 
 void print_slashes(XMQPrintState *ps, const char *pre, const char *post, size_t n)
 {
-    XMQWrite write = ps->output_settings->content.write;
-    void *writer_state = ps->output_settings->content.writer_state;
-    XMQColoring *coloring = &ps->output_settings->coloring;
+    XMQOutputSettings *os = ps->output_settings;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
     const char *cpre = NULL;
     const char *cpost = NULL;
-    get_color(coloring, COLOR_comment, &cpre, &cpost);
+    get_color(os, COLOR_comment, &cpre, &cpost);
 
     if (cpre) write(writer_state, cpre, NULL);
     if (pre) write(writer_state, pre, NULL);
@@ -3323,11 +3399,11 @@ void check_space_before_comment(XMQPrintState *ps)
 
 void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSettings *os)
 {
-    qs->indentation_space = os->coloring.indentation_space;
-    qs->explicit_space = os->coloring.explicit_space;
-    qs->explicit_nl = os->coloring.explicit_nl;
-    qs->prefix_line = os->coloring.prefix_line;
-    qs->postfix_line = os->coloring.prefix_line;
+    qs->indentation_space = os->indentation_space;
+    qs->explicit_space = os->explicit_space;
+    qs->explicit_nl = os->explicit_nl;
+    qs->prefix_line = os->prefix_line;
+    qs->postfix_line = os->prefix_line;
     qs->compact = os->compact;
 }
 
@@ -3811,7 +3887,7 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *output_settings)
     json_print_nodes(&ps, NULL, (xmlNode*)first, (xmlNode*)last);
 }
 
-void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *output_settings)
+void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
 {
     void *first = doq->docptr_.xml->children;
     if (!doq || !first) return;
@@ -3819,26 +3895,26 @@ void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *output_settings)
 
     XMQPrintState ps = {};
     ps.doq = doq;
-    if (output_settings->compact) output_settings->escape_newlines = true;
-    ps.output_settings = output_settings;
-    assert(output_settings->content.write);
+    if (os->compact) os->escape_newlines = true;
+    ps.output_settings = os;
+    assert(os->content.write);
 
-    XMQWrite write = output_settings->content.write;
-    void *writer_state = output_settings->content.writer_state;
-    XMQColoring *coloring = &output_settings->coloring;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
+    XMQColoring *c = os->default_coloring;
 
-    if (coloring->document.pre) write(writer_state, coloring->document.pre, NULL);
-    if (coloring->header.pre) write(writer_state, coloring->header.pre, NULL);
-    if (coloring->style.pre) write(writer_state, coloring->style.pre, NULL);
-    if (coloring->header.post) write(writer_state, coloring->header.post, NULL);
-    if (coloring->body.pre) write(writer_state, coloring->body.pre, NULL);
+    if (c->document.pre) write(writer_state, c->document.pre, NULL);
+    if (c->header.pre) write(writer_state, c->header.pre, NULL);
+    if (c->style.pre) write(writer_state, c->style.pre, NULL);
+    if (c->header.post) write(writer_state, c->header.post, NULL);
+    if (c->body.pre) write(writer_state, c->body.pre, NULL);
 
-    if (coloring->content.pre) write(writer_state, coloring->content.pre, NULL);
+    if (c->content.pre) write(writer_state, c->content.pre, NULL);
     print_nodes(&ps, (xmlNode*)first, (xmlNode*)last, 0);
-    if (coloring->content.post) write(writer_state, coloring->content.post, NULL);
+    if (c->content.post) write(writer_state, c->content.post, NULL);
 
-    if (coloring->body.post) write(writer_state, coloring->body.post, NULL);
-    if (coloring->document.post) write(writer_state, coloring->document.post, NULL);
+    if (c->body.post) write(writer_state, c->body.post, NULL);
+    if (c->document.post) write(writer_state, c->document.post, NULL);
 }
 
 void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
@@ -4469,16 +4545,16 @@ char *xmq_quote_default(int indent,
 }
 
 void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
-                                             XMQColor c,
+                                             XMQColor color,
                                              const char *start,
                                              const char *stop)
 {
-    XMQWrite write = ps->output_settings->content.write;
-    void *writer_state = ps->output_settings->content.writer_state;
-    XMQColoring *coloring = &ps->output_settings->coloring;
+    XMQOutputSettings *os = ps->output_settings;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
 
     const char *pre, *post;
-    get_color(coloring, c, &pre, &post);
+    get_color(os, color, &pre, &post);
 
     if (pre) write(writer_state, pre, NULL);
 
@@ -5346,12 +5422,12 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
                            const char *implicit_root)
 {
     bool rc = true;
-    XMQOutputSettings *output_settings = xmqNewOutputSettings();
+    XMQOutputSettings *os = xmqNewOutputSettings();
     XMQParseCallbacks *parse = xmqNewParseCallbacks();
 
     xmq_setup_parse_callbacks(parse);
 
-    XMQParseState *state = xmqNewParseState(parse, output_settings);
+    XMQParseState *state = xmqNewParseState(parse, os);
     state->doq = doq;
     xmqSetStateSourceName(state, doq->source_name_);
 
@@ -5376,7 +5452,7 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
 
     xmqFreeParseState(state);
     xmqFreeParseCallbacks(parse);
-    xmqFreeOutputSettings(output_settings);
+    xmqFreeOutputSettings(os);
 
     return rc;
 }

@@ -114,7 +114,8 @@ struct XMQCliCommand
     const char *xpath;
     const char *entity;
     const char *content; // Content to replace something.
-    xsltStylesheetPtr xslt;
+    XMQDoc *xslt_doq; // The xmq document loaded to generate the xslt.
+    xsltStylesheetPtr xslt; // The xslt trasnform to be used.
     xmlDocPtr   node_doc;
     xmlNodePtr  node_content; // Tree content to replace something.
     XMQContentType in_format;
@@ -545,6 +546,7 @@ bool handle_option(const char *arg, XMQCliCommand *command)
 
             xmlDocPtr xslt = (xmlDocPtr)xmqGetImplementationDoc(doq);
 
+            command->xslt_doq = doq;
             command->xslt = xsltParseStylesheetDoc(xslt);
             //command->xslt = xsltParseStylesheetFile((const xmlChar *)arg);
             return true;
@@ -1067,6 +1069,10 @@ bool cmd_transform(XMQCliCommand *command)
     xmqSetImplementationDoc(command->env->doc, new_doc);
 
     xsltFreeStylesheet(command->xslt);
+    // The xslt free has freed the internal implementation doc as well.
+    // Mark it as null to prevent double free.
+    xmqSetImplementationDoc(command->xslt_doq, NULL);
+    xmqFreeDoc(command->xslt_doq);
     command->xslt = NULL;
 
     return true;
