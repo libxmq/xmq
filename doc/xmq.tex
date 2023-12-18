@@ -26,7 +26,8 @@
 \newcommand{\xmqAttrKey}[1]{{\color{Grey}#1}}
 \newcommand{\xmqAttrVal}[1]{{\color{Green}#1}}
 \newcommand{\xmqEq}[0]{{\color{DarkSlateBlue}=}}
-\newcommand{\xmqQ}[0]{{\color{Purple}'}}
+\newcommand{\xmqQ}[0]{{\color{Green}'}}
+\newcommand{\xmqQuote}[1]{{\color{Green}#1}}
 \newcommand{\xmqLB}[0]{{\color{DarkSlateBlue}\{}}
 \newcommand{\xmqRB}[0]{{\color{DarkSlateBlue}\}}}
 \newcommand{\xmqLP}[0]{{\color{Purple}(}}
@@ -77,17 +78,17 @@
 
 \shifttext{-20mm}{\raisebox{-10cm}{\smash{\rotatebox{90}{\rule{50mm}{0.5pt}\ \texttt{LEXER}\ \rule{40mm}{.5pt}}}}}
 \hbox{
-  \raisebox{-4pt}{\hspace{-1em}\texttt{WS:}}
+  \raisebox{-4pt}{\hspace{-1.3em}\texttt{WS:}}
   \begin{minipage}{5cm}
     \begin{rail}
       '0xa 0xd 0x20'
     \end{rail}
   \end{minipage}
   \ \ \
-  \raisebox{-4pt}{\hspace{-1em}\texttt{UWS:}}
+  \raisebox{-4pt}{\hspace{-1em}\texttt{all-spaces:}}
   \begin{minipage}{5cm}
     \begin{rail}
-      'any unicode whitespace'
+      '0x9 and unicode WS Zs'
     \end{rail}
   \end{minipage}
 }
@@ -120,7 +121,7 @@
 \raisebox{-4pt}{\texttt{TEXT:}}
 \begin{minipage}{15cm}
 \begin{rail}
-"UTF8 excluding UWS and ' '\!\!' ( ) \{ \} must not start with = \& // /*"
+"UTF8 excluding all-spaces and ' '\!\!' ( ) \{ \} must not start with = \& // /*"
 \end{rail}
 \end{minipage}
 
@@ -182,28 +183,33 @@
 
 \shifttext{-20mm}{\raisebox{-10cm}{\smash{\rotatebox{90}{\rule{42mm}{0.5pt}\ \texttt{RULES}\ \rule{42mm}{.5pt}}}}}
 
-\verb|TEXT:namekey TEXT:key and TEXT:entity| \\
-\verb|r1. must start with a letter or underscore| \\
-\verb|r2. cannot start with the letters xml (or XML, or Xml, etc)| \\
-\verb|r3. can contain letters, digits, hyphens, underscores, periods and a single colon.|
+\verb|    TEXT:namekey TEXT:key and TEXT:entity| \\
+\verb|r1. Must start with a letter or underscore.| \\
+\verb|r2. Cannot start with the letters xml (or XML, or Xml, etc).| \\
+\verb|r3. Can contain letters, digits, hyphens, underscores and periods.| \\
+\verb|r4. Can contain a single colon separating the TEXT into two parts, each following r1,r2,r3.|
 
-\verb|TEXT:namekey is either a name or a key.| \\
-\verb|r4. it is a key if '=' follows immediately (ie no attributes), otherwise it is a name.|
+\vspace{-1mm}
+\verb|    Two permitted exceptions to TEXT:namekey rule r1 and r3.| \\
+\verb|r5. A single !DOCTYPE before the first element and ?pi elements.|
 
-\verb|Two permitted exceptions to TEXT:namekey rule r1 and r3.| \\
-\verb|r5. ?pi-nodes and !DOCTYPE|
+\vspace{-1mm}
+\verb|    If quoted content contains at least one newline then:|\\
+\verb|r6. All leading and ending spaces 0x20 and newlines 0xa are removed.| \\
+\verb|r7. All spaces before a newline are removed.| \\
+\verb|r8. Incidental indentation (some spaces 0x20 after a newline) is removed.|\\
+\verb|r9. The indent to be removed is the minimum source code indentation|\\
+\verb|    for text within the block where empty lines are ignored.|\\
+\verb|r10. The first line is prefixed with spaces if the following lines|\\
+\verb|     have lesser source code indentation.|
 
-\verb|If quoted content contains at least one newline then:|\\
-\verb|r6. All leading and ending spaces/tabs/newlines are removed.| \\
-\verb|r7. Spaces/tabs before a newline are removed.| \\
-\verb|r8. Incidental indentation is removed.|\\
-\verb|r9. The indent to be removed is the minimum source code indentation for text within|\\
-\verb|    the block where empty lines are ignored.|\\
-\verb|r10. The first line is prefixed with spaces if the following lines have lesser|\\
-\verb|     source code indentation.|\\
-\verb||\\
+\vspace{-1mm}
+\verb|     TEXT:namekey is (only for syntax highlighting) either a name or a key.| \\
+\verb|r11. it is a key if '=' follows immediately (ie no attributes), otherwise it is a name.|
+
+\vspace{-1mm}
 \verb|A quote with only spaces and at least one newline is equivalent to the empty string.|
-\texttt{The expression \xmqKey{age}\xmqEq 123    is shorthand for   \xmqName{age}\xmqLB\xmqQ 123\xmqQ\xmqRB}\\
+\texttt{The element \xmqKey{age}\xmqEq\xmqQuote{123}    is shorthand for   \xmqName{age}\xmqLB\xmqQuote{'123'}\xmqRB}\\
 \texttt{Use \xmqLP ...\xmqRP\ for attributes with newlines and explicit leading/ending spaces.} \\
 \texttt{Inside a comment \xmqCom{*/*} means a newline, used for compact xmq without newlines.}\\
 \texttt{The tab 0x9 is not in WS since its variable size would confuse incindental indentation.}\\

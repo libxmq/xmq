@@ -1,0 +1,17 @@
+INPUT
+alfa {
+    // foo-␐-␐-bar
+}
+FIRST
+<?xml version="1.0" encoding="utf8"?>
+<alfa><!--foo-␐␐-␐␐-bar--></alfa>
+
+SECOND
+alfa {
+    // foo-␐-␐-bar
+}
+END
+ARGS_FIRST
+CMDS_FIRST to_xml
+ARGS_SECOND
+CMDS_SECOND to_xmq

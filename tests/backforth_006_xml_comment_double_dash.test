@@ -1,0 +1,25 @@
+INPUT
+alfa {
+    // foo---bar
+    // ><
+    // <![CDATA[xxx]]>
+    body {
+        'welcome'
+    }
+}
+FIRST
+<?xml version="1.0" encoding="utf8"?>
+<alfa><!--foo-␐-␐-bar--><!--><--><!--<![CDATA[xxx]]>--><body>welcome</body></alfa>
+
+SECOND
+alfa {
+    // foo---bar
+    // ><
+    // <![CDATA[xxx]]>
+    body = welcome
+}
+END
+ARGS_FIRST
+CMDS_FIRST to_xml
+ARGS_SECOND
+CMDS_SECOND to_xmq

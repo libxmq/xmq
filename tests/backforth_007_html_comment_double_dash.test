@@ -1,0 +1,25 @@
+INPUT
+!DOCTYPE = html
+html {
+    // foo---bar
+    // ><
+    // <![CDATA[xxx]]>
+    body {
+        'welcome'
+    }
+}
+FIRST
+<!DOCTYPE html><html><!--foo-␐-␐-bar--><!--><--><!--<![CDATA[xxx]]>--><body>welcome</body></html>
+SECOND
+!DOCTYPE = html
+html {
+    // foo---bar
+    // ><
+    // <![CDATA[xxx]]>
+    body = welcome
+}
+END
+ARGS_FIRST
+CMDS_FIRST to_html
+ARGS_SECOND
+CMDS_SECOND to_xmq

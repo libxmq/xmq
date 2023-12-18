@@ -1,4 +1,3 @@
-
 /* libxmq - Copyright (C) 2023 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -583,7 +582,10 @@ bool peek_xmq_next_is_equal(XMQParseState *state);
 size_t count_xmq_quotes(const char *i, const char *stop);
 size_t eat_xmq_quote(XMQParseState *state, const char **content_start, const char **content_stop);
 char *xmq_trim_quote(size_t indent, char space, const char *start, const char *stop);
+char *escape_xml_comment(const char *comment);
+char *unescape_xml_comment(const char *comment);
 void xmq_fixup_html_before_writeout(XMQDoc *doq);
+void xmq_fixup_comments_after_readin(XMQDoc *doq);
 
 char *xmq_comment(int indent,
                  const char *start,
@@ -866,6 +868,7 @@ bool find_line(const char *start, const char *stop, size_t *indent, const char *
 const char *find_next_line_end(XMQPrintState *ps, const char *start, const char *stop);
 const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop);
 void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared);
+void fixup_comments(XMQDoc *doq, xmlNode *node);
 bool has_leading_ending_quote(const char *start, const char *stop);
 bool is_safe_char(const char *i, const char *stop);
 size_t line_length(const char *start, const char *stop, int *numq, int *lq, int *eq);
@@ -4645,6 +4648,8 @@ void print_node(XMQPrintState *ps, xmlNode *node, size_t align)
 
 void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings)
 {
+    xmq_fixup_html_before_writeout(doq);
+
     xmlChar *buffer;
     int size;
     xmlDocDumpMemoryEnc(doq->docptr_.xml,
@@ -4817,43 +4822,112 @@ void xmqTrimWhitespace(XMQDoc *doq, XMQTrimType tt)
     }
 }
 
-/*
-const char *escape_comments(const char *comment)
+char *escape_xml_comment(const char *comment)
 {
-    size_t len = 0;
-    bool needs_escape = false;
-    for (const char *i = comment; *i; ++i)
+    // The escape char is ␐ which is utf8 0xe2 0x90 0x90
+    size_t escapes = 0;
+    const char *i = comment;
+    for (; *i; ++i)
     {
-        if (*i == '-' && *(i+1) == '-')
+        if (*i == '-' && ( *(i+1) == '-' ||
+                           (*(const unsigned char*)(i+1) == 0xe2 &&
+                            *(const unsigned char*)(i+2) == 0x90 &&
+                            *(const unsigned char*)(i+3) == 0x90)))
         {
-            needs_escape = true;
-            break;
+            escapes++;
         }
-
     }
 
-    if (!needs_escape) return NULL;
+    // If no escapes are needed, return NULL.
+    if (!escapes) return NULL;
 
-    char *tmp = (char*)malloc(
-    return
+    size_t len = i-comment;
+    size_t new_len = len+escapes*3+1;
+    char *tmp = (char*)malloc(new_len);
+
+    i = comment;
+    char *j = tmp;
+    for (; *i; ++i)
+    {
+        *j++ = *i;
+        if (*i == '-' && ( *(i+1) == '-' ||
+                           (*(const unsigned char*)(i+1) == 0xe2 &&
+                            *(const unsigned char*)(i+2) == 0x90 &&
+                            *(const unsigned char*)(i+3) == 0x90)))
+        {
+            *j++ = 0xe2;
+            *j++ = 0x90;
+            *j++ = 0x90;
+        }
+    }
+    *j = 0;
+
+    assert( j-tmp+1 == new_len);
+    return tmp;
 }
-*/
+
+char *unescape_xml_comment(const char *comment)
+{
+    // The escape char is ␐ which is utf8 0xe2 0x90 0x90
+    size_t escapes = 0;
+    const char *i = comment;
+
+    for (; *i; ++i)
+    {
+        if (*i == '-' && (*(const unsigned char*)(i+1) == 0xe2 &&
+                          *(const unsigned char*)(i+2) == 0x90 &&
+                          *(const unsigned char*)(i+3) == 0x90))
+        {
+            escapes++;
+        }
+    }
+
+    // If no escapes need to be removed, then return NULL.
+    if (!escapes) return NULL;
+
+    size_t len = i-comment;
+    char *tmp = (char*)malloc(len+1);
+
+    i = comment;
+    char *j = tmp;
+    for (; *i; ++i)
+    {
+        *j++ = *i;
+        if (*i == '-' && (*(const unsigned char*)(i+1) == 0xe2 &&
+                          *(const unsigned char*)(i+2) == 0x90 &&
+                          *(const unsigned char*)(i+3) == 0x90))
+        {
+            // Skip the dle quote character.
+            i += 3;
+        }
+    }
+    *j++ = 0;
+
+    size_t new_len = j-tmp;
+    tmp = realloc(tmp, new_len);
+
+    return tmp;
+}
+
 void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared)
 {
-    /*
     if (node->type == XML_COMMENT_NODE)
     {
-        // When writing an xml comment we must replace -- with -␐-.
+        // When writing an xml comment we must replace --- with -␐-␐-.
         // An already existing -␐- is replaced with -␐␐- etc.
-        // A leading > (eg //>) is escaped <!--␐>-->
-        // A <![CDATA[ ]]> is escaped as <␐![CDATA[ ]]␐>
-        const char *buf = escape_xml_comments(node->content)
-        xmlNodePtr new_node = xmlNewText(new_content);
-        xmlReplaceNode(node, new_node);
-        fix_xml_comment(node);
+        char *new_content = escape_xml_comment((const char*)node->content);
+        if (new_content)
+        {
+            // Oups, the content contains -- which must be quoted as -␐-␐
+            // Likewise, if the content contains -␐-␐ it will be quoted as -␐␐-␐␐
+            xmlNodePtr new_node = xmlNewComment((const xmlChar*)new_content);
+            xmlReplaceNode(node, new_node);
+            xmlFreeNode(node);
+            free(new_content);
+        }
+        return;
     }
-    */
-    if (node->type == XML_CDATA_SECTION_NODE)
+    else if (node->type == XML_CDATA_SECTION_NODE)
     {
         // When the html is loaded by the libxml2 parser it creates a cdata
         // node instead of a text node for the style content.
@@ -4863,8 +4937,7 @@ void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared)
         // Workaround until I understand the proper fix, just make it a text node.
         node->type = XML_TEXT_NODE;
     }
-
-    if (is_entity_node(node) && inside_cdata_declared)
+    else if (is_entity_node(node) && inside_cdata_declared)
     {
         const char *new_content = (const char*)node->content;
         char buf[2];
@@ -4915,6 +4988,47 @@ void xmq_fixup_html_before_writeout(XMQDoc *doq)
     while (i)
     {
         fixup_html(doq, i, false);
+        i = xml_next_sibling(i);
+    }
+}
+
+void fixup_comments(XMQDoc *doq, xmlNode *node)
+{
+    if (node->type == XML_COMMENT_NODE)
+    {
+        // An xml comment containing dle quotes for example: -␐-␐- is replaceed with ---.
+        // If multiple dle quotes exists, then for example: -␐␐- is replaced with -␐-.
+        char *new_content = unescape_xml_comment((const char*)node->content);
+        if (new_content)
+        {
+            // Oups, the content contains -- which must be quoted as -␐-␐
+            // Likewise, if the content contains -␐-␐ it will be quoted as -␐␐-␐␐
+            xmlNodePtr new_node = xmlNewComment((const xmlChar*)new_content);
+            xmlReplaceNode(node, new_node);
+            xmlFreeNode(node);
+            free(new_content);
+        }
+        return;
+    }
+
+    xmlNode *i = xml_first_child(node);
+    while (i)
+    {
+        xmlNode *next = xml_next_sibling(i); // i might be freed in trim.
+
+        fixup_comments(doq, i);
+        i = next;
+    }
+}
+
+void xmq_fixup_comments_after_readin(XMQDoc *doq)
+{
+    xmlNodePtr i = doq->docptr_.xml->children;
+    if (!doq || !i) return;
+
+    while (i)
+    {
+        fixup_comments(doq, i);
         i = xml_next_sibling(i);
     }
 }
@@ -5935,6 +6049,8 @@ bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, XMQT
     doq->docptr_.xml = doc;
     xmlCleanupParser();
 
+    xmq_fixup_comments_after_readin(doq);
+
     return true;
 }
 
@@ -5973,6 +6089,8 @@ bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, XMQ
     }
     doq->docptr_.html = doc;
     xmlCleanupParser();
+
+    xmq_fixup_comments_after_readin(doq);
 
     return true;
 }
