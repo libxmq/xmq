@@ -4211,8 +4211,9 @@ void xmq_fixup_html_before_writeout(XMQDoc *doq)
 
     while (i)
     {
+        xmlNode *next = xml_next_sibling(i); // i might be freed in fixup_html.
         fixup_html(doq, i, false);
-        i = xml_next_sibling(i);
+        i = next;
     }
 }
 
@@ -4239,7 +4240,6 @@ void fixup_comments(XMQDoc *doq, xmlNode *node)
     while (i)
     {
         xmlNode *next = xml_next_sibling(i); // i might be freed in trim.
-
         fixup_comments(doq, i);
         i = next;
     }
@@ -4252,8 +4252,9 @@ void xmq_fixup_comments_after_readin(XMQDoc *doq)
 
     while (i)
     {
+        xmlNode *next = xml_next_sibling(i); // i might be freed in fixup_comments.
         fixup_comments(doq, i);
-        i = xml_next_sibling(i);
+        i = next;
     }
 }
 
