@@ -1,0 +1,37 @@
+INPUT
+/* Some xml:
+   <foo><!--Information-->
+   <![CDATA[albert <bar>-----</bar> ]]>
+   Some xmq:
+   foo {
+       // Information
+       CDATA = '<![CDATA[albert]]>'
+   }
+*/
+alfa
+FIRST
+<?xml version="1.0" encoding="utf8"?>
+<!-- Some xml:
+<foo><!-␐-Information-␐->
+<![CDATA[albert <bar>-␐-␐-␐-␐-</bar> ]]>
+Some xmq:
+foo {
+    // Information
+    CDATA = '<![CDATA[albert]]>'
+}-->
+<alfa/>
+
+SECOND
+/* Some xml:
+   <foo><!--Information-->
+   <![CDATA[albert <bar>-----</bar> ]]>
+   Some xmq:
+   foo {
+       // Information
+       CDATA = '<![CDATA[albert]]>'
+   } */
+alfa
+END
+CMDS_FIRST to_xml
+ARGS_SECOND
+CMDS_SECOND to_xmq
