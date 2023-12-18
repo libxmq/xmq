@@ -348,7 +348,8 @@ size_t count_whitespace(const char *i, const char *stop);
 
 // XMQ parser utility functions //////////////////////////////////
 
-bool is_xml_whitespace(char c);
+bool is_xml_whitespace(char c); // 0x9 0xa 0xd 0x20
+bool is_xmq_token_whitespace(char c); // 0xa 0xd 0x20
 bool is_xmq_attribute_key_start(char c);
 bool is_xmq_comment_start(char c, char cc);
 bool is_xmq_compound_start(char c);
@@ -393,7 +394,8 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, b
 
 // XMQ tokenizer functions ///////////////////////////////////////////////////////////
 
-void eat_whitespace(XMQParseState *state, const char **start, const char **stop);
+void eat_xml_whitespace(XMQParseState *state, const char **start, const char **stop);
+void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop);
 void eat_xmq_entity(XMQParseState *state, const char **content_start, const char **content_stop);
 void eat_xmq_comment_to_eol(XMQParseState *state, const char **content_start, const char **content_stop);
 void eat_xmq_comment_to_close(XMQParseState *state, const char **content_start, const char **content_stop, size_t n, bool *found_asterisk);

@@ -1,0 +1,8 @@
+# Note that there is tab 0x9 character
+START
+alfa { tab	tab }
+ERROR
+.../error_012_unexpected_tab.input:1:11: error: unexpected tab character (remember tabs must be quoted)
+alfa { tab	tab }
+          ^
+END

@@ -526,7 +526,8 @@ size_t count_whitespace(const char *i, const char *stop);
 
 // XMQ parser utility functions //////////////////////////////////
 
-bool is_xml_whitespace(char c);
+bool is_xml_whitespace(char c); // 0x9 0xa 0xd 0x20
+bool is_xmq_token_whitespace(char c); // 0xa 0xd 0x20
 bool is_xmq_attribute_key_start(char c);
 bool is_xmq_comment_start(char c, char cc);
 bool is_xmq_compound_start(char c);
@@ -571,7 +572,8 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, b
 
 // XMQ tokenizer functions ///////////////////////////////////////////////////////////
 
-void eat_whitespace(XMQParseState *state, const char **start, const char **stop);
+void eat_xml_whitespace(XMQParseState *state, const char **start, const char **stop);
+void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop);
 void eat_xmq_entity(XMQParseState *state, const char **content_start, const char **content_stop);
 void eat_xmq_comment_to_eol(XMQParseState *state, const char **content_start, const char **content_stop);
 void eat_xmq_comment_to_close(XMQParseState *state, const char **content_start, const char **content_stop, size_t n, bool *found_asterisk);
@@ -1216,6 +1218,21 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, b
     c->ns_colon.pre = NULL;
 }
 
+void xmqOverrideSettings(XMQOutputSettings *settings,
+                         const char *indentation_space,
+                         const char *explicit_space,
+                         const char *explicit_tab,
+                         const char *explicit_cr,
+                         const char *explicit_nl)
+{
+    if (indentation_space) settings->indentation_space = indentation_space;
+    if (explicit_space) settings->explicit_space = explicit_space;
+    if (explicit_tab) settings->explicit_tab = explicit_tab;
+    if (explicit_cr) settings->explicit_cr = explicit_cr;
+    if (explicit_nl) settings->explicit_nl = explicit_nl;
+}
+
+
 void xmqOverrideColorType(XMQOutputSettings *settings, XMQColorType ct, const char *pre, const char *post, const char *namespace)
 {
     switch (ct)
@@ -1232,6 +1249,7 @@ void xmqOverrideColorType(XMQOutputSettings *settings, XMQColorType ct, const ch
     case COLORTYPE_xmq_akv:
     case COLORTYPE_xmq_cp:
     case COLORTYPE_xmq_uw:
+        return;
     }
 }
 
@@ -1280,6 +1298,7 @@ void xmqOverrideColor(XMQOutputSettings *os, XMQColor c, const char *pre, const 
     case COLOR_attr_value_entity:
     case COLOR_attr_value_compound_quote:
     case COLOR_attr_value_compound_entity:
+        return;
     }
 }
 
@@ -1654,6 +1673,15 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
     }
 
     return XMQ_CONTENT_XMQ;
+}
+
+bool is_xmq_token_whitespace(char c)
+{
+    if (c == ' ' || c == '\n' || c == '\r')
+    {
+        return true;
+    }
+    return false;
 }
 
 bool is_xml_whitespace(char c)
@@ -2543,7 +2571,7 @@ void parse_xmq(XMQParseState *state)
         char cc = 0;
         if ((c == '/' || c == '(') && state->i+1 < end) cc = *(state->i+1);
 
-        if (is_xml_whitespace(c)) parse_xmq_whitespace(state);
+        if (is_xmq_token_whitespace(c)) parse_xmq_whitespace(state);
         else if (is_xmq_quote_start(c)) parse_xmq_quote(state, LEVEL_XMQ);
         else if (is_xmq_entity_start(c)) parse_xmq_entity(state, LEVEL_XMQ);
         else if (is_xmq_comment_start(c, cc)) parse_xmq_comment(state, cc);
@@ -2558,7 +2586,14 @@ void parse_xmq(XMQParseState *state)
                 longjmp(state->error_handler, 1);
             }
 
-            state->error_nr = XMQ_ERROR_INVALID_CHAR;
+            if (c == '\t')
+            {
+                state->error_nr = XMQ_ERROR_UNEXPECTED_TAB;
+            }
+            else
+            {
+                state->error_nr = XMQ_ERROR_INVALID_CHAR;
+            }
             longjmp(state->error_handler, 1);
         }
     }
@@ -2570,7 +2605,7 @@ void parse_xmq_whitespace(XMQParseState *state)
     size_t start_col = state->col;
     const char *start;
     const char *stop;
-    eat_whitespace(state, &start, &stop);
+    eat_xmq_token_whitespace(state, &start, &stop);
     DO_CALLBACK(whitespace, state, start_line, start_col, start, start_col, start, stop, stop);
 }
 
@@ -7172,7 +7207,7 @@ void parse_json_array(XMQParseState *state, const char *key_start, const char *k
 
     while (state->i < stop && c == ',')
     {
-        eat_whitespace(state, NULL, NULL);
+        eat_xml_whitespace(state, NULL, NULL);
         c = *(state->i);
         if (c == ']') break;
 
@@ -7189,7 +7224,7 @@ void parse_json_array(XMQParseState *state, const char *key_start, const char *k
 
 void parse_json(XMQParseState *state, const char *key_start, const char *key_stop)
 {
-    eat_whitespace(state, NULL, NULL);
+    eat_xml_whitespace(state, NULL, NULL);
 
     char c = *(state->i);
 
@@ -7204,7 +7239,7 @@ void parse_json(XMQParseState *state, const char *key_start, const char *key_sto
         state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
         longjmp(state->error_handler, 1);
     }
-    eat_whitespace(state, NULL, NULL);
+    eat_xml_whitespace(state, NULL, NULL);
 }
 
 typedef struct
@@ -7319,7 +7354,7 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
 
     while (state->i < stop && c == ',')
     {
-        eat_whitespace(state, NULL, NULL);
+        eat_xml_whitespace(state, NULL, NULL);
         c = *(state->i);
         if (c == '}') break;
 
@@ -7333,7 +7368,7 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
         const char *key_start, *key_stop;
         eat_json_quote(state, &key_start, &key_stop);
 
-        eat_whitespace(state, NULL, NULL);
+        eat_xml_whitespace(state, NULL, NULL);
         c = *(state->i);
 
         if (c == ':')
@@ -8530,7 +8565,7 @@ size_t count_whitespace(const char *i, const char *stop)
     return 0;
 }
 
-void eat_whitespace(XMQParseState *state, const char **start, const char **stop)
+void eat_xml_whitespace(XMQParseState *state, const char **start, const char **stop)
 {
     const char *i = state->i;
     const char *buffer_stop = state->buffer_stop;
@@ -8545,6 +8580,33 @@ void eat_whitespace(XMQParseState *state, const char **start, const char **stop)
     {
         size_t nw = count_whitespace(i, buffer_stop);
         if (!nw) break;
+        // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
+        increment(*i, nw, &i, &line, &col);
+    }
+
+    if (stop) *stop = i;
+    state->i = i;
+    state->line = line;
+    state->col = col;
+}
+
+void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop)
+{
+    const char *i = state->i;
+    const char *buffer_stop = state->buffer_stop;
+    size_t line = state->line;
+    size_t col = state->col;
+    if (start) *start = i;
+
+    size_t nw = count_whitespace(i, buffer_stop);
+    if (!nw) return;
+
+    while (i < buffer_stop)
+    {
+        size_t nw = count_whitespace(i, buffer_stop);
+        if (!nw) break;
+        // Tabs are not permitted as xmq token whitespace.
+        if (nw == 1 && *i == '\t') break;
         // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
         increment(*i, nw, &i, &line, &col);
     }
@@ -8695,6 +8757,7 @@ const char *xmqParseErrorToString(XMQParseError e)
     case XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES: return "quote closed with too many quotes";
     case XMQ_ERROR_UNEXPECTED_CLOSING_BRACE: return "unexpected closing brace";
     case XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS: return "expected content after equals";
+    case XMQ_ERROR_UNEXPECTED_TAB: return "unexpected tab character (remember tabs must be quoted)";
     case XMQ_ERROR_INVALID_CHAR: return "unexpected character";
     case XMQ_ERROR_BAD_DOCTYPE: return "doctype could not be parsed";
     case XMQ_ERROR_CANNOT_HANDLE_XML: return "cannot handle xml use libxmq-all for this!";

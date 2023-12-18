@@ -166,7 +166,7 @@ size_t count_whitespace(const char *i, const char *stop)
     return 0;
 }
 
-void eat_whitespace(XMQParseState *state, const char **start, const char **stop)
+void eat_xml_whitespace(XMQParseState *state, const char **start, const char **stop)
 {
     const char *i = state->i;
     const char *buffer_stop = state->buffer_stop;
@@ -181,6 +181,33 @@ void eat_whitespace(XMQParseState *state, const char **start, const char **stop)
     {
         size_t nw = count_whitespace(i, buffer_stop);
         if (!nw) break;
+        // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
+        increment(*i, nw, &i, &line, &col);
+    }
+
+    if (stop) *stop = i;
+    state->i = i;
+    state->line = line;
+    state->col = col;
+}
+
+void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop)
+{
+    const char *i = state->i;
+    const char *buffer_stop = state->buffer_stop;
+    size_t line = state->line;
+    size_t col = state->col;
+    if (start) *start = i;
+
+    size_t nw = count_whitespace(i, buffer_stop);
+    if (!nw) return;
+
+    while (i < buffer_stop)
+    {
+        size_t nw = count_whitespace(i, buffer_stop);
+        if (!nw) break;
+        // Tabs are not permitted as xmq token whitespace.
+        if (nw == 1 && *i == '\t') break;
         // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
         increment(*i, nw, &i, &line, &col);
     }
@@ -331,6 +358,7 @@ const char *xmqParseErrorToString(XMQParseError e)
     case XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES: return "quote closed with too many quotes";
     case XMQ_ERROR_UNEXPECTED_CLOSING_BRACE: return "unexpected closing brace";
     case XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS: return "expected content after equals";
+    case XMQ_ERROR_UNEXPECTED_TAB: return "unexpected tab character (remember tabs must be quoted)";
     case XMQ_ERROR_INVALID_CHAR: return "unexpected character";
     case XMQ_ERROR_BAD_DOCTYPE: return "doctype could not be parsed";
     case XMQ_ERROR_CANNOT_HANDLE_XML: return "cannot handle xml use libxmq-all for this!";

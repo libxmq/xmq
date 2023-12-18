@@ -445,6 +445,21 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, b
     c->ns_colon.pre = NULL;
 }
 
+void xmqOverrideSettings(XMQOutputSettings *settings,
+                         const char *indentation_space,
+                         const char *explicit_space,
+                         const char *explicit_tab,
+                         const char *explicit_cr,
+                         const char *explicit_nl)
+{
+    if (indentation_space) settings->indentation_space = indentation_space;
+    if (explicit_space) settings->explicit_space = explicit_space;
+    if (explicit_tab) settings->explicit_tab = explicit_tab;
+    if (explicit_cr) settings->explicit_cr = explicit_cr;
+    if (explicit_nl) settings->explicit_nl = explicit_nl;
+}
+
+
 void xmqOverrideColorType(XMQOutputSettings *settings, XMQColorType ct, const char *pre, const char *post, const char *namespace)
 {
     switch (ct)
@@ -461,6 +476,7 @@ void xmqOverrideColorType(XMQOutputSettings *settings, XMQColorType ct, const ch
     case COLORTYPE_xmq_akv:
     case COLORTYPE_xmq_cp:
     case COLORTYPE_xmq_uw:
+        return;
     }
 }
 
@@ -509,6 +525,7 @@ void xmqOverrideColor(XMQOutputSettings *os, XMQColor c, const char *pre, const 
     case COLOR_attr_value_entity:
     case COLOR_attr_value_compound_quote:
     case COLOR_attr_value_compound_entity:
+        return;
     }
 }
 
@@ -883,6 +900,15 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
     }
 
     return XMQ_CONTENT_XMQ;
+}
+
+bool is_xmq_token_whitespace(char c)
+{
+    if (c == ' ' || c == '\n' || c == '\r')
+    {
+        return true;
+    }
+    return false;
 }
 
 bool is_xml_whitespace(char c)
@@ -1772,7 +1798,7 @@ void parse_xmq(XMQParseState *state)
         char cc = 0;
         if ((c == '/' || c == '(') && state->i+1 < end) cc = *(state->i+1);
 
-        if (is_xml_whitespace(c)) parse_xmq_whitespace(state);
+        if (is_xmq_token_whitespace(c)) parse_xmq_whitespace(state);
         else if (is_xmq_quote_start(c)) parse_xmq_quote(state, LEVEL_XMQ);
         else if (is_xmq_entity_start(c)) parse_xmq_entity(state, LEVEL_XMQ);
         else if (is_xmq_comment_start(c, cc)) parse_xmq_comment(state, cc);
@@ -1787,7 +1813,14 @@ void parse_xmq(XMQParseState *state)
                 longjmp(state->error_handler, 1);
             }
 
-            state->error_nr = XMQ_ERROR_INVALID_CHAR;
+            if (c == '\t')
+            {
+                state->error_nr = XMQ_ERROR_UNEXPECTED_TAB;
+            }
+            else
+            {
+                state->error_nr = XMQ_ERROR_INVALID_CHAR;
+            }
             longjmp(state->error_handler, 1);
         }
     }
@@ -1799,7 +1832,7 @@ void parse_xmq_whitespace(XMQParseState *state)
     size_t start_col = state->col;
     const char *start;
     const char *stop;
-    eat_whitespace(state, &start, &stop);
+    eat_xmq_token_whitespace(state, &start, &stop);
     DO_CALLBACK(whitespace, state, start_line, start_col, start, start_col, start, stop, stop);
 }
 

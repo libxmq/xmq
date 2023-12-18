@@ -309,6 +309,7 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop);
     @XMQ_ERROR_CONTENT_MAY_NOT_CONTAIN: compound content may only contains quotes and entities.
     @XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES: too many closing single quotes.
     @XMQ_ERROR_UNEXPECTED_CLOSING_BRACE: an unexpected closing brace.
+    @XMQ_ERROR_UNEXPECTED_TAB: tabs are not permitted as token separators.
     @XMQ_ERROR_INVALID_CHAR: an invalid character found.
     @XMQ_ERROR_BAD_DOCTYPE: the doctype could not be parsed.
     @XMQ_ERROR_JSON_INVALID_ESCAPE: an invalid json escape sequence.
@@ -339,18 +340,19 @@ typedef enum
     XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES = 11,
     XMQ_ERROR_UNEXPECTED_CLOSING_BRACE = 12,
     XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS = 13,
-    XMQ_ERROR_INVALID_CHAR = 14,
-    XMQ_ERROR_BAD_DOCTYPE = 15,
-    XMQ_ERROR_JSON_INVALID_ESCAPE = 16,
-    XMQ_ERROR_JSON_INVALID_CHAR = 17,
-    XMQ_ERROR_CANNOT_HANDLE_XML = 18,
-    XMQ_ERROR_CANNOT_HANDLE_HTML = 19,
-    XMQ_ERROR_CANNOT_HANDLE_JSON = 20,
-    XMQ_ERROR_EXPECTED_XMQ = 21,
-    XMQ_ERROR_EXPECTED_HTMQ = 22,
-    XMQ_ERROR_EXPECTED_XML = 23,
-    XMQ_ERROR_EXPECTED_HTML = 24,
-    XMQ_ERROR_EXPECTED_JSON = 25
+    XMQ_ERROR_UNEXPECTED_TAB = 14,
+    XMQ_ERROR_INVALID_CHAR = 15,
+    XMQ_ERROR_BAD_DOCTYPE = 16,
+    XMQ_ERROR_JSON_INVALID_ESCAPE = 17,
+    XMQ_ERROR_JSON_INVALID_CHAR = 18,
+    XMQ_ERROR_CANNOT_HANDLE_XML = 19,
+    XMQ_ERROR_CANNOT_HANDLE_HTML = 20,
+    XMQ_ERROR_CANNOT_HANDLE_JSON = 21,
+    XMQ_ERROR_EXPECTED_XMQ = 22,
+    XMQ_ERROR_EXPECTED_HTMQ = 23,
+    XMQ_ERROR_EXPECTED_XML = 24,
+    XMQ_ERROR_EXPECTED_HTML = 25,
+    XMQ_ERROR_EXPECTED_JSON = 26
 } XMQParseError;
 
 
@@ -692,18 +694,44 @@ bool xmqParseFileWithType(XMQDoc *doc,
 void xmqSetupDefaultColors(XMQOutputSettings *settings, bool dark_mode);
 
 /**
+   xmqOverrideSetting: Change the default strings for spaces etc.
+   @settings: The output settings to modify.
+   @indentation_space: If NULL use " ".
+   @explicit_space: If NULL use " ".
+   @explicit_tab: If NULL use "\t"
+   @explicit_cr: If NULL use "\r".
+   @explicit_nl: If NULL use "\n".
+   @prefix_line: If NULL do not print any prefix.
+   @postfix_line: If NULL do not print any postfix.
+*/
+void xmqOverrideSettings(XMQOutputSettings *settings,
+                         const char *indentation_space,
+                         const char *explicit_space,
+                         const char *explicit_tab,
+                         const char *explicit_cr,
+                         const char *explicit_nl);
+
+/**
    xmqOverrideColorType:
 
    Change the color strings for the given color type. You have to run xmqSetupDefaultColors first.
 */
-void xmqOverrideColorType(XMQOutputSettings *settings, XMQColorType ct, const char *pre, const char *post, const char *namespace);
+void xmqOverrideColorType(XMQOutputSettings *settings,
+                          XMQColorType ct,
+                          const char *pre,
+                          const char *post,
+                          const char *namespace);
 
 /**
    xmqOverrideColor:
 
    Change the color strings for the given color. You have to run xmqSetupDefaultColors first.
 */
-void xmqOverrideColor(XMQOutputSettings *settings, XMQColor c, const char *pre, const char *post, const char *namespace);
+void xmqOverrideColor(XMQOutputSettings *settings,
+                      XMQColor c,
+                      const char *pre,
+                      const char *post,
+                      const char *namespace);
 
 #ifdef __cplusplus
 _hideRBfromEditor

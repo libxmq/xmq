@@ -126,6 +126,15 @@ struct XMQCliCommand
     XMQTrimType trim;
     bool use_color; // Uses color or not for terminal/html/tex
     bool dark_mode; // If false assume background is light.
+
+    // Overrides of output settings.
+    const char *indentation_space;
+    const char *explicit_space;
+    const char *explicit_tab;
+    const char *explicit_cr;
+    const char *explicit_nl;
+    bool has_overrides;
+
     bool print_help;
     bool print_version;
     bool debug;
@@ -404,6 +413,36 @@ bool handle_option(const char *arg, XMQCliCommand *command)
         if (!strcmp(arg, "--onlystyle"))
         {
             command->only_style = true;
+            return true;
+        }
+        if (!strncmp(arg, "--use-cr=", 9))
+        {
+            command->explicit_cr = arg+9;
+            command->has_overrides = true;
+            return true;
+        }
+        if (!strncmp(arg, "--use-es=", 9))
+        {
+            command->explicit_space = arg+9;
+            command->has_overrides = true;
+            return true;
+        }
+        if (!strncmp(arg, "--use-et=", 9))
+        {
+            command->explicit_tab = arg+9;
+            command->has_overrides = true;
+            return true;
+        }
+        if (!strncmp(arg, "--use-is=", 9))
+        {
+            command->indentation_space = arg+9;
+            command->has_overrides = true;
+            return true;
+        }
+        if (!strncmp(arg, "--use-nl=", 9))
+        {
+            command->explicit_nl = arg+9;
+            command->has_overrides = true;
             return true;
         }
     }
@@ -1004,7 +1043,11 @@ int cmd_load(XMQCliCommand *command)
         command->in = NULL;
     }
 
-    bool ok = xmqParseFileWithType(command->env->doc, command->in, command->implicit_root, command->in_format, command->trim);
+    bool ok = xmqParseFileWithType(command->env->doc,
+                                   command->in,
+                                   command->implicit_root,
+                                   command->in_format,
+                                   command->trim);
     if (!ok)
     {
         int rc = xmqDocErrno(command->env->doc);
@@ -1043,7 +1086,15 @@ bool cmd_to(XMQCliCommand *command)
     xmqSetRenderRaw(settings, command->render_raw);
     xmqSetRenderOnlyStyle(settings, command->only_style);
     xmqSetupDefaultColors(settings, command->dark_mode);
-
+    if (command->has_overrides)
+    {
+        xmqOverrideSettings(settings,
+                            command->indentation_space,
+                            command->explicit_space,
+                            command->explicit_tab,
+                            command->explicit_cr,
+                            command->explicit_nl);
+    }
     /*
     verbose_("(xmq) print %s render %s\n",
              content_type_to_string(settings->output_format),

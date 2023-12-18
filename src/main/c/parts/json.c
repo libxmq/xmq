@@ -582,7 +582,7 @@ void parse_json_array(XMQParseState *state, const char *key_start, const char *k
 
     while (state->i < stop && c == ',')
     {
-        eat_whitespace(state, NULL, NULL);
+        eat_xml_whitespace(state, NULL, NULL);
         c = *(state->i);
         if (c == ']') break;
 
@@ -599,7 +599,7 @@ void parse_json_array(XMQParseState *state, const char *key_start, const char *k
 
 void parse_json(XMQParseState *state, const char *key_start, const char *key_stop)
 {
-    eat_whitespace(state, NULL, NULL);
+    eat_xml_whitespace(state, NULL, NULL);
 
     char c = *(state->i);
 
@@ -614,7 +614,7 @@ void parse_json(XMQParseState *state, const char *key_start, const char *key_sto
         state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
         longjmp(state->error_handler, 1);
     }
-    eat_whitespace(state, NULL, NULL);
+    eat_xml_whitespace(state, NULL, NULL);
 }
 
 typedef struct
@@ -729,7 +729,7 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
 
     while (state->i < stop && c == ',')
     {
-        eat_whitespace(state, NULL, NULL);
+        eat_xml_whitespace(state, NULL, NULL);
         c = *(state->i);
         if (c == '}') break;
 
@@ -743,7 +743,7 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
         const char *key_start, *key_stop;
         eat_json_quote(state, &key_start, &key_stop);
 
-        eat_whitespace(state, NULL, NULL);
+        eat_xml_whitespace(state, NULL, NULL);
         c = *(state->i);
 
         if (c == ':')

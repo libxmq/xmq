@@ -70,7 +70,7 @@
 
 \begin{document}
 
-{\color{Red}\texttt{Specification for XMQ by Fredrik Öhrström 2023-10-07 \texttt{oehrstroem@gmail.com}}}
+{\color{Red}\texttt{Specification for XMQ by Fredrik Öhrström 2023-12-18 \texttt{oehrstroem@gmail.com}}}
 
 \texttt{Input must be valid UTF8 (0x9 | 0xa | 0xd | [20-d7ff] | [e000-fffd] | [10000-10ffff]) \\
   CRLF pairs (0xd 0xa) and standalone CR (0xd) are treated as LF (0xa) when parsing.}
@@ -80,10 +80,10 @@
   \raisebox{-4pt}{\hspace{-1em}\texttt{WS:}}
   \begin{minipage}{5cm}
     \begin{rail}
-      '0x9 0xa 0xd 0x20'
+      '0xa 0xd 0x20'
     \end{rail}
   \end{minipage}
-  \ \ \ \ \
+  \ \ \
   \raisebox{-4pt}{\hspace{-1em}\texttt{UWS:}}
   \begin{minipage}{5cm}
     \begin{rail}
@@ -180,7 +180,7 @@
 
 \pagebreak
 
-\shifttext{-20mm}{\raisebox{-9.5cm}{\smash{\rotatebox{90}{\rule{40mm}{0.5pt}\ \texttt{RULES}\ \rule{40mm}{.5pt}}}}}
+\shifttext{-20mm}{\raisebox{-10cm}{\smash{\rotatebox{90}{\rule{42mm}{0.5pt}\ \texttt{RULES}\ \rule{42mm}{.5pt}}}}}
 
 \verb|TEXT:namekey TEXT:key and TEXT:entity| \\
 \verb|r1. must start with a letter or underscore| \\
@@ -206,8 +206,8 @@
 \texttt{The expression \xmqKey{age}\xmqEq 123    is shorthand for   \xmqName{age}\xmqLB\xmqQ 123\xmqQ\xmqRB}\\
 \texttt{Use \xmqLP ...\xmqRP\ for attributes with newlines and explicit leading/ending spaces.} \\
 \texttt{Inside a comment \xmqCom{*/*} means a newline, used for compact xmq without newlines.}\\
-
-\shifttext{-20mm}{\raisebox{-6.7cm}{\smash{\rotatebox{90}{\rule{25mm}{0.5pt}\ \texttt{EXAMPLES}\ \rule{25mm}{.5pt}}}}}
+\texttt{The tab 0x9 is not in WS since its variable size would confuse incindental indentation.}\\
+\shifttext{-20mm}{\raisebox{-7.2cm}{\smash{\rotatebox{90}{\rule{27mm}{0.5pt}\ \texttt{EXAMPLES}\ \rule{27mm}{.5pt}}}}}
 
 \hbox{
 \begin{minipage}{6cm}
