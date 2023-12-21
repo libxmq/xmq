@@ -5,43 +5,126 @@ html {
         title = libxmq
         link(type=text/css href=resources/style.css rel=stylesheet)
         link(type=text/css href=resources/xmq.css rel=stylesheet)
+        script(type=text/javascript src=resources/code.js) = ''
+        meta(name=viewport content='width=device-width' initial-scale=1.0)
     }
     body {
-        h1 = 'XMQ - a new format for xml/html (+json)'
-
+        h1 = 'XMQ - a new language for xml/html (+json)'
+        i {
+            'by Fredrik Öhrström (last updated '
+            &DATE;
+            ')'
+        }
+        br
+        button(onClick='goDark();') = 'Dark Mode'
+        ' '
+        button(onClick='goLight();') = 'Light Mode'
+        br
+        p = 'The xmq format is easier for a human to read and write than xml/html yet it
+             captures exactly the xml/html content. It can always be safely pretty printed
+             without introducing significant whitespace. The file-suffix htmq is used
+             when working with html in the xmq format.'
+        p {
+          'You can use the standalone '
+          i = xmq
+          ' tool to convert between xmq/xml/htmq/html/json or link/include '
+          i = libxmq
+          ' to use xmq directly from your program.'
+        }
         div {
-            a(href=https://github.com/libxmq/xmq) = Github
+            a(href=https://github.com/libxmq/xmq) = [Github]
             &nbsp;&nbsp;
-            a(href=xmq.pdf) = Grammar
+            a(href=xmq.pdf) = [Grammar]
             &nbsp;&nbsp;
-            a(href=api/index.html) = API
-            &nbsp;&nbsp;
-            'by Fredrik Öhrström ' &DATE;
+            a(href=api/index.html) = [API]
         }
-
-        h2 = 'Quick Summary'
-
-        p = 'How about a new format to represent xml/html that makes it easier to read
-             can be pretty printed without having to worry about introducing significant whitespace?'
-
-        &EXAMPLE1_XMQ;
-
-        &nbsp;
-
-        pre(class = 'xmq xmq_dark')
+        p {
+            'Let us begin by looking at a shiporder expressed in both xmq and xml.'
+            &nbsp;
+            &nbsp;
+            a(href=resources/shiporder.xmq)=shiporder.xmq
+            &nbsp;
+            &nbsp;
+            a(href=resources/shiporder.xml)=shiporder.xml
+        }
+        p {
+          'Download the xmq binary for your platform and run: '
+          span(class=code) = 'xmq shiporder.xml'
+          ' you can also try '
+          span(class=code) = 'xmq-less shiporder.xml'
+          ' Running '
+          span(class=code) = 'xmq shiporder.xmq to_xml'
+          ' will convert the xmq to xml.'
+        }
+        &SHIPORDER_XMQ;
+        ' '
+        pre(class = 'xmq xmq_light w40')
         {
-            &EXAMPLE1_XML;
+            &SHIPORDER_XML;
+            &#10;
+            &#10;
         }
-
-        p = 'The hierarchical style looks familiar to C/Java etc. Note however:'
-
+        p = 'This hierarchical style looks familiar, however note:'
         ul{
-            li = 'Safe values can be stored as plain text (eg 889923 container), no quoting needed!'
-            li = '''Unsafe values with newlines, whitespace or (){}' or leading = & // /* must be quoted.'''
-            li = 'Note that incindental indentaion is removed in the address.'
-            li = 'Comments use // and /* */.'
-            li = 'Quotes containing quotes are quoted using n+1 single quotes.'
+            li = 'Safe values after = can be stored as plain text (eg 889923 container), no quoting needed!'
+            li = '''Unsafe values with newlines, whitespace or ( ) { } ' " or leading = & // /* must be quoted.'''
+            li = 'Two single quotes always mean the empty string (eg sailing).'
+            li = 'In multiline quotes, the incindental indentation is removed (eg address).'
+            li = 'Quotes containing quotes are quoted using n+1 single quotes (eg coord).'
+            li = 'Single line comments use // and multi line comments use /* */.'
+            li = 'Comments containing comments are commented using n+1 slashes (eg ///* *///).'
+        }
+        p = 'This means that you can quote any block of text with enough single quotes and you
+             can comment any block of text with enough slashes.'
+
+        ul {
+          li = '''The expression: key=value is just a shortcut for: key { 'value' }'''
+        }
+        pre(class = 'xmq xmq_light w40')
+        {
+            &SUGAR_XMQ;
+        }
+        ' '
+        pre(class = 'xmq xmq_light w40')
+        {
+            &SUGAR_XML;
+        }
+        p {
+          'An xmq file can always be printed on a single line, without newlines: '
+          span(class=code) = 'xmq shiporder.xml to_xmq --compact'
+        }
+        &SHIPORDER_XMQ_COMPACT;
+        p {
+            'Now let us try some htmq/html:'
+            &nbsp;
+            &nbsp;
+            a(href=resources/welcome_traveller.htmq)=welcome_traveller.htmq
+            &nbsp;
+            &nbsp;
+            a(href=resources/welcome_traveller.html)=welcome_traveller.html
         }
 
+        p {
+          'To view, pretty print and colorize, as xmq/htmq: '
+          span(class=code) = 'xmq-less welcome_traveller.html'
+        }
+        &WELCOME_TRAVELLER_HTMQ;
+        p {
+          'Convert back to html: '
+          span(class=code) = 'xmq welcome_traveller.htmq to_html'
+        }
+        pre(class = 'xmq xmq_light w40')
+        {
+            &WELCOME_TRAVELLER_NOPP_HTML;
+        }
+        ul {
+            li = 'The xmq can be pretty printed without introducing space between traveller: and Click.'
+            li = 'When generating xml/html from xmq the default is to not pretty print the xml/html.'
+        }
+        p {
+          'Generate compact xmq/htmq: '
+          span(class=code) = 'xmq welcome_traveller.html to_xmq --compact'
+        }
+        &WELCOME_TRAVELLER_HTMQ_COMPACT;
     }
 }

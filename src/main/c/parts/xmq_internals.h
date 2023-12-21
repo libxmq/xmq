@@ -224,6 +224,9 @@ struct XMQOutputSettings
     const char *prefix_line; // If non-NULL print this as the leader before each line.
     const char *postfix_line; // If non-NULL print this as the ending after each line.
 
+    const char *use_id; // If non-NULL inser this id in the pre tag.
+    const char *use_class; // If non-NULL insert this class in the pre tag.
+
     XMQColoring *default_coloring; // Shortcut to the no namespace coloring inside colorings.
     HashMap *colorings; // Map namespaces to unique colorings.
 };

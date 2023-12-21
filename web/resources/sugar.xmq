@@ -1,0 +1,6 @@
+book {
+    title = 123
+    title {
+       '123'
+    }
+}

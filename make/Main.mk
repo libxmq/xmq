@@ -131,11 +131,17 @@ $(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS)
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(VERBOSE)cp $@ $@.g
 	$(VERBOSE)$(STRIP_COMMAND) $@$(SUFFIX)
+ifeq ($(PLATFORM),WINAPI)
+	echo $(VERBOSE)makensis
+endif
 else
 $(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(PARTS_SOURCES)
 	@echo Linking static $(TYPE) $(CONF_MNEMONIC) $@
 	$(VERBOSE)$(CC) -static -o $@ $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS)  \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
+ifeq ($(PLATFORM),WINAPI)
+	echo $(VERBOSE)makensis
+endif
 endif
 
 $(OUTPUT_ROOT)/$(TYPE)/testinternals: $(TESTINTERNALS_OBJS)

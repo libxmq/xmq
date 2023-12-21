@@ -712,6 +712,16 @@ void xmqOverrideSettings(XMQOutputSettings *settings,
                          const char *explicit_nl);
 
 /**
+   xmqRenderHtmlSettings: Change the id or clas for the rendered html.
+   @settings: The output settings to modify.
+   @use_id: Mark the pre tag with this id.
+   @use_class: Mark the pre tag with this class.
+*/
+void xmqRenderHtmlSettings(XMQOutputSettings *settings,
+                           const char *use_id,
+                           const char *use_class);
+
+/**
    xmqOverrideColorType:
 
    Change the color strings for the given color type. You have to run xmqSetupDefaultColors first.

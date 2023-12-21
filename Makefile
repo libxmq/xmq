@@ -216,20 +216,60 @@ pom.xml: pom.xmq
 mvn:
 	mvn package
 
-TODAY:=$(shell date +%Y-%m-%d)
+TODAY:=$(shell date +'%Y-%m-%d %H:%M')
+
+.PHONY: web
+web: build/web/index.html
 
 WEBXMQ=./xmqr
-web: $(wildcard web/*) $(wildcard web/resources/*)
-	@rm -rf build/web build/_EX1_.html build/_EX1_.htmq build/tmp*.htmq
+.PHONY: build/web/index.html
+build/web/index.html:
 	@mkdir -p build/web/resources
 	@$(WEBXMQ) web/50x.htmq to_html > build/web/50x.html
 	@$(WEBXMQ) web/404.htmq to_html > build/web/404.html
-	@$(WEBXMQ) web/example1.xml render_html --onlystyle > build/web/resources/xmq.css
-	@$(WEBXMQ) web/example1.xml render_html --darkbg --nostyle  > build/rendered_example1.xml
-	@$(WEBXMQ) web/index.htmq \
-		replace_entity EXAMPLE1_XMQ --with-file=build/rendered_example1.xml \
-		replace_entity EXAMPLE1_XML --with-text-file=web/example1.xml \
+	@cp web/resources/style.css  build/web/resources
+	@cp web/resources/code.js  build/web/resources
+	@cp web/resources/shiporder.xml  build/web/resources/shiporder.xml
+	@cp web/resources/welcome_traveller.html  build/web/resources/welcome_traveller.html
+# Extract the css
+	$(WEBXMQ) web/resources/shiporder.xml render_html --onlystyle > build/web/resources/xmq.css
+# Generate the xmq from the xml
+	$(WEBXMQ) web/resources/shiporder.xml to_xmq > build/web/resources/shiporder.xmq
+# Render the xmq in html
+	$(WEBXMQ) web/resources/shiporder.xml render_html --id=ex1 --class=w40 --lightbg --nostyle  > build/rendered_shiporder_xmq.xml
+# Generate compact shiporder
+	$(WEBXMQ) web/resources/shiporder.xml to_xmq --compact > build/shiporder_compact.xmq
+# Render compact xmq in html
+	$(WEBXMQ) web/resources/shiporder.xml render_html --compact --id=ex1c --class=w40 --lightbg --nostyle  > build/rendered_shiporder_xmq_compact.xml
+# Tokenize the sugar.xmq
+	echo -n "<span>" > build/sugar_xmq.xml
+	$(WEBXMQ) web/resources/sugar.xmq tokenize --type=html >> build/sugar_xmq.xml
+	echo -n "</span>" >> build/sugar_xmq.xml
+# Raw xml from sugar
+	$(WEBXMQ) web/resources/sugar.xmq to_xml > build/sugar_xml.xml
+# Render the welcome traveller xmq in html
+	$(WEBXMQ) web/resources/welcome_traveller.html render_html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_xmq.xml
+# Render the same but compact
+	$(WEBXMQ) web/resources/welcome_traveller.html render_html --id=ex2 --class=w40 --lightbg --nostyle --compact > build/rendered_welcome_traveller_xmq_compact.xml
+	$(WEBXMQ) web/resources/welcome_traveller.html to_htmq > build/web/resources/welcome_traveller.htmq
+	$(WEBXMQ) web/resources/welcome_traveller.html to_html > build/welcome_traveller_nopp.html
+	$(WEBXMQ) pom.xml render_html --id=expom --class=w80 --lightbg --nostyle > build/pom_rendered.xml
+	$(WEBXMQ) data.xslt render_html --id=exxslt --class=w80 --lightbg --nostyle > build/xslt_rendered.xml
+	$(WEBXMQ) web/index.htmq \
+		replace_entity DATE "$(TODAY)" \
+		replace_entity SHIPORDER_XML --with-text-file=web/resources/shiporder.xml \
+		replace_entity SHIPORDER_XMQ --with-file=build/rendered_shiporder_xmq.xml \
+		replace_entity SHIPORDER_XMQ_COMPACT --with-file=build/rendered_shiporder_xmq_compact.xml \
+		replace_entity SUGAR_XMQ --with-file=build/sugar_xmq.xml \
+		replace_entity SUGAR_XML --with-text-file=build/sugar_xml.xml \
+		replace_entity WELCOME_TRAVELLER_HTMQ --with-file=build/rendered_welcome_traveller_xmq.xml \
+		replace_entity WELCOME_TRAVELLER_HTMQ_COMPACT --with-file=build/rendered_welcome_traveller_xmq_compact.xml \
+		replace_entity WELCOME_TRAVELLER_NOPP_HTML --with-text-file=build/welcome_traveller_nopp.html \
+		replace_entity POM_RENDERED --with-file=build/pom_rendered.xml \
+		replace_entity XSLT_RENDERED --with-file=build/xslt_rendered.xml \
 		to_html > build/web/index.html
+	@$(WEBXMQ) web/index.htmq render_html > build/web/resources/index_htmq.html
+	@echo Updated $@
 
 #	@$(WEBXMQ) --trim=none build/_EX1_.html to_xmq --compact  > build/_EX1_.htmq
 #	@cat web/index.htmq | sed -e "s/_EX1_/$$(sed 's:/:\\/:g' build/_EX1_.htmq | sed 's/\&/\\\&/g')/g" > build/tmp.htmq
@@ -239,5 +279,3 @@ web: $(wildcard web/*) $(wildcard web/resources/*)
 #	@cp web/favicon.ico build/web
 #	@cp web/resources/* build/web/resources
 #	@echo "Generated build/web/index.html"
-
-.PHONY: web

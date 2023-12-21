@@ -101,6 +101,7 @@ struct XMQCliEnvironment
     bool use_detect;
     bool use_color;
     bool dark_mode;
+    const char *use_id;
 };
 
 typedef struct XMQCliCommand XMQCliCommand;
@@ -126,6 +127,8 @@ struct XMQCliCommand
     XMQTrimType trim;
     bool use_color; // Uses color or not for terminal/html/tex
     bool dark_mode; // If false assume background is light.
+    const char *use_id; // When rendering html mark the pre tag with this id.
+    const char *use_class; // When rendering html mark the pre tag with this class.
 
     // Overrides of output settings.
     const char *indentation_space;
@@ -181,7 +184,7 @@ const char *render_format_to_string(XMQRenderFormat rt);
 void replace_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, const char *content, xmlNodePtr node_content);
 void replace_entities(xmlDoc *doc, const char *entity, const char *content, xmlNodePtr node_content);
 XMQRenderStyle render_style(bool *use_color, bool *dark_mode);
-int tokenize_input(XMQCliCommand *command);
+bool tokenize_input(XMQCliCommand *command);
 void verbose_(const char* fmt, ...);
 void write_print(void *buffer, const char *content);
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command);
@@ -377,6 +380,11 @@ bool handle_option(const char *arg, XMQCliCommand *command)
 
     if (group == XMQ_CLI_CMD_GROUP_RENDER)
     {
+        if (!strncmp(arg, "--class=", 8))
+        {
+            command->use_class = arg+8;
+            return true;
+        }
         if (!strcmp(arg, "--color"))
         {
             command->env->use_detect = false;
@@ -387,10 +395,15 @@ bool handle_option(const char *arg, XMQCliCommand *command)
             }
             return true;
         }
-        if (!strcmp(arg, "--mono"))
+        if (!strcmp(arg, "--darkbg"))
         {
             command->env->use_detect = false;
-            command->use_color = false;
+            command->dark_mode = true;
+            return true;
+        }
+        if (!strncmp(arg, "--id=", 5))
+        {
+            command->use_id = arg+5;
             return true;
         }
         if (!strcmp(arg, "--lightbg"))
@@ -399,10 +412,10 @@ bool handle_option(const char *arg, XMQCliCommand *command)
             command->dark_mode = false;
             return true;
         }
-        if (!strcmp(arg, "--darkbg"))
+        if (!strcmp(arg, "--mono"))
         {
             command->env->use_detect = false;
-            command->dark_mode = true;
+            command->use_color = false;
             return true;
         }
         if (!strcmp(arg, "--nostyle"))
@@ -505,7 +518,7 @@ bool handle_option(const char *arg, XMQCliCommand *command)
 
     if (group == XMQ_CLI_CMD_GROUP_ENTITY)
     {
-        if (!strncmp(arg, "--with-xml-file=", 12))
+        if (!strncmp(arg, "--with-file=", 12))
         {
             const char *file = arg+12;
             XMQCliEnvironment env;
@@ -517,7 +530,6 @@ bool handle_option(const char *arg, XMQCliCommand *command)
             cmd.in_format = XMQ_CONTENT_DETECT;
             cmd.trim = XMQ_TRIM_NONE;
             size_t len = strlen(file);
-            // .xml
             if (len > 4 && !(strncmp(file+len-4, ".xml", 4)))
             {
                 cmd.in_format = XMQ_CONTENT_XML;
@@ -977,25 +989,27 @@ void print_version_and_exit()
     exit(0);
 }
 
-int tokenize_input(XMQCliCommand *command)
+bool tokenize_input(XMQCliCommand *command)
 {
-    verbose_("(xmq) tokenizing input\n");
+    verbose_("(xmq) ttokenizing input %d\n", command->tok_type);
     XMQOutputSettings *output_settings = xmqNewOutputSettings();
     xmqSetupPrintStdOutStdErr(output_settings);
-    xmqSetupDefaultColors(output_settings, command->dark_mode);
 
     XMQParseCallbacks *callbacks = xmqNewParseCallbacks();
 
     switch (command->tok_type) {
     case XMQ_CLI_TOKENIZE_TERMINAL:
+        xmqSetRenderFormat(output_settings, XMQ_RENDER_TERMINAL);
         xmqSetupDefaultColors(output_settings, command->dark_mode);
         xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_TERMINAL, command->dark_mode);
         break;
     case XMQ_CLI_TOKENIZE_HTML:
+        xmqSetRenderFormat(output_settings, XMQ_RENDER_HTML);
         xmqSetupDefaultColors(output_settings, command->dark_mode);
         xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_HTML, command->dark_mode);
         break;
     case XMQ_CLI_TOKENIZE_TEX:
+        xmqSetRenderFormat(output_settings, XMQ_RENDER_TEX);
         xmqSetupDefaultColors(output_settings, command->dark_mode);
         xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_TEX, command->dark_mode);
         break;
@@ -1023,7 +1037,7 @@ int tokenize_input(XMQCliCommand *command)
     xmqFreeParseCallbacks(callbacks);
     xmqFreeOutputSettings(output_settings);
 
-    return err;
+    return err == 0;
 }
 
 void write_print(void *buffer, const char *content)
@@ -1085,7 +1099,9 @@ bool cmd_to(XMQCliCommand *command)
     xmqSetRenderFormat(settings, command->render_to);
     xmqSetRenderRaw(settings, command->render_raw);
     xmqSetRenderOnlyStyle(settings, command->only_style);
+    xmqRenderHtmlSettings(settings, command->use_id, command->use_class);
     xmqSetupDefaultColors(settings, command->dark_mode);
+
     if (command->has_overrides)
     {
         xmqOverrideSettings(settings,
@@ -1383,6 +1399,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command)
 
     if (com->cmd == XMQ_CLI_CMD_NONE ||
         (cmd_group(com->cmd) != XMQ_CLI_CMD_GROUP_RENDER &&
+         cmd_group(com->cmd) != XMQ_CLI_CMD_GROUP_TOKENIZE &&
          cmd_group(com->cmd) != XMQ_CLI_CMD_GROUP_TO))
     {
         com->next = allocate_cli_command(command->env);
