@@ -79,7 +79,7 @@ help:
 	@echo "       make asan"
 	@echo "       make release linux64"
 
-BUILDDIRS:=$(dir $(realpath $(wildcard build/*/spec.mk)))
+BUILDDIRS:=$(dir $(realpath $(filter-out build/default/%,$(wildcard build/*/spec.mk))))
 FIRSTDIR:=$(word 1,$(BUILDDIRS))
 
 ifeq (,$(BUILDDIRS))
@@ -211,33 +211,82 @@ build/gtkdoc: build/gtkdocentities.ent
 .PHONY: all release debug asan test test_release test_debug clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc
 
 pom.xml: pom.xmq
-	xmq pom.xmq to_xml > pom.xml
+	xmq pom.xmq to-xml > pom.xml
 
 mvn:
 	mvn package
 
-TODAY:=$(shell date +%Y-%m-%d)
+TODAY:=$(shell date +'%Y-%m-%d %H:%M')
 
-WEBXMQ=./xmqr
-web: $(wildcard web/*) $(wildcard web/resources/*)
-	@rm -rf build/web build/_EX1_.html build/_EX1_.htmq build/tmp*.htmq
+.PHONY: web
+web: build/web/index.html
+
+WEBXMQ:=build/default/release/xmq
+
+.PHONY: build/web/index.html
+build/web/index.html:
 	@mkdir -p build/web/resources
-	@$(WEBXMQ) web/50x.htmq to_html > build/web/50x.html
-	@$(WEBXMQ) web/404.htmq to_html > build/web/404.html
-	@$(WEBXMQ) web/example1.xml render_html --onlystyle > build/web/resources/xmq.css
-	@$(WEBXMQ) web/example1.xml render_html --darkbg --nostyle  > build/rendered_example1.xml
-	@$(WEBXMQ) web/index.htmq \
-		replace_entity EXAMPLE1_XMQ --with-file=build/rendered_example1.xml \
-		replace_entity EXAMPLE1_XML --with-text-file=web/example1.xml \
-		to_html > build/web/index.html
+	@$(WEBXMQ) web/50x.htmq to-html > build/web/50x.html
+	@$(WEBXMQ) web/404.htmq to-html > build/web/404.html
+	@cp doc/xmq.pdf  build/web
+	@cp web/resources/style.css  build/web/resources
+	@cp web/resources/code.js  build/web/resources
+	@cp web/resources/shiporder.xml  build/web/resources/shiporder.xml
+	@cp web/resources/car.xml  build/web/resources/car.xml
+	@cp web/resources/welcome_traveller.html  build/web/resources/welcome_traveller.html
+	@cp web/resources/sugar.xmq  build/web/resources/sugar.xmq
+# Extract the css
+	$(WEBXMQ) web/resources/shiporder.xml render-html --onlystyle > build/web/resources/xmq.css
+# Generate the xmq from the xml
+	$(WEBXMQ) web/resources/shiporder.xml to-xmq > build/web/resources/shiporder.xmq
+# Render the xmq in html
+	$(WEBXMQ) web/resources/shiporder.xml render-html --id=ex1 --class=w40 --lightbg --nostyle  > build/rendered_shiporder_xmq.xml
+# Generate compact shiporder
+	$(WEBXMQ) web/resources/shiporder.xml to-xmq --compact > build/shiporder_compact.xmq
+# Render compact xmq in html
+	$(WEBXMQ) web/resources/shiporder.xml render-html --compact --id=ex1c --class=w40 --lightbg --nostyle  > build/rendered_shiporder_xmq_compact.xml
+# Render car xmq in html
+	$(WEBXMQ) web/resources/car.xml render-html --class=w40 --lightbg --nostyle  > build/rendered_car_xmq.xml
+	$(WEBXMQ) web/resources/car.xml to-xml  > build/web/resources/car.xml
+	$(WEBXMQ) web/resources/car.xml to-xmq > build/web/resources/car.xmq
+# Tokenize the sugar.xmq
+	echo -n "<span>" > build/sugar_xmq.xml
+	$(WEBXMQ) web/resources/sugar.xmq tokenize --type=html >> build/sugar_xmq.xml
+	echo -n "</span>" >> build/sugar_xmq.xml
+# Raw xml from sugar
+	$(WEBXMQ) web/resources/sugar.xmq to-xml > build/sugar_xml.xml
+# Render the welcome traveller xmq in html
+	$(WEBXMQ) web/resources/welcome_traveller.html render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_xmq.xml
+# Render the same but compact
+	$(WEBXMQ) web/resources/welcome_traveller.html render-html --id=ex2 --class=w40 --lightbg --nostyle --compact > build/rendered_welcome_traveller_xmq_compact.xml
+	$(WEBXMQ) web/resources/welcome_traveller.html to-htmq > build/web/resources/welcome_traveller.htmq
+	$(WEBXMQ) web/resources/welcome_traveller.html to-html > build/welcome_traveller_nopp.html
+	$(WEBXMQ) pom.xml render-html --id=expom --class=w80 --lightbg --nostyle > build/pom_rendered.xml
+	$(WEBXMQ) data.xslt render-html --id=exxslt --class=w80 --lightbg --nostyle > build/xslt_rendered.xml
+	$(WEBXMQ) web/index.htmq \
+		replace-entity DATE "$(TODAY)" \
+		replace-entity SHIPORDER_XML --with-text-file=web/resources/shiporder.xml \
+		replace-entity SHIPORDER_XMQ --with-file=build/rendered_shiporder_xmq.xml \
+		replace-entity SHIPORDER_XMQ_COMPACT --with-file=build/rendered_shiporder_xmq_compact.xml \
+		replace-entity CAR_XML --with-text-file=web/resources/car.xml \
+		replace-entity CAR_XMQ --with-file=build/rendered_car_xmq.xml \
+		replace-entity SUGAR_XMQ --with-file=build/sugar_xmq.xml \
+		replace-entity SUGAR_XML --with-text-file=build/sugar_xml.xml \
+		replace-entity WELCOME_TRAVELLER_HTMQ --with-file=build/rendered_welcome_traveller_xmq.xml \
+		replace-entity WELCOME_TRAVELLER_HTMQ_COMPACT --with-file=build/rendered_welcome_traveller_xmq_compact.xml \
+		replace-entity WELCOME_TRAVELLER_NOPP_HTML --with-text-file=build/welcome_traveller_nopp.html \
+		replace-entity POM_RENDERED --with-file=build/pom_rendered.xml \
+		replace-entity XSLT_RENDERED --with-file=build/xslt_rendered.xml \
+		to-html > build/web/index.html
+	@$(WEBXMQ) web/index.htmq render-html > build/web/resources/index_htmq.html
+	@echo Updated $@
 
-#	@$(WEBXMQ) --trim=none build/_EX1_.html to_xmq --compact  > build/_EX1_.htmq
+
+#	@$(WEBXMQ) --trim=none build/_EX1_.html to-xmq --compact  > build/_EX1_.htmq
 #	@cat web/index.htmq | sed -e "s/_EX1_/$$(sed 's:/:\\/:g' build/_EX1_.htmq | sed 's/\&/\\\&/g')/g" > build/tmp.htmq
-#	@$(WEBXMQ) build/tmp2.htmq to_html > build/web/index.html
+#	@$(WEBXMQ) build/tmp2.htmq to-html > build/web/index.html
 #	@(cd doc; make)
 #	@cp doc/xmq.pdf build/web
 #	@cp web/favicon.ico build/web
 #	@cp web/resources/* build/web/resources
 #	@echo "Generated build/web/index.html"
-
-.PHONY: web

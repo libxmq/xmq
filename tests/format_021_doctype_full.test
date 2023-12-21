@@ -8,4 +8,4 @@ XMQ
 ]><row>&yes;</row>
 END
 ARGS
-CMDS to_html
+CMDS to-html

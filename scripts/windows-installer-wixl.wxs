@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Name="XMQ" Id="565b7254-a1c8-11ee-a3f3-1b33920ca1e4" UpgradeCode="5c213872-a1c8-11ee-b6b1-27827215348f" Language="1033" Codepage="1252" Version="1.0.0" Manufacturer="https://libxmq.org">
+    <Package Id="*" Keywords="Installer" Description="XMQ Installer" Comments="XMQ is a tool and a language." Manufacturer="https://libxmq.org" InstallerVersion="100" Languages="1033" Compressed="yes" SummaryCodepage="1252"/>
+    <Media Id="1" Cabinet="Sample.cab" EmbedCab="yes" DiskPrompt="CD-ROM #1"/>
+    <Property Id="DiskPrompt" Value="XMQ Installer"/>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder" Name="PFiles">
+        <Directory Id="libxmq" Name="libxmq">
+          <Directory Id="INSTALLDIR" Name="xmq">
+            <Component Id="MainExecutable" Guid="86cded0e-a1c8-11ee-8d6e-6fe885709713">
+              <File Id="XMQEXE" Name="xmq.exe" DiskId="1" Source="xmq.exe" KeyPath="yes"/>
+              <File Id="LIBGCCDLL" Name="libgcc_s_seh-1.dll" DiskId="1" Source="libgcc_s_seh-1.dll"/>
+              <File Id="LIBSTDCPPDLL" Name="libstdc++-6.dll" DiskId="1" Source="libstdc++-6.dll"/>
+              <File Id="LIBWINPTHREADDLL" Name="libwinpthread-1.dll" DiskId="1" Source="libwinpthread-1.dll"/>
+              <File Id="LIBXML2DLL" Name="libxml2-2.dll" DiskId="1" Source="libxml2-2.dll"/>
+              <File Id="LIBXSLT1DLL" Name="libxslt-1.dll" DiskId="1" Source="libxslt-1.dll"/>
+            </Component>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+    <Feature Id="Complete" Level="1">
+      <ComponentRef Id="MainExecutable"/>
+    </Feature>
+  </Product>
+</Wix>

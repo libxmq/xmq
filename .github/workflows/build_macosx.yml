@@ -3,11 +3,13 @@ on:
   push:
     branches:
       - master
+
 jobs:
-  build:
+  job_build_on_macos:
     runs-on: macOS-latest
     steps:
-    - uses: actions/checkout@v2
+    - id: CHECKOUT_SOURCE
+      uses: actions/checkout@v2
     - id: CONFIGURE
       run: ./configure
     - id: MAKE

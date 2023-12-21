@@ -30,7 +30,7 @@ CMDS=$(grep CMDS $TEST_FILE | cut -b 5- | tr -d '\n')
 
 if [ "$CMDS" = "" ]
 then
-    CMDS="to_json"
+    CMDS="to-json"
 fi
 
 $PROG $ARGS $OUTPUT/${TEST_NAME}.input $CMDS > $OUTPUT/${TEST_NAME}.output
@@ -93,7 +93,7 @@ fi
 exit 0
 
 $PROG $ARGS $OUTPUT/${TEST_NAME}.output_compact > $OUTPUT/${TEST_NAME}.output_expanded
-$PROG $ARGS $OUTPUT/${TEST_NAME}.output to_xmq --compact > $OUTPUT/${TEST_NAME}.output_compressed
+$PROG $ARGS $OUTPUT/${TEST_NAME}.output to-xmq --compact > $OUTPUT/${TEST_NAME}.output_compressed
 
 if diff $OUTPUT/${TEST_NAME}.output $OUTPUT/${TEST_NAME}.output_expanded > /dev/null
 then

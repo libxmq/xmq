@@ -85,6 +85,12 @@ if test ! -d "$OUTPUT_ROOT"; then
     AC_MSG_ERROR([Could not create build directory $OUTPUT_ROOT])
 fi
 
+rm -f "$SRC_ROOT/build/default"
+# Create the link build/default which points to the output root.
+# This reduces the need to know the exact output root which might include OS versions etc.
+# Useful for CI builds.
+ln -s "$OUTPUT_ROOT" "$SRC_ROOT/build/default"
+
 AC_SUBST(CONF_NAME)
 AC_SUBST(SRC_ROOT)
 AC_SUBST(OUTPUT_ROOT)

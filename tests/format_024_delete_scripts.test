@@ -6,4 +6,4 @@ XMQ
 !DOCTYPE=html html{body=howdy}
 END
 ARGS
-CMDS delete //script to_xmq --compact
+CMDS delete //script to-xmq --compact

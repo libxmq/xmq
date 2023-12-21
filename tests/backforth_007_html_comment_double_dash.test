@@ -20,6 +20,6 @@ html {
 }
 END
 ARGS_FIRST
-CMDS_FIRST to_html
+CMDS_FIRST to-html
 ARGS_SECOND
-CMDS_SECOND to_xmq
+CMDS_SECOND to-xmq

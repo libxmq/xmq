@@ -1,5 +1,6 @@
 html {
     box-sizing: border-box;
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";
 }
 
 *, *:before, *:after {
@@ -7,18 +8,83 @@ html {
 }
 
 body {
-    font-family: monospace;
-}
-
-h1 {
-    font-size: 32px;
 }
 
 a {
-    font-size: 16px;
+    color: #555555;
 }
 
-p {
-    font-size: 16px;
-    width: 50em;
+a:visited {
+    color: #888888;
+}
+
+body.dark a {
+    color:white
+}
+
+body.dark a:visited {
+    color:#888888
+}
+
+body.dark {
+    background-color: #0d1117;
+    color:white;
+}
+
+pre {
+    white-space:pre-wrap;
+    word-wrap:break-word;
+}
+
+span.code {
+    font-family: "Courier New";
+    background-color: #eff1f3;
+    padding: 0px 5px;
+    border-radius:4px;
+}
+
+body.dark span.code {
+    background-color: #343941;
+}
+
+@media screen and (orientation: portrait) {
+    html {
+        font-size: 3vw;
+    }
+    body {
+        margin: 0 5vw;
+    }
+    h1 {
+        font-size: 4vw;
+    }
+    pre {
+        width: 100%;
+    }
+
+    pre.w40 {
+        font-size: 2.5vw;
+    }
+
+    pre.w80 {
+        font-size: 2vw;
+    }
+}
+
+@media screen and (orientation: landscape) {
+    html {
+        font-size: 16px;
+    }
+    body {
+        width: 90%;
+        max-width: 100ch;
+        margin: 32px auto;
+    }
+
+    pre.w40 {
+        font-size: 0.9rem;
+    }
+
+    pre.w80 {
+        font-size: 0.9rem;
+    }
 }

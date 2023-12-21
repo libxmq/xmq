@@ -298,6 +298,7 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop);
 /**
     XMQParseError:
     @XMQ_ERROR_CANNOT_READ_FILE: file not found or cannot be opened for reading.
+    @XMQ_ERROR_OOM: out of memory.
     @XMQ_ERROR_NOT_XMQ: expected xmq but auto detect sees early that it is not xmq.
     @XMQ_ERROR_QUOTE_NOT_CLOSED: an xmq quote is not closed, ie single quotes are missing.
     @XMQ_ERROR_ENTITY_NOT_CLOSED: an entity is missing the semicolon.
@@ -328,31 +329,32 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop);
 typedef enum
 {
     XMQ_ERROR_CANNOT_READ_FILE = 1,
-    XMQ_ERROR_NOT_XMQ = 2,
-    XMQ_ERROR_QUOTE_NOT_CLOSED = 3,
-    XMQ_ERROR_ENTITY_NOT_CLOSED = 4,
-    XMQ_ERROR_COMMENT_NOT_CLOSED = 5,
-    XMQ_ERROR_COMMENT_CLOSED_WITH_TOO_MANY_SLASHES = 6,
-    XMQ_ERROR_BODY_NOT_CLOSED = 7,
-    XMQ_ERROR_ATTRIBUTES_NOT_CLOSED = 8,
-    XMQ_ERROR_COMPOUND_NOT_CLOSED = 9,
-    XMQ_ERROR_COMPOUND_MAY_NOT_CONTAIN = 10,
-    XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES = 11,
-    XMQ_ERROR_UNEXPECTED_CLOSING_BRACE = 12,
-    XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS = 13,
-    XMQ_ERROR_UNEXPECTED_TAB = 14,
-    XMQ_ERROR_INVALID_CHAR = 15,
-    XMQ_ERROR_BAD_DOCTYPE = 16,
-    XMQ_ERROR_JSON_INVALID_ESCAPE = 17,
-    XMQ_ERROR_JSON_INVALID_CHAR = 18,
-    XMQ_ERROR_CANNOT_HANDLE_XML = 19,
-    XMQ_ERROR_CANNOT_HANDLE_HTML = 20,
-    XMQ_ERROR_CANNOT_HANDLE_JSON = 21,
-    XMQ_ERROR_EXPECTED_XMQ = 22,
-    XMQ_ERROR_EXPECTED_HTMQ = 23,
-    XMQ_ERROR_EXPECTED_XML = 24,
-    XMQ_ERROR_EXPECTED_HTML = 25,
-    XMQ_ERROR_EXPECTED_JSON = 26
+    XMQ_ERROR_OOM = 2,
+    XMQ_ERROR_NOT_XMQ = 3,
+    XMQ_ERROR_QUOTE_NOT_CLOSED = 4,
+    XMQ_ERROR_ENTITY_NOT_CLOSED = 5,
+    XMQ_ERROR_COMMENT_NOT_CLOSED = 6,
+    XMQ_ERROR_COMMENT_CLOSED_WITH_TOO_MANY_SLASHES = 7,
+    XMQ_ERROR_BODY_NOT_CLOSED = 8,
+    XMQ_ERROR_ATTRIBUTES_NOT_CLOSED = 9,
+    XMQ_ERROR_COMPOUND_NOT_CLOSED = 10,
+    XMQ_ERROR_COMPOUND_MAY_NOT_CONTAIN = 11,
+    XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES = 12,
+    XMQ_ERROR_UNEXPECTED_CLOSING_BRACE = 13,
+    XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS = 14,
+    XMQ_ERROR_UNEXPECTED_TAB = 15,
+    XMQ_ERROR_INVALID_CHAR = 16,
+    XMQ_ERROR_BAD_DOCTYPE = 17,
+    XMQ_ERROR_JSON_INVALID_ESCAPE = 18,
+    XMQ_ERROR_JSON_INVALID_CHAR = 19,
+    XMQ_ERROR_CANNOT_HANDLE_XML = 20,
+    XMQ_ERROR_CANNOT_HANDLE_HTML = 21,
+    XMQ_ERROR_CANNOT_HANDLE_JSON = 22,
+    XMQ_ERROR_EXPECTED_XMQ = 23,
+    XMQ_ERROR_EXPECTED_HTMQ = 24,
+    XMQ_ERROR_EXPECTED_XML = 25,
+    XMQ_ERROR_EXPECTED_HTML = 26,
+    XMQ_ERROR_EXPECTED_JSON = 27
 } XMQParseError;
 
 
@@ -710,6 +712,16 @@ void xmqOverrideSettings(XMQOutputSettings *settings,
                          const char *explicit_tab,
                          const char *explicit_cr,
                          const char *explicit_nl);
+
+/**
+   xmqRenderHtmlSettings: Change the id or clas for the rendered html.
+   @settings: The output settings to modify.
+   @use_id: Mark the pre tag with this id.
+   @use_class: Mark the pre tag with this class.
+*/
+void xmqRenderHtmlSettings(XMQOutputSettings *settings,
+                           const char *use_id,
+                           const char *use_class);
 
 /**
    xmqOverrideColorType:

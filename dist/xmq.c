@@ -401,6 +401,9 @@ struct XMQOutputSettings
     const char *prefix_line; // If non-NULL print this as the leader before each line.
     const char *postfix_line; // If non-NULL print this as the ending after each line.
 
+    const char *use_id; // If non-NULL inser this id in the pre tag.
+    const char *use_class; // If non-NULL insert this class in the pre tag.
+
     XMQColoring *default_coloring; // Shortcut to the no namespace coloring inside colorings.
     HashMap *colorings; // Map namespaces to unique colorings.
 };
@@ -1033,20 +1036,22 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
         c->header.post =
             "</style></head>";
         c->style.pre =
-            "pre.xmq_dark{font-size:16px;border-radius:1em;background-color:#263338;display:inline-block;padding:1em;color:white;}\n"
-            "pre.xmq_light{font-size:16px;border-radius:1em;border:solid 2px #263338;display:inline-block;padding:1em;color:black;}\n"
-            "xmq_c{color:#536f78;}\n"
+            "pre.xmq_dark {border-radius:2px;background-color:#263338;border:solid 1px #555555;display:inline-block;padding:1em;color:white;}\n"
+            "pre.xmq_light{border-radius:2px;background-color:#f8f9fb;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
+            "xmq_c{color:#2aa1b3;}\n"
             "xmq_q{color:darkgreen;}\n"
             "xmq_e{color:magenta;}\n"
             "xmq_ens{text-decoration:underline; color:darkorange;}\n"
             "xmq_en{color:darkorange;}\n"
-            "xmq_ek{color:#88b4f7;}\n"
+            "xmq_ek {color:#88b4f7;}\n"
             "xmq_ekv{color:darkgreen;}\n"
-            "pre.xmq_dark { xmq_ekv{color:lightgreen;}}\n"
-            "xmq_ans{text-decoration:underline;color:#88b4f7;}\n"
             "xmq_ak{color:#88b4f7;}\n"
             "xmq_akv{color:#3166cc;}\n"
-            "xmq_cp{color:magenta;}";
+            "xmq_ans{text-decoration:underline;color:#88b4f7;}\n"
+            "xmq_cp{color:#c061cb;}\n"
+            "pre.xmq_light { xmq_ek {color:#1f61ff;}; xmq_ak{color:#1f61ff;}\n"
+            "pre.xmq_dark { xmq_ekv{color:lightgreen;}}\n"
+            ;
 
         c->body.pre =
             "<body>";
@@ -1057,14 +1062,29 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
     c->content.pre = "<pre>";
     c->content.post = "</pre>";
 
-    if (dark_mode)
+    const char *mode = "xmq_light";
+    if (dark_mode) mode = "xmq_dark";
+
+    char *buf = malloc(1024);
+    const char *id = os->use_id;
+    const char *idb = "id=\"";
+    const char *ide = "\" ";
+    if (!id)
     {
-        c->content.pre = "<pre class=\"xmq xmq_dark\">";
+        id = "";
+        idb = "";
+        ide = "";
     }
-    else
+    const char *clazz = os->use_class;
+    const char *space = " ";
+    if (!clazz)
     {
-        c->content.pre = "<pre class=\"xmq xmq_light\">";
+        clazz = "";
+        space = "";
     }
+    snprintf(buf, 1023, "<pre %s%s%sclass=\"xmq %s%s%s\">", idb, id, ide, mode, space, clazz);
+    c->content.pre = buf;
+
     c->whitespace.pre  = NULL;
     c->indentation_whitespace.pre = NULL;
     c->unicode_whitespace.pre  = "<xmq_uw>";
@@ -1098,8 +1118,8 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
     c->element_value_quote.post = "</xmq_ekv>";
     c->element_value_entity.pre = "<xmq_e>";
     c->element_value_entity.post = "</xmq_e>";
-    c->element_value_compound_quote.pre = "<xmq_kv>";
-    c->element_value_compound_quote.post = "</xmq_kv>";
+    c->element_value_compound_quote.pre = "<xmq_ekv>";
+    c->element_value_compound_quote.post = "</xmq_ekv>";
     c->element_value_compound_entity.pre = "<xmq_e>";
     c->element_value_compound_entity.post = "</xmq_e>";
     c->attr_ns.pre = "<xmq_ans>";
@@ -1107,7 +1127,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
     c->attr_key.pre = "<xmq_ak>";
     c->attr_key.post = "</xmq_ak>";
     c->attr_value_text.pre = "<xmq_akv>";
-    c->attr_value_text.post = "</xmq_kav>";
+    c->attr_value_text.post = "</xmq_akv>";
     c->attr_value_quote.pre = "<xmq_akv>";
     c->attr_value_quote.post = "</xmq_akv>";
     c->attr_value_entity.pre = "<xmq_e>";
@@ -1235,6 +1255,13 @@ void xmqOverrideSettings(XMQOutputSettings *settings,
     if (explicit_nl) settings->explicit_nl = explicit_nl;
 }
 
+void xmqRenderHtmlSettings(XMQOutputSettings *settings,
+                           const char *use_id,
+                           const char *use_class)
+{
+    if (use_id) settings->use_id = use_id;
+    if (use_class) settings->use_class = use_class;
+}
 
 void xmqOverrideColorType(XMQOutputSettings *settings, XMQColorType ct, const char *pre, const char *post, const char *namespace)
 {
@@ -1634,6 +1661,26 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
         {
             if (c == '<')
             {
+                if (i+3 < stop &&
+                    *(i+1) == '!' &&
+                    *(i+2) == '-' &&
+                    *(i+3) == '-')
+                {
+                    // This is a comment, zip past it.
+                    while (i+2 < stop &&
+                           !(*(i+0) == '-' &&
+                             *(i+1) == '-' &&
+                             *(i+2) == '>'))
+                    {
+                        i++;
+                    }
+                    i += 3;
+                    // No closing comment, return as xml.
+                    if (i >= stop) return XMQ_CONTENT_XML;
+                    // Pick up after the comment.
+                    c = *i;
+                }
+
                 // Starts with <html or < html
                 const char *is_html = find_word_ignore_case(i+1, stop, "html");
                 if (is_html) return XMQ_CONTENT_HTML;
@@ -3276,9 +3323,16 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root)
     buffer = (char*)malloc(fsize + 1);
     if (!buffer) return false;
 
-    n = fread(buffer, fsize, 1, f);
+    n = 0;
 
-    if (n != 1) {
+    do {
+        size_t r = fread(buffer, 1, 10000, f);
+        if (!r) break;
+        n += r;
+    } while (n < fsize);
+
+    if (n != fsize)
+    {
         ok = false;
         doq->errno_ = XMQ_ERROR_CANNOT_READ_FILE;
         goto exit;
@@ -6222,6 +6276,7 @@ bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **ou
     if (!buffer) return false;
 
     size_t n = fread(buffer, fsize, 1, f);
+    debug("(xmq) fread %zu\n", n);
 
     if (n != 1) {
         rc = false;

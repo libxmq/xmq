@@ -8,4 +8,4 @@ XMQ
 <xmq_en>foo</xmq_en></pre>
 END
 ARGS
-CMDS render_html --nostyle --lightbg
+CMDS render-html --nostyle --lightbg

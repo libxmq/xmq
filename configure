@@ -2456,6 +2456,12 @@ if test ! -d "$OUTPUT_ROOT"; then
     as_fn_error $? "Could not create build directory $OUTPUT_ROOT" "$LINENO" 5
 fi
 
+rm -f "$SRC_ROOT/build/default"
+# Create the link build/default which points to the output root.
+# This reduces the need to know the exact output root which might include OS versions etc.
+# Useful for CI builds.
+ln -s "$OUTPUT_ROOT" "$SRC_ROOT/build/default"
+
 
 
 

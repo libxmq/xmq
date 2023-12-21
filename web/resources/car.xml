@@ -1,0 +1,12 @@
+<!DOCTYPE car [<!ENTITY copy "COPY">]>
+<car>
+<!-- An example structure. -->
+<regnr>ABC 123</regnr>
+<color>red</color>
+<img>/www/y.png</img>
+<tag>&lt;car&gt;</tag>
+<url>https://x.y.z/bar?brand=saab</url>
+<copy>&copy;</copy>
+<info>CarBrand &copy;!</info>
+<about info="CarBrand &copy;!"/>
+</car>

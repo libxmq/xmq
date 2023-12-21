@@ -23,8 +23,8 @@
 \newcommand{\xmqCom}[1]{{\color{Cyan}#1}}
 \newcommand{\xmqName}[1]{{\color{Brown}#1}}
 \newcommand{\xmqKey}[1]{{\color{Blue}#1}}
-\newcommand{\xmqAttrKey}[1]{{\color{Grey}#1}}
-\newcommand{\xmqAttrVal}[1]{{\color{Green}#1}}
+\newcommand{\xmqAttrKey}[1]{{\color{Blue}#1}}
+\newcommand{\xmqAttrVal}[1]{{\color{DarkSlateBlue}#1}}
 \newcommand{\xmqEq}[0]{{\color{DarkSlateBlue}=}}
 \newcommand{\xmqQ}[0]{{\color{Green}'}}
 \newcommand{\xmqQuote}[1]{{\color{Green}#1}}
@@ -85,10 +85,10 @@
     \end{rail}
   \end{minipage}
   \ \ \
-  \raisebox{-4pt}{\hspace{-1em}\texttt{all-spaces:}}
+  \raisebox{-4pt}{\hspace{-3em}\texttt{all-spaces:}}
   \begin{minipage}{5cm}
     \begin{rail}
-      '0x9 and unicode WS Zs'
+      '0x9 0xa 0xd 0x20 unicode categories WS Zs'
     \end{rail}
   \end{minipage}
 }
@@ -219,10 +219,10 @@
 \begin{minipage}{6cm}
 \texttt{\xmqName{car} \xmqLB\\
 \xmqs\xmqCom{// An example structure.}\\
-\xmqs\xmqKey{regnr} \xmqEq\ \xmqQ ABC 123\xmqQ\\
-\xmqs\xmqKey{color} \xmqEq\ red\\
-\xmqs\xmqKey{img}\ \ \ \xmqEq\ /www/y.png\\
-\xmqs\xmqKey{tag}\ \ \ \xmqEq\ <car>\\
+\xmqs\xmqKey{regnr} \xmqEq\ \xmqQuote{'ABC 123'}\\
+\xmqs\xmqKey{color} \xmqEq\ \xmqQuote{red}\\
+\xmqs\xmqKey{img}\ \ \ \xmqEq\ \xmqQuote{/www/y.png}\\
+\xmqs\xmqKey{tag}\ \ \ \xmqEq\ \xmqQuote{<car>}\\
 \xmqRB
 }
 \end{minipage}
@@ -245,12 +245,12 @@
 \hbox{
 \begin{minipage}{6cm}
 \texttt{\xmqName{div}(\xmqAttrKey{id} \xmqEq\ \xmqAttrVal{32}) \{\\
-\xmqs\xmqKey{h1}\ \xmqEq\ Welcome!\\
-\xmqs\xmqQ Rest here weary\\
-\xmqs \ traveller:\xmqQ\\
+\xmqs\xmqKey{h1}\ \xmqEq\ \xmqQuote{Welcome!}\\
+\xmqs\xmqQuote{'Rest here weary}\\
+\xmqs\ \xmqQuote{traveller:'}\\
 \xmqs \xmqName{a}(\xmqAttrKey{href} \xmqEq\ \xmqAttrVal{https://a.b.c}) \{\\
 \xmqs\xmqs \xmqName{img}(\xmqAttrKey{url} \xmqEq\ \xmqAttrVal{/img/i.png})\\
-\xmqs\xmqs\xmqQ Click here!\xmqQ\\
+\xmqs\xmqs\xmqQuote{'Click here!'}\\
 \xmqs\}\\
 \}\\
 }
@@ -277,11 +277,11 @@ $\hookrightarrow$\verb|<img url="/img/i.png">Click here!</a>|\\
 \texttt{Explicit spaces:  \xmqKey{abc} \xmqEq\ \xmqQ \ \ \ \ \xmqQ \ \ \ \  \xmqName{abc} \xmqLB \xmqQ\ \ \ \ \xmqQ \xmqRB \\
 A single newline: \xmqKey{abc} \xmqEq\ \xmqE{\#10;}\ \ \ \ \ \ \ \xmqName{abc} \xmqLB\ \xmqE{\#10;} \xmqRB \\
 Spaces surrounding newline: \xmqKey{abc} \xmqEq\ \xmqLP\xmqQ\ \xmqQ\ \xmqE{\#10;} \xmqQ\ \xmqQ \xmqRP\ \ \ \xmqName{abc} \xmqLB \xmqQ\ \xmqQ\ \xmqE{\#10;} \xmqQ\ \xmqQ \xmqRB \\
-Quote starting with quote characters: \xmqLP\ \xmqE{\#39;} \xmqQ quoted quote\xmqQ\ \xmqE{\#39;} \xmqRP\ or: \\
+Quote starting with quote characters: \xmqLP\ \xmqE{\#39;} \xmqQuote{'quoted quote'}\ \xmqE{\#39;} \xmqRP\ or: \\
 \xmqQ\xmqQ\xmqQ\\
-\ \ 'quoted quote'\\
+\ \ \xmqQuote{'quoted quote'}\\
 \xmqQ\xmqQ\xmqQ \\
-When highlighting: \xmqKey{p} \xmqEq\ 123 is a key value and \xmqName{p}(\xmqKey{x}) \xmqEq\ 123 is a name value.
+When highlighting: \xmqKey{p} \xmqEq\ \xmqQuote{123} is a key value and \xmqName{p}(\xmqKey{x}) \xmqEq\ \xmqQuote{123} is a name value.
 }
 
 \end{document}

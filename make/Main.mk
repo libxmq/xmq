@@ -125,17 +125,29 @@ $(OUTPUT_ROOT)/$(TYPE)/libxmq.a: $(POSIX_OBJS)
 	$(VERBOSE)ar rcs $@ $^
 
 ifeq ($(ENABLE_STATIC_XMQ),no)
-$(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS)
+$(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(EXTRA_LIBS)
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
 	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS)  \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(VERBOSE)cp $@ $@.g
 	$(VERBOSE)$(STRIP_COMMAND) $@$(SUFFIX)
+ifeq ($(PLATFORM),WINAPI)
+	$(VERBOSE)mkdir -p build/windows_installer
+	$(VERBOSE)cp $(OUTPUT_ROOT)/$(TYPE)/xmq.exe $(OUTPUT_ROOT)/$(TYPE)/*.dll build/windows_installer
+	$(VERBOSE)cp scripts/xmq.nsis build/windows_installer
+	$(VERBOSE)(cd build/windows_installer; makensis xmq.nsis)
+endif
 else
-$(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(PARTS_SOURCES)
+$(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(PARTS_SOURCES) $(EXTRA_LIBS)
 	@echo Linking static $(TYPE) $(CONF_MNEMONIC) $@
 	$(VERBOSE)$(CC) -static -o $@ $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS)  \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
+ifeq ($(PLATFORM),WINAPI)
+	$(VERBOSE)mkdir -p $(OUTPUT_ROOT)/windows_installer
+	$(VERBOSE)cp $(OUTPUT_ROOT)/$(TYPE)/xmq.exe $(OUTPUT_ROOT)/$(TYPE)/*.dll $(OUTPUT_ROOT)/windows_installer
+	$(VERBOSE)cp $(SRC_ROOT)/scripts/windows-installer-wixl.wxs $(OUTPUT_ROOT)/windows_installer/xmq-windows.wxs
+	$(VERBOSE)(cd $(OUTPUT_ROOT)/windows_installer; wixl -v xmq-windows.wxs)
+endif
 endif
 
 $(OUTPUT_ROOT)/$(TYPE)/testinternals: $(TESTINTERNALS_OBJS)

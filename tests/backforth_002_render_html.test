@@ -9,6 +9,6 @@ SECOND
 pre(class='xmq xmq_light'){xmq_en=foo' {'&#10;'    'xmq_en=bar &#10;'}'}
 END
 ARGS_FIRST
-CMDS_FIRST render_html --nostyle
+CMDS_FIRST render-html --nostyle
 ARGS_SECOND --trim=none
-CMDS_SECOND to_xmq --compact
+CMDS_SECOND to-xmq --compact

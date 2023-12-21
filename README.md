@@ -6,6 +6,8 @@ API [https://libxmq.org/api/](https://libxmq.org/api/)
 
 Grammar [https://libxmq.org/xmq.pdf](https://libxmq.org/xmq.pdf)
 
+Binaries latest release [https://github.com/libxmq/xmq/releases/latest](https://github.com/libxmq/xmq/releases/latest)
+
 | System       | Status        |
 | ------------ |:-------------:|
 | Ubuntu | [![Build Ubuntu Status](https://github.com/libxmq/xmq/workflows/Build%20Ubuntu/badge.svg)](https://github.com/libxmq/xmq/actions)|
@@ -129,22 +131,22 @@ View an html page: `xmq-less page.html`
 
 View the same page but remove all script and style nodes and smaller indentation.
 ```
-xmq-less page.html delete //script delete //style render_terminal --color --indent=2
+xmq-less page.html delete //script delete //style render-terminal --color --indent=2
 ```
 
-Convert any input to xmq: `xmq input to_xmq > output.xmq`
+Convert any input to xmq: `xmq input to-xmq > output.xmq`
 
-Convert any input to xml: `xmq input to_xml > output.xml`
+Convert any input to xml: `xmq input to-xml > output.xml`
 
-Convert any (suitable) input to html: `xmq input to_html > output.html`
+Convert any (suitable) input to html: `xmq input to-html > output.html`
 
 ```
-xmq 'book { alfa = &ALFA; }' replace entity:ALFA "Howdy'''Dowdy" to_xmq
+xmq 'book { alfa = &ALFA; }' replace entity:ALFA "Howdy'''Dowdy" to-xmq
 ```
 
-Render any input as a web page: `xmq input.xmq render_html > input_as_web_page.html`
+Render any input as a web page: `xmq input.xmq render-html > input_as_web_page.html`
 
-Render any input as a tex: `xmq input.xmq render_tex > input_as_tex.tex ; xelatex input_as_tex.tex`
+Render any input as a tex: `xmq input.xmq render-tex > input_as_tex.tex ; xelatex input_as_tex.tex`
 
 Build with debug symbols:
 ```
@@ -171,3 +173,28 @@ Windows cross complation from GNU/Linux:
 (cd 3rdparty; fetch_and_build.sh)
 ./configure --host=x86_64-w64-mingw32 --with-libxml2=3rdparty/libxml2-winapi --with-libxslt=3rdparty/libxslt-winapi --with-zlib=3rdparty/zlib-1.3-winapi
 ```
+
+## How to install the gnulinux binary executable
+
+Download the xmq-gnulinux.gz file.
+```
+cd Downloads
+mv xmq-gnulinux xmq
+chmod a+x xmq
+mkdir -p ~/bin
+mv xmq ~/bin
+```
+Restart your shell and xmq should be in your path.
+
+## How to install the macosx binary executable
+
+Download the xmq-macosx.gz file.
+```
+cd Downloads
+mv xmq-macosx xmq
+chmod a+x xmq
+xattr -d com.apple.quarantine xmq
+mkdir -p ~/bin
+mv xmq ~/bin
+```
+Restart your shell and xmq should be in your path.

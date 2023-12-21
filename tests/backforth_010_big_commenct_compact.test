@@ -24,6 +24,6 @@ foo {
 <alfa/>
 
 END
-CMDS_FIRST to_xmq --compact
+CMDS_FIRST to-xmq --compact
 ARGS_SECOND
-CMDS_SECOND to_xml
+CMDS_SECOND to-xml

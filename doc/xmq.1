@@ -18,7 +18,7 @@ convert between them.  It can also pretty print, compact, colorize,
 tokenize, apply xslt transforms and other commands to modify the
 content.
 
-If no commands are provided then xmq executes the command \fIrender_terminal\fP or \fIto_xmq\fP
+If no commands are provided then xmq executes the command \fIrender-terminal\fP or \fIto-xmq\fP
 depending on whether stdout is a tty or a file/pipe.
 
 Xmq will read from stdin if a single minus \fB-\fP is provided as <file> or if neither <file> nor <command> is provided.
@@ -55,11 +55,11 @@ The input format is normally auto detected but you can force the input format he
 .SH COMMANDS
 
 .TP
-\fIto_xmq\fP / \fIto_htmq\fP
-Write the content as xmq/htmq on stdout. If stdout is a tty, then this command behaves as \fIrender_terminal\fP.
+\fIto-xmq\fP / \fIto-htmq\fP
+Write the content as xmq/htmq on stdout. If stdout is a tty, then this command behaves as \fIrender-terminal\fP.
 
 .br
-\fB--compact\fP By default, \fIto_xmq\fP pretty-prints the output. Using this option will result in a single line compact xmq/htmq.
+\fB--compact\fP By default, \fIto-xmq\fP pretty-prints the output. Using this option will result in a single line compact xmq/htmq.
 
 .br
 \fB--indent=n\fP Use the given number of spaces for indentation. Default is 4.
@@ -70,17 +70,20 @@ Write the content as xmq/htmq on stdout. If stdout is a tty, then this command b
 \fB--escape-non-7bit\fP Escape all non-7bit chars using entities like \fI&#160;\fP.
 
 .TP
-\fIto_xml\fP/\fIto_html\FP/\fIto_json\fP
+\fIto-xml\fP/\fIto-html\FP/\fIto-json\fP
 Write the content as xml/html/json on stdout.
 
 .TP
-\fIrender_terminal\fP / \fIrender_html\fP / \fIrender_tex\fP
+\fIrender-terminal\fP / \fIrender-html\fP / \fIrender-tex\fP
 This command will render the content as xmq/htmq for presentation at a terminal, as html or as LaTeX.
 
 .br
 \fB--color / --mono\fP By default, xmq generates syntax colored output if writing to a terminal.
 You can force it to produce color even if writing to a pipe or a file using --color, and disable color with --mono.
 Colors can be configured with the XMQ_COLORS environment variable (see below).
+
+.br
+\fB--id=abc\fP When rendering html mark the pre tag with this id.
 
 .br
 \fB--lightbg / --darkbg\fP Use a colorscheme suitable for a light background or a dark background.
@@ -154,9 +157,9 @@ Delete nodes and pretty print.
 .br
 % xmq input.xml delete --entity=Greeting
 .br
-% xmq-less input.html delete --xpath=//script to_html
+% xmq-less input.html delete --xpath=//script to-html
 .br
-% xmq-less input.html delete --xpath=//script render_terminal
+% xmq-less input.html delete --xpath=//script render-terminal
 
 .TP
 Replace nodes and print.
@@ -180,11 +183,11 @@ Select nodes and print.
 Transform document.
 
 .br
-% xmq input.xmq transform --xslt=toweb.xsltq to_html > index.html
+% xmq input.xmq transform --xslt=toweb.xsltq to-html > index.html
 .br
 % xmq data.json replace --xpath=//work --textfile=work.txt \\
 .br
-                transform --xslt=restructure.xsltq to_json > work.json
+                transform --xslt=restructure.xsltq to-json > work.json
 
 .SH AUTHOR
 Written by Fredrik Öhrström.

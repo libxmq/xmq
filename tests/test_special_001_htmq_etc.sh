@@ -15,11 +15,11 @@ fi
 mkdir -p $OUTPUT
 
 echo "c = Howdy" > $OUTPUT/input.xmq
-$PROG $OUTPUT/input.xmq render_html --darkbg > $OUTPUT/output.1.html
+$PROG $OUTPUT/input.xmq render-html --darkbg > $OUTPUT/output.1.html
 
-$PROG $OUTPUT/input.xmq render_html --darkbg \
-    | $PROG --trim=none to_xmq --compact \
-    | $PROG to_html > $OUTPUT/output.2.html
+$PROG $OUTPUT/input.xmq render-html --darkbg \
+    | $PROG --trim=none to-xmq --compact \
+    | $PROG to-html > $OUTPUT/output.2.html
 
 if diff $OUTPUT/output.1.html $OUTPUT/output.2.html
 then

@@ -21,6 +21,6 @@ machineFile(comment = 'x > 1 ⇒  y > 0 ∨  ⊤ ⇔ ⊥
 // Ending comment.
 END
 ARGS_FIRST
-CMDS_FIRST to_xml
+CMDS_FIRST to-xml
 ARGS_SECOND --trim=none
-CMDS_SECOND to_xmq
+CMDS_SECOND to-xmq

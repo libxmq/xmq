@@ -10,6 +10,6 @@ SECOND
 /*Leading comment.*/machineFile(comment=('x > 1 ⇒  y > 0 ∨  ⊤ ⇔ ⊥'&#10;'∀x·x∈ℕ → ℕ1 × (ℤ ∖ {123})')){event(name=&apos;){action(assign=x≔y do=x=y done='x = y')}}/*Ending comment.*/
 END
 ARGS_FIRST
-CMDS_FIRST to_xml
+CMDS_FIRST to-xml
 ARGS_SECOND --trim=none
-CMDS_SECOND to_xmq --compact
+CMDS_SECOND to-xmq --compact

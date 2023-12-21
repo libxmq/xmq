@@ -101,6 +101,7 @@ struct XMQCliEnvironment
     bool use_detect;
     bool use_color;
     bool dark_mode;
+    const char *use_id;
 };
 
 typedef struct XMQCliCommand XMQCliCommand;
@@ -126,6 +127,8 @@ struct XMQCliCommand
     XMQTrimType trim;
     bool use_color; // Uses color or not for terminal/html/tex
     bool dark_mode; // If false assume background is light.
+    const char *use_id; // When rendering html mark the pre tag with this id.
+    const char *use_class; // When rendering html mark the pre tag with this class.
 
     // Overrides of output settings.
     const char *indentation_space;
@@ -181,7 +184,7 @@ const char *render_format_to_string(XMQRenderFormat rt);
 void replace_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, const char *content, xmlNodePtr node_content);
 void replace_entities(xmlDoc *doc, const char *entity, const char *content, xmlNodePtr node_content);
 XMQRenderStyle render_style(bool *use_color, bool *dark_mode);
-int tokenize_input(XMQCliCommand *command);
+bool tokenize_input(XMQCliCommand *command);
 void verbose_(const char* fmt, ...);
 void write_print(void *buffer, const char *content);
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command);
@@ -218,19 +221,19 @@ void debug_(const char* fmt, ...)
 XMQCliCmd cmd_from(const char *s)
 {
     if (!s) return XMQ_CLI_CMD_NONE;
-    if (!strcmp(s, "to_xmq")) return XMQ_CLI_CMD_TO_XMQ;
-    if (!strcmp(s, "to_xml")) return XMQ_CLI_CMD_TO_XML;
-    if (!strcmp(s, "to_htmq")) return XMQ_CLI_CMD_TO_HTMQ;
-    if (!strcmp(s, "to_html")) return XMQ_CLI_CMD_TO_HTML;
-    if (!strcmp(s, "to_json")) return XMQ_CLI_CMD_TO_JSON;
-    if (!strcmp(s, "render_terminal")) return XMQ_CLI_CMD_RENDER_TERMINAL;
-    if (!strcmp(s, "render_html")) return XMQ_CLI_CMD_RENDER_HTML;
-    if (!strcmp(s, "render_tex")) return XMQ_CLI_CMD_RENDER_TEX;
+    if (!strcmp(s, "to-xmq")) return XMQ_CLI_CMD_TO_XMQ;
+    if (!strcmp(s, "to-xml")) return XMQ_CLI_CMD_TO_XML;
+    if (!strcmp(s, "to-htmq")) return XMQ_CLI_CMD_TO_HTMQ;
+    if (!strcmp(s, "to-html")) return XMQ_CLI_CMD_TO_HTML;
+    if (!strcmp(s, "to-json")) return XMQ_CLI_CMD_TO_JSON;
+    if (!strcmp(s, "render-terminal")) return XMQ_CLI_CMD_RENDER_TERMINAL;
+    if (!strcmp(s, "render-html")) return XMQ_CLI_CMD_RENDER_HTML;
+    if (!strcmp(s, "render-tex")) return XMQ_CLI_CMD_RENDER_TEX;
     if (!strcmp(s, "tokenize")) return XMQ_CLI_CMD_TOKENIZE;
     if (!strcmp(s, "delete")) return XMQ_CLI_CMD_DELETE;
-    if (!strcmp(s, "delete_entity")) return XMQ_CLI_CMD_DELETE_ENTITY;
+    if (!strcmp(s, "delete-entity")) return XMQ_CLI_CMD_DELETE_ENTITY;
     if (!strcmp(s, "replace")) return XMQ_CLI_CMD_REPLACE;
-    if (!strcmp(s, "replace_entity")) return XMQ_CLI_CMD_REPLACE_ENTITY;
+    if (!strcmp(s, "replace-entity")) return XMQ_CLI_CMD_REPLACE_ENTITY;
     if (!strcmp(s, "transform")) return XMQ_CLI_CMD_TRANSFORM;
     return XMQ_CLI_CMD_NONE;
 }
@@ -240,19 +243,19 @@ const char *cmd_name(XMQCliCmd cmd)
     switch (cmd)
     {
     case XMQ_CLI_CMD_NONE: return "noop";
-    case XMQ_CLI_CMD_TO_XMQ: return "to_xmq";
-    case XMQ_CLI_CMD_TO_XML: return "to_xml";
-    case XMQ_CLI_CMD_TO_HTMQ: return "to_htmq";
-    case XMQ_CLI_CMD_TO_HTML: return "to_html";
-    case XMQ_CLI_CMD_TO_JSON: return "to_json";
-    case XMQ_CLI_CMD_RENDER_TERMINAL: return "render_terminal";
-    case XMQ_CLI_CMD_RENDER_HTML: return "render_html";
-    case XMQ_CLI_CMD_RENDER_TEX: return "render_tex";
+    case XMQ_CLI_CMD_TO_XMQ: return "to-xmq";
+    case XMQ_CLI_CMD_TO_XML: return "to-xml";
+    case XMQ_CLI_CMD_TO_HTMQ: return "to-htmq";
+    case XMQ_CLI_CMD_TO_HTML: return "to-html";
+    case XMQ_CLI_CMD_TO_JSON: return "to-json";
+    case XMQ_CLI_CMD_RENDER_TERMINAL: return "render-terminal";
+    case XMQ_CLI_CMD_RENDER_HTML: return "render-html";
+    case XMQ_CLI_CMD_RENDER_TEX: return "render-tex";
     case XMQ_CLI_CMD_TOKENIZE: return "tokenize";
     case XMQ_CLI_CMD_DELETE: return "delete";
-    case XMQ_CLI_CMD_DELETE_ENTITY: return "delete_entity";
+    case XMQ_CLI_CMD_DELETE_ENTITY: return "delete-entity";
     case XMQ_CLI_CMD_REPLACE: return "replace";
-    case XMQ_CLI_CMD_REPLACE_ENTITY: return "replace_entity";
+    case XMQ_CLI_CMD_REPLACE_ENTITY: return "replace-entity";
     case XMQ_CLI_CMD_TRANSFORM: return "transform";
     }
     return "?";
@@ -377,6 +380,11 @@ bool handle_option(const char *arg, XMQCliCommand *command)
 
     if (group == XMQ_CLI_CMD_GROUP_RENDER)
     {
+        if (!strncmp(arg, "--class=", 8))
+        {
+            command->use_class = arg+8;
+            return true;
+        }
         if (!strcmp(arg, "--color"))
         {
             command->env->use_detect = false;
@@ -387,10 +395,15 @@ bool handle_option(const char *arg, XMQCliCommand *command)
             }
             return true;
         }
-        if (!strcmp(arg, "--mono"))
+        if (!strcmp(arg, "--darkbg"))
         {
             command->env->use_detect = false;
-            command->use_color = false;
+            command->dark_mode = true;
+            return true;
+        }
+        if (!strncmp(arg, "--id=", 5))
+        {
+            command->use_id = arg+5;
             return true;
         }
         if (!strcmp(arg, "--lightbg"))
@@ -399,10 +412,10 @@ bool handle_option(const char *arg, XMQCliCommand *command)
             command->dark_mode = false;
             return true;
         }
-        if (!strcmp(arg, "--darkbg"))
+        if (!strcmp(arg, "--mono"))
         {
             command->env->use_detect = false;
-            command->dark_mode = true;
+            command->use_color = false;
             return true;
         }
         if (!strcmp(arg, "--nostyle"))
@@ -505,7 +518,7 @@ bool handle_option(const char *arg, XMQCliCommand *command)
 
     if (group == XMQ_CLI_CMD_GROUP_ENTITY)
     {
-        if (!strncmp(arg, "--with-xml-file=", 12))
+        if (!strncmp(arg, "--with-file=", 12))
         {
             const char *file = arg+12;
             XMQCliEnvironment env;
@@ -517,7 +530,6 @@ bool handle_option(const char *arg, XMQCliCommand *command)
             cmd.in_format = XMQ_CONTENT_DETECT;
             cmd.trim = XMQ_TRIM_NONE;
             size_t len = strlen(file);
-            // .xml
             if (len > 4 && !(strncmp(file+len-4, ".xml", 4)))
             {
                 cmd.in_format = XMQ_CONTENT_XML;
@@ -639,6 +651,7 @@ XMQRenderStyle render_style(bool *use_color, bool *dark_mode)
 {
     // The Linux vt console is by default black. So dark-mode.
     char *term = getenv("TERM");
+    if (!term) term = "NULL";
     if (!strcmp(term, "linux"))
     {
         *use_color = true;
@@ -903,8 +916,8 @@ void print_help_and_exit()
            "  --version  Output version information and exit.\n"
            "\n"
            "COMMANDS\n"
-           "to_xmq\n"
-           "to_htmq\n"
+           "to-xmq\n"
+           "to-htmq\n"
            "             Write the content as xmq/htmq on stdout. If stdout is a tty, then this command behaves as render_terminal.\n"
            "  --compact\n"
            "             By default to_xmq pretty-prints the output. Using this option will result in a single line compact xmq/htmq.\n"
@@ -915,14 +928,14 @@ void print_help_and_exit()
            "  --escape-non-7bit\n"
            "             Escape all non-7bit chars using entities like &#160;\n"
            "\n"
-           "to_xml\n"
-           "to_html\n"
-           "to_json\n"
+           "to-xml\n"
+           "to-html\n"
+           "to-json\n"
            "             Write the content as xml/html/json on stdout.\n"
            "\n"
-           "render_terminal\n"
-           "render_html\n"
-           "render_tex\n"
+           "render-terminal\n"
+           "render-html\n"
+           "render-tex\n"
            "             Render the content as xmq/htmq for presentation on a terminal, as html or as LaTeX.\n"
            "  --color\n"
            "  --mono\n"
@@ -977,25 +990,27 @@ void print_version_and_exit()
     exit(0);
 }
 
-int tokenize_input(XMQCliCommand *command)
+bool tokenize_input(XMQCliCommand *command)
 {
-    verbose_("(xmq) tokenizing input\n");
+    verbose_("(xmq) tokenizing input %d\n", command->tok_type);
     XMQOutputSettings *output_settings = xmqNewOutputSettings();
     xmqSetupPrintStdOutStdErr(output_settings);
-    xmqSetupDefaultColors(output_settings, command->dark_mode);
 
     XMQParseCallbacks *callbacks = xmqNewParseCallbacks();
 
     switch (command->tok_type) {
     case XMQ_CLI_TOKENIZE_TERMINAL:
+        xmqSetRenderFormat(output_settings, XMQ_RENDER_TERMINAL);
         xmqSetupDefaultColors(output_settings, command->dark_mode);
         xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_TERMINAL, command->dark_mode);
         break;
     case XMQ_CLI_TOKENIZE_HTML:
+        xmqSetRenderFormat(output_settings, XMQ_RENDER_HTML);
         xmqSetupDefaultColors(output_settings, command->dark_mode);
         xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_HTML, command->dark_mode);
         break;
     case XMQ_CLI_TOKENIZE_TEX:
+        xmqSetRenderFormat(output_settings, XMQ_RENDER_TEX);
         xmqSetupDefaultColors(output_settings, command->dark_mode);
         xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_TEX, command->dark_mode);
         break;
@@ -1023,7 +1038,7 @@ int tokenize_input(XMQCliCommand *command)
     xmqFreeParseCallbacks(callbacks);
     xmqFreeOutputSettings(output_settings);
 
-    return err;
+    return err == 0;
 }
 
 void write_print(void *buffer, const char *content)
@@ -1085,7 +1100,9 @@ bool cmd_to(XMQCliCommand *command)
     xmqSetRenderFormat(settings, command->render_to);
     xmqSetRenderRaw(settings, command->render_raw);
     xmqSetRenderOnlyStyle(settings, command->only_style);
+    xmqRenderHtmlSettings(settings, command->use_id, command->use_class);
     xmqSetupDefaultColors(settings, command->dark_mode);
+
     if (command->has_overrides)
     {
         xmqOverrideSettings(settings,
@@ -1383,6 +1400,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command)
 
     if (com->cmd == XMQ_CLI_CMD_NONE ||
         (cmd_group(com->cmd) != XMQ_CLI_CMD_GROUP_RENDER &&
+         cmd_group(com->cmd) != XMQ_CLI_CMD_GROUP_TOKENIZE &&
          cmd_group(com->cmd) != XMQ_CLI_CMD_GROUP_TO))
     {
         com->next = allocate_cli_command(command->env);
@@ -1396,21 +1414,33 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command)
 #ifdef PLATFORM_WINAPI
 void enableAnsiColorsTerminal()
 {
+    debug_("(xmq) enable ansi colors terminal\n");
+
+    debug_("(xmq) GetStdHandle\n");
+
     HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hStdOut == INVALID_HANDLE_VALUE) return; // Fail
 
+    debug_("(xmq) GetConsoleMode\n");
     DWORD mode;
     if (!GetConsoleMode(hStdOut, &mode)) return; // Fail
 
     DWORD enabled = (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) ? true : false;
 
+    debug_("(xmq) enabled %x\n", enabled);
+
     if (enabled) return; // Already enabled colors.
 
     mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 
+    debug_("(xmq) SetConsoleMode %x\n", mode);
+
     SetConsoleMode(hStdOut, mode);
 
+    debug_("(xmq) SetConsoleOutputCP\n");
     SetConsoleOutputCP(CP_UTF8);
+
+    debug_("(xmq) Ansi done\n");
 }
 #endif
 
@@ -1446,6 +1476,7 @@ int main(int argc, const char **argv)
 
     if (isatty(1))
     {
+        debug_("(xmq) terminal output detected using colors\n");
         // Lets try to use detection of background. If any
         // of --mono or --color --darkbg or --ligtbg is set, then do not detect.
         env.use_detect = true;
@@ -1468,7 +1499,10 @@ int main(int argc, const char **argv)
     XMQCliCommand *first_command = allocate_cli_command(&env);
 
     bool ok = xmq_parse_cmd_line(argc, argv, first_command);
-    if (!ok) return 1;
+    if (!ok) {
+        debug_("(xmq) parse cmd line failed\n");
+        return 1;
+    }
 
     debug_enabled__ = first_command->debug;
     verbose_enabled__ = first_command->verbose || debug_enabled__;
@@ -1486,6 +1520,7 @@ int main(int argc, const char **argv)
         // Execute commands.
         while (c)
         {
+            debug_("(xmq) performing %s\n", cmd_name(c->cmd));
             bool ok = perform_command(c);
             if (!ok)
             {

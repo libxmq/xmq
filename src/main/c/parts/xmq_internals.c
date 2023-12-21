@@ -346,6 +346,7 @@ const char *xmqParseErrorToString(XMQParseError e)
     switch (e)
     {
     case XMQ_ERROR_CANNOT_READ_FILE: return "cannot read file";
+    case XMQ_ERROR_OOM: return "out of memory";
     case XMQ_ERROR_NOT_XMQ: return "input file is not xmq";
     case XMQ_ERROR_QUOTE_NOT_CLOSED: return "quote is not closed";
     case XMQ_ERROR_ENTITY_NOT_CLOSED: return "entity is not closed";

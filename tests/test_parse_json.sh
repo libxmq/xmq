@@ -28,7 +28,7 @@ sed -n '/^JSON$/,/^END$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_N
 ARGS=$(grep ARGS $TEST_FILE | cut -b 5- | tr -d '\n')
 CMDS=$(grep CMDS $TEST_FILE | cut -b 5- | tr -d '\n')
 
-$PROG $ARGS $OUTPUT/${TEST_NAME}.input to_xmq > $OUTPUT/${TEST_NAME}.xmq_output
+$PROG $ARGS $OUTPUT/${TEST_NAME}.input to-xmq > $OUTPUT/${TEST_NAME}.xmq_output
 
 if diff $OUTPUT/${TEST_NAME}.expected_xmq $OUTPUT/${TEST_NAME}.xmq_output > /dev/null
 then
@@ -45,7 +45,7 @@ else
     exit 1
 fi
 
-$PROG $ARGS $OUTPUT/${TEST_NAME}.xmq_output to_json > $OUTPUT/${TEST_NAME}.json_output
+$PROG $ARGS $OUTPUT/${TEST_NAME}.xmq_output to-json > $OUTPUT/${TEST_NAME}.json_output
 
 if ! jq . $OUTPUT/${TEST_NAME}.json_output >/dev/null 2>&1
 then

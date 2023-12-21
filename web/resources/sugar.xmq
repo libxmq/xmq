@@ -1,0 +1,9 @@
+room {
+    chair = 123
+    chair { '123' }
+    chair = '
+             123
+            '
+    chaise = ' 123   '
+    chaise { ' 123   ' }
+}

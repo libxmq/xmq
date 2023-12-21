@@ -14,9 +14,9 @@ then
     exit $?
 fi
 
-if echo "$*" | grep -q to_xmq || echo "$*" | grep -q render_terminal
+if echo "$*" | grep -q to-xmq || echo "$*" | grep -q render-terminal
 then
-    # The command line has an explicit render_terminal command, lets use the command line as is.
+    # The command line has an explicit render-terminal command, lets use the command line as is.
     xmq "$@" | less -R
     exit $?
 fi
@@ -28,12 +28,12 @@ RC="$?"
 
 if [ "$RC" = "0" ]
 then
-    RENDER_CMD="render_terminal --mono"
+    RENDER_CMD="render-terminal --mono"
 elif [ "$RC" = "1" ]
 then
-    RENDER_CMD="render_terminal --color --darkbg"
+    RENDER_CMD="render-terminal --color --darkbg"
 else
-    RENDER_CMD="render_terminal --color --lightbg"
+    RENDER_CMD="render-terminal --color --lightbg"
 fi
 
 # No arguments provided, read from stdin.

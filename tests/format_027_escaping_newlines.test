@@ -17,4 +17,4 @@ p {
 }
 END
 ARGS --trim=none
-CMDS to_xmq
+CMDS to-xmq

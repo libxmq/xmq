@@ -20,6 +20,6 @@ alfa {
 }
 END
 ARGS_FIRST
-CMDS_FIRST to_xml
+CMDS_FIRST to-xml
 ARGS_SECOND
-CMDS_SECOND to_xmq
+CMDS_SECOND to-xmq
