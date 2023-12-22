@@ -36,11 +36,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
     - name: upload linux artifact
-        uses: actions/upload-release-asset@v1
+    - run: gh release upload ${{steps.version.outputs.version}} ./build/x86_64-pc-linux-gnu/release/xmq.gz
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: build/x86_64-pc-linux-gnu/release/xmq.gz
-          asset_name: xmq.gz
-          asset_content_type: application/gzip
