@@ -1,6 +1,9 @@
-book {
-    title = 123
-    title {
-       '123'
-    }
+room {
+    chair = 123
+    chair { '123' }
+    chair = '
+             123
+            '
+    chaise = ' 123   '
+    chaise { ' 123   ' }
 }

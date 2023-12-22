@@ -227,10 +227,13 @@ build/web/index.html:
 	@mkdir -p build/web/resources
 	@$(WEBXMQ) web/50x.htmq to_html > build/web/50x.html
 	@$(WEBXMQ) web/404.htmq to_html > build/web/404.html
+	@cp doc/xmq.pdf  build/web
 	@cp web/resources/style.css  build/web/resources
 	@cp web/resources/code.js  build/web/resources
 	@cp web/resources/shiporder.xml  build/web/resources/shiporder.xml
+	@cp web/resources/car.xml  build/web/resources/car.xml
 	@cp web/resources/welcome_traveller.html  build/web/resources/welcome_traveller.html
+	@cp web/resources/sugar.xmq  build/web/resources/sugar.xmq
 # Extract the css
 	$(WEBXMQ) web/resources/shiporder.xml render_html --onlystyle > build/web/resources/xmq.css
 # Generate the xmq from the xml
@@ -241,6 +244,10 @@ build/web/index.html:
 	$(WEBXMQ) web/resources/shiporder.xml to_xmq --compact > build/shiporder_compact.xmq
 # Render compact xmq in html
 	$(WEBXMQ) web/resources/shiporder.xml render_html --compact --id=ex1c --class=w40 --lightbg --nostyle  > build/rendered_shiporder_xmq_compact.xml
+# Render car xmq in html
+	$(WEBXMQ) web/resources/car.xml render_html --class=w40 --lightbg --nostyle  > build/rendered_car_xmq.xml
+	$(WEBXMQ) web/resources/car.xml to_xml  > build/web/resources/car.xml
+	$(WEBXMQ) web/resources/car.xml to_xmq > build/web/resources/car.xmq
 # Tokenize the sugar.xmq
 	echo -n "<span>" > build/sugar_xmq.xml
 	$(WEBXMQ) web/resources/sugar.xmq tokenize --type=html >> build/sugar_xmq.xml
@@ -260,6 +267,8 @@ build/web/index.html:
 		replace_entity SHIPORDER_XML --with-text-file=web/resources/shiporder.xml \
 		replace_entity SHIPORDER_XMQ --with-file=build/rendered_shiporder_xmq.xml \
 		replace_entity SHIPORDER_XMQ_COMPACT --with-file=build/rendered_shiporder_xmq_compact.xml \
+		replace_entity CAR_XML --with-text-file=web/resources/car.xml \
+		replace_entity CAR_XMQ --with-file=build/rendered_car_xmq.xml \
 		replace_entity SUGAR_XMQ --with-file=build/sugar_xmq.xml \
 		replace_entity SUGAR_XML --with-text-file=build/sugar_xml.xml \
 		replace_entity WELCOME_TRAVELLER_HTMQ --with-file=build/rendered_welcome_traveller_xmq.xml \

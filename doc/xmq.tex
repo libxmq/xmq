@@ -85,10 +85,10 @@
     \end{rail}
   \end{minipage}
   \ \ \
-  \raisebox{-4pt}{\hspace{-1em}\texttt{all-spaces:}}
+  \raisebox{-4pt}{\hspace{-3em}\texttt{all-spaces:}}
   \begin{minipage}{5cm}
     \begin{rail}
-      '0x9 0xa 0xd unicode categories WS Zs'
+      '0x9 0xa 0xd 0x20 unicode categories WS Zs'
     \end{rail}
   \end{minipage}
 }
@@ -281,7 +281,7 @@ Quote starting with quote characters: \xmqLP\ \xmqE{\#39;} \xmqQuote{'quoted quo
 \xmqQ\xmqQ\xmqQ\\
 \ \ \xmqQuote{'quoted quote'}\\
 \xmqQ\xmqQ\xmqQ \\
-When highlighting: \xmqKey{p} \xmqEq\ 123 is a key value and \xmqName{p}(\xmqKey{x}) \xmqEq\ 123 is a name value.
+When highlighting: \xmqKey{p} \xmqEq\ \xmqQuote{123} is a key value and \xmqName{p}(\xmqKey{x}) \xmqEq\ \xmqQuote{123} is a name value.
 }
 
 \end{document}
