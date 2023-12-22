@@ -1,0 +1,46 @@
+name: Release Ubuntu
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build_release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - id: INSTALL_ADDITIONAL_BUILD_DEPENDENCIES
+      run: |
+         sudo apt install -y eatmydata libtidy-dev libxml2-dev libxslt1-dev
+    - id: CONFIGURE
+      run: eatmydata ./configure
+    - id: MAKE
+      run: eatmydata make
+    - id: TEST
+      run: eatmydata make test
+    - name: version
+      run: echo "::set-output name=version::$(./build/x86_64-pc-linux-gnu/release/xmq --version)"
+      id: version
+    - id: Create release archive
+      run: gzip ./build/x86_64-pc-linux-gnu/release/xmq
+    - name: release
+      uses: actions/create-release@v1
+      id: create_release
+      with:
+        draft: false
+        prerelease: false
+        release_name: ${{ steps.version.outputs.version }}
+        tag_name: ${{ github.ref }}
+        body_path: CHANGES
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+    - name: upload linux artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: build/x86_64-pc-linux-gnu/release/xmq.gz
+          asset_name: xmq.gz
+          asset_content_type: application/gzip
