@@ -71,7 +71,7 @@
 
 \begin{document}
 
-{\color{Red}\texttt{Specification for XMQ by Fredrik Öhrström 2023-12-18 \texttt{oehrstroem@gmail.com}}}
+{\color{Red}\texttt{Specification for XMQ by Fredrik Öhrström 2023-12-24 \texttt{oehrstroem@gmail.com}}}
 
 \texttt{Input must be valid UTF8 (0x9 | 0xa | 0xd | [20-d7ff] | [e000-fffd] | [10000-10ffff]) \\
   CRLF pairs (0xd 0xa) and standalone CR (0xd) are treated as LF (0xa) when parsing.}
@@ -195,9 +195,9 @@
 
 \vspace{-1mm}
 \verb|    If quoted content contains at least one newline then:|\\
-\verb|r6. All leading and ending spaces 0x20 and newlines 0xa are removed.| \\
+\verb|r6. Leading or ending WS with at least one newline will be trimmed.| \\
 \verb|r7. All spaces before a newline are removed.| \\
-\verb|r8. Incidental indentation (some spaces 0x20 after a newline) is removed.|\\
+\verb|r8. Incidental indentation (some spaces after a newline) is removed.|\\
 \verb|r9. The indent to be removed is the minimum source code indentation|\\
 \verb|    for text within the block where empty lines are ignored.|\\
 \verb|r10. The first line is prefixed with spaces if the following lines|\\
@@ -272,15 +272,16 @@ $\hookrightarrow$\verb|<img url="/img/i.png">Click here!</a>|\\
 \POS{-12mm}{-47mm}{\begin{picture}(10,10)\color{Grey}\put(0,0){\vector(-1,1){11}}\put(0,0){\vector(1,4){4}}\put(0,0){\vector(3,1){30}}\put(-40,-3){\texttt{\small Html cannot be pretty printed with newlines here,}}\put(-40,-7){\texttt{\small whereas xmq can be pretty printed without introducing whitespace.}}\end{picture}}%
 }
 
-\shifttext{-20mm}{\raisebox{-3.7cm}{\smash{\rotatebox{90}{\rule{10mm}{0.5pt}\ \texttt{CORNERS}\ \rule{10mm}{.5pt}}}}}
+\shifttext{-20mm}{\raisebox{-4.2cm}{\smash{\rotatebox{90}{\rule{12mm}{0.5pt}\ \texttt{CORNERS}\ \rule{12mm}{.5pt}}}}}
 
 \texttt{Explicit spaces:  \xmqKey{abc} \xmqEq\ \xmqQ \ \ \ \ \xmqQ \ \ \ \  \xmqName{abc} \xmqLB \xmqQ\ \ \ \ \xmqQ \xmqRB \\
 A single newline: \xmqKey{abc} \xmqEq\ \xmqE{\#10;}\ \ \ \ \ \ \ \xmqName{abc} \xmqLB\ \xmqE{\#10;} \xmqRB \\
 Spaces surrounding newline: \xmqKey{abc} \xmqEq\ \xmqLP\xmqQ\ \xmqQ\ \xmqE{\#10;} \xmqQ\ \xmqQ \xmqRP\ \ \ \xmqName{abc} \xmqLB \xmqQ\ \xmqQ\ \xmqE{\#10;} \xmqQ\ \xmqQ \xmqRB \\
-Quote starting with quote characters: \xmqLP\ \xmqE{\#39;} \xmqQuote{'quoted quote'}\ \xmqE{\#39;} \xmqRP\ or: \\
+Value with leading/ending quotes: \xmqKey{x} \xmqEq\ \xmqLP\ \xmqE{\#39;} \xmqQuote{'quoted quote'}\ \xmqE{\#39;} \xmqRP\ or: \\
 \xmqQ\xmqQ\xmqQ\\
-\ \ \xmqQuote{'quoted quote'}\\
+\xmqQuote{'quoted quote'}\\
 \xmqQ\xmqQ\xmqQ \\
+or: \xmqName{x} \xmqLB\ \xmqE{\#39;} \xmqQuote{'quoted quote'}\ \xmqE{\#39;} \xmqRB \\
 When highlighting: \xmqKey{p} \xmqEq\ \xmqQuote{123} is a key value and \xmqName{p}(\xmqKey{x}) \xmqEq\ \xmqQuote{123} is a name value.
 }
 

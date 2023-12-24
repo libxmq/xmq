@@ -1039,18 +1039,18 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
             "pre.xmq_dark {border-radius:2px;background-color:#263338;border:solid 1px #555555;display:inline-block;padding:1em;color:white;}\n"
             "pre.xmq_light{border-radius:2px;background-color:#f8f9fb;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
             "xmq_c{color:#2aa1b3;}\n"
-            "xmq_q{color:darkgreen;}\n"
+            "xmq_q{color:#26a269;}\n"
             "xmq_e{color:magenta;}\n"
             "xmq_ens{text-decoration:underline; color:darkorange;}\n"
             "xmq_en{color:darkorange;}\n"
             "xmq_ek {color:#88b4f7;}\n"
-            "xmq_ekv{color:darkgreen;}\n"
+            "xmq_ekv{color:#26a269;}\n"
             "xmq_ak{color:#88b4f7;}\n"
             "xmq_akv{color:#3166cc;}\n"
             "xmq_ans{text-decoration:underline;color:#88b4f7;}\n"
             "xmq_cp{color:#c061cb;}\n"
-            "pre.xmq_light { xmq_ek {color:#1f61ff;}; xmq_ak{color:#1f61ff;}\n"
-            "pre.xmq_dark { xmq_ekv{color:lightgreen;}}\n"
+            "pre.xmq_light { xmq_q{color:darkgreen;} xmq_ekv{color:darkgreen;} xmq_ek {color:#1f61ff;}; xmq_ak{color:#1f61ff;}\n"
+            "pre.xmq_dark { }\n"
             ;
 
         c->body.pre =
@@ -3302,8 +3302,7 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root)
 {
     bool ok = true;
     char *buffer = NULL;
-    long fsize = 0;
-    size_t n = 0;
+    size_t fsize = 0;
     XMQContentType content = XMQ_CONTENT_XMQ;
 
     xmqSetDocSourceName(doq, file);
@@ -3321,15 +3320,25 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root)
     fseek(f, 0, SEEK_SET);
 
     buffer = (char*)malloc(fsize + 1);
-    if (!buffer) return false;
+    if (!buffer)
+    {
+        doq->errno_ = XMQ_ERROR_OOM;
+        doq->error_ = build_error_message("xmq: %s: File too big, out of memory\n", file);
+        ok = false;
+        goto exit;
+    }
 
-    n = 0;
-
+    size_t block_size = fsize;
+    if (block_size > 10000) block_size = 10000;
+    size_t n = 0;
     do {
-        size_t r = fread(buffer, 1, 10000, f);
+        size_t r = fread(buffer, 1, block_size, f);
+        debug("(xmq) read %zu bytes total %zu\n", r, n);
         if (!r) break;
         n += r;
     } while (n < fsize);
+
+    debug("(xmq) read total %zu bytes\n", n);
 
     if (n != fsize)
     {
@@ -6261,7 +6270,7 @@ bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **ou
     bool rc = false;
     char *buffer = NULL;
 
-    FILE *f = fopen(file, "r");
+    FILE *f = fopen(file, "rb");
     if (!f) {
         doq->errno_ = XMQ_ERROR_CANNOT_READ_FILE;
         doq->error_ = build_error_message("xmq: %s: No such file or directory\n", file);
@@ -6269,16 +6278,32 @@ bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **ou
     }
 
     fseek(f, 0, SEEK_END);
-    long fsize = ftell(f);
+    size_t fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
 
+    debug("(xmq) file size %zu\n", fsize);
+
     buffer = (char*)malloc(fsize + 1);
-    if (!buffer) return false;
+    if (!buffer)
+    {
+        doq->errno_ = XMQ_ERROR_OOM;
+        doq->error_ = build_error_message("xmq: %s: File too big, out of memory\n", file);
+        goto exit;
+    }
 
-    size_t n = fread(buffer, fsize, 1, f);
-    debug("(xmq) fread %zu\n", n);
+    size_t block_size = fsize;
+    if (block_size > 10000) block_size = 10000;
+    size_t n = 0;
+    do {
+        size_t r = fread(buffer, 1, block_size, f);
+        debug("(xmq) read %zu bytes total %zu\n", r, n);
+        if (!r) break;
+        n += r;
+    } while (n < fsize);
 
-    if (n != 1) {
+    debug("(xmq) read total %zu bytes fsize %zu bytes\n", n, fsize);
+
+    if (n != fsize) {
         rc = false;
         doq->errno_ = XMQ_ERROR_CANNOT_READ_FILE;
         doq->error_ = build_error_message("xmq: %s: Cannot read file\n", file);
@@ -8919,6 +8944,7 @@ const char *xmqParseErrorToString(XMQParseError e)
     switch (e)
     {
     case XMQ_ERROR_CANNOT_READ_FILE: return "cannot read file";
+    case XMQ_ERROR_OOM: return "out of memory";
     case XMQ_ERROR_NOT_XMQ: return "input file is not xmq";
     case XMQ_ERROR_QUOTE_NOT_CLOSED: return "quote is not closed";
     case XMQ_ERROR_ENTITY_NOT_CLOSED: return "entity is not closed";
