@@ -53,6 +53,9 @@ typedef struct Stack Stack;
 struct HashMap;
 typedef struct HashMap HashMap;
 
+struct MemBuffer;
+typedef struct MemBuffer MemBuffer;
+
 extern const char *color_names[13];
 
 /**
@@ -216,6 +219,11 @@ struct XMQOutputSettings
     XMQWriter content;
     XMQWriter error;
 
+    // If printing to memory:
+    MemBuffer *output_buffer;
+    const char **output_buffer_start;
+    const char **output_buffer_stop;
+
     const char *indentation_space; // If NULL use " " can be replaced with any other string.
     const char *explicit_space; // If NULL use " " can be replaced with any other string.
     const char *explicit_tab; // If NULL use "\t" can be replaced with any other string.
@@ -229,6 +237,7 @@ struct XMQOutputSettings
 
     XMQColoring *default_coloring; // Shortcut to the no namespace coloring inside colorings.
     HashMap *colorings; // Map namespaces to unique colorings.
+    void *free_me;
 };
 typedef struct XMQOutputSettings XMQOutputSettings;
 

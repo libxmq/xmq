@@ -22,7 +22,6 @@ foo {
    CDATA = '<![CDATA[albert]]>'
 }-->
 <alfa/>
-
 END
 CMDS_FIRST to-xmq --compact
 ARGS_SECOND

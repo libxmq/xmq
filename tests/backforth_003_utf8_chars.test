@@ -5,7 +5,6 @@ FIRST
 <!--Leading comment.-->
 <machineFile comment="x &gt; 1 ⇒  y &gt; 0 ∨  ⊤ ⇔ ⊥&#10;∀x·x∈ℕ → ℕ1 × (ℤ ∖ {123})"><event name="&apos;"><action assign="x≔y" do="x=y" done="x = y"/></event></machineFile>
 <!--Ending comment.-->
-
 SECOND
 /*Leading comment.*/machineFile(comment=('x > 1 ⇒  y > 0 ∨  ⊤ ⇔ ⊥'&#10;'∀x·x∈ℕ → ℕ1 × (ℤ ∖ {123})')){event(name=&apos;){action(assign=x≔y do=x=y done='x = y')}}/*Ending comment.*/
 END

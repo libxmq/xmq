@@ -84,7 +84,8 @@ void hashmap_free(HashMap* map);
     @used_: Number of bytes actually used of buffer.
     @buffer_: Start of buffer data.
 */
-typedef struct
+struct MemBuffer;
+typedef struct MemBuffer
 {
     size_t max_; // Current size of malloc for buffer.
     size_t used_; // How much is actually used.
@@ -97,6 +98,7 @@ MemBuffer *new_membuffer();
 char *free_membuffer_but_return_trimmed_content(MemBuffer *mb);
 void free_membuffer_and_free_content(MemBuffer *mb);
 size_t pick_buffer_new_size(size_t max, size_t used, size_t add);
+size_t membuffer_used(MemBuffer *mb);
 void membuffer_append_region(MemBuffer *mb, const char *start, const char *stop);
 void membuffer_append(MemBuffer *mb, const char *start);
 void membuffer_append_char(MemBuffer *mb, char c);
@@ -229,6 +231,9 @@ typedef struct Stack Stack;
 
 struct HashMap;
 typedef struct HashMap HashMap;
+
+struct MemBuffer;
+typedef struct MemBuffer MemBuffer;
 
 extern const char *color_names[13];
 
@@ -393,6 +398,11 @@ struct XMQOutputSettings
     XMQWriter content;
     XMQWriter error;
 
+    // If printing to memory:
+    MemBuffer *output_buffer;
+    const char **output_buffer_start;
+    const char **output_buffer_stop;
+
     const char *indentation_space; // If NULL use " " can be replaced with any other string.
     const char *explicit_space; // If NULL use " " can be replaced with any other string.
     const char *explicit_tab; // If NULL use "\t" can be replaced with any other string.
@@ -406,6 +416,7 @@ struct XMQOutputSettings
 
     XMQColoring *default_coloring; // Shortcut to the no namespace coloring inside colorings.
     HashMap *colorings; // Map namespaces to unique colorings.
+    void *free_me;
 };
 typedef struct XMQOutputSettings XMQOutputSettings;
 
@@ -1066,6 +1077,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
     if (dark_mode) mode = "xmq_dark";
 
     char *buf = malloc(1024);
+    os->free_me = buf;
     const char *id = os->use_id;
     const char *idb = "id=\"";
     const char *ide = "\" ";
@@ -1395,6 +1407,11 @@ XMQOutputSettings *xmqNewOutputSettings()
 
 void xmqFreeOutputSettings(XMQOutputSettings *os)
 {
+    if (os->free_me)
+    {
+        free(os->free_me);
+        os->free_me = NULL;
+    }
     hashmap_free_and_values(os->colorings);
     os->colorings = NULL;
     free(os);
@@ -1495,6 +1512,17 @@ void xmqSetupPrintStdOutStdErr(XMQOutputSettings *ps)
     ps->content.write = write_print_stdout;
     ps->error.writer_state = NULL; // Not needed
     ps->error.write = write_print_stderr;
+}
+
+void xmqSetupPrintMemory(XMQOutputSettings *os, const char **start, const char **stop)
+{
+    os->output_buffer_start = start;
+    os->output_buffer_stop = stop;
+    os->output_buffer = new_membuffer();
+    os->content.writer_state = os->output_buffer;
+    os->content.write = (void*)membuffer_append_region;
+    os->error.writer_state = os->output_buffer;
+    os->error.write = (void*)membuffer_append_region;
 }
 
 XMQParseCallbacks *xmqNewParseCallbacks()
@@ -1661,6 +1689,16 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
         {
             if (c == '<')
             {
+                if (i+4 < stop &&
+                    *(i+1) == '?' &&
+                    *(i+2) == 'x' &&
+                    *(i+3) == 'm' &&
+                    *(i+4) == 'l')
+                {
+                    debug("(xmq) content detected as xml since <?xml found\n");
+                    return XMQ_CONTENT_XML;
+                }
+
                 if (i+3 < stop &&
                     *(i+1) == '!' &&
                     *(i+2) == '-' &&
@@ -3355,7 +3393,7 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root)
     if (block_size > 10000) block_size = 10000;
     size_t n = 0;
     do {
-        size_t r = fread(buffer, 1, block_size, f);
+        size_t r = fread(buffer+n, 1, block_size, f);
         debug("(xmq) read %zu bytes total %zu\n", r, n);
         if (!r) break;
         n += r;
@@ -4766,22 +4804,26 @@ void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
     }
     const char *c = (const char *)xmlBufferContent(buffer);
     fputs(c, stdout);
+    fputs("\n", stdout);
     xmlBufferFree(buffer);
 }
 
-void xmq_print_json(XMQDoc *doq, XMQOutputSettings *output_settings)
+void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
 {
     void *first = doq->docptr_.xml->children;
     if (!doq || !first) return;
     void *last = doq->docptr_.xml->last;
 
     XMQPrintState ps = {};
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
     ps.doq = doq;
-    if (output_settings->compact) output_settings->escape_newlines = true;
-    ps.output_settings = output_settings;
-    assert(output_settings->content.write);
+    if (os->compact) os->escape_newlines = true;
+    ps.output_settings = os;
+    assert(os->content.write);
 
     json_print_nodes(&ps, NULL, (xmlNode*)first, (xmlNode*)last);
+    write(writer_state, "\n", NULL);
 }
 
 void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
@@ -4812,6 +4854,8 @@ void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
 
     if (c->body.post) write(writer_state, c->body.post, NULL);
     if (c->document.post) write(writer_state, c->document.post, NULL);
+
+    write(writer_state, "\n", NULL);
 }
 
 void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
@@ -4835,6 +4879,17 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
     }
 
     xmq_print_xmq(doq, output_settings);
+
+    if (output_settings->output_buffer &&
+        output_settings->output_buffer_start &&
+        output_settings->output_buffer_stop)
+    {
+        size_t size = membuffer_used(output_settings->output_buffer);
+        char *buffer = free_membuffer_but_return_trimmed_content(output_settings->output_buffer);
+        *output_settings->output_buffer_start = buffer;
+        *output_settings->output_buffer_stop = buffer+size;
+    }
+
 }
 
 void trim_text_node(xmlNode *node, XMQTrimType tt)
@@ -6318,7 +6373,7 @@ bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **ou
     if (block_size > 10000) block_size = 10000;
     size_t n = 0;
     do {
-        size_t r = fread(buffer, 1, block_size, f);
+        size_t r = fread(buffer+n, 1, block_size, f);
         debug("(xmq) read %zu bytes total %zu\n", r, n);
         if (!r) break;
         n += r;
@@ -6856,6 +6911,11 @@ void membuffer_append_entity(MemBuffer *mb, char c)
     {
         assert(false);
     }
+}
+
+size_t membuffer_used(MemBuffer *mb)
+{
+    return mb->used_;
 }
 
 #endif // MEMBUFFER_MODULE

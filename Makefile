@@ -133,21 +133,18 @@ testa: test_asan
 
 test_release:
 	@echo "Running release tests"
-#	@for x in $(BUILDDIRS); do echo; $$x/release/testinternals ; done
-#	@for x in $(BUILDDIRS); do echo; $$x/release/parts/testinternals ; done
-	@for x in $(BUILDDIRS); do echo; ./tests/test.sh $$x/release $$x/release/test_output ; done
+	@for x in $(BUILDDIRS); do echo; if [ ! -f $$x/release/testinternals ]; then echo "Run make first. $$x/release/testinternals not found."; exit 1; fi ; $$x/release/testinternals ; done
+	@for x in $(BUILDDIRS); do echo;  if [ ! -f $$x/release/testinternals ]; then echo "Run make first. $$x/release/testinternals not found."; exit 1; fi ; ./tests/test.sh $$x/release $$x/release/test_output ; done
 
 test_debug:
 	@echo "Running debug tests"
-	@for x in $(BUILDDIRS); do echo; $$x/debug/testinternals ; done
-	@for x in $(BUILDDIRS); do echo; $$x/debug/parts/testinternals ; done
-	@for x in $(BUILDDIRS); do echo; ./tests/test.sh $$x/debug $$x/debug/test_output ; done
+	@for x in $(BUILDDIRS); do echo; if [ ! -f $$x/debug/testinternals ]; then echo "Run make first. $$x/debug/testinternals not found."; exit 1; fi ; $$x/debug/testinternals ; done
+	@for x in $(BUILDDIRS); do echo;  if [ ! -f $$x/debug/testinternals ]; then echo "Run make first. $$x/debug/testinternals not found."; exit 1; fi ; ./tests/test.sh $$x/debug $$x/debug/test_output ; done
 
 test_asan:
 	@echo "Running asan tests"
-	@for x in $(BUILDDIRS); do echo; $$x/asan/testinternals ; done
-	@for x in $(BUILDDIRS); do echo; $$x/asan/parts/testinternals ; done
-	@for x in $(BUILDDIRS); do echo; ./tests/test.sh $$x/asan $$x/asan/test_output ; done
+	@for x in $(BUILDDIRS); do echo; if [ ! -f $$x/asan/testinternals ]; then echo "Run make first. $$x/asan/testinternals not found."; exit 1; fi ; $$x/asan/testinternals ; done
+	@for x in $(BUILDDIRS); do echo;  if [ ! -f $$x/asan/testinternals ]; then echo "Run make first. $$x/asan/testinternals not found."; exit 1; fi ; ./tests/test.sh $$x/asan $$x/asan/test_output ; done
 
 clean:
 	@echo "Removing release, debug, asan, gtkdoc build dirs."

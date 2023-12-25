@@ -30,7 +30,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
     @used_: Number of bytes actually used of buffer.
     @buffer_: Start of buffer data.
 */
-typedef struct
+struct MemBuffer;
+typedef struct MemBuffer
 {
     size_t max_; // Current size of malloc for buffer.
     size_t used_; // How much is actually used.
@@ -43,6 +44,7 @@ MemBuffer *new_membuffer();
 char *free_membuffer_but_return_trimmed_content(MemBuffer *mb);
 void free_membuffer_and_free_content(MemBuffer *mb);
 size_t pick_buffer_new_size(size_t max, size_t used, size_t add);
+size_t membuffer_used(MemBuffer *mb);
 void membuffer_append_region(MemBuffer *mb, const char *start, const char *stop);
 void membuffer_append(MemBuffer *mb, const char *start);
 void membuffer_append_char(MemBuffer *mb, char c);

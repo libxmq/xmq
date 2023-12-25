@@ -143,4 +143,9 @@ void membuffer_append_entity(MemBuffer *mb, char c)
     }
 }
 
+size_t membuffer_used(MemBuffer *mb)
+{
+    return mb->used_;
+}
+
 #endif // MEMBUFFER_MODULE

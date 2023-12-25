@@ -94,11 +94,16 @@ jobs:
       - id: CONFIGURE
         run: ./configure --host=x86_64-w64-mingw32 --with-libxml2=3rdparty/libxml2-winapi --with-libxslt=3rdparty/libxslt-winapi --with-zlib=3rdparty/zlib-1.3-winapi
       - id: MAKE
-        run: make
+        run: make release asan
       - id: CREATE_RELEASE_ARCHIVE
         run: tar czf build/xmq-windows.tgz build/default/release/*.exe build/default/release/*.dll
-      - id: UPLOAD_ASSETS
+      - id: UPLOAD_ASSETS_RELEASE
         uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ needs.job_create_release.outputs.upload_url }}
-          asset_path: ./build/default/windows_installer/xmq-windows.msi
+          asset_path: ./build/default/windows_installer/xmq-windows-release.msi
+      - id: UPLOAD_ASSETS_ASAN
+        uses: shogo82148/actions-upload-release-asset@v1
+        with:
+          upload_url: ${{ needs.job_create_release.outputs.upload_url }}
+          asset_path: ./build/default/windows_installer/xmq-windows-asan.msi

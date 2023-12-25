@@ -287,6 +287,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
     if (dark_mode) mode = "xmq_dark";
 
     char *buf = malloc(1024);
+    os->free_me = buf;
     const char *id = os->use_id;
     const char *idb = "id=\"";
     const char *ide = "\" ";
@@ -616,6 +617,11 @@ XMQOutputSettings *xmqNewOutputSettings()
 
 void xmqFreeOutputSettings(XMQOutputSettings *os)
 {
+    if (os->free_me)
+    {
+        free(os->free_me);
+        os->free_me = NULL;
+    }
     hashmap_free_and_values(os->colorings);
     os->colorings = NULL;
     free(os);
@@ -716,6 +722,17 @@ void xmqSetupPrintStdOutStdErr(XMQOutputSettings *ps)
     ps->content.write = write_print_stdout;
     ps->error.writer_state = NULL; // Not needed
     ps->error.write = write_print_stderr;
+}
+
+void xmqSetupPrintMemory(XMQOutputSettings *os, const char **start, const char **stop)
+{
+    os->output_buffer_start = start;
+    os->output_buffer_stop = stop;
+    os->output_buffer = new_membuffer();
+    os->content.writer_state = os->output_buffer;
+    os->content.write = (void*)membuffer_append_region;
+    os->error.writer_state = os->output_buffer;
+    os->error.write = (void*)membuffer_append_region;
 }
 
 XMQParseCallbacks *xmqNewParseCallbacks()
@@ -3997,22 +4014,26 @@ void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
     }
     const char *c = (const char *)xmlBufferContent(buffer);
     fputs(c, stdout);
+    fputs("\n", stdout);
     xmlBufferFree(buffer);
 }
 
-void xmq_print_json(XMQDoc *doq, XMQOutputSettings *output_settings)
+void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
 {
     void *first = doq->docptr_.xml->children;
     if (!doq || !first) return;
     void *last = doq->docptr_.xml->last;
 
     XMQPrintState ps = {};
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
     ps.doq = doq;
-    if (output_settings->compact) output_settings->escape_newlines = true;
-    ps.output_settings = output_settings;
-    assert(output_settings->content.write);
+    if (os->compact) os->escape_newlines = true;
+    ps.output_settings = os;
+    assert(os->content.write);
 
     json_print_nodes(&ps, NULL, (xmlNode*)first, (xmlNode*)last);
+    write(writer_state, "\n", NULL);
 }
 
 void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
@@ -4043,6 +4064,8 @@ void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
 
     if (c->body.post) write(writer_state, c->body.post, NULL);
     if (c->document.post) write(writer_state, c->document.post, NULL);
+
+    write(writer_state, "\n", NULL);
 }
 
 void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
@@ -4066,6 +4089,17 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
     }
 
     xmq_print_xmq(doq, output_settings);
+
+    if (output_settings->output_buffer &&
+        output_settings->output_buffer_start &&
+        output_settings->output_buffer_stop)
+    {
+        size_t size = membuffer_used(output_settings->output_buffer);
+        char *buffer = free_membuffer_but_return_trimmed_content(output_settings->output_buffer);
+        *output_settings->output_buffer_start = buffer;
+        *output_settings->output_buffer_stop = buffer+size;
+    }
+
 }
 
 void trim_text_node(xmlNode *node, XMQTrimType tt)

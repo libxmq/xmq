@@ -10,7 +10,6 @@ alfa {
 FIRST
 <?xml version="1.0" encoding="utf8"?>
 <alfa><!--foo-␐-␐-bar--><!--><--><!--<![CDATA[xxx]]>--><body>welcome</body></alfa>
-
 SECOND
 alfa {
     // foo---bar

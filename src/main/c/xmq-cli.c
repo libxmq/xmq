@@ -22,6 +22,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include"xmq.h"
+#include"parts/membuffer.h"
 
 #include<assert.h>
 #include<ctype.h>
@@ -32,8 +33,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifdef PLATFORM_WINAPI
 #include<windows.h>
+#include<conio.h>
 #else
 #include<termios.h>
+#include<sys/ioctl.h>
 #endif
 
 #define LIBXML_STATIC
@@ -67,6 +70,7 @@ typedef enum
     XMQ_CLI_CMD_TO_HTMQ,
     XMQ_CLI_CMD_TO_HTML,
     XMQ_CLI_CMD_TO_JSON,
+    XMQ_CLI_CMD_PAGER,
     XMQ_CLI_CMD_RENDER_TERMINAL,
     XMQ_CLI_CMD_RENDER_HTML,
     XMQ_CLI_CMD_RENDER_TEX,
@@ -137,6 +141,7 @@ struct XMQCliCommand
     const char *explicit_cr;
     const char *explicit_nl;
     bool has_overrides;
+    bool use_pager; // If enabled then render-terminal will behave as a pager (eg less,more etc)
 
     bool print_help;
     bool print_version;
@@ -155,6 +160,18 @@ struct XMQCliCommand
 };
 
 
+typedef enum {
+    CHARACTER,
+    ARROW_UP,
+    ARROW_DOWN,
+    ARROW_LEFT,
+    ARROW_RIGHT,
+    PAGE_UP,
+    PAGE_DOWN,
+    BACKSPACE,
+    ENTER
+} KEY;
+
 // FUNCTION DECLARATIONS /////////////////////////////////////////////////////////////
 
 XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env);
@@ -172,18 +189,27 @@ void debug_(const char* fmt, ...);
 void disable_raw_mode();
 void enable_raw_mode();
 void enableAnsiColorsTerminal();
+void enableRawStdinTerminal();
+const char *find_next_line(const char *offset, const  char *start, const char *stop);
+const char *find_prev_line(const char *offset, const  char *start, const char *stop);
 bool has_debug(int argc, const char **argv);
 bool has_verbose(int argc, const char **argv);
 bool handle_global_option(const char *arg, XMQCliCommand *command);
 bool handle_option(const char *arg, XMQCliCommand *command);
+void page(const char *start, const char *stop);
 bool perform_command(XMQCliCommand *c);
 void prepare_command(XMQCliCommand *c);
 void print_help_and_exit();
 void print_version_and_exit();
+int get_char();
+void put_char(int c);
+void console_write(const char *start, const char *stop);
+KEY read_key(int *c);
 const char *render_format_to_string(XMQRenderFormat rt);
 void replace_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, const char *content, xmlNodePtr node_content);
 void replace_entities(xmlDoc *doc, const char *entity, const char *content, xmlNodePtr node_content);
 XMQRenderStyle render_style(bool *use_color, bool *dark_mode);
+void restoreStdinTerminal();
 bool tokenize_input(XMQCliCommand *command);
 void verbose_(const char* fmt, ...);
 void write_print(void *buffer, const char *content);
@@ -226,6 +252,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "to-htmq")) return XMQ_CLI_CMD_TO_HTMQ;
     if (!strcmp(s, "to-html")) return XMQ_CLI_CMD_TO_HTML;
     if (!strcmp(s, "to-json")) return XMQ_CLI_CMD_TO_JSON;
+    if (!strcmp(s, "pager")) return XMQ_CLI_CMD_PAGER;
     if (!strcmp(s, "render-terminal")) return XMQ_CLI_CMD_RENDER_TERMINAL;
     if (!strcmp(s, "render-html")) return XMQ_CLI_CMD_RENDER_HTML;
     if (!strcmp(s, "render-tex")) return XMQ_CLI_CMD_RENDER_TEX;
@@ -248,6 +275,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TO_HTMQ: return "to-htmq";
     case XMQ_CLI_CMD_TO_HTML: return "to-html";
     case XMQ_CLI_CMD_TO_JSON: return "to-json";
+    case XMQ_CLI_CMD_PAGER: return "pager";
     case XMQ_CLI_CMD_RENDER_TERMINAL: return "render-terminal";
     case XMQ_CLI_CMD_RENDER_HTML: return "render-html";
     case XMQ_CLI_CMD_RENDER_TEX: return "render-tex";
@@ -272,6 +300,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TO_JSON:
         return XMQ_CLI_CMD_GROUP_TO;
 
+    case XMQ_CLI_CMD_PAGER:
     case XMQ_CLI_CMD_RENDER_TERMINAL:
     case XMQ_CLI_CMD_RENDER_HTML:
     case XMQ_CLI_CMD_RENDER_TEX:
@@ -456,6 +485,11 @@ bool handle_option(const char *arg, XMQCliCommand *command)
         {
             command->explicit_nl = arg+9;
             command->has_overrides = true;
+            return true;
+        }
+        if (!strncmp(arg, "--pager", 7))
+        {
+            command->use_pager = true;
             return true;
         }
     }
@@ -933,6 +967,9 @@ void print_help_and_exit()
            "to-json\n"
            "             Write the content as xml/html/json on stdout.\n"
            "\n"
+           "pager\n"
+           "             Render the content as xmq/htmq for color presentation on a terminal and use pager.\n"
+           "\n"
            "render-terminal\n"
            "render-html\n"
            "render-tex\n"
@@ -1112,15 +1149,29 @@ bool cmd_to(XMQCliCommand *command)
                             command->explicit_cr,
                             command->explicit_nl);
     }
-    /*
-    verbose_("(xmq) print %s render %s\n",
-             content_type_to_string(settings->output_format),
-             render_format_to_string(settings->render_to)
-        );
-    */
-    xmqSetupPrintStdOutStdErr(settings);
-    xmqPrint(command->env->doc, settings);
-    printf("\n");
+
+    if (!command->use_pager)
+    {
+        verbose_("(xmq) print %s render %s\n",
+                 content_type_to_string(command->out_format),
+                 render_format_to_string(command->render_to));
+
+        xmqSetupPrintStdOutStdErr(settings);
+        xmqPrint(command->env->doc, settings);
+    }
+    else
+    {
+        verbose_("(xmq) paging %s render %s\n",
+                 content_type_to_string(command->out_format),
+                 render_format_to_string(command->render_to));
+
+        const char *start;
+        const char *stop;
+        xmqSetupPrintMemory(settings, &start, &stop);
+        xmqPrint(command->env->doc, settings);
+        page(start, stop);
+        free((char*)start);
+    }
 
     xmqFreeOutputSettings(settings);
     return true;
@@ -1267,6 +1318,11 @@ void prepare_command(XMQCliCommand *c)
     case XMQ_CLI_CMD_TO_JSON:
         c->out_format = XMQ_CONTENT_JSON;
         return;
+    case XMQ_CLI_CMD_PAGER:
+        c->use_pager = true;
+        c->out_format = XMQ_CONTENT_XMQ;
+        c->render_to = XMQ_RENDER_TERMINAL;
+        return;
     case XMQ_CLI_CMD_RENDER_TERMINAL:
         c->out_format = XMQ_CONTENT_XMQ;
         c->render_to = XMQ_RENDER_TERMINAL;
@@ -1296,6 +1352,202 @@ void prepare_command(XMQCliCommand *c)
     }
 }
 
+const char *find_prev_line(const char *offset, const  char *start, const char *stop)
+{
+    const char *i = offset-1;
+    if (i < start) return offset;
+    if (*i == '\n') i--;
+    while (i > start)
+    {
+        if (*i == '\n')
+        {
+            i++;
+            break;
+        }
+        i--;
+        if (i < start) return start;
+    }
+    return i;
+}
+
+const char *find_next_line(const char *offset, const  char *start, const char *stop)
+{
+    const char *i = offset;
+    while (i < stop)
+    {
+        if (*i == '\n')
+        {
+            i++;
+            break;
+        }
+        i++;
+    }
+    if (i >= stop) return offset;
+    return i;
+}
+
+int get_char()
+{
+#ifndef PLATFORM_WINAPI
+    return getchar();
+#else
+    return _getch();
+#endif
+}
+
+void put_char(int c)
+{
+#ifndef PLATFORM_WINAPI
+    putchar(c);
+#else
+    _putch(c);
+#endif
+}
+
+void console_write(const char *start, const char *stop)
+{
+#ifndef PLATFORM_WINAPI
+    printf("%.*s", (int)(stop-start), start);
+#else
+	HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD wrote = 0;
+	WriteConsole(out, start, stop-start, &wrote, NULL);
+#endif
+}
+
+KEY read_key(int *c)
+{
+    int k = get_char();
+    if (k == 10 || k == 13) return ENTER;
+    else if (k == 0 || k == 224)
+    {
+        k = get_char();
+        if (k == 72) return ARROW_UP;
+        if (k == 75) return ARROW_LEFT;
+        if (k == 77) return ARROW_RIGHT;
+        if (k == 80) return ARROW_DOWN;
+        if (k == 73) return PAGE_UP;
+        if (k == 81) return PAGE_DOWN;
+    }
+    else
+    if (k == 27)
+    {
+        k = get_char();
+        if (k == 91)
+        {
+            k = get_char();
+            if (k == 65) return ARROW_UP;
+            else if (k == 66) return ARROW_DOWN;
+            else if (k == 53)
+            {
+                k = get_char();
+                if (k == 126) return PAGE_UP;
+            }
+            else if (k == 54)
+            {
+                k = get_char();
+                if (k == 126) return PAGE_DOWN;
+            }
+        }
+    }
+
+    *c = k;
+    return CHARACTER;
+}
+
+void page(const char *start, const char *stop)
+{
+    int w = 0; // Max columns ie the width
+    int h = 0; // Max height ie the number of rows
+    int c = 0; // Current column starts with 0
+    int r = 0; // Current row starts with 0
+    const char *offset = start;
+
+#ifndef PLATFORM_WINAPI
+    struct winsize max;
+    ioctl(0, TIOCGWINSZ , &max);
+    h = max.ws_row - 2;
+    w = max.ws_col;
+
+#else
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    w = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    h = csbi.srWindow.Bottom - csbi.srWindow.Top + 1 - 2;
+
+#endif
+
+    enableRawStdinTerminal();
+
+    printf("\033[2J\033[H");
+    const char *eop = start;
+    for (;;)
+    {
+        MemBuffer *buffer = new_membuffer();
+        r = c = 0;
+        const char *i = offset;
+        for (; i < stop; ++i)
+        {
+            if (*i == '\n')
+            {
+                r++;
+                c = 0;
+                if (r > h) break;
+            }
+            else
+            {
+                c++;
+                if (c > w)
+                {
+                    r++;
+                    c = 0;
+                    if (r > h) break;
+                }
+            }
+            membuffer_append_char(buffer, *i);
+        }
+        eop = i+1;
+        console_write(buffer->buffer_, buffer->buffer_+buffer->used_);
+        printf("\033[0m\n:");
+        free_membuffer_and_free_content(buffer);
+        int c;
+        KEY key = read_key(&c);
+
+        if ((key == CHARACTER && c == ' ') ||
+            (key == PAGE_DOWN))
+        {
+            if (eop < stop) offset = eop;
+        }
+        else if (key == ENTER ||
+                 key == ARROW_DOWN)
+        {
+            offset = find_next_line(offset, start, stop);
+        }
+        else if (key == ARROW_UP)
+        {
+            offset = find_prev_line(offset, start, stop);
+        }
+        else if (key == CHARACTER && c == '<')
+        {
+            offset = start;
+        }
+        else if (key == CHARACTER && c == '>')
+        {
+            offset = stop-100;
+        }
+        else if (key == CHARACTER &&
+                 (c == 'q' || c == 'Q'))
+        {
+            break;
+        }
+        printf("\033[2J\033[H");
+    }
+
+    restoreStdinTerminal();
+    printf("\033[0m");
+}
+
 bool perform_command(XMQCliCommand *c)
 {
     if (c->cmd == XMQ_CLI_CMD_NONE) return true;
@@ -1308,6 +1560,7 @@ bool perform_command(XMQCliCommand *c)
     case XMQ_CLI_CMD_TO_HTMQ:
     case XMQ_CLI_CMD_TO_HTML:
     case XMQ_CLI_CMD_TO_JSON:
+    case XMQ_CLI_CMD_PAGER:
     case XMQ_CLI_CMD_RENDER_TERMINAL:
     case XMQ_CLI_CMD_RENDER_HTML:
     case XMQ_CLI_CMD_RENDER_TEX:
@@ -1442,6 +1695,49 @@ void enableAnsiColorsTerminal()
 
     debug_("(xmq) Ansi done\n");
 }
+
+void enableRawStdinTerminal()
+{
+    debug_("(xmq) enable raw stdin terminal\n");
+
+    HANDLE handle = GetStdHandle(STD_INPUT_HANDLE);
+    if (handle == INVALID_HANDLE_VALUE) return; // Fail
+
+    DWORD mode;
+    if (!GetConsoleMode(handle, &mode)) return; // Fail
+
+    mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    mode &= ~(ENABLE_LINE_INPUT|ENABLE_ECHO_INPUT);
+
+    debug_("(xmq) SetConsoleMode %x\n", mode);
+
+    SetConsoleMode(handle, mode);
+
+    debug_("(xmq) raw stdin done\n");
+}
+
+void restoreStdinTerminal()
+{
+}
+
+#else
+static struct termios old_terminal, new_terminal;
+
+void enableRawStdinTerminal()
+{
+    tcgetattr(STDIN_FILENO, &old_terminal);
+    new_terminal = old_terminal;
+
+    new_terminal.c_lflag &= ~(ICANON);
+    new_terminal.c_lflag &= ~(ECHO);
+    tcsetattr( STDIN_FILENO, TCSANOW, &new_terminal);
+}
+
+void restoreStdinTerminal()
+{
+    tcsetattr(STDIN_FILENO, TCSANOW, &old_terminal);
+}
+
 #endif
 
 bool has_verbose(int argc, const char **argv)

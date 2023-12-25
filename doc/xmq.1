@@ -74,6 +74,31 @@ Write the content as xmq/htmq on stdout. If stdout is a tty, then this command b
 Write the content as xml/html/json on stdout.
 
 .TP
+\fIpager\fP
+This command will render the content as xmq/htmq for presentation at a terminal and use a pager.
+You can use the following keys in the pager:
+.br
+q - quit
+.br
+enter - next line
+.br
+space - next page
+.br
+arrow down - next line
+.br
+arrow up - previous line
+.br
+page down - next page
+.br
+page up - previous page
+.br
+/ - start a search
+.br
+< - jump to beginning
+.br
+> - jump to end
+
+.TP
 \fIrender-terminal\fP / \fIrender-html\fP / \fIrender-tex\fP
 This command will render the content as xmq/htmq for presentation at a terminal, as html or as LaTeX.
 

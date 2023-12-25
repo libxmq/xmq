@@ -145,8 +145,8 @@ $(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(PARTS_SOURCES) $(EXTRA_LIBS)
 ifeq ($(PLATFORM),WINAPI)
 	$(VERBOSE)mkdir -p $(OUTPUT_ROOT)/windows_installer
 	$(VERBOSE)cp $(OUTPUT_ROOT)/$(TYPE)/xmq.exe $(OUTPUT_ROOT)/$(TYPE)/*.dll $(OUTPUT_ROOT)/windows_installer
-	$(VERBOSE)cp $(SRC_ROOT)/scripts/windows-installer-wixl.wxs $(OUTPUT_ROOT)/windows_installer/xmq-windows.wxs
-	$(VERBOSE)(cd $(OUTPUT_ROOT)/windows_installer; wixl -v xmq-windows.wxs)
+	$(VERBOSE)cp $(SRC_ROOT)/scripts/windows-installer-wixl.wxs $(OUTPUT_ROOT)/windows_installer/xmq-windows-$(TYPE).wxs
+	$(VERBOSE)(cd $(OUTPUT_ROOT)/windows_installer; wixl -v xmq-windows-$(TYPE).wxs)
 endif
 endif
 
