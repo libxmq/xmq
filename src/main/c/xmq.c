@@ -882,6 +882,16 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
         {
             if (c == '<')
             {
+                if (i+4 < stop &&
+                    *(i+1) == '?' &&
+                    *(i+2) == 'x' &&
+                    *(i+3) == 'm' &&
+                    *(i+4) == 'l')
+                {
+                    debug("(xmq) content detected as xml since <?xml found\n");
+                    return XMQ_CONTENT_XML;
+                }
+
                 if (i+3 < stop &&
                     *(i+1) == '!' &&
                     *(i+2) == '-' &&
@@ -897,14 +907,22 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                     }
                     i += 3;
                     // No closing comment, return as xml.
-                    if (i >= stop) return XMQ_CONTENT_XML;
+                    if (i >= stop)
+                    {
+                        debug("(xmq) content detected as xml since comment start found\n");
+                        return XMQ_CONTENT_XML;
+                    }
                     // Pick up after the comment.
                     c = *i;
                 }
 
                 // Starts with <html or < html
                 const char *is_html = find_word_ignore_case(i+1, stop, "html");
-                if (is_html) return XMQ_CONTENT_HTML;
+                if (is_html)
+                {
+                    debug("(xmq) content detected as html since html found\n");
+                    return XMQ_CONTENT_HTML;
+                }
 
                 // Starts with <!doctype  html
                 const char *is_doctype = find_word_ignore_case(i, stop, "<!doctype");
@@ -912,13 +930,22 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                 {
                     i = is_doctype;
                     is_html = find_word_ignore_case(is_doctype+1, stop, "html");
-                    if (is_html) return XMQ_CONTENT_HTML;
+                    if (is_html)
+                    {
+                        debug("(xmq) content detected as html since doctype html found\n");
+                        return XMQ_CONTENT_HTML;
+                    }
                 }
                 // Otherwise we assume it is xml. If you are working with html content inside
                 // the html, then use --html
+                debug("(xmq) content assumed to be xml\n");
                 return XMQ_CONTENT_XML; // Or HTML...
             }
-            if (c == '{' || c == '"' || c == '[' || (c >= '0' && c <= '9')) return XMQ_CONTENT_JSON;
+            if (c == '{' || c == '"' || c == '[' || (c >= '0' && c <= '9'))
+            {
+                debug("(xmq) content detected as json\n");
+                return XMQ_CONTENT_JSON;
+            }
             // Strictly speaking true,false and null are valid xmq files. But we assume
             // it is json since it must be very rare with a single <true> <false> <null> tag in xml/xmq/html/htmq etc.
             // Force xmq with --xmq for the cli command.
@@ -934,15 +961,21 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                     {
                         if (!strncmp(i, "true", 4) ||
                             !strncmp(i, "false", 5) ||
-                            !strncmp(i, "null", 4)) return XMQ_CONTENT_JSON;
+                            !strncmp(i, "null", 4))
+                        {
+                            debug("(xmq) content detected as json since true/false/null found\n");
+                            return XMQ_CONTENT_JSON;
+                        }
                     }
                 }
             }
+            debug("(xmq) content assumed to be xmq\n");
             return XMQ_CONTENT_XMQ;
         }
         i++;
     }
 
+    debug("(xmq) empty content assumed to be xmq\n");
     return XMQ_CONTENT_XMQ;
 }
 
@@ -2553,7 +2586,7 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root)
     if (block_size > 10000) block_size = 10000;
     size_t n = 0;
     do {
-        size_t r = fread(buffer, 1, block_size, f);
+        size_t r = fread(buffer+n, 1, block_size, f);
         debug("(xmq) read %zu bytes total %zu\n", r, n);
         if (!r) break;
         n += r;
@@ -5516,7 +5549,7 @@ bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **ou
     if (block_size > 10000) block_size = 10000;
     size_t n = 0;
     do {
-        size_t r = fread(buffer, 1, block_size, f);
+        size_t r = fread(buffer+n, 1, block_size, f);
         debug("(xmq) read %zu bytes total %zu\n", r, n);
         if (!r) break;
         n += r;
