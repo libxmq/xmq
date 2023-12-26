@@ -11,19 +11,23 @@ body {
 }
 
 a {
-    color: #555555;
+    color: #000088;
+    font-weight: bold;
 }
 
 a:visited {
-    color: #888888;
+    color: #444488;
+    font-weight: bold;
 }
 
 body.dark a {
-    color:white
+    color: #8888ff;
+    font-weight: bold;
 }
 
 body.dark a:visited {
-    color:#888888
+    color:#6666aa;
+    font-weight: bold;
 }
 
 body.dark {

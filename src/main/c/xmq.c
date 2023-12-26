@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/membuffer.h"
 #include"parts/stack.h"
 #include"parts/text.h"
+#include"parts/entities.h"
 #include"parts/xml.h"
 
 // XMQ STRUCTURES ////////////////////////////////////////////////
@@ -2992,15 +2993,28 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
         xmlNodePtr n = xmlNewDocNode(state->doq->docptr_.xml, NULL, (const xmlChar *)name, NULL);
         if (state->element_last == NULL)
         {
-            state->element_last = n;
-            xmlDocSetRootElement(state->doq->docptr_.xml, n);
-            state->doq->root_.node = n;
+            if (!state->implicit_root || !strcmp(name, state->implicit_root))
+            {
+                // There is no implicit root, or name is the same as the implicit root.
+                // Then create the root node with name.
+                state->element_last = n;
+                xmlDocSetRootElement(state->doq->docptr_.xml, n);
+                state->doq->root_.node = n;
+            }
+            else
+            {
+                // We have an implicit root and it is different from name.
+                xmlNodePtr root = xmlNewDocNode(state->doq->docptr_.xml, NULL, (const xmlChar *)state->implicit_root, NULL);
+                state->element_last = root;
+                xmlDocSetRootElement(state->doq->docptr_.xml, root);
+                state->doq->root_.node = root;
+                push_stack(state->element_stack, state->element_last);
+            }
         }
         xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
         xmlAddChild(parent, n);
         state->element_last = n;
     }
-
 
     free(name);
 }
@@ -3336,9 +3350,24 @@ size_t print_char_entity(XMQPrintState *ps, XMQColor color, const char *start, c
     if (decode_utf8(start, stop, &uc, &bytes))
     {
         // Max entity &#1114112; max buf is 11 bytes including terminating zero byte.
-        char buf[20] = {};
+        char buf[32] = {};
         memset(buf, 0, sizeof(buf));
-        snprintf(buf, 11, "&#%d;", uc);
+
+        const char *replacement = NULL;
+        if (ps->output_settings->escape_non_7bit &&
+            ps->output_settings->output_format == XMQ_CONTENT_HTMQ)
+        {
+            replacement = toHtmlEntity(uc);
+        }
+
+        if (replacement)
+        {
+            snprintf(buf, 32, "&%s;", replacement);
+        }
+        else
+        {
+            snprintf(buf, 32, "&#%d;", uc);
+        }
 
         if (pre) write(writer_state, pre, NULL);
         print_utf8(ps, COLOR_none, 1, buf, NULL);
@@ -5387,11 +5416,13 @@ bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, XMQT
     int parse_options = XML_PARSE_NOCDATA | XML_PARSE_NONET;
     if (tt != XMQ_TRIM_NONE) parse_options |= XML_PARSE_NOBLANKS;
 
-    doc = xmlReadMemory(start, stop-start, "foof", NULL, parse_options);
+    doc = xmlReadMemory(start, stop-start, doq->source_name_, NULL, parse_options);
     if (doc == NULL)
     {
-        PRINT_ERROR("Document not parsed successfully.\n");
-        return 0;
+        doq->errno_ = XMQ_ERROR_PARSING_XML;
+        // Let libxml2 print the error message.
+        doq->error_ = NULL;
+        return false;
     }
 
     if (doq->docptr_.xml)
@@ -5421,8 +5452,10 @@ bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, XMQ
 
     if (doc == NULL)
     {
-        PRINT_ERROR("Document not parsed successfully.\n");
-        return 0;
+        doq->errno_ = XMQ_ERROR_PARSING_HTML;
+        // Let libxml2 print the error message.
+        doq->error_ = NULL;
+        return false;
     }
 
     roo_element = xmlDocGetRootElement(doc);
@@ -5454,7 +5487,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
                             XMQContentType ct,
                             XMQTrimType tt)
 {
-    bool rc = true;
+    bool ok = true;
 
     // Unicode files might lead with a byte ordering mark.
     start = skip_any_potential_bom(start, stop);
@@ -5484,7 +5517,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
                 case XMQ_CONTENT_JSON: doq->errno_ = XMQ_ERROR_EXPECTED_JSON; break;
                 default: break;
                 }
-                rc = false;
+                ok = false;
                 goto exit;
             }
         }
@@ -5492,17 +5525,17 @@ bool xmqParseBufferWithType(XMQDoc *doq,
 
     switch (ct)
     {
-    case XMQ_CONTENT_XMQ: rc = xmqParseBuffer(doq, start, stop, implicit_root); break;
-    case XMQ_CONTENT_HTMQ: rc = xmqParseBuffer(doq, start, stop, implicit_root); break;
-    case XMQ_CONTENT_XML: rc = xmq_parse_buffer_xml(doq, start, stop, tt); break;
-    case XMQ_CONTENT_HTML: rc = xmq_parse_buffer_html(doq, start, stop, tt); break;
-    case XMQ_CONTENT_JSON: rc = xmq_parse_buffer_json(doq, start, stop, implicit_root); break;
+    case XMQ_CONTENT_XMQ: ok = xmqParseBuffer(doq, start, stop, implicit_root); break;
+    case XMQ_CONTENT_HTMQ: ok = xmqParseBuffer(doq, start, stop, implicit_root); break;
+    case XMQ_CONTENT_XML: ok = xmq_parse_buffer_xml(doq, start, stop, tt); break;
+    case XMQ_CONTENT_HTML: ok = xmq_parse_buffer_html(doq, start, stop, tt); break;
+    case XMQ_CONTENT_JSON: ok = xmq_parse_buffer_json(doq, start, stop, implicit_root); break;
     default: break;
     }
 
 exit:
 
-    if (rc)
+    if (ok)
     {
         if (tt == XMQ_TRIM_NORMAL ||
             tt == XMQ_TRIM_EXTRA ||
@@ -5515,7 +5548,7 @@ exit:
         }
     }
 
-    return rc;
+    return ok;
 }
 
 bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer)
@@ -5751,6 +5784,7 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
 }
 
 #include"parts/always.c"
+#include"parts/entities.c"
 #include"parts/hashmap.c"
 #include"parts/stack.c"
 #include"parts/membuffer.c"

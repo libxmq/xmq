@@ -8,4 +8,5 @@ Sweden</address>
     <!-- Remember to verify coord. -->
     <coord>59°19'41.0"N 18°05'29.0"E</coord>
   </shipto>
+  <rules/>
 </shiporder>

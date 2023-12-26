@@ -230,6 +230,7 @@ build/web/index.html:
 	@cp web/resources/code.js  build/web/resources
 	@cp web/resources/shiporder.xml  build/web/resources/shiporder.xml
 	@cp web/resources/car.xml  build/web/resources/car.xml
+	@cp web/resources/welcome_traveller.htmq  build/web/resources/welcome_traveller.htmq
 	@cp web/resources/welcome_traveller.html  build/web/resources/welcome_traveller.html
 	@cp web/resources/sugar.xmq  build/web/resources/sugar.xmq
 # Extract the css
@@ -253,11 +254,13 @@ build/web/index.html:
 # Raw xml from sugar
 	$(WEBXMQ) web/resources/sugar.xmq to-xml > build/sugar_xml.xml
 # Render the welcome traveller xmq in html
-	$(WEBXMQ) web/resources/welcome_traveller.html render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_xmq.xml
+	$(WEBXMQ) web/resources/welcome_traveller.htmq render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_xmq.xml
+	$(WEBXMQ) web/resources/welcome_traveller.html render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_back_xmq.xml
+	$(WEBXMQ) --trim=none web/resources/welcome_traveller.html to-htmq --escape-non-7bit | $(WEBXMQ) - render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_back_notrim_xmq.xml
 # Render the same but compact
-	$(WEBXMQ) web/resources/welcome_traveller.html render-html --id=ex2 --class=w40 --lightbg --nostyle --compact > build/rendered_welcome_traveller_xmq_compact.xml
-	$(WEBXMQ) web/resources/welcome_traveller.html to-htmq > build/web/resources/welcome_traveller.htmq
-	$(WEBXMQ) web/resources/welcome_traveller.html to-html > build/welcome_traveller_nopp.html
+	$(WEBXMQ) web/resources/welcome_traveller.htmq render-html --id=ex2 --class=w40 --lightbg --nostyle --compact > build/rendered_welcome_traveller_xmq_compact.xml
+	$(WEBXMQ) web/resources/welcome_traveller.htmq to-htmq > build/web/resources/welcome_traveller.htmq
+	$(WEBXMQ) web/resources/welcome_traveller.htmq to-html > build/welcome_traveller_nopp.html
 	$(WEBXMQ) pom.xml render-html --id=expom --class=w80 --lightbg --nostyle > build/pom_rendered.xml
 	$(WEBXMQ) data.xslt render-html --id=exxslt --class=w80 --lightbg --nostyle > build/xslt_rendered.xml
 	$(WEBXMQ) web/index.htmq \
@@ -270,6 +273,9 @@ build/web/index.html:
 		replace-entity SUGAR_XMQ --with-file=build/sugar_xmq.xml \
 		replace-entity SUGAR_XML --with-text-file=build/sugar_xml.xml \
 		replace-entity WELCOME_TRAVELLER_HTMQ --with-file=build/rendered_welcome_traveller_xmq.xml \
+		replace-entity WELCOME_TRAVELLER_BACK_HTMQ --with-file=build/rendered_welcome_traveller_back_xmq.xml \
+		replace-entity WELCOME_TRAVELLER_BACK_NOTRIM_HTMQ --with-file=build/rendered_welcome_traveller_back_notrim_xmq.xml \
+		replace-entity WELCOME_TRAVELLER_HTML --with-text-file=build/web/resources/welcome_traveller.html \
 		replace-entity WELCOME_TRAVELLER_HTMQ_COMPACT --with-file=build/rendered_welcome_traveller_xmq_compact.xml \
 		replace-entity WELCOME_TRAVELLER_NOPP_HTML --with-text-file=build/welcome_traveller_nopp.html \
 		replace-entity POM_RENDERED --with-file=build/pom_rendered.xml \

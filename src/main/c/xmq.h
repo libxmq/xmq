@@ -323,6 +323,8 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop);
     @XMQ_ERROR_EXPECTED_XML: x
     @XMQ_ERROR_EXPECTED_HTML: x
     @XMQ_ERROR_EXPECTED_JSON: x
+    @XMQ_ERROR_PARSING_XML:
+    @XMQ_ERROR_PARSING_HTML:
 
     Possible parse errors.
 */
@@ -354,7 +356,9 @@ typedef enum
     XMQ_ERROR_EXPECTED_HTMQ = 24,
     XMQ_ERROR_EXPECTED_XML = 25,
     XMQ_ERROR_EXPECTED_HTML = 26,
-    XMQ_ERROR_EXPECTED_JSON = 27
+    XMQ_ERROR_EXPECTED_JSON = 27,
+    XMQ_ERROR_PARSING_XML = 28,
+    XMQ_ERROR_PARSING_HTML = 29
 } XMQParseError;
 
 

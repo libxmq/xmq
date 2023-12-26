@@ -179,7 +179,7 @@ bool cmd_delete(XMQCliCommand *command);
 bool cmd_replace(XMQCliCommand *command);
 XMQCliCmd cmd_from(const char *s);
 XMQCliCmdGroup cmd_group(XMQCliCmd cmd);
-int cmd_load(XMQCliCommand *command);
+bool cmd_load(XMQCliCommand *command);
 const char *cmd_name(XMQCliCmd cmd);
 bool cmd_to(XMQCliCommand *command);
 bool cmd_transform(XMQCliCommand *command);
@@ -382,6 +382,7 @@ bool handle_option(const char *arg, XMQCliCommand *command)
         }
     }
     if (command->cmd == XMQ_CLI_CMD_TO_XMQ ||
+        command->cmd == XMQ_CLI_CMD_TO_HTMQ ||
         group == XMQ_CLI_CMD_GROUP_RENDER)
     {
         if (!strcmp(arg, "--escape-newlines"))
@@ -574,7 +575,8 @@ bool handle_option(const char *arg, XMQCliCommand *command)
             {
                 cmd.in_format = XMQ_CONTENT_HTML;
             }
-            cmd_load(&cmd);
+            bool ok = cmd_load(&cmd);
+            if (!ok) return false;
             xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(cmd.env->doc);
             command->node_doc = doc;
             command->node_content = doc->children;
@@ -892,9 +894,9 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->tab_size = atoi(arg+10);
         return true;
     }
-    if (!strncmp(arg, "--iroot=", 8))
+    if (!strncmp(arg, "--root=", 7))
     {
-        command->implicit_root = arg+8;
+        command->implicit_root = arg+7;
         return true;
     }
     if (!strncmp(arg, "--trim=", 7))
@@ -1085,7 +1087,7 @@ void write_print(void *buffer, const char *content)
     printf("%s", content);
 }
 
-int cmd_load(XMQCliCommand *command)
+bool cmd_load(XMQCliCommand *command)
 {
     command->env->doc = xmqNewDoc();
 
@@ -1104,17 +1106,18 @@ int cmd_load(XMQCliCommand *command)
                                    command->trim);
     if (!ok)
     {
-        int rc = xmqDocErrno(command->env->doc);
         const char *error = xmqDocError(command->env->doc);
-        fprintf(stderr, error, command->in);
+        if (error) {
+            fprintf(stderr, error, command->in);
+        }
         xmqFreeDoc(command->env->doc);
         command->env->doc = NULL;
-        return rc;
+        return false;
     }
 
     verbose_("(xmq) loaded %s\n", command->in);
 
-    return 0;
+    return true;
 }
 
 void cmd_unload(XMQCliCommand *command)
@@ -1714,8 +1717,9 @@ void page(const char *start, const char *stop)
             line_offset = in_line_offset = stop-100;
         }
         else if (key == CHARACTER &&
-                 (c == 'q' || c == 'Q'))
+                 (c == 27 || c == 'q' || c == 'Q'))
         {
+            printf("\033[2K\r");
             break;
         }
         printf("\033[2J\033[H");
@@ -1939,6 +1943,7 @@ bool has_debug(int argc, const char **argv)
 
 int main(int argc, const char **argv)
 {
+    int rc = 0;
     if (argc < 2 && isatty(0)) print_help_and_exit();
 
     verbose_enabled__ = has_verbose(argc, argv);
@@ -1986,9 +1991,9 @@ int main(int argc, const char **argv)
     if (first_command->print_help)  print_help_and_exit();
 
     XMQCliCommand *c = first_command;
-    int rc = cmd_load(c);
+    ok = cmd_load(c);
 
-    if (!rc)
+    if (ok)
     {
         // Execute commands.
         while (c)

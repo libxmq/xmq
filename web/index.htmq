@@ -8,12 +8,12 @@ html {
         script(type=text/javascript src=resources/code.js) = ''
         meta(name=viewport content='width=device-width' initial-scale=1.0)
     }
-    body {
+    body(onLoad='goDark();') {
         h1 = 'XMQ - a new language for xml/html (+json)'
         i {
             'by Fredrik Öhrström (last updated '
             &DATE;
-            ')'
+            ') oehrstroem@gmail.com'
         }
         br
         button(onClick='goDark();') = 'Dark Mode'
@@ -40,10 +40,29 @@ html {
             &nbsp;&nbsp;
             a(href=xmq.pdf) = [Grammar]
             &nbsp;&nbsp;
-            a(href=api/index.html) = [API]
+            a(href=api/index.html) = '[xmq.h API]'
         }
-        p {
-            'Let us begin by looking at a shiporder expressed in both xmq and xml.'
+        p = 'Xml can be human readable/editable if it is used for markup of longer
+             human language texts, ie books, articles and other documents etc. In
+             these cases the xml-tags represent a minor part of the whole xml-file.'
+
+        p = 'However xml is often used for configuration files, such as the
+             pom.xml. In such config files the xml-tags represent a major part of
+             the whole xml-file. This makes the config files hard to read and edit
+             directly by hand. Today, the tags are a major part of html files as
+             well, which is one reason why html files are hard to read and edit.'
+
+        p = 'The other reason why xml/html are hard to edit by hand is because they
+             have a complicated approach to dealing with significant
+             whitespace. The truth is that you cannot always pretty print the
+             xml/html code as you would like since it might introduce significant
+             white space. In fact proper pretty printing even requires a full
+             understanding of the DTD/XSD/CSS!'
+
+        p { 'Xmq solves the verbosity of tags by using braces instead of closing xml-tags
+             and solves the whitespace confusion by requiring all whitespace to be quoted.
+             There are a lot of details, of course, but let us begin with an example.
+             Download/build the xmq executable for your platform, then download:'
             &nbsp;
             &nbsp;
             a(href=resources/shiporder.xmq)=shiporder.xmq
@@ -52,16 +71,22 @@ html {
             a(href=resources/shiporder.xml)=shiporder.xml
         }
         p {
-          'Download the xmq binary for your platform and run: '
+          'To convert the xml to xmq and pretty print with colors:'
           span(class=code) = 'xmq shiporder.xml'
         }
         p {
-          'Or: '
-          span(class=code) = 'xmq-less shiporder.xmq'
+          'Use the pager command if the source file is large:'
+          span(class=code) = 'xmq shiporder.xml pager'
+          ' (Press q or esc to exit pager.)'
         }
         p {
-          'To convert to xml: '
-          span(class=code) = 'xmq shiporder.xmq to-xml'
+          'Use shell redirection to store the xmq output in a file:'
+          span(class=code) = 'xmq shiporder.xml to-xmq > test.xmq'
+          ' (The to-xmq command is the default command and can be left out here.)'
+        }
+        p {
+          'To convert the xmq to xml: '
+          span(class=code) = 'xmq shiporder.xmq to-xml > test.xml'
         }
         &SHIPORDER_XMQ;
         ' '
@@ -71,6 +96,77 @@ html {
             &#10;
             &#10;
         }
+        p = 'The hierarchical style should look familiar, but note:'
+        ul{
+            li = 'Safe values after = can be stored as plain text (see 889923 container), no quoting needed!'
+            li = '''Unsafe values (after =) with newlines, whitespace or ( ) { } ' " or leading = & // /* must be quoted.'''
+            li = 'Two single quotes always mean the empty string (see sailing).'
+            li = 'In multiline quotes, the incindental indentation is removed (see address).'
+            li = ''''Quotes containing quotes are quoted using n+1 single quotes (see coord). Note that two quotes are reserved for the empty string. You will therefore see a single quote ' or three quotes ''' or more quotes.''''
+            li = 'Single line comments use // and multi line comments use /* */.'
+            li = 'Comments containing comments are commented using n+1 slashes (eg ///* *///).'
+        }
+        p = 'This means that you can quote any block of text with enough single quotes and you
+             can comment any block of text with enough slashes.'
+        p {
+            'Now let us try some htmq/html:'
+            &nbsp;
+            &nbsp;
+            a(href=resources/welcome_traveller.htmq)=welcome_traveller.htmq
+            &nbsp;
+            &nbsp;
+            a(href=resources/welcome_traveller.html)=welcome_traveller.html
+            &nbsp;
+            &nbsp;
+            ' (Note that the html is manually pretty printed.)'
+        }
+        p {
+          span(class=code) = 'xmq welcome_traveller.htmq pager'
+        }
+        &WELCOME_TRAVELLER_HTMQ;
+        ' '
+        pre(class = 'xmq xmq_light w80')
+        {
+            &WELCOME_TRAVELLER_HTML;
+        }
+        ul {
+            li = '''Text that does not immediately follow an equal sign = is called a standalone quote
+                    (see 'Rest here ...' and 'p until ...') and must always be quoted.
+                    If you do not quote them, they will be interpreted as elements (see html body a h1).'''
+            li = 'Xmq pretty printing is straightforward whereas the html line breaks are weird to prevent spaces inside the word sleep.'
+            li = 'Xmq entities like &nabla; are outside the quotes.'
+            li = 'In the xmq it is obvious that there is exactly a single space between the dot and the nabla.'
+        }
+        p {
+          'If you convert from htmq to html:'
+          span(class=code) = 'xmq welcome_traveller.htmq to-html'
+          ' then you will see that xmq currently does not pretty print since
+            it wants to preserve the xmq whitespace exactly as it was written. (Any linebreaks below are due to the browser.)'
+        }
+        pre(class = 'xmq xmq_light w40')
+        {
+            &WELCOME_TRAVELLER_NOPP_HTML;
+        }
+        p {
+          'If you convert from the original manually pretty printed html above to htmq:'
+          span(class=code) = 'xmq welcome_traveller.html to-htmq'
+          ' then you will see that xmq by default performs a best effort whitespace trimming.
+            The xmq tool currently does not try to understand all DTD/XSD/CSS rules for whitespace.
+            You can also see that the &nabla; was replaced with the actual ∇. This happened because
+            it was character entity, which is just another kind of quote.
+            If you want to preserve all whitespace and restore the html entities then do:'
+          span(class=code) = 'xmq --trim=none welcome_traveller.html to-htmq --escape-non-7bit'
+        }
+        &WELCOME_TRAVELLER_BACK_HTMQ;
+        ' '
+        &WELCOME_TRAVELLER_BACK_NOTRIM_HTMQ;
+        p = 'As you can see there is quite a lot of strange whitespace in xml/html, which might or might not be significant
+             depending on your css and other rules. If you really want this whitespace then xmq will make it obvious.'
+        p {
+          'The opposite of xmq pretty printing is xmq compact printing with no indentation and no newlines: '
+          span(class=code) = 'xmq welcome_traveller.htmq to-htmq --compact'
+        }
+        &WELCOME_TRAVELLER_HTMQ_COMPACT;
         p {
             'And another simple data structure.'
             &nbsp;
@@ -86,20 +182,6 @@ html {
         {
             &CAR_XML;
         }
-        p = 'This hierarchical style looks familiar, however note:'
-        ul{
-            li = 'Safe values after = can be stored as plain text (eg 889923 container), no quoting needed!'
-            li = '''Unsafe values with newlines, whitespace or ( ) { } ' " or leading = & // /* must be quoted.'''
-            li = 'Two single quotes always mean the empty string (eg sailing).'
-            li = 'In multiline quotes, the incindental indentation is removed (eg address).'
-            li = 'In multiline quotes, any leading/ending whitespaces is removed.'
-            li = 'Quotes containing quotes are quoted using n+1 single quotes (eg coord).'
-            li = 'Single line comments use // and multi line comments use /* */.'
-            li = 'Comments containing comments are commented using n+1 slashes (eg ///* *///).'
-        }
-        p = 'This means that you can quote any block of text with enough single quotes and you
-             can comment any block of text with enough slashes.'
-
         ul {
             li {
                 '''Note: key=value is just a syntatic sugar for: key{'value'}'''
@@ -126,37 +208,5 @@ html {
           span(class=code) = 'xmq shiporder.xml to-xmq --compact'
         }
         &SHIPORDER_XMQ_COMPACT;
-        p {
-            'Now let us try some htmq/html:'
-            &nbsp;
-            &nbsp;
-            a(href=resources/welcome_traveller.htmq)=welcome_traveller.htmq
-            &nbsp;
-            &nbsp;
-            a(href=resources/welcome_traveller.html)=welcome_traveller.html
-        }
-
-        p {
-          'To view, pretty print and colorize, as xmq/htmq: '
-          span(class=code) = 'xmq-less welcome_traveller.html'
-        }
-        &WELCOME_TRAVELLER_HTMQ;
-        p {
-          'Convert back to html: '
-          span(class=code) = 'xmq welcome_traveller.htmq to-html'
-        }
-        pre(class = 'xmq xmq_light w40')
-        {
-            &WELCOME_TRAVELLER_NOPP_HTML;
-        }
-        ul {
-            li = 'The xmq can be pretty printed without introducing space between traveller: and Click.'
-            li = 'When generating xml/html from xmq the default is to not pretty print the xml/html.'
-        }
-        p {
-          'Generate compact xmq/htmq: '
-          span(class=code) = 'xmq welcome_traveller.html to-xmq --compact'
-        }
-        &WELCOME_TRAVELLER_HTMQ_COMPACT;
     }
 }

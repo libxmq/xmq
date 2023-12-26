@@ -1,0 +1,10 @@
+!DOCTYPE = html
+html {
+    body {
+        h1 = Welcome!
+        'Rest here weary traveller and s'
+        a(href = https://a.b.c) = lee
+        'p until morning. '
+        &nabla;
+    }
+}

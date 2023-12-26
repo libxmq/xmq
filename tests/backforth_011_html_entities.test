@@ -1,0 +1,14 @@
+INPUT
+<!DOCTYPE html><html><body>Howdy &nabla;</body></html>
+FIRST
+!DOCTYPE = html
+html {
+    body = ( 'Howdy '
+             &nabla; )
+}
+SECOND
+<!DOCTYPE html><html><body>Howdy &nabla;</body></html>xxx
+END
+CMDS_FIRST to-htmq --escape-non-7bit
+ARGS_SECOND
+CMDS_SECOND to-html

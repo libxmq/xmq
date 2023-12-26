@@ -372,6 +372,8 @@ const char *xmqParseErrorToString(XMQParseError e)
     case XMQ_ERROR_EXPECTED_XML: return "expected xml source";
     case XMQ_ERROR_EXPECTED_HTML: return "expected html source";
     case XMQ_ERROR_EXPECTED_JSON: return "expected json source";
+    case XMQ_ERROR_PARSING_XML: return "error parsing xml";
+    case XMQ_ERROR_PARSING_HTML: return "error parsing html";
     }
     assert(false);
     return "unknown error";
