@@ -190,8 +190,10 @@ void disable_raw_mode();
 void enable_raw_mode();
 void enableAnsiColorsTerminal();
 void enableRawStdinTerminal();
-const char *find_next_line(const char *offset, const  char *start, const char *stop);
-const char *find_prev_line(const char *offset, const  char *start, const char *stop);
+const char *skip_ansi_backwards(const char *i, const char *start);
+size_t count_non_ansi_chars(const char *start, const char *stop);
+void find_next_line(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width);
+void find_prev_line(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width);
 bool has_debug(int argc, const char **argv);
 bool has_verbose(int argc, const char **argv);
 bool handle_global_option(const char *arg, XMQCliCommand *command);
@@ -1352,38 +1354,190 @@ void prepare_command(XMQCliCommand *c)
     }
 }
 
-const char *find_prev_line(const char *offset, const  char *start, const char *stop)
+size_t count_non_ansi_chars(const char *start, const char *stop)
 {
-    const char *i = offset-1;
-    if (i < start) return offset;
-    if (*i == '\n') i--;
+    const char *i = start;
+    size_t n = 0;
+
+    while (i < stop)
+    {
+        if (*i == 27)
+        {
+            // Skip ansi escape sequence.
+            while (i < stop)
+            {
+                char c = *i++;
+                if (c == 'm') continue;
+            }
+        }
+        i++;
+        n++;
+    }
+
+    return n;
+}
+
+const char *skip_ansi_backwards(const char *i, const char *start)
+{
+    // An ansi escape looks like: \033[38m
+    if (*i != 'm') return i;
+    // Check that we have space to look for ansi. Minimum ansi: \033[0m which is 4 bytes.
+    if (i-4 < start) return i;
+    // Must be a digit before m.
+    if (!isdigit(*(i-1))) return i;
+
+    const char *org_i = i;
+    while (i > start)
+    {
+        char c = *i;
+        // Stop at [
+        if (c == '[') break;
+        // Abort if not digits nor ;
+        if (!isdigit(c) && c != ';') return org_i;
+        i--;
+    }
+    if (i <= start) return org_i;
+    i--;
+    if (i < start) return org_i;
+    if (*i != '\033') return org_i;
+    return i-1;
+}
+
+void print_until_newline(const char *info, const char *i, const char *stop);
+
+void print_until_newline(const char *info, const char *i, const char *stop)
+{
+    const char *start = i;
+    while (i < stop && *i != '\n') i++;
+    size_t n = i-start;
+    fprintf(stderr, "%s >%.*s<\n", info, (int)n, start);
+}
+
+const char *skip_line_width_backwards(const char *lo, const char *ilo, const char *start, const char *stop, int width);
+
+const char *skip_line_width_backwards(const char *lo, const char *ilo, const char *start, const char *stop, int width)
+{
+    assert(width > 0);
+    const char *i = ilo;
+    while (i > start)
+    {
+        i = skip_ansi_backwards(i, start);
+        width--;
+        i--;
+        if (*i == '\n') return i+1; // This is an error....
+        if (i == lo) return i; // This is an error....
+        if (width == 0) return i; // Good, we skipped backwards in a wrapped line.
+    }
+    return start;
+}
+
+const char *find_prev_line_start(const char *lo, const char *ilo, const char *start, const char *stop);
+
+const char *find_prev_line_start(const char *lo, const char *ilo, const char *start, const char *stop)
+{
+    if (ilo > lo) return lo;
+    // *lo is the first character in the current line.
+    // *(lo-1) is the newline ending the previous line.
+    // *(lo-2) is the last character on the previous line.
+    // Start searching from the last character on the previous line.
+    const char *i = lo-2;
     while (i > start)
     {
         if (*i == '\n')
         {
-            i++;
-            break;
+            return i+1;
         }
         i--;
-        if (i < start) return start;
     }
-    return i;
+    return start;
 }
 
-const char *find_next_line(const char *offset, const  char *start, const char *stop)
+void find_prev_line(const char **line_offset,
+                    const char **in_line_offset,
+                    const  char *start,
+                    const char *stop,
+                    int width)
 {
-    const char *i = offset;
+    /* - Lo and ilo might point to the same line starting point.
+         This happens for non-wrapped lines.
+       - Lo and ilo might point to the same line starting point for
+         wrapped long lines if we have not scrolled down into the line.
+       - Ilo might point into the wrapped line lo after we have scrolled
+         down a line or more into a wrapped long line. */
+    const char *lo = *line_offset;
+    const char *ilo = *in_line_offset;
+
+    print_until_newline("LO ", lo, stop);
+    print_until_newline("ILO", ilo, stop);
+
+    const char *prev_lo = find_prev_line_start(lo, ilo, start, stop);
+    // Prev_lo is now lo or the line before.
+    print_until_newline("PLO", prev_lo, stop);
+
+    // How far is it from the prev line start to the ilo?
+    size_t diff = count_non_ansi_chars(prev_lo, ilo);
+    fprintf(stderr, "diff %zu\n", diff);
+
+    if (diff > width)
+    {
+        // We have a wrapped line move backwards the width within the line.
+        *line_offset = prev_lo;
+        *in_line_offset = skip_line_width_backwards(lo, ilo, start, stop, width);
+        return;
+    }
+
+    *line_offset = prev_lo;
+    *in_line_offset = prev_lo;
+}
+
+void find_next_line(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width)
+{
+    const char *lo = *line_offset;
+    const char *ilo = *in_line_offset;
+
+    // Lo and ilo might point to the same line starting point. This happens for non-wrapped lines.
+    // Lo and ilo might point to the same line starting point for wrapped long lines if we have not scrolled
+    // down into the line.
+    // Ilo might point to the start of the wrapped line lo when scrolled down a line or more into a wrapped long line.
+
+    // Lets find the next ilo if we move into the next wrapped line or lo+ilo if we exit the wrapped line.
+    const char *i = ilo;
+    int col = 0;
     while (i < stop)
     {
+        if (*i == 27)
+        {
+            // Skip ansi escape sequence.
+            while (i < stop)
+            {
+                char c = *i;
+                i++;
+                if (c == 'm') break;
+            }
+        }
+
         if (*i == '\n')
         {
-            i++;
+            // We found a newline. Nice, we have a new lo and ilo after the newline.
+            lo = ilo = i+1;
+            break;
+        }
+
+        col++;
+        if (col >= width)
+        {
+            // We reached a new wrapped line. Stop here.
+            ilo = i;
             break;
         }
         i++;
     }
-    if (i >= stop) return offset;
-    return i;
+
+    // We reached end of buffer before we found a new line. Do nothing.
+    if (i >= stop) return;
+
+    *line_offset = lo;
+    *in_line_offset = ilo;
 }
 
 int get_char()
@@ -1457,24 +1611,25 @@ KEY read_key(int *c)
 
 void page(const char *start, const char *stop)
 {
-    int w = 0; // Max columns ie the width
-    int h = 0; // Max height ie the number of rows
-    int c = 0; // Current column starts with 0
-    int r = 0; // Current row starts with 0
-    const char *offset = start;
+    int width = 0; // Max columns ie the width
+    int height = 0; // Max height ie the number of rows
+    int col = 0; // Current column starts with 0
+    int row = 0; // Current row starts with 0
+    const char *line_offset = start; // Points to a start of line in the buffer.
+    const char *in_line_offset = start; // Points to line_offset or to start of next wrapped line.
 
 #ifndef PLATFORM_WINAPI
     struct winsize max;
     ioctl(0, TIOCGWINSZ , &max);
-    h = max.ws_row - 2;
-    w = max.ws_col;
+    height = max.ws_row - 1;
+    width = max.ws_col;
 
 #else
     CONSOLE_SCREEN_BUFFER_INFO csbi;
 
     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-    w = csbi.srWindow.Right - csbi.srWindow.Left + 1;
-    h = csbi.srWindow.Bottom - csbi.srWindow.Top + 1 - 2;
+    width = csbi.srWindow.Right - csbi.srWindow.Left + 1 - 1;
+    height = csbi.srWindow.Bottom - csbi.srWindow.Top + 1 - 1;
 
 #endif
 
@@ -1485,24 +1640,46 @@ void page(const char *start, const char *stop)
     for (;;)
     {
         MemBuffer *buffer = new_membuffer();
-        r = c = 0;
-        const char *i = offset;
+        row = col = 0;
+        const char *i = line_offset;
         for (; i < stop; ++i)
         {
-            if (*i == '\n')
+            if (*i == 27)
             {
-                r++;
-                c = 0;
-                if (r > h) break;
-            }
-            else
-            {
-                c++;
-                if (c > w)
+                // Ansi escape sequence.
+                while (i < stop)
                 {
-                    r++;
-                    c = 0;
-                    if (r > h) break;
+                    char c = *i;
+                    membuffer_append_char(buffer, c);
+                    if (c == 'm') break;
+                    i++;
+                }
+                continue;
+            }
+            // Only start counting rows and cols when we have passed the in_line_offset.
+            // Why? Because we want to print the line from the start to have the ansi colors
+            // correctly setup. Then we will print a bit more att the end which causes
+            // the display to scroll up and hide the line(s) before in_line_offset.
+            if (i >= in_line_offset)
+            {
+                if (*i == '\n')
+                {
+                    row++;
+                    col = 0;
+                    if (row >= height) break;
+                }
+                else
+                {
+                    col++;
+                    if (col >= width)
+                    {
+                        row++;
+                        col = 0;
+                        if (row >= height) {
+                            membuffer_append_char(buffer, *i);
+                            break;
+                        }
+                    }
                 }
             }
             membuffer_append_char(buffer, *i);
@@ -1517,24 +1694,24 @@ void page(const char *start, const char *stop)
         if ((key == CHARACTER && c == ' ') ||
             (key == PAGE_DOWN))
         {
-            if (eop < stop) offset = eop;
+            if (eop < stop) line_offset = eop;
         }
         else if (key == ENTER ||
                  key == ARROW_DOWN)
         {
-            offset = find_next_line(offset, start, stop);
+            find_next_line(&line_offset, &in_line_offset, start, stop, width);
         }
         else if (key == ARROW_UP)
         {
-            offset = find_prev_line(offset, start, stop);
+            find_prev_line(&line_offset, &in_line_offset, start, stop, width);
         }
         else if (key == CHARACTER && c == '<')
         {
-            offset = start;
+            line_offset = in_line_offset = start;
         }
         else if (key == CHARACTER && c == '>')
         {
-            offset = stop-100;
+            line_offset = in_line_offset = stop-100;
         }
         else if (key == CHARACTER &&
                  (c == 'q' || c == 'Q'))
