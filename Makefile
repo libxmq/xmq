@@ -230,6 +230,7 @@ build/web/index.html:
 	@cp web/resources/code.js  build/web/resources
 	@cp web/resources/shiporder.xml  build/web/resources/shiporder.xml
 	@cp web/resources/car.xml  build/web/resources/car.xml
+	@cp web/resources/config.xmq  build/web/resources/
 	@cp web/resources/welcome_traveller.htmq  build/web/resources/welcome_traveller.htmq
 	@cp web/resources/welcome_traveller.html  build/web/resources/welcome_traveller.html
 	@cp web/resources/sugar.xmq  build/web/resources/sugar.xmq
@@ -246,7 +247,10 @@ build/web/index.html:
 # Render config
 	$(WEBXMQ) web/resources/config.xmq render-html --class=w40 --lightbg --nostyle  > build/rendered_config_xmq.xml
 	$(WEBXMQ) --root=myconf web/resources/config.xmq to-xml  > build/config.xml
-	$(WEBXMQ) web/resources/config_more.xmq render-html --class=w40 --lightbg --nostyle  > build/rendered_config_more_xmq.xml
+# Render multi
+	$(WEBXMQ) web/resources/multi.xmq render-html --class=w40 --lightbg --nostyle  > build/rendered_multi_xmq.xml
+	$(WEBXMQ) web/resources/multi.xmq render-html --class=w40 --lightbg --nostyle --compact  > build/rendered_multi_compact_xmq.xml
+	$(WEBXMQ) web/resources/multi.xmq to-xml > build/multi.xml
 # Render car xmq in html
 	$(WEBXMQ) web/resources/car.xml render-html --class=w40 --lightbg --nostyle  > build/rendered_car_xmq.xml
 	$(WEBXMQ) web/resources/car.xml to-xml  > build/web/resources/car.xml
@@ -274,7 +278,9 @@ build/web/index.html:
 		replace-entity SHIPORDER_XMQ_COMPACT --with-file=build/rendered_shiporder_xmq_compact.xml \
 		replace-entity CONFIG_XMQ --with-file=build/rendered_config_xmq.xml \
 		replace-entity CONFIG_XML --with-text-file=build/config.xml \
-		replace-entity CONFIG_MORE_XMQ --with-file=build/rendered_config_more_xmq.xml \
+		replace-entity MULTI_XMQ --with-file=build/rendered_multi_xmq.xml \
+		replace-entity MULTI_COMPACT_XMQ --with-file=build/rendered_multi_compact_xmq.xml \
+		replace-entity MULTI_XML --with-text-file=build/multi.xml \
 		replace-entity CAR_XML --with-text-file=web/resources/car.xml \
 		replace-entity CAR_XMQ --with-file=build/rendered_car_xmq.xml \
 		replace-entity SUGAR_XMQ --with-file=build/sugar_xmq.xml \

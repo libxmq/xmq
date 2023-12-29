@@ -8,7 +8,7 @@ html {
         script(type=text/javascript src=resources/code.js) = ''
         meta(name=viewport content='width=device-width' initial-scale=1.0)
     }
-    body(onLoad='goDark();') {
+    body {
         h1 = 'XMQ - a new language for xml/html (+json)'
         i {
             'by Fredrik Öhrström (last updated '
@@ -114,8 +114,13 @@ html {
         p = 'This means that you can quote any block of text with enough single quotes and you
              can comment any block of text with enough slashes.'
 
-        p = 'XMQ permits multiple root nodes which means that if you use XMQ as your software config file format
+        p { 'XMQ permits multiple root nodes which means that if you use XMQ as your software config file format
              then the first iteration of your config file can be as simple as this:'
+            &nbsp;
+            &nbsp;
+            a(href=resources/config.xmq)=config.xmq
+        }
+
         &CONFIG_XMQ;
         ' '
         pre(class = 'xmq xmq_light w40')
@@ -128,7 +133,7 @@ html {
              cron = xmqGetString(doc, NULL, "/myconf/cron");'
         }
         p { 'The advantage of using XMQ instead of a hand coded format (often similar to INI), becomes obvious when
-             your software evolves. If you use XMQ, then you can rest assure that your config file is future proof
+             your software evolves. If you use XMQ, then you can rest assured that your config file is future proof
              since you can always move on to more powerful XMQ constructs if you need to. When you use XMQ as a config file,
              you do not have to convert it to XML, but if you really want to convert a root-less XMQ file to a valid
              XML file, then you can supply your implicit root (in this case myconf):'
@@ -166,7 +171,7 @@ html {
                     If you do not quote them, they will be interpreted as elements (see html body a h1).'''
             li = 'XMQ pretty printing is straightforward whereas the html line breaks are weird to prevent spaces inside the word sleep.'
             li = 'XMQ entities like &nabla; (∇) must be outside of the quotes.'
-            li = 'In the xmq it is obvious that there is exactly a single space between the dot and the nabla.'
+            li = 'In the xmq it is obvious that there is exactly a single space between Say and the nabla.'
         }
         p {
           'If you convert from htmq to html:'
@@ -183,7 +188,7 @@ html {
         p { 'If you convert from the original manually pretty printed html above to htmq:'
              span(class=code) = 'xmq welcome_traveller.html to-htmq'
             'then you will see that the tool xmq by default trims whitespace using its own heuristic.
-             It keeps the original linebreaks but remove leading/ending whitespace if they
+             It keeps the original linebreaks but removes leading/ending whitespace if they
              contain newlines. This usually work well but might in some situation remove
              significant spaces.'
         }
@@ -203,6 +208,28 @@ html {
           span(class=code) = 'xmq welcome_traveller.htmq to-htmq --compact'
         }
         &WELCOME_TRAVELLER_HTMQ_COMPACT;
+        p {
+            'Even multiline comments can be printed as compact XMQ since */* means a newline.
+             This is not possible with XML since there is no standardized way to escape newlines inside html/xml comments.'
+            &nbsp;
+            &nbsp;
+            a(href=resources/multi.xmq)=multi.xmq
+        }
+        &MULTI_XMQ;
+        p {
+            span(class=code) = 'xmq multi.xmq to-xmq --compact'
+        }
+        &MULTI_COMPACT_XMQ;
+        ' '
+        p {
+            'Note that xml/html does not permit two dashes inside a comment! The xmq tool works around
+             this by adding a very specific char (␐) in between the dashes.'
+             span(class=code) = 'xmq multi.xmq to-xml'
+        }
+        pre(class = 'xmq xmq_light w80')
+        {
+            &MULTI_XML;
+        }
         p {
             'And another simple data structure.'
             &nbsp;

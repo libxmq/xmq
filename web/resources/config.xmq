@@ -1,0 +1,4 @@
+server = 192.0.2.62
+port   = 143
+file   = payroll.dat
+cron   = '0 0 * * MON-FRI'
