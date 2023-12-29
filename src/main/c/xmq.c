@@ -47,7 +47,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //////////////////////////////////////////////////////////////////////////////////
 
 void add_nl(XMQParseState *state);
-bool begins_with_spaces_or_tabs_then_nl(const char *start, const char *stop);
 XMQProceed catch_single_content(XMQDoc *doc, XMQNode *node, void *user_data);
 size_t calculate_buffer_size(const char *start, const char *stop, int indent, const char *pre_line, const char *post_line);
 void copy_and_insert(MemBuffer *mb, const char *start, const char *stop, int num_prefix_spaces, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
@@ -88,7 +87,6 @@ void do_ns_colon(XMQParseState *state, size_t line, size_t col, const char *star
 void do_quote(XMQParseState *state, size_t l, size_t col, const char *start, size_t ccol, const char *cstart, const char *cstop, const char *stop);
 void do_whitespace(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
 void eat_xmq_doctype(XMQParseState *state, const char **text_start, const char **text_stop);
-bool ends_with_nl_then_sp_tb_cr(const char *start, const char *stop);
 bool find_line(const char *start, const char *stop, size_t *indent, const char **after_last_non_space, const char **eol);
 const char *find_next_line_end(XMQPrintState *ps, const char *start, const char *stop);
 const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop);
@@ -997,68 +995,6 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
     return XMQ_CONTENT_XMQ;
 }
 
-bool is_xmq_token_whitespace(char c)
-{
-    if (c == ' ' || c == '\n' || c == '\r')
-    {
-        return true;
-    }
-    return false;
-}
-
-bool is_xml_whitespace(char c)
-{
-    if (c == ' ' || c == '\n' || c == '\t' || c == '\r')
-    {
-        return true;
-    }
-    return false;
-}
-
-bool is_all_xml_whitespace(const char *s)
-{
-    if (!s) return false;
-
-    for (const char *i = s; *i; ++i)
-    {
-        if (!is_xml_whitespace(*i)) return false;
-    }
-    return true;
-}
-
-const char *has_leading_nl_whitespace(const char *start, const char *stop)
-{
-    const char *i = start;
-    bool found_nl = false;
-
-    while (i < stop)
-    {
-        if (*i == '\n') found_nl = true;
-        if (!is_xml_whitespace(*i)) break;
-        i++;
-    }
-    // No newline found before content, so leading spaces/tabs will not be trimmed.
-    if (!found_nl) return 0;
-    return i;
-}
-
-const char *has_ending_nl_whitespace(const char *start, const char *stop)
-{
-    const char *i = stop;
-    bool found_nl = false;
-
-    while (i > start)
-    {
-        i--;
-        if (*i == '\n') found_nl = true;
-        if (!is_xml_whitespace(*i)) break;
-    }
-    // No newline found after content, so ending spaces/tabs will not be trimmed.
-    if (!found_nl) return 0;
-    i++;
-    return i;
-}
-
 bool is_xmq_quote_start(char c)
 {
     return c == '\'';
@@ -1248,35 +1184,6 @@ static const char *build_error_message(const char* fmt, ...)
     return buf;
 }
 
-/** Check if the quote begins with a nl or spaces nl.
-    For example just newline:
-'
-abc'
-    Or spaces newline, but this cannot be shown here since
-    it is invisible and often trimmed by the source editor.
-*/
-bool begins_with_spaces_or_tabs_then_nl(const char *start, const char *stop)
-{
-    const char *i = start;
-    while (i < stop-1 && (*i == ' ' || *i == '\t')) i++;
-    return *i == '\n';
-}
-
-/** Check if the quote ends with a nl or nl spaces.
-    For example just newline:
-'abc
-'
-    Or newline spaces:
-'abc
-   '
-*/
-bool ends_with_nl_then_sp_tb_cr(const char *start, const char *stop)
-{
-    const char *i = stop-1;
-    while (i > start && (*i == ' ' || *i == '\t' || *i == '\r')) i--;
-    return *i == '\n';
-}
-
 /**
     xmq_un_quote:
     @indent: The number of chars before the quote starts on the first line.
@@ -1430,7 +1337,7 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
     }
 
     // Check if the final line is all spaces.
-    if (ends_with_nl_then_sp_tb_cr(start, stop))
+    if (has_ending_nl_space(start, stop))
     {
         // So it is, now trim from the end.
         while (stop > start)
@@ -1450,7 +1357,7 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
     }
 
     // Check if the first line is all spaces.
-    if (begins_with_spaces_or_tabs_then_nl(start, stop))
+    if (has_leading_space_nl(start, stop))
     {
         // The first line is all spaces, trim leading spaces and newlines!
         ignore_first_indent = true;
@@ -3694,47 +3601,6 @@ void print_content_node(XMQPrintState *ps, xmlNode *node)
     print_value(ps, node, LEVEL_XMQ);
 }
 
-bool has_leading_ending_quote(const char *start, const char *stop)
-{
-    return start < stop && ( *start == '\'' || *(stop-1) == '\'');
-}
-
-bool has_newlines(const char *start, const char *stop)
-{
-    for (const char *i = start; i < stop; ++i)
-    {
-        if (*i == '\n') return true;
-    }
-    return false;
-}
-
-bool has_all_quotes(const char *start, const char *stop)
-{
-    for (const char *i = start; i < stop; ++i)
-    {
-        if (*i != '\'') return false;
-    }
-    return true;
-}
-
-bool has_all_whitespace(const char *start, const char *stop, bool *all_space)
-{
-    *all_space = true;
-    for (const char *i = start; i < stop; ++i)
-    {
-        if (!is_xml_whitespace(*i))
-        {
-            *all_space = false;
-            return false;
-        }
-        if (*i != ' ')
-        {
-            *all_space = false;
-        }
-    }
-    return true;
-}
-
 void print_entity_node(XMQPrintState *ps, xmlNode *node)
 {
     check_space_before_entity_node(ps);
@@ -3742,15 +3608,6 @@ void print_entity_node(XMQPrintState *ps, xmlNode *node)
     print_utf8(ps, COLOR_entity, 1, "&", NULL);
     print_utf8(ps, COLOR_entity, 1, (const char*)node->name, NULL);
     print_utf8(ps, COLOR_entity, 1, ";", NULL);
-}
-
-bool contains_newline(const char *start, const char *stop)
-{
-    for (const char *i = start; i < stop; ++i)
-    {
-        if (*i == '\n') return true;
-    }
-    return false;
 }
 
 void print_comment_line(XMQPrintState *ps, const char *start, const char *stop, bool compact)
@@ -3829,7 +3686,7 @@ void print_comment_node(XMQPrintState *ps, xmlNode *node)
 
     check_space_before_comment(ps);
 
-    bool has_newline = contains_newline(start, stop);
+    bool has_newline = has_newlines(start, stop);
     if (!has_newline)
     {
         if (ps->output_settings->compact)
@@ -4529,9 +4386,9 @@ char *copy_lines(int num_prefix_spaces,
     {
         membuffer_append(mb, "( ");
 
-        short_start = has_leading_nl_whitespace(start, stop);
+        short_start = has_leading_space_nl(start, stop);
         if (!short_start) short_start = start;
-        short_stop = has_ending_nl_whitespace(start, stop);
+        short_stop = has_ending_nl_space(start, stop);
         if (!short_stop || short_stop == start) short_stop = stop;
 
         const char *i = start;
@@ -4665,7 +4522,7 @@ size_t count_necessary_quotes(const char *start, const char *stop, bool forbid_n
         }
     }
 
-    if (begins_with_spaces_or_tabs_then_nl(start, stop) || ends_with_nl_then_sp_tb_cr(start, stop))
+    if (has_leading_space_nl(start, stop) || has_ending_nl_space(start, stop))
     {
         // Leading ending ws + nl, nl + ws will be trimmed, so we need a compound and entities.
         *add_compound = true;
@@ -4938,6 +4795,8 @@ void print_quote(XMQPrintState *ps,
     }
     if (numq == 0 && force) numq = 1;
 
+    debug("(xmq) print_quote numq=%d add_nls=%d \n---\n%.*s\n---\n", numq, add_nls, (int)(stop-start), start);
+
     print_quotes(ps, numq, c);
 
     if (add_nls)
@@ -5000,6 +4859,10 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
 
 void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level)
 {
+    debug("(xmq) print_value_internal_text\n"
+          "---\n"
+          "%.*s---", (int)(stop-start), start);
+
     if (!stop) stop = start+strlen(start);
     if (!start || start >= stop || start[0] == 0)
     {
@@ -5056,14 +4919,14 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
         return;
     }
 
-    const char *new_start = has_leading_nl_whitespace(start, stop);
+    const char *new_start = has_leading_space_nl(start, stop);
     if (new_start)
     {
         print_all_whitespace(ps, start, new_start, level);
         start = new_start;
     }
 
-    const char *new_stop = has_ending_nl_whitespace(start, stop);
+    const char *new_stop = has_ending_nl_space(start, stop);
     const char *old_stop = stop;
     if (new_stop)
     {
@@ -5142,8 +5005,8 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
 {
     if (stop == start+1 && *start == '\'') return false;
     if (has_leading_ending_quote(start, stop)) return true;
-    if (has_leading_nl_whitespace(start, stop)) return true;
-    if (has_ending_nl_whitespace(start, stop)) return true;
+    if (has_leading_space_nl(start, stop)) return true;
+    if (has_ending_nl_space(start, stop)) return true;
     if (ps->output_settings->compact && has_newlines(start, stop)) return true;
 
     bool newlines = ps->output_settings->escape_newlines;

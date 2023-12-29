@@ -39,7 +39,17 @@ typedef struct
 } UTF8Char;
 
 bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
+const char *has_ending_nl_space(const char *start, const char *stop);
+const char *has_leading_space_nl(const char *start, const char *stop);
+bool has_leading_ending_quote(const char *start, const char *stop);
+bool has_newlines(const char *start, const char *stop);
+bool has_must_escape_chars(const char *start, const char *stop);
+bool has_all_quotes(const char *start, const char *stop);
+bool has_all_whitespace(const char *start, const char *stop, bool *all_space);
 bool is_lowercase_hex(char c);
+bool is_xmq_token_whitespace(char c);
+bool is_xml_whitespace(char c);
+bool is_all_xml_whitespace(const char *s);
 bool is_xmq_element_name(const char *start, const char *stop);
 bool is_xmq_element_start(char c);
 bool is_xmq_text_name(char c);

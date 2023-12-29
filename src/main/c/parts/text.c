@@ -11,6 +11,89 @@
 
 #ifdef TEXT_MODULE
 
+const char *has_leading_space_nl(const char *start, const char *stop)
+{
+    const char *i = start;
+    bool found_nl = false;
+
+    while (i < stop)
+    {
+        if (*i == '\n') found_nl = true;
+        if (!is_xml_whitespace(*i)) break;
+        i++;
+    }
+    // No newline found before content, so leading spaces/tabs will not be trimmed.
+    if (!found_nl) return 0;
+    return i;
+}
+
+const char *has_ending_nl_space(const char *start, const char *stop)
+{
+    const char *i = stop;
+    bool found_nl = false;
+
+    while (i > start)
+    {
+        i--;
+        if (*i == '\n') found_nl = true;
+        if (!is_xml_whitespace(*i)) break;
+    }
+    // No newline found after content, so ending spaces/tabs will not be trimmed.
+    if (!found_nl) return 0;
+    i++;
+    return i;
+}
+
+bool has_leading_ending_quote(const char *start, const char *stop)
+{
+    return start < stop && ( *start == '\'' || *(stop-1) == '\'');
+}
+
+bool has_newlines(const char *start, const char *stop)
+{
+    for (const char *i = start; i < stop; ++i)
+    {
+        if (*i == '\n') return true;
+    }
+    return false;
+}
+
+bool has_must_escape_chars(const char *start, const char *stop)
+{
+    for (const char *i = start; i < stop; ++i)
+    {
+        if (*i == '\n') return true;
+    }
+    return false;
+}
+
+bool has_all_quotes(const char *start, const char *stop)
+{
+    for (const char *i = start; i < stop; ++i)
+    {
+        if (*i != '\'') return false;
+    }
+    return true;
+}
+
+bool has_all_whitespace(const char *start, const char *stop, bool *all_space)
+{
+    *all_space = true;
+    for (const char *i = start; i < stop; ++i)
+    {
+        if (!is_xml_whitespace(*i))
+        {
+            *all_space = false;
+            return false;
+        }
+        if (*i != ' ')
+        {
+            *all_space = false;
+        }
+    }
+    return true;
+}
+
 bool is_lowercase_hex(char c)
 {
     return
@@ -236,6 +319,35 @@ bool is_xmq_element_name(const char *start, const char *stop)
         if (!is_xmq_text_name(c)) return false;
     }
 
+    return true;
+}
+
+bool is_xmq_token_whitespace(char c)
+{
+    if (c == ' ' || c == '\n' || c == '\r')
+    {
+        return true;
+    }
+    return false;
+}
+
+bool is_xml_whitespace(char c)
+{
+    if (c == ' ' || c == '\n' || c == '\t' || c == '\r')
+    {
+        return true;
+    }
+    return false;
+}
+
+bool is_all_xml_whitespace(const char *s)
+{
+    if (!s) return false;
+
+    for (const char *i = s; *i; ++i)
+    {
+        if (!is_xml_whitespace(*i)) return false;
+    }
     return true;
 }
 

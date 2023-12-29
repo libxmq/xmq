@@ -30,9 +30,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 extern bool debug_enabled_;
 extern bool verbose_enabled_;
 
-void verbose(const char* fmt, ...);
-void debug(const char* fmt, ...);
+void verbose__(const char* fmt, ...);
+void debug__(const char* fmt, ...);
 void check_malloc(void *a);
+
+#define verbose(...) if (verbose_enabled_) { verbose__(__VA_ARGS__); }
+#define debug(...) if (debug_enabled_) {debug__(__VA_ARGS__); }
 
 #define PRINT_STDOUT(...) printf(__VA_ARGS__)
 #define PRINT_ERROR(...) fprintf(stderr, __VA_ARGS__)

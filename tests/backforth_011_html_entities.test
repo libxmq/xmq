@@ -7,7 +7,7 @@ html {
              &nabla; )
 }
 SECOND
-<!DOCTYPE html><html><body>Howdy &nabla;</body></html>xxx
+<!DOCTYPE html><html><body>Howdy &nabla;</body></html>
 END
 CMDS_FIRST to-htmq --escape-non-7bit
 ARGS_SECOND

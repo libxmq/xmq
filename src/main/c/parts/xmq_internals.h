@@ -348,14 +348,9 @@ void build_state_error_message(XMQParseState *state, const char *start, const ch
 
 // Text functions ////////////////
 
-bool has_all_quotes(const char *start, const char *stop);
-bool has_all_whitespace(const char *start, const char *stop, bool *all_space);
-bool has_newlines(const char *start, const char *stop);
 bool is_all_xml_whitespace(const char *start);
 bool is_lowercase_hex(char c);
 bool is_unicode_whitespace(const char *start, const char *stop);
-const char *has_ending_nl_whitespace(const char *start, const char *stop);
-const char *has_leading_nl_whitespace(const char *start, const char *stop);
 size_t count_whitespace(const char *i, const char *stop);
 
 // XMQ parser utility functions //////////////////////////////////
@@ -374,8 +369,6 @@ bool is_xmq_text_value_char(const char *i, const char *stop);
 size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
 size_t count_necessary_quotes(const char *start, const char *stop, bool forbid_nl, bool *add_nls, bool *add_compound);
 size_t count_necessary_slashes(const char *start, const char *stop);
-
-bool contains_newline(const char *start, const char *stop);
 
 // Common parser functions ///////////////////////////////////////
 

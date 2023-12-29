@@ -147,21 +147,23 @@ html {
         {
             &WELCOME_TRAVELLER_NOPP_HTML;
         }
-        p {
-          'If you convert from the original manually pretty printed html above to htmq:'
-          span(class=code) = 'xmq welcome_traveller.html to-htmq'
-          ' then you will see that xmq by default performs a best effort whitespace trimming.
-            The xmq tool currently does not try to understand all DTD/XSD/CSS rules for whitespace.
-            You can also see that the &nabla; was replaced with the actual ∇. This happened because
-            it was character entity, which is just another kind of quote.
-            If you want to preserve all whitespace and restore the html entities then do:'
-          span(class=code) = 'xmq --trim=none welcome_traveller.html to-htmq --escape-non-7bit'
+        p { 'If you convert from the original manually pretty printed html above to htmq:'
+             span(class=code) = 'xmq welcome_traveller.html to-htmq'
+        }
+        p = 'Then you will see that xmq by default trims whitespace using its own heuristic
+             which works well for both xml and html, but might sometimes remove some
+             significant whitespace separating tags and text.'
+        p { 'You can also see that the &nabla; was replaced with the actual ∇. This happened because
+             it was character entity, which is just another kind of quote.
+             If you want to preserve all whitespace and restore the html entities then do:'
+             span(class=code) = 'xmq --trim=none welcome_traveller.html to-htmq --escape-non-7bit'
         }
         &WELCOME_TRAVELLER_BACK_HTMQ;
         ' '
         &WELCOME_TRAVELLER_BACK_NOTRIM_HTMQ;
-        p = 'As you can see there is quite a lot of strange whitespace in xml/html, which might or might not be significant
-             depending on your css and other rules. If you really want this whitespace then xmq will make it obvious.'
+        p = 'As you can see there is quite a lot of strange whitespace in xml/html, which might or might not be
+             significant/ignorable depending on your css and other settings. If you really want this whitespace then
+             xmq will make it obvious.'
         p {
           'The opposite of xmq pretty printing is xmq compact printing with no indentation and no newlines: '
           span(class=code) = 'xmq welcome_traveller.htmq to-htmq --compact'

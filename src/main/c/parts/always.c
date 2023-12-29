@@ -23,7 +23,7 @@ void check_malloc(void *a)
 
 bool verbose_enabled_ = false;
 
-void verbose(const char* fmt, ...)
+void verbose__(const char* fmt, ...)
 {
     if (verbose_enabled_) {
         va_list args;
@@ -35,7 +35,7 @@ void verbose(const char* fmt, ...)
 
 bool debug_enabled_ = false;
 
-void debug(const char* fmt, ...)
+void debug__(const char* fmt, ...)
 {
     if (debug_enabled_) {
         va_list args;
