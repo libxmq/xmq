@@ -1,0 +1,18 @@
+START
+<!DOCTYPE html><html><body><p>alfa
+&nabla;</p><p>alfa
+</p></body></html>
+COMPACT
+!DOCTYPE=html html{body{p=('alfa'&#10;&nabla;)p=alfa}}
+XMQ
+!DOCTYPE = html
+html {
+    body {
+        p = ( 'alfa'
+              &#10;
+              &nabla; )
+        p = alfa
+    }
+}
+END
+CMDS to-htmq --escape-non-7bit

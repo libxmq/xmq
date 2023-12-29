@@ -1269,10 +1269,10 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     start++;
     stop--;
 
-    // Skip any space
+    // Skip a single space immediately after the asterisk or before the ending asterisk.
+    // I.e. /* Comment */ results in the comment text "Comment"
     if (*start == ' ')
     {
-        indent++;
         start++;
     }
     if (*(stop-1) == ' ')
@@ -1396,7 +1396,6 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
                 {
                     incindental = found_indent;
                 }
-                debug("FOUND incindental %zu\n", incindental);
             }
             first_line = false;
         }
@@ -1412,7 +1411,6 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         // We need to prepend the output line with spaces that are not in the source!
         // But, only if there is more than one line with actual non spaces!
         prepend = indent - incindental;
-        debug("ADJUSTING prepend=%zu first_indent=%zu incindental=%zu\n", prepend, indent, incindental);
     }
 
     // Allocate max size of output buffer, it usually becomes smaller
@@ -1449,7 +1447,6 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
                     else break; // safety check.
                 }
             }
-            debug("ADD INCIDENTAL %zu\n", incindental);
         }
         // Copy content, but not line ending xml whitespace ie space, tab, cr.
         while (i < after_last_non_space) { *o++ = *i++; }
@@ -1457,7 +1454,6 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         if (has_nl)
         {
             *o++ = '\n';
-            debug("ADDING NL\n");
         }
         else
         {
@@ -3680,10 +3676,6 @@ void print_comment_node(XMQPrintState *ps, xmlNode *node)
     const char *start = comment;
     const char *stop = comment+strlen(comment);
 
-/*    // Remove leading and ending comment whitespace.
-    while (start < stop && is_xml_whitespace(*start)) start++;
-    while (start < stop && is_xml_whitespace(*(stop-1))) stop--;*/
-
     check_space_before_comment(ps);
 
     bool has_newline = has_newlines(start, stop);
@@ -4954,7 +4946,17 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
         else
         {
             check_space_before_quote(ps, level);
-            print_quote(ps, level_to_quote_color(level), from, to);
+            bool add_nls;
+            bool add_compound;
+            count_necessary_quotes(from, to, false, &add_nls, &add_compound);
+            if (!add_compound)
+            {
+                print_quote(ps, level_to_quote_color(level), from, to);
+            }
+            else
+            {
+                print_value_internal_text(ps, from, to, level);
+            }
         }
         from = to;
     }

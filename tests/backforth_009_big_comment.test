@@ -11,7 +11,7 @@ INPUT
 alfa
 FIRST
 <?xml version="1.0" encoding="utf8"?>
-<!-- Some xml:
+<!--Some xml:
 <foo><!-␐-Information-␐->
 <![CDATA[albert <bar>-␐-␐-␐-␐-</bar> ]]>
 Some xmq:

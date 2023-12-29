@@ -1,0 +1,17 @@
+START
+<!DOCTYPE html><html><body><p>alfa
+&nabla;</p><p>alfa
+</p></body></html>
+COMPACT
+!DOCTYPE=html html{body{p=('alfa'&#10;'∇')p=alfa}}
+XMQ
+!DOCTYPE = html
+html {
+    body {
+        p = 'alfa
+             ∇'
+        p = alfa
+    }
+}
+END
+ARGS

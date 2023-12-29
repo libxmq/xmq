@@ -1,0 +1,8 @@
+type {
+  name = number
+  /* After the type we define all the
+     necessary --regex-- patterns to
+     detect numbers. */
+  pattern = [0-9]+
+  pattern = [0-9]+.[0-9]
+}
