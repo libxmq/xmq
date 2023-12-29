@@ -1,0 +1,15 @@
+// Leading and ending two spaces
+spaces = '  alfa  '
+spaces = ( &#32;&#32; 'alfa' &#32;&#32; )
+spaces { &#32;&#32; 'alfa' &#32;&#32; }
+
+// Leading and ending single quotes
+apos = '''
+       'alfa'
+       '''
+apos = ( &#39; 'alfa' &#39; )
+apos { &#39; 'alfa' &#39; }
+
+// Leading and ending newlines
+newlines = ( &#10; 'alfa' &#10; )
+newlines { &#10; 'alfa' &#10; }

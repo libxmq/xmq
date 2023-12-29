@@ -1,0 +1,30 @@
+{
+    "Reservations": [
+        {
+            "Instances": [
+                {
+                    "ImageId": "ami-092c",
+                    "InstanceId": "i-1111",
+                    "InstanceType": "t3.micro",
+                    "State": {
+                        "Code": 16,
+                        "Name": "running"
+                    }
+                 }
+             ]
+        },
+        {
+            "Instances": [
+                {
+                    "ImageId": "ami-0efd",
+                    "InstanceId": "i-2222",
+                    "InstanceType": "t3.micro",
+                    "State": {
+                        "Code": 16,
+                        "Name": "running"
+                    }
+                }
+             ]
+        }
+    ]
+}

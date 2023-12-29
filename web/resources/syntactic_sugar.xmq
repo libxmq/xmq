@@ -1,0 +1,8 @@
+content {
+    value = 123
+    value = '123'
+    value { '123' }
+
+    element(value = 123
+            value = '123')
+}

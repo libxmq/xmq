@@ -1,0 +1,1 @@
+!DOCTYPE='car [ <!ENTITY copy "COPY"> ]'car{/*An example structure.*/regnr='ABC 123'color=red img=/www/y.png tag=<car> url=https://x.y.z/bar?brand=saab copy=&copy;info{'CarBrand'&copy;'!'}about(info=('CarBrand '&copy;'!'))}
