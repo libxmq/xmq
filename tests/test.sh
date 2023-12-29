@@ -26,7 +26,7 @@ fi
 rm -rf "$OUTPUT"
 mkdir -p "$OUTPUT"
 
-for i in tests/???_*.test
+for i in tests/[0-9][0-9][0-9]_*.test
 do
     tests/test_single.sh "$PROG" "$OUTPUT" "$i"
 done
@@ -39,6 +39,11 @@ done
 for i in tests/format_???_*.test
 do
     tests/test_formatting.sh "$PROG" "$OUTPUT" "$i"
+done
+
+for i in tests/cmd_???_*.test
+do
+    tests/test_cmd.sh "$PROG" "$OUTPUT" "$i"
 done
 
 for i in tests/json_???_*.test

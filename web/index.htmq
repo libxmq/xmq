@@ -53,8 +53,9 @@ html {
             a(href = xmq.pdf) = [Grammar]
             &nbsp;
             &nbsp;
-            a(href = api/index.html) = '[xmq.h API]'
+            a(href = https://github.com/orgs/libxmq/discussions) = '[Forum/Discussions]'
         }
+        h2= Rationale
         p = 'XML can be human readable/editable if it is used for markup of longer
              human language texts, ie books, articles and other documents etc. In
              these cases the xml-tags represent a minor part of the whole xml-file.'
@@ -71,13 +72,16 @@ html {
              XML/HTML code as you would like since it might introduce significant
              white space. In fact proper pretty printing even requires a full
              understanding of the DTD/XSD/CSS!'
+        h2= Solution
         p {
             'XMQ solves the verbosity of tags by using braces to avoid
              closing xml-tags and parentheses to surround the
              attributes. XMQ solves the whitespace confusion by
              requiring all whitespace to be quoted.  There are a lot
-             of details, of course, but let us begin with an example.
-             Download/build the xmq executable for your platform, then
+             of details, of course, but let us begin with an example.'
+         }
+         p {
+            'Download/build the xmq executable for your platform, then
              download: '
             &nbsp;
             a(href = resources/shiporder.xmq) = shiporder.xmq
@@ -119,13 +123,16 @@ html {
             li = 'Two single quotes always mean the empty string (see sailing).'
             li = 'In multiline quotes, the incindental indentation is removed (see address).'
             li = ''''
-            Quotes containing quotes are quoted using n+1 single quotes (see coord). Note that two quotes are reserved for the empty string. You will therefore see a single quote ' or three quotes ''' or more quotes.
+            Quotes containing quotes are quoted using n+1 single quotes (see coord).
+            Note that two quotes are reserved for the empty string. You will therefore see a single
+            quote ' or three quotes ''' or more quotes.
             ''''
             li = 'Single line comments use // and multi line comments use /* */.'
             li = 'Comments containing comments are commented using n+1 slashes (eg ///* *///).'
         }
         p = 'This means that you can quote any block of text with enough single quotes and you
              can comment any block of text with enough slashes.'
+        h2= 'XMQ as a configuration file'
         p {
             'XMQ permits multiple root nodes which means that if you use XMQ as your software config file format
              then the first iteration of your config file can be as simple as this:'
@@ -151,6 +158,7 @@ html {
             span(class = code) = 'xmq --root=myconf config.xmq to-xml > config.xml'
         }
         pre(class = 'xmq xmq_light w80') = &CONFIG_XML;
+        h2= 'Web pages and whitespace'
         p {
             'Now let us try some htmq/html:'
             &nbsp;
@@ -208,6 +216,7 @@ html {
         p = 'As you can see there is quite a lot of whitespace in xml/html, which might or might not be
              significant/ignorable depending on your css and other settings. If you really want this whitespace then
              xmq will make it obvious.'
+        h2= 'Compact XMQ'
         p {
             'The opposite of xmq pretty printing is xmq compact printing with no indentation and no newlines: '
             span(class = code) = 'xmq welcome_traveller.htmq to-htmq --compact'
@@ -227,42 +236,62 @@ html {
         &MULTI_COMPACT_XMQ;
         ' '
         p {
-            'Note that xml/html does not permit two dashes inside a comment! The xmq tool works around
-             this by adding a very specific char (␐) in between the dashes.'
+            'Note that xml/html does not permit two dashes inside a comment!!! The xmq tool works around
+             this by adding a very specific char (␐) in such a way there are no two consecutive dashes in the
+             xml. When loading from such xml, the char (␐) is instead removed to restore the two dashes.'
             span(class = code) = 'xmq multi.xmq to-xml'
         }
         pre(class = 'xmq xmq_light w80') = &MULTI_XML;
+        h2 = 'Quoting and entities inside attributes'
+        p = '''For elements, a key=value is syntactic sugar for: key{'value'}
+               However for attributes, this is not the case, here you can only write: key=value
+               In the example below all elements and attributes have the content: 123'''
+        &SYNTACTIC_SUGAR_XMQ;
         p {
-            'And another simple data structure.'
-            &nbsp;
-            &nbsp;
-            a(href = resources/car.xmq) = car.xmq
-            &nbsp;
-            &nbsp;
-            a(href = resources/car.xml) = car.xml
+            'XMQ is designed with the assumption that we rarely need significant leading/ending whitespace/quotes.
+             However sometimes you have to have that. For an element value, you can express such whitespace in
+             different ways:'
         }
-        &CAR_XMQ;
+        &CORNERS_XMQ;
+        p = '''You can see the magenta colored parentheses ( after the equal = sign. This is a compound value
+               consisting only of quotes and entities. Compound values are mandatory for the attribute values that
+               need multiple quotes/entities since braces {} cannot be used inside an attribute value. '''
+        &COMPOUND_XMQ;
+        h2 = 'Viewing large html pages'
+        p = 'The xmq tool is useful to decode large html pages. Let us assume that you downloaded a large html page: index.html'
+        pre(class = 'xmq xmq_light w40')
+        {
+            'xmq index.html delete /html/head delete //style delete //script pager'
+        }
+        p = 'This command will delete the head node and all style and script nodes, before using the pager to show you the htmq.
+             The argument to delete is an xpath expression.'
+        p {
+            'There are other commands to modify the xmq. In particular you can see how this web page is constructed by
+             replacing entities with text files or with xmq files. '
+             a(href = resources/index_htmq.html) = index.htmq
+        }
+        h2 = 'JSON'
+        p { 'The xmq tool can parse json as if it was xmq. But as you see below, the limitations of JSON, which in turn
+             are design choices in Javascript, shine through. In particular, objects have no type/name and
+             some really weird JSON store values in the keys. '
+             span(class = code) = 'xmq instances.json pager'
+        }
+        &INSTANCES_XMQ;
         ' '
-        pre(class = 'xmq xmq_light w40') = &CAR_XML;
-        ul {
-            li {
-                '''Note: key=value is just a syntatic sugar for: key{'value'}'''
-                &nbsp;
-                &nbsp;
-                a(href = resources/sugar.xmq) = sugar.xmq
-            }
+        pre(class = 'xmq xmq_light w80')
+        {
+            &INSTANCES_JSON;
+            &#10;
+            &#10;
+            &#10;
         }
-        p = 'All the chairs below have the same value: 123. Remember that leading/ending whitespace is trimmed from quotes.
-             But the chaise has a leading space and 3 ending space.'
-        pre(class = 'xmq xmq_light w40') = &SUGAR_XMQ;
-        p {
-            span(class = code) = 'xmq sugar.xmq to-xml'
-        }
-        pre(class = 'xmq xmq_light w40') = &SUGAR_XML;
-        p {
-            'An xmq file can always be printed on a single line, without newlines: '
-            span(class = code) = 'xmq shiporder.xml to-xmq --compact'
-        }
-        &SHIPORDER_XMQ_COMPACT;
+        h2 = 'Conclusions'
+        p = 'With XMQ the assumed dichotomy between mark-up languages (like XML) and key-value store languages (like JSON)
+             has been (perhaps surprisingly) removed. We can now use XML for mark-up situations and XMQ for key-value
+             store situations. They are interchangeable and all the years of effort going into XSLT/XSD and other
+             tools can still be used with XMQ.'
+
+        p = 'There are of course still bugs to fix in xmq and improvements to how the specification works.
+             Please let me know if you find bugs or other improvements.'
     }
 }

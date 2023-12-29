@@ -259,8 +259,13 @@ build/web/index.html:
 	echo -n "<span>" > build/sugar_xmq.xml
 	$(WEBXMQ) web/resources/sugar.xmq tokenize --type=html >> build/sugar_xmq.xml
 	echo -n "</span>" >> build/sugar_xmq.xml
-# Raw xml from sugar
-	$(WEBXMQ) web/resources/sugar.xmq to-xml > build/sugar_xml.xml
+# Raw xml from corners and syntactic sugar.
+	$(WEBXMQ) web/resources/syntactic_sugar.xmq tokenize --type=html > build/syntactic_sugar_xmq.xml
+	$(WEBXMQ) web/resources/corners.xmq tokenize --type=html > build/corners_xmq.xml
+	$(WEBXMQ) web/resources/compound.xmq tokenize --type=html > build/compound_xmq.xml
+# Render json
+	$(WEBXMQ) web/resources/instances.json render-html --class=w80 --lightbg --nostyle > build/instances_json.xml
+	cp web/resources/instances.json build/instances.json
 # Render the welcome traveller xmq in html
 	$(WEBXMQ) web/resources/welcome_traveller.htmq render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_xmq.xml
 	$(WEBXMQ) web/resources/welcome_traveller.html render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_back_xmq.xml
@@ -283,8 +288,11 @@ build/web/index.html:
 		replace-entity MULTI_XML --with-text-file=build/multi.xml \
 		replace-entity CAR_XML --with-text-file=web/resources/car.xml \
 		replace-entity CAR_XMQ --with-file=build/rendered_car_xmq.xml \
-		replace-entity SUGAR_XMQ --with-file=build/sugar_xmq.xml \
-		replace-entity SUGAR_XML --with-text-file=build/sugar_xml.xml \
+		replace-entity CORNERS_XMQ --with-file=build/corners_xmq.xml \
+		replace-entity COMPOUND_XMQ --with-file=build/compound_xmq.xml \
+		replace-entity INSTANCES_XMQ --with-file=build/instances_json.xml \
+		replace-entity INSTANCES_JSON --with-text-file=build/instances.json \
+		replace-entity SYNTACTIC_SUGAR_XMQ --with-file=build/syntactic_sugar_xmq.xml \
 		replace-entity WELCOME_TRAVELLER_HTMQ --with-file=build/rendered_welcome_traveller_xmq.xml \
 		replace-entity WELCOME_TRAVELLER_BACK_HTMQ --with-file=build/rendered_welcome_traveller_back_xmq.xml \
 		replace-entity WELCOME_TRAVELLER_BACK_NOTRIM_HTMQ --with-file=build/rendered_welcome_traveller_back_notrim_xmq.xml \

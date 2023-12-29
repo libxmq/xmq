@@ -109,6 +109,8 @@ const char *skip_any_potential_bom(const char *start, const char *stop);
 bool unsafe_start(char c, char cc);
 bool write_print_stderr(void *writer_state_ignored, const char *start, const char *stop);
 bool write_print_stdout(void *writer_state_ignored, const char *start, const char *stop);
+void write_safe_html(XMQWrite write, void *writer_state, const char *start, const char *stop);
+void write_safe_tex(XMQWrite write, void *writer_state, const char *start, const char *stop);
 bool xmqVerbose();
 void xmqSetupParseCallbacksNoop(XMQParseCallbacks *callbacks);
 bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, XMQTrimType tt);
@@ -564,7 +566,13 @@ int xmqStateErrno(XMQParseState *state)
             const char *pre, *post;  \
             get_color(state->output_settings, COLOR_##TYPE, &pre, &post); \
             if (pre) state->output_settings->content.write(state->output_settings->content.writer_state, pre, NULL); \
-            state->output_settings->content.write(state->output_settings->content.writer_state, start, stop); \
+            if (state->output_settings->render_to == XMQ_RENDER_TERMINAL) { \
+                state->output_settings->content.write(state->output_settings->content.writer_state, start, stop); \
+            } else if (state->output_settings->render_to == XMQ_RENDER_HTML) { \
+                write_safe_html(state->output_settings->content.write, state->output_settings->content.writer_state, start, stop); \
+            } else if (state->output_settings->render_to == XMQ_RENDER_TEX) { \
+                write_safe_tex(state->output_settings->content.write, state->output_settings->content.writer_state, start, stop); \
+            } \
             if (post) state->output_settings->content.write(state->output_settings->content.writer_state, post, NULL); \
         } \
     }
@@ -715,6 +723,36 @@ bool write_print_stderr(void *writer_state_ignored, const char *start, const cha
     return true;
 }
 
+void write_safe_html(XMQWrite write, void *writer_state, const char *start, const char *stop)
+{
+    for (const char *i = start; i < stop; ++i)
+    {
+        const char *amp = "&amp;";
+        const char *lt = "&lt;";
+        const char *gt = "&gt;";
+        const char *quot = "&quot;";
+        if (*i == '&') write(writer_state, amp, amp+5);
+        else if (*i == '<') write(writer_state, lt, lt+4);
+        else if (*i == '>') write(writer_state, gt, gt+4);
+        else if (*i == '"') write(writer_state, quot, quot+6);
+        else write(writer_state, i, i+1);
+    }
+}
+
+void write_safe_tex(XMQWrite write, void *writer_state, const char *start, const char *stop)
+{
+    for (const char *i = start; i < stop; ++i)
+    {
+        const char *amp = "\\&";
+        const char *bs = "\\\\";
+        const char *us = "\\_";
+        if (*i == '&') write(writer_state, amp, amp+2);
+        else if (*i == '\\') write(writer_state, bs, bs+2);
+        else if (*i == '_') write(writer_state, us, us+2);
+        else write(writer_state, i, i+1);
+    }
+}
+
 void xmqSetupPrintStdOutStdErr(XMQOutputSettings *ps)
 {
     ps->content.writer_state = NULL; // Not needed
@@ -797,6 +835,11 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
 
     if (state->parse->init) state->parse->init(state);
 
+    XMQOutputSettings *output_settings = state->output_settings;
+    const char *pre = output_settings->default_coloring->content.pre;
+    const char *post = output_settings->default_coloring->content.post;
+    if (pre) printf("%s", pre);
+
     if (!setjmp(state->error_handler))
     {
         // Start parsing!
@@ -812,6 +855,8 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
         build_state_error_message(state, start, stop);
         return false;
     }
+
+    if (post) printf("%s", post);
 
     if (state->parse->done) state->parse->done(state);
     return true;
@@ -2455,6 +2500,7 @@ bool xmqParseBuffer(XMQDoc *doq, const char *start, const char *stop, const char
     // Now state->element_stack->top->data points to doq->docptr_;
     state->element_last = NULL; // Will be set when the first node is created.
     // The doc root will be set when the first element node is created.
+
 
     // Time to tokenize the buffer and invoke the parse callbacks.
     xmqTokenizeBuffer(state, start, stop);

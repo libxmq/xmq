@@ -186,6 +186,10 @@ bool cmd_transform(XMQCliCommand *command);
 void cmd_unload(XMQCliCommand *command);
 const char *content_type_to_string(XMQContentType ct);
 void debug_(const char* fmt, ...);
+void delete_all_entities(XMQDoc *doq, xmlNode *node, const char *entity);
+void delete_entities(XMQDoc *doq, const char *entity);
+bool delete_entity(XMQCliCommand *command);
+bool delete_xpath(XMQCliCommand *command);
 void disable_raw_mode();
 void enable_raw_mode();
 void enableAnsiColorsTerminal();
@@ -514,6 +518,7 @@ bool handle_option(const char *arg, XMQCliCommand *command)
             else if (!strcmp(arg, "--type=terminal"))
             {
                 command->tok_type = XMQ_CLI_TOKENIZE_TERMINAL;
+                command->use_color = true;
                 return true;
             }
             else if (!strcmp(arg, "--type=html"))
@@ -1045,18 +1050,22 @@ bool tokenize_input(XMQCliCommand *command)
     XMQParseCallbacks *callbacks = xmqNewParseCallbacks();
 
     switch (command->tok_type) {
+    case XMQ_CLI_TOKENIZE_NONE:
     case XMQ_CLI_TOKENIZE_TERMINAL:
         xmqSetRenderFormat(output_settings, XMQ_RENDER_TERMINAL);
+        xmqSetUseColor(output_settings, command->use_color);
         xmqSetupDefaultColors(output_settings, command->dark_mode);
         xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_TERMINAL, command->dark_mode);
         break;
     case XMQ_CLI_TOKENIZE_HTML:
         xmqSetRenderFormat(output_settings, XMQ_RENDER_HTML);
+        xmqSetUseColor(output_settings, command->use_color);
         xmqSetupDefaultColors(output_settings, command->dark_mode);
         xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_HTML, command->dark_mode);
         break;
     case XMQ_CLI_TOKENIZE_TEX:
         xmqSetRenderFormat(output_settings, XMQ_RENDER_TEX);
+        xmqSetUseColor(output_settings, command->use_color);
         xmqSetupDefaultColors(output_settings, command->dark_mode);
         xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_TEX, command->dark_mode);
         break;
@@ -1208,6 +1217,68 @@ bool cmd_transform(XMQCliCommand *command)
 }
 
 bool cmd_delete(XMQCliCommand *command)
+{
+    if (command->xpath)
+    {
+        verbose_("(xmq) delete xpath %s\n", command->xpath);
+        return delete_xpath(command);
+    }
+
+    if (command->entity)
+    {
+        verbose_("(xmq) delete entity %s\n", command->entity);
+        return delete_entity(command);
+    }
+
+    return false;
+}
+
+void delete_all_entities(XMQDoc *doq, xmlNode *node, const char *entity)
+{
+    if (node->type == XML_ENTITY_NODE ||
+        node->type == XML_ENTITY_REF_NODE)
+    {
+        if (!strcmp(entity, (char*)node->name))
+        {
+            xmlUnlinkNode(node);
+            xmlFreeNode(node);
+        }
+        return;
+    }
+
+    xmlNode *i = node->children;
+    while (i)
+    {
+        xmlNode *next = i->next; // i might be freed in trim.
+        delete_all_entities(doq, i, entity);
+        i = next;
+    }
+}
+
+void delete_entities(XMQDoc *doq, const char *entity)
+{
+    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(doq);
+    xmlNodePtr i = doc->children;
+    if (!doq || !i) return;
+
+    while (i)
+    {
+        xmlNode *next = i->next; // i might be freed in delete_all_entities
+        delete_all_entities(doq, i, entity);
+        i = next;
+    }
+}
+
+bool delete_entity(XMQCliCommand *command)
+{
+    verbose_("(xmq) deleting entity %s\n", command->entity);
+
+    delete_entities(command->env->doc, command->entity);
+
+    return true;
+}
+
+bool delete_xpath(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
 

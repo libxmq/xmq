@@ -1,0 +1,15 @@
+INPUT
+enter {
+   style = '123123'
+   'Howdy'
+   script = '123123'
+   'There'
+}
+OUTPUT
+enter {
+    'Howdy'
+    'There'
+}
+END
+ARGS
+CMDS delete //style delete //script to-xmq
