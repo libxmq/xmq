@@ -243,6 +243,10 @@ build/web/index.html:
 	$(WEBXMQ) web/resources/shiporder.xml to-xmq --compact > build/shiporder_compact.xmq
 # Render compact xmq in html
 	$(WEBXMQ) web/resources/shiporder.xml render-html --compact --id=ex1c --class=w40 --lightbg --nostyle  > build/rendered_shiporder_xmq_compact.xml
+# Render config
+	$(WEBXMQ) web/resources/config.xmq render-html --class=w40 --lightbg --nostyle  > build/rendered_config_xmq.xml
+	$(WEBXMQ) --root=myconf web/resources/config.xmq to-xml  > build/config.xml
+	$(WEBXMQ) web/resources/config_more.xmq render-html --class=w40 --lightbg --nostyle  > build/rendered_config_more_xmq.xml
 # Render car xmq in html
 	$(WEBXMQ) web/resources/car.xml render-html --class=w40 --lightbg --nostyle  > build/rendered_car_xmq.xml
 	$(WEBXMQ) web/resources/car.xml to-xml  > build/web/resources/car.xml
@@ -268,6 +272,9 @@ build/web/index.html:
 		replace-entity SHIPORDER_XML --with-text-file=web/resources/shiporder.xml \
 		replace-entity SHIPORDER_XMQ --with-file=build/rendered_shiporder_xmq.xml \
 		replace-entity SHIPORDER_XMQ_COMPACT --with-file=build/rendered_shiporder_xmq_compact.xml \
+		replace-entity CONFIG_XMQ --with-file=build/rendered_config_xmq.xml \
+		replace-entity CONFIG_XML --with-text-file=build/config.xml \
+		replace-entity CONFIG_MORE_XMQ --with-file=build/rendered_config_more_xmq.xml \
 		replace-entity CAR_XML --with-text-file=web/resources/car.xml \
 		replace-entity CAR_XMQ --with-file=build/rendered_car_xmq.xml \
 		replace-entity SUGAR_XMQ --with-file=build/sugar_xmq.xml \

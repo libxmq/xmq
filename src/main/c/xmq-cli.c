@@ -588,6 +588,11 @@ bool handle_option(const char *arg, XMQCliCommand *command)
             const char *file = arg+17;
             verbose_("(xmq) reading text file %s\n", file);
             FILE *f = fopen(file, "rb");
+            if (!f)
+            {
+                fprintf(stderr, "xmq: %s: No such file or directory\n", file);
+                return false;
+            }
             fseek(f, 0L, SEEK_END);
             size_t sz = ftell(f);
             fseek(f, 0L, SEEK_SET);
