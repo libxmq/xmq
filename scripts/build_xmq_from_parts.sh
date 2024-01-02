@@ -60,5 +60,7 @@ do_part utf8
 do_part entities
 do_part xml
 do_part xmq_internals
+do_part xmq_parser
+do_part xmq_printer
 
 do_version

@@ -3,9 +3,11 @@ START
 COMPACT
 IGNORE
 XMQ
+<?xml version="1.0" encoding="utf8"?>
 <!DOCTYPE row [
 <!ENTITY yes "YES">
-]><row>&yes;</row>
+]>
+<row>&yes;</row>
 END
 ARGS
-CMDS to-html
+CMDS to-xml

@@ -1,0 +1,18 @@
+START
+!DOCTYPE = html
+html {
+    body {
+         a(id = hejsan)
+         alfa
+    }
+}
+COMPACT
+IGNORE
+XMQ
+<!DOCTYPE html>
+<html><body>
+<a id="hejsan"></a><alfa></alfa>
+</body></html>
+END
+ARGS
+CMDS to-html

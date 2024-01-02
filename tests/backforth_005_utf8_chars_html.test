@@ -1,15 +1,22 @@
 INPUT
 !DOCTYPE=html html{head{meta(http-equiv=Content-Type content='text/html; charset=UTF-8')}body='Howdy! åäö'}
 FIRST
-<!DOCTYPE html><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/></head><body>Howdy! åäö</body></html>
+<!DOCTYPE html>
+<html>
+<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head>
+<body>Howdy! &#xE5;&#xE4;&#xF6;</body>
+</html>
 SECOND
 !DOCTYPE = html
 html {
+    &#10;
     head {
         meta(http-equiv = Content-Type
              content    = 'text/html; charset=UTF-8')
     }
+    &#10;
     body = 'Howdy! åäö'
+    &#10;
 }
 END
 ARGS_FIRST

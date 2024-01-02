@@ -3,7 +3,8 @@ START
 COMPACT
 IGNORE
 XMQ
-<!DOCTYPE html><html><body><p>Howdy</p></body></html>
+<!DOCTYPE html>
+<html><body><p>Howdy</p></body></html>
 END
 ARGS
 CMDS to-html

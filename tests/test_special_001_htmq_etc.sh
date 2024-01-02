@@ -15,16 +15,23 @@ fi
 mkdir -p $OUTPUT
 
 echo "c = Howdy" > $OUTPUT/input.xmq
-$PROG $OUTPUT/input.xmq render-html --darkbg > $OUTPUT/output.1.html
+$PROG $OUTPUT/input.xmq render-html --darkbg > $OUTPUT/output.rendered.html
 
 $PROG $OUTPUT/input.xmq render-html --darkbg \
     | $PROG --trim=none to-xmq --compact \
-    | $PROG to-html > $OUTPUT/output.2.html
+    | $PROG to-html > $OUTPUT/output.rerendered.html
 
-if diff $OUTPUT/output.1.html $OUTPUT/output.2.html
+if diff $OUTPUT/output.rendered.html $OUTPUT/output.rerendered.html
 then
-    echo "OK: xmq -> html -> compact xmq -> html"
+    echo "OK: test special 001 xmq -> html -> compact xmq -> html"
 else
-    echo "ERROR: xmq -> html -> compact xmq -> html"
+    echo "ERROR: test special 001 xmq -> html -> compact xmq -> html"
+    echo "Formatting differ:"
+    if [ -n "$USE_MELD" ]
+    then
+        meld $OUTPUT/output.rendered.html $OUTPUT/output.rerendered.html
+    else
+        diff $OUTPUT/output.rendered.html $OUTPUT/output.rerendered.html
+    fi
     exit 1
 fi

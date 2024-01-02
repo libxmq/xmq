@@ -238,6 +238,7 @@ build/web/index.html:
 	$(WEBXMQ) web/resources/shiporder.xml render-html --onlystyle > build/web/resources/xmq.css
 # Generate the xmq from the xml
 	$(WEBXMQ) web/resources/shiporder.xml to-xmq > build/web/resources/shiporder.xmq
+	$(WEBXMQ) web/resources/shiporder.xml to-json | jq . > build/web/resources/shiporder.json
 # Render the xmq in html
 	$(WEBXMQ) web/resources/shiporder.xml render-html --id=ex1 --class=w40 --lightbg --nostyle  > build/rendered_shiporder_xmq.xml
 # Generate compact shiporder
@@ -279,6 +280,7 @@ build/web/index.html:
 	$(WEBXMQ) web/index.htmq \
 		replace-entity DATE "$(TODAY)" \
 		replace-entity SHIPORDER_XML --with-text-file=web/resources/shiporder.xml \
+		replace-entity SHIPORDER_JSON --with-text-file=build/web/resources/shiporder.json \
 		replace-entity SHIPORDER_XMQ --with-file=build/rendered_shiporder_xmq.xml \
 		replace-entity SHIPORDER_XMQ_COMPACT --with-file=build/rendered_shiporder_xmq_compact.xml \
 		replace-entity CONFIG_XMQ --with-file=build/rendered_config_xmq.xml \

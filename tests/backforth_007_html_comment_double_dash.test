@@ -9,7 +9,10 @@ html {
     }
 }
 FIRST
-<!DOCTYPE html><html><!--foo-␐-␐-bar--><!--><--><!--<![CDATA[xxx]]>--><body>welcome</body></html>
+<!DOCTYPE html>
+<html>
+<!--foo-␐-␐-bar--><!--><--><!--<![CDATA[xxx]]>--><body>welcome</body>
+</html>
 SECOND
 !DOCTYPE = html
 html {

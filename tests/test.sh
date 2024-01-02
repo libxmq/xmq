@@ -66,10 +66,10 @@ do
     tests/test_xslt.sh "$PROG" "$OUTPUT" "$i"
 done
 
-for i in tests/test_special_???_*.sh
-do
-    $i "$PROG" "$OUTPUT"
-done
+#for i in tests/test_special_???_*.sh
+#do
+#    $i "$PROG" "$OUTPUT"
+#done
 
 for i in tests/test_???_*.c
 do

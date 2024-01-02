@@ -2,7 +2,8 @@
 INPUT
 !DOCTYPE=html html{body{'Howdy'&nbsp;'There'}}
 FIRST
-<!DOCTYPE html><html><body>Howdy&nbsp;There</body></html>
+<!DOCTYPE html>
+<html><body>Howdy&nbsp;There</body></html>
 SECOND
 !DOCTYPE=html html{body='Howdy There'}
 END

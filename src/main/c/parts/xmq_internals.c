@@ -479,4 +479,115 @@ void element_strlen_name_prefix(xmlNode *element, const char **name, const char 
     assert(*name != NULL);
 }
 
+/**
+    enter_compound_level:
+
+    When parsing a value and the parser has entered a compound value,
+    the level for the child quotes/entities are now handled as
+    tokens inside the compound.
+
+    LEVEL_ELEMENT_VALUE -> LEVEL_ELEMENT_VALUE_COMPOUND
+    LEVEL_ATTR_VALUE -> LEVEL_ATTR_VALUE_COMPOUND
+*/
+Level enter_compound_level(Level l)
+{
+    assert(l != 0);
+    return (Level)(((int)l)+1);
+}
+
+XMQColor level_to_quote_color(Level level)
+{
+    switch (level)
+    {
+    case LEVEL_XMQ: return COLOR_quote;
+    case LEVEL_ELEMENT_VALUE: return COLOR_element_value_quote;
+    case LEVEL_ELEMENT_VALUE_COMPOUND: return COLOR_element_value_compound_quote;
+    case LEVEL_ATTR_VALUE: return COLOR_attr_value_quote;
+    case LEVEL_ATTR_VALUE_COMPOUND: return COLOR_attr_value_compound_quote;
+    }
+    assert(false);
+    return COLOR_none;
+}
+
+XMQColor level_to_entity_color(Level level)
+{
+    switch (level)
+    {
+    case LEVEL_XMQ: return COLOR_entity;
+    case LEVEL_ELEMENT_VALUE: return COLOR_element_value_entity;
+    case LEVEL_ELEMENT_VALUE_COMPOUND: return COLOR_element_value_compound_entity;
+    case LEVEL_ATTR_VALUE: return COLOR_attr_value_entity;
+    case LEVEL_ATTR_VALUE_COMPOUND: return COLOR_attr_value_compound_entity;
+    }
+    assert(false);
+    return COLOR_none;
+}
+
+/**
+  Scan the attribute names and find the max unicode character width.
+*/
+size_t find_attr_key_max_u_width(xmlAttr *a)
+{
+    size_t max = 0;
+    while (a)
+    {
+        const char *name;
+        const char *prefix;
+        size_t total_u_len;
+        attr_strlen_name_prefix(a, &name, &prefix, &total_u_len);
+
+        if (total_u_len > max) max = total_u_len;
+        a = xml_next_attribute(a);
+    }
+    return max;
+}
+
+/**
+  Scan nodes until there is a node which is not suitable for using the = sign.
+  I.e. it has multiple children or no children. This node unsuitable node is stored in
+  restart_find_at_node or NULL if all nodes were suitable.
+*/
+size_t find_element_key_max_width(xmlNodePtr element, xmlNodePtr *restart_find_at_node)
+{
+    size_t max = 0;
+    xmlNodePtr i = element;
+    while (i)
+    {
+        if (!is_key_value_node(i) || xml_first_attribute(i))
+        {
+            if (i == element) *restart_find_at_node = xml_next_sibling(i);
+            else *restart_find_at_node = i;
+            return max;
+        }
+        const char *name;
+        const char *prefix;
+        size_t total_u_len;
+        element_strlen_name_prefix(i, &name, &prefix, &total_u_len);
+
+        if (total_u_len > max) max = total_u_len;
+        i = xml_next_sibling(i);
+    }
+    *restart_find_at_node = NULL;
+    return max;
+}
+
+/**
+  Scan the namespace links and find the max unicode character width.
+*/
+size_t find_namespace_max_u_width(size_t max, xmlNs *ns)
+{
+    while (ns)
+    {
+        const char *prefix;
+        size_t total_u_len;
+        namespace_strlen_prefix(ns, &prefix, &total_u_len);
+
+        // Print only new/overriding namespaces.
+        if (total_u_len > max) max = total_u_len;
+        ns = ns->next;
+    }
+
+    return max;
+}
+
 #endif // XMQ_INTERNALS_MODULE

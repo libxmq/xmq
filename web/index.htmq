@@ -54,6 +54,11 @@ html {
             &nbsp;
             &nbsp;
             a(href = https://github.com/orgs/libxmq/discussions) = '[Forum/Discussions]'
+            br
+            a(href = #json) = '[1 Rationale]'
+            &nbsp;
+            &nbsp;
+            a(href = #json) = '[5 JSON]'
         }
         h2= Rationale
         p = 'XML can be human readable/editable if it is used for markup of longer
@@ -271,9 +276,19 @@ html {
              a(href = resources/index_htmq.html) = index.htmq
         }
         h2 = 'JSON'
-        p { 'The xmq tool can parse json as if it was xmq. But as you see below, the limitations of JSON, which in turn
-             are design choices in Javascript, shine through. In particular, objects have no type/name and
-             some really weird JSON store values in the keys. '
+        a(id=json)
+        p {
+            'We can use the xmq tool to convert shiporder to json:'
+            span(class = code) = 'xmq shiporder.xmq to-json | jq .'
+        }
+        &SHIPORDER_XMQ;
+        ' '
+        pre(class = 'xmq xmq_light w40')
+        {
+            &SHIPORDER_JSON;
+        }
+
+        p { 'We can also use the xmq tool to parse json. '
              span(class = code) = 'xmq instances.json pager'
         }
         &INSTANCES_XMQ;
@@ -285,6 +300,7 @@ html {
             &#10;
             &#10;
         }
+
         h2 = 'Conclusions'
         p = 'With XMQ the assumed dichotomy between mark-up languages (like XML) and key-value store languages (like JSON)
              has been (perhaps surprisingly) removed. We can now use XML for mark-up situations and XMQ for key-value
