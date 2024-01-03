@@ -3,7 +3,7 @@ alfa=123 beta=foo
 gamma=xyz
 delta=false
 DEBUG
-[element_key "alfa" 1:1][equals "=" 1:1][element_value_text "123" 1:6][whitespace " " 1:9][element_key "beta" 1:10][equals "=" 1:10][element_value_text "foo" 1:15][whitespace "\n" 1:18][element_key "gamma" 2:1][equals "=" 2:1][element_value_text "xyz" 2:7][whitespace "\n" 2:10][element_key "delta" 3:1][equals "=" 3:1][element_value_text "false" 3:7][whitespace "\n" 3:12]
+[element_key "alfa" 1:1][equals "=" 1:5][element_value_text "123" 1:6][whitespace " " 1:9][element_key "beta" 1:10][equals "=" 1:14][element_value_text "foo" 1:15][whitespace "\n" 1:18][element_key "gamma" 2:1][equals "=" 2:6][element_value_text "xyz" 2:7][whitespace "\n" 2:10][element_key "delta" 3:1][equals "=" 3:6][element_value_text "false" 3:7][whitespace "\n" 3:12]
 CONTENT
 {value "123"}{value "foo"}{value "xyz"}{value "false"}
 END

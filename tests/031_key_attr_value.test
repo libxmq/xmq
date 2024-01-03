@@ -3,7 +3,7 @@ resources {
     color(name = colorPrimary) = #008577
 }
 DEBUG
-[element_name "resources" 1:1][whitespace " " 1:10][brace_left "{" 1:1][whitespace "\n    " 1:12][element_name "color" 2:5][apar_left "(" 2:5][attr_key "name" 2:11][whitespace " " 2:15][equals "=" 2:11][whitespace " " 2:17][attr_value_text "colorPrimary" 2:18][apar_right ")" 2:5][whitespace " " 2:31][equals "=" 2:5][whitespace " " 2:33][element_value_text "#008577" 2:34][whitespace "\n" 2:41][brace_right "}" 1:1][whitespace "\n" 3:2]
+[element_name "resources" 1:1][whitespace " " 1:10][brace_left "{" 1:11][whitespace "\n    " 1:12][element_name "color" 2:5][apar_left "(" 2:10][attr_key "name" 2:11][whitespace " " 2:15][equals "=" 2:16][whitespace " " 2:17][attr_value_text "colorPrimary" 2:18][apar_right ")" 2:30][whitespace " " 2:31][equals "=" 2:32][whitespace " " 2:33][element_value_text "#008577" 2:34][whitespace "\n" 2:41][brace_right "}" 3:1][whitespace "\n" 3:2]
 CONTENT
 {value "colorPrimary"}{value "#008577"}
 END

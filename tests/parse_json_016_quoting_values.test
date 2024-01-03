@@ -1,0 +1,10 @@
+INPUT
+<foo data="{alfa:beta}"><banana>123</banana></foo>
+XMQ
+foo(data = '{alfa:beta}')
+{
+    banana = 123
+}
+JSON
+{"_":"foo","_data":"{alfa:beta}","banana":123}
+END

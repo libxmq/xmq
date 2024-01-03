@@ -1,7 +1,7 @@
 START
 alfa(x=1)
 DEBUG
-[element_name "alfa" 1:1][apar_left "(" 1:1][attr_key "x" 1:6][equals "=" 1:6][attr_value_text "1" 1:8][apar_right ")" 1:1][whitespace "\n" 1:10]
+[element_name "alfa" 1:1][apar_left "(" 1:5][attr_key "x" 1:6][equals "=" 1:7][attr_value_text "1" 1:8][apar_right ")" 1:9][whitespace "\n" 1:10]
 CONTENT
 {value "1"}
 END

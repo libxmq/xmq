@@ -4,7 +4,7 @@ alfa {
     gamma
 }
 DEBUG
-[element_name "alfa" 1:1][whitespace " " 1:5][brace_left "{" 1:1][whitespace "\n    " 1:7][element_name "beta" 2:5][whitespace "\n    " 2:9][element_name "gamma" 3:5][whitespace "\n" 3:10][brace_right "}" 1:1][whitespace "\n" 4:2]
+[element_name "alfa" 1:1][whitespace " " 1:5][brace_left "{" 1:6][whitespace "\n    " 1:7][element_name "beta" 2:5][whitespace "\n    " 2:9][element_name "gamma" 3:5][whitespace "\n" 3:10][brace_right "}" 4:1][whitespace "\n" 4:2]
 CONTENT
 
 END

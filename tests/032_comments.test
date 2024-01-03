@@ -6,7 +6,7 @@ node(xyz) {
    /* foo bar */
 }
 DEBUG
-[element_key "alfa_xyz" 1:1][whitespace " " 1:9][equals "=" 1:1][whitespace " " 1:11][element_value_text "123" 1:12][whitespace "\n" 1:15][comment "// Helpful comment\n" 2:1][element_name "node" 3:1][apar_left "(" 3:1][attr_key "xyz" 3:6][apar_right ")" 3:1][whitespace " " 3:10][brace_left "{" 3:1][whitespace "\n   " 3:12][element_name "howdy" 4:4][whitespace "\n   " 4:9][comment "/* foo bar */" 5:4][whitespace "\n" 5:17][brace_right "}" 3:1][whitespace "\n" 6:2]
+[element_key "alfa_xyz" 1:1][whitespace " " 1:9][equals "=" 1:10][whitespace " " 1:11][element_value_text "123" 1:12][whitespace "\n" 1:15][comment "// Helpful comment\n" 2:1][element_name "node" 3:1][apar_left "(" 3:5][attr_key "xyz" 3:6][apar_right ")" 3:9][whitespace " " 3:10][brace_left "{" 3:11][whitespace "\n   " 3:12][element_name "howdy" 4:4][whitespace "\n   " 4:9][comment "/* foo bar */" 5:4][whitespace "\n" 5:17][brace_right "}" 6:1][whitespace "\n" 6:2]
 CONTENT
 {value "123"}{comment "Helpful comment"}{comment "foo bar"}
 END

@@ -1,7 +1,7 @@
 START
 alfa(x=1 y=2 z='howdy')
 DEBUG
-[element_name "alfa" 1:1][apar_left "(" 1:1][attr_key "x" 1:6][equals "=" 1:6][attr_value_text "1" 1:8][whitespace " " 1:9][attr_key "y" 1:10][equals "=" 1:10][attr_value_text "2" 1:12][whitespace " " 1:13][attr_key "z" 1:14][equals "=" 1:14][attr_value_quote "'howdy'" 1:16][apar_right ")" 1:1][whitespace "\n" 1:24]
+[element_name "alfa" 1:1][apar_left "(" 1:5][attr_key "x" 1:6][equals "=" 1:7][attr_value_text "1" 1:8][whitespace " " 1:9][attr_key "y" 1:10][equals "=" 1:11][attr_value_text "2" 1:12][whitespace " " 1:13][attr_key "z" 1:14][equals "=" 1:15][attr_value_quote "'howdy'" 1:16][apar_right ")" 1:23][whitespace "\n" 1:24]
 CONTENT
 {value "1"}{value "2"}{quote "howdy"}
 END

@@ -7,7 +7,7 @@ alfa(x=1
     gamma = 8
 }
 DEBUG
-[element_name "alfa" 1:1][apar_left "(" 1:1][attr_key "x" 1:6][equals "=" 1:6][attr_value_text "1" 1:8][whitespace "\n     " 1:9][attr_key "y" 2:6][equals "=" 2:6][attr_value_quote "'x\n        y'" 2:8][apar_right ")" 1:1][whitespace "\n" 3:12][brace_left "{" 1:1][whitespace "\n    " 4:2][element_key "beta" 5:5][whitespace " " 5:9][equals "=" 5:5][whitespace " " 5:11][element_value_text "7" 5:12][whitespace "\n    " 5:13][element_key "gamma" 6:5][whitespace " " 6:10][equals "=" 6:5][whitespace " " 6:12][element_value_text "8" 6:13][whitespace "\n" 6:14][brace_right "}" 1:1][whitespace "\n" 7:2]
+[element_name "alfa" 1:1][apar_left "(" 1:5][attr_key "x" 1:6][equals "=" 1:7][attr_value_text "1" 1:8][whitespace "\n     " 1:9][attr_key "y" 2:6][equals "=" 2:7][attr_value_quote "'x\n        y'" 2:8][apar_right ")" 3:11][whitespace "\n" 3:12][brace_left "{" 4:1][whitespace "\n    " 4:2][element_key "beta" 5:5][whitespace " " 5:9][equals "=" 5:10][whitespace " " 5:11][element_value_text "7" 5:12][whitespace "\n    " 5:13][element_key "gamma" 6:5][whitespace " " 6:10][equals "=" 6:11][whitespace " " 6:12][element_value_text "8" 6:13][whitespace "\n" 6:14][brace_right "}" 7:1][whitespace "\n" 7:2]
 CONTENT
 {value "1"}{quote "x\ny"}{value "7"}{value "8"}
 END

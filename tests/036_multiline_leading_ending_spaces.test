@@ -7,7 +7,7 @@ b =
 alfa    '
 c = '    alfa    '
 DEBUG
-[element_key "a" 1:1][whitespace " " 1:2][equals "=" 1:1][whitespace "\n" 1:4][element_value_quote "'   alfa\n    '" 2:1][whitespace "\n" 3:6][element_key "b" 4:1][whitespace " " 4:2][equals "=" 4:1][whitespace "\n" 4:4][element_value_quote "'\nalfa    '" 5:1][whitespace "\n" 6:10][element_key "c" 7:1][whitespace " " 7:2][equals "=" 7:1][whitespace " " 7:4][element_value_quote "'    alfa    '" 7:5][whitespace "\n" 7:19]
+[element_key "a" 1:1][whitespace " " 1:2][equals "=" 1:3][whitespace "\n" 1:4][element_value_quote "'   alfa\n    '" 2:1][whitespace "\n" 3:6][element_key "b" 4:1][whitespace " " 4:2][equals "=" 4:3][whitespace "\n" 4:4][element_value_quote "'\nalfa    '" 5:1][whitespace "\n" 6:10][element_key "c" 7:1][whitespace " " 7:2][equals "=" 7:3][whitespace " " 7:4][element_value_quote "'    alfa    '" 7:5][whitespace "\n" 7:19]
 CONTENT
 {quote "   alfa"}{quote "alfa    "}{quote "    alfa    "}
 END

@@ -62,6 +62,7 @@ void debug_content_value(XMQParseState *state, size_t line, size_t start_col, co
 void debug_content_quote(XMQParseState *state, size_t line, size_t start_col, const char *start, size_t inden, const char *cstart, const char *cstop, const char*stop);
 void do_attr_key(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
 void do_attr_ns(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
+void do_attr_ns_declaration(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
 void do_attr_value_compound_entity(XMQParseState *state, size_t l, size_t c, const char *start, size_t indent, const char *cstart, const char *cstop, const char*stop);
 void do_attr_value_compound_quote(XMQParseState *state, size_t l, size_t c, const char *start, size_t indent, const char *cstart, const char *cstop, const char*stop);
 void do_attr_value_entity(XMQParseState *state, size_t l, size_t c, const char *start, size_t indent, const char *cstart, const char *cstop, const char*stop);
@@ -199,6 +200,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->element_value_compound_quote.pre = GREEN;
         c->element_value_compound_entity.pre = MAGENTA;
         c->attr_ns.pre = LIGHT_BLUE_UNDERLINE;
+        c->attr_ns_declaration.pre = MAGENTA;
         c->attr_key.pre = LIGHT_BLUE;
         c->attr_value_text.pre = BLUE;
         c->attr_value_quote.pre = BLUE;
@@ -232,6 +234,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->element_value_compound_quote.pre = DARK_GREEN;
         c->element_value_compound_entity.pre = MAGENTA;
         c->attr_ns.pre = BLUE_UNDERLINE;
+        c->attr_ns_declaration.pre = MAGENTA;
         c->attr_key.pre = BLUE;
         c->attr_value_text.pre = DARK_BLUE;
         c->attr_value_quote.pre = DARK_BLUE;
@@ -544,6 +547,7 @@ void xmqOverrideColor(XMQOutputSettings *os, XMQColor c, const char *pre, const 
     case COLOR_element_value_compound_quote:
     case COLOR_element_value_compound_entity:
     case COLOR_attr_ns:
+    case COLOR_attr_ns_declaration:
     case COLOR_attr_key:
     case COLOR_attr_value_text:
     case COLOR_attr_value_quote:
@@ -1966,6 +1970,17 @@ void do_attr_ns(XMQParseState *state,
                 const char *cstart,
                 const char *cstop,
                 const char *stop)
+{
+}
+
+void do_attr_ns_declaration(XMQParseState *state,
+                            size_t line,
+                            size_t col,
+                            const char *start,
+                            size_t indent,
+                            const char *cstart,
+                            const char *cstop,
+                            const char *stop)
 {
 }
 

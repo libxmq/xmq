@@ -205,6 +205,7 @@ typedef enum XMQColor {
     COLOR_element_value_compound_quote,
     COLOR_element_value_compound_entity,
     COLOR_attr_ns,
+    COLOR_attr_ns_declaration,
     COLOR_attr_key,
     COLOR_attr_value_text,
     COLOR_attr_value_quote,

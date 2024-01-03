@@ -118,6 +118,7 @@ struct XMQColoring
     XMQColorStrings element_value_compound_quote; // When the value is compounded and this is a quote in the compound.
     XMQColorStrings element_value_compound_entity; // When the value is compounded and this is an entity in the compound.
     XMQColorStrings attr_ns; // The namespace part of an attribute name, i.e. the text before colon in bar:speed.
+    XMQColorStrings attr_ns_declaration; // The xmlns part of an attribute namespace declaration.
     XMQColorStrings attr_key; // The color of the attribute name, i.e. the key.
     XMQColorStrings attr_value_text; // When the attribute value is text, use this color.
     XMQColorStrings attr_value_quote; // When the attribute value is a quote, use this color.
@@ -151,6 +152,7 @@ typedef struct XMQColoring XMQColoring;
     X(element_value_compound_quote)  \
     X(element_value_compound_entity) \
     X(attr_ns)             \
+    X(attr_ns_declaration) \
     X(attr_key)            \
     X(attr_value_text)     \
     X(attr_value_quote)    \
@@ -404,7 +406,6 @@ void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const ch
 void eat_xmq_entity(XMQParseState *state, const char **content_start, const char **content_stop);
 void eat_xmq_comment_to_eol(XMQParseState *state, const char **content_start, const char **content_stop);
 void eat_xmq_comment_to_close(XMQParseState *state, const char **content_start, const char **content_stop, size_t n, bool *found_asterisk);
-void eat_xmq_text_name(XMQParseState *state, const char **content_start, const char **content_stop);
 void eat_xmq_text_value(XMQParseState *state, const char **content_start, const char **content_stop);
 bool peek_xmq_next_is_equal(XMQParseState *state);
 size_t count_xmq_quotes(const char *i, const char *stop);

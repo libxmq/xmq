@@ -1,7 +1,7 @@
 START
 alfa = beta
 DEBUG
-[element_key "alfa" 1:1][whitespace " " 1:5][equals "=" 1:1][whitespace " " 1:7][element_value_text "beta" 1:8][whitespace "\n" 1:12]
+[element_key "alfa" 1:1][whitespace " " 1:5][equals "=" 1:6][whitespace " " 1:7][element_value_text "beta" 1:8][whitespace "\n" 1:12]
 CONTENT
 {value "beta"}
 END

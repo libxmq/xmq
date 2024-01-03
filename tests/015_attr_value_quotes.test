@@ -1,7 +1,7 @@
 START
 test(alfa=(' '&#10;''&#10;'''  '  '''))
 DEBUG
-[element_name "test" 1:1][apar_left "(" 1:1][attr_key "alfa" 1:6][equals "=" 1:6][cpar_left "(" 1:11][attr_value_compound_quote "' '" 1:12][attr_value_compound_entity "&#10;" 1:15][attr_value_compound_quote "''" 1:20][attr_value_compound_entity "&#10;" 1:22][attr_value_compound_quote "'''  '  '''" 1:27][cpar_right ")" 1:11][apar_right ")" 1:1][whitespace "\n" 1:40]
+[element_name "test" 1:1][apar_left "(" 1:5][attr_key "alfa" 1:6][equals "=" 1:10][cpar_left "(" 1:11][attr_value_compound_quote "' '" 1:12][attr_value_compound_entity "&#10;" 1:15][attr_value_compound_quote "''" 1:20][attr_value_compound_entity "&#10;" 1:22][attr_value_compound_quote "'''  '  '''" 1:27][cpar_right ")" 1:38][apar_right ")" 1:39][whitespace "\n" 1:40]
 CONTENT
 {quote " "}{quote ""}{quote "  '  "}
 END
