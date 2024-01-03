@@ -557,18 +557,6 @@ struct XMQPrintCallbacks
 #define DO_CALLBACK_SIM(TYPE, state, start_line, start_col, start, content_start_col, content_start, content_stop, stop) \
     { if (state->parse->handle_##TYPE != NULL) { state->simulated=true; state->parse->handle_##TYPE(state,start_line,start_col,start,content_start_col,content_start,content_stop,stop); state->simulated=false; } }
 
-typedef struct
-{
-    char *buf;   // Malloced memory, that might be reallocated.
-    size_t size; // Total allocated
-    size_t used; // Actually used.
-}  InternalBuffer;
-
-void new_buffer(InternalBuffer *ib, size_t l);
-void free_buffer(InternalBuffer *ib);
-void append_buffer(InternalBuffer *ib, const char *start, const char *stop);
-void trim_buffer(InternalBuffer *ib);
-
 bool debug_enabled();
 
 void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);

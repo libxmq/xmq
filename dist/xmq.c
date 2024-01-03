@@ -843,18 +843,6 @@ struct XMQPrintCallbacks
 #define DO_CALLBACK_SIM(TYPE, state, start_line, start_col, start, content_start_col, content_start, content_stop, stop) \
     { if (state->parse->handle_##TYPE != NULL) { state->simulated=true; state->parse->handle_##TYPE(state,start_line,start_col,start,content_start_col,content_start,content_stop,stop); state->simulated=false; } }
 
-typedef struct
-{
-    char *buf;   // Malloced memory, that might be reallocated.
-    size_t size; // Total allocated
-    size_t used; // Actually used.
-}  InternalBuffer;
-
-void new_buffer(InternalBuffer *ib, size_t l);
-void free_buffer(InternalBuffer *ib);
-void append_buffer(InternalBuffer *ib, const char *start, const char *stop);
-void trim_buffer(InternalBuffer *ib);
-
 bool debug_enabled();
 
 void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
@@ -3732,9 +3720,7 @@ size_t line_length(const char *start, const char *stop, int *numq, int *lq, int 
 char *xmq_quote_with_entity_newlines(const char *start, const char *stop, XMQQuoteSettings *settings)
 {
     // This code must only be invoked if there is at least one newline inside the to-be quoted text!
-    InternalBuffer ib;
-    size_t l = stop-start;
-    new_buffer(&ib, l*2);
+    MemBuffer *mb = new_membuffer();
 
     const char *i = start;
     bool found_nl = false;
@@ -3745,26 +3731,25 @@ char *xmq_quote_with_entity_newlines(const char *start, const char *stop, XMQQuo
         int eq = 0;
         size_t line_len = line_length(i, stop, &numq, &lq, &eq);
         i += lq;
-        for (int j = 0; j < lq; ++j) append_buffer(&ib, "&#39;", NULL);
+        for (int j = 0; j < lq; ++j) membuffer_append(mb, "&#39;");
         if (line_len > 0)
         {
             if (numq == 0 && (settings->force)) numq = 1; else numq++;
             if (numq == 2) numq++;
-            for (int i=0; i<numq; ++i) append_buffer(&ib, "'", NULL);
-            append_buffer(&ib, i, i+line_len);
-            for (int i=0; i<numq; ++i) append_buffer(&ib, "'", NULL);
+            for (int i=0; i<numq; ++i) membuffer_append(mb, "'");
+            membuffer_append_region(mb, i, i+line_len);
+            for (int i=0; i<numq; ++i) membuffer_append(mb, "'");
         }
-        for (int j = 0; j < eq; ++j) append_buffer(&ib, "&#39;", NULL);
+        for (int j = 0; j < eq; ++j) membuffer_append(mb, "&#39;");
         i += line_len+eq;
         if (i < stop && *i == '\n')
         {
             if (!found_nl) found_nl = true;
-            append_buffer(&ib, "&#10;", NULL);
+            membuffer_append(mb, "&#10;");
             i++;
         }
     }
-    trim_buffer(&ib);
-    return ib.buf;
+    return free_membuffer_but_return_trimmed_content(mb);
 }
 
 char *xmq_quote_default(int indent,
@@ -3855,50 +3840,6 @@ char *xmq_comment(int indent, const char *start, const char *stop, XMQQuoteSetti
     }
 
     return xmq_quote_default(indent, start, stop, settings);
-}
-
-void new_buffer(InternalBuffer *ib, size_t l)
-{
-    ib->buf = (char*)malloc(l);
-    ib->size = l;
-    ib->used = 0;
-}
-
-void free_buffer(InternalBuffer *ib)
-{
-    if (ib->buf) free(ib->buf);
-    ib->buf = NULL;
-    ib->size = 0;
-    ib->used = 0;
-}
-
-void append_buffer(InternalBuffer *ib, const char *start, const char *stop)
-{
-    assert(ib->buf);
-    if (stop == NULL) stop = start+strlen(start);
-    size_t l = stop-start;
-    if ((ib->used + l) > ib->size)
-    {
-        // Oups! Does not fit. Add size is same as current size, ie double the size.
-        size_t as;
-        if (ib->size > 1024*1024) as = 1024*1024; // But we top out doubling at 1MiB.
-        else as = ib->size;
-        if (as < l) as = l*2; // Oups, not enough.
-        ib->size += as;
-        ib->buf = (char*)realloc(ib->buf, ib->size);
-    }
-    memcpy(ib->buf+ib->used, start, l);
-    ib->used += l;
-}
-
-void trim_buffer(InternalBuffer *ib)
-{
-    if (ib->size > ib->used)
-    {
-        ib->size = ib->used+1;
-        ib->buf = (char*)realloc(ib->buf, ib->size);
-        ib->buf[ib->size-1] = 0;
-    }
 }
 
 int xmqForeach(XMQDoc *doq, XMQNode *xmq_node, const char *xpath, NodeCallback cb, void *user_data)
