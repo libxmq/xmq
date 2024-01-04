@@ -1,4 +1,5 @@
-<shiporder id="889923">
+<shiporder>
+  <id>889923</id>
   <type>container</type>
   <shipto sailing="">
     <address>The Vasa Museum

@@ -118,7 +118,6 @@ html {
         {
             &SHIPORDER_XML;
             &#10;
-            &#10;
         }
         p = 'The hierarchical style should look familiar, but note:'
         ul {
@@ -152,17 +151,43 @@ html {
              All other whitespace (including tabs) must be quoted. Let us take a look at shiporder in compact form.
              (Any linebreaks below are due to your browser.)'
         &SHIPORDER_COMPACT_XMQ;
-        p = '''You can see character entities like &#10; for newlines and compound values address=('...'#10;'...')
-               which normally is a multiline quote but where escaped newlines are intermingled with quotes to create the compact form.'''
-        p = 'You can read the config file using a simple xmq api. (You can also use the full libxml2 api if you like.)'
-        pre(class = 'xmq xmq_light w40') = 'XMQDoc *doc = xmqNewDoc();
-                                            ok = xmqParseFile(doc, "config.xmq, "myconf"); assert(ok);
-                                            server = xmqGetString(doc, NULL, "/myconf/server");
-                                            port = xmqGetInt(doc, NULL, "/myconf/port");
-                                            file = xmqGetString(doc, NULL, "/myconf/file");
-                                            cron = xmqGetString(doc, NULL, "/myconf/cron");'
         p {
-            'XMQ can be trivial which is nice for your first config file, but when your program
+            'You can see character entities like '
+            xmqE='&#10;'
+            ' for newlines and compound values like '
+            xmqEK='address'
+            '='
+            xmqCP='('
+            xmqQ=(&#39; '...' &#39;)
+            xmqE='&#10;'
+            xmqQ=(&#39; '...' &#39;)
+            xmqCP=')'
+            ' which normally is a multiline quote but where escaped newlines are intermingled with quotes to create the compact form.'
+        }
+        p = 'You can read the config file using a simple C api. (You can also use the full libxml2 api if you like and future
+             programming languages APIs will be coming.)'
+        pre(class = 'xmq xmq_light w40') {
+            'XMQDoc *doc = '
+            xmqQ = xmqNewDoc
+            '();
+             ok = '
+            xmqQ = xmqParseFile
+            '(doc, "config.xmq, "myconf"); assert(ok);
+             server = '
+            xmqQ = xmqGetString
+            '(doc, NULL, "/myconf/server");
+             port = '
+             xmqQ = xmqGetInt
+            '(doc, NULL, "/myconf/port");
+             file = '
+             xmqQ = xmqGetString
+            '(doc, NULL, "/myconf/file");
+             cron = '
+             xmqQ = xmqGetString
+             '(doc, NULL, "/myconf/cron");'
+        }
+        p {
+            'As you can see, XMQ can be trivial, which is nice for your first config file, but when your program
              grows in complexity, so can your config file. You do not have to convert your config
              file to xml, but if you want to then you can supply your implicit root (in this case myconf):'
             span(class = code) = 'xmq --root=myconf config.xmq to-xml > config.xml'
@@ -245,16 +270,19 @@ html {
         &MULTI_COMPACT_XMQ;
         ' '
         p {
-            'Note that xml/html does not permit two dashes inside a comment!!! The xmq tool works around
-             this by adding a very specific char (␐) in such a way there are no two consecutive dashes in the
-             xml. When loading from such xml, the char (␐) is instead removed to restore the two dashes.'
+            'Note that, for historical reasons, xml/html does not permit two dashes inside a comment! This is
+             quite a showstopper if you just want to comment out some large part of your document. As you
+             can see two dashes are permitted in xmq-comments and the xmq tool works around
+             this problem when converting to xml/html by adding a very specific char (␐) in such a way
+             there are no two consecutive dashes in the xml. When loading from such xml, the char (␐) is
+             instead removed to restore the two dashes.'
             span(class = code) = 'xmq multi.xmq to-xml'
         }
         pre(class = 'xmq xmq_light w80') = &MULTI_XML;
         h2 = 'Quoting and entities inside attributes'
         p = '''For elements, a key=value is syntactic sugar for: key{'value'}
                However for attributes, this is not the case, here you can only write: key=value
-               In the example below all elements and attributes have the content: 123'''
+               In the example below all content is: 123'''
         &SYNTACTIC_SUGAR_XMQ;
         p {
             'XMQ is designed with the assumption that we rarely need significant leading/ending whitespace/quotes.
@@ -262,9 +290,13 @@ html {
              different ways:'
         }
         &CORNERS_XMQ;
-        p = '''You can see the magenta colored parentheses ( after the equal = sign. This is a compound value
-               consisting only of quotes and entities. Compound values are mandatory for the attribute values that
-               need multiple quotes/entities since braces {} cannot be used inside an attribute value. '''
+        p {
+            'You can see the magenta colored parentheses '
+            xmqCP = '( )'
+            ' after the equal = sign. This is a compound value which can only consist of quotes and entities.
+             Compound values are mandatory for the attribute values that need multiple quotes/entities since braces
+             { } cannot be used inside an attribute value.'
+        }
         &COMPOUND_XMQ;
         h2 = 'Viewing large html pages'
         p = 'The xmq tool is useful to decode large html pages. Let us assume that you downloaded a large html page: index.html'
@@ -284,14 +316,16 @@ html {
         p {
             'We can use the xmq tool to convert shiporder to json:'
             span(class = code) = 'xmq shiporder.xmq to-json | jq .'
+            ' You can see that the xml element name is folded as the key "_":"shiporder" and
+             attributes are folded as children prefixed with underscores.'
         }
         pre(class = 'xmq xmq_light w40')
         {
             &SHIPORDER_JSON;
         }
         p = 'If an XMQ value is a valid JSON number, true, false or null, then it is converted to
-             the proper JSON value (without string quotes). If you want to force a number to a JSON string,
-             then add the S attribute: speed(S) = 123'
+             the proper JSON value (no quotes) see "id":889923 . If you want to force a number to a JSON string,
+             then add the S attribute: speed(S)=123 will translate into "speed":"123" .'
 
         p { 'We can also use the xmq tool to parse json. '
             span(class = code) = '''curl -s 'https://dummyjson.com/todos?skip=4&limit=2' | xmq'''
@@ -303,7 +337,11 @@ html {
             &nbsp;
             &nbsp;
             a(href = resources/todos.json) = todos.json
-
+            &nbsp;
+            &nbsp;
+            'Here you can see that since JSON objects lacks type information which means that the corresponding
+             XMQ element get the anonymous name underscore _. If there is a child _ with a name, then that will
+             be use instead, this enables proper back-forth conversion between XMQ and JSON.'
         }
         &TODOS_XMQ;
         ' '
@@ -312,8 +350,6 @@ html {
             &TODOS_JSON;
             &#10;
         }
-
-        p = 'You can see that the unnamed JSON objects are given a single underscore _ as their name.'
 
         h2 = 'XSLT transforms'
 
