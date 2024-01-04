@@ -16,7 +16,8 @@ html {
              content       = width=device-width
              initial-scale = 1.0)
     }
-    body {
+    body(onload='checkBackgroundSetting();')
+    {
         h1 = 'XMQ - a new language for xml/html (+json)'
         i {
             'by Fredrik Öhrström (last updated '
@@ -54,11 +55,9 @@ html {
             &nbsp;
             &nbsp;
             a(href = https://github.com/orgs/libxmq/discussions) = '[Forum/Discussions]'
-            br
-            a(href = #json) = '[1 Rationale]'
             &nbsp;
             &nbsp;
-            a(href = #json) = '[5 JSON]'
+            a(href = resources/index_htmq.html) = '[This page source as htmq]'
         }
         h2= Rationale
         p = 'XML can be human readable/editable if it is used for markup of longer
@@ -123,10 +122,11 @@ html {
         }
         p = 'The hierarchical style should look familiar, but note:'
         ul {
+            li = 'XMQ files are always UTF8 encoded.'
             li = 'Safe values after = can be stored as plain text (see 889923 container), no quoting needed!'
             li = '''Unsafe values (after =) with newlines, whitespace or ( ) { } ' " or leading = & // /* must be quoted.'''
             li = 'Two single quotes always mean the empty string (see sailing).'
-            li = 'In multiline quotes, the incindental indentation is removed (see address).'
+            li = 'In multiline quotes, the incidental indentation is removed (see address).'
             li = ''''
             Quotes containing quotes are quoted using n+1 single quotes (see coord).
             Note that two quotes are reserved for the empty string. You will therefore see a single
@@ -137,7 +137,7 @@ html {
         }
         p = 'This means that you can quote any block of text with enough single quotes and you
              can comment any block of text with enough slashes.'
-        h2= 'XMQ as a configuration file'
+        h2 = 'XMQ as a configuration file'
         p {
             'XMQ permits multiple root nodes which means that if you use XMQ as your software config file format
              then the first iteration of your config file can be as simple as this:'
@@ -146,7 +146,15 @@ html {
             a(href = resources/config.xmq) = config.xmq
         }
         &CONFIG_XMQ;
-        ' '
+        p = 'Every xmq file can be printed in compact form on a single line where whitespace between tokens is minimized.'
+        &CONFIG_COMPACT_XMQ;
+        p = 'The only permitted whitespace between tokens are space (ascii 32) and newlines (ascii 10 or 13 or 13 10).
+             All other whitespace (including tabs) must be quoted. Let us take a look at shiporder in compact form.
+             (Any linebreaks below are due to your browser.)'
+        &SHIPORDER_COMPACT_XMQ;
+        p = '''You can see character entities like &#10; for newlines and compound values address=('...'#10;'...')
+               which normally is a multiline quote but where escaped newlines are intermingled with quotes to create the compact form.'''
+        p = 'You can read the config file using a simple xmq api. (You can also use the full libxml2 api if you like.)'
         pre(class = 'xmq xmq_light w40') = 'XMQDoc *doc = xmqNewDoc();
                                             ok = xmqParseFile(doc, "config.xmq, "myconf"); assert(ok);
                                             server = xmqGetString(doc, NULL, "/myconf/server");
@@ -154,12 +162,9 @@ html {
                                             file = xmqGetString(doc, NULL, "/myconf/file");
                                             cron = xmqGetString(doc, NULL, "/myconf/cron");'
         p {
-            'The advantage of using XMQ instead of a hand coded format, becomes obvious when
-             your software evolves. If you use XMQ, then your config file is future proof
-             since you can always introduce more powerful XMQ constructs if you need them.
-             When you use XMQ as a config file, you do not have to convert it to XML, but
-             if you really want to convert a root-less XMQ file to a valid
-             XML file, then you can supply your implicit root (in this case myconf):'
+            'XMQ can be trivial which is nice for your first config file, but when your program
+             grows in complexity, so can your config file. You do not have to convert your config
+             file to xml, but if you want to then you can supply your implicit root (in this case myconf):'
             span(class = code) = 'xmq --root=myconf config.xmq to-xml > config.xml'
         }
         pre(class = 'xmq xmq_light w80') = &CONFIG_XML;
@@ -193,10 +198,10 @@ html {
         p {
             'If you convert from htmq to html:'
             span(class = code) = 'xmq welcome_traveller.htmq to-html'
-            ' then you will see that xmq currently does not pretty print since
-              it wants to preserve the xmq whitespace exactly as it was written. (Any linebreaks below are due to the browser.)
-              Since you know exactly what whitespace you are feeding the browser (html) and other tools (xml)
-              it will be easier to control their behaviour.'
+            ' then you will see that xmq does not pretty print since it wants to preserve the xmq whitespace
+             exactly as it was written. (Any linebreaks below are due to your browser.)
+             Since you know exactly what whitespace you are feeding the browser (html) and other tools (xml)
+             it will be easier to control their behaviour.'
         }
         pre(class = 'xmq xmq_light w40') = &WELCOME_TRAVELLER_NOPP_HTML;
         p {
@@ -209,19 +214,18 @@ html {
              newlines. This usually work well but might in some
              situation remove significant spaces.'
         }
+        &WELCOME_TRAVELLER_BACK_HTMQ;
         p {
             'You can also see that the &nabla; was replaced with the actual ∇. This happened because
              it was character entity, which is just another kind of quote.
              If you want to preserve all whitespace and restore the html entities then do:'
             span(class = code) = 'xmq --trim=none welcome_traveller.html to-htmq --escape-non-7bit'
         }
-        &WELCOME_TRAVELLER_BACK_HTMQ;
-        ' '
         &WELCOME_TRAVELLER_BACK_NOTRIM_HTMQ;
         p = 'As you can see there is quite a lot of whitespace in xml/html, which might or might not be
              significant/ignorable depending on your css and other settings. If you really want this whitespace then
              xmq will make it obvious.'
-        h2= 'Compact XMQ'
+        h2= 'Compact XMQ with multiline comments'
         p {
             'The opposite of xmq pretty printing is xmq compact printing with no indentation and no newlines: '
             span(class = code) = 'xmq welcome_traveller.htmq to-htmq --compact'
@@ -281,25 +285,41 @@ html {
             'We can use the xmq tool to convert shiporder to json:'
             span(class = code) = 'xmq shiporder.xmq to-json | jq .'
         }
-        &SHIPORDER_XMQ;
-        ' '
         pre(class = 'xmq xmq_light w40')
         {
             &SHIPORDER_JSON;
         }
+        p = 'If an XMQ value is a valid JSON number, true, false or null, then it is converted to
+             the proper JSON value (without string quotes). If you want to force a number to a JSON string,
+             then add the S attribute: speed(S) = 123'
 
         p { 'We can also use the xmq tool to parse json. '
-             span(class = code) = 'xmq instances.json pager'
+            span(class = code) = '''curl -s 'https://dummyjson.com/todos?skip=4&limit=2' | xmq'''
+            ' or '
+            span(class = code) = 'xmq todos.json'
+            &nbsp;
+            &nbsp;
+            a(href = resources/todos.xmq) = todos.xmq
+            &nbsp;
+            &nbsp;
+            a(href = resources/todos.json) = todos.json
+
         }
-        &INSTANCES_XMQ;
+        &TODOS_XMQ;
         ' '
         pre(class = 'xmq xmq_light w80')
         {
-            &INSTANCES_JSON;
-            &#10;
-            &#10;
+            &TODOS_JSON;
             &#10;
         }
+
+        p = 'You can see that the unnamed JSON objects are given a single underscore _ as their name.'
+
+        h2 = 'XSLT transforms'
+
+        p = 'The XMQ format makes XSLT transforms readable! If you try to pretty print an xslt-transform you
+             will get an output that is a mix of the desired whitespace and the implicit whitespace from
+             the indented xslt-transforms. Again with XMQ this problem goes away.'
 
         h2 = 'Conclusions'
         p = 'With XMQ the assumed dichotomy between mark-up languages (like XML) and key-value store languages (like JSON)

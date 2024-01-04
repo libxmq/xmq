@@ -955,7 +955,7 @@ void print_help_and_exit()
            "             For xmq/htmq/json the default settings is none since whitespace is explicit in xmq/htmq/json.\n"
            "             none: Keep all whitespace as is.\n"
            "             default: Use normal for xml/html and none for xmq/htmq/json.\n"
-           "             normal: Remove leading ending whitespace and incindental indentation.\n"
+           "             normal: Remove leading ending whitespace and incidental indentation.\n"
            "             extra: Like normal but also squeeze multiple consecutive whitespaces int a single whitespace.\n"
            "             reshuffle: Like extra but also move words between lines to shrink line width.\n"
            "  --help     Display this help and exit.\n"

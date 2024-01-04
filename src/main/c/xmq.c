@@ -1126,7 +1126,7 @@ static const char *build_error_message(const char* fmt, ...)
     @stop: Points to byte after buffer.
 
     Do the reverse of xmq_quote, take a quote (with or without the surrounding single quotes)
-    and removes any incindental indentation. Returns a newly malloced buffer
+    and removes any incidental indentation. Returns a newly malloced buffer
     that must be free:ed later.
 
     Use indent 0 if the quote ' is first on the line.
@@ -1156,7 +1156,7 @@ char *xmq_un_quote(size_t indent, char space, const char *start, const char *sto
 /**
     xmq_un_comment:
 
-    Do the reverse of xmq_comment, Takes a comment (including /✻ ✻/ ///✻ ✻///) and removes any incindental
+    Do the reverse of xmq_comment, Takes a comment (including /✻ ✻/ ///✻ ✻///) and removes any incidental
     indentation and trailing spaces. Returns a newly malloced buffer
     that must be free:ed later.
 
@@ -1306,11 +1306,11 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
             i++;
         }
     }
-    size_t incindental = (size_t)-1;
+    size_t incidental = (size_t)-1;
 
     if (!ignore_first_indent)
     {
-        incindental = indent;
+        incidental = indent;
     }
 
     // Now scan remaining lines at the first line.
@@ -1323,12 +1323,12 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         if (after_last_non_space != i)
         {
             // There are non-space chars.
-            if (found_indent < incindental)  // Their indent is lesser than the so far found.
+            if (found_indent < incidental)  // Their indent is lesser than the so far found.
             {
                 // Yep, remember it.
                 if (!first_line || ignore_first_indent)
                 {
-                    incindental = found_indent;
+                    incidental = found_indent;
                 }
             }
             first_line = false;
@@ -1339,16 +1339,16 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
     size_t prepend = 0;
 
     if (!ignore_first_indent &&
-        indent >= incindental)
+        indent >= incidental)
     {
-        // The first indent is relevant and it is bigger than the incindental.
+        // The first indent is relevant and it is bigger than the incidental.
         // We need to prepend the output line with spaces that are not in the source!
         // But, only if there is more than one line with actual non spaces!
-        prepend = indent - incindental;
+        prepend = indent - incidental;
     }
 
     // Allocate max size of output buffer, it usually becomes smaller
-    // when incindental indentation and trailing whitespace is removed.
+    // when incidental indentation and trailing whitespace is removed.
     size_t n = stop-start+prepend+1;
     char *buf = (char*)malloc(n);
     char *o = buf;
@@ -1357,7 +1357,7 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
     while (prepend) { *o++ = space; prepend--; }
 
     // Start scanning the lines from the beginning again.
-    // Now use the found incindental to copy the right parts.
+    // Now use the found incidental to copy the right parts.
     i = start;
 
     first_line = true;
@@ -1368,8 +1368,8 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         if (!first_line || ignore_first_indent)
         {
             // For all lines except the first. And for the first line if ignore_first_indent is true.
-            // Skip the incindental indentation, space counts as one tab counts as 8.
-            size_t n = incindental;
+            // Skip the incidental indentation, space counts as one tab counts as 8.
+            size_t n = incidental;
             while (n > 0)
             {
                 char c = *i;
@@ -2408,7 +2408,7 @@ void trim_text_node(xmlNode *node, XMQTrimType tt)
         xmlFreeNode(node);
         return;
     }
-    // This is not entirely whitespace, now use the xmq_un_quote function to remove any incindental indentation.
+    // This is not entirely whitespace, now use the xmq_un_quote function to remove any incidental indentation.
     // Use indent==0 and space==0 to indicate to the unquote function to assume the the first line indent
     // is the same as the second line indent! This is necessary to gracefully handle all the possible xml indentations.
     const char *start = content;

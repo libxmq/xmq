@@ -213,8 +213,6 @@ pom.xml: pom.xmq
 mvn:
 	mvn package
 
-TODAY:=$(shell date +'%Y-%m-%d %H:%M')
-
 .PHONY: web
 web: build/web/index.html
 
@@ -222,91 +220,7 @@ WEBXMQ:=build/default/release/xmq
 
 .PHONY: build/web/index.html
 build/web/index.html:
-	@mkdir -p build/web/resources
-	@$(WEBXMQ) web/50x.htmq to-html > build/web/50x.html
-	@$(WEBXMQ) web/404.htmq to-html > build/web/404.html
-	@cp doc/xmq.pdf  build/web
-	@cp web/resources/style.css  build/web/resources
-	@cp web/resources/code.js  build/web/resources
-	@cp web/resources/shiporder.xml  build/web/resources/shiporder.xml
-	@cp web/resources/car.xml  build/web/resources/car.xml
-	@cp web/resources/config.xmq  build/web/resources/
-	@cp web/resources/welcome_traveller.htmq  build/web/resources/welcome_traveller.htmq
-	@cp web/resources/welcome_traveller.html  build/web/resources/welcome_traveller.html
-	@cp web/resources/sugar.xmq  build/web/resources/sugar.xmq
-# Extract the css
-	$(WEBXMQ) web/resources/shiporder.xml render-html --onlystyle > build/web/resources/xmq.css
-# Generate the xmq from the xml
-	$(WEBXMQ) web/resources/shiporder.xml to-xmq > build/web/resources/shiporder.xmq
-	$(WEBXMQ) web/resources/shiporder.xml to-json | jq . > build/web/resources/shiporder.json
-# Render the xmq in html
-	$(WEBXMQ) web/resources/shiporder.xml render-html --id=ex1 --class=w40 --lightbg --nostyle  > build/rendered_shiporder_xmq.xml
-# Generate compact shiporder
-	$(WEBXMQ) web/resources/shiporder.xml to-xmq --compact > build/shiporder_compact.xmq
-# Render compact xmq in html
-	$(WEBXMQ) web/resources/shiporder.xml render-html --compact --id=ex1c --class=w40 --lightbg --nostyle  > build/rendered_shiporder_xmq_compact.xml
-# Render config
-	$(WEBXMQ) web/resources/config.xmq render-html --class=w40 --lightbg --nostyle  > build/rendered_config_xmq.xml
-	$(WEBXMQ) --root=myconf web/resources/config.xmq to-xml  > build/config.xml
-# Render multi
-	$(WEBXMQ) web/resources/multi.xmq render-html --class=w40 --lightbg --nostyle  > build/rendered_multi_xmq.xml
-	$(WEBXMQ) web/resources/multi.xmq render-html --class=w40 --lightbg --nostyle --compact  > build/rendered_multi_compact_xmq.xml
-	$(WEBXMQ) web/resources/multi.xmq to-xml > build/multi.xml
-# Render car xmq in html
-	$(WEBXMQ) web/resources/car.xml render-html --class=w40 --lightbg --nostyle  > build/rendered_car_xmq.xml
-	$(WEBXMQ) web/resources/car.xml to-xml  > build/web/resources/car.xml
-	$(WEBXMQ) web/resources/car.xml to-xmq > build/web/resources/car.xmq
-# Tokenize the sugar.xmq
-	echo -n "<span>" > build/sugar_xmq.xml
-	$(WEBXMQ) web/resources/sugar.xmq tokenize --type=html >> build/sugar_xmq.xml
-	echo -n "</span>" >> build/sugar_xmq.xml
-# Raw xml from corners and syntactic sugar.
-	$(WEBXMQ) web/resources/syntactic_sugar.xmq tokenize --type=html > build/syntactic_sugar_xmq.xml
-	$(WEBXMQ) web/resources/corners.xmq tokenize --type=html > build/corners_xmq.xml
-	$(WEBXMQ) web/resources/compound.xmq tokenize --type=html > build/compound_xmq.xml
-# Render json
-	$(WEBXMQ) web/resources/instances.json render-html --class=w80 --lightbg --nostyle > build/instances_json.xml
-	cp web/resources/instances.json build/instances.json
-# Render the welcome traveller xmq in html
-	$(WEBXMQ) web/resources/welcome_traveller.htmq render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_xmq.xml
-	$(WEBXMQ) web/resources/welcome_traveller.html render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_back_xmq.xml
-	$(WEBXMQ) --trim=none web/resources/welcome_traveller.html to-htmq --escape-non-7bit | $(WEBXMQ) - render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_back_notrim_xmq.xml
-# Render the same but compact
-	$(WEBXMQ) web/resources/welcome_traveller.htmq render-html --id=ex2 --class=w40 --lightbg --nostyle --compact > build/rendered_welcome_traveller_xmq_compact.xml
-	$(WEBXMQ) web/resources/welcome_traveller.htmq to-htmq > build/web/resources/welcome_traveller.htmq
-	$(WEBXMQ) web/resources/welcome_traveller.htmq to-html > build/welcome_traveller_nopp.html
-	$(WEBXMQ) pom.xml render-html --id=expom --class=w80 --lightbg --nostyle > build/pom_rendered.xml
-	$(WEBXMQ) data.xslt render-html --id=exxslt --class=w80 --lightbg --nostyle > build/xslt_rendered.xml
-	$(WEBXMQ) web/index.htmq \
-		replace-entity DATE "$(TODAY)" \
-		replace-entity SHIPORDER_XML --with-text-file=web/resources/shiporder.xml \
-		replace-entity SHIPORDER_JSON --with-text-file=build/web/resources/shiporder.json \
-		replace-entity SHIPORDER_XMQ --with-file=build/rendered_shiporder_xmq.xml \
-		replace-entity SHIPORDER_XMQ_COMPACT --with-file=build/rendered_shiporder_xmq_compact.xml \
-		replace-entity CONFIG_XMQ --with-file=build/rendered_config_xmq.xml \
-		replace-entity CONFIG_XML --with-text-file=build/config.xml \
-		replace-entity MULTI_XMQ --with-file=build/rendered_multi_xmq.xml \
-		replace-entity MULTI_COMPACT_XMQ --with-file=build/rendered_multi_compact_xmq.xml \
-		replace-entity MULTI_XML --with-text-file=build/multi.xml \
-		replace-entity CAR_XML --with-text-file=web/resources/car.xml \
-		replace-entity CAR_XMQ --with-file=build/rendered_car_xmq.xml \
-		replace-entity CORNERS_XMQ --with-file=build/corners_xmq.xml \
-		replace-entity COMPOUND_XMQ --with-file=build/compound_xmq.xml \
-		replace-entity INSTANCES_XMQ --with-file=build/instances_json.xml \
-		replace-entity INSTANCES_JSON --with-text-file=build/instances.json \
-		replace-entity SYNTACTIC_SUGAR_XMQ --with-file=build/syntactic_sugar_xmq.xml \
-		replace-entity WELCOME_TRAVELLER_HTMQ --with-file=build/rendered_welcome_traveller_xmq.xml \
-		replace-entity WELCOME_TRAVELLER_BACK_HTMQ --with-file=build/rendered_welcome_traveller_back_xmq.xml \
-		replace-entity WELCOME_TRAVELLER_BACK_NOTRIM_HTMQ --with-file=build/rendered_welcome_traveller_back_notrim_xmq.xml \
-		replace-entity WELCOME_TRAVELLER_HTML --with-text-file=build/web/resources/welcome_traveller.html \
-		replace-entity WELCOME_TRAVELLER_HTMQ_COMPACT --with-file=build/rendered_welcome_traveller_xmq_compact.xml \
-		replace-entity WELCOME_TRAVELLER_NOPP_HTML --with-text-file=build/welcome_traveller_nopp.html \
-		replace-entity POM_RENDERED --with-file=build/pom_rendered.xml \
-		replace-entity XSLT_RENDERED --with-file=build/xslt_rendered.xml \
-		to-html > build/web/index.html
-	@$(WEBXMQ) web/index.htmq render-html > build/web/resources/index_htmq.html
-	@echo Updated $@
-
+	@./scripts/build_web.sh
 
 #	@$(WEBXMQ) --trim=none build/_EX1_.html to-xmq --compact  > build/_EX1_.htmq
 #	@cat web/index.htmq | sed -e "s/_EX1_/$$(sed 's:/:\\/:g' build/_EX1_.htmq | sed 's/\&/\\\&/g')/g" > build/tmp.htmq

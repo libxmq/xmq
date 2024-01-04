@@ -208,20 +208,20 @@ void test_trimming_quotes()
     test_trim_quote(10, " x\n ", " x");
     test_trim_quote(1, " x\n ", " x");
 
-    // Incindental is removed.
+    // Incidental is removed.
     test_trim_quote(1, "\n x\n ", "x");
     test_trim_quote(1, "x\n          ", "x");
 
-    // Remove incindental indentation.
+    // Remove incidental indentation.
     test_trim_quote(1, "abc\n def", "abc\ndef");
 
     test_trim_quote(1, " abc\n def", " abc\ndef");
-    // Incindental is 1 because of first line and second line.
+    // Incidental is 1 because of first line and second line.
     test_trim_quote(1, "\n 'howdy'\n ", "'howdy'");
-    // Incindental is 0 because of second line.
+    // Incidental is 0 because of second line.
     test_trim_quote(1, "\n'howdy'\n ", "'howdy'");
 
-    // Remove incindetal.
+    // Remove incidetal.
     test_trim_quote(10, "\n    x\n  y\n    z\n", "  x\ny\n  z");
 
 

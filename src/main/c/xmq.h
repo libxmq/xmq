@@ -123,8 +123,8 @@ typedef enum
     XMQTrimType:
     @XMQ_TRIM_DEFAULT: Use the default, ie no-trim for xmq/json, normal-trim for xml/html.
     @XMQ_TRIM_NONE: Do not trim at all. Keep unnecessary xml/html indentation and newlines.
-    @XMQ_TRIM_NORMAL: Normal trim heuristic. Remove leading/ending whitespace, remove incindental indentation.
-    @XMQ_TRIM_EXTRA: Like normal but remove all indentation (not just incindental) and collapse whitespace.
+    @XMQ_TRIM_NORMAL: Normal trim heuristic. Remove leading/ending whitespace, remove incidental indentation.
+    @XMQ_TRIM_EXTRA: Like normal but remove all indentation (not just incidental) and collapse whitespace.
     @XMQ_TRIM_RESHUFFLE: Like extra but also reflow all content at word boundaries to limit line lengths.
 
     When loading xml/html trim the whitespace from the input to generate the most likely desired xmq output.

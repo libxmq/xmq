@@ -1,0 +1,19 @@
+{
+  "todos": [
+    {
+      "id": 5,
+      "todo": "Solve a cube",
+      "completed": false,
+      "userId": 31
+    },
+    {
+      "id": 6,
+      "todo": "Bake pastries",
+      "completed": false,
+      "userId": 39
+    }
+  ],
+  "total": 150,
+  "skip": 4,
+  "limit": 2
+}
