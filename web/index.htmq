@@ -353,9 +353,27 @@ html {
 
         h2 = 'XSLT transforms'
 
-        p = 'The XMQ format makes XSLT transforms readable! If you try to pretty print an xslt-transform you
-             will get an output that is a mix of the desired whitespace and the implicit whitespace from
-             the indented xslt-transforms. Again with XMQ this problem goes away.'
+        p { 'The XMQ format makes XSLT transforms readable! Let us convert the curled JSON directly into an HTML page using xmq.'
+            &nbsp;
+            &nbsp;
+            a(href = resources/todos.xslq) = todos.xslq
+            &nbsp;
+            &nbsp;
+            a(href = resources/todos.xslt) = todos.xslt
+            &nbsp;
+            &nbsp;
+            span(class = code) = 'xmq todos.json transform todos.xslq to-html > todos.html'
+            &nbsp;
+            &nbsp;
+            'This is the generated page: '
+            a(href = resources/todos.html) = todos.html
+
+        }
+        &TODOS_XSLQ;
+        p { 'And this is the generated HTMQ. '
+            a(href = resources/todos.html) = todos.html
+        }
+        &TODOS_HTMQ;
 
         h2 = 'Conclusions'
         p = 'With XMQ the assumed dichotomy between mark-up languages (like XML) and key-value store languages (like JSON)
