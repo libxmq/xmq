@@ -262,18 +262,18 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
         c->style.pre =
             "pre.xmq_dark {border-radius:2px;background-color:#263338;border:solid 1px #555555;display:inline-block;padding:1em;color:white;}\n"
             "pre.xmq_light{border-radius:2px;background-color:#f8f9fb;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
-            "xmq_c{color:#2aa1b3;}\n"
-            "xmq_q{color:#26a269;}\n"
-            "xmq_e{color:magenta;}\n"
-            "xmq_ens{text-decoration:underline; color:darkorange;}\n"
-            "xmq_en{color:darkorange;}\n"
-            "xmq_ek {color:#88b4f7;}\n"
-            "xmq_ekv{color:#26a269;}\n"
-            "xmq_ak{color:#88b4f7;}\n"
-            "xmq_akv{color:#3166cc;}\n"
-            "xmq_ans{text-decoration:underline;color:#88b4f7;}\n"
-            "xmq_cp{color:#c061cb;}\n"
-            "pre.xmq_light { xmq_q{color:darkgreen;} xmq_ekv{color:darkgreen;} xmq_ek {color:#1f61ff;}; xmq_ak{color:#1f61ff;}\n"
+            "xmqC{color:#2aa1b3;}\n"
+            "xmqQ{color:#26a269;}\n"
+            "xmqE{color:magenta;}\n"
+            "xmqENS_ens{text-decoration:underline; color:darkorange;}\n"
+            "xmqEN{color:darkorange;}\n"
+            "xmqEK{color:#88b4f7;}\n"
+            "xmqEKV{color:#26a269;}\n"
+            "xmqAK{color:#88b4f7;}\n"
+            "xmqAKV{color:#3166cc;}\n"
+            "xmqANS{text-decoration:underline;color:#88b4f7;}\n"
+            "xmqCP{color:#c061cb;}\n"
+            "pre.xmq_light { xmqQ{color:darkgreen;} xmqEKV{color:darkgreen;} xmqEK{color:#1f61ff;}; xmq_AK{color:#1f61ff;}\n"
             "pre.xmq_dark { }\n"
             ;
 
@@ -312,55 +312,55 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
 
     c->whitespace.pre  = NULL;
     c->indentation_whitespace.pre = NULL;
-    c->unicode_whitespace.pre  = "<xmq_uw>";
-    c->unicode_whitespace.post  = "</xmq_uw>";
+    c->unicode_whitespace.pre  = "<xmqUW>";
+    c->unicode_whitespace.post  = "</xmqUW>";
     c->equals.pre      = NULL;
     c->brace_left.pre  = NULL;
     c->brace_right.pre = NULL;
     c->apar_left.pre    = NULL;
     c->apar_right.pre   = NULL;
-    c->cpar_left.pre = "<xmq_cp>";
-    c->cpar_left.post = "</xmq_cp>";
-    c->cpar_right.pre = "<xmq_cp>";
-    c->cpar_right.post = "</xmq_cp>";
-    c->quote.pre = "<xmq_q>";
-    c->quote.post = "</xmq_q>";
-    c->entity.pre = "<xmq_e>";
-    c->entity.post = "</xmq_e>";
-    c->comment.pre = "<xmq_c>";
-    c->comment.post = "</xmq_c>";
-    c->comment_continuation.pre = "<xmq_c>";
-    c->comment_continuation.post = "</xmq_c>";
-    c->element_ns.pre = "<xmq_ens>";
-    c->element_ns.post = "</xmq_ens>";
-    c->element_name.pre = "<xmq_en>";
-    c->element_name.post = "</xmq_en>";
-    c->element_key.pre = "<xmq_ek>";
-    c->element_key.post = "</xmq_ek>";
-    c->element_value_text.pre = "<xmq_ekv>";
-    c->element_value_text.post = "</xmq_ekv>";
-    c->element_value_quote.pre = "<xmq_ekv>";
-    c->element_value_quote.post = "</xmq_ekv>";
-    c->element_value_entity.pre = "<xmq_e>";
-    c->element_value_entity.post = "</xmq_e>";
-    c->element_value_compound_quote.pre = "<xmq_ekv>";
-    c->element_value_compound_quote.post = "</xmq_ekv>";
-    c->element_value_compound_entity.pre = "<xmq_e>";
-    c->element_value_compound_entity.post = "</xmq_e>";
-    c->attr_ns.pre = "<xmq_ans>";
-    c->attr_ns.post = "</xmq_ans>";
-    c->attr_key.pre = "<xmq_ak>";
-    c->attr_key.post = "</xmq_ak>";
-    c->attr_value_text.pre = "<xmq_akv>";
-    c->attr_value_text.post = "</xmq_akv>";
-    c->attr_value_quote.pre = "<xmq_akv>";
-    c->attr_value_quote.post = "</xmq_akv>";
-    c->attr_value_entity.pre = "<xmq_e>";
-    c->attr_value_entity.post = "</xmq_e>";
-    c->attr_value_compound_quote.pre = "<xmq_akv>";
-    c->attr_value_compound_quote.post = "</xmq_akv>";
-    c->attr_value_compound_entity.pre = "<xmq_e>";
-    c->attr_value_compound_entity.post = "</xmq_e>";
+    c->cpar_left.pre = "<xmqCP>";
+    c->cpar_left.post = "</xmqCP>";
+    c->cpar_right.pre = "<xmqCP>";
+    c->cpar_right.post = "</xmqCP>";
+    c->quote.pre = "<xmqQ>";
+    c->quote.post = "</xmqQ>";
+    c->entity.pre = "<xmqE>";
+    c->entity.post = "</xmqE>";
+    c->comment.pre = "<xmqC>";
+    c->comment.post = "</xmqC>";
+    c->comment_continuation.pre = "<xmqC>";
+    c->comment_continuation.post = "</xmqC>";
+    c->element_ns.pre = "<xmqENS>";
+    c->element_ns.post = "</xmqENS>";
+    c->element_name.pre = "<xmqEN>";
+    c->element_name.post = "</xmqEN>";
+    c->element_key.pre = "<xmqEK>";
+    c->element_key.post = "</xmqEK>";
+    c->element_value_text.pre = "<xmqEKV>";
+    c->element_value_text.post = "</xmqEKV>";
+    c->element_value_quote.pre = "<xmqEKV>";
+    c->element_value_quote.post = "</xmqEKV>";
+    c->element_value_entity.pre = "<xmqE>";
+    c->element_value_entity.post = "</xmqE>";
+    c->element_value_compound_quote.pre = "<xmqEKV>";
+    c->element_value_compound_quote.post = "</xmqEKV>";
+    c->element_value_compound_entity.pre = "<xmqE>";
+    c->element_value_compound_entity.post = "</xmqE>";
+    c->attr_ns.pre = "<xmqANS>";
+    c->attr_ns.post = "</xmqANS>";
+    c->attr_key.pre = "<xmqAK>";
+    c->attr_key.post = "</xmqAK>";
+    c->attr_value_text.pre = "<xmqAKV>";
+    c->attr_value_text.post = "</xmqAKV>";
+    c->attr_value_quote.pre = "<xmqAKV>";
+    c->attr_value_quote.post = "</xmqAKV>";
+    c->attr_value_entity.pre = "<xmqE>";
+    c->attr_value_entity.post = "</xmqE>";
+    c->attr_value_compound_quote.pre = "<xmqAKV>";
+    c->attr_value_compound_quote.post = "</xmqAKV>";
+    c->attr_value_compound_entity.pre = "<xmqE>";
+    c->attr_value_compound_entity.post = "</xmqE>";
     c->ns_colon.pre = NULL;
 }
 
@@ -393,17 +393,17 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, b
             "\\definecolor{Purple}{rgb}{0.69,0.02,0.97}\n"
             "\\definecolor{Yellow}{rgb}{0.5,0.5,0.1}\n"
             "\\definecolor{Cyan}{rgb}{0.3,0.7,0.7}\n"
-            "\\newcommand{\\xmq_c}[1]{{\\color{Cyan}#1}}\n"
-            "\\newcommand{\\xmq_q}[1]{{\\color{Green}#1}}\n"
-            "\\newcommand{\\xmq_e}[1]{{\\color{Purple}#1}}\n"
-            "\\newcommand{\\xmq_ens}[1]{{\\color{Blue}#1}}\n"
-            "\\newcommand{\\xmq_en}[1]{{\\color{Blue}#1}}\n"
-            "\\newcommand{\\xmq_ek}[1]{{\\color{Blue}#1}}\n"
-            "\\newcommand{\\xmq_ekv}[1]{{\\color{Green}#1}}\n"
-            "\\newcommand{\\xmq_ans}[1]{{\\color{Blue}#1}}\n"
-            "\\newcommand{\\xmq_ak}[1]{{\\color{Blue}#1}}\n"
-            "\\newcommand{\\xmq_akv}[1]{{\\color{Blue}#1}}\n"
-            "\\newcommand{\\xmq_cp}[1]{{\\color{Purple}#1}}\n"
+            "\\newcommand{\\xmqC}[1]{{\\color{Cyan}#1}}\n"
+            "\\newcommand{\\xmqQ}[1]{{\\color{Green}#1}}\n"
+            "\\newcommand{\\xmqE}[1]{{\\color{Purple}#1}}\n"
+            "\\newcommand{\\xmqENS}[1]{{\\color{Blue}#1}}\n"
+            "\\newcommand{\\xmqEN}[1]{{\\color{Blue}#1}}\n"
+            "\\newcommand{\\xmqEK}[1]{{\\color{Blue}#1}}\n"
+            "\\newcommand{\\xmqEKV}[1]{{\\color{Green}#1}}\n"
+            "\\newcommand{\\xmqANS}[1]{{\\color{Blue}#1}}\n"
+            "\\newcommand{\\xmqAK}[1]{{\\color{Blue}#1}}\n"
+            "\\newcommand{\\xmqAKV}[1]{{\\color{Blue}#1}}\n"
+            "\\newcommand{\\xmqCP}[1]{{\\color{Purple}#1}}\n"
             "\\newcommand{\\xmqI}[0]{{\\mbox{\\ }}}\n";
 
         c->body.pre = "\n\\begin{document}\n";
@@ -414,54 +414,54 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, b
     c->content.post = "\n}\n";
     c->whitespace.pre  = NULL;
     c->indentation_whitespace.pre = NULL;
-    c->unicode_whitespace.pre  = "\\xmq_uw{";
+    c->unicode_whitespace.pre  = "\\xmqUW{";
     c->unicode_whitespace.post  = "}";
     c->equals.pre      = NULL;
     c->brace_left.pre  = NULL;
     c->brace_right.pre = NULL;
     c->apar_left.pre    = NULL;
     c->apar_right.pre   = NULL;
-    c->cpar_left.pre = "\\xmq_cp{";
+    c->cpar_left.pre = "\\xmqCP{";
     c->cpar_left.post = "}";
-    c->cpar_right.pre = "\\xmq_cp{";
+    c->cpar_right.pre = "\\xmqCP{";
     c->cpar_right.post = "}";
-    c->quote.pre = "\\xmq_q{";
+    c->quote.pre = "\\xmqQ{";
     c->quote.post = "}";
-    c->entity.pre = "\\xmq_e{";
+    c->entity.pre = "\\xmqE{";
     c->entity.post = "}";
-    c->comment.pre = "\\xmq_c{";
+    c->comment.pre = "\\xmqC{";
     c->comment.post = "}";
-    c->comment_continuation.pre = "\\xmq_c{";
+    c->comment_continuation.pre = "\\xmqC{";
     c->comment_continuation.post = "}";
-    c->element_ns.pre = "\\xmq_ens{";
+    c->element_ns.pre = "\\xmqENS{";
     c->element_ns.post = "}";
-    c->element_name.pre = "\\xmq_en{";
+    c->element_name.pre = "\\xmqEN{";
     c->element_name.post = "}";
-    c->element_key.pre = "\\xmq_ek{";
+    c->element_key.pre = "\\xmqEK{";
     c->element_key.post = "}";
-    c->element_value_text.pre = "\\xmq_ekv{";
+    c->element_value_text.pre = "\\xmqEKV{";
     c->element_value_text.post = "}";
-    c->element_value_quote.pre = "\\xmq_ekv{";
+    c->element_value_quote.pre = "\\xmqEKV{";
     c->element_value_quote.post = "}";
-    c->element_value_entity.pre = "\\xmq_e{";
+    c->element_value_entity.pre = "\\xmqE{";
     c->element_value_entity.post = "}";
-    c->element_value_compound_quote.pre = "\\xmq_ekv{";
+    c->element_value_compound_quote.pre = "\\xmqEKV{";
     c->element_value_compound_quote.post = "}";
-    c->element_value_compound_entity.pre = "\\xmq_e{";
+    c->element_value_compound_entity.pre = "\\xmqE{";
     c->element_value_compound_entity.post = "}";
-    c->attr_ns.pre = "\\xmq_ans{";
+    c->attr_ns.pre = "\\xmqANS{";
     c->attr_ns.post = "}";
-    c->attr_key.pre = "\\xmq_ak{";
+    c->attr_key.pre = "\\xmqAK{";
     c->attr_key.post = "}";
-    c->attr_value_text.pre = "\\xmq_akv{";
+    c->attr_value_text.pre = "\\xmqAKV{";
     c->attr_value_text.post = "}";
-    c->attr_value_quote.pre = "\\xmq_akv{";
+    c->attr_value_quote.pre = "\\xmqAKV{";
     c->attr_value_quote.post = "}";
-    c->attr_value_entity.pre = "\\xmq_e{";
+    c->attr_value_entity.pre = "\\xmqE{";
     c->attr_value_entity.post = "}";
-    c->attr_value_compound_quote.pre = "\\xmq_akv{";
+    c->attr_value_compound_quote.pre = "\\xmqAKV{";
     c->attr_value_compound_quote.post = "}";
-    c->attr_value_compound_entity.pre = "\\xmq_e{";
+    c->attr_value_compound_entity.pre = "\\xmqE{";
     c->attr_value_compound_entity.post = "}";
     c->ns_colon.pre = NULL;
 }
@@ -1971,6 +1971,8 @@ void do_attr_ns(XMQParseState *state,
                 const char *cstop,
                 const char *stop)
 {
+    // printf("ATTR NS >%.*s<\n", (int)(cstop-cstart), cstart);
+
 }
 
 void do_attr_ns_declaration(XMQParseState *state,
@@ -1982,6 +1984,7 @@ void do_attr_ns_declaration(XMQParseState *state,
                             const char *cstop,
                             const char *stop)
 {
+    //printf("ATTR NS DECLARATION >%.*s<\n", (int)(cstop-cstart), cstart);
 }
 
 void do_attr_key(XMQParseState *state,
@@ -2123,6 +2126,7 @@ void do_element_ns(XMQParseState *state,
                    const char *cstop,
                    const char *stop)
 {
+    //printf("ELEMENT NS >%.*s<\n", (int)(cstop-cstart), cstart);
 }
 
 void do_ns_colon(XMQParseState *state,

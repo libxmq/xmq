@@ -838,7 +838,15 @@ void parse_xmq_attribute(XMQParseState *state)
     }
     else
     {
-        DO_CALLBACK(attr_key, state, start_line, start_col, start, start_col, name_start, name_stop, stop);
+        size_t len = name_stop - name_start;
+        if (len == 5 && !strncmp(name_start, "xmlns", 5))
+        {
+            DO_CALLBACK(attr_key, state, start_line, start_col, start, start_col, name_start, name_stop, stop);
+        }
+        else
+        {
+            DO_CALLBACK(attr_key, state, start_line, start_col, start, start_col, name_start, name_stop, stop);
+        }
     }
 
 

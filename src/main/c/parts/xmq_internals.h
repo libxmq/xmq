@@ -249,21 +249,24 @@ struct XMQParseState
     void *out;
     const char *buffer_start; // Points to first byte in buffer.
     const char *buffer_stop;   // Points to byte >after< last byte in buffer.
-    const char *i;
-    size_t line;
-    size_t col;
+    const char *i; // Current parsing position.
+    size_t line; // Current line.
+    size_t col; // Current col.
     int error_nr;
     char *generated_error_msg;
     jmp_buf error_handler;
-    bool simulated;
+
+    bool simulated; // When true, this is generated from JSON parser to simulate an xmq element name.
     XMQParseCallbacks *parse;
     XMQDoc *doq;
     const char *implicit_root; // Assume that this is the first element name
     Stack *element_stack; // Top is last created node
     void *element_last; // Last added sibling to stack top node.
-    bool parsing_doctype;
+    bool parsing_doctype; // True when parsing a doctype.
     XMQOutputSettings *output_settings; // Used when coloring existing text using the tokenizer.
-    int magic_cookie;
+    int magic_cookie; // Used to check that the state has been properly initialized.
+
+    void *default_namespace; // If xmlns=http... has been set, then a pointer to the namespace object is stored here.
 
     // These are used for better error reporting.
     const char *last_body_start;
@@ -314,7 +317,7 @@ typedef struct XMQPrintState XMQPrintState;
     XMQQuoteSettings:
     @force:           Always add single quotes. More quotes if necessary.
     @compact:         Generate compact quote on a single line. Using &#10; and no superfluous whitespace.
-    @value_after_key: If enties are introduced by the quoting, then use compound (( )) around the content.
+    @value_after_key: If enties are introduced by the quoting, then use compound ( ) around the content.
 
     @indentation_space: Use this as the indentation character. If NULL default to " ".
     @explicit_space: Use this as the explicit space/indentation character. If NULL default to " ".

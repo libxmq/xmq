@@ -66,6 +66,8 @@ size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop)
 */
 size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *stop)
 {
+    if (stop == start || *start == 0) return 0;
+
     XMQOutputSettings *os = ps->output_settings;
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;

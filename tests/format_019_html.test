@@ -2,10 +2,10 @@ START
 <!-- en kommentar -->
 <foo/>
 COMPACT
-<pre class="xmq xmq_light"><xmq_c>/*en kommentar*/</xmq_c><xmq_en>foo</xmq_en></pre>
+<pre class="xmq xmq_light"><xmqC>/*en kommentar*/</xmqC><xmqEN>foo</xmqEN></pre>
 XMQ
-<pre class="xmq xmq_light"><xmq_c>// en kommentar</xmq_c>
-<xmq_en>foo</xmq_en></pre>
+<pre class="xmq xmq_light"><xmqC>// en kommentar</xmqC>
+<xmqEN>foo</xmqEN></pre>
 END
 ARGS
 CMDS render-html --nostyle --lightbg
