@@ -73,7 +73,6 @@ $XMQ web/resources/welcome_traveller.htmq render-html --id=ex2 --class=w40 --lig
 $XMQ web/resources/welcome_traveller.htmq to-htmq > build/web/resources/welcome_traveller.htmq
 $XMQ web/resources/welcome_traveller.htmq to-html > build/welcome_traveller_nopp.html
 $XMQ pom.xml render-html --id=expom --class=w80 --lightbg --nostyle > build/pom_rendered.xml
-$XMQ data.xslt render-html --id=exxslt --class=w80 --lightbg --nostyle > build/xslt_rendered.xml
 
 $XMQ web/index.htmq \
      replace-entity DATE "$TODAY" \
