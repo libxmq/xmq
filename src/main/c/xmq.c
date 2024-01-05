@@ -123,13 +123,13 @@ char *xmq_quote_with_entity_newlines(const char *start, const char *stop, XMQQuo
 char *xmq_quote_default(int indent, const char *start, const char *stop, XMQQuoteSettings *settings);
 bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root);
 
-// Declare colorize_whitespace colorize_name functions etc...
-#define X(TYPE) void colorize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start, size_t indent,const char *cstart, const char *cstop, const char *stop);
+// Declare tokenize_whitespace tokenize_name functions etc...
+#define X(TYPE) void tokenize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start, size_t indent,const char *cstart, const char *cstop, const char *stop);
 LIST_OF_XMQ_TOKENS
 #undef X
 
 // Declare debug_whitespace debug_name functions etc...
-#define X(TYPE) void debug_tokens_##TYPE(XMQParseState*state,size_t line,size_t col,const char*start,size_t indent,const char*cstart,const char*cstop,const char*stop);
+#define X(TYPE) void debug_token_##TYPE(XMQParseState*state,size_t line,size_t col,const char*start,size_t indent,const char*cstart,const char*cstop,const char*stop);
 LIST_OF_XMQ_TOKENS
 #undef X
 
@@ -564,7 +564,7 @@ int xmqStateErrno(XMQParseState *state)
 }
 
 #define X(TYPE) \
-    void colorize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start, size_t indent,const char *cstart, const char *cstop, const char *stop) { \
+    void tokenize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start, size_t indent,const char *cstart, const char *cstop, const char *stop) { \
         if (!state->simulated) { \
             const char *pre, *post;  \
             get_color(state->output_settings, COLOR_##TYPE, &pre, &post); \
@@ -737,7 +737,7 @@ void write_safe_html(XMQWrite write, void *writer_state, const char *start, cons
         if (*i == '&') write(writer_state, amp, amp+5);
         else if (*i == '<') write(writer_state, lt, lt+4);
         else if (*i == '>') write(writer_state, gt, gt+4);
-        else if (*i == '"') write(writer_state, quot, quot+6);
+        else if (*i == '"') write(writer_state, quot, quot+6); //"
         else write(writer_state, i, i+1);
     }
 }
@@ -764,7 +764,7 @@ void xmqSetupPrintStdOutStdErr(XMQOutputSettings *ps)
     ps->error.write = write_print_stderr;
 }
 
-void xmqSetupPrintMemory(XMQOutputSettings *os, const char **start, const char **stop)
+void xmqSetupPrintMemory(XMQOutputSettings *os, char **start, char **stop)
 {
     os->output_buffer_start = start;
     os->output_buffer_stop = stop;
@@ -824,7 +824,7 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
     XMQContentType detected_ct = xmqDetectContentType(start, stop);
     if (detected_ct != XMQ_CONTENT_XMQ)
     {
-        state->generated_error_msg = strdup("You can only tokenize xmq!");
+        state->generated_error_msg = strdup("xmq: you can only tokenize the xmq format");
         state->error_nr = XMQ_ERROR_NOT_XMQ;
         return false;
     }
@@ -839,9 +839,12 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
     if (state->parse->init) state->parse->init(state);
 
     XMQOutputSettings *output_settings = state->output_settings;
+    XMQWrite write = output_settings->content.write;
+    void *writer_state = output_settings->content.writer_state;
+
     const char *pre = output_settings->default_coloring->content.pre;
     const char *post = output_settings->default_coloring->content.post;
-    if (pre) printf("%s", pre);
+    if (pre) write(writer_state, pre, NULL);
 
     if (!setjmp(state->error_handler))
     {
@@ -859,9 +862,20 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
         return false;
     }
 
-    if (post) printf("%s", post);
+    if (post) write(writer_state, post, NULL);
 
     if (state->parse->done) state->parse->done(state);
+
+    if (output_settings->output_buffer &&
+        output_settings->output_buffer_start &&
+        output_settings->output_buffer_stop)
+    {
+        size_t size = membuffer_used(output_settings->output_buffer);
+        char *buffer = free_membuffer_but_return_trimmed_content(output_settings->output_buffer);
+        *output_settings->output_buffer_start = buffer;
+        *output_settings->output_buffer_stop = buffer+size;
+    }
+
     return true;
 }
 
@@ -952,7 +966,7 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                     *(i+3) == 'm' &&
                     *(i+4) == 'l')
                 {
-                    debug("(xmq) content detected as xml since <?xml found\n");
+                    debug("[XMQ] content detected as xml since <?xml found\n");
                     return XMQ_CONTENT_XML;
                 }
 
@@ -973,7 +987,7 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                     // No closing comment, return as xml.
                     if (i >= stop)
                     {
-                        debug("(xmq) content detected as xml since comment start found\n");
+                        debug("[XMQ] content detected as xml since comment start found\n");
                         return XMQ_CONTENT_XML;
                     }
                     // Pick up after the comment.
@@ -984,7 +998,7 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                 const char *is_html = find_word_ignore_case(i+1, stop, "html");
                 if (is_html)
                 {
-                    debug("(xmq) content detected as html since html found\n");
+                    debug("[XMQ] content detected as html since html found\n");
                     return XMQ_CONTENT_HTML;
                 }
 
@@ -996,18 +1010,18 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                     is_html = find_word_ignore_case(is_doctype+1, stop, "html");
                     if (is_html)
                     {
-                        debug("(xmq) content detected as html since doctype html found\n");
+                        debug("[XMQ] content detected as html since doctype html found\n");
                         return XMQ_CONTENT_HTML;
                     }
                 }
                 // Otherwise we assume it is xml. If you are working with html content inside
                 // the html, then use --html
-                debug("(xmq) content assumed to be xml\n");
+                debug("[XMQ] content assumed to be xml\n");
                 return XMQ_CONTENT_XML; // Or HTML...
             }
-            if (c == '{' || c == '"' || c == '[' || (c >= '0' && c <= '9'))
+            if (c == '{' || c == '"' || c == '[' || (c >= '0' && c <= '9')) // "
             {
-                debug("(xmq) content detected as json\n");
+                debug("[XMQ] content detected as json\n");
                 return XMQ_CONTENT_JSON;
             }
             // Strictly speaking true,false and null are valid xmq files. But we assume
@@ -1027,19 +1041,19 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                             !strncmp(i, "false", 5) ||
                             !strncmp(i, "null", 4))
                         {
-                            debug("(xmq) content detected as json since true/false/null found\n");
+                            debug("[XMQ] content detected as json since true/false/null found\n");
                             return XMQ_CONTENT_JSON;
                         }
                     }
                 }
             }
-            debug("(xmq) content assumed to be xmq\n");
+            debug("[XMQ] content assumed to be xmq\n");
             return XMQ_CONTENT_XMQ;
         }
         i++;
     }
 
-    debug("(xmq) empty content assumed to be xmq\n");
+    debug("[XMQ] empty content assumed to be xmq\n");
     return XMQ_CONTENT_XMQ;
 }
 
@@ -1417,14 +1431,28 @@ LIST_OF_XMQ_TOKENS
     callbacks->magic_cookie = MAGIC_COOKIE;
 }
 
-#define X(TYPE) void debug_tokens_##TYPE(XMQParseState*state,size_t line,size_t col,const char*start,size_t indent,const char*cstart,const char*cstop,const char*stop) { PRINT_STDOUT("["#TYPE "%s ", state->simulated?" SIM":""); char *tmp = xmq_quote_as_c(start, stop); PRINT_STDOUT("\"%s\" %zu:%zu]", tmp, line, col); free(tmp); };
+#define WRITE_ARGS(...) state->output_settings->content.write(state->output_settings->content.writer_state, __VA_ARGS__)
+
+#define X(TYPE) void debug_token_##TYPE(XMQParseState*state,size_t line,size_t col,const char*start,size_t indent,const char*cstart,const char*cstop,const char*stop) { \
+    WRITE_ARGS("["#TYPE, NULL); \
+    if (state->simulated) { WRITE_ARGS(" SIM", NULL); } \
+    WRITE_ARGS(" \"", NULL); \
+    char *tmp = xmq_quote_as_c(start, stop); \
+    WRITE_ARGS(tmp, NULL); \
+    free(tmp); \
+    WRITE_ARGS("\"", NULL); \
+    char buf[32]; \
+    snprintf(buf, 32, " %zu:%zu]", line, col); \
+    buf[31] = 0; \
+    WRITE_ARGS(buf, NULL); \
+};
 LIST_OF_XMQ_TOKENS
 #undef X
 
 void xmqSetupParseCallbacksDebugTokens(XMQParseCallbacks *callbacks)
 {
     memset(callbacks, 0, sizeof(*callbacks));
-#define X(TYPE) callbacks->handle_##TYPE = debug_tokens_##TYPE ;
+#define X(TYPE) callbacks->handle_##TYPE = debug_token_##TYPE ;
 LIST_OF_XMQ_TOKENS
 #undef X
 
@@ -1443,7 +1471,9 @@ void debug_content_value(XMQParseState *state,
                          const char *stop)
 {
     char *tmp = xmq_quote_as_c(cstart, cstop);
-    PRINT_STDOUT("{value \"%s\"}", tmp);
+    WRITE_ARGS("{value \"", NULL);
+    WRITE_ARGS(tmp, NULL);
+    WRITE_ARGS("\"}", NULL);
     free(tmp);
 }
 
@@ -1460,7 +1490,9 @@ void debug_content_quote(XMQParseState *state,
     size_t indent = start_col-1;
     char *trimmed = xmq_un_quote(indent, ' ', start, stop, true);
     char *tmp = xmq_quote_as_c(trimmed, trimmed+strlen(trimmed));
-    PRINT_STDOUT("{quote \"%s\"}", tmp);
+    WRITE_ARGS("{quote \"", NULL);
+    WRITE_ARGS(tmp, NULL);
+    WRITE_ARGS("\"}", NULL);
     free(tmp);
     free(trimmed);
 }
@@ -1477,7 +1509,9 @@ void debug_content_comment(XMQParseState *state,
     size_t indent = start_col-1;
     char *trimmed = xmq_un_comment(indent, ' ', start, stop);
     char *tmp = xmq_quote_as_c(trimmed, trimmed+strlen(trimmed));
-    PRINT_STDOUT("{comment \"%s\"}", tmp);
+    WRITE_ARGS("{comment \"", NULL);
+    WRITE_ARGS(tmp, NULL);
+    WRITE_ARGS("\"}", NULL);
     free(tmp);
     free(trimmed);
 }
@@ -1502,7 +1536,7 @@ void xmqSetupParseCallbacksColorizeTokens(XMQParseCallbacks *callbacks, XMQRende
 {
     memset(callbacks, 0, sizeof(*callbacks));
 
-#define X(TYPE) callbacks->handle_##TYPE = colorize_##TYPE ;
+#define X(TYPE) callbacks->handle_##TYPE = tokenize_##TYPE ;
 LIST_OF_XMQ_TOKENS
 #undef X
 
@@ -1565,23 +1599,23 @@ void xmqFreeDoc(XMQDoc *doq)
     if (!doq) return;
     if (doq->source_name_)
     {
-        debug("(xmq) freeing source name\n");
+        debug("[XMQ] freeing source name\n");
         free((void*)doq->source_name_);
         doq->source_name_ = NULL;
     }
     if (doq->error_)
     {
-        debug("(xmq) freeing error message\n");
+        debug("[XMQ] freeing error message\n");
         free((void*)doq->error_);
         doq->error_ = NULL;
     }
     if (doq->docptr_.xml)
     {
-        debug("(xmq) freeing xml doc\n");
+        debug("[XMQ] freeing xml doc\n");
         xmlFreeDoc(doq->docptr_.xml);
         doq->docptr_.xml = NULL;
     }
-    debug("(xmq) freeing xmq doc\n");
+    debug("[XMQ] freeing xmq doc\n");
     free(doq);
 }
 
@@ -1688,13 +1722,14 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root)
     if (block_size > 10000) block_size = 10000;
     size_t n = 0;
     do {
+        // We need to read smaller blocks because of a bug in Windows C-library..... blech.
         size_t r = fread(buffer+n, 1, block_size, f);
-        debug("(xmq) read %zu bytes total %zu\n", r, n);
+        debug("[XMQ] read %zu bytes total %zu\n", r, n);
         if (!r) break;
         n += r;
     } while (n < fsize);
 
-    debug("(xmq) read total %zu bytes\n", n);
+    debug("[XMQ] read total %zu bytes\n", n);
 
     if (n != fsize)
     {
@@ -2279,18 +2314,25 @@ void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings)
                         &buffer,
                         &size,
                         "utf8");
-    fputs((char*)buffer, stdout);
-    free(buffer);
+
+    membuffer_reuse(output_settings->output_buffer,
+                    (char*)buffer,
+                    size);
+
+    debug("[XMQ] xmq_print_xml wrote %zu bytes\n", size);
 }
 
 void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
 {
     xmq_fixup_html_before_writeout(doq);
     xmlOutputBufferPtr out = xmlAllocOutputBuffer(NULL);
-    if (out) {
+    if (out)
+    {
         htmlDocContentDumpOutput(out, doq->docptr_.html, "utf8");
-        const xmlChar *buffer = xmlBufferContent((xmlBuffer *) out->buffer);
-        fputs((char *) buffer, stdout);
+        const xmlChar *buffer = xmlBufferContent((xmlBuffer *)out->buffer);
+        MemBuffer *membuf = output_settings->output_buffer;
+        membuffer_append(membuf, (char*)buffer);
+        debug("[XMQ] xmq_print_html wrote %zu bytes\n", membuf->used_);
         xmlOutputBufferClose(out);
     }
     /*
@@ -2363,22 +2405,19 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
     if (output_settings->output_format == XMQ_CONTENT_XML)
     {
         xmq_print_xml(doq, output_settings);
-        return;
     }
-
-    if (output_settings->output_format == XMQ_CONTENT_HTML)
+    else if (output_settings->output_format == XMQ_CONTENT_HTML)
     {
         xmq_print_html(doq, output_settings);
-        return;
     }
-
-    if (output_settings->output_format == XMQ_CONTENT_JSON)
+    else if (output_settings->output_format == XMQ_CONTENT_JSON)
     {
         xmq_print_json(doq, output_settings);
-        return;
     }
-
-    xmq_print_xmq(doq, output_settings);
+    else
+    {
+        xmq_print_xmq(doq, output_settings);
+    }
 
     if (output_settings->output_buffer &&
         output_settings->output_buffer_start &&
@@ -2389,7 +2428,6 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
         *output_settings->output_buffer_start = buffer;
         *output_settings->output_buffer_stop = buffer+size;
     }
-
 }
 
 void trim_text_node(xmlNode *node, XMQTrimType tt)
@@ -3325,7 +3363,7 @@ bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **ou
     size_t fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    debug("(xmq) file size %zu\n", fsize);
+    debug("[XMQ] file size %zu\n", fsize);
 
     buffer = (char*)malloc(fsize + 1);
     if (!buffer)
@@ -3340,12 +3378,12 @@ bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **ou
     size_t n = 0;
     do {
         size_t r = fread(buffer+n, 1, block_size, f);
-        debug("(xmq) read %zu bytes total %zu\n", r, n);
+        debug("[XMQ] read %zu bytes total %zu\n", r, n);
         if (!r) break;
         n += r;
     } while (n < fsize);
 
-    debug("(xmq) read total %zu bytes fsize %zu bytes\n", n, fsize);
+    debug("[XMQ] read total %zu bytes fsize %zu bytes\n", n, fsize);
 
     if (n != fsize) {
         rc = false;

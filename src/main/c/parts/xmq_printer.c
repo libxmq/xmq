@@ -969,8 +969,6 @@ void print_quote(XMQPrintState *ps,
     }
     if (numq == 0 && force) numq = 1;
 
-    debug("(xmq) print_quote numq=%d add_nls=%d \n---\n%.*s\n---\n", numq, add_nls, (int)(stop-start), start);
-
     print_quotes(ps, numq, c);
 
     if (add_nls)
@@ -1033,10 +1031,6 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
 
 void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level)
 {
-    debug("(xmq) print_value_internal_text\n"
-          "---\n"
-          "%.*s---", (int)(stop-start), start);
-
     if (!stop) stop = start+strlen(start);
     if (!start || start >= stop || start[0] == 0)
     {

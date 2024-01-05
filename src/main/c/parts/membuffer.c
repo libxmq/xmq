@@ -56,6 +56,13 @@ void free_membuffer_and_free_content(MemBuffer *mb)
     free(mb);
 }
 
+void membuffer_reuse(MemBuffer *mb, char *start, size_t len)
+{
+    if (mb->buffer_) free(mb->buffer_);
+    mb->buffer_ = start;
+    mb->used_ = mb->max_ = len;
+}
+
 size_t pick_buffer_new_size(size_t max, size_t used, size_t add)
 {
     assert(used <= max);

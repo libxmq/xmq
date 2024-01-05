@@ -37,7 +37,6 @@ void check_malloc(void *a);
 #define verbose(...) if (verbose_enabled_) { verbose__(__VA_ARGS__); }
 #define debug(...) if (debug_enabled_) {debug__(__VA_ARGS__); }
 
-#define PRINT_STDOUT(...) printf(__VA_ARGS__)
 #define PRINT_ERROR(...) fprintf(stderr, __VA_ARGS__)
 
 #define ALWAYS_MODULE

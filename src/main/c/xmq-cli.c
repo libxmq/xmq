@@ -1,3 +1,4 @@
+
 /* libxmq - Copyright (C) 2023 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -65,15 +66,19 @@ typedef enum
 typedef enum
 {
     XMQ_CLI_CMD_NONE,
+    XMQ_CLI_CMD_LOAD,
     XMQ_CLI_CMD_TO_XMQ,
     XMQ_CLI_CMD_TO_XML,
     XMQ_CLI_CMD_TO_HTMQ,
     XMQ_CLI_CMD_TO_HTML,
     XMQ_CLI_CMD_TO_JSON,
+    XMQ_CLI_CMD_PRINT,
+    XMQ_CLI_CMD_SAVE,
     XMQ_CLI_CMD_PAGER,
     XMQ_CLI_CMD_RENDER_TERMINAL,
     XMQ_CLI_CMD_RENDER_HTML,
     XMQ_CLI_CMD_RENDER_TEX,
+    XMQ_CLI_CMD_RENDER_RAW,
     XMQ_CLI_CMD_TOKENIZE,
     XMQ_CLI_CMD_DELETE,
     XMQ_CLI_CMD_DELETE_ENTITY,
@@ -90,6 +95,7 @@ typedef enum {
     XMQ_CLI_CMD_GROUP_XPATH,
     XMQ_CLI_CMD_GROUP_ENTITY,
     XMQ_CLI_CMD_GROUP_TRANSFORM,
+    XMQ_CLI_CMD_GROUP_OUTPUT,
 } XMQCliCmdGroup;
 
 typedef enum {
@@ -106,6 +112,8 @@ struct XMQCliEnvironment
     bool use_color;
     bool dark_mode;
     const char *use_id;
+    char *out_start; // Points to generated output: xml/xmq/htmq/html/json/text
+    char *out_stop; // Points to byte after output, or NULL which means start is NULL terminated.
 };
 
 typedef struct XMQCliCommand XMQCliCommand;
@@ -121,6 +129,7 @@ struct XMQCliCommand
     const char *content; // Content to replace something.
     XMQDoc *xslt_doq; // The xmq document loaded to generate the xslt.
     xsltStylesheetPtr xslt; // The xslt trasnform to be used.
+    const char *save_file; // Save output to this file name.
     xmlDocPtr   node_doc;
     xmlNodePtr  node_content; // Tree content to replace something.
     XMQContentType in_format;
@@ -141,7 +150,6 @@ struct XMQCliCommand
     const char *explicit_cr;
     const char *explicit_nl;
     bool has_overrides;
-    bool use_pager; // If enabled then render-terminal will behave as a pager (eg less,more etc)
 
     bool print_help;
     bool print_version;
@@ -182,9 +190,11 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd);
 bool cmd_load(XMQCliCommand *command);
 const char *cmd_name(XMQCliCmd cmd);
 bool cmd_to(XMQCliCommand *command);
+bool cmd_output(XMQCliCommand *command);
 bool cmd_transform(XMQCliCommand *command);
 void cmd_unload(XMQCliCommand *command);
 const char *content_type_to_string(XMQContentType ct);
+const char *tokenize_type_to_string(XMQCliTokenizeType type);
 void debug_(const char* fmt, ...);
 void delete_all_entities(XMQDoc *doq, xmlNode *node, const char *entity);
 void delete_entities(XMQDoc *doq, const char *entity);
@@ -196,6 +206,8 @@ void enableAnsiColorsTerminal();
 void enableRawStdinTerminal();
 const char *skip_ansi_backwards(const char *i, const char *start);
 size_t count_non_ansi_chars(const char *start, const char *stop);
+void find_next_page(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width, int height);
+void find_prev_page(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width, int height);
 void find_next_line(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width);
 void find_prev_line(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width);
 bool has_debug(int argc, const char **argv);
@@ -204,7 +216,7 @@ bool handle_global_option(const char *arg, XMQCliCommand *command);
 bool handle_option(const char *arg, XMQCliCommand *command);
 void page(const char *start, const char *stop);
 bool perform_command(XMQCliCommand *c);
-void prepare_command(XMQCliCommand *c);
+void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command);
 void print_help_and_exit();
 void print_version_and_exit();
 int get_char();
@@ -216,7 +228,7 @@ void replace_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, const char
 void replace_entities(xmlDoc *doc, const char *entity, const char *content, xmlNodePtr node_content);
 XMQRenderStyle render_style(bool *use_color, bool *dark_mode);
 void restoreStdinTerminal();
-bool tokenize_input(XMQCliCommand *command);
+bool cmd_tokenize(XMQCliCommand *command);
 void verbose_(const char* fmt, ...);
 void write_print(void *buffer, const char *content);
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command);
@@ -249,7 +261,6 @@ void debug_(const char* fmt, ...)
     }
 }
 
-
 XMQCliCmd cmd_from(const char *s)
 {
     if (!s) return XMQ_CLI_CMD_NONE;
@@ -258,10 +269,13 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "to-htmq")) return XMQ_CLI_CMD_TO_HTMQ;
     if (!strcmp(s, "to-html")) return XMQ_CLI_CMD_TO_HTML;
     if (!strcmp(s, "to-json")) return XMQ_CLI_CMD_TO_JSON;
+    if (!strcmp(s, "print")) return XMQ_CLI_CMD_PRINT;
+    if (!strcmp(s, "save")) return XMQ_CLI_CMD_SAVE;
     if (!strcmp(s, "pager")) return XMQ_CLI_CMD_PAGER;
     if (!strcmp(s, "render-terminal")) return XMQ_CLI_CMD_RENDER_TERMINAL;
     if (!strcmp(s, "render-html")) return XMQ_CLI_CMD_RENDER_HTML;
     if (!strcmp(s, "render-tex")) return XMQ_CLI_CMD_RENDER_TEX;
+    if (!strcmp(s, "render-raw")) return XMQ_CLI_CMD_RENDER_RAW;
     if (!strcmp(s, "tokenize")) return XMQ_CLI_CMD_TOKENIZE;
     if (!strcmp(s, "delete")) return XMQ_CLI_CMD_DELETE;
     if (!strcmp(s, "delete-entity")) return XMQ_CLI_CMD_DELETE_ENTITY;
@@ -276,15 +290,19 @@ const char *cmd_name(XMQCliCmd cmd)
     switch (cmd)
     {
     case XMQ_CLI_CMD_NONE: return "noop";
+    case XMQ_CLI_CMD_LOAD: return "load";
     case XMQ_CLI_CMD_TO_XMQ: return "to-xmq";
     case XMQ_CLI_CMD_TO_XML: return "to-xml";
     case XMQ_CLI_CMD_TO_HTMQ: return "to-htmq";
     case XMQ_CLI_CMD_TO_HTML: return "to-html";
     case XMQ_CLI_CMD_TO_JSON: return "to-json";
+    case XMQ_CLI_CMD_PRINT: return "print";
+    case XMQ_CLI_CMD_SAVE: return "save";
     case XMQ_CLI_CMD_PAGER: return "pager";
     case XMQ_CLI_CMD_RENDER_TERMINAL: return "render-terminal";
     case XMQ_CLI_CMD_RENDER_HTML: return "render-html";
     case XMQ_CLI_CMD_RENDER_TEX: return "render-tex";
+    case XMQ_CLI_CMD_RENDER_RAW: return "render-raw";
     case XMQ_CLI_CMD_TOKENIZE: return "tokenize";
     case XMQ_CLI_CMD_DELETE: return "delete";
     case XMQ_CLI_CMD_DELETE_ENTITY: return "delete-entity";
@@ -306,22 +324,33 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TO_JSON:
         return XMQ_CLI_CMD_GROUP_TO;
 
+    case XMQ_CLI_CMD_PRINT:
+    case XMQ_CLI_CMD_SAVE:
     case XMQ_CLI_CMD_PAGER:
+        return XMQ_CLI_CMD_GROUP_OUTPUT;
+
     case XMQ_CLI_CMD_RENDER_TERMINAL:
     case XMQ_CLI_CMD_RENDER_HTML:
     case XMQ_CLI_CMD_RENDER_TEX:
+    case XMQ_CLI_CMD_RENDER_RAW:
         return XMQ_CLI_CMD_GROUP_RENDER;
+
     case XMQ_CLI_CMD_TOKENIZE:
         return XMQ_CLI_CMD_GROUP_TOKENIZE;
+
     case XMQ_CLI_CMD_DELETE:
     case XMQ_CLI_CMD_REPLACE:
         return XMQ_CLI_CMD_GROUP_XPATH;
+
     case XMQ_CLI_CMD_DELETE_ENTITY:
     case XMQ_CLI_CMD_REPLACE_ENTITY:
         return XMQ_CLI_CMD_GROUP_ENTITY;
+
     case XMQ_CLI_CMD_TRANSFORM:
         return XMQ_CLI_CMD_GROUP_TRANSFORM;
+
     case XMQ_CLI_CMD_NONE:
+    case XMQ_CLI_CMD_LOAD:
         return XMQ_CLI_CMD_GROUP_NONE;
     }
     return XMQ_CLI_CMD_GROUP_NONE;
@@ -340,6 +369,21 @@ const char *content_type_to_string(XMQContentType ct)
     case XMQ_CONTENT_JSON: return "json";
     }
     assert(false);
+    return "?";
+}
+
+const char *tokenize_type_to_string(XMQCliTokenizeType type)
+{
+    switch (type)
+    {
+    case XMQ_CLI_TOKENIZE_NONE: return "none";
+    case XMQ_CLI_TOKENIZE_DEBUG_TOKENS: return "debugtokens";
+    case XMQ_CLI_TOKENIZE_DEBUG_CONTENT: return "debugcontent";
+    case XMQ_CLI_TOKENIZE_TERMINAL: return "terminal;";
+    case XMQ_CLI_TOKENIZE_HTML: return "html";
+    case XMQ_CLI_TOKENIZE_TEX: return "tex";
+    case XMQ_CLI_TOKENIZE_LOCATION: return "location";
+    }
     return "?";
 }
 
@@ -374,6 +418,15 @@ bool handle_option(const char *arg, XMQCliCommand *command)
     if (!arg) return false;
 
     XMQCliCmdGroup group = cmd_group(command->cmd);
+
+    if (command->cmd == XMQ_CLI_CMD_SAVE)
+    {
+        if (command->save_file == NULL)
+        {
+            command->save_file = arg;
+            return true;
+        }
+    }
 
     if (group == XMQ_CLI_CMD_GROUP_TO ||
         group == XMQ_CLI_CMD_GROUP_RENDER)
@@ -492,11 +545,6 @@ bool handle_option(const char *arg, XMQCliCommand *command)
         {
             command->explicit_nl = arg+9;
             command->has_overrides = true;
-            return true;
-        }
-        if (!strncmp(arg, "--pager", 7))
-        {
-            command->use_pager = true;
             return true;
         }
     }
@@ -689,6 +737,7 @@ const char *render_format_to_string(XMQRenderFormat rf)
     case XMQ_RENDER_HTML: return "html";
     case XMQ_RENDER_HTMQ: return "htmq";
     case XMQ_RENDER_TEX: return "tex";
+    case XMQ_RENDER_RAW: return "raw";
     }
     assert(false);
     return "?";
@@ -1041,11 +1090,11 @@ void print_version_and_exit()
     exit(0);
 }
 
-bool tokenize_input(XMQCliCommand *command)
+bool cmd_tokenize(XMQCliCommand *command)
 {
-    verbose_("(xmq) tokenizing input %d\n", command->tok_type);
+    verbose_("(xmq) cmd-tokenize %s\n", tokenize_type_to_string(command->tok_type));
     XMQOutputSettings *output_settings = xmqNewOutputSettings();
-    xmqSetupPrintStdOutStdErr(output_settings);
+    xmqSetupPrintMemory(output_settings, &command->env->out_start, &command->env->out_stop);
 
     XMQParseCallbacks *callbacks = xmqNewParseCallbacks();
 
@@ -1080,6 +1129,7 @@ bool tokenize_input(XMQCliCommand *command)
     }
 
     XMQParseState *state = xmqNewParseState(callbacks, output_settings);
+    assert(command->in);
     xmqTokenizeFile(state, command->in);
 
     int err = 0;
@@ -1129,7 +1179,7 @@ bool cmd_load(XMQCliCommand *command)
         return false;
     }
 
-    verbose_("(xmq) loaded %s\n", command->in);
+    verbose_("(xmq) cmd-load %s\n", command->in);
 
     return true;
 }
@@ -1138,7 +1188,7 @@ void cmd_unload(XMQCliCommand *command)
 {
     if (command && command->env && command->env->doc)
     {
-        verbose_("(xmq) unloading document\n");
+        verbose_("(xmq) cmd-unload document\n");
         xmqFreeDoc(command->env->doc);
         command->env->doc = NULL;
     }
@@ -1169,31 +1219,66 @@ bool cmd_to(XMQCliCommand *command)
                             command->explicit_nl);
     }
 
-    if (!command->use_pager)
-    {
-        verbose_("(xmq) print %s render %s\n",
-                 content_type_to_string(command->out_format),
-                 render_format_to_string(command->render_to));
+    verbose_("(xmq) cmd-to %s render %s\n",
+             content_type_to_string(command->out_format),
+             render_format_to_string(command->render_to));
 
-        xmqSetupPrintStdOutStdErr(settings);
-        xmqPrint(command->env->doc, settings);
-    }
-    else
-    {
-        verbose_("(xmq) paging %s render %s\n",
-                 content_type_to_string(command->out_format),
-                 render_format_to_string(command->render_to));
-
-        const char *start;
-        const char *stop;
-        xmqSetupPrintMemory(settings, &start, &stop);
-        xmqPrint(command->env->doc, settings);
-        page(start, stop);
-        free((char*)start);
-    }
+    xmqSetupPrintMemory(settings, &command->env->out_start, &command->env->out_stop);
+    xmqPrint(command->env->doc, settings);
 
     xmqFreeOutputSettings(settings);
     return true;
+}
+
+bool cmd_output(XMQCliCommand *command)
+{
+    if (!command->env->out_start)
+    {
+        fprintf(stderr, "xmq: no output found, please add a to/render/tokenize command\n");
+        return false;
+    }
+    if (command->cmd == XMQ_CLI_CMD_PRINT)
+    {
+        verbose_("(xmq) cmd-print output\n");
+        console_write(command->env->out_start, command->env->out_stop);
+        free(command->env->out_start);
+        return true;
+    }
+    if (command->cmd == XMQ_CLI_CMD_PAGER)
+    {
+        verbose_("(xmq) cmd-pager output\n");
+        page(command->env->out_start, command->env->out_stop);
+        free(command->env->out_start);
+        return true;
+    }
+    if (command->cmd == XMQ_CLI_CMD_SAVE)
+    {
+        if (!command->save_file)
+        {
+            fprintf(stderr, "xmq: save command missing file name\n");
+            return false;
+        }
+        verbose_("(xmq) cmd-save output to %s\n", command->save_file);
+        size_t len = command->env->out_stop -  command->env->out_start;
+        FILE *f = fopen(command->save_file, "wb");
+        if (!f)
+        {
+            fprintf(stderr, "xmq: %s: Cannot open file for writing\n", command->save_file);
+            return false;
+        }
+        size_t wrote = fwrite(command->env->out_start, 1, len, f);
+        if (wrote != len)
+        {
+            fprintf(stderr, "xmq: Failed to write all bytes to %s wrote %zu but expected %zu\n",
+                    command->save_file, wrote, len);
+        }
+        free(command->env->out_start);
+        fclose(f);
+
+        return true;
+    }
+
+    return false;
 }
 
 bool cmd_transform(XMQCliCommand *command)
@@ -1220,13 +1305,13 @@ bool cmd_delete(XMQCliCommand *command)
 {
     if (command->xpath)
     {
-        verbose_("(xmq) delete xpath %s\n", command->xpath);
+        verbose_("(xmq) cmd-delete xpath %s\n", command->xpath);
         return delete_xpath(command);
     }
 
     if (command->entity)
     {
-        verbose_("(xmq) delete entity %s\n", command->entity);
+        verbose_("(xmq) cmd-delete entity %s\n", command->entity);
         return delete_entity(command);
     }
 
@@ -1287,7 +1372,6 @@ bool delete_xpath(XMQCliCommand *command)
 
     xmlXPathObjectPtr objects = xmlXPathEvalExpression((const xmlChar*)command->xpath, ctx);
 
-    verbose_("(xmq) deleting %s\n", command->xpath);
     if (objects == NULL)
     {
         verbose_("(xmq) no nodes deleted\n");
@@ -1381,7 +1465,7 @@ bool cmd_replace(XMQCliCommand *command)
     return true;
 }
 
-void prepare_command(XMQCliCommand *c)
+void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
 {
     switch (c->cmd) {
     case XMQ_CLI_CMD_TO_XMQ:
@@ -1400,9 +1484,16 @@ void prepare_command(XMQCliCommand *c)
         c->out_format = XMQ_CONTENT_JSON;
         return;
     case XMQ_CLI_CMD_PAGER:
-        c->use_pager = true;
-        c->out_format = XMQ_CONTENT_XMQ;
+        c->out_format = XMQ_CONTENT_UNKNOWN;
         c->render_to = XMQ_RENDER_TERMINAL;
+        return;
+    case XMQ_CLI_CMD_PRINT:
+        c->out_format = XMQ_CONTENT_UNKNOWN;
+        c->render_to = XMQ_RENDER_TERMINAL;
+        return;
+    case XMQ_CLI_CMD_SAVE:
+        c->out_format = XMQ_CONTENT_UNKNOWN;
+        c->render_to = XMQ_RENDER_PLAIN;
         return;
     case XMQ_CLI_CMD_RENDER_TERMINAL:
         c->out_format = XMQ_CONTENT_XMQ;
@@ -1416,7 +1507,12 @@ void prepare_command(XMQCliCommand *c)
         c->out_format = XMQ_CONTENT_XMQ;
         c->render_to = XMQ_RENDER_TEX;
         return;
+    case XMQ_CLI_CMD_RENDER_RAW:
+        c->out_format = XMQ_CONTENT_UNKNOWN;
+        c->render_to = XMQ_RENDER_RAW;
+        return;
     case XMQ_CLI_CMD_TOKENIZE:
+        c->in = load_command->in;
         return;
     case XMQ_CLI_CMD_DELETE:
         return;
@@ -1429,6 +1525,8 @@ void prepare_command(XMQCliCommand *c)
     case XMQ_CLI_CMD_TRANSFORM:
         return;
     case XMQ_CLI_CMD_NONE:
+        return;
+    case XMQ_CLI_CMD_LOAD:
         return;
     }
 }
@@ -1567,6 +1665,22 @@ void find_prev_line(const char **line_offset,
 
     *line_offset = prev_lo;
     *in_line_offset = prev_lo;
+}
+
+void find_next_page(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width, int height)
+{
+    for (int i=0; i<height; ++i)
+    {
+        find_next_line(line_offset, in_line_offset, start, stop, width);
+    }
+}
+
+void find_prev_page(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width, int height)
+{
+    for (int i=0; i<height; ++i)
+    {
+        find_prev_line(line_offset, in_line_offset, start, stop, width);
+    }
 }
 
 void find_next_line(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width)
@@ -1715,7 +1829,6 @@ void page(const char *start, const char *stop)
     enableRawStdinTerminal();
 
     printf("\033[2J\033[H");
-    const char *eop = start;
     for (;;)
     {
         MemBuffer *buffer = new_membuffer();
@@ -1763,7 +1876,6 @@ void page(const char *start, const char *stop)
             }
             membuffer_append_char(buffer, *i);
         }
-        eop = i+1;
         console_write(buffer->buffer_, buffer->buffer_+buffer->used_);
         printf("\033[0m\n:");
         free_membuffer_and_free_content(buffer);
@@ -1773,7 +1885,11 @@ void page(const char *start, const char *stop)
         if ((key == CHARACTER && c == ' ') ||
             (key == PAGE_DOWN))
         {
-            if (eop < stop) line_offset = eop;
+            find_next_page(&line_offset, &in_line_offset, start, stop, width, height);
+        }
+        if (key == PAGE_UP)
+        {
+            find_prev_page(&line_offset, &in_line_offset, start, stop, width, height);
         }
         else if (key == ENTER ||
                  key == ARROW_DOWN)
@@ -1812,18 +1928,24 @@ bool perform_command(XMQCliCommand *c)
     switch (c->cmd) {
     case XMQ_CLI_CMD_NONE:
         return true;
+    case XMQ_CLI_CMD_LOAD:
+        return cmd_load(c);
     case XMQ_CLI_CMD_TO_XMQ:
     case XMQ_CLI_CMD_TO_XML:
     case XMQ_CLI_CMD_TO_HTMQ:
     case XMQ_CLI_CMD_TO_HTML:
     case XMQ_CLI_CMD_TO_JSON:
-    case XMQ_CLI_CMD_PAGER:
     case XMQ_CLI_CMD_RENDER_TERMINAL:
     case XMQ_CLI_CMD_RENDER_HTML:
     case XMQ_CLI_CMD_RENDER_TEX:
+    case XMQ_CLI_CMD_RENDER_RAW:
         return cmd_to(c);
+    case XMQ_CLI_CMD_PRINT:
+    case XMQ_CLI_CMD_SAVE:
+    case XMQ_CLI_CMD_PAGER:
+        return cmd_output(c);
     case XMQ_CLI_CMD_TOKENIZE:
-        return tokenize_input(c);
+        return cmd_tokenize(c);
     case XMQ_CLI_CMD_DELETE:
     case XMQ_CLI_CMD_DELETE_ENTITY:
         return cmd_delete(c);
@@ -1837,10 +1959,16 @@ bool perform_command(XMQCliCommand *c)
     return false;
 }
 
-bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command)
+bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command)
 {
     int i = 1;
 
+    // Remember if we have found a to/render/tokenize command.
+    XMQCliCommand *to = NULL;
+    // Remember if we have found a print/save/pager command.
+    XMQCliCommand *output = NULL;
+
+    // Handle all global options....
     for (i = 1; argv[i]; ++i)
     {
         const char *arg = argv[i];
@@ -1848,74 +1976,137 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command)
         // Stop handling options when arg does not start with - or is exactly "-"
         if (arg[0] != '-' || !strcmp(arg, "-")) break;
 
-        bool ok = handle_global_option(arg, command);
+        bool ok = handle_global_option(arg, load_command);
         if (ok) continue;
 
         printf("xmq: unrecognized global option: '%s'\nTry 'xmq --help' for more information\n", arg);
         return false;
     }
 
-    // If no file name (nor commands) are supplied, or the filename is - then read from stdin.
-    if (!argv[i])
+    if (argv[i])
     {
-        command->cmd = XMQ_CLI_CMD_TO_XMQ;
-        return true;
-    }
-
-    // Check if not a command, then assume a file.
-    // You cannot load files that are named like the commands.
-    if (cmd_from(argv[i]) == XMQ_CLI_CMD_NONE)
-    {
-        // Next argument is the file name or - for reading from stdin.
-        command->in = argv[i];
-        i++;
-    }
-
-    command->cmd = cmd_from(argv[i]);
-    i++;
-
-    if (argv[i-1] && command->cmd == XMQ_CLI_CMD_NONE)
-    {
-        fprintf(stderr, "xmq: no such command \"%s\"\n", argv[i-1]);
-        exit(1);
-    }
-
-    XMQCliCommand *com = command;
-    prepare_command(com);
-
-    while (com->cmd != XMQ_CLI_CMD_NONE)
-    {
-        for (; argv[i]; ++i)
+        // Check if not a command, then assume a file.
+        // You cannot load files that are named like the commands.
+        if (cmd_from(argv[i]) == XMQ_CLI_CMD_NONE)
         {
-            const char *arg = argv[i];
-            bool ok = handle_option(arg, com);
+            // Next argument is the file name or - for reading from stdin.
+            load_command->in = argv[i];
+            i++;
+        }
+    }
 
-            if (!ok)
-            {
-                if (cmd_from(arg) != XMQ_CLI_CMD_NONE) break; // Start next command.
-                // Else this is bad....
-                printf("xmq: option \"%s\" not available for command \"%s\"\n", arg, cmd_name(com->cmd));
-                exit(1);
-            }
+    XMQCliCommand *command = load_command;
+
+    if (argv[i])
+    {
+        command = allocate_cli_command(command->env);
+        load_command->next = command;
+        command->cmd = cmd_from(argv[i]);
+        if (command->cmd == XMQ_CLI_CMD_NONE)
+        {
+            fprintf(stderr, "xmq: no such command \"%s\"\n", argv[i-1]);
+            exit(1);
         }
 
-        if (argv[i] == NULL) break;
-        XMQCliCommand *prev = com;
-        com = allocate_cli_command(command->env);
-        prev->next = com;
-        com->cmd = cmd_from(argv[i]);
         i++;
-        prepare_command(com);
+        prepare_command(command, load_command);
+
+        while (command->cmd != XMQ_CLI_CMD_NONE)
+        {
+            verbose_("(xmq) found command %s\n", cmd_name(command->cmd));
+
+            // Now handle any command options and args.
+            for (; argv[i]; ++i)
+            {
+                const char *arg = argv[i];
+                bool ok = handle_option(arg, command);
+
+                if (!ok)
+                {
+                    if (cmd_from(arg) != XMQ_CLI_CMD_NONE) break; // Start next command.
+                    // Else this is bad....
+                    printf("xmq: option \"%s\" not available for command \"%s\"\n", arg, cmd_name(command->cmd));
+                    exit(1);
+                }
+                verbose_("(xmq) found argument %s\n", arg);
+            }
+
+            // Check if we should remember this command as a to/render/tokenize command?
+            if (cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_TO ||
+                cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_RENDER ||
+                cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_TOKENIZE)
+            {
+                if (to)
+                {
+                    fprintf(stderr, "xmq: you can only use one to/render/tokenize command.\n");
+                    return false;
+                }
+                to = command;
+            }
+
+            // Check if we should remember this command as an print/save/pager command?
+            if (cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_OUTPUT)
+            {
+                if (output)
+                {
+                    fprintf(stderr, "xmq: you can only use one print/save/pager command.\n");
+                    return false;
+                }
+                output = command;
+            }
+
+            // No more args to parse
+            if (argv[i] == NULL) break;
+
+            XMQCliCommand *prev = command;
+            command = allocate_cli_command(command->env);
+            prev->next = command;
+            command->cmd = cmd_from(argv[i]);
+            prepare_command(command, load_command);
+            i++;
+        }
     }
 
-    if (com->cmd == XMQ_CLI_CMD_NONE ||
-        (cmd_group(com->cmd) != XMQ_CLI_CMD_GROUP_RENDER &&
-         cmd_group(com->cmd) != XMQ_CLI_CMD_GROUP_TOKENIZE &&
-         cmd_group(com->cmd) != XMQ_CLI_CMD_GROUP_TO))
+    if (!to)
     {
-        com->next = allocate_cli_command(command->env);
-        com->next->cmd = XMQ_CLI_CMD_TO_XMQ;
-        prepare_command(com->next);
+        XMQCliCommand *to = allocate_cli_command(command->env);
+        to->cmd = XMQ_CLI_CMD_TO_XMQ;
+        prepare_command(to, load_command);
+
+        if (!output)
+        {
+            command->next = to;
+            command = to;
+            verbose_("(xmq) added to-xmq command\n");
+        }
+        else
+        {
+            verbose_("(xmq) inserted to-xmq command before output\n");
+            // We have a print but no to-xmq, lets insert
+            // the to-xmq before the print.
+            XMQCliCommand *prev = load_command;
+            while (prev && prev->next != output)
+            {
+                prev = prev->next;
+            }
+            if (prev && prev->next == output)
+            {
+                prev->next = to;
+                to->next = output;
+            }
+            else
+            {
+                command->next = to;
+            }
+        }
+    }
+
+    if (!output)
+    {
+        command->next = allocate_cli_command(command->env);
+        command->next->cmd = XMQ_CLI_CMD_PRINT;
+        prepare_command(command->next, load_command);
+        verbose_("(xmq) added print command\n");
     }
 
     return true;
@@ -2050,46 +2241,44 @@ int main(int argc, const char **argv)
         render_style(&env.use_color, &env.dark_mode);
     }
 
-    XMQCliCommand *first_command = allocate_cli_command(&env);
+    XMQCliCommand *load_command = allocate_cli_command(&env);
+    load_command->cmd = XMQ_CLI_CMD_LOAD;
+    prepare_command(load_command, load_command);
 
-    bool ok = xmq_parse_cmd_line(argc, argv, first_command);
+    bool ok = xmq_parse_cmd_line(argc, argv, load_command);
     if (!ok) {
         debug_("(xmq) parse cmd line failed\n");
         return 1;
     }
 
-    debug_enabled__ = first_command->debug;
-    verbose_enabled__ = first_command->verbose || debug_enabled__;
+    debug_enabled__ = load_command->debug;
+    verbose_enabled__ = load_command->verbose || debug_enabled__;
     xmqSetDebug(debug_enabled__);
     xmqSetVerbose(verbose_enabled__);
 
-    if (first_command->print_version) print_version_and_exit();
-    if (first_command->print_help)  print_help_and_exit();
+    if (load_command->print_version) print_version_and_exit();
+    if (load_command->print_help)  print_help_and_exit();
 
-    XMQCliCommand *c = first_command;
-    ok = cmd_load(c);
+    XMQCliCommand *c = load_command;
 
-    if (ok)
+    // Execute commands.
+    while (c)
     {
-        // Execute commands.
-        while (c)
+        debug_("(xmq) performing %s\n", cmd_name(c->cmd));
+        bool ok = perform_command(c);
+        if (!ok)
         {
-            debug_("(xmq) performing %s\n", cmd_name(c->cmd));
-            bool ok = perform_command(c);
-            if (!ok)
-            {
-                rc = 1;
-                break;
-            }
-            c = c->next;
+            rc = 1;
+            break;
         }
+        c = c->next;
     }
 
     // Free document.
-    cmd_unload(first_command);
+    cmd_unload(load_command);
 
     // Free commands.
-    c = first_command;
+    c = load_command;
     while (c)
     {
         XMQCliCommand *tmp = c;

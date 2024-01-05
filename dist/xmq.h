@@ -107,8 +107,9 @@ typedef enum
     @XMQ_RENDER_HTML: colorize using html tags
     @XMQ_RENDER_HTMQ: colorize using htmq tags
     @XMQ_RENDER_TEX: colorize using tex
+    @XMQ_RENDER_RAW: write the text content using UTF8 with no escapes
 
-    The xmq output can be rendered as PLAIN, or for human consumption in TERMINAL, HTML, HTMQ or TEX.
+    The xmq output can be rendered as PLAIN, or for human consumption in TERMINAL, HTML, HTMQ, TEX or RAW.
 */
 typedef enum
 {
@@ -116,7 +117,8 @@ typedef enum
    XMQ_RENDER_TERMINAL,
    XMQ_RENDER_HTML,
    XMQ_RENDER_HTMQ,
-   XMQ_RENDER_TEX
+   XMQ_RENDER_TEX,
+   XMQ_RENDER_RAW
 } XMQRenderFormat;
 
 /**
@@ -559,7 +561,7 @@ void xmqSetupPrintFile(XMQOutputSettings *ps, const char *file);
 void xmqSetupPrintFileDescriptor(XMQOutputSettings *ps, int fd);
 
 /** Setup the printer to print to a dynamically memory buffer. */
-void xmqSetupPrintMemory(XMQOutputSettings *ps, const char **start, const char **stop);
+void xmqSetupPrintMemory(XMQOutputSettings *ps, char **start, char **stop);
 
 /** Pretty print the document according to the settings. */
 void xmqPrint(XMQDoc *doc, XMQOutputSettings *settings);

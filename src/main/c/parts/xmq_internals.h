@@ -223,8 +223,8 @@ struct XMQOutputSettings
 
     // If printing to memory:
     MemBuffer *output_buffer;
-    const char **output_buffer_start;
-    const char **output_buffer_stop;
+    char **output_buffer_start;
+    char **output_buffer_stop;
 
     const char *indentation_space; // If NULL use " " can be replaced with any other string.
     const char *explicit_space; // If NULL use " " can be replaced with any other string.

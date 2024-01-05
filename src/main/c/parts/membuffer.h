@@ -45,6 +45,7 @@ char *free_membuffer_but_return_trimmed_content(MemBuffer *mb);
 void free_membuffer_and_free_content(MemBuffer *mb);
 size_t pick_buffer_new_size(size_t max, size_t used, size_t add);
 size_t membuffer_used(MemBuffer *mb);
+void membuffer_reuse(MemBuffer *mb, char *start, size_t len);
 void membuffer_append_region(MemBuffer *mb, const char *start, const char *stop);
 void membuffer_append(MemBuffer *mb, const char *start);
 void membuffer_append_char(MemBuffer *mb, char c);

@@ -11,6 +11,20 @@ xmq \- Command-line xmq/htmq/xml/html/json processor
 \fBxmq\fP [options] <file> ( <\fIcommand\fP> [options] )+
 .br
 
+.SH EXAMPLES
+
+xmq pom.xml
+.br
+xmq pom.xmq
+.br
+xmq pom.xmq to-xml save pom.xml
+.br
+xmq big.xml pager
+.br
+xmq index.html delete //script delete //style pager
+.br
+curl https://jsonandstuff/products | xmq - transform make_web_list.xslq to-html save products.html
+
 .SH DESCRIPTION
 
 The xmq tool can extract data from xmq/htmq/xml/html/json files and
@@ -19,7 +33,7 @@ tokenize, apply xslt transforms and other commands to modify the
 content.
 
 If no commands are provided then xmq executes the command \fIrender-terminal\fP or \fIto-xmq\fP
-depending on whether stdout is a tty or a file/pipe.
+followed by \fIprint\fP depending on whether stdout is a tty or a file/pipe.
 
 Xmq will read from stdin if a single minus \fB-\fP is provided as <file> or if neither <file> nor <command> is provided.
 
@@ -56,7 +70,7 @@ The input format is normally auto detected but you can force the input format he
 
 .TP
 \fIto-xmq\fP / \fIto-htmq\fP
-Write the content as xmq/htmq on stdout. If stdout is a tty, then this command behaves as \fIrender-terminal\fP.
+Write the content as xmq/htmq. If stdout is a tty, then this command behaves as \fIrender-terminal\fP.
 
 .br
 \fB--compact\fP By default, \fIto-xmq\fP pretty-prints the output. Using this option will result in a single line compact xmq/htmq.
@@ -71,11 +85,11 @@ Write the content as xmq/htmq on stdout. If stdout is a tty, then this command b
 
 .TP
 \fIto-xml\fP/\fIto-html\FP/\fIto-json\fP
-Write the content as xml/html/json on stdout.
+Write the content as xml/html/json.
 
 .TP
 \fIpager\fP
-This command will render the content as xmq/htmq for presentation at a terminal and use a pager.
+Use the builtin pager to view the generated output from any of the to/render/tokenize commands.
 You can use the following keys in the pager:
 .br
 q - quit
@@ -88,7 +102,7 @@ arrow down - next line
 .br
 arrow up - previous line
 .br
-page down - next page
+page down or space - next page
 .br
 page up - previous page
 .br
@@ -97,6 +111,14 @@ page up - previous page
 < - jump to beginning
 .br
 > - jump to end
+
+.TP
+\fIprint\fP
+Print on stdout generated output from any of the to/render/tokenize commands.
+
+.TP
+\fIsave\fP <file_name>
+Save the generated output from any of the to/render/tokenize commands to the provided file name.
 
 .TP
 \fIrender-terminal\fP / \fIrender-html\fP / \fIrender-tex\fP
