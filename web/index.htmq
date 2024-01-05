@@ -45,7 +45,7 @@ html {
             ' to use xmq directly from your program or in the future link to a prebuilt libxmq.'
         }
         div {
-            a(href = https://github.com/libxmq/xmq/releases/latest) = '[Pre-built binaries]'
+            a(href = https://github.com/libxmq/xmq/releases/latest) = '[Download]'
             &nbsp;
             &nbsp;
             a(href = https://github.com/libxmq/xmq) = [Github]
@@ -57,7 +57,7 @@ html {
             a(href = https://github.com/orgs/libxmq/discussions) = '[Forum/Discussions]'
             &nbsp;
             &nbsp;
-            a(href = resources/index_htmq.html) = '[This page source as htmq]'
+            a(href = resources/index_htmq.html) = '[This page source as htmq]'
         }
         h2= Rationale
         p = 'XML can be human readable/editable if it is used for markup of longer
@@ -270,7 +270,7 @@ html {
         &MULTI_COMPACT_XMQ;
         ' '
         p {
-            'Note that, for historical reasons, xml/html does not permit two dashes inside a comment! This is
+            'Note that, for historical reasons, xml/html does not permit two or more consecutive dashes inside a comment! This is
              quite a showstopper if you just want to comment out some large part of your document. As you
              can see two dashes are permitted in xmq-comments and the xmq tool works around
              this problem when converting to xml/html by adding a very specific char (␐) in such a way

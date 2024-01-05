@@ -125,7 +125,7 @@ typedef enum
     XMQTrimType:
     @XMQ_TRIM_DEFAULT: Use the default, ie no-trim for xmq/json, normal-trim for xml/html.
     @XMQ_TRIM_NONE: Do not trim at all. Keep unnecessary xml/html indentation and newlines.
-    @XMQ_TRIM_NORMAL: Normal trim heuristic. Remove leading/ending whitespace, remove incidental indentation.
+    @XMQ_TRIM_HEURISTIC: Normal trim heuristic. Remove leading/ending whitespace, remove incidental indentation.
     @XMQ_TRIM_EXTRA: Like normal but remove all indentation (not just incidental) and collapse whitespace.
     @XMQ_TRIM_RESHUFFLE: Like extra but also reflow all content at word boundaries to limit line lengths.
 
@@ -133,15 +133,13 @@ typedef enum
     When loading xmq/htmq, the whitespace is never trimmed since xmq explicitly encodes all important whitespace.
     If you load xml with XMQ_TRIM_NONE (--trim=none) there will be a lot of unnecessary whitespace stored in
     the xmq, like &#32;&#9;&#10; etc.
-    You can then view the xmq with XMQ_TRIM_NORMAL (--trim=normal) to drop the whitespace.
+    You can then view the xmq with XMQ_TRIM_HEURISTIC (--trim=heuristic) to drop the whitespace.
 */
 typedef enum
 {
     XMQ_TRIM_DEFAULT = 0,
     XMQ_TRIM_NONE = 1,
-    XMQ_TRIM_NORMAL = 2,
-    XMQ_TRIM_EXTRA = 3,
-    XMQ_TRIM_RESHUFFLE = 4,
+    XMQ_TRIM_HEURISTIC = 2,
 } XMQTrimType;
 
 /**

@@ -103,7 +103,6 @@ $XMQ web/index.htmq \
      replace-entity WELCOME_TRAVELLER_HTMQ_COMPACT --with-file=build/rendered_welcome_traveller_xmq_compact.xml \
      replace-entity WELCOME_TRAVELLER_NOPP_HTML --with-text-file=build/welcome_traveller_nopp.html \
      replace-entity POM_RENDERED --with-file=build/pom_rendered.xml \
-     replace-entity XSLT_RENDERED --with-file=build/xslt_rendered.xml \
      to-html > build/web/index.html
 
 # Render the page source itself!

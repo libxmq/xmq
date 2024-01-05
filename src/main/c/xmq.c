@@ -3298,9 +3298,7 @@ exit:
 
     if (ok)
     {
-        if (tt == XMQ_TRIM_NORMAL ||
-            tt == XMQ_TRIM_EXTRA ||
-            tt == XMQ_TRIM_RESHUFFLE ||
+        if (tt == XMQ_TRIM_HEURISTIC ||
             (tt == XMQ_TRIM_DEFAULT && (
                 ct == XMQ_CONTENT_XML ||
                 ct == XMQ_CONTENT_HTML)))

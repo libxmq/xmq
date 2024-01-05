@@ -1,4 +1,3 @@
-
 /* libxmq - Copyright (C) 2023 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -968,17 +967,9 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         {
             command->trim = XMQ_TRIM_NONE;
         }
-        else if (!strcmp(arg+7, "normal"))
+        else if (!strcmp(arg+7, "heuristic"))
         {
-            command->trim = XMQ_TRIM_NORMAL;
-        }
-        else if (!strcmp(arg+7, "extra"))
-        {
-            command->trim = XMQ_TRIM_EXTRA;
-        }
-        else if (!strcmp(arg+7, "reshuffle"))
-        {
-            command->trim = XMQ_TRIM_RESHUFFLE;
+            command->trim = XMQ_TRIM_HEURISTIC;
         }
         else
         {
@@ -999,22 +990,17 @@ void print_help_and_exit()
            "             Create a root node <name> unless the file starts with a node with this <name> already.\n"
            "  --xmq|--htmq|--xml|--html|--json\n"
            "             The input format is normally auto detected but you can force the input format here.\n"
-           "  --trim=none|default|normal|extra|reshuffle\n"
-           "             When reading the input data, the default setting for xml/html content is to trim whitespace using normal.\n"
+           "  --trim=none|default|heuristic\n"
+           "             The default setting when reading xml/html content is to trim whitespace using heuristicl.\n"
            "             For xmq/htmq/json the default settings is none since whitespace is explicit in xmq/htmq/json.\n"
-           "             none: Keep all whitespace as is.\n"
-           "             default: Use normal for xml/html and none for xmq/htmq/json.\n"
-           "             normal: Remove leading ending whitespace and incidental indentation.\n"
-           "             extra: Like normal but also squeeze multiple consecutive whitespaces int a single whitespace.\n"
-           "             reshuffle: Like extra but also move words between lines to shrink line width.\n"
            "  --help     Display this help and exit.\n"
            "  --verbose  Output extra information on stderr.\n"
            "  --debug    Output debug information on stderr.\n"
            "  --version  Output version information and exit.\n"
            "\n"
            "COMMANDS\n"
-           "to-xmq\n"
-           "to-htmq\n"
+           "* to-xmq\n"
+           "* to-htmq\n"
            "             Write the content as xmq/htmq on stdout. If stdout is a tty, then this command behaves as render_terminal.\n"
            "  --compact\n"
            "             By default to_xmq pretty-prints the output. Using this option will result in a single line compact xmq/htmq.\n"
@@ -1025,17 +1011,17 @@ void print_help_and_exit()
            "  --escape-non-7bit\n"
            "             Escape all non-7bit chars using entities like &#160;\n"
            "\n"
-           "to-xml\n"
-           "to-html\n"
-           "to-json\n"
+           "* to-xml\n"
+           "* to-html\n"
+           "* to-json\n"
            "             Write the content as xml/html/json on stdout.\n"
            "\n"
            "pager\n"
            "             Render the content as xmq/htmq for color presentation on a terminal and use pager.\n"
            "\n"
-           "render-terminal\n"
-           "render-html\n"
-           "render-tex\n"
+           "* render-terminal\n"
+           "* render-html\n"
+           "* render-tex\n"
            "             Render the content as xmq/htmq for presentation on a terminal, as html or as LaTeX.\n"
            "  --color\n"
            "  --mono\n"
@@ -1053,21 +1039,21 @@ void print_help_and_exit()
            "\n"
            "  You can also use --compact, --indent=n, --escape-newlines and --escape-non-7bit with the render commands.\n"
            "\n"
-           "tokenize\n"
+           "* tokenize\n"
            "             Do not create a DOM tree for the content, just tokenize the input. Each token can be printed\n"
            "             using colors for terminal/html/tex or with location information or with debug information.\n"
            "             Location information is useful for editors to get help on syntax highlighting.\n"
            "  --type=[location|terminal|tex|debugtokens|debugcontent]\n"
            "\n"
-           "select\n"
-           "delete\n"
+           "* select\n"
+           "* delete\n"
            "             Select or delete nodes in the DOM.\n"
            "  --xpath=<xpath-expression>\n"
            "             Select or delete nodes matching this xpath expression.\n"
            "  --entity=<entity-name>\n"
            "             Select or delete entity nodes matching this name.\n"
            "\n"
-           "replace\n"
+           "* replace\n"
            "             Replace parts of the DOM.\n"
            "  --xpath=<xpath-expression>\n"
            "             Replace nodes matching this xpath expression.\n"

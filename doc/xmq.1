@@ -15,8 +15,6 @@ xmq \- Command-line xmq/htmq/xml/html/json processor
 
 xmq pom.xml
 .br
-xmq pom.xmq
-.br
 xmq pom.xmq to-xml save pom.xml
 .br
 xmq big.xml pager
@@ -24,6 +22,8 @@ xmq big.xml pager
 xmq index.html delete //script delete //style pager
 .br
 curl https://jsonandstuff/products | xmq - transform make_web_list.xslq to-html save products.html
+.br
+xmq input.json delete //work replace-entity VALUE $SPEED to-json | curl -H "Content-Type: application/json" -X POST --data-binary @- http://somewhere
 
 .SH DESCRIPTION
 
@@ -44,19 +44,15 @@ Xmq will read from stdin if a single minus \fB-\fP is provided as <file> or if n
 Create a root node <name> unless the file starts with a node with this <name> already.
 
 .TP
-.BR --trim=[none|default|normal|extra|reshuffle}
-When reading the input data, the default setting for xml/html content is to trim whitespace using \fBnormal\fP.
+.BR --trim=[none|default|heuristic}
+The default setting when reading xml/html content is to trim whitespace using \fBheuristic\fP.
 When reading xmq/htmq/json then default settings is \fBnone\fP since whitespace is explicit in xmq/htmq/json.
 .br
 \fBnone\fP Keep all whitespace as is.
 .br
 \fBdefault\fP Use normal for xml/html and none for xmq/htmq/json.
 .br
-\fBnormal\fP Remove leading ending whitespace and incidental indentation.
-.br
-\fBextra\fP Like normal but also squeeze multiple consecutive whitespaces int a single whitespace.
-.br
-\fBreshuffle\fP Like extra but also move words between lines to shrink line width.
+\fBheuristic\fP Remove leading ending whitespace and incidental indentation.
 
 .TP
 .BR \--version
