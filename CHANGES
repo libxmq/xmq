@@ -1,3 +1,7 @@
+2024-01-05: Version 1.9.6
+
+Improve pager. Improve documentation. Refactor code.
+
 2024-01-05: Version 1.9.5
 
 Generate HTML with <br> and not <br/>.
