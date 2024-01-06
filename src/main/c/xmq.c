@@ -191,7 +191,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->entity.pre = MAGENTA;
         c->comment.pre = CYAN;
         c->comment_continuation.pre = CYAN;
-        c->element_ns.pre = ORANGE_UNDERLINE;
+        c->element_ns.pre = GRAY;
         c->element_name.pre = ORANGE;
         c->element_key.pre = LIGHT_BLUE;
         c->element_value_text.pre = GREEN;
@@ -199,8 +199,8 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->element_value_entity.pre = MAGENTA;
         c->element_value_compound_quote.pre = GREEN;
         c->element_value_compound_entity.pre = MAGENTA;
-        c->attr_ns.pre = LIGHT_BLUE_UNDERLINE;
-        c->attr_ns_declaration.pre = MAGENTA;
+        c->attr_ns.pre = GRAY;
+        c->attr_ns_declaration.pre = GRAY_UNDERLINE;
         c->attr_key.pre = LIGHT_BLUE;
         c->attr_value_text.pre = BLUE;
         c->attr_value_quote.pre = BLUE;
@@ -225,7 +225,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->entity.pre = MAGENTA;
         c->comment.pre = CYAN;
         c->comment_continuation.pre = CYAN;
-        c->element_ns.pre = DARK_ORANGE_UNDERLINE;
+        c->element_ns.pre = DARK_GRAY;
         c->element_name.pre = DARK_ORANGE;
         c->element_key.pre = BLUE;
         c->element_value_text.pre = DARK_GREEN;
@@ -233,8 +233,8 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->element_value_entity.pre = MAGENTA;
         c->element_value_compound_quote.pre = DARK_GREEN;
         c->element_value_compound_entity.pre = MAGENTA;
-        c->attr_ns.pre = BLUE_UNDERLINE;
-        c->attr_ns_declaration.pre = MAGENTA;
+        c->attr_ns.pre = DARK_GRAY;
+        c->attr_ns_declaration.pre = DARK_GRAY_UNDERLINE;
         c->attr_key.pre = BLUE;
         c->attr_value_text.pre = DARK_BLUE;
         c->attr_value_quote.pre = DARK_BLUE;

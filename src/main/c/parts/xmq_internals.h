@@ -570,6 +570,10 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 // Multicolor terminals like gnome-term etc.
 
 #define NOCOLOR      "\033[0m"
+#define GRAY_UNDERLINE "\033[0;4;38;5;7m"
+#define DARK_GRAY_UNDERLINE "\033[0;4;38;5;8m"
+#define GRAY         "\033[0;38;5;7m"
+#define DARK_GRAY    "\033[0;38;5;8m"
 #define GREEN        "\033[0;32m"
 #define DARK_GREEN   "\033[0;1;32m"
 #define BLUE         "\033[0;38;5;27m"

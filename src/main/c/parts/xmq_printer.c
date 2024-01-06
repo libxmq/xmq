@@ -805,7 +805,7 @@ void print_namespace(XMQPrintState *ps, xmlNs *ns, size_t align)
 
     namespace_strlen_prefix(ns, &prefix, &total_u_len);
 
-    print_utf8(ps, COLOR_attr_key, 1, "xmlns", NULL);
+    print_utf8(ps, COLOR_attr_ns_declaration, 1, "xmlns", NULL);
 
     if (prefix)
     {

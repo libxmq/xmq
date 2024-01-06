@@ -649,23 +649,13 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
     }
     const char *stop = state->i;
 
+    // The only peek ahead in the whole grammar! And its only for syntax coloring. :-)
+    // key = 123   vs    name { '123' }
     bool is_key = peek_xmq_next_is_equal(state);
-    if (ns_start)
+
+    if (!ns_start)
     {
-        size_t ns_len = ns_stop - ns_start;
-        DO_CALLBACK(element_ns, state, start_line, start_col, ns_start, start_col, ns_start, ns_stop, ns_stop);
-        DO_CALLBACK(ns_colon, state, start_line, start_col+ns_len, ns_stop, start_col+start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
-        if (is_key)
-        {
-            DO_CALLBACK(element_key, state, start_line, start_col+ns_len+1, name_start, start_col+ns_len+1, name_start, name_stop, stop);
-        }
-        else
-        {
-            DO_CALLBACK(element_name, state, start_line, start_col+ns_len+1, name_start, start_col+ns_len+1, name_start, name_stop, stop);
-        }
-    }
-    else
-    {
+        // Normal key/name element.
         if (is_key)
         {
             DO_CALLBACK(element_key, state, start_line, start_col, start, start_col, name_start, name_stop, stop);
@@ -673,6 +663,22 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
         else
         {
             DO_CALLBACK(element_name, state, start_line, start_col, start, start_col, name_start, name_stop, stop);
+        }
+    }
+    else
+    {
+        // We have a namespace prefixed to the element, eg: abc:working
+        size_t ns_len = ns_stop - ns_start;
+        DO_CALLBACK(element_ns, state, start_line, start_col, ns_start, start_col, ns_start, ns_stop, ns_stop);
+        DO_CALLBACK(ns_colon, state, start_line, start_col+ns_len, ns_stop, start_col+start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
+
+        if (is_key)
+        {
+            DO_CALLBACK(element_key, state, start_line, start_col+ns_len+1, name_start, start_col+ns_len+1, name_start, name_stop, stop);
+        }
+        else
+        {
+            DO_CALLBACK(element_name, state, start_line, start_col+ns_len+1, name_start, start_col+ns_len+1, name_start, name_stop, stop);
         }
     }
 
@@ -818,37 +824,45 @@ void parse_xmq_attribute(XMQParseState *state)
     eat_xmq_text_name(state, &name_start, &name_stop, &ns_start, &ns_stop);
     const char *stop = state->i;
 
-    if (ns_start)
+    if (!ns_start)
     {
-        size_t ns_len = ns_stop - ns_start;
-        if (ns_len == 5 && !strncmp(ns_start, "xmlns", 5))
+        // No colon found, we have either a normal: key=123
+        // or a default namespace declaration xmlns=...
+        size_t len = name_stop - name_start;
+        if (len == 5 && !strncmp(name_start, "xmlns", 5))
         {
-            // Namespace declaration
-            DO_CALLBACK(attr_ns, state, start_line, start_col, ns_start, start_col, ns_start, ns_stop, ns_stop);
-            DO_CALLBACK(ns_colon, state, start_line, start_col+ns_len, ns_stop, start_col+start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
-            DO_CALLBACK(attr_ns_declaration, state, start_line, start_col+ns_len+1, name_start, start_col+ns_len+1, name_start, name_stop, stop);
+            // A default namespace declaration attr_ns_declaration
+            DO_CALLBACK(attr_ns_declaration, state, start_line, start_col, start, start_col, name_start, name_stop, stop);
         }
         else
         {
-            // Namespace usage
+            // A normal attribute key, eg: width=123
+            DO_CALLBACK(attr_key, state, start_line, start_col, start, start_col, name_start, name_stop, stop);
+        }
+    }
+    else
+    {
+        // We have a colon in the attribute key.
+        // E.g. alfa:beta where alfa is attr_ns and beta is attr_key
+        // However we can also have xmlns:xsl then it gets tokenized as attr_ns_declaration and attr_ns.
+        size_t ns_len = ns_stop - ns_start;
+        if (ns_len == 5 && !strncmp(ns_start, "xmlns", 5))
+        {
+            // The xmlns signals a declaration of a namespace.
+            DO_CALLBACK(attr_ns_declaration, state, start_line, start_col, ns_start, start_col, ns_start, ns_stop, ns_stop);
+            DO_CALLBACK(ns_colon, state, start_line, start_col+ns_len, ns_stop, start_col+start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
+            DO_CALLBACK(attr_ns, state, start_line, start_col+ns_len+1, name_start, start_col+ns_len+1, name_start, name_stop, stop);
+        }
+        else
+        {
+            // Normal namespaced attribute. Please try to avoid namespaced attributes because you only need to attach the
+            // namespace to the element itself, from that follows automatically the unique namespaced attributes.
+            // The exception being special use cases as: xlink:href.
             DO_CALLBACK(attr_ns, state, start_line, start_col, ns_start, start_col, ns_start, ns_stop, ns_stop);
             DO_CALLBACK(ns_colon, state, start_line, start_col+ns_len, ns_stop, start_col+start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
             DO_CALLBACK(attr_key, state, start_line, start_col+ns_len+1, name_start, start_col+ns_len+1, name_start, name_stop, stop);
         }
     }
-    else
-    {
-        size_t len = name_stop - name_start;
-        if (len == 5 && !strncmp(name_start, "xmlns", 5))
-        {
-            DO_CALLBACK(attr_key, state, start_line, start_col, start, start_col, name_start, name_stop, stop);
-        }
-        else
-        {
-            DO_CALLBACK(attr_key, state, start_line, start_col, start, start_col, name_start, name_stop, stop);
-        }
-    }
-
 
     c = *state->i;
     if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = *state->i; }
