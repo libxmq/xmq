@@ -28,7 +28,7 @@ size_t count_xmq_quotes(const char *i, const char *stop)
     return i-start;
 }
 
-size_t eat_xmq_quote(XMQParseState *state, const char **content_start, const char **content_stop)
+void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
 {
     const char *i = state->i;
     const char *end = state->buffer_stop;
@@ -36,12 +36,13 @@ size_t eat_xmq_quote(XMQParseState *state, const char **content_start, const cha
     size_t col = state->col;
 
     size_t depth = count_xmq_quotes(i, end);
-    size_t return_depth = depth;
     size_t count = depth;
 
     state->last_quote_start = state->i;
     state->last_quote_start_line = state->line;
     state->last_quote_start_col = state->col;
+
+    *start = i;
 
     while (count > 0)
     {
@@ -49,16 +50,14 @@ size_t eat_xmq_quote(XMQParseState *state, const char **content_start, const cha
         count--;
     }
 
-    *content_start = i;
-
     if (depth == 2)
     {
         // The empty quote ''
         state->i = i;
         state->line = line;
         state->col = col;
-        *content_stop = i;
-        return 1; // Depth is one.
+        *stop = i;
+        return;
     }
 
     while (i < end)
@@ -88,13 +87,13 @@ size_t eat_xmq_quote(XMQParseState *state, const char **content_start, const cha
         else
         if (count == depth)
         {
-            *content_stop = i;
             while (count > 0)
             {
                 increment('\'', 1, &i, &line, &col);
                 count--;
             }
             depth = 0;
+            *stop = i;
             break;
         }
     }
@@ -106,11 +105,9 @@ size_t eat_xmq_quote(XMQParseState *state, const char **content_start, const cha
     state->i = i;
     state->line = line;
     state->col = col;
-
-    return return_depth;
 }
 
-void eat_xmq_entity(XMQParseState *state, const char **content_start, const char **content_stop)
+void eat_xmq_entity(XMQParseState *state)
 {
     const char *i = state->i;
     const char *end = state->buffer_stop;
@@ -119,7 +116,6 @@ void eat_xmq_entity(XMQParseState *state, const char **content_start, const char
     size_t col = state->col;
     increment('&', 1, &i, &line, &col);
 
-    *content_start = i;
     char c = 0;
     bool expect_semicolon = false;
 
@@ -141,7 +137,7 @@ void eat_xmq_entity(XMQParseState *state, const char **content_start, const char
         state->error_nr = XMQ_ERROR_ENTITY_NOT_CLOSED;
         longjmp(state->error_handler, 1);
     }
-    *content_stop = i-1;
+
     state->i = i;
     state->line = line;
     state->col = col;
@@ -284,13 +280,12 @@ void eat_xmq_text_name(XMQParseState *state,
     state->col = col;
 }
 
-void eat_xmq_text_value(XMQParseState *state, const char **text_start, const char **text_stop)
+void eat_xmq_text_value(XMQParseState *state)
 {
     const char *i = state->i;
     const char *stop = state->buffer_stop;
     size_t line = state->line;
     size_t col = state->col;
-    *text_start = i;
 
     while (i < stop)
     {
@@ -299,7 +294,6 @@ void eat_xmq_text_value(XMQParseState *state, const char **text_start, const cha
         increment(c, 1, &i, &line, &col);
     }
 
-    *text_stop = i;
     state->i = i;
     state->line = line;
     state->col = col;
@@ -475,32 +469,29 @@ void parse_xmq(XMQParseState *state)
 
 void parse_xmq_quote(XMQParseState *state, Level level)
 {
-    const char *start = state->i;
     size_t start_line = state->line;
     size_t start_col = state->col;
-    const char *content_start;
-    const char *content_stop;
+    const char *start;
+    const char *stop;
 
-    size_t depth = eat_xmq_quote(state, &content_start, &content_stop);
-    const char *stop = state->i;
-    size_t content_start_col = start_col + depth;
+    eat_xmq_quote(state, &start, &stop);
 
     switch(level)
     {
     case LEVEL_XMQ:
-       DO_CALLBACK(quote, state, start_line, start_col, start, content_start_col, content_start, content_stop, stop);
+       DO_CALLBACK(quote, state, start_line, start_col, start, stop, stop);
        break;
     case LEVEL_ELEMENT_VALUE:
-        DO_CALLBACK(element_value_quote, state, start_line, start_col, start, content_start_col, content_start, content_stop, stop);
+        DO_CALLBACK(element_value_quote, state, start_line, start_col, start, stop, stop);
         break;
     case LEVEL_ELEMENT_VALUE_COMPOUND:
-        DO_CALLBACK(element_value_compound_quote, state, start_line, start_col, start, content_start_col, content_start, content_stop, stop);
+        DO_CALLBACK(element_value_compound_quote, state, start_line, start_col, start, stop, stop);
         break;
     case LEVEL_ATTR_VALUE:
-        DO_CALLBACK(attr_value_quote, state, start_line, start_col, start, content_start_col, content_start, content_stop, stop);
+        DO_CALLBACK(attr_value_quote, state, start_line, start_col, start, stop, stop);
         break;
     case LEVEL_ATTR_VALUE_COMPOUND:
-        DO_CALLBACK(attr_value_compound_quote, state, start_line, start_col, start, content_start_col, content_start, content_stop, stop);
+        DO_CALLBACK(attr_value_compound_quote, state, start_line, start_col, start, stop, stop);
         break;
     default:
         assert(false);
@@ -512,26 +503,25 @@ void parse_xmq_entity(XMQParseState *state, Level level)
     const char *start = state->i;
     int start_line = state->line;
     int start_col = state->col;
-    const char *content_start;
-    const char *content_stop;
 
-    eat_xmq_entity(state, &content_start, &content_stop);
+    eat_xmq_entity(state);
     const char *stop = state->i;
+
     switch (level) {
     case LEVEL_XMQ:
-        DO_CALLBACK(entity, state, start_line, start_col, start, start_col+1, content_start, content_stop, stop);
+        DO_CALLBACK(entity, state, start_line, start_col, start,  stop, stop);
         break;
     case LEVEL_ELEMENT_VALUE:
-        DO_CALLBACK(element_value_entity, state, start_line, start_col, start, start_col+1, content_start, content_stop, stop);
+        DO_CALLBACK(element_value_entity, state, start_line, start_col, start, stop, stop);
         break;
     case LEVEL_ELEMENT_VALUE_COMPOUND:
-        DO_CALLBACK(element_value_compound_entity, state, start_line, start_col, start, start_col+1, content_start, content_stop, stop);
+        DO_CALLBACK(element_value_compound_entity, state, start_line, start_col, start,  stop, stop);
         break;
     case LEVEL_ATTR_VALUE:
-        DO_CALLBACK(attr_value_entity, state, start_line, start_col, start, start_col+1, content_start, content_stop, stop);
+        DO_CALLBACK(attr_value_entity, state, start_line, start_col, start, stop, stop);
         break;
     case LEVEL_ATTR_VALUE_COMPOUND:
-        DO_CALLBACK(attr_value_compound_entity, state, start_line, start_col, start, start_col+1, content_start, content_stop, stop);
+        DO_CALLBACK(attr_value_compound_entity, state, start_line, start_col, start, stop, stop);
         break;
     default:
         assert(false);
@@ -554,14 +544,14 @@ void parse_xmq_comment(XMQParseState *state, char cc)
         // This is a single line asterisk.
         eat_xmq_comment_to_eol(state, &comment_start, &comment_stop);
         const char *stop = state->i;
-        DO_CALLBACK(comment, state, start_line, start_col, start, start_col, comment_start, comment_stop, stop);
+        DO_CALLBACK(comment, state, start_line, start_col, start, stop, stop);
     }
     else
     {
         // This is a /* ... */ or ////*  ... *//// comment.
         eat_xmq_comment_to_close(state, &comment_start, &comment_stop, n, &found_asterisk);
         const char *stop = state->i;
-        DO_CALLBACK(comment, state, start_line, start_col, start, start_col, comment_start, comment_stop, stop);
+        DO_CALLBACK(comment, state, start_line, start_col, start, stop, stop);
 
         while (found_asterisk)
         {
@@ -571,7 +561,7 @@ void parse_xmq_comment(XMQParseState *state, char cc)
             start_col = state->col;
             eat_xmq_comment_to_close(state, &comment_start, &comment_stop, n, &found_asterisk);
             stop = state->i;
-            DO_CALLBACK(comment_continuation, state, start_line, start_col, start, start_col, comment_start, comment_stop, stop);
+            DO_CALLBACK(comment_continuation, state, start_line, start_col, start, stop, stop);
         }
     }
 }
@@ -581,19 +571,18 @@ void parse_xmq_text_value(XMQParseState *state, Level level)
     const char *start = state->i;
     int start_line = state->line;
     int start_col = state->col;
-    const char *text_start;
-    const char *text_stop;
 
-    eat_xmq_text_value(state, &text_start, &text_stop);
+    eat_xmq_text_value(state);
     const char *stop = state->i;
+
     assert(level != LEVEL_XMQ);
     if (level == LEVEL_ATTR_VALUE)
     {
-        DO_CALLBACK(attr_value_text, state, start_line, start_col, start, start_col, text_start, text_stop, stop);
+        DO_CALLBACK(attr_value_text, state, start_line, start_col, start, stop, stop);
     }
     else
     {
-        DO_CALLBACK(element_value_text, state, start_line, start_col, start, start_col, text_start, text_stop, stop);
+        DO_CALLBACK(element_value_text, state, start_line, start_col, start, stop, stop);
     }
 }
 
@@ -629,13 +618,12 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
 {
     char c = 0;
     // Name
-    const char *name_start;
-    const char *name_stop;
+    const char *name_start = NULL;
+    const char *name_stop = NULL;
     // Namespace
-    const char *ns_start;
-    const char *ns_stop;
+    const char *ns_start = NULL;
+    const char *ns_stop = NULL;
 
-    const char *start = state->i;
     size_t start_line = state->line;
     size_t start_col = state->col;
 
@@ -658,27 +646,27 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
         // Normal key/name element.
         if (is_key)
         {
-            DO_CALLBACK(element_key, state, start_line, start_col, start, start_col, name_start, name_stop, stop);
+            DO_CALLBACK(element_key, state, start_line, start_col, name_start, name_stop, stop);
         }
         else
         {
-            DO_CALLBACK(element_name, state, start_line, start_col, start, start_col, name_start, name_stop, stop);
+            DO_CALLBACK(element_name, state, start_line, start_col, name_start, name_stop, stop);
         }
     }
     else
     {
         // We have a namespace prefixed to the element, eg: abc:working
         size_t ns_len = ns_stop - ns_start;
-        DO_CALLBACK(element_ns, state, start_line, start_col, ns_start, start_col, ns_start, ns_stop, ns_stop);
-        DO_CALLBACK(ns_colon, state, start_line, start_col+ns_len, ns_stop, start_col+start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
+        DO_CALLBACK(element_ns, state, start_line, start_col, ns_start, ns_stop, ns_stop);
+        DO_CALLBACK(ns_colon, state, start_line, start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
 
         if (is_key)
         {
-            DO_CALLBACK(element_key, state, start_line, start_col+ns_len+1, name_start, start_col+ns_len+1, name_start, name_stop, stop);
+            DO_CALLBACK(element_key, state, start_line, start_col+ns_len+1, name_start, name_stop, stop);
         }
         else
         {
-            DO_CALLBACK(element_name, state, start_line, start_col+ns_len+1, name_start, start_col+ns_len+1, name_start, name_stop, stop);
+            DO_CALLBACK(element_name, state, start_line, start_col+ns_len+1, name_start, name_stop, stop);
         }
     }
 
@@ -689,8 +677,6 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
     if (c == '(')
     {
         const char *start = state->i;
-        const char *parentheses_left_start = state->i;
-        const char *parentheses_left_stop = state->i+1;
         state->last_attr_start = state->i;
         state->last_attr_start_line = state->line;
         state->last_attr_start_col = state->col;
@@ -698,8 +684,7 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
         start_col = state->col;
         increment('(', 1, &state->i, &state->line, &state->col);
         const char *stop = state->i;
-        DO_CALLBACK(apar_left, state, start_line, start_col, start, start_col,
-                    parentheses_left_start, parentheses_left_stop, stop);
+        DO_CALLBACK(apar_left, state, start_line, start_col, start, stop, stop);
 
         parse_xmq_attributes(state);
 
@@ -719,8 +704,7 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
         start_col = state->col;
         increment(')', 1, &state->i, &state->line, &state->col);
         stop = state->i;
-        DO_CALLBACK(apar_right, state, start_line, start_col, start, start_col,
-                    parentheses_right_start, parentheses_right_stop, stop);
+        DO_CALLBACK(apar_right, state, start_line, start_col, parentheses_right_start, parentheses_right_stop, stop);
     }
 
     c = *state->i;
@@ -732,13 +716,12 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
         state->last_equals_start_line = state->line;
         state->last_equals_start_col = state->col;
         const char *start = state->i;
-        const char *equal_start = state->i;
-        const char *equal_stop = state->i+1;
         start_line = state->line;
         start_col = state->col;
         increment('=', 1, &state->i, &state->line, &state->col);
         const char *stop = state->i;
-        DO_CALLBACK(equals, state, start_line, start_col, start, start_col, equal_start, equal_stop, stop);
+
+        DO_CALLBACK(equals, state, start_line, start_col, start, stop, stop);
         parse_xmq_value(state, LEVEL_ELEMENT_VALUE);
         return;
     }
@@ -746,8 +729,6 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
     if (c == '{')
     {
         const char *start = state->i;
-        const char *brace_left_start = state->i;
-        const char *brace_left_stop = state->i+1;
         state->last_body_start = state->i;
         state->last_body_start_line = state->line;
         state->last_body_start_col = state->col;
@@ -755,7 +736,7 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
         start_col = state->col;
         increment('{', 1, &state->i, &state->line, &state->col);
         const char *stop = state->i;
-        DO_CALLBACK(brace_left, state, start_line, start_col, start, start_col, brace_left_start, brace_left_stop, stop);
+        DO_CALLBACK(brace_left, state, start_line, start_col, start, stop, stop);
 
         parse_xmq(state);
         c = *state->i;
@@ -767,13 +748,11 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
         }
 
         start = state->i;
-        const char *brace_right_start = state->i;
-        const char *brace_right_stop = state->i+1;
         start_line = state->line;
         start_col = state->col;
         increment('}', 1, &state->i, &state->line, &state->col);
         stop = state->i;
-        DO_CALLBACK(brace_right, state, start_line, start_col, start, start_col, brace_right_start, brace_right_stop, stop);
+        DO_CALLBACK(brace_right, state, start_line, start_col, start, stop, stop);
     }
 }
 
@@ -817,7 +796,6 @@ void parse_xmq_attribute(XMQParseState *state)
     const char *ns_start = NULL;
     const char *ns_stop = NULL;
 
-    const char *start = state->i;
     int start_line = state->line;
     int start_col = state->col;
 
@@ -831,13 +809,13 @@ void parse_xmq_attribute(XMQParseState *state)
         size_t len = name_stop - name_start;
         if (len == 5 && !strncmp(name_start, "xmlns", 5))
         {
-            // A default namespace declaration attr_ns_declaration
-            DO_CALLBACK(attr_ns_declaration, state, start_line, start_col, start, start_col, name_start, name_stop, stop);
+            // A default namespace declaration, eg: xmlns=uri
+            DO_CALLBACK(attr_ns_declaration, state, start_line, start_col, name_start, name_stop, name_stop);
         }
         else
         {
             // A normal attribute key, eg: width=123
-            DO_CALLBACK(attr_key, state, start_line, start_col, start, start_col, name_start, name_stop, stop);
+            DO_CALLBACK(attr_key, state, start_line, start_col, name_start, name_stop, stop);
         }
     }
     else
@@ -849,18 +827,18 @@ void parse_xmq_attribute(XMQParseState *state)
         if (ns_len == 5 && !strncmp(ns_start, "xmlns", 5))
         {
             // The xmlns signals a declaration of a namespace.
-            DO_CALLBACK(attr_ns_declaration, state, start_line, start_col, ns_start, start_col, ns_start, ns_stop, ns_stop);
-            DO_CALLBACK(ns_colon, state, start_line, start_col+ns_len, ns_stop, start_col+start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
-            DO_CALLBACK(attr_ns, state, start_line, start_col+ns_len+1, name_start, start_col+ns_len+1, name_start, name_stop, stop);
+            DO_CALLBACK(attr_ns_declaration, state, start_line, start_col, ns_start, ns_stop, name_stop);
+            DO_CALLBACK(ns_colon, state, start_line, start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
+            DO_CALLBACK(attr_ns, state, start_line, start_col+ns_len+1, name_start, name_stop, stop);
         }
         else
         {
             // Normal namespaced attribute. Please try to avoid namespaced attributes because you only need to attach the
             // namespace to the element itself, from that follows automatically the unique namespaced attributes.
             // The exception being special use cases as: xlink:href.
-            DO_CALLBACK(attr_ns, state, start_line, start_col, ns_start, start_col, ns_start, ns_stop, ns_stop);
-            DO_CALLBACK(ns_colon, state, start_line, start_col+ns_len, ns_stop, start_col+start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
-            DO_CALLBACK(attr_key, state, start_line, start_col+ns_len+1, name_start, start_col+ns_len+1, name_start, name_stop, stop);
+            DO_CALLBACK(attr_ns, state, start_line, start_col, ns_start, ns_stop, ns_stop);
+            DO_CALLBACK(ns_colon, state, start_line, start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
+            DO_CALLBACK(attr_key, state, start_line, start_col+ns_len+1, name_start, name_stop, stop);
         }
     }
 
@@ -870,13 +848,11 @@ void parse_xmq_attribute(XMQParseState *state)
     if (c == '=')
     {
         const char *start = state->i;
-        const char *equal_start = state->i;
-        const char *equal_stop = state->i+1;
         start_line = state->line;
         start_col = state->col;
         increment('=', 1, &state->i, &state->line, &state->col);
         const char *stop = state->i;
-        DO_CALLBACK(equals, state, start_line, start_col, start, start_col, equal_start, equal_stop, stop);
+        DO_CALLBACK(equals, state, start_line, start_col, start, stop, stop);
         parse_xmq_value(state, LEVEL_ATTR_VALUE);
         return;
     }
@@ -896,14 +872,11 @@ void parse_xmq_attribute(XMQParseState *state)
 void parse_xmq_compound(XMQParseState *state, Level level)
 {
     const char *start = state->i;
-    const char *parentheses_left_start = state->i;
-    const char *parentheses_left_stop = state->i+1;
     int start_line = state->line;
     int start_col = state->col;
     increment('(', 1, &state->i, &state->line, &state->col);
     const char *stop = state->i;
-    DO_CALLBACK(cpar_left, state, start_line, start_col, start, start_col,
-                parentheses_left_start, parentheses_left_stop, stop);
+    DO_CALLBACK(cpar_left, state, start_line, start_col, start, stop, stop);
 
     parse_xmq_compound_children(state, enter_compound_level(level));
 
@@ -917,15 +890,11 @@ void parse_xmq_compound(XMQParseState *state, Level level)
     }
 
     start = state->i;
-    const char *parentheses_right_start = state->i;
-    const char *parentheses_right_stop = state->i+1;
-
     start_line = state->line;
     start_col = state->col;
     increment(')', 1, &state->i, &state->line, &state->col);
     stop = state->i;
-    DO_CALLBACK(cpar_right, state, start_line, start_col, start,
-                start_col, parentheses_right_start, parentheses_right_stop, stop);
+    DO_CALLBACK(cpar_right, state, start_line, start_col, start, stop, stop);
 }
 
 /** Parse each compound child (quote or entity) until end of file or a ')' is found. */
@@ -991,7 +960,7 @@ void parse_xmq_whitespace(XMQParseState *state)
     const char *start;
     const char *stop;
     eat_xmq_token_whitespace(state, &start, &stop);
-    DO_CALLBACK(whitespace, state, start_line, start_col, start, start_col, start, stop, stop);
+    DO_CALLBACK(whitespace, state, start_line, start_col, start, stop, stop);
 }
 
 #endif // XMQ_PARSER_MODULE

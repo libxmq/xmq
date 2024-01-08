@@ -266,6 +266,10 @@ struct XMQParseState
     XMQOutputSettings *output_settings; // Used when coloring existing text using the tokenizer.
     int magic_cookie; // Used to check that the state has been properly initialized.
 
+    char *element_namespace; // The element namespace is found before the element name. Remember the namespace name here.
+    char *attribute_namespace; // The attribute namespace is found before the attribute key. Remember the namespace name here.
+    bool xmlns_found; // Set to true when the xmlns declaration is found. This will cause the next attr name space token to be a declaration.
+
     void *default_namespace; // If xmlns=http... has been set, then a pointer to the namespace object is stored here.
 
     // These are used for better error reporting.
@@ -406,13 +410,13 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, b
 
 void eat_xml_whitespace(XMQParseState *state, const char **start, const char **stop);
 void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop);
-void eat_xmq_entity(XMQParseState *state, const char **content_start, const char **content_stop);
+void eat_xmq_entity(XMQParseState *state);
 void eat_xmq_comment_to_eol(XMQParseState *state, const char **content_start, const char **content_stop);
 void eat_xmq_comment_to_close(XMQParseState *state, const char **content_start, const char **content_stop, size_t n, bool *found_asterisk);
-void eat_xmq_text_value(XMQParseState *state, const char **content_start, const char **content_stop);
+void eat_xmq_text_value(XMQParseState *state);
 bool peek_xmq_next_is_equal(XMQParseState *state);
 size_t count_xmq_quotes(const char *i, const char *stop);
-size_t eat_xmq_quote(XMQParseState *state, const char **content_start, const char **content_stop);
+void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop);
 char *xmq_trim_quote(size_t indent, char space, const char *start, const char *stop);
 char *escape_xml_comment(const char *comment);
 char *unescape_xml_comment(const char *comment);
@@ -530,10 +534,8 @@ typedef void (*XMQContentCallback)(XMQParseState *state,
                                    size_t start_line,
                                    size_t start_col,
                                    const char *start,
-                                   size_t content_start_col,
-                                   const char *content_start,
-                                   const char *content_stop,
-                                   const char *stop);
+                                   const char *stop,
+                                   const char *suffix);
 
 struct XMQParseCallbacks
 {
@@ -555,11 +557,11 @@ struct XMQPrintCallbacks
     void (*writeElementContent)(char *start, char *stop);
 };
 
-#define DO_CALLBACK(TYPE, state, start_line, start_col, start, content_start_col, content_start, content_stop, stop) \
-    { if (state->parse->handle_##TYPE != NULL) state->parse->handle_##TYPE(state,start_line,start_col,start,content_start_col,content_start,content_stop,stop); }
+#define DO_CALLBACK(TYPE, state, start_line, start_col, start, stop, suffix) \
+    { if (state->parse->handle_##TYPE != NULL) state->parse->handle_##TYPE(state,start_line,start_col,start,stop,suffix); }
 
-#define DO_CALLBACK_SIM(TYPE, state, start_line, start_col, start, content_start_col, content_start, content_stop, stop) \
-    { if (state->parse->handle_##TYPE != NULL) { state->simulated=true; state->parse->handle_##TYPE(state,start_line,start_col,start,content_start_col,content_start,content_stop,stop); state->simulated=false; } }
+#define DO_CALLBACK_SIM(TYPE, state, start_line, start_col, start, stop, suffix) \
+    { if (state->parse->handle_##TYPE != NULL) { state->simulated=true; state->parse->handle_##TYPE(state,start_line,start_col,start,stop,suffix); state->simulated=false; } }
 
 bool debug_enabled();
 

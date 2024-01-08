@@ -54,46 +54,47 @@ size_t calculate_buffer_size(const char *start, const char *stop, int indent, co
 void copy_and_insert(MemBuffer *mb, const char *start, const char *stop, int num_prefix_spaces, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
 char *copy_lines(int num_prefix_spaces, const char *start, const char *stop, int num_quotes, bool add_nls, bool add_compound, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
 void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSettings *os);
-xmlNodePtr create_entity(XMQParseState *state, size_t l, size_t c, const char *start, size_t indent, const char *cstart, const char *cstop, const char*stop, xmlNodePtr parent);
+xmlNodePtr create_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop, xmlNodePtr parent);
 void create_node(XMQParseState *state, const char *start, const char *stop);
-xmlNodePtr create_quote(XMQParseState *state, size_t l, size_t col, const char *start, size_t ccol, const char *cstart, const char *cstop, const char *stop,  xmlNodePtr parent);
-void debug_content_comment(XMQParseState *state, size_t line, size_t start_col, const char *start, size_t inden, const char *cstart, const char *cstop, const char*stop);
-void debug_content_value(XMQParseState *state, size_t line, size_t start_col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void debug_content_quote(XMQParseState *state, size_t line, size_t start_col, const char *start, size_t inden, const char *cstart, const char *cstop, const char*stop);
-void do_attr_key(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_attr_ns(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_attr_ns_declaration(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_attr_value_compound_entity(XMQParseState *state, size_t l, size_t c, const char *start, size_t indent, const char *cstart, const char *cstop, const char*stop);
-void do_attr_value_compound_quote(XMQParseState *state, size_t l, size_t c, const char *start, size_t indent, const char *cstart, const char *cstop, const char*stop);
-void do_attr_value_entity(XMQParseState *state, size_t l, size_t c, const char *start, size_t indent, const char *cstart, const char *cstop, const char*stop);
-void do_attr_value_text(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_attr_value_quote(XMQParseState*state, size_t line, size_t col, const char *start, size_t i, const char *cstart, const char *cstop, const char *stop);
-void do_comment(XMQParseState*state, size_t l, size_t c, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_comment_continuation(XMQParseState*state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_apar_left(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_apar_right(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_brace_left(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_brace_right(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_cpar_left(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_cpar_right(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_equals(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_element_key(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_element_name(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_element_ns(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_element_value_compound_entity(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_element_value_compound_quote(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_element_value_entity(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_element_value_text(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_element_value_quote(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_entity(XMQParseState *state, size_t l, size_t c, const char *start, size_t indent, const char *cstart, const char *cstop, const char*stop);
-void do_ns_colon(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
-void do_quote(XMQParseState *state, size_t l, size_t col, const char *start, size_t ccol, const char *cstart, const char *cstop, const char *stop);
-void do_whitespace(XMQParseState *state, size_t line, size_t col, const char *start, size_t indent, const char *cstart, const char *cstop, const char *stop);
+void declare_namespace(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+xmlNodePtr create_quote(XMQParseState *state, size_t l, size_t col, const char *start, const char *stop, const char *suffix,  xmlNodePtr parent);
+void debug_content_comment(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
+void debug_content_value(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
+void debug_content_quote(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
+void do_attr_key(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_attr_ns(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_attr_ns_declaration(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_attr_value_compound_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop);
+void do_attr_value_compound_quote(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop);
+void do_attr_value_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop);
+void do_attr_value_text(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_attr_value_quote(XMQParseState*state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_comment(XMQParseState*state, size_t l, size_t c, const char *start, const char *stop, const char *suffix);
+void do_comment_continuation(XMQParseState*state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_apar_left(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_apar_right(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_brace_left(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_brace_right(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_cpar_left(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_cpar_right(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_equals(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_element_key(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_element_name(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_element_ns(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_element_value_compound_entity(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_element_value_compound_quote(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_element_value_entity(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_element_value_text(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_element_value_quote(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop);
+void do_ns_colon(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_quote(XMQParseState *state, size_t l, size_t col, const char *start, const char *stop, const char *suffix);
+void do_whitespace(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
 bool find_line(const char *start, const char *stop, size_t *indent, const char **after_last_non_space, const char **eol);
 const char *find_next_line_end(XMQPrintState *ps, const char *start, const char *stop);
 const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop);
 void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared);
-void fixup_comments(XMQDoc *doq, xmlNode *node);
+void fixup_comments(XMQDoc *doq, xmlNode *node, int depth);
 bool has_leading_ending_quote(const char *start, const char *stop);
 bool is_safe_char(const char *i, const char *stop);
 size_t line_length(const char *start, const char *stop, int *numq, int *lq, int *eq);
@@ -122,14 +123,17 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *output_settings);
 char *xmq_quote_with_entity_newlines(const char *start, const char *stop, XMQQuoteSettings *settings);
 char *xmq_quote_default(int indent, const char *start, const char *stop, XMQQuoteSettings *settings);
 bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root);
+const char *xml_element_type_to_string(xmlElementType type);
+const char *indent_depth(int i);
+void free_indent_depths();
 
 // Declare tokenize_whitespace tokenize_name functions etc...
-#define X(TYPE) void tokenize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start, size_t indent,const char *cstart, const char *cstop, const char *stop);
+#define X(TYPE) void tokenize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start, const char *stop, const char *suffix);
 LIST_OF_XMQ_TOKENS
 #undef X
 
 // Declare debug_whitespace debug_name functions etc...
-#define X(TYPE) void debug_token_##TYPE(XMQParseState*state,size_t line,size_t col,const char*start,size_t indent,const char*cstart,const char*cstop,const char*stop);
+#define X(TYPE) void debug_token_##TYPE(XMQParseState*state,size_t line,size_t col,const char*start,const char*stop,const char*suffix);
 LIST_OF_XMQ_TOKENS
 #undef X
 
@@ -191,7 +195,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->entity.pre = MAGENTA;
         c->comment.pre = CYAN;
         c->comment_continuation.pre = CYAN;
-        c->element_ns.pre = GRAY;
+        c->element_ns.pre = ORANGE_UNDERLINE;
         c->element_name.pre = ORANGE;
         c->element_key.pre = LIGHT_BLUE;
         c->element_value_text.pre = GREEN;
@@ -199,8 +203,8 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->element_value_entity.pre = MAGENTA;
         c->element_value_compound_quote.pre = GREEN;
         c->element_value_compound_entity.pre = MAGENTA;
-        c->attr_ns.pre = GRAY;
-        c->attr_ns_declaration.pre = GRAY_UNDERLINE;
+        c->attr_ns.pre = LIGHT_BLUE_UNDERLINE;
+        c->attr_ns_declaration.pre = LIGHT_BLUE;
         c->attr_key.pre = LIGHT_BLUE;
         c->attr_value_text.pre = BLUE;
         c->attr_value_quote.pre = BLUE;
@@ -225,7 +229,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->entity.pre = MAGENTA;
         c->comment.pre = CYAN;
         c->comment_continuation.pre = CYAN;
-        c->element_ns.pre = DARK_GRAY;
+        c->element_ns.pre = DARK_ORANGE_UNDERLINE;
         c->element_name.pre = DARK_ORANGE;
         c->element_key.pre = BLUE;
         c->element_value_text.pre = DARK_GREEN;
@@ -233,8 +237,8 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->element_value_entity.pre = MAGENTA;
         c->element_value_compound_quote.pre = DARK_GREEN;
         c->element_value_compound_entity.pre = MAGENTA;
-        c->attr_ns.pre = DARK_GRAY;
-        c->attr_ns_declaration.pre = DARK_GRAY_UNDERLINE;
+        c->attr_ns.pre = BLUE_UNDERLINE;
+        c->attr_ns_declaration.pre = BLUE;
         c->attr_key.pre = BLUE;
         c->attr_value_text.pre = DARK_BLUE;
         c->attr_value_quote.pre = DARK_BLUE;
@@ -564,7 +568,7 @@ int xmqStateErrno(XMQParseState *state)
 }
 
 #define X(TYPE) \
-    void tokenize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start, size_t indent,const char *cstart, const char *cstop, const char *stop) { \
+    void tokenize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start,const char *stop,const char *suffix) { \
         if (!state->simulated) { \
             const char *pre, *post;  \
             get_color(state->output_settings, COLOR_##TYPE, &pre, &post); \
@@ -1433,7 +1437,7 @@ LIST_OF_XMQ_TOKENS
 
 #define WRITE_ARGS(...) state->output_settings->content.write(state->output_settings->content.writer_state, __VA_ARGS__)
 
-#define X(TYPE) void debug_token_##TYPE(XMQParseState*state,size_t line,size_t col,const char*start,size_t indent,const char*cstart,const char*cstop,const char*stop) { \
+#define X(TYPE) void debug_token_##TYPE(XMQParseState*state,size_t line,size_t col,const char*start,const char*stop,const char*suffix) { \
     WRITE_ARGS("["#TYPE, NULL); \
     if (state->simulated) { WRITE_ARGS(" SIM", NULL); } \
     WRITE_ARGS(" \"", NULL); \
@@ -1465,12 +1469,10 @@ void debug_content_value(XMQParseState *state,
                          size_t line,
                          size_t start_col,
                          const char *start,
-                         size_t indent,
-                         const char *cstart,
-                         const char *cstop,
-                         const char *stop)
+                         const char *stop,
+                         const char *suffix)
 {
-    char *tmp = xmq_quote_as_c(cstart, cstop);
+    char *tmp = xmq_quote_as_c(start, stop);
     WRITE_ARGS("{value \"", NULL);
     WRITE_ARGS(tmp, NULL);
     WRITE_ARGS("\"}", NULL);
@@ -1482,10 +1484,8 @@ void debug_content_quote(XMQParseState *state,
                          size_t line,
                          size_t start_col,
                          const char *start,
-                         size_t inden,
-                         const char *cstart,
-                         const char *cstop,
-                         const char*stop)
+                         const char *stop,
+                         const char *suffix)
 {
     size_t indent = start_col-1;
     char *trimmed = xmq_un_quote(indent, ' ', start, stop, true);
@@ -1501,10 +1501,8 @@ void debug_content_comment(XMQParseState *state,
                            size_t line,
                            size_t start_col,
                            const char *start,
-                           size_t inden,
-                           const char *cstart,
-                           const char *cstop,
-                           const char*stop)
+                           const char *stop,
+                           const char *suffix)
 {
     size_t indent = start_col-1;
     char *trimmed = xmq_un_comment(indent, ' ', start, stop);
@@ -1766,10 +1764,8 @@ void do_whitespace(XMQParseState *state,
                    size_t line,
                    size_t col,
                    const char *start,
-                   size_t indent,
-                   const char *cstart,
-                   const char *cstop,
-                   const char *stop)
+                   const char *stop,
+                   const char *suffix)
 {
 }
 
@@ -1777,10 +1773,8 @@ xmlNodePtr create_quote(XMQParseState *state,
                        size_t l,
                        size_t col,
                        const char *start,
-                       size_t ccol,
-                       const char *cstart,
-                       const char *cstop,
                        const char *stop,
+                       const char *suffix,
                        xmlNodePtr parent)
 {
     size_t indent = col - 1;
@@ -1795,12 +1789,10 @@ void do_quote(XMQParseState *state,
               size_t l,
               size_t col,
               const char *start,
-              size_t ccol,
-              const char *cstart,
-              const char *cstop,
-              const char *stop)
+              const char *stop,
+              const char *suffix)
 {
-    state->element_last = create_quote(state, l, col, start, ccol, cstart, cstop, stop,
+    state->element_last = create_quote(state, l, col, start, stop, suffix,
                                        (xmlNode*)state->element_stack->top->data);
 }
 
@@ -1808,10 +1800,8 @@ xmlNodePtr create_entity(XMQParseState *state,
                          size_t l,
                          size_t c,
                          const char *start,
-                         size_t indent,
-                         const char *cstart,
-                         const char *cstop,
-                         const char*stop,
+                         const char *stop,
+                         const char *suffix,
                          xmlNodePtr parent)
 {
     size_t len = stop-start;
@@ -1837,25 +1827,21 @@ void do_entity(XMQParseState *state,
                size_t l,
                size_t c,
                const char *start,
-               size_t indent,
-               const char *cstart,
-               const char *cstop,
-               const char*stop)
+               const char *stop,
+               const char *suffix)
 {
-    state->element_last = create_entity(state, l, c, start, indent, cstart, cstop, stop, (xmlNode*)state->element_stack->top->data);
+    state->element_last = create_entity(state, l, c, start, stop, suffix, (xmlNode*)state->element_stack->top->data);
 }
 
 void do_comment(XMQParseState*state,
-                size_t l,
-                size_t c,
+                size_t line,
+                size_t col,
                 const char *start,
-                size_t indent,
-                const char *cstart,
-                const char *cstop,
-                const char *stop)
+                const char *stop,
+                const char *suffix)
 {
     xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
-    char *trimmed = xmq_un_comment(indent, ' ', start, stop);
+    char *trimmed = xmq_un_comment(col, ' ', start, stop);
     xmlNodePtr n = xmlNewDocComment(state->doq->docptr_.xml, (const xmlChar *)trimmed);
     xmlAddChild(parent, n);
     state->element_last = n;
@@ -1866,10 +1852,8 @@ void do_comment_continuation(XMQParseState*state,
                              size_t line,
                              size_t col,
                              const char *start,
-                             size_t indent,
-                             const char *cstart,
-                             const char *cstop,
-                             const char *stop)
+                             const char *stop,
+                             const char *suffix)
 {
     xmlNodePtr last = (xmlNode*)state->element_last;
     // We have ///* alfa *///* beta *///* gamma *///
@@ -1880,7 +1864,7 @@ void do_comment_continuation(XMQParseState*state,
     while (i > start && *i == '/') { n++; i--; }
     // Since we know that we are invoked pointing into a buffer with /// before start, we
     // can safely do start-n.
-    char *trimmed = xmq_un_comment(indent, ' ', start-n, stop);
+    char *trimmed = xmq_un_comment(col, ' ', start-n, stop);
     size_t l = strlen(trimmed);
     char *tmp = (char*)malloc(l+2);
     tmp[0] = '\n';
@@ -1895,10 +1879,8 @@ void do_element_value_text(XMQParseState *state,
                            size_t line,
                            size_t col,
                            const char *start,
-                           size_t indent,
-                           const char *cstart,
-                           const char *cstop,
-                           const char *stop)
+                           const char *stop,
+                           const char *suffix)
 {
     if (!state->parsing_doctype)
     {
@@ -1907,9 +1889,9 @@ void do_element_value_text(XMQParseState *state,
     }
     else
     {
-        size_t l = cstop-cstart;
+        size_t l = stop-start;
         char *tmp = (char*)malloc(l+1);
-        memcpy(tmp, cstart, l);
+        memcpy(tmp, start, l);
         tmp[l] = 0;
         state->doq->docptr_.xml->intSubset = xmlNewDtd(state->doq->docptr_.xml, (xmlChar*)tmp, NULL, NULL);
         xmlNodePtr n = (xmlNodePtr)state->doq->docptr_.xml->intSubset;
@@ -1925,10 +1907,8 @@ void do_element_value_quote(XMQParseState *state,
                             size_t line,
                             size_t col,
                             const char *start,
-                            size_t indent,
-                            const char *cstart,
-                            const char *cstop,
-                            const char *stop)
+                            const char *stop,
+                            const char *suffix)
 {
     char *trimmed = xmq_un_quote(col-1, ' ', start, stop, true);
     if (!state->parsing_doctype)
@@ -1965,71 +1945,92 @@ void do_element_value_entity(XMQParseState *state,
                              size_t line,
                              size_t col,
                              const char *start,
-                             size_t indent,
-                             const char *cstart,
-                             const char *cstop,
-                             const char *stop)
+                             const char *stop,
+                             const char *suffix)
 {
-    create_entity(state, line, col, start, indent, cstart, cstop, stop, (xmlNode*)state->element_last);
+    create_entity(state, line, col, start, stop, suffix, (xmlNode*)state->element_last);
 }
 
 void do_element_value_compound_quote(XMQParseState *state,
                                      size_t line,
                                      size_t col,
                                      const char *start,
-                                     size_t indent,
-                                     const char *cstart,
-                                     const char *cstop,
-                                     const char *stop)
+                                     const char *stop,
+                                     const char *suffix)
 {
-    do_quote(state, line, col, start, indent, cstart, cstop, stop);
+    do_quote(state, line, col, start, stop, suffix);
 }
 
 void do_element_value_compound_entity(XMQParseState *state,
                                       size_t line,
                                       size_t col,
                                       const char *start,
-                                      size_t indent,
-                                      const char *cstart,
-                                      const char *cstop,
-                                      const char *stop)
+                                      const char *stop,
+                                      const char *suffix)
 {
-    do_entity(state, line, col, start, indent, cstart, cstop, stop);
+    do_entity(state, line, col, start, stop, suffix);
 }
 
 void do_attr_ns(XMQParseState *state,
                 size_t line,
                 size_t col,
                 const char *start,
-                size_t indent,
-                const char *cstart,
-                const char *cstop,
-                const char *stop)
+                const char *stop,
+                const char *suffix)
 {
-    // printf("ATTR NS >%.*s<\n", (int)(cstop-cstart), cstart);
+    if (!state->xmlns_found)
+    {
+        // Normal attribute namespace found before the attribute key, eg x:alfa=123 xlink:href=http...
+        size_t len = stop-start;
+        char *namespace = malloc(len+1);
+        memcpy(namespace, start, len);
+        namespace[len] = 0;
+        state->attribute_namespace = namespace;
+    }
+    else
+    {
+        // This is the first namespace after the xmlns declaration, eg. xmlns:xsl = http....
+        size_t len = stop-start;
+        char *namespace = malloc(len+1);
+        memcpy(namespace, start, len);
+        namespace[len] = 0;
 
+        // Let us declare the namespace, or update the existing one with the correct href.
+    }
 }
 
 void do_attr_ns_declaration(XMQParseState *state,
                             size_t line,
                             size_t col,
                             const char *start,
-                            size_t indent,
-                            const char *cstart,
-                            const char *cstop,
-                            const char *stop)
+                            const char *stop,
+                            const char *suffix)
 {
-    //printf("ATTR NS DECLARATION >%.*s<\n", (int)(cstop-cstart), cstart);
+    // We found a default namespace declaration xmlns=... or xmlns:prefix=...
+    // We can see the difference here since the parser will invoke with
+    // cstop pointing to after xmlns_ but stop either pointing to after xmlns_ or xmlns:prefix_
+    if (stop == suffix)
+    {
+        // Stop is the same as cstop, so no prefix has been added.
+        // I.e. this is a default namespace, eg: xmlns=uri
+/*        xmlNsPtr ns = xmlNewNs(parent,
+                      (const xmlChar *)"---temp",
+                      (const xmlChar *)state->attribute_namespace);*/
+    }
+    else
+    {
+        // This a new namespace with a prefix.
+    }
+
+    state->xmlns_found = true;
 }
 
 void do_attr_key(XMQParseState *state,
                  size_t line,
                  size_t col,
                  const char *start,
-                 size_t indent,
-                 const char *cstart,
-                 const char *cstop,
-                 const char *stop)
+                 const char *stop,
+                 const char *suffix)
 {
     size_t n = stop - start;
     char *key = (char*)malloc(n+1);
@@ -2037,27 +2038,88 @@ void do_attr_key(XMQParseState *state,
     key[n] = 0;
 
     xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
-    xmlAttrPtr attr =  xmlNewProp(parent, (xmlChar*)key, NULL);
+    xmlAttrPtr attr = NULL;
 
-    //xmlAttrPtr attr_with_ns = xmlNewNsProp(parent, ns, (xmlChar*)key, NULL);
-    //xmlAttrPtr an           = xmlNewNsProp(parent, ns, (xmlChar*)key, NULL);
+    if (!state->attribute_namespace)
+    {
+        // A normal attribute.
+        attr =  xmlNewProp(parent, (xmlChar*)key, NULL);
+    }
+    else
+    {
+        xmlNsPtr ns = xmlSearchNs(state->doq->docptr_.xml,
+                                  parent,
+                                  (const xmlChar *)state->element_namespace);
+        if (!ns)
+        {
+            // The namespaces does not yet exist. Lets create it.. Lets hope it will be declared
+            // inside the attributes of this node. Use a temporary href for now.
+            ns = xmlNewNs(parent,
+                          (const xmlChar *)"---temp",
+                          (const xmlChar *)state->attribute_namespace);
+        }
+        attr = xmlNewNsProp(parent, ns, (xmlChar*)key, NULL);
+        free(state->attribute_namespace);
+        state->attribute_namespace = NULL;
+    }
 
     // The new attribute attr should now be added to the parent elements: properties list.
-    // Remember this attr so that we can set the value.
+    // Remember this attr as the last element so that we can set the value.
     state->element_last = attr;
 
     free(key);
+}
+
+void declare_namespace(XMQParseState *state,
+                       size_t line,
+                       size_t col,
+                       const char *start,
+                       const char *stop,
+                       const char *suffix)
+{
+    assert(state->xmlns_found);
+
+//    xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
+
+/*
+    xmlNodePtr last_element = state->last_element;
+    if (state->element_namespace)
+    {
+        xmlNsPtr ns = xmlSearchNs(state->doq->docptr_.xml,
+                                  last_element,
+                                  (const xmlChar *)state->element_namespace);
+        if (ns)
+        {
+            // It seems like it has been created already
+        }
+        if (!ns)
+        {
+            // The namespaces does not yet exist. Lets create it.. Lets hope it will be declared
+            // inside the attributes of this node. Use a temporary href for now.
+            ns = xmlNewNs(new_node,
+                          (const xmlChar *)"---temp",
+                          (const xmlChar *)state->element_namespace);
+        }
+        xmlSetNs(new_node, ns);
+        free(state->element_namespace);
+        state->element_namespace = NULL;
+    }
+    state->element_last = new_node;
+    */
 }
 
 void do_attr_value_text(XMQParseState *state,
                         size_t line,
                         size_t col,
                         const char *start,
-                        size_t indent,
-                        const char *cstart,
-                        const char *cstop,
-                        const char *stop)
+                        const char *stop,
+                        const char *suffix)
 {
+    if (state->xmlns_found)
+    {
+        declare_namespace(state, line, col, start, stop, suffix);
+        return;
+    }
     xmlNodePtr n = xmlNewDocTextLen(state->doq->docptr_.xml, (const xmlChar *)start, stop-start);
     xmlAddChild((xmlNode*)state->element_last, n);
 }
@@ -2066,48 +2128,40 @@ void do_attr_value_quote(XMQParseState*state,
                          size_t line,
                          size_t col,
                          const char *start,
-                         size_t i,
-                         const char *cstart,
-                         const char *cstop,
-                         const char *stop)
+                         const char *stop,
+                         const char *suffix)
 {
-    create_quote(state, line, col, start, i, cstart, cstop, stop, (xmlNode*)state->element_last);
+    create_quote(state, line, col, start, stop, suffix, (xmlNode*)state->element_last);
 }
 
 void do_attr_value_entity(XMQParseState *state,
-                          size_t l,
-                          size_t c,
+                          size_t line,
+                          size_t col,
                           const char *start,
-                          size_t indent,
-                          const char *cstart,
-                          const char *cstop,
-                          const char*stop)
+                          const char *stop,
+                          const char *suffix)
 {
-    create_entity(state, l, c, start, indent, cstart, cstop, stop, (xmlNode*)state->element_last);
+    create_entity(state, line, col, start, stop, suffix, (xmlNode*)state->element_last);
 }
 
 void do_attr_value_compound_quote(XMQParseState *state,
-                                             size_t l,
-                                             size_t c,
-                                             const char *start,
-                                             size_t indent,
-                                             const char *cstart,
-                                             const char *cstop,
-                                             const char*stop)
+                                  size_t line,
+                                  size_t col,
+                                  const char *start,
+                                  const char *stop,
+                                  const char *suffix)
 {
-    do_quote(state, l, c, start, indent, cstart, cstop, stop);
+    do_quote(state, line, col, start, stop, suffix);
 }
 
 void do_attr_value_compound_entity(XMQParseState *state,
-                                             size_t l,
-                                             size_t c,
+                                             size_t line,
+                                             size_t col,
                                              const char *start,
-                                             size_t indent,
-                                             const char *cstart,
-                                             const char *cstop,
-                                             const char*stop)
+                                             const char *stop,
+                                             const char *suffix)
 {
-    do_entity(state, l, c, start, indent, cstart, cstop, stop);
+    do_entity(state, line, col, start, stop, suffix);
 }
 
 void create_node(XMQParseState *state, const char *start, const char *stop)
@@ -2123,16 +2177,16 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
     }
     else
     {
-        xmlNodePtr n = xmlNewDocNode(state->doq->docptr_.xml, NULL, (const xmlChar *)name, NULL);
+        xmlNodePtr new_node = xmlNewDocNode(state->doq->docptr_.xml, NULL, (const xmlChar *)name, NULL);
         if (state->element_last == NULL)
         {
             if (!state->implicit_root || !strcmp(name, state->implicit_root))
             {
                 // There is no implicit root, or name is the same as the implicit root.
                 // Then create the root node with name.
-                state->element_last = n;
-                xmlDocSetRootElement(state->doq->docptr_.xml, n);
-                state->doq->root_.node = n;
+                state->element_last = new_node;
+                xmlDocSetRootElement(state->doq->docptr_.xml, new_node);
+                state->doq->root_.node = new_node;
             }
             else
             {
@@ -2145,8 +2199,25 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
             }
         }
         xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
-        xmlAddChild(parent, n);
-        state->element_last = n;
+        xmlAddChild(parent, new_node);
+        if (state->element_namespace)
+        {
+            xmlNsPtr ns = xmlSearchNs(state->doq->docptr_.xml,
+                                      new_node,
+                                      (const xmlChar *)state->element_namespace);
+            if (!ns)
+            {
+                // The namespaces does not yet exist. Lets hope it will be declared
+                // inside the attributes of this node. Use a temporary href for now.
+                ns = xmlNewNs(new_node,
+                              (const xmlChar *)"---temp",
+                              (const xmlChar *)state->element_namespace);
+            }
+            xmlSetNs(new_node, ns);
+            free(state->element_namespace);
+            state->element_namespace = NULL;
+        }
+        state->element_last = new_node;
     }
 
     free(name);
@@ -2156,22 +2227,22 @@ void do_element_ns(XMQParseState *state,
                    size_t line,
                    size_t col,
                    const char *start,
-                   size_t indent,
-                   const char *cstart,
-                   const char *cstop,
-                   const char *stop)
+                   const char *stop,
+                   const char *suffix)
 {
-    //printf("ELEMENT NS >%.*s<\n", (int)(cstop-cstart), cstart);
+    size_t len = stop-start;
+    char *namespace = malloc(len+1);
+    memcpy(namespace, start, len);
+    namespace[len] = 0;
+    state->element_namespace = namespace;
 }
 
 void do_ns_colon(XMQParseState *state,
                  size_t line,
                  size_t col,
                  const char *start,
-                 size_t indent,
-                 const char *cstart,
-                 const char *cstop,
-                 const char *stop)
+                 const char *stop,
+                 const char *suffix)
 {
 }
 
@@ -2179,10 +2250,8 @@ void do_element_name(XMQParseState *state,
                      size_t line,
                      size_t col,
                      const char *start,
-                     size_t indent,
-                     const char *cstart,
-                     const char *cstop,
-                     const char *stop)
+                     const char *stop,
+                     const char *suffix)
 {
     create_node(state, start, stop);
 }
@@ -2191,10 +2260,8 @@ void do_element_key(XMQParseState *state,
                     size_t line,
                     size_t col,
                     const char *start,
-                    size_t indent,
-                    const char *cstart,
-                    const char *cstop,
-                    const char *stop)
+                    const char *stop,
+                    const char *suffix)
 {
     create_node(state, start, stop);
 }
@@ -2203,10 +2270,8 @@ void do_equals(XMQParseState *state,
                size_t line,
                size_t col,
                const char *start,
-               size_t indent,
-               const char *cstart,
-               const char *cstop,
-               const char *stop)
+               const char *stop,
+               const char *suffix)
 {
 }
 
@@ -2214,10 +2279,8 @@ void do_brace_left(XMQParseState *state,
                    size_t line,
                    size_t col,
                    const char *start,
-                   size_t indent,
-                   const char *cstart,
-                   const char *cstop,
-                   const char *stop)
+                   const char *stop,
+                   const char *suffix)
 {
     push_stack(state->element_stack, state->element_last);
 }
@@ -2226,10 +2289,8 @@ void do_brace_right(XMQParseState *state,
                     size_t line,
                     size_t col,
                     const char *start,
-                    size_t indent,
-                    const char *cstart,
-                    const char *cstop,
-                    const char *stop)
+                    const char *stop,
+                    const char *suffix)
 {
     state->element_last = pop_stack(state->element_stack);
 }
@@ -2238,10 +2299,8 @@ void do_apar_left(XMQParseState *state,
                  size_t line,
                  size_t col,
                  const char *start,
-                 size_t indent,
-                 const char *cstart,
-                 const char *cstop,
-                 const char *stop)
+                 const char *stop,
+                 const char *suffix)
 {
     push_stack(state->element_stack, state->element_last);
 }
@@ -2250,10 +2309,8 @@ void do_apar_right(XMQParseState *state,
                   size_t line,
                   size_t col,
                   const char *start,
-                  size_t indent,
-                  const char *cstart,
-                  const char *cstop,
-                  const char *stop)
+                  const char *stop,
+                  const char *suffix)
 {
     state->element_last = pop_stack(state->element_stack);
 }
@@ -2262,10 +2319,8 @@ void do_cpar_left(XMQParseState *state,
                   size_t line,
                   size_t col,
                   const char *start,
-                  size_t indent,
-                  const char *cstart,
-                  const char *cstop,
-                  const char *stop)
+                  const char *stop,
+                  const char *suffix)
 {
     push_stack(state->element_stack, state->element_last);
 }
@@ -2274,10 +2329,8 @@ void do_cpar_right(XMQParseState *state,
                    size_t line,
                    size_t col,
                    const char *start,
-                   size_t indent,
-                   const char *cstart,
-                   const char *cstop,
-                   const char *stop)
+                   const char *stop,
+                   const char *suffix)
 {
     state->element_last = pop_stack(state->element_stack);
 }
@@ -2468,6 +2521,8 @@ void trim_text_node(xmlNode *node, XMQTrimType tt)
 
 void trim_node(xmlNode *node, XMQTrimType tt)
 {
+    debug("[XMQ] trim %s\n", xml_element_type_to_string(node->type));
+
     if (is_content_node(node))
     {
         trim_text_node(node, tt);
@@ -2479,6 +2534,9 @@ void trim_node(xmlNode *node, XMQTrimType tt)
         trim_text_node(node, tt);
         return;
     }
+
+    // Do not recurse into these
+    if (node->type == XML_ENTITY_DECL) return;
 
     xmlNodePtr i = xml_first_child(node);
     while (i)
@@ -2672,17 +2730,80 @@ void xmq_fixup_html_before_writeout(XMQDoc *doq)
     }
 }
 
-void fixup_comments(XMQDoc *doq, xmlNode *node)
+char *depths_[64] = {};
+
+const char *indent_depth(int i)
 {
+    if (i < 0 || i > 63) return "----";
+    char *c = depths_[i];
+    if (!c)
+    {
+        c = malloc(i*4+1);
+        memset(c, ' ', i*4);
+        c[i*4] = 0;
+        depths_[i] = c;
+    }
+    return c;
+}
+
+void free_indent_depths()
+{
+    for (int i = 0; i < 64; ++i)
+    {
+        if (depths_[i])
+        {
+            free(depths_[i]);
+            depths_[i] = NULL;
+        }
+    }
+}
+
+const char *xml_element_type_to_string(xmlElementType type)
+{
+    switch (type)
+    {
+	case XML_ELEMENT_NODE: return "element";
+	case XML_ATTRIBUTE_NODE: return "attribute";
+	case XML_TEXT_NODE: return "text";
+	case XML_CDATA_SECTION_NODE: return "cdata";
+	case XML_ENTITY_REF_NODE: return "entity_ref";
+	case XML_ENTITY_NODE: return "entity";
+	case XML_PI_NODE: return "pi";
+	case XML_COMMENT_NODE: return "comment";
+	case XML_DOCUMENT_NODE: return "document";
+	case XML_DOCUMENT_TYPE_NODE: return "document_type";
+	case XML_DOCUMENT_FRAG_NODE: return "document_frag";
+	case XML_NOTATION_NODE: return "notation";
+	case XML_HTML_DOCUMENT_NODE: return "html_document";
+	case XML_DTD_NODE: return "dtd";
+	case XML_ELEMENT_DECL: return "element_decl";
+	case XML_ATTRIBUTE_DECL: return "attribute_decl";
+	case XML_ENTITY_DECL: return "entity_decl";
+	case XML_NAMESPACE_DECL: return "namespace_decl";
+	case XML_XINCLUDE_START: return "xinclude_start";
+	case XML_XINCLUDE_END: return "xinclude_end";
+	case XML_DOCB_DOCUMENT_NODE: return "docb_document";
+    }
+    return "?";
+}
+
+void fixup_comments(XMQDoc *doq, xmlNode *node, int depth)
+{
+    debug("[XMQ] fixup comments %s|%s %s\n", indent_depth(depth), node->name, xml_element_type_to_string(node->type));
     if (node->type == XML_COMMENT_NODE)
     {
-        // An xml comment containing dle quotes for example: -␐-␐- is replaceed with ---.
-        // If multiple dle quotes exists, then for example: -␐␐- is replaced with -␐-.
+        // An xml comment containing dle escapes for example: -␐-␐- is replaceed with ---.
+        // If multiple dle escapes exists, then for example: -␐␐- is replaced with -␐-.
         char *new_content = unescape_xml_comment((const char*)node->content);
         if (new_content)
         {
-            // Oups, the content contains -- which must be quoted as -␐-␐
-            // Likewise, if the content contains -␐-␐ it will be quoted as -␐␐-␐␐
+            if (debug_enabled_)
+            {
+                char *from = xmq_quote_as_c((const char*)node->content, NULL);
+                char *to = xmq_quote_as_c(new_content, NULL);
+                debug("[XMQ] fix comment \"%s\" to \"%s\"\n", from, to);
+            }
+
             xmlNodePtr new_node = xmlNewComment((const xmlChar*)new_content);
             xmlReplaceNode(node, new_node);
             xmlFreeNode(node);
@@ -2691,11 +2812,14 @@ void fixup_comments(XMQDoc *doq, xmlNode *node)
         return;
     }
 
+    // Do not recurse into these
+    if (node->type == XML_ENTITY_DECL) return;
+
     xmlNode *i = xml_first_child(node);
     while (i)
     {
         xmlNode *next = xml_next_sibling(i); // i might be freed in trim.
-        fixup_comments(doq, i);
+        fixup_comments(doq, i, depth+1);
         i = next;
     }
 }
@@ -2705,10 +2829,12 @@ void xmq_fixup_comments_after_readin(XMQDoc *doq)
     xmlNodePtr i = doq->docptr_.xml->children;
     if (!doq || !i) return;
 
+    debug("[XMQ] fixup comments after readin\n");
+
     while (i)
     {
         xmlNode *next = xml_next_sibling(i); // i might be freed in fixup_comments.
-        fixup_comments(doq, i);
+        fixup_comments(doq, i, 0);
         i = next;
     }
 }
