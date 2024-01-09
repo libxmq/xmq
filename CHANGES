@@ -1,3 +1,8 @@
+2024-01-09: Version 1.9.10
+
+Build and test with asan only on Ubuntu.
+Do not release any asan binaries.
+
 2024-01-09: Version 1.9.9
 
 Build and test with asan.
