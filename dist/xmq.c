@@ -32,15 +32,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<stdbool.h>
 #include<stdlib.h>
 
-extern bool debug_enabled_;
-extern bool verbose_enabled_;
+extern bool xmq_debug_enabled_;
+extern bool xmq_verbose_enabled_;
 
 void verbose__(const char* fmt, ...);
 void debug__(const char* fmt, ...);
 void check_malloc(void *a);
 
-#define verbose(...) if (verbose_enabled_) { verbose__(__VA_ARGS__); }
-#define debug(...) if (debug_enabled_) {debug__(__VA_ARGS__); }
+#define verbose(...) if (xmq_verbose_enabled_) { verbose__(__VA_ARGS__); }
+#define debug(...) if (xmq_debug_enabled_) {debug__(__VA_ARGS__); }
 
 #define PRINT_ERROR(...) fprintf(stderr, __VA_ARGS__)
 
@@ -2012,21 +2012,21 @@ bool find_line(const char *start, // Start scanning the line from here.
 
 void xmqSetDebug(bool e)
 {
-    debug_enabled_ = e;
+    xmq_debug_enabled_ = e;
 }
 
 bool xmqDebugging()
 {
-    return debug_enabled_;
+    return xmq_debug_enabled_;
 }
 
 void xmqSetVerbose(bool e)
 {
-    verbose_enabled_ = e;
+    xmq_verbose_enabled_ = e;
 }
 
 bool xmqVerbose() {
-    return verbose_enabled_;
+    return xmq_verbose_enabled_;
 }
 
 static const char *build_error_message(const char* fmt, ...)
@@ -3726,7 +3726,7 @@ void fixup_comments(XMQDoc *doq, xmlNode *node, int depth)
         char *new_content = unescape_xml_comment((const char*)node->content);
         if (new_content)
         {
-            if (debug_enabled_)
+            if (xmq_debug_enabled_)
             {
                 char *from = xmq_quote_as_c((const char*)node->content, NULL);
                 char *to = xmq_quote_as_c(new_content, NULL);
@@ -4569,11 +4569,11 @@ void check_malloc(void *a)
     }
 }
 
-bool verbose_enabled_ = false;
+bool xmq_verbose_enabled_ = false;
 
 void verbose__(const char* fmt, ...)
 {
-    if (verbose_enabled_) {
+    if (xmq_verbose_enabled_) {
         va_list args;
         va_start(args, fmt);
         vfprintf(stderr, fmt, args);
@@ -4581,11 +4581,11 @@ void verbose__(const char* fmt, ...)
     }
 }
 
-bool debug_enabled_ = false;
+bool xmq_debug_enabled_ = false;
 
 void debug__(const char* fmt, ...)
 {
-    if (debug_enabled_) {
+    if (xmq_debug_enabled_) {
         va_list args;
         va_start(args, fmt);
         vfprintf(stderr, fmt, args);

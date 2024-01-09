@@ -27,15 +27,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<stdbool.h>
 #include<stdlib.h>
 
-extern bool debug_enabled_;
-extern bool verbose_enabled_;
+extern bool xmq_debug_enabled_;
+extern bool xmq_verbose_enabled_;
 
 void verbose__(const char* fmt, ...);
 void debug__(const char* fmt, ...);
 void check_malloc(void *a);
 
-#define verbose(...) if (verbose_enabled_) { verbose__(__VA_ARGS__); }
-#define debug(...) if (debug_enabled_) {debug__(__VA_ARGS__); }
+#define verbose(...) if (xmq_verbose_enabled_) { verbose__(__VA_ARGS__); }
+#define debug(...) if (xmq_debug_enabled_) {debug__(__VA_ARGS__); }
 
 #define PRINT_ERROR(...) fprintf(stderr, __VA_ARGS__)
 

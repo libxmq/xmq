@@ -1107,21 +1107,21 @@ bool find_line(const char *start, // Start scanning the line from here.
 
 void xmqSetDebug(bool e)
 {
-    debug_enabled_ = e;
+    xmq_debug_enabled_ = e;
 }
 
 bool xmqDebugging()
 {
-    return debug_enabled_;
+    return xmq_debug_enabled_;
 }
 
 void xmqSetVerbose(bool e)
 {
-    verbose_enabled_ = e;
+    xmq_verbose_enabled_ = e;
 }
 
 bool xmqVerbose() {
-    return verbose_enabled_;
+    return xmq_verbose_enabled_;
 }
 
 static const char *build_error_message(const char* fmt, ...)
@@ -2821,7 +2821,7 @@ void fixup_comments(XMQDoc *doq, xmlNode *node, int depth)
         char *new_content = unescape_xml_comment((const char*)node->content);
         if (new_content)
         {
-            if (debug_enabled_)
+            if (xmq_debug_enabled_)
             {
                 char *from = xmq_quote_as_c((const char*)node->content, NULL);
                 char *to = xmq_quote_as_c(new_content, NULL);

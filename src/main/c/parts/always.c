@@ -21,11 +21,11 @@ void check_malloc(void *a)
     }
 }
 
-bool verbose_enabled_ = false;
+bool xmq_verbose_enabled_ = false;
 
 void verbose__(const char* fmt, ...)
 {
-    if (verbose_enabled_) {
+    if (xmq_verbose_enabled_) {
         va_list args;
         va_start(args, fmt);
         vfprintf(stderr, fmt, args);
@@ -33,11 +33,11 @@ void verbose__(const char* fmt, ...)
     }
 }
 
-bool debug_enabled_ = false;
+bool xmq_debug_enabled_ = false;
 
 void debug__(const char* fmt, ...)
 {
-    if (debug_enabled_) {
+    if (xmq_debug_enabled_) {
         va_list args;
         va_start(args, fmt);
         vfprintf(stderr, fmt, args);
