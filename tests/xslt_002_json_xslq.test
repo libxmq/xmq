@@ -1,0 +1,48 @@
+XML
+{"todos":[{"id":1,"todo":"Work","completed":true,"userId":26},{"id":2,"todo":"Sleep","completed":false,"userId":48}],"total":150,"skip":0,"limit":30}
+XSLT
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:output(method               = html
+               doctype-system       = about:legacy-compat
+               encoding             = utf-8
+               indent               = yes)
+    xsl:template(match = _/todos)
+    {
+        html {
+            body {
+                table(border = 1)
+                {
+                    xsl:for-each(select = _)
+                    {
+                        tr {
+                            td {
+                                xsl:value-of(select = todo)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    xsl:template(match = total)
+    xsl:template(match = skip)
+    xsl:template(match = limit)
+}
+EXPECTED
+!DOCTYPE = 'html SYSTEM "about:legacy-compat"'
+html {
+    body {
+        table(border = 1)
+        {
+            tr {
+                td = Work
+            }
+            tr {
+                td = Sleep
+            }
+        }
+    }
+}
+END

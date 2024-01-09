@@ -680,12 +680,10 @@ bool handle_option(const char *arg, XMQCliCommand *command)
 
             if (!ok)
             {
-                int rc = xmqDocErrno(command->env->doc);
-                const char *error = xmqDocError(command->env->doc);
+                const char *error = xmqDocError(doq);
                 fprintf(stderr, error, command->in);
-                xmqFreeDoc(command->env->doc);
-                command->env->doc = NULL;
-                return rc;
+                xmqFreeDoc(doq);
+                return false;
             }
 
             verbose_("(xmq) loaded xslt %s\n", arg);
@@ -694,7 +692,6 @@ bool handle_option(const char *arg, XMQCliCommand *command)
 
             command->xslt_doq = doq;
             command->xslt = xsltParseStylesheetDoc(xslt);
-            //command->xslt = xsltParseStylesheetFile((const xmlChar *)arg);
             return true;
         }
     }

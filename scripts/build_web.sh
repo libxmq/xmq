@@ -60,7 +60,7 @@ cp web/resources/todos.json build/web/resources/todos.json
 cp web/resources/todos.xslt build/web/resources/todos.xslt
 $XMQ web/resources/todos.xslt to-xmq > build/web/resources/todos.xslq
 $XMQ web/resources/todos.xslt render-html --class=w80 --lightbg --nostyle > build/todos_xslq.xml
-$XMQ web/resources/todos.json transform web/resources/todos.xslt to-html > build/web/resources/todos.html
+$XMQ web/resources/todos.json transform build/web/resources/todos.xslq to-html > build/web/resources/todos.html
 $XMQ build/web/resources/todos.html render-html --class=w80 --darkbg --nostyle > build/todos_htmq.xml
 
 # Render the welcome traveller xmq in html

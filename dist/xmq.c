@@ -554,7 +554,8 @@ struct XMQParseState
 
     char *element_namespace; // The element namespace is found before the element name. Remember the namespace name here.
     char *attribute_namespace; // The attribute namespace is found before the attribute key. Remember the namespace name here.
-    bool xmlns_found; // Set to true when the xmlns declaration is found. This will cause the next attr name space token to be a declaration.
+    bool declaring_xmlns; // Set to true when the xmlns declaration is found, the next attr value will be a href
+    void *declaring_xmlns_namespace; // The namespace to be updated with attribute value, eg. xmlns=uri or xmlns:prefix=uri
 
     void *default_namespace; // If xmlns=http... has been set, then a pointer to the namespace object is stored here.
 
@@ -941,7 +942,7 @@ char *copy_lines(int num_prefix_spaces, const char *start, const char *stop, int
 void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSettings *os);
 xmlNodePtr create_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop, xmlNodePtr parent);
 void create_node(XMQParseState *state, const char *start, const char *stop);
-void declare_namespace(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void update_namespace_href(xmlNsPtr ns, const char *start, const char *stop);
 xmlNodePtr create_quote(XMQParseState *state, size_t l, size_t col, const char *start, const char *stop, const char *suffix,  xmlNodePtr parent);
 void debug_content_comment(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
 void debug_content_value(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
@@ -2166,10 +2167,7 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
     if (!has_nl)
     {
         // No newline was found, then do not trim! Return as is.
-        size_t n = 1+stop-start;
-        char *buf = (char*)malloc(n);
-        memcpy(buf, start, n-1);
-        buf[n-1] = 0;
+        char *buf = strndup(start, stop-start);
         return buf;
     }
 
@@ -2689,10 +2687,7 @@ xmlNodePtr create_entity(XMQParseState *state,
                          const char *suffix,
                          xmlNodePtr parent)
 {
-    size_t len = stop-start;
-    char *tmp = (char*)malloc(len+1);
-    memcpy(tmp, start, len);
-    tmp[len] = 0;
+    char *tmp = strndup(start, stop-start);
     xmlNodePtr n = NULL;
     if (tmp[1] == '#')
     {
@@ -2863,24 +2858,17 @@ void do_attr_ns(XMQParseState *state,
                 const char *stop,
                 const char *suffix)
 {
-    if (!state->xmlns_found)
+    if (!state->declaring_xmlns)
     {
         // Normal attribute namespace found before the attribute key, eg x:alfa=123 xlink:href=http...
-        size_t len = stop-start;
-        char *namespace = malloc(len+1);
-        memcpy(namespace, start, len);
-        namespace[len] = 0;
+        char *namespace = strndup(start, stop-start);
         state->attribute_namespace = namespace;
     }
     else
     {
         // This is the first namespace after the xmlns declaration, eg. xmlns:xsl = http....
-        size_t len = stop-start;
-        char *namespace = malloc(len+1);
-        memcpy(namespace, start, len);
-        namespace[len] = 0;
-
-        // Let us declare the namespace, or update the existing one with the correct href.
+        // The xsl has already been handled in do_attr_ns_declaration that used suffix
+        // to peek ahead to the xsl name.
     }
 }
 
@@ -2891,23 +2879,75 @@ void do_attr_ns_declaration(XMQParseState *state,
                             const char *stop,
                             const char *suffix)
 {
-    // We found a default namespace declaration xmlns=... or xmlns:prefix=...
-    // We can see the difference here since the parser will invoke with
-    // cstop pointing to after xmlns_ but stop either pointing to after xmlns_ or xmlns:prefix_
+    // We found a namespace. It is either a default declaration xmlns=... or xmlns:prefix=...
+    //
+    // We can see the difference here since the parser will invoke with suffix
+    // either pointing to stop (xmlns=) or after stop (xmlns:foo=)
+    xmlNodePtr element = (xmlNode*)state->element_stack->top->data;
+    xmlNsPtr ns = NULL;
     if (stop == suffix)
     {
-        // Stop is the same as cstop, so no prefix has been added.
+        // Stop is the same as suffix, so no prefix has been added.
         // I.e. this is a default namespace, eg: xmlns=uri
-/*        xmlNsPtr ns = xmlNewNs(parent,
-                      (const xmlChar *)"---temp",
-                      (const xmlChar *)state->attribute_namespace);*/
+        ns = xmlNewNs(element,
+                      NULL,
+                      NULL);
+        if (!ns)
+        {
+            // Oups, this element already has a default namespace.
+            // This is probably due to multiple xmlns=uri declarations. Is this an error or not?
+            xmlNsPtr *list = xmlGetNsList(state->doq->docptr_.xml,
+                                          element);
+            for (int i = 0; list[i]; ++i)
+            {
+                if (!list[i]->prefix)
+                {
+                    ns = list[i];
+                    break;
+                }
+            }
+            free(list);
+        }
+        state->default_namespace = ns;
     }
     else
     {
-        // This a new namespace with a prefix.
+        // This a new namespace with a prefix. xmlns:prefix=uri
+        // Stop points to the colon, suffix points to =.
+        // The prefix starts at stop+1.
+        size_t len = suffix-(stop+1);
+        char *name = strndup(stop+1, len);
+        ns = xmlNewNs(element,
+                      NULL,
+                      (const xmlChar *)name);
+
+        if (!ns)
+        {
+            // Oups, this namespace has already been created, for example due to the namespace prefix
+            // of the element itself, eg: abc:element(xmlns:abc = uri)
+            // Lets pick this ns up and reuse it.
+            xmlNsPtr *list = xmlGetNsList(state->doq->docptr_.xml,
+                                          element);
+            for (int i = 0; list[i]; ++i)
+            {
+                if (list[i]->prefix && !strcmp((char*)list[i]->prefix, name))
+                {
+                    ns = list[i];
+                    break;
+                }
+            }
+            free(list);
+        }
+        free(name);
     }
 
-    state->xmlns_found = true;
+    if (!ns)
+    {
+        fprintf(stderr, "Internal error: expected namespace to be created/found.\n");
+        assert(ns);
+    }
+    state->declaring_xmlns = true;
+    state->declaring_xmlns_namespace = ns;
 }
 
 void do_attr_key(XMQParseState *state,
@@ -2927,20 +2967,20 @@ void do_attr_key(XMQParseState *state,
 
     if (!state->attribute_namespace)
     {
-        // A normal attribute.
+        // A normal attribute with no namespace.
         attr =  xmlNewProp(parent, (xmlChar*)key, NULL);
     }
     else
     {
         xmlNsPtr ns = xmlSearchNs(state->doq->docptr_.xml,
                                   parent,
-                                  (const xmlChar *)state->element_namespace);
+                                  (const xmlChar *)state->attribute_namespace);
         if (!ns)
         {
             // The namespaces does not yet exist. Lets create it.. Lets hope it will be declared
             // inside the attributes of this node. Use a temporary href for now.
             ns = xmlNewNs(parent,
-                          (const xmlChar *)"---temp",
+                          NULL,
                           (const xmlChar *)state->attribute_namespace);
         }
         attr = xmlNewNsProp(parent, ns, (xmlChar*)key, NULL);
@@ -2955,42 +2995,13 @@ void do_attr_key(XMQParseState *state,
     free(key);
 }
 
-void declare_namespace(XMQParseState *state,
-                       size_t line,
-                       size_t col,
-                       const char *start,
-                       const char *stop,
-                       const char *suffix)
+void update_namespace_href(xmlNsPtr ns,
+                           const char *start,
+                           const char *stop)
 {
-    assert(state->xmlns_found);
-
-//    xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
-
-/*
-    xmlNodePtr last_element = state->last_element;
-    if (state->element_namespace)
-    {
-        xmlNsPtr ns = xmlSearchNs(state->doq->docptr_.xml,
-                                  last_element,
-                                  (const xmlChar *)state->element_namespace);
-        if (ns)
-        {
-            // It seems like it has been created already
-        }
-        if (!ns)
-        {
-            // The namespaces does not yet exist. Lets create it.. Lets hope it will be declared
-            // inside the attributes of this node. Use a temporary href for now.
-            ns = xmlNewNs(new_node,
-                          (const xmlChar *)"---temp",
-                          (const xmlChar *)state->element_namespace);
-        }
-        xmlSetNs(new_node, ns);
-        free(state->element_namespace);
-        state->element_namespace = NULL;
-    }
-    state->element_last = new_node;
-    */
+    if (!stop) stop = start+strlen(start);
+    char *href = strndup(start, stop-start);
+    ns->href = (const xmlChar*)href;
 }
 
 void do_attr_value_text(XMQParseState *state,
@@ -3000,9 +3011,13 @@ void do_attr_value_text(XMQParseState *state,
                         const char *stop,
                         const char *suffix)
 {
-    if (state->xmlns_found)
+    if (state->declaring_xmlns)
     {
-        declare_namespace(state, line, col, start, stop, suffix);
+        assert(state->declaring_xmlns_namespace);
+
+        update_namespace_href(state->declaring_xmlns_namespace, start, stop);
+        state->declaring_xmlns = false;
+        state->declaring_xmlns_namespace = NULL;
         return;
     }
     xmlNodePtr n = xmlNewDocTextLen(state->doq->docptr_.xml, (const xmlChar *)start, stop-start);
@@ -3016,6 +3031,15 @@ void do_attr_value_quote(XMQParseState*state,
                          const char *stop,
                          const char *suffix)
 {
+    if (state->declaring_xmlns)
+    {
+        char *trimmed = xmq_un_quote(col, ' ', start, stop, true);
+        update_namespace_href(state->declaring_xmlns_namespace, trimmed, NULL);
+        state->declaring_xmlns = false;
+        state->declaring_xmlns_namespace = NULL;
+        free(trimmed);
+        return;
+    }
     create_quote(state, line, col, start, stop, suffix, (xmlNode*)state->element_last);
 }
 
@@ -3052,9 +3076,7 @@ void do_attr_value_compound_entity(XMQParseState *state,
 void create_node(XMQParseState *state, const char *start, const char *stop)
 {
     size_t len = stop-start;
-    char *name = (char*)malloc(len+1);
-    memcpy(name, start, len);
-    name[len] = 0;
+    char *name = strndup(start, len);
 
     if (!strcmp(name, "!DOCTYPE"))
     {
@@ -3085,6 +3107,7 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
         }
         xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
         xmlAddChild(parent, new_node);
+
         if (state->element_namespace)
         {
             xmlNsPtr ns = xmlSearchNs(state->doq->docptr_.xml,
@@ -3095,13 +3118,14 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
                 // The namespaces does not yet exist. Lets hope it will be declared
                 // inside the attributes of this node. Use a temporary href for now.
                 ns = xmlNewNs(new_node,
-                              (const xmlChar *)"---temp",
+                              NULL,
                               (const xmlChar *)state->element_namespace);
             }
             xmlSetNs(new_node, ns);
             free(state->element_namespace);
             state->element_namespace = NULL;
         }
+
         state->element_last = new_node;
     }
 
@@ -3115,10 +3139,7 @@ void do_element_ns(XMQParseState *state,
                    const char *stop,
                    const char *suffix)
 {
-    size_t len = stop-start;
-    char *namespace = malloc(len+1);
-    memcpy(namespace, start, len);
-    namespace[len] = 0;
+    char *namespace = strndup(start, stop-start);
     state->element_namespace = namespace;
 }
 

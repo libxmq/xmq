@@ -268,7 +268,8 @@ struct XMQParseState
 
     char *element_namespace; // The element namespace is found before the element name. Remember the namespace name here.
     char *attribute_namespace; // The attribute namespace is found before the attribute key. Remember the namespace name here.
-    bool xmlns_found; // Set to true when the xmlns declaration is found. This will cause the next attr name space token to be a declaration.
+    bool declaring_xmlns; // Set to true when the xmlns declaration is found, the next attr value will be a href
+    void *declaring_xmlns_namespace; // The namespace to be updated with attribute value, eg. xmlns=uri or xmlns:prefix=uri
 
     void *default_namespace; // If xmlns=http... has been set, then a pointer to the namespace object is stored here.
 
