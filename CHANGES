@@ -1,3 +1,8 @@
+
+2024-01-09: Version 1.9.7
+
+Handle namespaces for elements. Refactor code.
+
 2024-01-05: Version 1.9.6
 
 Improve pager. Improve documentation. Refactor code.
