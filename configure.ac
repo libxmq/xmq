@@ -121,7 +121,7 @@ AC_ARG_ENABLE([asan],
 if test "x$ENABLE_ASAN" = xyes; then
     ASAN_CFLAGS="-O0 -ggdb -fsanitize=address -fno-omit-frame-pointer -fprofile-arcs -ftest-coverage"
     ASAN_LDFLAGS=""
-    ASAN_LIBS="-lasan -lgcov --coverage"
+    ASAN_LIBS="-static-libasan -lgcov --coverage"
     AC_MSG_RESULT([using ${with_asan}])
 else
     AC_MSG_RESULT([no])
