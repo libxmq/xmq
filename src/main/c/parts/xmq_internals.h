@@ -396,6 +396,7 @@ size_t find_attr_key_max_u_width(xmlAttr *a);
 size_t find_namespace_max_u_width(size_t max, xmlNs *ns);
 size_t find_element_key_max_width(xmlNodePtr node, xmlNodePtr *restart_find_at_node);
 bool is_hex(char c);
+unsigned char hex_value(char c);
 const char *find_word_ignore_case(const char *start, const char *stop, const char *word);
 
 XMQParseState *xmqAllocateParseState(XMQParseCallbacks *callbacks);
@@ -454,6 +455,7 @@ void parse_xmq_whitespace(XMQParseState *state);
 // XML/HTML dom functions ///////////////////////////////////////////////////////////////
 
 xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop);
+char *xml_collapse_text(xmlNode *node);
 xmlNode *xml_first_child(xmlNode *node);
 xmlNode *xml_last_child(xmlNode *node);
 xmlNode *xml_prev_sibling(xmlNode *node);

@@ -22,6 +22,8 @@ void eat_json_null(XMQParseState *state);
 void eat_json_number(XMQParseState *state);
 void eat_json_quote(XMQParseState *state, char **content_start, char **content_stop);
 
+void fixup_json(XMQDoc *doq, xmlNode *node);
+
 void parse_json(XMQParseState *state, const char *key_start, const char *key_stop);
 void parse_json_array(XMQParseState *state, const char *key_start, const char *key_stop);
 void parse_json_boolean(XMQParseState *state, const char *key_start, const char *key_stop);
@@ -111,8 +113,16 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
             c = *i;
             if (c == '"' || c == '\\' || c == 'b' || c == 'f' || c == 'n' || c == 'r' || c == 't')
             {
-                *out++ = c; // Translate for bfnrt
                 increment(c, 1, &i, &line, &col);
+                switch(c)
+                {
+                case 'b': c = 8; break;
+                case 'f': c = 12; break;
+                case 'n': c = 10; break;
+                case 'r': c = 13; break;
+                case 't': c = 9; break;
+                }
+                *out++ = c;
                 continue;
             }
             else if (c == 'u')
@@ -121,12 +131,26 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
                 c = *i;
                 if (i+3 < stop)
                 {
+                    // Woot? Json can only escape unicode up to 0xffff ? What about 10000 up to 10ffff?
                     if (is_hex(*(i+0)) && is_hex(*(i+1)) && is_hex(*(i+2)) && is_hex(*(i+3)))
                     {
+                        unsigned char c1 = hex_value(*(i+0));
+                        unsigned char c2 = hex_value(*(i+1));
+                        unsigned char c3 = hex_value(*(i+2));
+                        unsigned char c4 = hex_value(*(i+3));
                         increment(c, 1, &i, &line, &col);
                         increment(c, 1, &i, &line, &col);
                         increment(c, 1, &i, &line, &col);
                         increment(c, 1, &i, &line, &col);
+
+                        int uc = (c1<<12)|(c2<<8)|(c3<<4)|c4;
+                        UTF8Char utf8;
+                        size_t n = encode_utf8(uc, &utf8);
+
+                        for (size_t j = 0; j < n; ++j)
+                        {
+                            *out++ = utf8.bytes[j];
+                        }
                         continue;
                     }
                 }
@@ -1091,7 +1115,54 @@ void json_print_leaf_node(XMQPrintState *ps,
     }
 }
 
+void fixup_json(XMQDoc *doq, xmlNode *node)
+{
+    if (is_element_node(node))
+    {
+        char *new_content = xml_collapse_text(node);
+        if (new_content)
+        {
+            xmlNodePtr new_child = xmlNewDocText(doq->docptr_.xml, (const xmlChar*)new_content);
+            xmlNode *i = node->children;
+            while (i) {
+                xmlNode *next = i->next;
+                xmlUnlinkNode(i);
+                xmlFreeNode(i);
+                i = next;
+            }
+            xmlAddChild(node, new_child);
+            return;
+        }
+    }
+
+    xmlNode *i = xml_first_child(node);
+    while (i)
+    {
+        xmlNode *next = xml_next_sibling(i); // i might be freed in trim.
+        fixup_json(doq, i);
+        i = next;
+    }
+}
+
+void xmq_fixup_json_before_writeout(XMQDoc *doq)
+{
+    xmlNodePtr i = doq->docptr_.xml->children;
+    if (!doq || !i) return;
+
+    while (i)
+    {
+        xmlNode *next = xml_next_sibling(i); // i might be freed in fixup_json.
+        fixup_json(doq, i);
+        i = next;
+    }
+}
+
 #else
+
+// Empty function when XMQ_NO_JSON is defined.
+void xmq_fixup_json_before_writeout(XMQDoc *doq)
+{
+}
 
 // Empty function when XMQ_NO_JSON is defined.
 bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop)

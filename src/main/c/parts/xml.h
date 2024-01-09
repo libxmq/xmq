@@ -52,6 +52,8 @@ bool is_element_node(const xmlNode *node);
 bool is_key_value_node(xmlNodePtr node);
 bool is_leaf_node(xmlNode *node);
 bool has_attributes(xmlNodePtr node);
+char *xml_collapse_text(xmlNode *node);
+int decode_entity_ref(const char *name);
 
 #define XML_MODULE
 

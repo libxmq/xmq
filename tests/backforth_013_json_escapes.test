@@ -1,0 +1,32 @@
+INPUT
+{
+    "paragraph": "Welcome!\nGreetings!",
+    "emojis": "Ω\u03A9😀",
+    "tab": "tab=\t",
+    "nl": "newline=\n",
+    "cr": "cr=\r",
+    "bs": "bs=\b",
+    "ff": "ff=\f"
+}
+FIRST
+_ {
+    paragraph = 'Welcome!
+                 Greetings!'
+    emojis    = ΩΩ😀
+    tab       = ( 'tab='
+                  &#9; )
+    nl        = ( 'newline='
+                  &#10; )
+    cr        = ( 'cr='
+                  &#13; )
+    bs        = ( 'bs='
+                  &#8; )
+    ff        = ( 'ff='
+                  &#12; )
+}
+SECOND
+{"paragraph":"Welcome!\nGreetings!","emojis":"ΩΩ😀","tab":"tab=\t","nl":"newline=\n","cr":"cr=\r","bs":"bs=\b","ff":"ff=\f"}
+END
+CMDS_FIRST to-xmq
+ARGS_SECOND
+CMDS_SECOND to-json

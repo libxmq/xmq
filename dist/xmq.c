@@ -60,6 +60,7 @@ typedef struct XMQPrintState XMQPrintState;
 size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop);
 size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *stop);
 size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...);
+size_t to_utf8(int uc, char buf[4]);
 
 #define UTF8_MODULE
 
@@ -158,6 +159,7 @@ typedef struct
 } UTF8Char;
 
 bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
+size_t encode_utf8(int uc, UTF8Char *utf8);
 const char *has_ending_nl_space(const char *start, const char *stop);
 const char *has_leading_space_nl(const char *start, const char *stop);
 bool has_leading_ending_quote(const char *start, const char *stop);
@@ -222,6 +224,8 @@ bool is_element_node(const xmlNode *node);
 bool is_key_value_node(xmlNodePtr node);
 bool is_leaf_node(xmlNode *node);
 bool has_attributes(xmlNodePtr node);
+char *xml_collapse_text(xmlNode *node);
+int decode_entity_ref(const char *name);
 
 #define XML_MODULE
 
@@ -686,6 +690,7 @@ size_t find_attr_key_max_u_width(xmlAttr *a);
 size_t find_namespace_max_u_width(size_t max, xmlNs *ns);
 size_t find_element_key_max_width(xmlNodePtr node, xmlNodePtr *restart_find_at_node);
 bool is_hex(char c);
+unsigned char hex_value(char c);
 const char *find_word_ignore_case(const char *start, const char *stop, const char *word);
 
 XMQParseState *xmqAllocateParseState(XMQParseCallbacks *callbacks);
@@ -744,6 +749,7 @@ void parse_xmq_whitespace(XMQParseState *state);
 // XML/HTML dom functions ///////////////////////////////////////////////////////////////
 
 xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop);
+char *xml_collapse_text(xmlNode *node);
 xmlNode *xml_first_child(xmlNode *node);
 xmlNode *xml_last_child(xmlNode *node);
 xmlNode *xml_prev_sibling(xmlNode *node);
@@ -930,6 +936,7 @@ void get_color(XMQOutputSettings *os, XMQColor c, const char **pre, const char *
 struct XMQPrintState;
 typedef struct XMQPrintState XMQPrintState;
 
+void xmq_fixup_json_before_writeout(XMQDoc *doq);
 void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
 bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const char *stop);
 
@@ -3315,6 +3322,8 @@ void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
 
 void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
 {
+    xmq_fixup_json_before_writeout(doq);
+
     void *first = doq->docptr_.xml->children;
     if (!doq || !first) return;
     void *last = doq->docptr_.xml->last;
@@ -5124,6 +5133,8 @@ void eat_json_null(XMQParseState *state);
 void eat_json_number(XMQParseState *state);
 void eat_json_quote(XMQParseState *state, char **content_start, char **content_stop);
 
+void fixup_json(XMQDoc *doq, xmlNode *node);
+
 void parse_json(XMQParseState *state, const char *key_start, const char *key_stop);
 void parse_json_array(XMQParseState *state, const char *key_start, const char *key_stop);
 void parse_json_boolean(XMQParseState *state, const char *key_start, const char *key_stop);
@@ -5213,8 +5224,16 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
             c = *i;
             if (c == '"' || c == '\\' || c == 'b' || c == 'f' || c == 'n' || c == 'r' || c == 't')
             {
-                *out++ = c; // Translate for bfnrt
                 increment(c, 1, &i, &line, &col);
+                switch(c)
+                {
+                case 'b': c = 8; break;
+                case 'f': c = 12; break;
+                case 'n': c = 10; break;
+                case 'r': c = 13; break;
+                case 't': c = 9; break;
+                }
+                *out++ = c;
                 continue;
             }
             else if (c == 'u')
@@ -5223,12 +5242,26 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
                 c = *i;
                 if (i+3 < stop)
                 {
+                    // Woot? Json can only escape unicode up to 0xffff ? What about 10000 up to 10ffff?
                     if (is_hex(*(i+0)) && is_hex(*(i+1)) && is_hex(*(i+2)) && is_hex(*(i+3)))
                     {
+                        unsigned char c1 = hex_value(*(i+0));
+                        unsigned char c2 = hex_value(*(i+1));
+                        unsigned char c3 = hex_value(*(i+2));
+                        unsigned char c4 = hex_value(*(i+3));
                         increment(c, 1, &i, &line, &col);
                         increment(c, 1, &i, &line, &col);
                         increment(c, 1, &i, &line, &col);
                         increment(c, 1, &i, &line, &col);
+
+                        int uc = (c1<<12)|(c2<<8)|(c3<<4)|c4;
+                        UTF8Char utf8;
+                        size_t n = encode_utf8(uc, &utf8);
+
+                        for (size_t j = 0; j < n; ++j)
+                        {
+                            *out++ = utf8.bytes[j];
+                        }
                         continue;
                     }
                 }
@@ -6193,7 +6226,54 @@ void json_print_leaf_node(XMQPrintState *ps,
     }
 }
 
+void fixup_json(XMQDoc *doq, xmlNode *node)
+{
+    if (is_element_node(node))
+    {
+        char *new_content = xml_collapse_text(node);
+        if (new_content)
+        {
+            xmlNodePtr new_child = xmlNewDocText(doq->docptr_.xml, (const xmlChar*)new_content);
+            xmlNode *i = node->children;
+            while (i) {
+                xmlNode *next = i->next;
+                xmlUnlinkNode(i);
+                xmlFreeNode(i);
+                i = next;
+            }
+            xmlAddChild(node, new_child);
+            return;
+        }
+    }
+
+    xmlNode *i = xml_first_child(node);
+    while (i)
+    {
+        xmlNode *next = xml_next_sibling(i); // i might be freed in trim.
+        fixup_json(doq, i);
+        i = next;
+    }
+}
+
+void xmq_fixup_json_before_writeout(XMQDoc *doq)
+{
+    xmlNodePtr i = doq->docptr_.xml->children;
+    if (!doq || !i) return;
+
+    while (i)
+    {
+        xmlNode *next = xml_next_sibling(i); // i might be freed in fixup_json.
+        fixup_json(doq, i);
+        i = next;
+    }
+}
+
 #else
+
+// Empty function when XMQ_NO_JSON is defined.
+void xmq_fixup_json_before_writeout(XMQDoc *doq)
+{
+}
 
 // Empty function when XMQ_NO_JSON is defined.
 bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop)
@@ -6383,6 +6463,47 @@ bool utf8_char_to_codepoint_string(UTF8Char *uc, char *buf)
     }
     snprintf(buf, 16, "U+%X", cp);
     return true;
+}
+
+/**
+   encode_utf8: Convert an integer unicode code point into utf8 bytes.
+   @uc: The unicode code point to encode as utf8
+   @out_char: Store the unicode code point here.
+   @out_len: How many bytes the utf8 char used.
+
+   Return true if valid utf8 char.
+*/
+size_t encode_utf8(int uc, UTF8Char *utf8)
+{
+    utf8->bytes[0] = 0;
+    utf8->bytes[1] = 0;
+    utf8->bytes[2] = 0;
+    utf8->bytes[3] = 0;
+
+    if (uc <= 0x7f)
+    {
+        utf8->bytes[0] = uc;
+        return 1;
+    }
+    else if (uc <= 0x7ff)
+    {
+        utf8->bytes[0] = (0xc0 | ((uc >> 6) & 0x1f));
+        utf8->bytes[1] = (0x80 | (uc & 0x3f));
+        return 2;
+    }
+    else if (uc <= 0xffff)
+    {
+        utf8->bytes[0] = (0xe0 | ((uc >> 12) & 0x0f));
+        utf8->bytes[1] = (0x80 | ((uc >> 6) & 0x3f));
+        utf8->bytes[2] = (0x80 | (uc & 0x3f));
+        return 3;
+    }
+    assert (uc <= 0x10ffff);
+    utf8->bytes[0] = (0xf0 | ((uc >> 18) & 0x07));
+    utf8->bytes[1] = (0x80 | ((uc >> 12) & 0x3f));
+    utf8->bytes[2] = (0x80 | ((uc >> 6) & 0x3f));
+    utf8->bytes[3] = (0x80 | (uc & 0x3f));
+    return 4;
 }
 
 /**
@@ -6961,7 +7082,26 @@ bool is_key_value_node(xmlNodePtr node)
     void *from = xml_first_child(node);
     void *to = xml_last_child(node);
 
-    return from && from == to && (is_content_node((xmlNode*)from) || is_entity_node((xmlNode*)from));
+    // Single content or entity node.
+    bool yes = from && from == to && (is_content_node((xmlNode*)from) || is_entity_node((xmlNode*)from));
+    if (yes) return true;
+
+    if (!from) return false;
+
+    // Multiple text or entity nodes.
+    xmlNode *i = node->children;
+    while (i)
+    {
+        xmlNode *next = i->next;
+        if (i->type != XML_TEXT_NODE &&
+            i->type != XML_ENTITY_REF_NODE)
+        {
+            // Found something other than text or character entities.
+            return false;
+        }
+        i = next;
+    }
+    return true;
 }
 
 bool is_leaf_node(xmlNode *node)
@@ -6983,6 +7123,79 @@ void free_xml(xmlNode * node)
         xmlFreeNode(node);
         node = next;
     }
+}
+
+char *xml_collapse_text(xmlNode *node)
+{
+    xmlNode *i = node->children;
+    size_t len = 0;
+    size_t num_text = 0;
+    size_t num_entities = 0;
+
+    while (i)
+    {
+        xmlNode *next = i->next;
+        if (i->type != XML_TEXT_NODE &&
+            i->type != XML_ENTITY_REF_NODE)
+        {
+            // Found something other than text or character entities.
+            // Cannot collapse.
+            return NULL;
+        }
+        if (i->type == XML_TEXT_NODE)
+        {
+            len += strlen((const char*)i->content);
+            num_text++;
+        }
+        else
+        {
+            len += 4;
+            num_entities++;
+        }
+        i = next;
+    }
+
+    // It is already collapsed.
+    if (num_text <= 1 && num_entities == 0) return NULL;
+
+    char *buf = malloc(len+1);
+    char *out = buf;
+    i = node->children;
+    while (i)
+    {
+        xmlNode *next = i->next;
+        if (i->type == XML_TEXT_NODE)
+        {
+            size_t l = strlen((const char *)i->content);
+            memcpy(out, i->content, l);
+            out += l;
+        }
+        else
+        {
+            int uc = decode_entity_ref((const char *)i->name);
+            UTF8Char utf8;
+            size_t n = encode_utf8(uc, &utf8);
+            for (size_t j = 0; j < n; ++j)
+            {
+                *out++ = utf8.bytes[j];
+            }
+        }
+        i = next;
+    }
+    *out = 0;
+    out++;
+    buf = realloc(buf, out-buf);
+    return buf;
+}
+
+int decode_entity_ref(const char *name)
+{
+    if (name[0] != '#') return 0;
+    if (name[1] == 'x') {
+        long v = strtol((const char*)name, NULL, 16);
+        return (int)v;
+    }
+    return atoi(name+1);
 }
 
 #endif // XML_MODULE
@@ -7251,6 +7464,15 @@ bool is_hex(char c)
         (c >= '0' && c <= '9') ||
         (c >= 'a' && c <= 'f') ||
         (c >= 'A' && c <= 'F');
+}
+
+unsigned char hex_value(char c)
+{
+    if (c >= '0' && c <= '9') return c-'0';
+    if (c >= 'a' && c <= 'f') return 10+c-'a';
+    if (c >= 'A' && c <= 'F') return 10+c-'A';
+    assert(false);
+    return 0;
 }
 
 bool is_unicode_whitespace(const char *start, const char *stop)
@@ -9534,8 +9756,6 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
     bool newlines = ps->output_settings->escape_newlines;
     bool non7bit = ps->output_settings->escape_non_7bit;
 
-    if (!newlines && !non7bit) return stop;
-
     const char *i = start;
 
     while (i < stop)
@@ -9543,6 +9763,7 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
         int c = (int)((unsigned char)*i);
         if (newlines && c == '\n') break;
         if (non7bit && c > 126) break;
+        if (c < 32 && c != '\n') break;
         i++;
     }
 
@@ -9713,9 +9934,9 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
     for (const char *i = start; i < stop; ++i)
     {
         int c = (int)(unsigned char)(*i);
-        if (c == '\t') return true;
-        if (newlines && (c == '\n' || c == '\r')) return true;
+        if (newlines && c == '\n') return true;
         if (non7bit && c > 126) return true;
+        if (c < 32 && c != '\n') return true;
     }
     return false;
 }

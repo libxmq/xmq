@@ -2425,6 +2425,8 @@ void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
 
 void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
 {
+    xmq_fixup_json_before_writeout(doq);
+
     void *first = doq->docptr_.xml->children;
     if (!doq || !first) return;
     void *last = doq->docptr_.xml->last;

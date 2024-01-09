@@ -32,6 +32,7 @@ typedef struct XMQPrintState XMQPrintState;
 size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop);
 size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *stop);
 size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...);
+size_t to_utf8(int uc, char buf[4]);
 
 #define UTF8_MODULE
 

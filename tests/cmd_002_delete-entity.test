@@ -6,10 +6,8 @@ enter {
    'There'
 }
 OUTPUT
-enter {
-    'Howdy'
-    'There'
-}
+enter = ( 'Howdy'
+          'There' )
 END
 ARGS
 CMDS delete-entity alfa to-xmq

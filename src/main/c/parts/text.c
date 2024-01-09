@@ -185,6 +185,47 @@ bool utf8_char_to_codepoint_string(UTF8Char *uc, char *buf)
 }
 
 /**
+   encode_utf8: Convert an integer unicode code point into utf8 bytes.
+   @uc: The unicode code point to encode as utf8
+   @out_char: Store the unicode code point here.
+   @out_len: How many bytes the utf8 char used.
+
+   Return true if valid utf8 char.
+*/
+size_t encode_utf8(int uc, UTF8Char *utf8)
+{
+    utf8->bytes[0] = 0;
+    utf8->bytes[1] = 0;
+    utf8->bytes[2] = 0;
+    utf8->bytes[3] = 0;
+
+    if (uc <= 0x7f)
+    {
+        utf8->bytes[0] = uc;
+        return 1;
+    }
+    else if (uc <= 0x7ff)
+    {
+        utf8->bytes[0] = (0xc0 | ((uc >> 6) & 0x1f));
+        utf8->bytes[1] = (0x80 | (uc & 0x3f));
+        return 2;
+    }
+    else if (uc <= 0xffff)
+    {
+        utf8->bytes[0] = (0xe0 | ((uc >> 12) & 0x0f));
+        utf8->bytes[1] = (0x80 | ((uc >> 6) & 0x3f));
+        utf8->bytes[2] = (0x80 | (uc & 0x3f));
+        return 3;
+    }
+    assert (uc <= 0x10ffff);
+    utf8->bytes[0] = (0xf0 | ((uc >> 18) & 0x07));
+    utf8->bytes[1] = (0x80 | ((uc >> 12) & 0x3f));
+    utf8->bytes[2] = (0x80 | ((uc >> 6) & 0x3f));
+    utf8->bytes[3] = (0x80 | (uc & 0x3f));
+    return 4;
+}
+
+/**
    decode_utf8: Peek 1 to 4 chars from start and calculate unicode codepoint.
    @start: Read utf8 from this string.
    @stop: Points to byte after last byte in string. If NULL assume start is null terminated.

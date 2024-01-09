@@ -10,7 +10,7 @@ alfa(a = howdy
     D = ( 'cc' &nbsp; 'dd' )
 }
 COMPACT
-alfa(a=howdy b='hello world'c=&nbsp;d=('cc'&nbsp;'dd')){A=howdy B='hello world'C=&nbsp;D{'cc'&nbsp;'dd'}}
+alfa(a=howdy b='hello world'c=&nbsp;d=('cc'&nbsp;'dd')){A=howdy B='hello world'C=&nbsp;D=('cc'&nbsp;'dd')}
 XMQ
 alfa(a = howdy
      b = 'hello world'
@@ -22,11 +22,9 @@ alfa(a = howdy
     A = howdy
     B = 'hello world'
     C = &nbsp;
-    D {
-        'cc'
-        &nbsp;
-        'dd'
-    }
+    D = ( 'cc'
+          &nbsp;
+          'dd' )
 }
 END
 ARGS

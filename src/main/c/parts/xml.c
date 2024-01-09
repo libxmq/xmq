@@ -2,6 +2,7 @@
 #ifndef BUILDING_XMQ
 
 #include"xml.h"
+#include"text.h"
 #include<assert.h>
 #include<string.h>
 #include<stdbool.h>
@@ -136,7 +137,26 @@ bool is_key_value_node(xmlNodePtr node)
     void *from = xml_first_child(node);
     void *to = xml_last_child(node);
 
-    return from && from == to && (is_content_node((xmlNode*)from) || is_entity_node((xmlNode*)from));
+    // Single content or entity node.
+    bool yes = from && from == to && (is_content_node((xmlNode*)from) || is_entity_node((xmlNode*)from));
+    if (yes) return true;
+
+    if (!from) return false;
+
+    // Multiple text or entity nodes.
+    xmlNode *i = node->children;
+    while (i)
+    {
+        xmlNode *next = i->next;
+        if (i->type != XML_TEXT_NODE &&
+            i->type != XML_ENTITY_REF_NODE)
+        {
+            // Found something other than text or character entities.
+            return false;
+        }
+        i = next;
+    }
+    return true;
 }
 
 bool is_leaf_node(xmlNode *node)
@@ -158,6 +178,79 @@ void free_xml(xmlNode * node)
         xmlFreeNode(node);
         node = next;
     }
+}
+
+char *xml_collapse_text(xmlNode *node)
+{
+    xmlNode *i = node->children;
+    size_t len = 0;
+    size_t num_text = 0;
+    size_t num_entities = 0;
+
+    while (i)
+    {
+        xmlNode *next = i->next;
+        if (i->type != XML_TEXT_NODE &&
+            i->type != XML_ENTITY_REF_NODE)
+        {
+            // Found something other than text or character entities.
+            // Cannot collapse.
+            return NULL;
+        }
+        if (i->type == XML_TEXT_NODE)
+        {
+            len += strlen((const char*)i->content);
+            num_text++;
+        }
+        else
+        {
+            len += 4;
+            num_entities++;
+        }
+        i = next;
+    }
+
+    // It is already collapsed.
+    if (num_text <= 1 && num_entities == 0) return NULL;
+
+    char *buf = malloc(len+1);
+    char *out = buf;
+    i = node->children;
+    while (i)
+    {
+        xmlNode *next = i->next;
+        if (i->type == XML_TEXT_NODE)
+        {
+            size_t l = strlen((const char *)i->content);
+            memcpy(out, i->content, l);
+            out += l;
+        }
+        else
+        {
+            int uc = decode_entity_ref((const char *)i->name);
+            UTF8Char utf8;
+            size_t n = encode_utf8(uc, &utf8);
+            for (size_t j = 0; j < n; ++j)
+            {
+                *out++ = utf8.bytes[j];
+            }
+        }
+        i = next;
+    }
+    *out = 0;
+    out++;
+    buf = realloc(buf, out-buf);
+    return buf;
+}
+
+int decode_entity_ref(const char *name)
+{
+    if (name[0] != '#') return 0;
+    if (name[1] == 'x') {
+        long v = strtol((const char*)name, NULL, 16);
+        return (int)v;
+    }
+    return atoi(name+1);
 }
 
 #endif // XML_MODULE

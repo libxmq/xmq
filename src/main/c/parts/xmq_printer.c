@@ -1014,8 +1014,6 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
     bool newlines = ps->output_settings->escape_newlines;
     bool non7bit = ps->output_settings->escape_non_7bit;
 
-    if (!newlines && !non7bit) return stop;
-
     const char *i = start;
 
     while (i < stop)
@@ -1023,6 +1021,7 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
         int c = (int)((unsigned char)*i);
         if (newlines && c == '\n') break;
         if (non7bit && c > 126) break;
+        if (c < 32 && c != '\n') break;
         i++;
     }
 
@@ -1193,9 +1192,9 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
     for (const char *i = start; i < stop; ++i)
     {
         int c = (int)(unsigned char)(*i);
-        if (c == '\t') return true;
-        if (newlines && (c == '\n' || c == '\r')) return true;
+        if (newlines && c == '\n') return true;
         if (non7bit && c > 126) return true;
+        if (c < 32 && c != '\n') return true;
     }
     return false;
 }

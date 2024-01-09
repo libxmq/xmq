@@ -39,6 +39,7 @@ typedef struct
 } UTF8Char;
 
 bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
+size_t encode_utf8(int uc, UTF8Char *utf8);
 const char *has_ending_nl_space(const char *start, const char *stop);
 const char *has_leading_space_nl(const char *start, const char *stop);
 bool has_leading_ending_quote(const char *start, const char *stop);

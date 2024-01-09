@@ -2,15 +2,13 @@ START
 <!DOCTYPE time [<!ENTITY copy "&#169;">]>
 <time>alfa&#10;beta&copy;gamma</time>
 COMPACT
-!DOCTYPE='time [ <!ENTITY copy "&#169;"> ]'time{'alfa'&#10;'beta'&copy;'gamma'}
+!DOCTYPE='time [ <!ENTITY copy "&#169;"> ]'time=('alfa'&#10;'beta'&copy;'gamma')
 XMQ
 !DOCTYPE = 'time [
             <!ENTITY copy "&#169;">
             ]'
-time {
-    'alfa
-     beta'
-    &copy;
-    'gamma'
-}
+time = ( 'alfa
+          beta'
+         &copy;
+         'gamma' )
 END

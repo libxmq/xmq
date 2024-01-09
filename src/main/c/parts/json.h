@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct XMQPrintState;
 typedef struct XMQPrintState XMQPrintState;
 
+void xmq_fixup_json_before_writeout(XMQDoc *doq);
 void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
 bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const char *stop);
 
