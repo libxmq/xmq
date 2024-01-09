@@ -45,8 +45,8 @@ void debug__(const char* fmt, ...)
     }
 }
 
-#ifdef WINAPI
-char *strndup(char *s, size_t l)
+#ifdef PLATFORM_WINAPI
+char *strndup(const char *s, size_t l)
 {
     char *buf = malloc(l+1);
     size_t i = 0;
@@ -68,6 +68,7 @@ char *strndup(char *s, size_t l)
     }
     return buf;
 }
-
 #endif
+
+
 #endif // ALWAYS_MODULE

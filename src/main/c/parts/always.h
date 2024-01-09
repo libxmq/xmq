@@ -39,6 +39,10 @@ void check_malloc(void *a);
 
 #define PRINT_ERROR(...) fprintf(stderr, __VA_ARGS__)
 
+#ifdef PLATFORM_WINAPI
+char *strndup(const char *s, size_t l);
+#endif
+
 #define ALWAYS_MODULE
 
 #endif // ALWAYS_H
