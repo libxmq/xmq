@@ -50,23 +50,16 @@ jobs:
       - id: CONFIGURE
         run: eatmydata ./configure
       - id: MAKE
-        run: eatmydata make release asan
+        run: eatmydata make release
       - id: TEST
         run: eatmydata make test
       - id: CREATE_RELEASE_ARCHIVE
         run: gzip -c build/default/release/xmq > build/xmq-gnulinux-release.gz
-      - id: CREATE_ASAN_ARCHIVE
-        run: gzip -c build/default/asan/xmq > build/xmq-gnulinux-asan.gz
       - id: UPLOAD_ASSETS_RELEASE
         uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ needs.job_create_release.outputs.upload_url }}
           asset_path: build/xmq-gnulinux-release.gz
-      - id: UPLOAD_ASSETS_ASAN
-        uses: shogo82148/actions-upload-release-asset@v1
-        with:
-          upload_url: ${{ needs.job_create_release.outputs.upload_url }}
-          asset_path: build/xmq-gnulinux-asan.gz
 
   job_release_macosx:
     needs: [job_create_release]
@@ -77,23 +70,16 @@ jobs:
       - id: CONFIGURE
         run: ./configure
       - id: MAKE
-        run: make release asan
+        run: make release
       - id: TEST
         run: make test
       - id: CREATE_RELEASE_ARCHIVE
         run: gzip -c build/default/release/xmq > build/xmq-macosx-release.gz
-      - id: CREATE_ASAN_ARCHIVE
-        run: gzip -c build/default/asan/xmq > build/xmq-macosx-asan.gz
       - id: UPLOAD_ASSETS_RELEASE
         uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ needs.job_create_release.outputs.upload_url }}
           asset_path: ./build/xmq-macosx-release.gz
-      - id: UPLOAD_ASSETS_ASAN
-        uses: shogo82148/actions-upload-release-asset@v1
-        with:
-          upload_url: ${{ needs.job_create_release.outputs.upload_url }}
-          asset_path: ./build/xmq-macosx-asan.gz
 
   job_release_windows:
     needs: [job_create_release]
@@ -108,14 +94,9 @@ jobs:
       - id: CONFIGURE
         run: ./configure --host=x86_64-w64-mingw32 --with-libxml2=3rdparty/libxml2-winapi --with-libxslt=3rdparty/libxslt-winapi --with-zlib=3rdparty/zlib-1.3-winapi
       - id: MAKE
-        run: make release asan
+        run: make release
       - id: UPLOAD_ASSETS_RELEASE
         uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ needs.job_create_release.outputs.upload_url }}
           asset_path: ./build/default/windows_installer/xmq-windows-release.msi
-      - id: UPLOAD_ASSETS_ASAN
-        uses: shogo82148/actions-upload-release-asset@v1
-        with:
-          upload_url: ${{ needs.job_create_release.outputs.upload_url }}
-          asset_path: ./build/default/windows_installer/xmq-windows-asan.msi

@@ -13,8 +13,6 @@ jobs:
     - id: CONFIGURE
       run: ./configure
     - id: MAKE
-      run: make release asan
+      run: make release
     - id: TEST
       run: make test
-    - id: TEST_ASAN
-      run: make testa

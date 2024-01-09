@@ -17,4 +17,4 @@ jobs:
     - id: CONFIGURE
       run: ./configure --host=x86_64-w64-mingw32 --with-libxml2=3rdparty/libxml2-winapi --with-libxslt=3rdparty/libxslt-winapi --with-zlib=3rdparty/zlib-1.3-winapi
     - id: MAKE
-      run: make release asan
+      run: make release
