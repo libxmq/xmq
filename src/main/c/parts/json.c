@@ -202,6 +202,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         name[len] = 0;
         xmlNodeSetName(container, (xmlChar*)name);
         free(name);
+        free(content_start);
         return;
     }
 
@@ -225,6 +226,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         // This is an attribute that was stored as "_attr":"value"
         DO_CALLBACK_SIM(attr_key, state, state->line, state->col, key_start+1, key_stop, key_stop);
         DO_CALLBACK_SIM(attr_value_quote, state, start_line, start_col, content_start, content_stop, content_stop);
+        free(content_start);
         return;
     }
 
