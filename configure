@@ -3964,7 +3964,7 @@ fi
 if test "x$ENABLE_ASAN" = xyes; then
     ASAN_CFLAGS="-O0 -ggdb -fsanitize=address -fno-omit-frame-pointer -fprofile-arcs -ftest-coverage"
     ASAN_LDFLAGS=""
-    ASAN_LIBS="-lasan -lgcov --coverage"
+    ASAN_LIBS="-fsanitize=address -lgcov --coverage"
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: using ${with_asan}" >&5
 printf "%s\n" "using ${with_asan}" >&6; }
 else
