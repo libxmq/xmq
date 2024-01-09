@@ -27,7 +27,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct XMQPrintState;
 typedef struct XMQPrintState XMQPrintState;
 
+#ifdef __cplusplus
+enum Level : short;
+#else
 enum Level;
+#endif
 typedef enum Level Level;
 
 size_t count_necessary_quotes(const char *start, const char *stop, bool forbid_nl, bool *add_nls, bool *add_compound);

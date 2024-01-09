@@ -90,7 +90,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
     const char *stop = state->buffer_stop;
 
     size_t len = stop-start;
-    char *buf = malloc(len+1);
+    char *buf = (char*)malloc(len+1);
     char *out = buf;
 
     const char *i = start;
@@ -171,7 +171,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
     // Calculate the real length which might be less than the original
     // since escapes have disappeared. Add 1 to have at least something to allocate.
     len = out-buf;
-    buf = realloc(buf, len);
+    buf = (char*)realloc(buf, len);
 
     *content_start = buf;
     *content_stop = buf+len-1; // Drop the zero byte.
@@ -219,9 +219,9 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         // This is the element name "_":"symbol" stored inside the json object,
         // in situations where the name is not visible as a key. For example
         // the root json object and any object in arrays.
-        xmlNodePtr container = state->element_last;
+        xmlNodePtr container = (xmlNodePtr)state->element_last;
         size_t len = content_stop - content_start;
-        char *name = malloc(len+1);
+        char *name = (char*)malloc(len+1);
         memcpy(name, content_start, len);
         name[len] = 0;
         xmlNodeSetName(container, (xmlChar*)name);
@@ -617,10 +617,10 @@ void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlN
     {
         if (!is_doctype_node(i))
         {
-            Counter *c = hashmap_get(map, (const char*)i->name);
+            Counter *c = (Counter*)hashmap_get(map, (const char*)i->name);
             if (!c)
             {
-                c = malloc(sizeof(Counter));
+                c = (Counter*)malloc(sizeof(Counter));
                 memset(c, 0, sizeof(Counter));
                 hashmap_put(map, (const char*)i->name, c);
             }
@@ -632,7 +632,7 @@ void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlN
     i = from;
     while (i)
     {
-        Counter *c = hashmap_get(map, (const char*)i->name);
+        Counter *c = (Counter*)hashmap_get(map, (const char*)i->name);
         json_print_node(ps, container, i, c->total, c->used);
         c->used++;
         i = xml_next_sibling(i);

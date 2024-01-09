@@ -46,9 +46,9 @@ const char *content_type_to_string(XMQContentType t);
 void test_content(const char *content, XMQContentType expected_ct);
 void test_mem_buffer();
 void test_sl(const char *s, size_t expected_b_len, size_t expected_u_len);
-void test_trim_comment(int first_indent, char *in, char *expected);
-void test_trim_quote(int first_indent, char *in, char *expected);
-void test_trim_quote_special(char *in, char *expected);
+void test_trim_comment(int first_indent, const char *in, const char *expected);
+void test_trim_quote(int first_indent, const char *in, const char *expected);
+void test_trim_quote_special(const char *in, const char *expected);
 
 #define TESTS \
     X(test_indented_quotes) \
@@ -119,7 +119,7 @@ void test_xmq()
     */
 }
 
-void test_trim_quote(int first_indent, char *in, char *expected)
+void test_trim_quote(int first_indent, const char *in, const char *expected)
 {
     /*
     char *out = xmq_un_quote(first_indent, ' ', in, in+strlen(in), true);
@@ -142,7 +142,7 @@ void test_trim_quote(int first_indent, char *in, char *expected)
     */
 }
 
-void test_trim_quote_special(char *in, char *expected)
+void test_trim_quote_special(const char *in, const char *expected)
 {
     /*
     char *out = xmq_un_quote(0, 0, in, in+strlen(in), true);
@@ -165,7 +165,7 @@ void test_trim_quote_special(char *in, char *expected)
     */
 }
 
-void test_trim_comment(int first_indent, char *in, char *expected)
+void test_trim_comment(int first_indent, const char *in, const char *expected)
 {
     /*
     char *out = xmq_un_comment(first_indent, ' ', in, in+strlen(in));

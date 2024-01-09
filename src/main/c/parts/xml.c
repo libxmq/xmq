@@ -213,7 +213,7 @@ char *xml_collapse_text(xmlNode *node)
     // It is already collapsed.
     if (num_text <= 1 && num_entities == 0) return NULL;
 
-    char *buf = malloc(len+1);
+    char *buf = (char*)malloc(len+1);
     char *out = buf;
     i = node->children;
     while (i)
@@ -239,7 +239,7 @@ char *xml_collapse_text(xmlNode *node)
     }
     *out = 0;
     out++;
-    buf = realloc(buf, out-buf);
+    buf = (char*)realloc(buf, out-buf);
     return buf;
 }
 

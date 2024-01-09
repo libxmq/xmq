@@ -388,7 +388,7 @@ const char *tokenize_type_to_string(XMQCliTokenizeType type)
 
 XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env)
 {
-    XMQCliCommand *c = malloc(sizeof(XMQCliCommand));
+    XMQCliCommand *c = (XMQCliCommand*)malloc(sizeof(XMQCliCommand));
     memset(c, 0, sizeof(*c));
 
     c->use_color = env->use_color;
@@ -648,7 +648,7 @@ bool handle_option(const char *arg, XMQCliCommand *command)
             fseek(f, 0L, SEEK_END);
             size_t sz = ftell(f);
             fseek(f, 0L, SEEK_SET);
-            char *buf = malloc(sz+1);
+            char *buf = (char*)malloc(sz+1);
             size_t n = fread(buf, 1, sz, f);
             buf[sz] = 0;
             if (n != sz) printf("ARRRRRGGGG\n");
@@ -743,7 +743,7 @@ const char *render_format_to_string(XMQRenderFormat rf)
 XMQRenderStyle render_style(bool *use_color, bool *dark_mode)
 {
     // The Linux vt console is by default black. So dark-mode.
-    char *term = getenv("TERM");
+    const char *term = getenv("TERM");
     if (!term) term = "NULL";
     if (!strcmp(term, "linux"))
     {
@@ -1635,8 +1635,8 @@ void find_prev_line(const char **line_offset,
     print_until_newline("PLO", prev_lo, stop);
 
     // How far is it from the prev line start to the ilo?
-    size_t diff = count_non_ansi_chars(prev_lo, ilo);
-    fprintf(stderr, "diff %zu\n", diff);
+    int diff = count_non_ansi_chars(prev_lo, ilo);
+    fprintf(stderr, "diff %d\n", diff);
 
     if (diff > width)
     {

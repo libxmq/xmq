@@ -48,7 +48,7 @@ void debug__(const char* fmt, ...)
 #ifdef PLATFORM_WINAPI
 char *strndup(const char *s, size_t l)
 {
-    char *buf = malloc(l+1);
+    char *buf = (char*)malloc(l+1);
     size_t i = 0;
     for (; i < l; ++i)
     {
@@ -59,7 +59,7 @@ char *strndup(const char *s, size_t l)
     {
         // The string s was shorter than l. We have already copied the null terminator.
         // Just resize.
-        buf = realloc(buf, i+1);
+        buf = (char*)realloc(buf, i+1);
     }
     else
     {

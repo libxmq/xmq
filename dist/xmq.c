@@ -243,7 +243,11 @@ void parse_xmq(XMQParseState *state);
 struct XMQPrintState;
 typedef struct XMQPrintState XMQPrintState;
 
+#ifdef __cplusplus
+enum Level : short;
+#else
 enum Level;
+#endif
 typedef enum Level Level;
 
 size_t count_necessary_quotes(const char *start, const char *stop, bool forbid_nl, bool *add_nls, bool *add_compound);
@@ -474,7 +478,11 @@ struct XMQDoc
     XMQNode root_; // The root node.
 };
 
+#ifdef __cplusplus
+enum Level : short {
+#else
 enum Level {
+#endif
     LEVEL_XMQ = 0,
     LEVEL_ELEMENT_VALUE = 1,
     LEVEL_ELEMENT_VALUE_COMPOUND = 2,
@@ -595,7 +603,7 @@ struct XMQParseState
    @color_pre: The active color prefix.
    @prev_color_pre: The previous color prefix, used for restoring utf8 text after coloring unicode whitespace.
    @restart_line: after nl_and_indent print this to restart coloring of line.
-   @namespace: the last namespace reference.
+   @ns: the last namespace reference.
    @output_settings: the output settings.
    @doc: The xmq document that is being printed.
 */
@@ -606,7 +614,7 @@ struct XMQPrintState
     int last_char;
     const char *replay_active_color_pre;
     const char *restart_line;
-    const char *namespace;
+    const char *last_namespace;
     XMQOutputSettings *output_settings;
     XMQDoc *doq;
 };
@@ -1039,7 +1047,7 @@ char ansi_reset_color[] = "\033[0m";
 
 void xmqSetupDefaultColors(XMQOutputSettings *os, bool dark_mode)
 {
-    XMQColoring *c = hashmap_get(os->colorings, "");
+    XMQColoring *c = (XMQColoring*)hashmap_get(os->colorings, "");
     assert(c);
     memset(c, 0, sizeof(XMQColoring));
     os->indentation_space = " ";
@@ -1190,7 +1198,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
     const char *mode = "xmq_light";
     if (dark_mode) mode = "xmq_dark";
 
-    char *buf = malloc(1024);
+    char *buf = (char*)malloc(1024);
     os->free_me = buf;
     const char *id = os->use_id;
     const char *idb = "id=\"";
@@ -1389,7 +1397,7 @@ void xmqRenderHtmlSettings(XMQOutputSettings *settings,
     if (use_class) settings->use_class = use_class;
 }
 
-void xmqOverrideColorType(XMQOutputSettings *settings, XMQColorType ct, const char *pre, const char *post, const char *namespace)
+void xmqOverrideColorType(XMQOutputSettings *settings, XMQColorType ct, const char *pre, const char *post, const char *ns)
 {
     switch (ct)
     {
@@ -1410,15 +1418,15 @@ void xmqOverrideColorType(XMQOutputSettings *settings, XMQColorType ct, const ch
 }
 
 
-void xmqOverrideColor(XMQOutputSettings *os, XMQColor c, const char *pre, const char *post, const char *namespace)
+void xmqOverrideColor(XMQOutputSettings *os, XMQColor c, const char *pre, const char *post, const char *ns)
 {
     if (!os->colorings)
     {
         fprintf(stderr, "Internal error: you have to invoke xmqSetupDefaultColors first before overriding.\n");
         exit(1);
     }
-    if (!namespace) namespace = "";
-    XMQColoring *cols = hashmap_get(os->colorings, namespace);
+    if (!ns) ns = "";
+    XMQColoring *cols = (XMQColoring*)hashmap_get(os->colorings, ns);
     assert(cols);
 
     switch (c)
@@ -1510,7 +1518,7 @@ XMQOutputSettings *xmqNewOutputSettings()
     XMQOutputSettings *os = (XMQOutputSettings*)malloc(sizeof(XMQOutputSettings));
     memset(os, 0, sizeof(XMQOutputSettings));
     os->colorings = hashmap_create(11);
-    XMQColoring *c = malloc(sizeof(XMQColoring));
+    XMQColoring *c = (XMQColoring*)malloc(sizeof(XMQColoring));
     memset(c, 0, sizeof(XMQColoring));
     hashmap_put(os->colorings, "", c);
     os->default_coloring = c;
@@ -1671,9 +1679,9 @@ void xmqSetupPrintMemory(XMQOutputSettings *os, char **start, char **stop)
     os->output_buffer_stop = stop;
     os->output_buffer = new_membuffer();
     os->content.writer_state = os->output_buffer;
-    os->content.write = (void*)membuffer_append_region;
+    os->content.write = (XMQWrite)(void*)membuffer_append_region;
     os->error.writer_state = os->output_buffer;
-    os->error.write = (void*)membuffer_append_region;
+    os->error.write = (XMQWrite)(void*)membuffer_append_region;
 }
 
 XMQParseCallbacks *xmqNewParseCallbacks()
@@ -2450,7 +2458,7 @@ void *xmqGetImplementationDoc(XMQDoc *doq)
 
 void xmqSetImplementationDoc(XMQDoc *doq, void *doc)
 {
-    doq->docptr_.xml = doc;
+    doq->docptr_.xml = (xmlDocPtr)doc;
 }
 
 void xmqSetDocSourceName(XMQDoc *doq, const char *source_name)
@@ -2586,6 +2594,8 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root)
     char *buffer = NULL;
     size_t fsize = 0;
     XMQContentType content = XMQ_CONTENT_XMQ;
+    size_t block_size = 0;
+    size_t n = 0;
 
     xmqSetDocSourceName(doq, file);
 
@@ -2610,9 +2620,9 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root)
         goto exit;
     }
 
-    size_t block_size = fsize;
+    block_size = fsize;
     if (block_size > 10000) block_size = 10000;
-    size_t n = 0;
+    n = 0;
     do {
         // We need to read smaller blocks because of a bug in Windows C-library..... blech.
         size_t r = fread(buffer+n, 1, block_size, f);
@@ -2872,8 +2882,8 @@ void do_attr_ns(XMQParseState *state,
     if (!state->declaring_xmlns)
     {
         // Normal attribute namespace found before the attribute key, eg x:alfa=123 xlink:href=http...
-        char *namespace = strndup(start, stop-start);
-        state->attribute_namespace = namespace;
+        char *ns = strndup(start, stop-start);
+        state->attribute_namespace = ns;
     }
     else
     {
@@ -3026,7 +3036,7 @@ void do_attr_value_text(XMQParseState *state,
     {
         assert(state->declaring_xmlns_namespace);
 
-        update_namespace_href(state->declaring_xmlns_namespace, start, stop);
+        update_namespace_href((xmlNsPtr)state->declaring_xmlns_namespace, start, stop);
         state->declaring_xmlns = false;
         state->declaring_xmlns_namespace = NULL;
         return;
@@ -3045,7 +3055,7 @@ void do_attr_value_quote(XMQParseState*state,
     if (state->declaring_xmlns)
     {
         char *trimmed = xmq_un_quote(col, ' ', start, stop, true);
-        update_namespace_href(state->declaring_xmlns_namespace, trimmed, NULL);
+        update_namespace_href((xmlNsPtr)state->declaring_xmlns_namespace, trimmed, NULL);
         state->declaring_xmlns = false;
         state->declaring_xmlns_namespace = NULL;
         free(trimmed);
@@ -3150,8 +3160,8 @@ void do_element_ns(XMQParseState *state,
                    const char *stop,
                    const char *suffix)
 {
-    char *namespace = strndup(start, stop-start);
-    state->element_namespace = namespace;
+    char *ns = strndup(start, stop-start);
+    state->element_namespace = ns;
 }
 
 void do_ns_colon(XMQParseState *state,
@@ -3518,7 +3528,7 @@ char *escape_xml_comment(const char *comment)
     }
     *j = 0;
 
-    assert( j-tmp+1 == new_len);
+    assert( (size_t)((j-tmp)+1) == new_len);
     return tmp;
 }
 
@@ -3560,7 +3570,7 @@ char *unescape_xml_comment(const char *comment)
     *j++ = 0;
 
     size_t new_len = j-tmp;
-    tmp = realloc(tmp, new_len);
+    tmp = (char*)realloc(tmp, new_len);
 
     return tmp;
 }
@@ -3657,7 +3667,7 @@ const char *indent_depth(int i)
     char *c = depths_[i];
     if (!c)
     {
-        c = malloc(i*4+1);
+        c = (char*)malloc(i*4+1);
         memset(c, ' ', i*4);
         c[i*4] = 0;
         depths_[i] = c;
@@ -4069,7 +4079,7 @@ char *xmq_comment(int indent, const char *start, const char *stop, XMQQuoteSetti
     return xmq_quote_default(indent, start, stop, settings);
 }
 
-int xmqForeach(XMQDoc *doq, XMQNode *xmq_node, const char *xpath, NodeCallback cb, void *user_data)
+int xmqForeach(XMQDoc *doq, XMQNode *xmq_node, const char *xpath, XMQNodeCallback cb, void *user_data)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(doq);
     xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
@@ -4394,6 +4404,8 @@ bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **ou
 {
     bool rc = false;
     char *buffer = NULL;
+    size_t block_size = 0;
+    size_t n = 0;
 
     FILE *f = fopen(file, "rb");
     if (!f) {
@@ -4416,9 +4428,9 @@ bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **ou
         goto exit;
     }
 
-    size_t block_size = fsize;
+    block_size = fsize;
     if (block_size > 10000) block_size = 10000;
-    size_t n = 0;
+    n = 0;
     do {
         size_t r = fread(buffer+n, 1, block_size, f);
         debug("[XMQ] read %zu bytes total %zu\n", r, n);
@@ -4584,7 +4596,7 @@ void debug__(const char* fmt, ...)
 #ifdef PLATFORM_WINAPI
 char *strndup(const char *s, size_t l)
 {
-    char *buf = malloc(l+1);
+    char *buf = (char*)malloc(l+1);
     size_t i = 0;
     for (; i < l; ++i)
     {
@@ -4595,7 +4607,7 @@ char *strndup(const char *s, size_t l)
     {
         // The string s was shorter than l. We have already copied the null terminator.
         // Just resize.
-        buf = realloc(buf, i+1);
+        buf = (char*)realloc(buf, i+1);
     }
     else
     {
@@ -4843,7 +4855,7 @@ HashMap* hashmap_create(size_t max_size)
 
 void hashmap_free_and_values(HashMap *map)
 {
-    for (size_t i=0; i < map->max_size_; ++i)
+    for (int i=0; i < map->max_size_; ++i)
     {
         HashMapNode *node = map->nodes_[i];
         map->nodes_[i] = NULL;
@@ -4918,7 +4930,7 @@ void *hashmap_get(HashMap* table, const char* key)
 
 void hashmap_free(HashMap* table)
 {
-    for (size_t i=0; i < table->max_size_; i++)
+    for (int i=0; i < table->max_size_; i++)
     {
         HashMapNode* slot = table->nodes_[i];
         while (slot != NULL)
@@ -5201,7 +5213,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
     const char *stop = state->buffer_stop;
 
     size_t len = stop-start;
-    char *buf = malloc(len+1);
+    char *buf = (char*)malloc(len+1);
     char *out = buf;
 
     const char *i = start;
@@ -5282,7 +5294,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
     // Calculate the real length which might be less than the original
     // since escapes have disappeared. Add 1 to have at least something to allocate.
     len = out-buf;
-    buf = realloc(buf, len);
+    buf = (char*)realloc(buf, len);
 
     *content_start = buf;
     *content_stop = buf+len-1; // Drop the zero byte.
@@ -5330,9 +5342,9 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         // This is the element name "_":"symbol" stored inside the json object,
         // in situations where the name is not visible as a key. For example
         // the root json object and any object in arrays.
-        xmlNodePtr container = state->element_last;
+        xmlNodePtr container = (xmlNodePtr)state->element_last;
         size_t len = content_stop - content_start;
-        char *name = malloc(len+1);
+        char *name = (char*)malloc(len+1);
         memcpy(name, content_start, len);
         name[len] = 0;
         xmlNodeSetName(container, (xmlChar*)name);
@@ -5728,10 +5740,10 @@ void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlN
     {
         if (!is_doctype_node(i))
         {
-            Counter *c = hashmap_get(map, (const char*)i->name);
+            Counter *c = (Counter*)hashmap_get(map, (const char*)i->name);
             if (!c)
             {
-                c = malloc(sizeof(Counter));
+                c = (Counter*)malloc(sizeof(Counter));
                 memset(c, 0, sizeof(Counter));
                 hashmap_put(map, (const char*)i->name, c);
             }
@@ -5743,7 +5755,7 @@ void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlN
     i = from;
     while (i)
     {
-        Counter *c = hashmap_get(map, (const char*)i->name);
+        Counter *c = (Counter*)hashmap_get(map, (const char*)i->name);
         json_print_node(ps, container, i, c->total, c->used);
         c->used++;
         i = xml_next_sibling(i);
@@ -7159,7 +7171,7 @@ char *xml_collapse_text(xmlNode *node)
     // It is already collapsed.
     if (num_text <= 1 && num_entities == 0) return NULL;
 
-    char *buf = malloc(len+1);
+    char *buf = (char*)malloc(len+1);
     char *out = buf;
     i = node->children;
     while (i)
@@ -7185,7 +7197,7 @@ char *xml_collapse_text(xmlNode *node)
     }
     *out = 0;
     out++;
-    buf = realloc(buf, out-buf);
+    buf = (char*)realloc(buf, out-buf);
     return buf;
 }
 

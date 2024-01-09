@@ -180,7 +180,11 @@ struct XMQDoc
     XMQNode root_; // The root node.
 };
 
+#ifdef __cplusplus
+enum Level : short {
+#else
 enum Level {
+#endif
     LEVEL_XMQ = 0,
     LEVEL_ELEMENT_VALUE = 1,
     LEVEL_ELEMENT_VALUE_COMPOUND = 2,
@@ -301,7 +305,7 @@ struct XMQParseState
    @color_pre: The active color prefix.
    @prev_color_pre: The previous color prefix, used for restoring utf8 text after coloring unicode whitespace.
    @restart_line: after nl_and_indent print this to restart coloring of line.
-   @namespace: the last namespace reference.
+   @ns: the last namespace reference.
    @output_settings: the output settings.
    @doc: The xmq document that is being printed.
 */
@@ -312,7 +316,7 @@ struct XMQPrintState
     int last_char;
     const char *replay_active_color_pre;
     const char *restart_line;
-    const char *namespace;
+    const char *last_namespace;
     XMQOutputSettings *output_settings;
     XMQDoc *doq;
 };

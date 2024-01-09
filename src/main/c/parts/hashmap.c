@@ -87,7 +87,7 @@ HashMap* hashmap_create(size_t max_size)
 
 void hashmap_free_and_values(HashMap *map)
 {
-    for (size_t i=0; i < map->max_size_; ++i)
+    for (int i=0; i < map->max_size_; ++i)
     {
         HashMapNode *node = map->nodes_[i];
         map->nodes_[i] = NULL;
@@ -162,7 +162,7 @@ void *hashmap_get(HashMap* table, const char* key)
 
 void hashmap_free(HashMap* table)
 {
-    for (size_t i=0; i < table->max_size_; i++)
+    for (int i=0; i < table->max_size_; i++)
     {
         HashMapNode* slot = table->nodes_[i];
         while (slot != NULL)
