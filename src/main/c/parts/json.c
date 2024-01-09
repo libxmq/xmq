@@ -1131,6 +1131,7 @@ void fixup_json(XMQDoc *doq, xmlNode *node)
                 i = next;
             }
             xmlAddChild(node, new_child);
+            free(new_content);
             return;
         }
     }
