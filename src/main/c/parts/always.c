@@ -45,4 +45,29 @@ void debug__(const char* fmt, ...)
     }
 }
 
+#ifdef WINAPI
+char *strndup(char *s, size_t l)
+{
+    char *buf = malloc(l+1);
+    size_t i = 0;
+    for (; i < l; ++i)
+    {
+        buf[i] = s[i];
+        if (!s[i]) break;
+    }
+    if (i < l)
+    {
+        // The string s was shorter than l. We have already copied the null terminator.
+        // Just resize.
+        buf = realloc(buf, i+1);
+    }
+    else
+    {
+        // We copied l bytes. Store a null-terminator in the position i (== l).
+        buf[i] = 0;
+    }
+    return buf;
+}
+
+#endif
 #endif // ALWAYS_MODULE
