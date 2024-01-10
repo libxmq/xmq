@@ -1,0 +1,24 @@
+xsl:stylesheet(version   = 1.0
+               xml:space = preserve
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform
+               xmlns:fo  = http://www.w3.org/1999/XSL/Format)
+{
+    xsl:output(method = text)
+    xsl:template(match = _/todos)
+    {
+        '┌─────────────┐'
+        &#10;
+        xsl:for-each(select = _)
+        {
+            '│'
+            xsl:value-of(select = '''substring(concat(todo,'             '), 1, 13)''')
+            '│'
+            &#10;
+        }
+        '└─────────────┘'
+        &#10;
+    }
+    xsl:template(match = total)
+    xsl:template(match = skip)
+    xsl:template(match = limit)
+}
