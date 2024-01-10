@@ -476,6 +476,7 @@ struct XMQDoc
     int errno_; // A parse error is assigned a number.
     const char *error_; // And the error is explained here.
     XMQNode root_; // The root node.
+    XMQContentType original_content_type_; // Remember if this document was created from xmq/xml etc.
 };
 
 #ifdef __cplusplus
@@ -1013,6 +1014,8 @@ void reset_ansi(XMQParseState *state);
 void reset_ansi_nl(XMQParseState *state);
 void setup_htmq_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
 const char *skip_any_potential_bom(const char *start, const char *stop);
+void text_print_node(XMQPrintState *ps, xmlNode *node);
+void text_print_nodes(XMQPrintState *ps, xmlNode *from);
 bool write_print_stderr(void *writer_state_ignored, const char *start, const char *stop);
 bool write_print_stdout(void *writer_state_ignored, const char *start, const char *stop);
 void write_safe_html(XMQWrite write, void *writer_state, const char *start, const char *stop);
@@ -1021,10 +1024,12 @@ bool xmqVerbose();
 void xmqSetupParseCallbacksNoop(XMQParseCallbacks *callbacks);
 bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, XMQTrimType tt);
 bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, XMQTrimType tt);
+bool xmq_parse_buffer_text(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root);
 void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_json(XMQDoc *doq, XMQOutputSettings *output_settings);
+void xmq_print_text(XMQDoc *doq, XMQOutputSettings *output_settings);
 char *xmq_quote_with_entity_newlines(const char *start, const char *stop, XMQQuoteSettings *settings);
 char *xmq_quote_default(int indent, const char *start, const char *stop, XMQQuoteSettings *settings);
 bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root);
@@ -2471,6 +2476,11 @@ void xmqSetDocSourceName(XMQDoc *doq, const char *source_name)
     }
 }
 
+XMQContentType xmqGetOriginalContentType(XMQDoc *doq)
+{
+    return doq->original_content_type_;
+}
+
 XMQNode *xmqGetRootNode(XMQDoc *doq)
 {
     return &doq->root_;
@@ -2569,7 +2579,6 @@ bool xmqParseBuffer(XMQDoc *doq, const char *start, const char *stop, const char
     // Now state->element_stack->top->data points to doq->docptr_;
     state->element_last = NULL; // Will be set when the first node is created.
     // The doc root will be set when the first element node is created.
-
 
     // Time to tokenize the buffer and invoke the parse callbacks.
     xmqTokenizeBuffer(state, start, stop);
@@ -3350,6 +3359,52 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
     write(writer_state, "\n", NULL);
 }
 
+void text_print_node(XMQPrintState *ps, xmlNode *node)
+{
+    XMQOutputSettings *output_settings = ps->output_settings;
+    XMQWrite write = output_settings->content.write;
+    void *writer_state = output_settings->content.writer_state;
+
+    if (is_content_node(node))
+    {
+        const char *content = xml_element_content(node);
+        write(writer_state, content, NULL);
+    }
+    else if (is_entity_node(node))
+    {
+        const char *name = xml_element_name(node);
+        write(writer_state, "<ENTITY>", NULL);
+        write(writer_state, name, NULL);
+    }
+    else if (is_element_node(node))
+    {
+        text_print_nodes(ps, node->children);
+    }
+}
+
+void text_print_nodes(XMQPrintState *ps, xmlNode *from)
+{
+    xmlNode *i = from;
+
+    while (i)
+    {
+        text_print_node(ps, i);
+        i = xml_next_sibling(i);
+    }
+}
+
+void xmq_print_text(XMQDoc *doq, XMQOutputSettings *os)
+{
+    void *first = doq->docptr_.xml->children;
+    if (!doq || !first) return;
+
+    XMQPrintState ps = {};
+    ps.doq = doq;
+    ps.output_settings = os;
+
+    text_print_nodes(&ps, (xmlNode*)first);
+}
+
 void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
 {
     void *first = doq->docptr_.xml->children;
@@ -3395,6 +3450,10 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
     else if (output_settings->output_format == XMQ_CONTENT_JSON)
     {
         xmq_print_json(doq, output_settings);
+    }
+    else if (output_settings->output_format == XMQ_CONTENT_TEXT)
+    {
+        xmq_print_text(doq, output_settings);
     }
     else
     {
@@ -4296,6 +4355,28 @@ bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, XMQ
     return true;
 }
 
+bool xmq_parse_buffer_text(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root)
+{
+    char *buffer = strndup(start, stop-start);
+    xmlNodePtr text = xmlNewDocText(doq->docptr_.xml, (xmlChar*)buffer);
+    free(buffer);
+
+    if (implicit_root && implicit_root[0])
+    {
+        // We have an implicit root must be created since input is text.
+        xmlNodePtr root = xmlNewDocNode(doq->docptr_.xml, NULL, (const xmlChar *)implicit_root, NULL);
+        xmlDocSetRootElement(doq->docptr_.xml, root);
+        doq->root_.node = root;
+        xmlAddChild(root, text);
+    }
+    else
+    {
+        // There is no implicit root. Text is the new root node.
+        xmlDocSetRootElement(doq->docptr_.xml, text);
+    }
+    return true;
+}
+
 bool xmqParseBufferWithType(XMQDoc *doq,
                             const char *start,
                             const char *stop,
@@ -4316,7 +4397,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     }
     else
     {
-        if (ct != detected_ct)
+        if (ct != detected_ct && ct != XMQ_CONTENT_TEXT)
         {
             if (detected_ct == XMQ_CONTENT_XML && ct == XMQ_CONTENT_HTML)
             {
@@ -4339,6 +4420,8 @@ bool xmqParseBufferWithType(XMQDoc *doq,
         }
     }
 
+    doq->original_content_type_ = detected_ct;
+
     switch (ct)
     {
     case XMQ_CONTENT_XMQ: ok = xmqParseBuffer(doq, start, stop, implicit_root); break;
@@ -4346,6 +4429,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     case XMQ_CONTENT_XML: ok = xmq_parse_buffer_xml(doq, start, stop, tt); break;
     case XMQ_CONTENT_HTML: ok = xmq_parse_buffer_html(doq, start, stop, tt); break;
     case XMQ_CONTENT_JSON: ok = xmq_parse_buffer_json(doq, start, stop, implicit_root); break;
+    case XMQ_CONTENT_TEXT: ok = xmq_parse_buffer_text(doq, start, stop, implicit_root); break;
     default: break;
     }
 

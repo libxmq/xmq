@@ -24,8 +24,9 @@ mkdir -p $OUTPUT
 sed -n '/^XML.*$/,/^XSLT$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.xml
 sed -n '/^XSLT$/,/^EXPECTED$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.xslt
 sed -n '/^EXPECTED$/,/^END$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.expected
+CMDS=$(grep CMDS $TEST_FILE | cut -b 5- | tr -d '\n')
 
-$PROG $ARGS $OUTPUT/${TEST_NAME}.xml transform $OUTPUT/${TEST_NAME}.xslt > $OUTPUT/${TEST_NAME}.output
+$PROG $ARGS $OUTPUT/${TEST_NAME}.xml transform $OUTPUT/${TEST_NAME}.xslt $CMDS > $OUTPUT/${TEST_NAME}.output
 
 if diff $OUTPUT/${TEST_NAME}.expected $OUTPUT/${TEST_NAME}.output > /dev/null
 then

@@ -1,0 +1,37 @@
+XML
+<log>
+    <login>
+        <user>torkel</user>
+        <startTime minutes="58" hours="23"/>
+        <startDate>2011-10-21</startDate>
+    </login>
+    <login>
+        <user>boo</user>
+        <startTime minutes="43" hours="2"/>
+        <startDate>2024-12-20</startDate>
+    </login>
+</log>
+XSLT
+xsl:stylesheet(version   = 1.0
+               xml:space = preserve
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform
+               xmlns:fo  = http://www.w3.org/1999/XSL/Format)
+{
+    xsl:output(method = text)
+    xsl:template(match = log/login)
+    {
+        xsl:value-of(select = user)
+        ' '
+        xsl:value-of(select = startTime/@hours)
+        'h '
+        xsl:value-of(select = startTime/@minutes)
+        'm '
+        xsl:value-of(select = startDate)
+        &#10;
+    }
+}
+EXPECTED
+torkel 23h 58m 2011-10-21
+boo 2h 43m 2024-12-20
+END
+CMDS to-text

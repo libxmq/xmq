@@ -178,6 +178,7 @@ struct XMQDoc
     int errno_; // A parse error is assigned a number.
     const char *error_; // And the error is explained here.
     XMQNode root_; // The root node.
+    XMQContentType original_content_type_; // Remember if this document was created from xmq/xml etc.
 };
 
 #ifdef __cplusplus

@@ -86,6 +86,7 @@ typedef struct XMQParseCallbacks XMQParseCallbacks;
     @XMQ_CONTENT_XML: xml detected
     @XMQ_CONTENT_HTML: html detected
     @XMQ_CONTENT_JSON: json detected
+    @XMQ_CONTENT_TEXT: valid utf8 text input/output is selected
 
     Specify the file/buffer content type.
 */
@@ -97,7 +98,8 @@ typedef enum
     XMQ_CONTENT_HTMQ = 3,
     XMQ_CONTENT_XML = 4,
     XMQ_CONTENT_HTML = 5,
-    XMQ_CONTENT_JSON = 6
+    XMQ_CONTENT_JSON = 6,
+    XMQ_CONTENT_TEXT = 7
 } XMQContentType;
 
 /**
@@ -468,6 +470,13 @@ XMQDoc *xmqNewDoc();
     The source name is often the file name, but can be "-" for stdin or anything you like.
 */
 void xmqSetDocSourceName(XMQDoc *doq, const char *source_name);
+
+/**
+    xmqGetOriginalContentType:
+
+    If available, return the original content type (xmq/htmq/xml/html/json/text) of this document.
+*/
+XMQContentType xmqGetOriginalContentType(XMQDoc *doq);
 
 /**
     xmqGetRootNode:

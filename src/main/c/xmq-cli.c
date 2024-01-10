@@ -23,6 +23,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include"xmq.h"
 #include"parts/membuffer.h"
+#include"parts/text.h"
+#include"parts/xml.h"
 
 #include<assert.h>
 #include<ctype.h>
@@ -71,6 +73,7 @@ typedef enum
     XMQ_CLI_CMD_TO_HTMQ,
     XMQ_CLI_CMD_TO_HTML,
     XMQ_CLI_CMD_TO_JSON,
+    XMQ_CLI_CMD_TO_TEXT,
     XMQ_CLI_CMD_PRINT,
     XMQ_CLI_CMD_SAVE,
     XMQ_CLI_CMD_PAGER,
@@ -83,6 +86,8 @@ typedef enum
     XMQ_CLI_CMD_DELETE_ENTITY,
     XMQ_CLI_CMD_REPLACE,
     XMQ_CLI_CMD_REPLACE_ENTITY,
+    XMQ_CLI_CMD_SUBSTITUTE_ENTITY,
+    XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES,
     XMQ_CLI_CMD_TRANSFORM,
 } XMQCliCmd;
 
@@ -93,6 +98,7 @@ typedef enum {
     XMQ_CLI_CMD_GROUP_TOKENIZE,
     XMQ_CLI_CMD_GROUP_XPATH,
     XMQ_CLI_CMD_GROUP_ENTITY,
+    XMQ_CLI_CMD_GROUP_SUBSTITUTE,
     XMQ_CLI_CMD_GROUP_TRANSFORM,
     XMQ_CLI_CMD_GROUP_OUTPUT,
 } XMQCliCmdGroup;
@@ -184,6 +190,7 @@ typedef enum {
 XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env);
 bool cmd_delete(XMQCliCommand *command);
 bool cmd_replace(XMQCliCommand *command);
+bool cmd_substitute(XMQCliCommand *command);
 XMQCliCmd cmd_from(const char *s);
 XMQCliCmdGroup cmd_group(XMQCliCmd cmd);
 bool cmd_load(XMQCliCommand *command);
@@ -225,6 +232,7 @@ KEY read_key(int *c);
 const char *render_format_to_string(XMQRenderFormat rt);
 void replace_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, const char *content, xmlNodePtr node_content);
 void replace_entities(xmlDoc *doc, const char *entity, const char *content, xmlNodePtr node_content);
+void substitute_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, bool only_chars);
 XMQRenderStyle render_style(bool *use_color, bool *dark_mode);
 void restoreStdinTerminal();
 bool cmd_tokenize(XMQCliCommand *command);
@@ -268,6 +276,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "to-htmq")) return XMQ_CLI_CMD_TO_HTMQ;
     if (!strcmp(s, "to-html")) return XMQ_CLI_CMD_TO_HTML;
     if (!strcmp(s, "to-json")) return XMQ_CLI_CMD_TO_JSON;
+    if (!strcmp(s, "to-text")) return XMQ_CLI_CMD_TO_TEXT;
     if (!strcmp(s, "print")) return XMQ_CLI_CMD_PRINT;
     if (!strcmp(s, "save")) return XMQ_CLI_CMD_SAVE;
     if (!strcmp(s, "pager")) return XMQ_CLI_CMD_PAGER;
@@ -280,6 +289,8 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "delete-entity")) return XMQ_CLI_CMD_DELETE_ENTITY;
     if (!strcmp(s, "replace")) return XMQ_CLI_CMD_REPLACE;
     if (!strcmp(s, "replace-entity")) return XMQ_CLI_CMD_REPLACE_ENTITY;
+    if (!strcmp(s, "substitute-entity")) return XMQ_CLI_CMD_SUBSTITUTE_ENTITY;
+    if (!strcmp(s, "substitute-char-entities")) return XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES;
     if (!strcmp(s, "transform")) return XMQ_CLI_CMD_TRANSFORM;
     return XMQ_CLI_CMD_NONE;
 }
@@ -295,6 +306,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TO_HTMQ: return "to-htmq";
     case XMQ_CLI_CMD_TO_HTML: return "to-html";
     case XMQ_CLI_CMD_TO_JSON: return "to-json";
+    case XMQ_CLI_CMD_TO_TEXT: return "to-text";
     case XMQ_CLI_CMD_PRINT: return "print";
     case XMQ_CLI_CMD_SAVE: return "save";
     case XMQ_CLI_CMD_PAGER: return "pager";
@@ -307,6 +319,8 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_DELETE_ENTITY: return "delete-entity";
     case XMQ_CLI_CMD_REPLACE: return "replace";
     case XMQ_CLI_CMD_REPLACE_ENTITY: return "replace-entity";
+    case XMQ_CLI_CMD_SUBSTITUTE_ENTITY: return "substitute-entity";
+    case XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES: return "substitute-char-entities";
     case XMQ_CLI_CMD_TRANSFORM: return "transform";
     }
     return "?";
@@ -321,6 +335,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TO_HTMQ:
     case XMQ_CLI_CMD_TO_HTML:
     case XMQ_CLI_CMD_TO_JSON:
+    case XMQ_CLI_CMD_TO_TEXT:
         return XMQ_CLI_CMD_GROUP_TO;
 
     case XMQ_CLI_CMD_PRINT:
@@ -345,6 +360,10 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_REPLACE_ENTITY:
         return XMQ_CLI_CMD_GROUP_ENTITY;
 
+    case XMQ_CLI_CMD_SUBSTITUTE_ENTITY:
+    case XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES:
+        return XMQ_CLI_CMD_GROUP_SUBSTITUTE;
+
     case XMQ_CLI_CMD_TRANSFORM:
         return XMQ_CLI_CMD_GROUP_TRANSFORM;
 
@@ -366,6 +385,7 @@ const char *content_type_to_string(XMQContentType ct)
     case XMQ_CONTENT_XML: return "xml";
     case XMQ_CONTENT_HTML: return "html";
     case XMQ_CONTENT_JSON: return "json";
+    case XMQ_CONTENT_TEXT: return "text";
     }
     assert(false);
     return "?";
@@ -605,6 +625,16 @@ bool handle_option(const char *arg, XMQCliCommand *command)
         }
     }
 
+    if (group == XMQ_CLI_CMD_GROUP_SUBSTITUTE)
+    {
+        if (cmd_from(arg) == XMQ_CLI_CMD_NONE && command->entity == NULL)
+        {
+            command->entity = arg;
+            return true;
+        }
+        return false;
+    }
+
     if (group == XMQ_CLI_CMD_GROUP_ENTITY)
     {
         if (!strncmp(arg, "--with-file=", 12))
@@ -676,7 +706,14 @@ bool handle_option(const char *arg, XMQCliCommand *command)
         {
             XMQDoc *doq = xmqNewDoc();
 
-            bool ok = xmqParseFileWithType(doq, arg, NULL, XMQ_CONTENT_DETECT, XMQ_TRIM_DEFAULT);
+            // We load the xslt transform with TRIM_NONE! Why?
+            // XSLT transform are terribly picky with whitespace and the xslt compiler will also trim whitespace
+            // so to make a normal xslt transform work here we do not use the whitespace trimming heuristic.
+            // There might be other problems here when loading normal old xslt transforms, we will get to them when we
+            // find the,
+            //
+            // When loading an xslq transform the default is TRIM_NONE anyway since it is xmq.
+            bool ok = xmqParseFileWithType(doq, arg, NULL, XMQ_CONTENT_DETECT, XMQ_TRIM_NONE);
 
             if (!ok)
             {
@@ -689,9 +726,19 @@ bool handle_option(const char *arg, XMQCliCommand *command)
             verbose_("(xmq) loaded xslt %s\n", arg);
 
             xmlDocPtr xslt = (xmlDocPtr)xmqGetImplementationDoc(doq);
-
+            if (xmqGetOriginalContentType(doq) == XMQ_CONTENT_XMQ ||
+                xmqGetOriginalContentType(doq) == XMQ_CONTENT_HTMQ)
+            {
+                // We want to be able to use char entities in the xslq by default.
+                // So we replace any explicit &#10; with actual newlines etc.
+                xmlNodePtr root = xmlDocGetRootElement(xslt);
+                while (root->prev) root = root->prev;
+                // Replace all char entities! I.e. &#10; is replaced with a newline.
+                substitute_entity(xslt, root, NULL, true);
+            }
             command->xslt_doq = doq;
             command->xslt = xsltParseStylesheetDoc(xslt);
+            if (!command->xslt) return false;
             return true;
         }
     }
@@ -936,6 +983,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->in_format=XMQ_CONTENT_HTML;
         return true;
     }
+    if (!strcmp(arg, "--text"))
+    {
+        command->in_format=XMQ_CONTENT_TEXT;
+        return true;
+    }
     if (!strncmp(arg, "--tabsize=", 10))
     {
         for (const char *i = arg+10; *i; i++)
@@ -1011,7 +1063,8 @@ void print_help_and_exit()
            "* to-xml\n"
            "* to-html\n"
            "* to-json\n"
-           "             Write the content as xml/html/json on stdout.\n"
+           "* to-text\n"
+           "             Write the content as xml/html/json/text on stdout.\n"
            "\n"
            "pager\n"
            "             Render the content as xmq/htmq for color presentation on a terminal and use pager.\n"
@@ -1448,6 +1501,77 @@ bool cmd_replace(XMQCliCommand *command)
     return true;
 }
 
+void substitute_entity(xmlDoc *doc, xmlNode *node, const char *entity, bool only_chars)
+{
+    if (!node) return;
+    if (node->type == XML_ENTITY_REF_NODE)
+    {
+        if (entity == NULL || !strcmp((const char *)node->name, entity))
+        {
+            if (node->name[0] == '#')
+            {
+                char buf[5] = {};
+                char *out = buf;
+                int uc = decode_entity_ref((const char *)node->name);
+                UTF8Char utf8;
+                size_t n = encode_utf8(uc, &utf8);
+                for (size_t j = 0; j < n; ++j)
+                {
+                    *out++ = utf8.bytes[j];
+                }
+                xmlNodePtr new_node = xmlNewDocText(doc, (const xmlChar*)buf);
+                xmlReplaceNode(node, new_node);
+                xmlFreeNode(node);
+            }
+            else if (!only_chars)
+            {
+                if (node->children)
+                {
+                    if (is_content_node(node))
+                    {
+                        xmlNodePtr new_node = xmlNewDocText(doc, node->content);
+                        xmlReplaceNode(node, new_node);
+                        xmlFreeNode(node);
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    xmlNode *i = node->children;
+    while (i)
+    {
+        xmlNode *next = i->next;
+        substitute_entity(doc, i, entity, only_chars);
+        i = next;
+    }
+}
+
+bool cmd_substitute(XMQCliCommand *command)
+{
+    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    xmlNodePtr root = xmlDocGetRootElement(doc);
+
+    while (root->prev) root = root->prev;
+    assert(root != NULL);
+
+    if (command->cmd == XMQ_CLI_CMD_SUBSTITUTE_ENTITY)
+    {
+        verbose_("(xmq) substituting entity %s\n", command->entity);
+
+        substitute_entity(doc, root, command->entity, false);
+    }
+    if (command->cmd == XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES)
+    {
+        verbose_("(xmq) substituting all char entities\n");
+
+        substitute_entity(doc, root, NULL, true);
+    }
+
+    return true;
+}
+
 void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
 {
     switch (c->cmd) {
@@ -1465,6 +1589,9 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
         return;
     case XMQ_CLI_CMD_TO_JSON:
         c->out_format = XMQ_CONTENT_JSON;
+        return;
+    case XMQ_CLI_CMD_TO_TEXT:
+        c->out_format = XMQ_CONTENT_TEXT;
         return;
     case XMQ_CLI_CMD_PAGER:
         c->out_format = XMQ_CONTENT_UNKNOWN;
@@ -1504,6 +1631,10 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
     case XMQ_CLI_CMD_REPLACE:
         return;
     case XMQ_CLI_CMD_REPLACE_ENTITY:
+        return;
+    case XMQ_CLI_CMD_SUBSTITUTE_ENTITY:
+        return;
+    case XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES:
         return;
     case XMQ_CLI_CMD_TRANSFORM:
         return;
@@ -1918,6 +2049,7 @@ bool perform_command(XMQCliCommand *c)
     case XMQ_CLI_CMD_TO_HTMQ:
     case XMQ_CLI_CMD_TO_HTML:
     case XMQ_CLI_CMD_TO_JSON:
+    case XMQ_CLI_CMD_TO_TEXT:
     case XMQ_CLI_CMD_RENDER_TERMINAL:
     case XMQ_CLI_CMD_RENDER_HTML:
     case XMQ_CLI_CMD_RENDER_TEX:
@@ -1935,6 +2067,9 @@ bool perform_command(XMQCliCommand *c)
     case XMQ_CLI_CMD_REPLACE:
     case XMQ_CLI_CMD_REPLACE_ENTITY:
         return cmd_replace(c);
+    case XMQ_CLI_CMD_SUBSTITUTE_ENTITY:
+    case XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES:
+        return cmd_substitute(c);
     case XMQ_CLI_CMD_TRANSFORM:
         return cmd_transform(c);
     }
