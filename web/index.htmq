@@ -244,6 +244,7 @@ html {
             'You can also see that the &nabla; was replaced with the actual ∇. This happened because
              it was character entity, which is just another kind of quote.
              If you want to preserve all whitespace and restore the html entities then do:'
+            br
             span(class = code) = 'xmq --trim=none welcome_traveller.html to-htmq --escape-non-7bit'
         }
         &WELCOME_TRAVELLER_BACK_NOTRIM_HTMQ;
@@ -253,6 +254,7 @@ html {
         h2= 'Compact XMQ with multiline comments'
         p {
             'The opposite of xmq pretty printing is xmq compact printing with no indentation and no newlines: '
+            br
             span(class = code) = 'xmq welcome_traveller.htmq to-htmq --compact'
         }
         &WELCOME_TRAVELLER_HTMQ_COMPACT;
@@ -328,8 +330,10 @@ html {
              then add the S attribute: speed(S)=123 will translate into "speed":"123" .'
 
         p { 'We can also use the xmq tool to parse json. '
+            br
             span(class = code) = '''curl -s 'https://dummyjson.com/todos?skip=4&limit=2' | xmq'''
             ' or '
+            br
             span(class = code) = 'xmq todos.json'
             &nbsp;
             &nbsp;
@@ -353,15 +357,17 @@ html {
 
         h2 = 'XSLT transforms'
 
-        p { 'The XMQ format makes XSLT transforms readable! Let us convert the curled JSON directly into an HTML page using xmq.'
+        p {
+            'XSLT transforms can be terribly(horribly) complicated when you have to deal with whitespace.
+             Again the XMQ format solves this part of the XSLT complexity because the whitespace in XMQ is explicit.
+             Let us convert the curled JSON directly into an HTML page using xmq and an xslq transform.'
             &nbsp;
             &nbsp;
             a(href = resources/todos.xslq) = todos.xslq
             &nbsp;
             &nbsp;
             a(href = resources/todos.xslt) = todos.xslt
-            &nbsp;
-            &nbsp;
+            br
             span(class = code) = 'xmq todos.json transform todos.xslq to-html > todos.html'
             &nbsp;
             &nbsp;
@@ -374,6 +380,25 @@ html {
             a(href = resources/todos.html) = todos.html
         }
         &TODOS_HTMQ;
+
+        p {
+            'We can generate whitespace exact text output with this xmq command. '
+            &nbsp;
+            &nbsp;
+            a(href = resources/todos.xslq) = todosframed.xslq
+            &nbsp;
+            &nbsp;
+            br
+            span(class = code) = 'xmq todos.json transform todosframed.xslq to-text'
+        }
+        &TODOSFRAMED_XSLQ;
+        p { 'And this is the generated text file. '
+            a(href = resources/todos.text) = todos.text
+        }
+        pre(class = 'xmq xmq_light w80')
+        {
+            &TODOS_TEXT;
+        }
 
         h2 = 'Conclusions'
         p = 'With XMQ the assumed dichotomy between mark-up languages (like XML) and key-value store languages (like JSON)

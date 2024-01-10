@@ -58,10 +58,13 @@ $XMQ web/resources/todos.json to-xmq > build/web/resources/todos.xmq
 $XMQ web/resources/todos.json render-html --class=w80 --lightbg --nostyle > build/todos_json.xml
 cp web/resources/todos.json build/web/resources/todos.json
 cp web/resources/todos.xslt build/web/resources/todos.xslt
+cp web/resources/todosframed.xslq build/web/resources/todosframed.xslq
 $XMQ web/resources/todos.xslt to-xmq > build/web/resources/todos.xslq
 $XMQ web/resources/todos.xslt render-html --class=w80 --lightbg --nostyle > build/todos_xslq.xml
+$XMQ web/resources/todosframed.xslq render-html --class=w80 --lightbg --nostyle > build/todosframed_xslq.xml
 $XMQ web/resources/todos.json transform build/web/resources/todos.xslq to-html > build/web/resources/todos.html
-$XMQ build/web/resources/todos.html render-html --class=w80 --darkbg --nostyle > build/todos_htmq.xml
+$XMQ web/resources/todos.json transform build/web/resources/todosframed.xslq to-text > build/web/resources/todos.text
+$XMQ build/web/resources/todos.html render-html --class=w80 --lightbg --nostyle > build/todos_htmq.xml
 
 # Render the welcome traveller xmq in html
 $XMQ web/resources/welcome_traveller.htmq render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_xmq.xml
@@ -95,6 +98,8 @@ $XMQ web/index.htmq \
      replace-entity TODOS_XSLQ --with-file=build/todos_xslq.xml \
      replace-entity TODOS_XSLT --with-text-file=build/web/resources/todos.xslt \
      replace-entity TODOS_HTMQ --with-file=build/todos_htmq.xml \
+     replace-entity TODOSFRAMED_XSLQ --with-file=build/todosframed_xslq.xml \
+     replace-entity TODOS_TEXT --with-text-file=build/web/resources/todos.text \
      replace-entity SYNTACTIC_SUGAR_XMQ --with-file=build/syntactic_sugar_xmq.xml \
      replace-entity WELCOME_TRAVELLER_HTMQ --with-file=build/rendered_welcome_traveller_xmq.xml \
      replace-entity WELCOME_TRAVELLER_BACK_HTMQ --with-file=build/rendered_welcome_traveller_back_xmq.xml \

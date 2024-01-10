@@ -1,0 +1,52 @@
+XML
+{
+  "todos": [
+    {
+      "id": 5,
+      "todo": "Solve a cube",
+      "completed": false,
+      "userId": 31
+    },
+    {
+      "id": 6,
+      "todo": "Bake pastries",
+      "completed": false,
+      "userId": 39
+    }
+  ],
+  "total": 150,
+  "skip": 4,
+  "limit": 2
+}
+XSLT
+xsl:stylesheet(version   = 1.0
+               xml:space = preserve
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform
+               xmlns:fo  = http://www.w3.org/1999/XSL/Format)
+{
+    xsl:output(method = text)
+    xsl:template(match = _/todos)
+    {
+        '┌─────────────┐'
+        &#10;
+        xsl:for-each(select = _)
+        {
+            '│'
+            xsl:value-of(select = '''substring(concat(todo,'             '), 1, 13)''')
+            '│'
+            &#10;
+        }
+        '└─────────────┘'
+        &#10;
+    }
+    xsl:template(match = total)
+    xsl:template(match = skip)
+    xsl:template(match = limit)
+}
+EXPECTED
+┌─────────────┐
+│Solve a cube │
+│Bake pastries│
+└─────────────┘
+END
+CMDS to-text
