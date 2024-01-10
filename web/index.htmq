@@ -47,19 +47,18 @@ html {
         div {
             a(href = https://github.com/libxmq/xmq/releases/latest) = '[Download]'
             &nbsp;
-            &nbsp;
+            '  '
             a(href = https://github.com/libxmq/xmq) = [Github]
-            &nbsp;
-            &nbsp;
+            '  '
             a(href = xmq.pdf) = [Grammar]
             &nbsp;
-            &nbsp;
+            '  '
             a(href = https://github.com/orgs/libxmq/discussions) = '[Forum/Discussions]'
             &nbsp;
-            &nbsp;
+            '  '
             a(href = resources/index_htmq.html) = '[This page source as htmq]'
         }
-        h2= Rationale
+        h2= Background
         p = 'XML can be human readable/editable if it is used for markup of longer
              human language texts, ie books, articles and other documents etc. In
              these cases the xml-tags represent a minor part of the whole xml-file.'
@@ -96,20 +95,26 @@ html {
         }
         p {
             'To convert the XML to XMQ and pretty print with colors:'
+            br
             span(class = code) = 'xmq shiporder.xml'
         }
         p {
             'Use the pager command if the source file is large:'
+            br
             span(class = code) = 'xmq shiporder.xml pager'
+            br
             ' (Press q or esc to exit pager.)'
         }
         p {
             'Use shell redirection to store the XMQ output in a file:'
+            br
             span(class = code) = 'xmq shiporder.xml to-xmq > test.xmq'
-            ' (The to-xmq command is the default command and can be left out here.)'
+            br
+            '(The to-xmq command is the default command and can be left out here.)'
         }
         p {
-            'To convert the XMQ to XML: '
+            'To convert the XMQ to XML:'
+            br
             span(class = code) = 'xmq shiporder.xmq to-xml > test.xml'
         }
         &SHIPORDER_XMQ;
@@ -136,6 +141,12 @@ html {
         }
         p = 'This means that you can quote any block of text with enough single quotes and you
              can comment any block of text with enough slashes.'
+
+        p = 'The incidental indentation removal and n+1 quotes ideas originated in th expert group
+             for JEP 378 Java Text blocks and was a collaborative effort led by Jim Laskey, Brian Goetz
+             and others. The seed to the idea to separate desired whitespace from incidental(accidental)
+             was planted by Kevin Bourrillion and the idea for n+1 quotes came from John Rose.'
+
         h2 = 'XMQ as a configuration file'
         p {
             'XMQ permits multiple root nodes which means that if you use XMQ as your software config file format
@@ -190,6 +201,7 @@ html {
             'As you can see, XMQ can be trivial, which is nice for your first config file, but when your program
              grows in complexity, so can your config file. You do not have to convert your config
              file to xml, but if you want to then you can supply your implicit root (in this case myconf):'
+            br
             span(class = code) = 'xmq --root=myconf config.xmq to-xml > config.xml'
         }
         pre(class = 'xmq xmq_light w80') = &CONFIG_XML;
@@ -222,8 +234,10 @@ html {
         }
         p {
             'If you convert from htmq to html:'
+            br
             span(class = code) = 'xmq welcome_traveller.htmq to-html'
-            ' then you will see that xmq does not pretty print since it wants to preserve the xmq whitespace
+            br
+            'Then you will see that xmq does not pretty print since it wants to preserve the xmq whitespace
              exactly as it was written. (Any linebreaks below are due to your browser.)
              Since you know exactly what whitespace you are feeding the browser (html) and other tools (xml)
              it will be easier to control their behaviour.'
@@ -235,9 +249,11 @@ html {
             ' then you will see that the tool xmq by default trims
              whitespace using its own heuristic.  It keeps the
              original linebreaks but removes incidental indentation
-             and leading/ending whitespace if they contain
-             newlines. This usually work well but might in some
-             situation remove significant spaces.'
+             and leading/ending whitespace if the leader/ender contain
+             newlines. This is the same rule xmq uses for trimming multiline quotes
+             and comments. This heuristic usually works well but might in some
+             situation remove significant spaces from XML sources which
+             were not written with this in mind.'
         }
         &WELCOME_TRAVELLER_BACK_HTMQ;
         p {
@@ -369,11 +385,6 @@ html {
             a(href = resources/todos.xslt) = todos.xslt
             br
             span(class = code) = 'xmq todos.json transform todos.xslq to-html > todos.html'
-            &nbsp;
-            &nbsp;
-            'This is the generated page: '
-            a(href = resources/todos.html) = todos.html
-
         }
         &TODOS_XSLQ;
         p { 'And this is the generated HTMQ. '
@@ -382,20 +393,19 @@ html {
         &TODOS_HTMQ;
 
         p {
-            'We can generate whitespace exact text output with this xmq command. '
-            &nbsp;
-            &nbsp;
-            a(href = resources/todos.xslq) = todosframed.xslq
-            &nbsp;
-            &nbsp;
+            'We can generate whitespace exact text output and still have
+             a pretty printed and readable xslq-transform. The to-text commad
+             will output only text nodes and substituted entities.'
             br
             span(class = code) = 'xmq todos.json transform todosframed.xslq to-text'
+            br
+            a(href = resources/todos.xslq) = todosframed.xslq
         }
         &TODOSFRAMED_XSLQ;
         p { 'And this is the generated text file. '
             a(href = resources/todos.text) = todos.text
         }
-        pre(class = 'xmq xmq_light w80')
+        pre(class = 'xmq xmq_light w80 text')
         {
             &TODOS_TEXT;
         }

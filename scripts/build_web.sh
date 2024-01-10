@@ -8,6 +8,7 @@ $XMQ web/50x.htmq to-html > build/web/50x.html
 $XMQ web/404.htmq to-html > build/web/404.html
 if [ -s doc/xmq.pdf ]; then cp doc/xmq.pdf build/web ; fi
 cp web/resources/style.css  build/web/resources
+cp web/resources/mononoki-Regular.otf  build/web/resources
 cp web/resources/code.js  build/web/resources
 cp web/resources/shiporder.xml  build/web/resources/shiporder.xml
 cp web/resources/car.xml  build/web/resources/car.xml
