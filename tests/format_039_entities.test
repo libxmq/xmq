@@ -1,0 +1,26 @@
+START
+<!DOCTYPE goo [<!ENTITY copy "&#169;">
+               <!ENTITY prutt "PRUTT&copy;">
+               <!ENTITY gurk "<x>sdfsfd</x>"> ]>
+<goo x="&prutt;alfa&#10;beta&copy;howdy&#10;dowdy">
+XXX&copy;&gurk;YYY</goo>
+COMPACT
+!DOCTYPE='goo [ <!ENTITY copy "&#169;"> <!ENTITY prutt "PRUTT&copy;"> <!ENTITY gurk "<x>sdfsfd</x>"> ]'goo(x=(&prutt;'alfa'&#10;'beta'&copy;'howdy'&#10;'dowdy'))=('XXX'&copy;&gurk;'YYY')
+XMQ
+!DOCTYPE = 'goo [
+            <!ENTITY copy "&#169;">
+            <!ENTITY prutt "PRUTT&copy;">
+            <!ENTITY gurk "<x>sdfsfd</x>">
+            ]'
+goo(x = ( &prutt;
+          'alfa
+           beta'
+          &copy;
+          'howdy
+           dowdy' )) = ( 'XXX'
+                         &copy;
+                         &gurk;
+                         'YYY' )
+END
+ARGS
+CMDS to-xmq

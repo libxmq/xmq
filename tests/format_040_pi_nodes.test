@@ -1,0 +1,22 @@
+START
+<?xml version="1.0" encoding="utf8"?>
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt'?>
+<?quotes ' '?>
+<?rfc toc="yes"?>
+<!DOCTYPE rfc>
+<rfc>Intro<?work alfa ?>Outro</rfc>
+COMPACT
+?xml-stylesheet='''type='text/xsl' href='rfc2629.xslt' '''?quotes=''' ' ' '''?rfc='toc="yes"'!DOCTYPE=rfc rfc{'Intro'?work='alfa ' 'Outro'}
+XMQ
+?xml-stylesheet = '''type='text/xsl' href='rfc2629.xslt' '''
+?quotes = ''' ' ' '''
+?rfc = 'toc="yes"'
+!DOCTYPE = rfc
+rfc {
+    'Intro'
+    ?work = 'alfa '
+    'Outro'
+}
+END
+ARGS
+CMDS to-xmq

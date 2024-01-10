@@ -122,6 +122,11 @@ bool is_comment_node(const xmlNode *node)
     return node->type == XML_COMMENT_NODE;
 }
 
+bool is_pi_node(const xmlNode *node)
+{
+    return node->type == XML_PI_NODE;
+}
+
 bool is_doctype_node(const xmlNode *node)
 {
     return node->type == XML_DTD_NODE;

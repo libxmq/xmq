@@ -502,4 +502,33 @@ char *xmq_unquote_as_c(const char *start, const char *stop)
     return buf;
 }
 
+char *potentially_add_leading_ending_space(const char *start, const char *stop)
+{
+    char *content = NULL;
+    int prefix = *start == '\'' ? 1 : 0;
+    int postfix = *(stop-1) == '\'' ? 1 : 0;
+    if (prefix || postfix)
+    {
+        size_t len = stop-start;
+        len += prefix;
+        len += postfix;
+        content = (char*)malloc(len+1);
+        if (prefix)
+        {
+            content[0] = ' ';
+        }
+        if (postfix)
+        {
+            content[len-1] = ' ';
+        }
+        memcpy(content+prefix, start, stop-start);
+        content[len] = 0;
+    }
+    else
+    {
+        content = strndup(start, stop-start);
+    }
+    return content;
+}
+
 #endif // TEXT_MODULE

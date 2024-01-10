@@ -1886,12 +1886,19 @@ void do_element_value_text(XMQParseState *state,
                            const char *stop,
                            const char *suffix)
 {
-    if (!state->parsing_doctype)
+    if (state->parsing_pi)
     {
-        xmlNodePtr n = xmlNewDocTextLen(state->doq->docptr_.xml, (const xmlChar *)start, stop-start);
-        xmlAddChild((xmlNode*)state->element_last, n);
+        char *content = potentially_add_leading_ending_space(start, stop);
+        xmlNodePtr n = (xmlNodePtr)xmlNewPI((xmlChar*)state->pi_name, (xmlChar*)content);
+        xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
+        xmlAddChild(parent, n);
+        free(content);
+
+        state->parsing_pi = false;
+        free((char*)state->pi_name);
+        state->pi_name = NULL;
     }
-    else
+    else if (state->parsing_doctype)
     {
         size_t l = stop-start;
         char *tmp = (char*)malloc(l+1);
@@ -1905,6 +1912,11 @@ void do_element_value_text(XMQParseState *state,
 
         state->parsing_doctype = false;
     }
+    else
+    {
+        xmlNodePtr n = xmlNewDocTextLen(state->doq->docptr_.xml, (const xmlChar *)start, stop-start);
+        xmlAddChild((xmlNode*)state->element_last, n);
+    }
 }
 
 void do_element_value_quote(XMQParseState *state,
@@ -1915,12 +1927,18 @@ void do_element_value_quote(XMQParseState *state,
                             const char *suffix)
 {
     char *trimmed = xmq_un_quote(col-1, ' ', start, stop, true);
-    if (!state->parsing_doctype)
+    if (state->parsing_pi)
     {
-        xmlNodePtr n = xmlNewDocText(state->doq->docptr_.xml, (const xmlChar *)trimmed);
-        xmlAddChild((xmlNode*)state->element_last, n);
+        char *content = potentially_add_leading_ending_space(trimmed, trimmed+strlen(trimmed));
+        xmlNodePtr n = (xmlNodePtr)xmlNewPI((xmlChar*)state->pi_name, (xmlChar*)content);
+        xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
+        xmlAddChild(parent, n);
+        state->parsing_pi = false;
+        free((char*)state->pi_name);
+        state->pi_name = NULL;
+        free(content);
     }
-    else
+    else if (state->parsing_doctype)
     {
         // "<!DOCTYPE "=10  ">"=1 NULL=1
         size_t tn = strlen(trimmed);
@@ -1941,6 +1959,11 @@ void do_element_value_quote(XMQParseState *state,
         xmlAddChild(parent, (xmlNodePtr)dtd);
         state->parsing_doctype = false;
         free(buf);
+    }
+    else
+    {
+        xmlNodePtr n = xmlNewDocText(state->doq->docptr_.xml, (const xmlChar *)trimmed);
+        xmlAddChild((xmlNode*)state->element_last, n);
     }
     free(trimmed);
 }
@@ -2205,6 +2228,11 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
     if (!strcmp(name, "!DOCTYPE"))
     {
         state->parsing_doctype = true;
+    }
+    else if (name[0] == '?')
+    {
+        state->parsing_pi = true;
+        state->pi_name = strdup(name+1); // Drop the ?
     }
     else
     {

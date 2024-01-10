@@ -47,6 +47,7 @@ const char* xml_namespace_href(xmlNs *ns);
 bool is_entity_node(const xmlNode *node);
 bool is_content_node(const xmlNode *node);
 bool is_comment_node(const xmlNode *node);
+bool is_pi_node(const xmlNode *node);
 bool is_doctype_node(const xmlNode *node);
 bool is_element_node(const xmlNode *node);
 bool is_key_value_node(xmlNodePtr node);

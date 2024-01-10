@@ -61,6 +61,7 @@ char to_hex(int c);
 bool utf8_char_to_codepoint_string(UTF8Char *uc, char *buf);
 char *xmq_quote_as_c(const char *start, const char *stop);
 char *xmq_unquote_as_c(const char *start, const char *stop);
+char *potentially_add_leading_ending_space(const char *start, const char *stop);
 
 #define TEXT_MODULE
 

@@ -15,6 +15,7 @@
 #ifdef XMQ_PARSER_MODULE
 
 void eat_xmq_doctype(XMQParseState *state, const char **text_start, const char **text_stop);
+void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text_stop);
 void eat_xmq_text_name(XMQParseState *state, const char **content_start, const char **content_stop,
                        const char **namespace_start, const char **namespace_stop);
 bool possibly_lost_content_after_equals(XMQParseState *state);
@@ -323,6 +324,29 @@ void eat_xmq_doctype(XMQParseState *state, const char **text_start, const char *
     state->col = col;
 }
 
+void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text_stop)
+{
+    const char *i = state->i;
+    const char *end = state->buffer_stop;
+    size_t line = state->line;
+    size_t col = state->col;
+    *text_start = i;
+
+    assert(*i == '?');
+    increment('?', 1, &i, &line, &col);
+    while (i < end)
+    {
+        char c = *i;
+        if (!is_xmq_text_name(c)) break;
+        increment(c, 1, &i, &line, &col);
+    }
+
+    *text_stop = i;
+    state->i = i;
+    state->line = line;
+    state->col = col;
+}
+
 bool is_xmq_quote_start(char c)
 {
     return c == '\'';
@@ -357,6 +381,14 @@ bool is_xmq_compound_start(char c)
 bool is_xmq_comment_start(char c, char cc)
 {
     return c == '/' && (cc == '/' || cc == '*');
+}
+
+bool is_xmq_pi_start(const char *start, const char *stop)
+{
+    if (*start != '?') return false;
+    // We need at least one character, eg. ?x
+    if (start+2 > stop) return false;
+    return true;
 }
 
 bool is_xmq_doctype_start(const char *start, const char *stop)
@@ -445,6 +477,7 @@ void parse_xmq(XMQParseState *state)
         else if (is_xmq_comment_start(c, cc)) parse_xmq_comment(state, cc);
         else if (is_xmq_element_start(c)) parse_xmq_element(state);
         else if (is_xmq_doctype_start(state->i, end)) parse_xmq_doctype(state);
+        else if (is_xmq_pi_start(state->i, end)) parse_xmq_pi(state);
         else if (c == '}') return;
         else
         {
@@ -631,6 +664,10 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
     {
         eat_xmq_doctype(state, &name_start, &name_stop);
     }
+    else if (pi)
+    {
+        eat_xmq_pi(state, &name_start, &name_stop);
+    }
     else
     {
         eat_xmq_text_name(state, &name_start, &name_stop, &ns_start, &ns_stop);
@@ -770,7 +807,6 @@ void parse_xmq_pi(XMQParseState *state)
 {
     parse_xmq_element_internal(state, false, true);
 }
-
 
 /** Parse a list of attribute key = value, or just key children until a ')' is found. */
 void parse_xmq_attributes(XMQParseState *state)

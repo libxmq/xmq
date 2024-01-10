@@ -268,6 +268,8 @@ struct XMQParseState
     Stack *element_stack; // Top is last created node
     void *element_last; // Last added sibling to stack top node.
     bool parsing_doctype; // True when parsing a doctype.
+    bool parsing_pi; // True when parsing a processing instruction, pi.
+    const char *pi_name; // Name of the pi node just started.
     XMQOutputSettings *output_settings; // Used when coloring existing text using the tokenizer.
     int magic_cookie; // Used to check that the state has been properly initialized.
 
@@ -376,6 +378,7 @@ bool is_xmq_attribute_key_start(char c);
 bool is_xmq_comment_start(char c, char cc);
 bool is_xmq_compound_start(char c);
 bool is_xmq_doctype_start(const char *start, const char *stop);
+bool is_xmq_pi_start(const char *start, const char *stop);
 bool is_xmq_entity_start(char c);
 bool is_xmq_quote_start(char c);
 bool is_xmq_text_value(const char *i, const char *stop);
@@ -478,6 +481,7 @@ bool is_entity_node(const xmlNode *node);
 bool is_content_node(const xmlNode *node);
 bool is_doctype_node(const xmlNode *node);
 bool is_comment_node(const xmlNode *node);
+bool is_pi_node(const xmlNode *node);
 bool is_leaf_node(xmlNode *node);
 bool is_key_value_node(xmlNode *node);
 void trim_node(xmlNode *node, XMQTrimType tt);

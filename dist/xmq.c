@@ -181,6 +181,7 @@ char to_hex(int c);
 bool utf8_char_to_codepoint_string(UTF8Char *uc, char *buf);
 char *xmq_quote_as_c(const char *start, const char *stop);
 char *xmq_unquote_as_c(const char *start, const char *stop);
+char *potentially_add_leading_ending_space(const char *start, const char *stop);
 
 #define TEXT_MODULE
 
@@ -219,6 +220,7 @@ const char* xml_namespace_href(xmlNs *ns);
 bool is_entity_node(const xmlNode *node);
 bool is_content_node(const xmlNode *node);
 bool is_comment_node(const xmlNode *node);
+bool is_pi_node(const xmlNode *node);
 bool is_doctype_node(const xmlNode *node);
 bool is_element_node(const xmlNode *node);
 bool is_key_value_node(xmlNodePtr node);
@@ -269,6 +271,7 @@ void print_element_with_children(XMQPrintState *ps,
                                  xmlNode *node,
                                  size_t align);
 void print_doctype(XMQPrintState *ps, xmlNode *node);
+void print_pi_node(XMQPrintState *ps, xmlNode *node);
 void print_node(XMQPrintState *ps, xmlNode *node, size_t align);
 
 void print_white_spaces(XMQPrintState *ps, int num);
@@ -566,6 +569,8 @@ struct XMQParseState
     Stack *element_stack; // Top is last created node
     void *element_last; // Last added sibling to stack top node.
     bool parsing_doctype; // True when parsing a doctype.
+    bool parsing_pi; // True when parsing a processing instruction, pi.
+    const char *pi_name; // Name of the pi node just started.
     XMQOutputSettings *output_settings; // Used when coloring existing text using the tokenizer.
     int magic_cookie; // Used to check that the state has been properly initialized.
 
@@ -674,6 +679,7 @@ bool is_xmq_attribute_key_start(char c);
 bool is_xmq_comment_start(char c, char cc);
 bool is_xmq_compound_start(char c);
 bool is_xmq_doctype_start(const char *start, const char *stop);
+bool is_xmq_pi_start(const char *start, const char *stop);
 bool is_xmq_entity_start(char c);
 bool is_xmq_quote_start(char c);
 bool is_xmq_text_value(const char *i, const char *stop);
@@ -776,6 +782,7 @@ bool is_entity_node(const xmlNode *node);
 bool is_content_node(const xmlNode *node);
 bool is_doctype_node(const xmlNode *node);
 bool is_comment_node(const xmlNode *node);
+bool is_pi_node(const xmlNode *node);
 bool is_leaf_node(xmlNode *node);
 bool is_key_value_node(xmlNode *node);
 void trim_node(xmlNode *node, XMQTrimType tt);
@@ -2792,12 +2799,19 @@ void do_element_value_text(XMQParseState *state,
                            const char *stop,
                            const char *suffix)
 {
-    if (!state->parsing_doctype)
+    if (state->parsing_pi)
     {
-        xmlNodePtr n = xmlNewDocTextLen(state->doq->docptr_.xml, (const xmlChar *)start, stop-start);
-        xmlAddChild((xmlNode*)state->element_last, n);
+        char *content = potentially_add_leading_ending_space(start, stop);
+        xmlNodePtr n = (xmlNodePtr)xmlNewPI((xmlChar*)state->pi_name, (xmlChar*)content);
+        xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
+        xmlAddChild(parent, n);
+        free(content);
+
+        state->parsing_pi = false;
+        free((char*)state->pi_name);
+        state->pi_name = NULL;
     }
-    else
+    else if (state->parsing_doctype)
     {
         size_t l = stop-start;
         char *tmp = (char*)malloc(l+1);
@@ -2811,6 +2825,11 @@ void do_element_value_text(XMQParseState *state,
 
         state->parsing_doctype = false;
     }
+    else
+    {
+        xmlNodePtr n = xmlNewDocTextLen(state->doq->docptr_.xml, (const xmlChar *)start, stop-start);
+        xmlAddChild((xmlNode*)state->element_last, n);
+    }
 }
 
 void do_element_value_quote(XMQParseState *state,
@@ -2821,12 +2840,18 @@ void do_element_value_quote(XMQParseState *state,
                             const char *suffix)
 {
     char *trimmed = xmq_un_quote(col-1, ' ', start, stop, true);
-    if (!state->parsing_doctype)
+    if (state->parsing_pi)
     {
-        xmlNodePtr n = xmlNewDocText(state->doq->docptr_.xml, (const xmlChar *)trimmed);
-        xmlAddChild((xmlNode*)state->element_last, n);
+        char *content = potentially_add_leading_ending_space(trimmed, trimmed+strlen(trimmed));
+        xmlNodePtr n = (xmlNodePtr)xmlNewPI((xmlChar*)state->pi_name, (xmlChar*)content);
+        xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
+        xmlAddChild(parent, n);
+        state->parsing_pi = false;
+        free((char*)state->pi_name);
+        state->pi_name = NULL;
+        free(content);
     }
-    else
+    else if (state->parsing_doctype)
     {
         // "<!DOCTYPE "=10  ">"=1 NULL=1
         size_t tn = strlen(trimmed);
@@ -2847,6 +2872,11 @@ void do_element_value_quote(XMQParseState *state,
         xmlAddChild(parent, (xmlNodePtr)dtd);
         state->parsing_doctype = false;
         free(buf);
+    }
+    else
+    {
+        xmlNodePtr n = xmlNewDocText(state->doq->docptr_.xml, (const xmlChar *)trimmed);
+        xmlAddChild((xmlNode*)state->element_last, n);
     }
     free(trimmed);
 }
@@ -3111,6 +3141,11 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
     if (!strcmp(name, "!DOCTYPE"))
     {
         state->parsing_doctype = true;
+    }
+    else if (name[0] == '?')
+    {
+        state->parsing_pi = true;
+        state->pi_name = strdup(name+1); // Drop the ?
     }
     else
     {
@@ -6880,6 +6915,35 @@ char *xmq_unquote_as_c(const char *start, const char *stop)
     return buf;
 }
 
+char *potentially_add_leading_ending_space(const char *start, const char *stop)
+{
+    char *content = NULL;
+    int prefix = *start == '\'' ? 1 : 0;
+    int postfix = *(stop-1) == '\'' ? 1 : 0;
+    if (prefix || postfix)
+    {
+        size_t len = stop-start;
+        len += prefix;
+        len += postfix;
+        content = (char*)malloc(len+1);
+        if (prefix)
+        {
+            content[0] = ' ';
+        }
+        if (postfix)
+        {
+            content[len-1] = ' ';
+        }
+        memcpy(content+prefix, start, stop-start);
+        content[len] = 0;
+    }
+    else
+    {
+        content = strndup(start, stop-start);
+    }
+    return content;
+}
+
 #endif // TEXT_MODULE
 
 // PARTS UTF8_C ////////////////////////////////////////
@@ -7162,6 +7226,11 @@ bool is_content_node(const xmlNode *node)
 bool is_comment_node(const xmlNode *node)
 {
     return node->type == XML_COMMENT_NODE;
+}
+
+bool is_pi_node(const xmlNode *node)
+{
+    return node->type == XML_PI_NODE;
 }
 
 bool is_doctype_node(const xmlNode *node)
@@ -7899,6 +7968,7 @@ size_t find_namespace_max_u_width(size_t max, xmlNs *ns)
 #ifdef XMQ_PARSER_MODULE
 
 void eat_xmq_doctype(XMQParseState *state, const char **text_start, const char **text_stop);
+void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text_stop);
 void eat_xmq_text_name(XMQParseState *state, const char **content_start, const char **content_stop,
                        const char **namespace_start, const char **namespace_stop);
 bool possibly_lost_content_after_equals(XMQParseState *state);
@@ -8207,6 +8277,29 @@ void eat_xmq_doctype(XMQParseState *state, const char **text_start, const char *
     state->col = col;
 }
 
+void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text_stop)
+{
+    const char *i = state->i;
+    const char *end = state->buffer_stop;
+    size_t line = state->line;
+    size_t col = state->col;
+    *text_start = i;
+
+    assert(*i == '?');
+    increment('?', 1, &i, &line, &col);
+    while (i < end)
+    {
+        char c = *i;
+        if (!is_xmq_text_name(c)) break;
+        increment(c, 1, &i, &line, &col);
+    }
+
+    *text_stop = i;
+    state->i = i;
+    state->line = line;
+    state->col = col;
+}
+
 bool is_xmq_quote_start(char c)
 {
     return c == '\'';
@@ -8241,6 +8334,14 @@ bool is_xmq_compound_start(char c)
 bool is_xmq_comment_start(char c, char cc)
 {
     return c == '/' && (cc == '/' || cc == '*');
+}
+
+bool is_xmq_pi_start(const char *start, const char *stop)
+{
+    if (*start != '?') return false;
+    // We need at least one character, eg. ?x
+    if (start+2 > stop) return false;
+    return true;
 }
 
 bool is_xmq_doctype_start(const char *start, const char *stop)
@@ -8329,6 +8430,7 @@ void parse_xmq(XMQParseState *state)
         else if (is_xmq_comment_start(c, cc)) parse_xmq_comment(state, cc);
         else if (is_xmq_element_start(c)) parse_xmq_element(state);
         else if (is_xmq_doctype_start(state->i, end)) parse_xmq_doctype(state);
+        else if (is_xmq_pi_start(state->i, end)) parse_xmq_pi(state);
         else if (c == '}') return;
         else
         {
@@ -8515,6 +8617,10 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
     {
         eat_xmq_doctype(state, &name_start, &name_stop);
     }
+    else if (pi)
+    {
+        eat_xmq_pi(state, &name_start, &name_stop);
+    }
     else
     {
         eat_xmq_text_name(state, &name_start, &name_stop, &ns_start, &ns_stop);
@@ -8654,7 +8760,6 @@ void parse_xmq_pi(XMQParseState *state)
 {
     parse_xmq_element_internal(state, false, true);
 }
-
 
 /** Parse a list of attribute key = value, or just key children until a ')' is found. */
 void parse_xmq_attributes(XMQParseState *state)
@@ -9224,6 +9329,44 @@ void print_doctype(XMQPrintState *ps, xmlNode *node)
     xmlBufferFree(buffer);
 }
 
+void print_pi_node(XMQPrintState *ps, xmlNode *node)
+{
+    if (!node) return;
+
+    check_space_before_key(ps);
+    size_t name_len = strlen((const char*)node->name);
+    print_utf8(ps, COLOR_element_key, 2, "?", NULL, node->name, NULL);
+    if (!ps->output_settings->compact) print_white_spaces(ps, 1);
+    print_utf8(ps, COLOR_equals, 1, "=", NULL);
+    if (!ps->output_settings->compact) print_white_spaces(ps, 1);
+
+    xmlBuffer *buffer = xmlBufferCreate();
+    xmlNodeDump(buffer, (xmlDocPtr)ps->doq->docptr_.xml, (xmlNodePtr)node, 0, 0);
+    char *c = (char*)xmlBufferContent(buffer);
+    size_t n = strlen(c);
+    // now detect if we need to add a leading/ending space.
+    if (c[n-1] == '>' && c[n-2] == '?')
+    {
+        n-=2;
+    }
+    char *content = potentially_add_leading_ending_space(c+name_len+3, c+n);
+    n = strlen(content);
+    char *end = content+n;
+
+    if (ps->output_settings->compact)
+    {
+        for (char *i = content; i < end; ++i)
+        {
+            if (*i == '\n') *i = ' ';
+        }
+    }
+
+    print_value_internal_text(ps, content, end, LEVEL_ELEMENT_VALUE);
+
+    free(content);
+    xmlBufferFree(buffer);
+}
+
 void print_node(XMQPrintState *ps, xmlNode *node, size_t align)
 {
     // Standalone quote must be quoted: 'word' 'some words'
@@ -9242,6 +9385,12 @@ void print_node(XMQPrintState *ps, xmlNode *node, size_t align)
     if (is_comment_node(node))
     {
         return print_comment_node(ps, node);
+    }
+
+    // This is a pi node ?something
+    if (is_pi_node(node))
+    {
+        return print_pi_node(ps, node);
     }
 
     // This is doctype node.

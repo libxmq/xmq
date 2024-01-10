@@ -384,6 +384,44 @@ void print_doctype(XMQPrintState *ps, xmlNode *node)
     xmlBufferFree(buffer);
 }
 
+void print_pi_node(XMQPrintState *ps, xmlNode *node)
+{
+    if (!node) return;
+
+    check_space_before_key(ps);
+    size_t name_len = strlen((const char*)node->name);
+    print_utf8(ps, COLOR_element_key, 2, "?", NULL, node->name, NULL);
+    if (!ps->output_settings->compact) print_white_spaces(ps, 1);
+    print_utf8(ps, COLOR_equals, 1, "=", NULL);
+    if (!ps->output_settings->compact) print_white_spaces(ps, 1);
+
+    xmlBuffer *buffer = xmlBufferCreate();
+    xmlNodeDump(buffer, (xmlDocPtr)ps->doq->docptr_.xml, (xmlNodePtr)node, 0, 0);
+    char *c = (char*)xmlBufferContent(buffer);
+    size_t n = strlen(c);
+    // now detect if we need to add a leading/ending space.
+    if (c[n-1] == '>' && c[n-2] == '?')
+    {
+        n-=2;
+    }
+    char *content = potentially_add_leading_ending_space(c+name_len+3, c+n);
+    n = strlen(content);
+    char *end = content+n;
+
+    if (ps->output_settings->compact)
+    {
+        for (char *i = content; i < end; ++i)
+        {
+            if (*i == '\n') *i = ' ';
+        }
+    }
+
+    print_value_internal_text(ps, content, end, LEVEL_ELEMENT_VALUE);
+
+    free(content);
+    xmlBufferFree(buffer);
+}
+
 void print_node(XMQPrintState *ps, xmlNode *node, size_t align)
 {
     // Standalone quote must be quoted: 'word' 'some words'
@@ -402,6 +440,12 @@ void print_node(XMQPrintState *ps, xmlNode *node, size_t align)
     if (is_comment_node(node))
     {
         return print_comment_node(ps, node);
+    }
+
+    // This is a pi node ?something
+    if (is_pi_node(node))
+    {
+        return print_pi_node(ps, node);
     }
 
     // This is doctype node.

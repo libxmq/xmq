@@ -53,6 +53,7 @@ void print_element_with_children(XMQPrintState *ps,
                                  xmlNode *node,
                                  size_t align);
 void print_doctype(XMQPrintState *ps, xmlNode *node);
+void print_pi_node(XMQPrintState *ps, xmlNode *node);
 void print_node(XMQPrintState *ps, xmlNode *node, size_t align);
 
 void print_white_spaces(XMQPrintState *ps, int num);
