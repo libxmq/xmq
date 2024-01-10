@@ -382,7 +382,7 @@ bool is_xmq_text_value(const char *i, const char *stop);
 bool is_xmq_text_value_char(const char *i, const char *stop);
 
 size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
-size_t count_necessary_quotes(const char *start, const char *stop, bool forbid_nl, bool *add_nls, bool *add_compound);
+size_t count_necessary_quotes(const char *start, const char *stop, bool compact, bool *add_nls, bool *add_compound);
 size_t count_necessary_slashes(const char *start, const char *stop);
 
 // Common parser functions ///////////////////////////////////////

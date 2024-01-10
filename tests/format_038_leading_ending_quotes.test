@@ -1,0 +1,33 @@
+START
+alfa {
+    beta = '''
+           howdy
+           '''
+    beta = '''
+           'howdy'
+           '''
+    beta = '''
+           ''howdy''
+           '''
+    beta = ''''
+           '''howdy'''
+           ''''
+}
+COMPACT
+alfa{beta=howdy beta=(&#39;'howdy'&#39;)beta=(&#39;&#39;'howdy'&#39;&#39;)beta=(&#39;&#39;&#39;'howdy'&#39;&#39;&#39;)}
+XMQ
+alfa {
+    beta = howdy
+    beta = '''
+           'howdy'
+           '''
+    beta = '''
+           ''howdy''
+           '''
+    beta = ''''
+           '''howdy'''
+           ''''
+}
+END
+ARGS
+CMDS to-xmq

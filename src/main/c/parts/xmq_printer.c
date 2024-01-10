@@ -1,4 +1,3 @@
-
 #ifndef BUILDING_XMQ
 
 #include"always.h"
@@ -34,7 +33,7 @@ const char *toHtmlEntity(int uc);
     Set add_compound to true if content starts or ends with spaces/newlines or if forbid_nl==true and
     content starts/ends with quotes.
 */
-size_t count_necessary_quotes(const char *start, const char *stop, bool forbid_nl, bool *add_nls, bool *add_compound)
+size_t count_necessary_quotes(const char *start, const char *stop, bool compact, bool *add_nls, bool *add_compound)
 {
     size_t max = 0;
     size_t curr = 0;
@@ -53,12 +52,18 @@ size_t count_necessary_quotes(const char *start, const char *stop, bool forbid_n
         // If leading or ending quote, then add newlines both at the beginning and at the end.
         // Strictly speaking, if only a leading quote, then only newline at beginning is needed.
         // However to reduce visual confusion, we add newlines at beginning and end.
-        if (!forbid_nl)
+        if (!compact)
         {
+            // We quote this using:
+            // '''
+            // 'howdy'
+            // '''
             *add_nls = true;
         }
         else
         {
+            // We quote this using:
+            // ( &#39; 'howdy' &#39; )
             *add_compound = true;
         }
     }
@@ -969,22 +974,36 @@ void print_quote(XMQPrintState *ps,
     }
     if (numq == 0 && force) numq = 1;
 
+    size_t old_line_indent = 0;
+
+    if (add_nls)
+    {
+        old_line_indent = ps->line_indent;
+        ps->line_indent = ps->current_indent;
+    }
+
     print_quotes(ps, numq, c);
+
+    if (!add_nls)
+    {
+        old_line_indent = ps->line_indent;
+        ps->line_indent = ps->current_indent;
+    }
 
     if (add_nls)
     {
         print_nl_and_indent(ps, NULL, NULL);
     }
-
-    size_t old_line_indent = ps->line_indent;
-    ps->line_indent = ps->current_indent;
 
     print_quote_lines_and_color_uwhitespace(ps,
                                             c,
                                             start,
                                             stop);
 
-    ps->line_indent = old_line_indent;
+    if (!add_nls)
+    {
+        ps->line_indent = old_line_indent;
+    }
 
     if (add_nls)
     {
@@ -993,6 +1012,10 @@ void print_quote(XMQPrintState *ps,
 
     print_quotes(ps, numq, c);
 
+    if (add_nls)
+    {
+        ps->line_indent = old_line_indent;
+    }
 }
 
 const char *find_next_line_end(XMQPrintState *ps, const char *start, const char *stop)
@@ -1011,14 +1034,27 @@ const char *find_next_line_end(XMQPrintState *ps, const char *start, const char 
 
 const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop)
 {
+    bool compact = ps->output_settings->compact;
     bool newlines = ps->output_settings->escape_newlines;
     bool non7bit = ps->output_settings->escape_non_7bit;
 
     const char *i = start;
 
+    if (*i == '\'' && compact)
+    {
+        return i;
+    }
+    const char *pre_stop = stop-1;
+    if (compact && *pre_stop == '\'')
+    {
+        while (pre_stop > start && *pre_stop == '\'') pre_stop--;
+        pre_stop++;
+    }
+
     while (i < stop)
     {
         int c = (int)((unsigned char)*i);
+        if (compact && c == '\'' && i == pre_stop) break;
         if (newlines && c == '\n') break;
         if (non7bit && c > 126) break;
         if (c < 32 && c != '\n') break;
@@ -1034,7 +1070,7 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
     if (!start || start >= stop || start[0] == 0)
     {
         // This is for empty attribute values.
-        // Empty elements do not have print_vale invoked so there is no: = ''
+        // Empty elements do not have print_value invoked so there is no equal char printed here (eg = '')
         check_space_before_quote(ps, level);
         print_utf8(ps, level_to_quote_color(level), 1, "''", NULL);
         return;
@@ -1121,8 +1157,8 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
         else
         {
             check_space_before_quote(ps, level);
-            bool add_nls;
-            bool add_compound;
+            bool add_nls = false;
+            bool add_compound = false;
             count_necessary_quotes(from, to, false, &add_nls, &add_compound);
             if (!add_compound)
             {
@@ -1180,11 +1216,21 @@ void print_value_internal(XMQPrintState *ps, xmlNode *node, Level level)
 */
 bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *stop)
 {
+    bool compact = ps->output_settings->compact;
     if (stop == start+1 && *start == '\'') return false;
-    if (has_leading_ending_quote(start, stop)) return true;
     if (has_leading_space_nl(start, stop)) return true;
     if (has_ending_nl_space(start, stop)) return true;
-    if (ps->output_settings->compact && has_newlines(start, stop)) return true;
+    if (compact)
+    {
+        // In compact form newlines must be escaped: &#10;
+        if (has_newlines(start, stop)) return true;
+        // In compact form leading or ending single quotes triggers &#39; escapes
+        // since we cannot use the multiline quote trick:
+        // '''
+        // 'alfa'
+        // '''
+        if (has_leading_ending_quote(start, stop)) return true;
+    }
 
     bool newlines = ps->output_settings->escape_newlines;
     bool non7bit = ps->output_settings->escape_non_7bit;

@@ -142,9 +142,9 @@ html {
         p = 'This means that you can quote any block of text with enough single quotes and you
              can comment any block of text with enough slashes.'
 
-        p = 'The incidental indentation removal and n+1 quotes ideas originated in th expert group
-             for JEP 378 Java Text blocks and was a collaborative effort led by Jim Laskey, Brian Goetz
-             and others. The seed to the idea to separate desired whitespace from incidental(accidental)
+        p = 'The incidental indentation removal and n+1 quotes ideas originated in the expert group
+             for JEP 378 Java Text blocks and was a collaborative effort led by Jim Laskey and Brian Goetz.
+             The seed to the idea to separate desired whitespace from incidental(accidental)
              was planted by Kevin Bourrillion and the idea for n+1 quotes came from John Rose.'
 
         h2 = 'XMQ as a configuration file'
