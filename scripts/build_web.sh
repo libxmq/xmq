@@ -15,6 +15,14 @@ cp web/resources/car.xml  build/web/resources/car.xml
 cp web/resources/welcome_traveller.htmq  build/web/resources/welcome_traveller.htmq
 cp web/resources/welcome_traveller.html  build/web/resources/welcome_traveller.html
 cp web/resources/sugar.xmq  build/web/resources/sugar.xmq
+cp web/resources/docx_example.xml  build/web/resources/docx_example.xml
+cp web/resources/odt_example.xml  build/web/resources/odt_example.xml
+cp web/resources/instances.json  build/web/resources
+cp web/resources/xsd_example.xsd  build/web/resources
+cp web/resources/rfc2629xslt.xml build/web/resources
+cp web/resources/rfcxml.xslt build/web/resources
+cp web/resources/diagonal.svg build/web/resources
+
 # Extract the css
 $XMQ web/resources/shiporder.xml render-html --onlystyle > build/web/resources/xmq.css
 
@@ -114,5 +122,14 @@ $XMQ web/index.htmq \
 # Render the page source itself!
 $XMQ web/index.htmq render-html --darkbg > build/web/resources/index_htmq.html
 $XMQ web/index.htmq render-html --lightbg > build/web/resources/index_htmq_light.html
+
+$XMQ build/web/resources/docx_example.xml render-html --darkbg > build/web/resources/docx_example.html
+$XMQ build/web/resources/odt_example.xml render-html --darkbg > build/web/resources/odt_example.html
+$XMQ build/web/resources/instances.json render-html --darkbg > build/web/resources/json_example.html
+$XMQ build/web/resources/xsd_example.xsd render-html --darkbg > build/web/resources/xsd_example.html
+$XMQ build/web/resources/todos.xslt render-html --darkbg > build/web/resources/xslt_example.html
+$XMQ build/web/resources/rfc2629xslt.xml render-html --darkbg > build/web/resources/rfc2629_example.html
+$XMQ build/web/resources/rfcxml.xslt render-html --darkbg > build/web/resources/rfcxslt_example.html
+$XMQ build/web/resources/diagonal.svg render-html --darkbg > build/web/resources/svg_example.html
 
 echo Updated build/web/index.html

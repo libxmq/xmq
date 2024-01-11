@@ -278,7 +278,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
             "xmqEK{color:#88b4f7;}\n"
             "xmqEKV{color:#26a269;}\n"
             "xmqAK{color:#88b4f7;}\n"
-            "xmqAKV{color:#3166cc;}\n"
+            "xmqAKV{color:#6196ec;}\n"
             "xmqANS{text-decoration:underline;color:#88b4f7;}\n"
             "xmqCP{color:#c061cb;}\n"
             "pre.xmq_light { xmqQ{color:darkgreen;} xmqEKV{color:darkgreen;} xmqEK{color:#1f61ff;}; xmq_AK{color:#1f61ff;}\n"
