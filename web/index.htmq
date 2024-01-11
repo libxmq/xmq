@@ -60,6 +60,8 @@ html {
         div {
             a(href = resources/index_htmq.html) = '[This page source as htmq]'
             '  '
+            a(href = resources/pom_example.html) = '[pom.xml]'
+            '  '
             a(href = resources/svg_example.html) = '[svg]'
             '  '
             a(href = resources/docx_example.html) = '[docx]'

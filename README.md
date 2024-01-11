@@ -81,12 +81,18 @@ msg   = 'Welcome to the app!'
 
 # The xmq cli command
 
-View the input file (xmq/xml/html/htmq/json) as xmq.
+The xmq tool has several useful commands, for example:
 
 ```
-xmq-less pom.xml
-xmq-less index.html
-xmq-less request.json
+xmq pom.xml
+xmq pom.xml pager
+xmq request.json pager
+xmq index.html delete //script delete //style pager
+xmq template.htmq replace-entity DATE 2024-01-11 replace-entity NAME 'Hercules' render-html --lightbg > page.html
+xmq todos.json transform todos.xslq to-html > list.html
+xmq todos.json transform todosframed.xslq to-text > list.txt
+xmq pom.xml to-json | jq .
+xmq input.xmq render-tex > input_as_tex.tex ; xelatex input_as_tex.tex
 ```
 
 # Using xmq.h and xmq.c in your program
@@ -94,17 +100,6 @@ xmq-less request.json
 If you want to add support for xmq to your program, just copy paste
 dist/xmq.h and dist/xmq.c in your source code directory and add
 libxml2 to the build dependencies and you are done. :-)
-
-If you do not need output, ie you are only loading data, for example config files,
-then uncomment: `// #define XMQ_NO_XMQ_PRINTING` in xmq.h.
-
-If you do not need full xml/html support, then uncomment:
-`// #define XMQ_NO_LIBXML` in xmq.h and xmq.c will not require libxml2.
-This means that you cannot load/print xml/html files.
-This will limit the xpath support to a small subset suitable for normal config files.
-
-If you do not need json support, similarily uncomment:
-`// #define XMQ_NO_JSON` in xmq.h.
 
 # JSON
 
@@ -124,29 +119,6 @@ make
 make test
 sudo make install
 ```
-
-View an xml file: `xmq-less file.xml`
-
-View an html page: `xmq-less page.html`
-
-View the same page but remove all script and style nodes and smaller indentation.
-```
-xmq-less page.html delete //script delete //style render-terminal --color --indent=2
-```
-
-Convert any input to xmq: `xmq input to-xmq > output.xmq`
-
-Convert any input to xml: `xmq input to-xml > output.xml`
-
-Convert any (suitable) input to html: `xmq input to-html > output.html`
-
-```
-xmq 'book { alfa = &ALFA; }' replace entity:ALFA "Howdy'''Dowdy" to-xmq
-```
-
-Render any input as a web page: `xmq input.xmq render-html > input_as_web_page.html`
-
-Render any input as a tex: `xmq input.xmq render-tex > input_as_tex.tex ; xelatex input_as_tex.tex`
 
 Build with debug symbols:
 ```
@@ -173,6 +145,10 @@ Windows cross complation from GNU/Linux:
 (cd 3rdparty; fetch_and_build.sh)
 ./configure --host=x86_64-w64-mingw32 --with-libxml2=3rdparty/libxml2-winapi --with-libxslt=3rdparty/libxslt-winapi --with-zlib=3rdparty/zlib-1.3-winapi
 ```
+
+The msi installer is found here: `./build/x86_64-w64-mingw32/windows_installer/xmq-windows-release.msi`
+It will install the xmq.exe and its supporting dlls here: `C:\Program Files (x86)\libxmq\xmq`
+Add this dir to your PATH: `PATH=%PATH%;"C:\Program Files (x86)\libxmq\xmq"`
 
 ## How to install the gnulinux binary executable
 
