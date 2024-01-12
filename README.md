@@ -87,12 +87,12 @@ The xmq tool has several useful commands, for example:
 # Render pom.xml as xmq in color on terminal.
 xmq pom.xml
 
-# Add a pager to scroll up and down.
-xmq pom.xml pager
+# Use a pager to scroll up and down.
+xmq pom.xml page
 xmq pom.xml pa
 
 # Write browse_tmp_pom.xml.html and open this file with the default browser.
-xmq pom.xml browser
+xmq pom.xml browse
 xmq pom.xml br
 
 # View a json file as xmq in a pager
