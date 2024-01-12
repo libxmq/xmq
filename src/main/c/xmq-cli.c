@@ -32,6 +32,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<string.h>
 #include<stdio.h>
 #include<unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #ifdef PLATFORM_WINAPI
 #include<windows.h>
@@ -77,6 +80,7 @@ typedef enum
     XMQ_CLI_CMD_PRINT,
     XMQ_CLI_CMD_SAVE,
     XMQ_CLI_CMD_PAGER,
+    XMQ_CLI_CMD_BROWSER,
     XMQ_CLI_CMD_RENDER_TERMINAL,
     XMQ_CLI_CMD_RENDER_HTML,
     XMQ_CLI_CMD_RENDER_TEX,
@@ -110,19 +114,9 @@ typedef enum {
 } XMQRenderStyle;
 
 typedef struct XMQCliEnvironment XMQCliEnvironment;
-struct XMQCliEnvironment
-{
-    XMQDoc *doc;
-    bool use_detect;
-    bool use_color;
-    bool dark_mode;
-    const char *use_id;
-    char *out_start; // Points to generated output: xml/xmq/htmq/html/json/text
-    char *out_stop; // Points to byte after output, or NULL which means start is NULL terminated.
-};
+struct XMQCliEnvironment;
 
 typedef struct XMQCliCommand XMQCliCommand;
-
 struct XMQCliCommand
 {
     XMQCliEnvironment *env;
@@ -172,6 +166,18 @@ struct XMQCliCommand
     XMQCliCommand *next; // Point to next command to be executed.
 };
 
+typedef struct XMQCliEnvironment XMQCliEnvironment;
+struct XMQCliEnvironment
+{
+    XMQDoc *doc;
+    XMQCliCommand *load;
+    bool use_detect;
+    bool use_color;
+    bool dark_mode;
+    const char *use_id;
+    char *out_start; // Points to generated output: xml/xmq/htmq/html/json/text
+    char *out_stop; // Points to byte after output, or NULL which means start is NULL terminated.
+};
 
 typedef enum {
     CHARACTER,
@@ -221,6 +227,8 @@ bool has_verbose(int argc, const char **argv);
 bool handle_global_option(const char *arg, XMQCliCommand *command);
 bool handle_option(const char *arg, XMQCliCommand *command);
 void page(const char *start, const char *stop);
+void browse(XMQCliCommand *c);
+void open_browser(const char *file);
 bool perform_command(XMQCliCommand *c);
 void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command);
 void print_help_and_exit();
@@ -279,7 +287,10 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "to-text")) return XMQ_CLI_CMD_TO_TEXT;
     if (!strcmp(s, "print")) return XMQ_CLI_CMD_PRINT;
     if (!strcmp(s, "save")) return XMQ_CLI_CMD_SAVE;
-    if (!strcmp(s, "pager")) return XMQ_CLI_CMD_PAGER;
+    if (!strcmp(s, "page")) return XMQ_CLI_CMD_PAGER;
+    if (!strcmp(s, "pa")) return XMQ_CLI_CMD_PAGER;
+    if (!strcmp(s, "browse")) return XMQ_CLI_CMD_BROWSER;
+    if (!strcmp(s, "br")) return XMQ_CLI_CMD_BROWSER;
     if (!strcmp(s, "render-terminal")) return XMQ_CLI_CMD_RENDER_TERMINAL;
     if (!strcmp(s, "render-html")) return XMQ_CLI_CMD_RENDER_HTML;
     if (!strcmp(s, "render-tex")) return XMQ_CLI_CMD_RENDER_TEX;
@@ -310,6 +321,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_PRINT: return "print";
     case XMQ_CLI_CMD_SAVE: return "save";
     case XMQ_CLI_CMD_PAGER: return "pager";
+    case XMQ_CLI_CMD_BROWSER: return "browser";
     case XMQ_CLI_CMD_RENDER_TERMINAL: return "render-terminal";
     case XMQ_CLI_CMD_RENDER_HTML: return "render-html";
     case XMQ_CLI_CMD_RENDER_TEX: return "render-tex";
@@ -341,6 +353,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_PRINT:
     case XMQ_CLI_CMD_SAVE:
     case XMQ_CLI_CMD_PAGER:
+    case XMQ_CLI_CMD_BROWSER:
         return XMQ_CLI_CMD_GROUP_OUTPUT;
 
     case XMQ_CLI_CMD_RENDER_TERMINAL:
@@ -1067,7 +1080,13 @@ void print_help_and_exit()
            "             Write the content as xml/html/json/text on stdout.\n"
            "\n"
            "pager\n"
+           "pa\n"
            "             Render the content as xmq/htmq for color presentation on a terminal and use pager.\n"
+           "\n"
+           "browser\n"
+           "br\n"
+           "             Render the content as xmq/htmq for color presentation in a browser and use the default browser.\n"
+           "             set shell variable XMQ_BG=DARK or XMQ_BG=LIGHT to choose background color.\n"
            "\n"
            "* render-terminal\n"
            "* render-html\n"
@@ -1193,6 +1212,7 @@ bool cmd_load(XMQCliCommand *command)
         command->in = NULL;
     }
 
+    command->env->load = command;
     bool ok = xmqParseFileWithType(command->env->doc,
                                    command->in,
                                    command->implicit_root,
@@ -1278,6 +1298,13 @@ bool cmd_output(XMQCliCommand *command)
     {
         verbose_("(xmq) cmd-pager output\n");
         page(command->env->out_start, command->env->out_stop);
+        free(command->env->out_start);
+        return true;
+    }
+    if (command->cmd == XMQ_CLI_CMD_BROWSER)
+    {
+        verbose_("(xmq) cmd-browser output\n");
+        browse(command);
         free(command->env->out_start);
         return true;
     }
@@ -1591,6 +1618,10 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
         c->out_format = XMQ_CONTENT_UNKNOWN;
         c->render_to = XMQ_RENDER_TERMINAL;
         return;
+    case XMQ_CLI_CMD_BROWSER:
+        c->out_format = XMQ_CONTENT_UNKNOWN;
+        c->render_to = XMQ_RENDER_HTML;
+        return;
     case XMQ_CLI_CMD_PRINT:
         c->out_format = XMQ_CONTENT_UNKNOWN;
         c->render_to = XMQ_RENDER_TERMINAL;
@@ -1870,6 +1901,22 @@ void console_write(const char *start, const char *stop)
 #endif
 }
 
+void open_browser(const char *file)
+{
+#ifdef PLATFORM_WINAPI
+    ShellExecute(NULL, "open", file, NULL, NULL, SW_SHOWNORMAL);
+#else
+    char buf[2049];
+    memset(buf, 0, 2049);
+    snprintf(buf, 2048, "open %s", file);
+    int rc = system(buf);
+    if (rc != 0)
+    {
+        fprintf(stderr, "xmq: command failed rc=%d:\n%s\n", rc, buf);
+    }
+#endif
+}
+
 KEY read_key(int *c)
 {
     int k = get_char();
@@ -1908,6 +1955,51 @@ KEY read_key(int *c)
 
     *c = k;
     return CHARACTER;
+}
+
+
+void browse(XMQCliCommand *c)
+{
+    const char *file;
+
+    if (c->env->load->in)
+    {
+        const char *in = c->env->load->in;
+        file = in+strlen(in);
+        // Find basename, eg data.xml from /alfa/beta/data.xml
+        // or data.xml from C:\alfa\beta\data.xml
+        while (file > in && *(file-1) != '/' && *(file-1) != '\\') file--;
+    }
+    else
+    {
+        file = "stdin";
+    }
+
+    char tmpfile[1024];
+    memset(tmpfile, 0, 1024);
+    snprintf(tmpfile, 1023, "browse_tmp_%s.html", file);
+
+    printf("Browsing file %s\n", tmpfile);
+
+#ifdef PLATFORM_WINAPI
+    int fd = open(tmpfile, O_CREAT | O_TRUNC | O_RDWR, 0666);
+#else
+    // Open the temporary file and truncate it, but do not follow a symbolic link
+    // since such a link could trick you into overwriting something else.
+    int fd = open(tmpfile, O_CREAT | O_TRUNC | O_NOFOLLOW | O_RDWR, 0666);
+#endif
+    size_t len = c->env->out_stop - c->env->out_start;
+    size_t wrote = write(fd, c->env->out_start, len);
+    close(fd);
+
+    if (wrote == len)
+    {
+        open_browser(tmpfile);
+    }
+    else
+    {
+        fprintf(stderr, "xmq: Failed to write content to %s\n", tmpfile);
+    }
 }
 
 void page(const char *start, const char *stop)
@@ -2052,6 +2144,7 @@ bool perform_command(XMQCliCommand *c)
     case XMQ_CLI_CMD_PRINT:
     case XMQ_CLI_CMD_SAVE:
     case XMQ_CLI_CMD_PAGER:
+    case XMQ_CLI_CMD_BROWSER:
         return cmd_output(c);
     case XMQ_CLI_CMD_TOKENIZE:
         return cmd_tokenize(c);
@@ -2182,7 +2275,14 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
     if (!to)
     {
         XMQCliCommand *to = allocate_cli_command(command->env);
-        to->cmd = XMQ_CLI_CMD_TO_XMQ;
+        if (output && output->cmd == XMQ_CLI_CMD_BROWSER)
+        {
+            to->cmd = XMQ_CLI_CMD_RENDER_HTML;
+        }
+        else
+        {
+            to->cmd = XMQ_CLI_CMD_TO_XMQ;
+        }
         prepare_command(to, load_command);
 
         if (!output)

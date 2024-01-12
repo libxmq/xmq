@@ -123,7 +123,15 @@ html {
             br
             span(class = code) = 'xmq shiporder.xml pager'
             br
-            ' (Press q or esc to exit pager.)'
+            'Press q or esc to exit pager. You can shorten the command to just pa.'
+        }
+        p {
+            'Use the browser command to start your default browser to view the content rendered as html:'
+            br
+            span(class = code) = 'xmq shiporder.xml browser'
+            br
+            'You can shorten the command to just br. Set the environement variable
+             XMQ_BG=DARK or XMQ_BG=LIGHT to change the background color.'
         }
         p {
             'Use shell redirection to store the XMQ output in a file:'

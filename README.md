@@ -83,15 +83,42 @@ msg   = 'Welcome to the app!'
 
 The xmq tool has several useful commands, for example:
 
-```
+```shell
+# Render pom.xml as xmq in color on terminal.
 xmq pom.xml
+
+# Add a pager to scroll up and down.
 xmq pom.xml pager
+xmq pom.xml pa
+
+# Write browse_tmp_pom.xml.html and open this file with the default browser.
+xmq pom.xml browser
+xmq pom.xml br
+
+# View a json file as xmq in a pager
 xmq request.json pager
+
+# View a large index.html but delete script and style tags.
 xmq index.html delete //script delete //style pager
+
+# The same but render to browse_tmp_dn.html and browse it.
+xmq index.html delete //script delete //style br
+
+# Replace entities with strings you can also --with-text-file=abc
+# which inserts the content safely quoted, or as DOM --with-file=abc.xml
+# where the file has be parseable.
 xmq template.htmq replace-entity DATE 2024-01-11 replace-entity NAME 'Hercules' render-html --lightbg > page.html
+
+# Apply an xslq transform to some json to generate a html page.
 xmq todos.json transform todos.xslq to-html > list.html
+
+# Apply an xslq transform to generate plain text.
 xmq todos.json transform todosframed.xslq to-text > list.txt
+
+# Convert xml to json.
 xmq pom.xml to-json | jq .
+
+# Render content for tex typesetting.
 xmq input.xmq render-tex > input_as_tex.tex ; xelatex input_as_tex.tex
 ```
 

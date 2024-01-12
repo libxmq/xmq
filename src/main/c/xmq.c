@@ -268,8 +268,8 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
         c->header.post =
             "</style></head>";
         c->style.pre =
-            "pre.xmq_dark {border-radius:2px;background-color:#263338;border:solid 1px #555555;display:inline-block;padding:1em;color:white;}\n"
-            "pre.xmq_light{border-radius:2px;background-color:#f8f9fb;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
+            "pre.xmq_dark {max-width:98%;white-space:pre-wrap;border-radius:2px;background-color:#263338;border:solid 1px #555555;display:inline-block;padding:1em;color:white;}\n"
+            "pre.xmq_light{max-width:98%;white-space:pre-wrap;border-radius:2px;background-color:#f8f9fb;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
             "xmqC{color:#2aa1b3;}\n"
             "xmqQ{color:#26a269;}\n"
             "xmqE{color:magenta;}\n"

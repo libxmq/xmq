@@ -1,6 +1,7 @@
 
 #ifndef BUILDING_XMQ
 
+#include"always.h"
 #include"text.h"
 #include<stdio.h>
 #include<stdlib.h>
