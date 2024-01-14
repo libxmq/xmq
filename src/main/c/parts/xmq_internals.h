@@ -37,8 +37,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<unistd.h>
 
 #include"xmq.h"
-#include"always.h"
-#include"parts/colors.h"
 #include<libxml/tree.h>
 #include<libxml/parser.h>
 #include<libxml/HTMLparser.h>
@@ -46,6 +44,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<libxml/xmlreader.h>
 #include<libxml/xpath.h>
 #include<libxml/xpathInternals.h>
+
+#ifndef BUILDING_XMQ
+#include"colors.h"
+#endif
 
 // STACK /////////////////////
 
@@ -59,6 +61,39 @@ struct MemBuffer;
 typedef struct MemBuffer MemBuffer;
 
 // DECLARATIONS /////////////////////////////////////////////////
+
+#define LIST_OF_XMQ_TOKENS  \
+    X(whitespace)           \
+    X(equals)               \
+    X(brace_left)           \
+    X(brace_right)          \
+    X(apar_left)            \
+    X(apar_right)           \
+    X(cpar_left)            \
+    X(cpar_right)           \
+    X(quote)                \
+    X(entity)               \
+    X(comment)              \
+    X(comment_continuation) \
+    X(element_ns)           \
+    X(element_name)         \
+    X(element_key)          \
+    X(element_value_text)   \
+    X(element_value_quote)  \
+    X(element_value_entity) \
+    X(element_value_compound_quote)  \
+    X(element_value_compound_entity) \
+    X(attr_ns)             \
+    X(attr_key)            \
+    X(attr_value_text)     \
+    X(attr_value_quote)    \
+    X(attr_value_entity)   \
+    X(attr_value_compound_quote)    \
+    X(attr_value_compound_entity)   \
+    X(ns_declaration) \
+    X(ns_colon)  \
+
+#define MAGIC_COOKIE 7287528
 
 struct XMQNode
 {

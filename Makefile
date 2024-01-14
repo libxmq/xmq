@@ -223,12 +223,3 @@ WEBXMQ:=build/default/release/xmq
 .PHONY: build/web/index.html
 build/web/index.html:
 	@./scripts/build_web.sh
-
-#	@$(WEBXMQ) --trim=none build/_EX1_.html to-xmq --compact  > build/_EX1_.htmq
-#	@cat web/index.htmq | sed -e "s/_EX1_/$$(sed 's:/:\\/:g' build/_EX1_.htmq | sed 's/\&/\\\&/g')/g" > build/tmp.htmq
-#	@$(WEBXMQ) build/tmp2.htmq to-html > build/web/index.html
-#	@(cd doc; make)
-#	@cp doc/xmq.pdf build/web
-#	@cp web/favicon.ico build/web
-#	@cp web/resources/* build/web/resources
-#	@echo "Generated build/web/index.html"

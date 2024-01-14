@@ -24,7 +24,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef UTF8_H
 #define UTF8_H
 
+#ifndef BUILDING_XMQ
 #include"xmq.h"
+#include"colors.h"
+#include"xmq_internals.h"
+#endif
 
 struct XMQPrintState;
 typedef struct XMQPrintState XMQPrintState;

@@ -244,21 +244,6 @@ typedef enum
 */
 typedef XMQProceed (*XMQNodeCallback)(XMQDoc *doc, XMQNode *node, void *user_data);
 
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////// FUNCTIONS  /////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
-    xmqDetectContentType:
-    @start: points to first byte of buffer to scan for content type
-    @stop: points to byte after buffer
-
-    Detect the content type xmq/xml/html/json by examining a few leading
-    non-whitespace words/characters.
- */
-XMQContentType xmqDetectContentType(const char *start, const char *stop);
-
 /**
     XMQParseError:
     @XMQ_ERROR_CANNOT_READ_FILE: file not found or cannot be opened for reading.
@@ -325,22 +310,39 @@ typedef enum
     XMQ_ERROR_PARSING_HTML = 29
 } XMQParseError;
 
-
-const char *xmqParseErrorToString(XMQParseError e);
-
-/** Allocate an empty XMQParseCallback structure. All callbacks are NULL and none will be called. */
-XMQParseCallbacks *xmqNewParseCallbacks();
-
-/** Free the XMQParseCallback structure. */
-void xmqFreeParseCallbacks(XMQParseCallbacks *cb);
+///////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////// FUNCTIONS  /////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
-    xmqSetupParseCallbacksNoopTokens:
+    xmqDetectContentType:
+    @start: points to first byte of buffer to scan for content type
+    @stop: points to byte after buffer
 
-    When tokenizing only, for coloring or debugging, you can
-    use the setup functions below for a few standardized handlers.
+    Detect the content type xmq/xml/html/json by examining a few leading
+    non-whitespace words/characters.
+ */
+XMQContentType xmqDetectContentType(const char *start, const char *stop);
+
+/**
+   xmqParseErrorToString:
+   @e: Translate this error to a human readable string.
 */
-void xmqSetupParseCallbacksNoopTokens(XMQParseCallbacks *state);
+const char *xmqParseErrorToString(XMQParseError e);
+
+/**
+    xmqNewParseCallbacks:
+
+    Allocate an empty XMQParseCallback structure. All callbacks are NULL and none will be called.
+*/
+XMQParseCallbacks *xmqNewParseCallbacks();
+
+/**
+    xmqFreeParseCallbacks:
+
+    Free the XMQParseCallback structure.
+*/
+void xmqFreeParseCallbacks(XMQParseCallbacks *cb);
 
 /**
     xmqSetupParseCallbacksColorizeTokens:
