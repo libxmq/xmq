@@ -264,12 +264,14 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
         c->document.post =
             "</html>";
         c->header.pre =
-            "<head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"><style>";
+            "<head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">"
+            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=5\"><style>";
         c->header.post =
             "</style></head>";
-        c->style.pre =
-            "pre.xmq_dark {max-width:98%;white-space:pre-wrap;border-radius:2px;background-color:#263338;border:solid 1px #555555;display:inline-block;padding:1em;color:white;}\n"
-            "pre.xmq_light{max-width:98%;white-space:pre-wrap;border-radius:2px;background-color:#f8f9fb;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
+        c->style.pre = "@media screen and (orientation: portrait) { pre { font-size: 2vw; } }"
+            "@media screen and (orientation: landscape) { pre { max-width: 98%; } }"
+            "pre.xmq_dark {white-space:pre-wrap;border-radius:2px;background-color:#263338;border:solid 1px #555555;display:inline-block;padding:1em;color:white;}\n"
+            "pre.xmq_light{white-space:pre-wrap;border-radius:2px;background-color:#f8f9fb;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
             "xmqC{color:#2aa1b3;}\n"
             "xmqQ{color:#26a269;}\n"
             "xmqE{color:magenta;}\n"
@@ -280,6 +282,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
             "xmqAK{color:#88b4f7;}\n"
             "xmqAKV{color:#6196ec;}\n"
             "xmqANS{text-decoration:underline;color:#88b4f7;}\n"
+            "xmqNSD{text-decoration:underline;color:#ff0000;}\n"
             "xmqCP{color:#c061cb;}\n"
             "pre.xmq_light { xmqQ{color:darkgreen;} xmqEKV{color:darkgreen;} xmqEK{color:#1f61ff;}; xmq_AK{color:#1f61ff;}\n"
             "pre.xmq_dark { }\n"

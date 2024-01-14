@@ -2010,9 +2010,9 @@ void browse(XMQCliCommand *c)
 
     char tmpfile[1024];
     memset(tmpfile, 0, 1024);
-    snprintf(tmpfile, 1023, "browse_tmp_%s.html", file);
+    snprintf(tmpfile, 1023, "xmq_browsing_%s.html", file);
 
-    printf("Browsing file %s\n", tmpfile);
+    printf("Created file %s\n", tmpfile);
 
 #ifdef PLATFORM_WINAPI
     int fd = open(tmpfile, O_CREAT | O_TRUNC | O_RDWR, 0666);
