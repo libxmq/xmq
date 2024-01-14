@@ -34,6 +34,26 @@ html {
              without introducing significant whitespace. The file-suffix htmq is used
              when working with html in the XMQ format. There is even a reasonable mapping
              between JSON and XMQ.'
+        div {
+            'What does it look like? Click on the examples: '
+            br
+            a(href = resources/index_htmq.html) = '[ This page source as htmq ]'
+            '  '
+            a(href = resources/pom_example.html) = '[ pom.xml ]'
+            '  '
+            a(href = resources/svg_example.html) = '[ svg ]'
+            '  '
+            a(href = resources/docx_example.html) = '[ docx ]'
+            '  '
+            a(href = resources/odt_example.html) = '[ odt ]'
+            '  '
+            a(href = resources/json_example.html) = '[ json ]'
+            '  '
+            a(href = resources/xsd_example.html) = '[ xsd schema definition ]'
+            '  '
+            a(href = resources/xslt_example.html) = '[ xslt transform ]'
+        }
+
         &SHIPORDER_XMQ;
         ' '
         pre(class = 'xmq xmq_light w40')
@@ -62,28 +82,6 @@ html {
             '  '
             a(href = https://github.com/orgs/libxmq/discussions) = '[Forum/Discussions]'
             br
-        }
-        h2 = Examples
-        div {
-            a(href = resources/index_htmq.html) = '[This page source as htmq]'
-            '  '
-            a(href = resources/pom_example.html) = '[pom.xml]'
-            '  '
-            a(href = resources/svg_example.html) = '[svg]'
-            '  '
-            a(href = resources/docx_example.html) = '[docx]'
-            '  '
-            a(href = resources/odt_example.html) = '[odt]'
-            '  '
-            a(href = resources/json_example.html) = '[json]'
-            '  '
-            a(href = resources/xsd_example.html) = '[xsd schema definition]'
-            '  '
-            a(href = resources/xslt_example.html) = '[simple xslt transform]'
-            '  '
-            a(href = resources/rfc2629_example.html) = '[rfc2629 as xmq]'
-            '  '
-            a(href = resources/rfcxslt_example.html) = '[complex xslt for rfc]'
         }
         h2= Background
         p = 'XML can be human readable/editable if it is used for markup of longer
