@@ -29,6 +29,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct XMQPrintState;
 typedef struct XMQPrintState XMQPrintState;
 
+enum XMQColor;
+typedef enum XMQColor XMQColor;
+
 size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop);
 size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *stop);
 size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...);

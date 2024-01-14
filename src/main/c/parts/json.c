@@ -2,6 +2,7 @@
 #ifndef BUILDING_XMQ
 
 #include"always.h"
+#include"colors.h"
 #include"parts/xmq_internals.h"
 #include"json.h"
 #include"hashmap.h"

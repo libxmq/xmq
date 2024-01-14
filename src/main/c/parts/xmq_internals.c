@@ -1,6 +1,7 @@
 #ifndef BUILDING_XMQ
 
 #include"parts/always.h"
+#include"parts/colors.h"
 #include"parts/text.h"
 #include"parts/xmq_internals.h"
 
@@ -218,35 +219,6 @@ void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const ch
     state->col = col;
 }
 
-/**
-   get_color: Lookup the color strings
-   coloring: The table of colors.
-   c: The color to use from the table.
-   pre: Store a pointer to the start color string here.
-   post: Store a pointer to the end color string here.
-*/
-void get_color(XMQOutputSettings *os, XMQColor color, const char **pre, const char **post)
-{
-    XMQColoring *coloring = os->default_coloring;
-    switch(color)
-    {
-
-#define X(TYPE) case COLOR_##TYPE: *pre = coloring->TYPE.pre; *post = coloring->TYPE.post; return;
-LIST_OF_XMQ_TOKENS
-#undef X
-
-    case COLOR_unicode_whitespace: *pre = coloring->unicode_whitespace.pre; *post = coloring->unicode_whitespace.post; return;
-    case COLOR_indentation_whitespace: *pre = coloring->indentation_whitespace.pre; *post = coloring->indentation_whitespace.post; return;
-    default:
-        *pre = NULL;
-        *post = NULL;
-        return;
-    }
-    assert(false);
-    *pre = "";
-    *post = "";
-}
-
 void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col)
 {
     if ((c & 0xc0) != 0x80) // Just ignore UTF8 parts since they do not change the line or col.
@@ -320,7 +292,7 @@ void print_color_pre(XMQPrintState *ps, XMQColor color)
     XMQOutputSettings *os = ps->output_settings;
     const char *pre = NULL;
     const char *post = NULL;
-    get_color(os, color, &pre, &post);
+    getColor(os, color, &pre, &post);
 
     if (pre)
     {
@@ -335,7 +307,7 @@ void print_color_post(XMQPrintState *ps, XMQColor color)
     XMQOutputSettings *os = ps->output_settings;
     const char *pre = NULL;
     const char *post = NULL;
-    get_color(os, color, &pre, &post);
+    getColor(os, color, &pre, &post);
 
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;

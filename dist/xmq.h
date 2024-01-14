@@ -145,76 +145,37 @@ typedef enum
 } XMQTrimType;
 
 /**
-    XMQColorType: The normal coloring options for xmq.
-    @COLORTYPE_xmq_c: Comments
-    @COLORTYPE_xmq_q: Standalone quote.
-    @COLORTYPE_xmq_e: Entity
-    @COLORTYPE_xmq_ens: Element Namespace
-    @COLORTYPE_xmq_en: Element Name
-    @COLORTYPE_xmq_ek: Element Key
-    @COLORTYPE_xmq_ekv: Element Key Value
-    @COLORTYPE_xmq_ans: Attribute NameSpace
-    @COLORTYPE_xmq_ak: Attribute Key
-    @COLORTYPE_xmq_akv: Attribute Key Value
-    @COLORTYPE_xmq_cp: Compound Parentheses
-    @COLORTYPE_xmq_uw: Unicode Whitespace
-    @COLORTYPE_xmq_tw: Tab Whitespace
+    XMQSyntax:
+    @SYNTAX_xmqC: Comments
+    @SYNTAX_xmqQ: Standalone quote.
+    @SYNTAX_xmqE: Entity
+    @SYNTAX_xmqENS: Element Namespace
+    @SYNTAX_xmqEN: Element Name
+    @SYNTAX_xmqEK: Element Key
+    @SYNTAX_xmqEKV: Element Key Value
+    @SYNTAX_xmqANS: Attribute NameSpace
+    @SYNTAX_xmqAK: Attribute Key
+    @SYNTAX_xmqAKV: Attribute Key Value
+    @SYNTAX_xmqCP: Compound Parentheses
+    @SYNTAX_xmqNDC: Namespace declaration
+    @SYNTAX_xmqUW: Unicode Whitespace
 */
 typedef enum
 {
-    COLORTYPE_xmq_c = 0, // Comments
-    COLORTYPE_xmq_q = 1, // Standalone quote.
-    COLORTYPE_xmq_e = 2, // Entity
-    COLORTYPE_xmq_ens = 3, // Element Namespace
-    COLORTYPE_xmq_en = 4, // Element Name
-    COLORTYPE_xmq_ek = 5, // Element Key
-    COLORTYPE_xmq_ekv = 6, // Element Key Value
-    COLORTYPE_xmq_ans = 7, // Attribute NameSpace
-    COLORTYPE_xmq_ak = 8, // Attribute Key
-    COLORTYPE_xmq_akv = 9, // Attribute Key Value
-    COLORTYPE_xmq_cp = 10, // Compound Parentheses
-    COLORTYPE_xmq_uw = 11, // Unicode Whitespace
-} XMQColorType;
-
-/**
-    XMQColor:
-
-    Map token type into color index.
-*/
-typedef enum XMQColor {
-    COLOR_none,
-    COLOR_whitespace,
-    COLOR_unicode_whitespace,
-    COLOR_indentation_whitespace,
-    COLOR_equals,
-    COLOR_brace_left,
-    COLOR_brace_right,
-    COLOR_apar_left,
-    COLOR_apar_right,
-    COLOR_cpar_left,
-    COLOR_cpar_right,
-    COLOR_quote,
-    COLOR_entity,
-    COLOR_comment,
-    COLOR_comment_continuation,
-    COLOR_ns_colon,
-    COLOR_element_ns,
-    COLOR_element_name,
-    COLOR_element_key,
-    COLOR_element_value_text,
-    COLOR_element_value_quote,
-    COLOR_element_value_entity,
-    COLOR_element_value_compound_quote,
-    COLOR_element_value_compound_entity,
-    COLOR_attr_ns,
-    COLOR_attr_ns_declaration,
-    COLOR_attr_key,
-    COLOR_attr_value_text,
-    COLOR_attr_value_quote,
-    COLOR_attr_value_entity,
-    COLOR_attr_value_compound_quote,
-    COLOR_attr_value_compound_entity,
-} XMQColor;
+    SYNTAX_C = 0, // Comments
+    SYNTAX_Q = 1, // Standalone quote.
+    SYNTAX_E = 2, // Entity
+    SYNTAX_ENS = 3, // Element Namespace
+    SYNTAX_EN = 4, // Element Name
+    SYNTAX_EK = 5, // Element Key
+    SYNTAX_EKV = 6, // Element Key Value
+    SYNTAX_ANS = 7, // Attribute NameSpace
+    SYNTAX_AK = 8, // Attribute Key
+    SYNTAX_AKV = 9, // Attribute Key Value
+    SYNTAX_CP = 10, // Compound Parentheses
+    SYNTAX_NDC = 11, // Namespace declaration
+    SYNTAX_UW = 12, // Unicode Whitespace
+} XMQSyntax;
 
 /**
     XMQReader:
@@ -551,7 +512,6 @@ void xmqSetUseColor(XMQOutputSettings *os, bool use_color);
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines);
 void xmqSetEscapeNon7bit(XMQOutputSettings *os, bool escape_non_7bit);
 void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format);
-//void xmqSetColoring(XMQOutputSettings *os, XMQColoring coloring);
 void xmqSetRenderFormat(XMQOutputSettings *os, XMQRenderFormat render_to);
 void xmqSetRenderRaw(XMQOutputSettings *os, bool render_raw);
 void xmqSetRenderOnlyStyle(XMQOutputSettings *os, bool only_style);
@@ -738,26 +698,16 @@ void xmqRenderHtmlSettings(XMQOutputSettings *settings,
                            const char *use_class);
 
 /**
-   xmqOverrideColorType:
+   xmqOverrideColor:
 
    Change the color strings for the given color type. You have to run xmqSetupDefaultColors first.
 */
-void xmqOverrideColorType(XMQOutputSettings *settings,
-                          XMQColorType ct,
-                          const char *pre,
-                          const char *post,
-                          const char *ns);
-
-/**
-   xmqOverrideColor:
-
-   Change the color strings for the given color. You have to run xmqSetupDefaultColors first.
-*/
 void xmqOverrideColor(XMQOutputSettings *settings,
-                      XMQColor c,
+                      XMQSyntax sc,
                       const char *pre,
                       const char *post,
                       const char *ns);
+
 
 #ifdef __cplusplus
 _hideRBfromEditor

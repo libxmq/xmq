@@ -82,7 +82,7 @@ void check_space_before_closing_brace(XMQPrintState *ps);
 void check_space_before_comment(XMQPrintState *ps);
 
 void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align);
-void print_namespace(XMQPrintState *ps, xmlNs *ns, size_t align);
+void print_namespace_declaration(XMQPrintState *ps, xmlNs *ns, size_t align);
 void print_attributes(XMQPrintState *ps, xmlNodePtr node);
 
 void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,

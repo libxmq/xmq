@@ -516,7 +516,7 @@ void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num)
 
     const char *pre = NULL;
     const char *post = NULL;
-    get_color(os, c, &pre, &post);
+    getColor(os, c, &pre, &post);
 
     write(writer_state, pre, NULL);
     for (int i=0; i<num; ++i)
@@ -554,7 +554,7 @@ void print_quotes(XMQPrintState *ps, size_t num, XMQColor color)
 
     const char *pre = NULL;
     const char *post = NULL;
-    get_color(os, color, &pre, &post);
+    getColor(os, color, &pre, &post);
 
     if (pre) write(writer_state, pre, NULL);
     for (size_t i=0; i<num; ++i)
@@ -587,7 +587,7 @@ size_t print_char_entity(XMQPrintState *ps, XMQColor color, const char *start, c
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
     const char *pre, *post;
-    get_color(os, color, &pre, &post);
+    getColor(os, color, &pre, &post);
 
     int uc = 0;
     size_t bytes = 0;
@@ -637,7 +637,7 @@ void print_slashes(XMQPrintState *ps, const char *pre, const char *post, size_t 
     void *writer_state = os->content.writer_state;
     const char *cpre = NULL;
     const char *cpost = NULL;
-    get_color(os, COLOR_comment, &cpre, &cpost);
+    getColor(os, COLOR_comment, &cpre, &cpost);
 
     if (cpre) write(writer_state, cpre, NULL);
     if (pre) write(writer_state, pre, NULL);
@@ -843,7 +843,7 @@ void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align)
     }
 }
 
-void print_namespace(XMQPrintState *ps, xmlNs *ns, size_t align)
+void print_namespace_declaration(XMQPrintState *ps, xmlNs *ns, size_t align)
 {
     if (!xml_non_empty_namespace(ns)) return;
 
@@ -854,7 +854,7 @@ void print_namespace(XMQPrintState *ps, xmlNs *ns, size_t align)
 
     namespace_strlen_prefix(ns, &prefix, &total_u_len);
 
-    print_utf8(ps, COLOR_attr_ns_declaration, 1, "xmlns", NULL);
+    print_utf8(ps, COLOR_ns_declaration, 1, "xmlns", NULL);
 
     if (prefix)
     {
@@ -898,7 +898,7 @@ void print_attributes(XMQPrintState *ps,
 
     while (ns)
     {
-        print_namespace(ps, ns, max);
+        print_namespace_declaration(ps, ns, max);
         ns = xml_next_namespace_def(ns);
     }
 
@@ -935,7 +935,7 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
     void *writer_state = os->content.writer_state;
 
     const char *pre, *post;
-    get_color(os, color, &pre, &post);
+    getColor(os, color, &pre, &post);
 
     if (pre) write(writer_state, pre, NULL);
 

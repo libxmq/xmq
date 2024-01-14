@@ -846,7 +846,7 @@ void parse_xmq_attribute(XMQParseState *state)
         if (len == 5 && !strncmp(name_start, "xmlns", 5))
         {
             // A default namespace declaration, eg: xmlns=uri
-            DO_CALLBACK(attr_ns_declaration, state, start_line, start_col, name_start, name_stop, name_stop);
+            DO_CALLBACK(ns_declaration, state, start_line, start_col, name_start, name_stop, name_stop);
         }
         else
         {
@@ -858,12 +858,12 @@ void parse_xmq_attribute(XMQParseState *state)
     {
         // We have a colon in the attribute key.
         // E.g. alfa:beta where alfa is attr_ns and beta is attr_key
-        // However we can also have xmlns:xsl then it gets tokenized as attr_ns_declaration and attr_ns.
+        // However we can also have xmlns:xsl then it gets tokenized as ns_declaration and attr_ns.
         size_t ns_len = ns_stop - ns_start;
         if (ns_len == 5 && !strncmp(ns_start, "xmlns", 5))
         {
             // The xmlns signals a declaration of a namespace.
-            DO_CALLBACK(attr_ns_declaration, state, start_line, start_col, ns_start, ns_stop, name_stop);
+            DO_CALLBACK(ns_declaration, state, start_line, start_col, ns_start, ns_stop, name_stop);
             DO_CALLBACK(ns_colon, state, start_line, start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
             DO_CALLBACK(attr_ns, state, start_line, start_col+ns_len+1, name_start, name_stop, stop);
         }

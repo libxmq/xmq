@@ -37,6 +37,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<unistd.h>
 
 #include"xmq.h"
+#include"always.h"
+#include"parts/colors.h"
 #include<libxml/tree.h>
 #include<libxml/parser.h>
 #include<libxml/HTMLparser.h>
@@ -56,112 +58,7 @@ typedef struct HashMap HashMap;
 struct MemBuffer;
 typedef struct MemBuffer MemBuffer;
 
-extern const char *color_names[13];
-
-/**
-    XMQColorStrings:
-    @pre: string to inserted before the token
-    @post: string to inserted after the token
-
-    A color string object is stored for each type of token.
-    It can store the ANSI color prefix, the html span etc.
-    If post is NULL then when the token ends, the pre of the containing color will be reprinted.
-    This is used for ansi codes where there is no stack memory (pop impossible) to the previous colors.
-    I.e. pre = "\033[0;1;32m" which means reset;bold;green but post = NULL.
-    For html/tex coloring we use the stack memory (pop possible) of tags.
-    I.e. pre = "<span class="red">" post = "</span>"
-    I.e. pre = "{\color{red}" post = "}"
-*/
-struct XMQColorStrings
-{
-    const char *pre;
-    const char *post;
-};
-typedef struct XMQColorStrings XMQColorStrings;
-
-/**
-    XMQColoring:
-
-    The coloring struct is used to prefix/postfix ANSI/HTML/TEX strings for
-    XMQ tokens to colorize the printed xmq output.
-*/
-struct XMQColoring
-{
-    XMQColorStrings document; // <html></html>  \documentclass{...}... etc
-    XMQColorStrings header; // <head>..</head>
-    XMQColorStrings style;  // Stylesheet content inside header (html) or color(tex) definitions.
-    XMQColorStrings body; // <body></body> \begin{document}\end{document}
-    XMQColorStrings content; // Wrapper around rendered code. Like <pre></pre>, \textt{...}
-
-    XMQColorStrings whitespace; // The normal whitespaces: space=32. Normally not colored.
-    XMQColorStrings tab_whitespace; // The tab, colored with red background.
-    XMQColorStrings unicode_whitespace; // The remaining unicode whitespaces, like: nbsp=160 color as red underline.
-    XMQColorStrings indentation_whitespace; // The xmq generated indentation spaces. Normally not colored.
-    XMQColorStrings equals; // The key = value equal sign.
-    XMQColorStrings brace_left; // Left brace starting a list of childs.
-    XMQColorStrings brace_right; // Right brace ending a list of childs.
-    XMQColorStrings apar_left; // Left parentheses surrounding attributes. foo(x=1)
-    XMQColorStrings apar_right; // Right parentheses surrounding attributes.
-    XMQColorStrings cpar_left; // Left parentheses surrounding a compound value. foo = (&#10;' x '&#10;)
-    XMQColorStrings cpar_right; // Right parentheses surrounding a compound value.
-    XMQColorStrings quote; // A quote 'x y z' can be single or multiline.
-    XMQColorStrings entity; // A entity &#10;
-    XMQColorStrings comment; // A comment // foo or /* foo */
-    XMQColorStrings comment_continuation; // A comment containing newlines /* Hello */* there */
-    XMQColorStrings ns_colon; // The color of the colon separating a namespace from a name.
-    XMQColorStrings element_ns; // The namespace part of an element tag, i.e. the text before colon in foo:alfa.
-    XMQColorStrings element_name; // When an element tag has multiple children or attributes it is rendered using this color.
-    XMQColorStrings element_key; // When an element tag is suitable to be presented as a key value, this color is used.
-    XMQColorStrings element_value_text; // When an element is presented as a key and the value is presented as text, use this color.
-    XMQColorStrings element_value_quote; // When the value is a single quote, use this color.
-    XMQColorStrings element_value_entity; // When the value is a single entity, use this color.
-    XMQColorStrings element_value_compound_quote; // When the value is compounded and this is a quote in the compound.
-    XMQColorStrings element_value_compound_entity; // When the value is compounded and this is an entity in the compound.
-    XMQColorStrings attr_ns; // The namespace part of an attribute name, i.e. the text before colon in bar:speed.
-    XMQColorStrings attr_ns_declaration; // The xmlns part of an attribute namespace declaration.
-    XMQColorStrings attr_key; // The color of the attribute name, i.e. the key.
-    XMQColorStrings attr_value_text; // When the attribute value is text, use this color.
-    XMQColorStrings attr_value_quote; // When the attribute value is a quote, use this color.
-    XMQColorStrings attr_value_entity; // When the attribute value is an entity, use this color.
-    XMQColorStrings attr_value_compound_quote; // When the attribute value is a compound and this is a quote in the compound.
-    XMQColorStrings attr_value_compound_entity; // When the attribute value is a compound and this is an entity in the compound.
-};
-typedef struct XMQColoring XMQColoring;
-
 // DECLARATIONS /////////////////////////////////////////////////
-
-#define LIST_OF_XMQ_TOKENS  \
-    X(whitespace)           \
-    X(equals)               \
-    X(brace_left)           \
-    X(brace_right)          \
-    X(apar_left)            \
-    X(apar_right)           \
-    X(cpar_left)            \
-    X(cpar_right)           \
-    X(quote)                \
-    X(entity)               \
-    X(comment)              \
-    X(comment_continuation) \
-    X(element_ns)           \
-    X(element_name)         \
-    X(element_key)          \
-    X(element_value_text)   \
-    X(element_value_quote)  \
-    X(element_value_entity) \
-    X(element_value_compound_quote)  \
-    X(element_value_compound_entity) \
-    X(attr_ns)             \
-    X(attr_ns_declaration) \
-    X(attr_key)            \
-    X(attr_value_text)     \
-    X(attr_value_quote)    \
-    X(attr_value_entity)   \
-    X(attr_value_compound_quote)    \
-    X(attr_value_compound_entity)   \
-    X(ns_colon)  \
-
-#define MAGIC_COOKIE 7287528
 
 struct XMQNode
 {
@@ -635,8 +532,6 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define NO_UNDERLINE "\033[24m"
 
 #endif
-
-void get_color(XMQOutputSettings *os, XMQColor c, const char **pre, const char **post);
 
 #define XMQ_INTERNALS_MODULE
 

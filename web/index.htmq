@@ -34,6 +34,13 @@ html {
              without introducing significant whitespace. The file-suffix htmq is used
              when working with html in the XMQ format. There is even a reasonable mapping
              between JSON and XMQ.'
+        &SHIPORDER_XMQ;
+        ' '
+        pre(class = 'xmq xmq_light w40')
+        {
+            &SHIPORDER_XML;
+            &#10;
+        }
         p {
             'You can use the standalone '
             a(href = https://github.com/libxmq/xmq/releases/latest)

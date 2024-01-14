@@ -28,6 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // PART HEADERS //////////////////////////////////////////////////
 
 #include"parts/always.h"
+#include"parts/colors.h"
 #include"parts/utf8.h"
 #include"parts/hashmap.h"
 #include"parts/membuffer.h"
@@ -63,7 +64,7 @@ void debug_content_value(XMQParseState *state, size_t line, size_t start_col, co
 void debug_content_quote(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
 void do_attr_key(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
 void do_attr_ns(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
-void do_attr_ns_declaration(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
+void do_ns_declaration(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
 void do_attr_value_compound_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop);
 void do_attr_value_compound_quote(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop);
 void do_attr_value_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop);
@@ -103,7 +104,6 @@ bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer);
 bool need_separation_before_entity(XMQPrintState *ps);
 size_t num_utf8_bytes(char c);
 void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num);
-void print_namespace(XMQPrintState *ps, xmlNs *ns, size_t align);
 void reset_ansi(XMQParseState *state);
 void reset_ansi_nl(XMQParseState *state);
 void setup_htmq_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
@@ -208,13 +208,13 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->element_value_compound_quote.pre = GREEN;
         c->element_value_compound_entity.pre = MAGENTA;
         c->attr_ns.pre = LIGHT_BLUE_UNDERLINE;
-        c->attr_ns_declaration.pre = LIGHT_BLUE;
         c->attr_key.pre = LIGHT_BLUE;
         c->attr_value_text.pre = BLUE;
         c->attr_value_quote.pre = BLUE;
         c->attr_value_entity.pre = MAGENTA;
         c->attr_value_compound_quote.pre = BLUE;
         c->attr_value_compound_entity.pre = MAGENTA;
+        c->ns_declaration.pre = LIGHT_BLUE;
         c->ns_colon.pre = NOCOLOR;
     }
     else
@@ -242,13 +242,13 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->element_value_compound_quote.pre = DARK_GREEN;
         c->element_value_compound_entity.pre = MAGENTA;
         c->attr_ns.pre = BLUE_UNDERLINE;
-        c->attr_ns_declaration.pre = BLUE;
         c->attr_key.pre = BLUE;
         c->attr_value_text.pre = DARK_BLUE;
         c->attr_value_quote.pre = DARK_BLUE;
         c->attr_value_entity.pre = MAGENTA;
         c->attr_value_compound_quote.pre = DARK_BLUE;
         c->attr_value_compound_entity.pre = MAGENTA;
+        c->ns_declaration.pre = BLUE;
         c->ns_colon.pre = NOCOLOR;
     }
 }
@@ -274,17 +274,30 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
             "pre.xmq_light{white-space:pre-wrap;border-radius:2px;background-color:#f8f9fb;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
             "xmqC{color:#2aa1b3;}\n"
             "xmqQ{color:#26a269;}\n"
-            "xmqE{color:magenta;}\n"
-            "xmqENS_ens{text-decoration:underline; color:darkorange;}\n"
-            "xmqEN{color:darkorange;}\n"
+            "xmqE{color:#FF5733;}\n"
+            "xmqENS{color:#a9a9a9;}\n"
+            "xmqEN{color:#ff8c00;}\n"
             "xmqEK{color:#88b4f7;}\n"
             "xmqEKV{color:#26a269;}\n"
             "xmqAK{color:#88b4f7;}\n"
             "xmqAKV{color:#6196ec;}\n"
-            "xmqANS{text-decoration:underline;color:#88b4f7;}\n"
-            "xmqNSD{text-decoration:underline;color:#ff0000;}\n"
+            "xmqANS{color:#a9a9a9;}\n"
+            "xmqNSD{color:#2aa1b3;}\n"
             "xmqCP{color:#c061cb;}\n"
-            "pre.xmq_light { xmqQ{color:darkgreen;} xmqEKV{color:darkgreen;} xmqEK{color:#1f61ff;}; xmq_AK{color:#1f61ff;}\n"
+            "pre.xmq_light {\n"
+            "  xmqC{color:#2aa1b3;}\n"
+            "  xmqQ{color:#006400;}\n"
+            "  xmqE{color:#FF85733;}\n"
+            "  xmqENS{color:#a9a9a9;}\n"
+            "  xmqEN{color:#ff8c00;}\n"
+            "  xmqEKV{color:#006400;}\n"
+            "  xmqEK{color:#1f61ff;}\n"
+            "  xmqAK{color:#1f61ff;}\n"
+            "  xmqAKV{color:#6196ec;}\n"
+            "  xmqANS{color:#a9a9a9;}\n"
+            "  xmqNSD{color:#2aa1b3;}\n"
+            "  xmqCP{color:#c061cb;}\n"
+            "\n"
             "pre.xmq_dark { }\n"
             ;
 
@@ -372,6 +385,8 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
     c->attr_value_compound_quote.post = "</xmqAKV>";
     c->attr_value_compound_entity.pre = "<xmqE>";
     c->attr_value_compound_entity.post = "</xmqE>";
+    c->ns_declaration.pre = "<xmqNSD>";
+    c->ns_declaration.post = "</xmqNSD>";
     c->ns_colon.pre = NULL;
 }
 
@@ -499,28 +514,7 @@ void xmqRenderHtmlSettings(XMQOutputSettings *settings,
     if (use_class) settings->use_class = use_class;
 }
 
-void xmqOverrideColorType(XMQOutputSettings *settings, XMQColorType ct, const char *pre, const char *post, const char *ns)
-{
-    switch (ct)
-    {
-    case COLORTYPE_xmq_c:
-    case COLORTYPE_xmq_q:
-    case COLORTYPE_xmq_e:
-    case COLORTYPE_xmq_ens:
-    case COLORTYPE_xmq_en:
-    case COLORTYPE_xmq_ek:
-    case COLORTYPE_xmq_ekv:
-    case COLORTYPE_xmq_ans:
-    case COLORTYPE_xmq_ak:
-    case COLORTYPE_xmq_akv:
-    case COLORTYPE_xmq_cp:
-    case COLORTYPE_xmq_uw:
-        return;
-    }
-}
-
-
-void xmqOverrideColor(XMQOutputSettings *os, XMQColor c, const char *pre, const char *post, const char *ns)
+void xmqOverrideColor(XMQOutputSettings *os, XMQSyntax sy, const char *pre, const char *post, const char *ns)
 {
     if (!os->colorings)
     {
@@ -530,43 +524,6 @@ void xmqOverrideColor(XMQOutputSettings *os, XMQColor c, const char *pre, const 
     if (!ns) ns = "";
     XMQColoring *cols = (XMQColoring*)hashmap_get(os->colorings, ns);
     assert(cols);
-
-    switch (c)
-    {
-    case COLOR_none: break;
-    case COLOR_whitespace: cols->whitespace.pre = pre; cols->whitespace.post = post;
-    case COLOR_unicode_whitespace:
-    case COLOR_indentation_whitespace:
-    case COLOR_equals:
-    case COLOR_brace_left:
-    case COLOR_brace_right:
-    case COLOR_apar_left:
-    case COLOR_apar_right:
-    case COLOR_cpar_left:
-    case COLOR_cpar_right:
-    case COLOR_quote:
-    case COLOR_entity:
-    case COLOR_comment:
-    case COLOR_comment_continuation:
-    case COLOR_ns_colon:
-    case COLOR_element_ns:
-    case COLOR_element_name:
-    case COLOR_element_key:
-    case COLOR_element_value_text:
-    case COLOR_element_value_quote:
-    case COLOR_element_value_entity:
-    case COLOR_element_value_compound_quote:
-    case COLOR_element_value_compound_entity:
-    case COLOR_attr_ns:
-    case COLOR_attr_ns_declaration:
-    case COLOR_attr_key:
-    case COLOR_attr_value_text:
-    case COLOR_attr_value_quote:
-    case COLOR_attr_value_entity:
-    case COLOR_attr_value_compound_quote:
-    case COLOR_attr_value_compound_entity:
-        return;
-    }
 }
 
 int xmqStateErrno(XMQParseState *state)
@@ -578,7 +535,7 @@ int xmqStateErrno(XMQParseState *state)
     void tokenize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start,const char *stop,const char *suffix) { \
         if (!state->simulated) { \
             const char *pre, *post;  \
-            get_color(state->output_settings, COLOR_##TYPE, &pre, &post); \
+            getColor(state->output_settings, COLOR_##TYPE, &pre, &post); \
             if (pre) state->output_settings->content.write(state->output_settings->content.writer_state, pre, NULL); \
             if (state->output_settings->render_to == XMQ_RENDER_TERMINAL) { \
                 state->output_settings->content.write(state->output_settings->content.writer_state, start, stop); \
@@ -2017,17 +1974,17 @@ void do_attr_ns(XMQParseState *state,
     else
     {
         // This is the first namespace after the xmlns declaration, eg. xmlns:xsl = http....
-        // The xsl has already been handled in do_attr_ns_declaration that used suffix
+        // The xsl has already been handled in do_ns_declaration that used suffix
         // to peek ahead to the xsl name.
     }
 }
 
-void do_attr_ns_declaration(XMQParseState *state,
-                            size_t line,
-                            size_t col,
-                            const char *start,
-                            const char *stop,
-                            const char *suffix)
+void do_ns_declaration(XMQParseState *state,
+                       size_t line,
+                       size_t col,
+                       const char *start,
+                       const char *stop,
+                       const char *suffix)
 {
     // We found a namespace. It is either a default declaration xmlns=... or xmlns:prefix=...
     //
@@ -3766,6 +3723,7 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
 }
 
 #include"parts/always.c"
+#include"parts/colors.c"
 #include"parts/entities.c"
 #include"parts/hashmap.c"
 #include"parts/stack.c"

@@ -51,6 +51,7 @@ do_version() {
 }
 
 do_part always
+do_part colors
 do_part hashmap
 do_part json
 do_part membuffer
