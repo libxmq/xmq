@@ -43,9 +43,6 @@ This means that it is always possible to pretty print the xmq without
 having to worry if you introduce visible changes to your web document!
 This is very helpful when deciphering complicated html documents.
 
-Opposite pretty printing, any xmq/htmq document (including multiple
-line comments) can also be printed in a compact form on a single line.
-
 ```
 car {
     speed = 50km/h
@@ -54,10 +51,15 @@ car {
 }
 ```
 
+Opposite pretty printing, any xmq/htmq document (including multiple
+line comments) can also be printed in a compact form on a single line.
+
+`car{speed=50km/h color=red brand='Le roy'}`
+
 The xmq format can exactly represent the content of the xml/html file
 and can therefore be converted back to xml/html after any editing has
 been done. It might not however generate exactly the same xml/html
-file, byte per byte, because xmq uses its own set of choices for:
+file, byte per byte, because xmq uses its own set of choices for
 pretty printing, quotes and escaping.
 
 For html you can use the suffix htmq to indicate that you have written
@@ -72,6 +74,7 @@ dist/xmq.c into your source code directory to have xmq support.
 
 In xmq you can omit the root node (if you supply an implicit root) this
 can make your xmq config files for your application even simpler to read.
+
 ```
 speed = 50km/h
 count = 123
@@ -86,17 +89,24 @@ The xmq tool has several useful commands, for example:
 ```shell
 # Render pom.xml as xmq in color on terminal.
 xmq pom.xml
+cat index.html | xmq
+xmq < rss.xml
 
-# Use a pager to scroll up and down.
+# Use the built in pager to scroll up and down.
 xmq pom.xml page
 xmq pom.xml pa
+cat rss.xml | xmq pa
+xmq pa < index.html
+curl -s 'https://dummyjson.com/todos?limit=10' | xmq pa
 
-# Write browse_tmp_pom.xml.html and open this file with the default browser.
+# Write xmq_browsing_pom.xml.html and open this file with the default browser.
 xmq pom.xml browse
 xmq pom.xml br
+xmq br < index.html
 
-# View a json file as xmq in a pager
+# View a json file as xmq in a pager or browser
 xmq request.json pager
+curl -s 'https://dummyjson.com/todos?limit=10' | xmq br
 
 # View a large index.html but delete script and style tags.
 xmq index.html delete //script delete //style pager

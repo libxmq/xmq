@@ -22,6 +22,9 @@ cp web/resources/xsd_example.xsd  build/web/resources
 cp web/resources/rfc2629xslt.xml build/web/resources
 cp web/resources/rfcxml.xslt build/web/resources
 cp web/resources/diagonal.svg build/web/resources
+cp web/resources/rss.xml build/web/resources
+cp web/resources/soap_response.xml build/web/resources
+cp web/resources/java_pojo.xml build/web/resources
 cp pom.xml build/web/resources
 
 # Extract the css
@@ -132,6 +135,9 @@ $XMQ build/web/resources/todos.xslt render-html --darkbg > build/web/resources/x
 $XMQ build/web/resources/rfc2629xslt.xml render-html --darkbg > build/web/resources/rfc2629_example.html
 $XMQ build/web/resources/rfcxml.xslt render-html --darkbg > build/web/resources/rfcxslt_example.html
 $XMQ build/web/resources/diagonal.svg render-html --darkbg > build/web/resources/svg_example.html
+$XMQ build/web/resources/rss.xml render-html --darkbg > build/web/resources/rss_example.html
 $XMQ build/web/resources/pom.xml render-html --darkbg > build/web/resources/pom_example.html
+$XMQ build/web/resources/java_pojo.xml render-html --darkbg > build/web/resources/java_pojo.html
+$XMQ build/web/resources/soap_response.xml render-html --darkbg > build/web/resources/soap_response.html
 
 echo Updated build/web/index.html

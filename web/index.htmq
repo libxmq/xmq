@@ -41,6 +41,8 @@ html {
             '  '
             a(href = resources/pom_example.html) = '[pom.xml]'
             '  '
+            a(href = resources/rss_example.html) = '[rss.xml]'
+            '  '
             a(href = resources/svg_example.html) = '[svg]'
             '  '
             a(href = resources/docx_example.html) = '[docx]'
@@ -53,7 +55,9 @@ html {
             '  '
             a(href = resources/xslt_example.html) = '[xslt transform]'
             '  '
-            a(href = resources/xslt_example.html) = '[soap_request]'
+            a(href = resources/soap_response.html) = '[soap response]'
+            '  '
+            a(href = resources/java_pojo.html) = '[java pojo jackson]'
         }
 
         &SHIPORDER_XMQ;
@@ -85,6 +89,35 @@ html {
             a(href = https://github.com/orgs/libxmq/discussions) = '[Forum/Discussions]'
             br
         }
+        pre {
+            '''
+            ########## Pretty print as xmq using colors on terminal
+            xmq pom.xml
+            xmq data.json
+            xmq index.html
+
+            ########## Convert to xmq and store in file
+            xmq pom.xml > pom.xmq
+            xmq data.json > data.xmq
+
+            ########## Use the built in pager.
+            xmq pom.xml pa
+            cat data.json | xmq pa
+            xmq index.html delete //script delete //style pa
+            curl -s 'https://dummyjson.com/todos?limit=20'  | xmq pa
+
+            ########## View in your default browser.
+            xmq docbook.xml br
+            xmq data.json br
+            curl https://slashdot.org | xmq delete //script delete //style br
+
+            ########## Convert xmq to xml,html or json
+            xmq pom.xmq to-xml > pom.xml
+            xmq data.xmq to-json > data.json
+            xmq index.htmq to-html > index.html
+            '''
+        }
+
         h2= Background
         p = 'XML can be human readable/editable if it is used for markup of longer
              human language texts, ie books, articles and other documents etc. In
