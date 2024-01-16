@@ -442,6 +442,13 @@ void xmqSetDocSourceName(XMQDoc *doq, const char *source_name);
 XMQContentType xmqGetOriginalContentType(XMQDoc *doq);
 
 /**
+    xmqGetOriginalSize:
+
+    If available, return the size of the original content, ie the loaded file size.
+*/
+size_t xmqGetOriginalSize(XMQDoc *doq);
+
+/**
     xmqGetRootNode:
 
     Get root node suitable for xmqForeach.

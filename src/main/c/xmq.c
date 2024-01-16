@@ -1535,6 +1535,11 @@ XMQContentType xmqGetOriginalContentType(XMQDoc *doq)
     return doq->original_content_type_;
 }
 
+size_t xmqGetOriginalSize(XMQDoc *doq)
+{
+    return doq->original_size_;
+}
+
 XMQNode *xmqGetRootNode(XMQDoc *doq)
 {
     return &doq->root_;
@@ -3503,6 +3508,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     }
 
     doq->original_content_type_ = detected_ct;
+    doq->original_size_ = stop-start;
 
     switch (ct)
     {

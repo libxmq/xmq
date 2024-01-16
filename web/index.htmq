@@ -37,21 +37,23 @@ html {
         div {
             'What does it look like? Click on the examples: '
             br
-            a(href = resources/index_htmq.html) = '[ This page source as htmq ]'
+            a(href = resources/index_htmq.html) = '[this page as htmq]'
             '  '
-            a(href = resources/pom_example.html) = '[ pom.xml ]'
+            a(href = resources/pom_example.html) = '[pom.xml]'
             '  '
-            a(href = resources/svg_example.html) = '[ svg ]'
+            a(href = resources/svg_example.html) = '[svg]'
             '  '
-            a(href = resources/docx_example.html) = '[ docx ]'
+            a(href = resources/docx_example.html) = '[docx]'
             '  '
-            a(href = resources/odt_example.html) = '[ odt ]'
+            a(href = resources/odt_example.html) = '[odt]'
             '  '
-            a(href = resources/json_example.html) = '[ json ]'
+            a(href = resources/json_example.html) = '[json]'
             '  '
-            a(href = resources/xsd_example.html) = '[ xsd schema definition ]'
+            a(href = resources/xsd_example.html) = '[xsd schema definition]'
             '  '
-            a(href = resources/xslt_example.html) = '[ xslt transform ]'
+            a(href = resources/xslt_example.html) = '[xslt transform]'
+            '  '
+            a(href = resources/xslt_example.html) = '[soap_request]'
         }
 
         &SHIPORDER_XMQ;
@@ -136,7 +138,7 @@ html {
             span(class = code) = 'xmq shiporder.xml browse'
             br
             'You can shorten the command to just br. Set the environement variable
-             XMQ_BG=DARK or XMQ_BG=LIGHT to change the background color.'
+             XMQ_BG=dark or XMQ_BG=light to background color or XMQ_BG=mono for no color.'
         }
         p {
             'Use shell redirection to store the XMQ output in a file:'

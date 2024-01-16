@@ -111,6 +111,7 @@ struct XMQDoc
     const char *error_; // And the error is explained here.
     XMQNode root_; // The root node.
     XMQContentType original_content_type_; // Remember if this document was created from xmq/xml etc.
+    size_t original_size_; // Remember the original source size of the document it was loaded from.
 };
 
 #ifdef __cplusplus

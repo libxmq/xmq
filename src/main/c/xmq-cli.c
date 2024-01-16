@@ -40,8 +40,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<windows.h>
 #include<conio.h>
 #else
-#include<termios.h>
+#include<signal.h>
 #include<sys/ioctl.h>
+#include<termios.h>
 #endif
 
 #define LIBXML_STATIC
@@ -802,6 +803,17 @@ const char *render_format_to_string(XMQRenderFormat rf)
 
 #ifndef PLATFORM_WINAPI
 
+static void sig_alarm_handler(int signo)
+{
+    fprintf(stderr,
+            "xmq: no response from xterm/xterm-256color terminal whether background is dark/light.\n"
+            "To skip this failed test please set environment variable XMQ_BG=mono|dark|light.\n");
+    exit(1);
+}
+
+struct sigaction old_alarm_;
+struct sigaction new_alarm_;
+
 bool query_xterm_bgcolor()
 {
     bool is_dark = true;
@@ -822,61 +834,59 @@ bool query_xterm_bgcolor()
     // Now lets put the tty in no-echo raw input mode, using the stdout filedescriptor.
     enable_stdout_raw_input_mode();
 
-    // Send the ansi query sequence.
-    printf("\x1b]11;?\x07");
-    fflush(stdout);
-
-    fd_set readset;
-    struct timeval time;
     int r = 0;
     int g = 0;
     int b = 0;
 
-    // Wait at most 100ms for the terminal to respond.
-    // A working xterm-256color terminal usually responds much faster.
-    FD_ZERO(&readset);
-    FD_SET(STDOUT_FILENO, &readset);
-    time.tv_sec = 0;
-    time.tv_usec = 10000;
+    new_alarm_.sa_handler = sig_alarm_handler;
+    sigemptyset(&new_alarm_.sa_mask);
+    new_alarm_.sa_flags = 0;
 
-    if (select(STDOUT_FILENO + 1, &readset, NULL, NULL, &time) == 1)
+    sigaction(SIGALRM, &new_alarm_, &old_alarm_);
+
+    // We wait at most 2 seconds for the response before giving up.
+    alarm(1);
+
+    // Send the ansi query sequence.
+    printf("\x1b]11;?\x07");
+    fflush(stdout);
+
+    // Expected response:
+    // \033]11;rgb:ffff/ffff/dddd\07
+    char buf[64];
+    memset(buf, 0, sizeof(buf));
+    int i = 0;
+    for (;;)
     {
-        // Expected response:
-        // \033]11;rgb:ffff/ffff/dddd\07
-        char buf[64];
-        memset(buf, 0, sizeof(buf));
-        int i = 0;
-        for (;;)
+        char c = 0;
+        // Reading from stdout!
+        size_t n = read(STDOUT_FILENO, &c, sizeof(char));
+        if (n == -1)
         {
-            char c = 0;
-            // Reading from stdout!
-            size_t n = read(STDOUT_FILENO, &c, sizeof(char));
-            if (n == -1)
-            {
-                fprintf(stderr, "xmq: error reading from stdout\n");
-                break;
-            }
-            if (c == 0x07) break;
-            buf[i++] = c;
-            if (i > 24) break;
+            fprintf(stderr, "xmq: error reading from stdout\n");
+            break;
         }
-        buf[i] = 0;
-        if (buf[0] == 0x1b && i >20 && 3 == sscanf(buf+1, "]11;rgb:%04x/%04x/%04x", &r, &g, &b))
-        {
-            double brightness = (0.2126*r + 0.7152*g + 0.0722*b)/256.0;
-            if (brightness > 153) {
-                is_dark = false;
-            }
+        if (c == 0x07) break;
+        buf[i++] = c;
+        if (i >= 24) break;
+    }
+    buf[i] = 0;
+    if (buf[0] == 0x1b && i >= 23 && 3 == sscanf(buf+1, "]11;rgb:%04x/%04x/%04x", &r, &g, &b))
+    {
+        double brightness = (0.2126*r + 0.7152*g + 0.0722*b)/256.0;
+        if (brightness > 153) {
+            is_dark = false;
         }
     }
     else
     {
-        error_to_print_on_exit =
-            "xmq: no response from terminal whether background is dark/light, defaults to dark.\n"
-            "To silence this warning please set environment variable XMQ_BG=MONO|DARK|LIGHT.\n";
-        verbose_("(xmq) Terminal does not respond with background color within 100ms.\n");
+        verbose_("(xmq) bad response from terminal, assuming dark background.\n");
         is_dark = true;
     }
+
+    alarm(0);
+    sigaction(SIGALRM, &old_alarm_, NULL);
+
     disable_stdout_raw_input_mode();
 
     return is_dark;
@@ -900,30 +910,30 @@ XMQRenderStyle render_style(bool *use_color, bool *dark_mode)
     char *xmq_mode = getenv("XMQ_BG");
     if (xmq_mode != NULL)
     {
-        if (!strcmp(xmq_mode, "MONO"))
+        if (!strcmp(xmq_mode, "mono"))
         {
             *use_color = false;
             *dark_mode = false;
-            verbose_("(xmq) XMQ_BG set to MONO\n");
+            verbose_("(xmq) XMQ_BG set to mono\n");
             return XMQ_RENDER_MONO;
         }
-        if (!strcmp(xmq_mode, "LIGHT"))
+        if (!strcmp(xmq_mode, "light"))
         {
             *use_color = true;
             *dark_mode = false;
-            verbose_("(xmq) XMQ_BG set to LIGHT\n");
+            verbose_("(xmq) XMQ_BG set to light\n");
             return XMQ_RENDER_COLOR_LIGHTBG;
         }
-        if (!strcmp(xmq_mode, "DARK"))
+        if (!strcmp(xmq_mode, "dark"))
         {
             *use_color = true;
             *dark_mode = true;
-            verbose_("(xmq) XMQ_BG set to DARK\n");
+            verbose_("(xmq) XMQ_BG set to dark\n");
             return XMQ_RENDER_COLOR_DARKBG;
         }
         *use_color = false;
         *dark_mode = false;
-        verbose_("(xmq) XMQ_BG content is bad, using MONO\n");
+        verbose_("(xmq) XMQ_BG content is bad, using mono\n");
         return XMQ_RENDER_MONO;
     }
 
@@ -934,7 +944,7 @@ XMQRenderStyle render_style(bool *use_color, bool *dark_mode)
         // White text on black background: 15;default;0
         *use_color = true;
         *dark_mode = true;
-        verbose_("(xmq) COLORFGBG means DARK\n");
+        verbose_("(xmq) COLORFGBG means dark\n");
         return XMQ_RENDER_COLOR_DARKBG;
     }
 
@@ -951,7 +961,8 @@ XMQRenderStyle render_style(bool *use_color, bool *dark_mode)
     return XMQ_RENDER_COLOR_DARKBG;
 #else
 
-    if (!strcmp(term, "xterm-256color"))
+    if (!strcmp(term, "xterm-256color") ||
+        !strcmp(term, "xterm"))
     {
         bool is_dark = true;
         is_dark = query_xterm_bgcolor();
@@ -977,7 +988,7 @@ XMQRenderStyle render_style(bool *use_color, bool *dark_mode)
 
 bool handle_global_option(const char *arg, XMQCliCommand *command)
 {
-    debug_("(xmq) option %s\n", arg);
+    debug_("[xmq] option %s\n", arg);
     if (!strcmp(arg, "--help") ||
         !strcmp(arg, "-h"))
     {
@@ -1261,8 +1272,9 @@ bool cmd_load(XMQCliCommand *command)
         command->env->doc = NULL;
         return false;
     }
-
-    verbose_("(xmq) cmd-load %s\n", command->in);
+    const char *from = "stdin";
+    if (command->in) from = command->in;
+    verbose_("(xmq) cmd-load %zu bytes from %s\n", xmqGetOriginalSize(command->env->doc), from);
 
     return true;
 }
@@ -1908,7 +1920,10 @@ void find_next_line(const char **line_offset, const char **in_line_offset, const
 int get_char()
 {
 #ifndef PLATFORM_WINAPI
-    return getchar();
+    unsigned char c;
+    size_t n = read(STDOUT_FILENO, &c, sizeof(char));
+    if (n == -1) return -1;
+    return c;
 #else
     return _getch();
 #endif
@@ -2044,9 +2059,14 @@ void page(const char *start, const char *stop)
     const char *line_offset = start; // Points to a start of line in the buffer.
     const char *in_line_offset = start; // Points to line_offset or to start of next wrapped line.
 
+    if (!isatty(1))
+    {
+        fprintf(stderr, "xmq: The page command can only be used with a terminal as output.\n");
+        exit(1);
+    }
 #ifndef PLATFORM_WINAPI
     struct winsize max;
-    ioctl(0, TIOCGWINSZ , &max);
+    ioctl(STDOUT_FILENO, TIOCGWINSZ , &max);
     height = max.ws_row - 1;
     width = max.ws_col;
 
@@ -2061,7 +2081,6 @@ void page(const char *start, const char *stop)
 
     enableRawStdinTerminal();
 
-    printf("\033[2J\033[H");
     for (;;)
     {
         MemBuffer *buffer = new_membuffer();
@@ -2111,6 +2130,7 @@ void page(const char *start, const char *stop)
         }
         console_write(buffer->buffer_, buffer->buffer_+buffer->used_);
         printf("\033[0m\n:");
+        fflush(stdout);
         free_membuffer_and_free_content(buffer);
         int c;
         KEY key = read_key(&c);
@@ -2360,38 +2380,38 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
 #ifdef PLATFORM_WINAPI
 void enableAnsiColorsWindowsConsole()
 {
-    debug_("(xmq) enable ansi colors terminal\n");
+    debug_("[xmq] enable ansi colors terminal\n");
 
-    debug_("(xmq) GetStdHandle\n");
+    debug_("[xmq] GetStdHandle\n");
 
     HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hStdOut == INVALID_HANDLE_VALUE) return; // Fail
 
-    debug_("(xmq) GetConsoleMode\n");
+    debug_("[xmq] GetConsoleMode\n");
     DWORD mode;
     if (!GetConsoleMode(hStdOut, &mode)) return; // Fail
 
     DWORD enabled = (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) ? true : false;
 
-    debug_("(xmq) enabled %x\n", enabled);
+    debug_("[xmq] enabled %x\n", enabled);
 
     if (enabled) return; // Already enabled colors.
 
     mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 
-    debug_("(xmq) SetConsoleMode %x\n", mode);
+    debug_("[xmq] SetConsoleMode %x\n", mode);
 
     SetConsoleMode(hStdOut, mode);
 
-    debug_("(xmq) SetConsoleOutputCP\n");
+    debug_("[xmq] SetConsoleOutputCP\n");
     SetConsoleOutputCP(CP_UTF8);
 
-    debug_("(xmq) Ansi done\n");
+    debug_("[xmq] Ansi done\n");
 }
 
 void enableRawStdinTerminal()
 {
-    debug_("(xmq) enable raw stdin terminal\n");
+    debug_("[xmq] enable raw stdin terminal\n");
 
     HANDLE handle = GetStdHandle(STD_INPUT_HANDLE);
     if (handle == INVALID_HANDLE_VALUE) return; // Fail
@@ -2402,11 +2422,11 @@ void enableRawStdinTerminal()
     mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
     mode &= ~(ENABLE_LINE_INPUT|ENABLE_ECHO_INPUT);
 
-    debug_("(xmq) SetConsoleMode %x\n", mode);
+    debug_("[xmq] SetConsoleMode %x\n", mode);
 
     SetConsoleMode(handle, mode);
 
-    debug_("(xmq) raw stdin done\n");
+    debug_("[xmq] raw stdin done\n");
 }
 
 void restoreStdinTerminal()
@@ -2428,7 +2448,7 @@ void enableRawStdinTerminal()
 
     new_terminal.c_lflag &= ~(ICANON);
     new_terminal.c_lflag &= ~(ECHO);
-    tcsetattr( STDOUT_FILENO, TCSANOW, &new_terminal);
+    tcsetattr(STDOUT_FILENO, TCSANOW, &new_terminal);
 }
 
 /**
@@ -2476,7 +2496,9 @@ int main(int argc, const char **argv)
 
     if (isatty(1))
     {
-        debug_("(xmq) terminal output detected using colors\n");
+        const char *term = getenv("TERM");
+        if (!term) term = "";
+        debug_("[xmq] detected terminal %s\n", term);
         // Lets try to use detection of background. If any
         // of --mono or --color --darkbg or --ligtbg is set, then do not detect.
         env.use_detect = true;
@@ -2502,7 +2524,7 @@ int main(int argc, const char **argv)
 
     bool ok = xmq_parse_cmd_line(argc, argv, load_command);
     if (!ok) {
-        debug_("(xmq) parse cmd line failed\n");
+        verbose_("(xmq) parse cmd line failed\n");
         return 1;
     }
 
@@ -2519,7 +2541,7 @@ int main(int argc, const char **argv)
     // Execute commands.
     while (c)
     {
-        debug_("(xmq) performing %s\n", cmd_name(c->cmd));
+        debug_("[xmq] performing %s\n", cmd_name(c->cmd));
         bool ok = perform_command(c);
         if (!ok)
         {

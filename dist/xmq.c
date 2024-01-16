@@ -269,6 +269,7 @@ struct XMQDoc
     const char *error_; // And the error is explained here.
     XMQNode root_; // The root node.
     XMQContentType original_content_type_; // Remember if this document was created from xmq/xml etc.
+    size_t original_size_; // Remember the original source size of the document it was loaded from.
 };
 
 #ifdef __cplusplus
@@ -1091,6 +1092,7 @@ struct XMQDoc
     const char *error_; // And the error is explained here.
     XMQNode root_; // The root node.
     XMQContentType original_content_type_; // Remember if this document was created from xmq/xml etc.
+    size_t original_size_; // Remember the original source size of the document it was loaded from.
 };
 
 #ifdef __cplusplus
@@ -3056,6 +3058,11 @@ XMQContentType xmqGetOriginalContentType(XMQDoc *doq)
     return doq->original_content_type_;
 }
 
+size_t xmqGetOriginalSize(XMQDoc *doq)
+{
+    return doq->original_size_;
+}
+
 XMQNode *xmqGetRootNode(XMQDoc *doq)
 {
     return &doq->root_;
@@ -3245,7 +3252,7 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root)
 
 const char *xmqVersion()
 {
-    return "1.99.2";
+    return "2.1.0";
 }
 
 void do_whitespace(XMQParseState *state,
@@ -5024,6 +5031,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     }
 
     doq->original_content_type_ = detected_ct;
+    doq->original_size_ = stop-start;
 
     switch (ct)
     {
