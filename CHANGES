@@ -1,3 +1,12 @@
+2024-01-16: Version 2.2.0
+
+Pager now works even when input is on stdin.
+Color namespace grey and namespace declaration dark cyan.
+Change default font size and max width for portrait devices.
+Improve background color detection in xterm.
+Improve documentation.
+Refactor code.
+
 2024-01-12: Version 2.1.0
 
 Add browser command to view content in your default web browser.
