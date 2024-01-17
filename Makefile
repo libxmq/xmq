@@ -152,6 +152,7 @@ clean:
 	@echo "Removing release, debug, asan, gtkdoc build dirs."
 	@for x in $(BUILDDIRS); do echo; rm -rf $$x/release $$x/debug $$x/asan $$x/generated_autocomplete.h; done
 	@rm -rf build/gtkdoc
+	@rm -rf xmq_browsing*
 
 clean-all:
 	@echo "Removing build directory containing configuration and artifacts."

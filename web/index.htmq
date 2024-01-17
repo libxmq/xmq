@@ -45,6 +45,10 @@ html {
             '  '
             a(href = resources/svg_example.html) = '[svg]'
             '  '
+            a(href = resources/ibmpcjr_cart.html) = '[mame cart driver]'
+            '  '
+            a(href = resources/jabber.html) = '[jabber]'
+            '  '
             a(href = resources/docx_example.html) = '[docx]'
             '  '
             a(href = resources/odt_example.html) = '[odt]'
@@ -58,6 +62,10 @@ html {
             a(href = resources/soap_response.html) = '[soap response]'
             '  '
             a(href = resources/java_pojo.html) = '[java pojo jackson]'
+            '  '
+            a(href = resources/saml_idp_metadata.html) = '[saml idp metadata]'
+            '  '
+            a(href = resources/saml_authn_response.html) = '[saml authn_response]'
         }
 
         &SHIPORDER_XMQ;
@@ -75,7 +83,10 @@ html {
             }
             ' tool to convert between xmq/xml/htmq/html/json  or include '
             a(href = https://github.com/libxmq/xmq/releases/latest) = xmq.h/xmq.c
-            ' to use xmq directly from your program or in the future link to a prebuilt libxmq.'
+            ' to use xmq directly from your program or in the future link to a prebuilt libxmq.
+             With the xmq tool you can syntax highlight and pretty print XMQ (and thus indirectly XML and HTML).
+             You can convert between XMQ/HTMQ and XML/HTML/JSON, you can apply XSLT transformations, replace
+             entities with other XMQ/XML/JSON or quoted content, write raw text output and more...'
         }
         div {
             a(href = https://github.com/libxmq/xmq/releases/latest) = '[Download]'

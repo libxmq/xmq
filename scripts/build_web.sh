@@ -25,7 +25,14 @@ cp web/resources/diagonal.svg build/web/resources
 cp web/resources/rss.xml build/web/resources
 cp web/resources/soap_response.xml build/web/resources
 cp web/resources/java_pojo.xml build/web/resources
+cp web/resources/saml_idp_metadata.xml build/web/resources
+cp web/resources/saml_sp_metadata.xml build/web/resources
+cp web/resources/saml_authn_request.xml build/web/resources
+cp web/resources/saml_authn_response.xml build/web/resources
+cp web/resources/jabber.xml build/web/resources
+cp web/resources/ibmpcjr_cart.xml build/web/resources
 cp pom.xml build/web/resources
+
 
 # Extract the css
 $XMQ web/resources/shiporder.xml render-html --onlystyle > build/web/resources/xmq.css
@@ -139,5 +146,11 @@ $XMQ build/web/resources/rss.xml render-html --darkbg > build/web/resources/rss_
 $XMQ build/web/resources/pom.xml render-html --darkbg > build/web/resources/pom_example.html
 $XMQ build/web/resources/java_pojo.xml render-html --darkbg > build/web/resources/java_pojo.html
 $XMQ build/web/resources/soap_response.xml render-html --darkbg > build/web/resources/soap_response.html
+$XMQ build/web/resources/saml_idp_metadata.xml render-html --darkbg > build/web/resources/saml_idp_metadata.html
+$XMQ build/web/resources/saml_sp_metadata.xml render-html --darkbg > build/web/resources/saml_sp_metadata.html
+$XMQ build/web/resources/saml_authn_request.xml render-html --darkbg > build/web/resources/saml_authn_request.html
+$XMQ build/web/resources/saml_authn_response.xml render-html --darkbg > build/web/resources/saml_authn_response.html
+$XMQ build/web/resources/jabber.xml render-html --darkbg > build/web/resources/jabber.html
+$XMQ build/web/resources/ibmpcjr_cart.xml render-html --darkbg > build/web/resources/ibmpcjr_cart.html
 
 echo Updated build/web/index.html
