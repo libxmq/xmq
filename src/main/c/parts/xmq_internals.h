@@ -546,6 +546,8 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 // The more limited Windows console.
 
 #define NOCOLOR      "\033[0m\033[24m"
+#define GRAY         "\033[37m\033[24m"
+#define DARK_GRAY    "\033[90m\033[24m"
 #define GREEN        "\033[92m\033[24m"
 #define DARK_GREEN   "\033[32m\033[24m"
 #define BLUE         "\033[94m\033[24m"

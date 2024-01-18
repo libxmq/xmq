@@ -38,7 +38,7 @@ html {
                   type = file
                   onchange = 'form.submit()'
                   hidden)
-            button(type = button onclick = '''document.getElementById('uploadFile').click()''') = 'Upload XML/HTML'
+            button(type = button onclick = '''document.getElementById('uploadFile').click()''') = 'Upload XML/HTML/JSON'
         }
         br
         p = 'The XMQ format is easier for a human to read and write than xml/html yet it
