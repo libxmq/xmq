@@ -270,8 +270,8 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
             "</style></head>";
         c->style.pre = "@media screen and (orientation: portrait) { pre { font-size: 2vw; } }"
             "@media screen and (orientation: landscape) { pre { max-width: 98%; } }"
-            "pre.xmq_dark {white-space:pre-wrap;border-radius:2px;background-color:#263338;border:solid 1px #555555;display:inline-block;padding:1em;color:white;}\n"
-            "pre.xmq_light{white-space:pre-wrap;border-radius:2px;background-color:#f8f9fb;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
+            "pre.xmq_dark {white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#263338;border:solid 1px #555555;display:inline-block;padding:1em;color:white;}\n"
+            "pre.xmq_light{white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#f8f9fb;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
             "body.xmq_dark {background-color:black;}\n"
             "body.xmq_light {}\n"
             "xmqC{color:#2aa1b3;}\n"

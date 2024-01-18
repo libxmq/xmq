@@ -43,7 +43,7 @@ body.dark {
 pre {
     font-family: monospace;
     white-space:pre-wrap;
-    word-wrap:break-word;
+    word-break: break-all;
 }
 
 pre.text {

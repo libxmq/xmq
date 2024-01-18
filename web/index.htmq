@@ -29,9 +29,9 @@ html {
             enctype = multipart/form-data
             action  = view)
         {
-            button(onClick = 'goDark();') = 'Dark Mode'
+            button(type = button onClick = 'goDark();') = 'Dark Mode'
             ' '
-            button(onClick = 'goLight();') = 'Light Mode'
+            button(type = button onClick = 'goLight();') = 'Light Mode'
             ' '
             input(name = uploadFile
                   id = uploadFile
