@@ -677,8 +677,8 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define NOCOLOR      "\033[0m"
 #define GRAY_UNDERLINE "\033[0;4;38;5;7m"
 #define DARK_GRAY_UNDERLINE "\033[0;4;38;5;8m"
-#define GRAY         "\033[0;38;5;7m"
-#define DARK_GRAY    "\033[0;38;5;8m"
+#define GRAY         "\033[0;38;5;242m"
+#define DARK_GRAY    "\033[0;38;5;238m"
 #define GREEN        "\033[0;32m"
 #define DARK_GREEN   "\033[0;1;32m"
 #define BLUE         "\033[0;38;5;27m"
@@ -1500,8 +1500,8 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define NOCOLOR      "\033[0m"
 #define GRAY_UNDERLINE "\033[0;4;38;5;7m"
 #define DARK_GRAY_UNDERLINE "\033[0;4;38;5;8m"
-#define GRAY         "\033[0;38;5;7m"
-#define DARK_GRAY    "\033[0;38;5;8m"
+#define GRAY         "\033[0;38;5;242m"
+#define DARK_GRAY    "\033[0;38;5;238m"
 #define GREEN        "\033[0;32m"
 #define DARK_GREEN   "\033[0;1;32m"
 #define BLUE         "\033[0;38;5;27m"
@@ -1722,7 +1722,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->entity.pre = MAGENTA;
         c->comment.pre = CYAN;
         c->comment_continuation.pre = CYAN;
-        c->element_ns.pre = ORANGE_UNDERLINE;
+        c->element_ns.pre = GRAY;
         c->element_name.pre = ORANGE;
         c->element_key.pre = LIGHT_BLUE;
         c->element_value_text.pre = GREEN;
@@ -1730,7 +1730,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->element_value_entity.pre = MAGENTA;
         c->element_value_compound_quote.pre = GREEN;
         c->element_value_compound_entity.pre = MAGENTA;
-        c->attr_ns.pre = LIGHT_BLUE_UNDERLINE;
+        c->attr_ns.pre = GRAY;
         c->attr_key.pre = LIGHT_BLUE;
         c->attr_value_text.pre = BLUE;
         c->attr_value_quote.pre = BLUE;
@@ -1756,7 +1756,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->entity.pre = MAGENTA;
         c->comment.pre = CYAN;
         c->comment_continuation.pre = CYAN;
-        c->element_ns.pre = DARK_ORANGE_UNDERLINE;
+        c->element_ns.pre = DARK_GRAY;
         c->element_name.pre = DARK_ORANGE;
         c->element_key.pre = BLUE;
         c->element_value_text.pre = DARK_GREEN;
@@ -1764,7 +1764,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->element_value_entity.pre = MAGENTA;
         c->element_value_compound_quote.pre = DARK_GREEN;
         c->element_value_compound_entity.pre = MAGENTA;
-        c->attr_ns.pre = BLUE_UNDERLINE;
+        c->attr_ns.pre = DARK_GRAY;
         c->attr_key.pre = BLUE;
         c->attr_value_text.pre = DARK_BLUE;
         c->attr_value_quote.pre = DARK_BLUE;
@@ -1811,14 +1811,14 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
             "  xmqC{color:#2aa1b3;}\n"
             "  xmqQ{color:#006400;}\n"
             "  xmqE{color:#c061cb;}\n"
-            "  xmqENS{color:#a9a9a9;}\n"
+            "  xmqENS{color:#696969;}\n"
             "  xmqEN{color:#ff8c00;}\n"
             "  xmqEKV{color:#006400;}\n"
             "  xmqEK{color:#1f61ff;}\n"
             "  xmqAK{color:#1f61ff;}\n"
-            "  xmqAKV{color:#6196ec;}\n"
-            "  xmqANS{color:#a9a9a9;}\n"
-            "  xmqNSD{color:#2aa1b3;}\n"
+            "  xmqAKV{color:#2156bc;}\n"
+            "  xmqANS{color:#696969;}\n"
+            "  xmqNSD{color:#1a91a3;}\n"
             "  xmqCP{color:#c061cb;}\n"
             "\n"
             "pre.xmq_dark { }\n"
@@ -10061,7 +10061,7 @@ void print_quoted_spaces(XMQPrintState *ps, XMQColor color, int num)
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
 
-    if (c->whitespace.pre) write(writer_state, c->quote.pre, NULL);
+    if (c->quote.pre) write(writer_state, c->quote.pre, NULL);
     write(writer_state, "'", NULL);
     for (int i=0; i<num; ++i)
     {
@@ -10070,7 +10070,7 @@ void print_quoted_spaces(XMQPrintState *ps, XMQColor color, int num)
     ps->current_indent += num;
     ps->last_char = '\'';
     write(writer_state, "'", NULL);
-    if (c->whitespace.post) write(writer_state, c->quote.post, NULL);
+    if (c->quote.post) write(writer_state, c->quote.post, NULL);
 }
 
 void print_quotes(XMQPrintState *ps, size_t num, XMQColor color)

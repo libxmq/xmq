@@ -25,9 +25,21 @@ html {
             ') oehrstroem@gmail.com'
         }
         br
-        button(onClick = 'goDark();') = 'Dark Mode'
-        ' '
-        button(onClick = 'goLight();') = 'Light Mode'
+        form(method  = post
+            enctype = multipart/form-data
+            action  = view)
+        {
+            button(onClick = 'goDark();') = 'Dark Mode'
+            ' '
+            button(onClick = 'goLight();') = 'Light Mode'
+            ' '
+            input(name = uploadFile
+                  id = uploadFile
+                  type = file
+                  onchange = 'form.submit()'
+                  hidden)
+            button(type = button onclick = '''document.getElementById('uploadFile').click()''') = 'Upload XML/HTML'
+        }
         br
         p = 'The XMQ format is easier for a human to read and write than xml/html yet it
              captures exactly the xml/html content. It can always be safely pretty printed
@@ -66,6 +78,8 @@ html {
             a(href = resources/saml_idp_metadata.html) = '[saml idp metadata]'
             '  '
             a(href = resources/saml_authn_response.html) = '[saml authn_response]'
+            '  '
+            a(href = resources/SEQLXML25.html) = '[WIPO ST.26_sequence listing]'
         }
 
         &SHIPORDER_XMQ;

@@ -199,7 +199,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->entity.pre = MAGENTA;
         c->comment.pre = CYAN;
         c->comment_continuation.pre = CYAN;
-        c->element_ns.pre = ORANGE_UNDERLINE;
+        c->element_ns.pre = GRAY;
         c->element_name.pre = ORANGE;
         c->element_key.pre = LIGHT_BLUE;
         c->element_value_text.pre = GREEN;
@@ -207,7 +207,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->element_value_entity.pre = MAGENTA;
         c->element_value_compound_quote.pre = GREEN;
         c->element_value_compound_entity.pre = MAGENTA;
-        c->attr_ns.pre = LIGHT_BLUE_UNDERLINE;
+        c->attr_ns.pre = GRAY;
         c->attr_key.pre = LIGHT_BLUE;
         c->attr_value_text.pre = BLUE;
         c->attr_value_quote.pre = BLUE;
@@ -233,7 +233,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->entity.pre = MAGENTA;
         c->comment.pre = CYAN;
         c->comment_continuation.pre = CYAN;
-        c->element_ns.pre = DARK_ORANGE_UNDERLINE;
+        c->element_ns.pre = DARK_GRAY;
         c->element_name.pre = DARK_ORANGE;
         c->element_key.pre = BLUE;
         c->element_value_text.pre = DARK_GREEN;
@@ -241,7 +241,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->element_value_entity.pre = MAGENTA;
         c->element_value_compound_quote.pre = DARK_GREEN;
         c->element_value_compound_entity.pre = MAGENTA;
-        c->attr_ns.pre = BLUE_UNDERLINE;
+        c->attr_ns.pre = DARK_GRAY;
         c->attr_key.pre = BLUE;
         c->attr_value_text.pre = DARK_BLUE;
         c->attr_value_quote.pre = DARK_BLUE;
@@ -272,6 +272,8 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
             "@media screen and (orientation: landscape) { pre { max-width: 98%; } }"
             "pre.xmq_dark {white-space:pre-wrap;border-radius:2px;background-color:#263338;border:solid 1px #555555;display:inline-block;padding:1em;color:white;}\n"
             "pre.xmq_light{white-space:pre-wrap;border-radius:2px;background-color:#f8f9fb;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
+            "body.xmq_dark {background-color:black;}\n"
+            "body.xmq_light {}\n"
             "xmqC{color:#2aa1b3;}\n"
             "xmqQ{color:#26a269;}\n"
             "xmqE{color:#c061cb;}\n"
@@ -301,8 +303,15 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
             "pre.xmq_dark { }\n"
             ;
 
-        c->body.pre =
-            "<body>";
+        if (dark_mode)
+        {
+            c->body.pre = "<body class=\"xmq_dark\">";
+        }
+        else
+        {
+            c->body.pre = "<body class=\"xmq_light\">";
+        }
+
         c->body.post =
             "</body>";
     }

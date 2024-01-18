@@ -31,6 +31,7 @@ cp web/resources/saml_authn_request.xml build/web/resources
 cp web/resources/saml_authn_response.xml build/web/resources
 cp web/resources/jabber.xml build/web/resources
 cp web/resources/ibmpcjr_cart.xml build/web/resources
+cp web/resources/SEQLXML26.xml build/web/resources
 cp pom.xml build/web/resources
 
 
@@ -130,6 +131,8 @@ $XMQ web/index.htmq \
      replace-entity POM_RENDERED --with-file=build/pom_rendered.xml \
      to-html > build/web/index.html
 
+$XMQ web/upload.htmq to-html > build/web/upload.html
+
 # Render the page source itself!
 $XMQ web/index.htmq render-html --darkbg > build/web/resources/index_htmq.html
 $XMQ web/index.htmq render-html --lightbg > build/web/resources/index_htmq_light.html
@@ -152,5 +155,6 @@ $XMQ build/web/resources/saml_authn_request.xml render-html --darkbg > build/web
 $XMQ build/web/resources/saml_authn_response.xml render-html --darkbg > build/web/resources/saml_authn_response.html
 $XMQ build/web/resources/jabber.xml render-html --darkbg > build/web/resources/jabber.html
 $XMQ build/web/resources/ibmpcjr_cart.xml render-html --darkbg > build/web/resources/ibmpcjr_cart.html
+$XMQ build/web/resources/SEQLXML26.xml render-html --darkbg > build/web/resources/SEQLXML25.html
 
 echo Updated build/web/index.html
