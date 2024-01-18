@@ -29,16 +29,22 @@ html {
             enctype = multipart/form-data
             action  = view)
         {
-            button(type = button onClick = 'goDark();') = 'Dark Mode'
+            button(type = button
+                   title = 'Set functional cookie background=dark'
+                   onClick = 'goDark();') = 'Dark Mode'
             ' '
-            button(type = button onClick = 'goLight();') = 'Light Mode'
+            button(type = button
+                   title = 'Set functional cookie background=light'
+                   onClick = 'goLight();') = 'Light Mode'
             ' '
             input(name = uploadFile
                   id = uploadFile
                   type = file
                   onchange = 'form.submit()'
                   hidden)
-            button(type = button onclick = '''document.getElementById('uploadFile').click()''') = 'Upload XML/HTML/JSON'
+            button(type  = button
+                   title = 'Max 200KB, logs cleared after 30 days.'
+                   onclick = '''document.getElementById('uploadFile').click()''') = 'Upload XML/HTML/JSON'
         }
         br
         p = 'The XMQ format is easier for a human to read and write than xml/html yet it
