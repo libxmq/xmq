@@ -989,10 +989,10 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
                                              XMQColor color,
                                              const char *start,
                                              const char *stop);
-void print_quote(XMQPrintState *ps,
-                 XMQColor c,
-                 const char *start,
-                 const char *stop);
+void print_quotee(XMQPrintState *ps,
+                  XMQColor c,
+                  const char *start,
+                  const char *stop);
 const char *find_next_line_end(XMQPrintState *ps, const char *start, const char *stop);
 const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop);
 void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level);
@@ -10499,7 +10499,7 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
     ps->restart_line = old_restart_line;
 }
 
-void print_quote(XMQPrintState *ps,
+void print_quotee(XMQPrintState *ps,
                  XMQColor c,
                  const char *start,
                  const char *stop)
@@ -10743,10 +10743,11 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
             check_space_before_quote(ps, level);
             bool add_nls = false;
             bool add_compound = false;
+            bool compact = ps->output_settings->compact;
             count_necessary_quotes(from, to, false, &add_nls, &add_compound);
-            if (!add_compound)
+            if (!add_compound && (!add_nls || !compact))
             {
-                print_quote(ps, level_to_quote_color(level), from, to);
+                print_quotee(ps, level_to_quote_color(level), from, to);
             }
             else
             {
