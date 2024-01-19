@@ -704,6 +704,8 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 // The more limited Windows console.
 
 #define NOCOLOR      "\033[0m\033[24m"
+#define GRAY         "\033[37m\033[24m"
+#define DARK_GRAY    "\033[90m\033[24m"
 #define GREEN        "\033[92m\033[24m"
 #define DARK_GREEN   "\033[32m\033[24m"
 #define BLUE         "\033[94m\033[24m"
@@ -1527,6 +1529,8 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 // The more limited Windows console.
 
 #define NOCOLOR      "\033[0m\033[24m"
+#define GRAY         "\033[37m\033[24m"
+#define DARK_GRAY    "\033[90m\033[24m"
 #define GREEN        "\033[92m\033[24m"
 #define DARK_GREEN   "\033[32m\033[24m"
 #define BLUE         "\033[94m\033[24m"
@@ -1814,11 +1818,11 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
             "  xmqQ{color:#006400;}\n"
             "  xmqE{color:#c061cb;}\n"
             "  xmqENS{color:#696969;}\n"
-            "  xmqEN{color:#ff8c00;}\n"
+            "  xmqEN{color:#a85c00;}\n"
             "  xmqEKV{color:#006400;}\n"
             "  xmqEK{color:#1f61ff;}\n"
             "  xmqAK{color:#1f61ff;}\n"
-            "  xmqAKV{color:#2156bc;}\n"
+            "  xmqAKV{color:#12488c;}\n"
             "  xmqANS{color:#696969;}\n"
             "  xmqNSD{color:#1a91a3;}\n"
             "  xmqCP{color:#c061cb;}\n"
