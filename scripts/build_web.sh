@@ -32,6 +32,7 @@ cp web/resources/saml_authn_response.xml build/web/resources
 cp web/resources/jabber.xml build/web/resources
 cp web/resources/ibmpcjr_cart.xml build/web/resources
 cp web/resources/SEQLXML26.xml build/web/resources
+cp web/resources/android_layout_main.xml build/web/resources
 cp pom.xml build/web/resources
 
 
@@ -156,5 +157,6 @@ $XMQ build/web/resources/saml_authn_response.xml render-html --darkbg > build/we
 $XMQ build/web/resources/jabber.xml render-html --darkbg > build/web/resources/jabber.html
 $XMQ build/web/resources/ibmpcjr_cart.xml render-html --darkbg > build/web/resources/ibmpcjr_cart.html
 $XMQ build/web/resources/SEQLXML26.xml render-html --darkbg > build/web/resources/SEQLXML25.html
+$XMQ build/web/resources/android_layout_main.xml render-html --darkbg > build/web/resources/android_layout_main.html
 
 echo Updated build/web/index.html

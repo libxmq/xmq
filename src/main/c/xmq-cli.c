@@ -137,6 +137,7 @@ struct XMQCliCommand
     XMQRenderFormat render_to;
     bool render_raw;
     bool only_style;
+    const char *render_style; // A named coloring.
     XMQTrimType trim;
     bool use_color; // Uses color or not for terminal/html/tex
     bool dark_mode; // If false assume background is light.
@@ -549,6 +550,11 @@ bool handle_option(const char *arg, XMQCliCommand *command)
         if (!strcmp(arg, "--onlystyle"))
         {
             command->only_style = true;
+            return true;
+        }
+        if (!strncmp(arg, "--style=", 5))
+        {
+            command->render_style = arg+8;
             return true;
         }
         if (!strncmp(arg, "--use-cr=", 9))
@@ -1301,6 +1307,7 @@ bool cmd_to(XMQCliCommand *command)
     xmqSetRenderFormat(settings, command->render_to);
     xmqSetRenderRaw(settings, command->render_raw);
     xmqSetRenderOnlyStyle(settings, command->only_style);
+    xmqSetRenderStyle(settings, command->render_style);
     xmqRenderHtmlSettings(settings, command->use_id, command->use_class);
     xmqSetupDefaultColors(settings, command->dark_mode);
 
@@ -1828,16 +1835,11 @@ void find_prev_line(const char **line_offset,
     const char *lo = *line_offset;
     const char *ilo = *in_line_offset;
 
-    print_until_newline("LO ", lo, stop);
-    print_until_newline("ILO", ilo, stop);
-
     const char *prev_lo = find_prev_line_start(lo, ilo, start, stop);
     // Prev_lo is now lo or the line before.
-    print_until_newline("PLO", prev_lo, stop);
 
     // How far is it from the prev line start to the ilo?
     int diff = count_non_ansi_chars(prev_lo, ilo);
-    fprintf(stderr, "diff %d\n", diff);
 
     if (diff > width)
     {

@@ -146,19 +146,19 @@ typedef enum
 
 /**
     XMQSyntax:
-    @SYNTAX_xmqC: Comments
-    @SYNTAX_xmqQ: Standalone quote.
-    @SYNTAX_xmqE: Entity
-    @SYNTAX_xmqENS: Element Namespace
-    @SYNTAX_xmqEN: Element Name
-    @SYNTAX_xmqEK: Element Key
-    @SYNTAX_xmqEKV: Element Key Value
-    @SYNTAX_xmqANS: Attribute NameSpace
-    @SYNTAX_xmqAK: Attribute Key
-    @SYNTAX_xmqAKV: Attribute Key Value
-    @SYNTAX_xmqCP: Compound Parentheses
-    @SYNTAX_xmqNDC: Namespace declaration
-    @SYNTAX_xmqUW: Unicode Whitespace
+    @SYNTAX_C: Comments
+    @SYNTAX_Q: Standalone quote.
+    @SYNTAX_E: Entity
+    @SYNTAX_ENS: Element Namespace
+    @SYNTAX_EN: Element Name
+    @SYNTAX_EK: Element Key
+    @SYNTAX_EKV: Element Key Value
+    @SYNTAX_ANS: Attribute NameSpace
+    @SYNTAX_AK: Attribute Key
+    @SYNTAX_AKV: Attribute Key Value
+    @SYNTAX_CP: Compound Parentheses
+    @SYNTAX_NDC: Namespace declaration
+    @SYNTAX_UW: Unicode Whitespace
 */
 typedef enum
 {
@@ -524,6 +524,7 @@ void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format);
 void xmqSetRenderFormat(XMQOutputSettings *os, XMQRenderFormat render_to);
 void xmqSetRenderRaw(XMQOutputSettings *os, bool render_raw);
 void xmqSetRenderOnlyStyle(XMQOutputSettings *os, bool only_style);
+void xmqSetRenderStyle(XMQOutputSettings *os, const char *render_style);
 void xmqSetWriterContent(XMQOutputSettings *os, XMQWriter content);
 void xmqSetWriterError(XMQOutputSettings *os, XMQWriter error);
 
@@ -708,10 +709,14 @@ void xmqRenderHtmlSettings(XMQOutputSettings *settings,
 
 /**
    xmqOverrideColor:
+   @settings:
+   @render_style: Use "" for the default render_style
+   @sc: The syntax element you want to change the color for.
 
    Change the color strings for the given color type. You have to run xmqSetupDefaultColors first.
 */
 void xmqOverrideColor(XMQOutputSettings *settings,
+                      const char *render_style,
                       XMQSyntax sc,
                       const char *pre,
                       const char *post,

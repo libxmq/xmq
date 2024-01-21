@@ -65,6 +65,8 @@ html {
             '  '
             a(href = resources/ibmpcjr_cart.html) = '[mame cart driver]'
             '  '
+            a(href = resources/android_layout_main.html) = '[Android layout]'
+            '  '
             a(href = resources/jabber.html) = '[jabber]'
             '  '
             a(href = resources/docx_example.html) = '[docx]'

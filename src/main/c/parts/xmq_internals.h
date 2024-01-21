@@ -155,6 +155,7 @@ struct XMQOutputSettings
     XMQRenderFormat render_to;
     bool render_raw;
     bool only_style;
+    const char *render_style;
 
     XMQWriter content;
     XMQWriter error;
@@ -522,18 +523,18 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define GRAY         "\033[0;38;5;242m"
 #define DARK_GRAY    "\033[0;38;5;238m"
 #define GREEN        "\033[0;32m"
-#define DARK_GREEN   "\033[0;1;32m"
+#define DARK_GREEN_BOLD "\033[0;1;32m"
 #define BLUE         "\033[0;38;5;27m"
 #define BLUE_UNDERLINE "\033[0;4;38;5;27m"
 #define LIGHT_BLUE   "\033[0;38;5;39m"
 #define LIGHT_BLUE_UNDERLINE   "\033[0;4;38;5;39m"
-#define DARK_BLUE    "\033[0;1;34m"
+#define DARK_BLUE_BOLD    "\033[0;1;34m"
 #define ORANGE       "\033[0;38;5;166m"
 #define ORANGE_UNDERLINE "\033[0;4;38;5;166m"
 #define DARK_ORANGE  "\033[0;38;5;130m"
 #define DARK_ORANGE_UNDERLINE  "\033[0;4;38;5;130m"
 #define MAGENTA      "\033[0;38;5;13m"
-#define CYAN         "\033[0;1;36m"
+#define CYAN_BOLD    "\033[0;1;36m"
 #define DARK_CYAN    "\033[0;38;5;21m"
 #define DARK_RED     "\033[0;31m"
 #define RED          "\033[0;31m"
@@ -549,18 +550,21 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define GRAY         "\033[37m\033[24m"
 #define DARK_GRAY    "\033[90m\033[24m"
 #define GREEN        "\033[92m\033[24m"
-#define DARK_GREEN   "\033[32m\033[24m"
+// Not really bold, how?
+#define DARK_GREEN_BOLD   "\033[32m\033[24m"
 #define BLUE         "\033[94m\033[24m"
 #define BLUE_UNDERLINE "\033[94m\033[4m"
 #define LIGHT_BLUE   "\033[36m\033[24m"
 #define LIGHT_BLUE_UNDERLINE   "\033[36m\033[4m"
-#define DARK_BLUE    "\033[34m\033[24m"
+// Not really bold, how?
+#define DARK_BLUE_BOLD    "\033[34m\033[24m"
 #define ORANGE       "\033[93m\033[24m"
 #define ORANGE_UNDERLINE "\033[93m\033[4m"
 #define DARK_ORANGE  "\033[33m\033[24m"
 #define DARK_ORANGE_UNDERLINE  "\033[33m\033[4m"
 #define MAGENTA      "\033[95m\033[24m"
-#define CYAN         "\033[96m\033[24m"
+// Not really bold, how?
+#define CYAN_BOLD         "\033[96m\033[24m"
 #define DARK_CYAN    "\033[36m\033[24m"
 #define DARK_RED     "\033[31m\033[24m"
 #define RED          "\033[91m\033[24m"

@@ -313,6 +313,7 @@ struct XMQOutputSettings
     XMQRenderFormat render_to;
     bool render_raw;
     bool only_style;
+    const char *render_style;
 
     XMQWriter content;
     XMQWriter error;
@@ -680,18 +681,18 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define GRAY         "\033[0;38;5;242m"
 #define DARK_GRAY    "\033[0;38;5;238m"
 #define GREEN        "\033[0;32m"
-#define DARK_GREEN   "\033[0;1;32m"
+#define DARK_GREEN_BOLD "\033[0;1;32m"
 #define BLUE         "\033[0;38;5;27m"
 #define BLUE_UNDERLINE "\033[0;4;38;5;27m"
 #define LIGHT_BLUE   "\033[0;38;5;39m"
 #define LIGHT_BLUE_UNDERLINE   "\033[0;4;38;5;39m"
-#define DARK_BLUE    "\033[0;1;34m"
+#define DARK_BLUE_BOLD    "\033[0;1;34m"
 #define ORANGE       "\033[0;38;5;166m"
 #define ORANGE_UNDERLINE "\033[0;4;38;5;166m"
 #define DARK_ORANGE  "\033[0;38;5;130m"
 #define DARK_ORANGE_UNDERLINE  "\033[0;4;38;5;130m"
 #define MAGENTA      "\033[0;38;5;13m"
-#define CYAN         "\033[0;1;36m"
+#define CYAN_BOLD    "\033[0;1;36m"
 #define DARK_CYAN    "\033[0;38;5;21m"
 #define DARK_RED     "\033[0;31m"
 #define RED          "\033[0;31m"
@@ -707,18 +708,21 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define GRAY         "\033[37m\033[24m"
 #define DARK_GRAY    "\033[90m\033[24m"
 #define GREEN        "\033[92m\033[24m"
-#define DARK_GREEN   "\033[32m\033[24m"
+// Not really bold, how?
+#define DARK_GREEN_BOLD   "\033[32m\033[24m"
 #define BLUE         "\033[94m\033[24m"
 #define BLUE_UNDERLINE "\033[94m\033[4m"
 #define LIGHT_BLUE   "\033[36m\033[24m"
 #define LIGHT_BLUE_UNDERLINE   "\033[36m\033[4m"
-#define DARK_BLUE    "\033[34m\033[24m"
+// Not really bold, how?
+#define DARK_BLUE_BOLD    "\033[34m\033[24m"
 #define ORANGE       "\033[93m\033[24m"
 #define ORANGE_UNDERLINE "\033[93m\033[4m"
 #define DARK_ORANGE  "\033[33m\033[24m"
 #define DARK_ORANGE_UNDERLINE  "\033[33m\033[4m"
 #define MAGENTA      "\033[95m\033[24m"
-#define CYAN         "\033[96m\033[24m"
+// Not really bold, how?
+#define CYAN_BOLD         "\033[96m\033[24m"
 #define DARK_CYAN    "\033[36m\033[24m"
 #define DARK_RED     "\033[31m\033[24m"
 #define RED          "\033[91m\033[24m"
@@ -1138,6 +1142,7 @@ struct XMQOutputSettings
     XMQRenderFormat render_to;
     bool render_raw;
     bool only_style;
+    const char *render_style;
 
     XMQWriter content;
     XMQWriter error;
@@ -1505,18 +1510,18 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define GRAY         "\033[0;38;5;242m"
 #define DARK_GRAY    "\033[0;38;5;238m"
 #define GREEN        "\033[0;32m"
-#define DARK_GREEN   "\033[0;1;32m"
+#define DARK_GREEN_BOLD "\033[0;1;32m"
 #define BLUE         "\033[0;38;5;27m"
 #define BLUE_UNDERLINE "\033[0;4;38;5;27m"
 #define LIGHT_BLUE   "\033[0;38;5;39m"
 #define LIGHT_BLUE_UNDERLINE   "\033[0;4;38;5;39m"
-#define DARK_BLUE    "\033[0;1;34m"
+#define DARK_BLUE_BOLD    "\033[0;1;34m"
 #define ORANGE       "\033[0;38;5;166m"
 #define ORANGE_UNDERLINE "\033[0;4;38;5;166m"
 #define DARK_ORANGE  "\033[0;38;5;130m"
 #define DARK_ORANGE_UNDERLINE  "\033[0;4;38;5;130m"
 #define MAGENTA      "\033[0;38;5;13m"
-#define CYAN         "\033[0;1;36m"
+#define CYAN_BOLD    "\033[0;1;36m"
 #define DARK_CYAN    "\033[0;38;5;21m"
 #define DARK_RED     "\033[0;31m"
 #define RED          "\033[0;31m"
@@ -1532,18 +1537,21 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define GRAY         "\033[37m\033[24m"
 #define DARK_GRAY    "\033[90m\033[24m"
 #define GREEN        "\033[92m\033[24m"
-#define DARK_GREEN   "\033[32m\033[24m"
+// Not really bold, how?
+#define DARK_GREEN_BOLD   "\033[32m\033[24m"
 #define BLUE         "\033[94m\033[24m"
 #define BLUE_UNDERLINE "\033[94m\033[4m"
 #define LIGHT_BLUE   "\033[36m\033[24m"
 #define LIGHT_BLUE_UNDERLINE   "\033[36m\033[4m"
-#define DARK_BLUE    "\033[34m\033[24m"
+// Not really bold, how?
+#define DARK_BLUE_BOLD    "\033[34m\033[24m"
 #define ORANGE       "\033[93m\033[24m"
 #define ORANGE_UNDERLINE "\033[93m\033[4m"
 #define DARK_ORANGE  "\033[33m\033[24m"
 #define DARK_ORANGE_UNDERLINE  "\033[33m\033[4m"
 #define MAGENTA      "\033[95m\033[24m"
-#define CYAN         "\033[96m\033[24m"
+// Not really bold, how?
+#define CYAN_BOLD         "\033[96m\033[24m"
 #define DARK_CYAN    "\033[36m\033[24m"
 #define DARK_RED     "\033[31m\033[24m"
 #define RED          "\033[91m\033[24m"
@@ -1673,7 +1681,14 @@ char ansi_reset_color[] = "\033[0m";
 
 void xmqSetupDefaultColors(XMQOutputSettings *os, bool dark_mode)
 {
-    XMQColoring *c = (XMQColoring*)hashmap_get(os->colorings, "");
+    const char *style = os->render_style;
+    if (!style) style = "";
+    XMQColoring *c = (XMQColoring*)hashmap_get(os->colorings, style);
+    if (!c)
+    {
+        fprintf(stderr, "xmq: No such render style \"%s\"\n", style);
+        exit(1);
+    }
     assert(c);
     memset(c, 0, sizeof(XMQColoring));
     os->indentation_space = " ";
@@ -1724,8 +1739,8 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->cpar_right.pre   = MAGENTA;
         c->quote.pre = GREEN;
         c->entity.pre = MAGENTA;
-        c->comment.pre = CYAN;
-        c->comment_continuation.pre = CYAN;
+        c->comment.pre = CYAN_BOLD;
+        c->comment_continuation.pre = CYAN_BOLD;
         c->element_ns.pre = GRAY;
         c->element_name.pre = ORANGE;
         c->element_key.pre = LIGHT_BLUE;
@@ -1756,24 +1771,24 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->apar_right.pre   = NOCOLOR;
         c->cpar_left.pre = MAGENTA;
         c->cpar_right.pre = MAGENTA;
-        c->quote.pre = DARK_GREEN;
+        c->quote.pre = DARK_GREEN_BOLD;
         c->entity.pre = MAGENTA;
-        c->comment.pre = CYAN;
-        c->comment_continuation.pre = CYAN;
+        c->comment.pre = CYAN_BOLD;
+        c->comment_continuation.pre = CYAN_BOLD;
         c->element_ns.pre = DARK_GRAY;
         c->element_name.pre = DARK_ORANGE;
         c->element_key.pre = BLUE;
-        c->element_value_text.pre = DARK_GREEN;
-        c->element_value_quote.pre = DARK_GREEN;
+        c->element_value_text.pre = DARK_GREEN_BOLD;
+        c->element_value_quote.pre = DARK_GREEN_BOLD;
         c->element_value_entity.pre = MAGENTA;
-        c->element_value_compound_quote.pre = DARK_GREEN;
+        c->element_value_compound_quote.pre = DARK_GREEN_BOLD;
         c->element_value_compound_entity.pre = MAGENTA;
         c->attr_ns.pre = DARK_GRAY;
         c->attr_key.pre = BLUE;
-        c->attr_value_text.pre = DARK_BLUE;
-        c->attr_value_quote.pre = DARK_BLUE;
+        c->attr_value_text.pre = DARK_BLUE_BOLD;
+        c->attr_value_quote.pre = DARK_BLUE_BOLD;
         c->attr_value_entity.pre = MAGENTA;
-        c->attr_value_compound_quote.pre = DARK_BLUE;
+        c->attr_value_compound_quote.pre = DARK_BLUE_BOLD;
         c->attr_value_compound_entity.pre = MAGENTA;
         c->ns_declaration.pre = BLUE;
         c->ns_colon.pre = NOCOLOR;
@@ -1798,16 +1813,16 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
         c->style.pre = "@media screen and (orientation: portrait) { pre { font-size: 2vw; } }"
             "@media screen and (orientation: landscape) { pre { max-width: 98%; } }"
             "pre.xmq_dark {white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#263338;border:solid 1px #555555;display:inline-block;padding:1em;color:white;}\n"
-            "pre.xmq_light{white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#f8f9fb;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
+            "pre.xmq_light{white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#ffffcc;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
             "body.xmq_dark {background-color:black;}\n"
             "body.xmq_light {}\n"
             "xmqC{color:#2aa1b3;}\n"
-            "xmqQ{color:#26a269;}\n"
+            "xmqQ{color:#26a269;font-weight:600;}\n"
             "xmqE{color:#c061cb;}\n"
             "xmqENS{color:#a9a9a9;}\n"
             "xmqEN{color:#ff8c00;}\n"
             "xmqEK{color:#88b4f7;}\n"
-            "xmqEKV{color:#26a269;}\n"
+            "xmqEKV{color:#26a269;font-weight:600;}\n"
             "xmqAK{color:#88b4f7;}\n"
             "xmqAKV{color:#6196ec;}\n"
             "xmqANS{color:#a9a9a9;}\n"
@@ -1815,11 +1830,11 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
             "xmqCP{color:#c061cb;}\n"
             "pre.xmq_light {\n"
             "  xmqC{color:#2aa1b3;}\n"
-            "  xmqQ{color:#006400;}\n"
+            "  xmqQ{color:#006400;font-weight:600;}\n"
             "  xmqE{color:#c061cb;}\n"
             "  xmqENS{color:#696969;}\n"
             "  xmqEN{color:#a85c00;}\n"
-            "  xmqEKV{color:#006400;}\n"
+            "  xmqEKV{color:#26a269;font-weight:600;}\n"
             "  xmqEK{color:#1f61ff;}\n"
             "  xmqAK{color:#1f61ff;}\n"
             "  xmqAKV{color:#12488c;}\n"
@@ -2050,7 +2065,7 @@ void xmqRenderHtmlSettings(XMQOutputSettings *settings,
     if (use_class) settings->use_class = use_class;
 }
 
-void xmqOverrideColor(XMQOutputSettings *os, XMQSyntax sy, const char *pre, const char *post, const char *ns)
+void xmqOverrideColor(XMQOutputSettings *os, const char *render_style, XMQSyntax sy, const char *pre, const char *post, const char *ns)
 {
     if (!os->colorings)
     {
@@ -2189,6 +2204,11 @@ void xmqSetRenderRaw(XMQOutputSettings *os, bool render_raw)
 void xmqSetRenderOnlyStyle(XMQOutputSettings *os, bool only_style)
 {
     os->only_style = only_style;
+}
+
+void xmqSetRenderStyle(XMQOutputSettings *os, const char *render_style)
+{
+    os->render_style = render_style;
 }
 
 void xmqSetWriterContent(XMQOutputSettings *os, XMQWriter content)

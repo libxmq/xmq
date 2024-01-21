@@ -146,7 +146,14 @@ char ansi_reset_color[] = "\033[0m";
 
 void xmqSetupDefaultColors(XMQOutputSettings *os, bool dark_mode)
 {
-    XMQColoring *c = (XMQColoring*)hashmap_get(os->colorings, "");
+    const char *style = os->render_style;
+    if (!style) style = "";
+    XMQColoring *c = (XMQColoring*)hashmap_get(os->colorings, style);
+    if (!c)
+    {
+        fprintf(stderr, "xmq: No such render style \"%s\"\n", style);
+        exit(1);
+    }
     assert(c);
     memset(c, 0, sizeof(XMQColoring));
     os->indentation_space = " ";
@@ -197,8 +204,8 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->cpar_right.pre   = MAGENTA;
         c->quote.pre = GREEN;
         c->entity.pre = MAGENTA;
-        c->comment.pre = CYAN;
-        c->comment_continuation.pre = CYAN;
+        c->comment.pre = CYAN_BOLD;
+        c->comment_continuation.pre = CYAN_BOLD;
         c->element_ns.pre = GRAY;
         c->element_name.pre = ORANGE;
         c->element_key.pre = LIGHT_BLUE;
@@ -229,24 +236,24 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
         c->apar_right.pre   = NOCOLOR;
         c->cpar_left.pre = MAGENTA;
         c->cpar_right.pre = MAGENTA;
-        c->quote.pre = DARK_GREEN;
+        c->quote.pre = DARK_GREEN_BOLD;
         c->entity.pre = MAGENTA;
-        c->comment.pre = CYAN;
-        c->comment_continuation.pre = CYAN;
+        c->comment.pre = CYAN_BOLD;
+        c->comment_continuation.pre = CYAN_BOLD;
         c->element_ns.pre = DARK_GRAY;
         c->element_name.pre = DARK_ORANGE;
         c->element_key.pre = BLUE;
-        c->element_value_text.pre = DARK_GREEN;
-        c->element_value_quote.pre = DARK_GREEN;
+        c->element_value_text.pre = DARK_GREEN_BOLD;
+        c->element_value_quote.pre = DARK_GREEN_BOLD;
         c->element_value_entity.pre = MAGENTA;
-        c->element_value_compound_quote.pre = DARK_GREEN;
+        c->element_value_compound_quote.pre = DARK_GREEN_BOLD;
         c->element_value_compound_entity.pre = MAGENTA;
         c->attr_ns.pre = DARK_GRAY;
         c->attr_key.pre = BLUE;
-        c->attr_value_text.pre = DARK_BLUE;
-        c->attr_value_quote.pre = DARK_BLUE;
+        c->attr_value_text.pre = DARK_BLUE_BOLD;
+        c->attr_value_quote.pre = DARK_BLUE_BOLD;
         c->attr_value_entity.pre = MAGENTA;
-        c->attr_value_compound_quote.pre = DARK_BLUE;
+        c->attr_value_compound_quote.pre = DARK_BLUE_BOLD;
         c->attr_value_compound_entity.pre = MAGENTA;
         c->ns_declaration.pre = BLUE;
         c->ns_colon.pre = NOCOLOR;
@@ -271,16 +278,16 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
         c->style.pre = "@media screen and (orientation: portrait) { pre { font-size: 2vw; } }"
             "@media screen and (orientation: landscape) { pre { max-width: 98%; } }"
             "pre.xmq_dark {white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#263338;border:solid 1px #555555;display:inline-block;padding:1em;color:white;}\n"
-            "pre.xmq_light{white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#f8f9fb;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
+            "pre.xmq_light{white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#ffffcc;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
             "body.xmq_dark {background-color:black;}\n"
             "body.xmq_light {}\n"
             "xmqC{color:#2aa1b3;}\n"
-            "xmqQ{color:#26a269;}\n"
+            "xmqQ{color:#26a269;font-weight:600;}\n"
             "xmqE{color:#c061cb;}\n"
             "xmqENS{color:#a9a9a9;}\n"
             "xmqEN{color:#ff8c00;}\n"
             "xmqEK{color:#88b4f7;}\n"
-            "xmqEKV{color:#26a269;}\n"
+            "xmqEKV{color:#26a269;font-weight:600;}\n"
             "xmqAK{color:#88b4f7;}\n"
             "xmqAKV{color:#6196ec;}\n"
             "xmqANS{color:#a9a9a9;}\n"
@@ -288,11 +295,11 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
             "xmqCP{color:#c061cb;}\n"
             "pre.xmq_light {\n"
             "  xmqC{color:#2aa1b3;}\n"
-            "  xmqQ{color:#006400;}\n"
+            "  xmqQ{color:#006400;font-weight:600;}\n"
             "  xmqE{color:#c061cb;}\n"
             "  xmqENS{color:#696969;}\n"
             "  xmqEN{color:#a85c00;}\n"
-            "  xmqEKV{color:#006400;}\n"
+            "  xmqEKV{color:#26a269;font-weight:600;}\n"
             "  xmqEK{color:#1f61ff;}\n"
             "  xmqAK{color:#1f61ff;}\n"
             "  xmqAKV{color:#12488c;}\n"
@@ -523,7 +530,7 @@ void xmqRenderHtmlSettings(XMQOutputSettings *settings,
     if (use_class) settings->use_class = use_class;
 }
 
-void xmqOverrideColor(XMQOutputSettings *os, XMQSyntax sy, const char *pre, const char *post, const char *ns)
+void xmqOverrideColor(XMQOutputSettings *os, const char *render_style, XMQSyntax sy, const char *pre, const char *post, const char *ns)
 {
     if (!os->colorings)
     {
@@ -662,6 +669,11 @@ void xmqSetRenderRaw(XMQOutputSettings *os, bool render_raw)
 void xmqSetRenderOnlyStyle(XMQOutputSettings *os, bool only_style)
 {
     os->only_style = only_style;
+}
+
+void xmqSetRenderStyle(XMQOutputSettings *os, const char *render_style)
+{
+    os->render_style = render_style;
 }
 
 void xmqSetWriterContent(XMQOutputSettings *os, XMQWriter content)
