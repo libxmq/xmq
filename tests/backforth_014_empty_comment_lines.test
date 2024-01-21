@@ -1,0 +1,23 @@
+INPUT
+howdy {
+    /*is this a good heuristic for the newlines?*/**/**/**/*beta*/
+    /**/**/**/**/**/
+}
+FIRST
+howdy {
+    /* is this a good heuristic for the newlines?
+
+
+
+       beta */
+    /*
+
+
+        */
+}
+SECOND
+howdy{/*is this a good heuristic for the newlines?*/**/**/**/*beta*/ /**/}
+END
+CMDS_FIRST to-xmq
+ARGS_SECOND
+CMDS_SECOND to-xmq --compact

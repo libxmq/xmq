@@ -61,6 +61,7 @@ void print_all_whitespace(XMQPrintState *ps, const char *start, const char *stop
 void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num);
 void print_quoted_spaces(XMQPrintState *ps, XMQColor color, int num);
 void print_quotes(XMQPrintState *ps, size_t num, XMQColor color);
+void print_nl(XMQPrintState *ps, const char *prefix, const char *postfix);
 void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *postfix);
 size_t print_char_entity(XMQPrintState *ps, XMQColor color, const char *start, const char *stop);
 void print_slashes(XMQPrintState *ps, const char *pre, const char *post, size_t n);

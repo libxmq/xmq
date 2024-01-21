@@ -189,7 +189,7 @@ void print_comment_lines(XMQPrintState *ps, const char *start, const char *stop,
     print_slashes(ps, NULL, "*", num_slashes);
     size_t add_spaces = ps->current_indent + 1 + num_slashes;
     if (!compact) {
-        print_white_spaces(ps, 1);
+        if (*i != '\n') print_white_spaces(ps, 1);
         add_spaces++;
     }
 
@@ -206,7 +206,16 @@ void print_comment_lines(XMQPrintState *ps, const char *start, const char *stop,
                 }
                 else
                 {
-                    print_nl_and_indent(ps, NULL, NULL);
+                    if (*(i-1) == 10 && *(i+1) != 0)
+                    {
+                        // This is an empty line. Do not indent.
+                        // Except the last line which must be indented.
+                        print_nl(ps, NULL, NULL);
+                    }
+                    else
+                    {
+                        print_nl_and_indent(ps, NULL, NULL);
+                    }
                 }
             }
             print_comment_line(ps, line, i, compact);
@@ -577,6 +586,20 @@ void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *post
     ps->current_indent = 0;
     ps->last_char = 0;
     print_white_spaces(ps, ps->line_indent);
+    if (ps->restart_line) write(writer_state, ps->restart_line, NULL);
+    if (prefix) write(writer_state, prefix, NULL);
+}
+
+void print_nl(XMQPrintState *ps, const char *prefix, const char *postfix)
+{
+    XMQOutputSettings *os = ps->output_settings;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
+
+    if (postfix) write(writer_state, postfix, NULL);
+    write(writer_state, os->explicit_nl, NULL);
+    ps->current_indent = 0;
+    ps->last_char = 0;
     if (ps->restart_line) write(writer_state, ps->restart_line, NULL);
     if (prefix) write(writer_state, prefix, NULL);
 }
@@ -1262,9 +1285,20 @@ void print_value_internal(XMQPrintState *ps, xmlNode *node, Level level)
 bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *stop)
 {
     bool compact = ps->output_settings->compact;
-    if (stop == start+1 && *start == '\'') return false;
+    if (stop == start+1)
+    {
+        // A single quote becomes &apos;
+        // A single newline becomes &#10;
+        // A single cr becomes &#13;
+        // A single tab becomes &#9;
+        if (*start == '\'') return false;
+        if (*start == '\n') return false;
+        if (*start == '\r') return false;
+        if (*start == '\t') return false;
+    }
     if (has_leading_space_nl(start, stop)) return true;
     if (has_ending_nl_space(start, stop)) return true;
+
     if (compact)
     {
         // In compact form newlines must be escaped: &#10;

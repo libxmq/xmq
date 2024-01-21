@@ -1,0 +1,14 @@
+START
+<target>
+  <exec inputstring="&#10;" sep="'"/>
+</target>
+COMPACT
+target{exec(inputstring=&#10;sep=&apos;)}
+XMQ
+target {
+    exec(inputstring = &#10;
+         sep         = &apos;)
+}
+END
+ARGS
+CMDS

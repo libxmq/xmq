@@ -295,7 +295,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
             "xmqCP{color:#c061cb;}\n"
             "pre.xmq_light {\n"
             "  xmqC{color:#2aa1b3;}\n"
-            "  xmqQ{color:#006400;font-weight:600;}\n"
+            "  xmqQ{color:#26a269;font-weight:600;}\n"
             "  xmqE{color:#c061cb;}\n"
             "  xmqENS{color:#696969;}\n"
             "  xmqEN{color:#a85c00;}\n"
