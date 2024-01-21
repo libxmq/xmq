@@ -1,0 +1,11 @@
+html {
+    body {
+        h1 = 'Introduction'
+        h2 = Todo
+        p = 'All work and no play.'
+        p = 'All work and no play.'
+        p = 'All work and no play.'
+        h2 = Done
+        p = 'Not much here.'
+    }
+}

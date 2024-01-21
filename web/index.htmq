@@ -47,11 +47,21 @@ html {
                    onclick = '''document.getElementById('uploadFile').click()''') = 'Upload XML/HTML/JSON'
         }
         br
-        p = 'The XMQ format is easier for a human to read and write than xml/html yet it
-             captures exactly the xml/html content. It can always be safely pretty printed
-             without introducing significant whitespace. The file-suffix htmq is used
-             when working with html in the XMQ format. There is even a reasonable mapping
+        p = 'Sometimes it seems like new developers are gravitating towards JSON and other
+             key=value based languages for data storage, leaving XML behind. This is somewhat
+             understandable since the visual appearance of XML (when used for data storage)
+             can be verbose, to say the least. The discombobulated handling of whitespace does not help either.
+             It would be sad to see XML fade away simply because of its visual appearance.'
+        p = 'But what if there is a way to render XML as a key value language and fix the whitespace
+             at the same time? This would be the same XML as before, just view/edited in a different way.
+             XMQ is such a language, it is XML just with Q instead of L.'
+        p = 'The XMQ format is easier for a human to read and write than XML/HTML yet it
+             captures exactly the XML/HTML content. It can always be safely pretty printed
+             without introducing significant whitespace. The file-suffix HTMQ is used
+             when working with HTML in the XMQ format. There is even a reasonable mapping
              between JSON and XMQ.'
+        p = 'We can use XML for markup of texts. We can use XMQ for data storage.
+             We can always convert between them since they are in fact the same thing.'
         div {
             'What does it look like? Click on the examples: '
             br
@@ -173,7 +183,7 @@ html {
             'XMQ solves the verbosity of tags by using braces to avoid
              closing xml-tags and parentheses to surround the
              attributes. XMQ solves the whitespace confusion by
-             requiring all whitespace to be quoted.  There are a lot
+             requiring all intended whitespace to be quoted. There are a lot
              of details, of course, but let us begin with an example.'
          }
          p {
@@ -400,8 +410,10 @@ html {
         pre(class = 'xmq xmq_light w80') = &MULTI_XML;
         h2 = 'Quoting and entities inside attributes'
         p = '''For elements, a key=value is syntactic sugar for: key{'value'}
-               However for attributes, this is not the case, here you can only write: key=value
-               In the example below all content is: 123'''
+               For attributes, you can only write: key=value
+               In the example below all content is: 123
+               If the xmq tool detects that all children of an element are either text or entities,
+               then it will present the element as a key value pair.'''
         &SYNTACTIC_SUGAR_XMQ;
         p {
             'XMQ is designed with the assumption that we rarely need significant leading/ending whitespace/quotes.
@@ -458,17 +470,30 @@ html {
             &nbsp;
             &nbsp;
             a(href = resources/todos.json) = todos.json
-            &nbsp;
-            &nbsp;
-            'Here you can see that since JSON objects lacks type information which means that the corresponding
-             XMQ element get the anonymous name underscore _. If there is a child _ with a name, then that will
-             be use instead, this enables proper back-forth conversion between XMQ and JSON.'
         }
+        p = 'A limitation of JSON is painfully visible as underline element names.
+             The Javascript objects lack types which means that the JSON objects lacks type information
+             and this results in the corresponding XMQ element get the anonymous name/type underscore _.
+             If the JSON object contains a child _ with a name, then xmq will use this as the key instead,
+             this enables proper back-forth conversion between XMQ and JSON.'
         &TODOS_XMQ;
         ' '
         pre(class = 'xmq xmq_light w80')
         {
             &TODOS_JSON;
+            &#10;
+        }
+
+        p = 'XMQ can read and generate json. The workflow is intended to be: 1) convert json to xmq 2) work on the data as xmq
+             3) possibly write back to json. Some clean xml files (like pom.files) can be converted to clean json,
+             worked on in json and then converted back to xmq. But if you convert generic xml/html with standalone text nodes
+             and attributes to json, then the result is probably rather confusing since key values must be unique in json.'
+        p = 'The xmq tool solves this by detecting non-unique element names and suffixing them with [0], [1], [2] etc.'
+        &SIMPLE_PAGE_HTMQ;
+        ' '
+        pre(class = 'xmq xmq_light w40')
+        {
+            &SIMPLE_PAGE_JSON;
             &#10;
         }
 

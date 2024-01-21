@@ -14,6 +14,7 @@ cp web/resources/shiporder.xml  build/web/resources/shiporder.xml
 cp web/resources/car.xml  build/web/resources/car.xml
 cp web/resources/welcome_traveller.htmq  build/web/resources/welcome_traveller.htmq
 cp web/resources/welcome_traveller.html  build/web/resources/welcome_traveller.html
+cp web/resources/simple_page.htmq  build/web/resources/simple_page.htmq
 cp web/resources/sugar.xmq  build/web/resources/sugar.xmq
 cp web/resources/docx_example.xml  build/web/resources/docx_example.xml
 cp web/resources/odt_example.xml  build/web/resources/odt_example.xml
@@ -93,6 +94,9 @@ $XMQ web/resources/welcome_traveller.htmq render-html --id=ex2 --class=w40 --lig
 $XMQ web/resources/welcome_traveller.html render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_back_xmq.xml
 $XMQ --trim=none web/resources/welcome_traveller.html to-htmq --escape-non-7bit | $XMQ - render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_back_notrim_xmq.xml
 
+$XMQ web/resources/simple_page.htmq render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/simple_page_xmq.xml
+$XMQ web/resources/simple_page.htmq to-json | jq . > build/simple_page.json
+
 # Render the same but compact
 $XMQ web/resources/welcome_traveller.htmq render-html --id=ex2 --class=w40 --lightbg --nostyle --compact > build/rendered_welcome_traveller_xmq_compact.xml
 $XMQ web/resources/welcome_traveller.htmq to-htmq > build/web/resources/welcome_traveller.htmq
@@ -129,6 +133,8 @@ $XMQ web/index.htmq \
      replace-entity WELCOME_TRAVELLER_HTML --with-text-file=build/web/resources/welcome_traveller.html \
      replace-entity WELCOME_TRAVELLER_HTMQ_COMPACT --with-file=build/rendered_welcome_traveller_xmq_compact.xml \
      replace-entity WELCOME_TRAVELLER_NOPP_HTML --with-text-file=build/welcome_traveller_nopp.html \
+     replace-entity SIMPLE_PAGE_HTMQ --with-file=build/simple_page_xmq.xml \
+     replace-entity SIMPLE_PAGE_JSON --with-text-file=build/simple_page.json \
      replace-entity POM_RENDERED --with-file=build/pom_rendered.xml \
      to-html > build/web/index.html
 
