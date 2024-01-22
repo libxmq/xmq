@@ -1,3 +1,13 @@
+2024-01-22: Version 2.3.0
+
+Add more internal testing.
+Improve xmq default formatting.
+Do not use newlines in compact mode in special cases.
+Improve documentation.
+Add gray/dark gray to winapi build.
+Break at any character in render-html pre.
+Improve colors.
+
 2024-01-16: Version 2.2.0
 
 Pager now works even when input is on stdin.
