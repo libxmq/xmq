@@ -3,6 +3,12 @@
 TODAY=$(date +'%Y-%m-%d %H:%M')
 XMQ=build/default/release/xmq
 
+function example {
+    $XMQ web/resources/$1 render-html --id=ex2 --class=w80 --lightbg --nostyle > build/rendered_$1
+    $XMQ web/pre.htmq replace-entity PRE --with-file=build/rendered_$1 to-html > build/web/resources/$1_xmq.html
+    $XMQ web/raw.htmq replace-entity RAW --with-text-file=web/resources/$1 to-html > build/web/resources/$1_xml.html
+}
+
 mkdir -p build/web/resources
 $XMQ web/50x.htmq to-html > build/web/50x.html
 $XMQ web/404.htmq to-html > build/web/404.html
@@ -11,36 +17,14 @@ cp web/resources/style.css  build/web/resources
 cp web/resources/mononoki-Regular.otf  build/web/resources
 cp web/resources/code.js  build/web/resources
 cp web/resources/shiporder.xml  build/web/resources/shiporder.xml
-cp web/resources/car.xml  build/web/resources/car.xml
 cp web/resources/welcome_traveller.htmq  build/web/resources/welcome_traveller.htmq
 cp web/resources/welcome_traveller.html  build/web/resources/welcome_traveller.html
 cp web/resources/simple_page.htmq  build/web/resources/simple_page.htmq
 cp web/resources/sugar.xmq  build/web/resources/sugar.xmq
-cp web/resources/docx_example.xml  build/web/resources/docx_example.xml
-cp web/resources/odt_example.xml  build/web/resources/odt_example.xml
-cp web/resources/instances.json  build/web/resources
-cp web/resources/xsd_example.xsd  build/web/resources
-cp web/resources/rfc2629xslt.xml build/web/resources
-cp web/resources/rfcxml.xslt build/web/resources
-cp web/resources/diagonal.svg build/web/resources
-cp web/resources/rss.xml build/web/resources
-cp web/resources/soap_response.xml build/web/resources
-cp web/resources/java_pojo.xml build/web/resources
-cp web/resources/saml_idp_metadata.xml build/web/resources
-cp web/resources/saml_sp_metadata.xml build/web/resources
-cp web/resources/saml_authn_request.xml build/web/resources
-cp web/resources/saml_authn_response.xml build/web/resources
-cp web/resources/jabber.xml build/web/resources
-cp web/resources/ibmpcjr_cart.xml build/web/resources
-cp web/resources/SEQLXML26.xml build/web/resources
-cp web/resources/android_layout_main.xml build/web/resources
-cp web/resources/dtd_example.xml build/web/resources
 cp pom.xml build/web/resources
-
 
 # Extract the css
 $XMQ web/resources/shiporder.xml render-html --onlystyle > build/web/resources/xmq.css
-
 
 # shiporder.xml
 $XMQ web/resources/shiporder.xml to-xmq > build/web/resources/shiporder.xmq
@@ -109,6 +93,29 @@ $XMQ web/resources/welcome_traveller.htmq to-htmq > build/web/resources/welcome_
 $XMQ web/resources/welcome_traveller.htmq to-html > build/welcome_traveller_nopp.html
 $XMQ pom.xml render-html --id=expom --class=w80 --lightbg --nostyle > build/pom_rendered.xml
 
+# Separate examples.
+cp web/index.htmq web/resources/index.htmq
+example index.htmq
+cp pom.xml web/resources/pom.xml
+example pom.xml
+example rss.xml
+example diagonal.svg
+example ibmpcjr_cart.xml
+example android_layout_main.xml
+example jabber.xml
+example docx_example.xml
+example odt_example.xml
+example instances.json
+example xsd_example.xsd
+example todos.xslt
+example soap_response.xml
+example java_pojo.xml
+example saml_idp_metadata.xml
+example saml_authn_response.xml
+example SEQLXML26.xml
+example thresholds.xml
+
+
 $XMQ web/index.htmq \
      replace-entity DATE "$TODAY" \
      replace-entity SHIPORDER_XML --with-text-file=web/resources/shiporder.xml \
@@ -149,30 +156,5 @@ $XMQ web/index.htmq \
      to-html > build/web/index.html
 
 $XMQ web/upload.htmq to-html > build/web/upload.html
-
-# Render the page source itself!
-$XMQ web/index.htmq render-html --darkbg > build/web/resources/index_htmq.html
-$XMQ web/index.htmq render-html --lightbg > build/web/resources/index_htmq_light.html
-
-$XMQ build/web/resources/docx_example.xml render-html --darkbg > build/web/resources/docx_example.html
-$XMQ build/web/resources/odt_example.xml render-html --darkbg > build/web/resources/odt_example.html
-$XMQ build/web/resources/instances.json render-html --darkbg > build/web/resources/json_example.html
-$XMQ build/web/resources/xsd_example.xsd render-html --darkbg > build/web/resources/xsd_example.html
-$XMQ build/web/resources/todos.xslt render-html --darkbg > build/web/resources/xslt_example.html
-$XMQ build/web/resources/rfc2629xslt.xml render-html --darkbg > build/web/resources/rfc2629_example.html
-$XMQ build/web/resources/rfcxml.xslt render-html --darkbg > build/web/resources/rfcxslt_example.html
-$XMQ build/web/resources/diagonal.svg render-html --darkbg > build/web/resources/svg_example.html
-$XMQ build/web/resources/rss.xml render-html --darkbg > build/web/resources/rss_example.html
-$XMQ build/web/resources/pom.xml render-html --darkbg > build/web/resources/pom_example.html
-$XMQ build/web/resources/java_pojo.xml render-html --darkbg > build/web/resources/java_pojo.html
-$XMQ build/web/resources/soap_response.xml render-html --darkbg > build/web/resources/soap_response.html
-$XMQ build/web/resources/saml_idp_metadata.xml render-html --darkbg > build/web/resources/saml_idp_metadata.html
-$XMQ build/web/resources/saml_sp_metadata.xml render-html --darkbg > build/web/resources/saml_sp_metadata.html
-$XMQ build/web/resources/saml_authn_request.xml render-html --darkbg > build/web/resources/saml_authn_request.html
-$XMQ build/web/resources/saml_authn_response.xml render-html --darkbg > build/web/resources/saml_authn_response.html
-$XMQ build/web/resources/jabber.xml render-html --darkbg > build/web/resources/jabber.html
-$XMQ build/web/resources/ibmpcjr_cart.xml render-html --darkbg > build/web/resources/ibmpcjr_cart.html
-$XMQ build/web/resources/SEQLXML26.xml render-html --darkbg > build/web/resources/SEQLXML25.html
-$XMQ build/web/resources/android_layout_main.xml render-html --darkbg > build/web/resources/android_layout_main.html
 
 echo Updated build/web/index.html

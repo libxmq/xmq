@@ -15,18 +15,8 @@
           </sequence>
         </complexType>
       </element>
-      <element name="item" maxOccurs="unbounded">
-        <complexType>
-          <sequence>
-            <element name="title" type="string"/>
-            <element name="note" type="string" minOccurs="0"/>
-            <element name="quantity" type="positiveInteger"/>
-            <element name="price" type="decimal"/>
-          </sequence>
-        </complexType>
-      </element>
+      <attribute name="orderid" type="string" use="required"/>
     </sequence>
-    <attribute name="orderid" type="string" use="required"/>
   </complexType>
 </element>
 

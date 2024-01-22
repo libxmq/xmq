@@ -25,9 +25,10 @@ html {
             ') oehrstroem@gmail.com'
         }
         br
-        form(method  = post
-            enctype = multipart/form-data
-            action  = view)
+        form(id=upload
+             method  = post
+             enctype = multipart/form-data
+             action  = view?light)
         {
             button(type = button
                    title = 'Set functional cookie background=dark'
@@ -65,41 +66,49 @@ html {
         div {
             'What does it look like? Click on the examples: '
             br
-            a(href = resources/index_htmq.html) = '[this page as htmq]'
+            a(href = resources/index.htmq_xmq.html) = '[this page as htmq]'
             '  '
-            a(href = resources/pom_example.html) = '[pom.xml]'
+            a(href = resources/pom.xml_xmq.html) = '[pom]'
             '  '
-            a(href = resources/rss_example.html) = '[rss.xml]'
+            a(href = resources/rss.xml_xmq.html) = '[rss]'
             '  '
-            a(href = resources/svg_example.html) = '[svg]'
+            a(href = resources/diagonal.svg_xmq.html) = '[svg]'
             '  '
-            a(href = resources/ibmpcjr_cart.html) = '[mame cart driver]'
+            a(href = resources/ibmpcjr_cart.xml_xmq.html) = '[mame cart driver]'
             '  '
-            a(href = resources/android_layout_main.html) = '[Android layout]'
+            a(href = resources/android_layout_main.xml_xmq.html) = '[android layout]'
             '  '
-            a(href = resources/jabber.html) = '[jabber]'
+            a(href = resources/jabber.xml_xmq.html) = '[jabber]'
             '  '
-            a(href = resources/docx_example.html) = '[docx]'
+            a(href = resources/docx_example.xml_xmq.html) = '[docx]'
             '  '
-            a(href = resources/odt_example.html) = '[odt]'
+            a(href = resources/odt_example.xml_xmq.html) = '[odt]'
             '  '
-            a(href = resources/json_example.html) = '[json]'
+            a(href = resources/instances.json_xmq.html) = '[json]'
             '  '
-            a(href = resources/xsd_example.html) = '[xsd schema definition]'
+            a(href = resources/xsd_example.xsd_xmq.html) = '[xsd schema definition]'
             '  '
-            a(href = resources/xslt_example.html) = '[xslt transform]'
+            a(href = resources/todos.xslt_xmq.html) = '[xslt transform]'
             '  '
-            a(href = resources/soap_response.html) = '[soap response]'
+            a(href = resources/soap_response.xml_xmq.html) = '[soap response]'
             '  '
-            a(href = resources/java_pojo.html) = '[java pojo jackson]'
+            a(href = resources/java_pojo.xml_xmq.html) = '[java pojo jackson]'
             '  '
-            a(href = resources/saml_idp_metadata.html) = '[saml idp metadata]'
+            a(href = resources/saml_idp_metadata.xml_xmq.html) = '[saml idp metadata]'
             '  '
-            a(href = resources/saml_authn_response.html) = '[saml authn_response]'
+            a(href = resources/saml_authn_response.xml_xmq.html) = '[saml authn_response]'
             '  '
-            a(href = resources/SEQLXML25.html) = '[WIPO ST.26_sequence listing]'
+            a(href = resources/SEQLXML26.xml_xmq.html) = '[WIPO ST.26_sequence listing xmq]'
+            '  '
+            a(href = resources/thresholds.xml_xmq.html) = '[Imagemagick thresholds xmq]'
         }
 
+        p {
+            'Upload your own xml/html/json file and render it as xmq on-line: '
+            button(type  = button
+                   title = 'Max 200KB, logs cleared after 30 days.'
+                   onclick = '''document.getElementById('uploadFile').click()''') = 'Upload XML/HTML/JSON'
+        }
         &SHIPORDER_XMQ;
         ' '
         pre(class = 'xmq xmq_light w40')

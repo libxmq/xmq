@@ -1,6 +1,7 @@
 
 function goLight()
 {
+    console.log("goLight");
     document.cookie = "background=light;expires=Fri, 31 Dec 9999 23:59:59 GMT;path=/;SameSite=Lax";
     document.getElementsByTagName('body')[0].classList.remove("dark");
     document.getElementsByTagName('body')[0].classList.add("light");
@@ -13,10 +14,15 @@ function goLight()
     {
         elements[i].classList.add("xmq_light");
     }
+    let form = document.getElementById('upload');
+    let s = form.action;
+    s = s.replace("?dark", "?light");
+    form.action = s;
 }
 
 function goDark()
 {
+    console.log("goDark");
     document.cookie = "background=dark;expires=Fri, 31 Dec 9999 23:59:59 GMT;path=/;SameSite=Lax";
 
     document.getElementsByTagName('body')[0].classList.remove("light");
@@ -30,6 +36,10 @@ function goDark()
     {
         elements[i].classList.add("xmq_dark");
     }
+    let form = document.getElementById('upload');
+    let s = form.action;
+    s = s.replace("?light", "?dark");
+    form.action = s;
 }
 
 function checkBackgroundSetting()
@@ -47,4 +57,18 @@ function checkBackgroundSetting()
             goLight();
         }
     }
+}
+
+function goXMQ()
+{
+    let s = ""+window.location;
+    s = s.replace('_xml.html', '_xmq.html');
+    window.location = s;
+}
+
+function goXML()
+{
+    let s = ""+window.location;
+    s = s.replace('_xmq.html', '_xml.html');
+    window.location = s;
 }
