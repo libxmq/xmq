@@ -536,6 +536,18 @@ html {
             &TODOS_TEXT;
         }
 
+        h2 = 'DTD:s and XSD:s'
+        p = 'The inline DTD is the value assigned to the !DOCTYPE.
+             There are no changes the the DTD language.'
+        &DTD_EXAMPLE_XMQ;
+        pre(class = 'xmq xmq_light w40')
+        {
+            &DTD_EXAMPLE_XML;
+        }
+
+        p = 'Since XSD:s are normal xml they are rendered as XMQ in the same way as other XML.'
+        &XSD_EXAMPLE_XSQ;
+
         h2 = 'Conclusions'
         p = 'With XMQ the assumed dichotomy between mark-up languages (like XML) and key-value store languages (like JSON)
              has been (perhaps surprisingly) removed. We can now use XML for mark-up situations and XMQ for key-value

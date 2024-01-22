@@ -90,10 +90,10 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
                                              XMQColor color,
                                              const char *start,
                                              const char *stop);
-void print_quotee(XMQPrintState *ps,
-                  XMQColor c,
-                  const char *start,
-                  const char *stop);
+void print_safe_leaf_quote(XMQPrintState *ps,
+                           XMQColor c,
+                           const char *start,
+                           const char *stop);
 const char *find_next_line_end(XMQPrintState *ps, const char *start, const char *stop);
 const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop);
 void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level);

@@ -1171,6 +1171,7 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     assert(start < stop);
     assert(*start == '/');
 
+    // PRUTT printf("indent=%d text>%.*s<\n", (int)indent, (int)(stop-start), start);
     const char *i = start;
     while (i < stop && *i == '/') i++;
 
@@ -1184,7 +1185,9 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     {
         // No asterisk * after the slashes. This is a single line comment.
         // If there is a space after //, skip it.
-        if (*i == ' ') i++;
+        if (*i == ' ') {
+            i++;
+        }
         // Remove trailing spaces.
         while (i < stop && *(stop-1) == ' ') stop--;
         assert(i <= stop);
@@ -1211,6 +1214,7 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     if (*start == ' ')
     {
         start++;
+        indent++;
     }
     if (*(stop-1) == ' ')
     {
@@ -1221,7 +1225,9 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     }
 
     assert(start <= stop);
-    return xmq_trim_quote(indent, space, start, stop);
+    char *foo = xmq_trim_quote(indent, space, start, stop);
+    // PRUTT printf("uncommented text>%s<\n", foo);
+    return foo;
 }
 
 char *xmq_trim_quote(size_t indent, char space, const char *start, const char *stop)
@@ -1831,7 +1837,8 @@ void do_comment(XMQParseState*state,
                 const char *suffix)
 {
     xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
-    char *trimmed = xmq_un_comment(col, ' ', start, stop);
+    size_t indent = col-1;
+    char *trimmed = xmq_un_comment(indent, ' ', start, stop);
     xmlNodePtr n = xmlNewDocComment(state->doq->docptr_.xml, (const xmlChar *)trimmed);
     xmlAddChild(parent, n);
     state->element_last = n;
@@ -1854,7 +1861,8 @@ void do_comment_continuation(XMQParseState*state,
     while (i > start && *i == '/') { n++; i--; }
     // Since we know that we are invoked pointing into a buffer with /// before start, we
     // can safely do start-n.
-    char *trimmed = xmq_un_comment(col, ' ', start-n, stop);
+    size_t indent = col-1;
+    char *trimmed = xmq_un_comment(indent, ' ', start-n, stop);
     size_t l = strlen(trimmed);
     char *tmp = (char*)malloc(l+2);
     tmp[0] = '\n';
@@ -2650,8 +2658,9 @@ void xmqTrimWhitespace(XMQDoc *doq, XMQTrimType tt)
 
     while (i)
     {
+        xmlNode *next = xml_next_sibling(i); // i might be freed in trim.
         trim_node(i, tt);
-        i = xml_next_sibling(i);
+        i = next;
     }
 }
 

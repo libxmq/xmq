@@ -39,6 +39,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<libxml/xmlreader.h>
 
 #include"xmq.h"
+#include"parts/xmq_internals.h"
+#include"parts/text.h"
+#include"parts/membuffer.h"
+#include"parts/xmq_printer.h"
 
 // DEFINITIONS ///////////////////////////////////
 
@@ -46,9 +50,10 @@ const char *content_type_to_string(XMQContentType t);
 void test_content(const char *content, XMQContentType expected_ct);
 void test_mem_buffer();
 void test_sl(const char *s, size_t expected_b_len, size_t expected_u_len);
-void test_trim_comment(int first_indent, const char *in, const char *expected);
-void test_trim_quote(int first_indent, const char *in, const char *expected);
+void test_trim_comment(int start_col, const char *in, const char *expected);
+void test_trim_quote(int start_col, const char *in, const char *expected);
 void test_trim_quote_special(const char *in, const char *expected);
+void test_quote(int indent, bool compact, char *in, char *expected);
 
 #define TESTS \
     X(test_indented_quotes) \
@@ -58,6 +63,7 @@ void test_trim_quote_special(const char *in, const char *expected);
     X(test_trimming_comments) \
     X(test_detect_content) \
     X(test_slashes) \
+    X(test_quoting) \
     X(test_whitespaces) \
     X(test_strlen) \
     X(test_escaping) \
@@ -120,10 +126,10 @@ void test_xmq()
     */
 }
 
-void test_trim_quote(int first_indent, const char *in, const char *expected)
+void test_trim_quote(int start_col, const char *in, const char *expected)
 {
-    /*
-    char *out = xmq_un_quote(first_indent, ' ', in, in+strlen(in), true);
+    size_t indent = start_col-1;
+    char *out = xmq_un_quote(indent, ' ', in, in+strlen(in), true);
     if (strcmp(out, expected))
     {
         all_ok_ = false;
@@ -138,14 +144,13 @@ void test_trim_quote(int first_indent, const char *in, const char *expected)
         free(inb);
         free(exb);
         free(gob);
+        exit(1);
     }
     free(out);
-    */
 }
 
 void test_trim_quote_special(const char *in, const char *expected)
 {
-    /*
     char *out = xmq_un_quote(0, 0, in, in+strlen(in), true);
     if (strcmp(out, expected))
     {
@@ -163,13 +168,12 @@ void test_trim_quote_special(const char *in, const char *expected)
         free(gob);
     }
     free(out);
-    */
 }
 
-void test_trim_comment(int first_indent, const char *in, const char *expected)
+void test_trim_comment(int start_col, const char *in, const char *expected)
 {
-    /*
-    char *out = xmq_un_comment(first_indent, ' ', in, in+strlen(in));
+    size_t indent = start_col-1;
+    char *out = xmq_un_comment(indent, ' ', in, in+strlen(in));
     if (strcmp(out, expected))
     {
         all_ok_ = false;
@@ -186,46 +190,48 @@ void test_trim_comment(int first_indent, const char *in, const char *expected)
         free(gob);
     }
     free(out);
-    */
 }
 
 void test_trimming_quotes()
 {
     // No newlines means no trimming.
-    test_trim_quote(1, " ", " ");
-    test_trim_quote(1, "  ", "  ");
-    test_trim_quote(1, "  x  ", "  x  ");
-    test_trim_quote(1, "  x", "  x");
-    test_trim_quote(1, "x", "x");
+    test_trim_quote(17, " ", " ");
+    test_trim_quote(17, "  ", "  ");
+    test_trim_quote(17, "  x  ", "  x  ");
+    test_trim_quote(17, "  x", "  x");
+    test_trim_quote(4711, "x", "x");
 
     // A single newline is removed.
-    test_trim_quote(1, "\n", "");
+    test_trim_quote(17, "\n", "");
     // A lot of newlines and spaces are removed.
-    test_trim_quote(1, "  \n \n    \n\n ", "");
-    test_trim_quote(1, "   \n", "");
-    test_trim_quote(1, "   \n   ", "");
+    test_trim_quote(17, "  \n \n    \n\n ", "");
+    test_trim_quote(17, "   \n", "");
+    test_trim_quote(4711, "   \n   ", "");
 
     // First line leading spaces are kept if there is some non-space on the first line.
-    test_trim_quote(10, " x\n ", " x");
-    test_trim_quote(1, " x\n ", " x");
+    test_trim_quote(17, " x\n ", " x");
+    test_trim_quote(4711, " x\n ", " x");
 
     // Incidental is removed.
-    test_trim_quote(1, "\n x\n ", "x");
-    test_trim_quote(1, "x\n          ", "x");
+    test_trim_quote(17, "\n x\n ", "x");
+    test_trim_quote(17, "x\n          ", "x");
 
-    // Remove incidental indentation.
-    test_trim_quote(1, "abc\n def", "abc\ndef");
+    // Remove incidental indentation. Source code indentation is colum 2 (= 1 space before)
+    // which corresponds to abc and def being aligned.
+    test_trim_quote(2, "abc\n def", "abc\ndef");
 
-    test_trim_quote(1, " abc\n def", " abc\ndef");
+    // Yes, the abc has one extra indentation.
+    test_trim_quote(2, " abc\n def", " abc\ndef");
     // Incidental is 1 because of first line and second line.
-    test_trim_quote(1, "\n 'howdy'\n ", "'howdy'");
+    test_trim_quote(1, "\n QhowdyQ\n ", "QhowdyQ");
     // Incidental is 0 because of second line.
-    test_trim_quote(1, "\n'howdy'\n ", "'howdy'");
+    test_trim_quote(0, "\nQhowdyQ\n ", "QhowdyQ");
 
-    // Remove incidetal.
-    test_trim_quote(10, "\n    x\n  y\n    z\n", "  x\ny\n  z");
+    // Remove incidetal. Indentation number irrelevant since first line is empty.
+    test_trim_quote(17, "\n    x\n  y\n    z\n", "  x\ny\n  z");
 
-
+    // No known indentation, use the second lines indentation and assume first and
+    // second has the same indentation. Used as part of the heuristic when converting from xml.
     test_trim_quote_special("HOWDY\n    HOWDY\n    HOWDY", "HOWDY\nHOWDY\nHOWDY");
 }
 
@@ -237,65 +243,50 @@ void test_trimming_comments()
     // However a duo "/*" "*/" is also allowed
     // Thus "/*ALFA*/" is also just the string "ALFA".
     // Apart from this the trimming is identical to the quote trimming.
-    test_trim_comment(0, "/**/", "");
-    test_trim_comment(0, "/*    */", "  ");
-    test_trim_comment(0, "/*\n   ALFA\n   BETA\n   GAMMA\n*/", "ALFA\nBETA\nGAMMA");
-    test_trim_comment(0, "/////* ALFA */////", "ALFA");
-    test_trim_comment(0, "/*ALFA\n  BETA*/", "ALFA\nBETA");
-    test_trim_comment(4,     "/* ALFA\n"
-                         "       BETA\n"
-                         "*/", "ALFA\nBETA");
+    test_trim_comment(17, "/**/", "");
+    test_trim_comment(17, "/*    */", "  ");
+    // The indent is ignored since the first line is empty.
+    test_trim_comment(17, "/*\n   ALFA\n   BETA\n   GAMMA\n*/", "ALFA\nBETA\nGAMMA");
+    test_trim_comment(17, "/////* ALFA */////", "ALFA");
+    test_trim_comment(17, "/////*ALFA*/////", "ALFA");
+    test_trim_comment(1, "/*ALFA\n  BETA*/", "ALFA\nBETA");
+    test_trim_comment(1, "/* ALFA\n   BETA*/", "ALFA\nBETA");
+    test_trim_comment(5,     "/* ALFA\n"
+                         "       BETA */"
+                       , "ALFA\nBETA");
 }
 
-/*
-void test_quote(int indent, char *in, char *expected)
+void test_quote(int indent, bool compact, char *in, char *expected)
 {
-    XMQQuoteSettings s = {};
-    char *out = xxmq_quote(indent, in, in+strlen(in), &s);
-    if (strcmp(out, expected))
+    XMQOutputSettings *os = xmqNewOutputSettings();
+    if (compact)
     {
-        all_ok_ = false;
-        char *inb = xmq_quote_as_c(in, in+strlen(in));
-        char *exb = xmq_quote_as_c(expected, expected+strlen(expected));
-        char *gob = xmq_quote_as_c(out, out+strlen(out));
-
-        printf("Quoting \"%s\" with indent %d\n", inb, indent);
-        printf("expected \"%s\"\n", exb);
-        printf("but got  \"%s\"\n", gob);
-
-        free(inb);
-        free(exb);
-        free(gob);
-        return;
+        os->compact = true;
+        os->escape_newlines = true;
     }
+    xmqSetupPrintMemory(os, NULL, NULL);
 
-    char *back = xmq_un_quote(indent, ' ', out, out+strlen(out));
-    if (strcmp(back, in))
-    {
-        all_ok_ = false;
-        char *inb = xmq_quote_as_c(out, out+strlen(out));
-        char *exb = xmq_quote_as_c(in, in+strlen(in));
-        char *gob = xmq_quote_as_c(back, back+strlen(back));
+    XMQPrintState ps;
+    memset(&ps, 0, sizeof(XMQPrintState));
+    ps.output_settings = os;
 
-        printf("Trimming back  \"%s\" with indent %d\n", inb, indent);
-        printf("expected \"%s\"\n", exb);
-        printf("but got  \"%s\"\n", gob);
+    xmlNode *parent = xmlNewNode(NULL, (xmlChar*)"test");
+    xmlNode *node = xmlNewText((const xmlChar *)in);
+    xmlAddChild(parent,node);
 
-        free(inb);
-        free(exb);
-        free(gob);
-    }
-    free(back);
-    free(out);
-}
-*/
+    ps.current_indent = indent;
+    ps.line_indent = indent;
+    print_node(&ps, parent, LEVEL_XMQ);
 
-/*
-void test_quote_single_line(int indent, char *in, char *expected)
-{
-    XMQQuoteSettings s = {};
-    s.compact = true;
-    char *out = xxmq_quote(indent, in, in+strlen(in), &s);
+    xmlUnlinkNode(node);
+    xmlFreeNode(node);
+    xmlFreeNode(parent);
+
+    size_t size = membuffer_used(os->output_buffer);
+    char *out = free_membuffer_but_return_trimmed_content(os->output_buffer);
+    out = realloc(out, size+1);
+    out[size] = 0;
+
     if (strcmp(out, expected))
     {
         all_ok_ = false;
@@ -311,63 +302,77 @@ void test_quote_single_line(int indent, char *in, char *expected)
         free(exb);
         free(gob);
         free(out);
-        return;
+        exit(1);
     }
 
-
-    char *back = xmqTrimQuote(indent, out, out+strlen(out));
-    if (strcmp(back, in))
+    if (!compact)
     {
-        all_ok_ = false;
-        char *inb = xmq_quote_as_c(out, out+strlen(out));
-        char *exb = xmq_quote_as_c(in, in+strlen(in));
-        char *gob = xmq_quote_as_c(back, back+strlen(back));
+        // Can only test non-compact quotes back for the moment.
+        // "test = " or "test="
+        size_t skip = 7;
+        if (compact) skip = 5;
+        char *trimmed = xmq_un_quote(indent+skip, ' ', out+skip, out+size, true);
 
-        printf("Trimming back  \"%s\"\n", inb);
-        printf("expected \"%s\"\n", exb);
-        printf("but got  \"%s\"\n", gob);
+        if (strcmp(trimmed, in))
+        {
+            all_ok_ = false;
+            char *inb = xmq_quote_as_c(out, out+strlen(out));
+            char *exb = xmq_quote_as_c(in, in+strlen(in));
+            char *gob = xmq_quote_as_c(trimmed, trimmed+strlen(trimmed));
 
-        free(inb);
-        free(exb);
-        free(gob);
+            printf("Trimming back  \"%s\"\n", inb);
+            printf("expected \"%s\"\n", exb);
+            printf("but got  \"%s\"\n", gob);
+
+            free(inb);
+            free(exb);
+            free(gob);
+        }
+        free(trimmed);
     }
-
-    free(back);
     free(out);
+    xmqFreeOutputSettings(os);
 }
-*/
 
-/*
 void test_quoting()
 {
-    test_quote_single_line(10, "howdy\ndowdy",
-                               "'howdy'&#10;'dowdy'");
-    test_quote_single_line(0, "   alfa\n beta  \n\n\nGamma Delta\n",
-                              "'   alfa'&#10;' beta  '&#10;&#10;&#10;'Gamma Delta'&#10;");
-    test_quote_single_line(0,
-                           " alfa \n 'gurka' \n_''''_\n",
-                           "' alfa '&#10;''' 'gurka' '''&#10;'''''_''''_'''''&#10;");
+    test_quote(10, true, "howdy\ndowdy", "test=('howdy'&#10;'dowdy')");
+    test_quote(0, false, "howdy\ndowdy", "test = 'howdy\n        dowdy'");
 
-    test_quote_single_line(0, "'''X'''", "&#39;&#39;&#39;'X'&#39;&#39;&#39;");
-    test_quote_single_line(0, "X'", "'X'&#39;");
-    test_quote_single_line(0, "X'\n", "'X'&#39;&#10;");
+    test_quote(0, true, "   alfa\n beta  \n\n\nGamma Delta\n",
+                        "test=('   alfa'&#10;' beta  '&#10;&#10;&#10;'Gamma Delta'&#10;)");
+/* TODO    test_quote(0, true,
+               " alfa \n 'gurka' \n_''''_\n",
+               "test=(' alfa '&#10;''' 'gurka' '''&#10;'''''_''''_'''''&#10;)");*/
 
-    test_quote_single_line(0, "01", "01");
+    test_quote(0, true,
+               "'''X'''",
+               "test=(&#39;&#39;&#39;'X'&#39;&#39;&#39;)");
+    test_quote(0, true,
+               "X'",
+               "test=('X'&#39;)");
+    test_quote(0, true,
+               "X'\n",
+               "test=('X'&#39;&#10;)");
 
-    test_quote(10, "", "''");
-    test_quote(10, "x", "x");
-    test_quote(10, "/root/home/bar.c", "/root/home/bar.c");
-    test_quote(10, "C:\\root\\home", "C:\\root\\home");
-    test_quote(10, "//root/home", "'//root/home'");
-    test_quote(10, "=47", "'=47'");
-    test_quote(10, "47=", "47=");
-    test_quote(10, "&", "'&'");
-    test_quote(10, "=", "'='");
-    test_quote(10, "&nbsp;", "'&nbsp;'");
-    test_quote(10, "https://www.vvv.zzz/aaa?x=3&y=4", "https://www.vvv.zzz/aaa?x=3&y=4");
-    test_quote(10, " ", "' '");
-    test_quote(4, "(", "'('");
-    test_quote(-1, "(", "'\n(\n'");
+    test_quote(0, true,
+               "01", "test=01");
+    test_quote(10, false, "", "test = ''");
+    test_quote(10, false, "x", "test = x");
+    test_quote(10, false, "/root/home/bar.c", "test = /root/home/bar.c");
+    test_quote(10, false, "C:\\root\\home", "test = C:\\root\\home");
+// TODO    test_quote(10, false, "//root/home", "test = '//root/home'");
+// TODO    test_quote(10, false, "=47", "test = '=47'");
+    test_quote(10, false, "47=", "test = 47=");
+
+// TODO    test_quote(10, false,"&", "test = '&'");
+// TODO    test_quote(10, false, "=", "test = '='");
+// TODO    test_quote(10, false,"&nbsp;", "test = '&nbsp;'");
+    test_quote(10, false, "https://www.vvv.zzz/aaa?x=3&y=4", "test = https://www.vvv.zzz/aaa?x=3&y=4");
+    test_quote(10, false, " ", "test = ' '");
+    test_quote(0, false, "(", "test = '('");
+// TODO    test_quote(-1, false, "(", "test = '\n(\n'");
+    /*
     test_quote(4, ")", "')'");
     test_quote(-1, ")", "'\n)\n'");
     test_quote(4, "{", "'{'");
@@ -376,44 +381,23 @@ void test_quoting()
     test_quote(-1, "\"", "'\n\"\n'");
     test_quote(10, "   123   123   ", "'   123   123   '");
     test_quote(10, "   123\n123   ", "'   123\n           123   '");
+    */
+    test_quote(4, false, " ' ", "test = ''' ' '''");
+    test_quote(4, false, " '' ", "test = ''' '' '''");
 
-    test_quote(4, " ' ", "''' ' '''");
-    test_quote(4, " '' ", "''' '' '''");
+    test_quote(0, false, "alfa\nbeta", "test = 'alfa\n        beta'");
+    test_quote(1, false, "alfa\nbeta", "test = 'alfa\n         beta'");
 
-    test_quote(0, "alfa\nbeta", "'alfa\n beta'");
-    test_quote(-1, "alfa\nbeta", "'\nalfa\nbeta\n'");
+//TODO     test_quote(4, false, " ''' ", "test = '''' ''' ''''");
+//TODO //    test_quote(4, " '''' ", "''''' '''' '''''");
 
-//    test_quote(4, " ''' ", "'''' ''' ''''");
-//    test_quote(4, " '''' ", "''''' '''' '''''");
+//TODO    test_quote(0, false, "'", "test = &apos;");
+    test_quote(0, false, "'alfa", "test = '''\n       'alfa\n       '''");
+    test_quote(1, false, "'alfa", "test = '''\n        'alfa\n        '''");
+    test_quote(0, false, "alfa'", "test = '''\n       alfa'\n       '''");
+    test_quote(1, false, "alfa'", "test = '''\n        alfa'\n        '''");
 
-//    test_quote(4, "'", "&quot;");
-    test_quote(4, "'alfa", "'''\n    'alfa\n    '''");
-    test_quote(4, "alfa'", "'''\n    alfa'\n    '''");
-*/
-/*
- Default formatting is like this:
- The implicit indent starts with the content after the quote for 1 or 3 quotes.
-    x = 'hejsan'
-    y = 'howdy
-         bowdy'
-    x = '''func(){'foo'};
-           call func;'''
-
-    BUT 4 or more quotes always adds newlines and the implicit indent is the start of the quotes.
-    x = ''''
-        Code with ''' quotes.
-        ''''
-    And if content starts or ends with quotes.
-    x = '''
-        'hejsan
-        '''
-*/
-    // Indent 0 is first column, here indent is 8 for quote.
-    // |    x = 'howdy
-    // |         dowdy'
-//    test_quote(8, "howdy\ndowdy", "'howdy\n         dowdy'");
-
-//}
+}
 
 void test_indented_quotes()
 {
@@ -421,22 +405,22 @@ void test_indented_quotes()
 'alfa
  beta'
     */
-    test_trim_quote(0, "'alfa\n beta'", "alfa\nbeta");
+//    test_trim_quote(1, "'alfa\n beta'", "alfa\nbeta");
     /*
  'alfa
   beta'
     */
-    test_trim_quote(1, "'alfa\n  beta'", "alfa\nbeta");
+//    test_trim_quote(1, "'alfa\n  beta'", "alfa\nbeta");
     /*
   'alfa
    beta'
     */
-    test_trim_quote(2, "'alfa\n   beta'", "alfa\nbeta");
+//    test_trim_quote(2, "'alfa\n   beta'", "alfa\nbeta");
     /*
    'alfa
 beta'
     */
-    test_trim_quote(3, "'alfa\nbeta'", "    alfa\nbeta");
+//    test_trim_quote(3, "'alfa\nbeta'", "    alfa\nbeta");
 
 
     /*

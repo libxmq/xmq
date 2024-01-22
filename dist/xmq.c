@@ -994,10 +994,10 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
                                              XMQColor color,
                                              const char *start,
                                              const char *stop);
-void print_quotee(XMQPrintState *ps,
-                  XMQColor c,
-                  const char *start,
-                  const char *stop);
+void print_safe_leaf_quote(XMQPrintState *ps,
+                           XMQColor c,
+                           const char *start,
+                           const char *stop);
 const char *find_next_line_end(XMQPrintState *ps, const char *start, const char *stop);
 const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop);
 void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level);
@@ -2707,6 +2707,7 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     assert(start < stop);
     assert(*start == '/');
 
+    // PRUTT printf("indent=%d text>%.*s<\n", (int)indent, (int)(stop-start), start);
     const char *i = start;
     while (i < stop && *i == '/') i++;
 
@@ -2720,7 +2721,9 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     {
         // No asterisk * after the slashes. This is a single line comment.
         // If there is a space after //, skip it.
-        if (*i == ' ') i++;
+        if (*i == ' ') {
+            i++;
+        }
         // Remove trailing spaces.
         while (i < stop && *(stop-1) == ' ') stop--;
         assert(i <= stop);
@@ -2747,6 +2750,7 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     if (*start == ' ')
     {
         start++;
+        indent++;
     }
     if (*(stop-1) == ' ')
     {
@@ -2757,7 +2761,9 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     }
 
     assert(start <= stop);
-    return xmq_trim_quote(indent, space, start, stop);
+    char *foo = xmq_trim_quote(indent, space, start, stop);
+    // PRUTT printf("uncommented text>%s<\n", foo);
+    return foo;
 }
 
 char *xmq_trim_quote(size_t indent, char space, const char *start, const char *stop)
@@ -3367,7 +3373,8 @@ void do_comment(XMQParseState*state,
                 const char *suffix)
 {
     xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
-    char *trimmed = xmq_un_comment(col, ' ', start, stop);
+    size_t indent = col-1;
+    char *trimmed = xmq_un_comment(indent, ' ', start, stop);
     xmlNodePtr n = xmlNewDocComment(state->doq->docptr_.xml, (const xmlChar *)trimmed);
     xmlAddChild(parent, n);
     state->element_last = n;
@@ -3390,7 +3397,8 @@ void do_comment_continuation(XMQParseState*state,
     while (i > start && *i == '/') { n++; i--; }
     // Since we know that we are invoked pointing into a buffer with /// before start, we
     // can safely do start-n.
-    char *trimmed = xmq_un_comment(col, ' ', start-n, stop);
+    size_t indent = col-1;
+    char *trimmed = xmq_un_comment(indent, ' ', start-n, stop);
     size_t l = strlen(trimmed);
     char *tmp = (char*)malloc(l+2);
     tmp[0] = '\n';
@@ -4186,8 +4194,9 @@ void xmqTrimWhitespace(XMQDoc *doq, XMQTrimType tt)
 
     while (i)
     {
+        xmlNode *next = xml_next_sibling(i); // i might be freed in trim.
         trim_node(i, tt);
-        i = xml_next_sibling(i);
+        i = next;
     }
 }
 
@@ -10543,10 +10552,10 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
     ps->restart_line = old_restart_line;
 }
 
-void print_quotee(XMQPrintState *ps,
-                 XMQColor c,
-                 const char *start,
-                 const char *stop)
+void print_safe_leaf_quote(XMQPrintState *ps,
+                           XMQColor c,
+                           const char *start,
+                           const char *stop)
 {
     bool force = true;
     bool add_nls = false;
@@ -10791,7 +10800,7 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
             count_necessary_quotes(from, to, false, &add_nls, &add_compound);
             if (!add_compound && (!add_nls || !compact))
             {
-                print_quotee(ps, level_to_quote_color(level), from, to);
+                print_safe_leaf_quote(ps, level_to_quote_color(level), from, to);
             }
             else
             {
