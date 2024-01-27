@@ -1,21 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <schema xmlns="http://www.w3.org/2001/XMLSchema">
 
-<element name="delivery">
+<element name="shiporder">
   <complexType>
     <sequence>
-      <element name="orderperson" type="string"/>
+      <element name="id" type="string"/>
+      <element name="type" type="string"/>
       <element name="shipto">
         <complexType>
           <sequence>
-            <element name="name" type="string"/>
             <element name="address" type="string"/>
-            <element name="city" type="string"/>
-            <element name="country" type="string"/>
+            <element name="coord" type="string"/>
           </sequence>
         </complexType>
       </element>
-      <attribute name="orderid" type="string" use="required"/>
+      <attribute name="ssailing" type="string" use="required"/>
     </sequence>
   </complexType>
 </element>

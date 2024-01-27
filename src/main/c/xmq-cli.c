@@ -94,6 +94,7 @@ typedef enum
     XMQ_CLI_CMD_SUBSTITUTE_ENTITY,
     XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES,
     XMQ_CLI_CMD_TRANSFORM,
+    XMQ_CLI_CMD_SELECT,
 } XMQCliCmd;
 
 typedef enum {
@@ -197,6 +198,7 @@ typedef enum {
 
 XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env);
 bool cmd_delete(XMQCliCommand *command);
+bool cmd_select(XMQCliCommand *command);
 bool cmd_replace(XMQCliCommand *command);
 bool cmd_substitute(XMQCliCommand *command);
 XMQCliCmd cmd_from(const char *s);
@@ -306,6 +308,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "substitute-entity")) return XMQ_CLI_CMD_SUBSTITUTE_ENTITY;
     if (!strcmp(s, "substitute-char-entities")) return XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES;
     if (!strcmp(s, "transform")) return XMQ_CLI_CMD_TRANSFORM;
+    if (!strcmp(s, "select")) return XMQ_CLI_CMD_SELECT;
     return XMQ_CLI_CMD_NONE;
 }
 
@@ -337,6 +340,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_SUBSTITUTE_ENTITY: return "substitute-entity";
     case XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES: return "substitute-char-entities";
     case XMQ_CLI_CMD_TRANSFORM: return "transform";
+    case XMQ_CLI_CMD_SELECT: return "select";
     }
     return "?";
 }
@@ -370,6 +374,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
 
     case XMQ_CLI_CMD_DELETE:
     case XMQ_CLI_CMD_REPLACE:
+    case XMQ_CLI_CMD_SELECT:
         return XMQ_CLI_CMD_GROUP_XPATH;
 
     case XMQ_CLI_CMD_DELETE_ENTITY:
@@ -1427,6 +1432,57 @@ bool cmd_delete(XMQCliCommand *command)
     return false;
 }
 
+bool cmd_select(XMQCliCommand *command)
+{
+    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    verbose_("(xmq) selecting\n");
+
+    xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
+    assert(ctx);
+
+    xmlXPathObjectPtr objects = xmlXPathEvalExpression((const xmlChar*)command->xpath, ctx);
+
+    if (objects == NULL)
+    {
+        fprintf(stderr, "xmq: no nodes matched %s\n", command->xpath);
+        xmlXPathFreeContext(ctx);
+        return false;
+    }
+
+    xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
+    xmlNodePtr root = xmlNewDocNode(new_doc, NULL, (xmlChar*)"root", NULL);
+    xmlDocSetRootElement(new_doc, root);
+
+    xmlNodeSetPtr nodes = objects->nodesetval;
+    int size = (nodes) ? nodes->nodeNr : 0;
+
+    // Copy and unlink in reverse order which means copy unlink deeper nodes first.
+    for(int i = size-1; i >= 0; i--)
+    {
+        assert(nodes->nodeTab[i]);
+        xmlNode *n = nodes->nodeTab[i];
+
+        while (n && !is_element_node(n))
+        {
+            // We found an attribute move to parent.
+            n = n->parent;
+        }
+        xmlNodePtr new_node = xmlCopyNode(n, 1);
+        xmlAddChild(root, new_node);
+
+        xmlUnlinkNode(n);
+        xmlFreeNode(n);
+    }
+
+    xmlXPathFreeObject(objects);
+    xmlXPathFreeContext(ctx);
+
+    xmlFreeDoc(doc);
+    xmqSetImplementationDoc(command->env->doc, new_doc);
+
+    return true;
+}
+
 void delete_all_entities(XMQDoc *doq, xmlNode *node, const char *entity)
 {
     if (node->type == XML_ENTITY_NODE ||
@@ -1714,6 +1770,8 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
     case XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES:
         return;
     case XMQ_CLI_CMD_TRANSFORM:
+        return;
+    case XMQ_CLI_CMD_SELECT:
         return;
     case XMQ_CLI_CMD_NONE:
         return;
@@ -2214,6 +2272,8 @@ bool perform_command(XMQCliCommand *c)
         return cmd_substitute(c);
     case XMQ_CLI_CMD_TRANSFORM:
         return cmd_transform(c);
+    case XMQ_CLI_CMD_SELECT:
+        return cmd_select(c);
     }
     assert(false);
     return false;

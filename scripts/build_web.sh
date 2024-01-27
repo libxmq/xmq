@@ -75,9 +75,9 @@ $XMQ web/resources/todos.json transform build/web/resources/todosframed.xslq to-
 $XMQ build/web/resources/todos.html render-html --class=w80 --lightbg --nostyle > build/todos_htmq.xml
 
 # DTD
-$XMQ build/web/resources/dtd_example.xml render-html --class=w40 --lightbg --nostyle > build/dtd_example_xmq.xml
+$XMQ web/resources/dtd_example.xml render-html --class=w40 --lightbg --nostyle > build/dtd_example_xmq.xml
 # XSD
-$XMQ build/web/resources/xsd_example.xsd render-html --class=w40 --lightbg --nostyle > build/xsd_example_xsq.xml
+$XMQ web/resources/xsd_example.xsd render-html --class=w40 --lightbg --nostyle > build/xsd_example_xsq.xml
 
 # Render the welcome traveller xmq in html
 $XMQ web/resources/welcome_traveller.htmq render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_xmq.xml
@@ -150,9 +150,9 @@ $XMQ web/index.htmq \
      replace-entity SIMPLE_PAGE_JSON --with-text-file=build/simple_page.json \
      replace-entity POM_RENDERED --with-file=build/pom_rendered.xml \
      replace-entity DTD_EXAMPLE_XMQ --with-file=build/dtd_example_xmq.xml \
-     replace-entity DTD_EXAMPLE_XML --with-text-file=build/web/resources/dtd_example.xml \
+     replace-entity DTD_EXAMPLE_XML --with-text-file=web/resources/dtd_example.xml \
      replace-entity XSD_EXAMPLE_XSQ --with-file=build/xsd_example_xsq.xml \
-     replace-entity XSD_EXAMPLE_XSD --with-text-file=build/web/resources/xsd_example.xsd \
+     replace-entity XSD_EXAMPLE_XSD --with-text-file=web/resources/xsd_example.xsd \
      to-html > build/web/index.html
 
 $XMQ web/upload.htmq to-html > build/web/upload.html
