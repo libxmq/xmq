@@ -279,6 +279,7 @@ typedef XMQProceed (*XMQNodeCallback)(XMQDoc *doc, XMQNode *node, void *user_dat
 */
 typedef enum
 {
+    XMQ_ERROR_NONE = 0,
     XMQ_ERROR_CANNOT_READ_FILE = 1,
     XMQ_ERROR_OOM = 2,
     XMQ_ERROR_NOT_XMQ = 3,
@@ -307,7 +308,8 @@ typedef enum
     XMQ_ERROR_EXPECTED_HTML = 26,
     XMQ_ERROR_EXPECTED_JSON = 27,
     XMQ_ERROR_PARSING_XML = 28,
-    XMQ_ERROR_PARSING_HTML = 29
+    XMQ_ERROR_PARSING_HTML = 29,
+    XMQ_WARNING_QUOTES_NEEDED = 100
 } XMQParseError;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

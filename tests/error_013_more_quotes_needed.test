@@ -1,0 +1,10 @@
+START
+tale = 'There's a candle, a room and a spirit.'
+ERROR
+.../error_013_more_quotes_needed.input:1:14: warning: perhaps you need more quotes to quote this quote
+tale = 'There's a candle, a room and a spirit.'
+             ^
+.../error_013_more_quotes_needed.input:1:25: error: unexpected character "," U+2C
+tale = 'There's a candle, a room and a spirit.'
+                        ^
+END

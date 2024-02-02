@@ -300,8 +300,8 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
             "  xmqENS{color:#696969;}\n"
             "  xmqEN{color:#a85c00;}\n"
             "  xmqEKV{color:#26a269;font-weight:600;}\n"
-            "  xmqEK{color:#005fff;}\n"
-            "  xmqAK{color:#005fff;}\n"
+            "  xmqEK{color:#0060fd;}\n"
+            "  xmqAK{color:#0060fd;}\n"
             "  xmqAKV{color:#12488c;}\n"
             "  xmqANS{color:#696969;}\n"
             "  xmqNSD{color:#1a91a3;}\n"
@@ -569,6 +569,11 @@ LIST_OF_XMQ_TOKENS
 
 const char *xmqStateErrorMsg(XMQParseState *state)
 {
+    if (!state->generated_error_msg && state->generating_error_msg)
+    {
+        state->generated_error_msg = free_membuffer_but_return_trimmed_content(state->generating_error_msg);
+        state->generating_error_msg = NULL;
+    }
     return state->generated_error_msg;
 }
 
@@ -823,7 +828,7 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
     state->i = start;
     state->line = 1;
     state->col = 1;
-    state->error_nr = 0;
+    state->error_nr = XMQ_ERROR_NONE;
 
     if (state->parse->init) state->parse->init(state);
 
@@ -847,7 +852,14 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
     }
     else
     {
-        build_state_error_message(state, start, stop);
+        XMQParseError error_nr = state->error_nr;
+        if (error_nr == XMQ_ERROR_INVALID_CHAR && state->last_suspicios_quote_end)
+        {
+            // Add warning about suspicious quote before the error.
+            generate_state_error_message(state, XMQ_WARNING_QUOTES_NEEDED, start, stop);
+        }
+        generate_state_error_message(state, error_nr, start, stop);
+
         return false;
     }
 
@@ -1111,12 +1123,12 @@ bool xmqVerbose() {
 
 static const char *build_error_message(const char* fmt, ...)
 {
-    char *buf = (char*)malloc(1024);
+    char *buf = (char*)malloc(4096);
     va_list args;
     va_start(args, fmt);
-    vsnprintf(buf, 1024, fmt, args);
+    vsnprintf(buf, 4096, fmt, args);
     va_end(args);
-    buf[1023] = 0;
+    buf[4095] = 0;
     buf = (char*)realloc(buf, strlen(buf)+1);
     return buf;
 }
@@ -1584,6 +1596,11 @@ void xmqFreeParseState(XMQParseState *state)
     state->source_name = NULL;
     free(state->generated_error_msg);
     state->generated_error_msg = NULL;
+    if (state->generating_error_msg)
+    {
+        free_membuffer_and_free_content(state->generating_error_msg);
+        state->generating_error_msg = NULL;
+    }
     free_stack(state->element_stack);
 //    free(state->settings);
     state->output_settings = NULL;

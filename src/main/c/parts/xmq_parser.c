@@ -19,6 +19,7 @@ void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text
 void eat_xmq_text_name(XMQParseState *state, const char **content_start, const char **content_stop,
                        const char **namespace_start, const char **namespace_stop);
 bool possibly_lost_content_after_equals(XMQParseState *state);
+bool possibly_need_more_quotes(XMQParseState *state);
 
 size_t count_xmq_quotes(const char *i, const char *stop)
 {
@@ -106,6 +107,13 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
     state->i = i;
     state->line = line;
     state->col = col;
+
+    if (possibly_need_more_quotes(state))
+    {
+        state->last_suspicios_quote_end = state->i-1;
+        state->last_suspicios_quote_end_line = state->line;
+        state->last_suspicios_quote_end_col = state->col-1;
+    }
 }
 
 void eat_xmq_entity(XMQParseState *state)
@@ -484,10 +492,8 @@ void parse_xmq(XMQParseState *state)
             if (possibly_lost_content_after_equals(state))
             {
                 state->error_nr = XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS;
-                longjmp(state->error_handler, 1);
             }
-
-            if (c == '\t')
+            else if (c == '\t')
             {
                 state->error_nr = XMQ_ERROR_UNEXPECTED_TAB;
             }
@@ -987,6 +993,70 @@ bool possibly_lost_content_after_equals(XMQParseState *state)
     }
 
     return *i == '=';
+}
+
+bool possibly_need_more_quotes(XMQParseState *state)
+{
+    if (state->i - 2 < state->buffer_start ||
+        state->i >= state->buffer_stop)
+    {
+        return false;
+    }
+    // Should have triple quotes: 'There's a man.'
+    // c0 = e
+    // c1 = '
+    // c2 = s
+    char c0 = *(state->i-2);
+    char c1 = *(state->i-1); // This is the apostrophe
+    char c2 = *(state->i);
+
+    // We have just parsed a quote. Check if this is a false ending and
+    // there is a syntax error since we need more quotes. For example:
+    // greeting = 'There's a man, a wolf and a boat.'
+    // We get this error:
+    // ../forgot.xmq:1:26: error: unexpected character "," U+2C
+    // greeting = 'There's a man, a wolf and a boat.'
+    //                          ^
+    // The quote terminated too early, we need three quotes.
+    //
+    // This function detects a suspicious quote ending and remembers it,
+    // but does not flag an error until the parser fails.
+
+    // Any non-quote quote non-quote, is suspicios: for example: g's t's
+    // or e'l or y'v etc....
+    if (c0 != '\'' &&
+        c1 == '\'' &&
+        c2 != '\'') return true;
+
+    return false;
+
+    // isn't doesn't shouldn't can't aren't won't
+    // dog's it's
+    // we'll
+    // they've
+    // he'd
+    // she'd've
+    // 'clock
+    // Hallowe'en
+    // fo'c's'le = forecastle
+    // cat-o'-nine-tails = cat-of-nine-tails
+    // ne'er-do-well = never-do-well
+    // will-o'-the-wisp
+    // 'tis = it is
+    // o'er = over
+    // 'twas = it was
+    // e'en = even
+    // 'Fraid so.'Nother drink?
+    // I s'pose so.'S not funny.
+    // O'Leary (Irish), d'Abbadie (French), D'Angelo (Italian), M'Tavish (Scots Gaelic)
+    // Robert Burns poetry: gi' for give and a' for all
+    // the generation of '98
+    // James's shop (or James' shop)
+    // a month's pay
+    // For God's sake! (= exclamation of exasperation)
+    // a stone's throw away (= very near)
+    // at death's door (= very ill)
+    // in my mind's eye (= in my imagination)
 }
 
 void parse_xmq_whitespace(XMQParseState *state)

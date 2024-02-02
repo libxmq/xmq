@@ -138,6 +138,16 @@ void membuffer_append_null(MemBuffer *mb)
     membuffer_append_char(mb, 0);
 }
 
+void membuffer_drop_last_null(MemBuffer *mb)
+{
+    char *buf = mb->buffer_;
+    size_t used = mb->used_;
+    if (used > 0 && buf[used-1] == 0)
+    {
+        mb->used_--;
+    }
+}
+
 void membuffer_append_entity(MemBuffer *mb, char c)
 {
     if (c == ' ') membuffer_append(mb, "&#32;");

@@ -4,6 +4,7 @@
 #include"parts/colors.h"
 #include"parts/text.h"
 #include"parts/xmq_internals.h"
+#include"parts/membuffer.h"
 
 #endif
 
@@ -25,59 +26,80 @@ const char *color_names[13] = {
     "xmq_tw",
 };
 
-void build_state_error_message(XMQParseState *state, const char *start, const char *stop)
+void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, const char *start, const char *stop)
 {
     // Error detected during parsing and this is where the longjmp will end up!
-    state->generated_error_msg = (char*)malloc(2048);
+    if (!state->generating_error_msg)
+    {
+        state->generating_error_msg = new_membuffer();
+    }
+    else
+    {
+        membuffer_drop_last_null(state->generating_error_msg);
+        membuffer_append(state->generating_error_msg, "\n");
+    }
 
-    XMQParseError error_nr = (XMQParseError)state->error_nr;
     const char *error = xmqParseErrorToString(error_nr);
 
     const char *statei = state->i;
     size_t line = state->line;
     size_t col = state->col;
 
+    // For certain errors we have a better point where the error triggered.
     if (error_nr == XMQ_ERROR_BODY_NOT_CLOSED)
     {
         statei = state->last_body_start;
         line = state->last_body_start_line;
         col = state->last_body_start_col;
     }
-    if (error_nr == XMQ_ERROR_ATTRIBUTES_NOT_CLOSED)
+    else if (error_nr == XMQ_ERROR_ATTRIBUTES_NOT_CLOSED)
     {
         statei = state->last_attr_start;
         line = state->last_attr_start_line;
         col = state->last_attr_start_col;
     }
-    if (error_nr == XMQ_ERROR_QUOTE_NOT_CLOSED)
+    else if (error_nr == XMQ_ERROR_QUOTE_NOT_CLOSED)
     {
         statei = state->last_quote_start;
         line = state->last_quote_start_line;
         col = state->last_quote_start_col;
     }
-    if (error_nr == XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS)
+    else if (error_nr == XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS)
     {
         statei = state->last_equals_start;
         line = state->last_equals_start_line;
         col = state->last_equals_start_col;
     }
+    else if (error_nr == XMQ_WARNING_QUOTES_NEEDED)
+    {
+        statei = state->last_suspicios_quote_end;
+        line = state->last_suspicios_quote_end_line;
+        col = state->last_suspicios_quote_end_col;
+    }
 
-    size_t n = 0;
-    size_t offset = 0;
+    // Move pointer to the beginning of the line and
+    // calculate the indent for the line so that we
+    // can position the ^ marker under the problematic character.
+    // Give up on lines longer than 1024 characters.
+    size_t line_length = 0;
+    size_t indent = 0;
+
     const char *line_start = statei;
-    while (line_start > start && *(line_start-1) != '\n' && n < 1024)
+    while (line_start > start && *(line_start-1) != '\n' && line_length < 1024)
     {
-        n++;
-        offset++;
+        line_length++;
         line_start--;
+        indent++;
     }
 
-    const char *i = statei;
-    while (i < stop && *i && *i != '\n' && n < 1024)
+    // Now find the end of the line.
+    const char *line_stop = statei;
+    while (line_stop < stop && *line_stop && *line_stop != '\n' && line_length < 1024)
     {
-        n++;
-        i++;
+        line_length++;
+        line_stop++;
     }
+
     const char *char_error = "";
     char buf[32];
 
@@ -98,21 +120,31 @@ void build_state_error_message(XMQParseState *state, const char *start, const ch
     if (statei < stop)
     {
         snprintf(line_error, 1024, "\n%.*s\n %*s",
-                 (int)n,
+                 (int)line_length,
                  line_start,
-                 (int)offset,
+                 (int)indent,
                  "^");
     }
 
-    snprintf(state->generated_error_msg, 2048,
-             "%s:%zu:%zu: error: %s%s%s",
+    const char *e_or_w = "error";
+    if (error_nr >= XMQ_WARNING_QUOTES_NEEDED)
+    {
+        e_or_w = "warning";
+    }
+    char error_msg[2048];
+    memset(error_msg, 0, sizeof(error_msg));
+    snprintf(error_msg, 2048,
+             "%s:%zu:%zu: %s: %s%s%s",
              state->source_name,
              line, col,
+             e_or_w,
              error,
              char_error,
              line_error
         );
-    state->generated_error_msg[2047] = 0;
+    error_msg[2047] = 0;
+    membuffer_append(state->generating_error_msg, error_msg);
+    membuffer_append_null(state->generating_error_msg);
 }
 
 size_t count_whitespace(const char *i, const char *stop)
@@ -326,6 +358,7 @@ const char *xmqParseErrorToString(XMQParseError e)
 {
     switch (e)
     {
+    case XMQ_ERROR_NONE: return "no warning, no error";
     case XMQ_ERROR_CANNOT_READ_FILE: return "cannot read file";
     case XMQ_ERROR_OOM: return "out of memory";
     case XMQ_ERROR_NOT_XMQ: return "input file is not xmq";
@@ -355,6 +388,7 @@ const char *xmqParseErrorToString(XMQParseError e)
     case XMQ_ERROR_EXPECTED_JSON: return "expected json source";
     case XMQ_ERROR_PARSING_XML: return "error parsing xml";
     case XMQ_ERROR_PARSING_HTML: return "error parsing html";
+    case XMQ_WARNING_QUOTES_NEEDED: return "perhaps you need more quotes to quote this quote";
     }
     assert(false);
     return "unknown error";

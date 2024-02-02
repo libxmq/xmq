@@ -191,8 +191,9 @@ struct XMQParseState
     const char *i; // Current parsing position.
     size_t line; // Current line.
     size_t col; // Current col.
-    int error_nr;
+    XMQParseError error_nr;
     char *generated_error_msg;
+    MemBuffer *generating_error_msg;
     jmp_buf error_handler;
 
     bool simulated; // When true, this is generated from JSON parser to simulate an xmq element name.
@@ -230,6 +231,9 @@ struct XMQParseState
     const char *last_equals_start;
     size_t last_equals_start_line;
     size_t last_equals_start_col;
+    const char *last_suspicios_quote_end;
+    size_t last_suspicios_quote_end_line;
+    size_t last_suspicios_quote_end_col;
 };
 
 /**
@@ -295,7 +299,7 @@ struct XMQQuoteSettings
 };
 typedef struct XMQQuoteSettings XMQQuoteSettings;
 
-void build_state_error_message(XMQParseState *state, const char *start, const char *stop);
+void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, const char *start, const char *stop);
 
 // Text functions ////////////////
 

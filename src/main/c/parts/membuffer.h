@@ -49,8 +49,9 @@ void membuffer_reuse(MemBuffer *mb, char *start, size_t len);
 void membuffer_append_region(MemBuffer *mb, const char *start, const char *stop);
 void membuffer_append(MemBuffer *mb, const char *start);
 void membuffer_append_char(MemBuffer *mb, char c);
-void membuffer_append_null(MemBuffer *mb);
 void membuffer_append_entity(MemBuffer *mb, char c);
+void membuffer_append_null(MemBuffer *mb);
+void membuffer_drop_last_null(MemBuffer *mb);
 
 #define MEMBUFFER_MODULE
 

@@ -519,7 +519,7 @@ bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const cha
     state->i = start;
     state->line = 1;
     state->col = 1;
-    state->error_nr = 0;
+    state->error_nr = XMQ_ERROR_NONE;
 
     if (state->parse->init) state->parse->init(state);
 
@@ -534,7 +534,8 @@ bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const cha
     }
     else
     {
-        build_state_error_message(state, start, stop);
+        XMQParseError error_nr = state->error_nr;
+        generate_state_error_message(state, error_nr, start, stop);
         return false;
     }
 
