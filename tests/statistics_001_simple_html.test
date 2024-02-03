@@ -1,0 +1,30 @@
+START
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- ABCD_ -->
+        <script>ABCD_ABCD_</script>
+        <style>ABCD_ABCD_ABCD_ABCD_</style>
+    </head>
+    <body abcd_="ABCD_ABCD_">
+        ABCD_
+    </body>
+</html>
+STATISTICS
+statistics {
+    num_elements           = 5
+    size_element_names     = 23
+    num_text_nodes         = 1
+    size_text_nodes        = 5
+    num_attributes         = 1
+    size_attribute_names   = 5
+    size_attribute_content = 10
+    num_comments           = 1
+    size_comments          = 5
+    size_doctype           = 4
+    num_cdata_nodes        = 2
+    size_cdata_nodes       = 30
+    sum_meta               = 42
+    sum_text               = 5
+}
+END

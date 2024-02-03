@@ -95,6 +95,7 @@ typedef enum
     XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES,
     XMQ_CLI_CMD_TRANSFORM,
     XMQ_CLI_CMD_SELECT,
+    XMQ_CLI_CMD_STATISTICS,
 } XMQCliCmd;
 
 typedef enum {
@@ -194,11 +195,44 @@ typedef enum {
     ENTER
 } KEY;
 
+typedef struct
+{
+    size_t num_elements;
+    size_t size_element_names;
+    size_t num_text_nodes;
+    size_t size_text_nodes;
+    size_t num_entities;
+    size_t size_entities;
+    size_t num_char_entities;
+    size_t size_char_entities;
+    size_t num_tabs;
+    size_t num_non_7bit_chars;
+    size_t num_attributes;
+    size_t size_attribute_names;
+    size_t size_attribute_content;
+    size_t num_comments;
+    size_t size_comments;
+    size_t num_pi_nodes;
+    size_t size_pi_nodes;
+    size_t has_doctype;
+    size_t size_doctype;
+    size_t num_cdata_nodes;
+    size_t size_cdata_nodes;
+} Stats;
+
 // FUNCTION DECLARATIONS /////////////////////////////////////////////////////////////
 
+void accumulate_attribute(Stats *stats, xmlAttr *a);
+void accumulate_attribute_content(Stats *stats, xmlNode *a);
+void accumulate_children(Stats *stats, xmlNode *node);
+void accumulate_statistics(Stats *stats, xmlNode *node);
+void count_statistics(Stats *stats, xmlDoc *doc);
+
+void add_key_value(xmlDoc *doc, xmlNode *root, const char *key, size_t value);
 XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env);
 bool cmd_delete(XMQCliCommand *command);
 bool cmd_select(XMQCliCommand *command);
+bool cmd_statistics(XMQCliCommand *command);
 bool cmd_replace(XMQCliCommand *command);
 bool cmd_substitute(XMQCliCommand *command);
 XMQCliCmd cmd_from(const char *s);
@@ -309,6 +343,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "substitute-char-entities")) return XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES;
     if (!strcmp(s, "transform")) return XMQ_CLI_CMD_TRANSFORM;
     if (!strcmp(s, "select")) return XMQ_CLI_CMD_SELECT;
+    if (!strcmp(s, "statistics")) return XMQ_CLI_CMD_STATISTICS;
     return XMQ_CLI_CMD_NONE;
 }
 
@@ -341,6 +376,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES: return "substitute-char-entities";
     case XMQ_CLI_CMD_TRANSFORM: return "transform";
     case XMQ_CLI_CMD_SELECT: return "select";
+    case XMQ_CLI_CMD_STATISTICS: return "statistics";
     }
     return "?";
 }
@@ -390,6 +426,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
 
     case XMQ_CLI_CMD_NONE:
     case XMQ_CLI_CMD_LOAD:
+    case XMQ_CLI_CMD_STATISTICS:
         return XMQ_CLI_CMD_GROUP_NONE;
     }
     return XMQ_CLI_CMD_GROUP_NONE;
@@ -1339,6 +1376,10 @@ bool cmd_to(XMQCliCommand *command)
 
 bool cmd_output(XMQCliCommand *command)
 {
+    if (command->cmd == XMQ_CLI_CMD_STATISTICS)
+    {
+        return true;
+    }
     if (!command->env->out_start)
     {
         fprintf(stderr, "xmq: no output found, please add a to/render/tokenize command\n");
@@ -1476,6 +1517,150 @@ bool cmd_select(XMQCliCommand *command)
 
     xmlXPathFreeObject(objects);
     xmlXPathFreeContext(ctx);
+
+    xmlFreeDoc(doc);
+    xmqSetImplementationDoc(command->env->doc, new_doc);
+
+    return true;
+}
+
+void accumulate_children(Stats *stats, xmlNode *node)
+{
+    xmlAttr *a = xml_first_attribute(node);
+    while (a)
+    {
+        xmlAttr *next = a->next;
+        accumulate_attribute(stats, a);
+        a = next;
+    }
+
+    xmlNode *i = xml_first_child(node);
+    while (i)
+    {
+        xmlNode *next = xml_next_sibling(i);
+        accumulate_statistics(stats, i);
+        i = next;
+    }
+}
+
+void accumulate_attribute(Stats *stats, xmlAttr *a)
+{
+    stats->num_attributes++;
+    stats->size_attribute_names += strlen((const char*)a->name);
+
+    xmlNode *i = a->children;
+    while (i)
+    {
+        xmlNode *next = xml_next_sibling(i);
+        accumulate_attribute_content(stats, i);
+        i = next;
+    }
+
+}
+
+void accumulate_statistics(Stats *stats, xmlNode *node)
+{
+    if (node->type == XML_ELEMENT_NODE)
+    {
+        stats->num_elements++;
+        stats->size_element_names += strlen((const char*)node->name);
+        accumulate_children(stats, node);
+        return;
+    }
+    else if (node->type == XML_TEXT_NODE)
+    {
+        stats->num_text_nodes++;
+        stats->size_text_nodes += strlen((const char*)node->content);
+        return;
+    }
+    else if (node->type == XML_COMMENT_NODE)
+    {
+        stats->num_comments++;
+        stats->size_comments += strlen((const char*)node->content);
+        return;
+    }
+    else if (node->type == XML_CDATA_SECTION_NODE)
+    {
+        stats->num_cdata_nodes++;
+        stats->size_cdata_nodes += strlen((const char*)node->content);
+        return;
+    }
+    else if (node->type == XML_ENTITY_REF_NODE)
+    {
+        stats->num_entities++;
+        stats->size_entities += strlen((const char*)node->name);
+        return;
+    }
+    else if (node->type == XML_DTD_NODE)
+    {
+        stats->has_doctype++;
+        stats->size_doctype += strlen((const char*)node->name);
+        return;
+    }
+}
+
+void accumulate_attribute_content(Stats *stats, xmlNode *node)
+{
+    if (node->type == XML_TEXT_NODE)
+    {
+        stats->size_attribute_content += strlen((const char*)node->content);
+        return;
+    }
+}
+
+void count_statistics(Stats *stats, xmlDocPtr doc)
+{
+    xmlNodePtr i = doc->children;
+
+    while (i)
+    {
+        xmlNode *next = xml_next_sibling(i);
+        accumulate_statistics(stats, i);
+        i = next;
+    }
+}
+
+void add_key_value(xmlDoc *doc, xmlNode *root, const char *key, size_t value)
+{
+    char buf[1024];
+    snprintf(buf, 1024, "%zu", value);
+    xmlNodePtr element = xmlNewDocNode(doc, NULL, (xmlChar*)key, NULL);
+    xmlAddChild(root, element);
+    xmlNodePtr text = xmlNewDocText(doc, (xmlChar*)buf);
+    xmlAddChild(element, text);
+}
+
+bool cmd_statistics(XMQCliCommand *command)
+{
+    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    verbose_("(xmq) calculating statistics\n");
+    Stats stats;
+    memset(&stats, 0, sizeof(stats));
+
+    count_statistics(&stats, doc);
+
+    xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
+    xmlNodePtr root = xmlNewDocNode(new_doc, NULL, (xmlChar*)"statistics", NULL);
+    xmlDocSetRootElement(new_doc, root);
+
+    if (stats.num_elements) add_key_value(doc, root, "num_elements", stats.num_elements);
+    if (stats.size_element_names) add_key_value(doc, root, "size_element_names", stats.size_element_names);
+    if (stats.num_text_nodes) add_key_value(doc, root, "num_text_nodes", stats.num_text_nodes);
+    if (stats.size_text_nodes) add_key_value(doc, root, "size_text_nodes", stats.size_text_nodes);
+    if (stats.num_attributes) add_key_value(doc, root, "num_attributes", stats.num_attributes);
+    if (stats.size_attribute_names) add_key_value(doc, root, "size_attribute_names", stats.size_attribute_names);
+    if (stats.size_attribute_content) add_key_value(doc, root, "size_attribute_content", stats.size_attribute_content);
+    if (stats.num_comments) add_key_value(doc, root, "num_comments", stats.num_comments);
+    if (stats.size_comments) add_key_value(doc, root, "size_comments", stats.size_comments);
+    if (stats.size_doctype) add_key_value(doc, root, "size_doctype", stats.size_doctype);
+    if (stats.num_cdata_nodes) add_key_value(doc, root, "num_cdata_nodes", stats.num_cdata_nodes);
+    if (stats.size_cdata_nodes) add_key_value(doc, root, "size_cdata_nodes", stats.size_cdata_nodes);
+
+    size_t sum_meta = stats.size_element_names+stats.size_attribute_names+stats.size_attribute_content+stats.size_doctype;
+    size_t sum_text = stats.size_text_nodes;
+
+    add_key_value(doc, root, "sum_meta", sum_meta);
+    add_key_value(doc, root, "sum_text", sum_text);
 
     xmlFreeDoc(doc);
     xmqSetImplementationDoc(command->env->doc, new_doc);
@@ -1772,6 +1957,8 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
     case XMQ_CLI_CMD_TRANSFORM:
         return;
     case XMQ_CLI_CMD_SELECT:
+        return;
+    case XMQ_CLI_CMD_STATISTICS:
         return;
     case XMQ_CLI_CMD_NONE:
         return;
@@ -2274,6 +2461,8 @@ bool perform_command(XMQCliCommand *c)
         return cmd_transform(c);
     case XMQ_CLI_CMD_SELECT:
         return cmd_select(c);
+    case XMQ_CLI_CMD_STATISTICS:
+        return cmd_statistics(c);
     }
     assert(false);
     return false;

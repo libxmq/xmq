@@ -9672,7 +9672,9 @@ bool possibly_need_more_quotes(XMQParseState *state)
 
     // Any non-quote quote non-quote, is suspicios: for example: g's t's
     // or e'l or y'v etc....
+    // But do not trigger on [space]'x since that is probably a valid quote start.
     if (c0 != '\'' &&
+        c0 != ' ' &&
         c1 == '\'' &&
         c2 != '\'') return true;
 
