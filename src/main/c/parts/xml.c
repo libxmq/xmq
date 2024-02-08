@@ -258,4 +258,20 @@ int decode_entity_ref(const char *name)
     return atoi(name+1);
 }
 
+void xml_add_root_child(xmlDoc *doc, xmlNode *node)
+{
+    if (doc->children == NULL)
+    {
+        doc->children = node;
+        doc->last = node;
+    }
+    else
+    {
+        xmlNode *prev = doc->last;
+        prev->next = node;
+        node->prev = prev;
+        doc->last = node;
+    }
+}
+
 #endif // XML_MODULE

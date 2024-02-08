@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2023 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2023-2024 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -71,6 +71,7 @@ typedef enum
 typedef enum
 {
     XMQ_CLI_CMD_NONE,
+    XMQ_CLI_CMD_HELP,
     XMQ_CLI_CMD_LOAD,
     XMQ_CLI_CMD_TO_XMQ,
     XMQ_CLI_CMD_TO_XML,
@@ -95,11 +96,13 @@ typedef enum
     XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES,
     XMQ_CLI_CMD_TRANSFORM,
     XMQ_CLI_CMD_SELECT,
+    XMQ_CLI_CMD_ADD_ROOT,
     XMQ_CLI_CMD_STATISTICS,
 } XMQCliCmd;
 
 typedef enum {
     XMQ_CLI_CMD_GROUP_NONE,
+    XMQ_CLI_CMD_GROUP_HELP,
     XMQ_CLI_CMD_GROUP_TO,
     XMQ_CLI_CMD_GROUP_RENDER,
     XMQ_CLI_CMD_GROUP_TOKENIZE,
@@ -155,6 +158,7 @@ struct XMQCliCommand
     bool has_overrides;
 
     bool print_help;
+    const char *help_command;
     bool print_version;
     bool debug;
     bool verbose;
@@ -231,7 +235,9 @@ void count_statistics(Stats *stats, xmlDoc *doc);
 void add_key_value(xmlDoc *doc, xmlNode *root, const char *key, size_t value);
 XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env);
 bool cmd_delete(XMQCliCommand *command);
+bool cmd_help(XMQCliCommand *c);
 bool cmd_select(XMQCliCommand *command);
+bool cmd_add_root(XMQCliCommand *command);
 bool cmd_statistics(XMQCliCommand *command);
 bool cmd_replace(XMQCliCommand *command);
 bool cmd_substitute(XMQCliCommand *command);
@@ -263,17 +269,17 @@ void find_prev_line(const char **line_offset, const char **in_line_offset, const
 bool has_debug(int argc, const char **argv);
 bool has_verbose(int argc, const char **argv);
 bool handle_global_option(const char *arg, XMQCliCommand *command);
-bool handle_option(const char *arg, XMQCliCommand *command);
+bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command);
 void page(const char *start, const char *stop);
 void browse(XMQCliCommand *c);
 void open_browser(const char *file);
 bool perform_command(XMQCliCommand *c);
 void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command);
-void print_help_and_exit();
 void print_version_and_exit();
 int get_char();
 void put_char(int c);
 void console_write(const char *start, const char *stop);
+void print_command_help(XMQCliCmd c);
 KEY read_key(int *c);
 const char *render_format_to_string(XMQRenderFormat rt);
 void replace_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, const char *content, xmlNodePtr node_content);
@@ -318,6 +324,7 @@ void debug_(const char* fmt, ...)
 XMQCliCmd cmd_from(const char *s)
 {
     if (!s) return XMQ_CLI_CMD_NONE;
+    if (!strcmp(s, "help")) return XMQ_CLI_CMD_HELP;
     if (!strcmp(s, "to-xmq")) return XMQ_CLI_CMD_TO_XMQ;
     if (!strcmp(s, "to-xml")) return XMQ_CLI_CMD_TO_XML;
     if (!strcmp(s, "to-htmq")) return XMQ_CLI_CMD_TO_HTMQ;
@@ -343,6 +350,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "substitute-char-entities")) return XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES;
     if (!strcmp(s, "transform")) return XMQ_CLI_CMD_TRANSFORM;
     if (!strcmp(s, "select")) return XMQ_CLI_CMD_SELECT;
+    if (!strcmp(s, "add-root")) return XMQ_CLI_CMD_ADD_ROOT;
     if (!strcmp(s, "statistics")) return XMQ_CLI_CMD_STATISTICS;
     return XMQ_CLI_CMD_NONE;
 }
@@ -352,6 +360,7 @@ const char *cmd_name(XMQCliCmd cmd)
     switch (cmd)
     {
     case XMQ_CLI_CMD_NONE: return "noop";
+    case XMQ_CLI_CMD_HELP: return "help";
     case XMQ_CLI_CMD_LOAD: return "load";
     case XMQ_CLI_CMD_TO_XMQ: return "to-xmq";
     case XMQ_CLI_CMD_TO_XML: return "to-xml";
@@ -376,6 +385,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES: return "substitute-char-entities";
     case XMQ_CLI_CMD_TRANSFORM: return "transform";
     case XMQ_CLI_CMD_SELECT: return "select";
+    case XMQ_CLI_CMD_ADD_ROOT: return "add-root";
     case XMQ_CLI_CMD_STATISTICS: return "statistics";
     }
     return "?";
@@ -411,6 +421,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_DELETE:
     case XMQ_CLI_CMD_REPLACE:
     case XMQ_CLI_CMD_SELECT:
+    case XMQ_CLI_CMD_ADD_ROOT:
         return XMQ_CLI_CMD_GROUP_XPATH;
 
     case XMQ_CLI_CMD_DELETE_ENTITY:
@@ -428,6 +439,8 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_LOAD:
     case XMQ_CLI_CMD_STATISTICS:
         return XMQ_CLI_CMD_GROUP_NONE;
+    case XMQ_CLI_CMD_HELP:
+        return XMQ_CLI_CMD_GROUP_HELP;
     }
     return XMQ_CLI_CMD_GROUP_NONE;
 }
@@ -490,7 +503,7 @@ XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env)
     return c;
 }
 
-bool handle_option(const char *arg, XMQCliCommand *command)
+bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command)
 {
     if (!arg) return false;
 
@@ -503,6 +516,12 @@ bool handle_option(const char *arg, XMQCliCommand *command)
             command->save_file = arg;
             return true;
         }
+    }
+
+    if (command->cmd == XMQ_CLI_CMD_HELP)
+    {
+        command->help_command = arg;
+        return true;
     }
 
     if (group == XMQ_CLI_CMD_GROUP_TO ||
@@ -1136,92 +1155,59 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     return false;
 }
 
-void print_help_and_exit()
+bool cmd_help(XMQCliCommand *cmd)
 {
+    if (cmd)
+    {
+        if (cmd->help_command)
+        {
+            XMQCliCmd c = cmd_from(cmd->help_command);
+            if (c == XMQ_CLI_CMD_NONE)
+            {
+                printf("xmq: Unknown command %s\n", cmd->help_command);
+                return false;
+            }
+            print_command_help(c);
+            return true;
+        }
+    }
     printf("Usage: xmq [options] <file> ( <command> [options] )*\n"
            "\n"
+           "  --debug    Output debug information on stderr.\n"
+           "  --help -h  Display this help and exit.\n"
+           "  --lines\n  Assume each line is a separate document\n"
            "  --root=<name>\n"
            "             Create a root node <name> unless the file starts with a node with this <name> already.\n"
+           "  --trim=none|default|heuristic\n"
+           "             The default setting when reading xml/html content is to trim whitespace using a heuristic.\n"
+           "             For xmq/htmq/json the default settings is none since whitespace is explicit in xmq/htmq/json.\n"
+           "  --verbose  Output extra information on stderr.\n"
+           "  --version  Output version information and exit.\n"
            "  --xmq|--htmq|--xml|--html|--json\n"
            "             The input format is normally auto detected but you can force the input format here.\n"
-           "  --trim=none|default|heuristic\n"
-           "             The default setting when reading xml/html content is to trim whitespace using heuristicl.\n"
-           "             For xmq/htmq/json the default settings is none since whitespace is explicit in xmq/htmq/json.\n"
-           "  --help     Display this help and exit.\n"
-           "  --verbose  Output extra information on stderr.\n"
-           "  --debug    Output debug information on stderr.\n"
-           "  --version  Output version information and exit.\n"
            "\n"
+           "To get help on the commands below: xmq help <command>\n\n"
            "COMMANDS\n"
-           "* to-xmq\n"
-           "* to-htmq\n"
-           "             Write the content as xmq/htmq on stdout. If stdout is a tty, then this command behaves as render_terminal.\n"
-           "  --compact\n"
-           "             By default to_xmq pretty-prints the output. Using this option will result in a single line compact xmq/htmq.\n"
-           "  --indent=n\n"
-           "             Use the given number of spaces for indentation. Default is 4.\n"
-           "  --escape-newlines\n"
-           "             Use the entity &#10; instead of actual newlines in xmq quotes. This is automatic in compact mode.\n"
-           "  --escape-non-7bit\n"
-           "             Escape all non-7bit chars using entities like &#160;\n"
-           "\n"
-           "* to-xml\n"
-           "* to-html\n"
-           "* to-json\n"
-           "* to-text\n"
-           "             Write the content as xml/html/json/text on stdout.\n"
-           "\n"
-           "pager\n"
-           "pa\n"
-           "             Render the content as xmq/htmq for color presentation on a terminal and use pager.\n"
-           "\n"
-           "browser\n"
-           "br\n"
-           "             Render the content as xmq/htmq for color presentation in a browser and use the default browser.\n"
-           "             set shell variable XMQ_BG=DARK or XMQ_BG=LIGHT to choose background color.\n"
-           "\n"
-           "* render-terminal\n"
-           "* render-html\n"
-           "* render-tex\n"
-           "             Render the content as xmq/htmq for presentation on a terminal, as html or as LaTeX.\n"
-           "  --color\n"
-           "  --mono\n"
-           "             By default, xmq generates syntax colored output if writing to a terminal.\n"
-           "             You can force it to produce color even if writing to a pipe or a file using --color,\n"
-           "             and disable color with --mono.\n"
-           "             Colors can be configured with the XMQ_COLORS environment variable.\n"
-           "  --lightbg\n"
-           "  --darkbg\n"
-           "             Use a colorscheme suitable for a light background or a dark background.\n"
-           "  --nostyle\n"
-           "             Do not output html/tex preamble/postamble.\n"
-           "  --onlystyle\n"
-           "             Output only the html/tex preamble.\n"
-           "\n"
-           "  You can also use --compact, --indent=n, --escape-newlines and --escape-non-7bit with the render commands.\n"
-           "\n"
-           "* tokenize\n"
-           "             Do not create a DOM tree for the content, just tokenize the input. Each token can be printed\n"
-           "             using colors for terminal/html/tex or with location information or with debug information.\n"
-           "             Location information is useful for editors to get help on syntax highlighting.\n"
-           "  --type=[location|terminal|tex|debugtokens|debugcontent]\n"
-           "\n"
-           "* delete <xpath-expression>\n"
-           "             Delete nodes in the DOM.\n"
-           "* delete-entity <entity-name>\n"
-           "             Delete named entity, eg \"delete-entity nbsp\" to delete all &nbsp; entities.\n"
-           "\n"
-           "* replace-entity <entity-name>\n"
-           "             Replace parts of the DOM.\n"
-           "  --with-text-file=<file-name>\n"
-           "             Replace with the text from this file. The text is safely quoted for insertion into the document.\n"
-           "  --with-file=<file-name>\n"
-           "             Replace with the content of this file which has to be proper xmq/htmq/xml/html/json.\n"
-           "* substitute-entity <entity-name>\n"
-           "* substitute-char-entities\n"
-           "             Substitite the desired entities with their definitions.\n"
-           "\nIf a single minus is given as <file> then xmq reads from stdin.\n"
-           "If neither <file> nor <command> given, then the xmq reads from stdin.\n");
+           "  add-root\n"
+           "  browser\n"
+           "  delete delete-entity\n"
+           "  help\n"
+           "  pager\n"
+           "  render-html render-terminal render-tex\n"
+           "  replace replace-entity\n"
+           "  to-html to-htmq to-json to-text to-xml to-xmq\n"
+           "  tokenize\n"
+           "  transform\n"
+           "  select\n"
+           "  statistics\n"
+           "  substitite-char-entities substitute-entity\n\n"
+           "EXAMPLES\n"
+           "  xmq pom.xml page"
+           "  xmq index.html delete //script delete //style browse\n"
+           "  xmq template.htmq replace-entity DATE 2024-02-08 to-html > index.html\n"
+           "  xmq data.json select /_/work transform format.xslq to-xml > data.xml\n"
+        );
+
     exit(0);
 }
 
@@ -1491,8 +1477,8 @@ bool cmd_select(XMQCliCommand *command)
     }
 
     xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
-    xmlNodePtr root = xmlNewDocNode(new_doc, NULL, (xmlChar*)"root", NULL);
-    xmlDocSetRootElement(new_doc, root);
+/*    xmlNodePtr root = xmlNewDocNode(new_doc, NULL, (xmlChar*)"root", NULL);
+      xmlDocSetRootElement(new_doc, root);*/
 
     xmlNodeSetPtr nodes = objects->nodesetval;
     int size = (nodes) ? nodes->nodeNr : 0;
@@ -1509,7 +1495,7 @@ bool cmd_select(XMQCliCommand *command)
             n = n->parent;
         }
         xmlNodePtr new_node = xmlCopyNode(n, 1);
-        xmlAddChild(root, new_node);
+        xml_add_root_child(new_doc, new_node);
 
         xmlUnlinkNode(n);
         xmlFreeNode(n);
@@ -1517,6 +1503,31 @@ bool cmd_select(XMQCliCommand *command)
 
     xmlXPathFreeObject(objects);
     xmlXPathFreeContext(ctx);
+
+    xmlFreeDoc(doc);
+    xmqSetImplementationDoc(command->env->doc, new_doc);
+
+    return true;
+}
+
+bool cmd_add_root(XMQCliCommand *command)
+{
+    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    verbose_("(xmq) adding root\n");
+
+    xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
+
+    xmlNodePtr root = xmlNewDocNode(new_doc, NULL, (const xmlChar*)command->xpath, NULL);
+    xmlDocSetRootElement(new_doc, root);
+
+    xmlNodePtr i = doc->children;
+
+    while (i)
+    {
+        xmlNodePtr new_node = xmlCopyNode(i, 1);
+        xmlAddChild(root, new_node);
+        i = i->next;
+    }
 
     xmlFreeDoc(doc);
     xmqSetImplementationDoc(command->env->doc, new_doc);
@@ -1643,24 +1654,24 @@ bool cmd_statistics(XMQCliCommand *command)
     xmlNodePtr root = xmlNewDocNode(new_doc, NULL, (xmlChar*)"statistics", NULL);
     xmlDocSetRootElement(new_doc, root);
 
-    if (stats.num_elements) add_key_value(doc, root, "num_elements", stats.num_elements);
-    if (stats.size_element_names) add_key_value(doc, root, "size_element_names", stats.size_element_names);
-    if (stats.num_text_nodes) add_key_value(doc, root, "num_text_nodes", stats.num_text_nodes);
-    if (stats.size_text_nodes) add_key_value(doc, root, "size_text_nodes", stats.size_text_nodes);
-    if (stats.num_attributes) add_key_value(doc, root, "num_attributes", stats.num_attributes);
-    if (stats.size_attribute_names) add_key_value(doc, root, "size_attribute_names", stats.size_attribute_names);
-    if (stats.size_attribute_content) add_key_value(doc, root, "size_attribute_content", stats.size_attribute_content);
-    if (stats.num_comments) add_key_value(doc, root, "num_comments", stats.num_comments);
-    if (stats.size_comments) add_key_value(doc, root, "size_comments", stats.size_comments);
-    if (stats.size_doctype) add_key_value(doc, root, "size_doctype", stats.size_doctype);
-    if (stats.num_cdata_nodes) add_key_value(doc, root, "num_cdata_nodes", stats.num_cdata_nodes);
-    if (stats.size_cdata_nodes) add_key_value(doc, root, "size_cdata_nodes", stats.size_cdata_nodes);
+    if (stats.num_elements) add_key_value(new_doc, root, "num_elements", stats.num_elements);
+    if (stats.size_element_names) add_key_value(new_doc, root, "size_element_names", stats.size_element_names);
+    if (stats.num_text_nodes) add_key_value(new_doc, root, "num_text_nodes", stats.num_text_nodes);
+    if (stats.size_text_nodes) add_key_value(new_doc, root, "size_text_nodes", stats.size_text_nodes);
+    if (stats.num_attributes) add_key_value(new_doc, root, "num_attributes", stats.num_attributes);
+    if (stats.size_attribute_names) add_key_value(new_doc, root, "size_attribute_names", stats.size_attribute_names);
+    if (stats.size_attribute_content) add_key_value(new_doc, root, "size_attribute_content", stats.size_attribute_content);
+    if (stats.num_comments) add_key_value(new_doc, root, "num_comments", stats.num_comments);
+    if (stats.size_comments) add_key_value(new_doc, root, "size_comments", stats.size_comments);
+    if (stats.size_doctype) add_key_value(new_doc, root, "size_doctype", stats.size_doctype);
+    if (stats.num_cdata_nodes) add_key_value(new_doc, root, "num_cdata_nodes", stats.num_cdata_nodes);
+    if (stats.size_cdata_nodes) add_key_value(new_doc, root, "size_cdata_nodes", stats.size_cdata_nodes);
 
     size_t sum_meta = stats.size_element_names+stats.size_attribute_names+stats.size_attribute_content+stats.size_doctype;
     size_t sum_text = stats.size_text_nodes;
 
-    add_key_value(doc, root, "sum_meta", sum_meta);
-    add_key_value(doc, root, "sum_text", sum_text);
+    add_key_value(new_doc, root, "sum_meta", sum_meta);
+    add_key_value(new_doc, root, "sum_text", sum_text);
 
     xmlFreeDoc(doc);
     xmqSetImplementationDoc(command->env->doc, new_doc);
@@ -1958,11 +1969,16 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
         return;
     case XMQ_CLI_CMD_SELECT:
         return;
+    case XMQ_CLI_CMD_ADD_ROOT:
+        return;
     case XMQ_CLI_CMD_STATISTICS:
         return;
     case XMQ_CLI_CMD_NONE:
         return;
     case XMQ_CLI_CMD_LOAD:
+        return;
+    case XMQ_CLI_CMD_HELP:
+        c->print_help = true;
         return;
     }
 }
@@ -2210,6 +2226,20 @@ void open_browser(const char *file)
         fprintf(stderr, "xmq: command failed rc=%d:\n%s\n", rc, buf);
     }
 #endif
+}
+
+void print_command_help(XMQCliCmd c)
+{
+    switch (c)
+    {
+    case XMQ_CLI_CMD_DELETE:
+        printf(
+            "Usage: xmq <input> delete <xpath>\n"
+            "Delete all nodes matching xpatch.\n");
+        break;
+    default:
+        printf("Help not written yet.\n");
+    }
 }
 
 KEY read_key(int *c)
@@ -2461,8 +2491,12 @@ bool perform_command(XMQCliCommand *c)
         return cmd_transform(c);
     case XMQ_CLI_CMD_SELECT:
         return cmd_select(c);
+    case XMQ_CLI_CMD_ADD_ROOT:
+        return cmd_add_root(c);
     case XMQ_CLI_CMD_STATISTICS:
         return cmd_statistics(c);
+    case XMQ_CLI_CMD_HELP:
+        return cmd_help(c);
     }
     assert(false);
     return false;
@@ -2528,7 +2562,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
             for (; argv[i]; ++i)
             {
                 const char *arg = argv[i];
-                bool ok = handle_option(arg, command);
+                bool ok = handle_option(arg, argv[i+1], command);
 
                 if (!ok)
                 {
@@ -2737,7 +2771,7 @@ bool has_debug(int argc, const char **argv)
 int main(int argc, const char **argv)
 {
     int rc = 0;
-    if (argc < 2 && isatty(0)) print_help_and_exit();
+    if (argc < 2 && isatty(0)) cmd_help(NULL);
 
     verbose_enabled__ = has_verbose(argc, argv);
     debug_enabled__ = has_debug(argc, argv);
@@ -2785,7 +2819,11 @@ int main(int argc, const char **argv)
     xmqSetVerbose(verbose_enabled__);
 
     if (load_command->print_version) print_version_and_exit();
-    if (load_command->print_help)  print_help_and_exit();
+    if (load_command->print_help) cmd_help(NULL);
+    if (load_command->next && load_command->next->cmd == XMQ_CLI_CMD_HELP)
+    {
+        return cmd_help(load_command->next);
+    }
 
     XMQCliCommand *c = load_command;
 
