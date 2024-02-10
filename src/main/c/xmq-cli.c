@@ -33,7 +33,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<stdio.h>
 #include<unistd.h>
 #include<sys/types.h>
+#ifndef PLATFORM_WINAPI
 #include<sys/wait.h>
+#endif
 #include<sys/stat.h>
 #include<fcntl.h>
 
@@ -2477,6 +2479,7 @@ char *grab_content(xmlNode *n, const char *name)
 
 void invoke_shell(xmlNode *n, const char *cmd)
 {
+#ifndef PLATFORM_WINAPI
     char **argv = malloc(sizeof(char*)*4);
     argv[0] = "/bin/sh";
     argv[1] = "-c";
@@ -2550,6 +2553,7 @@ void invoke_shell(xmlNode *n, const char *cmd)
         }
         free(env);
     }
+#endif
 }
 
 void page(const char *start, const char *stop)
