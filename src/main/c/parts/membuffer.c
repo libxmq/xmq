@@ -160,6 +160,19 @@ void membuffer_append_entity(MemBuffer *mb, char c)
     }
 }
 
+void membuffer_append_pointer(MemBuffer *mb, void *ptr)
+{
+    size_t add = sizeof(ptr);
+    size_t max = pick_buffer_new_size(mb->max_, mb->used_, add);
+    if (max > mb->max_)
+    {
+        mb->buffer_ = (char*)realloc(mb->buffer_, max);
+        mb->max_ = max;
+    }
+    memcpy(mb->buffer_+mb->used_, &ptr, sizeof(ptr));
+    mb->used_ += add;
+}
+
 size_t membuffer_used(MemBuffer *mb)
 {
     return mb->used_;

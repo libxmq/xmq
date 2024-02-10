@@ -1,0 +1,17 @@
+INPUT
+enter {
+   test {
+       name = Howdy
+       data = '1 2 3'
+   }
+   test {
+       name = Dowdy
+       data = '4 5 6'
+   }
+}
+OUTPUT
+NAME=Howdy DATA=1 2 3
+NAME=Dowdy DATA=4 5 6
+END
+ARGS
+CMDS for-each /enter/test --shell='echo NAME="${name}" DATA="${data}"'

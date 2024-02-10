@@ -803,6 +803,7 @@ void membuffer_append_char(MemBuffer *mb, char c);
 void membuffer_append_entity(MemBuffer *mb, char c);
 void membuffer_append_null(MemBuffer *mb);
 void membuffer_drop_last_null(MemBuffer *mb);
+void membuffer_append_pointer(MemBuffer *mb, void *ptr);
 
 #define MEMBUFFER_MODULE
 
@@ -914,6 +915,7 @@ bool is_comment_node(const xmlNode *node);
 bool is_pi_node(const xmlNode *node);
 bool is_doctype_node(const xmlNode *node);
 bool is_element_node(const xmlNode *node);
+bool is_text_node(const xmlNode *node);
 bool is_attribute_node(const xmlNode *node);
 bool is_key_value_node(xmlNodePtr node);
 bool is_leaf_node(xmlNode *node);
@@ -5940,6 +5942,19 @@ void membuffer_append_entity(MemBuffer *mb, char c)
     }
 }
 
+void membuffer_append_pointer(MemBuffer *mb, void *ptr)
+{
+    size_t add = sizeof(ptr);
+    size_t max = pick_buffer_new_size(mb->max_, mb->used_, add);
+    if (max > mb->max_)
+    {
+        mb->buffer_ = (char*)realloc(mb->buffer_, max);
+        mb->max_ = max;
+    }
+    memcpy(mb->buffer_+mb->used_, &ptr, sizeof(ptr));
+    mb->used_ += add;
+}
+
 size_t membuffer_used(MemBuffer *mb)
 {
     return mb->used_;
@@ -7939,6 +7954,11 @@ bool is_element_node(const xmlNode *node)
 bool is_attribute_node(const xmlNode *node)
 {
     return node->type == XML_ATTRIBUTE_NODE;
+}
+
+bool is_text_node(const xmlNode *node)
+{
+    return node->type == XML_TEXT_NODE;
 }
 
 bool is_key_value_node(xmlNodePtr node)

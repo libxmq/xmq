@@ -32,7 +32,7 @@ then
     CMDS="to-xmq"
 fi
 
-$PROG $ARGS $OUTPUT/${TEST_NAME}.input $CMDS > $OUTPUT/${TEST_NAME}.output
+(eval $PROG $ARGS $OUTPUT/${TEST_NAME}.input $CMDS) > $OUTPUT/${TEST_NAME}.output
 
 if diff $OUTPUT/${TEST_NAME}.expected $OUTPUT/${TEST_NAME}.output > /dev/null
 then

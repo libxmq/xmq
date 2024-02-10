@@ -50,6 +50,7 @@ bool is_comment_node(const xmlNode *node);
 bool is_pi_node(const xmlNode *node);
 bool is_doctype_node(const xmlNode *node);
 bool is_element_node(const xmlNode *node);
+bool is_text_node(const xmlNode *node);
 bool is_attribute_node(const xmlNode *node);
 bool is_key_value_node(xmlNodePtr node);
 bool is_leaf_node(xmlNode *node);

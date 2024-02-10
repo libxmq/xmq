@@ -236,6 +236,10 @@ void accumulate_children(Stats *stats, xmlNode *node);
 void accumulate_statistics(Stats *stats, xmlNode *node);
 void count_statistics(Stats *stats, xmlDoc *doc);
 
+char *grab_name(const char *s, const char **name_start);
+char *make_shell_safe_name(char *name, char *name_start);
+bool shell_safe(char *i);
+char *grab_content(xmlNode *node, const char *name);
 void add_key_value(xmlDoc *doc, xmlNode *root, const char *key, size_t value);
 XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env);
 bool cmd_delete(XMQCliCommand *command);
@@ -2401,22 +2405,120 @@ void browse(XMQCliCommand *c)
     }
 }
 
+bool shell_safe(char *i)
+{
+    char c = *i;
+    if (c >= 'a' && c <= 'z') return true;
+    if (c >= 'A' && c <= 'Z') return true;
+    if (c >= '0' && c <= '9') return true;
+    if (c == '_') return true;
+    return false;
+}
+
+char *make_shell_safe_name(char *name, char *name_start)
+{
+    char *s = strdup(name);
+    for (char *i = s, *j = name_start; *i; ++i, ++j)
+    {
+        if (!shell_safe(i))
+        {
+            *i = *j = '_';
+        }
+    }
+    return s;
+}
+
+char *grab_name(const char *s, const char **out_name_start)
+{
+    const char *i = s;
+    const char *name_start = NULL;
+    if (*i != '$') return NULL;
+    i++;
+    if (*i != '{') return NULL;
+    i++;
+    name_start = i;
+    while (*i && *i != '}') i++;
+    if (!*i) return NULL;
+    const char *name_stop = i;
+    assert(*i == '}');
+    i++;
+    size_t len = name_stop-name_start;
+    char *buf = malloc(len+1);
+    *out_name_start = name_start;
+    memcpy(buf, name_start, len);
+    buf[len]  = 0;
+    return buf;
+}
+
+char *grab_content(xmlNode *n, const char *name)
+{
+    MemBuffer *buf = new_membuffer();
+
+    xmlNode *i = n->children;
+    while (i)
+    {
+        if (!strcmp((char*)i->name, name))
+        {
+            xmlNode *j = i->children;
+            while (j)
+            {
+                if (is_text_node(j))
+                {
+                    membuffer_append(buf, (char*)j->content);
+                }
+                j = j->next;
+            }
+        }
+        i = i->next;
+    }
+    membuffer_append_null(buf);
+    return free_membuffer_but_return_trimmed_content(buf);
+}
+
 void invoke_shell(xmlNode *n, const char *cmd)
 {
-    printf("Invoking command %s\n", cmd);
     char **argv = malloc(sizeof(char*)*4);
     argv[0] = "/bin/sh";
     argv[1] = "-c";
     argv[2] = (char*)cmd;
     argv[3] = 0;
 
-    char **env = malloc(sizeof(char*)*2);
-    env[0] = "alfa=123";
-    env[1] = 0;
+    MemBuffer *envbuf = new_membuffer();
+
+    const char *i;
+    for (i = cmd; *i; ++i)
+    {
+        if (*i == '$')
+        {
+            const char *name_start;
+            char *name = grab_name(i, &name_start);
+            if (name)
+            {
+                char *safe_name = make_shell_safe_name(name, (char*)name_start);
+                char *content = grab_content(n, name);
+                if (content)
+                {
+                    MemBuffer *kv = new_membuffer();
+                    membuffer_append(kv, safe_name);
+                    membuffer_append(kv, "=");
+                    membuffer_append(kv, content);
+                    membuffer_append_null(kv);
+                    char *e = free_membuffer_but_return_trimmed_content(kv);
+                    membuffer_append_pointer(envbuf, e);
+                }
+                free(content);
+                free(safe_name);
+                free(name);
+            }
+        }
+    }
+    membuffer_append_pointer(envbuf, 0);
+    char **env = (void*)free_membuffer_but_return_trimmed_content(envbuf);
 
     pid_t pid = fork();
     int status;
-    if (pid == 0) {
+    if (pid == 0)
+    {
         // I am the child!
         close(0); // Close stdin
 #if (defined(__APPLE__) && defined(__MACH__)) || defined(__FreeBSD__)
@@ -2442,6 +2544,10 @@ void invoke_shell(xmlNode *n, const char *cmd)
             }
         }
         free(argv);
+        for (char **i = env; *i; ++i)
+        {
+            free(*i);
+        }
         free(env);
     }
 }
