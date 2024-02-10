@@ -207,6 +207,12 @@ Delete nodes and pretty print.
 % xmq-less input.html delete --xpath=//script render-terminal
 
 .TP
+Execute a shell command for each matching node.
+
+.br
+% xmq input.xml for-each /driver/test --shell='echo "${name}"'
+
+.TP
 Replace nodes and print.
 
 .br
@@ -222,7 +228,7 @@ Replace nodes and print.
 Select nodes and print.
 
 .br
-% xmq input.xml select --xpath=//button
+% xmq input.xml select //button
 
 .TP
 Transform document.
@@ -238,6 +244,6 @@ Transform document.
 Written by Fredrik Öhrström.
 
 .SH COPYRIGHT
-Copyright \(co 2018-2023 Fredrik Öhrström.
+Copyright \(co 2019-2024 Fredrik Öhrström.
 .br
 License MIT

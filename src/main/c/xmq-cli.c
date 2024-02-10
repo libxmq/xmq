@@ -1226,6 +1226,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  add-root\n"
            "  browser\n"
            "  delete delete-entity\n"
+           "  for-each\n"
            "  help\n"
            "  pager\n"
            "  render-html render-terminal render-tex\n"
@@ -2477,6 +2478,10 @@ char *grab_content(xmlNode *n, const char *name)
     return free_membuffer_but_return_trimmed_content(buf);
 }
 
+// Posix says that this variable just exists.
+// (On some systems this is also declared in unistd.h)
+extern char **environ;
+
 void invoke_shell(xmlNode *n, const char *cmd)
 {
 #ifndef PLATFORM_WINAPI
@@ -2487,6 +2492,13 @@ void invoke_shell(xmlNode *n, const char *cmd)
     argv[3] = 0;
 
     MemBuffer *envbuf = new_membuffer();
+
+    size_t num_envs;
+    for (num_envs = 0; environ[num_envs]; num_envs++)
+    {
+        const char *e = environ[num_envs];
+        membuffer_append_pointer(envbuf, (void*)e);
+    }
 
     const char *i;
     for (i = cmd; *i; ++i)
@@ -2547,9 +2559,13 @@ void invoke_shell(xmlNode *n, const char *cmd)
             }
         }
         free(argv);
-        for (char **i = env; *i; ++i)
+        size_t n = 0;
+        for (char **i = env; *i; ++i, n++)
         {
-            free(*i);
+            if (n >= num_envs)
+            {
+                free(*i);
+            }
         }
         free(env);
     }
