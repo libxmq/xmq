@@ -137,6 +137,11 @@ bool is_element_node(const xmlNode *node)
     return node->type == XML_ELEMENT_NODE;
 }
 
+bool is_attribute_node(const xmlNode *node)
+{
+    return node->type == XML_ATTRIBUTE_NODE;
+}
+
 bool is_key_value_node(xmlNodePtr node)
 {
     void *from = xml_first_child(node);

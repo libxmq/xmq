@@ -32,9 +32,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<string.h>
 #include<stdio.h>
 #include<unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include<sys/types.h>
+#include<sys/wait.h>
+#include<sys/stat.h>
+#include<fcntl.h>
 
 #ifdef PLATFORM_WINAPI
 #include<windows.h>
@@ -96,6 +97,7 @@ typedef enum
     XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES,
     XMQ_CLI_CMD_TRANSFORM,
     XMQ_CLI_CMD_SELECT,
+    XMQ_CLI_CMD_FOR_EACH,
     XMQ_CLI_CMD_ADD_ROOT,
     XMQ_CLI_CMD_STATISTICS,
 } XMQCliCmd;
@@ -107,6 +109,7 @@ typedef enum {
     XMQ_CLI_CMD_GROUP_RENDER,
     XMQ_CLI_CMD_GROUP_TOKENIZE,
     XMQ_CLI_CMD_GROUP_XPATH,
+    XMQ_CLI_CMD_GROUP_FOR_EACH,
     XMQ_CLI_CMD_GROUP_ENTITY,
     XMQ_CLI_CMD_GROUP_SUBSTITUTE,
     XMQ_CLI_CMD_GROUP_TRANSFORM,
@@ -168,6 +171,7 @@ struct XMQCliCommand
     bool escape_non_7bit;
     int  tab_size; // Default 8
     const char *implicit_root;
+    bool lines;
 
     // Command tok
     XMQCliTokenizeType tok_type; // Do not pretty print, just debug/colorize tokens.
@@ -237,6 +241,7 @@ XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env);
 bool cmd_delete(XMQCliCommand *command);
 bool cmd_help(XMQCliCommand *c);
 bool cmd_select(XMQCliCommand *command);
+bool cmd_for_each(XMQCliCommand *command);
 bool cmd_add_root(XMQCliCommand *command);
 bool cmd_statistics(XMQCliCommand *command);
 bool cmd_replace(XMQCliCommand *command);
@@ -270,6 +275,7 @@ bool has_debug(int argc, const char **argv);
 bool has_verbose(int argc, const char **argv);
 bool handle_global_option(const char *arg, XMQCliCommand *command);
 bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command);
+void invoke_shell(xmlNode *n, const char *cmd);
 void page(const char *start, const char *stop);
 void browse(XMQCliCommand *c);
 void open_browser(const char *file);
@@ -350,6 +356,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "substitute-char-entities")) return XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES;
     if (!strcmp(s, "transform")) return XMQ_CLI_CMD_TRANSFORM;
     if (!strcmp(s, "select")) return XMQ_CLI_CMD_SELECT;
+    if (!strcmp(s, "for-each")) return XMQ_CLI_CMD_FOR_EACH;
     if (!strcmp(s, "add-root")) return XMQ_CLI_CMD_ADD_ROOT;
     if (!strcmp(s, "statistics")) return XMQ_CLI_CMD_STATISTICS;
     return XMQ_CLI_CMD_NONE;
@@ -385,6 +392,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES: return "substitute-char-entities";
     case XMQ_CLI_CMD_TRANSFORM: return "transform";
     case XMQ_CLI_CMD_SELECT: return "select";
+    case XMQ_CLI_CMD_FOR_EACH: return "for-each";
     case XMQ_CLI_CMD_ADD_ROOT: return "add-root";
     case XMQ_CLI_CMD_STATISTICS: return "statistics";
     }
@@ -423,6 +431,9 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_SELECT:
     case XMQ_CLI_CMD_ADD_ROOT:
         return XMQ_CLI_CMD_GROUP_XPATH;
+
+    case XMQ_CLI_CMD_FOR_EACH:
+        return XMQ_CLI_CMD_GROUP_FOR_EACH;
 
     case XMQ_CLI_CMD_DELETE_ENTITY:
     case XMQ_CLI_CMD_REPLACE_ENTITY:
@@ -700,9 +711,13 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             command->xpath = arg;
             return true;
         }
-        if (group == XMQ_CLI_CMD_GROUP_XPATH && command->content != NULL )
+    }
+
+    if (group == XMQ_CLI_CMD_GROUP_FOR_EACH)
+    {
+        if (command->xpath == NULL)
         {
-            command->content = arg;
+            command->xpath = arg;
             return true;
         }
     }
@@ -715,6 +730,15 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             return true;
         }
         return false;
+    }
+
+    if (group == XMQ_CLI_CMD_GROUP_FOR_EACH)
+    {
+        if (!strncmp(arg, "--shell=", 8))
+        {
+            command->content = arg+8;
+            return true;
+        }
     }
 
     if (group == XMQ_CLI_CMD_GROUP_ENTITY)
@@ -1130,6 +1154,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->implicit_root = arg+7;
         return true;
     }
+    if (!strcmp(arg, "--lines"))
+    {
+        command->lines = true;
+        return true;
+    }
     if (!strncmp(arg, "--trim=", 7))
     {
         if (!strcmp(arg+7, "default"))
@@ -1175,7 +1204,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "\n"
            "  --debug    Output debug information on stderr.\n"
            "  --help -h  Display this help and exit.\n"
-           "  --lines\n  Assume each line is a separate document\n"
+           "  --lines    Assume each line is a separate document\n"
            "  --root=<name>\n"
            "             Create a root node <name> unless the file starts with a node with this <name> already.\n"
            "  --trim=none|default|heuristic\n"
@@ -1362,7 +1391,8 @@ bool cmd_to(XMQCliCommand *command)
 
 bool cmd_output(XMQCliCommand *command)
 {
-    if (command->cmd == XMQ_CLI_CMD_STATISTICS)
+    if (command->cmd == XMQ_CLI_CMD_STATISTICS ||
+        command->cmd == XMQ_CLI_CMD_FOR_EACH)
     {
         return true;
     }
@@ -1506,6 +1536,48 @@ bool cmd_select(XMQCliCommand *command)
 
     xmlFreeDoc(doc);
     xmqSetImplementationDoc(command->env->doc, new_doc);
+
+    return true;
+}
+
+bool cmd_for_each(XMQCliCommand *command)
+{
+    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    verbose_("(xmq) for each\n");
+
+    xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
+    assert(ctx);
+
+    xmlXPathObjectPtr objects = xmlXPathEvalExpression((const xmlChar*)command->xpath, ctx);
+
+    if (objects == NULL)
+    {
+        fprintf(stderr, "xmq: no nodes matched %s\n", command->xpath);
+        xmlXPathFreeContext(ctx);
+        return false;
+    }
+
+    xmlNodeSetPtr nodes = objects->nodesetval;
+    int size = (nodes) ? nodes->nodeNr : 0;
+
+    for(int i = 0; i < size; ++i)
+    {
+        assert(nodes->nodeTab[i]);
+        xmlNode *n = nodes->nodeTab[i];
+
+        if (n)
+        {
+            while (n && !is_element_node(n))
+            {
+                // We found an attribute move to parent.
+                n = n->parent;
+            }
+            invoke_shell(n, command->content);
+        }
+    }
+
+    xmlXPathFreeObject(objects);
+    xmlXPathFreeContext(ctx);
 
     return true;
 }
@@ -1969,6 +2041,8 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
         return;
     case XMQ_CLI_CMD_SELECT:
         return;
+    case XMQ_CLI_CMD_FOR_EACH:
+        return;
     case XMQ_CLI_CMD_ADD_ROOT:
         return;
     case XMQ_CLI_CMD_STATISTICS:
@@ -2327,6 +2401,51 @@ void browse(XMQCliCommand *c)
     }
 }
 
+void invoke_shell(xmlNode *n, const char *cmd)
+{
+    printf("Invoking command %s\n", cmd);
+    char **argv = malloc(sizeof(char*)*4);
+    argv[0] = "/bin/sh";
+    argv[1] = "-c";
+    argv[2] = (char*)cmd;
+    argv[3] = 0;
+
+    char **env = malloc(sizeof(char*)*2);
+    env[0] = "alfa=123";
+    env[1] = 0;
+
+    pid_t pid = fork();
+    int status;
+    if (pid == 0) {
+        // I am the child!
+        close(0); // Close stdin
+#if (defined(__APPLE__) && defined(__MACH__)) || defined(__FreeBSD__)
+        execve("/bin/sh", argv, env);
+#else
+        execve("/bin/sh", argv, env);
+#endif
+        perror("Execvp failed:");
+        //error_("(shell) invoking %s failed!\n", program.c_str());
+    } else {
+        if (pid == -1) {
+            perror("(shell) could not fork!\n");
+        }
+        debug_("(shell) waiting for child %d to complete.\n", pid);
+        // Wait for the child to finish!
+        waitpid(pid, &status, 0);
+        if (WIFEXITED(status)) {
+            // Child exited properly.
+            int rc = WEXITSTATUS(status);
+            debug_("(shell) %s: return code %d\n", "/bin/sh", rc);
+            if (rc != 0) {
+                verbose_("(shell) %s exited with non-zero return code: %d\n", "/bin/sh", rc);
+            }
+        }
+        free(argv);
+        free(env);
+    }
+}
+
 void page(const char *start, const char *stop)
 {
     int width = 0; // Max columns ie the width
@@ -2491,6 +2610,8 @@ bool perform_command(XMQCliCommand *c)
         return cmd_transform(c);
     case XMQ_CLI_CMD_SELECT:
         return cmd_select(c);
+    case XMQ_CLI_CMD_FOR_EACH:
+        return cmd_for_each(c);
     case XMQ_CLI_CMD_ADD_ROOT:
         return cmd_add_root(c);
     case XMQ_CLI_CMD_STATISTICS:
@@ -2539,6 +2660,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
     }
 
     XMQCliCommand *command = load_command;
+    bool do_print = true;
 
     if (argv[i])
     {
@@ -2585,6 +2707,13 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
                     return false;
                 }
                 to = command;
+                do_print = true;
+            }
+
+            if (cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_FOR_EACH)
+            {
+                // These commands by default do not need to print the output.
+                do_print = false;
             }
 
             // Check if we should remember this command as an print/save/pager command?
@@ -2610,7 +2739,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
         }
     }
 
-    if (!to)
+    if (!to && do_print)
     {
         XMQCliCommand *to = allocate_cli_command(command->env);
         if (output && output->cmd == XMQ_CLI_CMD_BROWSER)
@@ -2651,7 +2780,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
         }
     }
 
-    if (!output)
+    if (!output && do_print)
     {
         command->next = allocate_cli_command(command->env);
         command->next->cmd = XMQ_CLI_CMD_PRINT;
