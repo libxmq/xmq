@@ -236,6 +236,8 @@ void accumulate_attribute(Stats *stats, xmlAttr *a);
 void accumulate_attribute_content(Stats *stats, xmlNode *a);
 void accumulate_children(Stats *stats, xmlNode *node);
 void accumulate_statistics(Stats *stats, xmlNode *node);
+void append_text_node(MemBuffer *buf, xmlNode *node);
+void append_text_children(MemBuffer *buf, xmlNode *n);
 void count_statistics(Stats *stats, xmlDoc *doc);
 
 char *grab_name(const char *s, const char **name_start);
@@ -2453,26 +2455,60 @@ char *grab_name(const char *s, const char **out_name_start)
     return buf;
 }
 
+void append_text_node(MemBuffer *buf, xmlNode *node)
+{
+    if (is_content_node(node))
+    {
+        membuffer_append(buf, (char*)node->content);
+    }
+    else if (is_entity_node(node))
+    {
+        membuffer_append(buf, "TODO");
+    }
+    else if (is_element_node(node))
+    {
+        append_text_children(buf, node->children);
+    }
+}
+
+void append_text_children(MemBuffer *buf, xmlNode *n)
+{
+    xmlNode *i = n;
+
+    while (i)
+    {
+        append_text_node(buf, i);
+        i = xml_next_sibling(i);
+    }
+}
+
 char *grab_content(xmlNode *n, const char *name)
 {
     MemBuffer *buf = new_membuffer();
 
-    xmlNode *i = n->children;
-    while (i)
+    if (!strcmp(name, "."))
     {
-        if (!strcmp((char*)i->name, name))
+        append_text_node(buf, n);
+    }
+    else
+    {
+        xmlNode *i = n->children;
+        while (i)
         {
-            xmlNode *j = i->children;
-            while (j)
+            if (!strcmp((char*)i->name, name))
             {
-                if (is_text_node(j))
+                xmlNode *j = i->children;
+                while (j)
                 {
-                    membuffer_append(buf, (char*)j->content);
+                    if (is_text_node(j))
+                    {
+                        membuffer_append(buf, (char*)j->content);
+                    }
+                    j = j->next;
                 }
-                j = j->next;
             }
+            i = i->next;
         }
-        i = i->next;
     }
     membuffer_append_null(buf);
     return free_membuffer_but_return_trimmed_content(buf);
@@ -2482,9 +2518,10 @@ char *grab_content(xmlNode *n, const char *name)
 // (On some systems this is also declared in unistd.h)
 extern char **environ;
 
-void invoke_shell(xmlNode *n, const char *cmd)
+void invoke_shell(xmlNode *n, const char *shell_command)
 {
 #ifndef PLATFORM_WINAPI
+    char *cmd = strdup(shell_command);
     char **argv = malloc(sizeof(char*)*4);
     argv[0] = "/bin/sh";
     argv[1] = "-c";
@@ -2569,6 +2606,7 @@ void invoke_shell(xmlNode *n, const char *cmd)
         }
         free(env);
     }
+    free(cmd);
 #endif
 }
 
