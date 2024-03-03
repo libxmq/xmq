@@ -184,6 +184,15 @@ Transform the document using xslt. The xslt can of course be provided in xmq for
 .br
 \fB--file=<xslt-file-name>\fP Use this style sheet to transform the document.
 
+.TP
+\fIfor-each\fP\fP
+Execute a shell command for each matchin xpath node. The children of the node are available as text, eg. In the shell command,
+the text: ${name} will be replaced with the text content of the child node "name". This replacement happens before the shell
+executes the command, ie it is not a shell variable.
+
+.br
+\fB--shell="shell-command ${name}"\fP Invoke /bin/sh -c "shell-command ${name}" for each match.
+
 .SH EXAMPLES
 
 .TP
