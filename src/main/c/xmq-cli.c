@@ -1244,6 +1244,10 @@ bool cmd_help(XMQCliCommand *cmd)
            "  xmq index.html delete //script delete //style browse\n"
            "  xmq template.htmq replace-entity DATE 2024-02-08 to-html > index.html\n"
            "  xmq data.json select /_/work transform format.xslq to-xml > data.xml\n"
+           "  xmq data.html select \"//tr[@class='print_list_table_content']\" \\\n"
+           "                delete //@class \\\n"
+           "                add-root Course \\\n"
+           "                transform cols.xslq to-text\n"
         );
 
     exit(0);
@@ -2315,10 +2319,20 @@ void print_command_help(XMQCliCmd c)
 {
     switch (c)
     {
+    case XMQ_CLI_CMD_ADD_ROOT:
+        printf(
+            "Usage: xmq <input> add-root <root-element-name>\n"
+            "Place a new root node below all existing nodes. Useful after a select.\n");
+        break;
+    case XMQ_CLI_CMD_HELP:
+        printf(
+            "Usage: xmq help <command>\n"
+            "Print more detailed help about the command.\n");
+        break;
     case XMQ_CLI_CMD_DELETE:
         printf(
             "Usage: xmq <input> delete <xpath>\n"
-            "Delete all nodes matching xpatch.\n");
+            "Delete all nodes matching xpath.\n");
         break;
     default:
         printf("Help not written yet.\n");
