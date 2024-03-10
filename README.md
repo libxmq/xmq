@@ -8,7 +8,7 @@ Grammar [https://libxmq.org/xmq.pdf](https://libxmq.org/xmq.pdf)
 
 Binaries latest release [https://github.com/libxmq/xmq/releases/latest](https://github.com/libxmq/xmq/releases/latest)
 
-[<img src="web/resourcs/xmq_example.jpg">](https://libxmq.org/resources/xmq_example.jpg),
+[<img src="https://libxmq.org/resourcs/xmq_example.jpg">](https://libxmq.org/resources/xmq_example.jpg),
 
 | System       | Status        |
 | ------------ |:-------------:|
