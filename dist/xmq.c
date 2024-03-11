@@ -6757,10 +6757,11 @@ void json_print_array_with_children(XMQPrintState *ps,
                                     xmlNode *container,
                                     xmlNode *node)
 {
+    json_check_comma(ps);
+
     if (container)
     {
         // We have a containing node, then we can print this using "name" : [ ... ]
-        json_check_comma(ps);
         json_print_element_name(ps, container, node, 1, 0);
         print_utf8(ps, COLOR_none, 1, ":", NULL);
     }
