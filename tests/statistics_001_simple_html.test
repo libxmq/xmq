@@ -12,6 +12,7 @@ START
 </html>
 STATISTICS
 statistics {
+    size_source            = 213
     num_elements           = 5
     size_element_names     = 23
     num_text_nodes         = 1

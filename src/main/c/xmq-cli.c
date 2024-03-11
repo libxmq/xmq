@@ -1739,6 +1739,8 @@ bool cmd_statistics(XMQCliCommand *command)
     xmlNodePtr root = xmlNewDocNode(new_doc, NULL, (xmlChar*)"statistics", NULL);
     xmlDocSetRootElement(new_doc, root);
 
+    size_t size_source = xmqGetOriginalSize(command->env->doc);
+    add_key_value(new_doc, root, "size_source", size_source);
     if (stats.num_elements) add_key_value(new_doc, root, "num_elements", stats.num_elements);
     if (stats.size_element_names) add_key_value(new_doc, root, "size_element_names", stats.size_element_names);
     if (stats.num_text_nodes) add_key_value(new_doc, root, "num_text_nodes", stats.num_text_nodes);
