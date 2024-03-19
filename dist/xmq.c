@@ -8468,7 +8468,7 @@ const char *xmqParseErrorToString(XMQParseError e)
     case XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES: return "quote closed with too many quotes";
     case XMQ_ERROR_UNEXPECTED_CLOSING_BRACE: return "unexpected closing brace";
     case XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS: return "expected content after equals";
-    case XMQ_ERROR_UNEXPECTED_TAB: return "unexpected tab character (remember tabs must be quoted)";
+    case XMQ_ERROR_UNEXPECTED_TAB: return "invalid tab character found, remember that tab is not allowed as a field separator, to store tab as content it must be quoted";
     case XMQ_ERROR_INVALID_CHAR: return "unexpected character";
     case XMQ_ERROR_BAD_DOCTYPE: return "doctype could not be parsed";
     case XMQ_ERROR_CANNOT_HANDLE_XML: return "cannot handle xml use libxmq-all for this!";
