@@ -1,3 +1,13 @@
+2024-03-26: Version 2.5.0
+
+Fix so XMQ_BG is always used unless --mono.
+Improve error message explaining that the TAB character is not allowed
+between tokens, ie it is always content whitespace that must be quoted.
+Add source size to statistics.
+Print missing comma between json arrays in a json array.
+Improve documentation and man page.
+Add ${.} to for-each shell to get all text in node.
+
 2024-02-10: Version 2.4.0
 
 Add for-each command.
