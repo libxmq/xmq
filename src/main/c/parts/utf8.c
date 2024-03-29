@@ -135,7 +135,7 @@ size_t print_utf8(XMQPrintState *ps, XMQColor color, size_t num_pairs, ...)
     void *writer_state = os->content.writer_state;
 
     const char *pre, *post;
-    getColor(os, color, &pre, &post);
+    getThemeStrings(os, color, &pre, &post);
     const char *previous_color = NULL;
 
     if (pre)

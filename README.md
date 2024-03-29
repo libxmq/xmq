@@ -119,7 +119,7 @@ xmq index.html delete //script delete //style br
 # Replace entities with strings you can also --with-text-file=abc
 # which inserts the content safely quoted, or as DOM --with-file=abc.xml
 # where the file has be parseable.
-xmq template.htmq replace-entity DATE 2024-01-11 replace-entity NAME 'Hercules' render-html --lightbg > page.html
+xmq template.htmq replace-entity DATE 2024-01-11 replace-entity NAME 'Hercules' render-html --theme=lightbg > page.html
 
 # Apply an xslq transform to some json to generate a html page.
 xmq todos.json transform todos.xslq to-html > list.html

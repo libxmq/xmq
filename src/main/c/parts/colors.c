@@ -36,18 +36,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
    pre: Store a pointer to the start color string here.
    post: Store a pointer to the end color string here.
 */
-void getColor(XMQOutputSettings *os, XMQColor color, const char **pre, const char **post)
+void getThemeStrings(XMQOutputSettings *os, XMQColor color, const char **pre, const char **post)
 {
-    XMQColoring *coloring = os->default_coloring;
+    XMQTheme *theme = os->default_theme;
     switch(color)
     {
 
-#define X(TYPE) case COLOR_##TYPE: *pre = coloring->TYPE.pre; *post = coloring->TYPE.post; return;
+#define X(TYPE) case COLOR_##TYPE: *pre = theme->TYPE.pre; *post = theme->TYPE.post; return;
 LIST_OF_XMQ_TOKENS
 #undef X
 
-    case COLOR_unicode_whitespace: *pre = coloring->unicode_whitespace.pre; *post = coloring->unicode_whitespace.post; return;
-    case COLOR_indentation_whitespace: *pre = coloring->indentation_whitespace.pre; *post = coloring->indentation_whitespace.post; return;
+    case COLOR_unicode_whitespace: *pre = theme->unicode_whitespace.pre; *post = theme->unicode_whitespace.post; return;
+    case COLOR_indentation_whitespace: *pre = theme->indentation_whitespace.pre; *post = theme->indentation_whitespace.post; return;
     default:
         *pre = NULL;
         *post = NULL;

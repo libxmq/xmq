@@ -482,7 +482,7 @@ void print_node(XMQPrintState *ps, xmlNode *node, size_t align)
 void print_white_spaces(XMQPrintState *ps, int num)
 {
     XMQOutputSettings *os = ps->output_settings;
-    XMQColoring *c = os->default_coloring;
+    XMQTheme *c = os->default_theme;
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
     if (c->whitespace.pre) write(writer_state, c->whitespace.pre, NULL);
@@ -525,7 +525,7 @@ void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num)
 
     const char *pre = NULL;
     const char *post = NULL;
-    getColor(os, c, &pre, &post);
+    getThemeStrings(os, c, &pre, &post);
 
     write(writer_state, pre, NULL);
     for (int i=0; i<num; ++i)
@@ -539,7 +539,7 @@ void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num)
 void print_quoted_spaces(XMQPrintState *ps, XMQColor color, int num)
 {
     XMQOutputSettings *os = ps->output_settings;
-    XMQColoring *c = os->default_coloring;
+    XMQTheme *c = os->default_theme;
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
 
@@ -563,7 +563,7 @@ void print_quotes(XMQPrintState *ps, size_t num, XMQColor color)
 
     const char *pre = NULL;
     const char *post = NULL;
-    getColor(os, color, &pre, &post);
+    getThemeStrings(os, color, &pre, &post);
 
     if (pre) write(writer_state, pre, NULL);
     for (size_t i=0; i<num; ++i)
@@ -610,7 +610,7 @@ size_t print_char_entity(XMQPrintState *ps, XMQColor color, const char *start, c
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
     const char *pre, *post;
-    getColor(os, color, &pre, &post);
+    getThemeStrings(os, color, &pre, &post);
 
     int uc = 0;
     size_t bytes = 0;
@@ -660,7 +660,7 @@ void print_slashes(XMQPrintState *ps, const char *pre, const char *post, size_t 
     void *writer_state = os->content.writer_state;
     const char *cpre = NULL;
     const char *cpost = NULL;
-    getColor(os, COLOR_comment, &cpre, &cpost);
+    getThemeStrings(os, COLOR_comment, &cpre, &cpost);
 
     if (cpre) write(writer_state, cpre, NULL);
     if (pre) write(writer_state, pre, NULL);
@@ -958,7 +958,7 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
     void *writer_state = os->content.writer_state;
 
     const char *pre, *post;
-    getColor(os, color, &pre, &post);
+    getThemeStrings(os, color, &pre, &post);
 
     if (pre) write(writer_state, pre, NULL);
 

@@ -106,7 +106,7 @@ size_t num_utf8_bytes(char c);
 void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num);
 void reset_ansi(XMQParseState *state);
 void reset_ansi_nl(XMQParseState *state);
-void setup_htmq_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_htmq_coloring(XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
 const char *skip_any_potential_bom(const char *start, const char *stop);
 void text_print_node(XMQPrintState *ps, xmlNode *node);
 void text_print_nodes(XMQPrintState *ps, xmlNode *from);
@@ -142,25 +142,43 @@ LIST_OF_XMQ_TOKENS
 #undef X
 
 //////////////////////////////////////////////////////////////////////////////////
+
 char ansi_reset_color[] = "\033[0m";
 
-void xmqSetupDefaultColors(XMQOutputSettings *os, bool dark_mode)
+void xmqSetupDefaultColors(XMQOutputSettings *os)
 {
-    const char *style = os->render_style;
-    if (!style) style = "";
-    XMQColoring *c = (XMQColoring*)hashmap_get(os->colorings, style);
-    if (!c)
+    bool dark_mode = os->bg_dark_mode;
+    XMQTheme *theme = (XMQTheme*)hashmap_get(os->themes, "");
+    if (os->render_theme == NULL)
     {
-        fprintf(stderr, "xmq: No such render style \"%s\"\n", style);
+        os->render_theme = dark_mode?"darkbg":"lightbg";
+    }
+    else
+    {
+        if (!strcmp(os->render_theme, "darkbg"))
+        {
+            dark_mode = true;
+        }
+        else if (!strcmp(os->render_theme, "lightbg"))
+        {
+            dark_mode = false;
+        }
+        else
+        {
+            theme = (XMQTheme*)hashmap_get(os->themes, os->render_theme);
+        }
+    }
+    if (!theme)
+    {
+        fprintf(stderr, "xmq: No such render theme \"%s\"\n", os->render_theme);
         exit(1);
     }
-    assert(c);
-    memset(c, 0, sizeof(XMQColoring));
-    os->indentation_space = " ";
-    os->explicit_space = " ";
-    os->explicit_nl = "\n";
-    os->explicit_tab = "\t";
-    os->explicit_cr = "\r";
+    assert(theme);
+    os->indentation_space = theme->indentation_space; // " ";
+    os->explicit_space = theme->explicit_space; // " ";
+    os->explicit_nl = theme->explicit_nl; // "\n";
+    os->explicit_tab = theme->explicit_tab; // "\t";
+    os->explicit_cr = theme->explicit_cr; // "\r";
 
     if (os->render_to == XMQ_RENDER_PLAIN)
     {
@@ -168,26 +186,26 @@ void xmqSetupDefaultColors(XMQOutputSettings *os, bool dark_mode)
     else
     if (os->render_to == XMQ_RENDER_TERMINAL)
     {
-        setup_terminal_coloring(os, c, dark_mode, os->use_color, os->render_raw);
+        setup_terminal_coloring(os, theme, dark_mode, os->use_color, os->render_raw);
     }
     else if (os->render_to == XMQ_RENDER_HTML)
     {
-        setup_html_coloring(os, c, dark_mode, os->use_color, os->render_raw);
+        setup_html_coloring(os, theme, dark_mode, os->use_color, os->render_raw);
     }
     else if (os->render_to == XMQ_RENDER_TEX)
     {
-        setup_tex_coloring(os, c, dark_mode, os->use_color, os->render_raw);
+        setup_tex_coloring(os, theme, dark_mode, os->use_color, os->render_raw);
     }
 
     if (os->only_style)
     {
-        printf("%s\n", c->style.pre);
+        printf("%s\n", theme->style.pre);
         exit(0);
     }
 
 }
 
-void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw)
+void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw)
 {
     if (!use_color) return;
     if (dark_mode)
@@ -260,7 +278,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
     }
 }
 
-void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw)
+void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw)
 {
     os->indentation_space = " ";
     os->explicit_nl = "\n";
@@ -406,11 +424,11 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
     c->ns_colon.pre = NULL;
 }
 
-void setup_htmq_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool render_raw)
+void setup_htmq_coloring(XMQTheme *c, bool dark_mode, bool use_color, bool render_raw)
 {
 }
 
-void setup_tex_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw)
+void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw)
 {
     os->indentation_space = "\\xmqI ";
     os->explicit_space = " ";
@@ -532,13 +550,13 @@ void xmqRenderHtmlSettings(XMQOutputSettings *settings,
 
 void xmqOverrideColor(XMQOutputSettings *os, const char *render_style, XMQSyntax sy, const char *pre, const char *post, const char *ns)
 {
-    if (!os->colorings)
+    if (!os->themes)
     {
         fprintf(stderr, "Internal error: you have to invoke xmqSetupDefaultColors first before overriding.\n");
         exit(1);
     }
     if (!ns) ns = "";
-    XMQColoring *cols = (XMQColoring*)hashmap_get(os->colorings, ns);
+    XMQTheme *cols = (XMQTheme*)hashmap_get(os->themes, ns);
     assert(cols);
 }
 
@@ -551,7 +569,7 @@ int xmqStateErrno(XMQParseState *state)
     void tokenize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start,const char *stop,const char *suffix) { \
         if (!state->simulated) { \
             const char *pre, *post;  \
-            getColor(state->output_settings, COLOR_##TYPE, &pre, &post); \
+            getThemeStrings(state->output_settings, COLOR_##TYPE, &pre, &post); \
             if (pre) state->output_settings->content.write(state->output_settings->content.writer_state, pre, NULL); \
             if (state->output_settings->render_to == XMQ_RENDER_TERMINAL) { \
                 state->output_settings->content.write(state->output_settings->content.writer_state, start, stop); \
@@ -593,23 +611,32 @@ void add_nl(XMQParseState *state)
     state->output_settings->content.write(state->output_settings->content.writer_state, "\n", NULL);
 }
 
+XMQTheme *prepareSolarizedTheme(XMQTheme *parent);
+
+XMQTheme *prepareSolarizedTheme(XMQTheme *parent)
+{
+    return NULL;
+}
+
 XMQOutputSettings *xmqNewOutputSettings()
 {
     XMQOutputSettings *os = (XMQOutputSettings*)malloc(sizeof(XMQOutputSettings));
     memset(os, 0, sizeof(XMQOutputSettings));
-    os->colorings = hashmap_create(11);
-    XMQColoring *c = (XMQColoring*)malloc(sizeof(XMQColoring));
-    memset(c, 0, sizeof(XMQColoring));
-    hashmap_put(os->colorings, "", c);
-    os->default_coloring = c;
+    os->themes = hashmap_create(11);
+    XMQTheme *theme = (XMQTheme*)malloc(sizeof(XMQTheme));
+    memset(theme, 0, sizeof(XMQTheme));
+    hashmap_put(os->themes, "", theme);
+    os->default_theme = theme;
 
-    os->indentation_space = " ";
-    os->explicit_space = " ";
-    os->explicit_nl = "\n";
-    os->explicit_tab = "\t";
-    os->explicit_cr = "\r";
+    os->indentation_space = theme->indentation_space = " ";
+    os->explicit_space = theme->explicit_space = " ";
+    os->explicit_nl = theme->explicit_nl = "\n";
+    os->explicit_tab = theme->explicit_tab = "\t";
+    os->explicit_cr = theme->explicit_cr = "\r";
     os->add_indent = 4;
     os->use_color = false;
+
+    //hashmap_put(os->themes, "solarized", prepareSolarizedTheme(theme));
 
     return os;
 }
@@ -621,8 +648,8 @@ void xmqFreeOutputSettings(XMQOutputSettings *os)
         free(os->free_me);
         os->free_me = NULL;
     }
-    hashmap_free_and_values(os->colorings);
-    os->colorings = NULL;
+    hashmap_free_and_values(os->themes);
+    os->themes = NULL;
     free(os);
 }
 
@@ -641,6 +668,11 @@ void xmqSetUseColor(XMQOutputSettings *os, bool use_color)
     os->use_color = use_color;
 }
 
+void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode)
+{
+    os->bg_dark_mode = bg_dark_mode;
+}
+
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines)
 {
     os->escape_newlines = escape_newlines;
@@ -656,11 +688,6 @@ void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format)
     os->output_format = output_format;
 }
 
-/*void xmqSetColoring(XMQOutputSettings *os, XMQColoring coloring)
-{
-    os->coloring = coloring;
-    }*/
-
 void xmqSetRenderFormat(XMQOutputSettings *os, XMQRenderFormat render_to)
 {
     os->render_to = render_to;
@@ -671,14 +698,14 @@ void xmqSetRenderRaw(XMQOutputSettings *os, bool render_raw)
     os->render_raw = render_raw;
 }
 
+void xmqSetRenderTheme(XMQOutputSettings *os, const char *theme_name)
+{
+    os->render_theme = theme_name;
+}
+
 void xmqSetRenderOnlyStyle(XMQOutputSettings *os, bool only_style)
 {
     os->only_style = only_style;
-}
-
-void xmqSetRenderStyle(XMQOutputSettings *os, const char *render_style)
-{
-    os->render_style = render_style;
 }
 
 void xmqSetWriterContent(XMQOutputSettings *os, XMQWriter content)
@@ -836,8 +863,8 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
     XMQWrite write = output_settings->content.write;
     void *writer_state = output_settings->content.writer_state;
 
-    const char *pre = output_settings->default_coloring->content.pre;
-    const char *post = output_settings->default_coloring->content.post;
+    const char *pre = output_settings->default_theme->content.pre;
+    const char *post = output_settings->default_theme->content.post;
     if (pre) write(writer_state, pre, NULL);
 
     if (!setjmp(state->error_handler))
@@ -1530,7 +1557,7 @@ void xmqSetupParseCallbacksDebugContent(XMQParseCallbacks *callbacks)
     callbacks->magic_cookie = MAGIC_COOKIE;
 }
 
-void xmqSetupParseCallbacksColorizeTokens(XMQParseCallbacks *callbacks, XMQRenderFormat render_format, bool dark_mode)
+void xmqSetupParseCallbacksColorizeTokens(XMQParseCallbacks *callbacks, XMQRenderFormat render_format)
 {
     memset(callbacks, 0, sizeof(*callbacks));
 
@@ -2552,7 +2579,7 @@ void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
 
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
-    XMQColoring *c = os->default_coloring;
+    XMQTheme *c = os->default_theme;
 
     if (c->document.pre) write(writer_state, c->document.pre, NULL);
     if (c->header.pre) write(writer_state, c->header.pre, NULL);

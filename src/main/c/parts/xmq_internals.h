@@ -148,6 +148,7 @@ struct XMQOutputSettings
     int  add_indent;
     bool compact;
     bool use_color;
+    bool bg_dark_mode;
     bool escape_newlines;
     bool escape_non_7bit;
 
@@ -155,7 +156,7 @@ struct XMQOutputSettings
     XMQRenderFormat render_to;
     bool render_raw;
     bool only_style;
-    const char *render_style;
+    const char *render_theme;
 
     XMQWriter content;
     XMQWriter error;
@@ -176,8 +177,8 @@ struct XMQOutputSettings
     const char *use_id; // If non-NULL inser this id in the pre tag.
     const char *use_class; // If non-NULL insert this class in the pre tag.
 
-    XMQColoring *default_coloring; // Shortcut to the no namespace coloring inside colorings.
-    HashMap *colorings; // Map namespaces to unique colorings.
+    XMQTheme *default_theme; // Shortcut to the no namespace theme inside themes.
+    HashMap *themes; // Map namespaces to unique colorings.
     void *free_me;
 };
 typedef struct XMQOutputSettings XMQOutputSettings;
@@ -350,9 +351,9 @@ void xmqFreeParseState(XMQParseState *state);
 bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop);
 bool xmqTokenizeFile(XMQParseState *state, const char *file);
 
-void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
-void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
-void setup_tex_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
 
 // XMQ tokenizer functions ///////////////////////////////////////////////////////////
 

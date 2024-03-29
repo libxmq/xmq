@@ -324,7 +324,7 @@ void print_color_pre(XMQPrintState *ps, XMQColor color)
     XMQOutputSettings *os = ps->output_settings;
     const char *pre = NULL;
     const char *post = NULL;
-    getColor(os, color, &pre, &post);
+    getThemeStrings(os, color, &pre, &post);
 
     if (pre)
     {
@@ -339,7 +339,7 @@ void print_color_post(XMQPrintState *ps, XMQColor color)
     XMQOutputSettings *os = ps->output_settings;
     const char *pre = NULL;
     const char *post = NULL;
-    getColor(os, color, &pre, &post);
+    getThemeStrings(os, color, &pre, &post);
 
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;

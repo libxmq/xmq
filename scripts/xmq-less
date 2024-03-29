@@ -23,7 +23,7 @@ fi
 
 # No explicit render command. Determine a suitable render command by asking xmq.
 # Warn if we want to print color but we cannot determine background dark/light.
-xmq --render-style
+xmq --render-theme
 RC="$?"
 
 if [ "$RC" = "0" ]
@@ -31,9 +31,9 @@ then
     RENDER_CMD="render-terminal --mono"
 elif [ "$RC" = "1" ]
 then
-    RENDER_CMD="render-terminal --color --darkbg"
+    RENDER_CMD="render-terminal --color --theme=darkbg"
 else
-    RENDER_CMD="render-terminal --color --lightbg"
+    RENDER_CMD="render-terminal --color --theme=lightbg"
 fi
 
 # No arguments provided, read from stdin.

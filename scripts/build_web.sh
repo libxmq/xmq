@@ -4,7 +4,7 @@ TODAY=$(date +'%Y-%m-%d %H:%M')
 XMQ=build/default/release/xmq
 
 function example {
-    $XMQ web/resources/$1 render-html --id=ex2 --class=w80 --lightbg --nostyle > build/rendered_$1
+    $XMQ web/resources/$1 render-html --id=ex2 --class=w80 --theme=lightbg --nostyle > build/rendered_$1
     $XMQ web/pre.htmq replace-entity PRE --with-file=build/rendered_$1 to-html > build/web/resources/$1_xmq.html
     $XMQ web/raw.htmq replace-entity RAW --with-text-file=web/resources/$1 to-html > build/web/resources/$1_xml.html
 }
@@ -29,25 +29,25 @@ $XMQ web/resources/shiporder.xml render-html --onlystyle > build/web/resources/x
 # shiporder.xml
 $XMQ web/resources/shiporder.xml to-xmq > build/web/resources/shiporder.xmq
 $XMQ web/resources/shiporder.xml to-json | jq . > build/web/resources/shiporder.json
-$XMQ web/resources/shiporder.xml render-html --id=ex1 --class=w40 --lightbg --nostyle  > build/rendered_shiporder_xmq.xml
+$XMQ web/resources/shiporder.xml render-html --id=ex1 --class=w40 --theme=lightbg --nostyle  > build/rendered_shiporder_xmq.xml
 $XMQ web/resources/shiporder.xml to-xmq --compact > build/shiporder_compact.xmq
-$XMQ web/resources/shiporder.xml render-html --compact --id=ex1c --class=w40 --lightbg --nostyle  > build/rendered_shiporder_compact_xmq.xml
+$XMQ web/resources/shiporder.xml render-html --compact --id=ex1c --class=w40 --theme=lightbg --nostyle  > build/rendered_shiporder_compact_xmq.xml
 
 
 # config.xmq
 cp web/resources/config.xmq  build/web/resources/
-$XMQ web/resources/config.xmq render-html --class=w40 --lightbg --nostyle  > build/rendered_config_xmq.xml
-$XMQ web/resources/config.xmq render-html --compact --class=w40 --lightbg --nostyle  > build/rendered_config_compact_xmq.xml
+$XMQ web/resources/config.xmq render-html --class=w40 --theme=lightbg --nostyle  > build/rendered_config_xmq.xml
+$XMQ web/resources/config.xmq render-html --compact --class=w40 --theme=lightbg --nostyle  > build/rendered_config_compact_xmq.xml
 $XMQ --root=myconf web/resources/config.xmq to-xml  > build/config.xml
 
 # multi.xmq --- multiple line comments
 cp web/resources/multi.xmq build/web/resources
-$XMQ web/resources/multi.xmq render-html --class=w40 --lightbg --nostyle  > build/rendered_multi_xmq.xml
-$XMQ web/resources/multi.xmq render-html --class=w40 --lightbg --nostyle --compact  > build/rendered_multi_compact_xmq.xml
+$XMQ web/resources/multi.xmq render-html --class=w40 --theme=lightbg --nostyle  > build/rendered_multi_xmq.xml
+$XMQ web/resources/multi.xmq render-html --class=w40 --theme=lightbg --nostyle --compact  > build/rendered_multi_compact_xmq.xml
 $XMQ web/resources/multi.xmq to-xml > build/multi.xml
 
 # car.xml
-$XMQ web/resources/car.xml render-html --class=w40 --lightbg --nostyle  > build/rendered_car_xmq.xml
+$XMQ web/resources/car.xml render-html --class=w40 --theme=lightbg --nostyle  > build/rendered_car_xmq.xml
 $XMQ web/resources/car.xml to-xml  > build/web/resources/car.xml
 $XMQ web/resources/car.xml to-xmq > build/web/resources/car.xmq
 
@@ -63,35 +63,35 @@ $XMQ web/resources/compound.xmq tokenize --type=html > build/compound_xmq.xml
 
 # todos.json
 $XMQ web/resources/todos.json to-xmq > build/web/resources/todos.xmq
-$XMQ web/resources/todos.json render-html --class=w80 --lightbg --nostyle > build/todos_json.xml
+$XMQ web/resources/todos.json render-html --class=w80 --theme=lightbg --nostyle > build/todos_json.xml
 cp web/resources/todos.json build/web/resources/todos.json
 cp web/resources/todos.xslt build/web/resources/todos.xslt
 cp web/resources/todosframed.xslq build/web/resources/todosframed.xslq
 $XMQ web/resources/todos.xslt to-xmq > build/web/resources/todos.xslq
-$XMQ web/resources/todos.xslt render-html --class=w80 --lightbg --nostyle > build/todos_xslq.xml
-$XMQ web/resources/todosframed.xslq render-html --class=w80 --lightbg --nostyle > build/todosframed_xslq.xml
+$XMQ web/resources/todos.xslt render-html --class=w80 --theme=lightbg --nostyle > build/todos_xslq.xml
+$XMQ web/resources/todosframed.xslq render-html --class=w80 --theme=lightbg --nostyle > build/todosframed_xslq.xml
 $XMQ web/resources/todos.json transform build/web/resources/todos.xslq to-html > build/web/resources/todos.html
 $XMQ web/resources/todos.json transform build/web/resources/todosframed.xslq to-text > build/web/resources/todos.text
-$XMQ build/web/resources/todos.html render-html --class=w80 --lightbg --nostyle > build/todos_htmq.xml
+$XMQ build/web/resources/todos.html render-html --class=w80 --theme=lightbg --nostyle > build/todos_htmq.xml
 
 # DTD
-$XMQ web/resources/dtd_example.xml render-html --class=w40 --lightbg --nostyle > build/dtd_example_xmq.xml
+$XMQ web/resources/dtd_example.xml render-html --class=w40 --theme=lightbg --nostyle > build/dtd_example_xmq.xml
 # XSD
-$XMQ web/resources/xsd_example.xsd render-html --class=w40 --lightbg --nostyle > build/xsd_example_xsq.xml
+$XMQ web/resources/xsd_example.xsd render-html --class=w40 --theme=lightbg --nostyle > build/xsd_example_xsq.xml
 
 # Render the welcome traveller xmq in html
-$XMQ web/resources/welcome_traveller.htmq render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_xmq.xml
-$XMQ web/resources/welcome_traveller.html render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_back_xmq.xml
-$XMQ --trim=none web/resources/welcome_traveller.html to-htmq --escape-non-7bit | $XMQ - render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/rendered_welcome_traveller_back_notrim_xmq.xml
+$XMQ web/resources/welcome_traveller.htmq render-html --id=ex2 --class=w40 --theme=lightbg --nostyle  > build/rendered_welcome_traveller_xmq.xml
+$XMQ web/resources/welcome_traveller.html render-html --id=ex2 --class=w40 --theme=lightbg --nostyle  > build/rendered_welcome_traveller_back_xmq.xml
+$XMQ --trim=none web/resources/welcome_traveller.html to-htmq --escape-non-7bit | $XMQ - render-html --id=ex2 --class=w40 --theme=lightbg --nostyle  > build/rendered_welcome_traveller_back_notrim_xmq.xml
 
-$XMQ web/resources/simple_page.htmq render-html --id=ex2 --class=w40 --lightbg --nostyle  > build/simple_page_xmq.xml
+$XMQ web/resources/simple_page.htmq render-html --id=ex2 --class=w40 --theme=lightbg --nostyle  > build/simple_page_xmq.xml
 $XMQ web/resources/simple_page.htmq to-json | jq . > build/simple_page.json
 
 # Render the same but compact
-$XMQ web/resources/welcome_traveller.htmq render-html --id=ex2 --class=w40 --lightbg --nostyle --compact > build/rendered_welcome_traveller_xmq_compact.xml
+$XMQ web/resources/welcome_traveller.htmq render-html --id=ex2 --class=w40 --theme=lightbg --nostyle --compact > build/rendered_welcome_traveller_xmq_compact.xml
 $XMQ web/resources/welcome_traveller.htmq to-htmq > build/web/resources/welcome_traveller.htmq
 $XMQ web/resources/welcome_traveller.htmq to-html > build/welcome_traveller_nopp.html
-$XMQ pom.xml render-html --id=expom --class=w80 --lightbg --nostyle > build/pom_rendered.xml
+$XMQ pom.xml render-html --id=expom --class=w80 --theme=lightbg --nostyle > build/pom_rendered.xml
 
 # Separate examples.
 cp web/index.htmq web/resources/index.htmq

@@ -102,7 +102,7 @@ typedef enum XMQColor {
 extern const char *color_names[13];
 
 /**
-    XMQColorStrings:
+    XMQThemeStrings:
     @pre: string to inserted before the token
     @post: string to inserted after the token
 
@@ -115,63 +115,69 @@ extern const char *color_names[13];
     I.e. pre = "<span class="red">" post = "</span>"
     I.e. pre = "{\color{red}" post = "}"
 */
-struct XMQColorStrings
+struct XMQThemeStrings
 {
     const char *pre;
     const char *post;
 };
-typedef struct XMQColorStrings XMQColorStrings;
+typedef struct XMQThemeStrings XMQThemeStrings;
 
 /**
-    XMQColoring:
+    XMQTheme
 
-    The coloring struct is used to prefix/postfix ANSI/HTML/TEX strings for
+    The theme struct is used to prefix/postfix ANSI/HTML/TEX strings for
     XMQ tokens to colorize the printed xmq output.
 */
-struct XMQColoring
+struct XMQTheme
 {
-    XMQColorStrings document; // <html></html>  \documentclass{...}... etc
-    XMQColorStrings header; // <head>..</head>
-    XMQColorStrings style;  // Stylesheet content inside header (html) or color(tex) definitions.
-    XMQColorStrings body; // <body></body> \begin{document}\end{document}
-    XMQColorStrings content; // Wrapper around rendered code. Like <pre></pre>, \textt{...}
+    const char *indentation_space;
+    const char *explicit_space;
+    const char *explicit_nl;
+    const char *explicit_tab;
+    const char *explicit_cr;
 
-    XMQColorStrings whitespace; // The normal whitespaces: space=32. Normally not colored.
-    XMQColorStrings tab_whitespace; // The tab, colored with red background.
-    XMQColorStrings unicode_whitespace; // The remaining unicode whitespaces, like: nbsp=160 color as red underline.
-    XMQColorStrings indentation_whitespace; // The xmq generated indentation spaces. Normally not colored.
-    XMQColorStrings equals; // The key = value equal sign.
-    XMQColorStrings brace_left; // Left brace starting a list of childs.
-    XMQColorStrings brace_right; // Right brace ending a list of childs.
-    XMQColorStrings apar_left; // Left parentheses surrounding attributes. foo(x=1)
-    XMQColorStrings apar_right; // Right parentheses surrounding attributes.
-    XMQColorStrings cpar_left; // Left parentheses surrounding a compound value. foo = (&#10;' x '&#10;)
-    XMQColorStrings cpar_right; // Right parentheses surrounding a compound value.
-    XMQColorStrings quote; // A quote 'x y z' can be single or multiline.
-    XMQColorStrings entity; // A entity &#10;
-    XMQColorStrings comment; // A comment // foo or /* foo */
-    XMQColorStrings comment_continuation; // A comment containing newlines /* Hello */* there */
-    XMQColorStrings ns_colon; // The color of the colon separating a namespace from a name.
-    XMQColorStrings element_ns; // The namespace part of an element tag, i.e. the text before colon in foo:alfa.
-    XMQColorStrings element_name; // When an element tag has multiple children or attributes it is rendered using this color.
-    XMQColorStrings element_key; // When an element tag is suitable to be presented as a key value, this color is used.
-    XMQColorStrings element_value_text; // When an element is presented as a key and the value is presented as text, use this color.
-    XMQColorStrings element_value_quote; // When the value is a single quote, use this color.
-    XMQColorStrings element_value_entity; // When the value is a single entity, use this color.
-    XMQColorStrings element_value_compound_quote; // When the value is compounded and this is a quote in the compound.
-    XMQColorStrings element_value_compound_entity; // When the value is compounded and this is an entity in the compound.
-    XMQColorStrings attr_ns; // The namespace part of an attribute name, i.e. the text before colon in bar:speed.
-    XMQColorStrings attr_key; // The color of the attribute name, i.e. the key.
-    XMQColorStrings attr_value_text; // When the attribute value is text, use this color.
-    XMQColorStrings attr_value_quote; // When the attribute value is a quote, use this color.
-    XMQColorStrings attr_value_entity; // When the attribute value is an entity, use this color.
-    XMQColorStrings attr_value_compound_quote; // When the attribute value is a compound and this is a quote in the compound.
-    XMQColorStrings attr_value_compound_entity; // When the attribute value is a compound and this is an entity in the compound.
-    XMQColorStrings ns_declaration; // The xmlns part of an attribute namespace declaration.
+    XMQThemeStrings document; // <html></html>  \documentclass{...}... etc
+    XMQThemeStrings header; // <head>..</head>
+    XMQThemeStrings style;  // Stylesheet content inside header (html) or color(tex) definitions.
+    XMQThemeStrings body; // <body></body> \begin{document}\end{document}
+    XMQThemeStrings content; // Wrapper around rendered code. Like <pre></pre>, \textt{...}
+
+    XMQThemeStrings whitespace; // The normal whitespaces: space=32. Normally not colored.
+    XMQThemeStrings tab_whitespace; // The tab, colored with red background.
+    XMQThemeStrings unicode_whitespace; // The remaining unicode whitespaces, like: nbsp=160 color as red underline.
+    XMQThemeStrings indentation_whitespace; // The xmq generated indentation spaces. Normally not colored.
+    XMQThemeStrings equals; // The key = value equal sign.
+    XMQThemeStrings brace_left; // Left brace starting a list of childs.
+    XMQThemeStrings brace_right; // Right brace ending a list of childs.
+    XMQThemeStrings apar_left; // Left parentheses surrounding attributes. foo(x=1)
+    XMQThemeStrings apar_right; // Right parentheses surrounding attributes.
+    XMQThemeStrings cpar_left; // Left parentheses surrounding a compound value. foo = (&#10;' x '&#10;)
+    XMQThemeStrings cpar_right; // Right parentheses surrounding a compound value.
+    XMQThemeStrings quote; // A quote 'x y z' can be single or multiline.
+    XMQThemeStrings entity; // A entity &#10;
+    XMQThemeStrings comment; // A comment // foo or /* foo */
+    XMQThemeStrings comment_continuation; // A comment containing newlines /* Hello */* there */
+    XMQThemeStrings ns_colon; // The color of the colon separating a namespace from a name.
+    XMQThemeStrings element_ns; // The namespace part of an element tag, i.e. the text before colon in foo:alfa.
+    XMQThemeStrings element_name; // When an element tag has multiple children or attributes it is rendered using this color.
+    XMQThemeStrings element_key; // When an element tag is suitable to be presented as a key value, this color is used.
+    XMQThemeStrings element_value_text; // When an element is presented as a key and the value is presented as text, use this color.
+    XMQThemeStrings element_value_quote; // When the value is a single quote, use this color.
+    XMQThemeStrings element_value_entity; // When the value is a single entity, use this color.
+    XMQThemeStrings element_value_compound_quote; // When the value is compounded and this is a quote in the compound.
+    XMQThemeStrings element_value_compound_entity; // When the value is compounded and this is an entity in the compound.
+    XMQThemeStrings attr_ns; // The namespace part of an attribute name, i.e. the text before colon in bar:speed.
+    XMQThemeStrings attr_key; // The color of the attribute name, i.e. the key.
+    XMQThemeStrings attr_value_text; // When the attribute value is text, use this color.
+    XMQThemeStrings attr_value_quote; // When the attribute value is a quote, use this color.
+    XMQThemeStrings attr_value_entity; // When the attribute value is an entity, use this color.
+    XMQThemeStrings attr_value_compound_quote; // When the attribute value is a compound and this is a quote in the compound.
+    XMQThemeStrings attr_value_compound_entity; // When the attribute value is a compound and this is an entity in the compound.
+    XMQThemeStrings ns_declaration; // The xmlns part of an attribute namespace declaration.
 };
-typedef struct XMQColoring XMQColoring;
+typedef struct XMQTheme XMQTheme;
 
-void getColor(XMQOutputSettings *os, XMQColor c, const char **pre, const char **post);
+void getThemeStrings(XMQOutputSettings *os, XMQColor c, const char **pre, const char **post);
 
 #define COLORS_MODULE
 
@@ -306,6 +312,7 @@ struct XMQOutputSettings
     int  add_indent;
     bool compact;
     bool use_color;
+    bool bg_dark_mode;
     bool escape_newlines;
     bool escape_non_7bit;
 
@@ -313,7 +320,7 @@ struct XMQOutputSettings
     XMQRenderFormat render_to;
     bool render_raw;
     bool only_style;
-    const char *render_style;
+    const char *render_theme;
 
     XMQWriter content;
     XMQWriter error;
@@ -334,8 +341,8 @@ struct XMQOutputSettings
     const char *use_id; // If non-NULL inser this id in the pre tag.
     const char *use_class; // If non-NULL insert this class in the pre tag.
 
-    XMQColoring *default_coloring; // Shortcut to the no namespace coloring inside colorings.
-    HashMap *colorings; // Map namespaces to unique colorings.
+    XMQTheme *default_theme; // Shortcut to the no namespace theme inside themes.
+    HashMap *themes; // Map namespaces to unique colorings.
     void *free_me;
 };
 typedef struct XMQOutputSettings XMQOutputSettings;
@@ -508,9 +515,9 @@ void xmqFreeParseState(XMQParseState *state);
 bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop);
 bool xmqTokenizeFile(XMQParseState *state, const char *file);
 
-void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
-void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
-void setup_tex_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
 
 // XMQ tokenizer functions ///////////////////////////////////////////////////////////
 
@@ -1145,6 +1152,7 @@ struct XMQOutputSettings
     int  add_indent;
     bool compact;
     bool use_color;
+    bool bg_dark_mode;
     bool escape_newlines;
     bool escape_non_7bit;
 
@@ -1152,7 +1160,7 @@ struct XMQOutputSettings
     XMQRenderFormat render_to;
     bool render_raw;
     bool only_style;
-    const char *render_style;
+    const char *render_theme;
 
     XMQWriter content;
     XMQWriter error;
@@ -1173,8 +1181,8 @@ struct XMQOutputSettings
     const char *use_id; // If non-NULL inser this id in the pre tag.
     const char *use_class; // If non-NULL insert this class in the pre tag.
 
-    XMQColoring *default_coloring; // Shortcut to the no namespace coloring inside colorings.
-    HashMap *colorings; // Map namespaces to unique colorings.
+    XMQTheme *default_theme; // Shortcut to the no namespace theme inside themes.
+    HashMap *themes; // Map namespaces to unique colorings.
     void *free_me;
 };
 typedef struct XMQOutputSettings XMQOutputSettings;
@@ -1347,9 +1355,9 @@ void xmqFreeParseState(XMQParseState *state);
 bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop);
 bool xmqTokenizeFile(XMQParseState *state, const char *file);
 
-void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
-void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
-void setup_tex_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
 
 // XMQ tokenizer functions ///////////////////////////////////////////////////////////
 
@@ -1655,7 +1663,7 @@ size_t num_utf8_bytes(char c);
 void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num);
 void reset_ansi(XMQParseState *state);
 void reset_ansi_nl(XMQParseState *state);
-void setup_htmq_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_htmq_coloring(XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
 const char *skip_any_potential_bom(const char *start, const char *stop);
 void text_print_node(XMQPrintState *ps, xmlNode *node);
 void text_print_nodes(XMQPrintState *ps, xmlNode *from);
@@ -1691,25 +1699,43 @@ LIST_OF_XMQ_TOKENS
 #undef X
 
 //////////////////////////////////////////////////////////////////////////////////
+
 char ansi_reset_color[] = "\033[0m";
 
-void xmqSetupDefaultColors(XMQOutputSettings *os, bool dark_mode)
+void xmqSetupDefaultColors(XMQOutputSettings *os)
 {
-    const char *style = os->render_style;
-    if (!style) style = "";
-    XMQColoring *c = (XMQColoring*)hashmap_get(os->colorings, style);
-    if (!c)
+    bool dark_mode = os->bg_dark_mode;
+    XMQTheme *theme = (XMQTheme*)hashmap_get(os->themes, "");
+    if (os->render_theme == NULL)
     {
-        fprintf(stderr, "xmq: No such render style \"%s\"\n", style);
+        os->render_theme = dark_mode?"darkbg":"lightbg";
+    }
+    else
+    {
+        if (!strcmp(os->render_theme, "darkbg"))
+        {
+            dark_mode = true;
+        }
+        else if (!strcmp(os->render_theme, "lightbg"))
+        {
+            dark_mode = false;
+        }
+        else
+        {
+            theme = (XMQTheme*)hashmap_get(os->themes, os->render_theme);
+        }
+    }
+    if (!theme)
+    {
+        fprintf(stderr, "xmq: No such render theme \"%s\"\n", os->render_theme);
         exit(1);
     }
-    assert(c);
-    memset(c, 0, sizeof(XMQColoring));
-    os->indentation_space = " ";
-    os->explicit_space = " ";
-    os->explicit_nl = "\n";
-    os->explicit_tab = "\t";
-    os->explicit_cr = "\r";
+    assert(theme);
+    os->indentation_space = theme->indentation_space; // " ";
+    os->explicit_space = theme->explicit_space; // " ";
+    os->explicit_nl = theme->explicit_nl; // "\n";
+    os->explicit_tab = theme->explicit_tab; // "\t";
+    os->explicit_cr = theme->explicit_cr; // "\r";
 
     if (os->render_to == XMQ_RENDER_PLAIN)
     {
@@ -1717,26 +1743,26 @@ void xmqSetupDefaultColors(XMQOutputSettings *os, bool dark_mode)
     else
     if (os->render_to == XMQ_RENDER_TERMINAL)
     {
-        setup_terminal_coloring(os, c, dark_mode, os->use_color, os->render_raw);
+        setup_terminal_coloring(os, theme, dark_mode, os->use_color, os->render_raw);
     }
     else if (os->render_to == XMQ_RENDER_HTML)
     {
-        setup_html_coloring(os, c, dark_mode, os->use_color, os->render_raw);
+        setup_html_coloring(os, theme, dark_mode, os->use_color, os->render_raw);
     }
     else if (os->render_to == XMQ_RENDER_TEX)
     {
-        setup_tex_coloring(os, c, dark_mode, os->use_color, os->render_raw);
+        setup_tex_coloring(os, theme, dark_mode, os->use_color, os->render_raw);
     }
 
     if (os->only_style)
     {
-        printf("%s\n", c->style.pre);
+        printf("%s\n", theme->style.pre);
         exit(0);
     }
 
 }
 
-void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw)
+void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw)
 {
     if (!use_color) return;
     if (dark_mode)
@@ -1809,7 +1835,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mo
     }
 }
 
-void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw)
+void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw)
 {
     os->indentation_space = " ";
     os->explicit_nl = "\n";
@@ -1955,11 +1981,11 @@ void setup_html_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, 
     c->ns_colon.pre = NULL;
 }
 
-void setup_htmq_coloring(XMQColoring *c, bool dark_mode, bool use_color, bool render_raw)
+void setup_htmq_coloring(XMQTheme *c, bool dark_mode, bool use_color, bool render_raw)
 {
 }
 
-void setup_tex_coloring(XMQOutputSettings *os, XMQColoring *c, bool dark_mode, bool use_color, bool render_raw)
+void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw)
 {
     os->indentation_space = "\\xmqI ";
     os->explicit_space = " ";
@@ -2081,13 +2107,13 @@ void xmqRenderHtmlSettings(XMQOutputSettings *settings,
 
 void xmqOverrideColor(XMQOutputSettings *os, const char *render_style, XMQSyntax sy, const char *pre, const char *post, const char *ns)
 {
-    if (!os->colorings)
+    if (!os->themes)
     {
         fprintf(stderr, "Internal error: you have to invoke xmqSetupDefaultColors first before overriding.\n");
         exit(1);
     }
     if (!ns) ns = "";
-    XMQColoring *cols = (XMQColoring*)hashmap_get(os->colorings, ns);
+    XMQTheme *cols = (XMQTheme*)hashmap_get(os->themes, ns);
     assert(cols);
 }
 
@@ -2100,7 +2126,7 @@ int xmqStateErrno(XMQParseState *state)
     void tokenize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start,const char *stop,const char *suffix) { \
         if (!state->simulated) { \
             const char *pre, *post;  \
-            getColor(state->output_settings, COLOR_##TYPE, &pre, &post); \
+            getThemeStrings(state->output_settings, COLOR_##TYPE, &pre, &post); \
             if (pre) state->output_settings->content.write(state->output_settings->content.writer_state, pre, NULL); \
             if (state->output_settings->render_to == XMQ_RENDER_TERMINAL) { \
                 state->output_settings->content.write(state->output_settings->content.writer_state, start, stop); \
@@ -2142,23 +2168,32 @@ void add_nl(XMQParseState *state)
     state->output_settings->content.write(state->output_settings->content.writer_state, "\n", NULL);
 }
 
+XMQTheme *prepareSolarizedTheme(XMQTheme *parent);
+
+XMQTheme *prepareSolarizedTheme(XMQTheme *parent)
+{
+    return NULL;
+}
+
 XMQOutputSettings *xmqNewOutputSettings()
 {
     XMQOutputSettings *os = (XMQOutputSettings*)malloc(sizeof(XMQOutputSettings));
     memset(os, 0, sizeof(XMQOutputSettings));
-    os->colorings = hashmap_create(11);
-    XMQColoring *c = (XMQColoring*)malloc(sizeof(XMQColoring));
-    memset(c, 0, sizeof(XMQColoring));
-    hashmap_put(os->colorings, "", c);
-    os->default_coloring = c;
+    os->themes = hashmap_create(11);
+    XMQTheme *theme = (XMQTheme*)malloc(sizeof(XMQTheme));
+    memset(theme, 0, sizeof(XMQTheme));
+    hashmap_put(os->themes, "", theme);
+    os->default_theme = theme;
 
-    os->indentation_space = " ";
-    os->explicit_space = " ";
-    os->explicit_nl = "\n";
-    os->explicit_tab = "\t";
-    os->explicit_cr = "\r";
+    os->indentation_space = theme->indentation_space = " ";
+    os->explicit_space = theme->explicit_space = " ";
+    os->explicit_nl = theme->explicit_nl = "\n";
+    os->explicit_tab = theme->explicit_tab = "\t";
+    os->explicit_cr = theme->explicit_cr = "\r";
     os->add_indent = 4;
     os->use_color = false;
+
+    //hashmap_put(os->themes, "solarized", prepareSolarizedTheme(theme));
 
     return os;
 }
@@ -2170,8 +2205,8 @@ void xmqFreeOutputSettings(XMQOutputSettings *os)
         free(os->free_me);
         os->free_me = NULL;
     }
-    hashmap_free_and_values(os->colorings);
-    os->colorings = NULL;
+    hashmap_free_and_values(os->themes);
+    os->themes = NULL;
     free(os);
 }
 
@@ -2190,6 +2225,11 @@ void xmqSetUseColor(XMQOutputSettings *os, bool use_color)
     os->use_color = use_color;
 }
 
+void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode)
+{
+    os->bg_dark_mode = bg_dark_mode;
+}
+
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines)
 {
     os->escape_newlines = escape_newlines;
@@ -2205,11 +2245,6 @@ void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format)
     os->output_format = output_format;
 }
 
-/*void xmqSetColoring(XMQOutputSettings *os, XMQColoring coloring)
-{
-    os->coloring = coloring;
-    }*/
-
 void xmqSetRenderFormat(XMQOutputSettings *os, XMQRenderFormat render_to)
 {
     os->render_to = render_to;
@@ -2220,14 +2255,14 @@ void xmqSetRenderRaw(XMQOutputSettings *os, bool render_raw)
     os->render_raw = render_raw;
 }
 
+void xmqSetRenderTheme(XMQOutputSettings *os, const char *theme_name)
+{
+    os->render_theme = theme_name;
+}
+
 void xmqSetRenderOnlyStyle(XMQOutputSettings *os, bool only_style)
 {
     os->only_style = only_style;
-}
-
-void xmqSetRenderStyle(XMQOutputSettings *os, const char *render_style)
-{
-    os->render_style = render_style;
 }
 
 void xmqSetWriterContent(XMQOutputSettings *os, XMQWriter content)
@@ -2385,8 +2420,8 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
     XMQWrite write = output_settings->content.write;
     void *writer_state = output_settings->content.writer_state;
 
-    const char *pre = output_settings->default_coloring->content.pre;
-    const char *post = output_settings->default_coloring->content.post;
+    const char *pre = output_settings->default_theme->content.pre;
+    const char *post = output_settings->default_theme->content.post;
     if (pre) write(writer_state, pre, NULL);
 
     if (!setjmp(state->error_handler))
@@ -3079,7 +3114,7 @@ void xmqSetupParseCallbacksDebugContent(XMQParseCallbacks *callbacks)
     callbacks->magic_cookie = MAGIC_COOKIE;
 }
 
-void xmqSetupParseCallbacksColorizeTokens(XMQParseCallbacks *callbacks, XMQRenderFormat render_format, bool dark_mode)
+void xmqSetupParseCallbacksColorizeTokens(XMQParseCallbacks *callbacks, XMQRenderFormat render_format)
 {
     memset(callbacks, 0, sizeof(*callbacks));
 
@@ -4101,7 +4136,7 @@ void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
 
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
-    XMQColoring *c = os->default_coloring;
+    XMQTheme *c = os->default_theme;
 
     if (c->document.pre) write(writer_state, c->document.pre, NULL);
     if (c->header.pre) write(writer_state, c->header.pre, NULL);
@@ -5400,18 +5435,18 @@ char *strndup(const char *s, size_t l)
    pre: Store a pointer to the start color string here.
    post: Store a pointer to the end color string here.
 */
-void getColor(XMQOutputSettings *os, XMQColor color, const char **pre, const char **post)
+void getThemeStrings(XMQOutputSettings *os, XMQColor color, const char **pre, const char **post)
 {
-    XMQColoring *coloring = os->default_coloring;
+    XMQTheme *theme = os->default_theme;
     switch(color)
     {
 
-#define X(TYPE) case COLOR_##TYPE: *pre = coloring->TYPE.pre; *post = coloring->TYPE.post; return;
+#define X(TYPE) case COLOR_##TYPE: *pre = theme->TYPE.pre; *post = theme->TYPE.post; return;
 LIST_OF_XMQ_TOKENS
 #undef X
 
-    case COLOR_unicode_whitespace: *pre = coloring->unicode_whitespace.pre; *post = coloring->unicode_whitespace.post; return;
-    case COLOR_indentation_whitespace: *pre = coloring->indentation_whitespace.pre; *post = coloring->indentation_whitespace.post; return;
+    case COLOR_unicode_whitespace: *pre = theme->unicode_whitespace.pre; *post = theme->unicode_whitespace.post; return;
+    case COLOR_indentation_whitespace: *pre = theme->indentation_whitespace.pre; *post = theme->indentation_whitespace.post; return;
     default:
         *pre = NULL;
         *post = NULL;
@@ -7786,7 +7821,7 @@ size_t print_utf8(XMQPrintState *ps, XMQColor color, size_t num_pairs, ...)
     void *writer_state = os->content.writer_state;
 
     const char *pre, *post;
-    getColor(os, color, &pre, &post);
+    getThemeStrings(os, color, &pre, &post);
     const char *previous_color = NULL;
 
     if (pre)
@@ -8419,7 +8454,7 @@ void print_color_pre(XMQPrintState *ps, XMQColor color)
     XMQOutputSettings *os = ps->output_settings;
     const char *pre = NULL;
     const char *post = NULL;
-    getColor(os, color, &pre, &post);
+    getThemeStrings(os, color, &pre, &post);
 
     if (pre)
     {
@@ -8434,7 +8469,7 @@ void print_color_post(XMQPrintState *ps, XMQColor color)
     XMQOutputSettings *os = ps->output_settings;
     const char *pre = NULL;
     const char *post = NULL;
-    getColor(os, color, &pre, &post);
+    getThemeStrings(os, color, &pre, &post);
 
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
@@ -10238,7 +10273,7 @@ void print_node(XMQPrintState *ps, xmlNode *node, size_t align)
 void print_white_spaces(XMQPrintState *ps, int num)
 {
     XMQOutputSettings *os = ps->output_settings;
-    XMQColoring *c = os->default_coloring;
+    XMQTheme *c = os->default_theme;
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
     if (c->whitespace.pre) write(writer_state, c->whitespace.pre, NULL);
@@ -10281,7 +10316,7 @@ void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num)
 
     const char *pre = NULL;
     const char *post = NULL;
-    getColor(os, c, &pre, &post);
+    getThemeStrings(os, c, &pre, &post);
 
     write(writer_state, pre, NULL);
     for (int i=0; i<num; ++i)
@@ -10295,7 +10330,7 @@ void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num)
 void print_quoted_spaces(XMQPrintState *ps, XMQColor color, int num)
 {
     XMQOutputSettings *os = ps->output_settings;
-    XMQColoring *c = os->default_coloring;
+    XMQTheme *c = os->default_theme;
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
 
@@ -10319,7 +10354,7 @@ void print_quotes(XMQPrintState *ps, size_t num, XMQColor color)
 
     const char *pre = NULL;
     const char *post = NULL;
-    getColor(os, color, &pre, &post);
+    getThemeStrings(os, color, &pre, &post);
 
     if (pre) write(writer_state, pre, NULL);
     for (size_t i=0; i<num; ++i)
@@ -10366,7 +10401,7 @@ size_t print_char_entity(XMQPrintState *ps, XMQColor color, const char *start, c
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
     const char *pre, *post;
-    getColor(os, color, &pre, &post);
+    getThemeStrings(os, color, &pre, &post);
 
     int uc = 0;
     size_t bytes = 0;
@@ -10416,7 +10451,7 @@ void print_slashes(XMQPrintState *ps, const char *pre, const char *post, size_t 
     void *writer_state = os->content.writer_state;
     const char *cpre = NULL;
     const char *cpost = NULL;
-    getColor(os, COLOR_comment, &cpre, &cpost);
+    getThemeStrings(os, COLOR_comment, &cpre, &cpost);
 
     if (cpre) write(writer_state, cpre, NULL);
     if (pre) write(writer_state, pre, NULL);
@@ -10714,7 +10749,7 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
     void *writer_state = os->content.writer_state;
 
     const char *pre, *post;
-    getColor(os, color, &pre, &post);
+    getThemeStrings(os, color, &pre, &post);
 
     if (pre) write(writer_state, pre, NULL);
 

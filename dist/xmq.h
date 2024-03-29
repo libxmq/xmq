@@ -351,7 +351,7 @@ void xmqFreeParseCallbacks(XMQParseCallbacks *cb);
 
     Used to colorize xmq input, without building a parse tree.
 */
-void xmqSetupParseCallbacksColorizeTokens(XMQParseCallbacks *state, XMQRenderFormat render_format, bool dark_mode);
+void xmqSetupParseCallbacksColorizeTokens(XMQParseCallbacks *state, XMQRenderFormat render_format);
 
 /**
     xmqSetupParseCallbacksDebugTokens:
@@ -520,13 +520,14 @@ void xmqFreeOutputSettings(XMQOutputSettings *os);
 void xmqSetAddIndent(XMQOutputSettings *os, int add_indent);
 void xmqSetCompact(XMQOutputSettings *os, bool compact);
 void xmqSetUseColor(XMQOutputSettings *os, bool use_color);
+void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode);
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines);
 void xmqSetEscapeNon7bit(XMQOutputSettings *os, bool escape_non_7bit);
 void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format);
 void xmqSetRenderFormat(XMQOutputSettings *os, XMQRenderFormat render_to);
+void xmqSetRenderTheme(XMQOutputSettings *os, const char *theme_name);
 void xmqSetRenderRaw(XMQOutputSettings *os, bool render_raw);
 void xmqSetRenderOnlyStyle(XMQOutputSettings *os, bool only_style);
-void xmqSetRenderStyle(XMQOutputSettings *os, const char *render_style);
 void xmqSetWriterContent(XMQOutputSettings *os, XMQWriter content);
 void xmqSetWriterError(XMQOutputSettings *os, XMQWriter error);
 
@@ -677,9 +678,9 @@ bool xmqParseFileWithType(XMQDoc *doc,
 /**
    xmqSetupDefaultColors:
 
-   Set the default colors for settings based on the background color.
+   Set the default colors for settings based on the theme and background color.
 */
-void xmqSetupDefaultColors(XMQOutputSettings *settings, bool dark_mode);
+void xmqSetupDefaultColors(XMQOutputSettings *settings);
 
 /**
    xmqOverrideSetting: Change the default strings for spaces etc.
