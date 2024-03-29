@@ -71,10 +71,10 @@ do
     tests/test_statistics.sh "$PROG" "$OUTPUT" "$i"
 done
 
-#for i in tests/test_special_???_*.sh
-#do
-#    $i "$PROG" "$OUTPUT"
-#done
+for i in tests/test_special_???_*.sh
+do
+    $i "$PROG" "$OUTPUT"
+done
 
 for i in tests/test_???_*.c
 do
@@ -92,4 +92,9 @@ fi
 if [ "$CONF_MNEMONIC" = "linux64" ]
 then
     tests/test_dist.sh $SPEC
+fi
+
+if command -v xelatex > /dev/null
+then
+    tests/test_tex.sh "$PROG" "$OUTPUT"
 fi

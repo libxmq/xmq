@@ -223,7 +223,7 @@ html {
             span(class = code) = 'xmq shiporder.xml browse'
             br
             'You can shorten the command to just br. Set the environement variable
-             XMQ_BG=dark or XMQ_BG=light to background color or XMQ_BG=mono for no color.'
+             XMQ_THEME=darkbg or XMQ_THEME=lightbg to background color or XMQ_THEME=mono for no color.'
         }
         p {
             'Use shell redirection to store the XMQ output in a file:'

@@ -501,6 +501,7 @@ XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env)
     memset(c, 0, sizeof(*c));
 
     c->use_color = env->use_color;
+    c->bg_dark_mode = env->bg_dark_mode;
     c->env = env;
     c->cmd = XMQ_CLI_CMD_TO_XMQ;
     c->in_format = XMQ_CONTENT_DETECT;
@@ -890,7 +891,7 @@ static void sig_alarm_handler(int signo)
 {
     fprintf(stderr,
             "xmq: no response from xterm/xterm-256color terminal whether background is dark/light.\n"
-            "To skip this failed test please set environment variable XMQ_BG=mono|dark|light.\n");
+            "To skip this failed test please set environment variable XMQ_THEME=mono|darkbg|lightbg.\n");
     exit(1);
 }
 
@@ -983,33 +984,33 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
     if (!term) term = "NULL";
     debug_("[xmq] detected terminal %s\n", term);
 
-    char *xmq_mode = getenv("XMQ_BG");
+    char *xmq_mode = getenv("XMQ_THEME");
     if (xmq_mode != NULL)
     {
         if (!strcmp(xmq_mode, "mono"))
         {
             *use_color = false;
             *bg_dark_mode = false;
-            verbose_("(xmq) XMQ_BG set to mono\n");
+            verbose_("(xmq) XMQ_THEME set to mono\n");
             return XMQ_RENDER_MONO;
         }
-        if (!strcmp(xmq_mode, "light"))
+        if (!strcmp(xmq_mode, "lightbg"))
         {
             *use_color = true;
             *bg_dark_mode = false;
-            verbose_("(xmq) XMQ_BG set to light\n");
+            verbose_("(xmq) XMQ_THEME set to lightbg\n");
             return XMQ_RENDER_COLOR_LIGHTBG;
         }
-        if (!strcmp(xmq_mode, "dark"))
+        if (!strcmp(xmq_mode, "darkbg"))
         {
             *use_color = true;
             *bg_dark_mode = true;
-            verbose_("(xmq) XMQ_BG set to dark\n");
+            verbose_("(xmq) XMQ_THEME set to darkbg\n");
             return XMQ_RENDER_COLOR_DARKBG;
         }
         *use_color = false;
         *bg_dark_mode = false;
-        verbose_("(xmq) XMQ_BG content is bad, using mono\n");
+        verbose_("(xmq) XMQ_THEME content is bad, using mono\n");
         return XMQ_RENDER_MONO;
     }
 

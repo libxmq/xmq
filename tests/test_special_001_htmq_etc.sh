@@ -1,5 +1,5 @@
 #!/bin/sh
-# libxmq - Copyright 2023 Fredrik Öhrström (spdx: MIT)
+# libxmq - Copyright 2023-2024 Fredrik Öhrström (spdx: MIT)
 
 PROG=$1
 OUTPUT=$2
@@ -15,13 +15,14 @@ fi
 mkdir -p $OUTPUT
 
 echo "c = Howdy" > $OUTPUT/input.xmq
-$PROG $OUTPUT/input.xmq render-html --darkbg > $OUTPUT/output.rendered.html
+$PROG $OUTPUT/input.xmq render-html --theme=darkbg > $OUTPUT/output.rendered.html
 
-$PROG $OUTPUT/input.xmq render-html --darkbg \
-    | $PROG --trim=none to-xmq --compact \
-    | $PROG to-html > $OUTPUT/output.rerendered.html
+$PROG $OUTPUT/input.xmq render-html --theme=darkbg | $PROG to-xmq --compact | $PROG to-html > $OUTPUT/output.rerendered.html
 
-if diff $OUTPUT/output.rendered.html $OUTPUT/output.rerendered.html
+xmq $OUTPUT/output.rendered.html > $OUTPUT/output.rendered.htmq
+xmq $OUTPUT/output.rerendered.html > $OUTPUT/output.rerendered.htmq
+
+if diff $OUTPUT/output.rendered.htmq $OUTPUT/output.rerendered.htmq
 then
     echo "OK: test special 001 xmq -> html -> compact xmq -> html"
 else
@@ -29,9 +30,9 @@ else
     echo "Formatting differ:"
     if [ -n "$USE_MELD" ]
     then
-        meld $OUTPUT/output.rendered.html $OUTPUT/output.rerendered.html
+        meld $OUTPUT/output.rendered.htmq $OUTPUT/output.rerendered.htmq
     else
-        diff $OUTPUT/output.rendered.html $OUTPUT/output.rerendered.html
+        diff $OUTPUT/output.rendered.htmq $OUTPUT/output.rerendered.htmq
     fi
     exit 1
 fi
