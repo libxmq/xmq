@@ -162,12 +162,16 @@ DESTDIR?=/usr/local
 install:
 	install -Dm 755 -s build/x86_64-pc-linux-gnu/release/xmq $(DESTDIR)/bin/xmq
 	install -Dm 755 scripts/xmq-less $(DESTDIR)/bin/xmq-less
+	install -Dm 755 scripts/xmq-diff $(DESTDIR)/bin/xmq-diff
+	install -Dm 755 scripts/xmq-meld $(DESTDIR)/bin/xmq-meld
 	install -Dm 644 doc/xmq.1 $(DESTDIR)/man/man1/xmq.1
 	install -Dm 644 scripts/autocompletion_for_xmq.sh /etc/bash_completion.d/xmq
 
 uninstall:
 	rm -f $(DESTDIR)/bin/xmq
 	rm -f $(DESTDIR)/bin/xmq-less
+	rm -f $(DESTDIR)/bin/xmq-diff
+	rm -f $(DESTDIR)/bin/xmq-meld
 	rm -f $(DESTDIR)/man/man1/xmq.1
 	rm -f /etc/bash_completion.d/xmq
 

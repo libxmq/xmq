@@ -1,0 +1,24 @@
+#!/bin/sh
+
+if [ "$1" = "" ] && [ -t 0 ]
+then
+    # If input is a tty and no arguments, then print help.
+    xmq
+    exit 0
+fi
+
+if [ "$2" = "" ]
+then
+    echo "Usage: xmq-diff <file> <file>"
+    exit 0
+fi
+
+first=$(mktemp /tmp/xmq-diff.XXXXXX)
+second=$(mktemp /tmp/xmq-diff.XXXXXX)
+
+xmq "$1" > $first
+xmq "$2" > $second
+
+diff $first $second
+
+rm $first $second
