@@ -1,0 +1,19 @@
+START Warning! This file contains tab characters! Edit with care!
+<!DOCTYPE html><html><body><p p="0 
+	0 	"/></body></html>
+COMPACT
+!DOCTYPE=html html{body{p(p=('0 '&#10;&#9;'0 '&#9;))}}
+XMQ
+!DOCTYPE = html
+html {
+    body {
+        p(p = ( '0 '
+                &#10;
+                &#9;
+                '0 '
+                &#9; ))
+    }
+}
+END
+ARGS
+CMDS

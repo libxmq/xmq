@@ -1,0 +1,10 @@
+START Warning! This file contains tab characters! Edit with care!
+<p p="0 
+	0 	"/>
+COMPACT
+p(p='0   0  ')
+XMQ
+p(p = '0   0  ')
+END
+ARGS
+CMDS
