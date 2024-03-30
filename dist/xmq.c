@@ -11005,6 +11005,16 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
         {
             check_space_before_entity_node(ps);
             to += print_char_entity(ps, level_to_entity_color(level), from, stop);
+            while (from+1 < stop && *(from+1) == '\n')
+            {
+                // Special case, we have escaped something right before newline(s).
+                // Escape the newline(s) as well. This is important for CR LF.
+                // If not then we have to loop around detecting that the newline
+                // is leading a quote and needs to be escaped. Escape it here already.
+                from++;
+                check_space_before_entity_node(ps);
+                to += print_char_entity(ps, level_to_entity_color(level), from, stop);
+            }
         }
         else
         {

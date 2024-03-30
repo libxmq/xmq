@@ -1206,6 +1206,7 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
     // Ok, normal content to be quoted. However we might need to split the content
     // at chars that need to be replaced with character entities. Normally no
     // chars need to be replaced. But in compact mode, the \n newlines are replaced with &#10;
+    // If content contains CR LF its replaced with &#13;&#10;
     // Also one can replace all non-ascii chars with their entities if so desired.
     for (const char *from = start; from < stop; )
     {
@@ -1214,6 +1215,16 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
         {
             check_space_before_entity_node(ps);
             to += print_char_entity(ps, level_to_entity_color(level), from, stop);
+            while (from+1 < stop && *(from+1) == '\n')
+            {
+                // Special case, we have escaped something right before newline(s).
+                // Escape the newline(s) as well. This is important for CR LF.
+                // If not then we have to loop around detecting that the newline
+                // is leading a quote and needs to be escaped. Escape it here already.
+                from++;
+                check_space_before_entity_node(ps);
+                to += print_char_entity(ps, level_to_entity_color(level), from, stop);
+            }
         }
         else
         {

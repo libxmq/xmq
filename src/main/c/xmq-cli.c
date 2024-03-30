@@ -53,12 +53,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define XMLSEC_STATIC
 
 #include<libxml/tree.h>
-#include <libxml/xpath.h>
-#include <libxml/xpathInternals.h>
-#include <libxslt/xslt.h>
-#include <libxslt/xsltInternals.h>
-#include <libxslt/transform.h>
-#include <libxslt/xsltutils.h>
+#include<libxml/xpath.h>
+#include<libxml/xpathInternals.h>
+#include<libxslt/xslt.h>
+#include<libxslt/xsltInternals.h>
+#include<libxslt/transform.h>
+#include<libxslt/xsltutils.h>
 
 typedef enum
 {
