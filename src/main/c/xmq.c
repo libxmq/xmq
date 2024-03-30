@@ -29,12 +29,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include"parts/always.h"
 #include"parts/colors.h"
+#include"parts/entities.h"
 #include"parts/utf8.h"
 #include"parts/hashmap.h"
 #include"parts/membuffer.h"
 #include"parts/stack.h"
 #include"parts/text.h"
-#include"parts/entities.h"
 #include"parts/xml.h"
 #include"parts/xmq_parser.h"
 #include"parts/xmq_printer.h"
@@ -1210,7 +1210,6 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     assert(start < stop);
     assert(*start == '/');
 
-    // PRUTT printf("indent=%d text>%.*s<\n", (int)indent, (int)(stop-start), start);
     const char *i = start;
     while (i < stop && *i == '/') i++;
 
@@ -1265,7 +1264,6 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
 
     assert(start <= stop);
     char *foo = xmq_trim_quote(indent, space, start, stop);
-    // PRUTT printf("uncommented text>%s<\n", foo);
     return foo;
 }
 
@@ -1447,9 +1445,6 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
     buf = (char*)realloc(buf, real_size);
     return buf;
 }
-
-
-
 
 void xmqSetupParseCallbacksNoop(XMQParseCallbacks *callbacks)
 {
@@ -1851,7 +1846,20 @@ xmlNodePtr create_entity(XMQParseState *state,
     xmlNodePtr n = NULL;
     if (tmp[1] == '#')
     {
-        n = xmlNewCharRef(state->doq->docptr_.xml, (const xmlChar *)tmp);
+        if (tmp[2] == 'x')
+        {
+            UTF8Char uni;
+            int uc = strtol(tmp+3, NULL, 16);
+            size_t len = encode_utf8(uc, &uni);
+            char buf[len+1];
+            memcpy(buf, uni.bytes, len);
+            buf[len] = 0;
+            n = xmlNewDocText(state->doq->docptr_.xml, (xmlChar*)buf);
+        }
+        else
+        {
+            n = xmlNewCharRef(state->doq->docptr_.xml, (const xmlChar *)tmp);
+        }
     }
     else
     {

@@ -126,8 +126,9 @@ typedef enum
 /**
     XMQTrimType:
     @XMQ_TRIM_DEFAULT: Use the default, ie no-trim for xmq/json, normal-trim for xml/html.
-    @XMQ_TRIM_NONE: Do not trim at all. Keep unnecessary xml/html indentation and newlines.
-    @XMQ_TRIM_HEURISTIC: Normal trim heuristic. Remove leading/ending whitespace, remove incidental indentation.
+    @XMQ_TRIM_NONE: Do not trim/merge at all. Keep unnecessary xml/html indentation and newlines.
+    @XMQ_TRIM_MERGE: Merge text and character entities. Leave everything else as is.
+    @XMQ_TRIM_HEURISTIC: Normal trim heuristic. Remove leading/ending whitespace, remove incidental indentation. Merge text and character entities.
     @XMQ_TRIM_EXTRA: Like normal but remove all indentation (not just incidental) and collapse whitespace.
     @XMQ_TRIM_RESHUFFLE: Like extra but also reflow all content at word boundaries to limit line lengths.
 
@@ -141,7 +142,8 @@ typedef enum
 {
     XMQ_TRIM_DEFAULT = 0,
     XMQ_TRIM_NONE = 1,
-    XMQ_TRIM_HEURISTIC = 2,
+    XMQ_TRIM_MERGE = 2,
+    XMQ_TRIM_HEURISTIC = 3,
 } XMQTrimType;
 
 /**

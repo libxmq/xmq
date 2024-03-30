@@ -181,6 +181,16 @@ void getThemeStrings(XMQOutputSettings *os, XMQColor c, const char **pre, const 
 
 #define COLORS_MODULE
 
+// PARTS ENTITIES ////////////////////////////////////////
+
+/**
+    toHtmlEntity:
+    @uc: Unicode code point.
+*/
+const char *toHtmlEntity(int uc);
+
+#define ENTITIES_MODULE
+
 // PARTS UTF8 ////////////////////////////////////////
 
 #ifndef BUILDING_XMQ
@@ -369,6 +379,7 @@ struct XMQParseState
     void *element_last; // Last added sibling to stack top node.
     bool parsing_doctype; // True when parsing a doctype.
     bool parsing_pi; // True when parsing a processing instruction, pi.
+    bool merge_text; // Merge text nodes and character entities.
     const char *pi_name; // Name of the pi node just started.
     XMQOutputSettings *output_settings; // Used when coloring existing text using the tokenizer.
     int magic_cookie; // Used to check that the state has been properly initialized.
@@ -757,7 +768,6 @@ typedef enum XMQColor XMQColor;
 size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop);
 size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *stop);
 size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...);
-size_t to_utf8(int uc, char buf[4]);
 
 #define UTF8_MODULE
 
@@ -883,16 +893,6 @@ char *xmq_unquote_as_c(const char *start, const char *stop);
 char *potentially_add_leading_ending_space(const char *start, const char *stop);
 
 #define TEXT_MODULE
-
-// PARTS ENTITIES ////////////////////////////////////////
-
-/**
-    toHtmlEntity:
-    @uc: Unicode code point.
-*/
-const char *toHtmlEntity(int uc);
-
-#define ENTITIES_MODULE
 
 // PARTS XML ////////////////////////////////////////
 
@@ -1209,6 +1209,7 @@ struct XMQParseState
     void *element_last; // Last added sibling to stack top node.
     bool parsing_doctype; // True when parsing a doctype.
     bool parsing_pi; // True when parsing a processing instruction, pi.
+    bool merge_text; // Merge text nodes and character entities.
     const char *pi_name; // Name of the pi node just started.
     XMQOutputSettings *output_settings; // Used when coloring existing text using the tokenizer.
     int magic_cookie; // Used to check that the state has been properly initialized.
@@ -2767,7 +2768,6 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     assert(start < stop);
     assert(*start == '/');
 
-    // PRUTT printf("indent=%d text>%.*s<\n", (int)indent, (int)(stop-start), start);
     const char *i = start;
     while (i < stop && *i == '/') i++;
 
@@ -2822,7 +2822,6 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
 
     assert(start <= stop);
     char *foo = xmq_trim_quote(indent, space, start, stop);
-    // PRUTT printf("uncommented text>%s<\n", foo);
     return foo;
 }
 
@@ -3004,9 +3003,6 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
     buf = (char*)realloc(buf, real_size);
     return buf;
 }
-
-
-
 
 void xmqSetupParseCallbacksNoop(XMQParseCallbacks *callbacks)
 {
@@ -3408,7 +3404,20 @@ xmlNodePtr create_entity(XMQParseState *state,
     xmlNodePtr n = NULL;
     if (tmp[1] == '#')
     {
-        n = xmlNewCharRef(state->doq->docptr_.xml, (const xmlChar *)tmp);
+        if (tmp[2] == 'x')
+        {
+            UTF8Char uni;
+            int uc = strtol(tmp+3, NULL, 16);
+            size_t len = encode_utf8(uc, &uni);
+            char buf[len+1];
+            memcpy(buf, uni.bytes, len);
+            buf[len] = 0;
+            n = xmlNewDocText(state->doq->docptr_.xml, (xmlChar*)buf);
+        }
+        else
+        {
+            n = xmlNewCharRef(state->doq->docptr_.xml, (const xmlChar *)tmp);
+        }
     }
     else
     {
@@ -10919,7 +10928,16 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
         i++;
     }
 
-    return i;
+    // Now move backwards, perhaps there was newlines before this problematic character...
+    // Then we have to escape those as well since they are ending the previous quote.
+    const char *j = i-1;
+    while (j > start)
+    {
+        int c = (int)((unsigned char)*j);
+        if (c != '\n') break;
+        j--;
+    }
+    return j+1;
 }
 
 void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level)
@@ -10997,6 +11015,7 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
     // Ok, normal content to be quoted. However we might need to split the content
     // at chars that need to be replaced with character entities. Normally no
     // chars need to be replaced. But in compact mode, the \n newlines are replaced with &#10;
+    // If content contains CR LF its replaced with &#13;&#10;
     // Also one can replace all non-ascii chars with their entities if so desired.
     for (const char *from = start; from < stop; )
     {
@@ -11018,13 +11037,13 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
         }
         else
         {
-            check_space_before_quote(ps, level);
             bool add_nls = false;
             bool add_compound = false;
             bool compact = ps->output_settings->compact;
             count_necessary_quotes(from, to, false, &add_nls, &add_compound);
             if (!add_compound && (!add_nls || !compact))
             {
+                check_space_before_quote(ps, level);
                 print_safe_leaf_quote(ps, level_to_quote_color(level), from, to);
             }
             else

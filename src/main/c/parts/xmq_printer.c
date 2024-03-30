@@ -1128,7 +1128,16 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
         i++;
     }
 
-    return i;
+    // Now move backwards, perhaps there was newlines before this problematic character...
+    // Then we have to escape those as well since they are ending the previous quote.
+    const char *j = i-1;
+    while (j > start)
+    {
+        int c = (int)((unsigned char)*j);
+        if (c != '\n') break;
+        j--;
+    }
+    return j+1;
 }
 
 void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level)
@@ -1228,13 +1237,13 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
         }
         else
         {
-            check_space_before_quote(ps, level);
             bool add_nls = false;
             bool add_compound = false;
             bool compact = ps->output_settings->compact;
             count_necessary_quotes(from, to, false, &add_nls, &add_compound);
             if (!add_compound && (!add_nls || !compact))
             {
+                check_space_before_quote(ps, level);
                 print_safe_leaf_quote(ps, level_to_quote_color(level), from, to);
             }
             else

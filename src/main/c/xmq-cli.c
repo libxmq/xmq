@@ -1176,6 +1176,10 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         {
             command->trim = XMQ_TRIM_NONE;
         }
+        else if (!strcmp(arg+7, "merge"))
+        {
+            command->trim = XMQ_TRIM_MERGE;
+        }
         else if (!strcmp(arg+7, "heuristic"))
         {
             command->trim = XMQ_TRIM_HEURISTIC;
