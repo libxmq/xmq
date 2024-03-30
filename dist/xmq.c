@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2023 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2023-2024 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -10998,19 +10998,13 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
     // at chars that need to be replaced with character entities. Normally no
     // chars need to be replaced. But in compact mode, the \n newlines are replaced with &#10;
     // Also one can replace all non-ascii chars with their entities if so desired.
-    bool compact = ps->output_settings->compact;
     for (const char *from = start; from < stop; )
     {
         const char *to = find_next_char_that_needs_escape(ps, from, stop);
         if (from == to)
         {
-            char c = *from;
             check_space_before_entity_node(ps);
             to += print_char_entity(ps, level_to_entity_color(level), from, stop);
-            if (c == '\n' && !compact)
-            {
-                print_nl_and_indent(ps, NULL, NULL);
-            }
         }
         else
         {

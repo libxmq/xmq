@@ -1,0 +1,19 @@
+INPUT
+lines = 'alfa
+
+         beta
+
+         gamma'
+FIRST
+lines=('alfa'&#10;&#10;'beta'&#10;&#10;'gamma')
+SECOND
+lines = ( 'alfa'
+          &#10;
+          &#10;
+          'beta'
+          &#10;
+          &#10;
+          'gamma' )
+END
+CMDS_FIRST to-xmq --compact
+CMDS_SECOND to-xmq
