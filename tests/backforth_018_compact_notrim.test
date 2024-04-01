@@ -1,0 +1,24 @@
+INPUT
+<lines>
+    alfa
+    beta
+    gamma
+    <iffo>123
+          456
+    </iffo>
+</lines>
+FIRST
+lines{&#10;'    ' 'alfa'&#10;'    beta'&#10;'    gamma'&#10;'    'iffo=('123'&#10;'          456'&#10;'    ')&#10;}
+SECOND
+lines {
+    'alfa
+     beta
+     gamma'
+    iffo = '123
+            456'
+}
+END
+ARGS_FIRST --trim=none
+CMDS_FIRST to-xmq --compact
+ARGS_SECOND --trim=heuristic
+CMDS_SECOND to-xmq

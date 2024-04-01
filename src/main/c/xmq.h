@@ -125,10 +125,10 @@ typedef enum
 
 /**
     XMQFlagBits:
-    @XMQ_FLAG_TRIM_NONE: Do not trim any whitespace, implies
+    @XMQ_FLAG_TRIM_NONE: Do not trim any whitespace.
     @XMQ_FLAG_TRIM_HEURISTIC: Remove leading/ending whitespace, but try to keep significant, remove incidental indentation.
-    @XMQ_FLAG_TRIM_EXTRA: Replace sequence of whitespace with single spaces, try to keep significant, remove all indentation.
-    @XMQ_FLAG_NOMERGE: Do not merge text and character entities. Leave everything else as is.
+    @XMQ_FLAG_TRIM_EXACT: Trim exactly according to XML rules. Depends on your XSD,space:preserve and more and is COMPLICATED!
+    @XMQ_FLAG_NOMERGE: Do not merge text and character entities.
 
     If a 0 is provided as the flags to the parse functions, then it will parse using the these default settings:
     When loading xml/html:
@@ -149,7 +149,7 @@ typedef enum
 {
     XMQ_FLAG_TRIM_NONE = 1,
     XMQ_FLAG_TRIM_HEURISTIC = 2,
-    XMQ_FLAG_TRIM_EXTRA = 4,
+    XMQ_FLAG_TRIM_EXACT = 4,
     XMQ_FLAG_NOMERGE = 8,
 } XMQFlagBits;
 
@@ -557,9 +557,6 @@ void xmqPrint(XMQDoc *doc, XMQOutputSettings *settings);
 
 /** Trim xml whitespace. */
 void xmqTrimWhitespace(XMQDoc *doc, int flags);
-
-/** Merge hexadecimal character entities. */
-void xmqMergeHexCharEntities(XMQDoc *doc);
 
 /** A parsing error will be described here! */
 const char *xmqDocError(XMQDoc *doc);

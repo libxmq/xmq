@@ -1181,9 +1181,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         {
             command->flags |= XMQ_FLAG_TRIM_HEURISTIC;
         }
-        else if (!strcmp(arg+7, "extra"))
+        else if (!strcmp(arg+7, "exact"))
         {
-            command->flags |= XMQ_FLAG_TRIM_EXTRA;
+            command->flags |= XMQ_FLAG_TRIM_EXACT;
+            fprintf(stderr, "Warning --trim=exact is not yet implemented! Care to help?\n");
+            exit(1);
         }
         else
         {
@@ -1216,12 +1218,14 @@ bool cmd_help(XMQCliCommand *cmd)
            "\n"
            "  --debug    Output debug information on stderr.\n"
            "  --help -h  Display this help and exit.\n"
-           "  --lines    Assume each line is a separate document\n"
+           "  --lines    Assume each line is a separate document.\n"
+           "  --nomerge  When loading xmq do not merge text quotes and character entities.\n"
            "  --root=<name>\n"
            "             Create a root node <name> unless the file starts with a node with this <name> already.\n"
-           "  --trim=none|default|heuristic\n"
+           "  --trim=none|heuristic|exact\n"
            "             The default setting when reading xml/html content is to trim whitespace using a heuristic.\n"
            "             For xmq/htmq/json the default settings is none since whitespace is explicit in xmq/htmq/json.\n"
+           "             Not yet implemented: exact will trim exactly to the significant whitespace according to xml/html rules.\n"
            "  --verbose  Output extra information on stderr.\n"
            "  --version  Output version information and exit.\n"
            "  --xmq|--htmq|--xml|--html|--json\n"

@@ -4231,6 +4231,9 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
 
 void trim_text_node(xmlNode *node, int flags)
 {
+    // If node has whitespace preserve set, then do not trim.
+    // if (xmlNodeGetSpacePreserve (node)) return;
+
     const char *content = xml_element_content(node);
     // We remove any all whitespace node.
     // This ought to have been removed with XML_NOBLANKS alas that does not always happen.
@@ -4306,6 +4309,7 @@ void xmqTrimWhitespace(XMQDoc *doq, int flags)
     }
 }
 
+/*
 xmlNode *merge_surrounding_text_nodes(xmlNode *node)
 {
     const char *val = (const char *)node->name;
@@ -4371,6 +4375,7 @@ void xmqMergeHexCharEntities(XMQDoc *doq)
         i = merge_hex_chars_node(i);
     }
 }
+*/
 
 char *escape_xml_comment(const char *comment)
 {
@@ -5116,7 +5121,7 @@ bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, int 
     int parse_options = XML_PARSE_NOCDATA | XML_PARSE_NONET;
     bool should_trim = false;
     if (flags & XMQ_FLAG_TRIM_HEURISTIC ||
-        flags & XMQ_FLAG_TRIM_EXTRA) should_trim = true;
+        flags & XMQ_FLAG_TRIM_EXACT) should_trim = true;
     if (flags & XMQ_FLAG_TRIM_NONE) should_trim = false;
 
     if (should_trim) parse_options |= XML_PARSE_NOBLANKS;
@@ -5154,7 +5159,7 @@ bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, int
 
     bool should_trim = false;
     if (flags & XMQ_FLAG_TRIM_HEURISTIC ||
-        flags & XMQ_FLAG_TRIM_EXTRA) should_trim = true;
+        flags & XMQ_FLAG_TRIM_EXACT) should_trim = true;
     if (flags & XMQ_FLAG_TRIM_NONE) should_trim = false;
 
     if (should_trim) parse_options |= HTML_PARSE_NOBLANKS;
@@ -5275,10 +5280,9 @@ exit:
     if (ok)
     {
         bool should_trim = false;
-        bool should_merge = true;
 
         if (flags & XMQ_FLAG_TRIM_HEURISTIC ||
-            flags & XMQ_FLAG_TRIM_EXTRA) should_trim = true;
+            flags & XMQ_FLAG_TRIM_EXACT) should_trim = true;
 
         if (!(flags & XMQ_FLAG_TRIM_NONE) &&
             (ct == XMQ_CONTENT_XML ||
@@ -5287,10 +5291,7 @@ exit:
             should_trim = true;
         }
 
-        if (flags & XMQ_FLAG_NOMERGE) should_merge = false;
-
         if (should_trim) xmqTrimWhitespace(doq, flags);
-        if (should_merge) xmqMergeHexCharEntities(doq);
     }
 
     return ok;
