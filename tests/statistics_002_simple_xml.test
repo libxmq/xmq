@@ -1,0 +1,15 @@
+START
+<howdy aa="bbb">
+</howdy>
+STATISTICS
+statistics {
+    size_source            = 26
+    num_elements           = 1
+    size_element_names     = 5
+    num_attributes         = 1
+    size_attribute_names   = 2
+    size_attribute_content = 3
+    sum_meta               = 10
+    sum_text               = 0
+}
+END

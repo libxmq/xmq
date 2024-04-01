@@ -1,0 +1,25 @@
+START
+alfa=('Hejsan' &#10; 'Hoppsan')
+beta=('Hejsan' ' ' 'Hoppsan')
+gamma {
+    'Hejsan' ' ' 'Hoppsan'
+    delta = 3
+}
+COMPACT
+alfa=('Hejsan'&#10;'Hoppsan')beta=('Hejsan' ' ' 'Hoppsan')gamma{'Hejsan' ' ' 'Hoppsan'delta=3}
+XMQ
+alfa = ( 'Hejsan'
+         &#10;
+         'Hoppsan' )
+beta = ( 'Hejsan'
+         ' '
+         'Hoppsan' )
+gamma {
+    'Hejsan'
+    ' '
+    'Hoppsan'
+    delta = 3
+}
+END
+ARGS --nomerge
+CMDS
