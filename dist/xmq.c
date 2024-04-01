@@ -598,8 +598,8 @@ bool is_comment_node(const xmlNode *node);
 bool is_pi_node(const xmlNode *node);
 bool is_leaf_node(xmlNode *node);
 bool is_key_value_node(xmlNode *node);
-void trim_node(xmlNode *node, XMQTrimType tt);
-void trim_text_node(xmlNode *node, XMQTrimType tt);
+void trim_node(xmlNode *node, int flags);
+void trim_text_node(xmlNode *node, int flags);
 
 // Output buffer functions ////////////////////////////////////////////////////////
 
@@ -1428,8 +1428,8 @@ bool is_comment_node(const xmlNode *node);
 bool is_pi_node(const xmlNode *node);
 bool is_leaf_node(xmlNode *node);
 bool is_key_value_node(xmlNode *node);
-void trim_node(xmlNode *node, XMQTrimType tt);
-void trim_text_node(xmlNode *node, XMQTrimType tt);
+void trim_node(xmlNode *node, int flags);
+void trim_text_node(xmlNode *node, int flags);
 
 // Output buffer functions ////////////////////////////////////////////////////////
 
@@ -1674,8 +1674,8 @@ void write_safe_html(XMQWrite write, void *writer_state, const char *start, cons
 void write_safe_tex(XMQWrite write, void *writer_state, const char *start, const char *stop);
 bool xmqVerbose();
 void xmqSetupParseCallbacksNoop(XMQParseCallbacks *callbacks);
-bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, XMQTrimType tt);
-bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, XMQTrimType tt);
+bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, int flags);
+bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, int flags);
 bool xmq_parse_buffer_text(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root);
 void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings);
@@ -1688,6 +1688,9 @@ bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop, con
 const char *xml_element_type_to_string(xmlElementType type);
 const char *indent_depth(int i);
 void free_indent_depths();
+
+xmlNode *merge_surrounding_text_nodes(xmlNode *node);
+xmlNode *merge_hex_chars_node(xmlNode *node);
 
 // Declare tokenize_whitespace tokenize_name functions etc...
 #define X(TYPE) void tokenize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start, const char *stop, const char *suffix);
@@ -3242,7 +3245,7 @@ const char *skip_any_potential_bom(const char *start, const char *stop)
     return start;
 }
 
-bool xmqParseBuffer(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root)
+bool xmqParseBuffer(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root, int flags)
 {
     bool rc = true;
     XMQOutputSettings *output_settings = xmqNewOutputSettings();
@@ -3251,6 +3254,7 @@ bool xmqParseBuffer(XMQDoc *doq, const char *start, const char *stop, const char
     xmq_setup_parse_callbacks(parse);
 
     XMQParseState *state = xmqNewParseState(parse, output_settings);
+    state->merge_text = !(flags & XMQ_FLAG_NOMERGE);
     state->doq = doq;
     xmqSetStateSourceName(state, doq->source_name_);
 
@@ -3280,7 +3284,7 @@ bool xmqParseBuffer(XMQDoc *doq, const char *start, const char *stop, const char
     return rc;
 }
 
-bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root)
+bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root, int flags)
 {
     bool ok = true;
     char *buffer = NULL;
@@ -3342,7 +3346,7 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root)
         goto exit;
     }
 
-    ok = xmqParseBuffer(doq, buffer, buffer+fsize, implicit_root);
+    ok = xmqParseBuffer(doq, buffer, buffer+fsize, implicit_root, flags);
 
     exit:
 
@@ -3376,7 +3380,29 @@ xmlNodePtr create_quote(XMQParseState *state,
     size_t indent = col - 1;
     char *trimmed = xmq_un_quote(indent, ' ', start, stop, true);
     xmlNodePtr n = xmlNewDocText(state->doq->docptr_.xml, (const xmlChar *)trimmed);
-    xmlAddChild(parent, n);
+    if (state->merge_text)
+    {
+        n = xmlAddChild(parent, n);
+    }
+    else
+    {
+        // I want to prevent merging of this new text node with previous text nodes....
+        // Alas there is no such setting in libxml2 so I perform the addition explicit here.
+        // Check the source for xmlAddChild.
+        n->parent = parent;
+        if (parent->children == NULL)
+        {
+            parent->children = n;
+            parent->last = n;
+        }
+        else
+        {
+            xmlNodePtr prev = parent->last;
+	    prev->next = n;
+            n->prev = prev;
+            parent->last = n;
+        }
+    }
     free(trimmed);
     return n;
 }
@@ -3404,26 +3430,32 @@ xmlNodePtr create_entity(XMQParseState *state,
     xmlNodePtr n = NULL;
     if (tmp[1] == '#')
     {
-        if (tmp[2] == 'x')
+        // Character entity.
+        if (!state->merge_text)
         {
+            // Do not merge with surrounding text.
+            n = xmlNewCharRef(state->doq->docptr_.xml, (const xmlChar *)tmp);
+        }
+        else
+        {
+            // Make inte text that will be merged.
             UTF8Char uni;
-            int uc = strtol(tmp+3, NULL, 16);
+            int uc = 0;
+            if (tmp[2] == 'x') uc = strtol(tmp+3, NULL, 16);
+            else uc = strtol(tmp+2, NULL, 10);
             size_t len = encode_utf8(uc, &uni);
             char buf[len+1];
             memcpy(buf, uni.bytes, len);
             buf[len] = 0;
             n = xmlNewDocText(state->doq->docptr_.xml, (xmlChar*)buf);
         }
-        else
-        {
-            n = xmlNewCharRef(state->doq->docptr_.xml, (const xmlChar *)tmp);
-        }
     }
     else
     {
+        // Named references are kept as is.
         n = xmlNewReference(state->doq->docptr_.xml, (const xmlChar *)tmp);
     }
-    xmlAddChild(parent, n);
+    n = xmlAddChild(parent, n);
     free(tmp);
 
     return n;
@@ -4197,7 +4229,7 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
     }
 }
 
-void trim_text_node(xmlNode *node, XMQTrimType tt)
+void trim_text_node(xmlNode *node, int flags)
 {
     const char *content = xml_element_content(node);
     // We remove any all whitespace node.
@@ -4233,19 +4265,19 @@ void trim_text_node(xmlNode *node, XMQTrimType tt)
     free(trimmed);
 }
 
-void trim_node(xmlNode *node, XMQTrimType tt)
+void trim_node(xmlNode *node, int flags)
 {
     debug("[XMQ] trim %s\n", xml_element_type_to_string(node->type));
 
     if (is_content_node(node))
     {
-        trim_text_node(node, tt);
+        trim_text_node(node, flags);
         return;
     }
 
     if (is_comment_node(node))
     {
-        trim_text_node(node, tt);
+        trim_text_node(node, flags);
         return;
     }
 
@@ -4256,12 +4288,12 @@ void trim_node(xmlNode *node, XMQTrimType tt)
     while (i)
     {
         xmlNode *next = xml_next_sibling(i); // i might be freed in trim.
-        trim_node(i, tt);
+        trim_node(i, flags);
         i = next;
     }
 }
 
-void xmqTrimWhitespace(XMQDoc *doq, XMQTrimType tt)
+void xmqTrimWhitespace(XMQDoc *doq, int flags)
 {
     xmlNodePtr i = doq->docptr_.xml->children;
     if (!doq || !i) return;
@@ -4269,8 +4301,74 @@ void xmqTrimWhitespace(XMQDoc *doq, XMQTrimType tt)
     while (i)
     {
         xmlNode *next = xml_next_sibling(i); // i might be freed in trim.
-        trim_node(i, tt);
+        trim_node(i, flags);
         i = next;
+    }
+}
+
+xmlNode *merge_surrounding_text_nodes(xmlNode *node)
+{
+    const char *val = (const char *)node->name;
+    // Not a hex entity.
+    if (val[0] != '#' || val[1] != 'x') return node->next;
+
+    debug("[XMQ] merge hex %s chars %s\n", val, xml_element_type_to_string(node->type));
+
+    UTF8Char uni;
+    int uc = strtol(val+2, NULL, 16);
+    size_t len = encode_utf8(uc, &uni);
+    char buf[len+1];
+    memcpy(buf, uni.bytes, len);
+    buf[len] = 0;
+
+    xmlNodePtr prev = node->prev;
+    xmlNodePtr next = node->next;
+    if (prev && prev->type == XML_TEXT_NODE)
+    {
+        xmlNodeAddContentLen(prev, (xmlChar*)buf, len);
+        xmlUnlinkNode(node);
+        xmlFreeNode(node);
+        debug("[XMQ] merge left\n");
+    }
+    if (next && next->type == XML_TEXT_NODE)
+    {
+        xmlNodeAddContent(prev, next->content);
+        xmlNode *n = next->next;
+        xmlUnlinkNode(next);
+        xmlFreeNode(next);
+        next = n;
+        debug("[XMQ] merge right\n");
+    }
+
+    return next;
+}
+
+xmlNode *merge_hex_chars_node(xmlNode *node)
+{
+    if (node->type == XML_ENTITY_REF_NODE)
+    {
+        return merge_surrounding_text_nodes(node);
+    }
+
+    // Do not recurse into these
+    if (node->type == XML_ENTITY_DECL) return node->next;
+
+    xmlNodePtr i = xml_first_child(node);
+    while (i)
+    {
+        i = merge_hex_chars_node(i);
+    }
+    return node->next;
+}
+
+void xmqMergeHexCharEntities(XMQDoc *doq)
+{
+    xmlNodePtr i = doq->docptr_.xml->children;
+    if (!doq || !i) return;
+
+    while (i)
+    {
+        i = merge_hex_chars_node(i);
     }
 }
 
@@ -5008,7 +5106,7 @@ double xmqGetDouble(XMQDoc *doq, XMQNode *node, const char *xpath)
     return atof(content);
 }
 
-bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, XMQTrimType tt)
+bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, int flags)
 {
     xmlDocPtr doc;
 
@@ -5016,7 +5114,12 @@ bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, XMQT
     LIBXML_TEST_VERSION ;
 
     int parse_options = XML_PARSE_NOCDATA | XML_PARSE_NONET;
-    if (tt != XMQ_TRIM_NONE) parse_options |= XML_PARSE_NOBLANKS;
+    bool should_trim = false;
+    if (flags & XMQ_FLAG_TRIM_HEURISTIC ||
+        flags & XMQ_FLAG_TRIM_EXTRA) should_trim = true;
+    if (flags & XMQ_FLAG_TRIM_NONE) should_trim = false;
+
+    if (should_trim) parse_options |= XML_PARSE_NOBLANKS;
 
     doc = xmlReadMemory(start, stop-start, doq->source_name_, NULL, parse_options);
     if (doc == NULL)
@@ -5039,7 +5142,7 @@ bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, XMQT
     return true;
 }
 
-bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, XMQTrimType tt)
+bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, int flags)
 {
     htmlDocPtr doc;
     xmlNode *roo_element = NULL;
@@ -5048,7 +5151,13 @@ bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, XMQ
     LIBXML_TEST_VERSION
 
     int parse_options = HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET;
-    if (tt != XMQ_TRIM_NONE) parse_options |= HTML_PARSE_NOBLANKS;
+
+    bool should_trim = false;
+    if (flags & XMQ_FLAG_TRIM_HEURISTIC ||
+        flags & XMQ_FLAG_TRIM_EXTRA) should_trim = true;
+    if (flags & XMQ_FLAG_TRIM_NONE) should_trim = false;
+
+    if (should_trim) parse_options |= HTML_PARSE_NOBLANKS;
 
     doc = htmlReadMemory(start, stop-start, "foof", NULL, parse_options);
 
@@ -5109,7 +5218,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
                             const char *stop,
                             const char *implicit_root,
                             XMQContentType ct,
-                            XMQTrimType tt)
+                            int flags)
 {
     bool ok = true;
 
@@ -5152,10 +5261,10 @@ bool xmqParseBufferWithType(XMQDoc *doq,
 
     switch (ct)
     {
-    case XMQ_CONTENT_XMQ: ok = xmqParseBuffer(doq, start, stop, implicit_root); break;
-    case XMQ_CONTENT_HTMQ: ok = xmqParseBuffer(doq, start, stop, implicit_root); break;
-    case XMQ_CONTENT_XML: ok = xmq_parse_buffer_xml(doq, start, stop, tt); break;
-    case XMQ_CONTENT_HTML: ok = xmq_parse_buffer_html(doq, start, stop, tt); break;
+    case XMQ_CONTENT_XMQ: ok = xmqParseBuffer(doq, start, stop, implicit_root, flags); break;
+    case XMQ_CONTENT_HTMQ: ok = xmqParseBuffer(doq, start, stop, implicit_root, flags); break;
+    case XMQ_CONTENT_XML: ok = xmq_parse_buffer_xml(doq, start, stop, flags); break;
+    case XMQ_CONTENT_HTML: ok = xmq_parse_buffer_html(doq, start, stop, flags); break;
     case XMQ_CONTENT_JSON: ok = xmq_parse_buffer_json(doq, start, stop, implicit_root); break;
     case XMQ_CONTENT_TEXT: ok = xmq_parse_buffer_text(doq, start, stop, implicit_root); break;
     default: break;
@@ -5165,13 +5274,23 @@ exit:
 
     if (ok)
     {
-        if (tt == XMQ_TRIM_HEURISTIC ||
-            (tt == XMQ_TRIM_DEFAULT && (
-                ct == XMQ_CONTENT_XML ||
-                ct == XMQ_CONTENT_HTML)))
+        bool should_trim = false;
+        bool should_merge = true;
+
+        if (flags & XMQ_FLAG_TRIM_HEURISTIC ||
+            flags & XMQ_FLAG_TRIM_EXTRA) should_trim = true;
+
+        if (!(flags & XMQ_FLAG_TRIM_NONE) &&
+            (ct == XMQ_CONTENT_XML ||
+             ct == XMQ_CONTENT_HTML))
         {
-            xmqTrimWhitespace(doq, tt);
+            should_trim = true;
         }
+
+        if (flags & XMQ_FLAG_NOMERGE) should_merge = false;
+
+        if (should_trim) xmqTrimWhitespace(doq, flags);
+        if (should_merge) xmqMergeHexCharEntities(doq);
     }
 
     return ok;
@@ -5273,7 +5392,7 @@ bool xmqParseFileWithType(XMQDoc *doq,
                           const char *file,
                           const char *implicit_root,
                           XMQContentType ct,
-                          XMQTrimType tt)
+                          int flags)
 {
     bool rc = true;
     size_t fsize;
@@ -5291,7 +5410,7 @@ bool xmqParseFileWithType(XMQDoc *doq,
     }
     if (!rc) return false;
 
-    rc = xmqParseBufferWithType(doq, buffer, buffer+fsize, implicit_root, ct, tt);
+    rc = xmqParseBufferWithType(doq, buffer, buffer+fsize, implicit_root, ct, flags);
 
     free((void*)buffer);
 
@@ -7125,6 +7244,8 @@ void fixup_json(XMQDoc *doq, xmlNode *node)
                 xmlFreeNode(i);
                 i = next;
             }
+            assert(node);
+            assert(new_child);
             xmlAddChild(node, new_child);
             free(new_content);
             return;

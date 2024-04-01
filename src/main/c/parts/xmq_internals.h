@@ -424,8 +424,8 @@ bool is_comment_node(const xmlNode *node);
 bool is_pi_node(const xmlNode *node);
 bool is_leaf_node(xmlNode *node);
 bool is_key_value_node(xmlNode *node);
-void trim_node(xmlNode *node, XMQTrimType tt);
-void trim_text_node(xmlNode *node, XMQTrimType tt);
+void trim_node(xmlNode *node, int flags);
+void trim_text_node(xmlNode *node, int flags);
 
 // Output buffer functions ////////////////////////////////////////////////////////
 

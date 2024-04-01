@@ -8,7 +8,7 @@ int main(int argc, char **argv)
 {
     XMQDoc *doc = xmqNewDoc();
 
-    bool ok = xmqParseFile(doc, argv[1], "car");
+    bool ok = xmqParseFile(doc, argv[1], "car", 0);
     if (!ok) {
         printf("Could not load file %s.\n", argv[1]);
         return 1;

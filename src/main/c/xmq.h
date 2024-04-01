@@ -124,27 +124,34 @@ typedef enum
 } XMQRenderFormat;
 
 /**
-    XMQTrimType:
-    @XMQ_TRIM_DEFAULT: Use the default, ie no-trim for xmq/json, normal-trim for xml/html.
-    @XMQ_TRIM_NONE: Do not trim/merge at all. Keep unnecessary xml/html indentation and newlines.
-    @XMQ_TRIM_MERGE: Merge text and character entities. Leave everything else as is.
-    @XMQ_TRIM_HEURISTIC: Normal trim heuristic. Remove leading/ending whitespace, remove incidental indentation. Merge text and character entities.
-    @XMQ_TRIM_EXTRA: Like normal but remove all indentation (not just incidental) and collapse whitespace.
-    @XMQ_TRIM_RESHUFFLE: Like extra but also reflow all content at word boundaries to limit line lengths.
+    XMQFlagBits:
+    @XMQ_FLAG_TRIM_NONE: Do not trim any whitespace, implies
+    @XMQ_FLAG_TRIM_HEURISTIC: Remove leading/ending whitespace, but try to keep significant, remove incidental indentation.
+    @XMQ_FLAG_TRIM_EXTRA: Replace sequence of whitespace with single spaces, try to keep significant, remove all indentation.
+    @XMQ_FLAG_NOMERGE: Do not merge text and character entities. Leave everything else as is.
 
-    When loading xml/html trim the whitespace from the input to generate the most likely desired xmq output.
-    When loading xmq/htmq, the whitespace is never trimmed since xmq explicitly encodes all important whitespace.
+    If a 0 is provided as the flags to the parse functions, then it will parse using the these default settings:
+    When loading xml/html:
+        trim the whitespace from the input to generate the most likely desired xmq output.
+        merge character entities
+    When loading xmq/htmq:
+        no trimming but
+        merge character entities such as &#10; and consecutive text quotes
+
     If you load xml with XMQ_TRIM_NONE (--trim=none) there will be a lot of unnecessary whitespace stored in
     the xmq, like &#32;&#9;&#10; etc.
     You can then view the xmq with XMQ_TRIM_HEURISTIC (--trim=heuristic) to drop the whitespace.
+
+    If you load xmq with --nomerge then character entities and separate text blocks will be kept as is.
+    The --nomerge currently does not work for XML/HTML since libxml2 does not have a setting for merge.
 */
 typedef enum
 {
-    XMQ_TRIM_DEFAULT = 0,
-    XMQ_TRIM_NONE = 1,
-    XMQ_TRIM_MERGE = 2,
-    XMQ_TRIM_HEURISTIC = 3,
-} XMQTrimType;
+    XMQ_FLAG_TRIM_NONE = 1,
+    XMQ_FLAG_TRIM_HEURISTIC = 2,
+    XMQ_FLAG_TRIM_EXTRA = 4,
+    XMQ_FLAG_NOMERGE = 8,
+} XMQFlagBits;
 
 /**
     XMQSyntax:
@@ -488,7 +495,7 @@ void xmqFreeDoc(XMQDoc *doc);
 
     Parse a file, or if file is NULL, read from stdin.
 */
-bool xmqParseFile(XMQDoc *doc, const char *file, const char *implicit_root);
+bool xmqParseFile(XMQDoc *doc, const char *file, const char *implicit_root, int flags);
 
 /**
     xmqParseBuffer:
@@ -500,7 +507,7 @@ bool xmqParseFile(XMQDoc *doc, const char *file, const char *implicit_root);
     Parse a buffer or a file and create a document.
     The xmq format permits multiple root nodes if an implicit root is supplied.
 */
-bool xmqParseBuffer(XMQDoc *doc, const char *start, const char *stop, const char *implicit_root);
+bool xmqParseBuffer(XMQDoc *doc, const char *start, const char *stop, const char *implicit_root, int flags);
 
 /**
     xmqParseReader:
@@ -511,7 +518,7 @@ bool xmqParseBuffer(XMQDoc *doc, const char *start, const char *stop, const char
     Parse data fetched with a reader and create a document.
     The xmq format permits multiple root nodes if an implicit root is supplied.
 */
-bool xmqParseReader(XMQDoc *doc, XMQReader *reader, const char *implicit_root);
+bool xmqParseReader(XMQDoc *doc, XMQReader *reader, const char *implicit_root, int flags);
 
 /** Allocate the print settings structure and zero it. */
 XMQOutputSettings *xmqNewOutputSettings();
@@ -549,7 +556,10 @@ void xmqSetupPrintMemory(XMQOutputSettings *ps, char **start, char **stop);
 void xmqPrint(XMQDoc *doc, XMQOutputSettings *settings);
 
 /** Trim xml whitespace. */
-void xmqTrimWhitespace(XMQDoc *doc, XMQTrimType tt);
+void xmqTrimWhitespace(XMQDoc *doc, int flags);
+
+/** Merge hexadecimal character entities. */
+void xmqMergeHexCharEntities(XMQDoc *doc);
 
 /** A parsing error will be described here! */
 const char *xmqDocError(XMQDoc *doc);
@@ -664,7 +674,7 @@ bool xmqParseBufferWithType(XMQDoc *doc,
                             const char *stop,
                             const char *implicit_root,
                             XMQContentType ct,
-                            XMQTrimType tt);
+                            int flags);
 
 /**
     xmqParseFileWithType:
@@ -675,7 +685,7 @@ bool xmqParseFileWithType(XMQDoc *doc,
                           const char *file,
                           const char *implicit_root,
                           XMQContentType ct,
-                          XMQTrimType tt);
+                          int flags);
 
 /**
    xmqSetupDefaultColors:

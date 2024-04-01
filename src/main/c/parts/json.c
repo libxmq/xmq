@@ -1133,6 +1133,8 @@ void fixup_json(XMQDoc *doq, xmlNode *node)
                 xmlFreeNode(i);
                 i = next;
             }
+            assert(node);
+            assert(new_child);
             xmlAddChild(node, new_child);
             free(new_content);
             return;

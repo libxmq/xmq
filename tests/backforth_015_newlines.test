@@ -7,13 +7,11 @@ lines = 'alfa
 FIRST
 lines=('alfa'&#10;&#10;'beta'&#10;&#10;'gamma')
 SECOND
-lines = ( 'alfa'
-          &#10;
-          &#10;
-          'beta'
-          &#10;
-          &#10;
-          'gamma' )
+lines.=.'alfa
+.........
+.........beta
+.........
+.........gamma'
 END
 CMDS_FIRST to-xmq --compact
-CMDS_SECOND to-xmq
+CMDS_SECOND render-terminal --use-is=.

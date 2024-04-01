@@ -13,7 +13,7 @@ int main(int argc, char **argv)
     const char *file = "example.xmq";
     XMQDoc *doc = xmqNewDoc();
 
-    bool ok = xmqParseFile(doc, file, "car");
+    bool ok = xmqParseFile(doc, file, "car", 0);
     if (!ok) {
         printf("Parse error in %s\n%s",
                file,

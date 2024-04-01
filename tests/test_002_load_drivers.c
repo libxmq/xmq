@@ -28,7 +28,7 @@ int main(int argc, char **argv)
 {
     XMQDoc *doc = xmqNewDoc();
 
-    bool ok = xmqParseFile(doc, argv[1], "config");
+    bool ok = xmqParseFile(doc, argv[1], "config", 0);
     if (!ok) {
         printf("Could not load file %s.\n", argv[1]);
         return 1;

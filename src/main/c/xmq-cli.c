@@ -148,7 +148,7 @@ struct XMQCliCommand
     bool render_raw;
     bool only_style;
     const char *render_theme; // A named coloring.
-    XMQTrimType trim;
+    int  flags;
     bool use_color; // Uses color or not for terminal/html/tex
     bool bg_dark_mode; // Terminal has dark background.
     const char *use_id; // When rendering html mark the pre tag with this id.
@@ -746,7 +746,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             cmd.env = &env;
             cmd.in = file;
             cmd.in_format = XMQ_CONTENT_DETECT;
-            cmd.trim = XMQ_TRIM_NONE;
+            cmd.flags = XMQ_FLAG_TRIM_NONE;
             size_t len = strlen(file);
             if (len > 4 && !(strncmp(file+len-4, ".xml", 4)))
             {
@@ -812,7 +812,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             // find the,
             //
             // When loading an xslq transform the default is TRIM_NONE anyway since it is xmq.
-            bool ok = xmqParseFileWithType(doq, arg, NULL, XMQ_CONTENT_DETECT, XMQ_TRIM_NONE);
+            bool ok = xmqParseFileWithType(doq, arg, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE);
 
             if (!ok)
             {
@@ -1166,23 +1166,24 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->lines = true;
         return true;
     }
+    if (!strcmp(arg, "--nomerge"))
+    {
+        command->flags |= XMQ_FLAG_NOMERGE;
+        return true;
+    }
     if (!strncmp(arg, "--trim=", 7))
     {
-        if (!strcmp(arg+7, "default"))
+        if (!strcmp(arg+7, "none"))
         {
-            command->trim = XMQ_TRIM_DEFAULT;
-        }
-        else if (!strcmp(arg+7, "none"))
-        {
-            command->trim = XMQ_TRIM_NONE;
-        }
-        else if (!strcmp(arg+7, "merge"))
-        {
-            command->trim = XMQ_TRIM_MERGE;
+            command->flags |= XMQ_FLAG_TRIM_NONE;
         }
         else if (!strcmp(arg+7, "heuristic"))
         {
-            command->trim = XMQ_TRIM_HEURISTIC;
+            command->flags |= XMQ_FLAG_TRIM_HEURISTIC;
+        }
+        else if (!strcmp(arg+7, "extra"))
+        {
+            command->flags |= XMQ_FLAG_TRIM_EXTRA;
         }
         else
         {
@@ -1346,7 +1347,7 @@ bool cmd_load(XMQCliCommand *command)
                                    command->in,
                                    command->implicit_root,
                                    command->in_format,
-                                   command->trim);
+                                   command->flags);
     if (!ok)
     {
         const char *error = xmqDocError(command->env->doc);
