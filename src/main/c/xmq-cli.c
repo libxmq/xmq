@@ -83,6 +83,7 @@ typedef enum
     XMQ_CLI_CMD_TO_HTML,
     XMQ_CLI_CMD_TO_JSON,
     XMQ_CLI_CMD_TO_TEXT,
+    XMQ_CLI_CMD_NOOUT,
     XMQ_CLI_CMD_PRINT,
     XMQ_CLI_CMD_SAVE,
     XMQ_CLI_CMD_PAGER,
@@ -108,6 +109,7 @@ typedef enum
 
 typedef enum {
     XMQ_CLI_CMD_GROUP_NONE,
+    XMQ_CLI_CMD_GROUP_LOAD,
     XMQ_CLI_CMD_GROUP_HELP,
     XMQ_CLI_CMD_GROUP_TO,
     XMQ_CLI_CMD_GROUP_RENDER,
@@ -135,8 +137,11 @@ struct XMQCliCommand
 {
     XMQCliEnvironment *env;
     XMQCliCmd cmd;
+    bool silent;
     const char *in;
     const char *out;
+    const char *alias;
+    XMQDoc *alias_doq; // The xmq document loaded to generate the xsd.
     const char *xpath;
     const char *entity;
     const char *content; // Content to replace something.
@@ -345,12 +350,14 @@ XMQCliCmd cmd_from(const char *s)
 {
     if (!s) return XMQ_CLI_CMD_NONE;
     if (!strcmp(s, "help")) return XMQ_CLI_CMD_HELP;
+    if (!strcmp(s, "load")) return XMQ_CLI_CMD_LOAD;
     if (!strcmp(s, "to-xmq")) return XMQ_CLI_CMD_TO_XMQ;
     if (!strcmp(s, "to-xml")) return XMQ_CLI_CMD_TO_XML;
     if (!strcmp(s, "to-htmq")) return XMQ_CLI_CMD_TO_HTMQ;
     if (!strcmp(s, "to-html")) return XMQ_CLI_CMD_TO_HTML;
     if (!strcmp(s, "to-json")) return XMQ_CLI_CMD_TO_JSON;
     if (!strcmp(s, "to-text")) return XMQ_CLI_CMD_TO_TEXT;
+    if (!strcmp(s, "noout")) return XMQ_CLI_CMD_NOOUT;
     if (!strcmp(s, "print")) return XMQ_CLI_CMD_PRINT;
     if (!strcmp(s, "save")) return XMQ_CLI_CMD_SAVE;
     if (!strcmp(s, "page")) return XMQ_CLI_CMD_PAGER;
@@ -390,6 +397,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TO_HTML: return "to-html";
     case XMQ_CLI_CMD_TO_JSON: return "to-json";
     case XMQ_CLI_CMD_TO_TEXT: return "to-text";
+    case XMQ_CLI_CMD_NOOUT: return "noout";
     case XMQ_CLI_CMD_PRINT: return "print";
     case XMQ_CLI_CMD_SAVE: return "save";
     case XMQ_CLI_CMD_PAGER: return "pager";
@@ -419,6 +427,9 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
 {
     switch (cmd)
     {
+    case XMQ_CLI_CMD_LOAD:
+        return XMQ_CLI_CMD_GROUP_LOAD;
+
     case XMQ_CLI_CMD_TO_XMQ:
     case XMQ_CLI_CMD_TO_XML:
     case XMQ_CLI_CMD_TO_HTMQ:
@@ -427,6 +438,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TO_TEXT:
         return XMQ_CLI_CMD_GROUP_TO;
 
+    case XMQ_CLI_CMD_NOOUT:
     case XMQ_CLI_CMD_PRINT:
     case XMQ_CLI_CMD_SAVE:
     case XMQ_CLI_CMD_PAGER:
@@ -466,7 +478,6 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
         return XMQ_CLI_CMD_GROUP_VALIDATE;
 
     case XMQ_CLI_CMD_NONE:
-    case XMQ_CLI_CMD_LOAD:
     case XMQ_CLI_CMD_STATISTICS:
         return XMQ_CLI_CMD_GROUP_NONE;
     case XMQ_CLI_CMD_HELP:
@@ -599,6 +610,19 @@ void warnValidation(void *ctx, const char *fmt, ...)
     puts(buf);
 }
 
+void abortSilentValidating(void *ctx, const char *msg, ...);
+
+void abortSilentValidating(void *ctx, const char *fmt, ...)
+{
+    exit(1);
+}
+
+void warnSilentValidation(void *ctx, const char *msg, ...);
+
+void warnSilentValidation(void *ctx, const char *fmt, ...)
+{
+}
+
 bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command)
 {
     if (!arg) return false;
@@ -630,6 +654,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             return true;
         }
     }
+
     if (command->cmd == XMQ_CLI_CMD_TO_XMQ ||
         command->cmd == XMQ_CLI_CMD_TO_HTMQ ||
         group == XMQ_CLI_CMD_GROUP_RENDER)
@@ -920,8 +945,27 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         }
     }
 
+    if (group == XMQ_CLI_CMD_GROUP_LOAD)
+    {
+        if (!strncmp(arg, "--alias=", 8))
+        {
+            command->alias = arg+8;
+            return true;
+        }
+        if (command->in == NULL)
+        {
+            command->in = arg;
+            return true;
+        }
+    }
+
     if (group == XMQ_CLI_CMD_GROUP_VALIDATE)
     {
+        if (!strncmp(arg, "--silent", 8))
+        {
+            command->silent = true;
+            return true;
+        }
         if (command->xsd == NULL)
         {
             XMQDoc *doq = xmqNewDoc();
@@ -935,11 +979,12 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
                 return false;
             }
 
-            verbose_("(xmq) loaded xsd %s\n", arg);
-
-            xmlDocPtr xsd = (xmlDocPtr)xmqGetImplementationDoc(doq);
             command->xsd_name = arg;
             command->xsd_doq = doq;
+
+            verbose_("(xmq) loaded xsd %zu bytes from %s\n", xmqGetOriginalSize(doq), arg);
+
+            xmlDocPtr xsd = (xmlDocPtr)xmqGetImplementationDoc(doq);
 
             xmlSchemaParserCtxtPtr ctxt = xmlSchemaNewDocParserCtxt(xsd);
             xmlSchemaSetParserErrors(ctxt,
@@ -1355,6 +1400,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  delete delete-entity\n"
            "  for-each\n"
            "  help\n"
+           "  noout\n"
            "  render-html render-terminal render-tex\n"
            "  replace replace-entity\n"
            "  select\n"
@@ -1373,6 +1419,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "                delete //@class \\\n"
            "                add-root Course \\\n"
            "                transform cols.xslq to-text\n"
+           "  xmq work.xml validate --silent work.xsd noout\n"
         );
 
     exit(0);
@@ -1463,6 +1510,8 @@ bool cmd_load(XMQCliCommand *command)
         command->in = NULL;
     }
 
+    verbose_("(xmq) cmd-load %s\n", command->in);
+
     command->env->load = command;
     bool ok = xmqParseFileWithType(command->env->doc,
                                    command->in,
@@ -1537,7 +1586,8 @@ bool cmd_to(XMQCliCommand *command)
 bool cmd_output(XMQCliCommand *command)
 {
     if (command->cmd == XMQ_CLI_CMD_STATISTICS ||
-        command->cmd == XMQ_CLI_CMD_FOR_EACH)
+        command->cmd == XMQ_CLI_CMD_FOR_EACH ||
+        command->cmd == XMQ_CLI_CMD_NOOUT)
     {
         return true;
     }
@@ -1624,10 +1674,20 @@ bool cmd_validate(XMQCliCommand *command)
 
     xmlSchemaValidCtxtPtr validation_ctxt = xmlSchemaNewValidCtxt(command->xsd);
 
-    xmlSchemaSetValidErrors(validation_ctxt,
-                             abortValidating,
-                             warnValidation,
-                             (void*)command->xsd_name);
+    if (!command->silent)
+    {
+        xmlSchemaSetValidErrors(validation_ctxt,
+                                abortValidating,
+                                warnValidation,
+                                (void*)command->xsd_name);
+    }
+    else
+    {
+        xmlSchemaSetValidErrors(validation_ctxt,
+                                abortSilentValidating,
+                                warnSilentValidation,
+                                (void*)command->xsd_name);
+    }
 
     if (!xmlSchemaIsValid(validation_ctxt))
     {
@@ -2233,6 +2293,8 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
         return;
     case XMQ_CLI_CMD_LOAD:
         return;
+    case XMQ_CLI_CMD_NOOUT:
+        return;
     case XMQ_CLI_CMD_HELP:
         c->print_help = true;
         return;
@@ -2488,6 +2550,14 @@ void print_command_help(XMQCliCmd c)
 {
     switch (c)
     {
+    case XMQ_CLI_CMD_NONE:
+        break;
+    case XMQ_CLI_CMD_LOAD:
+        printf(
+            "Usage: xmq <input> load <file>\n"
+            "       xmq <input> load --alias=WORK <file>\n"
+            "Load a second document and store it under the alias. If no alias is given, then the first document is replaced.\n");
+        break;
     case XMQ_CLI_CMD_ADD_ROOT:
         printf(
             "Usage: xmq <input> add-root <root-element-name>\n"
@@ -2507,6 +2577,11 @@ void print_command_help(XMQCliCmd c)
         printf(
             "Usage: xmq <input> validate <xsd>\n"
             "Validate document against the supplied xsd. Exit with error if validation fails.\n");
+        break;
+    case XMQ_CLI_CMD_NOOUT:
+        printf(
+            "Usage: xmq <input> noout\n"
+            "Do not print any output, can be used after for example validate.\n");
         break;
     default:
         printf("Help not written yet.\n");
@@ -2929,6 +3004,8 @@ bool perform_command(XMQCliCommand *c)
     switch (c->cmd) {
     case XMQ_CLI_CMD_NONE:
         return true;
+    case XMQ_CLI_CMD_NOOUT:
+        return true;
     case XMQ_CLI_CMD_LOAD:
         return cmd_load(c);
     case XMQ_CLI_CMD_TO_XMQ:
@@ -3064,7 +3141,8 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
                 do_print = true;
             }
 
-            if (cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_FOR_EACH)
+            if (cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_FOR_EACH ||
+                command->cmd == XMQ_CLI_CMD_NOOUT)
             {
                 // These commands by default do not need to print the output.
                 do_print = false;
@@ -3075,7 +3153,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
             {
                 if (output)
                 {
-                    fprintf(stderr, "xmq: you can only use one print/save/pager command.\n");
+                    fprintf(stderr, "xmq: you can only use one print/save/pager/browse/noout command.\n");
                     return false;
                 }
                 output = command;

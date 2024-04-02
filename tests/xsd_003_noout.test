@@ -1,0 +1,20 @@
+XSD
+xs:schema(xmlns:xs = http://www.w3.org/2001/XMLSchema)
+{
+    xs:element(name = shiporder)
+    {
+        xs:complexType {
+            xs:sequence {
+                xs:element(name = name
+                           type = xs:string)
+            }
+        }
+    }
+}
+INPUT
+shiporder {
+    name = gurk
+}
+OUTPUT
+END
+CMDS noout
