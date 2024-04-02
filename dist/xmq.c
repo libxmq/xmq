@@ -5113,8 +5113,6 @@ double xmqGetDouble(XMQDoc *doq, XMQNode *node, const char *xpath)
 
 bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, int flags)
 {
-    xmlDocPtr doc;
-
     /* Macro to check API for match with the DLL we are using */
     LIBXML_TEST_VERSION ;
 
@@ -5126,7 +5124,7 @@ bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, int 
 
     if (should_trim) parse_options |= XML_PARSE_NOBLANKS;
 
-    doc = xmlReadMemory(start, stop-start, doq->source_name_, NULL, parse_options);
+    xmlDocPtr doc = xmlReadMemory(start, stop-start, doq->source_name_, NULL, parse_options);
     if (doc == NULL)
     {
         doq->errno_ = XMQ_ERROR_PARSING_XML;
@@ -5139,8 +5137,8 @@ bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, int 
     {
         xmlFreeDoc(doq->docptr_.xml);
     }
+
     doq->docptr_.xml = doc;
-    xmlCleanupParser();
 
     xmq_fixup_comments_after_readin(doq);
 
@@ -5180,7 +5178,6 @@ bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, int
     {
         PRINT_ERROR("empty document\n");
         xmlFreeDoc(doc);
-        xmlCleanupParser();
         return 0;
     }
 
@@ -5189,7 +5186,6 @@ bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, int
         xmlFreeDoc(doq->docptr_.html);
     }
     doq->docptr_.html = doc;
-    xmlCleanupParser();
 
     xmq_fixup_comments_after_readin(doq);
 

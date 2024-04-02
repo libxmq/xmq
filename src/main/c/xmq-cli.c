@@ -55,6 +55,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<libxml/tree.h>
 #include<libxml/xpath.h>
 #include<libxml/xpathInternals.h>
+#include<libxml/xmlschemas.h>
 #include<libxslt/xslt.h>
 #include<libxslt/xsltInternals.h>
 #include<libxslt/transform.h>
@@ -98,6 +99,7 @@ typedef enum
     XMQ_CLI_CMD_SUBSTITUTE_ENTITY,
     XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES,
     XMQ_CLI_CMD_TRANSFORM,
+    XMQ_CLI_CMD_VALIDATE,
     XMQ_CLI_CMD_SELECT,
     XMQ_CLI_CMD_FOR_EACH,
     XMQ_CLI_CMD_ADD_ROOT,
@@ -115,6 +117,7 @@ typedef enum {
     XMQ_CLI_CMD_GROUP_ENTITY,
     XMQ_CLI_CMD_GROUP_SUBSTITUTE,
     XMQ_CLI_CMD_GROUP_TRANSFORM,
+    XMQ_CLI_CMD_GROUP_VALIDATE,
     XMQ_CLI_CMD_GROUP_OUTPUT,
 } XMQCliCmdGroup;
 
@@ -139,6 +142,9 @@ struct XMQCliCommand
     const char *content; // Content to replace something.
     XMQDoc *xslt_doq; // The xmq document loaded to generate the xslt.
     xsltStylesheetPtr xslt; // The xslt trasnform to be used.
+    const char *xsd_name; // Name of xsd file.
+    XMQDoc *xsd_doq; // The xmq document loaded to generate the xsd.
+    xmlSchemaPtr xsd; // The xsd to validate agains.
     const char *save_file; // Save output to this file name.
     xmlDocPtr   node_doc;
     xmlNodePtr  node_content; // Tree content to replace something.
@@ -260,6 +266,7 @@ const char *cmd_name(XMQCliCmd cmd);
 bool cmd_to(XMQCliCommand *command);
 bool cmd_output(XMQCliCommand *command);
 bool cmd_transform(XMQCliCommand *command);
+bool cmd_validate(XMQCliCommand *command);
 void cmd_unload(XMQCliCommand *command);
 const char *content_type_to_string(XMQContentType ct);
 const char *tokenize_type_to_string(XMQCliTokenizeType type);
@@ -362,6 +369,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "substitute-entity")) return XMQ_CLI_CMD_SUBSTITUTE_ENTITY;
     if (!strcmp(s, "substitute-char-entities")) return XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES;
     if (!strcmp(s, "transform")) return XMQ_CLI_CMD_TRANSFORM;
+    if (!strcmp(s, "validate")) return XMQ_CLI_CMD_VALIDATE;
     if (!strcmp(s, "select")) return XMQ_CLI_CMD_SELECT;
     if (!strcmp(s, "for-each")) return XMQ_CLI_CMD_FOR_EACH;
     if (!strcmp(s, "add-root")) return XMQ_CLI_CMD_ADD_ROOT;
@@ -398,6 +406,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_SUBSTITUTE_ENTITY: return "substitute-entity";
     case XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES: return "substitute-char-entities";
     case XMQ_CLI_CMD_TRANSFORM: return "transform";
+    case XMQ_CLI_CMD_VALIDATE: return "validate";
     case XMQ_CLI_CMD_SELECT: return "select";
     case XMQ_CLI_CMD_FOR_EACH: return "for-each";
     case XMQ_CLI_CMD_ADD_ROOT: return "add-root";
@@ -452,6 +461,9 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
 
     case XMQ_CLI_CMD_TRANSFORM:
         return XMQ_CLI_CMD_GROUP_TRANSFORM;
+
+    case XMQ_CLI_CMD_VALIDATE:
+        return XMQ_CLI_CMD_GROUP_VALIDATE;
 
     case XMQ_CLI_CMD_NONE:
     case XMQ_CLI_CMD_LOAD:
@@ -519,6 +531,72 @@ XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env)
     c->tab_size = 8;
 
     return c;
+}
+
+void abortParsing(void *ctx, const char *msg, ...);
+
+void abortParsing(void *ctx, const char *fmt, ...)
+{
+    fprintf(stderr, "xmq: %s parse error\n", (const char*)ctx);
+
+    char buf[4096];
+
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, 4096, fmt, args);
+    va_end(args);
+
+    puts(buf);
+    exit(1);
+}
+
+void warnParsing(void *ctx, const char *msg, ...);
+
+void warnParsing(void *ctx, const char *fmt, ...)
+{
+    fprintf(stderr, "xmq: %s parse warning\n", (const char*)ctx);
+
+    char buf[4096];
+
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, 4096, fmt, args);
+    va_end(args);
+
+    puts(buf);
+}
+
+void abortValidating(void *ctx, const char *msg, ...);
+
+void abortValidating(void *ctx, const char *fmt, ...)
+{
+    fprintf(stderr, "xmq: Document cannot be validated against %s\n", (const char*)ctx);
+
+    char buf[4096];
+
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, 4096, fmt, args);
+    va_end(args);
+
+    puts(buf);
+    exit(1);
+}
+
+void warnValidation(void *ctx, const char *msg, ...);
+
+void warnValidation(void *ctx, const char *fmt, ...)
+{
+    fprintf(stderr, "xmq: validation warning\n");
+
+    char buf[4096];
+
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, 4096, fmt, args);
+    va_end(args);
+
+    puts(buf);
 }
 
 bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command)
@@ -809,7 +887,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             // XSLT transform are terribly picky with whitespace and the xslt compiler will also trim whitespace
             // so to make a normal xslt transform work here we do not use the whitespace trimming heuristic.
             // There might be other problems here when loading normal old xslt transforms, we will get to them when we
-            // find the,
+            // find them.
             //
             // When loading an xslq transform the default is TRIM_NONE anyway since it is xmq.
             bool ok = xmqParseFileWithType(doq, arg, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE);
@@ -838,6 +916,45 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             command->xslt_doq = doq;
             command->xslt = xsltParseStylesheetDoc(xslt);
             if (!command->xslt) return false;
+            return true;
+        }
+    }
+
+    if (group == XMQ_CLI_CMD_GROUP_VALIDATE)
+    {
+        if (command->xsd == NULL)
+        {
+            XMQDoc *doq = xmqNewDoc();
+            bool ok = xmqParseFileWithType(doq, arg, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE);
+
+            if (!ok)
+            {
+                const char *error = xmqDocError(doq);
+                fprintf(stderr, error, command->in);
+                xmqFreeDoc(doq);
+                return false;
+            }
+
+            verbose_("(xmq) loaded xsd %s\n", arg);
+
+            xmlDocPtr xsd = (xmlDocPtr)xmqGetImplementationDoc(doq);
+            command->xsd_name = arg;
+            command->xsd_doq = doq;
+
+            xmlSchemaParserCtxtPtr ctxt = xmlSchemaNewDocParserCtxt(xsd);
+            xmlSchemaSetParserErrors(ctxt,
+                                     abortParsing,
+                                     warnParsing,
+                                     (void*)arg);
+
+            command->xsd = xmlSchemaParse(ctxt);
+
+            xmlSchemaFreeParserCtxt(ctxt);
+            if (!command->xsd) return true;
+
+            /*fprintf(stderr, "-------------------------\n");
+            xmlSchemaDump(stdout, command->xsd);
+            fprintf(stderr, "-------------------------\n");*/
             return true;
         }
     }
@@ -1234,19 +1351,19 @@ bool cmd_help(XMQCliCommand *cmd)
            "To get help on the commands below: xmq help <command>\n\n"
            "COMMANDS\n"
            "  add-root\n"
-           "  browser\n"
+           "  browser pager\n"
            "  delete delete-entity\n"
            "  for-each\n"
            "  help\n"
-           "  pager\n"
            "  render-html render-terminal render-tex\n"
            "  replace replace-entity\n"
+           "  select\n"
+           "  statistics\n"
+           "  substitite-char-entities substitute-entity\n"
            "  to-html to-htmq to-json to-text to-xml to-xmq\n"
            "  tokenize\n"
            "  transform\n"
-           "  select\n"
-           "  statistics\n"
-           "  substitite-char-entities substitute-entity\n\n"
+           "  validate\n\n"
            "EXAMPLES\n"
            "  xmq pom.xml page"
            "  xmq index.html delete //script delete //style browse\n"
@@ -1496,6 +1613,41 @@ bool cmd_transform(XMQCliCommand *command)
     xmqSetImplementationDoc(command->xslt_doq, NULL);
     xmqFreeDoc(command->xslt_doq);
     command->xslt = NULL;
+
+    return true;
+}
+
+bool cmd_validate(XMQCliCommand *command)
+{
+    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    verbose_("(xmq) validating\n");
+
+    xmlSchemaValidCtxtPtr validation_ctxt = xmlSchemaNewValidCtxt(command->xsd);
+
+    xmlSchemaSetValidErrors(validation_ctxt,
+                             abortValidating,
+                             warnValidation,
+                             (void*)command->xsd_name);
+
+    if (!xmlSchemaIsValid(validation_ctxt))
+    {
+        fprintf(stderr, "xmq: Schema xsd not valid, cannot be used to validate document.\n");
+        exit(1);
+    }
+
+    bool ok = xmlSchemaValidateDoc(validation_ctxt, doc);
+
+    if (ok != 0)
+    {
+        printf("xmq: Document failed validation agains %s\n", command->in);
+        return false;
+    }
+
+    xmlSchemaFreeValidCtxt(validation_ctxt);
+    xmlSchemaFree(command->xsd);
+    command->xsd = NULL;
+    xmqFreeDoc(command->xsd_doq);
+    command->xsd_doq = NULL;
 
     return true;
 }
@@ -2067,6 +2219,8 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
         return;
     case XMQ_CLI_CMD_TRANSFORM:
         return;
+    case XMQ_CLI_CMD_VALIDATE:
+        return;
     case XMQ_CLI_CMD_SELECT:
         return;
     case XMQ_CLI_CMD_FOR_EACH:
@@ -2348,6 +2502,11 @@ void print_command_help(XMQCliCmd c)
         printf(
             "Usage: xmq <input> delete <xpath>\n"
             "Delete all nodes matching xpath.\n");
+        break;
+    case XMQ_CLI_CMD_VALIDATE:
+        printf(
+            "Usage: xmq <input> validate <xsd>\n"
+            "Validate document against the supplied xsd. Exit with error if validation fails.\n");
         break;
     default:
         printf("Help not written yet.\n");
@@ -2801,6 +2960,8 @@ bool perform_command(XMQCliCommand *c)
         return cmd_substitute(c);
     case XMQ_CLI_CMD_TRANSFORM:
         return cmd_transform(c);
+    case XMQ_CLI_CMD_VALIDATE:
+        return cmd_validate(c);
     case XMQ_CLI_CMD_SELECT:
         return cmd_select(c);
     case XMQ_CLI_CMD_FOR_EACH:

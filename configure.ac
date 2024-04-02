@@ -203,10 +203,16 @@ else
     fi
     LIBNAME="libxml2-2.dll"
     LIBF=$(find ${with_libxml2} -name "${LIBNAME}")
+    LIBXML2_LIBS="-Wl,-Bstatic ${LIBF}"
+
+    if test -z "$LIBF"; then
+       LIBNAME="libxml2_la-tree.o"
+       LIBF=$(find ${with_libxml2}/.libs -name "${LIBNAME}" | head -n 1)
+       LIBXML2_LIBS=$(find ${with_libxml2}/.libs -name "*.o" | tr '\n' ' ')
+    fi
     if test -z "$LIBF"; then
         AC_MSG_ERROR([Could not find ${LIBNAME} below ${with_libxml2}])
     fi
-    LIBXML2_LIBS="-Wl,-Bstatic ${LIBF}"
     AC_MSG_RESULT([using ${with_libxml2}])
 fi
 
@@ -238,10 +244,17 @@ else
     fi
     LIBNAME="libxslt-1.dll"
     LIBF=$(find ${with_libxslt} -name "${LIBNAME}")
+    LIBXSLT_LIBS="-Wl,-Bstatic ${LIBF}"
+
+    if test -z "$LIBF"; then
+       LIBNAME="xsltutils.o"
+       LIBF=$(find ${with_libxslt}/libxslt/.libs -name "${LIBNAME}" | head -n 1)
+       LIBXSLT_LIBS=$(find ${with_libxslt}/libxslt/.libs -name "*.o" | tr '\n' ' ')
+    fi
     if test -z "$LIBF"; then
         AC_MSG_ERROR([Could not find ${LIBNAME} below ${with_libxslt}])
     fi
-    LIBXSLT_LIBS="-Wl,-Bstatic ${LIBF}"
+
     AC_MSG_RESULT([using ${with_libxslt}])
 fi
 

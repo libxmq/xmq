@@ -43,8 +43,7 @@ then
         echo Building libxml2 posix
         echo
 
-        ./autogen.sh  --with-zlib=no --with-lzma=no --with-python=no
-        # -disable-shared
+        ./autogen.sh --enable-static=yes --with-zlib=no --with-lzma=no --with-python=no --with-http=no
         make
     fi
     cd ..
@@ -62,8 +61,7 @@ then
         echo Building static libxslt posix
         echo
 
-        ./autogen.sh --with-libxml-src=${DIR}/libxml2-posix/ --with-python=no
-        #--disable-shared
+        ./autogen.sh --enable-static=yes --with-libxml-src=${DIR}/libxml2-posix/ --with-python=no
         make
     fi
     cd ..
@@ -103,7 +101,7 @@ then
         echo Building libxml2 winapi
         echo
 
-        ./autogen.sh --host=x86_64-w64-mingw32 --with-zlib=no --with-lzma=no --with-python=no
+        ./autogen.sh --host=x86_64-w64-mingw32 --with-zlib=no --with-lzma=no --with-python=no --with-http=no
         make
     fi
     cd ..

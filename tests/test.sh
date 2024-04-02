@@ -71,6 +71,11 @@ do
     tests/test_statistics.sh "$PROG" "$OUTPUT" "$i"
 done
 
+for i in tests/xsd_???_*.test
+do
+    tests/test_xsd.sh "$PROG" "$OUTPUT" "$i"
+done
+
 for i in tests/test_special_???_*.sh
 do
     $i "$PROG" "$OUTPUT"
