@@ -1,8 +1,10 @@
 
+2024-04-02: Version 2.6.0
+
 Add validate command to xmq, which can check doc agains an xsd.
 Add xmq-diff and xmq-meld
 Change --lightbg/--darkbg to --theme=darkbg
-Change env variable XMQ_BG to XMQ_THEME
+Change env variable XMQ_BG to XMQ_THEME, eg. XMQ_THEME=darkbg and XMQ_THEME=lightbg
 
 2024-03-26: Version 2.5.0
 
