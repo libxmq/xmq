@@ -1,0 +1,27 @@
+XSD
+xs:schema(elementFormDefault = qualified
+          targetNamespace    = alfa:beta
+          xmlns:xs           = http://www.w3.org/2001/XMLSchema
+          xmlns              = alfa:beta)
+{
+    xs:element(name = shiporder)
+    {
+        xs:complexType {
+            xs:sequence {
+                xs:element(name = name
+                           type = xs:string)
+            }
+        }
+    }
+}
+INPUT
+shiporder(xmlns = alfa:beta)
+{
+    name = gurka
+}
+OUTPUT
+shiporder(xmlns = alfa:beta)
+{
+    name = gurka
+}
+END

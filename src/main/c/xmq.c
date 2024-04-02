@@ -2134,8 +2134,11 @@ void do_ns_declaration(XMQParseState *state,
             }
             free(list);
         }
-        debug("[XMQ] set default namespace in element %s prefix=%s href=%s\n", element->name, ns->prefix, ns->href);
-        xmlSetNs(element, ns);
+        if (element->ns == NULL)
+        {
+            debug("[XMQ] set default namespace in element %s prefix=%s href=%s\n", element->name, ns->prefix, ns->href);
+            xmlSetNs(element, ns);
+        }
         state->default_namespace = ns;
     }
     else

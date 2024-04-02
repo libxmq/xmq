@@ -1,0 +1,26 @@
+XSD
+xs:schema(elementFormDefault = qualified
+          targetNamespace    = alfa:beta
+          xmlns:xs           = http://www.w3.org/2001/XMLSchema
+          xmlns              = alfa:beta)
+{
+    xs:element(name = shiporder)
+    {
+        xs:complexType {
+            xs:sequence {
+                xs:element(name = name
+                           type = xs:string)
+            }
+        }
+    }
+}
+INPUT
+shiporder(xmlns = alfa:bettrium)
+{
+    name = gurka
+}
+OUTPUT
+xmq: Document cannot be validated against ...
+Element '{alfa:bettrium}shiporder': No matching global declaration available for the validation root.
+
+END
