@@ -1,0 +1,49 @@
+XSD
+schema(targetNamespace = http://alfa
+       xmlns           = http://www.w3.org/2001/XMLSchema
+       xmlns:target    = http://alfa)
+{
+    element(name = assignments)
+    {
+        complexType {
+            sequence {
+                element(name      = assignment
+                        type      = target:assignmentInfo
+                        minOccurs = 1
+                        maxOccurs = unbounded)
+            }
+        }
+    }
+    complexType(name = assignmentInfo)
+    {
+        sequence {
+            element(name = name
+                    type = string)
+        }
+        attribute(name = id
+                  type = string
+                  use  = required)
+    }
+}
+
+INPUT
+bar:assignments(xsi:schemaLocation = 'http://alfa try.xsd'
+                xmlns:bar          = http://alfa
+                xmlns:xsi          = http://www.w3.org/2001/XMLSchema-instance)
+{
+    assignment(id    = a1)
+    {
+        name = John
+    }
+}
+OUTPUT
+bar:assignments(xsi:schemaLocation = 'http://alfa try.xsd'
+                xmlns:bar          = http://alfa
+                xmlns:xsi          = http://www.w3.org/2001/XMLSchema-instance)
+{
+    assignment(id = a1)
+    {
+        name = John
+    }
+}
+END

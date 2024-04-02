@@ -28,7 +28,7 @@ sed -n '/^OUTPUT$/,/^END$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST
 ARGS=$(grep ARGS $TEST_FILE | cut -b 5- | tr -d '\n')
 CMDS=$(grep CMDS $TEST_FILE | cut -b 5- | tr -d '\n')
 
-$PROG $ARGS $OUTPUT/${TEST_NAME}.input validate $OUTPUT/${TEST_NAME}.xsd $CMDS > $OUTPUT/${TEST_NAME}.output
+$PROG $ARGS $OUTPUT/${TEST_NAME}.input validate $OUTPUT/${TEST_NAME}.xsd $CMDS | sed 's/validated against.*/validated against .../' > $OUTPUT/${TEST_NAME}.output
 
 if diff $OUTPUT/${TEST_NAME}.expected $OUTPUT/${TEST_NAME}.output > /dev/null
 then

@@ -868,7 +868,7 @@ void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align)
 
 void print_namespace_declaration(XMQPrintState *ps, xmlNs *ns, size_t align)
 {
-    if (!xml_non_empty_namespace(ns)) return;
+    //if (!xml_non_empty_namespace(ns)) return;
 
     check_space_before_attribute(ps);
 
@@ -895,7 +895,7 @@ void print_namespace_declaration(XMQPrintState *ps, xmlNs *ns, size_t align)
 
         if (!ps->output_settings->compact) print_white_spaces(ps, 1);
 
-        print_utf8(ps, COLOR_attr_value_text, 1, v, NULL);
+        print_value_internal_text(ps, v, NULL, LEVEL_ATTR_VALUE);
     }
 }
 

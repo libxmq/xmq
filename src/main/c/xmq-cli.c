@@ -581,7 +581,7 @@ void abortValidating(void *ctx, const char *msg, ...);
 
 void abortValidating(void *ctx, const char *fmt, ...)
 {
-    fprintf(stderr, "xmq: Document cannot be validated against %s\n", (const char*)ctx);
+    printf("xmq: Document cannot be validated against %s\n", (const char*)ctx);
 
     char buf[4096];
 
@@ -598,7 +598,7 @@ void warnValidation(void *ctx, const char *msg, ...);
 
 void warnValidation(void *ctx, const char *fmt, ...)
 {
-    fprintf(stderr, "xmq: validation warning\n");
+    printf("xmq: validation warning\n");
 
     char buf[4096];
 

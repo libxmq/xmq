@@ -1,0 +1,40 @@
+XSD
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:target="http://alfa"
+        targetNamespace="http://alfa">
+  <element name="assignments">
+    <complexType>
+      <sequence>
+        <element name="assignment" type="target:assignmentInfo"
+                 minOccurs="1" maxOccurs="unbounded"/>
+      </sequence>
+    </complexType>
+  </element>
+  <complexType name="assignmentInfo">
+    <sequence>
+      <element name="name" type="string"/>
+    </sequence>
+    <attribute name="id" type="string" use="required"/>
+  </complexType>
+</schema>
+INPUT
+<assignments xmlns="http://alfa"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://alfa try.xsd">
+  <assignment id="a1" xmlns="">
+    <name>John</name>
+  </assignment>
+</assignments>
+OUTPUT
+assignments(xsi:schemaLocation = 'http://alfa try.xsd'
+            xmlns              = http://alfa
+            xmlns:xsi          = http://www.w3.org/2001/XMLSchema-instance)
+{
+    assignment(id    = a1
+               xmlns = '')
+    {
+        name = John
+    }
+}
+END

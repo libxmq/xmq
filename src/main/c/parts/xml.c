@@ -66,11 +66,14 @@ bool xml_non_empty_namespace(xmlNs *ns)
 bool xml_has_non_empty_namespace_defs(xmlNode *node)
 {
     xmlNs *ns = node->nsDef;
+    if (ns) return true;
+    /*!= NULL)
     while (ns)
     {
-        if (xml_non_empty_namespace(ns)) return true;
+        //if (xml_non_empty_namespace(ns)) return true;
         ns = xml_next_namespace_def(ns);
     }
+    */
     return false;
 }
 

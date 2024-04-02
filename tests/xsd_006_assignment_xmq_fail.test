@@ -1,0 +1,42 @@
+XSD
+schema(targetNamespace = http://alfa
+       xmlns           = http://www.w3.org/2001/XMLSchema
+       xmlns:target    = http://alfa)
+{
+    element(name = assignments)
+    {
+        complexType {
+            sequence {
+                element(name      = assignment
+                        type      = target:assignmentInfo
+                        minOccurs = 1
+                        maxOccurs = unbounded)
+            }
+        }
+    }
+    complexType(name = assignmentInfo)
+    {
+        sequence {
+            element(name = name
+                    type = string)
+        }
+        attribute(name = id
+                  type = string
+                  use  = required)
+    }
+}
+INPUT
+assignments(xsi:schemaLocation = 'http://alfa try.xsd'
+            xmlns              = http://alfa
+            xmlns:xsi          = http://www.w3.org/2001/XMLSchema-instance)
+{
+    assignment(id    = a1)
+    {
+        name = John
+    }
+}
+OUTPUT
+xmq: Document cannot be validated against ...
+Element '{http://alfa}assignment': This element is not expected. Expected is ( assignment ).
+
+END

@@ -11,7 +11,7 @@ START
   <configure name="CC" value="gcc"/>
 </configuremap>
 COMPACT
-!DOCTYPE='configuremap [ <!ELEMENT configuremap (configure)+> <!ATTLIST configuremap xmlns CDATA #FIXED ""> <!ELEMENT configure EMPTY> <!ATTLIST configure xmlns CDATA #FIXED ""> <!ATTLIST configure name NMTOKEN #REQUIRED> <!ATTLIST configure value CDATA #REQUIRED> ]'configuremap{configure(name=CC value=gcc)}
+!DOCTYPE='configuremap [ <!ELEMENT configuremap (configure)+> <!ATTLIST configuremap xmlns CDATA #FIXED ""> <!ELEMENT configure EMPTY> <!ATTLIST configure xmlns CDATA #FIXED ""> <!ATTLIST configure name NMTOKEN #REQUIRED> <!ATTLIST configure value CDATA #REQUIRED> ]'configuremap(xmlns=''){configure(name=CC value=gcc xmlns='')}
 XMQ
 !DOCTYPE = 'configuremap [
             <!ELEMENT configuremap (configure)+>
@@ -21,9 +21,11 @@ XMQ
             <!ATTLIST configure name NMTOKEN #REQUIRED>
             <!ATTLIST configure value CDATA #REQUIRED>
             ]'
-configuremap {
+configuremap(xmlns = '')
+{
     configure(name  = CC
-              value = gcc)
+              value = gcc
+              xmlns = '')
 }
 END
 ARGS

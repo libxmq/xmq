@@ -1615,7 +1615,7 @@ char *copy_lines(int num_prefix_spaces, const char *start, const char *stop, int
 void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSettings *os);
 xmlNodePtr create_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop, xmlNodePtr parent);
 void create_node(XMQParseState *state, const char *start, const char *stop);
-void update_namespace_href(xmlNsPtr ns, const char *start, const char *stop);
+void update_namespace_href(XMQParseState *state, xmlNsPtr ns, const char *start, const char *stop);
 xmlNodePtr create_quote(XMQParseState *state, size_t l, size_t col, const char *start, const char *stop, const char *suffix,  xmlNodePtr parent);
 void debug_content_comment(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
 void debug_content_value(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
@@ -3675,6 +3675,7 @@ void do_ns_declaration(XMQParseState *state,
         ns = xmlNewNs(element,
                       NULL,
                       NULL);
+        debug("[XMQ] create default namespace in element %s\n", element->name);
         if (!ns)
         {
             // Oups, this element already has a default namespace.
@@ -3691,6 +3692,8 @@ void do_ns_declaration(XMQParseState *state,
             }
             free(list);
         }
+        debug("[XMQ] set default namespace in element %s prefix=%s href=%s\n", element->name, ns->prefix, ns->href);
+        xmlSetNs(element, ns);
         state->default_namespace = ns;
     }
     else
@@ -3778,13 +3781,25 @@ void do_attr_key(XMQParseState *state,
     free(key);
 }
 
-void update_namespace_href(xmlNsPtr ns,
+void update_namespace_href(XMQParseState *state,
+                           xmlNsPtr ns,
                            const char *start,
                            const char *stop)
 {
     if (!stop) stop = start+strlen(start);
+
     char *href = strndup(start, stop-start);
     ns->href = (const xmlChar*)href;
+    debug("[XMQ] update namespace prefix=%s with href=%s\n", ns->prefix, href);
+
+    if (start[0] == 0 && ns == state->default_namespace)
+    {
+        xmlNodePtr element = (xmlNode*)state->element_stack->top->data;
+        debug("[XMQ] remove default namespace in element %s\n", element->name);
+        xmlSetNs(element, NULL);
+        state->default_namespace = NULL;
+        return;
+    }
 }
 
 void do_attr_value_text(XMQParseState *state,
@@ -3798,7 +3813,7 @@ void do_attr_value_text(XMQParseState *state,
     {
         assert(state->declaring_xmlns_namespace);
 
-        update_namespace_href((xmlNsPtr)state->declaring_xmlns_namespace, start, stop);
+        update_namespace_href(state, (xmlNsPtr)state->declaring_xmlns_namespace, start, stop);
         state->declaring_xmlns = false;
         state->declaring_xmlns_namespace = NULL;
         return;
@@ -3817,7 +3832,7 @@ void do_attr_value_quote(XMQParseState*state,
     if (state->declaring_xmlns)
     {
         char *trimmed = xmq_un_quote(col, ' ', start, stop, true);
-        update_namespace_href((xmlNsPtr)state->declaring_xmlns_namespace, trimmed, NULL);
+        update_namespace_href(state, (xmlNsPtr)state->declaring_xmlns_namespace, trimmed, NULL);
         state->declaring_xmlns = false;
         state->declaring_xmlns_namespace = NULL;
         free(trimmed);
@@ -3898,6 +3913,7 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
 
         if (state->element_namespace)
         {
+            // Have a namespace before the element name, eg abc:work
             xmlNsPtr ns = xmlSearchNs(state->doq->docptr_.xml,
                                       new_node,
                                       (const xmlChar *)state->element_namespace);
@@ -3908,10 +3924,20 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
                 ns = xmlNewNs(new_node,
                               NULL,
                               (const xmlChar *)state->element_namespace);
+                debug("[XMQ] created namespace prefix=%s in element %s\n", state->element_namespace, name);
             }
+            debug("[XMQ] setting namespace prefix=%s for element %s\n", state->element_namespace, name);
             xmlSetNs(new_node, ns);
             free(state->element_namespace);
             state->element_namespace = NULL;
+        }
+        else if (state->default_namespace)
+        {
+            // We have a default namespace.
+            xmlNsPtr ns = (xmlNsPtr)state->default_namespace;
+            assert(ns->prefix == NULL);
+            debug("[XMQ] set default namespace with href=%s for element %s\n", ns->href, name);
+            xmlSetNs(new_node, ns);
         }
 
         state->element_last = new_node;
@@ -8043,11 +8069,14 @@ bool xml_non_empty_namespace(xmlNs *ns)
 bool xml_has_non_empty_namespace_defs(xmlNode *node)
 {
     xmlNs *ns = node->nsDef;
+    if (ns) return true;
+    /*!= NULL)
     while (ns)
     {
-        if (xml_non_empty_namespace(ns)) return true;
+        //if (xml_non_empty_namespace(ns)) return true;
         ns = xml_next_namespace_def(ns);
     }
+    */
     return false;
 }
 
@@ -10786,7 +10815,7 @@ void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align)
 
 void print_namespace_declaration(XMQPrintState *ps, xmlNs *ns, size_t align)
 {
-    if (!xml_non_empty_namespace(ns)) return;
+    //if (!xml_non_empty_namespace(ns)) return;
 
     check_space_before_attribute(ps);
 
@@ -10813,7 +10842,7 @@ void print_namespace_declaration(XMQPrintState *ps, xmlNs *ns, size_t align)
 
         if (!ps->output_settings->compact) print_white_spaces(ps, 1);
 
-        print_utf8(ps, COLOR_attr_value_text, 1, v, NULL);
+        print_value_internal_text(ps, v, NULL, LEVEL_ATTR_VALUE);
     }
 }
 
