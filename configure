@@ -2448,7 +2448,7 @@ fi
 PKG_CONFIG="$(which pkg-config)"
 if test "$PKG_CONFIG" = ""; then
     PKG_CONFIG=/bin/false
-    as_fn_error $? "You need pkg-config to build. Please install." "$LINENO" 5
+    as_fn_error $? "You need pkg-config to build. Try: sudo apt install pkg-config" "$LINENO" 5
 fi
 
 mkdir -p "$OUTPUT_ROOT"
@@ -4011,7 +4011,7 @@ fi
 
 if test "x${with_zlib}" = "x"; then
     if ! pkg-config zlib ; then
-        as_fn_error $? "not found using pkg-config" "$LINENO" 5
+        as_fn_error $? "not found using pkg-config. Try: sudo apt install zlib1g-dev" "$LINENO" 5
         exit 0
     fi
     ZLIB_CFLAGS="$($PKG_CONFIG zlib --cflags)"
@@ -4095,7 +4095,7 @@ then :
 
 else $as_nop
 
-        echo "Error! You need to have libxml2 available."
+        echo "Error! You need to have libxml2 available. Try: sudo apt install libxml2-dev"
         exit -1
 
 fi
@@ -4187,7 +4187,7 @@ then :
 
 else $as_nop
 
-        echo "Error! You need to have libxslt available."
+        echo "Error! You need to have libxslt available. Try: sudo apt install libxslt1-dev"
         exit -1
 
 fi

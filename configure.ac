@@ -77,7 +77,7 @@ fi
 PKG_CONFIG="$(which pkg-config)"
 if test "$PKG_CONFIG" = ""; then
     PKG_CONFIG=/bin/false
-    AC_MSG_ERROR([You need pkg-config to build. Please install.])
+    AC_MSG_ERROR([You need pkg-config to build. Try: sudo apt install pkg-config])
 fi
 
 mkdir -p "$OUTPUT_ROOT"
@@ -154,7 +154,7 @@ AC_ARG_WITH(zlib, [AS_HELP_STRING([--with-zlib],
 
 if test "x${with_zlib}" = "x"; then
     if ! pkg-config zlib ; then
-        AC_MSG_ERROR([not found using pkg-config])
+        AC_MSG_ERROR([not found using pkg-config. Try: sudo apt install zlib1g-dev])
         exit 0
     fi
     ZLIB_CFLAGS="$($PKG_CONFIG zlib --cflags)"
@@ -188,7 +188,7 @@ if test "x${with_libxml2}" = "x"; then
     LIBXML2_LIBS="-lxml2"
     AC_MSG_RESULT([using -lxml2 and /usr/include/libxml2])
     AC_CHECK_LIB(xml2, xmlSAXParseDoc, [], [
-        echo "Error! You need to have libxml2 available."
+        echo "Error! You need to have libxml2 available. Try: sudo apt install libxml2-dev"
         exit -1
         ])
     if test "x$ENABLE_STATIC_XMQ" = xyes; then
@@ -229,7 +229,7 @@ if test "x${with_libxslt}" = "x"; then
     LIBXSLT_LIBS="-lxslt"
     AC_MSG_RESULT([using -lxslt and /usr/include/libxslt])
     AC_CHECK_LIB(xslt, xsltLibxmlVersion, [], [
-        echo "Error! You need to have libxslt available."
+        echo "Error! You need to have libxslt available. Try: sudo apt install libxslt1-dev"
         exit -1
         ])
     if test "x$ENABLE_STATIC_XMQ" = xyes; then
