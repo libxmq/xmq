@@ -1,0 +1,17 @@
+START
+<project><before/><!--A
+ B
+C--><after/></project>
+COMPACT
+project{before /*A*/* B*/*C*/after}
+XMQ
+project {
+    before
+    /* A
+        B
+       C */
+    after
+}
+END
+ARGS
+CMDS

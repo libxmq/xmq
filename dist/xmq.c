@@ -2954,11 +2954,14 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
     // Allocate max size of output buffer, it usually becomes smaller
     // when incidental indentation and trailing whitespace is removed.
     size_t n = stop-start+prepend+1;
-    char *buf = (char*)malloc(n);
-    char *o = buf;
+    char *output = (char*)malloc(n);
+    char *o = output;
 
     // Insert any necessary prepended spaces due to source indentation of the line.
-    while (prepend) { *o++ = space; prepend--; }
+    if (space != 0)
+    {
+        while (prepend) { *o++ = space; prepend--; }
+    }
 
     // Start scanning the lines from the beginning again.
     // Now use the found incidental to copy the right parts.
@@ -2972,7 +2975,7 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         if (!first_line || ignore_first_indent)
         {
             // For all lines except the first. And for the first line if ignore_first_indent is true.
-            // Skip the incidental indentation, space counts as one tab counts as 8.
+            // Skip the incidental indentation.
             size_t n = incidental;
             while (n > 0)
             {
@@ -3002,9 +3005,9 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         first_line = false;
     }
     *o++ = 0;
-    size_t real_size = o-buf;
-    buf = (char*)realloc(buf, real_size);
-    return buf;
+    size_t real_size = o-output;
+    output = (char*)realloc(output, real_size);
+    return output;
 }
 
 void xmqSetupParseCallbacksNoop(XMQParseCallbacks *callbacks)
@@ -4641,20 +4644,20 @@ void fixup_comments(XMQDoc *doq, xmlNode *node, int depth)
     {
         // An xml comment containing dle escapes for example: -␐-␐- is replaceed with ---.
         // If multiple dle escapes exists, then for example: -␐␐- is replaced with -␐-.
-        char *new_content = unescape_xml_comment((const char*)node->content);
-        if (new_content)
+        char *content_needed_escaping = unescape_xml_comment((const char*)node->content);
+        if (content_needed_escaping)
         {
             if (xmq_debug_enabled_)
             {
                 char *from = xmq_quote_as_c((const char*)node->content, NULL);
-                char *to = xmq_quote_as_c(new_content, NULL);
+                char *to = xmq_quote_as_c(content_needed_escaping, NULL);
                 debug("[XMQ] fix comment \"%s\" to \"%s\"\n", from, to);
             }
 
-            xmlNodePtr new_node = xmlNewComment((const xmlChar*)new_content);
+            xmlNodePtr new_node = xmlNewComment((const xmlChar*)content_needed_escaping);
             xmlReplaceNode(node, new_node);
             xmlFreeNode(node);
-            free(new_content);
+            free(content_needed_escaping);
         }
         return;
     }
