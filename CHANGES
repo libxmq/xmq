@@ -1,4 +1,8 @@
 
+2024-04-11: Version 2.7.0
+
+Fix where comments could disappear when indentation was just right/bad.
+
 2024-04-02: Version 2.6.0
 
 Add validate command to xmq, which can check doc agains an xsd.
