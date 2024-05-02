@@ -1334,9 +1334,11 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
 
     if (stop == start)
     {
-        // Oups! Quote was all space and newlines. I.e. it is an empty quote.
-        char *buf = (char*)malloc(1);
-        buf[0] = 0;
+        // Oups! Quote was all space and newlines.
+        char *buf = (char*)malloc(append_newlines+1);
+        size_t i;
+        for (i = 0; i < append_newlines; ++i) buf[i] = '\n';
+        buf[i] = 0;
         return buf;
     }
 

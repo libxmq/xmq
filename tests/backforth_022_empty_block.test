@@ -1,0 +1,21 @@
+INPUT
+''''''''''''''''''''''''
+
+
+
+
+''''''''''''''''''''''''
+FIRST
+&#10;&#10;&#10;&#10;
+SECOND
+'
+
+
+
+
+'
+END
+ARGS_FIRST
+CMDS_FIRST to-xmq --compact
+ARGS_SECOND
+CMDS_SECOND to-xmq

@@ -203,8 +203,8 @@ void test_trimming_quotes()
 
     // A single newline is removed.
     test_trim_quote(17, "\n", "");
-    // A lot of newlines and spaces are removed.
-    test_trim_quote(17, "  \n \n    \n\n ", "");
+    // A lot spaces are removed and one less newline.
+    test_trim_quote(17, "  \n \n    \n\n ", "\n\n\n");
     test_trim_quote(17, "   \n", "");
     test_trim_quote(4711, "   \n   ", "");
 

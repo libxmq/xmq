@@ -129,19 +129,25 @@ bool has_all_quotes(const char *start, const char *stop)
     return true;
 }
 
-bool has_all_whitespace(const char *start, const char *stop, bool *all_space)
+bool has_all_whitespace(const char *start, const char *stop, bool *all_space, bool *only_newlines)
 {
     *all_space = true;
+    *only_newlines = true;
     for (const char *i = start; i < stop; ++i)
     {
         if (!is_xml_whitespace(*i))
         {
             *all_space = false;
+            *only_newlines = false;
             return false;
         }
-        if (*i != ' ')
+        if (*i != ' ' && *all_space == true)
         {
             *all_space = false;
+        }
+        if (*i != '\n' && *only_newlines == true)
+        {
+            *only_newlines = false;
         }
     }
     return true;

@@ -875,7 +875,7 @@ bool has_leading_ending_quote(const char *start, const char *stop);
 bool has_newlines(const char *start, const char *stop);
 bool has_must_escape_chars(const char *start, const char *stop);
 bool has_all_quotes(const char *start, const char *stop);
-bool has_all_whitespace(const char *start, const char *stop, bool *all_space);
+bool has_all_whitespace(const char *start, const char *stop, bool *all_space, bool *only_newlines);
 bool is_lowercase_hex(char c);
 bool is_xmq_token_whitespace(char c);
 bool is_xml_whitespace(char c);
@@ -2892,9 +2892,11 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
 
     if (stop == start)
     {
-        // Oups! Quote was all space and newlines. I.e. it is an empty quote.
-        char *buf = (char*)malloc(1);
-        buf[0] = 0;
+        // Oups! Quote was all space and newlines.
+        char *buf = (char*)malloc(append_newlines+1);
+        size_t i;
+        for (i = 0; i < append_newlines; ++i) buf[i] = '\n';
+        buf[i] = 0;
         return buf;
     }
 
@@ -7459,19 +7461,25 @@ bool has_all_quotes(const char *start, const char *stop)
     return true;
 }
 
-bool has_all_whitespace(const char *start, const char *stop, bool *all_space)
+bool has_all_whitespace(const char *start, const char *stop, bool *all_space, bool *only_newlines)
 {
     *all_space = true;
+    *only_newlines = true;
     for (const char *i = start; i < stop; ++i)
     {
         if (!is_xml_whitespace(*i))
         {
             *all_space = false;
+            *only_newlines = false;
             return false;
         }
-        if (*i != ' ')
+        if (*i != ' ' && *all_space == true)
         {
             *all_space = false;
+        }
+        if (*i != '\n' && *only_newlines == true)
+        {
+            *only_newlines = false;
         }
     }
     return true;
@@ -11000,6 +11008,7 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
         print_nl(ps, pre, post);
     }
 
+    bool all_newlines = true;
     for (const char *i = start; i < stop;)
     {
         if (*i == '\n')
@@ -11017,13 +11026,23 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
         else
         {
             i += print_utf8_char(ps, i, stop);
+            all_newlines = false;
         }
     }
     // We are ending with a newline, print an extra into the quote, which will be trimmed away during parse.
     if (*(stop-1) == '\n')
     {
         ps->line_indent--;
-        print_nl_and_indent(ps, pre, post);
+        if (!all_newlines)
+        {
+            print_nl_and_indent(ps, pre, post);
+        }
+        else
+        {
+            ps->current_indent = 0;
+            ps->last_char = 0;
+            print_white_spaces(ps, ps->line_indent);
+        }
         ps->line_indent++;
     }
     if (*(stop-1) != '\n' && post) write(writer_state, post, NULL);
@@ -11220,7 +11239,8 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
     }
 
     bool all_space = false;
-    bool all_whitespace = has_all_whitespace(start, stop, &all_space);
+    bool only_newlines = false;
+    bool all_whitespace = has_all_whitespace(start, stop, &all_space, &only_newlines);
 
     if (all_space)
     {
@@ -11232,12 +11252,19 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
 
     if (all_whitespace)
     {
-        // All whitespace, but more than just normal spaces, ie newlines!
-        // This is often the case with trimmed whitespace, lets print using
-        // entities, which makes this content be easy to spot when --trim=none is used.
-        // Also works both for normal and compact mode.
-        print_all_whitespace(ps, start, stop, level);
-        return;
+        if (only_newlines && !ps->output_settings->compact && ((size_t)(stop-start)) > 1)
+        {
+            // All newlines and more than 1 newline. This is printed further on.
+        }
+        else
+        {
+            // All whitespace, but more than just normal spaces, ie newlines!
+            // This is often the case with trimmed whitespace, lets print using
+            // entities, which makes this content be easy to spot when --trim=none is used.
+            // Also works both for normal and compact mode.
+            print_all_whitespace(ps, start, stop, level);
+            return;
+        }
     }
 
     if (is_xmq_text_value(start, stop) && (level == LEVEL_ELEMENT_VALUE || level == LEVEL_ATTR_VALUE))

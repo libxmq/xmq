@@ -1,0 +1,17 @@
+START
+a = '
+
+    '
+b =
+'''
+
+
+
+
+'''
+
+DEBUG
+[element_key "a" 1:1][whitespace " " 1:2][equals "=" 1:3][whitespace " " 1:4][element_value_quote "'\n\n    '" 1:5][whitespace "\n" 3:6][element_key "b" 4:1][whitespace " " 4:2][equals "=" 4:3][whitespace "\n" 4:4][element_value_quote "'''\n\n\n\n\n'''" 5:1][whitespace "\n\n" 10:4]
+CONTENT
+{quote "\n"}{quote "\n\n\n\n"}
+END

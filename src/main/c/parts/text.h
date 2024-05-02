@@ -46,7 +46,7 @@ bool has_leading_ending_quote(const char *start, const char *stop);
 bool has_newlines(const char *start, const char *stop);
 bool has_must_escape_chars(const char *start, const char *stop);
 bool has_all_quotes(const char *start, const char *stop);
-bool has_all_whitespace(const char *start, const char *stop, bool *all_space);
+bool has_all_whitespace(const char *start, const char *stop, bool *all_space, bool *only_newlines);
 bool is_lowercase_hex(char c);
 bool is_xmq_token_whitespace(char c);
 bool is_xml_whitespace(char c);

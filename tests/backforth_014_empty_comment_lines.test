@@ -16,7 +16,7 @@ howdy {
         */
 }
 SECOND
-howdy{/*is this a good heuristic for the newlines?*/**/**/**/*beta*/ /**/}
+howdy{/*is this a good heuristic for the newlines?*/**/**/**/*beta*/ /**/**/}
 END
 CMDS_FIRST to-xmq
 ARGS_SECOND
