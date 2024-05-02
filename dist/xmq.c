@@ -11035,7 +11035,7 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
         ps->line_indent--;
         if (!all_newlines)
         {
-            print_nl_and_indent(ps, pre, post);
+            print_nl_and_indent(ps, NULL, post);
         }
         else
         {
