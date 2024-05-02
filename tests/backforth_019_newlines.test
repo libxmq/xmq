@@ -1,0 +1,25 @@
+INPUT
+a = 'hej
+     svejs
+
+    '
+b = '
+
+     hej
+     svejs'
+FIRST
+a=('hej'&#10;'svejs'&#10;)b=(&#10;'hej'&#10;'svejs')
+SECOND
+a = 'hej
+     svejs
+
+    '
+b = '
+
+     hej
+     svejs'
+END
+ARGS_FIRST
+CMDS_FIRST to-xmq --compact
+ARGS_SECOND
+CMDS_SECOND to-xmq

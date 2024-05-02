@@ -8,8 +8,9 @@ XMQ
 !DOCTYPE = html
 html {
     body {
-        p = ( 'alfa'
-              &#10;
+        p = ( 'alfa
+
+              '
               &nabla; )
         p = alfa
     }

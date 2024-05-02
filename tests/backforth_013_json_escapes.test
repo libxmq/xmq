@@ -15,8 +15,9 @@ _ {
     emojis    = ΩΩ😀
     tab       = ( 'tab='
                   &#9; )
-    nl        = ( 'newline='
-                  &#10; )
+    nl        = 'newline=
+
+                '
     cr        = ( 'cr='
                   &#13; )
     bs        = ( 'bs='

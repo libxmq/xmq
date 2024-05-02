@@ -869,8 +869,8 @@ typedef struct
 
 bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
 size_t encode_utf8(int uc, UTF8Char *utf8);
-const char *has_ending_nl_space(const char *start, const char *stop);
-const char *has_leading_space_nl(const char *start, const char *stop);
+const char *has_ending_nl_space(const char *start, const char *stop, size_t *only_newlines);
+const char *has_leading_space_nl(const char *start, const char *stop, size_t *only_newlines);
 bool has_leading_ending_quote(const char *start, const char *stop);
 bool has_newlines(const char *start, const char *stop);
 bool has_must_escape_chars(const char *start, const char *stop);
@@ -2874,17 +2874,21 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         return buf;
     }
 
+    size_t append_newlines = 0;
+
     // Check if the final line is all spaces.
-    if (has_ending_nl_space(start, stop))
+    if (has_ending_nl_space(start, stop, NULL))
     {
         // So it is, now trim from the end.
         while (stop > start)
         {
             char c = *(stop-1);
+            if (c == '\n') append_newlines++;
             if (c != ' ' && c != '\t' && c != '\n' && c != '\r') break;
             stop--;
         }
     }
+    if (append_newlines > 0) append_newlines--;
 
     if (stop == start)
     {
@@ -2894,8 +2898,10 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         return buf;
     }
 
+    size_t prepend_newlines = 0;
+
     // Check if the first line is all spaces.
-    if (has_leading_space_nl(start, stop))
+    if (has_leading_space_nl(start, stop, NULL))
     {
         // The first line is all spaces, trim leading spaces and newlines!
         ignore_first_indent = true;
@@ -2905,7 +2911,11 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         while (i < stop)
         {
             char c = *i;
-            if (c == '\n') start = i+1; // Restart find lines from here.
+            if (c == '\n')
+            {
+                start = i+1; // Restart find lines from here.
+                prepend_newlines++;
+            }
             else if (c != ' ' && c != '\t' && c != '\r') break;
             i++;
         }
@@ -2940,7 +2950,7 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         i = eol; // Start at next line, or end at stop.
     }
 
-    size_t prepend = 0;
+    size_t prepend_spaces = 0;
 
     if (!ignore_first_indent &&
         indent >= incidental)
@@ -2948,20 +2958,23 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         // The first indent is relevant and it is bigger than the incidental.
         // We need to prepend the output line with spaces that are not in the source!
         // But, only if there is more than one line with actual non spaces!
-        prepend = indent - incidental;
+        prepend_spaces = indent - incidental;
     }
 
     // Allocate max size of output buffer, it usually becomes smaller
     // when incidental indentation and trailing whitespace is removed.
-    size_t n = stop-start+prepend+1;
+    size_t n = stop-start+prepend_spaces+prepend_newlines+append_newlines+1;
     char *output = (char*)malloc(n);
     char *o = output;
 
     // Insert any necessary prepended spaces due to source indentation of the line.
     if (space != 0)
     {
-        while (prepend) { *o++ = space; prepend--; }
+        while (prepend_spaces) { *o++ = space; prepend_spaces--; }
     }
+
+    // Insert any necessary prepended newlines.
+    while (prepend_newlines) { *o++ = '\n'; prepend_newlines--; }
 
     // Start scanning the lines from the beginning again.
     // Now use the found incidental to copy the right parts.
@@ -3004,6 +3017,8 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         i = eol;
         first_line = false;
     }
+    // Insert any necessary appended newlines.
+    while (append_newlines) { *o++ = '\n'; append_newlines--; }
     *o++ = 0;
     size_t real_size = o-output;
     output = (char*)realloc(output, real_size);
@@ -4784,9 +4799,9 @@ char *copy_lines(int num_prefix_spaces,
     {
         membuffer_append(mb, "( ");
 
-        short_start = has_leading_space_nl(start, stop);
+        short_start = has_leading_space_nl(start, stop, NULL);
         if (!short_start) short_start = start;
-        short_stop = has_ending_nl_space(start, stop);
+        short_stop = has_ending_nl_space(start, stop, NULL);
         if (!short_stop || short_stop == start) short_stop = stop;
 
         const char *i = start;
@@ -7327,35 +7342,87 @@ void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlN
 
 #ifdef TEXT_MODULE
 
-const char *has_leading_space_nl(const char *start, const char *stop)
+const char *has_leading_space_nl(const char *start, const char *stop, size_t *only_newlines)
 {
     const char *i = start;
     bool found_nl = false;
+    size_t only_nls = 0;
 
+    if (only_newlines != NULL) *only_newlines = 0;
+
+    // Look for leading newlines.
+    while (i < stop && *i == '\n')
+    {
+        i++;
+        only_nls++;
+    }
+    const char *middle = NULL;
+
+    // Yep, we found some leading pure newlines.
+    if (only_nls > 0)
+    {
+        found_nl = true;
+        middle = i;
+    }
+
+    // Scan other leading whitespace, perhaps none.
     while (i < stop)
     {
         if (*i == '\n') found_nl = true;
         if (!is_xml_whitespace(*i)) break;
         i++;
     }
+
     // No newline found before content, so leading spaces/tabs will not be trimmed.
     if (!found_nl) return 0;
+
+    if (middle == i)
+    {
+        // We have for example "\ncontent" this we can represent in xmq with a visible empty line, eg:
+        // '
+        //
+        // content'
+        if (only_newlines != NULL) *only_newlines = only_nls;
+    }
     return i;
 }
 
-const char *has_ending_nl_space(const char *start, const char *stop)
+const char *has_ending_nl_space(const char *start, const char *stop, size_t *only_newlines)
 {
     const char *i = stop;
     bool found_nl = false;
+    size_t only_nls = 0;
 
-    while (i > start)
+    if (only_newlines != NULL) *only_newlines = 0;
+
+    // Look for ending newlines.
+    i--;
+    while (i >= start && *i == '\n')
     {
         i--;
+        only_nls++;
+        found_nl = true;
+    }
+    const char *middle = i;
+
+    while (i >= start)
+    {
         if (*i == '\n') found_nl = true;
         if (!is_xml_whitespace(*i)) break;
+        i--;
     }
     // No newline found after content, so ending spaces/tabs will not be trimmed.
     if (!found_nl) return 0;
+
+    if (middle == i)
+    {
+        // We have for example "content\n" this we can represent in xmq with a visible empty line, eg:
+        // 'content
+        //
+        // '
+        if (only_newlines != NULL) *only_newlines = only_nls;
+    }
+
     i++;
     return i;
 }
@@ -10021,7 +10088,15 @@ size_t count_necessary_quotes(const char *start, const char *stop, bool compact,
         }
     }
 
-    if (has_leading_space_nl(start, stop) || has_ending_nl_space(start, stop))
+    size_t only_prepended_newlines = 0;
+    size_t only_appended_newlines = 0;
+    const char *ls = has_leading_space_nl(start, stop, &only_prepended_newlines);
+    const char *es = has_ending_nl_space(start, stop, &only_appended_newlines);
+
+    // We do not need to add a compound, if there is no leading nl+space or if there is pure newlines.
+    // Likewise for the ending. Test this.
+    if ((ls != NULL && only_prepended_newlines == 0) || // We have leading nl and some non-newlines.
+        (es != NULL && only_appended_newlines == 0))    // We have ending nl and some non-newlines.
     {
         // Leading ending ws + nl, nl + ws will be trimmed, so we need a compound and entities.
         *add_compound = true;
@@ -10919,17 +10994,37 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
     if (!post) ps->restart_line = pre;
     else ps->restart_line = NULL;
 
+    // We are leading with a newline, print an extra into the quote, which will be trimmed away during parse.
+    if (*start == '\n')
+    {
+        print_nl(ps, pre, post);
+    }
+
     for (const char *i = start; i < stop;)
     {
         if (*i == '\n')
         {
-            print_nl_and_indent(ps, pre, post);
+            if (i+1 < stop && *(i+1) != '\n')
+            {
+                print_nl_and_indent(ps, pre, post);
+            }
+            else
+            {
+                print_nl(ps, pre, post);
+            }
             i++;
         }
         else
         {
             i += print_utf8_char(ps, i, stop);
         }
+    }
+    // We are ending with a newline, print an extra into the quote, which will be trimmed away during parse.
+    if (*(stop-1) == '\n')
+    {
+        ps->line_indent--;
+        print_nl_and_indent(ps, pre, post);
+        ps->line_indent++;
     }
     if (*(stop-1) != '\n' && post) write(writer_state, post, NULL);
     ps->restart_line = old_restart_line;
@@ -11083,14 +11178,15 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
 
     // Now move backwards, perhaps there was newlines before this problematic character...
     // Then we have to escape those as well since they are ending the previous quote.
+    /*
     const char *j = i-1;
     while (j > start)
     {
         int c = (int)((unsigned char)*j);
         if (c != '\n') break;
         j--;
-    }
-    return j+1;
+        }*/
+    return i; // j+1;
 }
 
 void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level)
@@ -11151,18 +11247,24 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
         return;
     }
 
-    const char *new_start = has_leading_space_nl(start, stop);
-    if (new_start)
+    size_t only_prepended_newlines = 0;
+    const char *new_start = has_leading_space_nl(start, stop, &only_prepended_newlines);
+    if (new_start && only_prepended_newlines == 0)
     {
+        // We have a leading mix of newlines and whitespace.
         print_all_whitespace(ps, start, new_start, level);
         start = new_start;
     }
 
-    const char *new_stop = has_ending_nl_space(start, stop);
+    size_t only_appended_newlines = 0;
+    const char *new_stop = has_ending_nl_space(start, stop, &only_appended_newlines);
     const char *old_stop = stop;
-    if (new_stop)
+    if (new_stop && only_appended_newlines == 0)
     {
+        // We have an ending mix of newlines and whitespace.
         stop = new_stop;
+        // Move forward over normal spaces.
+        while (stop < old_stop && *stop == ' ') stop++;
     }
 
     // Ok, normal content to be quoted. However we might need to split the content
@@ -11206,9 +11308,11 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
         }
         from = to;
     }
-    if (new_stop)
+
+    if (new_stop && only_appended_newlines == 0)
     {
-        print_all_whitespace(ps, new_stop, old_stop, level);
+        // This trailing whitespace could not be printed inside the quote.
+        print_all_whitespace(ps, stop, old_stop, level);
     }
 }
 
@@ -11263,8 +11367,13 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
         if (*start == '\r') return false;
         if (*start == '\t') return false;
     }
-    if (has_leading_space_nl(start, stop)) return true;
-    if (has_ending_nl_space(start, stop)) return true;
+
+    size_t only_leading_newlines = 0;
+    const char *ls = has_leading_space_nl(start, stop, &only_leading_newlines);
+    if (ls != NULL && only_leading_newlines == 0) return true;
+    size_t only_ending_newlines = 0;
+    const char *es = has_ending_nl_space(start, stop, &only_ending_newlines);
+    if (es != NULL && only_ending_newlines == 0) return true;
 
     if (compact)
     {

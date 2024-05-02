@@ -68,7 +68,15 @@ size_t count_necessary_quotes(const char *start, const char *stop, bool compact,
         }
     }
 
-    if (has_leading_space_nl(start, stop) || has_ending_nl_space(start, stop))
+    size_t only_prepended_newlines = 0;
+    size_t only_appended_newlines = 0;
+    const char *ls = has_leading_space_nl(start, stop, &only_prepended_newlines);
+    const char *es = has_ending_nl_space(start, stop, &only_appended_newlines);
+
+    // We do not need to add a compound, if there is no leading nl+space or if there is pure newlines.
+    // Likewise for the ending. Test this.
+    if ((ls != NULL && only_prepended_newlines == 0) || // We have leading nl and some non-newlines.
+        (es != NULL && only_appended_newlines == 0))    // We have ending nl and some non-newlines.
     {
         // Leading ending ws + nl, nl + ws will be trimmed, so we need a compound and entities.
         *add_compound = true;
@@ -966,17 +974,37 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
     if (!post) ps->restart_line = pre;
     else ps->restart_line = NULL;
 
+    // We are leading with a newline, print an extra into the quote, which will be trimmed away during parse.
+    if (*start == '\n')
+    {
+        print_nl(ps, pre, post);
+    }
+
     for (const char *i = start; i < stop;)
     {
         if (*i == '\n')
         {
-            print_nl_and_indent(ps, pre, post);
+            if (i+1 < stop && *(i+1) != '\n')
+            {
+                print_nl_and_indent(ps, pre, post);
+            }
+            else
+            {
+                print_nl(ps, pre, post);
+            }
             i++;
         }
         else
         {
             i += print_utf8_char(ps, i, stop);
         }
+    }
+    // We are ending with a newline, print an extra into the quote, which will be trimmed away during parse.
+    if (*(stop-1) == '\n')
+    {
+        ps->line_indent--;
+        print_nl_and_indent(ps, pre, post);
+        ps->line_indent++;
     }
     if (*(stop-1) != '\n' && post) write(writer_state, post, NULL);
     ps->restart_line = old_restart_line;
@@ -1130,14 +1158,15 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
 
     // Now move backwards, perhaps there was newlines before this problematic character...
     // Then we have to escape those as well since they are ending the previous quote.
+    /*
     const char *j = i-1;
     while (j > start)
     {
         int c = (int)((unsigned char)*j);
         if (c != '\n') break;
         j--;
-    }
-    return j+1;
+        }*/
+    return i; // j+1;
 }
 
 void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level)
@@ -1198,18 +1227,24 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
         return;
     }
 
-    const char *new_start = has_leading_space_nl(start, stop);
-    if (new_start)
+    size_t only_prepended_newlines = 0;
+    const char *new_start = has_leading_space_nl(start, stop, &only_prepended_newlines);
+    if (new_start && only_prepended_newlines == 0)
     {
+        // We have a leading mix of newlines and whitespace.
         print_all_whitespace(ps, start, new_start, level);
         start = new_start;
     }
 
-    const char *new_stop = has_ending_nl_space(start, stop);
+    size_t only_appended_newlines = 0;
+    const char *new_stop = has_ending_nl_space(start, stop, &only_appended_newlines);
     const char *old_stop = stop;
-    if (new_stop)
+    if (new_stop && only_appended_newlines == 0)
     {
+        // We have an ending mix of newlines and whitespace.
         stop = new_stop;
+        // Move forward over normal spaces.
+        while (stop < old_stop && *stop == ' ') stop++;
     }
 
     // Ok, normal content to be quoted. However we might need to split the content
@@ -1253,9 +1288,11 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
         }
         from = to;
     }
-    if (new_stop)
+
+    if (new_stop && only_appended_newlines == 0)
     {
-        print_all_whitespace(ps, new_stop, old_stop, level);
+        // This trailing whitespace could not be printed inside the quote.
+        print_all_whitespace(ps, stop, old_stop, level);
     }
 }
 
@@ -1310,8 +1347,13 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
         if (*start == '\r') return false;
         if (*start == '\t') return false;
     }
-    if (has_leading_space_nl(start, stop)) return true;
-    if (has_ending_nl_space(start, stop)) return true;
+
+    size_t only_leading_newlines = 0;
+    const char *ls = has_leading_space_nl(start, stop, &only_leading_newlines);
+    if (ls != NULL && only_leading_newlines == 0) return true;
+    size_t only_ending_newlines = 0;
+    const char *es = has_ending_nl_space(start, stop, &only_ending_newlines);
+    if (es != NULL && only_ending_newlines == 0) return true;
 
     if (compact)
     {

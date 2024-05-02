@@ -1316,17 +1316,21 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         return buf;
     }
 
+    size_t append_newlines = 0;
+
     // Check if the final line is all spaces.
-    if (has_ending_nl_space(start, stop))
+    if (has_ending_nl_space(start, stop, NULL))
     {
         // So it is, now trim from the end.
         while (stop > start)
         {
             char c = *(stop-1);
+            if (c == '\n') append_newlines++;
             if (c != ' ' && c != '\t' && c != '\n' && c != '\r') break;
             stop--;
         }
     }
+    if (append_newlines > 0) append_newlines--;
 
     if (stop == start)
     {
@@ -1336,8 +1340,10 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         return buf;
     }
 
+    size_t prepend_newlines = 0;
+
     // Check if the first line is all spaces.
-    if (has_leading_space_nl(start, stop))
+    if (has_leading_space_nl(start, stop, NULL))
     {
         // The first line is all spaces, trim leading spaces and newlines!
         ignore_first_indent = true;
@@ -1347,7 +1353,11 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         while (i < stop)
         {
             char c = *i;
-            if (c == '\n') start = i+1; // Restart find lines from here.
+            if (c == '\n')
+            {
+                start = i+1; // Restart find lines from here.
+                prepend_newlines++;
+            }
             else if (c != ' ' && c != '\t' && c != '\r') break;
             i++;
         }
@@ -1382,7 +1392,7 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         i = eol; // Start at next line, or end at stop.
     }
 
-    size_t prepend = 0;
+    size_t prepend_spaces = 0;
 
     if (!ignore_first_indent &&
         indent >= incidental)
@@ -1390,20 +1400,23 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         // The first indent is relevant and it is bigger than the incidental.
         // We need to prepend the output line with spaces that are not in the source!
         // But, only if there is more than one line with actual non spaces!
-        prepend = indent - incidental;
+        prepend_spaces = indent - incidental;
     }
 
     // Allocate max size of output buffer, it usually becomes smaller
     // when incidental indentation and trailing whitespace is removed.
-    size_t n = stop-start+prepend+1;
+    size_t n = stop-start+prepend_spaces+prepend_newlines+append_newlines+1;
     char *output = (char*)malloc(n);
     char *o = output;
 
     // Insert any necessary prepended spaces due to source indentation of the line.
     if (space != 0)
     {
-        while (prepend) { *o++ = space; prepend--; }
+        while (prepend_spaces) { *o++ = space; prepend_spaces--; }
     }
+
+    // Insert any necessary prepended newlines.
+    while (prepend_newlines) { *o++ = '\n'; prepend_newlines--; }
 
     // Start scanning the lines from the beginning again.
     // Now use the found incidental to copy the right parts.
@@ -1446,6 +1459,8 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         i = eol;
         first_line = false;
     }
+    // Insert any necessary appended newlines.
+    while (append_newlines) { *o++ = '\n'; append_newlines--; }
     *o++ = 0;
     size_t real_size = o-output;
     output = (char*)realloc(output, real_size);
@@ -3226,9 +3241,9 @@ char *copy_lines(int num_prefix_spaces,
     {
         membuffer_append(mb, "( ");
 
-        short_start = has_leading_space_nl(start, stop);
+        short_start = has_leading_space_nl(start, stop, NULL);
         if (!short_start) short_start = start;
-        short_stop = has_ending_nl_space(start, stop);
+        short_stop = has_ending_nl_space(start, stop, NULL);
         if (!short_stop || short_stop == start) short_stop = stop;
 
         const char *i = start;

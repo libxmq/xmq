@@ -12,35 +12,87 @@
 
 #ifdef TEXT_MODULE
 
-const char *has_leading_space_nl(const char *start, const char *stop)
+const char *has_leading_space_nl(const char *start, const char *stop, size_t *only_newlines)
 {
     const char *i = start;
     bool found_nl = false;
+    size_t only_nls = 0;
 
+    if (only_newlines != NULL) *only_newlines = 0;
+
+    // Look for leading newlines.
+    while (i < stop && *i == '\n')
+    {
+        i++;
+        only_nls++;
+    }
+    const char *middle = NULL;
+
+    // Yep, we found some leading pure newlines.
+    if (only_nls > 0)
+    {
+        found_nl = true;
+        middle = i;
+    }
+
+    // Scan other leading whitespace, perhaps none.
     while (i < stop)
     {
         if (*i == '\n') found_nl = true;
         if (!is_xml_whitespace(*i)) break;
         i++;
     }
+
     // No newline found before content, so leading spaces/tabs will not be trimmed.
     if (!found_nl) return 0;
+
+    if (middle == i)
+    {
+        // We have for example "\ncontent" this we can represent in xmq with a visible empty line, eg:
+        // '
+        //
+        // content'
+        if (only_newlines != NULL) *only_newlines = only_nls;
+    }
     return i;
 }
 
-const char *has_ending_nl_space(const char *start, const char *stop)
+const char *has_ending_nl_space(const char *start, const char *stop, size_t *only_newlines)
 {
     const char *i = stop;
     bool found_nl = false;
+    size_t only_nls = 0;
 
-    while (i > start)
+    if (only_newlines != NULL) *only_newlines = 0;
+
+    // Look for ending newlines.
+    i--;
+    while (i >= start && *i == '\n')
     {
         i--;
+        only_nls++;
+        found_nl = true;
+    }
+    const char *middle = i;
+
+    while (i >= start)
+    {
         if (*i == '\n') found_nl = true;
         if (!is_xml_whitespace(*i)) break;
+        i--;
     }
     // No newline found after content, so ending spaces/tabs will not be trimmed.
     if (!found_nl) return 0;
+
+    if (middle == i)
+    {
+        // We have for example "content\n" this we can represent in xmq with a visible empty line, eg:
+        // 'content
+        //
+        // '
+        if (only_newlines != NULL) *only_newlines = only_nls;
+    }
+
     i++;
     return i;
 }
