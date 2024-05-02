@@ -69,7 +69,7 @@ cp web/resources/todos.xslt build/web/resources/todos.xslt
 cp web/resources/todosframed.xslq build/web/resources/todosframed.xslq
 $XMQ web/resources/todos.xslt to-xmq > build/web/resources/todos.xslq
 $XMQ web/resources/todos.xslt render-html --class=w80 --theme=lightbg --nostyle > build/todos_xslq.xml
-$XMQ web/resources/todosframed.xslq render-html --class=w80 --theme=lightbg --nostyle > build/todosframed_xslq.xml
+$XMQ --nomerge web/resources/todosframed.xslq render-html --class=w80 --theme=lightbg --nostyle > build/todosframed_xslq.xml
 $XMQ web/resources/todos.json transform build/web/resources/todos.xslq to-html > build/web/resources/todos.html
 $XMQ web/resources/todos.json transform build/web/resources/todosframed.xslq to-text > build/web/resources/todos.text
 $XMQ build/web/resources/todos.html render-html --class=w80 --theme=lightbg --nostyle > build/todos_htmq.xml
