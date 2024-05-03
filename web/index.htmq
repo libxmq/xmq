@@ -259,7 +259,7 @@ html {
             li = 'Single line comments use // and multi line comments use /* */.'
             li = 'Comments containing comments are commented using n+1 slashes (eg ///* *///).'
         }
-        p = 'This means that you can quote any block of text with enough single quotes and you
+        p = 'This means that you can quote any block of text (except invisible spaces near newlines) with enough single quotes and you
              can comment any block of text with enough slashes.'
 
         p = 'The incidental indentation removal and n+1 quotes ideas originated in the expert group
