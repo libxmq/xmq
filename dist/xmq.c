@@ -2638,7 +2638,7 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
 }
 
 
-/** Scan a line, ie until \n or NULL.
+/** Scan a line, ie until \n pr \r\n or \r or NULL.
     Return true if a newline was found. */
 bool find_line(const char *start, // Start scanning the line from here.
                const char *stop,  // Points to char after end of buffer.
@@ -2665,8 +2665,9 @@ bool find_line(const char *start, // Start scanning the line from here.
     // Find eol \n and the last non-space char.
     while (i < stop)
     {
-        if (*i == '\n')
+        if (*i == '\n' || *i == '\r')
         {
+            if (*i == '\r' && *(i+1) == '\n') i++;
             i++;
             has_nl = true;
             break;
