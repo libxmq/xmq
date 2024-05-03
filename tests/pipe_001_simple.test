@@ -1,0 +1,10 @@
+START
+''''
+
+
+''''
+DEBUG
+[quote "''''\n\n\n''''" 1:1][whitespace "\n" 4:5]
+CONTENT
+{quote "\n\n"}
+END

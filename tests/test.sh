@@ -31,6 +31,11 @@ do
     tests/test_single.sh "$PROG" "$OUTPUT" "$i"
 done
 
+for i in tests/pipe_???_*.test
+do
+    tests/test_pipes.sh "$PROG" "$OUTPUT" "$i"
+done
+
 for i in tests/error_???_*.test
 do
     tests/test_error.sh "$PROG" "$OUTPUT" "$i"
