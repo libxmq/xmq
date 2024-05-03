@@ -1476,7 +1476,6 @@ bool cmd_tokenize(XMQCliCommand *command)
     }
 
     XMQParseState *state = xmqNewParseState(callbacks, output_settings);
-    assert(command->in);
     xmqTokenizeFile(state, command->in);
 
     int err = 0;
@@ -2264,6 +2263,8 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
         return;
     case XMQ_CLI_CMD_TOKENIZE:
         c->in = load_command->in;
+        // Overwrite load command, do not load before tokenize.
+        load_command->cmd = XMQ_CLI_CMD_NONE;
         return;
     case XMQ_CLI_CMD_DELETE:
         return;

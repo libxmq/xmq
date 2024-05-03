@@ -2471,33 +2471,23 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
 bool xmqTokenizeFile(XMQParseState *state, const char *file)
 {
     bool rc = false;
-    char *buffer = NULL;
-    long fsize = 0;
-    size_t n = 0;
+    const char *buffer = NULL;
+    size_t fsize = 0;
     XMQContentType content = XMQ_CONTENT_XMQ;
 
-    FILE *f = fopen(file, "rb");
-    if (!f) {
-        state->error_nr = XMQ_ERROR_CANNOT_READ_FILE;
-        goto exit;
+    XMQDoc *doq = xmqNewDoc();
+
+    if (file)
+    {
+        xmqSetDocSourceName(doq, file);
+        rc = load_file(doq, file, &fsize, &buffer);
     }
-
-    fseek(f, 0, SEEK_END);
-    fsize = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    buffer = (char*)malloc(fsize + 1);
-    if (!buffer) return false;
-
-    n = fread(buffer, fsize, 1, f);
-
-    if (n != 1) {
-        rc = false;
-        state->error_nr = XMQ_ERROR_CANNOT_READ_FILE;
-        goto exit;
+    else
+    {
+        xmqSetDocSourceName(doq, "-");
+        rc = load_stdin(doq, &fsize, &buffer);
     }
-    fclose(f);
-    buffer[fsize] = 0;
+    if (!rc) return false;
 
     xmqSetStateSourceName(state, file);
 
@@ -2514,7 +2504,8 @@ bool xmqTokenizeFile(XMQParseState *state, const char *file)
 
     exit:
 
-    free(buffer);
+    free((void*)buffer);
+    xmqFreeDoc(doq);
 
     return rc;
 }
