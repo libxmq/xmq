@@ -1,4 +1,13 @@
 
+2024-05-03: Version 2.8.0
+
+Remove \r in \r\n newlines inside quotes.
+
+Enable stdin pipe into xmq tokenize command.
+
+Use --nomerge to prevent xmq from merging text and character entity nodes
+when loading xmq.
+
 Leading and ending newlines can now be expressed using empty lines. E.g.
 the content "\nhello\n" can be expressed as:
 '
