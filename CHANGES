@@ -1,4 +1,9 @@
 
+2024-05-11: Version 2.8.1
+
+If writing to a pipe/file (ie NOT tty) then do not add ansi colors
+unless render-terminal --color is used.
+
 2024-05-03: Version 2.8.0
 
 Remove \r in \r\n newlines inside quotes.
