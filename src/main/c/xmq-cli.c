@@ -1176,25 +1176,6 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
         return XMQ_RENDER_MONO;
     }
 
-    char *colorfgbg = getenv("COLORFGBG");
-    if (colorfgbg != NULL)
-    {
-        // Black text on white background: 0;default;15
-        // White text on black background: 15;default;0
-        *use_color = true;
-        *bg_dark_mode = true;
-        verbose_("(xmq) COLORFGBG means dark\n");
-        return XMQ_RENDER_COLOR_DARKBG;
-    }
-
-    if (!isatty(1))
-    {
-        *use_color = false;
-        *bg_dark_mode = false;
-        verbose_("(xmq) using mono since output is not a tty\n");
-        return XMQ_RENDER_MONO;
-    }
-
     if (!strcmp(term, "linux"))
     {
         // The Linux vt console is by default black. So dark-mode.
@@ -1238,12 +1219,34 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
         return XMQ_RENDER_COLOR_LIGHTBG;
     }
 
+#endif
+
+    char *colorfgbg = getenv("COLORFGBG");
+    if (colorfgbg != NULL)
+    {
+        // Black text on white background: 0;default;15
+        // Or 0;15
+        // White text on black background: 15;default;0
+        // Or 15;0 or 7;0 etc
+        const char *p = strrchr(colorfgbg, ';');
+        // If the string ends with ;0 then it is dark mode.
+	if (p == NULL || (*(p+2) == 0 && *(p+1) == '0'))
+	{
+	    *use_color = true;
+            *bg_dark_mode = true;
+            verbose_("(xmq) COLORFGBG means dark \"%s\"\n", colorfgbg);
+            return XMQ_RENDER_COLOR_DARKBG;
+	}
+	*use_color = true;
+        *bg_dark_mode = false;
+        verbose_("(xmq) COLORFGBG means light \"%s\"\n", colorfgbg);
+        return XMQ_RENDER_COLOR_LIGHTBG;
+    }
+
     *use_color = true;
     *bg_dark_mode = true;
     verbose_("(xmq) unknown terminal \"%s\" defaults to colors and dark background\n", term);
     return XMQ_RENDER_COLOR_DARKBG;
-
-#endif
 }
 
 bool handle_global_option(const char *arg, XMQCliCommand *command)
@@ -3344,13 +3347,17 @@ int main(int argc, const char **argv)
     // See if we can find from the env variables or the terminal if it is dark mode or not.
     terminal_render_theme(&env.use_color, &env.bg_dark_mode);
 
-#ifdef PLATFORM_WINAPI
     if (isatty(1))
     {
+#ifdef PLATFORM_WINAPI
         enableAnsiColorsWindowsConsole();
-    }
 #endif
-
+    }
+    else
+    {
+        env.use_color = false;
+        verbose_("(xmq) using mono since output is not a tty\n");
+    }
     XMQCliCommand *load_command = allocate_cli_command(&env);
     load_command->cmd = XMQ_CLI_CMD_LOAD;
     prepare_command(load_command, load_command);
