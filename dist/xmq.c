@@ -779,15 +779,23 @@ size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...);
 struct HashMap;
 typedef struct HashMap HashMap;
 
+struct HashMapIterator;
+typedef struct HashMapIterator HashMapIterator;
+
 HashMap *hashmap_create(size_t max_size);
 void hashmap_free_and_values(HashMap *map);
 // Returns NULL if no key is found.
 void *hashmap_get(HashMap* map, const char* key);
 // Putting a non-NULL value.
 void hashmap_put(HashMap* map, const char* key, void *val);
-// Remove a key-val.
-void hashmap_remove(HashMap* map, const char* key);
+// How many key-vals are there?
+size_t hashmap_size();
+// Free it.
 void hashmap_free(HashMap* map);
+
+HashMapIterator *hashmap_iterate(HashMap *map);
+bool hashmap_next_key_value(HashMapIterator *i, const char **key, void **val);
+void hashmap_free_iterator(HashMapIterator *i);
 
 #define HASHMAP_MODULE
 
@@ -5805,7 +5813,7 @@ typedef struct HashMapNode HashMapNode;
 
 struct HashMapNode
 {
-    const char *key_;
+    char *key_;
     void *val_;
     struct HashMapNode *next_;
 };
@@ -5815,6 +5823,13 @@ struct HashMap
     int size_;
     int max_size_;
     HashMapNode** nodes_;
+};
+
+struct HashMapIterator
+{
+    HashMap *hm_;
+    int offset_;
+    struct HashMapNode *node_;
 };
 
 // FUNCTION DECLARATIONS //////////////////////////////////////////////////
@@ -5844,7 +5859,7 @@ HashMapNode* hashmap_create_node(const char *key)
 {
     HashMapNode* new_node = (HashMapNode*) malloc(sizeof(HashMapNode));
     memset(new_node, 0, sizeof(*new_node));
-    new_node->key_ = key;
+    new_node->key_ = strdup(key);
 
     return new_node;
 }
@@ -5869,6 +5884,8 @@ void hashmap_free_and_values(HashMap *map)
         map->nodes_[i] = NULL;
         while (node)
         {
+            if (node->key_) free((char*)node->key_);
+            node->key_ = NULL;
             if (node->val_) free(node->val_);
             node->val_ = NULL;
             HashMapNode *next = node->next_;
@@ -5897,6 +5914,7 @@ void hashmap_put(HashMap* table, const char* key, void *val)
         HashMapNode* new_node = hashmap_create_node(key);
         new_node->val_ = val;
         table->nodes_[index] = new_node;
+        table->size_++;
         return;
     }
 
@@ -5916,6 +5934,7 @@ void hashmap_put(HashMap* table, const char* key, void *val)
     HashMapNode* new_node = hashmap_create_node(key);
     new_node->val_ = val;
     prev_slot->next_ = new_node;
+    table->size_++;
     return;
 }
 
@@ -5936,6 +5955,11 @@ void *hashmap_get(HashMap* table, const char* key)
     return NULL;
 }
 
+size_t hashmap_size(HashMap* table)
+{
+    return table->size_;
+}
+
 void hashmap_free(HashMap* table)
 {
     for (int i=0; i < table->max_size_; i++)
@@ -5951,6 +5975,47 @@ void hashmap_free(HashMap* table)
 
     free(table->nodes_);
     free(table);
+}
+
+HashMapIterator *hashmap_iterate(HashMap *map)
+{
+    HashMapIterator* new_iterator = (HashMapIterator*) malloc(sizeof(HashMapIterator));
+    memset(new_iterator, 0, sizeof(*new_iterator));
+    new_iterator->hm_ = map;
+    new_iterator->offset_ = -1;
+
+    return new_iterator;
+}
+
+bool hashmap_next_key_value(HashMapIterator *i, const char **key, void **val)
+{
+    if (i->node_)
+    {
+        i->node_ = i->node_->next_;
+    }
+    if (i->node_)
+    {
+        *key = i->node_->key_;
+        *val = i->node_->val_;
+        return true;
+    }
+    do
+    {
+        i->offset_++;
+    }
+    while (i->offset_ < i->hm_->max_size_ && i->hm_->nodes_[i->offset_] == NULL);
+
+    if (i->offset_ >= i->hm_->max_size_) return false;
+
+    i->node_ = i->hm_->nodes_[i->offset_];
+    *key = i->node_->key_;
+    *val = i->node_->val_;
+    return true;
+}
+
+void hashmap_free_iterator(HashMapIterator *i)
+{
+    free(i);
 }
 
 #endif // HASHMAP_MODULE

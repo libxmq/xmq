@@ -30,15 +30,23 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 struct HashMap;
 typedef struct HashMap HashMap;
 
+struct HashMapIterator;
+typedef struct HashMapIterator HashMapIterator;
+
 HashMap *hashmap_create(size_t max_size);
 void hashmap_free_and_values(HashMap *map);
 // Returns NULL if no key is found.
 void *hashmap_get(HashMap* map, const char* key);
 // Putting a non-NULL value.
 void hashmap_put(HashMap* map, const char* key, void *val);
-// Remove a key-val.
-void hashmap_remove(HashMap* map, const char* key);
+// How many key-vals are there?
+size_t hashmap_size();
+// Free it.
 void hashmap_free(HashMap* map);
+
+HashMapIterator *hashmap_iterate(HashMap *map);
+bool hashmap_next_key_value(HashMapIterator *i, const char **key, void **val);
+void hashmap_free_iterator(HashMapIterator *i);
 
 #define HASHMAP_MODULE
 

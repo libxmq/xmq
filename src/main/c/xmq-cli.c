@@ -918,15 +918,18 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
 
     if (group == XMQ_CLI_CMD_GROUP_TRANSFORM)
     {
-        if (!strncmp(arg, "--stringparam=", 14))
+        if (!strncmp(arg, "--stringparam=", 14) ||
+            !strncmp(arg, "--param=", 8))
         {
+            size_t offset = (arg[2] == 's')?14:8;
+
             if (!command->xslt_params)
             {
                 command->xslt_params = hashmap_create(64);
             }
 
             // Start of key in key=value
-            const char *s = arg+14;
+            const char *s = arg+offset;
             // Find start of value
             const char *p = strchr(s, '=');
             if (p == NULL)
@@ -935,8 +938,30 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
                 return false;
             }
             char *key = strndup(s, p-s);
-            char *val = strdup(p+1);
+            char *val = NULL;
+            if (offset == 8)
+            {
+                val = strdup(p+1);
+            }
+            else
+            {
+                char *sq = strchr(p+1, '\'');
+                char *dq = strchr(p+1, '"');
+                if (sq && dq)
+                {
+                    fprintf(stderr, "Invalid: %s\nA string param cannot contain both single and double quotes.\n", arg);
+                    return false;
+                }
+                char q = sq?'"':'\'';
+                size_t len = strlen(p+1);
+                val = malloc(1+2+len);
+                val[0] = q;
+                val[1+len] = q;
+                val[2+len] = 0;
+                memcpy(val+1, p+1, len);
+            }
             hashmap_put(command->xslt_params, key, val);
+            free(key);
             return true;
         }
         if (command->xslt == NULL)
@@ -1456,7 +1481,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  xmq data.html select \"//tr[@class='print_list_table_content']\" \\\n"
            "                delete //@class \\\n"
            "                add-root Course \\\n"
-           "                transform cols.xslq to-text\n"
+           "                transform --stringparam=title=Welcome cols.xslq to-text\n"
            "  xmq work.xml validate --silent work.xsd noout\n"
         );
 
@@ -1689,8 +1714,36 @@ bool cmd_transform(XMQCliCommand *command)
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
     verbose_("(xmq) transforming\n");
 
-    xmlDocPtr new_doc = xsltApplyStylesheet(command->xslt, doc, NULL);
+    const char **params = NULL;
+    HashMapIterator *i;
+    size_t j = 0;
 
+    if (command->xslt_params)
+    {
+        size_t n = hashmap_size(command->xslt_params);
+        params = calloc(2*n+1, sizeof(char*));
+
+        i = hashmap_iterate(command->xslt_params);
+        const char *key;
+        void *val;
+        while (hashmap_next_key_value(i, &key, &val))
+        {
+            params[j++] = key;
+            params[j++] = (const char*)val;
+            verbose_("(xmq) param %s %s\n", key, val);
+        }
+        params[j++] = NULL;
+    }
+
+    verbose_("(xmq) blaaa\n");
+    xmlDocPtr new_doc = xsltApplyStylesheet(command->xslt, doc, params);
+    verbose_("(xmq) bloooo\n");
+
+    if (params)
+    {
+        hashmap_free_iterator(i);
+        free(params);
+    }
     xmlFreeDoc(doc);
     xmqSetImplementationDoc(command->env->doc, new_doc);
 
