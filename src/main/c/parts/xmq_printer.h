@@ -66,8 +66,6 @@ void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *post
 size_t print_char_entity(XMQPrintState *ps, XMQColor color, const char *start, const char *stop);
 void print_slashes(XMQPrintState *ps, const char *pre, const char *post, size_t n);
 
-bool is_safe_char(const char *i, const char *stop);
-bool unsafe_start(char c, char cc);
 
 bool need_separation_before_attribute_key(XMQPrintState *ps);
 bool need_separation_before_entity(XMQPrintState *ps);

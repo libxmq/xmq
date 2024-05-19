@@ -1,0 +1,8 @@
+START
+/* Hesan */
+b = /*
+ERROR
+.../error_016_unsafe_start_slashstar.input:2:5: error: value cannot start with = /* or //
+b = /*
+    ^
+END

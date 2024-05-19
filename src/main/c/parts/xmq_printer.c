@@ -41,7 +41,7 @@ size_t count_necessary_quotes(const char *start, const char *stop, bool compact,
 
     assert(stop > start);
 
-    if (unsafe_start(*start, start+1 < stop ? *(start+1):0))
+    if (unsafe_value_start(*start, start+1 < stop ? *(start+1):0))
     {
         // Content starts with = & // or /* so it must be quoted.
         all_safe = false;
@@ -93,7 +93,7 @@ size_t count_necessary_quotes(const char *start, const char *stop, bool compact,
         else
         {
             curr = 0;
-            all_safe &= is_safe_char(i, stop);
+            all_safe &= is_safe_value_char(i, stop);
         }
     }
     // We found 3 quotes, thus we need 4 quotes to quote them.
@@ -934,26 +934,6 @@ void print_attributes(XMQPrintState *ps,
     }
 
     ps->line_indent = line_indent;
-}
-
-bool is_safe_char(const char *i, const char *stop)
-{
-    char c = *i;
-    return !(count_whitespace(i, stop) > 0 ||
-             c == '\n' ||
-             c == '(' ||
-             c == ')' ||
-             c == '\'' ||
-             c == '\"' ||
-             c == '{' ||
-             c == '}' ||
-             c == '\t' ||
-             c == '\r');
-}
-
-bool unsafe_start(char c, char cc)
-{
-    return c == '=' || c == '&' || (c == '/' && (cc == '/' || cc == '*'));
 }
 
 void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,

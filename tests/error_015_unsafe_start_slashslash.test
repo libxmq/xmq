@@ -1,0 +1,8 @@
+START
+// Comment
+b = //
+ERROR
+.../error_015_unsafe_start_slashslash.input:2:5: error: value cannot start with = /* or //
+b = //
+    ^
+END

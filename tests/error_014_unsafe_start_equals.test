@@ -1,0 +1,8 @@
+START
+a = a=
+b = =
+ERROR
+.../error_014_unsafe_start_equals.input:2:5: error: value cannot start with = /* or //
+b = =
+    ^
+END

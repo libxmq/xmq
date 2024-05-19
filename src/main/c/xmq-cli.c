@@ -22,6 +22,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include"xmq.h"
+#include"parts/hashmap.h"
 #include"parts/membuffer.h"
 #include"parts/text.h"
 #include"parts/xml.h"
@@ -146,7 +147,9 @@ struct XMQCliCommand
     const char *entity;
     const char *content; // Content to replace something.
     XMQDoc *xslt_doq; // The xmq document loaded to generate the xslt.
-    xsltStylesheetPtr xslt; // The xslt trasnform to be used.
+    xsltStylesheetPtr xslt; // The xslt transform to be used.
+    HashMap *xslt_params; // Parameters to the xslt transform.
+
     const char *xsd_name; // Name of xsd file.
     XMQDoc *xsd_doq; // The xmq document loaded to generate the xsd.
     xmlSchemaPtr xsd; // The xsd to validate agains.
@@ -256,6 +259,7 @@ bool shell_safe(char *i);
 char *grab_content(xmlNode *node, const char *name);
 void add_key_value(xmlDoc *doc, xmlNode *root, const char *key, size_t value);
 XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env);
+void free_cli_command(XMQCliCommand *cmd);
 bool cmd_delete(XMQCliCommand *command);
 bool cmd_help(XMQCliCommand *c);
 bool cmd_select(XMQCliCommand *command);
@@ -542,6 +546,16 @@ XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env)
     c->tab_size = 8;
 
     return c;
+}
+
+void free_cli_command(XMQCliCommand *cmd)
+{
+    if (cmd->xslt_params)
+    {
+        hashmap_free_and_values(cmd->xslt_params);
+        cmd->xslt_params = NULL;
+    }
+    free(cmd);
 }
 
 void abortParsing(void *ctx, const char *msg, ...);
@@ -904,6 +918,27 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
 
     if (group == XMQ_CLI_CMD_GROUP_TRANSFORM)
     {
+        if (!strncmp(arg, "--stringparam=", 14))
+        {
+            if (!command->xslt_params)
+            {
+                command->xslt_params = hashmap_create(64);
+            }
+
+            // Start of key in key=value
+            const char *s = arg+14;
+            // Find start of value
+            const char *p = strchr(s, '=');
+            if (p == NULL)
+            {
+                fprintf(stderr, "Invalid: %s\nUsage: --stringparam=key=value\n", arg);
+                return false;
+            }
+            char *key = strndup(s, p-s);
+            char *val = strdup(p+1);
+            hashmap_put(command->xslt_params, key, val);
+            return true;
+        }
         if (command->xslt == NULL)
         {
             XMQDoc *doq = xmqNewDoc();
@@ -3404,7 +3439,7 @@ int main(int argc, const char **argv)
     {
         XMQCliCommand *tmp = c;
         c = c->next;
-        free(tmp);
+        free_cli_command(tmp);
     }
 
     if (error_to_print_on_exit) fprintf(stderr, "%s", error_to_print_on_exit);

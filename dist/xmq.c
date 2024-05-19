@@ -497,10 +497,13 @@ bool is_xmq_entity_start(char c);
 bool is_xmq_quote_start(char c);
 bool is_xmq_text_value(const char *i, const char *stop);
 bool is_xmq_text_value_char(const char *i, const char *stop);
+bool unsafe_value_start(char c, char cc);
+bool is_safe_value_char(const char *i, const char *stop);
 
 size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
 size_t count_necessary_quotes(const char *start, const char *stop, bool compact, bool *add_nls, bool *add_compound);
 size_t count_necessary_slashes(const char *start, const char *stop);
+
 
 // Common parser functions ///////////////////////////////////////
 
@@ -986,8 +989,6 @@ void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *post
 size_t print_char_entity(XMQPrintState *ps, XMQColor color, const char *start, const char *stop);
 void print_slashes(XMQPrintState *ps, const char *pre, const char *post, size_t n);
 
-bool is_safe_char(const char *i, const char *stop);
-bool unsafe_start(char c, char cc);
 
 bool need_separation_before_attribute_key(XMQPrintState *ps);
 bool need_separation_before_entity(XMQPrintState *ps);
@@ -1327,10 +1328,13 @@ bool is_xmq_entity_start(char c);
 bool is_xmq_quote_start(char c);
 bool is_xmq_text_value(const char *i, const char *stop);
 bool is_xmq_text_value_char(const char *i, const char *stop);
+bool unsafe_value_start(char c, char cc);
+bool is_safe_value_char(const char *i, const char *stop);
 
 size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
 size_t count_necessary_quotes(const char *start, const char *stop, bool compact, bool *add_nls, bool *add_compound);
 size_t count_necessary_slashes(const char *start, const char *stop);
+
 
 // Common parser functions ///////////////////////////////////////
 
@@ -8747,6 +8751,7 @@ const char *xmqParseErrorToString(XMQParseError e)
     case XMQ_ERROR_EXPECTED_JSON: return "expected json source";
     case XMQ_ERROR_PARSING_XML: return "error parsing xml";
     case XMQ_ERROR_PARSING_HTML: return "error parsing html";
+    case XMQ_ERROR_VALUE_CANNOT_START_WITH: return "value cannot start with = /* or //";
     case XMQ_WARNING_QUOTES_NEEDED: return "perhaps you need more quotes to quote this quote";
     }
     assert(false);
@@ -8963,6 +8968,28 @@ size_t find_namespace_max_u_width(size_t max, xmlNs *ns)
 
     return max;
 }
+
+/** Check if a value can start with these two characters. */
+bool unsafe_value_start(char c, char cc)
+{
+    return c == '=' || c == '&' || (c == '/' && (cc == '/' || cc == '*'));
+}
+
+bool is_safe_value_char(const char *i, const char *stop)
+{
+    char c = *i;
+    return !(count_whitespace(i, stop) > 0 ||
+             c == '\n' ||
+             c == '(' ||
+             c == ')' ||
+             c == '\'' ||
+             c == '\"' ||
+             c == '{' ||
+             c == '}' ||
+             c == '\t' ||
+             c == '\r');
+}
+
 
 #endif // XMQ_INTERNALS_MODULE
 
@@ -9255,7 +9282,7 @@ void eat_xmq_text_value(XMQParseState *state)
     while (i < stop)
     {
         char c = *i;
-        if (!is_xmq_text_value_char(i, stop)) break;
+        if (!is_safe_value_char(i, stop)) break;
         increment(c, 1, &i, &line, &col);
     }
 
@@ -9381,27 +9408,16 @@ size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk)
     return i-start;
 }
 
-bool is_xmq_text_value_char(const char *i, const char *stop)
-{
-    char c = *i;
-    if (count_whitespace(i, stop) > 0 ||
-        c == '\'' ||
-        c == '"' ||
-        c == '(' ||
-        c == ')' ||
-        c == '{' ||
-        c == '}')
-    {
-        return false;
-    }
-    return true;
-}
-
 bool is_xmq_text_value(const char *start, const char *stop)
 {
+    char c = *start;
+    char cc = *(start+1);
+
+    if (unsafe_value_start(c, cc)) return false;
+
     for (const char *i = start; i < stop; ++i)
     {
-        if (!is_xmq_text_value_char(i, stop))
+        if (!is_safe_value_char(i, stop))
         {
             return false;
         }
@@ -9605,6 +9621,12 @@ void parse_xmq_value(XMQParseState *state, Level level)
     }
     else
     {
+        char cc = *(state->i+1);
+        if (unsafe_value_start(c, cc))
+        {
+            state->error_nr = XMQ_ERROR_VALUE_CANNOT_START_WITH;
+            longjmp(state->error_handler, 1);
+        }
         parse_xmq_text_value(state, level);
     }
 }
@@ -9721,6 +9743,7 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
         const char *stop = state->i;
 
         DO_CALLBACK(equals, state, start_line, start_col, start, stop, stop);
+
         parse_xmq_value(state, LEVEL_ELEMENT_VALUE);
         return;
     }
@@ -10061,7 +10084,7 @@ size_t count_necessary_quotes(const char *start, const char *stop, bool compact,
 
     assert(stop > start);
 
-    if (unsafe_start(*start, start+1 < stop ? *(start+1):0))
+    if (unsafe_value_start(*start, start+1 < stop ? *(start+1):0))
     {
         // Content starts with = & // or /* so it must be quoted.
         all_safe = false;
@@ -10113,7 +10136,7 @@ size_t count_necessary_quotes(const char *start, const char *stop, bool compact,
         else
         {
             curr = 0;
-            all_safe &= is_safe_char(i, stop);
+            all_safe &= is_safe_value_char(i, stop);
         }
     }
     // We found 3 quotes, thus we need 4 quotes to quote them.
@@ -10954,26 +10977,6 @@ void print_attributes(XMQPrintState *ps,
     }
 
     ps->line_indent = line_indent;
-}
-
-bool is_safe_char(const char *i, const char *stop)
-{
-    char c = *i;
-    return !(count_whitespace(i, stop) > 0 ||
-             c == '\n' ||
-             c == '(' ||
-             c == ')' ||
-             c == '\'' ||
-             c == '\"' ||
-             c == '{' ||
-             c == '}' ||
-             c == '\t' ||
-             c == '\r');
-}
-
-bool unsafe_start(char c, char cc)
-{
-    return c == '=' || c == '&' || (c == '/' && (cc == '/' || cc == '*'));
 }
 
 void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,

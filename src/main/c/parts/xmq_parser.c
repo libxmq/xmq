@@ -299,7 +299,7 @@ void eat_xmq_text_value(XMQParseState *state)
     while (i < stop)
     {
         char c = *i;
-        if (!is_xmq_text_value_char(i, stop)) break;
+        if (!is_safe_value_char(i, stop)) break;
         increment(c, 1, &i, &line, &col);
     }
 
@@ -425,27 +425,16 @@ size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk)
     return i-start;
 }
 
-bool is_xmq_text_value_char(const char *i, const char *stop)
-{
-    char c = *i;
-    if (count_whitespace(i, stop) > 0 ||
-        c == '\'' ||
-        c == '"' ||
-        c == '(' ||
-        c == ')' ||
-        c == '{' ||
-        c == '}')
-    {
-        return false;
-    }
-    return true;
-}
-
 bool is_xmq_text_value(const char *start, const char *stop)
 {
+    char c = *start;
+    char cc = *(start+1);
+
+    if (unsafe_value_start(c, cc)) return false;
+
     for (const char *i = start; i < stop; ++i)
     {
-        if (!is_xmq_text_value_char(i, stop))
+        if (!is_safe_value_char(i, stop))
         {
             return false;
         }
@@ -649,6 +638,12 @@ void parse_xmq_value(XMQParseState *state, Level level)
     }
     else
     {
+        char cc = *(state->i+1);
+        if (unsafe_value_start(c, cc))
+        {
+            state->error_nr = XMQ_ERROR_VALUE_CANNOT_START_WITH;
+            longjmp(state->error_handler, 1);
+        }
         parse_xmq_text_value(state, level);
     }
 }
@@ -765,6 +760,7 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
         const char *stop = state->i;
 
         DO_CALLBACK(equals, state, start_line, start_col, start, stop, stop);
+
         parse_xmq_value(state, LEVEL_ELEMENT_VALUE);
         return;
     }

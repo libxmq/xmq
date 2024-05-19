@@ -388,6 +388,7 @@ const char *xmqParseErrorToString(XMQParseError e)
     case XMQ_ERROR_EXPECTED_JSON: return "expected json source";
     case XMQ_ERROR_PARSING_XML: return "error parsing xml";
     case XMQ_ERROR_PARSING_HTML: return "error parsing html";
+    case XMQ_ERROR_VALUE_CANNOT_START_WITH: return "value cannot start with = /* or //";
     case XMQ_WARNING_QUOTES_NEEDED: return "perhaps you need more quotes to quote this quote";
     }
     assert(false);
@@ -604,5 +605,27 @@ size_t find_namespace_max_u_width(size_t max, xmlNs *ns)
 
     return max;
 }
+
+/** Check if a value can start with these two characters. */
+bool unsafe_value_start(char c, char cc)
+{
+    return c == '=' || c == '&' || (c == '/' && (cc == '/' || cc == '*'));
+}
+
+bool is_safe_value_char(const char *i, const char *stop)
+{
+    char c = *i;
+    return !(count_whitespace(i, stop) > 0 ||
+             c == '\n' ||
+             c == '(' ||
+             c == ')' ||
+             c == '\'' ||
+             c == '\"' ||
+             c == '{' ||
+             c == '}' ||
+             c == '\t' ||
+             c == '\r');
+}
+
 
 #endif // XMQ_INTERNALS_MODULE
