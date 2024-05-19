@@ -1,4 +1,8 @@
 
+2024-05-19: Version 2.9
+
+Add --stringparam=key=value and --param=key=value to transform command.
+
 2024-05-11: Version 2.8.1
 
 If writing to a pipe/file (ie NOT tty) then do not add ansi colors
