@@ -1573,7 +1573,12 @@ bool cmd_load(XMQCliCommand *command)
 
     command->env->doc = xmqNewDoc();
 
-    if (command->no_input) return true;
+    if (command->no_input)
+    {
+        command->env->load = command;
+        command->in = "z";
+        return true;
+    }
 
     if (command->in &&
         command->in[0] == '-' &&

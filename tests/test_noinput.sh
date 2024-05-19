@@ -23,8 +23,8 @@ mkdir -p $OUTPUT
 
 sed -n '/^XMQ$/,/^END$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.expected
 
-ARGS=$(grep ARGS $TEST_FILE | cut -b 5- | tr -d '\n')
-CMDS=$(grep CMDS $TEST_FILE | cut -b 5- | tr -d '\n')
+ARGS=$(grep ^ARGS $TEST_FILE | cut -b 5- | tr -d '\n')
+CMDS=$(grep ^CMDS $TEST_FILE | cut -b 5- | tr -d '\n')
 
 $PROG -z $ARGS $CMDS > $OUTPUT/${TEST_NAME}.output
 
