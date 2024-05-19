@@ -140,6 +140,7 @@ struct XMQCliCommand
     XMQCliCmd cmd;
     bool silent;
     const char *in;
+    bool no_input; // If set to true, then no initial file is read nor any stdin is read.
     const char *out;
     const char *alias;
     XMQDoc *alias_doq; // The xmq document loaded to generate the xsd.
@@ -1318,6 +1319,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->print_help = true;
         return true;
     }
+    if (!strcmp(arg, "-z"))
+    {
+        command->no_input = true;
+        return true;
+    }
     if (!strcmp(arg, "--debug"))
     {
         command->debug = true;
@@ -1455,6 +1461,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  --version  Output version information and exit.\n"
            "  --xmq|--htmq|--xml|--html|--json\n"
            "             The input format is normally auto detected but you can force the input format here.\n"
+           "  -z         Do not read from stdin nor from a file. Start with an empty dom.\n"
            "\n"
            "To get help on the commands below: xmq help <command>\n\n"
            "COMMANDS\n"
@@ -1562,10 +1569,13 @@ void write_print(void *buffer, const char *content)
 
 bool cmd_load(XMQCliCommand *command)
 {
+    if (!command) return false;
+
     command->env->doc = xmqNewDoc();
 
-    if (command &&
-        command->in &&
+    if (command->no_input) return true;
+
+    if (command->in &&
         command->in[0] == '-' &&
         command->in[1] == 0)
     {

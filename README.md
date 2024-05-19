@@ -213,3 +213,5 @@ mkdir -p ~/bin
 mv xmq ~/bin
 ```
 Restart your shell and xmq should be in your path.
+
+## Help

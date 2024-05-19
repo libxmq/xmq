@@ -1,0 +1,10 @@
+# This is: xmq -z
+XMQ
+gamma {
+    beta {
+        alfa
+    }
+}
+END
+ARGS
+CMDS add-root alfa add-root beta add-root gamma to-xmq

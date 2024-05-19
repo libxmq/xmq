@@ -46,6 +46,11 @@ do
     tests/test_formatting.sh "$PROG" "$OUTPUT" "$i"
 done
 
+for i in tests/noinput_???_*.test
+do
+    tests/test_noinput.sh "$PROG" "$OUTPUT" "$i"
+done
+
 for i in tests/cmd_???_*.test
 do
     tests/test_cmd.sh "$PROG" "$OUTPUT" "$i"
