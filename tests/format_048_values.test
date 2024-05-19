@@ -1,0 +1,15 @@
+START
+a = '='
+b = '//'
+c = '/*'
+d = '&'
+COMPACT
+a='='b='//'c='/*'d='&'
+XMQ
+a = '='
+b = '//'
+c = '/*'
+d = '&'
+END
+ARGS
+CMDS
