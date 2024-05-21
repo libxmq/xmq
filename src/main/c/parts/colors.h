@@ -66,7 +66,8 @@ typedef enum XMQColor {
     COLOR_attr_value_entity,
     COLOR_attr_value_compound_quote,
     COLOR_attr_value_compound_entity,
-    COLOR_ns_declaration
+    COLOR_ns_declaration,
+    COLOR_ns_override_xsl,
 } XMQColor;
 
 extern const char *color_names[13];
@@ -144,6 +145,7 @@ struct XMQTheme
     XMQThemeStrings attr_value_compound_quote; // When the attribute value is a compound and this is a quote in the compound.
     XMQThemeStrings attr_value_compound_entity; // When the attribute value is a compound and this is an entity in the compound.
     XMQThemeStrings ns_declaration; // The xmlns part of an attribute namespace declaration.
+    XMQThemeStrings ns_override_xsl; // Override key/name colors for elements with xsl namespace.
 };
 typedef struct XMQTheme XMQTheme;
 

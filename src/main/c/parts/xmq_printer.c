@@ -290,13 +290,23 @@ size_t print_element_name_and_attributes(XMQPrintState *ps, xmlNode *node)
     const char *name;
     const char *prefix;
 
+    XMQColor ns_color = COLOR_element_ns;
+    XMQColor key_color = COLOR_element_key;
+    XMQColor name_color = COLOR_element_name;
+
     check_space_before_key(ps);
 
     node_strlen_name_prefix(node, &name, &name_len, &prefix, &prefix_len, &total_u_len);
 
     if (prefix)
     {
-        print_utf8(ps, COLOR_element_ns, 1, prefix, NULL);
+        if (!strcmp(prefix, "xsl"))
+        {
+            //ns_color = COLOR_ns_override_xsl;
+            key_color = COLOR_ns_override_xsl;
+            name_color = COLOR_ns_override_xsl;
+        }
+        print_utf8(ps, ns_color, 1, prefix, NULL);
         print_utf8(ps, COLOR_ns_colon, 1, ":", NULL);
     }
 
@@ -304,13 +314,13 @@ size_t print_element_name_and_attributes(XMQPrintState *ps, xmlNode *node)
     {
         // Only print using key color if = and no attributes.
         // I.e. alfa=1
-        print_utf8(ps, COLOR_element_key, 1, name, NULL);
+        print_utf8(ps, key_color, 1, name, NULL);
     }
     else
     {
         // All other cases print with node color.
         // I.e. alfa{a b} alfa(x=1)=1
-        print_utf8(ps, COLOR_element_name, 1, name, NULL);
+        print_utf8(ps, name_color, 1, name, NULL);
     }
 
     bool has_non_empty_ns = xml_has_non_empty_namespace_defs(node);
@@ -890,7 +900,9 @@ void print_namespace_declaration(XMQPrintState *ps, xmlNs *ns, size_t align)
     if (prefix)
     {
         print_utf8(ps, COLOR_ns_colon, 1, ":", NULL);
-        print_utf8(ps, COLOR_attr_ns, 1, prefix, NULL);
+        XMQColor ns_color = COLOR_attr_ns;
+        if (!strcmp(prefix, "xsl")) ns_color = COLOR_ns_override_xsl;
+        print_utf8(ps, ns_color, 1, prefix, NULL);
     }
 
     const char *v = xml_namespace_href(ns);

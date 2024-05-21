@@ -48,6 +48,7 @@ LIST_OF_XMQ_TOKENS
 
     case COLOR_unicode_whitespace: *pre = theme->unicode_whitespace.pre; *post = theme->unicode_whitespace.post; return;
     case COLOR_indentation_whitespace: *pre = theme->indentation_whitespace.pre; *post = theme->indentation_whitespace.post; return;
+    case COLOR_ns_override_xsl: *pre = theme->ns_override_xsl.pre; *post = theme->ns_override_xsl.post; return;
     default:
         *pre = NULL;
         *post = NULL;

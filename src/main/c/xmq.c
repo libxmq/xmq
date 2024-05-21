@@ -244,6 +244,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode,
         c->attr_value_compound_entity.pre = MAGENTA;
         c->ns_declaration.pre = LIGHT_BLUE;
         c->ns_colon.pre = NOCOLOR;
+        c->ns_override_xsl.pre = MAGENTA;
     }
     else
     {
@@ -278,6 +279,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode,
         c->attr_value_compound_entity.pre = MAGENTA;
         c->ns_declaration.pre = BLUE;
         c->ns_colon.pre = NOCOLOR;
+        c->ns_override_xsl.pre = MAGENTA;
     }
 }
 
@@ -314,6 +316,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, boo
             "xmqANS{color:#a9a9a9;}\n"
             "xmqNSD{color:#2aa1b3;}\n"
             "xmqCP{color:#c061cb;}\n"
+            "xmqXSL{color:#c061cb;}\n"
             "pre.xmq_light {\n"
             "  xmqC{color:#2aa1b3;}\n"
             "  xmqQ{color:#26a269;font-weight:600;}\n"
@@ -327,6 +330,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, boo
             "  xmqANS{color:#696969;}\n"
             "  xmqNSD{color:#1a91a3;}\n"
             "  xmqCP{color:#c061cb;}\n"
+            "  xmqXSL{color:#c061cb;}\n"
             "\n"
             "pre.xmq_dark { }\n"
             ;
@@ -424,6 +428,8 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, boo
     c->attr_value_compound_entity.post = "</xmqE>";
     c->ns_declaration.pre = "<xmqNSD>";
     c->ns_declaration.post = "</xmqNSD>";
+    c->ns_override_xsl.pre = "<xmqXSL>";
+    c->ns_override_xsl.post = "</xmqXSL>";
     c->ns_colon.pre = NULL;
 }
 

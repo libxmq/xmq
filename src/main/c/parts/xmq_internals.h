@@ -542,13 +542,16 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define ORANGE_UNDERLINE "\033[0;4;38;5;166m"
 #define DARK_ORANGE  "\033[0;38;5;130m"
 #define DARK_ORANGE_UNDERLINE  "\033[0;4;38;5;130m"
+#define DARK_MAGENTA      "\033[0;38;5;5m"
 #define MAGENTA      "\033[0;38;5;13m"
 #define CYAN_BOLD    "\033[0;1;36m"
 #define DARK_CYAN    "\033[0;38;5;21m"
+#define DARK_CYAN_BOLD    "\033[0;1;36m"
 #define DARK_RED     "\033[0;31m"
 #define RED          "\033[0;31m"
 #define RED_UNDERLINE  "\033[0;4;31m"
 #define RED_BACKGROUND "\033[41m"
+#define DARK_RED_BOLD "\033[0;1;31m"
 #define UNDERLINE    "\033[0;1;4m"
 
 #else
@@ -579,6 +582,7 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define RED          "\033[91m\033[24m"
 #define RED_UNDERLINE  "\033[91m\033[4m"
 #define RED_BACKGROUND "\033[91m\033[4m"
+#define DARK_RED_BOLD "\033[31m\033[24m"
 #define UNDERLINE    "\033[4m"
 #define NO_UNDERLINE "\033[24m"
 

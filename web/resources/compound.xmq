@@ -1,1 +1,6 @@
+content(newlines = '
+
+                    alfa
+
+                   ')
 content(newlines = ( &#10; 'alfa' &#10; ))

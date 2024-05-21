@@ -11,5 +11,10 @@ apos = ( &#39; 'alfa' &#39; )
 apos { &#39; 'alfa' &#39; }
 
 // Leading and ending newlines
+newlines = '
+
+            alfa
+
+           '
 newlines = ( &#10; 'alfa' &#10; )
 newlines { &#10; 'alfa' &#10; }
