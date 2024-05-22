@@ -196,6 +196,8 @@ void setColorDef(XMQColorDef *cd, int r, int g, int b, bool bold, bool underline
     cd->underline = underline;
 }
 
+#include"default_colors.h"
+
 void install_default_lightbg_colors(XMQTheme *theme)
 {
     memset(theme, 0, sizeof(XMQTheme));
