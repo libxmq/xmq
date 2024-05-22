@@ -637,6 +637,14 @@ XMQOutputSettings *xmqNewOutputSettings()
     hashmap_put(os->themes, "", theme);
     os->default_theme = theme;
 
+    XMQTheme *darkbg_theme = (XMQTheme*)malloc(sizeof(XMQTheme));
+    install_default_darkbg_colors(darkbg_theme);
+    hashmap_put(os->themes, "darkbg", darkbg_theme);
+
+    XMQTheme *lightbg_theme = (XMQTheme*)malloc(sizeof(XMQTheme));
+    install_default_lightbg_colors(lightbg_theme);
+    hashmap_put(os->themes, "lightbg", lightbg_theme);
+
     os->indentation_space = theme->indentation_space = " ";
     os->explicit_space = theme->explicit_space = " ";
     os->explicit_nl = theme->explicit_nl = "\n";

@@ -70,7 +70,27 @@ typedef enum XMQColor {
     COLOR_ns_override_xsl,
 } XMQColor;
 
-extern const char *color_names[13];
+typedef enum XMQColorName {
+    XMQ_COLOR_C, // Comment
+    XMQ_COLOR_Q, // Quote
+    XMQ_COLOR_E, // Entity
+    XMQ_COLOR_ENS, // Element Name Space
+    XMQ_COLOR_EN, // Element Name
+    XMQ_COLOR_EK, // Element Key
+    XMQ_COLOR_EKV, // Element Key Value
+    XMQ_COLOR_ANS, // Attribute Name Space
+    XMQ_COLOR_AK, // Attribute Key
+    XMQ_COLOR_AKV, // Attribute Key Value
+    XMQ_COLOR_CP, // Compound Parentheses
+    XMQ_COLOR_UW, // Unicode whitespace
+    XMQ_COLOR_TW, // Tab whitespace
+} XMQColorName;
+
+typedef struct XMQColorDef {
+    int r, g, b;
+    bool bold;
+    bool underline;
+} XMQColorDef;
 
 /**
     XMQThemeStrings:
@@ -146,10 +166,35 @@ struct XMQTheme
     XMQThemeStrings attr_value_compound_entity; // When the attribute value is a compound and this is an entity in the compound.
     XMQThemeStrings ns_declaration; // The xmlns part of an attribute namespace declaration.
     XMQThemeStrings ns_override_xsl; // Override key/name colors for elements with xsl namespace.
+
+    // RGB Sources + bold + underline from which we can configure the strings.
+    XMQColorDef xmq_color_c;
+    XMQColorDef xmq_color_q;
+    XMQColorDef xmq_color_e;
+    XMQColorDef xmq_color_ens;
+    XMQColorDef xmq_color_en;
+    XMQColorDef xmq_color_ek;
+    XMQColorDef xmq_color_ekv;
+    XMQColorDef xmq_color_ans;
+    XMQColorDef xmq_color_ak;
+    XMQColorDef xmq_color_akv;
+    XMQColorDef xmq_color_cp;
+    XMQColorDef xmq_color_uw;
+    XMQColorDef xmq_color_tw;
 };
 typedef struct XMQTheme XMQTheme;
 
 void getThemeStrings(XMQOutputSettings *os, XMQColor c, const char **pre, const char **post);
+
+bool string_to_colors(char *s, int *r, int *g, int *b);
+
+// Expect buffer to store 128 bytes.
+bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool bold);
+bool generate_html_color(char *buf, size_t buf_size, int r, int g, int b, bool bold);
+bool generate_tex_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, const char *name);
+
+void install_default_lightbg_colors(XMQTheme *theme);
+void install_default_darkbg_colors(XMQTheme *theme);
 
 #define COLORS_MODULE
 

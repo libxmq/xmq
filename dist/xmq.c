@@ -96,10 +96,31 @@ typedef enum XMQColor {
     COLOR_attr_value_entity,
     COLOR_attr_value_compound_quote,
     COLOR_attr_value_compound_entity,
-    COLOR_ns_declaration
+    COLOR_ns_declaration,
+    COLOR_ns_override_xsl,
 } XMQColor;
 
-extern const char *color_names[13];
+typedef enum XMQColorName {
+    XMQ_COLOR_C, // Comment
+    XMQ_COLOR_Q, // Quote
+    XMQ_COLOR_E, // Entity
+    XMQ_COLOR_ENS, // Element Name Space
+    XMQ_COLOR_EN, // Element Name
+    XMQ_COLOR_EK, // Element Key
+    XMQ_COLOR_EKV, // Element Key Value
+    XMQ_COLOR_ANS, // Attribute Name Space
+    XMQ_COLOR_AK, // Attribute Key
+    XMQ_COLOR_AKV, // Attribute Key Value
+    XMQ_COLOR_CP, // Compound Parentheses
+    XMQ_COLOR_UW, // Unicode whitespace
+    XMQ_COLOR_TW, // Tab whitespace
+} XMQColorName;
+
+typedef struct XMQColorDef {
+    int r, g, b;
+    bool bold;
+    bool underline;
+} XMQColorDef;
 
 /**
     XMQThemeStrings:
@@ -174,10 +195,36 @@ struct XMQTheme
     XMQThemeStrings attr_value_compound_quote; // When the attribute value is a compound and this is a quote in the compound.
     XMQThemeStrings attr_value_compound_entity; // When the attribute value is a compound and this is an entity in the compound.
     XMQThemeStrings ns_declaration; // The xmlns part of an attribute namespace declaration.
+    XMQThemeStrings ns_override_xsl; // Override key/name colors for elements with xsl namespace.
+
+    // RGB Sources + bold + underline from which we can configure the strings.
+    XMQColorDef xmq_color_c;
+    XMQColorDef xmq_color_q;
+    XMQColorDef xmq_color_e;
+    XMQColorDef xmq_color_ens;
+    XMQColorDef xmq_color_en;
+    XMQColorDef xmq_color_ek;
+    XMQColorDef xmq_color_ekv;
+    XMQColorDef xmq_color_ans;
+    XMQColorDef xmq_color_ak;
+    XMQColorDef xmq_color_akv;
+    XMQColorDef xmq_color_cp;
+    XMQColorDef xmq_color_uw;
+    XMQColorDef xmq_color_tw;
 };
 typedef struct XMQTheme XMQTheme;
 
 void getThemeStrings(XMQOutputSettings *os, XMQColor c, const char **pre, const char **post);
+
+bool string_to_colors(char *s, int *r, int *g, int *b);
+
+// Expect buffer to store 128 bytes.
+bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool bold);
+bool generate_html_color(char *buf, size_t buf_size, int r, int g, int b, bool bold);
+bool generate_tex_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, const char *name);
+
+void install_default_lightbg_colors(XMQTheme *theme);
+void install_default_darkbg_colors(XMQTheme *theme);
 
 #define COLORS_MODULE
 
@@ -716,13 +763,16 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define ORANGE_UNDERLINE "\033[0;4;38;5;166m"
 #define DARK_ORANGE  "\033[0;38;5;130m"
 #define DARK_ORANGE_UNDERLINE  "\033[0;4;38;5;130m"
+#define DARK_MAGENTA      "\033[0;38;5;5m"
 #define MAGENTA      "\033[0;38;5;13m"
 #define CYAN_BOLD    "\033[0;1;36m"
 #define DARK_CYAN    "\033[0;38;5;21m"
+#define DARK_CYAN_BOLD    "\033[0;1;36m"
 #define DARK_RED     "\033[0;31m"
 #define RED          "\033[0;31m"
 #define RED_UNDERLINE  "\033[0;4;31m"
 #define RED_BACKGROUND "\033[41m"
+#define DARK_RED_BOLD "\033[0;1;31m"
 #define UNDERLINE    "\033[0;1;4m"
 
 #else
@@ -753,6 +803,7 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define RED          "\033[91m\033[24m"
 #define RED_UNDERLINE  "\033[91m\033[4m"
 #define RED_BACKGROUND "\033[91m\033[4m"
+#define DARK_RED_BOLD "\033[31m\033[24m"
 #define UNDERLINE    "\033[4m"
 #define NO_UNDERLINE "\033[24m"
 
@@ -1555,13 +1606,16 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define ORANGE_UNDERLINE "\033[0;4;38;5;166m"
 #define DARK_ORANGE  "\033[0;38;5;130m"
 #define DARK_ORANGE_UNDERLINE  "\033[0;4;38;5;130m"
+#define DARK_MAGENTA      "\033[0;38;5;5m"
 #define MAGENTA      "\033[0;38;5;13m"
 #define CYAN_BOLD    "\033[0;1;36m"
 #define DARK_CYAN    "\033[0;38;5;21m"
+#define DARK_CYAN_BOLD    "\033[0;1;36m"
 #define DARK_RED     "\033[0;31m"
 #define RED          "\033[0;31m"
 #define RED_UNDERLINE  "\033[0;4;31m"
 #define RED_BACKGROUND "\033[41m"
+#define DARK_RED_BOLD "\033[0;1;31m"
 #define UNDERLINE    "\033[0;1;4m"
 
 #else
@@ -1592,6 +1646,7 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 #define RED          "\033[91m\033[24m"
 #define RED_UNDERLINE  "\033[91m\033[4m"
 #define RED_BACKGROUND "\033[91m\033[4m"
+#define DARK_RED_BOLD "\033[31m\033[24m"
 #define UNDERLINE    "\033[4m"
 #define NO_UNDERLINE "\033[24m"
 
@@ -1814,6 +1869,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode,
         c->attr_value_compound_entity.pre = MAGENTA;
         c->ns_declaration.pre = LIGHT_BLUE;
         c->ns_colon.pre = NOCOLOR;
+        c->ns_override_xsl.pre = MAGENTA;
     }
     else
     {
@@ -1848,6 +1904,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode,
         c->attr_value_compound_entity.pre = MAGENTA;
         c->ns_declaration.pre = BLUE;
         c->ns_colon.pre = NOCOLOR;
+        c->ns_override_xsl.pre = MAGENTA;
     }
 }
 
@@ -1884,6 +1941,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, boo
             "xmqANS{color:#a9a9a9;}\n"
             "xmqNSD{color:#2aa1b3;}\n"
             "xmqCP{color:#c061cb;}\n"
+            "xmqXSL{color:#c061cb;}\n"
             "pre.xmq_light {\n"
             "  xmqC{color:#2aa1b3;}\n"
             "  xmqQ{color:#26a269;font-weight:600;}\n"
@@ -1897,6 +1955,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, boo
             "  xmqANS{color:#696969;}\n"
             "  xmqNSD{color:#1a91a3;}\n"
             "  xmqCP{color:#c061cb;}\n"
+            "  xmqXSL{color:#c061cb;}\n"
             "\n"
             "pre.xmq_dark { }\n"
             ;
@@ -1994,6 +2053,8 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, boo
     c->attr_value_compound_entity.post = "</xmqE>";
     c->ns_declaration.pre = "<xmqNSD>";
     c->ns_declaration.post = "</xmqNSD>";
+    c->ns_override_xsl.pre = "<xmqXSL>";
+    c->ns_override_xsl.post = "</xmqXSL>";
     c->ns_colon.pre = NULL;
 }
 
@@ -2200,6 +2261,14 @@ XMQOutputSettings *xmqNewOutputSettings()
     memset(theme, 0, sizeof(XMQTheme));
     hashmap_put(os->themes, "", theme);
     os->default_theme = theme;
+
+    XMQTheme *darkbg_theme = (XMQTheme*)malloc(sizeof(XMQTheme));
+    install_default_darkbg_colors(darkbg_theme);
+    hashmap_put(os->themes, "darkbg", darkbg_theme);
+
+    XMQTheme *lightbg_theme = (XMQTheme*)malloc(sizeof(XMQTheme));
+    install_default_lightbg_colors(lightbg_theme);
+    hashmap_put(os->themes, "lightbg", lightbg_theme);
 
     os->indentation_space = theme->indentation_space = " ";
     os->explicit_space = theme->explicit_space = " ";
@@ -5606,6 +5675,8 @@ char *strndup(const char *s, size_t l)
 
 #ifdef COLORS_MODULE
 
+bool hex_to_number(char c, char cc, int *v);
+
 /**
    get_color: Lookup the color strings
    coloring: The table of colors.
@@ -5625,6 +5696,7 @@ LIST_OF_XMQ_TOKENS
 
     case COLOR_unicode_whitespace: *pre = theme->unicode_whitespace.pre; *post = theme->unicode_whitespace.post; return;
     case COLOR_indentation_whitespace: *pre = theme->indentation_whitespace.pre; *post = theme->indentation_whitespace.post; return;
+    case COLOR_ns_override_xsl: *pre = theme->ns_override_xsl.pre; *post = theme->ns_override_xsl.post; return;
     default:
         *pre = NULL;
         *post = NULL;
@@ -5633,6 +5705,153 @@ LIST_OF_XMQ_TOKENS
     assert(false);
     *pre = "";
     *post = "";
+}
+
+// Set background color: echo -ne "\033]11;#53186f\007"
+
+//#define DEFAULT_COLOR "\033]11;#aa186f\007"
+//#echo -ne '\e]10;#123456\e\\'  # set default foreground to #123456
+//#echo -ne '\e]11;#abcdef\e\\'  # set default background to #abcdef
+//printf "\x1b[38;2;40;177;249mTRUECOLOR\x1b[0m\n"
+
+
+
+bool string_to_colors(char *s, int *r, int *g, int *b)
+{
+    if (!*(s+0) || !*(s+1) || !*(s+2) || !*(s+3) || !*(s+4) || !*(s+5) || *(s+6)) return false;
+
+    bool ok = hex_to_number(*(s+0), *(s+1), r);
+    ok &= hex_to_number(*(s+2), *(s+3), g);
+    ok &= hex_to_number(*(s+4), *(s+5), b);
+
+    return ok;
+}
+
+bool hex_to_number(char c, char cc, int *v)
+{
+    int hi = 0;
+    if (c >= '0' && c <= '9') hi = (int)c-'0';
+    else if (c >= 'a' && c <= 'f') hi = 10+(int)c-'a';
+    else if (c >= 'A' && c <= 'F') hi = 10+(int)c-'A';
+    else return false;
+
+    int lo = 0;
+    if (cc >= '0' && cc <= '9') lo = (int)cc-'0';
+    else if (cc >= 'a' && cc <= 'f') lo = 10+(int)cc-'a';
+    else if (cc >= 'A' && cc <= 'F') lo = 10+(int)cc-'A';
+    else return false;
+
+    *v = hi*16+lo;
+    return false;
+}
+
+bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool bold)
+{
+    // Example: \x1b[38;2;40;177;249mTRUECOLOR\x1b[0m
+    if (buf_size < 32) return false;
+    if (r < 0 || r > 255) return false;
+    if (g < 0 || g > 255) return false;
+    if (b < 0 || b > 255) return false;
+
+    char *i = buf;
+
+    *i++ = 27;
+    *i++ = '[';
+    *i++ = '3';
+    *i++ = '8';
+    *i++ = ';';
+    *i++ = '2';
+    *i++ = ';';
+
+    char tmp[16];
+    snprintf(tmp, sizeof(tmp), "%d", r);
+    strcpy(i, tmp);
+    i += strlen(tmp);
+    *i++ = ';';
+
+    snprintf(tmp, sizeof(tmp), "%d", g);
+    strcpy(i, tmp);
+    i += strlen(tmp);
+    *i++ = ';';
+
+    snprintf(tmp, sizeof(tmp), "%d", b);
+    strcpy(i, tmp);
+    i += strlen(tmp);
+    *i++ = 'm';
+    *i++ = 0;
+
+    return true;
+}
+
+bool generate_html_color(char *buf, size_t buf_size, int r, int g, int b, bool bold)
+{
+    // color:#26a269;font-weight:600;
+
+    if (buf_size < 64) return false;
+    if (r < 0 || r > 255) return false;
+    if (g < 0 || g > 255) return false;
+    if (b < 0 || b > 255) return false;
+
+    char *i = buf;
+    strcpy(buf, "color:#");
+    i += 7;
+    i += snprintf(i, buf_size - (i-buf), "%02x%02x%02x", r, g, b);
+    *i++ = ';';
+
+    *i++ = 0;
+    return false;
+}
+
+bool generate_tex_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, const char *name)
+{
+    // \definecolor{mypink2}{RGB}{219, 48, 122}
+
+    if (buf_size < 128) return false;
+    if (r < 0 || r > 255) return false;
+    if (g < 0 || g > 255) return false;
+    if (b < 0 || b > 255) return false;
+
+    snprintf(buf, buf_size, "\\definecolor{%s}{RGB}{%d,%d,%d}", name, r, g, b);
+    return true;
+}
+
+const char *color_names[13] = {
+    "xmq_c", // Comment
+    "xmq_q", // Quote
+    "xmq_e", // Entity
+    "xmq_ens", // Element Name Space
+    "xmq_en", // Element Name
+    "xmq_ek", // Element Key
+    "xmq_ekv", // Element Key Value
+    "xmq_ans", // Attribute Name Space
+    "xmq_ak", // Attribute Key
+    "xmq_akv", // Attribute Key Value
+    "xmq_cp", // Compound Parentheses
+    "xmq_uw", // Unicode whitespace
+    "xmq_tw", // Tab whitespace
+};
+
+void setColorDef(XMQColorDef *cd, int r, int g, int b, bool bold, bool underline);
+
+void setColorDef(XMQColorDef *cd, int r, int g, int b, bool bold, bool underline)
+{
+    cd->r = r;
+    cd->g = g;
+    cd->b = b;
+    cd->bold = bold;
+    cd->underline = underline;
+}
+
+void install_default_lightbg_colors(XMQTheme *theme)
+{
+    memset(theme, 0, sizeof(XMQTheme));
+    setColorDef(&theme->xmq_color_c, 0, 0, 0, false, false);
+}
+
+void install_default_darkbg_colors(XMQTheme *theme)
+{
+    memset(theme, 0, sizeof(XMQTheme));
+    setColorDef(&theme->xmq_color_c, 0, 0, 0, false, false);
 }
 
 #endif // COLORS_MODULE
@@ -8438,22 +8657,6 @@ void xml_add_root_child(xmlDoc *doc, xmlNode *node)
 
 #ifdef XMQ_INTERNALS_MODULE
 
-const char *color_names[13] = {
-    "xmq_c",
-    "xmq_q",
-    "xmq_e",
-    "xmq_ens",
-    "xmq_en",
-    "xmq_ek",
-    "xmq_ekv",
-    "xmq_ans",
-    "xmq_ak",
-    "xmq_akv",
-    "xmq_cp",
-    "xmq_uw",
-    "xmq_tw",
-};
-
 void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, const char *start, const char *stop)
 {
     // Error detected during parsing and this is where the longjmp will end up!
@@ -10398,13 +10601,23 @@ size_t print_element_name_and_attributes(XMQPrintState *ps, xmlNode *node)
     const char *name;
     const char *prefix;
 
+    XMQColor ns_color = COLOR_element_ns;
+    XMQColor key_color = COLOR_element_key;
+    XMQColor name_color = COLOR_element_name;
+
     check_space_before_key(ps);
 
     node_strlen_name_prefix(node, &name, &name_len, &prefix, &prefix_len, &total_u_len);
 
     if (prefix)
     {
-        print_utf8(ps, COLOR_element_ns, 1, prefix, NULL);
+        if (!strcmp(prefix, "xsl"))
+        {
+            //ns_color = COLOR_ns_override_xsl;
+            key_color = COLOR_ns_override_xsl;
+            name_color = COLOR_ns_override_xsl;
+        }
+        print_utf8(ps, ns_color, 1, prefix, NULL);
         print_utf8(ps, COLOR_ns_colon, 1, ":", NULL);
     }
 
@@ -10412,13 +10625,13 @@ size_t print_element_name_and_attributes(XMQPrintState *ps, xmlNode *node)
     {
         // Only print using key color if = and no attributes.
         // I.e. alfa=1
-        print_utf8(ps, COLOR_element_key, 1, name, NULL);
+        print_utf8(ps, key_color, 1, name, NULL);
     }
     else
     {
         // All other cases print with node color.
         // I.e. alfa{a b} alfa(x=1)=1
-        print_utf8(ps, COLOR_element_name, 1, name, NULL);
+        print_utf8(ps, name_color, 1, name, NULL);
     }
 
     bool has_non_empty_ns = xml_has_non_empty_namespace_defs(node);
@@ -10998,7 +11211,9 @@ void print_namespace_declaration(XMQPrintState *ps, xmlNs *ns, size_t align)
     if (prefix)
     {
         print_utf8(ps, COLOR_ns_colon, 1, ":", NULL);
-        print_utf8(ps, COLOR_attr_ns, 1, prefix, NULL);
+        XMQColor ns_color = COLOR_attr_ns;
+        if (!strcmp(prefix, "xsl")) ns_color = COLOR_ns_override_xsl;
+        print_utf8(ps, ns_color, 1, prefix, NULL);
     }
 
     const char *v = xml_namespace_href(ns);

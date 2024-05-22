@@ -1,4 +1,5 @@
 
+#include"colors.h"
 #include"hashmap.h"
 #include"stack.h"
 #include"quicksort_strings.h"
@@ -10,6 +11,7 @@
     X(test_hashmap) \
     X(test_quicksort) \
     X(test_stack) \
+    X(test_colors) \
 
 #define X(name) void name();
 TESTS
@@ -70,6 +72,30 @@ void test_stack()
         all_ok_ = false;
     }
     free_stack(stack);
+}
+
+void test_colors()
+{
+    int r,g,b;
+    string_to_colors("800711", &r, &g, &b);
+    if (r != 128 || g != 7 || b != 17)
+    {
+        printf("BAD colors!\n");
+    }
+
+    char buf[128];
+
+    generate_ansi_color(buf, sizeof(buf), 0, 255, 0, false);
+
+    printf("ANSI %sTRUECOLOR\x1b[0m\n", buf);
+
+    generate_html_color(buf, sizeof(buf), 0, 255, 0, false);
+
+    printf("HTML %s\n", buf);
+
+    generate_tex_color(buf, sizeof(buf), 0, 255, 0, false, "xmq_q");
+
+    printf("TEX %s\n", buf);
 }
 
 /*

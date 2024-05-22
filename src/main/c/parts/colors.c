@@ -29,6 +29,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 #ifdef COLORS_MODULE
 
+bool hex_to_number(char c, char cc, int *v);
+
 /**
    get_color: Lookup the color strings
    coloring: The table of colors.
@@ -57,6 +59,153 @@ LIST_OF_XMQ_TOKENS
     assert(false);
     *pre = "";
     *post = "";
+}
+
+// Set background color: echo -ne "\033]11;#53186f\007"
+
+//#define DEFAULT_COLOR "\033]11;#aa186f\007"
+//#echo -ne '\e]10;#123456\e\\'  # set default foreground to #123456
+//#echo -ne '\e]11;#abcdef\e\\'  # set default background to #abcdef
+//printf "\x1b[38;2;40;177;249mTRUECOLOR\x1b[0m\n"
+
+
+
+bool string_to_colors(char *s, int *r, int *g, int *b)
+{
+    if (!*(s+0) || !*(s+1) || !*(s+2) || !*(s+3) || !*(s+4) || !*(s+5) || *(s+6)) return false;
+
+    bool ok = hex_to_number(*(s+0), *(s+1), r);
+    ok &= hex_to_number(*(s+2), *(s+3), g);
+    ok &= hex_to_number(*(s+4), *(s+5), b);
+
+    return ok;
+}
+
+bool hex_to_number(char c, char cc, int *v)
+{
+    int hi = 0;
+    if (c >= '0' && c <= '9') hi = (int)c-'0';
+    else if (c >= 'a' && c <= 'f') hi = 10+(int)c-'a';
+    else if (c >= 'A' && c <= 'F') hi = 10+(int)c-'A';
+    else return false;
+
+    int lo = 0;
+    if (cc >= '0' && cc <= '9') lo = (int)cc-'0';
+    else if (cc >= 'a' && cc <= 'f') lo = 10+(int)cc-'a';
+    else if (cc >= 'A' && cc <= 'F') lo = 10+(int)cc-'A';
+    else return false;
+
+    *v = hi*16+lo;
+    return false;
+}
+
+bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool bold)
+{
+    // Example: \x1b[38;2;40;177;249mTRUECOLOR\x1b[0m
+    if (buf_size < 32) return false;
+    if (r < 0 || r > 255) return false;
+    if (g < 0 || g > 255) return false;
+    if (b < 0 || b > 255) return false;
+
+    char *i = buf;
+
+    *i++ = 27;
+    *i++ = '[';
+    *i++ = '3';
+    *i++ = '8';
+    *i++ = ';';
+    *i++ = '2';
+    *i++ = ';';
+
+    char tmp[16];
+    snprintf(tmp, sizeof(tmp), "%d", r);
+    strcpy(i, tmp);
+    i += strlen(tmp);
+    *i++ = ';';
+
+    snprintf(tmp, sizeof(tmp), "%d", g);
+    strcpy(i, tmp);
+    i += strlen(tmp);
+    *i++ = ';';
+
+    snprintf(tmp, sizeof(tmp), "%d", b);
+    strcpy(i, tmp);
+    i += strlen(tmp);
+    *i++ = 'm';
+    *i++ = 0;
+
+    return true;
+}
+
+bool generate_html_color(char *buf, size_t buf_size, int r, int g, int b, bool bold)
+{
+    // color:#26a269;font-weight:600;
+
+    if (buf_size < 64) return false;
+    if (r < 0 || r > 255) return false;
+    if (g < 0 || g > 255) return false;
+    if (b < 0 || b > 255) return false;
+
+    char *i = buf;
+    strcpy(buf, "color:#");
+    i += 7;
+    i += snprintf(i, buf_size - (i-buf), "%02x%02x%02x", r, g, b);
+    *i++ = ';';
+
+    *i++ = 0;
+    return false;
+}
+
+bool generate_tex_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, const char *name)
+{
+    // \definecolor{mypink2}{RGB}{219, 48, 122}
+
+    if (buf_size < 128) return false;
+    if (r < 0 || r > 255) return false;
+    if (g < 0 || g > 255) return false;
+    if (b < 0 || b > 255) return false;
+
+    snprintf(buf, buf_size, "\\definecolor{%s}{RGB}{%d,%d,%d}", name, r, g, b);
+    return true;
+}
+
+const char *color_names[13] = {
+    "xmq_c", // Comment
+    "xmq_q", // Quote
+    "xmq_e", // Entity
+    "xmq_ens", // Element Name Space
+    "xmq_en", // Element Name
+    "xmq_ek", // Element Key
+    "xmq_ekv", // Element Key Value
+    "xmq_ans", // Attribute Name Space
+    "xmq_ak", // Attribute Key
+    "xmq_akv", // Attribute Key Value
+    "xmq_cp", // Compound Parentheses
+    "xmq_uw", // Unicode whitespace
+    "xmq_tw", // Tab whitespace
+};
+
+void setColorDef(XMQColorDef *cd, int r, int g, int b, bool bold, bool underline);
+
+void setColorDef(XMQColorDef *cd, int r, int g, int b, bool bold, bool underline)
+{
+    cd->r = r;
+    cd->g = g;
+    cd->b = b;
+    cd->bold = bold;
+    cd->underline = underline;
+}
+
+void install_default_lightbg_colors(XMQTheme *theme)
+{
+    memset(theme, 0, sizeof(XMQTheme));
+    setColorDef(&theme->xmq_color_c, 0, 0, 0, false, false);
+}
+
+void install_default_darkbg_colors(XMQTheme *theme)
+{
+    memset(theme, 0, sizeof(XMQTheme));
+    setColorDef(&theme->xmq_color_c, 0, 0, 0, false, false);
 }
 
 #endif // COLORS_MODULE

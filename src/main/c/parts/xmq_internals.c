@@ -10,22 +10,6 @@
 
 #ifdef XMQ_INTERNALS_MODULE
 
-const char *color_names[13] = {
-    "xmq_c", // Comment
-    "xmq_q", // Quote
-    "xmq_e", // Entity
-    "xmq_ens", // Element Name Space
-    "xmq_en", // Element Name
-    "xmq_ek", // Element Key
-    "xmq_ekv", // Element Key Value
-    "xmq_ans", // Attribute Name Space
-    "xmq_ak", // Attribute Key
-    "xmq_akv", // Attribute Key Value
-    "xmq_cp", // Compound Parentheses
-    "xmq_uw", // Unicode whitespace
-    "xmq_tw", // Tab whitespace
-};
-
 void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, const char *start, const char *stop)
 {
     // Error detected during parsing and this is where the longjmp will end up!

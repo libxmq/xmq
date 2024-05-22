@@ -135,18 +135,18 @@ testa: test_asan
 
 test_release:
 	@echo "Running release tests"
-	@for x in $(BUILDDIRS); do echo; if [ ! -f $$x/release/testinternals ]; then echo "Run make first. $$x/release/testinternals not found."; exit 1; fi ; $$x/release/testinternals ; done
-	@for x in $(BUILDDIRS); do echo;  if [ ! -f $$x/release/testinternals ]; then echo "Run make first. $$x/release/testinternals not found."; exit 1; fi ; ./tests/test.sh $$x/release $$x/release/test_output ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $$x/release/testinternals ]; then echo "Run make first. $$x/release/testinternals not found."; exit 1; fi ; $$x/release/testinternals ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $$x/release/parts/testinternals ]; then echo "Run make first. $$x/release/parts/testinternals not found."; exit 1; fi ; $$x/release/parts/testinternals ; ./tests/test.sh $$x/release $$x/release/test_output ; done
 
 test_debug:
 	@echo "Running debug tests"
-	@for x in $(BUILDDIRS); do echo; if [ ! -f $$x/debug/testinternals ]; then echo "Run make first. $$x/debug/testinternals not found."; exit 1; fi ; $$x/debug/testinternals ; done
-	@for x in $(BUILDDIRS); do echo;  if [ ! -f $$x/debug/testinternals ]; then echo "Run make first. $$x/debug/testinternals not found."; exit 1; fi ; ./tests/test.sh $$x/debug $$x/debug/test_output ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $$x/debug/testinternals ]; then echo "Run make first. $$x/debug/testinternals not found."; exit 1; fi ; $$x/debug/testinternals ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $$x/debug/parts/testinternals ]; then echo "Run make first. $$x/debug/parts/testinternals not found."; exit 1; fi ; $$x/release/debug/testinternals ; ./tests/test.sh $$x/debug $$x/debug/test_output ; done
 
 test_asan:
 	@echo "Running asan tests"
-	@for x in $(BUILDDIRS); do echo; if [ ! -f $$x/asan/testinternals ]; then echo "Run make first. $$x/asan/testinternals not found."; exit 1; fi ; $$x/asan/testinternals ; done
-	@for x in $(BUILDDIRS); do echo;  if [ ! -f $$x/asan/testinternals ]; then echo "Run make first. $$x/asan/testinternals not found."; exit 1; fi ; ./tests/test.sh $$x/asan $$x/asan/test_output ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $$x/asan/testinternals ]; then echo "Run make first. $$x/asan/testinternals not found."; exit 1; fi ; $$x/asan/testinternals ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $$x/asan/parts/testinternals ]; then echo "Run make first. $$x/asan/parts/testinternals not found."; exit 1; fi ; $$x/release/asan/testinternals ; ./tests/test.sh $$x/asan $$x/asan/test_output ; done
 
 clean:
 	@echo "Removing release, debug, asan, gtkdoc build dirs."
