@@ -186,12 +186,12 @@ typedef struct XMQTheme XMQTheme;
 
 void getThemeStrings(XMQOutputSettings *os, XMQColor c, const char **pre, const char **post);
 
-bool string_to_colors(char *s, int *r, int *g, int *b);
+bool string_to_colors(const char *s, int *r, int *g, int *b, bool *bold, bool *underline);
 
 // Expect buffer to store 128 bytes.
-bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool bold);
-bool generate_html_color(char *buf, size_t buf_size, int r, int g, int b, bool bold);
-bool generate_tex_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, const char *name);
+bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline);
+bool generate_html_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline);
+bool generate_tex_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline, const char *name);
 
 void install_default_lightbg_colors(XMQTheme *theme);
 void install_default_darkbg_colors(XMQTheme *theme);

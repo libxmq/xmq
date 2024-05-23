@@ -450,31 +450,73 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool
             "\\documentclass[10pt,a4paper]{article}\n"
             "\\usepackage{color}\n";
 
-        c->style.pre =
-            "\\definecolor{Brown}{rgb}{0.86,0.38,0.0}\n"
-            "\\definecolor{Blue}{rgb}{0.0,0.37,1.0}\n"
-            "\\definecolor{DarkSlateBlue}{rgb}{0.28,0.24,0.55}\n"
-            "\\definecolor{Green}{rgb}{0.0,0.46,0.0}\n"
-            "\\definecolor{Red}{rgb}{0.77,0.13,0.09}\n"
-            "\\definecolor{LightBlue}{rgb}{0.40,0.68,0.89}\n"
-            "\\definecolor{MediumBlue}{rgb}{0.21,0.51,0.84}\n"
-            "\\definecolor{LightGreen}{rgb}{0.54,0.77,0.43}\n"
-            "\\definecolor{Grey}{rgb}{0.5,0.5,0.5}\n"
-            "\\definecolor{Purple}{rgb}{0.69,0.02,0.97}\n"
-            "\\definecolor{Yellow}{rgb}{0.5,0.5,0.1}\n"
-            "\\definecolor{Cyan}{rgb}{0.3,0.7,0.7}\n"
-            "\\newcommand{\\xmqC}[1]{{\\color{Cyan}#1}}\n"
-            "\\newcommand{\\xmqQ}[1]{{\\color{Green}#1}}\n"
-            "\\newcommand{\\xmqE}[1]{{\\color{Purple}#1}}\n"
-            "\\newcommand{\\xmqENS}[1]{{\\color{Blue}#1}}\n"
-            "\\newcommand{\\xmqEN}[1]{{\\color{Blue}#1}}\n"
-            "\\newcommand{\\xmqEK}[1]{{\\color{Blue}#1}}\n"
-            "\\newcommand{\\xmqEKV}[1]{{\\color{Green}#1}}\n"
-            "\\newcommand{\\xmqANS}[1]{{\\color{Blue}#1}}\n"
-            "\\newcommand{\\xmqAK}[1]{{\\color{Blue}#1}}\n"
-            "\\newcommand{\\xmqAKV}[1]{{\\color{Blue}#1}}\n"
-            "\\newcommand{\\xmqCP}[1]{{\\color{Purple}#1}}\n"
-            "\\newcommand{\\xmqI}[0]{{\\mbox{\\ }}}\n";
+        char *style_pre = (char*)malloc(1024);
+        char xmq_c[128], xmq_q[128], xmq_e[128], xmq_ens[128], xmq_en[128], xmq_ek[128], xmq_ekv[128];
+        char xmq_ans[128], xmq_ak[128], xmq_akv[128], xmq_cp[128];
+        int r, g, b;
+        bool bold, underline;
+
+        string_to_colors(default_lightbg_colors[XMQ_COLOR_C], &r, &g, &b, &bold, &underline);
+        generate_tex_color(xmq_c, 128, r, g, b, bold, underline, "xmqC");
+        string_to_colors(default_lightbg_colors[XMQ_COLOR_Q], &r, &g, &b, &bold, &underline);
+        generate_tex_color(xmq_q, 128, r, g, b, bold, underline, "xmqQ");
+        string_to_colors(default_lightbg_colors[XMQ_COLOR_E], &r, &g, &b, &bold, &underline);
+        generate_tex_color(xmq_e, 128, r, g, b, bold, underline, "xmqE");
+        string_to_colors(default_lightbg_colors[XMQ_COLOR_ENS], &r, &g, &b, &bold, &underline);
+        generate_tex_color(xmq_ens, 128, r, g, b, bold, underline, "xmqENS");
+        string_to_colors(default_lightbg_colors[XMQ_COLOR_EN], &r, &g, &b, &bold, &underline);
+        generate_tex_color(xmq_en, 128, r, g, b, bold, underline, "xmqEN");
+        string_to_colors(default_lightbg_colors[XMQ_COLOR_EK], &r, &g, &b, &bold, &underline);
+        generate_tex_color(xmq_ek, 128, r, g, b, bold, underline, "xmqEK");
+        string_to_colors(default_lightbg_colors[XMQ_COLOR_EKV], &r, &g, &b, &bold, &underline);
+        generate_tex_color(xmq_ekv, 128, r, g, b, bold, underline, "xmqEKV");
+        string_to_colors(default_lightbg_colors[XMQ_COLOR_ANS], &r, &g, &b, &bold, &underline);
+        generate_tex_color(xmq_ans, 128, r, g, b, bold, underline, "xmqANS");
+        string_to_colors(default_lightbg_colors[XMQ_COLOR_AK], &r, &g, &b, &bold, &underline);
+        generate_tex_color(xmq_ak, 128, r, g, b, bold, underline, "xmqAK");
+        string_to_colors(default_lightbg_colors[XMQ_COLOR_AKV], &r, &g, &b, &bold, &underline);
+        generate_tex_color(xmq_akv, 128, r, g, b, bold, underline, "xmqAKV");
+        string_to_colors(default_lightbg_colors[XMQ_COLOR_CP], &r, &g, &b, &bold, &underline);
+        generate_tex_color(xmq_cp, 128, r, g, b, bold, underline, "xmqCP");
+
+        size_t len = snprintf(style_pre, 1024,
+                              "%s\n"  // C
+                              "%s\n"  // Q
+                              "%s\n"  // E
+                              "%s\n"  // ENS
+                              "%s\n"  // EN
+                              "%s\n"  // EK
+                              "%s\n"  // EKV
+                              "%s\n"  // ANS
+                              "%s\n"  // AK
+                              "%s\n"  // AKV
+                              "%s\n"  // CP
+                              "\\newcommand{\\xmqC}[1]{{\\color{xmqC}#1}}\n"
+                              "\\newcommand{\\xmqQ}[1]{{\\color{xmqQ}#1}}\n"
+                              "\\newcommand{\\xmqE}[1]{{\\color{xmqE}#1}}\n"
+                              "\\newcommand{\\xmqENS}[1]{{\\color{xmqENS}#1}}\n"
+                              "\\newcommand{\\xmqEN}[1]{{\\color{xmqEN}#1}}\n"
+                              "\\newcommand{\\xmqEK}[1]{{\\color{xmqEK}#1}}\n"
+                              "\\newcommand{\\xmqEKV}[1]{{\\color{xmqEKV}#1}}\n"
+                              "\\newcommand{\\xmqANS}[1]{{\\color{xmqANS}#1}}\n"
+                              "\\newcommand{\\xmqAK}[1]{{\\color{xmqAK}#1}}\n"
+                              "\\newcommand{\\xmqAKV}[1]{{\\color{xmqAKV}#1}}\n"
+                              "\\newcommand{\\xmqCP}[1]{{\\color{xmqCP}#1}}\n"
+                              "\\newcommand{\\xmqI}[0]{{\\mbox{\\ }}}\n",
+                              xmq_c,
+                              xmq_q,
+                              xmq_e,
+                              xmq_ens,
+                              xmq_en,
+                              xmq_ek,
+                              xmq_ekv,
+                              xmq_ans,
+                              xmq_ak,
+                              xmq_akv,
+                              xmq_cp
+            );
+
+        c->style.pre = style_pre;
 
         c->body.pre = "\n\\begin{document}\n";
         c->body.post = "\n\\end{document}\n";

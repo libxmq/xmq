@@ -68,17 +68,40 @@ LIST_OF_XMQ_TOKENS
 //#echo -ne '\e]11;#abcdef\e\\'  # set default background to #abcdef
 //printf "\x1b[38;2;40;177;249mTRUECOLOR\x1b[0m\n"
 
-
-
-bool string_to_colors(char *s, int *r, int *g, int *b)
+bool string_to_colors(const char *s, int *r, int *g, int *b, bool *bold, bool *underline)
 {
-    if (!*(s+0) || !*(s+1) || !*(s+2) || !*(s+3) || !*(s+4) || !*(s+5) || *(s+6)) return false;
+    // #aabbcc
+    // #aabbcc_B
+    // #aabbcc_U
+    // #aabbcc_B_U
+
+    *r = *g = *b = 0;
+    *bold = false;
+    *underline = false;
+
+    if (strlen(s) < 7) return false;
+    if (*s != '#') return false;
+    s++;
 
     bool ok = hex_to_number(*(s+0), *(s+1), r);
     ok &= hex_to_number(*(s+2), *(s+3), g);
     ok &= hex_to_number(*(s+4), *(s+5), b);
 
-    return ok;
+    if (!ok) return false;
+    s+=6;
+    if (*s == '_')
+    {
+        if (*(s+1) == 'B') *bold = true;
+        s += 2;
+    }
+    if (*s == '_')
+    {
+        if (*(s+1) == 'U') *underline = true;
+        s += 2;
+    }
+    if (*s != 0) return false;
+
+    return true;
 }
 
 bool hex_to_number(char c, char cc, int *v)
@@ -99,7 +122,7 @@ bool hex_to_number(char c, char cc, int *v)
     return false;
 }
 
-bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool bold)
+bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline)
 {
     // Example: \x1b[38;2;40;177;249mTRUECOLOR\x1b[0m
     if (buf_size < 32) return false;
@@ -137,7 +160,7 @@ bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool b
     return true;
 }
 
-bool generate_html_color(char *buf, size_t buf_size, int r, int g, int b, bool bold)
+bool generate_html_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline)
 {
     // color:#26a269;font-weight:600;
 
@@ -156,7 +179,7 @@ bool generate_html_color(char *buf, size_t buf_size, int r, int g, int b, bool b
     return false;
 }
 
-bool generate_tex_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, const char *name)
+bool generate_tex_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline, const char *name)
 {
     // \definecolor{mypink2}{RGB}{219, 48, 122}
 
