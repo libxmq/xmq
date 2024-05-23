@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include"parts/always.h"
 #include"parts/colors.h"
+#include"parts/default_themes.h"
 #include"parts/entities.h"
 #include"parts/utf8.h"
 #include"parts/hashmap.h"
