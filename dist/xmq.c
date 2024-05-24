@@ -3496,6 +3496,7 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root, int 
     n = 0;
     do {
         // We need to read smaller blocks because of a bug in Windows C-library..... blech.
+        if (n + block_size > fsize) block_size = fsize - n;
         size_t r = fread(buffer+n, 1, block_size, f);
         debug("[XMQ] read %zu bytes total %zu\n", r, n);
         if (!r) break;
@@ -5564,6 +5565,7 @@ bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **ou
     if (block_size > 10000) block_size = 10000;
     n = 0;
     do {
+        if (n + block_size > fsize) block_size = fsize - n;
         size_t r = fread(buffer+n, 1, block_size, f);
         debug("[XMQ] read %zu bytes total %zu\n", r, n);
         if (!r) break;
