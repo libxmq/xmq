@@ -40,7 +40,7 @@ bool hex_to_number(char c, char cc, int *v);
 */
 void getThemeStrings(XMQOutputSettings *os, XMQColor color, const char **pre, const char **post)
 {
-    XMQTheme *theme = os->default_theme;
+    XMQTheme *theme = os->theme;
     switch(color)
     {
 
@@ -102,10 +102,12 @@ bool string_to_color_def(const char *s, XMQColorDef *def)
     if (*s == '_')
     {
         if (*(s+1) == 'B') bold = true;
+        if (*(s+1) == 'U') underline = true;
         s += 2;
     }
     if (*s == '_')
     {
+        if (*(s+1) == 'B') bold = true;
         if (*(s+1) == 'U') underline = true;
         s += 2;
     }

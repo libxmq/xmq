@@ -177,8 +177,7 @@ struct XMQOutputSettings
     const char *use_id; // If non-NULL inser this id in the pre tag.
     const char *use_class; // If non-NULL insert this class in the pre tag.
 
-    XMQTheme *default_theme; // Shortcut to the no namespace theme inside themes.
-    HashMap *themes; // Map namespaces to unique colorings.
+    XMQTheme *theme; // The theme used to print.
     void *free_me;
 };
 typedef struct XMQOutputSettings XMQOutputSettings;

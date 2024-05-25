@@ -177,6 +177,7 @@ typedef struct XMQThemeStrings XMQThemeStrings;
 */
 struct XMQTheme
 {
+    const char *name;
     const char *indentation_space;
     const char *explicit_space;
     const char *explicit_nl;
@@ -249,8 +250,7 @@ bool generate_tex_color(char *buf, size_t buf_size, XMQColorDef *def, const char
 struct XMQTheme;
 typedef struct XMQTheme XMQTheme;
 
-const char *defaultColor(int i, bool dark_mode);
-void installDefaultThemeColors(XMQTheme *theme, bool dark_mode);
+void installDefaultThemeColors(XMQTheme *theme, const char *name);
 
 #define DEFAULT_THEMES_MODULE
 
@@ -424,8 +424,7 @@ struct XMQOutputSettings
     const char *use_id; // If non-NULL inser this id in the pre tag.
     const char *use_class; // If non-NULL insert this class in the pre tag.
 
-    XMQTheme *default_theme; // Shortcut to the no namespace theme inside themes.
-    HashMap *themes; // Map namespaces to unique colorings.
+    XMQTheme *theme; // The theme used to print.
     void *free_me;
 };
 typedef struct XMQOutputSettings XMQOutputSettings;
@@ -1267,8 +1266,7 @@ struct XMQOutputSettings
     const char *use_id; // If non-NULL inser this id in the pre tag.
     const char *use_class; // If non-NULL insert this class in the pre tag.
 
-    XMQTheme *default_theme; // Shortcut to the no namespace theme inside themes.
-    HashMap *themes; // Map namespaces to unique colorings.
+    XMQTheme *theme; // The theme used to print.
     void *free_me;
 };
 typedef struct XMQOutputSettings XMQOutputSettings;
@@ -1802,9 +1800,10 @@ char ansi_reset_color[] = "\033[0m";
 void xmqSetupDefaultColors(XMQOutputSettings *os)
 {
     bool dark_mode = os->bg_dark_mode;
-    XMQTheme *theme = (XMQTheme*)hashmap_get(os->themes, "");
+    XMQTheme *theme = os->theme;
     if (os->render_theme == NULL)
     {
+        if (os->render_to == XMQ_RENDER_TEX) dark_mode = false;
         os->render_theme = dark_mode?"darkbg":"lightbg";
     }
     else
@@ -1817,17 +1816,11 @@ void xmqSetupDefaultColors(XMQOutputSettings *os)
         {
             dark_mode = false;
         }
-        else
-        {
-            theme = (XMQTheme*)hashmap_get(os->themes, os->render_theme);
-        }
     }
-    if (!theme)
-    {
-        fprintf(stderr, "xmq: No such render theme \"%s\"\n", os->render_theme);
-        exit(1);
-    }
-    assert(theme);
+
+    verbose("(xmq) use theme %s\n", os->render_theme);
+    installDefaultThemeColors(theme, os->render_theme);
+
     os->indentation_space = theme->indentation_space; // " ";
     os->explicit_space = theme->explicit_space; // " ";
     os->explicit_nl = theme->explicit_nl; // "\n";
@@ -2096,37 +2089,48 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode, 
     {
         theme->document.pre =
             "\\documentclass[10pt,a4paper]{article}\n"
-            "\\usepackage{color}\n";
+            "\\usepackage{color}\n"
+            "\\usepackage{bold-extra}\n";
 
-        char *style_pre = (char*)malloc(2048);
+        char *style_pre = (char*)malloc(4096);
         char *p = style_pre;
 
         for (int i=0; i<NUM_XMQ_COLOR_NAMES; ++i)
         {
             char buf[128];
-            fprintf(stderr, "PRUTT %s %d %d %d\n", colorName(i), theme->colors[i].r, theme->colors[i].g,
-                    theme->colors[i].b);
-
             generate_tex_color(buf, 128, &theme->colors[i], colorName(i));
             strcpy(p, buf);
             p += strlen(p);
             *p++ = '\n';
         }
 
+        for (int i=0; i<NUM_XMQ_COLOR_NAMES; ++i)
+        {
+            char buf[128];
+            const char *bold_pre = "";
+            const char *bold_post = "";
+            const char *underline_pre = "";
+            const char *underline_post = "";
+
+            if (theme->colors[i].bold)
+            {
+                bold_pre = "\\textbf{";
+                bold_post = "}";
+            }
+            if (theme->colors[i].underline)
+            {
+                underline_pre = "\\underline{";
+                underline_post = "}";
+            }
+
+            snprintf(buf, 128, "\\newcommand{\\%s}[1]{{\\color{%s}%s%s#1%s%s}}\n",
+                     colorName(i), colorName(i), bold_pre, underline_pre, bold_post, underline_post);
+
+            strcpy(p, buf);
+            p += strlen(p);
+        }
+
         const char *cmds =
-            "\\newcommand{\\xmqC}[1]{{\\color{xmqC}#1}}\n"
-            "\\newcommand{\\xmqQ}[1]{{\\color{xmqQ}#1}}\n"
-            "\\newcommand{\\xmqE}[1]{{\\color{xmqE}#1}}\n"
-            "\\newcommand{\\xmqNS}[1]{{\\color{xmqNS}#1}}\n"
-            "\\newcommand{\\xmqEN}[1]{{\\color{xmqEN}#1}}\n"
-            "\\newcommand{\\xmqEK}[1]{{\\color{xmqEK}#1}}\n"
-            "\\newcommand{\\xmqEKV}[1]{{\\color{xmqEKV}#1}}\n"
-            "\\newcommand{\\xmqAK}[1]{{\\color{xmqAK}#1}}\n"
-            "\\newcommand{\\xmqAKV}[1]{{\\color{xmqAKV}#1}}\n"
-            "\\newcommand{\\xmqCP}[1]{{\\color{xmqCP}#1}}\n"
-            "\\newcommand{\\xmqNSD}[1]{{\\color{xmqNSD}#1}}\n"
-            "\\newcommand{\\xmqUW}[1]{{\\color{xmqUW}#1}}\n"
-            "\\newcommand{\\xmqXLS}[1]{{\\color{xmqXLS}#1}}\n"
             "\\newcommand{\\xmqI}[0]{{\\mbox{\\ }}}\n";
 
         strcpy(p, cmds);
@@ -2219,14 +2223,7 @@ void xmqRenderHtmlSettings(XMQOutputSettings *settings,
 
 void xmqOverrideColor(XMQOutputSettings *os, const char *render_style, XMQSyntax sy, const char *pre, const char *post, const char *ns)
 {
-    if (!os->themes)
-    {
-        fprintf(stderr, "Internal error: you have to invoke xmqSetupDefaultColors first before overriding.\n");
-        exit(1);
-    }
-    if (!ns) ns = "";
-    XMQTheme *cols = (XMQTheme*)hashmap_get(os->themes, ns);
-    assert(cols);
+    //
 }
 
 int xmqStateErrno(XMQParseState *state)
@@ -2284,19 +2281,9 @@ XMQOutputSettings *xmqNewOutputSettings()
 {
     XMQOutputSettings *os = (XMQOutputSettings*)malloc(sizeof(XMQOutputSettings));
     memset(os, 0, sizeof(XMQOutputSettings));
-    os->themes = hashmap_create(11);
     XMQTheme *theme = (XMQTheme*)malloc(sizeof(XMQTheme));
     memset(theme, 0, sizeof(XMQTheme));
-    hashmap_put(os->themes, "", theme);
-    os->default_theme = theme;
-
-    XMQTheme *darkbg_theme = (XMQTheme*)malloc(sizeof(XMQTheme));
-    installDefaultThemeColors(darkbg_theme, true);
-    hashmap_put(os->themes, "darkbg", darkbg_theme);
-
-    XMQTheme *lightbg_theme = (XMQTheme*)malloc(sizeof(XMQTheme));
-    installDefaultThemeColors(lightbg_theme, false);
-    hashmap_put(os->themes, "lightbg", lightbg_theme);
+    os->theme = theme;
 
     os->indentation_space = theme->indentation_space = " ";
     os->explicit_space = theme->explicit_space = " ";
@@ -2305,8 +2292,6 @@ XMQOutputSettings *xmqNewOutputSettings()
     os->explicit_cr = theme->explicit_cr = "\r";
     os->add_indent = 4;
     os->use_color = false;
-
-    //hashmap_put(os->themes, "solarized", prepareSolarizedTheme(theme));
 
     return os;
 }
@@ -2318,8 +2303,6 @@ void xmqFreeOutputSettings(XMQOutputSettings *os)
         free(os->free_me);
         os->free_me = NULL;
     }
-    hashmap_free_and_values(os->themes);
-    os->themes = NULL;
     free(os);
 }
 
@@ -2533,8 +2516,8 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
     XMQWrite write = output_settings->content.write;
     void *writer_state = output_settings->content.writer_state;
 
-    const char *pre = output_settings->default_theme->content.pre;
-    const char *post = output_settings->default_theme->content.post;
+    const char *pre = output_settings->theme->content.pre;
+    const char *post = output_settings->theme->content.post;
     if (pre) write(writer_state, pre, NULL);
 
     if (!setjmp(state->error_handler))
@@ -4328,7 +4311,7 @@ void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
 
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
-    XMQTheme *theme = os->default_theme;
+    XMQTheme *theme = os->theme;
 
     if (theme->document.pre) write(writer_state, theme->document.pre, NULL);
     if (theme->header.pre) write(writer_state, theme->header.pre, NULL);
@@ -5716,7 +5699,7 @@ bool hex_to_number(char c, char cc, int *v);
 */
 void getThemeStrings(XMQOutputSettings *os, XMQColor color, const char **pre, const char **post)
 {
-    XMQTheme *theme = os->default_theme;
+    XMQTheme *theme = os->theme;
     switch(color)
     {
 
@@ -5778,10 +5761,12 @@ bool string_to_color_def(const char *s, XMQColorDef *def)
     if (*s == '_')
     {
         if (*(s+1) == 'B') bold = true;
+        if (*(s+1) == 'U') underline = true;
         s += 2;
     }
     if (*s == '_')
     {
+        if (*(s+1) == 'B') bold = true;
         if (*(s+1) == 'U') underline = true;
         s += 2;
     }
@@ -5933,49 +5918,51 @@ void setColorDef(XMQColorDef *cd, int r, int g, int b, bool bold, bool underline
 
 #ifdef DEFAULT_THEMES_MODULE
 
+const char *defaultColor(int i, const char *theme_name);
+
 const char *default_darkbg_colors[NUM_XMQ_COLOR_NAMES] = {
     "#2aa1b3", // XMQ_COLOR_C
     "#26a269_B", // XMQ_COLOR_Q
     "#c061cb", // XMQ_COLOR_E
-    "#a9a9a9", // XMQ_COLOR_ENS
+    "#a9a9a9", // XMQ_COLOR_NS
     "#ff8c00", // XMQ_COLOR_EN
     "#88b4f7", // XMQ_COLOR_EK
     "#26a269_B", // XMQ_COLOR_EKV
     "#88b4f7", // XMQ_COLOR_AK
     "#6196ec", // XMQ_COLOR_AKV
-    "#a9a9a9", // XMQ_COLOR_ANS
-    "#2aa1b3", // XMQ_COLOR_NSD
     "#c061cb", // XMQ_COLOR_CP
+    "#2aa1b3", // XMQ_COLOR_NSD
+    "#880000_U", // XMQ_COLOR_UW
     "#c061cb" // XMQ_COLOR_XSL
 };
 
-const char *default_lightbg_colors[] = {
+const char *default_lightbg_colors[NUM_XMQ_COLOR_NAMES] = {
     "#2aa1b3", // XMQ_COLOR_C
     "#26a269_B", // XMQ_COLOR_Q
     "#c061cb", // XMQ_COLOR_E
-    "#696969", // XMQ_COLOR_ENS
+    "#696969", // XMQ_COLOR_NS
     "#a86c00", // XMQ_COLOR_EN
     "#0060fd", // XMQ_COLOR_EK
     "#26a269_B", // XMQ_COLOR_EKV
     "#0060fd", // XMQ_COLOR_AK
     "#12488c", // XMQ_COLOR_AKV
-    "#696969", // XMQ_COLOR_ANS
-    "#1a91a3", // XMQ_COLOR_NSD
     "#c061cb", // XMQ_COLOR_CP
+    "#1a91a3", // XMQ_COLOR_NSD
+    "#880000_U", // XMQ_COLOR_UW
     "#c061cb" // XMQ_COLOR_XSL
 };
 
-const char *defaultColor(int i, bool dark_mode)
+const char *defaultColor(int i, const char *theme_name)
 {
-    if (dark_mode) return default_darkbg_colors[i];
-    return default_lightbg_colors[i];
+    if (!strcmp(theme_name, "lightbg")) return default_lightbg_colors[i];
+    return default_darkbg_colors[i];
 }
 
-void installDefaultThemeColors(XMQTheme *theme, bool dark_mode)
+void installDefaultThemeColors(XMQTheme *theme, const char *theme_name)
 {
     for (int i = 0; i < NUM_XMQ_COLOR_NAMES; ++i)
     {
-        const char *color = defaultColor(i, dark_mode);
+        const char *color = defaultColor(i, theme_name);
         string_to_color_def(color, &theme->colors[i]);
     }
 }
@@ -10937,7 +10924,7 @@ void print_node(XMQPrintState *ps, xmlNode *node, size_t align)
 void print_white_spaces(XMQPrintState *ps, int num)
 {
     XMQOutputSettings *os = ps->output_settings;
-    XMQTheme *c = os->default_theme;
+    XMQTheme *c = os->theme;
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
     if (c->whitespace.pre) write(writer_state, c->whitespace.pre, NULL);
@@ -10994,7 +10981,7 @@ void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num)
 void print_quoted_spaces(XMQPrintState *ps, XMQColor color, int num)
 {
     XMQOutputSettings *os = ps->output_settings;
-    XMQTheme *c = os->default_theme;
+    XMQTheme *c = os->theme;
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
 

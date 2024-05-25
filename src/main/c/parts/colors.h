@@ -147,6 +147,7 @@ typedef struct XMQThemeStrings XMQThemeStrings;
 */
 struct XMQTheme
 {
+    const char *name;
     const char *indentation_space;
     const char *explicit_space;
     const char *explicit_nl;
