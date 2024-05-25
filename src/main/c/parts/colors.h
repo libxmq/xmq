@@ -195,7 +195,8 @@ struct XMQTheme
     XMQThemeStrings ns_override_xsl; // Override key/name colors for elements with xsl namespace.
 
     // RGB Sources + bold + underline from which we can configure the strings.
-    XMQColorDef colors[NUM_XMQ_COLOR_NAMES];
+    XMQColorDef colors_darkbg[NUM_XMQ_COLOR_NAMES];
+    XMQColorDef colors_lightbg[NUM_XMQ_COLOR_NAMES];
 };
 typedef struct XMQTheme XMQTheme;
 
@@ -205,7 +206,7 @@ bool string_to_color_def(const char *s, XMQColorDef *def);
 
 // Expect buffer to store 128 bytes.
 bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline);
-bool generate_html_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline);
+bool generate_html_color(char *buf, size_t buf_size, XMQColorDef *def, const char *name);
 bool generate_tex_color(char *buf, size_t buf_size, XMQColorDef *def, const char *name);
 
 

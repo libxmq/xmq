@@ -178,35 +178,31 @@ bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool b
     return true;
 }
 
-bool generate_html_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline)
+bool generate_html_color(char *buf, size_t buf_size, XMQColorDef *def, const char *name)
 {
-    // color:#26a269;font-weight:600;
+    // xmqQ{color:#26a269;font-weight:600;}
 
     if (buf_size < 64) return false;
-    if (r < 0 || r > 255) return false;
-    if (g < 0 || g > 255) return false;
-    if (b < 0 || b > 255) return false;
 
     char *i = buf;
-    strcpy(buf, "color:#");
-    i += 7;
-    i += snprintf(i, buf_size - (i-buf), "%02x%02x%02x", r, g, b);
+    i += snprintf(i, buf_size, "%s{color:#%02x%02x%02x", name, def->r, def->g, def->b);
     *i++ = ';';
 
-    if (bold)
+    if (def->bold)
     {
         const char *tmp = "font-weight:600;";
         strcpy(i, tmp);
         i += strlen(tmp);
     }
 
-    if (bold)
+    if (def->underline)
     {
-        const char *tmp = "text-decoration: underline;";
+        const char *tmp = "text-decoration:underline;";
         strcpy(i, tmp);
         i += strlen(tmp);
     }
 
+    *i++ = '}';
     *i++ = 0;
     return false;
 }

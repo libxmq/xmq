@@ -294,41 +294,47 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode,
             "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=5\"><style>";
         theme->header.post =
             "</style></head>";
-        theme->style.pre = "@media screen and (orientation: portrait) { pre { font-size: 2vw; } }"
+
+        char *style_pre = (char*)malloc(4096);
+        char *p = style_pre;
+
+        const char *tmp =
+            "@media screen and (orientation: portrait) { pre { font-size: 2vw; } }"
             "@media screen and (orientation: landscape) { pre { max-width: 98%; } }"
             "pre.xmq_dark {white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#263338;border:solid 1px #555555;display:inline-block;padding:1em;color:white;}\n"
             "pre.xmq_light{white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#ffffcc;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
             "body.xmq_dark {background-color:black;}\n"
-            "body.xmq_light {}\n"
-            "xmqC{color:#2aa1b3;}\n"
-            "xmqQ{color:#26a269;font-weight:600;}\n"
-            "xmqE{color:#c061cb;}\n"
-            "xmqNS{color:#a9a9a9;}\n"
-            "xmqEN{color:#ff8c00;}\n"
-            "xmqEK{color:#88b4f7;}\n"
-            "xmqEKV{color:#26a269;font-weight:600;}\n"
-            "xmqAK{color:#88b4f7;}\n"
-            "xmqAKV{color:#6196ec;}\n"
-            "xmqNSD{color:#2aa1b3;}\n"
-            "xmqCP{color:#c061cb;}\n"
-            "xmqXSL{color:#c061cb;}\n"
-            "pre.xmq_light {\n"
-            "  xmqC{color:#2aa1b3;}\n"
-            "  xmqQ{color:#26a269;font-weight:600;}\n"
-            "  xmqE{color:#c061cb;}\n"
-            "  xmqNS{color:#696969;}\n"
-            "  xmqEN{color:#a85c00;}\n"
-            "  xmqEKV{color:#26a269;font-weight:600;}\n"
-            "  xmqEK{color:#0060fd;}\n"
-            "  xmqAK{color:#0060fd;}\n"
-            "  xmqAKV{color:#12488c;}\n"
-            "  xmqNSD{color:#1a91a3;}\n"
-            "  xmqCP{color:#c061cb;}\n"
-            "  xmqXSL{color:#c061cb;}\n"
-            "\n"
-            "pre.xmq_dark { }\n"
-            ;
+            "body.xmq_light {}\n";
+        strcpy(p, tmp);
+        p += strlen(tmp);
 
+        for (int i=0; i<NUM_XMQ_COLOR_NAMES; ++i)
+        {
+            char buf[128];
+            generate_html_color(buf, 128, &theme->colors_darkbg[i], colorName(i));
+            strcpy(p, buf);
+            p += strlen(p);
+            *p++ = '\n';
+        }
+        const char *tmpp = "pre.xmq_light {\n";
+        strcpy(p, tmpp);
+        p += strlen(p);
+
+        for (int i=0; i<NUM_XMQ_COLOR_NAMES; ++i)
+        {
+            char buf[128];
+            generate_html_color(buf, 128, &theme->colors_lightbg[i], colorName(i));
+            strcpy(p, buf);
+            p += strlen(p);
+            *p++ = '\n';
+        }
+
+        const char *tmppp = "pre.xmq_dark {}\n";
+        strcpy(p, tmppp);
+        p += strlen(p);
+        *p++ = '}';
+
+        theme->style.pre = style_pre;
         if (dark_mode)
         {
             theme->body.pre = "<body class=\"xmq_dark\">";
@@ -433,6 +439,9 @@ void setup_htmq_coloring(XMQTheme *theme, bool dark_mode, bool use_color, bool r
 
 void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode, bool use_color, bool render_raw)
 {
+    XMQColorDef *colors = theme->colors_darkbg;
+    if (!dark_mode) colors = theme->colors_lightbg;
+
     os->indentation_space = "\\xmqI ";
     os->explicit_space = " ";
     os->explicit_nl = "\\linebreak\n";
@@ -450,7 +459,7 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode, 
         for (int i=0; i<NUM_XMQ_COLOR_NAMES; ++i)
         {
             char buf[128];
-            generate_tex_color(buf, 128, &theme->colors[i], colorName(i));
+            generate_tex_color(buf, 128, &theme->colors_lightbg[i], colorName(i));
             strcpy(p, buf);
             p += strlen(p);
             *p++ = '\n';
@@ -464,12 +473,12 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode, 
             const char *underline_pre = "";
             const char *underline_post = "";
 
-            if (theme->colors[i].bold)
+            if (colors[i].bold)
             {
                 bold_pre = "\\textbf{";
                 bold_post = "}";
             }
-            if (theme->colors[i].underline)
+            if (colors[i].underline)
             {
                 underline_pre = "\\underline{";
                 underline_post = "}";

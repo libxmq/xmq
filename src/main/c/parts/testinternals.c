@@ -90,7 +90,7 @@ void test_colors()
 
     printf("ANSI %sTRUECOLOR\x1b[0m\n", buf);
 
-    generate_html_color(buf, sizeof(buf), 0, 255, 0, false, false);
+    generate_html_color(buf, sizeof(buf), &def, "GURKA");
 
     printf("HTML %s\n", buf);
 
