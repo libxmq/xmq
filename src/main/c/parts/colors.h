@@ -70,21 +70,47 @@ typedef enum XMQColor {
     COLOR_ns_override_xsl,
 } XMQColor;
 
+/**
+   XMQColorName:
+
+   The actual number of colors are fewer than the number of tokens
+   since we reuse colors for several tokens, no need to have different
+   colors for left and right compound parentheses.
+*/
 typedef enum XMQColorName {
     XMQ_COLOR_C, // Comment
     XMQ_COLOR_Q, // Quote
     XMQ_COLOR_E, // Entity
-    XMQ_COLOR_ENS, // Element Name Space
+    XMQ_COLOR_NS, // Name Space (both for element and attribute)
     XMQ_COLOR_EN, // Element Name
     XMQ_COLOR_EK, // Element Key
     XMQ_COLOR_EKV, // Element Key Value
-    XMQ_COLOR_ANS, // Attribute Name Space
     XMQ_COLOR_AK, // Attribute Key
     XMQ_COLOR_AKV, // Attribute Key Value
     XMQ_COLOR_CP, // Compound Parentheses
+    XMQ_COLOR_NSD, // Name Space Declaration xmlns
     XMQ_COLOR_UW, // Unicode whitespace
-    XMQ_COLOR_TW, // Tab whitespace
+    XMQ_COLOR_XLS, // Override XLS element names with this color.
 } XMQColorName;
+
+#define XMQ_COLOR_NAMES \
+    X(C) \
+    X(Q) \
+    X(E) \
+    X(NS) \
+    X(EN) \
+    X(EK) \
+    X(EKV) \
+    X(AK) \
+    X(AKV) \
+    X(CP) \
+    X(NSD) \
+    X(UW) \
+    X(XLS) \
+
+#define NUM_XMQ_COLOR_NAMES 13
+
+const char* colorName(int i);
 
 typedef struct XMQColorDef {
     int r, g, b;
@@ -168,33 +194,19 @@ struct XMQTheme
     XMQThemeStrings ns_override_xsl; // Override key/name colors for elements with xsl namespace.
 
     // RGB Sources + bold + underline from which we can configure the strings.
-    XMQColorDef xmq_color_c;
-    XMQColorDef xmq_color_q;
-    XMQColorDef xmq_color_e;
-    XMQColorDef xmq_color_ens;
-    XMQColorDef xmq_color_en;
-    XMQColorDef xmq_color_ek;
-    XMQColorDef xmq_color_ekv;
-    XMQColorDef xmq_color_ans;
-    XMQColorDef xmq_color_ak;
-    XMQColorDef xmq_color_akv;
-    XMQColorDef xmq_color_cp;
-    XMQColorDef xmq_color_uw;
-    XMQColorDef xmq_color_tw;
+    XMQColorDef colors[NUM_XMQ_COLOR_NAMES];
 };
 typedef struct XMQTheme XMQTheme;
 
 void getThemeStrings(XMQOutputSettings *os, XMQColor c, const char **pre, const char **post);
 
-bool string_to_colors(const char *s, int *r, int *g, int *b, bool *bold, bool *underline);
+bool string_to_color_def(const char *s, XMQColorDef *def);
 
 // Expect buffer to store 128 bytes.
 bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline);
 bool generate_html_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline);
-bool generate_tex_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline, const char *name);
+bool generate_tex_color(char *buf, size_t buf_size, XMQColorDef *def, const char *name);
 
-void install_default_lightbg_colors(XMQTheme *theme);
-void install_default_darkbg_colors(XMQTheme *theme);
 
 #define COLORS_MODULE
 

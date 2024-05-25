@@ -100,21 +100,47 @@ typedef enum XMQColor {
     COLOR_ns_override_xsl,
 } XMQColor;
 
+/**
+   XMQColorName:
+
+   The actual number of colors are fewer than the number of tokens
+   since we reuse colors for several tokens, no need to have different
+   colors for left and right compound parentheses.
+*/
 typedef enum XMQColorName {
     XMQ_COLOR_C, // Comment
     XMQ_COLOR_Q, // Quote
     XMQ_COLOR_E, // Entity
-    XMQ_COLOR_ENS, // Element Name Space
+    XMQ_COLOR_NS, // Name Space (both for element and attribute)
     XMQ_COLOR_EN, // Element Name
     XMQ_COLOR_EK, // Element Key
     XMQ_COLOR_EKV, // Element Key Value
-    XMQ_COLOR_ANS, // Attribute Name Space
     XMQ_COLOR_AK, // Attribute Key
     XMQ_COLOR_AKV, // Attribute Key Value
     XMQ_COLOR_CP, // Compound Parentheses
+    XMQ_COLOR_NSD, // Name Space Declaration xmlns
     XMQ_COLOR_UW, // Unicode whitespace
-    XMQ_COLOR_TW, // Tab whitespace
+    XMQ_COLOR_XLS, // Override XLS element names with this color.
 } XMQColorName;
+
+#define XMQ_COLOR_NAMES \
+    X(C) \
+    X(Q) \
+    X(E) \
+    X(NS) \
+    X(EN) \
+    X(EK) \
+    X(EKV) \
+    X(AK) \
+    X(AKV) \
+    X(CP) \
+    X(NSD) \
+    X(UW) \
+    X(XLS) \
+
+#define NUM_XMQ_COLOR_NAMES 13
+
+const char* colorName(int i);
 
 typedef struct XMQColorDef {
     int r, g, b;
@@ -198,33 +224,19 @@ struct XMQTheme
     XMQThemeStrings ns_override_xsl; // Override key/name colors for elements with xsl namespace.
 
     // RGB Sources + bold + underline from which we can configure the strings.
-    XMQColorDef xmq_color_c;
-    XMQColorDef xmq_color_q;
-    XMQColorDef xmq_color_e;
-    XMQColorDef xmq_color_ens;
-    XMQColorDef xmq_color_en;
-    XMQColorDef xmq_color_ek;
-    XMQColorDef xmq_color_ekv;
-    XMQColorDef xmq_color_ans;
-    XMQColorDef xmq_color_ak;
-    XMQColorDef xmq_color_akv;
-    XMQColorDef xmq_color_cp;
-    XMQColorDef xmq_color_uw;
-    XMQColorDef xmq_color_tw;
+    XMQColorDef colors[NUM_XMQ_COLOR_NAMES];
 };
 typedef struct XMQTheme XMQTheme;
 
 void getThemeStrings(XMQOutputSettings *os, XMQColor c, const char **pre, const char **post);
 
-bool string_to_colors(const char *s, int *r, int *g, int *b, bool *bold, bool *underline);
+bool string_to_color_def(const char *s, XMQColorDef *def);
 
 // Expect buffer to store 128 bytes.
 bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline);
 bool generate_html_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline);
-bool generate_tex_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline, const char *name);
+bool generate_tex_color(char *buf, size_t buf_size, XMQColorDef *def, const char *name);
 
-void install_default_lightbg_colors(XMQTheme *theme);
-void install_default_darkbg_colors(XMQTheme *theme);
 
 #define COLORS_MODULE
 
@@ -234,37 +246,11 @@ void install_default_darkbg_colors(XMQTheme *theme);
 #include "xmq.h"
 #endif
 
-const char *default_darkbg_colors[] = {
-    "#2aa1b3", // XMQ_COLOR_C
-    "#26a269_B", // XMQ_COLOR_Q
-    "#c061cb", // XMQ_COLOR_E
-    "#a9a9a9", // XMQ_COLOR_ENS
-    "#ff8c00", // XMQ_COLOR_EN
-    "#88b4f7", // XMQ_COLOR_EK
-    "#26a269_B", // XMQ_COLOR_EKV
-    "#88b4f7", // XMQ_COLOR_AK
-    "#6196ec", // XMQ_COLOR_AKV
-    "#a9a9a9", // XMQ_COLOR_ANS
-    "#2aa1b3", // XMQ_COLOR_NSD
-    "#c061cb", // XMQ_COLOR_CP
-    "#c061cb" // XMQ_COLOR_XSL
-};
+struct XMQTheme;
+typedef struct XMQTheme XMQTheme;
 
-const char *default_lightbg_colors[] = {
-    "#2aa1b3", // XMQ_COLOR_C
-    "#26a269_B", // XMQ_COLOR_Q
-    "#c061cb", // XMQ_COLOR_E
-    "#696969", // XMQ_COLOR_ENS
-    "#a86c00", // XMQ_COLOR_EN
-    "#0060fd", // XMQ_COLOR_EK
-    "#26a269_B", // XMQ_COLOR_EKV
-    "#0060fd", // XMQ_COLOR_AK
-    "#12488c", // XMQ_COLOR_AKV
-    "#696969", // XMQ_COLOR_ANS
-    "#1a91a3", // XMQ_COLOR_NSD
-    "#c061cb", // XMQ_COLOR_CP
-    "#c061cb" // XMQ_COLOR_XSL
-};
+const char *defaultColor(int i, bool dark_mode);
+void installDefaultThemeColors(XMQTheme *theme, bool dark_mode);
 
 #define DEFAULT_THEMES_MODULE
 
@@ -1948,22 +1934,22 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode,
     }
 }
 
-void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw)
+void setup_html_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode, bool use_color, bool render_raw)
 {
     os->indentation_space = " ";
     os->explicit_nl = "\n";
     if (!render_raw)
     {
-        c->document.pre =
+        theme->document.pre =
             "<!DOCTYPE html>\n<html>\n";
-        c->document.post =
+        theme->document.post =
             "</html>";
-        c->header.pre =
+        theme->header.pre =
             "<head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">"
             "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=5\"><style>";
-        c->header.post =
+        theme->header.post =
             "</style></head>";
-        c->style.pre = "@media screen and (orientation: portrait) { pre { font-size: 2vw; } }"
+        theme->style.pre = "@media screen and (orientation: portrait) { pre { font-size: 2vw; } }"
             "@media screen and (orientation: landscape) { pre { max-width: 98%; } }"
             "pre.xmq_dark {white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#263338;border:solid 1px #555555;display:inline-block;padding:1em;color:white;}\n"
             "pre.xmq_light{white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#ffffcc;border:solid 1px #888888;display:inline-block;padding:1em;color:black;}\n"
@@ -1972,13 +1958,12 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, boo
             "xmqC{color:#2aa1b3;}\n"
             "xmqQ{color:#26a269;font-weight:600;}\n"
             "xmqE{color:#c061cb;}\n"
-            "xmqENS{color:#a9a9a9;}\n"
+            "xmqNS{color:#a9a9a9;}\n"
             "xmqEN{color:#ff8c00;}\n"
             "xmqEK{color:#88b4f7;}\n"
             "xmqEKV{color:#26a269;font-weight:600;}\n"
             "xmqAK{color:#88b4f7;}\n"
             "xmqAKV{color:#6196ec;}\n"
-            "xmqANS{color:#a9a9a9;}\n"
             "xmqNSD{color:#2aa1b3;}\n"
             "xmqCP{color:#c061cb;}\n"
             "xmqXSL{color:#c061cb;}\n"
@@ -1986,13 +1971,12 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, boo
             "  xmqC{color:#2aa1b3;}\n"
             "  xmqQ{color:#26a269;font-weight:600;}\n"
             "  xmqE{color:#c061cb;}\n"
-            "  xmqENS{color:#696969;}\n"
+            "  xmqNS{color:#696969;}\n"
             "  xmqEN{color:#a85c00;}\n"
             "  xmqEKV{color:#26a269;font-weight:600;}\n"
             "  xmqEK{color:#0060fd;}\n"
             "  xmqAK{color:#0060fd;}\n"
             "  xmqAKV{color:#12488c;}\n"
-            "  xmqANS{color:#696969;}\n"
             "  xmqNSD{color:#1a91a3;}\n"
             "  xmqCP{color:#c061cb;}\n"
             "  xmqXSL{color:#c061cb;}\n"
@@ -2002,19 +1986,19 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, boo
 
         if (dark_mode)
         {
-            c->body.pre = "<body class=\"xmq_dark\">";
+            theme->body.pre = "<body class=\"xmq_dark\">";
         }
         else
         {
-            c->body.pre = "<body class=\"xmq_light\">";
+            theme->body.pre = "<body class=\"xmq_light\">";
         }
 
-        c->body.post =
+        theme->body.post =
             "</body>";
     }
 
-    c->content.pre = "<pre>";
-    c->content.post = "</pre>";
+    theme->content.pre = "<pre>";
+    theme->content.post = "</pre>";
 
     const char *mode = "xmq_light";
     if (dark_mode) mode = "xmq_dark";
@@ -2038,71 +2022,71 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, boo
         space = "";
     }
     snprintf(buf, 1023, "<pre %s%s%sclass=\"xmq %s%s%s\">", idb, id, ide, mode, space, clazz);
-    c->content.pre = buf;
+    theme->content.pre = buf;
 
-    c->whitespace.pre  = NULL;
-    c->indentation_whitespace.pre = NULL;
-    c->unicode_whitespace.pre  = "<xmqUW>";
-    c->unicode_whitespace.post  = "</xmqUW>";
-    c->equals.pre      = NULL;
-    c->brace_left.pre  = NULL;
-    c->brace_right.pre = NULL;
-    c->apar_left.pre    = NULL;
-    c->apar_right.pre   = NULL;
-    c->cpar_left.pre = "<xmqCP>";
-    c->cpar_left.post = "</xmqCP>";
-    c->cpar_right.pre = "<xmqCP>";
-    c->cpar_right.post = "</xmqCP>";
-    c->quote.pre = "<xmqQ>";
-    c->quote.post = "</xmqQ>";
-    c->entity.pre = "<xmqE>";
-    c->entity.post = "</xmqE>";
-    c->comment.pre = "<xmqC>";
-    c->comment.post = "</xmqC>";
-    c->comment_continuation.pre = "<xmqC>";
-    c->comment_continuation.post = "</xmqC>";
-    c->element_ns.pre = "<xmqENS>";
-    c->element_ns.post = "</xmqENS>";
-    c->element_name.pre = "<xmqEN>";
-    c->element_name.post = "</xmqEN>";
-    c->element_key.pre = "<xmqEK>";
-    c->element_key.post = "</xmqEK>";
-    c->element_value_text.pre = "<xmqEKV>";
-    c->element_value_text.post = "</xmqEKV>";
-    c->element_value_quote.pre = "<xmqEKV>";
-    c->element_value_quote.post = "</xmqEKV>";
-    c->element_value_entity.pre = "<xmqE>";
-    c->element_value_entity.post = "</xmqE>";
-    c->element_value_compound_quote.pre = "<xmqEKV>";
-    c->element_value_compound_quote.post = "</xmqEKV>";
-    c->element_value_compound_entity.pre = "<xmqE>";
-    c->element_value_compound_entity.post = "</xmqE>";
-    c->attr_ns.pre = "<xmqANS>";
-    c->attr_ns.post = "</xmqANS>";
-    c->attr_key.pre = "<xmqAK>";
-    c->attr_key.post = "</xmqAK>";
-    c->attr_value_text.pre = "<xmqAKV>";
-    c->attr_value_text.post = "</xmqAKV>";
-    c->attr_value_quote.pre = "<xmqAKV>";
-    c->attr_value_quote.post = "</xmqAKV>";
-    c->attr_value_entity.pre = "<xmqE>";
-    c->attr_value_entity.post = "</xmqE>";
-    c->attr_value_compound_quote.pre = "<xmqAKV>";
-    c->attr_value_compound_quote.post = "</xmqAKV>";
-    c->attr_value_compound_entity.pre = "<xmqE>";
-    c->attr_value_compound_entity.post = "</xmqE>";
-    c->ns_declaration.pre = "<xmqNSD>";
-    c->ns_declaration.post = "</xmqNSD>";
-    c->ns_override_xsl.pre = "<xmqXSL>";
-    c->ns_override_xsl.post = "</xmqXSL>";
-    c->ns_colon.pre = NULL;
+    theme->whitespace.pre  = NULL;
+    theme->indentation_whitespace.pre = NULL;
+    theme->unicode_whitespace.pre  = "<xmqUW>";
+    theme->unicode_whitespace.post  = "</xmqUW>";
+    theme->equals.pre      = NULL;
+    theme->brace_left.pre  = NULL;
+    theme->brace_right.pre = NULL;
+    theme->apar_left.pre    = NULL;
+    theme->apar_right.pre   = NULL;
+    theme->cpar_left.pre = "<xmqCP>";
+    theme->cpar_left.post = "</xmqCP>";
+    theme->cpar_right.pre = "<xmqCP>";
+    theme->cpar_right.post = "</xmqCP>";
+    theme->quote.pre = "<xmqQ>";
+    theme->quote.post = "</xmqQ>";
+    theme->entity.pre = "<xmqE>";
+    theme->entity.post = "</xmqE>";
+    theme->comment.pre = "<xmqC>";
+    theme->comment.post = "</xmqC>";
+    theme->comment_continuation.pre = "<xmqC>";
+    theme->comment_continuation.post = "</xmqC>";
+    theme->element_ns.pre = "<xmqNS>";
+    theme->element_ns.post = "</xmqNS>";
+    theme->element_name.pre = "<xmqEN>";
+    theme->element_name.post = "</xmqEN>";
+    theme->element_key.pre = "<xmqEK>";
+    theme->element_key.post = "</xmqEK>";
+    theme->element_value_text.pre = "<xmqEKV>";
+    theme->element_value_text.post = "</xmqEKV>";
+    theme->element_value_quote.pre = "<xmqEKV>";
+    theme->element_value_quote.post = "</xmqEKV>";
+    theme->element_value_entity.pre = "<xmqE>";
+    theme->element_value_entity.post = "</xmqE>";
+    theme->element_value_compound_quote.pre = "<xmqEKV>";
+    theme->element_value_compound_quote.post = "</xmqEKV>";
+    theme->element_value_compound_entity.pre = "<xmqE>";
+    theme->element_value_compound_entity.post = "</xmqE>";
+    theme->attr_ns.pre = "<xmqNS>";
+    theme->attr_ns.post = "</xmqNS>";
+    theme->attr_key.pre = "<xmqAK>";
+    theme->attr_key.post = "</xmqAK>";
+    theme->attr_value_text.pre = "<xmqAKV>";
+    theme->attr_value_text.post = "</xmqAKV>";
+    theme->attr_value_quote.pre = "<xmqAKV>";
+    theme->attr_value_quote.post = "</xmqAKV>";
+    theme->attr_value_entity.pre = "<xmqE>";
+    theme->attr_value_entity.post = "</xmqE>";
+    theme->attr_value_compound_quote.pre = "<xmqAKV>";
+    theme->attr_value_compound_quote.post = "</xmqAKV>";
+    theme->attr_value_compound_entity.pre = "<xmqE>";
+    theme->attr_value_compound_entity.post = "</xmqE>";
+    theme->ns_declaration.pre = "<xmqNSD>";
+    theme->ns_declaration.post = "</xmqNSD>";
+    theme->ns_override_xsl.pre = "<xmqXSL>";
+    theme->ns_override_xsl.post = "</xmqXSL>";
+    theme->ns_colon.pre = NULL;
 }
 
-void setup_htmq_coloring(XMQTheme *c, bool dark_mode, bool use_color, bool render_raw)
+void setup_htmq_coloring(XMQTheme *theme, bool dark_mode, bool use_color, bool render_raw)
 {
 }
 
-void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw)
+void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode, bool use_color, bool render_raw)
 {
     os->indentation_space = "\\xmqI ";
     os->explicit_space = " ";
@@ -2110,136 +2094,105 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool
 
     if (!render_raw)
     {
-        c->document.pre =
+        theme->document.pre =
             "\\documentclass[10pt,a4paper]{article}\n"
             "\\usepackage{color}\n";
 
-        char *style_pre = (char*)malloc(1024);
-        char xmq_c[128], xmq_q[128], xmq_e[128], xmq_ens[128], xmq_en[128], xmq_ek[128], xmq_ekv[128];
-        char xmq_ans[128], xmq_ak[128], xmq_akv[128], xmq_cp[128];
-        int r, g, b;
-        bool bold, underline;
+        char *style_pre = (char*)malloc(2048);
+        char *p = style_pre;
 
-        string_to_colors(default_lightbg_colors[XMQ_COLOR_C], &r, &g, &b, &bold, &underline);
-        generate_tex_color(xmq_c, 128, r, g, b, bold, underline, "xmqC");
-        string_to_colors(default_lightbg_colors[XMQ_COLOR_Q], &r, &g, &b, &bold, &underline);
-        generate_tex_color(xmq_q, 128, r, g, b, bold, underline, "xmqQ");
-        string_to_colors(default_lightbg_colors[XMQ_COLOR_E], &r, &g, &b, &bold, &underline);
-        generate_tex_color(xmq_e, 128, r, g, b, bold, underline, "xmqE");
-        string_to_colors(default_lightbg_colors[XMQ_COLOR_ENS], &r, &g, &b, &bold, &underline);
-        generate_tex_color(xmq_ens, 128, r, g, b, bold, underline, "xmqENS");
-        string_to_colors(default_lightbg_colors[XMQ_COLOR_EN], &r, &g, &b, &bold, &underline);
-        generate_tex_color(xmq_en, 128, r, g, b, bold, underline, "xmqEN");
-        string_to_colors(default_lightbg_colors[XMQ_COLOR_EK], &r, &g, &b, &bold, &underline);
-        generate_tex_color(xmq_ek, 128, r, g, b, bold, underline, "xmqEK");
-        string_to_colors(default_lightbg_colors[XMQ_COLOR_EKV], &r, &g, &b, &bold, &underline);
-        generate_tex_color(xmq_ekv, 128, r, g, b, bold, underline, "xmqEKV");
-        string_to_colors(default_lightbg_colors[XMQ_COLOR_ANS], &r, &g, &b, &bold, &underline);
-        generate_tex_color(xmq_ans, 128, r, g, b, bold, underline, "xmqANS");
-        string_to_colors(default_lightbg_colors[XMQ_COLOR_AK], &r, &g, &b, &bold, &underline);
-        generate_tex_color(xmq_ak, 128, r, g, b, bold, underline, "xmqAK");
-        string_to_colors(default_lightbg_colors[XMQ_COLOR_AKV], &r, &g, &b, &bold, &underline);
-        generate_tex_color(xmq_akv, 128, r, g, b, bold, underline, "xmqAKV");
-        string_to_colors(default_lightbg_colors[XMQ_COLOR_CP], &r, &g, &b, &bold, &underline);
-        generate_tex_color(xmq_cp, 128, r, g, b, bold, underline, "xmqCP");
+        for (int i=0; i<NUM_XMQ_COLOR_NAMES; ++i)
+        {
+            char buf[128];
+            fprintf(stderr, "PRUTT %s %d %d %d\n", colorName(i), theme->colors[i].r, theme->colors[i].g,
+                    theme->colors[i].b);
 
-        size_t len = snprintf(style_pre, 1024,
-                              "%s\n"  // C
-                              "%s\n"  // Q
-                              "%s\n"  // E
-                              "%s\n"  // ENS
-                              "%s\n"  // EN
-                              "%s\n"  // EK
-                              "%s\n"  // EKV
-                              "%s\n"  // ANS
-                              "%s\n"  // AK
-                              "%s\n"  // AKV
-                              "%s\n"  // CP
-                              "\\newcommand{\\xmqC}[1]{{\\color{xmqC}#1}}\n"
-                              "\\newcommand{\\xmqQ}[1]{{\\color{xmqQ}#1}}\n"
-                              "\\newcommand{\\xmqE}[1]{{\\color{xmqE}#1}}\n"
-                              "\\newcommand{\\xmqENS}[1]{{\\color{xmqENS}#1}}\n"
-                              "\\newcommand{\\xmqEN}[1]{{\\color{xmqEN}#1}}\n"
-                              "\\newcommand{\\xmqEK}[1]{{\\color{xmqEK}#1}}\n"
-                              "\\newcommand{\\xmqEKV}[1]{{\\color{xmqEKV}#1}}\n"
-                              "\\newcommand{\\xmqANS}[1]{{\\color{xmqANS}#1}}\n"
-                              "\\newcommand{\\xmqAK}[1]{{\\color{xmqAK}#1}}\n"
-                              "\\newcommand{\\xmqAKV}[1]{{\\color{xmqAKV}#1}}\n"
-                              "\\newcommand{\\xmqCP}[1]{{\\color{xmqCP}#1}}\n"
-                              "\\newcommand{\\xmqI}[0]{{\\mbox{\\ }}}\n",
-                              xmq_c,
-                              xmq_q,
-                              xmq_e,
-                              xmq_ens,
-                              xmq_en,
-                              xmq_ek,
-                              xmq_ekv,
-                              xmq_ans,
-                              xmq_ak,
-                              xmq_akv,
-                              xmq_cp
-            );
+            generate_tex_color(buf, 128, &theme->colors[i], colorName(i));
+            strcpy(p, buf);
+            p += strlen(p);
+            *p++ = '\n';
+        }
 
-        c->style.pre = style_pre;
+        const char *cmds =
+            "\\newcommand{\\xmqC}[1]{{\\color{xmqC}#1}}\n"
+            "\\newcommand{\\xmqQ}[1]{{\\color{xmqQ}#1}}\n"
+            "\\newcommand{\\xmqE}[1]{{\\color{xmqE}#1}}\n"
+            "\\newcommand{\\xmqNS}[1]{{\\color{xmqNS}#1}}\n"
+            "\\newcommand{\\xmqEN}[1]{{\\color{xmqEN}#1}}\n"
+            "\\newcommand{\\xmqEK}[1]{{\\color{xmqEK}#1}}\n"
+            "\\newcommand{\\xmqEKV}[1]{{\\color{xmqEKV}#1}}\n"
+            "\\newcommand{\\xmqAK}[1]{{\\color{xmqAK}#1}}\n"
+            "\\newcommand{\\xmqAKV}[1]{{\\color{xmqAKV}#1}}\n"
+            "\\newcommand{\\xmqCP}[1]{{\\color{xmqCP}#1}}\n"
+            "\\newcommand{\\xmqNSD}[1]{{\\color{xmqNSD}#1}}\n"
+            "\\newcommand{\\xmqUW}[1]{{\\color{xmqUW}#1}}\n"
+            "\\newcommand{\\xmqXLS}[1]{{\\color{xmqXLS}#1}}\n"
+            "\\newcommand{\\xmqI}[0]{{\\mbox{\\ }}}\n";
 
-        c->body.pre = "\n\\begin{document}\n";
-        c->body.post = "\n\\end{document}\n";
+        strcpy(p, cmds);
+        p += strlen(p);
+        *p = 0;
+
+        theme->style.pre = style_pre;
+
+        theme->body.pre = "\n\\begin{document}\n";
+        theme->body.post = "\n\\end{document}\n";
     }
 
-    c->content.pre = "\\texttt{\\flushleft\\noindent ";
-    c->content.post = "\n}\n";
-    c->whitespace.pre  = NULL;
-    c->indentation_whitespace.pre = NULL;
-    c->unicode_whitespace.pre  = "\\xmqUW{";
-    c->unicode_whitespace.post  = "}";
-    c->equals.pre      = NULL;
-    c->brace_left.pre  = NULL;
-    c->brace_right.pre = NULL;
-    c->apar_left.pre    = NULL;
-    c->apar_right.pre   = NULL;
-    c->cpar_left.pre = "\\xmqCP{";
-    c->cpar_left.post = "}";
-    c->cpar_right.pre = "\\xmqCP{";
-    c->cpar_right.post = "}";
-    c->quote.pre = "\\xmqQ{";
-    c->quote.post = "}";
-    c->entity.pre = "\\xmqE{";
-    c->entity.post = "}";
-    c->comment.pre = "\\xmqC{";
-    c->comment.post = "}";
-    c->comment_continuation.pre = "\\xmqC{";
-    c->comment_continuation.post = "}";
-    c->element_ns.pre = "\\xmqENS{";
-    c->element_ns.post = "}";
-    c->element_name.pre = "\\xmqEN{";
-    c->element_name.post = "}";
-    c->element_key.pre = "\\xmqEK{";
-    c->element_key.post = "}";
-    c->element_value_text.pre = "\\xmqEKV{";
-    c->element_value_text.post = "}";
-    c->element_value_quote.pre = "\\xmqEKV{";
-    c->element_value_quote.post = "}";
-    c->element_value_entity.pre = "\\xmqE{";
-    c->element_value_entity.post = "}";
-    c->element_value_compound_quote.pre = "\\xmqEKV{";
-    c->element_value_compound_quote.post = "}";
-    c->element_value_compound_entity.pre = "\\xmqE{";
-    c->element_value_compound_entity.post = "}";
-    c->attr_ns.pre = "\\xmqANS{";
-    c->attr_ns.post = "}";
-    c->attr_key.pre = "\\xmqAK{";
-    c->attr_key.post = "}";
-    c->attr_value_text.pre = "\\xmqAKV{";
-    c->attr_value_text.post = "}";
-    c->attr_value_quote.pre = "\\xmqAKV{";
-    c->attr_value_quote.post = "}";
-    c->attr_value_entity.pre = "\\xmqE{";
-    c->attr_value_entity.post = "}";
-    c->attr_value_compound_quote.pre = "\\xmqAKV{";
-    c->attr_value_compound_quote.post = "}";
-    c->attr_value_compound_entity.pre = "\\xmqE{";
-    c->attr_value_compound_entity.post = "}";
-    c->ns_colon.pre = NULL;
+    theme->content.pre = "\\texttt{\\flushleft\\noindent ";
+    theme->content.post = "\n}\n";
+    theme->whitespace.pre  = NULL;
+    theme->indentation_whitespace.pre = NULL;
+    theme->unicode_whitespace.pre  = "\\xmqUW{";
+    theme->unicode_whitespace.post  = "}";
+    theme->equals.pre      = NULL;
+    theme->brace_left.pre  = NULL;
+    theme->brace_right.pre = NULL;
+    theme->apar_left.pre    = NULL;
+    theme->apar_right.pre   = NULL;
+    theme->cpar_left.pre = "\\xmqCP{";
+    theme->cpar_left.post = "}";
+    theme->cpar_right.pre = "\\xmqCP{";
+    theme->cpar_right.post = "}";
+    theme->quote.pre = "\\xmqQ{";
+    theme->quote.post = "}";
+    theme->entity.pre = "\\xmqE{";
+    theme->entity.post = "}";
+    theme->comment.pre = "\\xmqC{";
+    theme->comment.post = "}";
+    theme->comment_continuation.pre = "\\xmqC{";
+    theme->comment_continuation.post = "}";
+    theme->element_ns.pre = "\\xmqNS{";
+    theme->element_ns.post = "}";
+    theme->element_name.pre = "\\xmqEN{";
+    theme->element_name.post = "}";
+    theme->element_key.pre = "\\xmqEK{";
+    theme->element_key.post = "}";
+    theme->element_value_text.pre = "\\xmqEKV{";
+    theme->element_value_text.post = "}";
+    theme->element_value_quote.pre = "\\xmqEKV{";
+    theme->element_value_quote.post = "}";
+    theme->element_value_entity.pre = "\\xmqE{";
+    theme->element_value_entity.post = "}";
+    theme->element_value_compound_quote.pre = "\\xmqEKV{";
+    theme->element_value_compound_quote.post = "}";
+    theme->element_value_compound_entity.pre = "\\xmqE{";
+    theme->element_value_compound_entity.post = "}";
+    theme->attr_ns.pre = "\\xmqNS{";
+    theme->attr_ns.post = "}";
+    theme->attr_key.pre = "\\xmqAK{";
+    theme->attr_key.post = "}";
+    theme->attr_value_text.pre = "\\xmqAKV{";
+    theme->attr_value_text.post = "}";
+    theme->attr_value_quote.pre = "\\xmqAKV{";
+    theme->attr_value_quote.post = "}";
+    theme->attr_value_entity.pre = "\\xmqE{";
+    theme->attr_value_entity.post = "}";
+    theme->attr_value_compound_quote.pre = "\\xmqAKV{";
+    theme->attr_value_compound_quote.post = "}";
+    theme->attr_value_compound_entity.pre = "\\xmqE{";
+    theme->attr_value_compound_entity.post = "}";
+    theme->ns_colon.pre = NULL;
 }
 
 void xmqOverrideSettings(XMQOutputSettings *settings,
@@ -2327,13 +2280,6 @@ void add_nl(XMQParseState *state)
     state->output_settings->content.write(state->output_settings->content.writer_state, "\n", NULL);
 }
 
-XMQTheme *prepareSolarizedTheme(XMQTheme *parent);
-
-XMQTheme *prepareSolarizedTheme(XMQTheme *parent)
-{
-    return NULL;
-}
-
 XMQOutputSettings *xmqNewOutputSettings()
 {
     XMQOutputSettings *os = (XMQOutputSettings*)malloc(sizeof(XMQOutputSettings));
@@ -2345,11 +2291,11 @@ XMQOutputSettings *xmqNewOutputSettings()
     os->default_theme = theme;
 
     XMQTheme *darkbg_theme = (XMQTheme*)malloc(sizeof(XMQTheme));
-    install_default_darkbg_colors(darkbg_theme);
+    installDefaultThemeColors(darkbg_theme, true);
     hashmap_put(os->themes, "darkbg", darkbg_theme);
 
     XMQTheme *lightbg_theme = (XMQTheme*)malloc(sizeof(XMQTheme));
-    install_default_lightbg_colors(lightbg_theme);
+    installDefaultThemeColors(lightbg_theme, false);
     hashmap_put(os->themes, "lightbg", lightbg_theme);
 
     os->indentation_space = theme->indentation_space = " ";
@@ -4382,20 +4328,20 @@ void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
 
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
-    XMQTheme *c = os->default_theme;
+    XMQTheme *theme = os->default_theme;
 
-    if (c->document.pre) write(writer_state, c->document.pre, NULL);
-    if (c->header.pre) write(writer_state, c->header.pre, NULL);
-    if (c->style.pre) write(writer_state, c->style.pre, NULL);
-    if (c->header.post) write(writer_state, c->header.post, NULL);
-    if (c->body.pre) write(writer_state, c->body.pre, NULL);
+    if (theme->document.pre) write(writer_state, theme->document.pre, NULL);
+    if (theme->header.pre) write(writer_state, theme->header.pre, NULL);
+    if (theme->style.pre) write(writer_state, theme->style.pre, NULL);
+    if (theme->header.post) write(writer_state, theme->header.post, NULL);
+    if (theme->body.pre) write(writer_state, theme->body.pre, NULL);
 
-    if (c->content.pre) write(writer_state, c->content.pre, NULL);
+    if (theme->content.pre) write(writer_state, theme->content.pre, NULL);
     print_nodes(&ps, (xmlNode*)first, (xmlNode*)last, 0);
-    if (c->content.post) write(writer_state, c->content.post, NULL);
+    if (theme->content.post) write(writer_state, theme->content.post, NULL);
 
-    if (c->body.post) write(writer_state, c->body.post, NULL);
-    if (c->document.post) write(writer_state, c->document.post, NULL);
+    if (theme->body.post) write(writer_state, theme->body.post, NULL);
+    if (theme->document.post) write(writer_state, theme->document.post, NULL);
 
     write(writer_state, "\n", NULL);
 }
@@ -5798,38 +5744,54 @@ LIST_OF_XMQ_TOKENS
 //#echo -ne '\e]11;#abcdef\e\\'  # set default background to #abcdef
 //printf "\x1b[38;2;40;177;249mTRUECOLOR\x1b[0m\n"
 
-bool string_to_colors(const char *s, int *r, int *g, int *b, bool *bold, bool *underline)
+bool string_to_color_def(const char *s, XMQColorDef *def)
 {
     // #aabbcc
     // #aabbcc_B
     // #aabbcc_U
     // #aabbcc_B_U
 
-    *r = *g = *b = 0;
-    *bold = false;
-    *underline = false;
+    def->r = -1;
+    def->g = -1;
+    def->b = -1;
+    def->bold = false;
+    def->underline = false;
+
+    int r, g, b;
+    bool bold, underline;
+
+    r = g = b = 0;
+    bold = false;
+    underline = false;
 
     if (strlen(s) < 7) return false;
     if (*s != '#') return false;
     s++;
 
-    bool ok = hex_to_number(*(s+0), *(s+1), r);
-    ok &= hex_to_number(*(s+2), *(s+3), g);
-    ok &= hex_to_number(*(s+4), *(s+5), b);
+    bool ok = hex_to_number(*(s+0), *(s+1), &r);
+    ok &= hex_to_number(*(s+2), *(s+3), &g);
+    ok &= hex_to_number(*(s+4), *(s+5), &b);
 
     if (!ok) return false;
+
     s+=6;
     if (*s == '_')
     {
-        if (*(s+1) == 'B') *bold = true;
+        if (*(s+1) == 'B') bold = true;
         s += 2;
     }
     if (*s == '_')
     {
-        if (*(s+1) == 'U') *underline = true;
+        if (*(s+1) == 'U') underline = true;
         s += 2;
     }
     if (*s != 0) return false;
+
+    def->r = r;
+    def->g = g;
+    def->b = b;
+    def->bold = bold;
+    def->underline = underline;
 
     return true;
 }
@@ -5849,7 +5811,7 @@ bool hex_to_number(char c, char cc, int *v)
     else return false;
 
     *v = hi*16+lo;
-    return false;
+    return true;
 }
 
 bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline)
@@ -5905,38 +5867,54 @@ bool generate_html_color(char *buf, size_t buf_size, int r, int g, int b, bool b
     i += snprintf(i, buf_size - (i-buf), "%02x%02x%02x", r, g, b);
     *i++ = ';';
 
+    if (bold)
+    {
+        const char *tmp = "font-weight:600;";
+        strcpy(i, tmp);
+        i += strlen(tmp);
+    }
+
+    if (bold)
+    {
+        const char *tmp = "text-decoration: underline;";
+        strcpy(i, tmp);
+        i += strlen(tmp);
+    }
+
     *i++ = 0;
     return false;
 }
 
-bool generate_tex_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline, const char *name)
+bool generate_tex_color(char *buf, size_t buf_size, XMQColorDef *def, const char *name)
 {
     // \definecolor{mypink2}{RGB}{219, 48, 122}
 
     if (buf_size < 128) return false;
-    if (r < 0 || r > 255) return false;
-    if (g < 0 || g > 255) return false;
-    if (b < 0 || b > 255) return false;
 
-    snprintf(buf, buf_size, "\\definecolor{%s}{RGB}{%d,%d,%d}", name, r, g, b);
+    snprintf(buf, buf_size, "\\definecolor{%s}{RGB}{%d,%d,%d}", name, def->r, def->g, def->b);
     return true;
 }
 
 const char *color_names[13] = {
-    "xmq_c", // Comment
-    "xmq_q", // Quote
-    "xmq_e", // Entity
-    "xmq_ens", // Element Name Space
-    "xmq_en", // Element Name
-    "xmq_ek", // Element Key
-    "xmq_ekv", // Element Key Value
-    "xmq_ans", // Attribute Name Space
-    "xmq_ak", // Attribute Key
-    "xmq_akv", // Attribute Key Value
-    "xmq_cp", // Compound Parentheses
-    "xmq_uw", // Unicode whitespace
-    "xmq_tw", // Tab whitespace
+    "xmqC", // Comment
+    "xmqQ", // Quote
+    "xmqE", // Entity
+    "xmqNS", // Name Space (both for element and attribute)
+    "xmqEN", // Element Name
+    "xmqEK", // Element Key
+    "xmqEKV", // Element Key Value
+    "xmqAK", // Attribute Key
+    "xmqAKV", // Attribute Key Value
+    "xmqCP", // Compound Parentheses
+    "xmqNSD", // Name Space declaration xmlns
+    "xmqUW", // Unicode whitespace
+    "xmqXLS", // Element color for xsl transform elements.
 };
+
+const char* colorName(int i)
+{
+    return color_names[i];
+}
 
 void setColorDef(XMQColorDef *cd, int r, int g, int b, bool bold, bool underline);
 
@@ -5949,19 +5927,60 @@ void setColorDef(XMQColorDef *cd, int r, int g, int b, bool bold, bool underline
     cd->underline = underline;
 }
 
-void install_default_lightbg_colors(XMQTheme *theme)
-{
-    memset(theme, 0, sizeof(XMQTheme));
-    setColorDef(&theme->xmq_color_c, 0, 0, 0, false, false);
-}
-
-void install_default_darkbg_colors(XMQTheme *theme)
-{
-    memset(theme, 0, sizeof(XMQTheme));
-    setColorDef(&theme->xmq_color_c, 0, 0, 0, false, false);
-}
-
 #endif // COLORS_MODULE
+
+// PARTS DEFAULT_THEMES_C ////////////////////////////////////////
+
+#ifdef DEFAULT_THEMES_MODULE
+
+const char *default_darkbg_colors[NUM_XMQ_COLOR_NAMES] = {
+    "#2aa1b3", // XMQ_COLOR_C
+    "#26a269_B", // XMQ_COLOR_Q
+    "#c061cb", // XMQ_COLOR_E
+    "#a9a9a9", // XMQ_COLOR_ENS
+    "#ff8c00", // XMQ_COLOR_EN
+    "#88b4f7", // XMQ_COLOR_EK
+    "#26a269_B", // XMQ_COLOR_EKV
+    "#88b4f7", // XMQ_COLOR_AK
+    "#6196ec", // XMQ_COLOR_AKV
+    "#a9a9a9", // XMQ_COLOR_ANS
+    "#2aa1b3", // XMQ_COLOR_NSD
+    "#c061cb", // XMQ_COLOR_CP
+    "#c061cb" // XMQ_COLOR_XSL
+};
+
+const char *default_lightbg_colors[] = {
+    "#2aa1b3", // XMQ_COLOR_C
+    "#26a269_B", // XMQ_COLOR_Q
+    "#c061cb", // XMQ_COLOR_E
+    "#696969", // XMQ_COLOR_ENS
+    "#a86c00", // XMQ_COLOR_EN
+    "#0060fd", // XMQ_COLOR_EK
+    "#26a269_B", // XMQ_COLOR_EKV
+    "#0060fd", // XMQ_COLOR_AK
+    "#12488c", // XMQ_COLOR_AKV
+    "#696969", // XMQ_COLOR_ANS
+    "#1a91a3", // XMQ_COLOR_NSD
+    "#c061cb", // XMQ_COLOR_CP
+    "#c061cb" // XMQ_COLOR_XSL
+};
+
+const char *defaultColor(int i, bool dark_mode)
+{
+    if (dark_mode) return default_darkbg_colors[i];
+    return default_lightbg_colors[i];
+}
+
+void installDefaultThemeColors(XMQTheme *theme, bool dark_mode)
+{
+    for (int i = 0; i < NUM_XMQ_COLOR_NAMES; ++i)
+    {
+        const char *color = defaultColor(i, dark_mode);
+        string_to_color_def(color, &theme->colors[i]);
+    }
+}
+
+#endif // DEFAULT_THEMES_MODULE
 
 // PARTS ENTITIES_C ////////////////////////////////////////
 

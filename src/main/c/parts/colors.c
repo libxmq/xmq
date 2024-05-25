@@ -68,38 +68,54 @@ LIST_OF_XMQ_TOKENS
 //#echo -ne '\e]11;#abcdef\e\\'  # set default background to #abcdef
 //printf "\x1b[38;2;40;177;249mTRUECOLOR\x1b[0m\n"
 
-bool string_to_colors(const char *s, int *r, int *g, int *b, bool *bold, bool *underline)
+bool string_to_color_def(const char *s, XMQColorDef *def)
 {
     // #aabbcc
     // #aabbcc_B
     // #aabbcc_U
     // #aabbcc_B_U
 
-    *r = *g = *b = 0;
-    *bold = false;
-    *underline = false;
+    def->r = -1;
+    def->g = -1;
+    def->b = -1;
+    def->bold = false;
+    def->underline = false;
+
+    int r, g, b;
+    bool bold, underline;
+
+    r = g = b = 0;
+    bold = false;
+    underline = false;
 
     if (strlen(s) < 7) return false;
     if (*s != '#') return false;
     s++;
 
-    bool ok = hex_to_number(*(s+0), *(s+1), r);
-    ok &= hex_to_number(*(s+2), *(s+3), g);
-    ok &= hex_to_number(*(s+4), *(s+5), b);
+    bool ok = hex_to_number(*(s+0), *(s+1), &r);
+    ok &= hex_to_number(*(s+2), *(s+3), &g);
+    ok &= hex_to_number(*(s+4), *(s+5), &b);
 
     if (!ok) return false;
+
     s+=6;
     if (*s == '_')
     {
-        if (*(s+1) == 'B') *bold = true;
+        if (*(s+1) == 'B') bold = true;
         s += 2;
     }
     if (*s == '_')
     {
-        if (*(s+1) == 'U') *underline = true;
+        if (*(s+1) == 'U') underline = true;
         s += 2;
     }
     if (*s != 0) return false;
+
+    def->r = r;
+    def->g = g;
+    def->b = b;
+    def->bold = bold;
+    def->underline = underline;
 
     return true;
 }
@@ -119,7 +135,7 @@ bool hex_to_number(char c, char cc, int *v)
     else return false;
 
     *v = hi*16+lo;
-    return false;
+    return true;
 }
 
 bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline)
@@ -175,38 +191,54 @@ bool generate_html_color(char *buf, size_t buf_size, int r, int g, int b, bool b
     i += snprintf(i, buf_size - (i-buf), "%02x%02x%02x", r, g, b);
     *i++ = ';';
 
+    if (bold)
+    {
+        const char *tmp = "font-weight:600;";
+        strcpy(i, tmp);
+        i += strlen(tmp);
+    }
+
+    if (bold)
+    {
+        const char *tmp = "text-decoration: underline;";
+        strcpy(i, tmp);
+        i += strlen(tmp);
+    }
+
     *i++ = 0;
     return false;
 }
 
-bool generate_tex_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline, const char *name)
+bool generate_tex_color(char *buf, size_t buf_size, XMQColorDef *def, const char *name)
 {
     // \definecolor{mypink2}{RGB}{219, 48, 122}
 
     if (buf_size < 128) return false;
-    if (r < 0 || r > 255) return false;
-    if (g < 0 || g > 255) return false;
-    if (b < 0 || b > 255) return false;
 
-    snprintf(buf, buf_size, "\\definecolor{%s}{RGB}{%d,%d,%d}", name, r, g, b);
+    snprintf(buf, buf_size, "\\definecolor{%s}{RGB}{%d,%d,%d}", name, def->r, def->g, def->b);
     return true;
 }
 
 const char *color_names[13] = {
-    "xmq_c", // Comment
-    "xmq_q", // Quote
-    "xmq_e", // Entity
-    "xmq_ens", // Element Name Space
-    "xmq_en", // Element Name
-    "xmq_ek", // Element Key
-    "xmq_ekv", // Element Key Value
-    "xmq_ans", // Attribute Name Space
-    "xmq_ak", // Attribute Key
-    "xmq_akv", // Attribute Key Value
-    "xmq_cp", // Compound Parentheses
-    "xmq_uw", // Unicode whitespace
-    "xmq_tw", // Tab whitespace
+    "xmqC", // Comment
+    "xmqQ", // Quote
+    "xmqE", // Entity
+    "xmqNS", // Name Space (both for element and attribute)
+    "xmqEN", // Element Name
+    "xmqEK", // Element Key
+    "xmqEKV", // Element Key Value
+    "xmqAK", // Attribute Key
+    "xmqAKV", // Attribute Key Value
+    "xmqCP", // Compound Parentheses
+    "xmqNSD", // Name Space declaration xmlns
+    "xmqUW", // Unicode whitespace
+    "xmqXLS", // Element color for xsl transform elements.
 };
+
+const char* colorName(int i)
+{
+    return color_names[i];
+}
 
 void setColorDef(XMQColorDef *cd, int r, int g, int b, bool bold, bool underline);
 
@@ -217,18 +249,6 @@ void setColorDef(XMQColorDef *cd, int r, int g, int b, bool bold, bool underline
     cd->b = b;
     cd->bold = bold;
     cd->underline = underline;
-}
-
-void install_default_lightbg_colors(XMQTheme *theme)
-{
-    memset(theme, 0, sizeof(XMQTheme));
-    setColorDef(&theme->xmq_color_c, 0, 0, 0, false, false);
-}
-
-void install_default_darkbg_colors(XMQTheme *theme)
-{
-    memset(theme, 0, sizeof(XMQTheme));
-    setColorDef(&theme->xmq_color_c, 0, 0, 0, false, false);
 }
 
 #endif // COLORS_MODULE
