@@ -86,7 +86,7 @@ void test_colors()
 
     char buf[128];
 
-    generate_ansi_color(buf, sizeof(buf), 0, 255, 0, false, false);
+    generate_ansi_color(buf, sizeof(buf), &def);
 
     printf("ANSI %sTRUECOLOR\x1b[0m\n", buf);
 

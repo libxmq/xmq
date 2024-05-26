@@ -161,7 +161,6 @@ struct XMQTheme
     XMQThemeStrings content; // Wrapper around rendered code. Like <pre></pre>, \textt{...}
 
     XMQThemeStrings whitespace; // The normal whitespaces: space=32. Normally not colored.
-    XMQThemeStrings tab_whitespace; // The tab, colored with red background.
     XMQThemeStrings unicode_whitespace; // The remaining unicode whitespaces, like: nbsp=160 color as red underline.
     XMQThemeStrings indentation_whitespace; // The xmq generated indentation spaces. Normally not colored.
     XMQThemeStrings equals; // The key = value equal sign.
@@ -205,7 +204,7 @@ void getThemeStrings(XMQOutputSettings *os, XMQColor c, const char **pre, const 
 bool string_to_color_def(const char *s, XMQColorDef *def);
 
 // Expect buffer to store 128 bytes.
-bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline);
+bool generate_ansi_color(char *buf, size_t buf_size, XMQColorDef *def);
 bool generate_html_color(char *buf, size_t buf_size, XMQColorDef *def, const char *name);
 bool generate_tex_color(char *buf, size_t buf_size, XMQColorDef *def, const char *name);
 

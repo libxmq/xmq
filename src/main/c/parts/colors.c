@@ -140,18 +140,26 @@ bool hex_to_number(char c, char cc, int *v)
     return true;
 }
 
-bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool bold, bool underline)
+bool generate_ansi_color(char *buf, size_t buf_size, XMQColorDef *def)
 {
     // Example: \x1b[38;2;40;177;249mTRUECOLOR\x1b[0m
     if (buf_size < 32) return false;
-    if (r < 0 || r > 255) return false;
-    if (g < 0 || g > 255) return false;
-    if (b < 0 || b > 255) return false;
 
     char *i = buf;
 
     *i++ = 27;
     *i++ = '[';
+    *i++ = '0';
+    *i++ = ';';
+    if (def->bold)
+    {
+        *i++ = '1';
+        *i++ = ';';
+    }
+    if (def->underline) {
+        *i++ = '4';
+        *i++ = ';';
+    }
     *i++ = '3';
     *i++ = '8';
     *i++ = ';';
@@ -159,17 +167,17 @@ bool generate_ansi_color(char *buf, size_t buf_size, int r, int g, int b, bool b
     *i++ = ';';
 
     char tmp[16];
-    snprintf(tmp, sizeof(tmp), "%d", r);
+    snprintf(tmp, sizeof(tmp), "%d", def->r);
     strcpy(i, tmp);
     i += strlen(tmp);
     *i++ = ';';
 
-    snprintf(tmp, sizeof(tmp), "%d", g);
+    snprintf(tmp, sizeof(tmp), "%d", def->g);
     strcpy(i, tmp);
     i += strlen(tmp);
     *i++ = ';';
 
-    snprintf(tmp, sizeof(tmp), "%d", b);
+    snprintf(tmp, sizeof(tmp), "%d", def->b);
     strcpy(i, tmp);
     i += strlen(tmp);
     *i++ = 'm';

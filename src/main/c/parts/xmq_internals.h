@@ -179,6 +179,7 @@ struct XMQOutputSettings
 
     XMQTheme *theme; // The theme used to print.
     void *free_me;
+    void *free_and_me;
 };
 typedef struct XMQOutputSettings XMQOutputSettings;
 
@@ -521,71 +522,9 @@ bool debug_enabled();
 
 void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 
-#ifndef PLATFORM_WINAPI
-
 // Multicolor terminals like gnome-term etc.
 
 #define NOCOLOR      "\033[0m"
-#define GRAY_UNDERLINE "\033[0;4;38;5;7m"
-#define DARK_GRAY_UNDERLINE "\033[0;4;38;5;8m"
-#define GRAY         "\033[0;38;5;242m"
-#define DARK_GRAY    "\033[0;38;5;238m"
-#define GREEN        "\033[0;32m"
-#define DARK_GREEN_BOLD "\033[0;1;32m"
-#define BLUE         "\033[0;38;5;27m"
-#define BLUE_UNDERLINE "\033[0;4;38;5;27m"
-#define LIGHT_BLUE   "\033[0;38;5;39m"
-#define LIGHT_BLUE_UNDERLINE   "\033[0;4;38;5;39m"
-#define DARK_BLUE_BOLD    "\033[0;1;34m"
-#define ORANGE       "\033[0;38;5;166m"
-#define ORANGE_UNDERLINE "\033[0;4;38;5;166m"
-#define DARK_ORANGE  "\033[0;38;5;130m"
-#define DARK_ORANGE_UNDERLINE  "\033[0;4;38;5;130m"
-#define DARK_MAGENTA      "\033[0;38;5;5m"
-#define MAGENTA      "\033[0;38;5;13m"
-#define CYAN_BOLD    "\033[0;1;36m"
-#define DARK_CYAN    "\033[0;38;5;21m"
-#define DARK_CYAN_BOLD    "\033[0;1;36m"
-#define DARK_RED     "\033[0;31m"
-#define RED          "\033[0;31m"
-#define RED_UNDERLINE  "\033[0;4;31m"
-#define RED_BACKGROUND "\033[41m"
-#define DARK_RED_BOLD "\033[0;1;31m"
-#define UNDERLINE    "\033[0;1;4m"
-
-#else
-
-// The more limited Windows console.
-
-#define NOCOLOR      "\033[0m\033[24m"
-#define GRAY         "\033[37m\033[24m"
-#define DARK_GRAY    "\033[90m\033[24m"
-#define GREEN        "\033[92m\033[24m"
-// Not really bold, how?
-#define DARK_GREEN_BOLD   "\033[32m\033[24m"
-#define BLUE         "\033[94m\033[24m"
-#define BLUE_UNDERLINE "\033[94m\033[4m"
-#define LIGHT_BLUE   "\033[36m\033[24m"
-#define LIGHT_BLUE_UNDERLINE   "\033[36m\033[4m"
-// Not really bold, how?
-#define DARK_BLUE_BOLD    "\033[34m\033[24m"
-#define ORANGE       "\033[93m\033[24m"
-#define ORANGE_UNDERLINE "\033[93m\033[4m"
-#define DARK_ORANGE  "\033[33m\033[24m"
-#define DARK_ORANGE_UNDERLINE  "\033[33m\033[4m"
-#define MAGENTA      "\033[95m\033[24m"
-// Not really bold, how?
-#define CYAN_BOLD         "\033[96m\033[24m"
-#define DARK_CYAN    "\033[36m\033[24m"
-#define DARK_RED     "\033[31m\033[24m"
-#define RED          "\033[91m\033[24m"
-#define RED_UNDERLINE  "\033[91m\033[4m"
-#define RED_BACKGROUND "\033[91m\033[4m"
-#define DARK_RED_BOLD "\033[31m\033[24m"
-#define UNDERLINE    "\033[4m"
-#define NO_UNDERLINE "\033[24m"
-
-#endif
 
 #define XMQ_INTERNALS_MODULE
 
