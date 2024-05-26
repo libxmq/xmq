@@ -4,8 +4,44 @@
 \usepackage{changepage}
 \usepackage{geometry}
 \usepackage{graphicx}
-\usepackage{color}
 \usepackage[absolute,overlay]{textpos}
+\usepackage{color}
+\usepackage{bold-extra}
+
+\definecolor{xmqC}{RGB}{42,161,179}
+\definecolor{xmqQ}{RGB}{38,162,105}
+\definecolor{xmqE}{RGB}{192,97,203}
+\definecolor{xmqNS}{RGB}{105,105,105}
+\definecolor{xmqEN}{RGB}{168,108,0}
+\definecolor{xmqEK}{RGB}{0,96,253}
+\definecolor{xmqEKV}{RGB}{38,162,105}
+\definecolor{xmqAK}{RGB}{0,96,253}
+\definecolor{xmqAKV}{RGB}{18,72,140}
+\definecolor{xmqCP}{RGB}{192,97,203}
+\definecolor{xmqNSD}{RGB}{26,145,163}
+\definecolor{xmqUW}{RGB}{136,0,0}
+\definecolor{xmqXLS}{RGB}{192,97,203}
+\newcommand{\xmqC}[1]{{\color{xmqC}\textbf{#1}}}
+\newcommand{\xmqQ}[1]{{\color{xmqQ}\textbf{#1}}}
+\newcommand{\xmqE}[1]{{\color{xmqE}#1}}
+\newcommand{\xmqNS}[1]{{\color{xmqNS}#1}}
+\newcommand{\xmqEN}[1]{{\color{xmqEN}#1}}
+\newcommand{\xmqEK}[1]{{\color{xmqEK}#1}}
+\newcommand{\xmqEKV}[1]{{\color{xmqEKV}\textbf{#1}}}
+\newcommand{\xmqAK}[1]{{\color{xmqAK}#1}}
+\newcommand{\xmqAKV}[1]{{\color{xmqAKV}#1}}
+\newcommand{\xmqCP}[1]{{\color{xmqCP}#1}}
+\newcommand{\xmqNSD}[1]{{\color{xmqNSD}#1}}
+\newcommand{\xmqUW}[1]{{\color{xmqUW}\underline{#1}}}
+\newcommand{\xmqXLS}[1]{{\color{xmqXLS}#1}}
+\newcommand{\xmqI}[0]{{\mbox{\ }}}
+
+\newcommand{\xmqEq}[0]{{=}}
+\newcommand{\xmqQu}[0]{{\color{xmqQ}'}}
+\newcommand{\xmqLB}[0]{{\{}}
+\newcommand{\xmqRB}[0]{{\}}}
+\newcommand{\xmqLP}[0]{{\color{xmqCP}(}}
+\newcommand{\xmqRP}[0]{{\color{xmqCP})}}
 
 \definecolor{Brown}{rgb}{0.86,0.38,0.0}
 \definecolor{Blue}{rgb}{0.0,0.37,1.0}
@@ -20,19 +56,6 @@
 \definecolor{Yellow}{rgb}{0.5,0.5,0.1}
 \definecolor{Cyan}{rgb}{0.3,0.7,0.7}
 
-\newcommand{\xmqCom}[1]{{\color{Cyan}#1}}
-\newcommand{\xmqName}[1]{{\color{Brown}#1}}
-\newcommand{\xmqKey}[1]{{\color{Blue}#1}}
-\newcommand{\xmqAttrKey}[1]{{\color{Blue}#1}}
-\newcommand{\xmqAttrVal}[1]{{\color{DarkSlateBlue}#1}}
-\newcommand{\xmqEq}[0]{{\color{DarkSlateBlue}=}}
-\newcommand{\xmqQ}[0]{{\color{Green}'}}
-\newcommand{\xmqQuote}[1]{{\color{Green}#1}}
-\newcommand{\xmqLB}[0]{{\color{DarkSlateBlue}\{}}
-\newcommand{\xmqRB}[0]{{\color{DarkSlateBlue}\}}}
-\newcommand{\xmqLP}[0]{{\color{Purple}(}}
-\newcommand{\xmqRP}[0]{{\color{Purple})}}
-\newcommand{\xmqE}[1]{{\color{Purple}\&#1}}
 \newcommand{\s}[0]{\mbox{~}}
 \newcommand{\xmqs}[0]{\s\s\s\s}
 \newcommand{\POS}[3]{\raisebox{#1}[0mm][0mm]{\makebox[0mm][l]{\rule{#2}{0mm}#3}}}
@@ -71,7 +94,7 @@
 
 \begin{document}
 
-{\color{Red}\texttt{Specification for XMQ by Fredrik Öhrström 2024-05-03 \texttt{oehrstroem@gmail.com}}}
+{\color{Red}\texttt{Specification for XMQ by Fredrik Öhrström 2024-05-26 \texttt{oehrstroem@gmail.com}}}
 
 \texttt{Input must be valid UTF8 (0x9 | 0xa | 0xd | [20-d7ff] | [e000-fffd] | [10000-10ffff]) \\
   CRLF pairs (0xd 0xa) and standalone CR (0xd) are treated as LF (0xa) when parsing.}
@@ -209,21 +232,21 @@
 
 \vspace{-1mm}
 \verb|A quote with only spaces and a single newline is equivalent to the empty string.|
-\texttt{The element \xmqKey{age}\xmqEq\xmqQuote{123}    is shorthand for   \xmqName{age}\xmqLB\xmqQuote{'123'}\xmqRB}\\
-\texttt{Use \xmqLP ...\xmqRP\ for attributes with newlines and explicit leading/ending spaces.} \\
-\texttt{Inside a comment \xmqCom{*/*} means a newline, used for compact xmq without newlines.}\\
-\texttt{The tab 0x9 is not in WS since its variable size would confuse incidental indentation.}\\
+\texttt{The element \xmqEK{age}\xmqEq\xmqQ{123}    is shorthand for   \xmqEN{age}\xmqLB\xmqQ{'123'}\xmqRB}\\
+%\texttt{Use \xmqLP ...\xmqRP\ for attributes with newlines and explicit leading/ending spaces.} \\
+%\texttt{Inside a comment \xmqCom{*/*} means a newline, used for compact xmq without newlines.}\\
+%\texttt{The tab 0x9 is not in WS since its variable size would confuse incidental indentation.}\\
 \shifttext{-20mm}{\raisebox{-7.2cm}{\smash{\rotatebox{90}{\rule{27mm}{0.5pt}\ \texttt{EXAMPLES}\ \rule{27mm}{.5pt}}}}}
 
 \hbox{
 \begin{minipage}{6cm}
-\texttt{\xmqName{car} \xmqLB\\
-\xmqs\xmqCom{// An example structure.}\\
-\xmqs\xmqKey{regnr} \xmqEq\ \xmqQuote{'ABC 123'}\\
-\xmqs\xmqKey{color} \xmqEq\ \xmqQuote{red}\\
-\xmqs\xmqKey{img}\ \ \ \xmqEq\ \xmqQuote{/www/y.png}\\
-\xmqs\xmqKey{tag}\ \ \ \xmqEq\ \xmqQuote{<car>}\\
-\xmqRB
+\texttt{\flushleft\noindent \xmqEN{car}\xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqC{// An example structure.}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{regnr}\xmqI =\xmqI \xmqEKV{'}\xmqEKV{ABC 123}\xmqEKV{'}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{color}\xmqI =\xmqI \xmqEKV{red}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{img}\xmqI \xmqI \xmqI =\xmqI \xmqEKV{/www/y.png}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{tag}\xmqI \xmqI \xmqI =\xmqI \xmqEKV{<car>}\linebreak
+\}
 }
 \end{minipage}
 
@@ -243,16 +266,16 @@
 \vspace{5mm}
 
 \hbox{
-\begin{minipage}{6cm}
-\texttt{\xmqName{div}(\xmqAttrKey{id} \xmqEq\ \xmqAttrVal{32}) \{\\
-\xmqs\xmqKey{h1}\ \xmqEq\ \xmqQuote{Welcome!}\\
-\xmqs\xmqQuote{'Rest here weary}\\
-\xmqs\ \xmqQuote{traveller:'}\\
-\xmqs \xmqName{a}(\xmqAttrKey{href} \xmqEq\ \xmqAttrVal{https://a.b.c}) \{\\
-\xmqs\xmqs \xmqName{img}(\xmqAttrKey{url} \xmqEq\ \xmqAttrVal{/img/i.png})\\
-\xmqs\xmqs\xmqQuote{'Click here!'}\\
-\xmqs\}\\
-\}\\
+  \begin{minipage}{6cm}
+\texttt{\flushleft\noindent\xmqEN{div}(\xmqAK{id}\xmqI =\xmqI \xmqAKV{32})\ \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{h1}\xmqI =\xmqI \xmqEKV{Welcome!}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqQ{'}\xmqQ{Rest here weary}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqQ{traveller:}\xmqQ{'}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEN{a}(\xmqAK{href}\xmqI =\xmqI \xmqAKV{https://a.b.c})\ \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEN{img}(\xmqAK{url}\xmqI =\xmqI \xmqAKV{/img/i.png})\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqQ{'}\xmqQ{Click here!}\xmqQ{'}\linebreak
+\xmqI \xmqI \xmqI \xmqI \}\linebreak
+\}\linebreak
 }
 \end{minipage}
 
@@ -272,17 +295,20 @@ $\hookrightarrow$\verb|<img url="/img/i.png">Click here!</a>|\\
 \POS{-12mm}{-47mm}{\begin{picture}(10,10)\color{Grey}\put(0,0){\vector(-1,1){11}}\put(0,0){\vector(1,4){4}}\put(0,0){\vector(3,1){30}}\put(-40,-3){\texttt{\small Html cannot be pretty printed with newlines here,}}\put(-40,-7){\texttt{\small whereas xmq can be pretty printed without introducing whitespace.}}\end{picture}}%
 }
 
-\shifttext{-20mm}{\raisebox{-4.2cm}{\smash{\rotatebox{90}{\rule{12mm}{0.5pt}\ \texttt{CORNERS}\ \rule{12mm}{.5pt}}}}}
+\shifttext{-20mm}{\raisebox{-4.9cm}{\smash{\rotatebox{90}{\rule{17mm}{0.5pt}\ \texttt{CORNERS}\ \rule{17mm}{.5pt}}}}}
 
-\texttt{Explicit spaces:  \xmqKey{abc} \xmqEq\ \xmqQ \ \ \ \ \xmqQ \ \ \ \  \xmqName{abc} \xmqLB \xmqQ\ \ \ \ \xmqQ \xmqRB \\
-A single newline: \xmqKey{abc} \xmqEq\ \xmqE{\#10;}\ \ \ \ \ \ \ \xmqName{abc} \xmqLB\ \xmqE{\#10;} \xmqRB \\
-Spaces surrounding newline: \xmqKey{abc} \xmqEq\ \xmqLP\xmqQ\ \xmqQ\ \xmqE{\#10;} \xmqQ\ \xmqQ \xmqRP\ \ \ \xmqName{abc} \xmqLB \xmqQ\ \xmqQ\ \xmqE{\#10;} \xmqQ\ \xmqQ \xmqRB \\
-Value with leading/ending quotes: \xmqKey{x} \xmqEq\ \xmqLP\ \xmqE{\#39;} \xmqQuote{'quoted quote'}\ \xmqE{\#39;} \xmqRP\ or: \\
-\xmqQ\xmqQ\xmqQ\\
-\xmqQuote{'quoted quote'}\\
-\xmqQ\xmqQ\xmqQ \\
-or: \xmqName{x} \xmqLB\ \xmqE{\#39;} \xmqQuote{'quoted quote'}\ \xmqE{\#39;} \xmqRB \\
-When highlighting: \xmqKey{p} \xmqEq\ \xmqQuote{123} is a key value and \xmqName{p}(\xmqKey{x}) \xmqEq\ \xmqQuote{123} is a name value.
+\texttt{Explicit spaces:  \xmqEK{abc} \xmqEq\ \xmqQu \ \ \ \ \xmqQu \ \ \ \  \xmqEN{abc} \xmqLB \xmqQu \ \ \ \ \xmqQu \xmqRB \\
+Spaces surrounding newline: \xmqEK{abc} \xmqEq\ \xmqLP\xmqQu\ \xmqQu\ \xmqE{\#10;} \xmqQu\ \xmqQu \xmqRP\ \ \ \xmqEN{abc} \xmqLB \xmqQu\ \xmqQu\ \xmqE{\#10;} \xmqQu\ \xmqQu \xmqRB \\
+Value with leading/ending quotes: \xmqEK{x} \xmqEq\ \xmqLP\ \xmqE{\#39;} \xmqQ{'quoted quote'}\ \xmqE{\#39;} \xmqRP\ or: \\
+\xmqQu\xmqQu\xmqQu\\
+\xmqQ{'quoted quote'}\\
+\xmqQu\xmqQu\xmqQu \\
+or: \xmqEN{x} \xmqLB\ \xmqE{\#39;} \xmqQ{'quoted quote'}\ \xmqE{\#39;} \xmqRB \\
+%When highlighting: \xmqEK{p} \xmqEq\ \xmqQ{123} is a key value and \xmqEN{p}(\xmqEK{x}) \xmqEq\ \xmqQ{123} is a name value.
+A single newline: \xmqEK{abc} \xmqEq\ \xmqE{\#10;}\ \ \ \ \ \ \ \xmqEN{abc} \xmqLB\ \xmqE{\#10;} \xmqRB \\
+or: \xmqEK{abc} \xmqEq\ \xmqQu \\
+\\
+\xmqI \,\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqQu
 }
 
 \end{document}
