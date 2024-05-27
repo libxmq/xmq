@@ -100,14 +100,19 @@ const char *defaultColor(int i, const char *theme_name)
     return default_darkbg_colors[i];
 }
 
-void installDefaultThemeColors(XMQTheme *theme, const char *theme_name)
+void installDefaultThemeColors(XMQTheme *theme)
 {
     XMQColorDef *colors = theme->colors_darkbg;
-
-    if (!strcmp(theme_name, "lightbg")) colors = theme->colors_lightbg;
     for (int i = 0; i < NUM_XMQ_COLOR_NAMES; ++i)
     {
-        const char *color = defaultColor(i, theme_name);
+        const char *color = defaultColor(i, "darkbg");
+        string_to_color_def(color, &colors[i]);
+    }
+
+    colors = theme->colors_lightbg;
+    for (int i = 0; i < NUM_XMQ_COLOR_NAMES; ++i)
+    {
+        const char *color = defaultColor(i, "lightbg");
         string_to_color_def(color, &colors[i]);
     }
 }

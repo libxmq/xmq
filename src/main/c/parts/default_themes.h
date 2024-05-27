@@ -29,7 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 struct XMQTheme;
 typedef struct XMQTheme XMQTheme;
 
-void installDefaultThemeColors(XMQTheme *theme, const char *name);
+void installDefaultThemeColors(XMQTheme *theme);
 
 #define DEFAULT_THEMES_MODULE
 

@@ -1,4 +1,3 @@
-
 /* libxmq - Copyright (C) 2023-2024 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -171,7 +170,7 @@ void xmqSetupDefaultColors(XMQOutputSettings *os)
     }
 
     verbose("(xmq) use theme %s\n", os->render_theme);
-    installDefaultThemeColors(theme, os->render_theme);
+    installDefaultThemeColors(theme);
 
     os->indentation_space = theme->indentation_space; // " ";
     os->explicit_space = theme->explicit_space; // " ";

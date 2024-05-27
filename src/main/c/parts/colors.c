@@ -238,7 +238,7 @@ const char *color_names[13] = {
     "xmqCP", // Compound Parentheses
     "xmqNSD", // Name Space declaration xmlns
     "xmqUW", // Unicode whitespace
-    "xmqXLS", // Element color for xsl transform elements.
+    "xmqXSL", // Element color for xsl transform elements.
 };
 
 const char* colorName(int i)
