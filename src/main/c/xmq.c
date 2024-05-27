@@ -207,11 +207,14 @@ const char *add_color(XMQColorDef *colors, XMQColorName n, char **pp);
 const char *add_color(XMQColorDef *colors, XMQColorName n, char **pp)
 {
 #ifdef PLATFORM_WINAPI
-    const char *tmp = ansiWin(n);
+    const char *tmp = ansiWin((int)n);
     char *p = *pp;
+    char *color = p;
     strcpy(p, tmp);
     p += strlen(tmp);
     *p++ = 0;
+    *pp = p;
+    return color;
 #else
     XMQColorDef *def = &colors[n];
     char *p = *pp;
