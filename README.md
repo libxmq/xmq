@@ -132,6 +132,9 @@ xmq pom.xml to-json | jq .
 
 # Render content for tex typesetting.
 xmq input.xmq render-tex > input_as_tex.tex ; xelatex input_as_tex.tex
+
+# Compose a new DOM from xmq snippets and write the xml
+xmq -z add a=1 add b=2 add c=3 add-root numbers to-xml
 ```
 
 # Using xmq.h and xmq.c in your program

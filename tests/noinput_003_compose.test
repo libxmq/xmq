@@ -1,0 +1,7 @@
+# This is: xmq -z $ARGS $CMDS
+XMQ
+h1 = Welcome
+p  = Howdy
+END
+ARGS
+CMDS add h1=Welcome add p=Howdy to-xmq

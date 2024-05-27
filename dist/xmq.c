@@ -251,6 +251,7 @@ struct XMQTheme;
 typedef struct XMQTheme XMQTheme;
 
 void installDefaultThemeColors(XMQTheme *theme);
+const char *ansiWin(int i);
 
 #define DEFAULT_THEMES_MODULE
 
@@ -1732,6 +1733,16 @@ void xmqSetupDefaultColors(XMQOutputSettings *os)
 const char *add_color(XMQColorDef *colors, XMQColorName n, char **pp);
 const char *add_color(XMQColorDef *colors, XMQColorName n, char **pp)
 {
+#ifdef PLATFORM_WINAPI
+    const char *tmp = ansiWin((int)n);
+    char *p = *pp;
+    char *color = p;
+    strcpy(p, tmp);
+    p += strlen(tmp);
+    *p++ = 0;
+    *pp = p;
+    return color;
+#else
     XMQColorDef *def = &colors[n];
     char *p = *pp;
     // Remember where the color starts in the buffer.
@@ -1746,6 +1757,7 @@ const char *add_color(XMQColorDef *colors, XMQColorName n, char **pp)
     *pp = p;
     // Return the color position;
     return color;
+#endif
 }
 void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode, bool use_color, bool render_raw)
 {
@@ -5867,6 +5879,11 @@ const char *default_lightbg_colors[NUM_XMQ_COLOR_NAMES] = {
     "#880000_U", // XMQ_COLOR_UW
     "#c061cb" // XMQ_COLOR_XSL
 };
+
+const char *ansiWin(int i)
+{
+    return win_darkbg_ansi[i];
+}
 
 const char *defaultColor(int i, const char *theme_name)
 {

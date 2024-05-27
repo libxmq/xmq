@@ -104,6 +104,7 @@ typedef enum
     XMQ_CLI_CMD_VALIDATE,
     XMQ_CLI_CMD_SELECT,
     XMQ_CLI_CMD_FOR_EACH,
+    XMQ_CLI_CMD_ADD,
     XMQ_CLI_CMD_ADD_ROOT,
     XMQ_CLI_CMD_STATISTICS,
 } XMQCliCmd;
@@ -116,6 +117,7 @@ typedef enum {
     XMQ_CLI_CMD_GROUP_RENDER,
     XMQ_CLI_CMD_GROUP_TOKENIZE,
     XMQ_CLI_CMD_GROUP_XPATH,
+    XMQ_CLI_CMD_GROUP_ADD_XMQ,
     XMQ_CLI_CMD_GROUP_FOR_EACH,
     XMQ_CLI_CMD_GROUP_ENTITY,
     XMQ_CLI_CMD_GROUP_SUBSTITUTE,
@@ -147,6 +149,7 @@ struct XMQCliCommand
     const char *xpath;
     const char *entity;
     const char *content; // Content to replace something.
+    const char *add_xmq; // XMQ content to add.
     XMQDoc *xslt_doq; // The xmq document loaded to generate the xslt.
     xsltStylesheetPtr xslt; // The xslt transform to be used.
     HashMap *xslt_params; // Parameters to the xslt transform.
@@ -265,6 +268,7 @@ bool cmd_delete(XMQCliCommand *command);
 bool cmd_help(XMQCliCommand *c);
 bool cmd_select(XMQCliCommand *command);
 bool cmd_for_each(XMQCliCommand *command);
+bool cmd_add(XMQCliCommand *command);
 bool cmd_add_root(XMQCliCommand *command);
 bool cmd_statistics(XMQCliCommand *command);
 bool cmd_replace(XMQCliCommand *command);
@@ -384,6 +388,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "validate")) return XMQ_CLI_CMD_VALIDATE;
     if (!strcmp(s, "select")) return XMQ_CLI_CMD_SELECT;
     if (!strcmp(s, "for-each")) return XMQ_CLI_CMD_FOR_EACH;
+    if (!strcmp(s, "add")) return XMQ_CLI_CMD_ADD;
     if (!strcmp(s, "add-root")) return XMQ_CLI_CMD_ADD_ROOT;
     if (!strcmp(s, "statistics")) return XMQ_CLI_CMD_STATISTICS;
     return XMQ_CLI_CMD_NONE;
@@ -422,6 +427,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_VALIDATE: return "validate";
     case XMQ_CLI_CMD_SELECT: return "select";
     case XMQ_CLI_CMD_FOR_EACH: return "for-each";
+    case XMQ_CLI_CMD_ADD: return "add";
     case XMQ_CLI_CMD_ADD_ROOT: return "add-root";
     case XMQ_CLI_CMD_STATISTICS: return "statistics";
     }
@@ -464,6 +470,9 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_SELECT:
     case XMQ_CLI_CMD_ADD_ROOT:
         return XMQ_CLI_CMD_GROUP_XPATH;
+
+    case XMQ_CLI_CMD_ADD:
+        return XMQ_CLI_CMD_GROUP_ADD_XMQ;
 
     case XMQ_CLI_CMD_FOR_EACH:
         return XMQ_CLI_CMD_GROUP_FOR_EACH;
@@ -820,6 +829,15 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         if (command->xpath == NULL)
         {
             command->xpath = arg;
+            return true;
+        }
+    }
+
+    if (group == XMQ_CLI_CMD_GROUP_ADD_XMQ)
+    {
+        if (command->add_xmq == NULL)
+        {
+            command->add_xmq = arg;
             return true;
         }
     }
@@ -1465,6 +1483,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "\n"
            "To get help on the commands below: xmq help <command>\n\n"
            "COMMANDS\n"
+           "  add\n"
            "  add-root\n"
            "  browser pager\n"
            "  delete delete-entity\n"
@@ -1921,6 +1940,45 @@ bool cmd_for_each(XMQCliCommand *command)
 
     xmlXPathFreeObject(objects);
     xmlXPathFreeContext(ctx);
+
+    return true;
+}
+
+bool cmd_add(XMQCliCommand *command)
+{
+    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    verbose_("(xmq) adding xmq >%s<\n", command->add_xmq);
+
+    XMQDoc *doq = xmqNewDoc();
+    const char *start = command->add_xmq;
+    const char *stop = start+strlen(start);
+
+    bool ok = xmqParseBuffer(doq, start, stop, NULL, 0);
+    if (!ok)
+    {
+        const char *error = xmqDocError(doq);
+        fprintf(stderr, error, command->in);
+        xmqFreeDoc(doq);
+        return false;
+    }
+
+    xmlDocPtr append = (xmlDocPtr)xmqGetImplementationDoc(doq);
+    xmlNodePtr i = append->children;
+    while (i)
+    {
+        xmlNodePtr next = i->next;
+        if (doc->last)
+        {
+            xmlAddSibling(doc->last, i);
+        }
+        else
+        {
+            xmlDocSetRootElement(doc, i);
+        }
+        i = next;
+    }
+
+    xmqFreeDoc(doq);
 
     return true;
 }
@@ -2394,6 +2452,8 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
         return;
     case XMQ_CLI_CMD_ADD_ROOT:
         return;
+    case XMQ_CLI_CMD_ADD:
+        return;
     case XMQ_CLI_CMD_STATISTICS:
         return;
     case XMQ_CLI_CMD_NONE:
@@ -2664,6 +2724,11 @@ void print_command_help(XMQCliCmd c)
             "Usage: xmq <input> load <file>\n"
             "       xmq <input> load --alias=WORK <file>\n"
             "Load a second document and store it under the alias. If no alias is given, then the first document is replaced.\n");
+        break;
+    case XMQ_CLI_CMD_ADD:
+        printf(
+            "Usage: xmq <input> add <xmq>\n"
+            "Append the xmq to the DOM.\n");
         break;
     case XMQ_CLI_CMD_ADD_ROOT:
         printf(
@@ -3150,6 +3215,8 @@ bool perform_command(XMQCliCommand *c)
         return cmd_select(c);
     case XMQ_CLI_CMD_FOR_EACH:
         return cmd_for_each(c);
+    case XMQ_CLI_CMD_ADD:
+        return cmd_add(c);
     case XMQ_CLI_CMD_ADD_ROOT:
         return cmd_add_root(c);
     case XMQ_CLI_CMD_STATISTICS:
