@@ -203,9 +203,17 @@ void xmqSetupDefaultColors(XMQOutputSettings *os)
 
 }
 
-const char *add_color(XMQColorDef *def, char **pp);
-const char *add_color(XMQColorDef *def, char **pp)
+const char *add_color(XMQColorDef *colors, XMQColorName n, char **pp);
+const char *add_color(XMQColorDef *colors, XMQColorName n, char **pp)
 {
+#ifdef PLATFORM_WINAPI
+    const char *tmp = ansiWin(n);
+    char *p = *pp;
+    strcpy(p, tmp);
+    p += strlen(tmp);
+    *p++ = 0;
+#else
+    XMQColorDef *def = &colors[n];
     char *p = *pp;
     // Remember where the color starts in the buffer.
     char *color = p;
@@ -219,6 +227,7 @@ const char *add_color(XMQColorDef *def, char **pp)
     *pp = p;
     // Return the color position;
     return color;
+#endif
 }
 void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode, bool use_color, bool render_raw)
 {
@@ -231,54 +240,54 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_m
     os->free_me = commands;
     char *p = commands;
 
-    const char *c = add_color(&colors[XMQ_COLOR_C], &p);
+    const char *c = add_color(colors, XMQ_COLOR_C, &p);
     theme->comment.pre = c;
     theme->comment_continuation.pre = c;
 
-    c = add_color(&colors[XMQ_COLOR_Q], &p);
+    c = add_color(colors, XMQ_COLOR_Q, &p);
     theme->quote.pre = c;
 
-    c = add_color(&colors[XMQ_COLOR_E], &p);
+    c = add_color(colors, XMQ_COLOR_E, &p);
     theme->entity.pre = c;
     theme->element_value_entity.pre = c;
     theme->element_value_compound_entity.pre = c;
     theme->attr_value_entity.pre = c;
     theme->attr_value_compound_entity.pre = c;
 
-    c = add_color(&colors[XMQ_COLOR_NS], &p);
+    c = add_color(colors, XMQ_COLOR_NS, &p);
     theme->element_ns.pre = c;
     theme->attr_ns.pre = c;
 
-    c = add_color(&colors[XMQ_COLOR_EN], &p);
+    c = add_color(colors, XMQ_COLOR_EN, &p);
     theme->element_name.pre = c;
 
-    c = add_color(&colors[XMQ_COLOR_EK], &p);
+    c = add_color(colors,XMQ_COLOR_EK, &p);
     theme->element_key.pre = c;
 
-    c = add_color(&colors[XMQ_COLOR_EKV], &p);
+    c = add_color(colors, XMQ_COLOR_EKV, &p);
     theme->element_value_text.pre = c;
     theme->element_value_quote.pre = c;
     theme->element_value_compound_quote.pre = c;
 
-    c = add_color(&colors[XMQ_COLOR_AK], &p);
+    c = add_color(colors, XMQ_COLOR_AK, &p);
     theme->attr_key.pre = c;
 
-    c = add_color(&colors[XMQ_COLOR_AKV], &p);
+    c = add_color(colors, XMQ_COLOR_AKV, &p);
     theme->attr_value_text.pre = c;
     theme->attr_value_quote.pre = c;
     theme->attr_value_compound_quote.pre = c;
 
-    c = add_color(&colors[XMQ_COLOR_CP], &p);
+    c = add_color(colors, XMQ_COLOR_CP, &p);
     theme->cpar_left.pre  = c;
     theme->cpar_right.pre = c;
 
-    c = add_color(&colors[XMQ_COLOR_NSD], &p);
+    c = add_color(colors, XMQ_COLOR_NSD, &p);
     theme->ns_declaration.pre = c;
 
-    c = add_color(&colors[XMQ_COLOR_UW], &p);
+    c = add_color(colors, XMQ_COLOR_UW, &p);
     theme->unicode_whitespace.pre = c;
 
-    c = add_color(&colors[XMQ_COLOR_XLS], &p);
+    c = add_color(colors, XMQ_COLOR_XLS, &p);
     theme->ns_override_xsl.pre = c;
 
     theme->whitespace.pre  = NOCOLOR;

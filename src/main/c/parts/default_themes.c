@@ -48,6 +48,22 @@ const char *default_darkbg_colors[NUM_XMQ_COLOR_NAMES] = {
     "#c061cb" // XMQ_COLOR_XSL
 };
 
+const char *win_darkbg_ansi[NUM_XMQ_COLOR_NAMES] = {
+    "\033[96m\033[24m", // XMQ_COLOR_C --- CYAN
+    "\033[92m\033[24m", // XMQ_COLOR_Q --- GREEN
+    "\033[95m\033[24m", // XMQ_COLOR_E --- MAGENTA
+    "\033[37m\033[24m", // XMQ_COLOR_NS --- GRAY
+    "\033[93m\033[24m", // XMQ_COLOR_EN --- ORANGE
+    "\033[36m\033[24m", // XMQ_COLOR_EK --- LIGHT BLUE
+    "\033[92m\033[24m", // XMQ_COLOR_EKV --- GREEN
+    "\033[36m\033[24m", // XMQ_COLOR_AK --- LIGHT BLUE
+    "\033[94m\033[24m", // XMQ_COLOR_AKV --- BLUE
+    "\033[95m\033[24m", // XMQ_COLOR_CP --- MAGENTA
+    "\033[36m\033[24m", // XMQ_COLOR_NSD --- LIGHT BLUE
+    "\033[91m\033[4m", // XMQ_COLOR_UW --- RED UNDERLINE
+    "\033[95m\033[24m", // XMQ_COLOR_XSL -- MAGENTA
+};
+
 const char *default_lightbg_colors[NUM_XMQ_COLOR_NAMES] = {
     "#2aa1b3_B", // XMQ_COLOR_C
     "#26a269_B", // XMQ_COLOR_Q
@@ -64,35 +80,10 @@ const char *default_lightbg_colors[NUM_XMQ_COLOR_NAMES] = {
     "#c061cb" // XMQ_COLOR_XSL
 };
 
-// The more limited Windows console.
-
-#define WIN_NOCOLOR      "\033[0m\033[24m"
-#define WIN_GRAY         "\033[37m\033[24m"
-#define WIN_DARK_GRAY    "\033[90m\033[24m"
-#define WIN_GREEN        "\033[92m\033[24m"
-// Not really bold, how?
-#define WIN_DARK_GREEN_BOLD   "\033[32m\033[24m"
-#define WIN_BLUE         "\033[94m\033[24m"
-#define WIN_BLUE_UNDERLINE "\033[94m\033[4m"
-#define WIN_LIGHT_BLUE   "\033[36m\033[24m"
-#define WIN_LIGHT_BLUE_UNDERLINE   "\033[36m\033[4m"
-// Not really bold, how?
-#define WIN_DARK_BLUE_BOLD    "\033[34m\033[24m"
-#define WIN_ORANGE       "\033[93m\033[24m"
-#define WIN_ORANGE_UNDERLINE "\033[93m\033[4m"
-#define WIN_DARK_ORANGE  "\033[33m\033[24m"
-#define WIN_DARK_ORANGE_UNDERLINE  "\033[33m\033[4m"
-#define WIN_MAGENTA      "\033[95m\033[24m"
-// Not really bold, how?
-#define WIN_CYAN_BOLD         "\033[96m\033[24m"
-#define WIN_DARK_CYAN    "\033[36m\033[24m"
-#define WIN_DARK_RED     "\033[31m\033[24m"
-#define WIN_RED          "\033[91m\033[24m"
-#define WIN_RED_UNDERLINE  "\033[91m\033[4m"
-#define WIN_RED_BACKGROUND "\033[91m\033[4m"
-#define WIN_DARK_RED_BOLD "\033[31m\033[24m"
-#define WIN_UNDERLINE    "\033[4m"
-#define WIN_NO_UNDERLINE "\033[24m"
+const char *ansiWin(int i)
+{
+    return win_darkbg_ansi[i];
+}
 
 const char *defaultColor(int i, const char *theme_name)
 {

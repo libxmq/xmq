@@ -30,6 +30,7 @@ struct XMQTheme;
 typedef struct XMQTheme XMQTheme;
 
 void installDefaultThemeColors(XMQTheme *theme);
+const char *ansiWin(int i);
 
 #define DEFAULT_THEMES_MODULE
 
