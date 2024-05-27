@@ -134,7 +134,7 @@ xmq pom.xml to-json | jq .
 xmq input.xmq render-tex > input_as_tex.tex ; xelatex input_as_tex.tex
 
 # Compose a new DOM from xmq snippets and write the xml
-xmq -z add a=1 add b=2 add c=3 add-root numbers to-xml
+xmq -z add weight=2.5ton add speed=123km/h add-root car to-xml
 ```
 
 # Using xmq.h and xmq.c in your program

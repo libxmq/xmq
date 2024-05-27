@@ -1,4 +1,10 @@
 
+2024-05-27: Version 2.10
+
+Add -z to start with empty DOM then use add command to build DOM.
+E.g.: xmq -z add weight=2.5ton add speed=123km/h add-root car to-xml
+Generate proper colors for the tex output.
+
 2024-05-19: Version 2.9
 
 Add --stringparam=key=value and --param=key=value to transform command.
