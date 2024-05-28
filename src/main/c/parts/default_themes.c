@@ -33,7 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 const char *defaultColor(int i, const char *theme_name);
 
 const char *default_darkbg_colors[NUM_XMQ_COLOR_NAMES] = {
-    "#2aa1b3_B", // XMQ_COLOR_C
+    "#2aa1b3", // XMQ_COLOR_C
     "#26a269_B", // XMQ_COLOR_Q
     "#c061cb", // XMQ_COLOR_E
     "#a9a9a9", // XMQ_COLOR_NS
@@ -65,7 +65,7 @@ const char *win_darkbg_ansi[NUM_XMQ_COLOR_NAMES] = {
 };
 
 const char *default_lightbg_colors[NUM_XMQ_COLOR_NAMES] = {
-    "#2aa1b3_B", // XMQ_COLOR_C
+    "#2aa1b3", // XMQ_COLOR_C
     "#26a269_B", // XMQ_COLOR_Q
     "#c061cb", // XMQ_COLOR_E
     "#696969", // XMQ_COLOR_NS
