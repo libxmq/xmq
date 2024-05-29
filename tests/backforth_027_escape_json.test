@@ -1,0 +1,19 @@
+INPUT
+html {
+    head {
+        script(type = text/javascript) = \d
+    }
+}
+FIRST
+{"_":"html","head":{"script":{"_type":"text/javascript","|":"\\d"}}}
+SECOND
+html {
+    head {
+        script(type = text/javascript) = \d
+    }
+}
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-xmq

@@ -8351,7 +8351,8 @@ char *xmq_quote_as_c(const char *start, const char *stop)
             continue;
         }
         char c = *i;
-        if (c >= ' ' && c <= 126 && c != '"') { *o++ = *i; real++;}
+        if (c >= ' ' && c <= 126 && c != '"' && c != '\\') { *o++ = *i; real++;}
+        else if (c == '\\') { *o++ = '\\'; *o++ = '\\'; real+=2; }
         else if (c == '"') { *o++ = '\\'; *o++ = '"'; real+=2; }
         else if (c == '\a') { *o++ = '\\'; *o++ = 'a'; real+=2; }
         else if (c == '\b') { *o++ = '\\'; *o++ = 'b'; real+=2; }
