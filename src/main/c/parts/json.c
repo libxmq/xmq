@@ -720,7 +720,7 @@ void json_print_object_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *fro
         if (!is_doctype_node(i))
         {
             const char *name = (const char*)i->name;
-            if (strcmp(name, "_"))
+            if (name && strcmp(name, "_"))
             {
                 Counter *c = (Counter*)hashmap_get(map, name);
                 if (!c)
@@ -739,7 +739,7 @@ void json_print_object_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *fro
     while (i)
     {
         const char *name = (const char*)i->name;
-        if (strcmp(name, "_"))
+        if (name && strcmp(name, "_"))
         {
             Counter *c = (Counter*)hashmap_get(map, (const char*)i->name);
             json_print_node(ps, container, i, c->total, c->used);
