@@ -1,0 +1,19 @@
+INPUT
+{"_":"html","body":{"pre":{"x":"'","|":")\n{"}}}
+FIRST
+html {
+    body {
+        pre {
+            x = &apos;
+            ')
+             {'
+        }
+    }
+}
+SECOND
+{"_":"html","body":{"pre":{"x":"'","|":")\n{"}}}
+END
+ARGS_FIRST
+CMDS_FIRST to-xmq
+ARGS_SECOND
+CMDS_SECOND to-json

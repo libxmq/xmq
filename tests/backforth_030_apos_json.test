@@ -1,0 +1,15 @@
+INPUT
+_ {
+   y = &apos;
+}
+FIRST
+{"y":"'"}
+SECOND
+_ {
+    y = &apos;
+}
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-xmq

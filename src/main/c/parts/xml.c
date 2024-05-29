@@ -222,7 +222,8 @@ char *xml_collapse_text(xmlNode *node)
         }
         else
         {
-            len += 4;
+            // &apos;
+            len += 2 + strlen((const char*)i->name);
             num_entities++;
         }
         i = next;
@@ -263,6 +264,11 @@ char *xml_collapse_text(xmlNode *node)
 
 int decode_entity_ref(const char *name)
 {
+    if (!strcmp(name, "apos")) return '\'';
+    if (!strcmp(name, "gt")) return '>';
+    if (!strcmp(name, "lt")) return '<';
+    if (!strcmp(name, "quot")) return '"';
+    if (!strcmp(name, "nbsp")) return 160;
     if (name[0] != '#') return 0;
     if (name[1] == 'x') {
         long v = strtol((const char*)name, NULL, 16);

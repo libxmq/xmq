@@ -52,7 +52,7 @@ void json_print_standalone_quote(XMQPrintState *ps, xmlNode *container, xmlNodeP
 void json_print_object_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
 void json_print_array_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
 void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
-void json_print_value(XMQPrintState *ps, xmlNode *node, Level level, bool force_string);
+void json_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, Level level, bool force_string);
 void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 void json_print_element_with_children(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 void json_print_key_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used, bool force_string);
@@ -217,7 +217,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
     if (key_start && *key_start == '|' && key_stop == key_start+1)
     {
         // This is "|":"symbol" which means a pure text node in xml.
-        DO_CALLBACK_SIM(quote, state, start_line, start_col, content_start, content_stop, content_stop);
+        DO_CALLBACK_SIM(quote, state, start_line, 1, content_start, content_stop, content_stop);
         free(content_start);
         return;
     }
@@ -775,7 +775,7 @@ void json_print_array_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from
 
         if (force_string || is_number || is_keyword)
         {
-            json_print_value(ps, xml_first_child(i), LEVEL_ELEMENT_VALUE, force_string);
+            json_print_value(ps, xml_first_child(i), xml_last_child(i), LEVEL_ELEMENT_VALUE, force_string);
         }
         else
         {
@@ -942,11 +942,13 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
     DO_CALLBACK_SIM(brace_right, state, state->line, state->col, rightbrace, rightbrace+1, rightbrace+1);
 }
 
-void json_print_value(XMQPrintState *ps, xmlNode *node, Level level, bool force_string)
+void json_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, Level level, bool force_string)
 {
     XMQOutputSettings *output_settings = ps->output_settings;
     XMQWrite write = output_settings->content.write;
     void *writer_state = output_settings->content.writer_state;
+
+    xmlNode *node = from;
     const char *content = xml_element_content(node);
 
     if (!xml_next_sibling(node) &&
@@ -975,13 +977,26 @@ void json_print_value(XMQPrintState *ps, xmlNode *node, Level level, bool force_
         }
         else
         {
-            const char *value = xml_element_content(node);
-            if (value)
+            do
             {
-                char *quoted_value = xmq_quote_as_c(value, value+strlen(value));
-                print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
-                free(quoted_value);
-            }
+                if (is_entity_node(node))
+                {
+                    const char *name = xml_element_name(node);
+                    print_utf8(ps, COLOR_none, 3, "&", NULL, name, NULL, ";", NULL);
+                }
+                else
+                {
+                    const char *value = xml_element_content(node);
+                    if (value)
+                    {
+                        char *quoted_value = xmq_quote_as_c(value, value+strlen(value));
+                        print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
+                        free(quoted_value);
+                    }
+                }
+                if (node == to) break;
+                node = xml_next_sibling(node);
+            } while (node);
         }
 
         print_utf8(ps, COLOR_none, 1, "\"", NULL);
@@ -1192,7 +1207,7 @@ void json_print_key_node(XMQPrintState *ps,
         ps->last_char = ':';
     }
 
-    json_print_value(ps, xml_first_child(node), LEVEL_ELEMENT_VALUE, force_string);
+    json_print_value(ps, xml_first_child(node), xml_last_child(node), LEVEL_ELEMENT_VALUE, force_string);
 }
 
 void json_check_comma(XMQPrintState *ps)
@@ -1223,7 +1238,7 @@ void json_print_comment_node(XMQPrintState *ps,
 
     print_utf8(ps, COLOR_equals, 1, "\"//\":", NULL);
     ps->last_char = ':';
-    json_print_value(ps, node, LEVEL_XMQ, true);
+    json_print_value(ps, node, node, LEVEL_XMQ, true);
     ps->last_char = '"';
 }
 
