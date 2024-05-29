@@ -1,0 +1,17 @@
+INPUT
+div {
+    a(class = foo) = beta
+    a = beta
+}
+FIRST
+{"_":"div","a[0]":{"_class":"foo","|":"beta"},"a[1]":"beta"}
+SECOND
+div {
+    a(class = foo) = beta
+    a = beta
+}
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-xmq
