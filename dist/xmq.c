@@ -6525,6 +6525,7 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
 void parse_json_quote(XMQParseState *state, const char *key_start, const char *key_stop);
 
 bool has_number_ended(char c);
+bool has_attr_other_than_AS_(xmlNode *node);
 const char *is_jnumber(const char *start, const char *stop);
 bool is_json_boolean(XMQParseState *state);
 bool is_json_null(XMQParseState *state);
@@ -7267,6 +7268,21 @@ void json_print_array_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from
     }
 }
 
+bool has_attr_other_than_AS_(xmlNode *node)
+{
+    xmlAttr *a = xml_first_attribute(node);
+
+    while (a)
+    {
+        if (strcmp((const char*)a->name, "A") &&
+            strcmp((const char*)a->name, "S") &&
+            strcmp((const char*)a->name, "_")) return true;
+        a = a->next;
+    }
+
+    return false;
+}
+
 void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used)
 {
     // Standalone quote must be quoted: 'word' 'some words'
@@ -7302,7 +7318,16 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_
     }
 
     // This is a key = value or key = 'value value' or key = ( 'value' &#10; )
-    if (is_key_value_node(node))
+    // Also! If the node has attributes, then we cannot print as key value in json.
+    // It has to be an object.
+/*    fprintf(stderr, "PRUTT %d %d %d\n",
+            is_key_value_node(node),
+            has_attributes(node),
+            has_attr_other_than_AS_(node));
+*/
+    if (is_key_value_node(node) &&
+        (!has_attributes(node) ||
+         !has_attr_other_than_AS_(node)))
     {
         bool force_string = xml_get_attribute(node, "S");
         return json_print_key_node(ps, container, node, total, used, force_string);
@@ -8767,7 +8792,7 @@ bool is_leaf_node(xmlNode *node)
 
 bool has_attributes(xmlNodePtr node)
 {
-    return NULL == xml_first_attribute(node);
+    return NULL != xml_first_attribute(node);
 }
 
 void free_xml(xmlNode * node)

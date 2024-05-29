@@ -184,7 +184,7 @@ bool is_leaf_node(xmlNode *node)
 
 bool has_attributes(xmlNodePtr node)
 {
-    return NULL == xml_first_attribute(node);
+    return NULL != xml_first_attribute(node);
 }
 
 void free_xml(xmlNode * node)
