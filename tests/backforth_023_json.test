@@ -1,0 +1,28 @@
+INPUT
+{
+    "...key...":"xyz",
+    "...key..." : {
+        "...key...":"1223"
+    },
+    "...prkey...":[
+        "alfa",
+        123,
+        true,
+        false,
+        null,
+        "123",
+        "true",
+        "false",
+        "null"
+    ],
+    "x":[[123]]
+}
+FIRST
+{"...key...":"xyz","...key...":{"...key...":"1223"},"...prkey...":["alfa",123,true,false,null,"123","true","false","null"],"x":[[123]]}
+SECOND
+{"...key...":"xyz","...key...":{"...key...":"1223"},"...prkey...":["alfa",123,true,false,null,"123","true","false","null"],"x":[[123]]}
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-json

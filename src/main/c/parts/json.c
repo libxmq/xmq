@@ -47,7 +47,7 @@ void json_print_array_with_children(XMQPrintState *ps,
                                     xmlNode *node);
 void json_print_comment_node(XMQPrintState *ps, xmlNodePtr node);
 void json_print_entity_node(XMQPrintState *ps, xmlNodePtr node);
-void json_print_standalone_quote(XMQPrintState *ps, xmlNodePtr node);
+void json_print_standalone_quote(XMQPrintState *ps, xmlNode *container, xmlNodePtr node, size_t total, size_t used);
 void json_print_object_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
 void json_print_array_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
 void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
@@ -212,6 +212,16 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
     eat_json_quote(state, &content_start, &content_stop);
     size_t content_len = content_stop-content_start;
 
+    trim_index_suffix(key_start, &key_stop);
+
+    if (key_start && *key_start == '|' && key_stop == key_start+1)
+    {
+        // This is "|":"symbol" which means a pure text node in xml.
+        DO_CALLBACK_SIM(quote, state, start_line, start_col, content_start, content_stop, content_stop);
+        free(content_start);
+        return;
+    }
+
     if (key_start && *key_start == '_' && key_stop == key_start+1)
     {
         // This is the element name "_":"symbol" stored inside the json object,
@@ -230,8 +240,6 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
 
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
-
-    trim_index_suffix(key_start, &key_stop);
 
     if (!key_start)
     {
@@ -766,7 +774,7 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_
     // Standalone quote must be quoted: 'word' 'some words'
     if (is_content_node(node))
     {
-        json_print_standalone_quote(ps, node);
+        json_print_standalone_quote(ps, container, node, total, used);
         return;
     }
 
@@ -1188,12 +1196,22 @@ void json_print_entity_node(XMQPrintState *ps, xmlNodePtr node)
     ps->last_char = '"';
 }
 
-void json_print_standalone_quote(XMQPrintState *ps, xmlNodePtr node)
+void json_print_standalone_quote(XMQPrintState *ps, xmlNodePtr container, xmlNodePtr node, size_t total, size_t used)
 {
     json_check_comma(ps);
     const char *value = xml_element_content(node);
     char *quoted_value = xmq_quote_as_c(value, value+strlen(value));
-    print_utf8(ps, COLOR_none, 3, "\"[1]\":\"", NULL, quoted_value, NULL, "\"", NULL);
+    if (total == 1)
+    {
+        print_utf8(ps, COLOR_none, 3, "\"|\":\"", NULL, quoted_value, NULL, "\"", NULL);
+    }
+    else
+    {
+        char buf[32];
+        buf[31] = 0;
+        snprintf(buf, 32, "\"|[%zu]\":\"", used);
+        print_utf8(ps, COLOR_none, 3, buf, NULL, quoted_value, NULL, "\"", NULL);
+    }
     free(quoted_value);
     ps->last_char = '"';
 }

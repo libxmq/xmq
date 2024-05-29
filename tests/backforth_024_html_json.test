@@ -1,0 +1,25 @@
+INPUT
+<html>
+    <body>
+        <h1>Hejsan</h1>
+        hoppsan
+        <b>tjo</b>
+        svejsan
+    </body>
+</html>
+FIRST
+{"_":"html","body":{"h1":"Hejsan","|[0]":"hoppsan","b":"tjo","|[1]":"svejsan"}}
+SECOND
+html {
+    body {
+        h1 = Hejsan
+        'hoppsan'
+        b = tjo
+        'svejsan'
+    }
+}
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-xmq
