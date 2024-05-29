@@ -1234,7 +1234,6 @@ char *xmq_un_quote(size_t indent, char space, const char *start, const char *sto
 char *xmq_un_comment(size_t indent, char space, const char *start, const char *stop)
 {
     assert(start < stop);
-    assert(*start == '/');
 
     const char *i = start;
     while (i < stop && *i == '/') i++;

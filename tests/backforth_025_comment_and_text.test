@@ -1,0 +1,21 @@
+INPUT
+<alfa>
+  <!-- HEJSAN -->
+  <beta>
+    123
+  </beta>
+  ren text nod
+</alfa>
+FIRST
+{"_":"alfa","//":"HEJSAN","beta":123,"|":"ren text nod"}
+SECOND
+alfa {
+    // HEJSAN
+    beta = 123
+    'ren text nod'
+}
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-xmq

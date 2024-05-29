@@ -222,6 +222,14 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         return;
     }
 
+    if (key_start && *key_start == '/' && *(key_start+1) == '/' && key_stop == key_start+2)
+    {
+        // This is "//":"symbol" which means a comment node in xml.
+        DO_CALLBACK_SIM(comment, state, start_line, start_col, content_start, content_stop, content_stop);
+        free(content_start);
+        return;
+    }
+
     if (key_start && *key_start == '_' && key_stop == key_start+1)
     {
         // This is the element name "_":"symbol" stored inside the json object,
@@ -755,14 +763,13 @@ void json_print_array_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from
         bool force_string = xml_get_attribute(i, "S");
         bool is_number = xml_element_content(i) && json_is_number(xml_element_content(i));
         bool is_keyword = xml_element_content(i) && json_is_keyword(xml_element_content(i));
-        //fprintf(stderr, "PRUTT >%s< >%s<\n", xml_element_name(i), xml_element_content(i));
+
         if (force_string || is_number || is_keyword)
         {
             json_print_value(ps, xml_first_child(i), LEVEL_ELEMENT_VALUE, force_string);
         }
         else
         {
-            //fprintf(stderr, "NODE >%s< >%s<\n", xml_element_name(i), xml_element_content(i));
             json_print_node(ps, NULL, i, 1, 0);
         }
         i = xml_next_sibling(i);
@@ -927,23 +934,20 @@ void json_print_value(XMQPrintState *ps, xmlNode *node, Level level, bool force_
     {
         print_utf8(ps, COLOR_none, 1, "\"", NULL);
 
-        for (xmlNode *i = node; i; i = xml_next_sibling(i))
+        if (is_entity_node(node))
         {
-            if (is_entity_node(i))
+            write(writer_state, "&", NULL);
+            write(writer_state, (const char*)node->name, NULL);
+            write(writer_state, ";", NULL);
+        }
+        else
+        {
+            const char *value = xml_element_content(node);
+            if (value)
             {
-                write(writer_state, "&", NULL);
-                write(writer_state, (const char*)i->name, NULL);
-                write(writer_state, ";", NULL);
-            }
-            else
-            {
-                const char *value = xml_element_content(node);
-                if (value)
-                {
-                    char *quoted_value = xmq_quote_as_c(value, value+strlen(value));
-                    print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
-                    free(quoted_value);
-                }
+                char *quoted_value = xmq_quote_as_c(value, value+strlen(value));
+                print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
+                free(quoted_value);
             }
         }
 
