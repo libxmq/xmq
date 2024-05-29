@@ -1,0 +1,16 @@
+INPUT
+div {
+    ript(async href=abc)
+}
+FIRST
+{"_":"div","ript":{"_async":null,"_href":"abc"}}
+SECOND
+div {
+    ript(async
+         href  = abc)
+}
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-xmq

@@ -53,7 +53,6 @@ void json_print_object_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *fro
 void json_print_array_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
 void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 void json_print_value(XMQPrintState *ps, xmlNode *node, Level level, bool force_string);
-void json_print_boolean_value(XMQPrintState *ps, xmlNode *container, xmlNode *node);
 void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 void json_print_element_with_children(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 void json_print_key_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used, bool force_string);
@@ -339,6 +338,15 @@ void parse_json_null(XMQParseState *state, const char *key_start, const char *ke
     const char *unsafe_key_stop = NULL;
 
     trim_index_suffix(key_start, &key_stop);
+
+    if (key_start && *key_start == '_' && key_stop > key_start+1)
+    {
+        // script:{"_async":null "_href":"abc"}
+        // translates into scripts(async href=abc)
+        // detect attribute before this null. Make into attribute without value.
+        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, key_start+1, key_stop, key_stop);
+        return;
+    }
 
     if (!key_start)
     {
@@ -1047,6 +1055,10 @@ void json_print_attribute(XMQPrintState *ps, xmlAttr *a)
         print_utf8(ps, COLOR_none, 3, "\"", NULL, quoted_value, NULL, "\"", NULL);
         free(quoted_value);
         xmlFree(value);
+    }
+    else
+    {
+        print_utf8(ps, COLOR_none, 1, "null", NULL);
     }
 }
 
