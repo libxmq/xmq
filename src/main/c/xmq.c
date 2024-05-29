@@ -3819,6 +3819,9 @@ bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer)
     int fd = 0;
     while (true) {
         ssize_t n = read(fd, block, sizeof(block));
+        if (n == 0) {
+            break;
+        }
         if (n == -1) {
             if (errno == EINTR) {
                 continue;
@@ -3829,9 +3832,6 @@ bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer)
             return false;
         }
         membuffer_append_region(mb, block, block + n);
-        if (n < (ssize_t)sizeof(block)) {
-            break;
-        }
     }
     close(fd);
 

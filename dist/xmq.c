@@ -5346,6 +5346,9 @@ bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer)
     int fd = 0;
     while (true) {
         ssize_t n = read(fd, block, sizeof(block));
+        if (n == 0) {
+            break;
+        }
         if (n == -1) {
             if (errno == EINTR) {
                 continue;
@@ -5356,9 +5359,6 @@ bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer)
             return false;
         }
         membuffer_append_region(mb, block, block + n);
-        if (n < (ssize_t)sizeof(block)) {
-            break;
-        }
     }
     close(fd);
 
@@ -5833,7 +5833,7 @@ void setColorDef(XMQColorDef *cd, int r, int g, int b, bool bold, bool underline
 const char *defaultColor(int i, const char *theme_name);
 
 const char *default_darkbg_colors[NUM_XMQ_COLOR_NAMES] = {
-    "#2aa1b3_B", // XMQ_COLOR_C
+    "#2aa1b3", // XMQ_COLOR_C
     "#26a269_B", // XMQ_COLOR_Q
     "#c061cb", // XMQ_COLOR_E
     "#a9a9a9", // XMQ_COLOR_NS
@@ -5865,7 +5865,7 @@ const char *win_darkbg_ansi[NUM_XMQ_COLOR_NAMES] = {
 };
 
 const char *default_lightbg_colors[NUM_XMQ_COLOR_NAMES] = {
-    "#2aa1b3_B", // XMQ_COLOR_C
+    "#2aa1b3", // XMQ_COLOR_C
     "#26a269_B", // XMQ_COLOR_Q
     "#c061cb", // XMQ_COLOR_E
     "#696969", // XMQ_COLOR_NS
