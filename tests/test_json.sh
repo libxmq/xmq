@@ -25,8 +25,8 @@ sed -n '/^INPUT.*$/,/^OUTPUT$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${
 sed -n '/^OUTPUT$/,/^COMPACT$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.expected
 sed -n '/^COMPACT$/,/^END$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.expected_compact
 
-ARGS=$(grep ARGS $TEST_FILE | cut -b 5- | tr -d '\n')
-CMDS=$(grep CMDS $TEST_FILE | cut -b 5- | tr -d '\n')
+ARGS=$(grep ^ARGS $TEST_FILE | cut -b 5- | tr -d '\n')
+CMDS=$(grep ^CMDS $TEST_FILE | cut -b 5- | tr -d '\n')
 
 if [ "$CMDS" = "" ]
 then

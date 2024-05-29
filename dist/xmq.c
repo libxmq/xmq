@@ -6541,11 +6541,11 @@ void json_print_entity_node(XMQPrintState *ps, xmlNodePtr node);
 void json_print_standalone_quote(XMQPrintState *ps, xmlNodePtr node);
 void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
 void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
-void json_print_value(XMQPrintState *ps, xmlNode *node, Level level);
+void json_print_value(XMQPrintState *ps, xmlNode *node, Level level, bool force_string);
 void json_print_boolean_value(XMQPrintState *ps, xmlNode *container, xmlNode *node);
 void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 void json_print_element_with_children(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
-void json_print_key_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
+void json_print_key_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used, bool force_string);
 
 void json_check_comma(XMQPrintState *ps);
 void json_print_comma(XMQPrintState *ps);
@@ -6693,7 +6693,6 @@ void trim_index_suffix(const char *key_start, const char **stop)
 
 void parse_json_quote(XMQParseState *state, const char *key_start, const char *key_stop)
 {
-    const char *start = state->i;
     int start_line = state->line;
     int start_col = state->col;
 
@@ -6702,9 +6701,6 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
     // Decode and content_start points to newly allocated buffer where escapes have been removed.
     eat_json_quote(state, &content_start, &content_stop);
     size_t content_len = content_stop-content_start;
-
-    const char *unsafe_key_start = NULL;
-    const char *unsafe_key_stop = NULL;
 
     if (key_start && *key_start == '_' && key_stop == key_start+1)
     {
@@ -6721,6 +6717,9 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         free(content_start);
         return;
     }
+
+    const char *unsafe_key_start = NULL;
+    const char *unsafe_key_stop = NULL;
 
     trim_index_suffix(key_start, &key_stop);
 
@@ -6750,9 +6749,9 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
 
     bool need_string_type =
         content_len > 0 && (
-        !strncmp(start, "true", content_len) ||
-        !strncmp(start, "false", content_len) ||
-        !strncmp(start, "null", content_len) ||
+        !strncmp(content_start, "true", content_len) ||
+        !strncmp(content_start, "false", content_len) ||
+        !strncmp(content_start, "null", content_len) ||
         content_stop == is_jnumber(content_start, content_stop));
 
     if (need_string_type || unsafe_key_start)
@@ -6809,13 +6808,35 @@ void parse_json_null(XMQParseState *state, const char *key_start, const char *ke
     eat_json_null(state);
     const char *stop = state->i;
 
+    const char *unsafe_key_start = NULL;
+    const char *unsafe_key_stop = NULL;
+
+    trim_index_suffix(key_start, &key_stop);
+
     if (!key_start)
     {
         key_start = underline;
         key_stop = underline+1;
     }
+    else if (!is_xmq_element_name(key_start, key_stop))
+    {
+        unsafe_key_start = key_start;
+        unsafe_key_stop = key_stop;
+        key_start = underline;
+        key_stop = underline+1;
+    }
 
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
+    if (unsafe_key_start)
+    {
+        DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, leftpar+1, leftpar+1);
+        if (unsafe_key_start)
+        {
+            DO_CALLBACK_SIM(attr_key, state, state->line, state->col, underline, underline+1, underline+1);
+            DO_CALLBACK_SIM(attr_value_quote, state, state->line, state->col, unsafe_key_start, unsafe_key_stop, unsafe_key_stop);
+        }
+        DO_CALLBACK_SIM(apar_right, state, state->line, state->col, rightpar, rightpar+1, rightpar+1);
+    }
 
     DO_CALLBACK(element_value_text, state, start_line, start_col, start, stop, stop);
 }
@@ -6943,13 +6964,35 @@ void parse_json_boolean(XMQParseState *state, const char *key_start, const char 
     eat_json_boolean(state);
     const char *stop = state->i;
 
+    const char *unsafe_key_start = NULL;
+    const char *unsafe_key_stop = NULL;
+
+    trim_index_suffix(key_start, &key_stop);
+
     if (!key_start)
     {
         key_start = underline;
         key_stop = underline+1;
     }
+    else if (!is_xmq_element_name(key_start, key_stop))
+    {
+        unsafe_key_start = key_start;
+        unsafe_key_stop = key_stop;
+        key_start = underline;
+        key_stop = underline+1;
+    }
 
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
+    if (unsafe_key_start)
+    {
+        DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, leftpar+1, leftpar+1);
+        if (unsafe_key_start)
+        {
+            DO_CALLBACK_SIM(attr_key, state, state->line, state->col, underline, underline+1, underline+1);
+            DO_CALLBACK_SIM(attr_value_quote, state, state->line, state->col, unsafe_key_start, unsafe_key_stop, unsafe_key_stop);
+        }
+        DO_CALLBACK_SIM(apar_right, state, state->line, state->col, rightpar, rightpar+1, rightpar+1);
+    }
 
     DO_CALLBACK(element_value_text, state, start_line, start_col, start, stop, stop);
 }
@@ -6985,13 +7028,35 @@ void parse_json_number(XMQParseState *state, const char *key_start, const char *
     eat_json_number(state);
     const char *stop = state->i;
 
+    const char *unsafe_key_start = NULL;
+    const char *unsafe_key_stop = NULL;
+
+    trim_index_suffix(key_start, &key_stop);
+
     if (!key_start)
     {
         key_start = underline;
         key_stop = underline+1;
     }
+    else if (!is_xmq_element_name(key_start, key_stop))
+    {
+        unsafe_key_start = key_start;
+        unsafe_key_stop = key_stop;
+        key_start = underline;
+        key_stop = underline+1;
+    }
 
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
+    if (unsafe_key_start)
+    {
+        DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, leftpar+1, leftpar+1);
+        if (unsafe_key_start)
+        {
+            DO_CALLBACK_SIM(attr_key, state, state->line, state->col, underline, underline+1, underline+1);
+            DO_CALLBACK_SIM(attr_value_quote, state, state->line, state->col, unsafe_key_start, unsafe_key_stop, unsafe_key_stop);
+        }
+        DO_CALLBACK_SIM(apar_right, state, state->line, state->col, rightpar, rightpar+1, rightpar+1);
+    }
 
     DO_CALLBACK(element_value_text, state, start_line, start_col, start, stop, stop);
 }
@@ -7040,17 +7105,34 @@ void parse_json_array(XMQParseState *state, const char *key_start, const char *k
     assert(c == '[');
     increment(c, 1, &state->i, &state->line, &state->col);
 
+    const char *unsafe_key_start = NULL;
+    const char *unsafe_key_stop = NULL;
+
+    trim_index_suffix(key_start, &key_stop);
+
     if (!key_start)
     {
         key_start = underline;
         key_stop = underline+1;
     }
+    else if (!is_xmq_element_name(key_start, key_stop))
+    {
+        unsafe_key_start = key_start;
+        unsafe_key_stop = key_stop;
+        key_start = underline;
+        key_stop = underline+1;
+    }
 
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
-
     DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, leftpar+1, leftpar+1);
+    if (unsafe_key_start)
+    {
+        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, underline, underline+1, underline+1);
+        DO_CALLBACK_SIM(attr_value_quote, state, state->line, state->col, unsafe_key_start, unsafe_key_stop, unsafe_key_stop);
+    }
     DO_CALLBACK_SIM(attr_key, state, state->line, state->col, array, array+1, array+1);
     DO_CALLBACK_SIM(apar_right, state, state->line, state->col, rightpar, rightpar+1, rightpar+1);
+
     DO_CALLBACK_SIM(brace_left, state, state->line, state->col, leftbrace, leftbrace+1, leftbrace+1);
 
     const char *stop = state->buffer_stop;
@@ -7168,10 +7250,11 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_
         return json_print_leaf_node(ps, container, node, total, used);
     }
 
-    // This is a key = value or key = 'value value' node and there are no attributes.
+    // This is a key = value or key = 'value value' or key = ( 'value' &#10; )
     if (is_key_value_node(node))
     {
-        return json_print_key_node(ps, container, node, total, used);
+        bool force_string = xml_get_attribute(node, "S");
+        return json_print_key_node(ps, container, node, total, used, force_string);
     }
 
     // The node is marked foo(A) { } translate this into: "foo":[ ]
@@ -7189,6 +7272,9 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
     assert(c == '{');
     increment(c, 1, &state->i, &state->line, &state->col);
 
+    const char *unsafe_key_start = NULL;
+    const char *unsafe_key_stop = NULL;
+
     trim_index_suffix(key_start, &key_stop);
 
     if (!key_start)
@@ -7196,8 +7282,23 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
         key_start = underline;
         key_stop = underline+1;
     }
+    else if (!is_xmq_element_name(key_start, key_stop))
+    {
+        unsafe_key_start = key_start;
+        unsafe_key_stop = key_stop;
+        key_start = underline;
+        key_stop = underline+1;
+    }
 
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
+    if (unsafe_key_start)
+    {
+        DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, leftpar+1, leftpar+1);
+        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, underline, underline+1, underline+1);
+        DO_CALLBACK_SIM(attr_value_quote, state, state->line, state->col, unsafe_key_start, unsafe_key_stop, unsafe_key_stop);
+        DO_CALLBACK_SIM(apar_right, state, state->line, state->col, rightpar, rightpar+1, rightpar+1);
+    }
+
     DO_CALLBACK_SIM(brace_left, state, state->line, state->col, leftbrace, leftbrace+1, leftbrace+1);
 
     const char *stop = state->buffer_stop;
@@ -7248,7 +7349,7 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
     DO_CALLBACK_SIM(brace_right, state, state->line, state->col, rightbrace, rightbrace+1, rightbrace+1);
 }
 
-void json_print_value(XMQPrintState *ps, xmlNode *node, Level level)
+void json_print_value(XMQPrintState *ps, xmlNode *node, Level level, bool force_string)
 {
     XMQOutputSettings *output_settings = ps->output_settings;
     XMQWrite write = output_settings->content.write;
@@ -7256,6 +7357,7 @@ void json_print_value(XMQPrintState *ps, xmlNode *node, Level level)
     const char *content = xml_element_content(node);
 
     if (!xml_next_sibling(node) &&
+        !force_string &&
         (json_is_number(xml_element_content(node))
          || json_is_keyword(xml_element_content(node))))
     {
@@ -7469,7 +7571,8 @@ void json_print_key_node(XMQPrintState *ps,
                          xmlNode *container,
                          xmlNode *node,
                          size_t total,
-                         size_t used)
+                         size_t used,
+                         bool force_string)
 {
     json_check_comma(ps);
 
@@ -7495,7 +7598,7 @@ void json_print_key_node(XMQPrintState *ps,
             ps->last_char = ':';
         }
     }
-    json_print_value(ps, xml_first_child(node), LEVEL_ELEMENT_VALUE);
+    json_print_value(ps, xml_first_child(node), LEVEL_ELEMENT_VALUE, force_string);
 }
 
 void json_check_comma(XMQPrintState *ps)
@@ -7526,7 +7629,7 @@ void json_print_comment_node(XMQPrintState *ps,
 
     print_utf8(ps, COLOR_equals, 1, "\"//\":", NULL);
     ps->last_char = ':';
-    json_print_value(ps, node, LEVEL_XMQ);
+    json_print_value(ps, node, LEVEL_XMQ, true);
     ps->last_char = '"';
 }
 

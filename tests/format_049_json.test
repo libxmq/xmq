@@ -1,0 +1,45 @@
+START
+{
+    "...key...":"xyz",
+    "...key..." : {
+        "...key...":"1223"
+    },
+    "...prkey...":[
+        "alfa",
+        123,
+        true,
+        false,
+        null,
+        "123",
+        "true",
+        "false",
+        "null"
+    ]
+}
+COMPACT
+_{_(_=...key...)=xyz _(_=...key...){_(_=...key... S)=1223}_(_=...prkey... A){_=alfa _=123 _=true _=false _=null _(S)=123 _(S)=true _(S)=false _(S)=null}}
+XMQ
+_ {
+    _(_ = ...key...) = xyz
+    _(_ = ...key...)
+    {
+        _(_ = ...key...
+          S) = 1223
+    }
+    _(_ = ...prkey...
+      A)
+    {
+        _ = alfa
+        _ = 123
+        _ = true
+        _ = false
+        _ = null
+        _(S) = 123
+        _(S) = true
+        _(S) = false
+        _(S) = null
+    }
+}
+END
+ARGS
+CMDS
