@@ -2628,7 +2628,7 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
     ps.output_settings = os;
     assert(os->content.write);
 
-    json_print_nodes(&ps, NULL, (xmlNode*)first, (xmlNode*)last);
+    json_print_object_nodes(&ps, NULL, (xmlNode*)first, (xmlNode*)last);
     write(writer_state, "\n", NULL);
 }
 

@@ -31,7 +31,8 @@ struct XMQPrintState;
 typedef struct XMQPrintState XMQPrintState;
 
 void xmq_fixup_json_before_writeout(XMQDoc *doq);
-void json_print_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
+void json_print_object_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
+void json_print_array_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
 bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const char *stop);
 
 #define JSON_MODULE
