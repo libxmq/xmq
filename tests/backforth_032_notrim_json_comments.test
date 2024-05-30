@@ -1,0 +1,19 @@
+INPUT
+alfa {
+    /* Hejsan
+       Hoppsan
+
+     */
+}
+FIRST
+{"_":"alfa","//":"Hejsan\nHoppsan\n"}
+SECOND
+alfa {
+    /* Hejsan
+       Hoppsan */
+}
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-xmq

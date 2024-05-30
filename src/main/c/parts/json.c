@@ -3,9 +3,10 @@
 
 #include"always.h"
 #include"colors.h"
-#include"parts/xmq_internals.h"
-#include"json.h"
 #include"hashmap.h"
+#include"json.h"
+#include"membuffer.h"
+#include"parts/xmq_internals.h"
 #include"stack.h"
 #include"text.h"
 #include"xml.h"
@@ -91,9 +92,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
     const char *start = state->i;
     const char *stop = state->buffer_stop;
 
-    size_t len = stop-start;
-    char *buf = (char*)malloc(len+1);
-    char *out = buf;
+    MemBuffer *buf = new_membuffer();
 
     const char *i = start;
     size_t line = state->line;
@@ -124,7 +123,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
                 case 'r': c = 13; break;
                 case 't': c = 9; break;
                 }
-                *out++ = c;
+                membuffer_append_char(buf, c);
                 continue;
             }
             else if (c == 'u')
@@ -151,7 +150,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
 
                         for (size_t j = 0; j < n; ++j)
                         {
-                            *out++ = utf8.bytes[j];
+                            membuffer_append_char(buf, utf8.bytes[j]);
                         }
                         continue;
                     }
@@ -160,23 +159,22 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
             state->error_nr = XMQ_ERROR_JSON_INVALID_ESCAPE;
             longjmp(state->error_handler, 1);
         }
-        *out++ = c;
+        membuffer_append_char(buf, c);
         increment(c, 1, &i, &line, &col);
     }
     // Add a zero termination to the string which is not used except for
     // guaranteeing that there is at least one allocated byte for empty strings.
-    *out++ = 0;
+    membuffer_append_null(buf);
     state->i = i;
     state->line = line;
     state->col = col;
 
     // Calculate the real length which might be less than the original
     // since escapes have disappeared. Add 1 to have at least something to allocate.
-    len = out-buf;
-    buf = (char*)realloc(buf, len);
-
-    *content_start = buf;
-    *content_stop = buf+len-1; // Drop the zero byte.
+    size_t len = membuffer_used(buf);
+    char *quote = free_membuffer_but_return_trimmed_content(buf);
+    *content_start = quote;
+    *content_stop = quote+len-1; // Drop the zero byte.
 }
 
 void trim_index_suffix(const char *key_start, const char **stop)

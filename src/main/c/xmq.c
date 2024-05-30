@@ -1965,7 +1965,7 @@ void do_comment(XMQParseState*state,
 {
     xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
     size_t indent = col-1;
-    char *trimmed = xmq_un_comment(indent, ' ', start, stop);
+    char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_comment(indent, ' ', start, stop);
     xmlNodePtr n = xmlNewDocComment(state->doq->docptr_.xml, (const xmlChar *)trimmed);
     xmlAddChild(parent, n);
     state->element_last = n;
