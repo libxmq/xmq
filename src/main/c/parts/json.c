@@ -206,6 +206,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
 
     char *content_start = NULL;
     char *content_stop = NULL;
+
     // Decode and content_start points to newly allocated buffer where escapes have been removed.
     eat_json_quote(state, &content_start, &content_stop);
     size_t content_len = content_stop-content_start;
@@ -273,10 +274,10 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
 
     bool need_string_type =
         content_len > 0 && (
-        !strncmp(content_start, "true", content_len) ||
-        !strncmp(content_start, "false", content_len) ||
-        !strncmp(content_start, "null", content_len) ||
-        content_stop == is_jnumber(content_start, content_stop));
+            (content_len == 4 && !strncmp(content_start, "true", 4)) ||
+            (content_len == 5 && !strncmp(content_start, "false", 5)) ||
+            (content_len == 4 && !strncmp(content_start, "null", 4)) ||
+            content_stop == is_jnumber(content_start, content_stop));
 
     if (need_string_type || unsafe_key_start)
     {

@@ -1,0 +1,15 @@
+INPUT
+x {
+   a = tr
+}
+FIRST
+{"_":"x","a":"tr"}
+SECOND
+x {
+    a = tr
+}
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-xmq
