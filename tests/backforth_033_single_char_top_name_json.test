@@ -1,0 +1,12 @@
+INPUT
+<x><b>Hello</b><i>World</i></x>
+FIRST
+{"_":"x","b":"Hello","i":"World"}
+SECOND
+<?xml version="1.0" encoding="utf8"?>
+<x><b>Hello</b><i>World</i></x>
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-xml

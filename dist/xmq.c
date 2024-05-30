@@ -7328,11 +7328,6 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_
     // This is a key = value or key = 'value value' or key = ( 'value' &#10; )
     // Also! If the node has attributes, then we cannot print as key value in json.
     // It has to be an object.
-/*    fprintf(stderr, "PRUTT %d %d %d\n",
-            is_key_value_node(node),
-            has_attributes(node),
-            has_attr_other_than_AS_(node));
-*/
     if (is_key_value_node(node) &&
         (!has_attributes(node) ||
          !has_attr_other_than_AS_(node)))
@@ -7346,6 +7341,7 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_
     {
         return json_print_array_with_children(ps, container, node);
     }
+
     // All other nodes are printed
     json_print_element_with_children(ps, container, node, total, used);
 }
@@ -7611,9 +7607,12 @@ void json_print_element_with_children(XMQPrintState *ps,
     ps->line_indent += ps->output_settings->add_indent;
 
     const char *name = xml_element_name(node);
-    if (!container && name && name[0] != '_' && name[1] != 0)
+    bool is_underline = (name[0] == '_' && name[1] == 0);
+    if (!container && name && !is_underline)
     {
         // Top level object or object inside array.
+        // Hide the name of the object inside the json object with the key "_".
+        // I.e. x { a=1 } -> { "_":"x", "a":1 }
         print_utf8(ps, COLOR_none, 1, "\"_\":", NULL);
         ps->last_char = ':';
         json_print_element_name(ps, container, node, total, used);
