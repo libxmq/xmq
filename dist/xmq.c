@@ -452,6 +452,8 @@ struct XMQParseState
     Stack *element_stack; // Top is last created node
     void *element_last; // Last added sibling to stack top node.
     bool parsing_doctype; // True when parsing a doctype.
+    void *add_doctype_before; // Used when retrofitting a doctype found in json.
+    bool doctype_found; // True after a doctype has been parsed.
     bool parsing_pi; // True when parsing a processing instruction, pi.
     bool merge_text; // Merge text nodes and character entities.
     bool no_trim_quotes; // No trimming if quotes, used when reading json strings.
@@ -509,6 +511,7 @@ struct XMQPrintState
     const char *replay_active_color_pre;
     const char *restart_line;
     const char *last_namespace;
+    xmlNode *doctype; // Used to remember doctype when printing json.
     XMQOutputSettings *output_settings;
     XMQDoc *doq;
 };
@@ -1234,6 +1237,8 @@ struct XMQParseState
     Stack *element_stack; // Top is last created node
     void *element_last; // Last added sibling to stack top node.
     bool parsing_doctype; // True when parsing a doctype.
+    void *add_doctype_before; // Used when retrofitting a doctype found in json.
+    bool doctype_found; // True after a doctype has been parsed.
     bool parsing_pi; // True when parsing a processing instruction, pi.
     bool merge_text; // Merge text nodes and character entities.
     bool no_trim_quotes; // No trimming if quotes, used when reading json strings.
@@ -1291,6 +1296,7 @@ struct XMQPrintState
     const char *replay_active_color_pre;
     const char *restart_line;
     const char *last_namespace;
+    xmlNode *doctype; // Used to remember doctype when printing json.
     XMQOutputSettings *output_settings;
     XMQDoc *doq;
 };
@@ -3562,6 +3568,7 @@ void do_element_value_text(XMQParseState *state,
         free(tmp);
 
         state->parsing_doctype = false;
+        state->doctype_found = true;
     }
     else
     {
@@ -3606,9 +3613,19 @@ void do_element_value_quote(XMQParseState *state,
             longjmp(state->error_handler, 1);
         }
         state->doq->docptr_.xml->intSubset = dtd;
-        xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
-        xmlAddChild(parent, (xmlNodePtr)dtd);
+        if (state->add_doctype_before)
+        {
+            // Insert doctype before this node.
+            xmlAddPrevSibling((xmlNodePtr)state->add_doctype_before, (xmlNodePtr)dtd);
+        }
+        else
+        {
+            // Append doctype to document.
+            xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
+            xmlAddChild(parent, (xmlNodePtr)dtd);
+        }
         state->parsing_doctype = false;
+        state->doctype_found = true;
         free(buf);
     }
     else
@@ -6738,6 +6755,21 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         return;
     }
 
+    if (key_start && *key_start == '!' && !state->doctype_found)
+    {
+        size_t len = key_stop-key_start;
+        if (len == 8 && !strncmp("!DOCTYPE", key_start, 8))
+        {
+            // This is the one and only !DOCTYPE element.
+            DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
+            state->parsing_doctype = true;
+            state->add_doctype_before = (xmlNode*)state->element_stack->top->data;
+            DO_CALLBACK_SIM(element_value_quote, state, state->line, state->col, content_start, content_stop, content_stop);
+            state->add_doctype_before = NULL;
+            return;
+        }
+    }
+
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
 
@@ -7304,19 +7336,22 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_
     // This is an entity reference node. &something;
     if (is_entity_node(node))
     {
-        return json_print_entity_node(ps, node);
+        json_print_entity_node(ps, node);
+        return;
     }
 
     // This is a comment translated into "_//":"Comment text"
     if (is_comment_node(node))
     {
-        return json_print_comment_node(ps, node);
+        json_print_comment_node(ps, node);
+        return;
     }
 
     // This is doctype node.
     if (is_doctype_node(node))
     {
-        return ; // json_print_doctype(ps, node);
+        ps->doctype = node;
+        return;
     }
 
     // This is a node with no children, but the only such valid json nodes are
@@ -7607,6 +7642,22 @@ void json_print_element_with_children(XMQPrintState *ps,
 
     ps->line_indent += ps->output_settings->add_indent;
 
+    if (ps->doctype)
+    {
+        // Print !DOCTYPE inside top level object.
+        // I.e. !DOCTYPE=html html { body = a } -> { "!DOCTYPE":"html", "html":{ "body":"a"}}
+        print_utf8(ps, COLOR_none, 1, "\"!DOCTYPE\":", NULL);
+        ps->last_char = ':';
+        xmlBuffer *buffer = xmlBufferCreate();
+        xmlNodeDump(buffer, (xmlDocPtr)ps->doq->docptr_.xml, (xmlNodePtr)ps->doctype, 0, 0);
+        char *c = (char*)xmlBufferContent(buffer);
+        char *quoted_value = xmq_quote_as_c(c+10, c+strlen(c)-1);
+        print_utf8(ps, COLOR_none, 3, "\"", NULL, quoted_value, NULL, "\"", NULL);
+        free(quoted_value);
+        xmlBufferFree(buffer);
+        ps->doctype = NULL;
+        ps->last_char = '"';
+    }
     const char *name = xml_element_name(node);
     bool is_underline = (name[0] == '_' && name[1] == 0);
     if (!container && name && !is_underline)
@@ -7614,6 +7665,7 @@ void json_print_element_with_children(XMQPrintState *ps,
         // Top level object or object inside array.
         // Hide the name of the object inside the json object with the key "_".
         // I.e. x { a=1 } -> { "_":"x", "a":1 }
+        json_check_comma(ps);
         print_utf8(ps, COLOR_none, 1, "\"_\":", NULL);
         ps->last_char = ':';
         json_print_element_name(ps, container, node, total, used);

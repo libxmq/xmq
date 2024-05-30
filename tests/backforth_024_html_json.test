@@ -1,4 +1,5 @@
 INPUT
+<!DOCTYPE html>
 <html>
     <body>
         <h1>Hejsan</h1>
@@ -8,8 +9,9 @@ INPUT
     </body>
 </html>
 FIRST
-{"_":"html","body":{"h1":"Hejsan","|[0]":"hoppsan","b":"tjo","|[1]":"svejsan"}}
+{"!DOCTYPE":"html","_":"html","body":{"h1":"Hejsan","|[0]":"hoppsan","b":"tjo","|[1]":"svejsan"}}
 SECOND
+!DOCTYPE = html
 html {
     body {
         h1 = Hejsan

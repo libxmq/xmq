@@ -204,6 +204,8 @@ struct XMQParseState
     Stack *element_stack; // Top is last created node
     void *element_last; // Last added sibling to stack top node.
     bool parsing_doctype; // True when parsing a doctype.
+    void *add_doctype_before; // Used when retrofitting a doctype found in json.
+    bool doctype_found; // True after a doctype has been parsed.
     bool parsing_pi; // True when parsing a processing instruction, pi.
     bool merge_text; // Merge text nodes and character entities.
     bool no_trim_quotes; // No trimming if quotes, used when reading json strings.
@@ -261,6 +263,7 @@ struct XMQPrintState
     const char *replay_active_color_pre;
     const char *restart_line;
     const char *last_namespace;
+    xmlNode *doctype; // Used to remember doctype when printing json.
     XMQOutputSettings *output_settings;
     XMQDoc *doq;
 };

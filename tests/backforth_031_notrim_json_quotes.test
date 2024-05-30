@@ -12,8 +12,9 @@ INPUT
 </body>
 </html>
 FIRST
-{"_":"html","body":{"pre":{"_class":"xmq xmq_light w40","|":"\n<shiporder>\n  </shipto>\n  <rules/>\n</shiporder>\n"}}}
+{"!DOCTYPE":"html PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/REC-html40/loose.dtd\"","_":"html","body":{"pre":{"_class":"xmq xmq_light w40","|":"\n<shiporder>\n  </shipto>\n  <rules/>\n</shiporder>\n"}}}
 SECOND
+!DOCTYPE = 'html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd"'
 html {
     body {
         pre(class = 'xmq xmq_light w40') = '

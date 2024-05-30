@@ -1,0 +1,17 @@
+INPUT
+!DOCTYPE = html
+html {
+    body = Hejsan
+}
+FIRST
+{"!DOCTYPE":"html","_":"html","body":"Hejsan"}
+SECOND
+!DOCTYPE = html
+html {
+    body = Hejsan
+}
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-htmq

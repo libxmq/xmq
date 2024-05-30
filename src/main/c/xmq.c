@@ -2032,6 +2032,7 @@ void do_element_value_text(XMQParseState *state,
         free(tmp);
 
         state->parsing_doctype = false;
+        state->doctype_found = true;
     }
     else
     {
@@ -2076,9 +2077,19 @@ void do_element_value_quote(XMQParseState *state,
             longjmp(state->error_handler, 1);
         }
         state->doq->docptr_.xml->intSubset = dtd;
-        xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
-        xmlAddChild(parent, (xmlNodePtr)dtd);
+        if (state->add_doctype_before)
+        {
+            // Insert doctype before this node.
+            xmlAddPrevSibling((xmlNodePtr)state->add_doctype_before, (xmlNodePtr)dtd);
+        }
+        else
+        {
+            // Append doctype to document.
+            xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
+            xmlAddChild(parent, (xmlNodePtr)dtd);
+        }
         state->parsing_doctype = false;
+        state->doctype_found = true;
         free(buf);
     }
     else
