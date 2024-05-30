@@ -1,0 +1,33 @@
+INPUT
+<html>
+<body>
+<pre class="xmq xmq_light w40">
+
+&lt;shiporder&gt;
+  &lt;/shipto&gt;
+  &lt;rules/&gt;
+&lt;/shiporder&gt;
+
+</pre>
+</body>
+</html>
+FIRST
+{"_":"html","body":{"pre":{"_class":"xmq xmq_light w40","|":"\n<shiporder>\n  </shipto>\n  <rules/>\n</shiporder>\n"}}}
+SECOND
+html {
+    body {
+        pre(class = 'xmq xmq_light w40') = '
+
+                                            <shiporder>
+                                              </shipto>
+                                              <rules/>
+                                            </shiporder>
+
+                                           '
+    }
+}
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-xmq

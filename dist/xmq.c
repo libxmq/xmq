@@ -454,6 +454,7 @@ struct XMQParseState
     bool parsing_doctype; // True when parsing a doctype.
     bool parsing_pi; // True when parsing a processing instruction, pi.
     bool merge_text; // Merge text nodes and character entities.
+    bool no_trim_quotes; // No trimming if quotes, used when reading json strings.
     const char *pi_name; // Name of the pi node just started.
     XMQOutputSettings *output_settings; // Used when coloring existing text using the tokenizer.
     int magic_cookie; // Used to check that the state has been properly initialized.
@@ -1235,6 +1236,7 @@ struct XMQParseState
     bool parsing_doctype; // True when parsing a doctype.
     bool parsing_pi; // True when parsing a processing instruction, pi.
     bool merge_text; // Merge text nodes and character entities.
+    bool no_trim_quotes; // No trimming if quotes, used when reading json strings.
     const char *pi_name; // Name of the pi node just started.
     XMQOutputSettings *output_settings; // Used when coloring existing text using the tokenizer.
     int magic_cookie; // Used to check that the state has been properly initialized.
@@ -3391,7 +3393,7 @@ xmlNodePtr create_quote(XMQParseState *state,
                        xmlNodePtr parent)
 {
     size_t indent = col - 1;
-    char *trimmed = xmq_un_quote(indent, ' ', start, stop, true);
+    char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_quote(indent, ' ', start, stop, true);
     xmlNodePtr n = xmlNewDocText(state->doq->docptr_.xml, (const xmlChar *)trimmed);
     if (state->merge_text)
     {
@@ -3575,7 +3577,7 @@ void do_element_value_quote(XMQParseState *state,
                             const char *stop,
                             const char *suffix)
 {
-    char *trimmed = xmq_un_quote(col-1, ' ', start, stop, true);
+    char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_quote(col-1, ' ', start, stop, true);
     if (state->parsing_pi)
     {
         char *content = potentially_add_leading_ending_space(trimmed, trimmed+strlen(trimmed));
@@ -3847,7 +3849,7 @@ void do_attr_value_quote(XMQParseState*state,
 {
     if (state->declaring_xmlns)
     {
-        char *trimmed = xmq_un_quote(col, ' ', start, stop, true);
+        char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_quote(col-1, ' ', start, stop, true);
         update_namespace_href(state, (xmlNsPtr)state->declaring_xmlns_namespace, trimmed, NULL);
         state->declaring_xmlns = false;
         state->declaring_xmlns_namespace = NULL;
@@ -5498,6 +5500,7 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
     xmq_setup_parse_callbacks(parse);
 
     XMQParseState *state = xmqNewParseState(parse, os);
+    state->no_trim_quotes = true;
     state->doq = doq;
     xmqSetStateSourceName(state, doq->source_name_);
 
