@@ -1,0 +1,13 @@
+Add colors for xsl and xlmns for tex rendering.
+Separate xmqGetString vs xmqGetStringRel.
+Handle DOCTYPE in json conversion.
+Json conversion handle true/false/null correctly.
+Convert single char top level element to correct json.
+Do not trim json comments.
+Do not trim json quotes.
+Handle entities to/from json strings.
+Handle attribute without value when converting to from json.
+Escape backslash with backslash*2 in json strings.
+When converting to json for key = value with attributes, then create json objects instead.
+Handle comments and pure text nodes in json conversion.
+Handle pure text nodes (key |) when converting to json.
