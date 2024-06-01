@@ -20,12 +20,12 @@ int main(int argc, char **argv)
                xmqDocError(doc));
         return 1;
     }
-    const char *model = xmqGetString(doc, NULL, "/car/model");
-    int32_t num_wheels = xmqGetInt(doc, NULL, "/car/num_wheels");
-    double weight = xmqGetDouble(doc, NULL, "/car/weight");
-    const char *not_found = xmqGetString(doc, NULL, "/car/not_found");
-    const char *color = xmqGetString(doc, NULL, "/car/color");
-    const char *history = xmqGetString(doc, NULL, "/car/history");
+    const char *model = xmqGetString(doc, "/car/model");
+    int32_t num_wheels = xmqGetInt(doc, "/car/num_wheels");
+    double weight = xmqGetDouble(doc, "/car/weight");
+    const char *not_found = xmqGetString(doc, "/car/not_found");
+    const char *color = xmqGetString(doc, "/car/color");
+    const char *history = xmqGetString(doc, "/car/history");
 
     expect(model, "EsCarGo");
     expect_int(num_wheels, 36);

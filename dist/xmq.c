@@ -5029,15 +5029,20 @@ char *xmq_comment(int indent, const char *start, const char *stop, XMQQuoteSetti
     return xmq_quote_default(indent, start, stop, settings);
 }
 
-int xmqForeach(XMQDoc *doq, XMQNode *xmq_node, const char *xpath, XMQNodeCallback cb, void *user_data)
+int xmqForeach(XMQDoc *doq, const char *xpath, XMQNodeCallback cb, void *user_data)
+{
+    return xmqForeachRel(doq, xpath, cb, user_data, NULL);
+}
+
+int xmqForeachRel(XMQDoc *doq, const char *xpath, XMQNodeCallback cb, void *user_data, XMQNode *relative)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(doq);
     xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
     if (!ctx) return 0;
 
-    if (xmq_node && xmq_node->node)
+    if (relative && relative->node)
     {
-        xmlXPathSetContextNode(xmq_node->node, ctx);
+        xmlXPathSetContextNode(relative->node, ctx);
     }
 
     xmlXPathObjectPtr objects = xmlXPathEvalExpression((const xmlChar*)xpath, ctx);
@@ -5104,11 +5109,16 @@ XMQProceed catch_single_content(XMQDoc *doc, XMQNode *node, void *user_data)
     return XMQ_STOP;
 }
 
-int32_t xmqGetInt(XMQDoc *doq, XMQNode *node, const char *xpath)
+int32_t xmqGetInt(XMQDoc *doq, const char *xpath)
+{
+    return xmqGetIntRel(doq, xpath, NULL);
+}
+
+int32_t xmqGetIntRel(XMQDoc *doq, const char *xpath, XMQNode *relative)
 {
     const char *content = NULL;
 
-    xmqForeach(doq, node, xpath, catch_single_content, (void*)&content);
+    xmqForeachRel(doq, xpath, catch_single_content, (void*)&content, relative);
 
     if (!content) return 0;
 
@@ -5128,11 +5138,16 @@ int32_t xmqGetInt(XMQDoc *doq, XMQNode *node, const char *xpath)
     return atoi(content);
 }
 
-int64_t xmqGetLong(XMQDoc *doq, XMQNode *node, const char *xpath)
+int64_t xmqGetLong(XMQDoc *doq, const char *xpath)
+{
+    return xmqGetLongRel(doq, xpath, NULL);
+}
+
+int64_t xmqGetLongRel(XMQDoc *doq, const char *xpath, XMQNode *relative)
 {
     const char *content = NULL;
 
-    xmqForeach(doq, node, xpath, catch_single_content, (void*)&content);
+    xmqForeachRel(doq, xpath, catch_single_content, (void*)&content, relative);
 
     if (!content) return 0;
 
@@ -5152,20 +5167,30 @@ int64_t xmqGetLong(XMQDoc *doq, XMQNode *node, const char *xpath)
     return atol(content);
 }
 
-const char *xmqGetString(XMQDoc *doq, XMQNode *node, const char *xpath)
+const char *xmqGetString(XMQDoc *doq, const char *xpath)
+{
+    return xmqGetStringRel(doq, xpath, NULL);
+}
+
+const char *xmqGetStringRel(XMQDoc *doq, const char *xpath, XMQNode *relative)
 {
     const char *content = NULL;
 
-    xmqForeach(doq, node, xpath, catch_single_content, (void*)&content);
+    xmqForeachRel(doq, xpath, catch_single_content, (void*)&content, relative);
 
     return content;
 }
 
-double xmqGetDouble(XMQDoc *doq, XMQNode *node, const char *xpath)
+double xmqGetDouble(XMQDoc *doq, const char *xpath)
+{
+    return xmqGetDoubleRel(doq, xpath, NULL);
+}
+
+double xmqGetDoubleRel(XMQDoc *doq, const char *xpath, XMQNode *relative)
 {
     const char *content = NULL;
 
-    xmqForeach(doq, node, xpath, catch_single_content, (void*)&content);
+    xmqForeachRel(doq, xpath, catch_single_content, (void*)&content, relative);
 
     if (!content) return 0;
 

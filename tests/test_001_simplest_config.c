@@ -13,12 +13,12 @@ int main(int argc, char **argv)
         printf("Could not load file %s.\n", argv[1]);
         return 1;
     }
-    const char *model = xmqGetString(doc, NULL, "/car/model");
-    int32_t speed = xmqGetInt(doc, NULL, "/car/speed");
-    double weight = xmqGetDouble(doc, NULL, "/car/weight");
-    const char *registration = xmqGetString(doc, NULL, "/car/registration");
-    const char *color = xmqGetString(doc, NULL, "/car/color");
-    const char *history = xmqGetString(doc, NULL, "/car/history");
+    const char *model = xmqGetString(doc, "/car/model");
+    int32_t speed = xmqGetInt(doc, "/car/speed");
+    double weight = xmqGetDouble(doc, "/car/weight");
+    const char *registration = xmqGetString(doc, "/car/registration");
+    const char *color = xmqGetString(doc, "/car/color");
+    const char *history = xmqGetString(doc, "/car/history");
 
     ok = true;
 
