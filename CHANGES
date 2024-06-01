@@ -2,7 +2,7 @@
 
 Add colors for xsl and xlmns for tex rendering.
 Separate xmqGetString vs xmqGetStringRel.
-Handle DOCTYPE in json conversion.
+Handle !DOCTYPE in json conversion.
 Json conversion handle true/false/null correctly.
 Convert single char top level element to correct json.
 Do not trim json comments.
