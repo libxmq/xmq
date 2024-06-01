@@ -6795,6 +6795,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
             state->add_doctype_before = (xmlNode*)state->element_stack->top->data;
             DO_CALLBACK_SIM(element_value_quote, state, state->line, state->col, content_start, content_stop, content_stop);
             state->add_doctype_before = NULL;
+            free(content_start);
             return;
         }
     }
