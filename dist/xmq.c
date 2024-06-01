@@ -2103,6 +2103,10 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode, 
     theme->attr_value_compound_quote.post = "}";
     theme->attr_value_compound_entity.pre = "\\xmqE{";
     theme->attr_value_compound_entity.post = "}";
+    theme->ns_declaration.pre = "\\xmqNSD{";
+    theme->ns_declaration.post = "}";
+    theme->ns_override_xsl.pre = "\\xmqXSL{";
+    theme->ns_override_xsl.post = "}";
     theme->ns_colon.pre = NULL;
 }
 
