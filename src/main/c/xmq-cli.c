@@ -84,7 +84,7 @@ typedef enum
     XMQ_CLI_CMD_TO_HTML,
     XMQ_CLI_CMD_TO_JSON,
     XMQ_CLI_CMD_TO_TEXT,
-    XMQ_CLI_CMD_NOOUT,
+    XMQ_CLI_CMD_NO_OUTPUT,
     XMQ_CLI_CMD_PRINT,
     XMQ_CLI_CMD_SAVE,
     XMQ_CLI_CMD_PAGER,
@@ -366,7 +366,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "to-html")) return XMQ_CLI_CMD_TO_HTML;
     if (!strcmp(s, "to-json")) return XMQ_CLI_CMD_TO_JSON;
     if (!strcmp(s, "to-text")) return XMQ_CLI_CMD_TO_TEXT;
-    if (!strcmp(s, "noout")) return XMQ_CLI_CMD_NOOUT;
+    if (!strcmp(s, "no-output")) return XMQ_CLI_CMD_NO_OUTPUT;
     if (!strcmp(s, "print")) return XMQ_CLI_CMD_PRINT;
     if (!strcmp(s, "save")) return XMQ_CLI_CMD_SAVE;
     if (!strcmp(s, "page")) return XMQ_CLI_CMD_PAGER;
@@ -407,7 +407,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TO_HTML: return "to-html";
     case XMQ_CLI_CMD_TO_JSON: return "to-json";
     case XMQ_CLI_CMD_TO_TEXT: return "to-text";
-    case XMQ_CLI_CMD_NOOUT: return "noout";
+    case XMQ_CLI_CMD_NO_OUTPUT: return "no-output";
     case XMQ_CLI_CMD_PRINT: return "print";
     case XMQ_CLI_CMD_SAVE: return "save";
     case XMQ_CLI_CMD_PAGER: return "pager";
@@ -449,7 +449,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TO_TEXT:
         return XMQ_CLI_CMD_GROUP_TO;
 
-    case XMQ_CLI_CMD_NOOUT:
+    case XMQ_CLI_CMD_NO_OUTPUT:
     case XMQ_CLI_CMD_PRINT:
     case XMQ_CLI_CMD_SAVE:
     case XMQ_CLI_CMD_PAGER:
@@ -1489,7 +1489,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  delete delete-entity\n"
            "  for-each\n"
            "  help\n"
-           "  noout\n"
+           "  no-output\n"
            "  render-html render-terminal render-tex\n"
            "  replace replace-entity\n"
            "  select\n"
@@ -1683,7 +1683,7 @@ bool cmd_output(XMQCliCommand *command)
 {
     if (command->cmd == XMQ_CLI_CMD_STATISTICS ||
         command->cmd == XMQ_CLI_CMD_FOR_EACH ||
-        command->cmd == XMQ_CLI_CMD_NOOUT)
+        command->cmd == XMQ_CLI_CMD_NO_OUTPUT)
     {
         return true;
     }
@@ -2460,7 +2460,7 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
         return;
     case XMQ_CLI_CMD_LOAD:
         return;
-    case XMQ_CLI_CMD_NOOUT:
+    case XMQ_CLI_CMD_NO_OUTPUT:
         return;
     case XMQ_CLI_CMD_HELP:
         c->print_help = true;
@@ -2750,9 +2750,9 @@ void print_command_help(XMQCliCmd c)
             "Usage: xmq <input> validate <xsd>\n"
             "Validate document against the supplied xsd. Exit with error if validation fails.\n");
         break;
-    case XMQ_CLI_CMD_NOOUT:
+    case XMQ_CLI_CMD_NO_OUTPUT:
         printf(
-            "Usage: xmq <input> noout\n"
+            "Usage: xmq <input> no-output\n"
             "Do not print any output, can be used after for example validate.\n");
         break;
     default:
@@ -3176,7 +3176,7 @@ bool perform_command(XMQCliCommand *c)
     switch (c->cmd) {
     case XMQ_CLI_CMD_NONE:
         return true;
-    case XMQ_CLI_CMD_NOOUT:
+    case XMQ_CLI_CMD_NO_OUTPUT:
         return true;
     case XMQ_CLI_CMD_LOAD:
         return cmd_load(c);
@@ -3316,7 +3316,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
             }
 
             if (cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_FOR_EACH ||
-                command->cmd == XMQ_CLI_CMD_NOOUT)
+                command->cmd == XMQ_CLI_CMD_NO_OUTPUT)
             {
                 // These commands by default do not need to print the output.
                 do_print = false;
