@@ -217,8 +217,8 @@ build/gtkdoc: build/gtkdocentities.ent
 pom.xml: pom.xmq
 	xmq pom.xmq to-xml > pom.xml
 
-mvn:
-	mvn package
+mvn: pom.xml
+	mvn compile
 
 .PHONY: web
 web: build/web/index.html

@@ -1,0 +1,59 @@
+project(xmlns = http://maven.apache.org/POM/4.0.0)
+{
+    modelVersion = 4.0.0
+    properties {
+        project.build.sourceEncoding = UTF-8
+        maven.compiler.source        = 22
+        maven.compiler.target        = 22
+    }
+    groupId    = org.libxmq
+    artifactId = XMQ
+    version    = 1.0-SNAPSHOT
+    build {
+        directory = build
+        plugins {
+            plugin {
+                groupId    = org.apache.maven.plugins
+                artifactId = maven-compiler-plugin
+                version    = 3.8.0
+                configuration {
+                    release = 22
+                }
+            }
+        }
+    }
+    dependencies {
+        dependency {
+            groupId    = org.w3c
+            artifactId = dom
+            version    = 2.3.0-jaxb-1.0.6
+        }
+        // https://mvnrepository.com/artifact/javax.xml.parsers/jaxp-api
+        dependency {
+            groupId = javax.xml.parsers
+            artifactId = jaxp-api
+            version = 1.4.5
+        }
+        dependency {
+            groupId    = javax.xml.bind
+            artifactId = jaxb-api
+            version    = 2.3.0
+        }
+        dependency {
+            groupId    = com.sun.xml.bind
+            artifactId = jaxb-core
+            version    = 2.3.0
+        }
+        dependency {
+            groupId    = com.sun.xml.bind
+            artifactId = jaxb-impl
+            version    = 2.3.0
+        }
+        dependency {
+            groupId    = junit
+            artifactId = junit
+            version    = 4.13.1
+            scope      = test
+        }
+    }
+}
