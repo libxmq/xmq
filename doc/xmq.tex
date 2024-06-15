@@ -2,11 +2,17 @@
 \usepackage{rail}
 \usepackage{parskip}
 \usepackage{changepage}
-\usepackage{geometry}
-\usepackage{graphicx}
+\usepackage[margin=3cm,noheadfoot,a4paper]{geometry}
 \usepackage[absolute,overlay]{textpos}
-\usepackage{color}
 \usepackage{bold-extra}
+\usepackage[xetex]{graphicx}
+\usepackage{color}
+\usepackage{xunicode}
+\usepackage{fontspec}
+\pagestyle{empty}
+\setromanfont[Mapping=tex-text]{Linux Libertine O}
+\setlength{\columnsep}{50mm}
+
 
 \definecolor{xmqC}{RGB}{42,161,179}
 \definecolor{xmqQ}{RGB}{38,162,105}
@@ -20,7 +26,7 @@
 \definecolor{xmqCP}{RGB}{192,97,203}
 \definecolor{xmqNSD}{RGB}{26,145,163}
 \definecolor{xmqUW}{RGB}{136,0,0}
-\definecolor{xmqXLS}{RGB}{192,97,203}
+\definecolor{xmqXSL}{RGB}{192,97,203}
 \newcommand{\xmqC}[1]{{\color{xmqC}\textbf{#1}}}
 \newcommand{\xmqQ}[1]{{\color{xmqQ}\textbf{#1}}}
 \newcommand{\xmqE}[1]{{\color{xmqE}#1}}
@@ -33,7 +39,7 @@
 \newcommand{\xmqCP}[1]{{\color{xmqCP}#1}}
 \newcommand{\xmqNSD}[1]{{\color{xmqNSD}#1}}
 \newcommand{\xmqUW}[1]{{\color{xmqUW}\underline{#1}}}
-\newcommand{\xmqXLS}[1]{{\color{xmqXLS}#1}}
+\newcommand{\xmqXSL}[1]{{\color{xmqXSL}#1}}
 \newcommand{\xmqI}[0]{{\mbox{\ }}}
 
 \newcommand{\xmqEq}[0]{{=}}
@@ -69,7 +75,7 @@
 }
 \makeatother
 
-\geometry{a4paper, layoutwidth=20cm, layoutheight=32cm}
+\geometry{a4paper, layoutwidth=20cm, layoutheight=34cm}
 
 \newcommand{\shiftleft}[2]{\makebox[0pt][r]{\makebox[#1][l]{#2}}}
 \newcommand{\shiftright}[2]{\makebox[#1][r]{\makebox[0pt][l]{#2}}}
@@ -94,7 +100,224 @@
 
 \begin{document}
 
-{\color{Red}\texttt{Specification for XMQ by Fredrik Öhrström 2024-05-26 \texttt{oehrstroem@gmail.com}}}
+{\flushleft
+{\textsc{\Large XMQ/HTMQ --- see XML/HTML in a new light}}
+
+by Fredrik Öhrström 2024-06-07 \hfill \texttt{https://libxmq.org}
+}
+
+{\flushleft{\large\textsc{\color{Red}{Rationale}}}} XMQ offers a visual
+appearance for config files that is more readable and writeable for humans compared
+to XML. The visual appearance of XML is a contributing factor to why programmers
+rarely pick XML as the initial configuration file format for newly developed software.
+However after some time of development the configuration file has grown in complexity
+and you need full XML capabilities, but by then it is too late to switch to XML. XMQ solves this problem.
+
+\begin{minipage}[b][27mm][b]{6cm}
+\texttt{\flushleft\noindent \xmqEN{config}\xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{name}\xmqI \xmqI \xmqI =\xmqI \xmqEKV{Restore}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{driver}\xmqI =\xmqI \xmqEKV{/drivers/r.sh}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{id}\xmqI \xmqI \xmqI \xmqI \xmqI =\xmqI \xmqEKV{90234578}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{cron}\xmqI \xmqI \xmqI =\xmqI \xmqEKV{'}\xmqEKV{30 08 10 06 *}\xmqEKV{'}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{url}\xmqI \xmqI \xmqI \xmqI =\xmqI \xmqEKV{https://a.b.c/api?x=2}\linebreak
+\}
+}
+\end{minipage}
+\rule{5mm}{0cm}
+\begin{minipage}[b][27mm][b]{6cm}
+\verb|<config>|\\
+\verb|  <name>Restore</name>|\\
+\verb|  <driver>/drivers/r.sh</driver>|\\
+\verb|  <id>90234578</id>|\\
+\verb|  <cron>30 08 10 06 *</cron>|\\
+\verb|  <url>https://a.b.c/api/r?x=2</url>|\\
+\verb|</config>|
+\end{minipage}
+
+{\flushleft{\large\textsc{\color{Red}{Tooling}}}} XMQ permits multiple root nodes
+and the tooling offers an implicit root node when loading the config file. If the
+first element is not that root node, it will be added. This means that the initial
+config file can be as simple as this:
+
+\begin{minipage}[b][23mm][b]{63mm}
+\texttt{\flushleft\noindent \xmqEK{name}\xmqI \xmqI \xmqI =\xmqI \xmqEKV{Restore}\linebreak
+\xmqEK{driver}\xmqI =\xmqI \xmqEKV{/work/drivers/restore.sh}\linebreak
+\xmqEK{id}\xmqI \xmqI \xmqI \xmqI \xmqI =\xmqI \xmqEKV{90234578}\linebreak
+\xmqEK{cron}\xmqI \xmqI \xmqI =\xmqI \xmqEKV{'}\xmqEKV{30 08 10 06 *}\xmqEKV{'}\linebreak
+\xmqEK{fetch}\xmqI \xmqI =\xmqI \xmqEKV{https://a.b.c/api/restore}
+}
+\end{minipage}
+\rule{5mm}{0cm}
+\begin{minipage}[b][23mm][t]{63mm}
+\verb|XMQDoc *doc = xmqNewDoc();|\\
+\verb|xmqParseFile(doc, "/etc/config.xmq", "config", 0);|\\
+\verb|name = xmqGetString(doc, "/config/name");|\\
+\verb|id = xmqGetLong(doc, "/config/id");|\\
+\end{minipage}
+
+\vspace{-5mm}
+The standalone xmq tool can convert from such a root-less config file to XML like this:
+
+\rule{2cm}{0cm}\texttt{xmq /etc/config.xmq add-root config to-xml > config.xml}
+
+The same tool can read and write any XML/HTML file since XMQ is 100\% compatible and can
+pretty print the XMQ/HTMQ (terminal, browser, tex) and perform other functions on the DOM.
+
+\rule{2cm}{0cm}\texttt{xmq work.xml}\\
+\rule{2cm}{0cm}\texttt{xmq work.xml browse} \\
+\rule{2cm}{0cm}\texttt{xmq page.htmq to-html > page.html} \\
+\rule{2cm}{0cm}\texttt{xmq data.xml transform work.xslq to-text > report.txt} \\
+\rule{2cm}{0cm}\texttt{xmq index.html delete //style delete //script page} \\
+
+\vspace{-4mm}
+{\flushleft{\large\textsc{\color{Red}{Whitespace}}}} It is always possible to pretty print XMQ because
+whitespace is either \textit{\color{Blue}{separating}} or \textit{\color{Blue}{content}}.
+The content whitespace must always be quoted and is passed to the application, which then
+distinguishes between significant and insignificant.
+
+\begin{minipage}[b][57mm][b]{10cm}
+\texttt{\flushleft\noindent \xmqEN{shiporder}\xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{id}\xmqI \xmqI \xmqI =\xmqI \xmqEKV{889923}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{type}\xmqI =\xmqI \xmqEKV{container}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEN{shipto}(\xmqAK{sailing}\xmqI =\xmqI \xmqAKV{{'}{'}})\linebreak
+\xmqI \xmqI \xmqI \xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEK{address}\xmqI =\xmqI \xmqEKV{'}\xmqEKV{The Vasa Museum}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEKV{Galärvarvsvägen 14}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEKV{115 21 Stockholm}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEKV{Sweden}\xmqEKV{'}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqC{// Remember to verify coord.}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEK{coord}\xmqI =\xmqI \xmqEKV{'''}\xmqEKV{59°19{'}41.0"N 18°05{'}29.0"E}\xmqEKV{'''}\linebreak
+\xmqI \xmqI \xmqI \xmqI \}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEN{rules}\linebreak
+\}
+}
+\end{minipage}
+\POS{56mm}{-64mm}{\begin{picture}(10,10)\vector(-1,-1){4}\put(1,0){\emph{no quotes needed for safe strings, ie no whitespace} {\footnotesize{\texttt{' " ( )\{ \}}}} \emph{not start with} {\footnotesize{\texttt{= \& // /*}}}}\end{picture}}%
+\POS{50mm}{-54mm}{\begin{picture}(10,10)\vector(-1,-1){4}\put(1,0){\emph{two single quotes are the empty string}}\end{picture}}%
+\POS{40mm}{-34mm}{\begin{picture}(10,10)\vector(-1,-1){4}\put(1,0){\emph{multiline quote with incidental indentation removed}}\end{picture}}%
+\POS{36mm}{-24mm}{\begin{picture}(10,10)\put(1,0){\emph{there are 5 spaces and 3 newlines in this quote}}\end{picture}}%
+\POS{20mm}{-27mm}{\begin{picture}(10,10)\vector(-1,-1){4}\put(1,0){\emph{single quote that needs to be quoted}}\end{picture}}%
+\POS{8mm}{-63mm}{\begin{picture}(10,10)\vector(-1,1){4}\put(-2,-3){\emph{n+1 quotes to quote n quotes (cave! empty string is 2 quotes)}}\end{picture}}%
+\POS{26mm}{-66mm}{\begin{picture}(10,10)\vector(-1,0){35}\vector(1,0){35}\put(-25,0.9){\emph{\footnotesize incidental}}\put(-25,-2.5){\emph{\footnotesize indentation}}\end{picture}}%
+
+The shiporder only has content whitespace in the \xmqEK{address} and in the \xmqEK{coord}.
+
+\pagebreak
+
+{\flushleft{\large\textsc{\color{Red}{Compact}}}} Every XMQ file can be printed in compact form on a single line where separating whitespace between tokens is minimized and the actual newlines are escaped.
+
+\vspace{-7mm}
+\texttt{\flushleft\noindent \xmqEN{shiporder}\{\xmqEK{id}=\xmqEKV{889923}\xmqI \xmqEK{type}=\xmqEKV{container}\xmqI \xmqEN{shipto}(\xmqAK{sailing}=\xmqAKV{{'}{'}})\{\xmqEK{address}=\xmqCP{(}\xmqEKV{'}\xmqEKV{The Vasa \\
+    Museum}\xmqEKV{'}\xmqE{\&\#10;}\xmqEKV{'}\xmqEKV{Galärvarvsvägen 14}\xmqEKV{'}\xmqE{\&\#10;}\xmqEKV{'}\xmqEKV{115 21 Stockholm}\xmqEKV{'}\xmqE{\&\#10;}\xmqEKV{'}\xmqEKV{Sweden}\xmqEKV{'}\xmqCP{)}\xmqC{/*Re\\
+    member to verify coord.*/}\xmqEK{coord}=\xmqEKV{'''}\xmqEKV{59°19{'}41.0"N 18°05{'}29.0"E}\xmqEKV{'''}\}\xmqEN{rules}\}
+}
+
+XMQ can always switch between a compact and a pretty printed layout.
+Compact XMQ is useful for log files where each appended line can be a complete and valid XMQ document.
+
+{\flushleft{\large\textsc{\color{Red}{JSON}}}} There is an easy to understand mapping from
+JSON to XMQ/XML. The xpath to select every \xmqEK{what} below is \texttt{"/\_\,/todos/\_\,/what"} the underscores
+represents the missing object types in JSON.
+
+\fbox{\begin{minipage}[b][58mm][b]{7cm}
+\texttt{\small\flushleft\noindent \xmqEN{\_}\xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEN{todos}(\xmqAK{A})\linebreak
+\xmqI \xmqI \xmqI \xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEN{\_}\xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEK{id}\xmqI \xmqI \xmqI =\xmqI \xmqEKV{5}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEK{what}\xmqI =\xmqI \xmqEKV{'}\xmqEKV{Solve a cube}\xmqEKV{'}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEN{\_}\xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEK{id}\xmqI \xmqI \xmqI =\xmqI \xmqEKV{6}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEK{what}\xmqI =\xmqI \xmqEKV{'}\xmqEKV{Bake pastries}\xmqEKV{'}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \}\linebreak
+\xmqI \xmqI \xmqI \xmqI \}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{id}(\xmqAK{S})\xmqI =\xmqI \xmqEKV{827309}\linebreak
+\}
+}
+\end{minipage}}
+\ \ \fbox{\begin{minipage}[b][58mm][b]{7cm}
+\texttt{\small\flushleft\noindent \{\linebreak
+\xmqI \xmqI \xmqI \xmqI "todos": \linebreak
+\xmqI \xmqI \xmqI \xmqI {[}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI "id": 5,\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI "what": "Solve a cube"\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \},\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI "id": 6,\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI "what": "Bake pastries"\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \}\linebreak
+\xmqI \xmqI \xmqI \xmqI {]},\linebreak
+\xmqI \xmqI \xmqI \xmqI "id": "827309",\linebreak
+\}
+}
+\end{minipage}}
+
+{\flushleft{\large\textsc{\color{Red}{XSLT}}}} It is easier to write XSLQ transforms since
+the content whitespace is visible. XSLT files can often not be pretty printed
+because this would introduce unwanted whitespace in the output.
+
+\vspace{-5mm}
+\texttt{\flushleft\noindent \xmqNS{xsl}:\xmqXSL{stylesheet}(\xmqAK{version}\xmqI \xmqI \xmqI =\xmqI \xmqAKV{1.0}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqNSD{xmlns}:\xmqXSL{xsl}\xmqI =\xmqI \xmqAKV{http://www.w3.org/1999/XSL/Transform})\linebreak
+\{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqNS{xsl}:\xmqXSL{template}(\xmqAK{match}\xmqI =\xmqI \xmqAKV{\_/todos})\linebreak
+\xmqI \xmqI \xmqI \xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEN{html}\xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEN{body}\xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEN{table}(\xmqAK{border}\xmqI =\xmqI \xmqAKV{1})\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqNS{xsl}:\xmqXSL{for-each}(\xmqAK{select}\xmqI =\xmqI \xmqAKV{\_})\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEN{tr}\xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEN{td}\xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqNS{xsl}:\xmqXSL{value-of}(\xmqAK{select}\xmqI =\xmqI \xmqAKV{what})\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \}\linebreak
+\xmqI \xmqI \xmqI \xmqI \}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqNS{xsl}:\xmqXSL{template}(\xmqAK{match}\xmqI =\xmqI \xmqAKV{total})\linebreak
+\}
+}
+\POS{31mm}{70mm}{\texttt{xmq todos.json transform todos.xslq}}%
+\POS{-24.5mm}{70mm}{%
+\fbox{\begin{minipage}[b][53mm][b]{6cm}
+\texttt{\small\flushleft\noindent \xmqEN{html}\xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEN{body}\xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEN{table}(\xmqAK{border}\xmqI =\xmqI \xmqAKV{1})\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEN{tr}\xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEK{td}\xmqI =\xmqI \xmqEKV{'}\xmqEKV{Solve a cube}\xmqEKV{'}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEN{tr}\xmqI \{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEK{td}\xmqI =\xmqI \xmqEKV{'}\xmqEKV{Bake pastries}\xmqEKV{'}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \}\linebreak
+\xmqI \xmqI \xmqI \xmqI \}\linebreak
+\}
+}
+\end{minipage}}
+}
+\POS{79mm}{70mm}{\texttt{xmq todos.json select /\_\,/todos/\_\,/what}}%
+\POS{70mm}{70mm}{%
+\fbox{\begin{minipage}[b][6.5mm][b]{6cm}
+\texttt{\flushleft\noindent \xmqEK{what}\xmqI =\xmqI \xmqEKV{'}\xmqEKV{Bake pastries}\xmqEKV{'}\linebreak
+\xmqEK{what}\xmqI =\xmqI \xmqEKV{'}\xmqEKV{Solve a cube}\xmqEKV{'}
+}
+
+\end{minipage}}
+}
+
+\noindent{\footnotesize The Q in XMQ/HTMQ/XSLQ/XSQ does not mean anything.  \\
+\ It is merely an available file suffix.}
+
+\pagebreak
+
+{\color{Red}\texttt{Specification for XMQ by Fredrik Öhrström}}
 
 \texttt{Input must be valid UTF8 (0x9 | 0xa | 0xd | [20-d7ff] | [e000-fffd] | [10000-10ffff]) \\
   CRLF pairs (0xd 0xa) and standalone CR (0xd) are treated as LF (0xa) when parsing.}
@@ -213,8 +436,8 @@
 \verb|r4. Can contain a single colon separating the TEXT into two parts, each following r1,r2,r3.|
 
 \vspace{-1mm}
-\verb|    Two permitted exceptions to TEXT:namekey rule r1 and r3.| \\
-\verb|r5. A single !DOCTYPE before the first element and ?pi elements.|
+\verb|    Three permitted exceptions to rule r1 and r3.| \\
+\verb|r5. A single !DOCTYPE before the first element and ?pi elements and &#..; entities.|
 
 \vspace{-1mm}
 \verb|    If quoted content contains at least one newline then:|\\

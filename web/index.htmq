@@ -47,7 +47,18 @@ html {
                    title = 'Max 200KB, logs cleared after 30 days.'
                    onclick = '''document.getElementById('uploadFile').click()''') = 'Upload XML/HTML/JSON'
         }
-        br
+        div {
+            a(href = https://github.com/libxmq/xmq/releases/latest) = '[Download]'
+            &nbsp;
+            '  '
+            a(href = https://github.com/libxmq/xmq) = [Github]
+            '  '
+            a(href = xmq.pdf) = [Grammar]
+            &nbsp;
+            '  '
+            a(href = https://github.com/orgs/libxmq/discussions) = '[Forum/Discussions]'
+            br
+        }
         p = 'Sometimes it seems like new developers are gravitating towards JSON and other
              key=value based languages for data storage, leaving XML behind. This is somewhat
              understandable since the visual appearance of XML (when used for data storage)
@@ -306,16 +317,16 @@ html {
             '(doc, "config.xmq, "myconf"); assert(ok);
              server = '
             xmqQ = xmqGetString
-            '(doc, NULL, "/myconf/server");
+            '(doc, "/myconf/server");
              port = '
              xmqQ = xmqGetInt
-            '(doc, NULL, "/myconf/port");
+            '(doc, "/myconf/port");
              file = '
              xmqQ = xmqGetString
-            '(doc, NULL, "/myconf/file");
+            '(doc, "/myconf/file");
              cron = '
              xmqQ = xmqGetString
-             '(doc, NULL, "/myconf/cron");'
+             '(doc, "/myconf/cron");'
         }
         p {
             'As you can see, XMQ can be trivial, which is nice for your first config file, but when your program
