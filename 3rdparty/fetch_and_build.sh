@@ -101,7 +101,7 @@ then
         echo Building libxml2 winapi
         echo
 
-        ./autogen.sh --host=x86_64-w64-mingw32 --with-zlib=no --with-lzma=no --with-python=no --with-http=no
+        ./autogen.sh --host=x86_64-w64-mingw32 --with-iconv=no --with-zlib=no --with-lzma=no --with-python=no --with-http=no
         make
     fi
     cd ..
