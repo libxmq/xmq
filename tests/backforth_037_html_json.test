@@ -1,0 +1,33 @@
+INPUT
+!DOCTYPE = html
+// html-header type=current begin
+html {
+    body {
+        div {
+            span = Working...
+        }
+        // 1x1 home page
+        div(id = div-gpt-ad-1x1)
+    }
+}
+// footer type=current end
+FIRST
+{"!DOCTYPE":"html","_//[0]":"html-header type=current begin","_":"html","body":{"div[0]":{"span":"Working..."},"//":"1x1 home page","div[1]":{"_id":"div-gpt-ad-1x1"}},"_//[1]":"footer type=current end"}
+SECOND
+!DOCTYPE = html
+// html-header type=current begin
+html {
+    body {
+        div {
+            span = Working...
+        }
+        // 1x1 home page
+        div(id = div-gpt-ad-1x1)
+    }
+}
+// footer type=current end
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-htmq
