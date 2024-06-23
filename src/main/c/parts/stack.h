@@ -42,8 +42,10 @@ typedef struct Stack Stack;
 Stack *new_stack();
 void free_stack(Stack *stack);
 void push_stack(Stack *s, void *);
-size_t size_stack();
+// Pop the top element.
 void *pop_stack(Stack *s);
+// Pull the bottom element.
+void *rock_stack(Stack *s);
 
 #define STACK_MODULE
 

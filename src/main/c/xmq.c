@@ -2635,6 +2635,8 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
     void *last = doq->docptr_.xml->last;
 
     XMQPrintState ps = {};
+    ps.pre_nodes = new_stack();
+    ps.post_nodes = new_stack();
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
     ps.doq = doq;
@@ -2644,6 +2646,9 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
 
     json_print_object_nodes(&ps, NULL, (xmlNode*)first, (xmlNode*)last);
     write(writer_state, "\n", NULL);
+
+    free_stack(ps.pre_nodes);
+    free_stack(ps.post_nodes);
 }
 
 void text_print_node(XMQPrintState *ps, xmlNode *node)

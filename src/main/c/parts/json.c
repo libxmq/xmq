@@ -47,7 +47,7 @@ void json_print_attributes(XMQPrintState *ps, xmlNodePtr node);
 void json_print_array_with_children(XMQPrintState *ps,
                                     xmlNode *container,
                                     xmlNode *node);
-void json_print_comment_node(XMQPrintState *ps, xmlNodePtr node);
+void json_print_comment_node(XMQPrintState *ps, xmlNodePtr node, bool prefix_ul, size_t total, size_t used);
 void json_print_entity_node(XMQPrintState *ps, xmlNodePtr node);
 void json_print_standalone_quote(XMQPrintState *ps, xmlNode *container, xmlNodePtr node, size_t total, size_t used);
 void json_print_object_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
@@ -831,23 +831,35 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_
         return;
     }
 
-    // This is a comment translated into "_//":"Comment text"
+    // This is a comment translated into "//":"Comment text"
     if (is_comment_node(node))
     {
-        json_print_comment_node(ps, node);
+        if (!container)
+        {
+            // Moved into root json object as _//
+            if (!ps->root_element_found) push_stack(ps->pre_nodes, node);
+            else push_stack(ps->post_nodes, node);
+            ps->pre_post_num_comments_total++;
+        }
+        else
+        {
+            // Normal comment.
+            json_print_comment_node(ps, node, false, total, used);
+        }
         return;
     }
 
     // This is doctype node.
     if (is_doctype_node(node))
     {
-        ps->doctype = node;
+        // Moved into the root json object as !DOCTYPE
+        push_stack(ps->pre_nodes, node);
         return;
     }
 
     // This is a node with no children, but the only such valid json nodes are
     // the empty object _ ---> {} or _(A) ---> [].
-    if (is_leaf_node(node))
+    if (is_leaf_node(node) && container)
     {
         return json_print_leaf_node(ps, container, node, total, used);
     }
@@ -1044,8 +1056,12 @@ void json_print_array_with_children(XMQPrintState *ps,
         // Top level object or object inside array. [ {} {} ]
         // Dump the element name! It cannot be represented!
     }
-    while (xml_prev_sibling((xmlNode*)from)) from = xml_prev_sibling((xmlNode*)from);
-    assert(from != NULL);
+
+    if (from)
+    {
+        while (xml_prev_sibling((xmlNode*)from)) from = xml_prev_sibling((xmlNode*)from);
+        assert(from != NULL);
+    }
 
     json_print_array_nodes(ps, NULL, (xmlNode*)from, (xmlNode*)to);
 
@@ -1133,22 +1149,35 @@ void json_print_element_with_children(XMQPrintState *ps,
 
     ps->line_indent += ps->output_settings->add_indent;
 
-    if (ps->doctype)
+    while (ps->pre_nodes && ps->pre_nodes->size > 0)
     {
-        // Print !DOCTYPE inside top level object.
-        // I.e. !DOCTYPE=html html { body = a } -> { "!DOCTYPE":"html", "html":{ "body":"a"}}
-        print_utf8(ps, COLOR_none, 1, "\"!DOCTYPE\":", NULL);
-        ps->last_char = ':';
-        xmlBuffer *buffer = xmlBufferCreate();
-        xmlNodeDump(buffer, (xmlDocPtr)ps->doq->docptr_.xml, (xmlNodePtr)ps->doctype, 0, 0);
-        char *c = (char*)xmlBufferContent(buffer);
-        char *quoted_value = xmq_quote_as_c(c+10, c+strlen(c)-1);
-        print_utf8(ps, COLOR_none, 3, "\"", NULL, quoted_value, NULL, "\"", NULL);
-        free(quoted_value);
-        xmlBufferFree(buffer);
-        ps->doctype = NULL;
-        ps->last_char = '"';
+        xmlNodePtr node = (xmlNodePtr)rock_stack(ps->pre_nodes);
+
+        if (is_doctype_node(node))
+        {
+            // Print !DOCTYPE inside top level object.
+            // I.e. !DOCTYPE=html html { body = a } -> { "!DOCTYPE":"html", "html":{ "body":"a"}}
+            print_utf8(ps, COLOR_none, 1, "\"!DOCTYPE\":", NULL);
+            ps->last_char = ':';
+            xmlBuffer *buffer = xmlBufferCreate();
+            xmlNodeDump(buffer, (xmlDocPtr)ps->doq->docptr_.xml, node, 0, 0);
+            char *c = (char*)xmlBufferContent(buffer);
+            char *quoted_value = xmq_quote_as_c(c+10, c+strlen(c)-1);
+            print_utf8(ps, COLOR_none, 3, "\"", NULL, quoted_value, NULL, "\"", NULL);
+            free(quoted_value);
+            xmlBufferFree(buffer);
+            ps->last_char = '"';
+        }
+        else if (is_comment_node(node))
+        {
+            json_print_comment_node(ps, node, true, total, used);
+        }
+        else
+        {
+            assert(false);
+        }
     }
+
     const char *name = xml_element_name(node);
     bool is_underline = (name[0] == '_' && name[1] == 0);
     if (!container && name && !is_underline)
@@ -1164,10 +1193,27 @@ void json_print_element_with_children(XMQPrintState *ps,
 
     json_print_attributes(ps, node);
 
-    while (xml_prev_sibling((xmlNode*)from)) from = xml_prev_sibling((xmlNode*)from);
-    assert(from != NULL);
+    if (from)
+    {
+        while (xml_prev_sibling((xmlNode*)from)) from = xml_prev_sibling((xmlNode*)from);
+        assert(from != NULL);
+    }
 
     json_print_object_nodes(ps, node, (xmlNode*)from, (xmlNode*)to);
+
+    while (false && ps->post_nodes && ps->post_nodes->size > 0)
+    {
+        xmlNodePtr node = (xmlNodePtr)rock_stack(ps->post_nodes);
+
+        if (is_comment_node(node))
+        {
+            json_print_comment_node(ps, node, true, ps->pre_post_num_comments_total, ps->pre_post_num_comments_used++);
+        }
+        else
+        {
+            assert(false);
+        }
+    }
 
     ps->line_indent -= ps->output_settings->add_indent;
 
@@ -1266,11 +1312,27 @@ void json_print_comma(XMQPrintState *ps)
 }
 
 void json_print_comment_node(XMQPrintState *ps,
-                             xmlNode *node)
+                             xmlNode *node,
+                             bool prefix_ul,
+                             size_t total,
+                             size_t used)
 {
     json_check_comma(ps);
 
-    print_utf8(ps, COLOR_equals, 1, "\"//\":", NULL);
+    if (prefix_ul) print_utf8(ps, COLOR_equals, 1, "\"_//", NULL);
+    else print_utf8(ps, COLOR_equals, 1, "\"//", NULL);
+
+    if (total > 1)
+    {
+        char buf[32];
+        buf[31] = 0;
+        snprintf(buf, 32, "[%zu]\":", used);
+        print_utf8(ps, COLOR_equals, 1, buf, NULL);
+    }
+    else
+    {
+        print_utf8(ps, COLOR_equals, 1, "\":", NULL);
+    }
     ps->last_char = ':';
     json_print_value(ps, node, node, LEVEL_XMQ, true);
     ps->last_char = '"';

@@ -1,0 +1,13 @@
+INPUT
+<alfa><!--Hejsan--><beta/><!--Hoppsan--><gamma/><!--Svejsan--></alfa>
+XMQ
+alfa {
+    // Hejsan
+    beta
+    // Hoppsan
+    gamma
+    // Svejsan
+}
+JSON
+{"_":"alfa","//[0]":"Hejsan","beta":{},"//[1]":"Hoppsan","gamma":{},"//[2]":"Svejsan"}
+END

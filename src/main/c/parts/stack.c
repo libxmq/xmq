@@ -29,6 +29,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 #ifdef STACK_MODULE
 
+StackElement *find_element_above(Stack *s, StackElement *b);
+
 Stack *new_stack()
 {
     Stack *s = (Stack*)malloc(sizeof(Stack));
@@ -79,6 +81,41 @@ void *pop_stack(Stack *stack)
     stack->top = element->below;
     free(element);
     stack->size--;
+    return data;
+}
+
+StackElement *find_element_above(Stack *s, StackElement *b)
+{
+    StackElement *e = s->top;
+
+    for (;;)
+    {
+        if (!e) return NULL;
+        if (e->below == b) return e;
+        e = e->below;
+    }
+
+    return NULL;
+}
+
+void *rock_stack(Stack *stack)
+{
+    assert(stack);
+    assert(stack->bottom);
+
+    assert(stack->size > 0);
+
+    if (stack->size == 1) return pop_stack(stack);
+
+    StackElement *element = stack->bottom;
+    void *data = element->data;
+    StackElement *above = find_element_above(stack, element);
+    assert(above);
+    stack->bottom = above;
+    above->below = NULL;
+    free(element);
+    stack->size--;
+
     return data;
 }
 
