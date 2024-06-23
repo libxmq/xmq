@@ -205,6 +205,7 @@ struct XMQParseState
     void *element_last; // Last added sibling to stack top node.
     bool parsing_doctype; // True when parsing a doctype.
     void *add_pre_node_before; // Used when retrofitting pre-root comments and doctype found in json.
+    bool root_found; // Used to decide if _// should be printed before or after root.
     void *add_post_node_after; // Used when retrofitting post-root comments found in json.
     bool doctype_found; // True after a doctype has been parsed.
     bool parsing_pi; // True when parsing a processing instruction, pi.
@@ -267,7 +268,6 @@ struct XMQPrintState
     Stack *pre_nodes; // Used to remember leading comments/doctype when printing json.
     size_t pre_post_num_comments_total; // Number of comments outside of the root element.
     size_t pre_post_num_comments_used; // Active number of comment outside of the root element.
-    bool   root_element_found; // True when the root element has been found.
     Stack *post_nodes; // Used to remember ending comments when printing json.
     XMQOutputSettings *output_settings;
     XMQDoc *doq;

@@ -2658,6 +2658,9 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
     ps.output_settings = os;
     assert(os->content.write);
 
+    // Find any leading (doctype/comments) and ending (comments) nodes and store in pre_nodes and post_nodes inside ps.
+    // Adjust the first and last pointer.
+    collect_leading_ending_comments_doctype(&ps, (xmlNode**)&first, (xmlNode**)&last);
     json_print_object_nodes(&ps, NULL, (xmlNode*)first, (xmlNode*)last);
     write(writer_state, "\n", NULL);
 

@@ -1,0 +1,29 @@
+INPUT
+// Alfa
+!DOCTYPE = html
+// Beta
+html {
+    // Alfa
+    body = Hejsan
+    // Beta
+}
+// Alfa
+// Beta
+FIRST
+{"_//[0]":"Alfa","!DOCTYPE":"html","_//[1]":"Beta","_":"html","//[0]":"Alfa","body":"Hejsan","//[1]":"Beta","_//[2]":"Beta","_//[3]":"Alfa"}
+SECOND
+// Alfa
+!DOCTYPE = html
+// Beta
+html {
+    // Alfa
+    body = Hejsan
+    // Beta
+}
+// Alfa
+// Beta
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-htmq

@@ -48,6 +48,7 @@ void json_print_array_with_children(XMQPrintState *ps,
                                     xmlNode *container,
                                     xmlNode *node);
 void json_print_comment_node(XMQPrintState *ps, xmlNodePtr node, bool prefix_ul, size_t total, size_t used);
+void json_print_doctype_node(XMQPrintState *ps, xmlNodePtr node);
 void json_print_entity_node(XMQPrintState *ps, xmlNodePtr node);
 void json_print_standalone_quote(XMQPrintState *ps, xmlNode *container, xmlNodePtr node, size_t total, size_t used);
 void json_print_object_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
@@ -232,9 +233,11 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
     if (key_start && key_stop == key_start+3 && *key_start == '_' && *(key_start+1) == '/' && *(key_start+2) == '/')
     {
         // This is "_//":"symbol" which means a comment node in xml prefixing the root xml node.
-        state->add_pre_node_before = (xmlNode*)state->element_stack->top->data;
+        if (!state->root_found) state->add_pre_node_before = (xmlNode*)state->element_stack->top->data;
+        else                    state->add_post_node_after = (xmlNode*)state->element_stack->top->data;
         DO_CALLBACK_SIM(comment, state, start_line, start_col, content_start, content_stop, content_stop);
-        state->add_pre_node_before = NULL;
+        if (!state->root_found) state->add_pre_node_before = NULL;
+        else                    state->add_post_node_after = NULL;
         free(content_start);
         return;
     }
@@ -252,6 +255,8 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         xmlNodeSetName(container, (xmlChar*)name);
         free(name);
         free(content_start);
+        // This will be set many times.
+        state->root_found = true;
         return;
     }
 
@@ -750,21 +755,19 @@ void json_print_object_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *fro
 
     while (i)
     {
-        if (!is_doctype_node(i))
+        const char *name = (const char*)i->name;
+        if (name && strcmp(name, "_")) // We have a name and it is NOT a single _
         {
-            const char *name = (const char*)i->name;
-            if (name && strcmp(name, "_"))
+            Counter *c = (Counter*)hashmap_get(map, name);
+            if (!c)
             {
-                Counter *c = (Counter*)hashmap_get(map, name);
-                if (!c)
-                {
-                    c = (Counter*)malloc(sizeof(Counter));
-                    memset(c, 0, sizeof(Counter));
-                    hashmap_put(map, name, c);
-                }
-                c->total++;
+                c = (Counter*)malloc(sizeof(Counter));
+                memset(c, 0, sizeof(Counter));
+                hashmap_put(map, name, c);
             }
+            c->total++;
         }
+        if (i == to) break;
         i = xml_next_sibling(i);
     }
 
@@ -782,6 +785,7 @@ void json_print_object_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *fro
         {
             json_print_node(ps, container, i, 1, 0);
         }
+        if (i == to) break;
         i = xml_next_sibling(i);
     }
 
@@ -827,6 +831,13 @@ bool has_attr_other_than_AS_(xmlNode *node)
 
 void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used)
 {
+    // This is a comment translated into "//":"Comment text"
+    if (is_comment_node(node))
+    {
+        json_print_comment_node(ps, node, false, total, used);
+        return;
+    }
+
     // Standalone quote must be quoted: 'word' 'some words'
     if (is_content_node(node))
     {
@@ -838,32 +849,6 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_
     if (is_entity_node(node))
     {
         json_print_entity_node(ps, node);
-        return;
-    }
-
-    // This is a comment translated into "//":"Comment text"
-    if (is_comment_node(node))
-    {
-        if (!container)
-        {
-            // Moved into root json object as _//
-            if (!ps->root_element_found) push_stack(ps->pre_nodes, node);
-            else push_stack(ps->post_nodes, node);
-            ps->pre_post_num_comments_total++;
-        }
-        else
-        {
-            // Normal comment.
-            json_print_comment_node(ps, node, false, total, used);
-        }
-        return;
-    }
-
-    // This is doctype node.
-    if (is_doctype_node(node))
-    {
-        // Moved into the root json object as !DOCTYPE
-        push_stack(ps->pre_nodes, node);
         return;
     }
 
@@ -1165,22 +1150,11 @@ void json_print_element_with_children(XMQPrintState *ps,
 
         if (is_doctype_node(node))
         {
-            // Print !DOCTYPE inside top level object.
-            // I.e. !DOCTYPE=html html { body = a } -> { "!DOCTYPE":"html", "html":{ "body":"a"}}
-            print_utf8(ps, COLOR_none, 1, "\"!DOCTYPE\":", NULL);
-            ps->last_char = ':';
-            xmlBuffer *buffer = xmlBufferCreate();
-            xmlNodeDump(buffer, (xmlDocPtr)ps->doq->docptr_.xml, node, 0, 0);
-            char *c = (char*)xmlBufferContent(buffer);
-            char *quoted_value = xmq_quote_as_c(c+10, c+strlen(c)-1);
-            print_utf8(ps, COLOR_none, 3, "\"", NULL, quoted_value, NULL, "\"", NULL);
-            free(quoted_value);
-            xmlBufferFree(buffer);
-            ps->last_char = '"';
+            json_print_doctype_node(ps, node);
         }
         else if (is_comment_node(node))
         {
-            json_print_comment_node(ps, node, true, total, used);
+            json_print_comment_node(ps, node, true, ps->pre_post_num_comments_total, ps->pre_post_num_comments_used++);
         }
         else
         {
@@ -1211,7 +1185,7 @@ void json_print_element_with_children(XMQPrintState *ps,
 
     json_print_object_nodes(ps, node, (xmlNode*)from, (xmlNode*)to);
 
-    while (false && ps->post_nodes && ps->post_nodes->size > 0)
+    while (ps->post_nodes && ps->post_nodes->size > 0)
     {
         xmlNodePtr node = (xmlNodePtr)rock_stack(ps->post_nodes);
 
@@ -1345,6 +1319,24 @@ void json_print_comment_node(XMQPrintState *ps,
     }
     ps->last_char = ':';
     json_print_value(ps, node, node, LEVEL_XMQ, true);
+    ps->last_char = '"';
+}
+
+void json_print_doctype_node(XMQPrintState *ps, xmlNodePtr node)
+{
+    json_check_comma(ps);
+
+    // Print !DOCTYPE inside top level object.
+    // I.e. !DOCTYPE=html html { body = a } -> { "!DOCTYPE":"html", "html":{ "body":"a"}}
+    print_utf8(ps, COLOR_none, 1, "\"!DOCTYPE\":", NULL);
+    ps->last_char = ':';
+    xmlBuffer *buffer = xmlBufferCreate();
+    xmlNodeDump(buffer, (xmlDocPtr)ps->doq->docptr_.xml, node, 0, 0);
+    char *c = (char*)xmlBufferContent(buffer);
+    char *quoted_value = xmq_quote_as_c(c+10, c+strlen(c)-1);
+    print_utf8(ps, COLOR_none, 3, "\"", NULL, quoted_value, NULL, "\"", NULL);
+    free(quoted_value);
+    xmlBufferFree(buffer);
     ps->last_char = '"';
 }
 
@@ -1482,6 +1474,47 @@ void xmq_fixup_json_before_writeout(XMQDoc *doq)
     }
 }
 
+
+void collect_leading_ending_comments_doctype(XMQPrintState *ps, xmlNodePtr *first, xmlNodePtr *last)
+{
+    xmlNodePtr f = *first;
+    xmlNodePtr l = *last;
+    xmlNodePtr node;
+
+    for (node = f; node && node != l; node = node->next)
+    {
+        if (is_doctype_node(node) || is_comment_node(node))
+        {
+            push_stack(ps->pre_nodes, node);
+            if (is_comment_node(node)) ps->pre_post_num_comments_total++;
+            continue;
+        }
+        break;
+    }
+
+    if (*first != node)
+    {
+        *first = node;
+        f = node;
+    }
+
+    for (node = l; node && node != f; node = node->prev)
+    {
+        if (is_comment_node(node))
+        {
+            push_stack(ps->post_nodes, node);
+            ps->pre_post_num_comments_total++;
+            continue;
+        }
+        break;
+    }
+
+    if (*last != node)
+    {
+        *last = node;
+    }
+}
+
 #else
 
 // Empty function when XMQ_NO_JSON is defined.
@@ -1497,6 +1530,10 @@ bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop)
 
 // Empty function when XMQ_NO_JSON is defined.
 void json_print_object_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to)
+{
+}
+
+void collect_leading_ending_comments_doctype(XMQPrintState *ps, xmlNodePtr *first, xmlNodePtr *last)
 {
 }
 
