@@ -452,7 +452,8 @@ struct XMQParseState
     Stack *element_stack; // Top is last created node
     void *element_last; // Last added sibling to stack top node.
     bool parsing_doctype; // True when parsing a doctype.
-    void *add_doctype_before; // Used when retrofitting a doctype found in json.
+    void *add_pre_node_before; // Used when retrofitting pre-root comments and doctype found in json.
+    void *add_post_node_after; // Used when retrofitting post-root comments found in json.
     bool doctype_found; // True after a doctype has been parsed.
     bool parsing_pi; // True when parsing a processing instruction, pi.
     bool merge_text; // Merge text nodes and character entities.
@@ -1243,7 +1244,8 @@ struct XMQParseState
     Stack *element_stack; // Top is last created node
     void *element_last; // Last added sibling to stack top node.
     bool parsing_doctype; // True when parsing a doctype.
-    void *add_doctype_before; // Used when retrofitting a doctype found in json.
+    void *add_pre_node_before; // Used when retrofitting pre-root comments and doctype found in json.
+    void *add_post_node_after; // Used when retrofitting post-root comments found in json.
     bool doctype_found; // True after a doctype has been parsed.
     bool parsing_pi; // True when parsing a processing instruction, pi.
     bool merge_text; // Merge text nodes and character entities.
@@ -3517,7 +3519,21 @@ void do_comment(XMQParseState*state,
     size_t indent = col-1;
     char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_comment(indent, ' ', start, stop);
     xmlNodePtr n = xmlNewDocComment(state->doq->docptr_.xml, (const xmlChar *)trimmed);
-    xmlAddChild(parent, n);
+
+    if (state->add_pre_node_before)
+    {
+        // Insert comment before this node.
+        xmlAddPrevSibling((xmlNodePtr)state->add_pre_node_before, n);
+    }
+    else if (state->add_post_node_after)
+    {
+        // Insert comment after this node.
+        xmlAddNextSibling((xmlNodePtr)state->add_post_node_after, n);
+    }
+    else
+    {
+        xmlAddChild(parent, n);
+    }
     state->element_last = n;
     free(trimmed);
 }
@@ -3627,10 +3643,10 @@ void do_element_value_quote(XMQParseState *state,
             longjmp(state->error_handler, 1);
         }
         state->doq->docptr_.xml->intSubset = dtd;
-        if (state->add_doctype_before)
+        if (state->add_pre_node_before)
         {
             // Insert doctype before this node.
-            xmlAddPrevSibling((xmlNodePtr)state->add_doctype_before, (xmlNodePtr)dtd);
+            xmlAddPrevSibling((xmlNodePtr)state->add_pre_node_before, (xmlNodePtr)dtd);
         }
         else
         {
@@ -6812,7 +6828,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         return;
     }
 
-    if (key_start && *key_start == '/' && *(key_start+1) == '/' && key_stop == key_start+2)
+    if (key_start && key_stop == key_start+2 && *key_start == '/' && *(key_start+1) == '/')
     {
         // This is "//":"symbol" which means a comment node in xml.
         DO_CALLBACK_SIM(comment, state, start_line, start_col, content_start, content_stop, content_stop);
@@ -6820,12 +6836,22 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         return;
     }
 
-    if (key_start && *key_start == '_' && key_stop == key_start+1)
+    if (key_start && key_stop == key_start+3 && *key_start == '_' && *(key_start+1) == '/' && *(key_start+2) == '/')
+    {
+        // This is "_//":"symbol" which means a comment node in xml prefixing the root xml node.
+        state->add_pre_node_before = (xmlNode*)state->element_stack->top->data;
+        DO_CALLBACK_SIM(comment, state, start_line, start_col, content_start, content_stop, content_stop);
+        state->add_pre_node_before = NULL;
+        free(content_start);
+        return;
+    }
+
+    if (key_start && key_stop == key_start+1 && *key_start == '_' )
     {
         // This is the element name "_":"symbol" stored inside the json object,
         // in situations where the name is not visible as a key. For example
         // the root json object and any object in arrays.
-        xmlNodePtr container = (xmlNodePtr)state->element_last;
+        xmlNodePtr container = (xmlNodePtr)state->element_stack->top->data;
         size_t len = content_stop - content_start;
         char *name = (char*)malloc(len+1);
         memcpy(name, content_start, len);
@@ -6844,9 +6870,9 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
             // This is the one and only !DOCTYPE element.
             DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
             state->parsing_doctype = true;
-            state->add_doctype_before = (xmlNode*)state->element_stack->top->data;
+            state->add_pre_node_before = (xmlNode*)state->element_stack->top->data;
             DO_CALLBACK_SIM(element_value_quote, state, state->line, state->col, content_start, content_stop, content_stop);
-            state->add_doctype_before = NULL;
+            state->add_pre_node_before = NULL;
             free(content_start);
             return;
         }

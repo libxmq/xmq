@@ -221,7 +221,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         return;
     }
 
-    if (key_start && *key_start == '/' && *(key_start+1) == '/' && key_stop == key_start+2)
+    if (key_start && key_stop == key_start+2 && *key_start == '/' && *(key_start+1) == '/')
     {
         // This is "//":"symbol" which means a comment node in xml.
         DO_CALLBACK_SIM(comment, state, start_line, start_col, content_start, content_stop, content_stop);
@@ -229,12 +229,22 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         return;
     }
 
-    if (key_start && *key_start == '_' && key_stop == key_start+1)
+    if (key_start && key_stop == key_start+3 && *key_start == '_' && *(key_start+1) == '/' && *(key_start+2) == '/')
+    {
+        // This is "_//":"symbol" which means a comment node in xml prefixing the root xml node.
+        state->add_pre_node_before = (xmlNode*)state->element_stack->top->data;
+        DO_CALLBACK_SIM(comment, state, start_line, start_col, content_start, content_stop, content_stop);
+        state->add_pre_node_before = NULL;
+        free(content_start);
+        return;
+    }
+
+    if (key_start && key_stop == key_start+1 && *key_start == '_' )
     {
         // This is the element name "_":"symbol" stored inside the json object,
         // in situations where the name is not visible as a key. For example
         // the root json object and any object in arrays.
-        xmlNodePtr container = (xmlNodePtr)state->element_last;
+        xmlNodePtr container = (xmlNodePtr)state->element_stack->top->data;
         size_t len = content_stop - content_start;
         char *name = (char*)malloc(len+1);
         memcpy(name, content_start, len);
@@ -253,9 +263,9 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
             // This is the one and only !DOCTYPE element.
             DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
             state->parsing_doctype = true;
-            state->add_doctype_before = (xmlNode*)state->element_stack->top->data;
+            state->add_pre_node_before = (xmlNode*)state->element_stack->top->data;
             DO_CALLBACK_SIM(element_value_quote, state, state->line, state->col, content_start, content_stop, content_stop);
-            state->add_doctype_before = NULL;
+            state->add_pre_node_before = NULL;
             free(content_start);
             return;
         }

@@ -204,7 +204,8 @@ struct XMQParseState
     Stack *element_stack; // Top is last created node
     void *element_last; // Last added sibling to stack top node.
     bool parsing_doctype; // True when parsing a doctype.
-    void *add_doctype_before; // Used when retrofitting a doctype found in json.
+    void *add_pre_node_before; // Used when retrofitting pre-root comments and doctype found in json.
+    void *add_post_node_after; // Used when retrofitting post-root comments found in json.
     bool doctype_found; // True after a doctype has been parsed.
     bool parsing_pi; // True when parsing a processing instruction, pi.
     bool merge_text; // Merge text nodes and character entities.

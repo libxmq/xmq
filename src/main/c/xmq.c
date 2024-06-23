@@ -1971,7 +1971,21 @@ void do_comment(XMQParseState*state,
     size_t indent = col-1;
     char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_comment(indent, ' ', start, stop);
     xmlNodePtr n = xmlNewDocComment(state->doq->docptr_.xml, (const xmlChar *)trimmed);
-    xmlAddChild(parent, n);
+
+    if (state->add_pre_node_before)
+    {
+        // Insert comment before this node.
+        xmlAddPrevSibling((xmlNodePtr)state->add_pre_node_before, n);
+    }
+    else if (state->add_post_node_after)
+    {
+        // Insert comment after this node.
+        xmlAddNextSibling((xmlNodePtr)state->add_post_node_after, n);
+    }
+    else
+    {
+        xmlAddChild(parent, n);
+    }
     state->element_last = n;
     free(trimmed);
 }
@@ -2081,10 +2095,10 @@ void do_element_value_quote(XMQParseState *state,
             longjmp(state->error_handler, 1);
         }
         state->doq->docptr_.xml->intSubset = dtd;
-        if (state->add_doctype_before)
+        if (state->add_pre_node_before)
         {
             // Insert doctype before this node.
-            xmlAddPrevSibling((xmlNodePtr)state->add_doctype_before, (xmlNodePtr)dtd);
+            xmlAddPrevSibling((xmlNodePtr)state->add_pre_node_before, (xmlNodePtr)dtd);
         }
         else
         {

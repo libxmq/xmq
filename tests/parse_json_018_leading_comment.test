@@ -1,0 +1,12 @@
+INPUT
+<?xml version="1.0" encoding="utf8"?>
+<!--Början-->
+<hoppsan><a>1</a></hoppsan>
+XMQ
+// Början
+hoppsan {
+    a = 1
+}
+JSON
+{"_//":"Början","_":"hoppsan","a":1}
+END
