@@ -7755,7 +7755,7 @@ void json_print_element_with_children(XMQPrintState *ps,
 
     ps->line_indent += ps->output_settings->add_indent;
 
-    while (ps->pre_nodes && ps->pre_nodes->size > 0)
+    while (!container && ps->pre_nodes && ps->pre_nodes->size > 0)
     {
         xmlNodePtr node = (xmlNodePtr)rock_stack(ps->pre_nodes);
 
@@ -7796,7 +7796,7 @@ void json_print_element_with_children(XMQPrintState *ps,
 
     json_print_object_nodes(ps, node, (xmlNode*)from, (xmlNode*)to);
 
-    while (ps->post_nodes && ps->post_nodes->size > 0)
+    while (!container && ps->post_nodes && ps->post_nodes->size > 0)
     {
         xmlNodePtr node = (xmlNodePtr)rock_stack(ps->post_nodes);
 
@@ -8084,7 +8084,6 @@ void xmq_fixup_json_before_writeout(XMQDoc *doq)
         i = next;
     }
 }
-
 
 void collect_leading_ending_comments_doctype(XMQPrintState *ps, xmlNodePtr *first, xmlNodePtr *last)
 {
