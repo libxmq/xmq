@@ -1,0 +1,88 @@
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:output(method         = html
+               doctype-system = about:legacy-compat
+               encoding       = utf-8
+               indent         = yes)
+    xsl:template(match = list)
+    {
+        html {
+            head {
+                meta(http-equiv = content-type
+                content    = 'text/html; charset=UTF-8')
+                title = libxmq
+                link(type = text/css
+                     href = resources/style.css
+                     rel  = stylesheet)
+                link(type = text/css
+                     href = resources/xmq.css
+                     rel  = stylesheet)
+                script(type = text/javascript
+                       src  = resources/code.js) = ''
+                meta(name          = viewport
+                     content       = width=device-width
+                     initial-scale = 1.0)
+            }
+            body(onload = 'checkBackgroundSetting();')
+            {
+                h1 = 'A list of markup/data-storage languages.'
+                'Last updated 2024-08-11 oehrstroem@gmail.com'
+                p
+                'Source: '
+                a(href=resources/languages.xmq) = languages.xmq
+                ' Transform: '
+                a(href=resources/genlanguages.xslq) = genlanguages.xslq
+                br
+                'Cmdline: xmq languages.xmq transform genlanguages.xslq to-html'
+                p
+                table(border = 0)
+                {
+                    xsl:for-each(select = lang)
+                    {
+                        tr {
+                            td {
+                                a {
+                                   xsl:attribute(name = href) {
+                                       xsl:value-of(select = url)
+                                   }
+                                   xsl:value-of(select = name)
+                                }
+                            }
+                            td(style='padding-right:10px') {
+                                xsl:value-of(select = year)
+                            }
+                            td {
+                                xsl:value-of(select = info)
+                            }
+                        }
+                        tr {
+                            td
+                            td
+                            td(style = 'font-style:italic') {
+                                xsl:value-of(select = by)
+                            }
+                        }
+                        tr {
+                            td
+                            td
+                            td {
+                                div(style = '
+                                        display:inline-block;
+                                        padding:10px;
+                                        white-space:pre;
+                                        color:white;
+                                        font-family:monospace;
+                                        font-size: 10px;
+                                        border-radius:5px;
+                                        background-color:#888888;') {
+                                    xsl:value-of(select = example)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

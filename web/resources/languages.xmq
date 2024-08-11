@@ -1,0 +1,383 @@
+list {
+    lang {
+        name    = GML
+        info    = 'Markup Language.'
+        year    = 1969
+        url     = https://en.wikipedia.org/wiki/IBM_Generalized_Markup_Language
+        by      = 'Charles Goldfarb, Edward Mosher and Raymond Lorie'
+        example = ''':h1 id='intr'.My Todo List
+                     :p.Time for celebration!
+                     :ol.
+                     :li.Clean house.
+                     :li.Order food.
+                     :li.Have party.
+                     :eol.
+                     Have a great time.'''
+    }
+    lang {
+        name    = 'Property Lists'
+        info    = 'The NEXTSTEP data serialization format.'
+        year    = 1989
+        url     = http://web.archive.org/web/20040817013256/http://developer.apple.com/documentation/Cocoa/Conceptual/PropertyLists/Concepts/OldStylePListsConcept.html#//apple_ref/doc/uid/20001012
+        example = '{
+                       user = wshakesp;
+                       birth = 1564;
+                       death = 1616;
+                       Play = {
+                           title = Hamlet;
+                           ending = "Everyone dies.";
+                           protagonists = ( "Hamlet", "Claudius", "Gertrude" );
+                       };
+                       binarydata = <0fbd777 1c2735ae>
+                   }'
+    }
+    lang {
+        name    = XML
+        info    = 'Extensible Markup Language a subset of SGML.'
+        year    = 1998
+        url     = https://www.w3.org/TR/1998/REC-xml-19980210.html
+        by      = 'World Wide Web Consortium'
+        example = '<car>
+                     <model>Satsuma</model>
+                     <year>1974</year>
+                     <speed>80 km/h</speed>
+                     <color>yellow/rust</color>
+                   </car>'
+    }
+    lang {
+        name    = JSON
+        info    = 'JavaScript Object Notation is a lightweight data-interchange format.'
+        year    = 2000
+        url     = https://json.org
+        by      = 'Douglas Crockford'
+        tags    = #syntax_types
+        example = '{
+                       "color": "red",
+                       "speed": 123,
+                       "working": true,
+                       "null": null,
+                       "tires" : [ 1, "2", null, "null", true, "true", "round", {}, [] ]
+                   }'
+    }
+    lang {
+        name    = YAML
+        info    = 'Human-friendly data serialization language.'
+        year    = 2001
+        url     = https://yaml.org/
+        by      = 'Oren Ben-Kiki, Clark Evans, Brian Ingerson'
+        example = 'invoice: 34843
+                   date   : 2001-01-23
+                   bill-to: &id001
+                       given  : Chris
+                       family : Dumars
+                       address:
+                           lines: |
+                               458 Walkman Dr.
+                               Suite #292
+                           city    : Royal Oak
+                           state   : MI
+                           postal  : 48046
+                   ship-to: *id001
+                   product:
+                       - sku         : BL394D
+                         quantity    : 4
+                         description : Basketball
+                         price       : 450.00
+                       - sku         : BL4438H
+                         quantity    : 1
+                         description : Super Hoop
+                         price       : 2392.00'
+    }
+    lang {
+        name    = OGDL
+        info    = 'The Ordered Graph Data Language is a structured textual format that
+                   represents information in the form of graphs, where the nodes are strings
+                   and the arcs or edges are spaces or indentation.'
+        year    = 2002
+        url     = https://ogdl.org/
+        by      = 'Rolf Veen'
+        example = 'network
+                     eth0
+                       ip   192.168.0.10
+                       mask 255.255.255.0
+                       gw   192.168.0.1
+                   hostname crispin'
+    }
+    lang {
+        name    = DL
+        info    = 'A Streaming Data Language.'
+        year    = 2002
+        url     = http://web.archive.org/web/20021005084855/http://www.notdotnet.org/dl/README
+        by      = 'Tom Bradford'
+        example = 'UserInfo {
+                      name     "Tom"
+                      age      29
+                      happy    true
+                      password "something"
+                      favColor {
+                         red      255
+                         green    0
+                         blue     0
+                      }
+                      groups {
+                         "admin"
+                         "staff"
+                         "wheel"
+                      }
+                   }'
+    }
+    lang {
+        name    = SMEL
+        info    = '''Some Modest Extensible Language. It's inspired by XML, but intended to be more flexible,
+                     more compact, and more readable.'''
+        year    = 2003
+        by      = 'Tommy Carlier'
+        example = '
+
+                   table(id="data:Persons")
+                   {
+                     fields(pk=!nr) /* the primary key is nr (number*/")>
+                     {
+                       field(id=!nr type="number", unique="true");
+                       field(id=!first_name type="text" maxlength=100);
+                       field(id=!last_name type="text" maxlength=100);
+                       field(id=!mail type="text" maxlength=200);
+                     }
+
+                     data
+                     {
+                       row {0, "Tommy", "Carlier", "tommy.carlier@pandora.be"}
+                       row {1, "John", "Doe", "john@doe.com"}
+                       row {2, "Bill", "Gates", "bill.gates@microsoft.com"}
+                     }
+                   }'
+    }
+    lang {
+        name    = SDL
+        info    = 'Simple Data Language created for Apache HiveMind, has elements, attributes, and nesting present in XML,
+                   but is geared towards configuration.'
+        year    = 2003
+        url     = http://web.archive.org/web/20040603003051/http://jakarta.apache.org/hivemind/sdl.html
+        by      = 'Dieter Bogdoll'
+        example = 'module(id      = some.module
+                          version = "1.0.0")
+                   {
+                       // A comment...
+                       configuration(id = ControlPipeline)
+                       {
+                           description = << A long, multiline string
+                                            that may contain "quoted" sections. >>
+                           schema {
+                               element(name = processor)
+                               {
+                                   attribute(name     = alfa
+                                             required = true)
+                               }
+                           }
+                       }
+                   }'
+    }
+    lang {
+        name    = LMNL
+        info    = 'A Layered Markup and Annotation Language with overlapping mark regions.'
+        year    = 2002
+        url     = http://web.archive.org/web/20070617135137/http://www.lmnl.org/prose/tutorial/index.html
+        example = '[!lmnl version="0.1"]
+                   [!ns p="http://www.example.com/paper"]
+                   [p:extract
+                     [href
+                       [title}Ted Hughes and Crow{]
+                       }http://www.zeta.org.au/~annskea/Trickstr.htm{]}
+                   [p:paragraph}
+                   Trickster has never been restricted to one society. In European countries he
+                   appears in the guise of Jester or Fool, and his roots in the human psyche are
+                   deep.
+                   [!ns bib="http://www.example.com/bibliographic"]
+                   [bib:reference}Alan Garner has collected Trickster stories from many
+                   countries in his book
+                   [p:book [bib:ISBN}0241892228{]
+                           [buy}http://www.allbookstores.com/book/compare/0241892228{]
+                           [buy}http://www.abebooks.com/{]
+                           [buy}http://www.bookfinder.com/{]}The Guizer{p:book] and he writes:
+                   {p:paragraph]
+                   [p:extract}
+                   If we take the elements from which our emotions are built and give them
+                   separate names such as Mother, Hero, Father, King, Child, Queen, the element
+                   that I think marks most of us is that of the Fool.
+                   {bib:reference
+                     [cite}[bib:author}Garner, A.{bib:author], [bib:title}The Guizer: A Book of Fools{bib:title],
+                           London, [bib:publisher}Hamish Hamilton{bib:publisher], [bib:year}1975{bib:year],
+                           p.[bib:page}9{bib:page].{cite]]
+                   {p:extract]
+                   {p:extract]'
+    }
+    lang {
+        name    = ONX
+        info    = 'Alternativeto XML but designed to be data-oriented instead of document-oriented.'
+        year    = 2003
+        url     = http://web.archive.org/web/20030203054936/http://www.seairth.com/web/onx/onx.html
+        by      = 'Seairth Jacobs'
+        example = ':onx{
+                       :calendar{
+                           :entry{
+                               :date["2003" "1" "1"]
+                               :type["event"]
+                               :note["Happy New Year!"]
+                           }
+                           :entry{
+                               :date["2003" "3" "8"]
+                               :type["birthday"]
+                               :note["Buy self a present..."]
+                           }
+                       }calendar
+                   }onx
+
+                   :onx{
+                       :fields{
+                           :field["ID" "integer"]
+                           :field["city" "string"]
+                           :field["state" "string"]
+                       }
+                       :data{
+                           :record["1" "Norfolk" "VA"]
+                           :record["2" "Salem" "MA"]
+                       }
+                   }onx
+
+                   :onx{:request{:host["www.seairth.com"]:resource["/web/onx/onx.html"]}}onx'
+    }
+    lang {
+        name    = Config
+        info    = 'A Python configuration file format.'
+        year    = 2004
+        url     = http://web.archive.org/web/20041114163743/http://www.red-dove.com/python_config.html
+        by      = 'Vinay Sajip'
+        example = '''# A comment regarding this message.
+                     messages:
+                     [
+                       {
+                         stream : `sys.stderr`
+                         message: Welcome
+                         name: Harry
+                       }
+                       {
+                         stream : `sys.stdout`
+                         message: Welkom
+                         name: 'Ruud Groot'
+                       }
+                       {
+                         stream : $messages[0].stream
+                         message : Bienvenue
+                         name    : Yves
+                       }
+                     ]'''
+    }
+    lang {
+        name    = ConfigObj
+        info    = 'ConfigObj is a simple but powerful Python config file reader and writer: an ini file round tripper.'
+        year    = 2004
+        url     = http://web.archive.org/web/20060414213925/http://www.voidspace.org.uk/python/configobj.html
+        by      = 'Michael Foord, Nicola Larosa'
+        example = ''''
+                  keyword1 = value1
+                  'keyword 2' = 'value 2'
+
+                  [ "section 1" ]
+                  keyword 3 = value 3
+                  'keyword 4' = value4, value 5, 'value 6'
+
+                      [[ sub-section ]]
+                      'keyword 6' = '''A multiline value,
+                  that spans more than one line :-)
+                  The line breaks are included in the value.'''
+
+                          [[[ sub-sub-section ]]]
+                          'keyword 7' = 'value 8'
+                  ''''
+    }
+    lang {
+        name    = SSYN
+        info    = 'SSYN is intended to be a simpler alternative to data-centric XML and YAML.'
+        year    = 2004
+        url     = http://web.archive.org/web/20060110060040/http://injektilo.org/ssyn/spec/ssyn_model_and_syntax.html
+        by      = 'Jason Diamond'
+        example = 'purchase order: 1999-10-20
+                   ship to:
+                       name: Alice Smith
+                       street: 123 Maple Street
+                       city: Mill Valley
+                       state: CA
+                       zip: 90952
+                       country: US
+                   comment::
+                       Hurry, my lawn is going wild!
+                   items:
+                       : 872-AA
+                           product name: Lawnmower
+                           quantity: 1
+                           price: 148.95
+                           comment::
+                               Confirm this is electronic.
+                       : 926-AA
+                           product name: Baby Monitor
+                           quantity: 1
+                           price: 39.98
+                           ship date: 1999-05-21'
+    }
+    lang {
+        name    = GroovyMarkup
+        info    = 'The native Groovy syntax used to represent XML/HTML.'
+        year    = 2004
+        example = '''html(lang:'en') {
+                           head {
+                               meta('http-equiv':'"Content-Type" content="text/html; charset=utf-8"')
+                               title('My page')
+                           }
+                           body {
+                               p('This is an example of HTML contents')
+                           }
+                       }'''
+    }
+    lang {
+        name    = DIXY
+        info    = 'Dixy is a very simple data format based on dictionaries.'
+        year    = 2017
+        url     = https://github.com/kuyawa/dixy
+        by      = 'Kuyawa Kata'
+        example = '# Commentary...
+                   car:
+                       name: Volvo
+                       color: Red
+                       speed: 123.45'
+    }
+    lang {
+        name    = Boulder
+        info    = 'Boulder - A Perl API for hierarchical tag/value structures.'
+        url     = https://metacpan.org/dist/Boulder/view/Boulder.pod
+        by      = 'Lincoln D. Stein'
+        year    = 2021
+        example = 'Name=Lincoln Stein
+                   Home=/u/bush202/lds32
+                   Privileges={
+                      ChangePasswd=yes
+                      Reboot=yes
+                   }'
+    }
+    lang {
+        name    = HDF
+        info    = 'HDF stands for Hierarchical Data Format. Alternative to both XML and XSLT'
+        year    = 2020
+        by      = 'Brandon Long'
+        url     = http://clearsilver.net/docs/man_hdf.hdf
+        example = 'age {
+                     Name = My Index
+                     URL = /myindex.html
+                     Menu {
+                       0 = Home
+                       1 = Preferences
+                       2 = Help
+                       3 = Support
+                     }
+                   }'
+    }
+}

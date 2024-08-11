@@ -18,7 +18,7 @@ html {
     }
     body(onload='checkBackgroundSetting();')
     {
-        h1 = 'XMQ - a new language for xml/html (+json)'
+        h1 = 'XMQ - a language for xml/html (+json)'
         i {
             'by Fredrik Öhrström (last updated '
             &DATE;
@@ -45,10 +45,10 @@ html {
                   hidden)
             button(type  = button
                    title = 'Max 200KB, logs cleared after 30 days.'
-                   onclick = '''document.getElementById('uploadFile').click()''') = 'Upload XML/HTML/JSON'
+                   onclick = '''document.getElementById('uploadFile').click()''') = 'Upload your own XML/HTML/JSON and render as XMQ'
         }
         div {
-            a(href = https://github.com/libxmq/xmq/releases/latest) = '[Download]'
+            a(href = https://github.com/libxmq/xmq/releases/latest) = '[Download Executables]'
             &nbsp;
             '  '
             a(href = https://github.com/libxmq/xmq) = [Github]
@@ -59,14 +59,13 @@ html {
             a(href = https://github.com/orgs/libxmq/discussions) = '[Forum/Discussions]'
             br
         }
-        p = 'Sometimes it seems like new developers are gravitating towards JSON and other
-             key=value based languages for data storage, leaving XML behind. This is somewhat
-             understandable since the visual appearance of XML (when used for data storage)
-             can be verbose, to say the least. The discombobulated handling of whitespace does not help either.
-             It would be sad to see XML fade away simply because of its visual appearance.'
-        p = 'But what if there is a way to render XML as a key value language and fix the whitespace
-             at the same time? This would be the same XML as before, just view/edited in a different way.
-             XMQ is such a language, it is XML just with Q instead of L.'
+        &SHIPORDER_XMQ;
+        ' '
+        pre(class = 'xmq xmq_light w40')
+        {
+            &SHIPORDER_XML;
+            &#10;
+        }
         p = 'The XMQ format is easier for a human to read and write than XML/HTML yet it
              captures exactly the XML/HTML content. It can always be safely pretty printed
              without introducing significant whitespace. The file-suffix HTMQ is used
@@ -112,20 +111,16 @@ html {
             a(href = resources/SEQLXML26.xml_xmq.html) = '[WIPO ST.26_sequence listing xmq]'
             '  '
             a(href = resources/thresholds.xml_xmq.html) = '[Imagemagick thresholds xmq]'
+            '  '
+            a(href = resources/crazy.xml_xmq.html) = '[Heartbeat Cluster Configuration xmq]'
         }
+        a(href = languages.html) = 'An exposé of existing markup/data-storage languages.'
 
         p {
             'Upload your own xml/html/json file and render it as xmq on-line: '
             button(type  = button
                    title = 'Max 200KB, logs cleared after 30 days.'
                    onclick = '''document.getElementById('uploadFile').click()''') = 'Upload XML/HTML/JSON'
-        }
-        &SHIPORDER_XMQ;
-        ' '
-        pre(class = 'xmq xmq_light w40')
-        {
-            &SHIPORDER_XML;
-            &#10;
         }
         p {
             'You can use the standalone '
@@ -139,18 +134,6 @@ html {
              With the xmq tool you can syntax highlight and pretty print XMQ (and thus indirectly XML and HTML).
              You can convert between XMQ/HTMQ and XML/HTML/JSON, you can apply XSLT transformations, replace
              entities with other XMQ/XML/JSON or quoted content, write raw text output and more...'
-        }
-        div {
-            a(href = https://github.com/libxmq/xmq/releases/latest) = '[Download]'
-            &nbsp;
-            '  '
-            a(href = https://github.com/libxmq/xmq) = [Github]
-            '  '
-            a(href = xmq.pdf) = [Grammar]
-            &nbsp;
-            '  '
-            a(href = https://github.com/orgs/libxmq/discussions) = '[Forum/Discussions]'
-            br
         }
         pre {
             '''
@@ -520,7 +503,7 @@ html {
         h2 = 'XSLT transforms'
 
         p {
-            'XSLT transforms can be terribly(horribly) complicated when you have to deal with whitespace.
+            'XSLT transforms can be complicated when you have to deal with whitespace.
              Again the XMQ format solves this part of the XSLT complexity because the whitespace in XMQ is explicit.
              Let us convert the curled JSON directly into an HTML page using xmq and an xslq transform.'
             &nbsp;
@@ -571,10 +554,6 @@ html {
         h2 = 'Conclusions'
         p = 'With XMQ the assumed dichotomy between mark-up languages (like XML) and key-value store languages (like JSON)
              has been (perhaps surprisingly) removed. We can now use XML for mark-up situations and XMQ for key-value
-             store situations. They are interchangeable and all the years of effort going into XSLT/XSD and other
-             tools can still be used with XMQ.'
-
-        p = 'There are of course still bugs to fix in xmq and improvements to how the specification works.
-             Please let me know if you find bugs or other improvements.'
+             store situations.'
     }
 }
