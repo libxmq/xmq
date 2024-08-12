@@ -127,6 +127,101 @@ list {
                    }'
     }
     lang {
+        name    = LMNL
+        info    = 'A Layered Markup and Annotation Language with overlapping mark regions.'
+        year    = 2002
+        url     = http://web.archive.org/web/20070617135137/http://www.lmnl.org/prose/tutorial/index.html
+        example = '[!lmnl version="0.1"]
+                   [!ns p="http://www.example.com/paper"]
+                   [p:extract
+                     [href
+                       [title}Ted Hughes and Crow{]
+                       }http://www.zeta.org.au/~annskea/Trickstr.htm{]}
+                   [p:paragraph}
+                   Trickster has never been restricted to one society. In European countries he
+                   appears in the guise of Jester or Fool, and his roots in the human psyche are
+                   deep.
+                   [!ns bib="http://www.example.com/bibliographic"]
+                   [bib:reference}Alan Garner has collected Trickster stories from many
+                   countries in his book
+                   [p:book [bib:ISBN}0241892228{]
+                           [buy}http://www.allbookstores.com/book/compare/0241892228{]
+                           [buy}http://www.abebooks.com/{]
+                           [buy}http://www.bookfinder.com/{]}The Guizer{p:book] and he writes:
+                   {p:paragraph]
+                   [p:extract}
+                   If we take the elements from which our emotions are built and give them
+                   separate names such as Mother, Hero, Father, King, Child, Queen, the element
+                   that I think marks most of us is that of the Fool.
+                   {bib:reference
+                     [cite}[bib:author}Garner, A.{bib:author], [bib:title}The Guizer: A Book of Fools{bib:title],
+                           London, [bib:publisher}Hamish Hamilton{bib:publisher], [bib:year}1975{bib:year],
+                           p.[bib:page}9{bib:page].{cite]]
+                   {p:extract]
+                   {p:extract]'
+    }
+    lang {
+        name    = BetterMarkup
+        info    = 'Better Markup format is an alternative syntax for XML.'
+        year    = 2002
+        url     = http://web.archive.org/web/20031223214317/http://bettermarkup.com/
+        by      = 'Bryan Livingston'
+        example = '{*BM DefaultAttributeName=name}
+                   {*xml version="1.0"}
+                   <TEST-STYLE />
+                   {*  This is comment number 1.}
+                   <staff>
+                           <employee>
+                                   <employeeId>EMP0001~
+                                   <name>Margaret Martin~
+                                   <position>Accountant~
+                                   <salary>56,000~
+                                   <gender>Female~
+                                   <address domestic=Yes>1230 North Ave. Dallas, Texas 98551~
+                           ~
+                           <employee>
+                                   <employeeId>EMP0002~
+                                   <name>Martha Raynolds{This is a CDATASection &ent2;}~
+                                   <position>Secretary~
+                                   <salary>35,000~
+                                   <gender>Female~
+                                   <address domestic=Yes street=Yes>& Dallas, &  98554~
+                           ~
+                   ~'
+    }
+    lang {
+        name    = SML
+        info    = 'Simplify XML and focus on user-friendly syntax: easier to read and write than XML.'
+        year    = 2003
+        url     = http://web.archive.org/web/20030414010210/http://www.docuverse.com/blog/donpark/2003/02/04.html
+        by      = 'Don Park'
+        example = '''XML Version:
+
+                     <circle x="1.0" y="1.0" r="0.5">
+                         <fill color="#FF0000"/>
+                         <text>Hello</text>
+                         <text>World</text>
+                     </circle>
+
+                     SML Version:
+
+                     circle x="1.0" y="1.0" r="0.5"
+                         fill color="#FF0000"
+                         text "Hello"
+                         text "World"
+
+                     SOSML Version:
+
+                         # comments are '#' followed by a whitespace
+                         circle x='1.0' y = '1.0' r='0.5'
+                         fill color='#ff0000' # red
+                         "some useless text as mixed content"
+                         text "Hello"
+                         text
+                             a href='somewhere'
+                                 "text with a link a quote like this \" "'''
+    }
+    lang {
         name    = SMEL
         info    = '''Some Modest Extensible Language. It's inspired by XML, but intended to be more flexible,
                      more compact, and more readable.'''
@@ -178,40 +273,6 @@ list {
                    }'
     }
     lang {
-        name    = LMNL
-        info    = 'A Layered Markup and Annotation Language with overlapping mark regions.'
-        year    = 2002
-        url     = http://web.archive.org/web/20070617135137/http://www.lmnl.org/prose/tutorial/index.html
-        example = '[!lmnl version="0.1"]
-                   [!ns p="http://www.example.com/paper"]
-                   [p:extract
-                     [href
-                       [title}Ted Hughes and Crow{]
-                       }http://www.zeta.org.au/~annskea/Trickstr.htm{]}
-                   [p:paragraph}
-                   Trickster has never been restricted to one society. In European countries he
-                   appears in the guise of Jester or Fool, and his roots in the human psyche are
-                   deep.
-                   [!ns bib="http://www.example.com/bibliographic"]
-                   [bib:reference}Alan Garner has collected Trickster stories from many
-                   countries in his book
-                   [p:book [bib:ISBN}0241892228{]
-                           [buy}http://www.allbookstores.com/book/compare/0241892228{]
-                           [buy}http://www.abebooks.com/{]
-                           [buy}http://www.bookfinder.com/{]}The Guizer{p:book] and he writes:
-                   {p:paragraph]
-                   [p:extract}
-                   If we take the elements from which our emotions are built and give them
-                   separate names such as Mother, Hero, Father, King, Child, Queen, the element
-                   that I think marks most of us is that of the Fool.
-                   {bib:reference
-                     [cite}[bib:author}Garner, A.{bib:author], [bib:title}The Guizer: A Book of Fools{bib:title],
-                           London, [bib:publisher}Hamish Hamilton{bib:publisher], [bib:year}1975{bib:year],
-                           p.[bib:page}9{bib:page].{cite]]
-                   {p:extract]
-                   {p:extract]'
-    }
-    lang {
         name    = ONX
         info    = 'Alternativeto XML but designed to be data-oriented instead of document-oriented.'
         year    = 2003
@@ -245,6 +306,26 @@ list {
                    }onx
 
                    :onx{:request{:host["www.seairth.com"]:resource["/web/onx/onx.html"]}}onx'
+    }
+    lang {
+        name    = ConciseXML
+        info    = 'Alternative xml for non-hierarchial data, program logic, document markup, and binary data.'
+        year    = 2003
+        url     = http://web.archive.org/web/20060107061026/http://concisexml.org/water_ch02.pdf
+        by      = 'Christopher Fry'
+        example = 'ConciseXML: <textarea>hi</>
+                   XML 1.0:    <textarea>hi</textarea>
+
+                   ConciseXML: <person "Mike" "Plusch"/>
+                   XML 1.0:    <person first="Mike" last="Plusch"/>
+
+                   ConciseXML: "abe".<foo color="blue"/>.bar
+                   XML 1.0:    <execute_path>"abe"<foo color="blue"/>bar</execute_path>
+
+                   ConciseXML: <list <item name="bread"/> <item name="milk"/> />
+                   XML 1.0:    <list><attributes><item name=”bread”/><item name=”milk”/></attributes></list>
+
+                  '
     }
     lang {
         name    = Config
@@ -380,4 +461,5 @@ list {
                      }
                    }'
     }
+
 }
