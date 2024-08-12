@@ -21,6 +21,8 @@ cp web/resources/welcome_traveller.htmq  build/web/resources/welcome_traveller.h
 cp web/resources/welcome_traveller.html  build/web/resources/welcome_traveller.html
 cp web/resources/simple_page.htmq  build/web/resources/simple_page.htmq
 cp web/resources/sugar.xmq  build/web/resources/sugar.xmq
+cp web/resources/languages.xmq  build/web/resources/languages.xmq
+cp web/resources/genlanguages.xslq  build/web/resources/genlanguages.xslq
 cp pom.xml build/web/resources
 
 # Extract the css
@@ -114,6 +116,7 @@ example saml_idp_metadata.xml
 example saml_authn_response.xml
 example SEQLXML26.xml
 example thresholds.xml
+example crazy.xml
 
 
 $XMQ web/index.htmq \
@@ -154,6 +157,8 @@ $XMQ web/index.htmq \
      replace-entity XSD_EXAMPLE_XSQ --with-file=build/xsd_example_xsq.xml \
      replace-entity XSD_EXAMPLE_XSD --with-text-file=web/resources/xsd_example.xsd \
      to-html > build/web/index.html
+
+$XMQ web/resources/languages.xmq replace-entity DATE "$TODAY" transform web/resources/genlanguages.xslq to-html > build/web/languages.html
 
 $XMQ web/upload.htmq to-html > build/web/upload.html
 

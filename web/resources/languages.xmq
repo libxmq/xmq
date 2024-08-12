@@ -15,6 +15,24 @@ list {
                      Have a great time.'''
     }
     lang {
+        name    = SGML
+        info    = 'Standard Generalized Markup Language.'
+        year    = 1986
+        url     = https://en.wikipedia.org/wiki/Standard_Generalized_Markup_Language
+        by      = ISO
+        example = '<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook V3.1//EN">
+
+                   <article>
+                      <sect1 id="introduction"><title>Hello world introduction</title>
+
+                         <para>
+                         Hello world!
+                         </para>
+
+                      </sect1>
+                   </article>'
+    }
+    lang {
         name    = 'Property Lists'
         info    = 'The NEXTSTEP data serialization format.'
         year    = 1989
@@ -30,6 +48,24 @@ list {
                        };
                        binarydata = <0fbd777 1c2735ae>
                    }'
+    }
+    lang {
+        name    = HTML
+        info    = 'Hypertext Markup Language.'
+        year    = 1993
+        url     = https://en.wikipedia.org/wiki/HTML
+        by      = 'Tim Berners-Lee'
+        example =
+''''
+<HEADER>
+<TITLE>The World Wide Web project</TITLE>
+<NEXTID N="55">
+</HEADER>
+<BODY>
+   <H1>World Wide Web</H1>The WorldWideWeb (W3) is a wide-area<A NAME=0 HREF="WhatIs.html"> hypermedia</A>
+   information retrieval initiative aiming to give universal access to a large universe of documents.<P>
+</BODY>
+''''
     }
     lang {
         name    = XML
@@ -461,5 +497,4 @@ list {
                      }
                    }'
     }
-
 }
