@@ -43,8 +43,7 @@ list {
                        death = 1616;
                        Play = {
                            title = Hamlet;
-                           ending = "Everyone dies.";
-                           protagonists = ( "Hamlet", "Claudius", "Gertrude" );
+                           arrayofantagonists = ( "Claudius", "Polonius" );
                        };
                        binarydata = <0fbd777 1c2735ae>
                    }'
@@ -55,17 +54,14 @@ list {
         year    = 1993
         url     = https://en.wikipedia.org/wiki/HTML
         by      = 'Tim Berners-Lee'
-        example =
-''''
-<HEADER>
-<TITLE>The World Wide Web project</TITLE>
-<NEXTID N="55">
-</HEADER>
-<BODY>
-   <H1>World Wide Web</H1>The WorldWideWeb (W3) is a wide-area<A NAME=0 HREF="WhatIs.html"> hypermedia</A>
-   information retrieval initiative aiming to give universal access to a large universe of documents.<P>
-</BODY>
-''''
+        example = '<HEADER>
+                   <TITLE>The World Wide Web project</TITLE>
+                   <NEXTID N="55">
+                   </HEADER>
+                   <BODY>
+                      <H1>World Wide Web</H1>The WorldWideWeb (W3) is a wide-area<A NAME=0 HREF="WhatIs.html"> hypermedia</A>
+                      information retrieval initiative aiming to give universal access to a large universe of documents.<P>
+                   </BODY>'
     }
     lang {
         name    = XML
@@ -456,6 +452,57 @@ list {
                        }'''
     }
     lang {
+        name    = FtanML
+        info    = 'The FtanML Markup Language'
+        url = https://www.balisage.net/Proceedings/vol10/html/Kay01/BalisageVol10-Kay01.html
+        year    = 2012
+        by = 'Michael Kay, Stephanie Haupt, Max Altgelt, Julien Bergner, Lukas Graf, Dominik Helm, Axel Kroschk, Uwe von Lpke, My-Tien Nguyen, Sebastian Memer, Suhanyaa Nitkunanantharajah, Jan Landelin Pawellek, and Martin Schmitt'
+        example = '''
+<purchaseOrder
+   orderDate="1999-10-20"
+   shipTo = <country="US" [
+      <name "Alice Smith">
+      <street "123 Maple Street">
+      <city "Mill Valley">
+      <state "CA">
+      <zip 90952>
+   ]>
+   billTo = <country="US" [
+      <name "Robert Smith">
+      <street "8 Oak Avenue">
+      <city "Old Town">
+      <state "PA">
+      <zip 95819>
+   ]>
+   comment = |<emph |Hurry|>, my lawn is going wild|
+   items = [
+      <  partNum="872-AA"
+         productName="Lawnmower"
+         quantity=1
+         USPrice=148.95
+         comment=|Confirm this is <strong |electric|>|
+      >
+      <  partNum="926-AA"
+         productName="Baby Monitor"
+         quantity=1
+         USPrice=39.98
+         shipDate="1999-05-21"
+      >
+   ]
+>
+'''
+    }
+    lang {
+        name    = UCL
+        info    = 'The native Groovy syntax used to represent XML/HTML.'
+        url = https://github.com/vstakhov/libucl
+        year    = 2013
+        by = Vsevolod Stakhov
+        example = '''
+
+'''
+    }
+    lang {
         name    = DIXY
         info    = 'Dixy is a very simple data format based on dictionaries.'
         year    = 2017
@@ -468,16 +515,33 @@ list {
                        speed: 123.45'
     }
     lang {
-        name    = Boulder
-        info    = 'Boulder - A Perl API for hierarchical tag/value structures.'
-        url     = https://metacpan.org/dist/Boulder/view/Boulder.pod
-        by      = 'Lincoln D. Stein'
-        year    = 2021
-        example = 'Name=Lincoln Stein
-                   Home=/u/bush202/lds32
-                   Privileges={
-                      ChangePasswd=yes
-                      Reboot=yes
+        name    = SML
+        info    = 'XML made simple'
+        year    = 2018
+        url     = https://archive.xmlprague.cz/2018/files/presentations/A_simpler_and_shorter_representation_of_XML.pdf
+        by      = 'Jean-François Larvoire'
+        example = 'xml version="1.0" encoding="UTF-8"
+                   kml {
+                       Folder {
+                           name "Take off zones in the Alps"
+                           open 1
+                               Folder {
+                                   name Drome
+                                   visibility 0
+                                   Placemark {
+                                       description "Take off"
+                                       name "Mont Rachas"
+                                       LookAt {
+                                           longitude 5.0116666667
+                                           latitude 44.8355
+                                           range 4000
+                                           tilt 45
+                                           heading 0
+                                       }
+                                   }
+                               }
+                           }
+                       }
                    }'
     }
     lang {
@@ -495,6 +559,19 @@ list {
                        2 = Help
                        3 = Support
                      }
+                   }'
+    }
+    lang {
+        name    = Boulder
+        info    = 'Boulder - A Perl API for hierarchical tag/value structures.'
+        url     = https://metacpan.org/dist/Boulder/view/Boulder.pod
+        by      = 'Lincoln D. Stein'
+        year    = 2021
+        example = 'Name=Lincoln Stein
+                   Home=/u/bush202/lds32
+                   Privileges={
+                      ChangePasswd=yes
+                      Reboot=yes
                    }'
     }
 }
