@@ -507,31 +507,31 @@ list {
     lang {
         name    = SDL
         info    = 'Simple Declarative Language was designed to provide a terse and perspicuous format for describing common data structures and data types.'
-        url    = 'https://web.archive.org/web/20120719083634/http://sdl.ikayzo.org/display/SDL/Language+Guide'
+        url     = https://web.archive.org/web/20120719083634/http://sdl.ikayzo.org/display/SDL/Language+Guide
         year    = 2012
         by      = 'Daniel Leuck'
-        example =
-'''''
+        example = '
 
-plants {
-    trees {
-        deciduous {
-            elm
-            oak
-        }
-    }
-}
+                   plants {
+                       trees {
+                           deciduous {
+                               elm
+                               oak
+                           }
+                       }
+                   }
 
-folder "myFiles" color="yellow" protection=on {
-    folder "my images" {
-        file "myHouse.jpg" color=true date=2005/11/05
-        file "myCar.jpg" color=false date=2002/01/05
-    }
-    folder "my documents" {
-        document "resume.pdf"
-    }
-}
-'''''
+                   folder "myFiles" color="yellow" protection=on {
+                       folder "my images" {
+                           file "myHouse.jpg" color=true date=2005/11/05
+                           file "myCar.jpg" color=false date=2002/01/05
+                       }
+                       folder "my documents" {
+                           document "resume.pdf"
+                       }
+                   }
+
+                   // https://sdlang.org/'
     }
     lang {
         name    = MicroXML
@@ -767,6 +767,25 @@ folder "myFiles" color="yellow" protection=on {
                      }
                    }'
     }
+    lang {
+        name = Tree
+        info = 'Simple fast compact user-readable binary-safe extensible structural format.'
+        year = 2020
+        url = https://github.com/nin-jin/tree.d?tab=readme-ov-file
+        by = 'Dmitry Karlovsky'
+example =
+'''''
+! doctype html
+html
+        meta @ charset \utf-8
+        link
+                @ href \web.css
+                @ rel \stylesheet
+        script @ src \web.js
+        body
+                h1 \Procter & Gamble
+'''''
+}
     lang {
         name    = Boulder
         info    = 'Boulder - A Perl API for hierarchical tag/value structures.'
