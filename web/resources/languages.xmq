@@ -452,6 +452,60 @@ list {
                        }'''
     }
     lang {
+        name    = HOCON
+        info    = 'Configuration using HOCON files'
+        year    = 2011
+        url     = https://github.com/lightbend/config/tree/main?tab=readme-ov-file#examples-of-hocon
+        example = ''''
+All of these are valid HOCON.
+
+{
+    "foo" : {
+        "bar" : 10,
+        "baz" : 12
+    }
+}
+
+Drop root braces:
+
+"foo" : {
+    "bar" : 10,
+    "baz" : 12
+}
+
+Drop quotes:
+
+foo : {
+    bar : 10,
+    baz : 12
+}
+
+Use = and omit it before {:
+
+foo {
+    bar = 10,
+    baz = 12
+}
+
+Remove commas:
+
+foo {
+    bar = 10
+    baz = 12
+}
+
+Use dotted notation for unquoted keys:
+
+foo.bar=10
+foo.baz=12
+
+Put the dotted-notation fields on a single line:
+
+foo.bar=10, foo.baz=12
+
+''''
+    }
+    lang {
         name    = FtanML
         info    = 'The FtanML Markup Language'
         url = https://www.balisage.net/Proceedings/vol10/html/Kay01/BalisageVol10-Kay01.html
@@ -494,12 +548,30 @@ list {
     }
     lang {
         name    = UCL
-        info    = 'The native Groovy syntax used to represent XML/HTML.'
+        info    = 'Universal configuration library parser'
         url = https://github.com/vstakhov/libucl
         year    = 2013
         by = Vsevolod Stakhov
         example = '''
-
+param = value;
+section {
+    param = value;
+    param1 = value1;
+    flag = true;
+    number = 10k;
+    time = 0.2s;
+    string = "something";
+    subsection {
+        host = {
+            host = "hostname";
+            port = 900;
+        }
+        host = {
+            host = "hostname";
+            port = 901;
+        }
+    }
+}
 '''
     }
     lang {
@@ -543,6 +615,33 @@ list {
                            }
                        }
                    }'
+    }
+    lang {
+        name    = ENO
+        info    = 'A Data Language For Everyone'
+        year    = 2018
+        by      = 'Simon Repp'
+        url     = https://eno-lang.org/
+        example = ''''
+author: Jane Doe
+email: jane@eno-lang.org
+
+-- my_content
+Multi-line embedded content (e.g. markdown) here ...
+-- my_content
+
+states:
+active = #fff
+hover = #b6b6b6
+
+# cities
+Den Haag: 52.069961, 4.302315
+Málaga: 36.721447, -4.421291
+서울특별시: 37.566984, 126.977041
+
+# cities expanded < cities
+Springfield: 38.790312, -77.186418
+''''
     }
     lang {
         name    = HDF
