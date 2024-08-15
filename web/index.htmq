@@ -259,8 +259,8 @@ html {
         p = 'The incidental indentation removal and n+1 quotes ideas originated in the expert group
              for JEP 378 Java Text blocks and was a collaborative effort led by Jim Laskey and Brian Goetz.
              The seed to the idea to separate desired whitespace from incidental(accidental)
-             was planted by Kevin Bourrillion and the idea for n+1 quotes came from John Rose.'
-
+             was planted by Kevin Bourrillion and the idea for n+1 quotes came from John Rose.
+             Also the HJSON language by Christian Zangl supported incidental indentation removal.'
         h2 = 'XMQ as a configuration file'
         p {
             'XMQ permits multiple root nodes which means that if you use XMQ as your software config file format
