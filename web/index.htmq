@@ -18,7 +18,7 @@ html {
     }
     body(onload='checkBackgroundSetting();')
     {
-        h1 = 'XMQ - a language for xml/html (+json)'
+        h1 = 'XMQ - a configuration language, data-storage language, logging language compatible with  xml/html and json.'
         i {
             'by Fredrik Öhrström (last updated '
             &DATE;

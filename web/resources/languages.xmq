@@ -452,6 +452,72 @@ list {
                        }'''
     }
     lang {
+name = HAML
+info = 'Beautifully DRY, well-indented, clear markup: templating haiku.'
+year = 2006
+url = https://haml.info/
+example =
+'''''
+#content
+  .left.column
+    %h2 Welcome to our site!
+    %p= print_information
+  .right.column
+    = render :partial => "sidebar"
+'''''
+
+}
+    lang {
+        name    = Recutils
+        info    = 'Tools and libraries to edit human-editable, plain text databases called recfiles. '
+        year    = 2010
+        url     = https://www.gnu.org/software/recutils/
+        example = '%rec: Book
+                   #%key: Id
+                   #%type: Id int
+                   #%auto: Id
+                   #%unique: ISBN
+                   %mandatory: Title
+                   %type: Location enum loaned home unknown
+                   %doc:
+                   + A book in my personal collection.
+
+                   Title: GNU Emacs Manual
+                   Author: Richard M. Stallman
+                   Publisher: FSF
+                   Location: home
+
+                   Title: The Colour of Magic
+                   Author: Terry Pratchett
+                   Location: loaned
+
+                   Title: Mio Cid
+                   Author: Anonymous
+                   Location: home'
+    }
+    lang {
+        name    = Pug
+        info    = 'Pug is a high-performance template engine heavily influenced by Haml.'
+        url     = https://github.com/pugjs/pug
+        year    = 2010
+        example = '''doctype html
+                     html(lang="en")
+                       head
+                         title= pageTitle
+                         script(type='text/javascript').
+                           if (foo) bar(1 + 5);
+                       body
+                         h1 Pug - node template engine
+                         #container.col
+                           if youAreUsingPug
+                             p You are amazing
+                           else
+                             p Get on it!
+                           p.
+                             Pug is a terse and simple templating language with a
+                             strong focus on performance and powerful features.'''
+    }
+    lang {
         name    = HOCON
         info    = 'Configuration using HOCON files'
         year    = 2011
@@ -510,9 +576,7 @@ list {
         url     = https://web.archive.org/web/20120719083634/http://sdl.ikayzo.org/display/SDL/Language+Guide
         year    = 2012
         by      = 'Daniel Leuck'
-        example = '
-
-                   plants {
+        example = 'plants {
                        trees {
                            deciduous {
                                elm
@@ -696,6 +760,48 @@ list {
                        speed: 123.45'
     }
     lang {
+        name    = SAN
+        info    = 'The Simple And Needed configuration format.'
+        year    = 2018
+        url     = https://web.archive.org/web/20181024171121/https://astrocorp.net/san/
+        by      = 'Sylvain Kerkour'
+        example = '# This is a SAN document
+
+                   title = "SAN Example"
+
+                   creator = {
+                     name = "Sylvain Kerkour"
+                     website = "https://kerkour.com"
+                   }
+
+                   database = {
+                     server = "192.168.1.1"
+                     ports = [ 8001, 8001, 8002 ]
+                     connection_max = 5000
+                     enabled = true
+                   }
+
+                   servers = {
+                     # Indentation (only spaces) is allowed but not required
+                     alpha = {
+                       ip = "10.0.0.1"
+                       dc = "eqdc10"
+                     }
+
+                     beta = {
+                       ip = "10.0.0.2"
+                       dc = "eqdc10"
+                     }
+                   }
+
+                   empty_map = {}
+
+                   hosts = [
+                     "alpha",
+                     "omega",
+                   ]'
+    }
+    lang {
         name    = SML
         info    = 'XML made simple'
         year    = 2018
@@ -723,6 +829,45 @@ list {
                                }
                            }
                        }
+                   }'
+    }
+    lang {
+        name    = SCL
+        year    = 2018
+        url     = https://github.com/Keats/scl
+        by      = 'Vincent Prouillet'
+        example = '# This is a SCL document. Boom.
+                   include "base.scl"
+
+                   owner = {
+                     name = "Vincent Prouillet",
+                     bio = "Someone",
+                     dob = 1979-05-27, # first-class date type
+                   }
+
+                   database = {
+                     server = "192.168.1.1",
+                     ports = [ 8001, 8001, 8002 ],
+                     connection_max = 5000,
+                     enabled = true,
+                   }
+
+                   servers = {
+                     max_upload_size = 10Mb, # first class byte size
+                     alpha = {
+                       ip = "10.0.0.1",
+                       dc = "eqdc10",
+                     },
+                     # Inline objects as well
+                     beta = { ip = "10.0.0.2", dc = "eqdc10" },
+                   }
+
+                   clients = {
+                     data = [
+                       ["gamma", "delta"],
+                       [1, 2],
+                     ],
+                     hosts = ["alpha", "omega"],
                    }'
     }
     lang {
@@ -768,48 +913,41 @@ list {
                    }'
     }
     lang {
-        name = Tree
-        info = 'Simple fast compact user-readable binary-safe extensible structural format.'
-        year = 2020
-        url = https://github.com/nin-jin/tree.d?tab=readme-ov-file
-        by = 'Dmitry Karlovsky'
-example =
-'''''
-! doctype html
-html
-        meta @ charset \utf-8
-        link
-                @ href \web.css
-                @ rel \stylesheet
-        script @ src \web.js
-        body
-                h1 \Procter & Gamble
-'''''
-}
+        name    = Tree
+        info    = 'Simple fast compact user-readable binary-safe extensible structural format.'
+        year    = 2020
+        url     = https://github.com/nin-jin/tree.d?tab=readme-ov-file
+        by      = 'Dmitry Karlovsky'
+        example = '! doctype html
+                   html
+                           meta @ charset \utf-8
+                           link
+                                   @ href \web.css
+                                   @ rel \stylesheet
+                           script @ src \web.js
+                           body
+                                   h1 \Procter & Gamble'
+    }
     lang {
         name    = NestedText
-        info = 'A Human Friendly Data Format'
-        year = 2020
-        url = https://nestedtext.org/en/latest/
-        example =
-'''''
-# Contact information for our officers
+        info    = 'A Human Friendly Data Format'
+        year    = 2020
+        url     = https://nestedtext.org/en/latest/
+        example = '# Contact information for our officers
 
-Katheryn McDaniel:
-    position: president
-    address:
-        > 138 Almond Street
-        > Topeka, Kansas 20697
-    phone:
-        cell: 1-210-555-5297
-        home: 1-210-555-8470
-            # Katheryn prefers that we always call her on her cell phone.
-    email: KateMcD@aol.com
-    additional roles:
-        - board member
-'''''
-
-}
+                   Katheryn McDaniel:
+                       position: president
+                       address:
+                           > 138 Almond Street
+                           > Topeka, Kansas 20697
+                       phone:
+                           cell: 1-210-555-5297
+                           home: 1-210-555-8470
+                               # Katheryn prefers that we always call her on her cell phone.
+                       email: KateMcD@aol.com
+                       additional roles:
+                           - board member'
+    }
     lang {
         name    = Boulder
         info    = 'Boulder - A Perl API for hierarchical tag/value structures.'
@@ -821,6 +959,24 @@ Katheryn McDaniel:
                    Privileges={
                       ChangePasswd=yes
                       Reboot=yes
+                   }'
+    }
+    lang {
+        name    = PKL
+        info    = 'A configuration as code language with rich validation and tooling.'
+        url     = https://github.com/apple/pkl
+        year    = 2024
+        example = 'mixedObject {
+                     name = "Pigeon"
+                     lifespan = 8
+                     "wing"
+                     "claw"
+                     ["wing"] = "Not related to the _element_ \"wing\""
+                     42
+                     extinct = false
+                     [false] {
+                       description = "Construed object example"
+                     }
                    }'
     }
 }
