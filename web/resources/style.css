@@ -15,6 +15,14 @@ html {
 body {
 }
 
+.vbox {
+    width: 21em;
+    display: inline;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
 a {
     color: #000088;
     font-weight: bold;

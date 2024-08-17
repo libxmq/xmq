@@ -17,6 +17,7 @@ cp web/resources/style.css  build/web/resources
 cp web/resources/mononoki-Regular.otf  build/web/resources
 cp web/resources/code.js  build/web/resources
 cp web/resources/shiporder.xml  build/web/resources/shiporder.xml
+cp web/resources/webconfig.xml  build/web/resources/webconfig.xml
 cp web/resources/welcome_traveller.htmq  build/web/resources/welcome_traveller.htmq
 cp web/resources/welcome_traveller.html  build/web/resources/welcome_traveller.html
 cp web/resources/simple_page.htmq  build/web/resources/simple_page.htmq
@@ -35,6 +36,10 @@ $XMQ web/resources/shiporder.xml render-html --id=ex1 --class=w40 --theme=lightb
 $XMQ web/resources/shiporder.xml to-xmq --compact > build/shiporder_compact.xmq
 $XMQ web/resources/shiporder.xml render-html --compact --id=ex1c --class=w40 --theme=lightbg --nostyle  > build/rendered_shiporder_compact_xmq.xml
 
+# webconfig.xml
+$XMQ web/resources/webconfig.xml to-xmq > build/web/resources/webconfig.xmq
+$XMQ web/resources/webconfig.xml to-json | jq . > build/web/resources/webconfig.json
+$XMQ web/resources/webconfig.xml render-html --id=ex1 --class=w40 --theme=lightbg --nostyle  > build/rendered_webconfig_xmq.xml
 
 # config.xmq
 cp web/resources/config.xmq  build/web/resources/
@@ -125,6 +130,9 @@ $XMQ web/index.htmq \
      replace-entity SHIPORDER_JSON --with-text-file=build/web/resources/shiporder.json \
      replace-entity SHIPORDER_XMQ --with-file=build/rendered_shiporder_xmq.xml \
      replace-entity SHIPORDER_COMPACT_XMQ --with-file=build/rendered_shiporder_compact_xmq.xml \
+     replace-entity WEBCONFIG_XML --with-text-file=web/resources/webconfig.xml \
+     replace-entity WEBCONFIG_JSON --with-text-file=build/web/resources/webconfig.json \
+     replace-entity WEBCONFIG_XMQ --with-file=build/rendered_webconfig_xmq.xml \
      replace-entity CONFIG_XMQ --with-file=build/rendered_config_xmq.xml \
      replace-entity CONFIG_COMPACT_XMQ --with-file=build/rendered_config_compact_xmq.xml \
      replace-entity CONFIG_XML --with-text-file=build/config.xml \

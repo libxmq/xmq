@@ -1,0 +1,16 @@
+{
+  "_": "webserver",
+  "user": "tinyw",
+  "error_log": "/var/log/error.log",
+  "pid": "/var/run/webserver.pid",
+  "http": {
+    "default_type": "application/octet-stream",
+    "access_log": "/var/log/access.log",
+    "sendfile": "on",
+    "//": "tcp_nopush = on",
+    "keepalive_timeout": 65,
+    "gzip": "on",
+    "server_tokens": "off",
+    "include": "/etc/webserver/conf.d/*.conf"
+  }
+}

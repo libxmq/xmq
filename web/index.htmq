@@ -69,10 +69,18 @@ html {
         p = 'The XMQ format is easier for a human to read and write than XML/HTML yet it
              captures exactly the XML/HTML content. It can always be safely pretty printed
              without introducing significant whitespace. The file-suffix HTMQ is used
-             when working with HTML in the XMQ format. There is even a reasonable mapping
-             between JSON and XMQ.'
-        p = 'We can use XML for markup of texts. We can use XMQ for data storage.
-             We can always convert between them since they are in fact the same thing.'
+             when working with HTML in the XMQ format. Use XMQ also maps to JSON.'
+
+        div(class = vbox) {
+            &WEBCONFIG_XMQ;
+
+        }
+        ' '
+        pre(class = 'xmq xmq_light w40')
+        {
+            &WEBCONFIG_JSON;
+        }
+
         div {
             'What does it look like? Click on the examples: '
             br

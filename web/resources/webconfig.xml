@@ -1,0 +1,12 @@
+<webserver>
+  <user>ws</user>
+  <error_log>/var/log/err.log</error_log>
+  <pid>/var/run/ws.pid</pid>
+  <http>
+    <sendfile>on</sendfile>
+    <!--tcp_nopush = on-->
+    <keepalive>65</keepalive>
+    <gzip>on</gzip>
+    <include>*.xmq</include>
+  </http>
+</webserver>
