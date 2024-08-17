@@ -787,6 +787,30 @@ html
 '''''
 }
     lang {
+        name    = NestedText
+        info = 'A Human Friendly Data Format'
+        year = 2020
+        url = https://nestedtext.org/en/latest/
+        example =
+'''''
+# Contact information for our officers
+
+Katheryn McDaniel:
+    position: president
+    address:
+        > 138 Almond Street
+        > Topeka, Kansas 20697
+    phone:
+        cell: 1-210-555-5297
+        home: 1-210-555-8470
+            # Katheryn prefers that we always call her on her cell phone.
+    email: KateMcD@aol.com
+    additional roles:
+        - board member
+'''''
+
+}
+    lang {
         name    = Boulder
         info    = 'Boulder - A Perl API for hierarchical tag/value structures.'
         url     = https://metacpan.org/dist/Boulder/view/Boulder.pod
