@@ -360,6 +360,23 @@ list {
                   '
     }
     lang {
+name=Nginx
+info = 'Nginx configuration language.'
+year = 2004
+url = https://docs.nginx.com/nginx/admin-guide/basic-functionality/managing-configuration-files/
+by = xxx
+example='''''
+server {
+    listen 80;
+    server_name mywebsite.com;
+    location / {
+        root /var/www/mywebsite;
+        index index.html;
+    }
+}
+'''''
+    }
+    lang {
         name    = Config
         info    = 'A Python configuration file format.'
         year    = 2004
@@ -742,6 +759,101 @@ list {
                       '''
                   }
                   ''''
+    }
+    lang {
+        name    = HCL
+        info    = 'HCL is a toolkit for creating structured configuration languages that are both human- and machine-friendly, for use with command-line tools.'
+        year    = 2014
+        url     = https://github.com/hashicorp/hcl
+        example = 'io_mode = "async"
+
+                   service "http" "web_proxy" {
+                     listen_addr = "127.0.0.1:8080"
+
+                     process "main" {
+                       command = ["/usr/local/bin/awesome-app", "server"]
+                     }
+
+                     process "mgmt" {
+                       command = ["/usr/local/bin/awesome-app", "mgmt"]
+                     }
+                   }'
+    }
+    lang {
+        name    = AXON
+        year    = 2014
+        url     = https://web.archive.org/web/20160717112213/https://intellimath.bitbucket.org/axon/
+        by      = 'Zaur Shibzukhov'
+        example = '##### Statement form
+
+                   axon
+                     name: "AXON is eXtended Object Notation"
+                     short_name: "AXON"
+                     python_library: "pyaxon"
+                     atomic_values
+                       int: [0 -1 17]
+                       float: [3.1428 1.5e-17]
+                       decimal: [10D 1000.35D -1.25E+6D]
+                       bool: [true false]
+                       string: "abc абв 中文本"
+                       multiline_string: "one
+                   two
+                   three"
+                       date: ^2012-12-31
+                       time: [^12:30:34 ^12:35:12.000120 ^12:35+03]
+                       datetime: [^2012-12-31T12:30 ^2012-12-31T12:35+03]
+                       binary: |QVhPTiBpcyBlWHRlbmRlZCBPYmplY3QgTm90YXRpb24=
+
+                   complex_values
+                       list: ["one" "two" "three"]
+                       dict: {
+                         one: 1
+                         three: 3
+                         two: 2}
+                       odered_dict: [
+                         one: 1
+                         three: 3
+                         two: 2]
+                       tuple: ("nodes" "edges")
+                       set: {"a" "b" "c"}
+                       node: person
+                         name: "Alex"
+                         age: 32
+
+                   ##### Formatted expression form
+                   axon {
+                     name: "AXON is eXtended Object Notation"
+                     short_name: "AXON"
+                     python_library: "pyaxon"
+                     atomic_values {
+                       int: [0 -1 17]
+                       float: [3.1428 1.5e-17]
+                       decimal: [10D 1000.35D -1.25E+6D]
+                       bool: [true false]
+                       string: "abc абв 中文本"
+                       multiline_string: "one
+                   two
+                   three"
+                       date: ^2012-12-31
+                       time: [^12:30:34 ^12:35:12.000120 ^12:35+03]
+                       datetime: [2012-12-31T12:30 2012-12-31T12:35+03]
+                       binary: |QVhPTiBpcyBlWHRlbmRlZCBPYmplY3QgTm90YXRpb24=
+                   }
+                   complex_values {
+                       list: ["one" "two" "three"]
+                       dict: {
+                         one: 1
+                         three: 3
+                         two: 2}
+                       odered_dict: [
+                         one: 1
+                         three: 3
+                         two: 2]
+                       tuple: ("nodes" "edges")
+                       set: {"a" "b" "c"}
+                       node: person {
+                         name: "Alex"
+                         age: 32}}}'
     }
     lang {
         name    = DIXY
