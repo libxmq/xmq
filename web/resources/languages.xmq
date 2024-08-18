@@ -452,21 +452,17 @@ list {
                        }'''
     }
     lang {
-name = HAML
-info = 'Beautifully DRY, well-indented, clear markup: templating haiku.'
-year = 2006
-url = https://haml.info/
-example =
-'''''
-#content
-  .left.column
-    %h2 Welcome to our site!
-    %p= print_information
-  .right.column
-    = render :partial => "sidebar"
-'''''
-
-}
+        name    = HAML
+        info    = 'Beautifully DRY, well-indented, clear markup: templating haiku.'
+        year    = 2006
+        url     = https://haml.info/
+        example = '#content
+                     .left.column
+                       %h2 Welcome to our site!
+                       %p= print_information
+                     .right.column
+                       = render :partial => "sidebar"'
+    }
     lang {
         name    = Recutils
         info    = 'Tools and libraries to edit human-editable, plain text databases called recfiles. '
