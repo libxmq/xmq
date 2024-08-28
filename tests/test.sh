@@ -91,6 +91,11 @@ do
     $i "$PROG" "$OUTPUT"
 done
 
+for i in tests/test_cmd_???_*.sh
+do
+    $i "$PROG" "$OUTPUT"
+done
+
 for i in tests/test_???_*.c
 do
     tests/test_program.sh "$LIB" "$OUTPUT" "$i"

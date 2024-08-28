@@ -316,7 +316,7 @@ void console_write(const char *start, const char *stop);
 void print_command_help(XMQCliCmd c);
 KEY read_key(int *c);
 const char *render_format_to_string(XMQRenderFormat rt);
-void replace_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, const char *content, xmlNodePtr node_content);
+xmlNodePtr replace_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, const char *content, xmlNodePtr node_content);
 void replace_entities(xmlDoc *doc, const char *entity, const char *content, xmlNodePtr node_content);
 void substitute_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, bool only_chars);
 bool query_xterm_bgcolor();
@@ -2233,9 +2233,11 @@ bool delete_xpath(XMQCliCommand *command)
     return true;
 }
 
-void replace_entity(xmlDoc *doc, xmlNode *node, const char *entity, const char *content, xmlNodePtr node_content)
+xmlNode *replace_entity(xmlDoc *doc, xmlNode *node, const char *entity, const char *content, xmlNodePtr node_content)
 {
-    if (!node) return;
+    if (!node) return NULL;
+
+    xmlNode *next = node->next;
 
     if (node->type == XML_ENTITY_REF_NODE)
     {
@@ -2246,24 +2248,57 @@ void replace_entity(xmlDoc *doc, xmlNode *node, const char *entity, const char *
                 xmlNodePtr new_node = xmlNewDocText(doc, (const xmlChar*)content);
                 xmlReplaceNode(node, new_node);
                 xmlFreeNode(node);
+                node = new_node;
+                next = node->next;
             }
-            if (node_content)
+            else if (node_content)
             {
                 xmlNodePtr new_node = xmlCopyNode(node_content, 1);
                 xmlReplaceNode(node, new_node);
                 xmlFreeNode(node);
+                node = new_node;
+                next = node->next;
+            }
+            else
+            {
+                assert(false);
             }
         }
-        return;
+        if (node->prev != NULL && is_content_node(node->prev) && is_content_node(node))
+        {
+            node = xmlTextMerge(node->prev, node);
+            next = node->next;
+
+            if (node->next != NULL && is_content_node(node->next))
+            {
+                node = xmlTextMerge(node, node->next);
+                next = node->next;
+            }
+        }
+        return next;
+    }
+
+    xmlAttr *a = xml_first_attribute(node);
+    while (a)
+    {
+        if (a->children != NULL)
+        {
+            xmlNode *i = a->children;
+            while (i)
+            {
+                i = replace_entity(doc, i, entity, content, node_content);
+            }
+        }
+        a = xml_next_attribute(a);
     }
 
     xmlNode *i = node->children;
     while (i)
     {
-        xmlNode *next = i->next;
-        replace_entity(doc, i, entity, content, node_content);
-        i = next;
+        i = replace_entity(doc, i, entity, content, node_content);
     }
+
+    return next;
 }
 
 void replace_entities(xmlDoc *doc, const char *entity, const char *content, xmlNodePtr node_content)
