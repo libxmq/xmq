@@ -15,6 +15,19 @@ list {
                      Have a great time.'''
     }
     lang {
+        name    = Scribe
+        info    = 'Markup Language.'
+        year    = 1980
+        url     = 'https://en.wikipedia.org/wiki/Scribe_(markup_language)'
+        by      = 'Brian Reid'
+        example = '''@MakeSection(tag=first title="My First Section")
+                     @Heading(The Beginning)
+                     An introduction with text. Followed by a quotation:
+                     @Begin(Quotation)
+                         Let's start at the very beginning, a very good place to start
+                     @End(Quotation)'''
+    }
+    lang {
         name    = SGML
         info    = 'Standard Generalized Markup Language.'
         year    = 1986
@@ -360,21 +373,19 @@ list {
                   '
     }
     lang {
-name=Nginx
-info = 'Nginx configuration language.'
-year = 2004
-url = https://docs.nginx.com/nginx/admin-guide/basic-functionality/managing-configuration-files/
-by = xxx
-example='''''
-server {
-    listen 80;
-    server_name mywebsite.com;
-    location / {
-        root /var/www/mywebsite;
-        index index.html;
-    }
-}
-'''''
+        name    = Nginx
+        info    = 'Nginx configuration language.'
+        year    = 2004
+        url     = https://docs.nginx.com/nginx/admin-guide/basic-functionality/managing-configuration-files/
+        by      = 'Igor Sysoev'
+        example = 'server {
+                       listen 80;
+                       server_name mywebsite.com;
+                       location / {
+                           root /var/www/mywebsite;
+                           index index.html;
+                       }
+                   }'
     }
     lang {
         name    = Config
