@@ -772,6 +772,21 @@ list {
                   ''''
     }
     lang {
+        name    = JSONNET
+        info    = 'JSON with functions.'
+        year    = 2014
+        url     = https://jsonnet.org
+        by      = 'Dave Cunningham'
+        example = '// Edit me!
+                   {
+                     person1: {
+                       name: "Alice",
+                       welcome: "Hello " + self.name + "!",
+                     },
+                     person2: self.person1 { name: "Bob" },
+                   }'
+    }
+    lang {
         name    = HCL
         info    = 'HCL is a toolkit for creating structured configuration languages that are both human- and machine-friendly, for use with command-line tools.'
         year    = 2014
@@ -865,6 +880,38 @@ list {
                        node: person {
                          name: "Alex"
                          age: 32}}}'
+    }
+    lang {
+        name    = Dhall
+        info    = 'Maintainable configuration files.'
+        year    = 2017
+        url     = https://dhall-lang.org/
+        by      = 'Gabriel Gonzales'
+        example = '{- You can optionally add types
+
+                      `x : T` means that `x` has type `T`
+                   -}
+
+                   let Config : Type =
+                         {- What happens if you add another field here? -}
+                         { home : Text
+                         , privateKey : Text
+                         , publicKey : Text
+                         }
+
+                   let makeUser : Text -> Config = \(user : Text) ->
+                         let home       : Text   = "/home/${user}"
+                         let privateKey : Text   = "${home}/.ssh/id_ed25519"
+                         let publicKey  : Text   = "${privateKey}.pub"
+                         let config     : Config = { home, privateKey, publicKey }
+                         in  config
+
+                   let configs : List Config =
+                         [ makeUser "bill"
+                         , makeUser "jane"
+                         ]
+
+                   in  configs'
     }
     lang {
         name    = DIXY
@@ -1013,6 +1060,71 @@ list {
 
                    # cities expanded < cities
                    Springfield: 38.790312, -77.186418'
+    }
+    lang {
+        name    = CUE
+        info    = 'An open-source data validation language and inference engine with its roots in logic programming.'
+        year    = 2018
+        url     = https://cuelang.org
+        by      = 'Marcel van Lohuizen'
+        example = 'Data
+
+                   moscow: {
+                       name:    "Moscow"
+                       pop:     11.92M
+                       capital: true
+                   }
+
+                   Schema
+
+                   municipality: {
+                       name:    string
+                       pop:     int
+                       capital: bool
+                   }
+
+                   CUE
+
+                   largeCapital: {
+                       name:    string
+                       pop:     >5M
+                       capital: true
+                   }'
+    }
+    Marcel
+    van
+    Lohuizen
+    lang {
+        name    = Nickel
+        info    = 'The cheap configuration language.'
+        year    = 2019
+        example = '''{
+                       name = "example",
+                       description = m%"
+                         This is an awesome software I'm developing.
+                         Please use it!
+                       "%,
+                       version = "0.1.1",
+                       main = "index.js",
+                       keywords = ["example", "config"],
+                       scripts = {
+                         test = m%"
+                           test.sh --option --install example --version "0.1.1"
+                         "%,
+                         do_stuff = "do_stuff.sh subcommand",
+                       },
+                       contributors = [{
+                           name = "John Doe",
+                           email = "johndoe@example.com"
+                         }, {
+                           name = "Ivy Lane",
+                           url = "https://example.com/ivylane"
+                         }],
+                       dependencies = {
+                         dep1 = "^1.0.0",
+                         dep3 = "6.7"
+                       }
+                     }'''
     }
     lang {
         name    = HDF
