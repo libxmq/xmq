@@ -17,7 +17,7 @@ list {
     lang {
         name    = Scribe
         info    = 'Markup Language.'
-        year    = 1980
+        year    = 1979
         url     = 'https://en.wikipedia.org/wiki/Scribe_(markup_language)'
         by      = 'Brian Reid'
         example = '''@MakeSection(tag=first title="My First Section")
@@ -175,35 +175,24 @@ list {
         name    = LMNL
         info    = 'A Layered Markup and Annotation Language with overlapping mark regions.'
         year    = 2002
+        by      = 'Jeni Tennison, Wendell Piez'
         url     = http://web.archive.org/web/20070617135137/http://www.lmnl.org/prose/tutorial/index.html
-        example = '[!lmnl version="0.1"]
-                   [!ns p="http://www.example.com/paper"]
-                   [p:extract
-                     [href
-                       [title}Ted Hughes and Crow{]
-                       }http://www.zeta.org.au/~annskea/Trickstr.htm{]}
-                   [p:paragraph}
-                   Trickster has never been restricted to one society. In European countries he
-                   appears in the guise of Jester or Fool, and his roots in the human psyche are
-                   deep.
-                   [!ns bib="http://www.example.com/bibliographic"]
-                   [bib:reference}Alan Garner has collected Trickster stories from many
-                   countries in his book
-                   [p:book [bib:ISBN}0241892228{]
-                           [buy}http://www.allbookstores.com/book/compare/0241892228{]
-                           [buy}http://www.abebooks.com/{]
-                           [buy}http://www.bookfinder.com/{]}The Guizer{p:book] and he writes:
-                   {p:paragraph]
-                   [p:extract}
-                   If we take the elements from which our emotions are built and give them
-                   separate names such as Mother, Hero, Father, King, Child, Queen, the element
-                   that I think marks most of us is that of the Fool.
-                   {bib:reference
-                     [cite}[bib:author}Garner, A.{bib:author], [bib:title}The Guizer: A Book of Fools{bib:title],
-                           London, [bib:publisher}Hamish Hamilton{bib:publisher], [bib:year}1975{bib:year],
-                           p.[bib:page}9{bib:page].{cite]]
-                   {p:extract]
-                   {p:extract]'
+        example = '[book [title [lang}en{lang]}Genesis{title]}
+                   [chapter}
+                   [section [title}The creation of the world.{title]}
+                   [para}
+                   [v}[s}[note}In the beginning of creation, when God made heaven and
+                   earth,{note [alt}In the beginning God created heaven and
+                   earth.{alt]]{v] [v}the earth was without form and void, with darkness
+                   over the face of the abyss, [note}and a mighty wind that swept{note [alt}and
+                   the spirit of God hovering{alt]] over the surface of the waters.{s]{v]
+                   [v}[s}God said, [quote}[s}Let there be a light{s]{quote], and there
+                   was light;{v] [v}and God saw that the light was good, and he separated
+                   the light from darkness.{s]{v] [v}[s}He called the light day, and the
+                   darkness night. So evening came, and morning came, the first
+                   day.{s]{v]
+                   {para]
+                   ...{chapter]...{section]...{book]'
     }
     lang {
         name    = BetterMarkup
@@ -773,7 +762,7 @@ list {
     }
     lang {
         name    = JSONNET
-        info    = 'JSON with functions.'
+        info    = 'JSON with functions. Generates config files.'
         year    = 2014
         url     = https://jsonnet.org
         by      = 'Dave Cunningham'
@@ -883,7 +872,7 @@ list {
     }
     lang {
         name    = Dhall
-        info    = 'Maintainable configuration files.'
+        info    = 'Maintainable configuration files. Generates config files.'
         year    = 2017
         url     = https://dhall-lang.org/
         by      = 'Gabriel Gonzales'
@@ -1063,7 +1052,7 @@ list {
     }
     lang {
         name    = CUE
-        info    = 'An open-source data validation language and inference engine with its roots in logic programming.'
+        info    = 'An open-source data validation language and inference engine with its roots in logic programming. Generates config files.'
         year    = 2018
         url     = https://cuelang.org
         by      = 'Marcel van Lohuizen'
@@ -1091,13 +1080,13 @@ list {
                        capital: true
                    }'
     }
-    Marcel
-    van
-    Lohuizen
     lang {
         name    = Nickel
-        info    = 'The cheap configuration language.'
+        info    = 'Better configuration for less Write complex configurations.
+                   Modular, correct and boilerplate-free. Generates config files.'
         year    = 2019
+        by      = 'Yann Hamdaoui et.al.'
+        url     = https://github.com/tweag/nickel
         example = '''{
                        name = "example",
                        description = m%"
