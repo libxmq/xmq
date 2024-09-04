@@ -719,6 +719,35 @@ list {
                    }'
     }
     lang {
+        name    = StringSwan/swanctl.conf
+        info    = 'New configuration format for StrongSwan.'
+        year    = 2014
+        url     = https://docs.strongswan.org/docs/5.9/swanctl/swanctlConf.html
+        example = 'connections {
+                       home {
+                           local {
+                               id = home
+                               auth = psk
+                           }
+
+                           remote {
+                               id = gw
+                               auth = psk
+                           }
+                           children {
+                               home {
+                               }
+                           }
+                   }
+
+                   secrets {
+                       ike-home {
+                           id  = gw
+                           secret = foobar
+                       }
+                   }'
+    }
+    lang {
         name    = HJSON
         info    = 'Hjson, a user interface for JSON.'
         url     = https://hjson.github.io/
