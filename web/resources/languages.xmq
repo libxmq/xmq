@@ -77,6 +77,26 @@ list {
                    </BODY>'
     }
     lang {
+        name    = LUA
+        info    = 'is a lightweight, high-level, multi-paradigm programming language.'
+        year    = 1993
+        url     = https://github.com/LuaLS/lua-language-server/wiki/Configuration-File
+        by      = 'Roberto Ierusalimschy, Luiz Henrique de Figueiredo, Waldemar Celes'
+        example = '''-- Configure your settings here...
+                     settings = {
+                         lol = {
+                             runtime = {
+                                 version = "Lua 5.1",
+                                 enable = false
+                             }
+                             paths = {
+                                 '/alfa/beta',
+                                 '/gamma'
+                             }
+                         }
+                     }'''
+    }
+    lang {
         name    = XML
         info    = 'Extensible Markup Language a subset of SGML.'
         year    = 1998
@@ -471,6 +491,7 @@ list {
     lang {
         name    = HAML
         info    = 'Beautifully DRY, well-indented, clear markup: templating haiku.'
+        by      = 'Hampton Catlin'
         year    = 2006
         url     = https://haml.info/
         example = '#content
@@ -791,7 +812,7 @@ list {
     }
     lang {
         name    = JSONNET
-        info    = 'JSON with functions. Generates config files.'
+        info    = 'JSON with functions. [configuration generator language]'
         year    = 2014
         url     = https://jsonnet.org
         by      = 'Dave Cunningham'
@@ -900,8 +921,29 @@ list {
                          age: 32}}}'
     }
     lang {
+        name    = NIX
+        info    = 'is a tool for people who both need computers to do exactly as intended, repeatably, far into the future, and who are familiar with command line interfaces and plain text editors. [configuration generator language]'
+        by      = 'Domen Kožar'
+        url     = https://nix.dev
+        year    = 2016
+        example = '{
+                     string = "hello";
+                     integer = 1;
+                     float = 3.141;
+                     bool = true;
+                     null = null;
+                     list = [ 1 "two" false ];
+                     attribute-set = {
+                       a = "hello";
+                       b = 2;
+                       c = 2.718;
+                       d = false;
+                     }; # comments are supported
+                   }'
+    }
+    lang {
         name    = Dhall
-        info    = 'Maintainable configuration files. Generates config files.'
+        info    = 'Maintainable configuration files. [configuration generator language]'
         year    = 2017
         url     = https://dhall-lang.org/
         by      = 'Gabriel Gonzales'
@@ -1081,7 +1123,7 @@ list {
     }
     lang {
         name    = CUE
-        info    = 'An open-source data validation language and inference engine with its roots in logic programming. Generates config files.'
+        info    = 'An open-source data validation language and inference engine with its roots in logic programming. [configuration generator language]'
         year    = 2018
         url     = https://cuelang.org
         by      = 'Marcel van Lohuizen'
@@ -1110,9 +1152,40 @@ list {
                    }'
     }
     lang {
+        name    = Concise-Encoding
+        year    = 2018
+        by      = 'Karl Stenerud'
+        info    = '''Solving today's problems where times are different from the carefree days that brought us XML and JSON.'''
+        url     = https://github.com/kstenerud/concise-encoding
+        example = 'c1
+                   [
+                       {
+                           "make" = "Ford"
+                           "model" = "Explorer"
+                           "drive" = "4wd"
+                           "sunroof" = true
+                           "float32 array" = @f32[1.5e10 -8.31e-12]
+                           "hex float"     = 0x5.1ec4p+20
+                           "url"    = @"https://example.com/"
+                       }
+                       {
+                           "make" = "Toyota"
+                           "model" = "Corolla"
+                           "drive" = "fwd"
+                           "sunroof" = false
+                           @vehicle<"make" "model" "drive" "sunroof"> // type
+                           [
+                               @vehicle{"Ford"   "Explorer" "4wd" true } // instance
+                               @vehicle{"Toyota" "Corolla"  "fwd" false} // instance
+                           ]
+                           "tree" = (2(7 2 1 (6 5 8)) (5 (9 4)))
+                       }
+                   ]'
+    }
+    lang {
         name    = Nickel
         info    = 'Better configuration for less Write complex configurations.
-                   Modular, correct and boilerplate-free. Generates config files.'
+                   Modular, correct and boilerplate-free. [configuration generator language]'
         year    = 2019
         by      = 'Yann Hamdaoui et.al.'
         url     = https://github.com/tweag/nickel
@@ -1208,6 +1281,28 @@ list {
                    Privileges={
                       ChangePasswd=yes
                       Reboot=yes
+                   }'
+    }
+    lang {
+        name    = RCL
+        info    = 'A reasonable configuration language. [configuration generator language]'
+        by      = 'Ruud van Asseldonk'
+        url     = https://rcl-lang.org
+        year    = 2023
+        example = '{
+                     // A silly snippet to show some
+                     // features in a limited space.
+                     let data: List[String] = import "data.rcl";
+                     assert
+                       data.contains("Assertions"),
+                       "Assertions are supported";
+                     let f = () => ["List", "Dict", "Set"];
+                     features = [
+                       for d in data: d,
+                       for collection in f():
+                       f"{collection} comprehensions",
+                     ],
+                     export-to = "json, yaml, toml, ...",
                    }'
     }
     lang {
