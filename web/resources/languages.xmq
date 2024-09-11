@@ -609,6 +609,7 @@ list {
         info    = 'CoffeeScript-Object-Notation. Same as JSON but for CoffeeScript objects.'
         by      = 'Benjamin Lupton'
         year    = 2011
+        url     = https://github.com/bevry/cson
         example = ''''
                   # An Array with no commas!
                   listOfStuff: [
@@ -1307,6 +1308,45 @@ list {
                    Privileges={
                       ChangePasswd=yes
                       Reboot=yes
+                   }'
+    }
+    lang {
+        name    = Bicep
+        info    = 'Bicep is a domain-specific language (DSL) that uses declarative syntax to deploy Azure resources.'
+        url     = https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview
+        year    = 2022
+        example = '''param location string = resourceGroup().location
+                     param storageAccountName string = 'toylaunch${uniqueString(resourceGroup().id)}'
+
+                     resource storageAccount 'Microsoft.Storage/storageAccounts@2023-04-01' = {
+                       name: storageAccountName
+                       location: location
+                       sku: {
+                         name: 'Standard_LRS'
+                       }
+                       kind: 'StorageV2'
+                       properties: {
+                         accessTier: 'Hot'
+                       }
+                     }'''
+    }
+    lang {
+        name    = KCL
+        info    = 'KCL is an open-source, constraint-based record and functional language that enhances the writing of complex configurations, including those for cloud-native scenarios.'
+        year    = 2022
+        url     = https://github.com/kcl-lang/kcl
+        example = 'env: str = option("env") or "dev"  # The attribute `env` has a default value "den"
+                   database: str = option("database")
+                   hosts = {
+                       dev = "postgres.dev"
+                       stage = "postgres.stage"
+                       prod = "postgres.prod"
+                   }
+                   dbConfig = {
+                       host = hosts[env]
+                       database = database
+                       port = "2023"
+                       conn = "postgres://${host}:${port}/${database}"
                    }'
     }
     lang {
