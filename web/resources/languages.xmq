@@ -605,6 +605,31 @@ list {
                   '
     }
     lang {
+        name    = CSON
+        info    = 'CoffeeScript-Object-Notation. Same as JSON but for CoffeeScript objects.'
+        by      = 'Benjamin Lupton'
+        year    = 2011
+        example = ''''
+                  # An Array with no commas!
+                  listOfStuff: [
+                     'alfa'
+                     'beta'
+                     'gamma'
+                  ]
+
+                  # An Object without braces!
+                  stuff:
+                     # Multi-Line Strings! Without Quote Escaping!
+                     information: '''
+                        Rambulations in
+                        ranger roof
+                        calling.
+                        '''
+
+                     more: 'alfa beta gamma'
+                  ''''
+    }
+    lang {
         name    = SDL
         info    = 'Simple Declarative Language was designed to provide a terse and perspicuous format for describing common data structures and data types.'
         url     = https://web.archive.org/web/20120719083634/http://sdl.ikayzo.org/display/SDL/Language+Guide
@@ -1254,6 +1279,7 @@ list {
         name    = NestedText
         info    = 'A Human Friendly Data Format'
         year    = 2020
+        by      = 'Ken & Kale Kundert'
         url     = https://nestedtext.org/en/latest/
         example = '# Contact information for our officers
 
