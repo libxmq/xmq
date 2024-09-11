@@ -1000,6 +1000,43 @@ list {
                    in  configs'
     }
     lang {
+        name    = ICL
+        info    = 'ICL is a configuration language, that aims to provide a concise and elegant way to describe your configurations files. [configuration generator language]'
+        year    = 2017
+        by      = 'Mahieddine Cherif'
+        url     = https://github.com/archipaorg/icl
+        example = ( '::image "mysql" as MySQL {
+
+                    '
+                    &#9;
+                    'url = "mysql:5.6",
+
+                    '
+                    &#9;
+                    'port = 3306
+                     }
+                     app "hello-world" {
+                                 name = "this is
+
+                    '
+                    &#9;
+                    &#9;
+                    'a multiline
+                                 string",
+                                 price = +4.5
+                     }
+                     app "hello-world" {
+                             icon = <<<EOF R0lGODlhPQBEAPeoAJosMAwOAwHVYZz595kzAPs7P+goOXMv8+fhwv739f
+                             +8PD98fH8mJl+fn9ZWb8PzWlwv6wWGbImAPgTEMImIN9gUFCEmgDALULDN
+                             8PAD6atYdCTX9gUNKlj8wZAKUsAOzZz+UMAOsJAPZ2ccMDA8PD95eX5NWv
+                             sJCOVNQPtfX8zM8+QePLl38MGBr8JCP+zs9myn8GBqwpAPGxgwJCPny78l
+                             zYLgjAJ8vAP9fX+MjMUcAN8zM9wcM8ZGcATEL+QePdZWf
+                             29ucP9cmJu9MTDImIN+r7+vz8P8VNQGNugV8AAF9fX8swMNg
+                             TAFlDOICAgPNSUnNWSMQ5MBAQEJE3Q
+                             EOF
+                     }' )
+    }
+    lang {
         name    = DIXY
         info    = 'Dixy is a very simple data format based on dictionaries.'
         year    = 2017
@@ -1244,6 +1281,52 @@ list {
                      }'''
     }
     lang {
+        name    = NACL
+        info    = 'NACL is a configuration data language intended to be both human and machine friendly.'
+        year    = 2019
+        url     = https://github.com/Nuglif/nacl
+        by      = 'Pierrick Charron, Charle Demers'
+        example = 'application {
+                       debug off;
+                       buffer 10MB;
+
+                       mysql {
+                           host .env (default: "127.0.0.1") MYSQL_HOST;
+                           username .env (default: root) MYSQL_USERNAME;
+                           password .env (default: root) MYSQL_PASSWORD;
+                           port .env (default: 3306, type: int) MYSQL_PORT;
+                       }
+
+                       servers [
+                           "172.28.0.10",
+                           "172.28.0.5"
+                       ]
+                   }'
+    }
+    lang {
+        name    = XMQ
+        info    = 'XMQ - a configuration language, data-storage language, logging language compatible with xml/html and json.'
+        year    = 2019
+        by      = 'Fredrik Öhrström'
+        url     = https://github.com/libxmq/xmq
+        example = ''''
+                  shiporder {
+                      id   = 889923
+                      type = container
+                      shipto(sailing = '')
+                      {
+                          address = 'The Vasa Museum
+                                     Galärvarvsvägen 14
+                                     115 21 Stockholm
+                                     Sweden'
+                          // Remember to verify coord.
+                          coord = '''59°19'41.0"N 18°05'29.0"E'''
+                      }
+                      rules
+                  }
+                  ''''
+    }
+    lang {
         name    = HDF
         info    = 'HDF stands for Hierarchical Data Format. Alternative to both XML and XSLT'
         year    = 2020
@@ -1350,6 +1433,37 @@ list {
                    }'
     }
     lang {
+        name    = Config
+        info    = 'Config is a library for working with structured configuration files in Go.'
+        year    = 2022
+        url     = https://github.com/andrewpillar/config
+        by      = 'Andrew Pillar'
+        example = '# Example configuration file.
+
+                   net {
+                       listen ":https"
+
+                       tls {
+                           cert "/var/lib/ssl/server.crt"
+                           key  "/var/lib/ssl/server.key"
+
+                           ciphers ["AES-128SHA256", "AES-256SHA256"]
+                       }
+                   }
+
+                   log access {
+                       level "info"
+                       file  "/var/log/http/access.log"
+                   }
+
+                   body_limt 50MB
+
+                   timeout {
+                       read  10m
+                       write 10m
+                   }'
+    }
+    lang {
         name    = RCL
         info    = 'A reasonable configuration language. [configuration generator language]'
         by      = 'Ruud van Asseldonk'
@@ -1370,6 +1484,36 @@ list {
                      ],
                      export-to = "json, yaml, toml, ...",
                    }'
+    }
+    lang {
+        name    = Tyson
+        year    = 2023
+        info    = 'TySON (TypeScript Object Notation) is a subset of TypeScript, chosen to be useful as an embeddable configuration language that generates JSON.'
+        by      = 'Daniel Leroto'
+        url     = https://github.com/jetify-com/tyson
+        example = '''// example.tson
+                     {
+                       // Single-line comments are supported
+                       array_field: [1, 2, 3],
+                       boolean_field: true,
+                       /* As well as multi-line comments, and multi-line strings.
+                        *
+                        * Multi-line strings are TypeScript template literals, so they also support
+                        * interpolation.
+                        */
+                       multi_line_string_field: `
+                         line 1
+                         line 2
+                         line ${1 + 2}
+                       `,
+                       number_field: 123,
+                       string_field: 'string',
+                       object_field: {
+                         // Notice that, unlike JSON, field names can be unquoted if they're a valid
+                         // TypeScript identifier.
+                         nested_field: "nested",
+                       }, // Trailing commas are allowed
+                     }'''
     }
     lang {
         name    = PKL
