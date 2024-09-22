@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Fredrik Öhrström
+# Copyright (C) 2023-2024 Fredrik Öhrström
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -260,6 +260,17 @@ fi
 
 AC_SUBST(LIBXSLT_CFLAGS)
 AC_SUBST(LIBXSLT_LIBS)
+
+AC_MSG_CHECKING([for libyaep])
+AC_ARG_WITH(libyaep, [AS_HELP_STRING([--with-libyaep],
+      [specify prefix directory for the yaep package
+      (expecting the libraries .a under PATH/src and the header yaep.h under PATH/src)])])
+
+LIBYAEP_CFLAGS=""
+LIBYAEP_LIBS="3rdparty/yaep/src/libyaep.a"
+
+AC_SUBST(LIBYAEP_CFLAGS)
+AC_SUBST(LIBYAEP_LIBS)
 
 AC_LANG_PUSH([C])
 AC_COMPILE_IFELSE(

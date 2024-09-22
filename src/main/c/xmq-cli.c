@@ -26,6 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/membuffer.h"
 #include"parts/text.h"
 #include"parts/xml.h"
+#include"yaep/yaep.h"
 
 #include<assert.h>
 #include<ctype.h>
@@ -158,6 +159,8 @@ struct XMQCliCommand
     XMQDoc *xsd_doq; // The xmq document loaded to generate the xsd.
     xmlSchemaPtr xsd; // The xsd to validate agains.
     const char *save_file; // Save output to this file name.
+    xmlDocPtr   ixml_doc;  // A DOM containing the ixml grammar.
+    const char *ixml_yaep; // Yaep grammar source to be used.
     xmlDocPtr   node_doc;
     xmlNodePtr  node_content; // Tree content to replace something.
     XMQContentType in_format;
@@ -327,6 +330,16 @@ void verbose_(const char* fmt, ...);
 void write_print(void *buffer, const char *content);
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command);
 
+void syntax_error(int err_tok_num,
+                  void *err_tok_attr,
+                  int start_ignored_tok_num,
+                  void *start_ignored_tok_attr,
+                  int start_recovered_tok_num,
+                  void *start_recovered_tok_attr);
+
+
+char *load_file_into_buffer(const char *file);
+
 /////////////////////////////////////////////////////////////////////////////////////
 
 const char *error_to_print_on_exit = NULL;
@@ -358,39 +371,39 @@ void debug_(const char* fmt, ...)
 XMQCliCmd cmd_from(const char *s)
 {
     if (!s) return XMQ_CLI_CMD_NONE;
-    if (!strcmp(s, "help")) return XMQ_CLI_CMD_HELP;
-    if (!strcmp(s, "load")) return XMQ_CLI_CMD_LOAD;
-    if (!strcmp(s, "to-xmq")) return XMQ_CLI_CMD_TO_XMQ;
-    if (!strcmp(s, "to-xml")) return XMQ_CLI_CMD_TO_XML;
-    if (!strcmp(s, "to-htmq")) return XMQ_CLI_CMD_TO_HTMQ;
-    if (!strcmp(s, "to-html")) return XMQ_CLI_CMD_TO_HTML;
-    if (!strcmp(s, "to-json")) return XMQ_CLI_CMD_TO_JSON;
-    if (!strcmp(s, "to-text")) return XMQ_CLI_CMD_TO_TEXT;
-    if (!strcmp(s, "no-output")) return XMQ_CLI_CMD_NO_OUTPUT;
-    if (!strcmp(s, "print")) return XMQ_CLI_CMD_PRINT;
-    if (!strcmp(s, "save")) return XMQ_CLI_CMD_SAVE;
-    if (!strcmp(s, "page")) return XMQ_CLI_CMD_PAGER;
-    if (!strcmp(s, "pa")) return XMQ_CLI_CMD_PAGER;
-    if (!strcmp(s, "browse")) return XMQ_CLI_CMD_BROWSER;
-    if (!strcmp(s, "br")) return XMQ_CLI_CMD_BROWSER;
-    if (!strcmp(s, "render-terminal")) return XMQ_CLI_CMD_RENDER_TERMINAL;
-    if (!strcmp(s, "render-html")) return XMQ_CLI_CMD_RENDER_HTML;
-    if (!strcmp(s, "render-tex")) return XMQ_CLI_CMD_RENDER_TEX;
-    if (!strcmp(s, "render-raw")) return XMQ_CLI_CMD_RENDER_RAW;
-    if (!strcmp(s, "tokenize")) return XMQ_CLI_CMD_TOKENIZE;
-    if (!strcmp(s, "delete")) return XMQ_CLI_CMD_DELETE;
-    if (!strcmp(s, "delete-entity")) return XMQ_CLI_CMD_DELETE_ENTITY;
-    if (!strcmp(s, "replace")) return XMQ_CLI_CMD_REPLACE;
-    if (!strcmp(s, "replace-entity")) return XMQ_CLI_CMD_REPLACE_ENTITY;
-    if (!strcmp(s, "substitute-entity")) return XMQ_CLI_CMD_SUBSTITUTE_ENTITY;
-    if (!strcmp(s, "substitute-char-entities")) return XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES;
-    if (!strcmp(s, "transform")) return XMQ_CLI_CMD_TRANSFORM;
-    if (!strcmp(s, "validate")) return XMQ_CLI_CMD_VALIDATE;
-    if (!strcmp(s, "select")) return XMQ_CLI_CMD_SELECT;
-    if (!strcmp(s, "for-each")) return XMQ_CLI_CMD_FOR_EACH;
     if (!strcmp(s, "add")) return XMQ_CLI_CMD_ADD;
     if (!strcmp(s, "add-root")) return XMQ_CLI_CMD_ADD_ROOT;
+    if (!strcmp(s, "br")) return XMQ_CLI_CMD_BROWSER;
+    if (!strcmp(s, "browse")) return XMQ_CLI_CMD_BROWSER;
+    if (!strcmp(s, "delete")) return XMQ_CLI_CMD_DELETE;
+    if (!strcmp(s, "delete-entity")) return XMQ_CLI_CMD_DELETE_ENTITY;
+    if (!strcmp(s, "for-each")) return XMQ_CLI_CMD_FOR_EACH;
+    if (!strcmp(s, "help")) return XMQ_CLI_CMD_HELP;
+    if (!strcmp(s, "load")) return XMQ_CLI_CMD_LOAD;
+    if (!strcmp(s, "no-output")) return XMQ_CLI_CMD_NO_OUTPUT;
+    if (!strcmp(s, "pa")) return XMQ_CLI_CMD_PAGER;
+    if (!strcmp(s, "page")) return XMQ_CLI_CMD_PAGER;
+    if (!strcmp(s, "print")) return XMQ_CLI_CMD_PRINT;
+    if (!strcmp(s, "render-html")) return XMQ_CLI_CMD_RENDER_HTML;
+    if (!strcmp(s, "render-raw")) return XMQ_CLI_CMD_RENDER_RAW;
+    if (!strcmp(s, "render-terminal")) return XMQ_CLI_CMD_RENDER_TERMINAL;
+    if (!strcmp(s, "render-tex")) return XMQ_CLI_CMD_RENDER_TEX;
+    if (!strcmp(s, "replace")) return XMQ_CLI_CMD_REPLACE;
+    if (!strcmp(s, "replace-entity")) return XMQ_CLI_CMD_REPLACE_ENTITY;
+    if (!strcmp(s, "save")) return XMQ_CLI_CMD_SAVE;
+    if (!strcmp(s, "select")) return XMQ_CLI_CMD_SELECT;
     if (!strcmp(s, "statistics")) return XMQ_CLI_CMD_STATISTICS;
+    if (!strcmp(s, "substitute-char-entities")) return XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES;
+    if (!strcmp(s, "substitute-entity")) return XMQ_CLI_CMD_SUBSTITUTE_ENTITY;
+    if (!strcmp(s, "to-html")) return XMQ_CLI_CMD_TO_HTML;
+    if (!strcmp(s, "to-htmq")) return XMQ_CLI_CMD_TO_HTMQ;
+    if (!strcmp(s, "to-json")) return XMQ_CLI_CMD_TO_JSON;
+    if (!strcmp(s, "to-text")) return XMQ_CLI_CMD_TO_TEXT;
+    if (!strcmp(s, "to-xml")) return XMQ_CLI_CMD_TO_XML;
+    if (!strcmp(s, "to-xmq")) return XMQ_CLI_CMD_TO_XMQ;
+    if (!strcmp(s, "tokenize")) return XMQ_CLI_CMD_TOKENIZE;
+    if (!strcmp(s, "transform")) return XMQ_CLI_CMD_TRANSFORM;
+    if (!strcmp(s, "validate")) return XMQ_CLI_CMD_VALIDATE;
     return XMQ_CLI_CMD_NONE;
 }
 
@@ -1443,6 +1456,55 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         }
         return true;
     }
+    if (!strncmp(arg, "--ixml=", 7))
+    {
+        const char *file = arg+7;
+
+        if (command->ixml_doc != NULL || command->ixml_yaep != NULL)
+        {
+            printf("You have already specified an ixml grammar!\n");
+            exit(1);
+        }
+
+        size_t len = strlen(file);
+        if (len < 6 ||
+            (strcmp(file+len-5, ".ixml") &&
+             strcmp(file+len-4, ".xml") &&
+             strcmp(file+len-4, ".xmq") &&
+             strcmp(file+len-5, ".yaep")))
+        {
+            printf("For ixml you can specify: g.ixml g.xml g.xmq g.yaep\n");
+            exit(1);
+        }
+        if (!strcmp(file+len-5, ".yaep"))
+        {
+            verbose_("(xmq) reading yaep file %s\n", file);
+            command->ixml_yaep = load_file_into_buffer(file);
+            return true;
+        }
+
+        printf("PRUTT %s\n", arg);
+        return false;
+        /*
+
+        XMQDoc *doq = xmqNewDoc();
+        bool ok = xmqParseFileWithType(doq, file, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE);
+        if (!ok)
+        {
+            const char *error = xmqDocError(doq);
+            fprintf(stderr, error, command->in);
+            xmqFreeDoc(doq);
+            return false;
+        }
+
+        verbose_("(xmq) loaded ixml %s\n", file);
+
+        xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(doq);
+        command->ixml_doc = doc;
+        */
+
+        return true;
+    }
 
     return false;
 }
@@ -1586,6 +1648,105 @@ void write_print(void *buffer, const char *content)
     printf("%s", content);
 }
 
+static char *input;
+static int ntok = 0;
+
+static int read_token(void **attr)
+{
+
+  *attr = NULL;
+  if (input[ntok])
+  {
+      return input [ntok++];
+  }
+  else
+  {
+      return -1;
+  }
+}
+
+void syntax_error(int err_tok_num,
+                  void *err_tok_attr,
+                  int start_ignored_tok_num,
+                  void *start_ignored_tok_attr,
+                  int start_recovered_tok_num,
+                  void *start_recovered_tok_attr)
+{
+    printf("SYNTAX ERROR\n");
+}
+
+
+const char *node_type_to_string(enum yaep_tree_node_type t);
+
+const char *node_type_to_string(enum yaep_tree_node_type t)
+{
+    switch (t)
+    {
+    case YAEP_NIL: return "NIL";
+    case YAEP_ERROR: return "ERROR";
+    case YAEP_TERM: return "TERM";
+    case YAEP_ANODE: return "ANODE";
+    case YAEP_ALT: return "ALT";
+    default:
+    }
+    return "?";
+}
+
+void print_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, int depth, int index);
+
+void print_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, int depth, int index)
+{
+    if (n->type == YAEP_ANODE)
+    {
+        struct yaep_anode *an = &n->val.anode;
+
+        xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)an->name, NULL);
+        char buf[10];
+        snprintf(buf, 10, "%d", an->cost);
+        xmlNewProp(new_node, (xmlChar*)"cost", (xmlChar*)buf);
+
+        if (node == NULL)
+        {
+            xmlDocSetRootElement(doc, new_node);
+        }
+        else
+        {
+            xmlAddChild(node, new_node);
+        }
+
+        for (int i=0; an->children[i] != NULL; ++i)
+        {
+            struct yaep_tree_node *nn = an->children[i];
+            print_yaep_node(doc, new_node, nn, depth+1, i);
+        }
+    }
+    else
+    if (n->type == YAEP_TERM)
+    {
+        struct yaep_term *at = &n->val.term;
+
+        xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)"term", NULL);
+        char buf[10];
+        snprintf(buf, 10, "%d", at->code);
+        xmlNewProp(new_node, (xmlChar*)"code", (xmlChar*)buf);
+
+        if (node == NULL)
+        {
+            xmlDocSetRootElement(doc, new_node);
+        }
+        else
+        {
+            xmlAddChild(node, new_node);
+        }
+    }
+    else
+    {
+        for (int i=0; i<depth; ++i) printf("    ");
+        printf("[%d] ", index);
+        printf("WOOT %s\n", node_type_to_string(n->type));
+    }
+}
+
 bool cmd_load(XMQCliCommand *command)
 {
     if (!command) return false;
@@ -1609,24 +1770,76 @@ bool cmd_load(XMQCliCommand *command)
     verbose_("(xmq) cmd-load %s\n", command->in);
 
     command->env->load = command;
-    bool ok = xmqParseFileWithType(command->env->doc,
-                                   command->in,
-                                   command->implicit_root,
-                                   command->in_format,
-                                   command->flags);
-    if (!ok)
+
+    if (command->ixml_yaep != NULL)
     {
-        const char *error = xmqDocError(command->env->doc);
-        if (error) {
-            fprintf(stderr, error, command->in);
+        struct grammar *g;
+        struct yaep_tree_node *root;
+        int ambiguous;
+
+        g = yaep_create_grammar();
+
+        printf("GRAMMAR >%s<\n", command->ixml_yaep);
+
+        int rc = yaep_parse_grammar (g, 1, command->ixml_yaep);
+
+        //int rc = yaep_read_grammar(g, 0, read_terminal, read_rule);
+
+        if (rc)
+        {
+            printf("xmq: could not parse yaep grammar: %s\n", yaep_error_message(g));
+            return 1;
         }
-        xmqFreeDoc(command->env->doc);
-        command->env->doc = NULL;
-        return false;
+
+        input = load_file_into_buffer(command->in);
+//        input[strlen(input)-1] = 0;
+        printf("INPUT >%s<\n", input);
+
+        rc = yaep_parse (g,
+                         read_token,
+                         syntax_error,
+                         NULL,
+                         NULL,
+                         &root,
+                         &ambiguous);
+
+        xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
+
+        print_yaep_node(new_doc, NULL, root, 0, 0);
+
+        //add_key_value(new_doc, new_root, "sum_text", 123);
+        //xmlFreeDoc(command->env->doc);
+
+        xmqSetImplementationDoc(command->env->doc, new_doc);
+
+
+        yaep_free_grammar (g);
+
+        const char *from = "stdin";
+        if (command->in) from = command->in;
+        verbose_("(xmq) cmd-load-ixml %zu bytes from %s\n", xmqGetOriginalSize(command->env->doc), from);
     }
-    const char *from = "stdin";
-    if (command->in) from = command->in;
-    verbose_("(xmq) cmd-load %zu bytes from %s\n", xmqGetOriginalSize(command->env->doc), from);
+    else
+    {
+        bool ok = xmqParseFileWithType(command->env->doc,
+                                       command->in,
+                                       command->implicit_root,
+                                       command->in_format,
+                                       command->flags);
+        if (!ok)
+        {
+            const char *error = xmqDocError(command->env->doc);
+            if (error) {
+                fprintf(stderr, error, command->in);
+            }
+            xmqFreeDoc(command->env->doc);
+            command->env->doc = NULL;
+            return false;
+        }
+        const char *from = "stdin";
+        if (command->in) from = command->in;
+        verbose_("(xmq) cmd-load %zu bytes from %s\n", xmqGetOriginalSize(command->env->doc), from);
+    }
 
     return true;
 }
@@ -3615,4 +3828,23 @@ int main(int argc, const char **argv)
     if (error_to_print_on_exit) fprintf(stderr, "%s", error_to_print_on_exit);
 
     return rc;
+}
+
+char *load_file_into_buffer(const char *file)
+{
+    FILE *f = fopen(file, "rb");
+    if (!f)
+    {
+        fprintf(stderr, "xmq: %s: No such file or directory\n", file);
+        return false;
+    }
+    fseek(f, 0L, SEEK_END);
+    size_t sz = ftell(f);
+    fseek(f, 0L, SEEK_SET);
+    char *buf = (char*)malloc(sz+1);
+    size_t n = fread(buf, 1, sz, f);
+    buf[sz] = 0;
+    if (n != sz) printf("ARRRRRGGGG\n");
+    fclose(f);
+    return buf;
 }

@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2017-2023 Fredrik Öhrström
+# Copyright (C) 2017-2024 Fredrik Öhrström
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -114,7 +114,7 @@ $(OUTPUT_ROOT)/$(TYPE)/parts/%.o: $(SRC_ROOT)/src/main/c/parts/%.c
 ifneq ($(PLATFORM),WINAPI)
 $(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(POSIX_OBJS)
 	@echo Linking libxmq.so
-	$(VERBOSE)$(CC) -shared -g -o $(OUTPUT_ROOT)/$(TYPE)/libxmq.so $(OUTPUT_ROOT)/$(TYPE)/xmq.o $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSBEGIN_$(TYPE)) $(DEBUG_LDFLAGS) $(LDFLAGSEND_$(TYPE))
+	$(VERBOSE)$(CC) -shared -g -o $(OUTPUT_ROOT)/$(TYPE)/libxmq.so $(OUTPUT_ROOT)/$(TYPE)/xmq.o $(SRC_ROOT)/$(LIBYAEP_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSBEGIN_$(TYPE)) $(DEBUG_LDFLAGS) $(LDFLAGSEND_$(TYPE))
 else
 $(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(WINAPI_OBJS) $(PARTS_SOURCES)
 	touch $@
@@ -127,7 +127,7 @@ $(OUTPUT_ROOT)/$(TYPE)/libxmq.a: $(POSIX_OBJS)
 ifeq ($(ENABLE_STATIC_XMQ),no)
 $(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(EXTRA_LIBS)
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
-	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS)  \
+	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS) $(SRC_ROOT)/$(LIBYAEP_LIBS) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(VERBOSE)cp $@ $@.g
 	$(VERBOSE)$(STRIP_COMMAND) $@$(SUFFIX)
@@ -140,7 +140,7 @@ endif
 else
 $(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(PARTS_SOURCES) $(EXTRA_LIBS)
 	@echo Linking static $(TYPE) $(CONF_MNEMONIC) $@
-	$(VERBOSE)$(CC) -static -o $@ $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS)  \
+	$(VERBOSE)$(CC) -static -o $@ $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS) $(SRC_ROOT)/$(LIBYAEP_LIBS) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 ifeq ($(PLATFORM),WINAPI)
 	$(VERBOSE)mkdir -p $(OUTPUT_ROOT)/windows_installer
@@ -152,13 +152,13 @@ endif
 
 $(OUTPUT_ROOT)/$(TYPE)/testinternals: $(TESTINTERNALS_OBJS)
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
-	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(TESTINTERNALS_OBJS) \
+	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(TESTINTERNALS_OBJS) $(SRC_ROOT)/$(LIBYAEP_LIBS) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(VERBOSE)$(STRIP_COMMAND) $@$(SUFFIX)
 
 $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals: $($(PLATFORM)_PARTS_OBJS)
 	@echo Linking parts $(TYPE) $(CONF_MNEMONIC) $@
-	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $($(PLATFORM)_PARTS_OBJS) \
+	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $($(PLATFORM)_PARTS_OBJS) $(SRC_ROOT)/$(LIBYAEP_LIBS) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(VERBOSE)$(STRIP_COMMAND) $@$(SUFFIX)
 

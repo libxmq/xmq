@@ -634,6 +634,8 @@ CFLAGS_asan
 CFLAGS_debug
 CFLAGS_release
 CLANG
+LIBYAEP_LIBS
+LIBYAEP_CFLAGS
 LIBXSLT_LIBS
 LIBXSLT_CFLAGS
 LIBXML2_LIBS
@@ -718,6 +720,7 @@ enable_static_xmq
 with_zlib
 with_libxml2
 with_libxslt
+with_libyaep
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1365,6 +1368,9 @@ Optional Packages:
   --with-libxslt          specify prefix directory for the libxslt package
                           (expecting the libraries under PATH and the headers
                           under PATH)
+  --with-libyaep          specify prefix directory for the yaep package
+                          (expecting the libraries .a under PATH/src and the
+                          header yaep.h under PATH/src)
 
 Some influential environment variables:
   CC          C compiler command
@@ -4218,6 +4224,22 @@ else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: using ${with_libxslt}" >&5
 printf "%s\n" "using ${with_libxslt}" >&6; }
 fi
+
+
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libyaep" >&5
+printf %s "checking for libyaep... " >&6; }
+
+# Check whether --with-libyaep was given.
+if test ${with_libyaep+y}
+then :
+  withval=$with_libyaep;
+fi
+
+
+LIBYAEP_CFLAGS=""
+LIBYAEP_LIBS="3rdparty/yaep/src/libyaep.a"
 
 
 
