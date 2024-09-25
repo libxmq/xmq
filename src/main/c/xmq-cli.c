@@ -1696,14 +1696,15 @@ void print_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, i
 
 void print_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, int depth, int index)
 {
+    if (n == NULL) return;
     if (n->type == YAEP_ANODE)
     {
         struct yaep_anode *an = &n->val.anode;
 
         xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)an->name, NULL);
-        char buf[10];
-        snprintf(buf, 10, "%d", an->cost);
-        xmlNewProp(new_node, (xmlChar*)"cost", (xmlChar*)buf);
+//        char buf[10];
+//        snprintf(buf, 10, "%d", an->cost);
+//        xmlNewProp(new_node, (xmlChar*)"cost", (xmlChar*)buf);
 
         if (node == NULL)
         {
@@ -1724,12 +1725,16 @@ void print_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, i
     if (n->type == YAEP_TERM)
     {
         struct yaep_term *at = &n->val.term;
+        char buf[4];
+        snprintf(buf, 4, "%c", at->code);
+        xmlNodePtr new_node = xmlNewDocText(doc, (xmlChar*)buf);
 
+        /*
         xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)"term", NULL);
         char buf[10];
         snprintf(buf, 10, "%d", at->code);
         xmlNewProp(new_node, (xmlChar*)"code", (xmlChar*)buf);
-
+        */
         if (node == NULL)
         {
             xmlDocSetRootElement(doc, new_node);
@@ -1779,8 +1784,6 @@ bool cmd_load(XMQCliCommand *command)
 
         g = yaep_create_grammar();
 
-        printf("GRAMMAR >%s<\n", command->ixml_yaep);
-
         int rc = yaep_parse_grammar (g, 1, command->ixml_yaep);
 
         //int rc = yaep_read_grammar(g, 0, read_terminal, read_rule);
@@ -1792,8 +1795,6 @@ bool cmd_load(XMQCliCommand *command)
         }
 
         input = load_file_into_buffer(command->in);
-//        input[strlen(input)-1] = 0;
-        printf("INPUT >%s<\n", input);
 
         rc = yaep_parse (g,
                          read_token,
@@ -1807,11 +1808,7 @@ bool cmd_load(XMQCliCommand *command)
 
         print_yaep_node(new_doc, NULL, root, 0, 0);
 
-        //add_key_value(new_doc, new_root, "sum_text", 123);
-        //xmlFreeDoc(command->env->doc);
-
         xmqSetImplementationDoc(command->env->doc, new_doc);
-
 
         yaep_free_grammar (g);
 
