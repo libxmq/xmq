@@ -1394,6 +1394,36 @@ list {
                    }'
     }
     lang {
+        name    = GURA
+        info    = 'Is a file format for configuration files. Gura is as readable as YAML and simple as TOML.'
+        url     = https://gura.netlify.app/
+        by      = 'Genaro Camele'
+        year    = 2021
+        example = '# This is a comment in a Gura configuration file.
+                   # Define a variable named `title` with string value "Gura Example"
+                   title: "Gura Example"
+
+                   # Define an object with fields `username` and `age`
+                   # with string and integer values, respectively
+                   # Indentation is used to indicate nesting
+                   person:
+                       username: "Stephen"
+                       age: 20
+
+                   # Define a list of values
+                   # Line breaks are OK when inside arrays
+                   hosts: [
+                       "alpha",
+                       "omega"
+                   ]
+
+                   # Variables can be defined and referenced to avoid repetition
+                   $foreground: "#FFAH84"
+                   color_scheme:
+                       editor: $foreground
+                       ui: $foreground'
+    }
+    lang {
         name    = Bicep
         info    = 'Bicep is a domain-specific language (DSL) that uses declarative syntax to deploy Azure resources.'
         url     = https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview
