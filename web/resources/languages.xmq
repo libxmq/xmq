@@ -1516,6 +1516,67 @@ list {
                    }'
     }
     lang {
+        name    = Khi
+        info    = 'A data language: a source code for data.'
+        by      = Torm
+        url     = https://github.com/khilang/khi
+        year    = 2023
+        example = '''{article}:
+                     uuid: 0c5aacfe-d828-43c7-a530-12a802af1df4
+                     type: chemical-element
+                     key: aluminium
+                     title: Aluminium
+                     description: The <@element>:{chemical element} aluminium.
+                     tags: [metal; common]
+
+                     {chemical-element}:
+                     symbol: Al
+                     number: 13
+                     stp-phase: <Solid>
+                     melting-point: 933.47
+                     boiling-point: 2743
+                     density: 2.7
+                     electron-shells: [2; 8; 3]
+
+                     {references}:
+                     wikipedia: \https://en.wikipedia.org/wiki/Aluminium
+                     snl: \https://snl.no/aluminium
+
+                     {links}:
+                     element: 740097ea-10fa-4203-b086-58632f099167
+                     chemsym: 6e2f634c-f180-407a-b9ce-2138b412b248
+                     atomnum: 1a5e1974-a78c-4820-afeb-79bef6974814
+                     react: ab7d8a1f-c028-4466-9bb2-41a39d153241
+                     aloxide: c1ff08e7-a88f-42d5-83c3-6adc4835a07b
+                     stab: b3b13474-4fe3-4556-9568-925c066916a5
+                     purity: 40786551-85c4-461c-ba6e-4d54d5863820
+                     ion: effd5c7a-da31-4357-a94c-91343e9a05eb
+                     metal: 84333088-cfcc-4e78-8d3f-7307dcab144b
+
+                     [content]:
+
+                     <h1>: Aluminium
+
+                     <p>: <@self>:Aluminium is a <@element>:{chemical element} with
+                     <@chemsym>:{chemical symbol} <chemsym> and <@atomnum>:{atomic number} <atomnum>.
+
+                     <h2>: Substance
+
+                     <p>: In <@purity>:pure form, it is a highly <@react>:reactive {<@metal>:metal},
+                     but normally a thin coat of <@aloxide>:{aluminium oxide} forms on its surface,
+                     keeping it highly {<@stab>:stable}.
+
+                     <p>: ...
+
+                     <h2>: Occurrence
+
+                     <p>: In nature, it occurs as the <@ion>:ion <$>:{<sym>:{Al}^{3+}}. It
+                     constitutes <$>:8.2% of the earth's crust, making it the most common
+                     <@metal>:metal found there.
+
+                     <p>: ...'''
+    }
+    lang {
         name    = Tyson
         year    = 2023
         info    = 'TySON (TypeScript Object Notation) is a subset of TypeScript, chosen to be useful as an embeddable configuration language that generates JSON.'
