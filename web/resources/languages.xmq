@@ -1304,62 +1304,60 @@ list {
                    }'
     }
     lang {
-        name    = VOML
-        info    = 'Virtual Object Markup Language: Another Readable Configuration.'
+        name    = JACL
+        info    = 'Jacl is a straightforward configuration language.'
         year    = 2019
-        url     = https://github.com/voml/voml
-        by      = SasakiSaki
-        example =
-'''''
-% This is a Arc example document.
-% Using `%` starts line comment
+        url     = https://github.com/yuce/jacl
+        by      = 'Yüce Tekol'
+        example = '''// This is a Jacl file. Boom.
 
-% import data from other files
-import "package.json" as package
-import json "package.json" as pkg
+                     owner: {
+                         name: "Phillips Redd"
+                         age: 34
+                         bio: """
+                             Coder.
+                             Loves cats.
+                             """
+                     }
 
-[string]
-literal = 'This is a string.'
-multiline = """
-\b     - backspace       (U+0008)
-\t     - tab             (U+0009)
-\n     - linefeed        (U+000A)
-\f     - form feed       (U+000C)
-\r     - carriage return (U+000D)
-\"     - quote           (U+0022)
-\/     - slash           (U+002F)
-\\     - backslash       (U+005C)
-\u1234 - unicode         (U+1234)
-"""
+                     database: {
+                         server: "192.168.1.1"
+                         ports: [8001 8002 8003]
+                         connection_max: 5_000
+                         enabled: true
+                     }
 
-<list.scope.insert>
-& 42
-& 'string'
-& [true, false, null]
+                     // Some code in the config. Indentation matters only when it should:
+                     source: trim"""
+                         def main():
+                             if True:
+                                 print("OK, fine")
+                             else:
+                                 print("Not fine")
+                         """
 
-<list.scope.string>
-& 'Apple'
-& 'Banana'
-& 'Cherry'
+                         /*
+                             You can indent as you please, even if it doesn't make sense.
+                             Tabs or spaces. Jacl doesn't care.
+                             Oh, and this is a multiline comment!
+                         */
+                         servers: {
+                             alpha: {
+                                 ip: "10.0.0.1"
+                                 dc: "eqdc10"
+                             }
+                             beta: {
+                                 ip: "10.0.0.2"
+                                 dc: "eqdc10"
+                             }
+                         }
 
-<list.scope.dict>
-* name = "Apple"
-  color = "red"
-* name = "Banana"
-  color = "yellow"
-* name = "apple"
-  color = "red"
-
-% expand above syntax
-[list.scope.expand]
-insert = [42, 'string', [true, false, null]]
-string = ['Apple', 'Banana', 'Cherry']
-dict = [
-    {name = 'Apple', color = 'red'},
-    {name = 'Banana', color = 'yellow'},
-    {name = 'apple', color = 'red'}
-]
-'''''
+                     clients: {
+                         data: [
+                             ["gamma", "delta"]
+                             [1 2]
+                         ]
+                     }'''
     }
     lang {
         name    = XMQ
