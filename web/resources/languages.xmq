@@ -1551,7 +1551,7 @@ list {
     }
     lang {
         name    = Corn
-        info    = ''
+        info    = 'A simple and pain-free configuration language.'
         year    = 2022
         url     = https://github.com/corn-config/corn
         by      = 'Jake Stanger'
