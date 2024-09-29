@@ -766,7 +766,7 @@ list {
                    }'
     }
     lang {
-        name    = StringSwan/swanctl.conf
+        name    = StrongSwan/swanctl.conf
         info    = 'New configuration format for StrongSwan.'
         year    = 2014
         url     = https://docs.strongswan.org/docs/5.9/swanctl/swanctlConf.html
@@ -1305,7 +1305,7 @@ list {
     }
     lang {
         name    = JACL
-        info    = 'Jacl is a straightforward configuration language.'
+        info    = 'Specification for just another configuration language.'
         year    = 2019
         url     = https://github.com/yuce/jacl
         by      = 'Yüce Tekol'
@@ -1437,6 +1437,57 @@ list {
                            - board member'
     }
     lang {
+        name    = okra
+        info    = 'A digestible language for data and configuration.'
+        year    = 2020
+        by      = 'Cameron Messinides'
+        url     = https://github.com/CMessinides/okra
+        example = '''# Okra consists of simple key-value pairs.
+                     # Each value's type is indicated by the delimiter after the key.
+
+                     # Strings are delimited by ":"
+                     hello: okra
+                     # Keys and strings can contain spaces.
+                     biological name: Abelmoschus esculentus
+
+                     # Numbers, delimited by "="
+                     cpus= 16
+                     # Floats and scientific notation are supported.
+                     threshold= 0.8
+                     minimum= 1.1e-10
+
+                     # Booleans, delimited by "?"
+                     autocomplete? true
+                     # Plain English and shorthand booleans
+                     validate config? yes
+                     dev? n
+                     # Booleans are case insensitive.
+                     verbose? Y
+                     skip tests? False
+
+                     # (Comments are supported, too.)
+
+                     # Lists are opened with "/"
+                     packages/
+                             # Okra uses indentation for nesting
+                             cli: 0.1.2
+                             validator: 2.3.18
+
+                     # Leave off the keys to create a sequential list (array)
+                     benchmarks/
+                             = 4.101
+                             = 4.533
+                             = 3.970
+
+                     # Sequential lists can contain any type
+                     mixed bag/
+                             = 2
+                             : text
+                             ? true
+                             /
+                                     nested lists? true'''
+    }
+    lang {
         name    = Boulder
         info    = 'Boulder - A Perl API for hierarchical tag/value structures.'
         url     = https://metacpan.org/dist/Boulder/view/Boulder.pod
@@ -1478,6 +1529,25 @@ list {
                    color_scheme:
                        editor: $foreground
                        ui: $foreground'
+    }
+    lang {
+        name    = Fern
+        info    = 'A clean and simple storage or configuration format with easy readability, minimal meta-characters, lenient parsing and simple conversion.'
+        url     = https://github.com/Moderocky/Fern
+        by      = Moderocky
+        year    = 2021
+        example = 'name "Tony"
+                   age 42
+                   height 1.85
+                   weight 70.2
+                   spouse null
+                   likes [ "chicken" "pasta" "bacon" ]
+                   dislikes [ "fish" "ice cream" 74 ]
+                   education (
+                       school "Hartlepool Secondary School"
+                       college "Wisham College"
+                       university null
+                   )'
     }
     lang {
         name    = Bicep
@@ -1607,6 +1677,38 @@ list {
                    }'
     }
     lang {
+        name    = Ink-lang
+        info    = 'Ink is a configuration language that is a subset of Kotlin.'
+        by      = 'Alex Semin'
+        url     = https://github.com/alllex/ink-lang
+        year    = 2023
+        example = '// Flat properties style
+                   server.port = 80
+
+                   // Nested scoping style
+                   server {
+                       // Overrides the value above!
+                       port = 8080
+
+                       // Mixed style
+                       auth {
+                           token.refresh = "<token>"
+                       }
+                   }
+
+                   // Human readable list syntax
+                   testerIds = listOf(1001, 1002)
+
+                   // Builder style
+                   users = listOf({
+                       name = "Alex"
+                       age = 42
+                   }, {
+                       name = "Bob"
+                       age = 6033
+                   })'
+    }
+    lang {
         name    = Khi
         info    = 'A data language: a source code for data.'
         by      = Torm
@@ -1696,6 +1798,31 @@ list {
                          nested_field: "nested",
                        }, // Trailing commas are allowed
                      }'''
+    }
+    lang {
+        name    = Yam-lang
+        year    = 2023
+        info    = 'A simple human readable, data oriented configuration language.'
+        by      = 'Aigars Šķiliņš '
+        url     = https://github.com/askilins/yam-lang
+        example = '~~ Configuring display.
+                   - <time/>
+                   - version:
+                       "0.1.2"
+                   - background:
+                       svg: <l>background.svg</l>
+                       transparency: 60%
+                       color: !Color(255,255,255)
+                   - !Display
+                       menu: <l>pages/index.html</l>
+                       options: <l>pages/options.html</l>
+                       log_path: logs/display.log
+                       settings:
+                         width: 1920
+                         height: 1080
+                         mode: fullscreen
+                       show_hidden: false
+                   - style: <l>style.yam</l>'
     }
     lang {
         name    = PKL
