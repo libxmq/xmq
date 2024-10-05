@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2023 Fredrik Öhrström
+# Copyright (C) 2017-2024 Fredrik Öhrström
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -89,6 +89,13 @@ ifeq (,$(BUILDDIRS))
 endif
 
 VERBOSE?=@
+SILENT?=nosilent
+
+ifeq ($(SILENT),nosilent)
+SILENCER:=
+else
+SILENCER:=| (grep ERR | true)
+endif
 
 ifeq (winapi64,$(findstring winapi64,$(MAKECMDGOALS)))
 BUILDDIRS:=$(filter %x86_64-w64-mingw32%,$(BUILDDIRS))
@@ -135,18 +142,18 @@ testa: test_asan
 
 test_release:
 	@echo "Running release tests"
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/release/testinternals ]; then echo "Run make first. $$x/release/testinternals not found."; exit 1; fi ; $$x/release/testinternals ; done
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/release/parts/testinternals ]; then echo "Run make first. $$x/release/parts/testinternals not found."; exit 1; fi ; $$x/release/parts/testinternals ; ./tests/test.sh $$x/release $$x/release/test_output ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $$x/release/testinternals ]; then echo "Run make first. $$x/release/testinternals not found."; exit 1; fi ; $$x/release/testinternals $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $$x/release/parts/testinternals ]; then echo "Run make first. $$x/release/parts/testinternals not found."; exit 1; fi ; $$x/release/parts/testinternals $(SILENCER) ; ./tests/test.sh $$x/release $$x/release/test_output $(SILENCER) ; done
 
 test_debug:
 	@echo "Running debug tests"
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/debug/testinternals ]; then echo "Run make first. $$x/debug/testinternals not found."; exit 1; fi ; $$x/debug/testinternals ; done
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/debug/parts/testinternals ]; then echo "Run make first. $$x/debug/parts/testinternals not found."; exit 1; fi ; $$x/release/debug/testinternals ; ./tests/test.sh $$x/debug $$x/debug/test_output ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $$x/debug/testinternals ]; then echo "Run make first. $$x/debug/testinternals not found."; exit 1; fi ; $$x/debug/testinternals $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $$x/debug/parts/testinternals ]; then echo "Run make first. $$x/debug/parts/testinternals not found."; exit 1; fi ; $$x/release/debug/testinternals $(SILENCER) ; ./tests/test.sh $$x/debug $$x/debug/test_output $(SILENCER) ; done
 
 test_asan:
 	@echo "Running asan tests"
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/asan/testinternals ]; then echo "Run make first. $$x/asan/testinternals not found."; exit 1; fi ; $$x/asan/testinternals ; done
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/asan/parts/testinternals ]; then echo "Run make first. $$x/asan/parts/testinternals not found."; exit 1; fi ; $$x/release/asan/testinternals ; ./tests/test.sh $$x/asan $$x/asan/test_output ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $$x/asan/testinternals ]; then echo "Run make first. $$x/asan/testinternals not found."; exit 1; fi ; $$x/asan/testinternals $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $$x/asan/parts/testinternals ]; then echo "Run make first. $$x/asan/parts/testinternals not found."; exit 1; fi ; $$x/release/asan/testinternals $(SILENCER) ; ./tests/test.sh $$x/asan $$x/asan/test_output $(SILENCER) ; done
 
 clean:
 	@echo "Removing release, debug, asan, gtkdoc build dirs."
