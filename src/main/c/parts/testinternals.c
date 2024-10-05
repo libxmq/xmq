@@ -25,6 +25,11 @@ void test_core()
 {
     int8_t i8;
     bool ok = coreParseI8("77", &i8);
+    if (i8 != 77 || !ok)
+    {
+        all_ok_ = false;
+        printf("ERROR: coreParseI8(77) failed\n");
+    }
 }
 
 void test_hashmap()

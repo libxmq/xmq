@@ -241,6 +241,19 @@ bool generate_tex_color(char *buf, size_t buf_size, XMQColorDef *def, const char
 
 #define COLORS_MODULE
 
+// PARTS CORE ////////////////////////////////////////
+
+#include<stdbool.h>
+#include<stdint.h>
+
+#define CORE_MODULE
+
+bool coreParseI8(const char *s, int8_t *out);
+bool coreParseI16(const char *s, int16_t *out);
+bool coreParseI32(const char *s, int32_t *out);
+bool coreParseI64(const char *s, int64_t *out);
+bool coreParseI128(const char *s, __int128 *out);
+
 // PARTS DEFAULT_THEMES ////////////////////////////////////////
 
 #ifndef BUILDING_XMQ
@@ -5909,6 +5922,59 @@ void setColorDef(XMQColorDef *cd, int r, int g, int b, bool bold, bool underline
 }
 
 #endif // COLORS_MODULE
+
+// PARTS CORE_C ////////////////////////////////////////
+
+#ifdef CORE_MODULE
+
+bool internal_parser_number(const char *s, int64_t *out, int num_digits);
+
+bool internal_parser_number(const char *s, int64_t *out, int num_digits)
+{
+    if (s == NULL || *s == 0) return false;
+
+    char *err = NULL;
+    int64_t tmp = strtoll(s, &err, 0);
+
+    if (err == NULL || *err != 0) return false;
+    *out = tmp;
+
+    return true;
+}
+
+bool coreParseI8(const char *s, int8_t *out)
+{
+    int64_t tmp = 0;
+    bool ok = internal_parser_number(s, &tmp, 3);
+    if (!ok) return false;
+    if (tmp > 127) return false;
+    if (tmp < -128) return false;
+    *out = (int8_t)tmp;
+
+    return true;
+}
+
+bool coreParseI16(const char *s, int16_t *out)
+{
+    return false;
+}
+
+bool coreParseI32(const char *s, int32_t *out)
+{
+    return false;
+}
+
+bool coreParseI64(const char *s, int64_t *out)
+{
+    return false;
+}
+
+bool coreParseI128(const char *s, __int128 *out)
+{
+    return false;
+}
+
+#endif // CORE_MODULE
 
 // PARTS DEFAULT_THEMES_C ////////////////////////////////////////
 

@@ -31,14 +31,14 @@ bool internal_parser_number(const char *s, int64_t *out, int num_digits);
 bool internal_parser_number(const char *s, int64_t *out, int num_digits)
 {
     if (s == NULL || *s == 0) return false;
-    //size_t len = strlen(s);
-    //size_t num_whitespace = count_whitespace(s, s+len);
 
-    if (s[0] == '0' && s[1] == 'x')
-    {
-    }
+    char *err = NULL;
+    int64_t tmp = strtoll(s, &err, 0);
 
-    return false;
+    if (err == NULL || *err != 0) return false;
+    *out = tmp;
+
+    return true;
 }
 
 bool coreParseI8(const char *s, int8_t *out)
@@ -46,9 +46,11 @@ bool coreParseI8(const char *s, int8_t *out)
     int64_t tmp = 0;
     bool ok = internal_parser_number(s, &tmp, 3);
     if (!ok) return false;
+    if (tmp > 127) return false;
+    if (tmp < -128) return false;
     *out = (int8_t)tmp;
 
-    return false;
+    return true;
 }
 
 bool coreParseI16(const char *s, int16_t *out)

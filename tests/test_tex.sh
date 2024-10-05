@@ -9,7 +9,7 @@ $PROG render-tex > $OUTPUT/tjo.tex <<EOF
 work { data(i=2) { foo bar = '123' } }
 EOF
 
-if ! command -v xelatex
+if ! command -v xelatex > /dev/null
 then
     echo "No xelatex found, skipping tex test."
     exit 0
