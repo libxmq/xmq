@@ -2,7 +2,7 @@ build/
 target/
 project-deps/
 extras/
-3rdparty
+3rdparty/
 doc/*.aux
 doc/*.log
 doc/*.pdf

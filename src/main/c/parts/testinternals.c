@@ -1,5 +1,6 @@
 
 #include"colors.h"
+#include"core.h"
 #include"hashmap.h"
 #include"stack.h"
 #include"quicksort_strings.h"
@@ -8,6 +9,7 @@
 #include<stdint.h>
 
 #define TESTS \
+    X(test_core) \
     X(test_hashmap) \
     X(test_quicksort) \
     X(test_stack) \
@@ -18,6 +20,12 @@ TESTS
 #undef X
 
 bool all_ok_ = true;
+
+void test_core()
+{
+    int8_t i8;
+    bool ok = coreParseI8("77", &i8);
+}
 
 void test_hashmap()
 {

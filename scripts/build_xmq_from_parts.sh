@@ -52,6 +52,7 @@ do_version() {
 
 do_part always
 do_part colors
+do_part core
 do_part default_themes
 do_part hashmap
 do_part json

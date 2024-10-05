@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include"parts/always.h"
 #include"parts/colors.h"
+#include"parts/core.h"
 #include"parts/default_themes.h"
 #include"parts/entities.h"
 #include"parts/utf8.h"
@@ -4064,6 +4065,7 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
 
 #include"parts/always.c"
 #include"parts/colors.c"
+#include"parts/core.c"
 #include"parts/default_themes.c"
 #include"parts/entities.c"
 #include"parts/hashmap.c"
