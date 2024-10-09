@@ -1463,6 +1463,7 @@ void fixup_json(XMQDoc *doq, xmlNode *node)
 
 void xmq_fixup_json_before_writeout(XMQDoc *doq)
 {
+    if (doq == NULL || doq->docptr_.xml == NULL) return;
     xmlNodePtr i = doq->docptr_.xml->children;
     if (!doq || !i) return;
 

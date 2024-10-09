@@ -4205,6 +4205,7 @@ void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
 
 void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
 {
+    if (doq == NULL || doq->docptr_.xml == NULL) return;
     xmq_fixup_json_before_writeout(doq);
 
     void *first = doq->docptr_.xml->children;
@@ -4279,6 +4280,7 @@ void xmq_print_text(XMQDoc *doq, XMQOutputSettings *os)
 
 void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
 {
+    if (doq == NULL || doq->docptr_.xml == NULL) return;
     void *first = doq->docptr_.xml->children;
     if (!doq || !first) return;
     void *last = doq->docptr_.xml->last;
@@ -8141,6 +8143,7 @@ void fixup_json(XMQDoc *doq, xmlNode *node)
 
 void xmq_fixup_json_before_writeout(XMQDoc *doq)
 {
+    if (doq == NULL || doq->docptr_.xml == NULL) return;
     xmlNodePtr i = doq->docptr_.xml->children;
     if (!doq || !i) return;
 
