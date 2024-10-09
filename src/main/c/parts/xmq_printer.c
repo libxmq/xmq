@@ -3,6 +3,7 @@
 #include"always.h"
 #include"text.h"
 #include"parts/xmq_internals.h"
+#include"xml.h"
 #include"xmq_printer.h"
 
 #include<assert.h>
@@ -872,7 +873,7 @@ void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align)
     }
     print_utf8(ps, COLOR_attr_key, 1, key, NULL);
 
-    if (a->children != NULL)
+    if (a->children != NULL && !is_single_empty_text_node(a->children))
     {
         if (!ps->output_settings->compact) print_white_spaces(ps, 1+align-total_u_len);
 

@@ -976,6 +976,7 @@ bool is_element_node(const xmlNode *node);
 bool is_text_node(const xmlNode *node);
 bool is_attribute_node(const xmlNode *node);
 bool is_key_value_node(xmlNodePtr node);
+bool is_single_empty_text_node(xmlNodePtr node);
 bool is_leaf_node(xmlNode *node);
 bool has_attributes(xmlNodePtr node);
 char *xml_collapse_text(xmlNode *node);
@@ -9141,6 +9142,15 @@ bool is_key_value_node(xmlNodePtr node)
     return true;
 }
 
+bool is_single_empty_text_node(xmlNodePtr node)
+{
+    if (is_entity_node(node)) return false;
+    if (node->type != XML_TEXT_NODE) return false;
+    const char *c = (const char*)node->content;
+    if (c != NULL && *c != 0) return false;
+    return true;
+}
+
 bool is_leaf_node(xmlNode *node)
 {
     return xml_first_child(node) == NULL;
@@ -11789,7 +11799,7 @@ void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align)
     }
     print_utf8(ps, COLOR_attr_key, 1, key, NULL);
 
-    if (a->children != NULL)
+    if (a->children != NULL && !is_single_empty_text_node(a->children))
     {
         if (!ps->output_settings->compact) print_white_spaces(ps, 1+align-total_u_len);
 

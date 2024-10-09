@@ -1,0 +1,9 @@
+START
+welcome(A = '')
+COMPACT
+welcome(A)
+XMQ
+welcome(A)
+END
+ARGS
+CMDS
