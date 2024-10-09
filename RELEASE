@@ -1,2 +1,2 @@
-Handle leading/ending comments (outside of root node) when converting to/from json.
-Rename command noout to no-output.
+Print an empty document on stdout when xsl transform fails instead of
+generating a segmentation fault.

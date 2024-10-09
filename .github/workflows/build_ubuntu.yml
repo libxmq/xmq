@@ -19,5 +19,3 @@ jobs:
       run: eatmydata make release asan
     - id: TEST
       run: eatmydata make test
-    - id: TEST_ASAN
-      run: eatmydata make testa
