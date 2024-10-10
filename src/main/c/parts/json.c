@@ -874,6 +874,23 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_
     // The node is marked foo(A) { } translate this into: "foo":[ ]
     if (xml_get_attribute(node, "A"))
     {
+        const char *name = xml_element_name(node);
+        bool is_underline = (name[0] == '_' && name[1] == 0);
+        bool has_attr = has_attr_other_than_AS_(node);
+        if (!is_underline && !container)
+        {
+            // The xmq "alfa(A) { _=hello _=there }" translates into
+            // the json ["hello","there"] and there is no sensible
+            // way of storing the alfa element name. Fixable?
+            PRINT_WARNING("xmq: Warning! The element name \"%s\" is lost when converted to an unnamed json array!\n", name);
+        }
+        if (has_attr)
+        {
+            // The xmq "_(A beta=123) { _=hello _=there }" translates into
+            // the json ["hello","there"] and there is no sensible
+            // way of storing the beta attribute. Fixable?
+            PRINT_WARNING("xmq: Warning! The element \"%s\" loses its attributes when converted to a json array!\n", name);
+        }
         return json_print_array_with_children(ps, container, node);
     }
 
@@ -894,6 +911,12 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
 
     if (!key_start)
     {
+        key_start = underline;
+        key_stop = underline+1;
+    }
+    else if (key_start == key_stop)
+    {
+        // The empty key translates into a _
         key_start = underline;
         key_stop = underline+1;
     }

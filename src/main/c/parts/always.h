@@ -38,6 +38,7 @@ void check_malloc(void *a);
 #define debug(...) if (xmq_debug_enabled_) {debug__(__VA_ARGS__); }
 
 #define PRINT_ERROR(...) fprintf(stderr, __VA_ARGS__)
+#define PRINT_WARNING(...) fprintf(stderr, __VA_ARGS__)
 
 #ifdef PLATFORM_WINAPI
 char *strndup(const char *s, size_t l);
