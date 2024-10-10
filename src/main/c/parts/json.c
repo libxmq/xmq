@@ -280,8 +280,9 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
 
-    if (!key_start)
+    if (!key_start || key_start == key_stop)
     {
+        // No key and the empty key translates into a _
         key_start = underline;
         key_stop = underline+1;
     }
@@ -379,8 +380,9 @@ void parse_json_null(XMQParseState *state, const char *key_start, const char *ke
         return;
     }
 
-    if (!key_start)
+    if (!key_start || key_start == key_stop)
     {
+        // No key and the empty key translates into a _
         key_start = underline;
         key_stop = underline+1;
     }
@@ -535,8 +537,9 @@ void parse_json_boolean(XMQParseState *state, const char *key_start, const char 
 
     trim_index_suffix(key_start, &key_stop);
 
-    if (!key_start)
+    if (!key_start || key_start == key_stop)
     {
+        // No key and the empty key translates into a _
         key_start = underline;
         key_stop = underline+1;
     }
@@ -599,8 +602,9 @@ void parse_json_number(XMQParseState *state, const char *key_start, const char *
 
     trim_index_suffix(key_start, &key_stop);
 
-    if (!key_start)
+    if (!key_start || key_start == key_stop)
     {
+        // No key and the empty key translates into a _
         key_start = underline;
         key_stop = underline+1;
     }
@@ -676,8 +680,9 @@ void parse_json_array(XMQParseState *state, const char *key_start, const char *k
 
     trim_index_suffix(key_start, &key_stop);
 
-    if (!key_start)
+    if (!key_start || key_start == key_stop)
     {
+        // No key and the empty key translates into a _
         key_start = underline;
         key_stop = underline+1;
     }
@@ -909,14 +914,9 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
 
     trim_index_suffix(key_start, &key_stop);
 
-    if (!key_start)
+    if (!key_start || key_start == key_stop)
     {
-        key_start = underline;
-        key_stop = underline+1;
-    }
-    else if (key_start == key_stop)
-    {
-        // The empty key translates into a _
+        // No key and the empty key translates into a _
         key_start = underline;
         key_stop = underline+1;
     }
