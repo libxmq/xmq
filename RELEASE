@@ -1,2 +1,4 @@
-Print an empty document on stdout when xsl transform fails instead of
-generating a segmentation fault.
+Properly handle xml namespaces when converting to and from json.
+Handle json with a key that is the empty string.
+Changed default for tabs to be kept as is inside quotes.
+Added --escape-tabs to trigger replacement of tabs into &#9; when generating xmq.
