@@ -183,7 +183,7 @@ void trim_index_suffix(const char *key_start, const char **stop)
 {
     const char *key_stop = *stop;
 
-    if (key_start && key_stop && *(key_stop-1) == ']')
+    if (key_start && key_stop && key_start < key_stop && *(key_stop-1) == ']')
     {
         // This is an indexed element name "path[32]":"123" ie the 32:nd xml element
         // which has been indexed because json objects must have unique keys.
