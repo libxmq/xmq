@@ -1135,6 +1135,7 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
 {
     bool compact = ps->output_settings->compact;
     bool newlines = ps->output_settings->escape_newlines;
+    bool escape_tabs = ps->output_settings->escape_tabs;
     bool non7bit = ps->output_settings->escape_non_7bit;
 
     const char *i = start;
@@ -1156,7 +1157,8 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
         if (compact && c == '\'' && i == pre_stop) break;
         if (newlines && c == '\n') break;
         if (non7bit && c > 126) break;
-        if (c < 32 && c != '\n') break;
+        if (c < 32 && c != '\t' && c != '\n') break;
+        if (c == '\t' && escape_tabs) break;
         i++;
     }
 
@@ -1348,6 +1350,7 @@ void print_value_internal(XMQPrintState *ps, xmlNode *node, Level level)
 bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *stop)
 {
     bool compact = ps->output_settings->compact;
+    bool escape_tabs = ps->output_settings->escape_tabs;
     if (stop == start+1)
     {
         // A single quote becomes &apos;
@@ -1387,7 +1390,8 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
         int c = (int)(unsigned char)(*i);
         if (newlines && c == '\n') return true;
         if (non7bit && c > 126) return true;
-        if (c < 32 && c != '\n') return true;
+        if (c < 32 && c != '\t' && c != '\n') return true;
+        if (c == '\t' && escape_tabs) return true;
     }
     return false;
 }

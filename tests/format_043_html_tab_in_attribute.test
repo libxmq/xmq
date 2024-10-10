@@ -16,4 +16,4 @@ html {
 }
 END
 ARGS
-CMDS
+CMDS to-xmq --escape-tabs

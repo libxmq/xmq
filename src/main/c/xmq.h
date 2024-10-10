@@ -579,6 +579,7 @@ void xmqSetUseColor(XMQOutputSettings *os, bool use_color);
 void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode);
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines);
 void xmqSetEscapeNon7bit(XMQOutputSettings *os, bool escape_non_7bit);
+void xmqSetEscapeTabs(XMQOutputSettings *os, bool escape_tabs);
 void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format);
 void xmqSetRenderFormat(XMQOutputSettings *os, XMQRenderFormat render_to);
 void xmqSetRenderTheme(XMQOutputSettings *os, const char *theme_name);

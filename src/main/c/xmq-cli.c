@@ -189,7 +189,7 @@ struct XMQCliCommand
     bool compact;
     bool escape_newlines;
     bool escape_non_7bit;
-    int  tab_size; // Default 8
+    bool escape_tabs;
     const char *implicit_root;
     bool lines;
 
@@ -553,7 +553,7 @@ XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env)
     }
     c->add_indent = 4;
     c->compact = false;
-    c->tab_size = 8;
+    c->escape_tabs = false;
 
     return c;
 }
@@ -691,6 +691,11 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         if (!strcmp(arg, "--escape-non-7bit"))
         {
             command->escape_non_7bit = true;
+            return true;
+        }
+        if (!strcmp(arg, "--escape-tabs"))
+        {
+            command->escape_tabs = true;
             return true;
         }
         if (!strncmp(arg, "--indent=", 9))
@@ -1392,19 +1397,6 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->in_format=XMQ_CONTENT_TEXT;
         return true;
     }
-    if (!strncmp(arg, "--tabsize=", 10))
-    {
-        for (const char *i = arg+10; *i; i++)
-        {
-            if (!isdigit(*i))
-            {
-                printf("xmq: tab size must be a positive integer\n");
-                exit(1);
-            }
-        }
-        command->tab_size = atoi(arg+10);
-        return true;
-    }
     if (!strncmp(arg, "--root=", 7))
     {
         command->implicit_root = arg+7;
@@ -1647,6 +1639,7 @@ bool cmd_to(XMQCliCommand *command)
     xmqSetCompact(settings, command->compact);
     xmqSetEscapeNewlines(settings, command->escape_newlines);
     xmqSetEscapeNon7bit(settings, command->escape_non_7bit);
+    xmqSetEscapeTabs(settings, command->escape_tabs);
     xmqSetAddIndent(settings, command->add_indent);
     xmqSetUseColor(settings, command->use_color);
     xmqSetBackgroundMode(settings, command->bg_dark_mode);
@@ -1881,7 +1874,7 @@ bool cmd_select(XMQCliCommand *command)
         assert(nodes->nodeTab[i]);
         xmlNode *n = nodes->nodeTab[i];
 
-        while (n && !is_element_node(n))
+        while (n && !is_element_node(n) && !is_content_node(n))
         {
             // We found an attribute move to parent.
             n = n->parent;

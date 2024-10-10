@@ -394,6 +394,7 @@ typedef enum Level Level;
     @compact: Print on a single line limiting whitespace to a minimum.
     @escape_newlines: Replace newlines with &#10; this is implied if compact is set.
     @escape_non_7bit: Replace all chars above 126 with char entities, ie &#10;
+    @escape_tabs: Replace tabs with &#9;
     @output_format: Print xmq/xml/html/json
     @render_to: Render to terminal, html, tex.
     @render_raw: If true do not write surrounding html and css colors, likewise for tex.
@@ -412,6 +413,7 @@ struct XMQOutputSettings
     bool bg_dark_mode;
     bool escape_newlines;
     bool escape_non_7bit;
+    bool escape_tabs;
 
     XMQContentType output_format;
     XMQRenderFormat render_to;
@@ -1187,6 +1189,7 @@ typedef enum Level Level;
     @compact: Print on a single line limiting whitespace to a minimum.
     @escape_newlines: Replace newlines with &#10; this is implied if compact is set.
     @escape_non_7bit: Replace all chars above 126 with char entities, ie &#10;
+    @escape_tabs: Replace tabs with &#9;
     @output_format: Print xmq/xml/html/json
     @render_to: Render to terminal, html, tex.
     @render_raw: If true do not write surrounding html and css colors, likewise for tex.
@@ -1205,6 +1208,7 @@ struct XMQOutputSettings
     bool bg_dark_mode;
     bool escape_newlines;
     bool escape_non_7bit;
+    bool escape_tabs;
 
     XMQContentType output_format;
     XMQRenderFormat render_to;
@@ -2282,6 +2286,11 @@ void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines)
 void xmqSetEscapeNon7bit(XMQOutputSettings *os, bool escape_non_7bit)
 {
     os->escape_non_7bit = escape_non_7bit;
+}
+
+void xmqSetEscapeTabs(XMQOutputSettings *os, bool escape_tabs)
+{
+    os->escape_tabs = escape_tabs;
 }
 
 void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format)
@@ -12064,6 +12073,7 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
 {
     bool compact = ps->output_settings->compact;
     bool newlines = ps->output_settings->escape_newlines;
+    bool escape_tabs = ps->output_settings->escape_tabs;
     bool non7bit = ps->output_settings->escape_non_7bit;
 
     const char *i = start;
@@ -12085,7 +12095,8 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
         if (compact && c == '\'' && i == pre_stop) break;
         if (newlines && c == '\n') break;
         if (non7bit && c > 126) break;
-        if (c < 32 && c != '\n') break;
+        if (c < 32 && c != '\t' && c != '\n') break;
+        if (c == '\t' && escape_tabs) break;
         i++;
     }
 
@@ -12277,6 +12288,7 @@ void print_value_internal(XMQPrintState *ps, xmlNode *node, Level level)
 bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *stop)
 {
     bool compact = ps->output_settings->compact;
+    bool escape_tabs = ps->output_settings->escape_tabs;
     if (stop == start+1)
     {
         // A single quote becomes &apos;
@@ -12316,7 +12328,8 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
         int c = (int)(unsigned char)(*i);
         if (newlines && c == '\n') return true;
         if (non7bit && c > 126) return true;
-        if (c < 32 && c != '\n') return true;
+        if (c < 32 && c != '\t' && c != '\n') return true;
+        if (c == '\t' && escape_tabs) return true;
     }
     return false;
 }

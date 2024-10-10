@@ -10,3 +10,4 @@ alfa {
 }
 END
 ARGS --trim=none
+CMDS to-xmq --escape-tabs

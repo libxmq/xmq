@@ -722,6 +722,11 @@ void xmqSetEscapeNon7bit(XMQOutputSettings *os, bool escape_non_7bit)
     os->escape_non_7bit = escape_non_7bit;
 }
 
+void xmqSetEscapeTabs(XMQOutputSettings *os, bool escape_tabs)
+{
+    os->escape_tabs = escape_tabs;
+}
+
 void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format)
 {
     os->output_format = output_format;
