@@ -42,6 +42,7 @@ bool is_json_null(XMQParseState *state);
 bool is_json_number(XMQParseState *state);
 bool is_json_quote_start(char c);
 bool is_json_whitespace(char c);
+void json_print_namespace_declaration(XMQPrintState *ps, xmlNs *ns);
 void json_print_attribute(XMQPrintState *ps, xmlAttrPtr a);
 void json_print_attributes(XMQPrintState *ps, xmlNodePtr node);
 void json_print_array_with_children(XMQPrintState *ps,
@@ -1079,13 +1080,14 @@ void json_print_attribute(XMQPrintState *ps, xmlAttr *a)
 
     json_check_comma(ps);
 
+    char *quoted_key = xmq_quote_as_c(key, key+strlen(key));
+    print_utf8(ps, COLOR_none, 1, "\"_", NULL);
     if (prefix)
     {
         print_utf8(ps, COLOR_none, 1, prefix, NULL);
         print_utf8(ps, COLOR_none, 1, ":", NULL);
     }
-    char *quoted_key = xmq_quote_as_c(key, key+strlen(key));
-    print_utf8(ps, COLOR_none, 3, "\"_", NULL, quoted_key, NULL, "\":", NULL);
+    print_utf8(ps, COLOR_none, 2, quoted_key, NULL, "\":", NULL);
     free(quoted_key);
 
     if (a->children != NULL)
@@ -1102,23 +1104,54 @@ void json_print_attribute(XMQPrintState *ps, xmlAttr *a)
     }
 }
 
+void json_print_namespace_declaration(XMQPrintState *ps, xmlNs *ns)
+{
+    const char *prefix;
+    size_t total_u_len;
+
+    namespace_strlen_prefix(ns, &prefix, &total_u_len);
+
+    json_check_comma(ps);
+
+    print_utf8(ps, COLOR_none, 1, "\"_xmlns", NULL);
+
+    if (prefix)
+    {
+        print_utf8(ps, COLOR_none, 1, ":", NULL);
+        print_utf8(ps, COLOR_none, 1, prefix, NULL);
+    }
+    print_utf8(ps, COLOR_none, 1, "\":", NULL);
+
+    const char *v = xml_namespace_href(ns);
+
+    if (v != NULL)
+    {
+        print_utf8(ps, COLOR_none, 3, "\"", NULL, v, NULL, "\"", NULL);
+    }
+    else
+    {
+        print_utf8(ps, COLOR_none, 1, "null", NULL);
+    }
+
+}
+
 void json_print_attributes(XMQPrintState *ps,
                            xmlNodePtr node)
 {
     xmlAttr *a = xml_first_attribute(node);
-    //xmlNs *ns = xml_first_namespace_def(node);
+    xmlNs *ns = xml_first_namespace_def(node);
 
     while (a)
     {
         json_print_attribute(ps, a);
         a = xml_next_attribute(a);
     }
-    /*
+
     while (ns)
     {
-        print_namespace(ps, ns, max);
+        json_print_namespace_declaration(ps, ns);
         ns = xml_next_namespace_def(ns);
-        }*/
+    }
 }
 
 void json_print_element_with_children(XMQPrintState *ps,

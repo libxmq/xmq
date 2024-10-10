@@ -1,0 +1,12 @@
+START
+<?xml version="1.0" encoding="utf8"?>
+<element xmlns:foo="http://a.b.c">
+  <foo:spam>Viking</foo:spam>
+</element>
+COMPACT
+{"_":"element","_xmlns:foo":"http://a.b.c","foo:spam":"Viking"}
+XMQ
+{"_":"element","_xmlns:foo":"http://a.b.c","foo:spam":"Viking"}
+END
+ARGS
+CMDS to-json
