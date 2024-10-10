@@ -934,7 +934,7 @@ bool is_lowercase_hex(char c);
 bool is_xmq_token_whitespace(char c);
 bool is_xml_whitespace(char c);
 bool is_all_xml_whitespace(const char *s);
-bool is_xmq_element_name(const char *start, const char *stop);
+bool is_xmq_element_name(const char *start, const char *stop, const char **colon);
 bool is_xmq_element_start(char c);
 bool is_xmq_text_name(char c);
 size_t num_utf8_bytes(char c);
@@ -6969,6 +6969,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
 
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
+    const char *colon = NULL;
 
     if (!key_start || key_start == key_stop)
     {
@@ -6976,7 +6977,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         key_start = underline;
         key_stop = underline+1;
     }
-    else if (!is_xmq_element_name(key_start, key_stop))
+    else if (!is_xmq_element_name(key_start, key_stop, &colon))
     {
         unsafe_key_start = key_start;
         unsafe_key_stop = key_stop;
@@ -6986,13 +6987,39 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
 
     if (*key_start == '_' && key_stop > key_start+1)
     {
-        // This is an attribute that was stored as "_attr":"value"
-        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, key_start+1, key_stop, key_stop);
-        DO_CALLBACK_SIM(attr_value_quote, state, start_line, start_col, content_start, content_stop, content_stop);
+        // Check if this is an xmlns ns declaration.
+        if (key_start+6 <= key_stop && !strncmp(key_start, "_xmlns", 6))
+        {
+            // Declaring the use of a namespace.
+            if (colon)
+            {
+                // We have for example: "_xmlns:xls":"http://a.b.c."
+                DO_CALLBACK_SIM(ns_declaration, state, state->line, state->col, key_start+1, colon?colon:key_stop, key_stop);
+                assert (state->declaring_xmlns == true);
+                DO_CALLBACK_SIM(attr_value_quote, state, start_line, start_col, content_start, content_stop, content_stop)
+            }
+            else
+            {
+                // The default namespace. "_xmlns":"http://a.b.c"
+                DO_CALLBACK_SIM(ns_declaration, state, state->line, state->col, key_start+1, key_stop, key_stop);
+                DO_CALLBACK_SIM(attr_value_quote, state, start_line, start_col, content_start, content_stop, content_stop)
+            }
+        }
+        else
+        {
+            // This is a normal attribute that was stored as "_attr":"value"
+            DO_CALLBACK_SIM(attr_key, state, state->line, state->col, key_start+1, key_stop, key_stop);
+            DO_CALLBACK_SIM(attr_value_quote, state, start_line, start_col, content_start, content_stop, content_stop);
+        }
         free(content_start);
         return;
     }
 
+    if (!unsafe_key_start && colon)
+    {
+        DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
+        key_start = colon+1;
+    }
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
 
     bool need_string_type =
@@ -7058,6 +7085,7 @@ void parse_json_null(XMQParseState *state, const char *key_start, const char *ke
 
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
+    const char *colon = NULL;
 
     trim_index_suffix(key_start, &key_stop);
 
@@ -7076,7 +7104,7 @@ void parse_json_null(XMQParseState *state, const char *key_start, const char *ke
         key_start = underline;
         key_stop = underline+1;
     }
-    else if (!is_xmq_element_name(key_start, key_stop))
+    else if (!is_xmq_element_name(key_start, key_stop, &colon))
     {
         unsafe_key_start = key_start;
         unsafe_key_stop = key_stop;
@@ -7084,6 +7112,11 @@ void parse_json_null(XMQParseState *state, const char *key_start, const char *ke
         key_stop = underline+1;
     }
 
+    if (!unsafe_key_start && colon)
+    {
+        DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
+        key_start = colon+1;
+    }
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
     if (unsafe_key_start)
     {
@@ -7224,6 +7257,7 @@ void parse_json_boolean(XMQParseState *state, const char *key_start, const char 
 
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
+    const char *colon = NULL;
 
     trim_index_suffix(key_start, &key_stop);
 
@@ -7233,7 +7267,7 @@ void parse_json_boolean(XMQParseState *state, const char *key_start, const char 
         key_start = underline;
         key_stop = underline+1;
     }
-    else if (!is_xmq_element_name(key_start, key_stop))
+    else if (!is_xmq_element_name(key_start, key_stop, &colon))
     {
         unsafe_key_start = key_start;
         unsafe_key_stop = key_stop;
@@ -7241,6 +7275,11 @@ void parse_json_boolean(XMQParseState *state, const char *key_start, const char 
         key_stop = underline+1;
     }
 
+    if (!unsafe_key_start && colon)
+    {
+        DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
+        key_start = colon+1;
+    }
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
     if (unsafe_key_start)
     {
@@ -7289,6 +7328,7 @@ void parse_json_number(XMQParseState *state, const char *key_start, const char *
 
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
+    const char *colon = NULL;
 
     trim_index_suffix(key_start, &key_stop);
 
@@ -7298,7 +7338,7 @@ void parse_json_number(XMQParseState *state, const char *key_start, const char *
         key_start = underline;
         key_stop = underline+1;
     }
-    else if (!is_xmq_element_name(key_start, key_stop))
+    else if (!is_xmq_element_name(key_start, key_stop, &colon))
     {
         unsafe_key_start = key_start;
         unsafe_key_stop = key_stop;
@@ -7306,6 +7346,11 @@ void parse_json_number(XMQParseState *state, const char *key_start, const char *
         key_stop = underline+1;
     }
 
+    if (!unsafe_key_start && colon)
+    {
+        DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
+        key_start = colon+1;
+    }
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
     if (unsafe_key_start)
     {
@@ -7367,6 +7412,7 @@ void parse_json_array(XMQParseState *state, const char *key_start, const char *k
 
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
+    const char *colon = NULL;
 
     trim_index_suffix(key_start, &key_stop);
 
@@ -7376,7 +7422,7 @@ void parse_json_array(XMQParseState *state, const char *key_start, const char *k
         key_start = underline;
         key_stop = underline+1;
     }
-    else if (!is_xmq_element_name(key_start, key_stop))
+    else if (!is_xmq_element_name(key_start, key_stop, &colon))
     {
         unsafe_key_start = key_start;
         unsafe_key_stop = key_stop;
@@ -7384,6 +7430,11 @@ void parse_json_array(XMQParseState *state, const char *key_start, const char *k
         key_stop = underline+1;
     }
 
+    if (!unsafe_key_start && colon)
+    {
+        DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
+        key_start = colon+1;
+    }
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
     DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, leftpar+1, leftpar+1);
     if (unsafe_key_start)
@@ -7601,6 +7652,7 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
 
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
+    const char *colon = NULL;
 
     trim_index_suffix(key_start, &key_stop);
 
@@ -7610,7 +7662,7 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
         key_start = underline;
         key_stop = underline+1;
     }
-    else if (!is_xmq_element_name(key_start, key_stop))
+    else if (!is_xmq_element_name(key_start, key_stop, &colon))
     {
         unsafe_key_start = key_start;
         unsafe_key_stop = key_stop;
@@ -7618,7 +7670,12 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
         key_stop = underline+1;
     }
 
-    DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
+    if (!unsafe_key_start && colon)
+    {
+        DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
+        key_start = colon+1;
+    }
+    DO_CALLBACK_SIM(element_key, state, state->line, state->col, colon?colon+1:key_start, key_stop, key_stop);
     if (unsafe_key_start)
     {
         DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, leftpar+1, leftpar+1);
@@ -8688,9 +8745,10 @@ bool is_xmq_element_start(char c)
     return false;
 }
 
-bool is_xmq_element_name(const char *start, const char *stop)
+bool is_xmq_element_name(const char *start, const char *stop, const char **colon)
 {
     const char *i = start;
+    *colon = NULL;
     if (!is_xmq_element_start(*i)) return false;
     i++;
 
@@ -8698,6 +8756,7 @@ bool is_xmq_element_name(const char *start, const char *stop)
     {
         char c = *i;
         if (!is_xmq_text_name(c)) return false;
+        if (c == ':') *colon = i;
     }
 
     return true;
@@ -10807,9 +10866,12 @@ void parse_xmq_attribute(XMQParseState *state)
         }
         else
         {
-            // Normal namespaced attribute. Please try to avoid namespaced attributes because you only need to attach the
-            // namespace to the element itself, from that follows automatically the unique namespaced attributes.
-            // The exception being special use cases as: xlink:href.
+            // Normal namespaced attribute. Please try to avoid namespaced attributes
+            // because you only need to attach the namespace to the element itself,
+            // from that follows automatically the unique namespaced attributes.
+            // But if you are adding attributes to an existing xml with schema, then you will need
+            // use namespaced attributes to avoid tripping the xml validation.
+            // An example of this is: xlink:href.
             DO_CALLBACK(attr_ns, state, start_line, start_col, ns_start, ns_stop, ns_stop);
             DO_CALLBACK(ns_colon, state, start_line, start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
             DO_CALLBACK(attr_key, state, start_line, start_col+ns_len+1, name_start, name_stop, stop);

@@ -1,0 +1,12 @@
+START
+alfa(A) {
+    _ = 1
+    _ = 2
+}
+
+WARNING
+xmq: Warning! The element name "alfa" is lost when converted to an unnamed json array!
+[1,2]
+END
+ARGS
+CMDS to-json

@@ -871,9 +871,12 @@ void parse_xmq_attribute(XMQParseState *state)
         }
         else
         {
-            // Normal namespaced attribute. Please try to avoid namespaced attributes because you only need to attach the
-            // namespace to the element itself, from that follows automatically the unique namespaced attributes.
-            // The exception being special use cases as: xlink:href.
+            // Normal namespaced attribute. Please try to avoid namespaced attributes
+            // because you only need to attach the namespace to the element itself,
+            // from that follows automatically the unique namespaced attributes.
+            // But if you are adding attributes to an existing xml with schema, then you will need
+            // use namespaced attributes to avoid tripping the xml validation.
+            // An example of this is: xlink:href.
             DO_CALLBACK(attr_ns, state, start_line, start_col, ns_start, ns_stop, ns_stop);
             DO_CALLBACK(ns_colon, state, start_line, start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
             DO_CALLBACK(attr_key, state, start_line, start_col+ns_len+1, name_start, name_stop, stop);
