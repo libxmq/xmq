@@ -502,6 +502,40 @@ list {
                        = render :partial => "sidebar"'
     }
     lang {
+        name    = JsonML
+        info    = 'The purpose of JsonML is to provide a compact format for transporting
+                   XML-based markup as JSON which allows it to be losslessly converted
+                   back to its original form.'
+        year    = 2007
+        url     = http://www.jsonml.org/
+        example = '["person",
+                     {"created":"2006-11-11T19:23",
+                      "modified":"2006-12-31T23:59"},
+                     ["firstName", "Robert"],
+                     ["lastName", "Smith"],
+                     ["address", {"type":"home"},
+                       ["street", "12345 Sixth Ave"],
+                       ["city", "Anytown"],
+                       ["state", "CA"],
+                       ["postalCode", "98765-4321"]
+                     ]
+                   ]
+
+                   is equivalent to
+
+                   <!-- XML representation of a person record -->
+                   <person created="2006-11-11T19:23" modified="2006-12-31T23:59">
+                       <firstName>Robert</firstName>
+                       <lastName>Smith</lastName>
+                       <address type="home">
+                           <street>12345 Sixth Ave</street>
+                           <city>Anytown</city>
+                           <state>CA</state>
+                           <postalCode>98765-4321</postalCode>
+                       </address>
+                   </person>'
+    }
+    lang {
         name    = Recutils
         info    = 'Tools and libraries to edit human-editable, plain text databases called recfiles. '
         year    = 2010
@@ -1005,36 +1039,26 @@ list {
         year    = 2017
         by      = 'Mahieddine Cherif'
         url     = https://github.com/archipaorg/icl
-        example = ( '::image "mysql" as MySQL {
-
-                    '
-                    &#9;
-                    'url = "mysql:5.6",
-
-                    '
-                    &#9;
-                    'port = 3306
-                     }
-                     app "hello-world" {
-                                 name = "this is
-
-                    '
-                    &#9;
-                    &#9;
-                    'a multiline
-                                 string",
-                                 price = +4.5
-                     }
-                     app "hello-world" {
-                             icon = <<<EOF R0lGODlhPQBEAPeoAJosMAwOAwHVYZz595kzAPs7P+goOXMv8+fhwv739f
-                             +8PD98fH8mJl+fn9ZWb8PzWlwv6wWGbImAPgTEMImIN9gUFCEmgDALULDN
-                             8PAD6atYdCTX9gUNKlj8wZAKUsAOzZz+UMAOsJAPZ2ccMDA8PD95eX5NWv
-                             sJCOVNQPtfX8zM8+QePLl38MGBr8JCP+zs9myn8GBqwpAPGxgwJCPny78l
-                             zYLgjAJ8vAP9fX+MjMUcAN8zM9wcM8ZGcATEL+QePdZWf
-                             29ucP9cmJu9MTDImIN+r7+vz8P8VNQGNugV8AAF9fX8swMNg
-                             TAFlDOICAgPNSUnNWSMQ5MBAQEJE3Q
-                             EOF
-                     }' )
+        example = '::image "mysql" as MySQL {
+                       url = "mysql:5.6",
+                       port = 3306
+                   }
+                   app "hello-world" {
+                               name = "this is
+                               a multiline
+                               string",
+                               price = +4.5
+                   }
+                   app "hello-world" {
+                           icon = <<<EOF R0lGODlhPQBEAPeoAJosMAwOAwHVYZz595kzAPs7P+goOXMv8+fhwv739f
+                           +8PD98fH8mJl+fn9ZWb8PzWlwv6wWGbImAPgTEMImIN9gUFCEmgDALULDN
+                           8PAD6atYdCTX9gUNKlj8wZAKUsAOzZz+UMAOsJAPZ2ccMDA8PD95eX5NWv
+                           sJCOVNQPtfX8zM8+QePLl38MGBr8JCP+zs9myn8GBqwpAPGxgwJCPny78l
+                           zYLgjAJ8vAP9fX+MjMUcAN8zM9wcM8ZGcATEL+QePdZWf
+                           29ucP9cmJu9MTDImIN+r7+vz8P8VNQGNugV8AAF9fX8swMNg
+                           TAFlDOICAgPNSUnNWSMQ5MBAQEJE3Q
+                           EOF
+                   }'
     }
     lang {
         name    = DIXY
