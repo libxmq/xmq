@@ -329,8 +329,8 @@ void verbose_(const char* fmt, ...);
 void write_print(void *buffer, const char *content);
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command);
 xmlDocPtr xmqDocDefaultLoaderFunc(const xmlChar * URI, xmlDictPtr dict, int options,
-                                  void *ctxt ATTRIBUTE_UNUSED,
-                                  xsltLoadType type ATTRIBUTE_UNUSED);
+                                  void *ctxt /* ATTRIBUTE_UNUSED */,
+                                  xsltLoadType type /* ATTRIBUTE_UNUSED*/);
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -3541,8 +3541,8 @@ xmlDocPtr
 xmqDocDefaultLoaderFunc(const xmlChar * URI,
                         xmlDictPtr dict,
                         int options,
-                        void *ctxt ATTRIBUTE_UNUSED,
-                        xsltLoadType type ATTRIBUTE_UNUSED)
+                        void *ctxt /* ATTRIBUTE_UNUSED */,
+                        xsltLoadType type /*ATTRIBUTE_UNUSED */)
 {
     XMQDoc *doq = xmqNewDoc();
 
