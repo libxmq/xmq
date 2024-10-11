@@ -65,6 +65,12 @@ else
        CFLAGS_EXTRAS=""
        CXXFLAGS_EXTRAS=""
    fi
+   if test "${host_cpu}" = "armv7l"; then
+       CONF_MNEMONIC="arm32"
+       MNEMONIC="LINUX32"
+       CFLAGS_EXTRAS=""
+       CXXFLAGS_EXTRAS=""
+   fi
    if test "${host_vendor}" = "apple"; then
        CONF_MNEMONIC="osx64"
        MNEMONIC="OSX64"
