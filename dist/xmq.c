@@ -6943,12 +6943,35 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         char *name = (char*)malloc(len+1);
         memcpy(name, content_start, len);
         name[len] = 0;
-        xmlNodeSetName(container, (xmlChar*)name);
+        const char *colon = NULL;
+        bool do_return = true;
+        if (is_xmq_element_name(name, name+len, &colon))
+        {
+            if (!colon)
+            {
+                xmlNodeSetName(container, (xmlChar*)name);
+            }
+            else
+            {
+                DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
+                xmlNodeSetName(container, (xmlChar*)colon+1);
+            }
+        }
+        else
+        {
+            // Oups! we cannot use this as an element name! What should we do?
+            //xmlNodeSetName(container, "Baaad")
+            PRINT_WARNING("xmq: Warning! \"_\":\"%s\" cannot be converted into an valid element name!\n", name);
+            do_return = false;
+        }
         free(name);
-        free(content_start);
-        // This will be set many times.
-        state->root_found = true;
-        return;
+        if (do_return)
+        {
+            free(content_start);
+            // This will be set many times.
+            state->root_found = true;
+            return;
+        }
     }
 
     if (key_start && *key_start == '!' && !state->doctype_found)

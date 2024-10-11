@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Fredrik Öhrström
+# Copyright (C) 2023-2024 Fredrik Öhrström
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,6 +34,11 @@ AC_SUBST(PLATFORM_CFLAGS)
 AC_SUBST(PATH_SEP)
 AC_SUBST(CONF_MNEMONIC)
 
+# host_cpu   host_vendor   host_os
+# armv7l     unknown       linux-gnueabihf
+# x86_64     pc            linux-gnu
+# x86_64     w64           mingw32
+
 if test "${host_vendor}" = "w64"; then
    PLATFORM=WINAPI
    PATH_SEP=';'
@@ -54,9 +59,9 @@ else
    MEDIA_DEFAULT="yes"
    ASAN_DEFAULT="yes"
    STATIC_XMQ_DEFAULT="no"
-   if test "${host_cpu}" = "arm"; then
-       CONF_MNEMONIC="arm32"
-       MNEMONIC="ARM32"
+   if test "${host_cpu}" = "aarch64"; then
+       CONF_MNEMONIC="aarch64"
+       MNEMONIC="LINUX64"
        CFLAGS_EXTRAS=""
        CXXFLAGS_EXTRAS=""
    fi
