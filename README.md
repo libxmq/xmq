@@ -182,10 +182,18 @@ You can find the built asan binary here:
 
 ## How to compile:
 
+Any Posix platform:
+```
+./configure
+make
+sudo make install
+```
+
 Windows cross complation from GNU/Linux:
 ```
 (cd 3rdparty; fetch_and_build.sh)
 ./configure --host=x86_64-w64-mingw32 --with-libxml2=3rdparty/libxml2-winapi --with-libxslt=3rdparty/libxslt-winapi --with-zlib=3rdparty/zlib-1.3-winapi
+make
 ```
 
 The msi installer is found here: `./build/x86_64-w64-mingw32/windows_installer/xmq-windows-release.msi`
@@ -197,6 +205,7 @@ GNU/Linux on aarch64-linux-gnu cross complation from GNU/Linux AMD64:
 sudo apt install gcc make g++-aarch64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
 (cd 3rdparty; fetch_and_build.sh aarch64-linux-gnu)
 ./configure --host=aarch64-linux-gnu --with-libxml2=3rdparty/libxml2-posix-aarch64 --with-libxslt=3rdparty/libxslt-posix-aarch64 --with-zlib=3rdparty/zlib-1.3-posix-aarch64
+make
 ```
 
 GNU/Linux on armv7l-unknown-linux-gnueabihf cross complation from GNU/Linux AMD64:
@@ -204,7 +213,8 @@ GNU/Linux on armv7l-unknown-linux-gnueabihf cross complation from GNU/Linux AMD6
 sudo apt install gcc make g++-arm-linux-gnueabi gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi
 (cd 3rdparty; fetch_and_build.sh armv7l-linux-gnu)
 ./configure --host=armv7l-unknown-linux-gnueabihf --with-libxml2=3rdparty/libxml2-posix-armv7l --with-libxslt=3rdparty/libxslt-posix-armv7l --with-zlib=3rdparty/zlib-1.3-posix-armv7l
-
+make
+```
 
 ## How to install the gnulinux binary executable
 
