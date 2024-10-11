@@ -1,4 +1,8 @@
-Properly handle xml namespaces when converting to and from json.
-Handle json with a key that is the empty string.
-Changed default for tabs to be kept as is inside quotes.
-Added --escape-tabs to trigger replacement of tabs into &#9; when generating xmq.
+You can now write an xsl transform in json!
+(Just as you can write the xsl transform in xml/xmq.)
+
+This transform can then work on xml/xmq/json and produce xml/xmq/json.
+
+For example: xmq dostuff.xslt to-json > dostuff.xslj
+
+Then run: xmq source.json transform dostuff.xslj to-json
