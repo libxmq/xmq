@@ -1,0 +1,12 @@
+{
+    "owners": [
+        {
+            "name": "Torkel",
+            "regnr": "ABC 123"
+        },
+        {
+            "name": "Sven",
+            "regnr": "ZZZ 444"
+        }
+    ]
+}

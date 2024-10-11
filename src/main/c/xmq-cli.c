@@ -57,6 +57,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<libxml/xpath.h>
 #include<libxml/xpathInternals.h>
 #include<libxml/xmlschemas.h>
+#include<libxml/parserInternals.h>
+#include<libxslt/documents.h>
 #include<libxslt/xslt.h>
 #include<libxslt/xsltInternals.h>
 #include<libxslt/transform.h>
@@ -326,6 +328,9 @@ bool cmd_tokenize(XMQCliCommand *command);
 void verbose_(const char* fmt, ...);
 void write_print(void *buffer, const char *content);
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command);
+xmlDocPtr xmqDocDefaultLoaderFunc(const xmlChar * URI, xmlDictPtr dict, int options,
+                                  void *ctxt ATTRIBUTE_UNUSED,
+                                  xsltLoadType type ATTRIBUTE_UNUSED);
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -1741,6 +1746,8 @@ bool cmd_transform(XMQCliCommand *command)
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
     verbose_("(xmq) transforming\n");
 
+    xsltSetLoaderFunc(xmqDocDefaultLoaderFunc);
+
     const char **params = NULL;
     HashMapIterator *i;
     size_t j = 0;
@@ -1762,9 +1769,8 @@ bool cmd_transform(XMQCliCommand *command)
         params[j++] = NULL;
     }
 
-    verbose_("(xmq) blaaa\n");
+    verbose_("(xmq) applying stylesheet\n");
     xmlDocPtr new_doc = xsltApplyStylesheet(command->xslt, doc, params);
-    verbose_("(xmq) bloooo\n");
 
     if (params)
     {
@@ -3529,6 +3535,80 @@ bool has_debug(int argc, const char **argv)
         if (!strcmp(*i, "--debug")) return true;
     }
     return false;
+}
+
+xmlDocPtr
+xmqDocDefaultLoaderFunc(const xmlChar * URI,
+                        xmlDictPtr dict,
+                        int options,
+                        void *ctxt ATTRIBUTE_UNUSED,
+                        xsltLoadType type ATTRIBUTE_UNUSED)
+{
+    XMQDoc *doq = xmqNewDoc();
+
+    verbose_("(xmq) xsl-document-load %s\n", URI);
+
+    bool ok = xmqParseFileWithType(doq,
+                                   (const char*)URI,
+                                   NULL,
+                                   XMQ_CONTENT_DETECT,
+                                   XMQ_FLAG_TRIM_NONE);
+    if (!ok)
+    {
+        const char *error = xmqDocError(doq);
+        if (error) {
+            fprintf(stderr, error, URI);
+        }
+        xmqFreeDoc(doq);
+        return NULL;
+    }
+
+    verbose_("(xmq) xsl-document-load %zu bytes from %s\n", xmqGetOriginalSize(doq), URI);
+
+    return xmqGetImplementationDoc(doq);
+
+    /*
+    xmlParserCtxtPtr pctxt;
+    xmlParserInputPtr inputStream;
+    xmlDocPtr doc;
+
+    pctxt = xmlNewParserCtxt();
+    if (pctxt == NULL)
+        return(NULL);
+    if ((dict != NULL) && (pctxt->dict != NULL)) {
+        xmlDictFree(pctxt->dict);
+        pctxt->dict = NULL;
+    }
+    if (dict != NULL) {
+        pctxt->dict = dict;
+        xmlDictReference(pctxt->dict);
+#ifdef WITH_XSLT_DEBUG
+        xsltGenericDebug(xsltGenericDebugContext,
+                     "Reusing dictionary for document\n");
+#endif
+    }
+    xmlCtxtUseOptions(pctxt, options);
+    inputStream = xmlLoadExternalEntity((const char *) URI, NULL, pctxt);
+    if (inputStream == NULL) {
+        xmlFreeParserCtxt(pctxt);
+        return(NULL);
+    }
+    inputPush(pctxt, inputStream);
+
+    xmlParseDocument(pctxt);
+
+    if (pctxt->wellFormed) {
+        doc = pctxt->myDoc;
+    }
+    else {
+        doc = NULL;
+        xmlFreeDoc(pctxt->myDoc);
+        pctxt->myDoc = NULL;
+    }
+    xmlFreeParserCtxt(pctxt);
+
+    return(doc);
+    */
 }
 
 int main(int argc, const char **argv)

@@ -1,0 +1,14 @@
+{
+    "cars": [
+        {
+            "regnr": "ABC 123",
+            "model": "Volvo",
+            "color": "red"
+        },
+        {
+            "regnr": "ZZZ 444",
+            "model": "Saab",
+            "color": "blue"
+        }
+    ]
+}
