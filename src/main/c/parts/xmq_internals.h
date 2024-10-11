@@ -533,6 +533,8 @@ bool debug_enabled();
 
 void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 
+void set_node_namespace(XMQParseState *state, xmlNodePtr node, const char *node_name);
+
 // Multicolor terminals like gnome-term etc.
 
 #define NOCOLOR      "\033[0m"

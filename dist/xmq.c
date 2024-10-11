@@ -795,6 +795,8 @@ bool debug_enabled();
 
 void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 
+void set_node_namespace(XMQParseState *state, xmlNodePtr node, const char *node_name);
+
 // Multicolor terminals like gnome-term etc.
 
 #define NOCOLOR      "\033[0m"
@@ -1589,6 +1591,8 @@ struct XMQPrintCallbacks
 bool debug_enabled();
 
 void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
+
+void set_node_namespace(XMQParseState *state, xmlNodePtr node, const char *node_name);
 
 // Multicolor terminals like gnome-term etc.
 
@@ -6891,6 +6895,38 @@ void trim_index_suffix(const char *key_start, const char **stop)
     }
 }
 
+void set_node_namespace(XMQParseState *state, xmlNodePtr node, const char *node_name)
+{
+    if (state->element_namespace)
+    {
+        // Have a namespace before the element name, eg abc:work
+        xmlNsPtr ns = xmlSearchNs(state->doq->docptr_.xml,
+                                  node,
+                                  (const xmlChar *)state->element_namespace);
+        if (!ns)
+        {
+            // The namespaces does not yet exist. Lets hope it will be declared
+            // inside the attributes of this node. Use a temporary href for now.
+            ns = xmlNewNs(node,
+                          NULL,
+                          (const xmlChar *)state->element_namespace);
+            debug("[XMQ] created namespace prefix=%s in element %s\n", state->element_namespace, node_name);
+        }
+        debug("[XMQ] setting namespace prefix=%s for element %s\n", state->element_namespace, node_name);
+        xmlSetNs(node, ns);
+        free(state->element_namespace);
+        state->element_namespace = NULL;
+    }
+    else if (state->default_namespace)
+    {
+        // We have a default namespace.
+        xmlNsPtr ns = (xmlNsPtr)state->default_namespace;
+        assert(ns->prefix == NULL);
+        debug("[XMQ] set default namespace with href=%s for element %s\n", ns->href, node_name);
+        xmlSetNs(node, ns);
+    }
+}
+
 void parse_json_quote(XMQParseState *state, const char *key_start, const char *key_stop)
 {
     int start_line = state->line;
@@ -6953,8 +6989,9 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
             }
             else
             {
-                DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
+                DO_CALLBACK_SIM(element_ns, state, state->line, state->col, name, colon, colon);
                 xmlNodeSetName(container, (xmlChar*)colon+1);
+                set_node_namespace(state, container, colon+1);
             }
         }
         else
