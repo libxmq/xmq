@@ -64,22 +64,24 @@ else
        MNEMONIC="LINUX64"
        CFLAGS_EXTRAS=""
        CXXFLAGS_EXTRAS=""
-   fi
-   if test "${host_cpu}" = "armv7l"; then
+   elif test "${host_cpu}" = "armv7l"; then
        CONF_MNEMONIC="arm32"
        MNEMONIC="LINUX32"
        CFLAGS_EXTRAS=""
        CXXFLAGS_EXTRAS=""
-   fi
-   if test "${host_vendor}" = "apple"; then
+   elif test "${host_vendor}" = "apple"; then
        CONF_MNEMONIC="osx64"
        MNEMONIC="OSX64"
        CFLAGS_EXTRAS=-D_DARWIN_FEATURE_64_BIT_INODE
        CXXFLAGS_EXTRAS=-D_DARWIN_FEATURE_64_BIT_INODE
-   fi
-   if test "${host_vendor}" = "pc"; then
+   elif test "${host_vendor}" = "pc"; then
        CONF_MNEMONIC="linux64"
        MNEMONIC="LINUX64"
+       CFLAGS_EXTRAS=""
+       CXXFLAGS_EXTRAS=""
+   else
+       CONF_MNEMONIC="posix64"
+       MNEMONIC="POSIX64"
        CFLAGS_EXTRAS=""
        CXXFLAGS_EXTRAS=""
    fi
