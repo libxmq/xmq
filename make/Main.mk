@@ -81,6 +81,7 @@ POSIX_TESTINTERNALS_OBJS:=$(filter-out %xmq-cli.o,$(POSIX_OBJS))
 POSIX_LIBS:=
 POSIX_SUFFIX:=
 
+YAEP := $(OUTPUT_ROOT)/$(TYPE)/libyaep.a
 EXTRA_LIBS := $($(PLATFORM)_LIBS)
 
 $(OUTPUT_ROOT)/generated_autocomplete.h: $(SRC_ROOT)/scripts/autocompletion_for_xmq.sh
@@ -112,22 +113,22 @@ $(OUTPUT_ROOT)/$(TYPE)/parts/%.o: $(SRC_ROOT)/src/main/c/parts/%.c
 	$(VERBOSE)$(CC) -E $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c > $@.source
 
 ifneq ($(PLATFORM),WINAPI)
-$(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(POSIX_OBJS)
+$(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(POSIX_OBJS) $(YAEP)
 	@echo Linking libxmq.so
-	$(VERBOSE)$(CC) -shared -g -o $(OUTPUT_ROOT)/$(TYPE)/libxmq.so $(OUTPUT_ROOT)/$(TYPE)/xmq.o $(SRC_ROOT)/$(LIBYAEP_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSBEGIN_$(TYPE)) $(DEBUG_LDFLAGS) $(LDFLAGSEND_$(TYPE))
+	$(VERBOSE)$(CC) -shared -g -o $(OUTPUT_ROOT)/$(TYPE)/libxmq.so $(OUTPUT_ROOT)/$(TYPE)/xmq.o $(YAEP) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSBEGIN_$(TYPE)) $(DEBUG_LDFLAGS) $(LDFLAGSEND_$(TYPE))
 else
-$(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(WINAPI_OBJS) $(PARTS_SOURCES)
+$(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(WINAPI_OBJS) $(PARTS_SOURCES) $(YAEP)
 	touch $@
 endif
 
-$(OUTPUT_ROOT)/$(TYPE)/libxmq.a: $(POSIX_OBJS)
+$(OUTPUT_ROOT)/$(TYPE)/libxmq.a: $(POSIX_OBJS) $(YAEP)
 	@echo Archiving libxmq.a
 	$(VERBOSE)ar rcs $@ $^
 
 ifeq ($(ENABLE_STATIC_XMQ),no)
-$(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(EXTRA_LIBS)
+$(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(YAEP) $(EXTRA_LIBS)
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
-	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS) $(SRC_ROOT)/$(LIBYAEP_LIBS) \
+	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS) $(YAEP) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(VERBOSE)cp $@ $@.g
 	$(VERBOSE)$(STRIP_COMMAND) $@$(SUFFIX)
@@ -140,7 +141,7 @@ endif
 else
 $(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(PARTS_SOURCES) $(EXTRA_LIBS)
 	@echo Linking static $(TYPE) $(CONF_MNEMONIC) $@
-	$(VERBOSE)$(CC) -static -o $@ $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS) $(SRC_ROOT)/$(LIBYAEP_LIBS) \
+	$(VERBOSE)$(CC) -static -o $@ $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS) $(YAEP) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 ifeq ($(PLATFORM),WINAPI)
 	$(VERBOSE)mkdir -p $(OUTPUT_ROOT)/windows_installer
@@ -152,13 +153,13 @@ endif
 
 $(OUTPUT_ROOT)/$(TYPE)/testinternals: $(TESTINTERNALS_OBJS)
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
-	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(TESTINTERNALS_OBJS) $(SRC_ROOT)/$(LIBYAEP_LIBS) \
+	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(TESTINTERNALS_OBJS) $(YAEP) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(VERBOSE)$(STRIP_COMMAND) $@$(SUFFIX)
 
 $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals: $($(PLATFORM)_PARTS_OBJS)
 	@echo Linking parts $(TYPE) $(CONF_MNEMONIC) $@
-	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $($(PLATFORM)_PARTS_OBJS) $(SRC_ROOT)/$(LIBYAEP_LIBS) \
+	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $($(PLATFORM)_PARTS_OBJS) $(YAEP) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(VERBOSE)$(STRIP_COMMAND) $@$(SUFFIX)
 
@@ -188,6 +189,9 @@ BINARIES:=$(OUTPUT_ROOT)/$(TYPE)/libxmq.a \
           $(OUTPUT_ROOT)/$(TYPE)/testinternals \
           $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals
 
+$(YAEP):
+	@(cd $(SRC_ROOT)/src/main/c/yaep; ./configure; make)
+	@cp $(SRC_ROOT)/src/main/c/yaep/src/libyaep.a $(OUTPUT_ROOT)/$(TYPE)
 
 $(SRC_ROOT)/dist/xmq.h: $(SRC_ROOT)/src/main/c/xmq.h
 	@cp $< $@
