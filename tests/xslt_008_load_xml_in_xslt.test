@@ -1,0 +1,35 @@
+XML
+fields {
+    field = 1
+    field = 2
+}
+XSLT
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:template(match = /fields/field)
+    {
+        fieldo {
+            field {
+                xsl:value-of(select = .)
+            }
+            xsl:copy-of(select ='document("tests/resources/books.xml")')
+        }
+    }
+}
+EXPECTED
+fieldo {
+    field = 1
+    books {
+        book = Moby-Dick
+        book = 'One hundred years of solitude'
+    }
+}
+fieldo {
+    field = 2
+    books {
+        book = Moby-Dick
+        book = 'One hundred years of solitude'
+    }
+}
+END

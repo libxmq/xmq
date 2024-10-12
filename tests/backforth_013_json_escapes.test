@@ -28,6 +28,6 @@ _ {
 SECOND
 {"paragraph":"Welcome!\nGreetings!","emojis":"ΩΩ😀","tab":"tab=\t","nl":"newline=\n","cr":"cr=\r","bs":"bs=\b","ff":"ff=\f"}
 END
-CMDS_FIRST to-xmq
+CMDS_FIRST to-xmq --escape-tabs
 ARGS_SECOND
 CMDS_SECOND to-json

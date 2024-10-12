@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include"parts/always.h"
 #include"parts/colors.h"
+#include"parts/core.h"
 #include"parts/default_themes.h"
 #include"parts/entities.h"
 #include"parts/utf8.h"
@@ -719,6 +720,11 @@ void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines)
 void xmqSetEscapeNon7bit(XMQOutputSettings *os, bool escape_non_7bit)
 {
     os->escape_non_7bit = escape_non_7bit;
+}
+
+void xmqSetEscapeTabs(XMQOutputSettings *os, bool escape_tabs)
+{
+    os->escape_tabs = escape_tabs;
 }
 
 void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format)
@@ -2642,6 +2648,7 @@ void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
 
 void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
 {
+    if (doq == NULL || doq->docptr_.xml == NULL) return;
     xmq_fixup_json_before_writeout(doq);
 
     void *first = doq->docptr_.xml->children;
@@ -2716,6 +2723,7 @@ void xmq_print_text(XMQDoc *doq, XMQOutputSettings *os)
 
 void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
 {
+    if (doq == NULL || doq->docptr_.xml == NULL) return;
     void *first = doq->docptr_.xml->children;
     if (!doq || !first) return;
     void *last = doq->docptr_.xml->last;
@@ -4062,8 +4070,11 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
     return rc;
 }
 
+
+
 #include"parts/always.c"
 #include"parts/colors.c"
+#include"parts/core.c"
 #include"parts/default_themes.c"
 #include"parts/entities.c"
 #include"parts/hashmap.c"

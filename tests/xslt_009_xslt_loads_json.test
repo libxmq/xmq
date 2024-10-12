@@ -1,0 +1,37 @@
+XML
+{
+    "cars": [
+        {
+            "regnr": "ABC 123",
+            "model": "Volvo",
+            "color": "red"
+        },
+        {
+            "regnr": "ZZZ 444",
+            "model": "Saab",
+            "color": "blue"
+        }
+    ]
+}
+XSLT
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:variable(name   = owners
+                 select = 'document("tests/resources/owners.json")')
+    xsl:template(match = _/cars/_)
+    {
+        xsl:variable(name   = reggo
+                     select = regnr)
+        xsl:value-of(select = color)
+        ' car owned by '
+        xsl:value-of(select = $owners/_/owners/_[./regnr=$reggo]/name)
+        br
+    }
+}
+EXPECTED
+'red car owned by Torkel'
+br
+'blue car owned by Sven'
+br
+END

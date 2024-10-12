@@ -133,6 +133,7 @@ typedef enum Level Level;
     @compact: Print on a single line limiting whitespace to a minimum.
     @escape_newlines: Replace newlines with &#10; this is implied if compact is set.
     @escape_non_7bit: Replace all chars above 126 with char entities, ie &#10;
+    @escape_tabs: Replace tabs with &#9;
     @output_format: Print xmq/xml/html/json
     @render_to: Render to terminal, html, tex.
     @render_raw: If true do not write surrounding html and css colors, likewise for tex.
@@ -151,6 +152,7 @@ struct XMQOutputSettings
     bool bg_dark_mode;
     bool escape_newlines;
     bool escape_non_7bit;
+    bool escape_tabs;
 
     XMQContentType output_format;
     XMQRenderFormat render_to;
@@ -530,6 +532,8 @@ struct XMQPrintCallbacks
 bool debug_enabled();
 
 void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
+
+void set_node_namespace(XMQParseState *state, xmlNodePtr node, const char *node_name);
 
 // Multicolor terminals like gnome-term etc.
 

@@ -13,15 +13,23 @@ xmq \- Command-line xmq/htmq/xml/html/json processor
 
 .SH EXAMPLES
 
-xmq pom.xml
+xmq pom.xmq         \fB# pretty print as xmq and colorize\fP
 .br
-xmq pom.xmq to-xml save pom.xml
+xmq < pom.xml
 .br
-xmq big.xml pager
+cat data.json | xmq
 .br
-xmq big.xml browser
+xmq index.html
 .br
-xmq index.html delete //script delete //style pager
+xmq big.xml pa      \fB# use pager in terminal\fP
+.br
+xmq big.json br     \fB# view in default browser\fP
+.br
+xmq pom.xmq to-xml > pom.xml         \fB# convert to xml and save into pom.xml file\fP
+.br
+xmq data.xml to-json save data.json  \fB# save using xmq command instead\fP
+.br
+xmq index.html delete //script delete //style pa  \fB# delete script/style nodes then use pager\fP
 .br
 curl https://jsonandstuff/products | xmq - transform make_web_list.xslq to-html save products.html
 .br
@@ -71,6 +79,10 @@ Do not read from stdin nor from a file. Start with an empty dom.
 .SH COMMANDS
 
 .TP
+\fIbrowse/br\fP
+Render a temporary html page and view it using the default browser.
+
+.TP
 \fIto-xmq\fP / \fIto-htmq\fP
 Write the content as xmq/htmq. If stdout is a tty, then this command behaves as \fIrender-terminal\fP.
 
@@ -83,6 +95,10 @@ Write the content as xmq/htmq. If stdout is a tty, then this command behaves as 
 .br
 \fB--escape-newlines\fP Use the entity \fI&#10;\fP instead of actual newlines in xmq quotes. This is automatic in compact mode.
 
+.br
+\fB--escape-tabs\fP Use the entity \fI&#9;\fP instead of actual tabs in xmq quotes.
+
+.br
 \fB--escape-non-7bit\fP Escape all non-7bit chars using entities like \fI&#160;\fP.
 
 .TP
@@ -90,7 +106,7 @@ Write the content as xmq/htmq. If stdout is a tty, then this command behaves as 
 Write the content as xml/html/json.
 
 .TP
-\fIpager\fP
+\fIpage/pa\fP
 Use the builtin pager to view the generated output from any of the to/render/tokenize commands.
 You can use the following keys in the pager:
 .br

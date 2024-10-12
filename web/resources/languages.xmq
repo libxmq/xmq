@@ -502,6 +502,40 @@ list {
                        = render :partial => "sidebar"'
     }
     lang {
+        name    = JsonML
+        info    = 'The purpose of JsonML is to provide a compact format for transporting
+                   XML-based markup as JSON which allows it to be losslessly converted
+                   back to its original form.'
+        year    = 2007
+        url     = http://www.jsonml.org/
+        example = '["person",
+                     {"created":"2006-11-11T19:23",
+                      "modified":"2006-12-31T23:59"},
+                     ["firstName", "Robert"],
+                     ["lastName", "Smith"],
+                     ["address", {"type":"home"},
+                       ["street", "12345 Sixth Ave"],
+                       ["city", "Anytown"],
+                       ["state", "CA"],
+                       ["postalCode", "98765-4321"]
+                     ]
+                   ]
+
+                   is equivalent to
+
+                   <!-- XML representation of a person record -->
+                   <person created="2006-11-11T19:23" modified="2006-12-31T23:59">
+                       <firstName>Robert</firstName>
+                       <lastName>Smith</lastName>
+                       <address type="home">
+                           <street>12345 Sixth Ave</street>
+                           <city>Anytown</city>
+                           <state>CA</state>
+                           <postalCode>98765-4321</postalCode>
+                       </address>
+                   </person>'
+    }
+    lang {
         name    = Recutils
         info    = 'Tools and libraries to edit human-editable, plain text databases called recfiles. '
         year    = 2010
@@ -766,7 +800,7 @@ list {
                    }'
     }
     lang {
-        name    = StringSwan/swanctl.conf
+        name    = StrongSwan/swanctl.conf
         info    = 'New configuration format for StrongSwan.'
         year    = 2014
         url     = https://docs.strongswan.org/docs/5.9/swanctl/swanctlConf.html
@@ -1005,36 +1039,26 @@ list {
         year    = 2017
         by      = 'Mahieddine Cherif'
         url     = https://github.com/archipaorg/icl
-        example = ( '::image "mysql" as MySQL {
-
-                    '
-                    &#9;
-                    'url = "mysql:5.6",
-
-                    '
-                    &#9;
-                    'port = 3306
-                     }
-                     app "hello-world" {
-                                 name = "this is
-
-                    '
-                    &#9;
-                    &#9;
-                    'a multiline
-                                 string",
-                                 price = +4.5
-                     }
-                     app "hello-world" {
-                             icon = <<<EOF R0lGODlhPQBEAPeoAJosMAwOAwHVYZz595kzAPs7P+goOXMv8+fhwv739f
-                             +8PD98fH8mJl+fn9ZWb8PzWlwv6wWGbImAPgTEMImIN9gUFCEmgDALULDN
-                             8PAD6atYdCTX9gUNKlj8wZAKUsAOzZz+UMAOsJAPZ2ccMDA8PD95eX5NWv
-                             sJCOVNQPtfX8zM8+QePLl38MGBr8JCP+zs9myn8GBqwpAPGxgwJCPny78l
-                             zYLgjAJ8vAP9fX+MjMUcAN8zM9wcM8ZGcATEL+QePdZWf
-                             29ucP9cmJu9MTDImIN+r7+vz8P8VNQGNugV8AAF9fX8swMNg
-                             TAFlDOICAgPNSUnNWSMQ5MBAQEJE3Q
-                             EOF
-                     }' )
+        example = '::image "mysql" as MySQL {
+                       url = "mysql:5.6",
+                       port = 3306
+                   }
+                   app "hello-world" {
+                               name = "this is
+                               a multiline
+                               string",
+                               price = +4.5
+                   }
+                   app "hello-world" {
+                           icon = <<<EOF R0lGODlhPQBEAPeoAJosMAwOAwHVYZz595kzAPs7P+goOXMv8+fhwv739f
+                           +8PD98fH8mJl+fn9ZWb8PzWlwv6wWGbImAPgTEMImIN9gUFCEmgDALULDN
+                           8PAD6atYdCTX9gUNKlj8wZAKUsAOzZz+UMAOsJAPZ2ccMDA8PD95eX5NWv
+                           sJCOVNQPtfX8zM8+QePLl38MGBr8JCP+zs9myn8GBqwpAPGxgwJCPny78l
+                           zYLgjAJ8vAP9fX+MjMUcAN8zM9wcM8ZGcATEL+QePdZWf
+                           29ucP9cmJu9MTDImIN+r7+vz8P8VNQGNugV8AAF9fX8swMNg
+                           TAFlDOICAgPNSUnNWSMQ5MBAQEJE3Q
+                           EOF
+                   }'
     }
     lang {
         name    = DIXY
@@ -1304,6 +1328,62 @@ list {
                    }'
     }
     lang {
+        name    = JACL
+        info    = 'Specification for just another configuration language.'
+        year    = 2019
+        url     = https://github.com/yuce/jacl
+        by      = 'Yüce Tekol'
+        example = '''// This is a Jacl file. Boom.
+
+                     owner: {
+                         name: "Phillips Redd"
+                         age: 34
+                         bio: """
+                             Coder.
+                             Loves cats.
+                             """
+                     }
+
+                     database: {
+                         server: "192.168.1.1"
+                         ports: [8001 8002 8003]
+                         connection_max: 5_000
+                         enabled: true
+                     }
+
+                     // Some code in the config. Indentation matters only when it should:
+                     source: trim"""
+                         def main():
+                             if True:
+                                 print("OK, fine")
+                             else:
+                                 print("Not fine")
+                         """
+
+                         /*
+                             You can indent as you please, even if it doesn't make sense.
+                             Tabs or spaces. Jacl doesn't care.
+                             Oh, and this is a multiline comment!
+                         */
+                         servers: {
+                             alpha: {
+                                 ip: "10.0.0.1"
+                                 dc: "eqdc10"
+                             }
+                             beta: {
+                                 ip: "10.0.0.2"
+                                 dc: "eqdc10"
+                             }
+                         }
+
+                     clients: {
+                         data: [
+                             ["gamma", "delta"]
+                             [1 2]
+                         ]
+                     }'''
+    }
+    lang {
         name    = XMQ
         info    = 'XMQ - a configuration language, data-storage language, logging language compatible with xml/html and json.'
         year    = 2019
@@ -1381,6 +1461,57 @@ list {
                            - board member'
     }
     lang {
+        name    = okra
+        info    = 'A digestible language for data and configuration.'
+        year    = 2020
+        by      = 'Cameron Messinides'
+        url     = https://github.com/CMessinides/okra
+        example = '''# Okra consists of simple key-value pairs.
+                     # Each value's type is indicated by the delimiter after the key.
+
+                     # Strings are delimited by ":"
+                     hello: okra
+                     # Keys and strings can contain spaces.
+                     biological name: Abelmoschus esculentus
+
+                     # Numbers, delimited by "="
+                     cpus= 16
+                     # Floats and scientific notation are supported.
+                     threshold= 0.8
+                     minimum= 1.1e-10
+
+                     # Booleans, delimited by "?"
+                     autocomplete? true
+                     # Plain English and shorthand booleans
+                     validate config? yes
+                     dev? n
+                     # Booleans are case insensitive.
+                     verbose? Y
+                     skip tests? False
+
+                     # (Comments are supported, too.)
+
+                     # Lists are opened with "/"
+                     packages/
+                             # Okra uses indentation for nesting
+                             cli: 0.1.2
+                             validator: 2.3.18
+
+                     # Leave off the keys to create a sequential list (array)
+                     benchmarks/
+                             = 4.101
+                             = 4.533
+                             = 3.970
+
+                     # Sequential lists can contain any type
+                     mixed bag/
+                             = 2
+                             : text
+                             ? true
+                             /
+                                     nested lists? true'''
+    }
+    lang {
         name    = Boulder
         info    = 'Boulder - A Perl API for hierarchical tag/value structures.'
         url     = https://metacpan.org/dist/Boulder/view/Boulder.pod
@@ -1392,6 +1523,55 @@ list {
                       ChangePasswd=yes
                       Reboot=yes
                    }'
+    }
+    lang {
+        name    = GURA
+        info    = 'Is a file format for configuration files. Gura is as readable as YAML and simple as TOML.'
+        url     = https://gura.netlify.app/
+        by      = 'Genaro Camele'
+        year    = 2021
+        example = '# This is a comment in a Gura configuration file.
+                   # Define a variable named `title` with string value "Gura Example"
+                   title: "Gura Example"
+
+                   # Define an object with fields `username` and `age`
+                   # with string and integer values, respectively
+                   # Indentation is used to indicate nesting
+                   person:
+                       username: "Stephen"
+                       age: 20
+
+                   # Define a list of values
+                   # Line breaks are OK when inside arrays
+                   hosts: [
+                       "alpha",
+                       "omega"
+                   ]
+
+                   # Variables can be defined and referenced to avoid repetition
+                   $foreground: "#FFAH84"
+                   color_scheme:
+                       editor: $foreground
+                       ui: $foreground'
+    }
+    lang {
+        name    = Fern
+        info    = 'A clean and simple storage or configuration format with easy readability, minimal meta-characters, lenient parsing and simple conversion.'
+        url     = https://github.com/Moderocky/Fern
+        by      = Moderocky
+        year    = 2021
+        example = 'name "Tony"
+                   age 42
+                   height 1.85
+                   weight 70.2
+                   spouse null
+                   likes [ "chicken" "pasta" "bacon" ]
+                   dislikes [ "fish" "ice cream" 74 ]
+                   education (
+                       school "Hartlepool Secondary School"
+                       college "Wisham College"
+                       university null
+                   )'
     }
     lang {
         name    = Bicep
@@ -1464,6 +1644,41 @@ list {
                    }'
     }
     lang {
+        name    = Corn
+        info    = 'A simple and pain-free configuration language.'
+        year    = 2022
+        url     = https://github.com/corn-config/corn
+        by      = 'Jake Stanger'
+        example = 'let {
+                       $entry = "dist/index.js"
+                       $author = { name = "John Smith" email = "mail@example.com" }
+                   } in {
+                       name = "example-package"
+                       version = "1.0.0"
+                       main = $entry
+                       bin.filebrowser = $entry
+                       private = false
+
+                       author = $author
+                       author.url = "https://example.com"
+
+                       contributors = [ $author ]
+
+                       scripts.build = "tsc"
+                       scripts.run = "node dist"
+
+                       dependencies = {
+                           dotenv = "^8.2.0"
+                           // put the rest of your deps here...
+                       }
+
+                       devDependencies.typescript = "^4.5"
+
+                       config.port = 8080
+                       config.hostname = null
+                   }'
+    }
+    lang {
         name    = RCL
         info    = 'A reasonable configuration language. [configuration generator language]'
         by      = 'Ruud van Asseldonk'
@@ -1484,6 +1699,99 @@ list {
                      ],
                      export-to = "json, yaml, toml, ...",
                    }'
+    }
+    lang {
+        name    = Ink-lang
+        info    = 'Ink is a configuration language that is a subset of Kotlin.'
+        by      = 'Alex Semin'
+        url     = https://github.com/alllex/ink-lang
+        year    = 2023
+        example = '// Flat properties style
+                   server.port = 80
+
+                   // Nested scoping style
+                   server {
+                       // Overrides the value above!
+                       port = 8080
+
+                       // Mixed style
+                       auth {
+                           token.refresh = "<token>"
+                       }
+                   }
+
+                   // Human readable list syntax
+                   testerIds = listOf(1001, 1002)
+
+                   // Builder style
+                   users = listOf({
+                       name = "Alex"
+                       age = 42
+                   }, {
+                       name = "Bob"
+                       age = 6033
+                   })'
+    }
+    lang {
+        name    = Khi
+        info    = 'A data language: a source code for data.'
+        by      = Torm
+        url     = https://github.com/khilang/khi
+        year    = 2023
+        example = '''{article}:
+                     uuid: 0c5aacfe-d828-43c7-a530-12a802af1df4
+                     type: chemical-element
+                     key: aluminium
+                     title: Aluminium
+                     description: The <@element>:{chemical element} aluminium.
+                     tags: [metal; common]
+
+                     {chemical-element}:
+                     symbol: Al
+                     number: 13
+                     stp-phase: <Solid>
+                     melting-point: 933.47
+                     boiling-point: 2743
+                     density: 2.7
+                     electron-shells: [2; 8; 3]
+
+                     {references}:
+                     wikipedia: \https://en.wikipedia.org/wiki/Aluminium
+                     snl: \https://snl.no/aluminium
+
+                     {links}:
+                     element: 740097ea-10fa-4203-b086-58632f099167
+                     chemsym: 6e2f634c-f180-407a-b9ce-2138b412b248
+                     atomnum: 1a5e1974-a78c-4820-afeb-79bef6974814
+                     react: ab7d8a1f-c028-4466-9bb2-41a39d153241
+                     aloxide: c1ff08e7-a88f-42d5-83c3-6adc4835a07b
+                     stab: b3b13474-4fe3-4556-9568-925c066916a5
+                     purity: 40786551-85c4-461c-ba6e-4d54d5863820
+                     ion: effd5c7a-da31-4357-a94c-91343e9a05eb
+                     metal: 84333088-cfcc-4e78-8d3f-7307dcab144b
+
+                     [content]:
+
+                     <h1>: Aluminium
+
+                     <p>: <@self>:Aluminium is a <@element>:{chemical element} with
+                     <@chemsym>:{chemical symbol} <chemsym> and <@atomnum>:{atomic number} <atomnum>.
+
+                     <h2>: Substance
+
+                     <p>: In <@purity>:pure form, it is a highly <@react>:reactive {<@metal>:metal},
+                     but normally a thin coat of <@aloxide>:{aluminium oxide} forms on its surface,
+                     keeping it highly {<@stab>:stable}.
+
+                     <p>: ...
+
+                     <h2>: Occurrence
+
+                     <p>: In nature, it occurs as the <@ion>:ion <$>:{<sym>:{Al}^{3+}}. It
+                     constitutes <$>:8.2% of the earth's crust, making it the most common
+                     <@metal>:metal found there.
+
+                     <p>: ...'''
     }
     lang {
         name    = Tyson
@@ -1514,6 +1822,31 @@ list {
                          nested_field: "nested",
                        }, // Trailing commas are allowed
                      }'''
+    }
+    lang {
+        name    = Yam-lang
+        year    = 2023
+        info    = 'A simple human readable, data oriented configuration language.'
+        by      = 'Aigars Šķiliņš '
+        url     = https://github.com/askilins/yam-lang
+        example = '~~ Configuring display.
+                   - <time/>
+                   - version:
+                       "0.1.2"
+                   - background:
+                       svg: <l>background.svg</l>
+                       transparency: 60%
+                       color: !Color(255,255,255)
+                   - !Display
+                       menu: <l>pages/index.html</l>
+                       options: <l>pages/options.html</l>
+                       log_path: logs/display.log
+                       settings:
+                         width: 1920
+                         height: 1080
+                         mode: fullscreen
+                       show_hidden: false
+                   - style: <l>style.yam</l>'
     }
     lang {
         name    = PKL

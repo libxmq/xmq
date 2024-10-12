@@ -1,0 +1,10 @@
+INPUT
+{"_":"element","_xmlns:foo":"http://a.b.c","foo:spam":"Viking"}
+XMQ
+element(xmlns:foo = http://a.b.c)
+{
+    foo:spam = Viking
+}
+JSON
+{"_":"element","_xmlns:foo":"http://a.b.c","foo:spam":"Viking"}
+END

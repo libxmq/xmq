@@ -5,6 +5,8 @@ then
     echo "Usage:"
     echo "fetch_and_build.sh x86_64-pc-linux-gnu"
     echo "fetch_and_build.sh x86_64-w64-mingw32"
+    echo "fetch_and_build.sh aarch64-linux-gnu"
+    echo "fetch_and_build.sh armv7l-unknown-linux-gnueabihf"
     exit 0
 fi
 
@@ -62,6 +64,130 @@ then
         echo
 
         ./autogen.sh --enable-static=yes --with-libxml-src=${DIR}/libxml2-posix/ --with-python=no
+        make
+    fi
+    cd ..
+
+    exit 0
+fi
+
+if [ "$1" = "aarch64-linux-gnu" ]
+then
+    if [ ! -d zlib-1.3-posix-aarch64 ]; then
+        echo
+        echo Fetching zlib posix aarch64
+        echo
+        wget https://github.com/madler/zlib/releases/download/v1.3/zlib-1.3.tar.gz && tar xzf zlib-1.3.tar.gz
+        mv zlib-1.3 zlib-1.3-posix-aarch64
+    fi
+
+    cd zlib-1.3-posix-aarch64
+    if [ ! -f zlib1.dll ]; then
+        echo
+        echo Building static zlib posix
+        echo
+        CROSS_PREFIX=aarch64-linux-gnu ./configure
+        make
+    fi
+    cd ..
+
+    if [ ! -d libxml2-posix-aarch64 ]; then
+        echo
+        echo Fetching libxml2 posix aarch64
+        echo
+        git clone https://gitlab.gnome.org/GNOME/libxml2.git libxml2-posix
+        mv libxml2-posix libxml2-posix-aarch64
+    fi
+
+    # ./.libs/libxml2.a
+    cd libxml2-posix-aarch64
+    if [ ! -f ./.libs/libxml2.a ]; then
+        echo
+        echo Building libxml2 posix aarch64
+        echo
+
+        ./autogen.sh --host=aarch64-linux-gnu --enable-static=yes --with-zlib=no --with-lzma=no --with-python=no --with-http=no
+        make
+    fi
+    cd ..
+
+    if [ ! -d libxslt-posix-aarch64 ]; then
+        echo
+        echo Fetching libxslt posix aarch64
+        echo
+        git clone https://gitlab.gnome.org/GNOME/libxslt.git libxslt-posix
+        mv libxslt-posix libxslt-posix-aarch64
+    fi
+
+    cd libxslt-posix-aarch64
+    if [ ! -f ./.libs/libxslt.a ]; then
+        echo
+        echo Building static libxslt posix aarch64
+        echo
+
+        ./autogen.sh --host=aarch64-linux-gnu --enable-static=yes --with-libxml-src=${DIR}/libxml2-posix-aarch64/ --with-python=no
+        make
+    fi
+    cd ..
+
+    exit 0
+fi
+
+if [ "$1" = "armv7l-unknown-linux-gnueabihf" ]
+then
+    if [ ! -d zlib-1.3-posix-armv7l ]; then
+        echo
+        echo Fetching zlib posix armv7l
+        echo
+        wget https://github.com/madler/zlib/releases/download/v1.3/zlib-1.3.tar.gz && tar xzf zlib-1.3.tar.gz
+        mv zlib-1.3 zlib-1.3-posix-armv7l
+    fi
+
+    cd zlib-1.3-posix-armv7l
+    if [ ! -f zlib1.dll ]; then
+        echo
+        echo Building static zlib posix
+        echo
+        CROSS_PREFIX=armv7l-linux-gnu ./configure
+        make
+    fi
+    cd ..
+
+    if [ ! -d libxml2-posix-armv7l ]; then
+        echo
+        echo Fetching libxml2 posix armv7l
+        echo
+        git clone https://gitlab.gnome.org/GNOME/libxml2.git libxml2-posix
+        mv libxml2-posix libxml2-posix-armv7l
+    fi
+
+    # ./.libs/libxml2.a
+    cd libxml2-posix-armv7l
+    if [ ! -f ./.libs/libxml2.a ]; then
+        echo
+        echo Building libxml2 posix armv7l
+        echo
+
+        ./autogen.sh --host=armv7l-linux-gnu --enable-static=yes --with-zlib=no --with-lzma=no --with-python=no --with-http=no
+        make
+    fi
+    cd ..
+
+    if [ ! -d libxslt-posix-armv7l ]; then
+        echo
+        echo Fetching libxslt posix armv7l
+        echo
+        git clone https://gitlab.gnome.org/GNOME/libxslt.git libxslt-posix
+        mv libxslt-posix libxslt-posix-armv7l
+    fi
+
+    cd libxslt-posix-armv7l
+    if [ ! -f ./.libs/libxslt.a ]; then
+        echo
+        echo Building static libxslt posix armv7l
+        echo
+
+        ./autogen.sh --host=armv7l-linux-gnu --enable-static=yes --with-libxml-src=${DIR}/libxml2-posix-armv7l/ --with-python=no
         make
     fi
     cd ..

@@ -19,8 +19,8 @@ $PROG $OUTPUT/input.xmq render-html --theme=darkbg > $OUTPUT/output.rendered.htm
 
 $PROG $OUTPUT/input.xmq render-html --theme=darkbg | $PROG to-xmq --compact | $PROG to-html > $OUTPUT/output.rerendered.html
 
-xmq $OUTPUT/output.rendered.html > $OUTPUT/output.rendered.htmq
-xmq $OUTPUT/output.rerendered.html > $OUTPUT/output.rerendered.htmq
+$PROG $OUTPUT/output.rendered.html > $OUTPUT/output.rendered.htmq
+$PROG $OUTPUT/output.rerendered.html > $OUTPUT/output.rerendered.htmq
 
 if diff $OUTPUT/output.rendered.htmq $OUTPUT/output.rerendered.htmq
 then

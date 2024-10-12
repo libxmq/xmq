@@ -85,4 +85,14 @@ public class XMQ
         */
     }
 
+    String xmqGetString(XMQDoc doc, String xpath)
+    {
+        return "";
+    }
+
+    String xmqGetStringRel(XMQDoc doc, String xpath, XMQNode relative)
+    {
+        return "";
+    }
+
 }

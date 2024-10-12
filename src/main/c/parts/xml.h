@@ -53,6 +53,7 @@ bool is_element_node(const xmlNode *node);
 bool is_text_node(const xmlNode *node);
 bool is_attribute_node(const xmlNode *node);
 bool is_key_value_node(xmlNodePtr node);
+bool is_single_empty_text_node(xmlNodePtr node);
 bool is_leaf_node(xmlNode *node);
 bool has_attributes(xmlNodePtr node);
 char *xml_collapse_text(xmlNode *node);

@@ -1,0 +1,13 @@
+START
+_ {
+    alfa(A x = 1) {
+        _ = Hello
+        _ = World!
+    }
+}
+WARNING
+xmq: Warning! The element "alfa" loses its attributes when converted to a json array!
+{"alfa":["Hello","World!"]}
+END
+ARGS
+CMDS to-json

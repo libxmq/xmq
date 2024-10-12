@@ -1,3 +1,26 @@
+2024-10-11: Version 2.16.0
+
+You can now write an xsl transform in json!
+(Just as you can write the xsl transform in xml/xmq.)
+
+This transform can then work on xml/xmq/json and produce xml/xmq/json.
+
+For example: xmq dostuff.xslt to-json > dostuff.xslj
+
+Then run: xmq source.json transform dostuff.xslj to-json
+
+2024-10-10: Version 2.15.0
+
+Properly handle xml namespaces when converting to and from json.
+Handle json with a key that is the empty string.
+Changed default for tabs to be kept as is inside quotes.
+Added --escape-tabs to trigger replacement of tabs into &#9; when generating xmq.
+
+2024-10-09: Version 2.14.0
+
+Print an empty document on stdout when xsl transform fails instead of
+generating a segmentation fault.
+
 2024-06-23: Version 2.13.0
 
 Handle leading/ending comments (outside of root node) when converting to/from json.

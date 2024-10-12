@@ -34,6 +34,11 @@ AC_SUBST(PLATFORM_CFLAGS)
 AC_SUBST(PATH_SEP)
 AC_SUBST(CONF_MNEMONIC)
 
+# host_cpu   host_vendor   host_os
+# armv7l     unknown       linux-gnueabihf
+# x86_64     pc            linux-gnu
+# x86_64     w64           mingw32
+
 if test "${host_vendor}" = "w64"; then
    PLATFORM=WINAPI
    PATH_SEP=';'
@@ -54,21 +59,29 @@ else
    MEDIA_DEFAULT="yes"
    ASAN_DEFAULT="yes"
    STATIC_XMQ_DEFAULT="no"
-   if test "${host_cpu}" = "arm"; then
-       CONF_MNEMONIC="arm32"
-       MNEMONIC="ARM32"
+   if test "${host_cpu}" = "aarch64"; then
+       CONF_MNEMONIC="aarch64"
+       MNEMONIC="LINUX64"
        CFLAGS_EXTRAS=""
        CXXFLAGS_EXTRAS=""
-   fi
-   if test "${host_vendor}" = "apple"; then
+   elif test "${host_cpu}" = "armv7l"; then
+       CONF_MNEMONIC="arm32"
+       MNEMONIC="LINUX32"
+       CFLAGS_EXTRAS=""
+       CXXFLAGS_EXTRAS=""
+   elif test "${host_vendor}" = "apple"; then
        CONF_MNEMONIC="osx64"
        MNEMONIC="OSX64"
        CFLAGS_EXTRAS=-D_DARWIN_FEATURE_64_BIT_INODE
        CXXFLAGS_EXTRAS=-D_DARWIN_FEATURE_64_BIT_INODE
-   fi
-   if test "${host_vendor}" = "pc"; then
+   elif test "${host_vendor}" = "pc"; then
        CONF_MNEMONIC="linux64"
        MNEMONIC="LINUX64"
+       CFLAGS_EXTRAS=""
+       CXXFLAGS_EXTRAS=""
+   else
+       CONF_MNEMONIC="posix64"
+       MNEMONIC="POSIX64"
        CFLAGS_EXTRAS=""
        CXXFLAGS_EXTRAS=""
    fi

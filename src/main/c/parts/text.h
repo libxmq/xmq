@@ -51,7 +51,7 @@ bool is_lowercase_hex(char c);
 bool is_xmq_token_whitespace(char c);
 bool is_xml_whitespace(char c);
 bool is_all_xml_whitespace(const char *s);
-bool is_xmq_element_name(const char *start, const char *stop);
+bool is_xmq_element_name(const char *start, const char *stop, const char **colon);
 bool is_xmq_element_start(char c);
 bool is_xmq_text_name(char c);
 size_t num_utf8_bytes(char c);

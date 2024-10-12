@@ -42,6 +42,7 @@ bool is_json_null(XMQParseState *state);
 bool is_json_number(XMQParseState *state);
 bool is_json_quote_start(char c);
 bool is_json_whitespace(char c);
+void json_print_namespace_declaration(XMQPrintState *ps, xmlNs *ns);
 void json_print_attribute(XMQPrintState *ps, xmlAttrPtr a);
 void json_print_attributes(XMQPrintState *ps, xmlNodePtr node);
 void json_print_array_with_children(XMQPrintState *ps,
@@ -182,7 +183,7 @@ void trim_index_suffix(const char *key_start, const char **stop)
 {
     const char *key_stop = *stop;
 
-    if (key_start && key_stop && *(key_stop-1) == ']')
+    if (key_start && key_stop && key_start < key_stop && *(key_stop-1) == ']')
     {
         // This is an indexed element name "path[32]":"123" ie the 32:nd xml element
         // which has been indexed because json objects must have unique keys.
@@ -197,6 +198,38 @@ void trim_index_suffix(const char *key_start, const char **stop)
             // We found a [ which is not at key_start. Trim off suffix!
             *stop = i;
         }
+    }
+}
+
+void set_node_namespace(XMQParseState *state, xmlNodePtr node, const char *node_name)
+{
+    if (state->element_namespace)
+    {
+        // Have a namespace before the element name, eg abc:work
+        xmlNsPtr ns = xmlSearchNs(state->doq->docptr_.xml,
+                                  node,
+                                  (const xmlChar *)state->element_namespace);
+        if (!ns)
+        {
+            // The namespaces does not yet exist. Lets hope it will be declared
+            // inside the attributes of this node. Use a temporary href for now.
+            ns = xmlNewNs(node,
+                          NULL,
+                          (const xmlChar *)state->element_namespace);
+            debug("[XMQ] created namespace prefix=%s in element %s\n", state->element_namespace, node_name);
+        }
+        debug("[XMQ] setting namespace prefix=%s for element %s\n", state->element_namespace, node_name);
+        xmlSetNs(node, ns);
+        free(state->element_namespace);
+        state->element_namespace = NULL;
+    }
+    else if (state->default_namespace)
+    {
+        // We have a default namespace.
+        xmlNsPtr ns = (xmlNsPtr)state->default_namespace;
+        assert(ns->prefix == NULL);
+        debug("[XMQ] set default namespace with href=%s for element %s\n", ns->href, node_name);
+        xmlSetNs(node, ns);
     }
 }
 
@@ -252,12 +285,36 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         char *name = (char*)malloc(len+1);
         memcpy(name, content_start, len);
         name[len] = 0;
-        xmlNodeSetName(container, (xmlChar*)name);
+        const char *colon = NULL;
+        bool do_return = true;
+        if (is_xmq_element_name(name, name+len, &colon))
+        {
+            if (!colon)
+            {
+                xmlNodeSetName(container, (xmlChar*)name);
+            }
+            else
+            {
+                DO_CALLBACK_SIM(element_ns, state, state->line, state->col, name, colon, colon);
+                xmlNodeSetName(container, (xmlChar*)colon+1);
+                set_node_namespace(state, container, colon+1);
+            }
+        }
+        else
+        {
+            // Oups! we cannot use this as an element name! What should we do?
+            //xmlNodeSetName(container, "Baaad")
+            PRINT_WARNING("xmq: Warning! \"_\":\"%s\" cannot be converted into an valid element name!\n", name);
+            do_return = false;
+        }
         free(name);
-        free(content_start);
-        // This will be set many times.
-        state->root_found = true;
-        return;
+        if (do_return)
+        {
+            free(content_start);
+            // This will be set many times.
+            state->root_found = true;
+            return;
+        }
     }
 
     if (key_start && *key_start == '!' && !state->doctype_found)
@@ -278,13 +335,15 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
 
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
+    const char *colon = NULL;
 
-    if (!key_start)
+    if (!key_start || key_start == key_stop)
     {
+        // No key and the empty key translates into a _
         key_start = underline;
         key_stop = underline+1;
     }
-    else if (!is_xmq_element_name(key_start, key_stop))
+    else if (!is_xmq_element_name(key_start, key_stop, &colon))
     {
         unsafe_key_start = key_start;
         unsafe_key_stop = key_stop;
@@ -294,13 +353,39 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
 
     if (*key_start == '_' && key_stop > key_start+1)
     {
-        // This is an attribute that was stored as "_attr":"value"
-        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, key_start+1, key_stop, key_stop);
-        DO_CALLBACK_SIM(attr_value_quote, state, start_line, start_col, content_start, content_stop, content_stop);
+        // Check if this is an xmlns ns declaration.
+        if (key_start+6 <= key_stop && !strncmp(key_start, "_xmlns", 6))
+        {
+            // Declaring the use of a namespace.
+            if (colon)
+            {
+                // We have for example: "_xmlns:xls":"http://a.b.c."
+                DO_CALLBACK_SIM(ns_declaration, state, state->line, state->col, key_start+1, colon?colon:key_stop, key_stop);
+                assert (state->declaring_xmlns == true);
+                DO_CALLBACK_SIM(attr_value_quote, state, start_line, start_col, content_start, content_stop, content_stop)
+            }
+            else
+            {
+                // The default namespace. "_xmlns":"http://a.b.c"
+                DO_CALLBACK_SIM(ns_declaration, state, state->line, state->col, key_start+1, key_stop, key_stop);
+                DO_CALLBACK_SIM(attr_value_quote, state, start_line, start_col, content_start, content_stop, content_stop)
+            }
+        }
+        else
+        {
+            // This is a normal attribute that was stored as "_attr":"value"
+            DO_CALLBACK_SIM(attr_key, state, state->line, state->col, key_start+1, key_stop, key_stop);
+            DO_CALLBACK_SIM(attr_value_quote, state, start_line, start_col, content_start, content_stop, content_stop);
+        }
         free(content_start);
         return;
     }
 
+    if (!unsafe_key_start && colon)
+    {
+        DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
+        key_start = colon+1;
+    }
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
 
     bool need_string_type =
@@ -366,6 +451,7 @@ void parse_json_null(XMQParseState *state, const char *key_start, const char *ke
 
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
+    const char *colon = NULL;
 
     trim_index_suffix(key_start, &key_stop);
 
@@ -378,12 +464,13 @@ void parse_json_null(XMQParseState *state, const char *key_start, const char *ke
         return;
     }
 
-    if (!key_start)
+    if (!key_start || key_start == key_stop)
     {
+        // No key and the empty key translates into a _
         key_start = underline;
         key_stop = underline+1;
     }
-    else if (!is_xmq_element_name(key_start, key_stop))
+    else if (!is_xmq_element_name(key_start, key_stop, &colon))
     {
         unsafe_key_start = key_start;
         unsafe_key_stop = key_stop;
@@ -391,6 +478,11 @@ void parse_json_null(XMQParseState *state, const char *key_start, const char *ke
         key_stop = underline+1;
     }
 
+    if (!unsafe_key_start && colon)
+    {
+        DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
+        key_start = colon+1;
+    }
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
     if (unsafe_key_start)
     {
@@ -531,15 +623,17 @@ void parse_json_boolean(XMQParseState *state, const char *key_start, const char 
 
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
+    const char *colon = NULL;
 
     trim_index_suffix(key_start, &key_stop);
 
-    if (!key_start)
+    if (!key_start || key_start == key_stop)
     {
+        // No key and the empty key translates into a _
         key_start = underline;
         key_stop = underline+1;
     }
-    else if (!is_xmq_element_name(key_start, key_stop))
+    else if (!is_xmq_element_name(key_start, key_stop, &colon))
     {
         unsafe_key_start = key_start;
         unsafe_key_stop = key_stop;
@@ -547,6 +641,11 @@ void parse_json_boolean(XMQParseState *state, const char *key_start, const char 
         key_stop = underline+1;
     }
 
+    if (!unsafe_key_start && colon)
+    {
+        DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
+        key_start = colon+1;
+    }
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
     if (unsafe_key_start)
     {
@@ -595,15 +694,17 @@ void parse_json_number(XMQParseState *state, const char *key_start, const char *
 
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
+    const char *colon = NULL;
 
     trim_index_suffix(key_start, &key_stop);
 
-    if (!key_start)
+    if (!key_start || key_start == key_stop)
     {
+        // No key and the empty key translates into a _
         key_start = underline;
         key_stop = underline+1;
     }
-    else if (!is_xmq_element_name(key_start, key_stop))
+    else if (!is_xmq_element_name(key_start, key_stop, &colon))
     {
         unsafe_key_start = key_start;
         unsafe_key_stop = key_stop;
@@ -611,6 +712,11 @@ void parse_json_number(XMQParseState *state, const char *key_start, const char *
         key_stop = underline+1;
     }
 
+    if (!unsafe_key_start && colon)
+    {
+        DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
+        key_start = colon+1;
+    }
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
     if (unsafe_key_start)
     {
@@ -672,15 +778,17 @@ void parse_json_array(XMQParseState *state, const char *key_start, const char *k
 
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
+    const char *colon = NULL;
 
     trim_index_suffix(key_start, &key_stop);
 
-    if (!key_start)
+    if (!key_start || key_start == key_stop)
     {
+        // No key and the empty key translates into a _
         key_start = underline;
         key_stop = underline+1;
     }
-    else if (!is_xmq_element_name(key_start, key_stop))
+    else if (!is_xmq_element_name(key_start, key_stop, &colon))
     {
         unsafe_key_start = key_start;
         unsafe_key_stop = key_stop;
@@ -688,6 +796,11 @@ void parse_json_array(XMQParseState *state, const char *key_start, const char *k
         key_stop = underline+1;
     }
 
+    if (!unsafe_key_start && colon)
+    {
+        DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
+        key_start = colon+1;
+    }
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
     DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, leftpar+1, leftpar+1);
     if (unsafe_key_start)
@@ -873,6 +986,23 @@ void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_
     // The node is marked foo(A) { } translate this into: "foo":[ ]
     if (xml_get_attribute(node, "A"))
     {
+        const char *name = xml_element_name(node);
+        bool is_underline = (name[0] == '_' && name[1] == 0);
+        bool has_attr = has_attr_other_than_AS_(node);
+        if (!is_underline && !container)
+        {
+            // The xmq "alfa(A) { _=hello _=there }" translates into
+            // the json ["hello","there"] and there is no sensible
+            // way of storing the alfa element name. Fixable?
+            PRINT_WARNING("xmq: Warning! The element name \"%s\" is lost when converted to an unnamed json array!\n", name);
+        }
+        if (has_attr)
+        {
+            // The xmq "_(A beta=123) { _=hello _=there }" translates into
+            // the json ["hello","there"] and there is no sensible
+            // way of storing the beta attribute. Fixable?
+            PRINT_WARNING("xmq: Warning! The element \"%s\" loses its attributes when converted to a json array!\n", name);
+        }
         return json_print_array_with_children(ps, container, node);
     }
 
@@ -888,15 +1018,17 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
 
     const char *unsafe_key_start = NULL;
     const char *unsafe_key_stop = NULL;
+    const char *colon = NULL;
 
     trim_index_suffix(key_start, &key_stop);
 
-    if (!key_start)
+    if (!key_start || key_start == key_stop)
     {
+        // No key and the empty key translates into a _
         key_start = underline;
         key_stop = underline+1;
     }
-    else if (!is_xmq_element_name(key_start, key_stop))
+    else if (!is_xmq_element_name(key_start, key_stop, &colon))
     {
         unsafe_key_start = key_start;
         unsafe_key_stop = key_stop;
@@ -904,7 +1036,12 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
         key_stop = underline+1;
     }
 
-    DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
+    if (!unsafe_key_start && colon)
+    {
+        DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
+        key_start = colon+1;
+    }
+    DO_CALLBACK_SIM(element_key, state, state->line, state->col, colon?colon+1:key_start, key_stop, key_stop);
     if (unsafe_key_start)
     {
         DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, leftpar+1, leftpar+1);
@@ -1079,13 +1216,14 @@ void json_print_attribute(XMQPrintState *ps, xmlAttr *a)
 
     json_check_comma(ps);
 
+    char *quoted_key = xmq_quote_as_c(key, key+strlen(key));
+    print_utf8(ps, COLOR_none, 1, "\"_", NULL);
     if (prefix)
     {
         print_utf8(ps, COLOR_none, 1, prefix, NULL);
         print_utf8(ps, COLOR_none, 1, ":", NULL);
     }
-    char *quoted_key = xmq_quote_as_c(key, key+strlen(key));
-    print_utf8(ps, COLOR_none, 3, "\"_", NULL, quoted_key, NULL, "\":", NULL);
+    print_utf8(ps, COLOR_none, 2, quoted_key, NULL, "\":", NULL);
     free(quoted_key);
 
     if (a->children != NULL)
@@ -1102,23 +1240,54 @@ void json_print_attribute(XMQPrintState *ps, xmlAttr *a)
     }
 }
 
+void json_print_namespace_declaration(XMQPrintState *ps, xmlNs *ns)
+{
+    const char *prefix;
+    size_t total_u_len;
+
+    namespace_strlen_prefix(ns, &prefix, &total_u_len);
+
+    json_check_comma(ps);
+
+    print_utf8(ps, COLOR_none, 1, "\"_xmlns", NULL);
+
+    if (prefix)
+    {
+        print_utf8(ps, COLOR_none, 1, ":", NULL);
+        print_utf8(ps, COLOR_none, 1, prefix, NULL);
+    }
+    print_utf8(ps, COLOR_none, 1, "\":", NULL);
+
+    const char *v = xml_namespace_href(ns);
+
+    if (v != NULL)
+    {
+        print_utf8(ps, COLOR_none, 3, "\"", NULL, v, NULL, "\"", NULL);
+    }
+    else
+    {
+        print_utf8(ps, COLOR_none, 1, "null", NULL);
+    }
+
+}
+
 void json_print_attributes(XMQPrintState *ps,
                            xmlNodePtr node)
 {
     xmlAttr *a = xml_first_attribute(node);
-    //xmlNs *ns = xml_first_namespace_def(node);
+    xmlNs *ns = xml_first_namespace_def(node);
 
     while (a)
     {
         json_print_attribute(ps, a);
         a = xml_next_attribute(a);
     }
-    /*
+
     while (ns)
     {
-        print_namespace(ps, ns, max);
+        json_print_namespace_declaration(ps, ns);
         ns = xml_next_namespace_def(ns);
-        }*/
+    }
 }
 
 void json_print_element_with_children(XMQPrintState *ps,
@@ -1463,6 +1632,7 @@ void fixup_json(XMQDoc *doq, xmlNode *node)
 
 void xmq_fixup_json_before_writeout(XMQDoc *doq)
 {
+    if (doq == NULL || doq->docptr_.xml == NULL) return;
     xmlNodePtr i = doq->docptr_.xml->children;
     if (!doq || !i) return;
 

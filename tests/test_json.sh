@@ -37,7 +37,7 @@ $PROG $ARGS $OUTPUT/${TEST_NAME}.input $CMDS > $OUTPUT/${TEST_NAME}.output
 if ! jq . $OUTPUT/${TEST_NAME}.output >/dev/null 2>&1
 then
     jq . $OUTPUT/${TEST_NAME}.output
-    echo ERROR: $TEST_NAME
+    echo ERR: $TEST_NAME
     exit 1
 fi
 
@@ -47,7 +47,7 @@ then
     if ! jq . $OUTPUT/${TEST_NAME}.output_compact >/dev/null 2>&1
     then
         jq . $OUTPUT/${TEST_NAME}.output_compact
-        echo ERROR: compact $TEST_NAME
+        echo ERR: compact $TEST_NAME
         exit 1
     fi
 else

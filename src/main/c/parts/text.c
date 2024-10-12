@@ -407,9 +407,10 @@ bool is_xmq_element_start(char c)
     return false;
 }
 
-bool is_xmq_element_name(const char *start, const char *stop)
+bool is_xmq_element_name(const char *start, const char *stop, const char **colon)
 {
     const char *i = start;
+    *colon = NULL;
     if (!is_xmq_element_start(*i)) return false;
     i++;
 
@@ -417,6 +418,7 @@ bool is_xmq_element_name(const char *start, const char *stop)
     {
         char c = *i;
         if (!is_xmq_text_name(c)) return false;
+        if (c == ':') *colon = i;
     }
 
     return true;

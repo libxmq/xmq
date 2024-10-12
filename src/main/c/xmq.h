@@ -20,6 +20,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
+
 #ifndef XMQ_H
 #define XMQ_H
 
@@ -322,6 +323,51 @@ typedef enum
     XMQ_WARNING_QUOTES_NEEDED = 100
 } XMQParseError;
 
+/**
+    XMQCoreType:
+    @XMQ_CORE_STRING: Zero to infinite sized unicode string. No zero bytes.
+    @XMQ_CORE_BASE64: Base64 encoded binary data.
+    @XMQ_CORE_I8:     Signed 8 bit integer.
+    @XMQ_CORE_I16:    Signed 16 bit integer.
+    @XMQ_CORE_I32:    Signed 32 bit integer.
+    @XMQ_CORE_I64:    Signed 64 bit integer.
+    @XMQ_CORE_I128:   Signed 128 bit integer.
+    @XMQ_CORE_U8:     Unsigned 8 bit integer.
+    @XMQ_CORE_U16:    Unsigned 16 bit integer.
+    @XMQ_CORE_U32:    Unsigned 32 bit integer.
+    @XMQ_CORE_U64:    Unsigned 64 bit integer.
+    @XMQ_CORE_U128:   Unsigned 128 bit integer.
+    @XMQ_CORE_IP_ADDRESS: Either a v4 or a v6.
+    @XMQ_CORE_IPV4_ADDRESS: 128.0.0.1
+    @XMQ_CORE_IPV6_ADDRESS: ::0
+*/
+typedef enum
+{
+    XMQ_CORE_BOOL,
+    XMQ_CORE_I8,
+    XMQ_CORE_I16,
+    XMQ_CORE_I32,
+    XMQ_CORE_I64,
+    XMQ_CORE_I128,
+    XMQ_CORE_U8,
+    XMQ_CORE_U16,
+    XMQ_CORE_U32,
+    XMQ_CORE_U64,
+    XMQ_CORE_U128,
+
+    XMQ_CORE_F32,
+    XMQ_CORE_F64,
+
+    XMQ_CORE_STRING,
+    XMQ_CORE_EMAIL,
+    XMQ_CORE_URI,
+    XMQ_CORE_URL,
+
+    XMQ_CORE_IP_ADDRESS,
+    XMQ_CORE_IPV4_ADDRESS,
+    XMQ_CORE_IPV6_ADDRESS
+} XMQCoreType;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////// FUNCTIONS  /////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -533,6 +579,7 @@ void xmqSetUseColor(XMQOutputSettings *os, bool use_color);
 void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode);
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines);
 void xmqSetEscapeNon7bit(XMQOutputSettings *os, bool escape_non_7bit);
+void xmqSetEscapeTabs(XMQOutputSettings *os, bool escape_tabs);
 void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format);
 void xmqSetRenderFormat(XMQOutputSettings *os, XMQRenderFormat render_to);
 void xmqSetRenderTheme(XMQOutputSettings *os, const char *theme_name);

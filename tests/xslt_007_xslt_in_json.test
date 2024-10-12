@@ -1,0 +1,87 @@
+XML
+{
+  "_": "catalog",
+  "cd[0]": {
+    "title": "Empire Burlesque",
+    "artist": "Bob Dylan",
+    "country": "USA",
+    "company": "Columbia",
+    "price": 10.9,
+    "year": 1985
+  },
+  "cd[1]": {
+    "title": "Hide your heart",
+    "artist": "Bonnie Tyler",
+    "country": "UK",
+    "company": "CBS Records",
+    "price": 9.9,
+    "year": 1988
+  }
+}
+XSLT
+{
+  "_": "xsl:stylesheet",
+  "_version": "1.0",
+  "_xmlns:xsl": "http://www.w3.org/1999/XSL/Transform",
+  "xsl:output": {
+    "_method": "html",
+    "_doctype-system": "about:legacy-compat",
+    "_encoding": "UTF-8",
+    "_indent": "yes"
+  },
+  "xsl:template": {
+    "_match": "/",
+    "html": {
+      "body": {
+        "h2": "My CD Collection",
+        "table": {
+          "_border": "1",
+          "tr": {
+            "_bgcolor": "#9acd32",
+            "th[0]": "Title",
+            "th[1]": "Artist"
+          },
+          "xsl:for-each": {
+            "_select": "catalog/cd",
+            "tr": {
+              "td[0]": {
+                "xsl:value-of": {
+                  "_select": "title"
+                }
+              },
+              "td[1]": {
+                "xsl:value-of": {
+                  "_select": "artist"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+EXPECTED
+!DOCTYPE = 'html SYSTEM "about:legacy-compat"'
+html {
+    body {
+        h2 = 'My CD Collection'
+        table(border = 1)
+        {
+            tr(bgcolor = #9acd32)
+            {
+                th = Title
+                th = Artist
+            }
+            tr {
+                td = 'Empire Burlesque'
+                td = 'Bob Dylan'
+            }
+            tr {
+                td = 'Hide your heart'
+                td = 'Bonnie Tyler'
+            }
+        }
+    }
+}
+END

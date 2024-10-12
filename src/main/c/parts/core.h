@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2023 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2024 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -21,29 +21,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef ALWAYS_H
-#define ALWAYS_H
+#ifndef CORE_H
+#define CORE_H
 
 #include<stdbool.h>
-#include<stdlib.h>
+#include<stdint.h>
 
-extern bool xmq_debug_enabled_;
-extern bool xmq_verbose_enabled_;
+#define CORE_MODULE
 
-void verbose__(const char* fmt, ...);
-void debug__(const char* fmt, ...);
-void check_malloc(void *a);
+bool coreParseI8(const char *s, int8_t *out);
+bool coreParseI16(const char *s, int16_t *out);
+bool coreParseI32(const char *s, int32_t *out);
+bool coreParseI64(const char *s, int64_t *out);
+bool coreParseI128(const char *s, __int128 *out);
 
-#define verbose(...) if (xmq_verbose_enabled_) { verbose__(__VA_ARGS__); }
-#define debug(...) if (xmq_debug_enabled_) {debug__(__VA_ARGS__); }
-
-#define PRINT_ERROR(...) fprintf(stderr, __VA_ARGS__)
-#define PRINT_WARNING(...) fprintf(stderr, __VA_ARGS__)
-
-#ifdef PLATFORM_WINAPI
-char *strndup(const char *s, size_t l);
-#endif
-
-#define ALWAYS_MODULE
-
-#endif // ALWAYS_H
+#endif // CORE_H

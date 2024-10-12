@@ -1,0 +1,31 @@
+INPUT
+_(A)
+{
+    _ {
+        _ = 1
+    }
+    _ = 1
+    _ = null
+    _ = true
+    _ = false
+    _ = ''
+}
+FIRST
+[{"":1},1,null,true,false,""]
+SECOND
+_(A)
+{
+    _ {
+        _ = 1
+    }
+    _ = 1
+    _ = null
+    _ = true
+    _ = false
+    _ = ''
+}
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-htmq

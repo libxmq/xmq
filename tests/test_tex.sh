@@ -5,9 +5,15 @@ OUTPUT="$2"
 
 mkdir -p $OUTPUT
 
-xmq render-tex > $OUTPUT/tjo.tex <<EOF
+$PROG render-tex > $OUTPUT/tjo.tex <<EOF
 work { data(i=2) { foo bar = '123' } }
 EOF
+
+if ! command -v xelatex > /dev/null
+then
+    echo "No xelatex found, skipping tex test."
+    exit 0
+fi
 
 (cd $OUTPUT; xelatex -interaction=batchmode -halt-on-error tjo.tex > texx.log 2>&1)
 

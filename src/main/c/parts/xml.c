@@ -177,6 +177,15 @@ bool is_key_value_node(xmlNodePtr node)
     return true;
 }
 
+bool is_single_empty_text_node(xmlNodePtr node)
+{
+    if (is_entity_node(node)) return false;
+    if (node->type != XML_TEXT_NODE) return false;
+    const char *c = (const char*)node->content;
+    if (c != NULL && *c != 0) return false;
+    return true;
+}
+
 bool is_leaf_node(xmlNode *node)
 {
     return xml_first_child(node) == NULL;

@@ -41,6 +41,11 @@ do
     tests/test_error.sh "$PROG" "$OUTPUT" "$i"
 done
 
+for i in tests/warning_???_*.test
+do
+    tests/test_warning.sh "$PROG" "$OUTPUT" "$i"
+done
+
 for i in tests/format_???_*.test
 do
     tests/test_formatting.sh "$PROG" "$OUTPUT" "$i"
