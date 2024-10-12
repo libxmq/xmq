@@ -1,0 +1,54 @@
+2018-11-02  Vladimir Makarov  <vmakarov@gcc.gnu.org>
+
+	* src/yape.c (traverse_pruned_translation): Process next alt node
+	from the start again.
+
+2018-11-02  Vladimir Makarov  <vmakarov@gcc.gnu.org>
+
+	* src/compare_parsers.tst.in: Remove mentioning ammunition.  Print
+	better messages.
+	(set_sgrammar): Fix typo in OS_CREATE call.
+
+2018-10-21  Vladimir Makarov  <vmakarov@gcc.gnu.org>
+
+	* allocate.[ch]: Use GNU style format.
+	* compare_parsers.tst.in: Ditto.
+	* hashtab.{c,cpp}: Ditto.
+	* objstack.{c,h,cpp}: Ditto.
+	* sgramm.y: Ditto.
+	* vlobject.{c,h,cpp}: Ditto.
+	* yaep.{c,cpp}: Ditto.
+	* yaep[++].tst.in: Ditto.
+
+2018-10-21  Vladimir Makarov  <vmakarov@gcc.gnu.org>
+
+	* src/compare_parsers.tst.in: Add forward func decls.  Remove old
+	C style func decls.
+	* src/yaep.tst.in: Ditto.
+
+2018-10-21  Alexander Klauer
+
+	* Merge: https://github.com/vnmakarov/yaep/pull/16
+
+2016-11-04  Vladimir Makarov  <vmakarov@gcc.gnu.org>
+
+	* Makefile.in (install, uninstall): Process allocate.h.
+
+2015-10-06  Vladimir Makarov  <vmakarov@gcc.gnu.org>
+
+	* compare_parsers.tst.in: Use YAEPLIB and YAEPDIR.
+
+2015-10-06  Vladimir Makarov  <vmakarov@gcc.gnu.org>
+
+	* ChangeLog.YAEP: Start.
+	* yaep.c (struct sit_dist, first_free_sit_dist_index): Remove.
+	(sit_dist_vlo, sit_dist_vec_check_vlo): Ditto.
+	(sit_dist_set_init, empty_sit_dist_set, sit_dist_insert): Rewrite
+	for new (sit, dist) set implementation.
+	(sit_dist_set_fin): Ditto.
+	(make_parse): Add more debug printing.
+	* compare_parsers.tst.in: Move from MSTA/compare.tst.  Add
+	checking MSTA.  Add big test.
+	* yaep_part.sgml.in, yaep_part++.sgml.in: New.
+	* whole_gcc_test.i: New.
+
