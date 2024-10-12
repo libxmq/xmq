@@ -34,12 +34,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/entities.h"
 #include"parts/utf8.h"
 #include"parts/hashmap.h"
+#include"parts/ixml.h"
 #include"parts/membuffer.h"
 #include"parts/stack.h"
 #include"parts/text.h"
 #include"parts/xml.h"
 #include"parts/xmq_parser.h"
 #include"parts/xmq_printer.h"
+
+struct grammar;
+struct yaep_tree_node;
 
 // XMQ STRUCTURES ////////////////////////////////////////////////
 
@@ -48,6 +52,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // FUNCTIONALITY /////////////////////////////////////////////////
 
 #include"parts/json.h"
+#include"parts/ixml.h"
 
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -128,6 +133,12 @@ void xmq_print_text(XMQDoc *doq, XMQOutputSettings *output_settings);
 char *xmq_quote_with_entity_newlines(const char *start, const char *stop, XMQQuoteSettings *settings);
 char *xmq_quote_default(int indent, const char *start, const char *stop, XMQQuoteSettings *settings);
 bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root);
+bool xmq_parse_ixml_grammar(struct grammar *g,
+                            struct yaep_tree_node **root,
+                            int *ambiguous,
+                            XMQDoc *doq,
+                            const char *start,
+                            const char *stop);
 const char *xml_element_type_to_string(xmlElementType type);
 const char *indent_depth(int i);
 void free_indent_depths();
@@ -4070,7 +4081,42 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
     return rc;
 }
 
+bool xmq_parse_ixml_grammar(struct grammar *g,
+                            struct yaep_tree_node **root,
+                            int *ambiguous,
+                            XMQDoc *doq,
+                            const char *start,
+                            const char *stop)
+{
+    bool rc = true;
+    if (!stop) stop = start+strlen(start);
 
+    XMQOutputSettings *os = xmqNewOutputSettings();
+    XMQParseCallbacks *parse = xmqNewParseCallbacks();
+    parse->magic_cookie = MAGIC_COOKIE;
+
+    XMQParseState *state = xmqNewParseState(parse, os);
+    state->doq = doq;
+
+    xmqSetStateSourceName(state, doq->source_name_);
+
+    push_stack(state->element_stack, doq->docptr_.xml);
+
+    xmq_tokenize_buffer_ixml(state, start, stop);
+
+    if (xmqStateErrno(state))
+    {
+        rc = false;
+        doq->errno_ = xmqStateErrno(state);
+        doq->error_ = build_error_message("%s\n", xmqStateErrorMsg(state));
+    }
+
+    xmqFreeParseState(state);
+    xmqFreeParseCallbacks(parse);
+    xmqFreeOutputSettings(os);
+
+    return rc;
+}
 
 #include"parts/always.c"
 #include"parts/colors.c"
@@ -4080,6 +4126,7 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
 #include"parts/hashmap.c"
 #include"parts/stack.c"
 #include"parts/membuffer.c"
+#include"parts/ixml.c"
 #include"parts/json.c"
 #include"parts/text.c"
 #include"parts/utf8.c"

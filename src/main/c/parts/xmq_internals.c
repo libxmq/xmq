@@ -373,6 +373,8 @@ const char *xmqParseErrorToString(XMQParseError e)
     case XMQ_ERROR_PARSING_XML: return "error parsing xml";
     case XMQ_ERROR_PARSING_HTML: return "error parsing html";
     case XMQ_ERROR_VALUE_CANNOT_START_WITH: return "value cannot start with = /* or //";
+    case XMQ_ERROR_IXML_EXPECTED_RULE: return "expected ixml rule";
+    case XMQ_ERROR_IXML_EXPECTED_NAME: return "expected ixml rule name";
     case XMQ_WARNING_QUOTES_NEEDED: return "perhaps you need more quotes to quote this quote";
     }
     assert(false);

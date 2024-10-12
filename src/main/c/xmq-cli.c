@@ -25,6 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/hashmap.h"
 #include"parts/membuffer.h"
 #include"parts/text.h"
+#include"parts/ixml.h"
 #include"parts/xml.h"
 #include"yaep/yaep.h"
 
@@ -163,6 +164,7 @@ struct XMQCliCommand
     const char *save_file; // Save output to this file name.
     xmlDocPtr   ixml_doc;  // A DOM containing the ixml grammar.
     const char *ixml_yaep; // Yaep grammar source to be used.
+    const char *ixml_ixml; // IXML grammar source to be used.
     xmlDocPtr   node_doc;
     xmlNodePtr  node_content; // Tree content to replace something.
     XMQContentType in_format;
@@ -1457,7 +1459,7 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     {
         const char *file = arg+7;
 
-        if (command->ixml_doc != NULL || command->ixml_yaep != NULL)
+        if (command->ixml_doc != NULL || command->ixml_yaep != NULL || command->ixml_ixml != NULL)
         {
             printf("You have already specified an ixml grammar!\n");
             exit(1);
@@ -1477,6 +1479,13 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         {
             verbose_("(xmq) reading yaep file %s\n", file);
             command->ixml_yaep = load_file_into_buffer(file);
+            return true;
+        }
+        if (!strcmp(file+len-5, ".ixml"))
+        {
+            verbose_("(xmq) reading ixml file %s\n", file);
+            command->ixml_ixml = load_file_into_buffer(file);
+            if (command->ixml_ixml == NULL) exit(1);
             return true;
         }
 
@@ -1773,7 +1782,19 @@ bool cmd_load(XMQCliCommand *command)
 
     command->env->load = command;
 
-    if (command->ixml_yaep != NULL)
+    if (command->ixml_ixml != NULL)
+    {
+        struct grammar *g;
+        struct yaep_tree_node *root;
+        int ambiguous;
+
+        g = yaep_create_grammar();
+
+        XMQDoc *doq = xmqNewDoc();
+
+        xmq_parse_ixml_grammar(g, &root, &ambiguous, doq, command->ixml_ixml, NULL);
+    }
+    else if (command->ixml_yaep != NULL)
     {
         struct grammar *g;
         struct yaep_tree_node *root;
@@ -3906,7 +3927,7 @@ char *load_file_into_buffer(const char *file)
     if (!f)
     {
         fprintf(stderr, "xmq: %s: No such file or directory\n", file);
-        return false;
+        return NULL;
     }
     fseek(f, 0L, SEEK_END);
     size_t sz = ftell(f);
