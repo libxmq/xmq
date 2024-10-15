@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - AddIXML
 
 jobs:
   job_build_on_macos:

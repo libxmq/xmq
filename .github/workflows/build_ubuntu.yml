@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - AddIXML
   pull_request:
 
 jobs:
