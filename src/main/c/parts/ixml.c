@@ -24,17 +24,34 @@
 #define DEBUG_IXML_GRAMMAR
 
 #ifdef DEBUG_IXML_GRAMMAR
-#define IXML_STEP(name,state) { \
+#define IXML_STEP(name,state) {                 \
     if (true) { \
         char *tmp = xmq_quote_as_c(state->i, state->i+10); \
-        fprintf(stderr, "DBG PARSE " #name " \"%s...\n", tmp);      \
+        for (int i=0; i<state->depth; ++i) fprintf(stderr, "    "); \
+        fprintf(stderr, "dbg " #name " >%s...\n", tmp);      \
+        for (int i=0; i<state->depth; ++i) fprintf(stderr, "    "); \
+        fprintf(stderr, "{\n");      \
+        state->depth++; \
         free(tmp); \
     } \
 }
+#define IXML_DONE(name,state) {                 \
+    if (true) { \
+        char *tmp = xmq_quote_as_c(state->i, state->i+10); \
+        state->depth--; \
+        for (int i=0; i<state->depth; ++i) fprintf(stderr, "    "); \
+        fprintf(stderr, "}\n"); \
+        for (int i=0; i<state->depth; ++i) fprintf(stderr, "    "); \
+        fprintf(stderr, ">%s...\n", tmp);                                     \
+        free(tmp); \
+    } \
+}
+
 #define EAT(name, num) { \
     if (true) { \
         char *tmp = xmq_quote_as_c(state->i, state->i+num);       \
-        fprintf(stderr, "DBG EAT %s \"%s\"\n", #name, tmp);       \
+        for (int i=0; i<state->depth; ++i) fprintf(stderr, "    "); \
+        fprintf(stderr, "eat %s %s\n", #name, tmp);       \
         free(tmp); \
     } \
     increment(0, num, &state->i, &state->line, &state->col); \
@@ -131,7 +148,7 @@ bool is_ixml_mark(char c)
 bool is_ixml_name_follower(char c)
 {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' ||
-        c == '-' || c == '.' || (c >= '0' && c <= '9') ;
+        c == '-' || (c >= '0' && c <= '9') ;
 }
 
 bool is_ixml_name_start(char c)
@@ -226,6 +243,8 @@ void parse_ixml_alt(XMQParseState *state)
         const char *name_stop;
         parse_ixml_name(state, &name_start, &name_stop);
     }
+
+    IXML_DONE(alt, state);
 }
 
 void parse_ixml_alts(XMQParseState *state)
@@ -236,7 +255,6 @@ void parse_ixml_alts(XMQParseState *state)
     for (;;)
     {
         if (is_ixml_eob(state) ||
-            is_ixml_alt_end(*(state->i)) ||
             is_ixml_rule_end(*(state->i))) break;
 
         if (!is_ixml_alt_start(*(state->i)))
@@ -247,11 +265,22 @@ void parse_ixml_alts(XMQParseState *state)
         }
         parse_ixml_alt(state);
 
+        parse_ixml_whitespace(state);
+
         char c = *(state->i);
-        if (is_ixml_alt_end(c) || is_ixml_rule_end(c)) break; // We found ';' or '|' or '.'
+        if (is_ixml_rule_end(c)) break;
+        if (c != '|' && c != ';')
+        {
+            state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+            state->error_info = "expected ; or | here";
+            longjmp(state->error_handler, 1);
+        }
+        EAT(choice, 1);
 
         parse_ixml_whitespace(state);
     }
+
+    IXML_DONE(alts, state);
 }
 
 void parse_ixml_comment(XMQParseState *state)
@@ -278,6 +307,8 @@ void parse_ixml_comment(XMQParseState *state)
         EAT(comment_inside, 1);
     }
     EAT(comment_stop, 1);
+
+    IXML_DONE(comment, state);
 }
 
 void parse_ixml_name(XMQParseState *state, const char **name_start, const char **name_stop)
@@ -295,6 +326,7 @@ void parse_ixml_name(XMQParseState *state, const char **name_start, const char *
     *name_stop = state->i;
 
     fprintf(stderr, "name >%.*s<\n", (int)(*name_stop-*name_start), *name_start);
+    IXML_DONE(name, state);
 }
 
 void parse_ixml_prolog(XMQParseState *state)
@@ -311,6 +343,7 @@ void parse_ixml_prolog(XMQParseState *state)
     if (strncmp(state->i, "version", 7))
     {
         state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+        state->error_info = "expected \"version\" ";
         longjmp(state->error_handler, 1);
     }
 
@@ -319,6 +352,7 @@ void parse_ixml_prolog(XMQParseState *state)
     if (!is_ixml_whitespace_start(state))
     {
         state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+        state->error_info = "expected whitespace";
         longjmp(state->error_handler, 1);
     }
 
@@ -327,6 +361,7 @@ void parse_ixml_prolog(XMQParseState *state)
     if (!is_ixml_string_start(*(state->i)))
     {
         state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+        state->error_info = "expected string";
         longjmp(state->error_handler, 1);
     }
 
@@ -344,6 +379,67 @@ void parse_ixml_prolog(XMQParseState *state)
         longjmp(state->error_handler, 1);
     }
     EAT(prolog_stop, 1);
+
+    IXML_DONE(prolog, state);
+}
+
+void parse_ixml_rule(XMQParseState *state)
+{
+    IXML_STEP(rule, state);
+
+    // rule: naming, -["=:"], s, -alts, -".".
+
+    char c = *(state->i);
+    char mark = 0;
+    const char *name_start = NULL;
+    const char *name_stop = NULL;
+
+    if (is_ixml_mark(c))
+    {
+        mark = c;
+        EAT(rule_mark, 1);
+        parse_ixml_whitespace(state);
+    }
+
+    c = *(state->i);
+    if (!is_ixml_name_start(c))
+    {
+        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+        state->error_info = "expected name here";
+        longjmp(state->error_handler, 1);
+    }
+
+    parse_ixml_name(state, &name_start, &name_stop);
+
+    parse_ixml_whitespace(state);
+
+    c = *(state->i);
+    if (c != '=' && c != ':')
+    {
+        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+        state->error_info = "expected equal or colon here";
+        longjmp(state->error_handler, 1);
+    }
+    EAT(rule_equal, 1);
+
+    parse_ixml_whitespace(state);
+
+    parse_ixml_alts(state);
+
+    c = *(state->i);
+    if (c != '.')
+    {
+        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+        state->error_info = "expected dot here";
+        longjmp(state->error_handler, 1);
+    }
+    EAT(rule_stop, 1);
+
+    parse_ixml_whitespace(state);
+
+    add_yaep_grammar_rule(mark, name_start, name_stop);
+
+    IXML_DONE(rule, state);
 }
 
 void parse_ixml_string(XMQParseState *state, const char **content_start, const char **content_stop)
@@ -381,13 +477,15 @@ void parse_ixml_string(XMQParseState *state, const char **content_start, const c
     char *quote = free_membuffer_but_return_trimmed_content(buf);
     *content_start = quote;
     *content_stop = quote+len-1; // Drop the zero byte.
+
+    IXML_DONE(string, state);
 }
 
 void parse_ixml_whitespace(XMQParseState *state)
 {
     if (is_ixml_eob(state) || !is_ixml_whitespace_start(state)) return;
 
-    IXML_STEP(whitespace, state);
+    IXML_STEP(ws, state);
 
     while (state->i < state->buffer_stop && is_ixml_whitespace_start(state))
     {
@@ -400,6 +498,8 @@ void parse_ixml_whitespace(XMQParseState *state)
             EAT(ws, 1);
         }
     }
+
+    IXML_DONE(ws, state);
 }
 
 int peek_ixml_code(XMQParseState *state)
@@ -456,63 +556,6 @@ bool xmq_tokenize_buffer_ixml(XMQParseState *state, const char *start, const cha
 void add_yaep_grammar_rule(char mark, const char *name_start, const char *name_stop)
 {
 }
-
-
-void parse_ixml_rule(XMQParseState *state)
-{
-    IXML_STEP(rule, state);
-
-    // rule: naming, -["=:"], s, -alts, -".".
-
-    char c = *(state->i);
-    char mark = 0;
-    const char *name_start = NULL;
-    const char *name_stop = NULL;
-
-    if (is_ixml_mark(c))
-    {
-        mark = c;
-        EAT(rule_mark, 1);
-        parse_ixml_whitespace(state);
-    }
-
-    c = *(state->i);
-    if (!is_ixml_name_start(c))
-    {
-        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
-        state->error_info = "expected name here";
-        longjmp(state->error_handler, 1);
-    }
-
-    parse_ixml_name(state, &name_start, &name_stop);
-
-    parse_ixml_whitespace(state);
-
-    c = *(state->i);
-    if (c != '=' && c != ':')
-    {
-        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
-        state->error_info = "expected equal or colon here";
-        longjmp(state->error_handler, 1);
-    }
-    EAT(rule_equal, 1);
-
-    parse_ixml_whitespace(state);
-
-    parse_ixml_alts(state);
-
-    c = *(state->i);
-    if (c != '.')
-    {
-        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
-        state->error_info = "expected dot here";
-        longjmp(state->error_handler, 1);
-    }
-    EAT(rule_stop, 1);
-
-    add_yaep_grammar_rule(mark, name_start, name_stop);
-}
-
 
 #else
 

@@ -1,6 +1,6 @@
 START
   {comment
 ERROR
-.../ixml_error_001_comment_not_closed.ixml:1:12: error: syntax comment is not closed
+.../ixml_error_001_comment_not_closed.ixml:2:1: error: syntax comment is not closed
 
 END

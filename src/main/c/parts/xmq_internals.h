@@ -244,6 +244,9 @@ struct XMQParseState
     const char *last_suspicios_quote_end;
     size_t last_suspicios_quote_end_line;
     size_t last_suspicios_quote_end_col;
+
+    // When debugging parsing of ixml, track indentation of depth here.
+    int depth;
 };
 
 /**

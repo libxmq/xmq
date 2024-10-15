@@ -26,7 +26,7 @@ sed -n '/^ERROR$/,/^END$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_
 
 $PROG --ixml=$OUTPUT/${TEST_NAME}.ixml $TEST_FILE > $OUTPUT/${TEST_NAME}.err 2>&1
 
-cat $OUTPUT/${TEST_NAME}.err | grep -v ^DBG | sed 's|'${OUTPUT}'|...|'  > $OUTPUT/${TEST_NAME}.error
+cat $OUTPUT/${TEST_NAME}.err | grep -v "dbg " | grep -v "eat " | grep -v '{' | grep -v '}' | sed 's|'${OUTPUT}'|...|'  > $OUTPUT/${TEST_NAME}.error
 
 mv $OUTPUT/${TEST_NAME}.error $OUTPUT/${TEST_NAME}.err
 
