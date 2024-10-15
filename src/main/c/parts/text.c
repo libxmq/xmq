@@ -508,6 +508,7 @@ char *xmq_quote_as_c(const char *start, const char *stop)
         else if (c == '\f') { *o++ = '\\'; *o++ = 'f'; real+=2; }
         else if (c == '\r') { *o++ = '\\'; *o++ = 'r'; real+=2; }
         else { *o++ = '\\'; *o++ = 'x'; *o++ = to_hex((c>>4)&0xf); *o++ = to_hex(c&0xf); real+=4; }
+        if (c == 0) break;
     }
     real++;
     *o = 0;

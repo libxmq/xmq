@@ -52,6 +52,7 @@ CFLAGS += -DVERSION='"$(VERSION)"'
 
 # The SOURCES are what makes up libxmq xmq.
 SOURCES:=$(wildcard $(SRC_ROOT)/src/main/c/*.c)
+
 # The PARTS_SOURCES are what gets copied into xmq.c
 # But we test the parts separately here.
 PARTS_SOURCES:=$(wildcard $(SRC_ROOT)/src/main/c/parts/*.c)

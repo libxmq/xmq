@@ -1,6 +1,7 @@
 #!/bin/bash
 # libxmq - Copyright 2023 Fredrik Öhrström (spdx: MIT)
 
+set -e
 BUILD=$1
 OUTPUT=$2
 
@@ -25,6 +26,11 @@ fi
 
 rm -rf "$OUTPUT"
 mkdir -p "$OUTPUT"
+
+for i in tests/ixml_error_[0-9][0-9][0-9]_*.test
+do
+    tests/test_ixml_error.sh "$PROG" "$OUTPUT" "$i" || (echo "Testing aborted" ; exit 1)
+done
 
 for i in tests/[0-9][0-9][0-9]_*.test
 do

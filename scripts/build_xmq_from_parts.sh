@@ -55,6 +55,7 @@ do_part colors
 do_part core
 do_part default_themes
 do_part hashmap
+do_part ixml
 do_part json
 do_part membuffer
 do_part stack

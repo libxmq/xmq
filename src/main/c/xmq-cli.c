@@ -165,6 +165,7 @@ struct XMQCliCommand
     xmlDocPtr   ixml_doc;  // A DOM containing the ixml grammar.
     const char *ixml_yaep; // Yaep grammar source to be used.
     const char *ixml_ixml; // IXML grammar source to be used.
+    const char *ixml_filename; // Where the ixml grammar was read from.
     xmlDocPtr   node_doc;
     xmlNodePtr  node_content; // Tree content to replace something.
     XMQContentType in_format;
@@ -1484,6 +1485,7 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         if (!strcmp(file+len-5, ".ixml"))
         {
             verbose_("(xmq) reading ixml file %s\n", file);
+            command->ixml_filename = strdup(file);
             command->ixml_ixml = load_file_into_buffer(file);
             if (command->ixml_ixml == NULL) exit(1);
             return true;
@@ -1791,8 +1793,15 @@ bool cmd_load(XMQCliCommand *command)
         g = yaep_create_grammar();
 
         XMQDoc *doq = xmqNewDoc();
+        xmqSetDocSourceName(doq, command->ixml_filename);
 
-        xmq_parse_ixml_grammar(g, &root, &ambiguous, doq, command->ixml_ixml, NULL);
+        bool ok = xmq_parse_ixml_grammar(g, &root, &ambiguous, doq, command->ixml_ixml, NULL);
+
+        if (!ok)
+        {
+            fprintf(stderr, "%s\n", xmqDocError(doq));
+            exit(1);
+        }
     }
     else if (command->ixml_yaep != NULL)
     {
