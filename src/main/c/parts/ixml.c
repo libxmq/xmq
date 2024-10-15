@@ -350,24 +350,25 @@ void parse_ixml_string(XMQParseState *state, const char **content_start, const c
 {
     IXML_STEP(string, state);
 
-    const char *start = state->i;
-    const char *stop = state->buffer_stop;
-
     MemBuffer *buf = new_membuffer();
-
-    const char *i = start;
 
     EAT(string_start, 1);
 
-    while (i < stop)
+    for (;;)
     {
-        char c = *i;
-        if (c == '"')
+        if (is_ixml_eob(state))
         {
-            EAT(string_inside_quote, 1);
+            state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+            state->error_info = "string not terminated";
+            longjmp(state->error_handler, 1);
+        }
+
+        if (*(state->i) == '"')
+        {
+            EAT(string_stop, 1);
             break;
         }
-        membuffer_append_char(buf, c);
+        membuffer_append_char(buf, *(state->i));
         EAT(string_inside, 1);
     }
     // Add a zero termination to the string which is not used except for

@@ -1696,6 +1696,7 @@ const char *node_type_to_string(enum yaep_tree_node_type t)
     case YAEP_ANODE: return "ANODE";
     case YAEP_ALT: return "ALT";
     default:
+        return "?";
     }
     return "?";
 }
