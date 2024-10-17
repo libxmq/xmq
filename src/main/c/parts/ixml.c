@@ -136,6 +136,8 @@ bool is_ixml_alt_start(char c)
         c == '+' || // Insertion +"hej" or +#a
         c == '#' || // encoded literal
         c == '(' || // Group ( "svej" | "hojt" )
+        c == '"' || // "string"
+        c == '\'' || // 'string'
         is_ixml_mark(c) || // @^-
         is_ixml_name_start(c);
 }
