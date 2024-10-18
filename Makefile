@@ -142,19 +142,19 @@ testa: test_asan
 
 test_release:
 	@echo "Running release tests"
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/release/testinternals ]; then echo "Run make first. $$x/release/testinternals not found."; exit 1; fi ; $$x/release/testinternals $(SILENCER) ; done
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/release/parts/testinternals ]; then echo "Run make first. $$x/release/parts/testinternals not found."; exit 1; fi ; $$x/release/parts/testinternals $(SILENCER) ; ./tests/test.sh $$x/release $$x/release/test_output $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/testinternals ]; then echo "Run make first. $${x}release/testinternals not found."; exit 1; fi ; $${x}release/testinternals $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/parts/testinternals ]; then echo "Run make first. $${x}release/parts/testinternals not found."; exit 1; fi ; $${x}release/parts/testinternals $(SILENCER) ; ./tests/test.sh $${x}release $${x}release/test_output $(SILENCER) ; done
 
 test_debug:
 	@echo "Running debug tests"
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/debug/testinternals ]; then echo "Run make first. $$x/debug/testinternals not found."; exit 1; fi ; $$x/debug/testinternals $(SILENCER) ; done
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/debug/parts/testinternals ]; then echo "Run make first. $$x/debug/parts/testinternals not found."; exit 1; fi ; $$x/release/debug/testinternals $(SILENCER) ; ./tests/test.sh $$x/debug $$x/debug/test_output $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/testinternals ]; then echo "Run make first. $${x}debug/testinternals not found."; exit 1; fi ; $${x}debug/testinternals $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/parts/testinternals ]; then echo "Run make first. $${x}debug/parts/testinternals not found."; exit 1; fi ; $${x}release/debug/testinternals $(SILENCER) ; ./tests/test.sh $${x}debug $${x}debug/test_output $(SILENCER) ; done
 
 test_asan:
 	@echo "Running asan tests"
 	@if [ "$$(cat /proc/sys/kernel/randomize_va_space)" != "0" ]; then echo "Please disable address randomization for libasan to work!"; exit 1; fi
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/asan/testinternals ]; then echo "Run make first. $$x/asan/testinternals not found."; exit 1; fi ; $$x/asan/testinternals $(SILENCER) ; done
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/asan/parts/testinternals ]; then echo "Run make first. $$x/asan/parts/testinternals not found."; exit 1; fi ; $$x/release/asan/testinternals $(SILENCER) ; ./tests/test.sh $$x/asan $$x/asan/test_output $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/testinternals ]; then echo "Run make first. $${x}asan/testinternals not found."; exit 1; fi ; $${x}asan/testinternals $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/parts/testinternals ]; then echo "Run make first. $${x}asan/parts/testinternals not found."; exit 1; fi ; $${x}release/asan/testinternals $(SILENCER) ; ./tests/test.sh $${x}asan $${x}asan/test_output $(SILENCER) ; done
 
 disable_address_randomization:
 	@echo "Now running: echo 0 | sudo tee /proc/sys/kernel/randomize_va_space"
@@ -166,7 +166,7 @@ enable_address_randomization:
 
 clean:
 	@echo "Removing release, debug, asan, gtkdoc build dirs."
-	@for x in $(BUILDDIRS); do echo; rm -rf $$x/release $$x/debug $$x/asan $$x/generated_autocomplete.h; done
+	@for x in $(BUILDDIRS); do echo; rm -rf $${x}release $${x}debug $${x}asan $${x}generated_autocomplete.h; done
 	@rm -rf build/gtkdoc
 	@rm -rf xmq_browsing*
 

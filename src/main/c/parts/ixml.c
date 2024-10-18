@@ -121,6 +121,7 @@ void parse_ixml_term(XMQParseState *state);
 void parse_ixml_terminal(XMQParseState *state);
 void parse_ixml_whitespace(XMQParseState *state);
 
+void skip_comment(const char **i);
 void skip_encoded(const char **i);
 void skip_mark(const char **i);
 void skip_string(const char **i);
@@ -394,7 +395,7 @@ bool is_ixml_tmark_start(XMQParseState *state)
 
 bool is_ixml_whitespace_char(char c)
 {
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '{';
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '{' || c == '}';
 }
 
 bool is_ixml_whitespace_start(XMQParseState *state)
@@ -597,18 +598,17 @@ void parse_ixml_comment(XMQParseState *state)
 
     for (;;)
     {
-        char c = *(state->i);
         if (is_ixml_eob(state))
         {
             state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
             state->error_info = "comment is not closed";
             longjmp(state->error_handler, 1);
         }
-        if (c == '{')
+        if (*(state->i) == '{')
         {
             parse_ixml_comment(state);
         }
-        if (c == '}') break;
+        if (*(state->i) == '}') break;
         EAT(comment_inside, 1);
     }
     EAT(comment_stop, 1);
@@ -1163,6 +1163,21 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
     return true;
 }
 
+void skip_comment(const char **i)
+{
+    const char *j = *i;
+    ASSERT(*j == '{');
+    for (;;)
+    {
+        j++;
+        if (*j == '{') skip_comment(&j);
+        if (*j == '}') break;
+        if (*j == 0) return;
+    }
+    j++;
+    *i = j;
+}
+
 void skip_encoded(const char **i)
 {
     const char *j = *i;
@@ -1229,7 +1244,11 @@ void skip_tmark(const char **i)
 void skip_whitespace(const char **i)
 {
     const char *j = *i;
-    while (is_ixml_whitespace_char(*j)) j++;
+    while (is_ixml_whitespace_char(*j))
+    {
+        if (*j == '{') skip_comment(&j);
+        else j++;
+    }
     *i = j;
 }
 
