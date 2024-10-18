@@ -66,12 +66,13 @@ bool is_ixml_alias_start(XMQParseState *state);
 bool is_ixml_alt_start(XMQParseState *state);
 bool is_ixml_alt_end(char c);
 bool is_ixml_charset_start(XMQParseState *state);
-bool is_ixml_code_start(XMQParseState *state);
+int  is_ixml_code_start(XMQParseState *state);
 bool is_ixml_comment_start(XMQParseState *state);
 bool is_ixml_encoded_start(XMQParseState *state);
 bool is_ixml_factor_start(XMQParseState *state);
 bool is_ixml_group_start(XMQParseState *state);
 bool is_ixml_group_end(XMQParseState *state);
+bool is_ixml_hex_char(char c);
 bool is_ixml_hex_start(XMQParseState *state);
 bool is_ixml_insertion_start(XMQParseState *state);
 bool is_ixml_literal_start(XMQParseState *state);
@@ -82,6 +83,7 @@ bool is_ixml_naming_char(char c);
 bool is_ixml_naming_start(XMQParseState *state);
 bool is_ixml_nonterminal_start(XMQParseState *state);
 bool is_ixml_prolog_start(XMQParseState *state);
+bool is_ixml_range_start(XMQParseState *state);
 bool is_ixml_string_char(char c);
 bool is_ixml_string_start(XMQParseState *state);
 bool is_ixml_term_start(XMQParseState *state);
@@ -111,6 +113,7 @@ void parse_ixml_name(XMQParseState *state, const char **content_start, const cha
 void parse_ixml_naming(XMQParseState *state);
 void parse_ixml_nonterminal(XMQParseState *state);
 void parse_ixml_prolog(XMQParseState *state);
+void parse_ixml_range(XMQParseState *state);
 void parse_ixml_quoted(XMQParseState *state);
 void parse_ixml_rule(XMQParseState *state);
 void parse_ixml_string(XMQParseState *state, const char **content_start, const char **content_stop);
@@ -118,7 +121,12 @@ void parse_ixml_term(XMQParseState *state);
 void parse_ixml_terminal(XMQParseState *state);
 void parse_ixml_whitespace(XMQParseState *state);
 
-int peek_ixml_character(XMQParseState *state);
+void skip_encoded(const char **i);
+void skip_mark(const char **i);
+void skip_string(const char **i);
+void skip_tmark(const char **i);
+void skip_whitespace(const char **i);
+
 
 void add_yaep_grammar_rule(char mark, const char *name_start, const char *name_stop);
 
@@ -133,7 +141,7 @@ void do_ixml_option(XMQParseState *state);
 
 bool is_ixml_eob(XMQParseState *state)
 {
-    return state->i >= state->buffer_stop;
+    return state->i >= state->buffer_stop || *(state->i) == 0;
 }
 
 bool is_ixml_alias_start(XMQParseState *state)
@@ -151,6 +159,7 @@ bool is_ixml_alt_start(XMQParseState *state)
         c == '"' || // "string"
         c == '\'' || // 'string'
         c == '[' || // Charset
+        c == '~' || // Negative charset
         is_ixml_mark_char(c) || // @^-
         is_ixml_name_start(c);
 }
@@ -166,8 +175,8 @@ bool is_ixml_charset_start(XMQParseState *state)
 {
     const char *i = state->i;
 
-    if (is_ixml_tmark_char(*i)) i++;
-    while (is_ixml_whitespace_char(*i)) i++;
+    skip_tmark(&i);
+
     if (*i == '~') i++;
     while (is_ixml_whitespace_char(*i)) i++;
 
@@ -176,15 +185,15 @@ bool is_ixml_charset_start(XMQParseState *state)
     return false;
 }
 
-bool is_ixml_code_start(XMQParseState *state)
+int is_ixml_code_start(XMQParseState *state)
 {
     char a = *(state->i);
     char b = *(state->i+1);
     bool capital = (a >= 'A' && a <= 'Z');
-    if (!capital) return false;
+    if (!capital) return 0;
     bool letter = (b >= 'a' && b <= 'z');
-    if (!letter) return false;
-    return true;
+    if (!letter) return 1;
+    return 2;
 }
 
 bool is_ixml_comment_start(XMQParseState *state)
@@ -197,14 +206,11 @@ bool is_ixml_encoded_start(XMQParseState *state)
     // -encoded: (tmark, s)?, -"#", hex, s.
 
     const char *i = state->i;
+    skip_tmark(&i);
+
     char c = *i;
     if (c == '#') return true;
-    if (c != '^' && c != '-' && !is_ixml_whitespace_char(*i)) return false;
-    while (is_ixml_whitespace_char(*i))
-    {
-        i++;
-    }
-    return *i == '#';
+    return false;
 }
 
 bool is_ixml_factor_start(XMQParseState *state)
@@ -231,18 +237,26 @@ bool is_ixml_insertion_start(XMQParseState *state)
     return *(state->i) == '+';
 }
 
-bool is_ixml_hex_start(XMQParseState *state)
+bool is_ixml_hex_char(char c)
 {
-    char c = *(state->i);
     return
         (c >= 'A' && c <= 'F') ||
         (c >= 'a' && c <= 'f') ||
         (c >= '0' && c <= '9');
 }
 
+bool is_ixml_hex_start(XMQParseState *state)
+{
+    return is_ixml_hex_char(*(state->i));
+}
+
 bool is_ixml_literal_start(XMQParseState *state)
 {
-    return is_ixml_quoted_start(state) || is_ixml_encoded_start(state);
+    const char *i = state->i;
+    skip_tmark(&i);
+
+    char c = *i;
+    return c == '"' || c == '\'' || c == '#';
 }
 
 bool is_ixml_mark_char(char c)
@@ -286,6 +300,34 @@ bool is_ixml_prolog_start(XMQParseState *state)
     return !strncmp(state->i, "ixml", 4) && is_ixml_whitespace_char(*(state->i+4));
 }
 
+bool is_ixml_range_start(XMQParseState *state)
+{
+    // -range: from, s, -"-", s, to.
+    // @from: character.
+    // @to: character.
+    // -character: -'"', dchar, -'"';
+    //             -"'", schar, -"'";
+    //             "#", hex.
+
+    const char *j = state->i;
+    if (is_ixml_string_start(state))
+    {
+        skip_string(&j);
+        skip_whitespace(&j);
+        if (*j == '-') return true;
+        return false;
+    }
+    else if (is_ixml_encoded_start(state))
+    {
+        skip_encoded(&j);
+        skip_whitespace(&j);
+        if (*j == '-') return true;
+        return false;
+    }
+
+    return false;
+}
+
 bool is_ixml_string_char(char c)
 {
     // Detect "howdy "" there" or 'howdy '' there'
@@ -312,14 +354,9 @@ bool is_ixml_quoted_start(XMQParseState *state)
     //  -quoted: (tmark, s)?, string, s.
 
     const char *i = state->i;
+    skip_tmark(&i);
     char c = *i;
-    if (c == '"' || c == '\'') return true;
-    if (c != '^' && c != '-' && !is_ixml_whitespace_char(*i)) return false;
-    while (is_ixml_whitespace_char(*i))
-    {
-        i++;
-    }
-    return *i == '"' || *i  == '\'';
+    return c == '"' || c  == '\'';
 }
 
 bool is_ixml_rule_start(XMQParseState *state)
@@ -338,6 +375,7 @@ bool is_ixml_rule_end(char c)
 bool is_ixml_terminal_start(XMQParseState *state)
 {
     return
+        is_ixml_encoded_start(state) ||
         is_ixml_literal_start(state) ||
         is_ixml_charset_start(state);
 }
@@ -435,7 +473,7 @@ void parse_ixml_alt(XMQParseState *state)
         if (c != ',')
         {
             state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
-            state->error_info = "expected , here";
+            state->error_info = "expected , or . here";
             longjmp(state->error_handler, 1);
         }
         EAT(comma, 1);
@@ -514,12 +552,20 @@ void parse_ixml_charset(XMQParseState *state)
             longjmp(state->error_handler, 1);
         }
 
-        if (is_ixml_code_start(state))
+        else if (is_ixml_range_start(state))
         {
-            EAT(unicode_class, 2);
+            parse_ixml_range(state);
         }
-
-        if (is_ixml_string_start(state))
+        else if (is_ixml_encoded_start(state))
+        {
+            parse_ixml_encoded(state);
+        }
+        else if (is_ixml_code_start(state))
+        {
+            int num = is_ixml_code_start(state);
+            EAT(unicode_class, num);
+        }
+        else if (is_ixml_string_start(state))
         {
             const char *start, *stop;
             parse_ixml_string(state, &start, &stop);
@@ -533,6 +579,9 @@ void parse_ixml_charset(XMQParseState *state)
             state->error_info = "expected ; or |";
             longjmp(state->error_handler, 1);
         }
+
+        EAT(next_charset_part, 1);
+        parse_ixml_whitespace(state);
     }
 
     EAT(right_bracket, 1);
@@ -699,7 +748,7 @@ void parse_ixml_literal(XMQParseState *state)
 {
     IXML_STEP(literal,state);
 
-    ASSERT(is_ixml_quoted_start(state) || is_ixml_encoded_start(state));
+    ASSERT(is_ixml_literal_start(state));
 
     if (is_ixml_quoted_start(state))
     {
@@ -826,6 +875,49 @@ void parse_ixml_prolog(XMQParseState *state)
     EAT(prolog_stop, 1);
 
     IXML_DONE(prolog, state);
+}
+
+
+void parse_ixml_range(XMQParseState *state)
+{
+    IXML_STEP(range, state);
+    ASSERT(is_ixml_range_start(state));
+
+    if (is_ixml_string_start(state))
+    {
+        const char *start, *stop;
+        parse_ixml_string(state, &start, &stop);
+    }
+    else
+    {
+        parse_ixml_encoded(state);
+    }
+    parse_ixml_whitespace(state);
+
+    // This is guaranteed by the is range test in the assert.
+    ASSERT(*(state->i) == '-');
+    EAT(range_minus, 1);
+
+    parse_ixml_whitespace(state);
+
+    if (is_ixml_string_start(state))
+    {
+        const char *start, *stop;
+        parse_ixml_string(state, &start, &stop);
+    }
+    else if (is_ixml_encoded_start(state))
+    {
+        parse_ixml_encoded(state);
+    }
+    else
+    {
+        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+        state->error_info = "expected range ending with string or hex char";
+        longjmp(state->error_handler, 1);
+    }
+    parse_ixml_whitespace(state);
+
+    IXML_DONE(range, state);
 }
 
 void parse_ixml_quoted(XMQParseState *state)
@@ -982,6 +1074,10 @@ void parse_ixml_term(XMQParseState *state)
             {
                 EAT(plus, 1);
             }
+            parse_ixml_whitespace(state);
+
+            // sep
+            parse_ixml_factor(state);
         }
         parse_ixml_whitespace(state);
     }
@@ -1052,7 +1148,7 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
         if (state->i < state->buffer_stop)
         {
             state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
-            state->error_info = "unexpected end";
+            state->error_info = "failed to parse whole buffer";
             longjmp(state->error_handler, 1);
         }
     }
@@ -1065,6 +1161,76 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
 
     if (state->parse->done) state->parse->done(state);
     return true;
+}
+
+void skip_encoded(const char **i)
+{
+    const char *j = *i;
+    if (*j != '#') return;
+    j++;
+    while (is_ixml_hex_char(*j)) j++;
+    *i = j;
+}
+
+void skip_mark(const char **i)
+{
+    const char *j = *i;
+    char c = *j;
+    if (c == '^' || c == '-' || c == '@') // mark
+    {
+        j++;
+        while (is_ixml_whitespace_char(*j)) j++;
+    }
+    *i = j;
+}
+
+void skip_string(const char **i)
+{
+    const char *j = *i;
+    if (*j == '"') // mark
+    {
+        j++;
+        while (*j != '"')
+        {
+            if (*j == 0) return; // Ouch string not closed.
+            if (*j == '"' && *(j+1) == '"') j++;
+            j++;
+        }
+        // Move past the last "
+        j++;
+    }
+    else
+    if (*j == '\'') // mark
+    {
+        j++;
+        while (*j != '\'')
+        {
+            if (*j == 0) return; // Ouch string not closed.
+            if (*j == '\'' && *(j+1) == '\'') j++;
+            j++;
+        }
+        j++;
+    }
+    *i = j;
+}
+
+void skip_tmark(const char **i)
+{
+    const char *j = *i;
+    char c = *j;
+    if (c == '^' || c == '-') // tmark
+    {
+        j++;
+        while (is_ixml_whitespace_char(*j)) j++;
+    }
+    *i = j;
+}
+
+void skip_whitespace(const char **i)
+{
+    const char *j = *i;
+    while (is_ixml_whitespace_char(*j)) j++;
+    *i = j;
 }
 
 void add_yaep_grammar_rule(char mark, const char *name_start, const char *name_stop)
