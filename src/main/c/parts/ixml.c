@@ -1140,7 +1140,7 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
     state->col = 1;
     state->error_nr = XMQ_ERROR_NONE;
 
-    if (state->parse->init) state->parse->init(state);
+    if (state->parse && state->parse->init) state->parse->init(state);
 
     if (!setjmp(state->error_handler))
     {
@@ -1159,7 +1159,7 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
         return false;
     }
 
-    if (state->parse->done) state->parse->done(state);
+    if (state->parse && state->parse->done) state->parse->done(state);
     return true;
 }
 

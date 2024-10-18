@@ -152,7 +152,7 @@ test_debug:
 
 test_asan:
 	@echo "Running asan tests"
-	@if [ "$$(cat /proc/sys/kernel/randomize_va_space)" != "0" ]; then echo "Please disable address randomization for libasan to work!"; exit 1; fi
+	@if [ "$$(cat /proc/sys/kernel/randomize_va_space)" != "0" ]; then echo "Please disable address randomization for libasan to work! make disable_address_randomization"; exit 1; fi
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/testinternals ]; then echo "Run make first. $${x}asan/testinternals not found."; exit 1; fi ; $${x}asan/testinternals $(SILENCER) ; done
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/parts/testinternals ]; then echo "Run make first. $${x}asan/parts/testinternals not found."; exit 1; fi ; $${x}release/asan/testinternals $(SILENCER) ; ./tests/test.sh $${x}asan $${x}asan/test_output $(SILENCER) ; done
 

@@ -855,7 +855,7 @@ void xmqSetupPrintMemory(XMQOutputSettings *os, char **start, char **stop)
 XMQParseCallbacks *xmqNewParseCallbacks()
 {
     XMQParseCallbacks *callbacks = (XMQParseCallbacks*)malloc(sizeof(XMQParseCallbacks));
-    memset(callbacks, 0, sizeof(sizeof(XMQParseCallbacks)));
+    memset(callbacks, 0, sizeof(XMQParseCallbacks));
     return callbacks;
 }
 

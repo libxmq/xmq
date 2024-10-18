@@ -1522,7 +1522,6 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
             return true;
         }
 
-        printf("PRUTT %s\n", arg);
         return false;
         /*
 
