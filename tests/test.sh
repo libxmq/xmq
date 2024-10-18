@@ -32,6 +32,11 @@ do
     tests/test_ixml_error.sh "$PROG" "$OUTPUT" "$i" || (echo "Testing aborted" ; exit 1)
 done
 
+for i in tests/ixml_grammar_[0-9][0-9][0-9]_*.test
+do
+    tests/test_ixml_grammar.sh "$PROG" "$OUTPUT" "$i" || (echo "Testing aborted" ; exit 1)
+done
+
 for i in tests/[0-9][0-9][0-9]_*.test
 do
     tests/test_single.sh "$PROG" "$OUTPUT" "$i"

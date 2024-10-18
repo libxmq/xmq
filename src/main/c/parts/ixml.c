@@ -25,28 +25,28 @@
 
 #ifdef DEBUG_IXML_GRAMMAR
 #define IXML_STEP(name,state) {                 \
-    if (true) { \
+    if (xmq_trace_enabled_) {                                \
         char *tmp = xmq_quote_as_c(state->i, state->i+10); \
-        for (int i=0; i<state->depth; ++i) fprintf(stderr, "    "); \
-        fprintf(stderr, "dbg " #name " >%s...\n", tmp);      \
-        for (int i=0; i<state->depth; ++i) fprintf(stderr, "    "); \
-        fprintf(stderr, "{\n");      \
+        for (int i=0; i<state->depth; ++i) trace("    "); \
+        trace("dbg " #name " >%s...\n", tmp);       \
+        for (int i=0; i<state->depth; ++i) trace("    "); \
+        trace("{\n");      \
         state->depth++; \
         free(tmp); \
     } \
 }
 #define IXML_DONE(name,state) {                 \
-    if (true) { \
+    if (xmq_trace_enabled_) {                                \
         char *tmp = xmq_quote_as_c(state->i, state->i+10); \
         state->depth--; \
-        for (int i=0; i<state->depth; ++i) fprintf(stderr, "    "); \
-        fprintf(stderr, "}\n"); \
+        for (int i=0; i<state->depth; ++i) trace("    "); \
+        trace("}\n"); \
         free(tmp); \
     } \
 }
 
 #define EAT(name, num) { \
-    if (true) { \
+    if (xmq_trace_enabled_) { \
         char *tmp = xmq_quote_as_c(state->i, state->i+num);       \
         for (int i=0; i<state->depth; ++i) fprintf(stderr, "    "); \
         fprintf(stderr, "eat %s %s\n", #name, tmp);       \
@@ -72,7 +72,7 @@ bool is_ixml_factor_start(XMQParseState *state);
 bool is_ixml_hex_start(XMQParseState *state);
 bool is_ixml_insertion_start(XMQParseState *state);
 bool is_ixml_literal_start(XMQParseState *state);
-bool is_ixml_mark(char c);
+bool is_ixml_mark_char(char c);
 bool is_ixml_name_follower(char c);
 bool is_ixml_name_start(char c);
 bool is_ixml_naming_char(char c);
@@ -118,6 +118,13 @@ int peek_ixml_character(XMQParseState *state);
 
 void add_yaep_grammar_rule(char mark, const char *name_start, const char *name_stop);
 
+void do_ixml(XMQParseState *state);
+void do_ixml_comment(XMQParseState *state, const char *start, const char *stop);
+void do_ixml_rule(XMQParseState *state, const char *name_start, const char *name_stop);
+void do_ixml_alt(XMQParseState *state);
+void do_ixml_nonterminal(XMQParseState *state, const char *name_start, char *name_stop);
+void do_ixml_option(XMQParseState *state);
+
 //////////////////////////////////////////////////////////////////////////////////////
 
 bool is_ixml_eob(XMQParseState *state)
@@ -138,7 +145,7 @@ bool is_ixml_alt_start(char c)
         c == '(' || // Group ( "svej" | "hojt" )
         c == '"' || // "string"
         c == '\'' || // 'string'
-        is_ixml_mark(c) || // @^-
+        is_ixml_mark_char(c) || // @^-
         is_ixml_name_start(c);
 }
 
@@ -209,7 +216,7 @@ bool is_ixml_literal_start(XMQParseState *state)
     return is_ixml_quoted_start(state) || is_ixml_encoded_start(state);
 }
 
-bool is_ixml_mark(char c)
+bool is_ixml_mark_char(char c)
 {
     return
         c == '@' || // Add as attribute.
@@ -230,7 +237,7 @@ bool is_ixml_name_start(char c)
 
 bool is_ixml_naming_char(char c)
 {
-    return is_ixml_name_start(c) || is_ixml_mark(c);
+    return is_ixml_name_start(c) || is_ixml_mark_char(c);
 }
 
 bool is_ixml_naming_start(XMQParseState *state)
@@ -289,10 +296,7 @@ bool is_ixml_quoted_start(XMQParseState *state)
 bool is_ixml_rule_start(XMQParseState *state)
 {
 //  rule: (mark, s)?, name,
-    char c = *(state->i);
-
-    if (is_ixml_mark(c)) return true;
-    if (is_ixml_name_start(c)) return true;
+    if (is_ixml_naming_start(state)) return true;
 
     return false;
 }
@@ -628,7 +632,7 @@ void parse_ixml_name(XMQParseState *state, const char **name_start, const char *
     }
     *name_stop = state->i;
 
-    fprintf(stderr, "name >%.*s<\n", (int)(*name_stop-*name_start), *name_start);
+//    fprintf(stderr, "name >%.*s<\n", (int)(*name_stop-*name_start), *name_start);
     IXML_DONE(name, state);
 }
 
@@ -638,13 +642,19 @@ void parse_ixml_naming(XMQParseState *state)
 
     ASSERT(is_ixml_naming_start(state));
 
-    if (is_ixml_mark(*(state->i)))
+    if (is_ixml_mark_char(*(state->i)))
     {
         EAT(naming_mark, 1);
     }
 
     parse_ixml_whitespace(state);
 
+    if (!is_ixml_name_start(*(state->i)))
+    {
+        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+        state->error_info = "expected a name";
+        longjmp(state->error_handler, 1);
+    }
     const char *name_start;
     const char *name_stop;
     parse_ixml_name(state, &name_start, &name_stop);
@@ -902,7 +912,7 @@ int peek_ixml_code(XMQParseState *state)
 }
 
 
-bool xmq_tokenize_buffer_ixml(XMQParseState *state, const char *start, const char *stop)
+bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *stop)
 {
     if (state->magic_cookie != MAGIC_COOKIE)
     {
@@ -953,7 +963,8 @@ bool xmq_parse_ixml_grammar(struct grammar *g,
                             int *ambiguous,
                             XMQDoc *doq,
                             const char *start,
-                            const char *stop)
+                            const char *stop,
+                            bool build_xml_of_ixml)
 {
     return false;
 }

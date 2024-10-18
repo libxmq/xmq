@@ -746,11 +746,25 @@ void xmqSetVerbose(bool e);
 void xmqSetDebug(bool e);
 
 /**
+    xmqSetTrace:
+
+    Enable/Disable tracing.
+*/
+void xmqSetTrace(bool e);
+
+/**
    xmqDebugging:
 
    Return whether debugging is enabled or not.
 */
 bool xmqDebugging();
+
+/**
+   xmqTracing:
+
+   Return whether tracing is enabled or not.
+*/
+bool xmqTracing();
 
 /**
     xmqParseBufferWithType:

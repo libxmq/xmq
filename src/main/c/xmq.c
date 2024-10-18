@@ -138,7 +138,8 @@ bool xmq_parse_ixml_grammar(struct grammar *g,
                             int *ambiguous,
                             XMQDoc *doq,
                             const char *start,
-                            const char *stop);
+                            const char *stop,
+                            bool build_xml_of_ixml);
 const char *xml_element_type_to_string(xmlElementType type);
 const char *indent_depth(int i);
 void free_indent_depths();
@@ -1184,6 +1185,16 @@ void xmqSetDebug(bool e)
 bool xmqDebugging()
 {
     return xmq_debug_enabled_;
+}
+
+void xmqSetTrace(bool e)
+{
+    xmq_trace_enabled_ = e;
+}
+
+bool xmqTracing()
+{
+    return xmq_trace_enabled_;
 }
 
 void xmqSetVerbose(bool e)
@@ -4086,7 +4097,8 @@ bool xmq_parse_ixml_grammar(struct grammar *g,
                             int *ambiguous,
                             XMQDoc *doq,
                             const char *start,
-                            const char *stop)
+                            const char *stop,
+                            bool build_xml_of_ixml)
 {
     bool rc = true;
     if (!stop) stop = start+strlen(start);
@@ -4097,12 +4109,13 @@ bool xmq_parse_ixml_grammar(struct grammar *g,
 
     XMQParseState *state = xmqNewParseState(parse, os);
     state->doq = doq;
+    state->build_xml_of_ixml = build_xml_of_ixml;
 
     xmqSetStateSourceName(state, doq->source_name_);
 
     push_stack(state->element_stack, doq->docptr_.xml);
 
-    xmq_tokenize_buffer_ixml(state, start, stop);
+    xmq_parse_buffer_ixml(state, start, stop);
 
     if (xmqStateErrno(state))
     {

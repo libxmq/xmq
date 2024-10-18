@@ -247,6 +247,7 @@ struct XMQParseState
 
     // When debugging parsing of ixml, track indentation of depth here.
     int depth;
+    bool build_xml_of_ixml;
 };
 
 /**

@@ -166,6 +166,10 @@ struct XMQCliCommand
     const char *ixml_yaep; // Yaep grammar source to be used.
     const char *ixml_ixml; // IXML grammar source to be used.
     const char *ixml_filename; // Where the ixml grammar was read from.
+    bool build_xml_of_ixml; // Generate xml directly from ixml.
+    // xmq --ixml=grammar.ixml --xml-of-ixml # This will print the grammar as xmq.
+    // xmq --ixml=ixml.ixml grammar.ixml # This will print the same grammar as xmq,
+    // but uses the ixml early parser instead of the hand coded parser.
     xmlDocPtr   node_doc;
     xmlNodePtr  node_content; // Tree content to replace something.
     XMQContentType in_format;
@@ -193,6 +197,7 @@ struct XMQCliCommand
     bool print_version;
     bool debug;
     bool verbose;
+    bool trace;
     int  add_indent;
     bool compact;
     bool escape_newlines;
@@ -293,6 +298,7 @@ void cmd_unload(XMQCliCommand *command);
 const char *content_type_to_string(XMQContentType ct);
 const char *tokenize_type_to_string(XMQCliTokenizeType type);
 void debug_(const char* fmt, ...);
+void trace_(const char* fmt, ...);
 void delete_all_entities(XMQDoc *doq, xmlNode *node, const char *entity);
 void delete_entities(XMQDoc *doq, const char *entity);
 bool delete_entity(XMQCliCommand *command);
@@ -369,6 +375,18 @@ bool debug_enabled__ = false;
 void debug_(const char* fmt, ...)
 {
     if (debug_enabled__) {
+        va_list args;
+        va_start(args, fmt);
+        vfprintf(stderr, fmt, args);
+        va_end(args);
+    }
+}
+
+bool trace_enabled__ = false;
+
+void trace_(const char* fmt, ...)
+{
+    if (trace_enabled__) {
         va_list args;
         va_start(args, fmt);
         vfprintf(stderr, fmt, args);
@@ -1368,6 +1386,19 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->no_input = true;
         return true;
     }
+    if (!strcmp(arg, "--xml-of-ixml"))
+    {
+        command->build_xml_of_ixml = true;
+        return true;
+    }
+    if (!strcmp(arg, "--trace"))
+    {
+        command->trace = true;
+        trace_enabled__ = true;
+        debug_enabled__ = true;
+        verbose_enabled__ = true;
+        return true;
+    }
     if (!strcmp(arg, "--debug"))
     {
         command->debug = true;
@@ -1796,7 +1827,10 @@ bool cmd_load(XMQCliCommand *command)
         XMQDoc *doq = xmqNewDoc();
         xmqSetDocSourceName(doq, command->ixml_filename);
 
-        bool ok = xmq_parse_ixml_grammar(g, &root, &ambiguous, doq, command->ixml_ixml, NULL);
+        bool ok = xmq_parse_ixml_grammar(g, &root, &ambiguous, doq,
+                                         command->ixml_ixml,
+                                         NULL,
+                                         command->build_xml_of_ixml);
 
         if (!ok)
         {
@@ -3887,8 +3921,10 @@ int main(int argc, const char **argv)
         return 1;
     }
 
+    trace_enabled__ = load_command->trace;
     debug_enabled__ = load_command->debug;
     verbose_enabled__ = load_command->verbose || debug_enabled__;
+    xmqSetTrace(trace_enabled__);
     xmqSetDebug(debug_enabled__);
     xmqSetVerbose(verbose_enabled__);
 

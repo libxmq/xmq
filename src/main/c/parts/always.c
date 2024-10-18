@@ -45,6 +45,18 @@ void debug__(const char* fmt, ...)
     }
 }
 
+bool xmq_trace_enabled_ = false;
+
+void trace__(const char* fmt, ...)
+{
+    if (xmq_trace_enabled_) {
+        va_list args;
+        va_start(args, fmt);
+        vfprintf(stderr, fmt, args);
+        va_end(args);
+    }
+}
+
 #ifdef PLATFORM_WINAPI
 char *strndup(const char *s, size_t l)
 {

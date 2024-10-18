@@ -29,13 +29,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct grammar;
 struct yaep_tree_node;
 
-bool xmq_tokenize_buffer_ixml(XMQParseState *state, const char *start, const char *stop);
+bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *stop);
 bool xmq_parse_ixml_grammar(struct grammar *g,
                             struct yaep_tree_node **root,
                             int *ambiguous,
                             XMQDoc *doq,
                             const char *start,
-                            const char *stop);
+                            const char *stop,
+                            bool build_xml_of_ixml);
 
 #define IXML_MODULE
 
