@@ -45,6 +45,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifdef PLATFORM_WINAPI
 #include<windows.h>
 #include<conio.h>
+char *strndup(const char *s, size_t l);
 #else
 #include<signal.h>
 #include<sys/ioctl.h>
