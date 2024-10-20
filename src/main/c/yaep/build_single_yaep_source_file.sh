@@ -24,7 +24,7 @@ EOF
 
 cat yaep_full_source.c | \
     sed 's/__cplusplus/NOT_DEFINED/g' | \
-    sed 's/extern //g' | \
+    sed 's/^extern //g' | \
     sed 's/^#include "/\/\/include "/g' | \
     sed 's/^#include"/\/\/include"/g' | \
     sed 's/LOAD_YAEP/#include\"parts\/yaep.h\"/g' | \

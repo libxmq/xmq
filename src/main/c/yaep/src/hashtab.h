@@ -27,7 +27,7 @@
 /* FILE NAME:   hashtab.h
 
    TITLE:       Include file of package for work with variable length
-                hash tables 
+                hash tables
 
    DESCRIPTION: This header file contains type definitions and ANSI C
        prototype definitions of the package functions and definition of
@@ -86,12 +86,12 @@ typedef struct
 /* The following variable is used for debugging. Its value is number
    of all calls of `find_hash_table_entry' for all hash tables. */
 
-extern int all_searches;
+//extern int all_searches;
 
 /* The following variable is used for debugging. Its value is number
    of collisions fixed for time of work with all hash tables. */
 
-extern int all_collisions;
+//extern int all_collisions;
 
 /* The prototypes of the package functions. */
 
@@ -134,7 +134,7 @@ get_collisions (hash_table_t htab)
 static inline int
 get_all_searches (void)
 {
-  return all_searches;
+    return 0; // all_searches; TODO FREDRIK
 }
 
 /* The following function returns number of occurred collisions
@@ -142,7 +142,7 @@ get_all_searches (void)
 static inline int
 get_all_collisions (void)
 {
-  return all_collisions;
+    return 0; // all_collisions; // TODO FREDRIK
 }
 
 extern int hash_table_collision_percentage (hash_table_t htab);
@@ -201,7 +201,7 @@ public:
   void empty (void);
 
   hash_table_entry_t *find_entry (hash_table_entry_t element, int reserve);
-  
+
   void remove_element_from_entry (hash_table_entry_t element);
 
   /* The following function returns current size of given hash
@@ -219,7 +219,7 @@ public:
     {
       return number_of_elements - number_of_deleted_elements;
     }
-  
+
   /* The following function returns number of searches during all work
      with given hash table. */
 
@@ -238,7 +238,7 @@ public:
 
   /* The following function returns number of searches
      during all work with all hash tables. */
-  
+
   static inline int get_all_searches (void)
     {
       return all_searches;
@@ -246,7 +246,7 @@ public:
 
   /* The following function returns number of occurred collisions
      during all work with all hash tables. */
-  
+
   static inline int get_all_collisions (void)
     {
       return all_collisions;
