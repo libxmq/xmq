@@ -115,7 +115,7 @@ void parse_ixml_naming(XMQParseState *state,
                        char *mark,
                        char **name,
                        char **alias);
-void parse_ixml_nonterminal(XMQParseState *state, IXMLNonTerminal *nt);
+void parse_ixml_nonterminal(XMQParseState *state);
 void parse_ixml_prolog(XMQParseState *state);
 void parse_ixml_range(XMQParseState *state);
 void parse_ixml_quoted(XMQParseState *state);
@@ -146,7 +146,8 @@ IXMLRule *new_ixml_rule();
 void free_ixml_rule(IXMLRule *r);
 IXMLTerminal *new_ixml_terminal();
 void free_ixml_terminal(IXMLTerminal *t);
-
+IXMLNonTerminal *new_ixml_nonterminal();
+void free_ixml_nonterminal(IXMLNonTerminal *t);
 //////////////////////////////////////////////////////////////////////////////////////
 
 bool is_ixml_eob(XMQParseState *state)
@@ -691,8 +692,13 @@ void parse_ixml_factor(XMQParseState *state)
     }
     else if (is_ixml_nonterminal_start(state))
     {
-        IXMLNonTerminal nt;
-        parse_ixml_nonterminal(state, &nt);
+        state->ixml_nonterminal = new_ixml_nonterminal();
+
+        parse_ixml_nonterminal(state);
+
+        push_back_vector(state->ixml_rule->rhs, state->ixml_nonterminal);
+        free(state->ixml_terminal);
+        state->ixml_terminal = NULL;
     }
     else  if (is_ixml_insertion_start(state))
     {
@@ -866,11 +872,12 @@ void parse_ixml_naming(XMQParseState *state,
     IXML_DONE(naming, state);
 }
 
-void parse_ixml_nonterminal(XMQParseState *state, IXMLNonTerminal *nt)
+void parse_ixml_nonterminal(XMQParseState *state)
 {
     IXML_STEP(nonterminal, state);
     ASSERT(is_ixml_naming_start(state));
 
+    IXMLNonTerminal *nt = state->ixml_nonterminal;
     parse_ixml_naming(state, &nt->mark, &nt->name, &nt->alias);
 
     IXML_DONE(nonterminal, state);
@@ -1365,6 +1372,13 @@ IXMLTerminal *new_ixml_terminal()
 {
     IXMLTerminal *t = (IXMLTerminal*)calloc(1, sizeof(IXMLTerminal));
     t->type = IXML_TERMINAL;
+    return t;
+}
+
+IXMLNonTerminal *new_ixml_nonterminal()
+{
+    IXMLNonTerminal *t = (IXMLNonTerminal*)calloc(1, sizeof(IXMLNonTerminal));
+    t->type = IXML_NON_TERMINAL;
     return t;
 }
 
