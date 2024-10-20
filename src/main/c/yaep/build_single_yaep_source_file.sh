@@ -24,6 +24,7 @@ EOF
 
 cat yaep_full_source.c | \
     sed 's/__cplusplus/NOT_DEFINED/g' | \
+    sed 's/extern //g' | \
     sed 's/^#include "/\/\/include "/g' | \
     sed 's/^#include"/\/\/include"/g' | \
     sed 's/LOAD_YAEP/#include\"parts\/yaep.h\"/g' | \
@@ -34,11 +35,10 @@ mv tt.c yaep_full_source.c
 
 cat src/yaep.h  |  \
     sed 's/__cplusplus/NOT_DEFINED/g' | \
+    sed 's/extern //g' | \
     sed 's/__YAEP__/YAEP_H/g' |  \
-    sed 's|^.endif.*YAEP_H.*|#endif // YAEP_H|g'  \
+    sed 's|^.endif.*YAEP_H.*|#define YAEP_MODULE\n#endif // YAEP_H|g'  \
     > yaep_full_source.h
-
-echo "#define YAEP_MODULE" >> yaep_full_source.h
 
 cp yaep_full_source.h ../parts/yaep.h
 cp yaep_full_source.c ../parts/yaep.c

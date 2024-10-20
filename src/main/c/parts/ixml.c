@@ -40,8 +40,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 #ifdef IXML_MODULE
 
-#define INLINE __attribute__((always_inline))
-
 #define DEBUG_IXML_GRAMMAR
 
 #ifdef DEBUG_IXML_GRAMMAR

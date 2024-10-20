@@ -58,7 +58,7 @@
 #ifdef __GNUC__
 #define MAKE_INLINE 1
 #ifndef INLINE
-#define INLINE __inline__
+#define INLINE
 #endif
 #else /* #ifdef __GNUC__ */
 #if MAKE_INLINE

@@ -44,7 +44,7 @@
 #define YAEP_ALLOCATE_H_
 
 #ifdef NOT_DEFINED
-extern "C"
+"C"
 {
 #endif
 
@@ -380,32 +380,32 @@ typedef struct
 /* The following variable is used for debugging. Its value is number
    of all calls of `find_hash_table_entry' for all hash tables. */
 
-extern int all_searches;
+int all_searches;
 
 /* The following variable is used for debugging. Its value is number
    of collisions fixed for time of work with all hash tables. */
 
-extern int all_collisions;
+int all_collisions;
 
 /* The prototypes of the package functions. */
 
-extern hash_table_t create_hash_table(
+hash_table_t create_hash_table(
   YaepAllocator * allocator, size_t size, unsigned int ( *hash_function )( hash_table_entry_t el_ptr ), int ( *eq_function )( hash_table_entry_t el1_ptr, hash_table_entry_t el2_ptr )
 );
 
-extern void empty_hash_table (hash_table_t htab);
+void empty_hash_table (hash_table_t htab);
 
-extern void delete_hash_table (hash_table_t htab);
+void delete_hash_table (hash_table_t htab);
 
-extern hash_table_entry_t *find_hash_table_entry
+hash_table_entry_t *find_hash_table_entry
   (hash_table_t htab, hash_table_entry_t element, int reserve);
 
-extern void remove_element_from_hash_table_entry (hash_table_t htab,
+void remove_element_from_hash_table_entry (hash_table_t htab,
                                                   hash_table_entry_t element);
 
-extern size_t hash_table_size (hash_table_t htab);
+size_t hash_table_size (hash_table_t htab);
 
-extern size_t hash_table_elements_number (hash_table_t htab);
+size_t hash_table_elements_number (hash_table_t htab);
 
 /* The following function returns number of searches during all work
    with given hash table. */
@@ -439,9 +439,9 @@ get_all_collisions (void)
   return all_collisions;
 }
 
-extern int hash_table_collision_percentage (hash_table_t htab);
+int hash_table_collision_percentage (hash_table_t htab);
 
-extern int all_hash_table_collision_percentage (void);
+int all_hash_table_collision_percentage (void);
 
 #else /* #ifndef NOT_DEFINED */
 
@@ -881,11 +881,11 @@ typedef struct
    Remember that they are internal functions - all work with OS is
    executed through the macros. */
 
-extern void _OS_create_function (os_t *os, size_t initial_segment_length);
-extern void _OS_delete_function (os_t *os);
-extern void _OS_empty_function (os_t *os);
-extern void _OS_add_string_function (os_t *os, const char *str);
-extern void _OS_expand_memory (os_t *os, size_t additional_length);
+void _OS_create_function (os_t *os, size_t initial_segment_length);
+void _OS_delete_function (os_t *os);
+void _OS_empty_function (os_t *os);
+void _OS_add_string_function (os_t *os, const char *str);
+void _OS_expand_memory (os_t *os, size_t additional_length);
 
 #else /* #ifndef NOT_DEFINED */
 
@@ -1372,9 +1372,9 @@ typedef struct
    Remember that they are internal functions - all work with VLO is
    executed through the macros. */
 
-extern void _VLO_tailor_function (vlo_t *vlo);
-extern void _VLO_add_string_function (vlo_t *vlo, const char *str);
-extern void _VLO_expand_memory (vlo_t *vlo, size_t additional_length);
+void _VLO_tailor_function (vlo_t *vlo);
+void _VLO_add_string_function (vlo_t *vlo, const char *str);
+void _VLO_expand_memory (vlo_t *vlo, size_t additional_length);
 
 #else /* #ifndef NOT_DEFINED */
 
@@ -2388,7 +2388,7 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 #ifdef __GNUC__
 #define MAKE_INLINE 1
 #ifndef INLINE
-#define INLINE __inline__
+#define INLINE
 #endif
 #else /* #ifdef __GNUC__ */
 #if MAKE_INLINE
@@ -9056,9 +9056,9 @@ static int anode_cost;
 static char *slhs;
 
 /* Forward declarations. */
-extern int yyerror (const char *str);
-extern int yylex (void);
-extern int yyparse (void);
+int yyerror (const char *str);
+int yylex (void);
+int yyparse (void);
 
 
 #line 159 "y.tab.c"
@@ -9090,7 +9090,7 @@ extern int yyparse (void);
 # define YYDEBUG 0
 #endif
 #if YYDEBUG
-extern int yydebug;
+int yydebug;
 #endif
 
 /* Token kinds.  */
@@ -9140,7 +9140,7 @@ typedef union YYSTYPE YYSTYPE;
 #endif
 
 
-extern YYSTYPE yylval;
+YYSTYPE yylval;
 
 
 int yyparse (void);
