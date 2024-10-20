@@ -7596,8 +7596,8 @@ static vlo_t *tnodes_vlo;
 static struct yaep_tree_node *
 prune_to_minimal (struct yaep_tree_node *node, int *cost)
 {
-  struct yaep_tree_node *child, *alt, *next_alt, *result;
-  int i, min_cost;
+  struct yaep_tree_node *child, *alt, *next_alt, *result = NULL;
+  int i, min_cost = INT_MAX;
 
   assert (node != NULL);
   switch (node->type)
@@ -7656,7 +7656,7 @@ prune_to_minimal (struct yaep_tree_node *node, int *cost)
 static void
 traverse_pruned_translation (struct yaep_tree_node *node)
 {
-  struct yaep_tree_node *child, *alt;
+  struct yaep_tree_node *child;
   hash_table_entry_t *entry;
   int i;
 
@@ -7764,7 +7764,7 @@ make_parse (int *ambiguous_p)
   struct yaep_tree_node *parent_anode, *anode, root_anode;
   int parent_disp;
   int saved_one_parse_p;
-  struct yaep_tree_node **term_node_array;
+  struct yaep_tree_node **term_node_array = NULL;
 #ifndef __cplusplus
   vlo_t stack, orig_states;
 #else
