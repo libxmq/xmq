@@ -775,6 +775,7 @@ void parse_ixml_hex(XMQParseState *state, int *value)
     const char *stop = state->i;
     char *hex = strndup(start, stop-start);
     *value = (int)strtol(hex, NULL, 16);
+    free(hex);
 
     IXML_DONE(hex, state);
 }
@@ -1031,9 +1032,9 @@ void parse_ixml_rule(XMQParseState *state)
     state->ixml_rule = rule;
 
     parse_ixml_naming(state,
-                      &rule->rule_name.mark,
-                      &rule->rule_name.name,
-                      &rule->rule_name.alias);
+                      &rule->rule_name->mark,
+                      &rule->rule_name->name,
+                      &rule->rule_name->alias);
 
     parse_ixml_whitespace(state);
 
@@ -1248,8 +1249,8 @@ const char *ixml_to_yaep_read_rule(const char ***rhs,
 {
     if (yaep_j_ >= yaep_state_->ixml_rules->size) return NULL;
     IXMLRule *rule = (IXMLRule*)element_at_vector(yaep_state_->ixml_rules, yaep_j_);
-    *abs_node = rule->rule_name.name;
-    if (rule->rule_name.alias) *abs_node = rule->rule_name.alias;
+    *abs_node = rule->rule_name->name;
+    if (rule->rule_name->alias) *abs_node = rule->rule_name->alias;
     size_t num_rhs = rule->rhs->size;
     if (yaep_tmp_rhs_) free(yaep_tmp_rhs_);
     yaep_tmp_rhs_ = (char**)calloc(num_rhs+1, sizeof(char*));
@@ -1281,7 +1282,7 @@ const char *ixml_to_yaep_read_rule(const char ***rhs,
     *transl = yaep_tmp_transl_;
     *cost = 0;
     yaep_j_++;
-    return rule->rule_name.name;
+    return rule->rule_name->name;
 }
 
 bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *stop, struct grammar *g)
@@ -1364,6 +1365,12 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
 
     if (yaep_tmp_rhs_) free(yaep_tmp_rhs_);
     if (yaep_tmp_transl_) free(yaep_tmp_transl_);
+
+    for (size_t i = 0; i < state->ixml_rules->size; ++i)
+    {
+        IXMLRule *r = (IXMLRule*)element_at_vector(state->ixml_rules, i);
+        free_ixml_rule(r);
+    }
 
     return true;
 }
@@ -1464,8 +1471,19 @@ void add_yaep_grammar_rule(char mark, const char *name_start, const char *name_s
 IXMLRule *new_ixml_rule()
 {
     IXMLRule *r = (IXMLRule*)calloc(1, sizeof(IXMLRule));
+    r->rule_name = new_ixml_nonterminal();
     r->rhs = new_vector();
     return r;
+}
+
+void free_ixml_rule(IXMLRule *r)
+{
+    if (r->rule_name) free_ixml_nonterminal(r->rule_name);
+    r->rule_name = NULL;
+    free_vector_elements(r->rhs);
+    free_vector(r->rhs);
+    r->rhs = NULL;
+    free(r);
 }
 
 IXMLTerminal *new_ixml_terminal()
@@ -1480,6 +1498,13 @@ IXMLNonTerminal *new_ixml_nonterminal()
     IXMLNonTerminal *t = (IXMLNonTerminal*)calloc(1, sizeof(IXMLNonTerminal));
     t->type = IXML_NON_TERMINAL;
     return t;
+}
+
+void free_ixml_nonterminal(IXMLNonTerminal *nt)
+{
+    if (nt->name) free(nt->name);
+    nt->name = NULL;
+    free(nt);
 }
 
 #else

@@ -34,6 +34,7 @@ typedef struct Vector Vector;
 
 Vector *new_vector();
 void free_vector(Vector *v);
+void free_vector_elements(Vector *v);
 void push_back_vector(Vector *v, void *);
 void *element_at_vector(Vector *v, size_t i);
 

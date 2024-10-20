@@ -1919,6 +1919,8 @@ bool cmd_load(XMQCliCommand *command)
             return 1;
         }
 
+        xmqFreeDoc(doq);
+
         xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
 
         print_yaep_node(new_doc, NULL, root, 0, 0);

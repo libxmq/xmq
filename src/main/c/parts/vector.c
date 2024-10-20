@@ -49,6 +49,19 @@ void free_vector(Vector *vector)
     free(vector);
 }
 
+void free_vector_elements(Vector *v)
+{
+    for (size_t i = 0; i < v->size; ++i)
+    {
+        void *e = v->elements[i];
+        if (e)
+        {
+            free(e);
+            v->elements[i] = 0;
+        }
+    }
+}
+
 void push_back_vector(Vector *vector, void *data)
 {
     assert(vector);

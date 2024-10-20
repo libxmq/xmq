@@ -1698,23 +1698,14 @@ void xmqFreeParseState(XMQParseState *state)
 {
     if (!state) return;
 
-    /*
-    for (size_t i = 0; i < state->ixml_rules->size; ++i)
-    {
-        free(element_at_vector(state->ixml_rules, i));
-    }
     if (state->ixml_rules) free_vector(state->ixml_rules);
-    for (size_t i = 0; i < state->ixml_terminals->size; ++i)
-    {
-        free(element_at_vector(state->ixml_terminals,i));
-    }
+    state->ixml_rules = NULL;
     if (state->ixml_terminals) free_vector(state->ixml_terminals);
     state->ixml_terminals = NULL;
     hashmap_free(state->ixml_terminals_map);
     state->ixml_terminals_map = NULL;
     free_stack(state->ixml_rule_stack);
     state->ixml_rule_stack = NULL;
-    */
     free(state->source_name);
     state->source_name = NULL;
     free(state->generated_error_msg);

@@ -221,7 +221,7 @@ typedef union IXMLTerm IXMLTerm;
 
 struct IXMLRule
 {
-    IXMLNonTerminal rule_name;
+    IXMLNonTerminal *rule_name;
     Vector *rhs;
 };
 typedef struct IXMLRule IXMLRule;
