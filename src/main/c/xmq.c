@@ -4139,7 +4139,7 @@ bool xmq_parse_ixml_grammar(struct grammar *g,
 
     push_stack(state->element_stack, doq->docptr_.xml);
 
-    xmq_parse_buffer_ixml(state, start, stop);
+    xmq_parse_buffer_ixml(state, start, stop, g);
 
     if (xmqStateErrno(state))
     {

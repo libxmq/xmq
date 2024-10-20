@@ -1897,6 +1897,39 @@ bool cmd_load(XMQCliCommand *command)
             fprintf(stderr, "%s\n", xmqDocError(doq));
             exit(1);
         }
+
+        if (command->in == NULL)
+        {
+            return true;
+        }
+
+        input = load_file_into_buffer(command->in);
+
+        int rc = yaep_parse (g,
+                             read_token,
+                             syntax_error,
+                             NULL,
+                             NULL,
+                             &root,
+                             &ambiguous);
+
+        if (rc)
+        {
+            printf("xmq: could not parse input using ixml/yaep grammar: %s\n", yaep_error_message(g));
+            return 1;
+        }
+
+        xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
+
+        print_yaep_node(new_doc, NULL, root, 0, 0);
+
+        xmqSetImplementationDoc(command->env->doc, new_doc);
+
+        yaep_free_grammar (g);
+
+        const char *from = "stdin";
+        if (command->in) from = command->in;
+        verbose_("(xmq) cmd-load-ixml %zu bytes from %s\n", xmqGetOriginalSize(command->env->doc), from);
     }
     else if (command->ixml_yaep != NULL)
     {

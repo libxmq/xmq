@@ -1,3 +1,23 @@
+/* libxmq - Copyright (C) 2024 Fredrik Öhrström (spdx: MIT)
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 #ifndef BUILDING_XMQ
 
@@ -1017,7 +1037,6 @@ void parse_ixml_rule(XMQParseState *state)
                       &rule->rule_name.name,
                       &rule->rule_name.alias);
 
-    printf("PRUTT >%s<\n", rule->rule_name.name);
     parse_ixml_whitespace(state);
 
     char c = *(state->i);
@@ -1201,7 +1220,73 @@ void parse_ixml_whitespace(XMQParseState *state)
     IXML_DONE(ws, state);
 }
 
-bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *stop)
+static __thread XMQParseState *yaep_state_ = NULL;
+static __thread char **yaep_tmp_rhs_ = NULL;
+static __thread int *yaep_tmp_transl_ = NULL;
+static __thread size_t yaep_i_ = 0;
+static __thread size_t yaep_j_ = 0;
+
+const char *ixml_to_yaep_read_terminal(int *code);
+
+const char *ixml_to_yaep_read_terminal(int *code)
+{
+    if (yaep_i_ >= yaep_state_->ixml_terminals->size) return NULL;
+    IXMLTerminal *t = element_at_vector(yaep_state_->ixml_terminals, yaep_i_);
+    const char *name = t->name;
+    *code = t->code;
+    yaep_i_++;
+    return name;
+}
+
+const char *ixml_to_yaep_read_rule(const char ***rhs,
+                                   const char **abs_node,
+                                   int *cost,
+                                   int **transl);
+
+const char *ixml_to_yaep_read_rule(const char ***rhs,
+                                   const char **abs_node,
+                                   int *cost,
+                                   int **transl)
+{
+    if (yaep_j_ >= yaep_state_->ixml_rules->size) return NULL;
+    IXMLRule *rule = (IXMLRule*)element_at_vector(yaep_state_->ixml_rules, yaep_j_);
+    *abs_node = rule->rule_name.name;
+    if (rule->rule_name.alias) *abs_node = rule->rule_name.alias;
+    size_t num_rhs = rule->rhs->size;
+    if (yaep_tmp_rhs_) free(yaep_tmp_rhs_);
+    yaep_tmp_rhs_ = calloc(num_rhs+1, sizeof(char*));
+    if (yaep_tmp_transl_) free(yaep_tmp_transl_);
+    yaep_tmp_transl_ = calloc(num_rhs+1, sizeof(char*));
+    for (size_t i = 0; i < num_rhs; ++i)
+    {
+        yaep_tmp_transl_[i] = (int)i;
+        IXMLTermType *tt = (IXMLTermType*)element_at_vector(rule->rhs, i);
+        if (*tt == IXML_TERMINAL)
+        {
+            IXMLTerminal *t = (IXMLTerminal*)tt;
+            yaep_tmp_rhs_[i] = t->name;
+        }
+        else if (*tt == IXML_NON_TERMINAL)
+        {
+            IXMLNonTerminal *nt = (IXMLNonTerminal*)tt;
+            yaep_tmp_rhs_[i] = nt->name;
+        }
+        else
+        {
+            fprintf(stderr, "Internal error %d as term type does not exist!\n", *tt);
+            assert(false);
+        }
+    }
+    yaep_tmp_transl_[num_rhs] = -1;
+    yaep_tmp_rhs_[num_rhs] = NULL;
+    *rhs = (const char **)yaep_tmp_rhs_;
+    *transl = yaep_tmp_transl_;
+    *cost = 0;
+    yaep_j_++;
+    return rule->rule_name.name;
+}
+
+bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *stop, struct grammar *g)
 {
     if (state->magic_cookie != MAGIC_COOKIE)
     {
@@ -1238,7 +1323,11 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
 
     if (state->parse && state->parse->done) state->parse->done(state);
 
+    // Now build vectors suitable for yaep.
+    yaep_i_ = 0;
+    yaep_state_ = state;
 
+    /*
     for (size_t i = 0; i < state->ixml_terminals->size; ++i)
     {
         IXMLTerminal *t = (IXMLTerminal*)element_at_vector(state->ixml_terminals, i);
@@ -1264,6 +1353,19 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
             }
         }
     }
+    */
+    int rc = yaep_read_grammar(g, 0, ixml_to_yaep_read_terminal, ixml_to_yaep_read_rule);
+
+    if (rc != 0)
+    {
+        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+        state->error_info = "internal error, yaep did not accept generated yaep grammar";
+        printf("xmq: could not parse input using ixml/yaep grammar: %s\n", yaep_error_message(g));
+        longjmp(state->error_handler, 1);
+    }
+
+    if (yaep_tmp_rhs_) free(yaep_tmp_rhs_);
+    if (yaep_tmp_transl_) free(yaep_tmp_transl_);
 
     return true;
 }

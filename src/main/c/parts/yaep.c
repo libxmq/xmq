@@ -5673,7 +5673,7 @@ yaep_read_grammar (struct grammar *g, int strict_p,
     yaep_empty_grammar ();
   while ((name = (*read_terminal) (&code)) != NULL)
     {
-        printf("TERM >%s< %d\n", name, code); // GURKA
+        // fprintf(stderr, "TERM >%s< %d\n", name, code); // DEBUGGING TODO REMOVE
       if (code < 0)
 	yaep_error (YAEP_NEGATIVE_TERM_CODE,
 		    "term `%s' has negative code", name);
@@ -5698,7 +5698,7 @@ yaep_read_grammar (struct grammar *g, int strict_p,
   grammar->axiom = grammar->end_marker = NULL;
   while ((lhs = (*read_rule) (&rhs, &anode, &anode_cost, &transl)) != NULL)
     {
-      printf("LHS >%s<\n", lhs); // GURKA
+        // fprintf(stderr, "LHS >%s<\n", lhs); // DEBUGGING TODO REMOVE
       symb = symb_find_by_repr (lhs);
       if (symb == NULL)
 	symb = symb_add_nonterm (lhs);
@@ -5741,7 +5741,7 @@ yaep_read_grammar (struct grammar *g, int strict_p,
       rule = rule_new_start (symb, anode, (anode != NULL ? anode_cost : 0));
       while (*rhs != NULL)
 	{
-            printf("   >%s<\n", *rhs);
+            // fprintf(stderr, "   >%s<\n", *rhs); // DEBUGGING TODO REMOVE
 	  symb = symb_find_by_repr (*rhs);
 	  if (symb == NULL)
 	    symb = symb_add_nonterm (*rhs);
@@ -5752,6 +5752,8 @@ yaep_read_grammar (struct grammar *g, int strict_p,
       if (transl != NULL)
 	{
 	  for (i = 0; (el = transl[i]) >= 0; i++)
+          {
+              // fprintf(stderr, "   transl %d -> %d\n", i, transl[i]); // DEBUGGING TODO REMOVE
 	    if (el >= rule->rhs_len)
 	      {
 		if (el != YAEP_NIL_TRANSLATION_NUMBER)
@@ -5773,6 +5775,7 @@ yaep_read_grammar (struct grammar *g, int strict_p,
 		rule->trans_len++;
 	      }
 	  assert (i < rule->rhs_len || transl[i] < 0);
+          }
 	}
     }
   if (grammar->axiom == NULL)
