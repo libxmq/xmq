@@ -40,7 +40,7 @@ void *hashmap_get(HashMap* map, const char* key);
 // Putting a non-NULL value.
 void hashmap_put(HashMap* map, const char* key, void *val);
 // How many key-vals are there?
-size_t hashmap_size();
+size_t hashmap_size(HashMap *map);
 // Free it.
 void hashmap_free(HashMap* map);
 
