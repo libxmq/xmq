@@ -57,7 +57,7 @@ _OS_create_function (os_t * os, size_t initial_segment_length)
 {
   if (initial_segment_length == 0)
     initial_segment_length = OS_DEFAULT_SEGMENT_LENGTH;
-  os->os_current_segment =
+  os->os_current_segment = (struct _os_segment*)
     yaep_malloc (os->os_alloc,
 		 initial_segment_length + sizeof (struct _os_segment));
   os->os_current_segment->os_previous_segment = NULL;
@@ -156,7 +156,7 @@ _OS_expand_memory (os_t * os, size_t additional_length)
   segment_length += segment_length / 2 + 1;
   if (segment_length < OS_DEFAULT_SEGMENT_LENGTH)
     segment_length = OS_DEFAULT_SEGMENT_LENGTH;
-  new_segment =
+  new_segment = (struct _os_segment*)
     yaep_malloc (os->os_alloc, segment_length + sizeof (struct _os_segment));
   new_os_top_object_start =
     (char *) _OS_ALIGNED_ADDRESS (new_segment->os_segment_contest);

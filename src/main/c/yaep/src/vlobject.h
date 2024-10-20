@@ -109,7 +109,7 @@ typedef struct
     YaepAllocator * _temp_alloc = ( allocator ); \
     temp_initial_length = (temp_initial_length != 0 ? temp_initial_length\
                                                     : VLO_DEFAULT_LENGTH);\
-    _temp_vlo->vlo_start = yaep_malloc( _temp_alloc, temp_initial_length ); \
+    _temp_vlo->vlo_start = (char*)yaep_malloc( _temp_alloc, temp_initial_length ); \
     _temp_vlo->vlo_boundary = _temp_vlo->vlo_start + temp_initial_length;\
     _temp_vlo->vlo_free = _temp_vlo->vlo_start;\
     _temp_vlo->vlo_alloc = _temp_alloc; \

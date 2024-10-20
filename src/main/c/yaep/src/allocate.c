@@ -76,7 +76,7 @@ yaep_alloc_new (Yaep_malloc mallocf, Yaep_calloc callocf,
     }
 
   /* Allocate allocator */
-  result = mallocf (sizeof (*result));
+  result = (struct YaepAllocator*)mallocf (sizeof (*result));
   if (result == NULL)
     return NULL;
   result->malloc = mallocf;

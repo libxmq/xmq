@@ -96,8 +96,8 @@ create_hash_table (YaepAllocator * allocator, size_t size,
   hash_table_entry_t *entry_ptr;
 
   size = higher_prime_number (size);
-  result = yaep_malloc (allocator, sizeof (*result));
-  result->entries =
+  result = (hash_table_t)yaep_malloc (allocator, sizeof (*result));
+  result->entries = (const void**)
     yaep_malloc (allocator, size * sizeof (hash_table_entry_t));
   result->size = size;
   result->hash_function = hash_function;

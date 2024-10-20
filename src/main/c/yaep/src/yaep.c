@@ -2310,7 +2310,7 @@ vlo_array_fin (void)
 #ifndef __cplusplus
   vlo_t *vlo_ptr;
 
-  for (vlo_ptr = VLO_BEGIN (vlo_array);
+  for (vlo_ptr = (vlo_t *) VLO_BEGIN (vlo_array);
        (char *) vlo_ptr < (char *) VLO_BOUND (vlo_array); vlo_ptr++)
     VLO_DELETE (*vlo_ptr);
   VLO_DELETE (vlo_array);
@@ -2693,7 +2693,7 @@ core_symb_vect_addr_get (struct set_core *set_core, struct symb *symb)
 	  OS_TOP_EXPAND (core_symb_tab_rows,
 			 (symbs_ptr->n_terms + symbs_ptr->n_nonterms)
 			 * sizeof (struct core_symb_vect *));
-	  *ptr = OS_TOP_BEGIN (core_symb_tab_rows);
+	  *ptr = (struct core_symb_vect **) OS_TOP_BEGIN (core_symb_tab_rows);
 	  OS_TOP_FINISH (core_symb_tab_rows);
 #else
 	  core_symb_tab_rows->top_expand
@@ -2879,7 +2879,7 @@ process_core_symb_vect_el (struct core_symb_vect *core_symb_vect,
 	  *entry = (hash_table_entry_t) core_symb_vect;
 #ifndef __cplusplus
 	  OS_TOP_ADD_MEMORY (vect_els_os, vec->els, vec->len * sizeof (int));
-	  vec->els = OS_TOP_BEGIN (vect_els_os);
+	  vec->els = (int *) OS_TOP_BEGIN (vect_els_os);
 	  OS_TOP_FINISH (vect_els_os);
 #else
 	  vect_els_os->top_add_memory (vec->els, vec->len * sizeof (int));
@@ -2900,7 +2900,7 @@ core_symb_vect_new_all_stop (void)
   struct core_symb_vect **triple_ptr;
 
 #ifndef __cplusplus
-  for (triple_ptr = VLO_BEGIN (new_core_symb_vect_vlo);
+  for (triple_ptr = (struct core_symb_vect **) VLO_BEGIN (new_core_symb_vect_vlo);
        (char *) triple_ptr < (char *) VLO_BOUND (new_core_symb_vect_vlo);
        triple_ptr++)
 #else

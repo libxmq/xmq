@@ -191,7 +191,7 @@ typedef struct
     os_t *_temp_os = &(os);\
     assert (_temp_os->os_top_object_start != NULL);\
     _temp_os->os_top_object_start\
-      = _OS_ALIGNED_ADDRESS (_temp_os->os_top_object_free);\
+        = (char *) _OS_ALIGNED_ADDRESS (_temp_os->os_top_object_free);    \
     _temp_os->os_top_object_free = _temp_os->os_top_object_start;\
   }\
   while (0)

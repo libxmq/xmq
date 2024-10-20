@@ -15,7 +15,7 @@ EOF
 
 cat src/allocate.h src/hashtab.h src/objstack.h src/vlobject.h >> yaep_full_source.c
 echo "/****************** YAEP parser single source file code **********************/" >> yaep_full_source.c
-cat src/allocate.c src/hashtab.c src/objstack.c src/vlobject.c src/yaep.c src/sgramm.c  >> yaep_full_source.c
+cat src/allocate.c src/hashtab.c src/objstack.c src/vlobject.c src/yaep.c  >> yaep_full_source.c
 echo "/****************** YAEP parser single source file end **********************/" >> yaep_full_source.c
 
 cat <<EOF >> yaep_full_source.c

@@ -1939,9 +1939,9 @@ bool cmd_load(XMQCliCommand *command)
 
         g = yaep_create_grammar();
 
-        int rc = yaep_parse_grammar (g, 1, command->ixml_yaep);
+        //int rc = yaep_parse_grammar (g, 1, command->ixml_yaep);
 
-        //int rc = yaep_read_grammar(g, 0, s_read_terminal, s_read_rule);
+        int rc = yaep_read_grammar(g, 0, s_read_terminal, s_read_rule);
 
         if (rc)
         {
