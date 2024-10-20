@@ -8,6 +8,7 @@
 #include"parts/xmq_internals.h"
 #include"stack.h"
 #include"text.h"
+#include"vector.h"
 #include"xml.h"
 #include<yaep/yaep.h>
 
@@ -98,7 +99,7 @@ bool is_ixml_whitespace_char(char c);
 bool is_ixml_whitespace_start(XMQParseState *state);
 
 void parse_ixml(XMQParseState *state);
-void parse_ixml_alias(XMQParseState *state);
+void parse_ixml_alias(XMQParseState *state, const char **alias_start, const char **alias_stop);
 void parse_ixml_alt(XMQParseState *state);
 void parse_ixml_alts(XMQParseState *state);
 void parse_ixml_charset(XMQParseState *state);
@@ -106,12 +107,15 @@ void parse_ixml_comment(XMQParseState *state);
 void parse_ixml_encoded(XMQParseState *state);
 void parse_ixml_factor(XMQParseState *state);
 void parse_ixml_group(XMQParseState *state);
-void parse_ixml_hex(XMQParseState *state);
+void parse_ixml_hex(XMQParseState *state, int *value);
 void parse_ixml_insertion(XMQParseState *state);
 void parse_ixml_literal(XMQParseState *state);
 void parse_ixml_name(XMQParseState *state, const char **content_start, const char **content_stop);
-void parse_ixml_naming(XMQParseState *state);
-void parse_ixml_nonterminal(XMQParseState *state);
+void parse_ixml_naming(XMQParseState *state,
+                       char *mark,
+                       char **name,
+                       char **alias);
+void parse_ixml_nonterminal(XMQParseState *state, IXMLNonTerminal *nt);
 void parse_ixml_prolog(XMQParseState *state);
 void parse_ixml_range(XMQParseState *state);
 void parse_ixml_quoted(XMQParseState *state);
@@ -137,6 +141,11 @@ void do_ixml_rule(XMQParseState *state, const char *name_start, const char *name
 void do_ixml_alt(XMQParseState *state);
 void do_ixml_nonterminal(XMQParseState *state, const char *name_start, char *name_stop);
 void do_ixml_option(XMQParseState *state);
+
+IXMLRule *new_ixml_rule();
+void free_ixml_rule(IXMLRule *r);
+IXMLTerminal *new_ixml_terminal();
+void free_ixml_terminal(IXMLTerminal *t);
 
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -431,7 +440,7 @@ void parse_ixml(XMQParseState *state)
     parse_ixml_whitespace(state);
 }
 
-void parse_ixml_alias(XMQParseState *state)
+void parse_ixml_alias(XMQParseState *state, const char **alias_start, const char **alias_stop)
 {
     IXML_STEP(alias, state);
 
@@ -440,9 +449,7 @@ void parse_ixml_alias(XMQParseState *state)
 
     parse_ixml_whitespace(state);
 
-    const char *name_start;
-    const char *name_stop;
-    parse_ixml_name(state, &name_start, &name_stop);
+    parse_ixml_name(state, alias_start, alias_stop);
 
     parse_ixml_whitespace(state);
 
@@ -638,8 +645,15 @@ void parse_ixml_encoded(XMQParseState *state)
         state->error_info = "expected hex after #";
         longjmp(state->error_handler, 1);
     }
-    parse_ixml_hex(state);
+
+    int value;
+    parse_ixml_hex(state, &value);
     parse_ixml_whitespace(state);
+
+    state->ixml_terminal->code = value;
+    char buffer[16];
+    snprintf(buffer, 15, "#%x", value);
+    state->ixml_terminal->name = strdup(buffer);
 
     IXML_DONE(encoded, state);
 }
@@ -651,11 +665,34 @@ void parse_ixml_factor(XMQParseState *state)
 
     if (is_ixml_terminal_start(state))
     {
+        state->ixml_terminal = new_ixml_terminal();
+
         parse_ixml_terminal(state);
+
+        if (state->ixml_terminal->name != NULL) // Test needed while developing parser.
+        {
+            IXMLTerminal *t = (IXMLTerminal*)hashmap_get(state->ixml_terminals_map, state->ixml_terminal->name);
+            if (!t)
+            {
+                hashmap_put(state->ixml_terminals_map, state->ixml_terminal->name, state->ixml_terminal);
+                push_back_vector(state->ixml_terminals, state->ixml_terminal);
+                push_back_vector(state->ixml_rule->rhs, state->ixml_terminal);
+            }
+            else
+            {
+                free(state->ixml_terminal);
+            }
+        }
+        else
+        {
+            free(state->ixml_terminal);
+        }
+        state->ixml_terminal = NULL;
     }
     else if (is_ixml_nonterminal_start(state))
     {
-        parse_ixml_nonterminal(state);
+        IXMLNonTerminal nt;
+        parse_ixml_nonterminal(state, &nt);
     }
     else  if (is_ixml_insertion_start(state))
     {
@@ -702,14 +739,18 @@ void parse_ixml_group(XMQParseState *state)
     IXML_DONE(factor, state);
 }
 
-void parse_ixml_hex(XMQParseState *state)
+void parse_ixml_hex(XMQParseState *state, int *value)
 {
     IXML_STEP(hex,state);
 
+    const char *start = state->i;
     while (is_ixml_hex_start(state))
     {
         EAT(hex_inside, 1);
     }
+    const char *stop = state->i;
+    char *hex = strndup(start, stop-start);
+    *value = (int)strtol(hex, NULL, 16);
 
     IXML_DONE(hex, state);
 }
@@ -776,11 +817,13 @@ void parse_ixml_name(XMQParseState *state, const char **name_start, const char *
     }
     *name_stop = state->i;
 
-//    fprintf(stderr, "name >%.*s<\n", (int)(*name_stop-*name_start), *name_start);
     IXML_DONE(name, state);
 }
 
-void parse_ixml_naming(XMQParseState *state)
+void parse_ixml_naming(XMQParseState *state,
+                       char *mark,
+                       char **name,
+                       char **alias)
 {
     IXML_STEP(naming,state);
 
@@ -788,9 +831,13 @@ void parse_ixml_naming(XMQParseState *state)
 
     if (is_ixml_mark_char(*(state->i)))
     {
+        *mark = (*(state->i));
         EAT(naming_mark, 1);
     }
-
+    else
+    {
+        *mark = 0;
+    }
     parse_ixml_whitespace(state);
 
     if (!is_ixml_name_start(*(state->i)))
@@ -799,26 +846,32 @@ void parse_ixml_naming(XMQParseState *state)
         state->error_info = "expected a name";
         longjmp(state->error_handler, 1);
     }
-    const char *name_start;
-    const char *name_stop;
+    const char *name_start, *name_stop;
     parse_ixml_name(state, &name_start, &name_stop);
+    *name = strndup(name_start, (name_stop-name_start));
 
     parse_ixml_whitespace(state);
 
     if (is_ixml_alias_start(state))
     {
-        parse_ixml_alias(state);
+        const char *alias_start, *alias_stop;
+        parse_ixml_alias(state, &alias_start, &alias_stop);
+        *alias = strndup(alias_start, alias_stop-alias_start);
+    }
+    else
+    {
+        *alias = NULL;
     }
 
     IXML_DONE(naming, state);
 }
 
-void parse_ixml_nonterminal(XMQParseState *state)
+void parse_ixml_nonterminal(XMQParseState *state, IXMLNonTerminal *nt)
 {
     IXML_STEP(nonterminal, state);
     ASSERT(is_ixml_naming_start(state));
 
-    parse_ixml_naming(state);
+    parse_ixml_naming(state, &nt->mark, &nt->name, &nt->alias);
 
     IXML_DONE(nonterminal, state);
 }
@@ -947,8 +1000,17 @@ void parse_ixml_rule(XMQParseState *state)
     IXML_STEP(rule, state);
     ASSERT(is_ixml_naming_start(state));
 
-    parse_ixml_naming(state);
+    IXMLRule *rule = new_ixml_rule();
+    push_back_vector(state->ixml_rules, rule);
+//    push_stack(state->ixml_rule_stack, rule);
+    state->ixml_rule = rule;
 
+    parse_ixml_naming(state,
+                      &rule->rule_name.mark,
+                      &rule->rule_name.name,
+                      &rule->rule_name.alias);
+
+    printf("PRUTT >%s<\n", rule->rule_name.name);
     parse_ixml_whitespace(state);
 
     char c = *(state->i);
@@ -976,6 +1038,8 @@ void parse_ixml_rule(XMQParseState *state)
     parse_ixml_whitespace(state);
 
 //    add_yaep_grammar_rule(0, name_start, name_stop);
+
+    state->ixml_rule = NULL;
 
     IXML_DONE(rule, state);
 }
@@ -1038,6 +1102,12 @@ void parse_ixml_term(XMQParseState *state)
     if (is_ixml_factor_start(state))
     {
         parse_ixml_factor(state);
+
+        if (state->ixml_terminal)
+        {
+            push_back_vector(state->ixml_rule->rhs, state->ixml_terminal);
+            state->ixml_terminal = NULL;
+        }
     }
     else
     {
@@ -1160,6 +1230,34 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
     }
 
     if (state->parse && state->parse->done) state->parse->done(state);
+
+
+    for (size_t i = 0; i < state->ixml_terminals->size; ++i)
+    {
+        IXMLTerminal *t = (IXMLTerminal*)element_at_vector(state->ixml_terminals, i);
+        printf("TERMINAL %s %d\n", t->name, t->code);
+    }
+
+    for (size_t i = 0; i < state->ixml_rules->size; ++i)
+    {
+        IXMLRule *r = (IXMLRule*)element_at_vector(state->ixml_rules, i);
+        printf("RULE %c%s \n", r->rule_name.mark, r->rule_name.name);
+        for (size_t j = 0; j < r->rhs->size; ++j)
+        {
+            IXMLTermType *tt = (IXMLTermType*)element_at_vector(r->rhs, j);
+            if (*tt == IXML_TERMINAL)
+            {
+                IXMLTerminal *t = (IXMLTerminal*)tt;
+                printf("   T %s %d\n", t->name, t->code);
+            }
+            else
+            {
+                IXMLNonTerminal *nt = (IXMLNonTerminal*)tt;
+                printf("  nt %c%s \n", nt->mark, nt->name);
+            }
+        }
+    }
+
     return true;
 }
 
@@ -1254,6 +1352,20 @@ void skip_whitespace(const char **i)
 
 void add_yaep_grammar_rule(char mark, const char *name_start, const char *name_stop)
 {
+}
+
+IXMLRule *new_ixml_rule()
+{
+    IXMLRule *r = (IXMLRule*)calloc(1, sizeof(IXMLRule));
+    r->rhs = new_vector();
+    return r;
+}
+
+IXMLTerminal *new_ixml_terminal()
+{
+    IXMLTerminal *t = (IXMLTerminal*)calloc(1, sizeof(IXMLTerminal));
+    t->type = IXML_TERMINAL;
+    return t;
 }
 
 #else

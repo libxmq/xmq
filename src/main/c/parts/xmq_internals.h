@@ -54,6 +54,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct Stack;
 typedef struct Stack Stack;
 
+struct Vector;
+typedef struct Vector Vector;
+
 struct HashMap;
 typedef struct HashMap HashMap;
 
@@ -185,6 +188,44 @@ struct XMQOutputSettings
 };
 typedef struct XMQOutputSettings XMQOutputSettings;
 
+enum IXMLTermType
+{
+    IXML_TERMINAL, IXML_NON_TERMINAL
+};
+typedef enum IXMLTermType IXMLTermType;
+
+struct IXMLTerminal
+{
+    IXMLTermType type; // Keep first in struct for union.
+    char *name;
+    int code;
+};
+typedef struct IXMLTerminal IXMLTerminal;
+
+struct IXMLNonTerminal
+{
+    IXMLTermType type; // Keep first in struct for union.
+    char mark;
+    char *name;
+    char *alias;
+};
+typedef struct IXMLNonTerminal IXMLNonTerminal;
+
+union IXMLTerm
+{
+    IXMLTermType type;
+    IXMLTerminal t;
+    IXMLNonTerminal nt;
+};
+typedef union IXMLTerm IXMLTerm;
+
+struct IXMLRule
+{
+    IXMLNonTerminal rule_name;
+    Vector *rhs;
+};
+typedef struct IXMLRule IXMLRule;
+
 struct XMQParseState
 {
     char *source_name; // Only used for generating any error messages.
@@ -244,6 +285,17 @@ struct XMQParseState
     const char *last_suspicios_quote_end;
     size_t last_suspicios_quote_end_line;
     size_t last_suspicios_quote_end_col;
+
+    // When parsing an ixml grammar.
+    Vector *ixml_terminals;
+    HashMap *ixml_terminals_map;
+    Vector *ixml_rules;
+    // Rule stack is pushed by groups (..), ?, * and +.
+    Stack  *ixml_rule_stack;
+    // Active objects being modified while ixml parsing.
+    IXMLRule *ixml_rule;
+    IXMLNonTerminal *ixml_nonterminal;
+    IXMLTerminal *ixml_terminal;
 
     // When debugging parsing of ixml, track indentation of depth here.
     int depth;

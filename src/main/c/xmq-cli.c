@@ -1791,6 +1791,66 @@ void print_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, i
     }
 }
 
+static int s_term_counter = 0;
+typedef struct {
+    const char *name;
+    int code;
+} Terminal;
+
+Terminal terminals[] = { { "#78", 'x' }, { "#79", 'y' }, { NULL, -1 } };
+
+const char *s_read_terminal(int *code);
+
+const char *s_read_terminal(int *code)
+{
+    if (terminals[s_term_counter].name == NULL) return NULL;
+    const char *r = terminals[s_term_counter].name;
+    *code = terminals[s_term_counter].code;
+    s_term_counter++;
+    return r;
+}
+
+static int s_rule_counter = 0;
+
+typedef struct {
+    const char *name;
+    const char **rhs;
+    const char *translation_name;
+    int *translation_nodes;
+    int cost;
+} Rule;
+
+const char *rhs1[] = { "X", "Y", NULL };
+const char *rhs2[] = { "#78", NULL };
+const char *rhs3[] = { "#79", NULL };
+int transl1[]      = { 0, 1, -1 };
+int transl2[]      = { 0, -1 };
+
+Rule rules[] = {
+    { "DATA", rhs1, "dutta", transl1, 0 },
+    { "X", rhs2, "xa", transl2, 0},
+    { "Y", rhs3, "ya", transl2, 0} };
+
+const char *s_read_rule(const char ***rhs,
+                        const char **abs_node,
+                        int *anode_cost,
+                        int **transl);
+
+const char *s_read_rule(const char ***rhs,
+                        const char **abs_node,
+                        int *cost,
+                        int **transl)
+{
+    Rule *rule = &rules[s_rule_counter];
+    if (rule->name == NULL) return NULL;
+    *rhs = rule->rhs;
+    *abs_node = rule->translation_name;
+    *transl = rule->translation_nodes;
+    *cost = rule->cost;
+    s_rule_counter++;
+    return rule->name;
+}
+
 bool cmd_load(XMQCliCommand *command)
 {
     if (!command) return false;
@@ -1845,9 +1905,9 @@ bool cmd_load(XMQCliCommand *command)
 
         g = yaep_create_grammar();
 
-        int rc = yaep_parse_grammar (g, 1, command->ixml_yaep);
+        // int rc = yaep _parse_grammar (g, 1, command->ixml_yaep);
 
-        //int rc = yaep_read_grammar(g, 0, read_terminal, read_rule);
+        int rc = yaep_read_grammar(g, 0, s_read_terminal, s_read_rule);
 
         if (rc)
         {
@@ -2029,7 +2089,7 @@ bool cmd_transform(XMQCliCommand *command)
     if (command->xslt_params)
     {
         size_t n = hashmap_size(command->xslt_params);
-        params = calloc(2*n+1, sizeof(char*));
+        params = (const char**)calloc(2*n+1, sizeof(char*));
 
         i = hashmap_iterate(command->xslt_params);
         const char *key;

@@ -62,6 +62,7 @@ do_part stack
 do_part text
 do_part utf8
 do_part entities
+do_part vector
 do_part xml
 do_part xmq_internals
 do_part xmq_parser

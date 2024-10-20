@@ -38,6 +38,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/membuffer.h"
 #include"parts/stack.h"
 #include"parts/text.h"
+#include"parts/vector.h"
 #include"parts/xml.h"
 #include"parts/xmq_parser.h"
 #include"parts/xmq_printer.h"
@@ -885,6 +886,10 @@ XMQParseState *xmqNewParseState(XMQParseCallbacks *callbacks, XMQOutputSettings 
     state->output_settings = output_settings;
     state->magic_cookie = MAGIC_COOKIE;
     state->element_stack = new_stack();
+    state->ixml_rules = new_vector();
+    state->ixml_terminals = new_vector();
+    state->ixml_terminals_map = hashmap_create(16);
+    state->ixml_rule_stack = new_stack();
 
     return state;
 }
@@ -1691,6 +1696,24 @@ void xmqFreeParseCallbacks(XMQParseCallbacks *cb)
 void xmqFreeParseState(XMQParseState *state)
 {
     if (!state) return;
+
+    /*
+    for (size_t i = 0; i < state->ixml_rules->size; ++i)
+    {
+        free(element_at_vector(state->ixml_rules, i));
+    }
+    if (state->ixml_rules) free_vector(state->ixml_rules);
+    for (size_t i = 0; i < state->ixml_terminals->size; ++i)
+    {
+        free(element_at_vector(state->ixml_terminals,i));
+    }
+    if (state->ixml_terminals) free_vector(state->ixml_terminals);
+    state->ixml_terminals = NULL;
+    hashmap_free(state->ixml_terminals_map);
+    state->ixml_terminals_map = NULL;
+    free_stack(state->ixml_rule_stack);
+    state->ixml_rule_stack = NULL;
+    */
     free(state->source_name);
     state->source_name = NULL;
     free(state->generated_error_msg);
@@ -4143,6 +4166,7 @@ bool xmq_parse_ixml_grammar(struct grammar *g,
 #include"parts/json.c"
 #include"parts/text.c"
 #include"parts/utf8.c"
+#include"parts/vector.c"
 #include"parts/xml.c"
 #include"parts/xmq_internals.c"
 #include"parts/xmq_parser.c"

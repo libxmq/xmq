@@ -3343,6 +3343,7 @@ yaep_read_grammar (struct grammar *g, int strict_p,
     yaep_empty_grammar ();
   while ((name = (*read_terminal) (&code)) != NULL)
     {
+        printf("TERM >%s< %d\n", name, code); // GURKA
       if (code < 0)
 	yaep_error (YAEP_NEGATIVE_TERM_CODE,
 		    "term `%s' has negative code", name);
@@ -3367,6 +3368,7 @@ yaep_read_grammar (struct grammar *g, int strict_p,
   grammar->axiom = grammar->end_marker = NULL;
   while ((lhs = (*read_rule) (&rhs, &anode, &anode_cost, &transl)) != NULL)
     {
+      printf("LHS >%s<\n", lhs); // GURKA
       symb = symb_find_by_repr (lhs);
       if (symb == NULL)
 	symb = symb_add_nonterm (lhs);
@@ -3409,6 +3411,7 @@ yaep_read_grammar (struct grammar *g, int strict_p,
       rule = rule_new_start (symb, anode, (anode != NULL ? anode_cost : 0));
       while (*rhs != NULL)
 	{
+            printf("   >%s<\n", *rhs);
 	  symb = symb_find_by_repr (*rhs);
 	  if (symb == NULL)
 	    symb = symb_add_nonterm (*rhs);
