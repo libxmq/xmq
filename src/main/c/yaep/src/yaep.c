@@ -5017,7 +5017,7 @@ canon_node_num (int num)
    all its children (if debug_level < 0 output format is for
    graphviz). */
 static void
-print_node (FILE * f, struct yaep_tree_node *node)
+print_yaep_node (FILE * f, struct yaep_tree_node *node)
 {
   struct trans_visit_node *trans_visit_node;
   struct yaep_tree_node *child;
@@ -5085,7 +5085,7 @@ print_node (FILE * f, struct yaep_tree_node *node)
 	    }
 	}
       for (i = 0; (child = node->val.anode.children[i]) != NULL; i++)
-	print_node (f, child);
+	print_yaep_node (f, child);
       break;
     case YAEP_ALT:
       if (grammar->debug_level > 0)
@@ -5130,9 +5130,9 @@ print_node (FILE * f, struct yaep_tree_node *node)
 		     trans_visit_node->num,
 		     canon_node_num (visit_node (node->val.alt.next)->num));
 	}
-      print_node (f, node->val.alt.node);
+      print_yaep_node (f, node->val.alt.node);
       if (node->val.alt.next != NULL)
-	print_node (f, node->val.alt.next);
+	print_yaep_node (f, node->val.alt.next);
       break;
     default:
       assert (FALSE);
@@ -5154,7 +5154,7 @@ print_parse (FILE * f, struct yaep_tree_node *root)
 #endif
   n_trans_visit_nodes = 0;
   OS_CREATE (trans_visit_nodes_os, grammar->alloc, 0);
-  print_node (f, root);
+  print_yaep_node (f, root);
   OS_DELETE (trans_visit_nodes_os);
 #ifndef __cplusplus
   delete_hash_table (trans_visit_nodes_tab);

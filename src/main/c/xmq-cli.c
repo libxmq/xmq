@@ -27,7 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/text.h"
 #include"parts/ixml.h"
 #include"parts/xml.h"
-#include"yaep/yaep.h"
+#include"parts/yaep.h"
 
 #include<assert.h>
 #include<ctype.h>

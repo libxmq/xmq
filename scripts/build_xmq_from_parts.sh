@@ -67,5 +67,6 @@ do_part xml
 do_part xmq_internals
 do_part xmq_parser
 do_part xmq_printer
+do_part yaep
 
 do_version

@@ -10,7 +10,7 @@
 #include"text.h"
 #include"vector.h"
 #include"xml.h"
-#include<yaep/yaep.h>
+#include"yaep.h"
 
 #include<assert.h>
 #include<string.h>

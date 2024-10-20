@@ -42,6 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/xml.h"
 #include"parts/xmq_parser.h"
 #include"parts/xmq_printer.h"
+#include"parts/yaep.h"
 
 struct grammar;
 struct yaep_tree_node;
@@ -4171,3 +4172,4 @@ bool xmq_parse_ixml_grammar(struct grammar *g,
 #include"parts/xmq_internals.c"
 #include"parts/xmq_parser.c"
 #include"parts/xmq_printer.c"
+#include"parts/yaep.c"
