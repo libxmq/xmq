@@ -29,8 +29,8 @@
    The algorithm is originated from Earley's algorithm.  The algorithm
    is sufficiently fast to be used in serious language processors. */
 
-#ifndef __YAEP__
-#define __YAEP__
+#ifndef YAEP_H
+#define YAEP_H
 
 #include <limits.h>
 
@@ -148,7 +148,7 @@ struct yaep_tree_node
   } val;
 };
 
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 
 /* The following function creates undefined grammar.  The function
    returns NULL if there is no memory.  This function should be called
@@ -313,7 +313,7 @@ extern void yaep_free_grammar (struct grammar *grammar);
    to free the term attributes. The term node itself must not be freed. */
 extern void yaep_free_tree( struct yaep_tree_node * root, void ( *parse_free )( void * ), void ( *termcb )( struct yaep_term * term ) );
 
-#else /* #ifndef __cplusplus */
+#else /* #ifndef NOT_DEFINED */
 
 class yaep
 {
@@ -374,7 +374,7 @@ public:
   static void free_tree( struct yaep_tree_node * root, void ( *parse_free )( void * ), void ( *termcb )( struct yaep_term * term ) );
 };
 
-#endif /* #ifndef __cplusplus */
+#endif /* #ifndef NOT_DEFINED */
 
-#endif /* #ifndef __YAEP__ */
+#endif // YAEP_H
 #define YAEP_MODULE

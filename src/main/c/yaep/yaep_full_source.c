@@ -43,7 +43,7 @@
 #ifndef YAEP_ALLOCATE_H_
 #define YAEP_ALLOCATE_H_
 
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 extern "C"
 {
 #endif
@@ -287,7 +287,7 @@ void *yaep_alloc_getuserptr (YaepAllocator * allocator);
 void yaep_alloc_seterr (YaepAllocator * allocator, Yaep_alloc_error errfunc,
 			void *userptr);
 
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 }
 #endif
 
@@ -341,7 +341,7 @@ void yaep_alloc_seterr (YaepAllocator * allocator, Yaep_alloc_error errfunc,
 typedef const void *hash_table_entry_t;
 
 
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 
 
 /* Hash tables are of the following type.  The structure
@@ -443,7 +443,7 @@ extern int hash_table_collision_percentage (hash_table_t htab);
 
 extern int all_hash_table_collision_percentage (void);
 
-#else /* #ifndef __cplusplus */
+#else /* #ifndef NOT_DEFINED */
 
 
 
@@ -554,7 +554,7 @@ private:
 typedef class hash_table *hash_table_t;
 
 
-#endif /* #ifndef __cplusplus */
+#endif /* #ifndef NOT_DEFINED */
 
 #endif /* #ifndef __HASH_TABLE__ */
 /*
@@ -668,7 +668,7 @@ struct _os_auxiliary_struct
 
 
 
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 
 /* This internal structure describes segment of an object stack. */
 
@@ -887,7 +887,7 @@ extern void _OS_empty_function (os_t *os);
 extern void _OS_add_string_function (os_t *os, const char *str);
 extern void _OS_expand_memory (os_t *os, size_t additional_length);
 
-#else /* #ifndef __cplusplus */
+#else /* #ifndef NOT_DEFINED */
 
 /* This class describes a descriptor of stack of objects.  All work
    with stack of objects is executed by member functions.  It should
@@ -1082,7 +1082,7 @@ class _os_segment
   friend void os::_OS_expand_memory (size_t additional_length);
 };
 
-#endif /* #ifndef __cplusplus */
+#endif /* #ifndef NOT_DEFINED */
 
 #endif /* #ifndef __OS__ */
 /*
@@ -1158,7 +1158,7 @@ class _os_segment
 #endif
 
 
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 
 
 /* This type describes a descriptor of variable length object.  All
@@ -1376,7 +1376,7 @@ extern void _VLO_tailor_function (vlo_t *vlo);
 extern void _VLO_add_string_function (vlo_t *vlo, const char *str);
 extern void _VLO_expand_memory (vlo_t *vlo, size_t additional_length);
 
-#else /* #ifndef __cplusplus */
+#else /* #ifndef NOT_DEFINED */
 
 
 /* This type describes a descriptor of variable length object.  It
@@ -1545,7 +1545,7 @@ private:
 
 typedef vlo vlo_t;
 
-#endif /* #ifndef __cplusplus */
+#endif /* #ifndef NOT_DEFINED */
 
 #endif /* #ifndef __VLO__ */
 /****************** YAEP parser single source file code **********************/
@@ -2540,7 +2540,7 @@ static void (*parse_free) (void *mem);
 /* Forward decrlarations: */
 static void yaep_error (int code, const char *format, ...);
 
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 extern
 #else
 static
@@ -2556,7 +2556,7 @@ void yaep_free_grammar (struct grammar *g);
 static int
 expand_int_vlo (vlo_t * vlo, int n_els)
 {
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   int i, prev_n_els = VLO_LENGTH (*vlo) / sizeof (int);
 
   if (prev_n_els >= n_els)
@@ -2649,7 +2649,7 @@ struct symbs
   int n_terms, n_nonterms;
 
   /* All symbols are placed in the following object. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   os_t symbs_os;
 #else
   os_t *symbs_os;
@@ -2658,7 +2658,7 @@ struct symbs
   /* All references to the symbols, terminals, nonterminals are stored
      in the following vlos.  The indexes in the arrays are the same as
      corresponding symbol, terminal, and nonterminal numbers. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   vlo_t symbs_vlo;
   vlo_t terms_vlo;
   vlo_t nonterms_vlo;
@@ -3005,7 +3005,7 @@ struct tab_term_set
 struct term_sets
 {
   /* All terminal sets are stored in the following os. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   os_t term_set_os;
 #else
   os_t *term_set_os;
@@ -3021,7 +3021,7 @@ struct term_sets
 
   /* References to all structure tab_term_set are stored in the
      following vlo. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   vlo_t tab_term_set_vlo;
 #else
   vlo_t *tab_term_set_vlo;
@@ -3333,7 +3333,7 @@ struct rules
      externally. */
   struct rule *curr_rule;
   /* All rules are placed in the following object. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   os_t rules_os;
 #else
   os_t *rules_os;
@@ -3537,7 +3537,7 @@ static int toks_len;
 static int tok_curr;
 
 /* The following array contains all input tokens. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static vlo_t toks_vlo;
 #else
 static vlo_t *toks_vlo;
@@ -3620,14 +3620,14 @@ static struct sit ***sit_table;
 /* The following vlo is indexed by situation context number and gives
    array which is indexed by situation number
    (sit->rule->rule_start_offset + sit->pos). */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static vlo_t sit_table_vlo;
 #else
 static vlo_t *sit_table_vlo;
 #endif
 
 /* All situations are placed in the following object. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t sits_os;
 #else
 static os_t *sits_os;
@@ -3899,14 +3899,14 @@ static int n_sets, n_sets_start_sits;
 static int n_set_term_lookaheads;
 
 /* The set cores of formed sets are placed in the following os. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t set_cores_os;
 #else
 static os_t *set_cores_os;
 #endif
 
 /* The situations of formed sets are placed in the following os. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t set_sits_os;
 #else
 static os_t *set_sits_os;
@@ -3915,28 +3915,28 @@ static os_t *set_sits_os;
 /* The indexes of the parent start situations whose distances are used
    to get distances of some nonstart situations are placed in the
    following os. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t set_parent_indexes_os;
 #else
 static os_t *set_parent_indexes_os;
 #endif
 
 /* The distances of formed sets are placed in the following os. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t set_dists_os;
 #else
 static os_t *set_dists_os;
 #endif
 
 /* The sets themself are placed in the following os. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t sets_os;
 #else
 static os_t *sets_os;
 #endif
 
 /* Container for triples (set, term, lookahead.  */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t set_term_lookahead_os;
 #else
 static os_t *set_term_lookahead_os;
@@ -4050,7 +4050,7 @@ set_term_lookahead_eq (hash_table_entry_t s1, hash_table_entry_t s2)
 
 /* This page contains code for table of pairs (sit, dist).  */
 
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 /* Vector implementing map: sit number -> vlo of the distance check
    indexed by the distance.  */
 static vlo_t sit_dist_vec_vlo;
@@ -4092,7 +4092,7 @@ sit_dist_insert (struct sit *sit, int dist)
     {
       VLO_EXPAND (sit_dist_vec_vlo, (sit_number + 1 - len) * sizeof (vlo_t));
       for (i = len; i <= sit_number; i++)
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 	VLO_CREATE (((vlo_t *) VLO_BEGIN (sit_dist_vec_vlo))[i],
 		    grammar->alloc, 64);
 #else
@@ -4100,7 +4100,7 @@ sit_dist_insert (struct sit *sit, int dist)
 	  new vlo (grammar->alloc, 64);
 #endif
     }
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   check_dist_vlo = &((vlo_t *) VLO_BEGIN (sit_dist_vec_vlo))[sit_number];
   len = VLO_LENGTH (*check_dist_vlo) / sizeof (int);
   if (len <= dist)
@@ -4136,7 +4136,7 @@ sit_dist_set_fin (void)
   int i, len = VLO_LENGTH (sit_dist_vec_vlo) / sizeof (vlo_t);
 
   for (i = 0; i < len; i++)
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
     VLO_DELETE (((vlo_t *) VLO_BEGIN (sit_dist_vec_vlo))[i]);
 #else
     delete ((vlo_t **) VLO_BEGIN (sit_dist_vec_vlo))[i];
@@ -4155,7 +4155,7 @@ static int curr_sit_check;
    vectors:  */
 /*  The value is used to mark already processed symbols.  */
 static int core_symbol_check;
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 /* The first is used to check already processed symbols.  The second
    contains symbols to be processed.  The third is a queue used during
    building transitive transitions.  */
@@ -4541,7 +4541,7 @@ pl_fin (void)
    only to implement abstract data `core_symb_vect'. */
 
 /* All vlos being formed are placed in the following object. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static vlo_t vlo_array;
 #else
 static vlo_t *vlo_array;
@@ -4557,7 +4557,7 @@ INLINE
 static void
 vlo_array_init (void)
 {
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   VLO_CREATE (vlo_array, grammar->alloc, 4096);
 #else
   vlo_array = new vlo (grammar->alloc, 4096);
@@ -4573,7 +4573,7 @@ INLINE
 static int
 vlo_array_expand (void)
 {
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   vlo_t *vlo_ptr;
 
   if ((unsigned) vlo_array_len >= VLO_LENGTH (vlo_array) / sizeof (vlo_t))
@@ -4623,7 +4623,7 @@ static vlo_t *
 vlo_array_el (int index)
 {
   assert (index >= 0 && vlo_array_len > index);
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   return &((vlo_t *) VLO_BEGIN (vlo_array))[index];
 #else
   return ((vlo_t **) vlo_array->begin ())[index];
@@ -4637,7 +4637,7 @@ INLINE
 static void
 vlo_array_fin (void)
 {
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   vlo_t *vlo_ptr;
 
   for (vlo_ptr = VLO_BEGIN (vlo_array);
@@ -4719,7 +4719,7 @@ static int n_reduce_vects, n_reduce_vect_len;
 
 /* All triples (set core, symbol, vect) are placed in the following
    object. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t core_symb_vect_os;
 #else
 static os_t *core_symb_vect_os;
@@ -4727,7 +4727,7 @@ static os_t *core_symb_vect_os;
 
 /* Pointers to triples (set core, symbol, vect) being formed are
    placed in the following object. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static vlo_t new_core_symb_vect_vlo;
 #else
 static vlo_t *new_core_symb_vect_vlo;
@@ -4736,7 +4736,7 @@ static vlo_t *new_core_symb_vect_vlo;
 /* All elements of vectors in the table (see
    (transitive_)transition_els_tab and reduce_els_tab) are placed in
    the following os. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t vect_els_os;
 #else
 static os_t *vect_els_os;
@@ -4749,7 +4749,7 @@ static hash_table_t core_symb_to_vect_tab;	/* key is set_core and symb. */
    symbol)->core_symb_vect implemented as two dimensional array. */
 /* The following object contains pointers to the table rows for each
    set core. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static vlo_t core_symb_table_vlo;
 #else
 static vlo_t *core_symb_table_vlo;
@@ -4760,7 +4760,7 @@ static struct core_symb_vect ***core_symb_table;
 
 /* The following contains rows of the table.  The element in the rows
    are indexed by symbol number. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t core_symb_tab_rows;
 #else
 static os_t *core_symb_tab_rows;
@@ -4880,7 +4880,7 @@ reduce_els_eq (hash_table_entry_t t1, hash_table_entry_t t2)
 static void
 core_symb_vect_init (void)
 {
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   OS_CREATE (core_symb_vect_os, grammar->alloc, 0);
   VLO_CREATE (new_core_symb_vect_vlo, grammar->alloc, 0);
   OS_CREATE (vect_els_os, grammar->alloc, 0);
@@ -4891,7 +4891,7 @@ core_symb_vect_init (void)
 #endif
   vlo_array_init ();
 #ifdef USE_CORE_SYMB_HASH_TABLE
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   core_symb_to_vect_tab =
     create_hash_table (grammar->alloc, 3000, core_symb_vect_hash,
 		       core_symb_vect_eq);
@@ -4901,7 +4901,7 @@ core_symb_vect_init (void)
 		    core_symb_vect_eq);
 #endif
 #else
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   VLO_CREATE (core_symb_table_vlo, grammar->alloc, 4096);
   core_symb_table
     = (struct core_symb_vect ***) VLO_BEGIN (core_symb_table_vlo);
@@ -4913,7 +4913,7 @@ core_symb_vect_init (void)
 #endif
 #endif
 
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   transition_els_tab =
     create_hash_table (grammar->alloc, 3000, transition_els_hash,
 		       transition_els_eq);
@@ -4960,7 +4960,7 @@ core_symb_vect_addr_get (struct core_symb_vect *triple, int reserv_p)
   if (triple->symb->cached_core_symb_vect != NULL
       && triple->symb->cached_core_symb_vect->set_core == triple->set_core)
     return &triple->symb->cached_core_symb_vect;
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   result = ((struct core_symb_vect **)
 	    find_hash_table_entry (core_symb_to_vect_tab, triple, reserv_p));
 #else
@@ -4984,7 +4984,7 @@ core_symb_vect_addr_get (struct set_core *set_core, struct symb *symb)
   struct core_symb_vect ***core_symb_vect_ptr;
 
   core_symb_vect_ptr = core_symb_table + set_core->num;
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   if ((char *) core_symb_vect_ptr >= (char *) VLO_BOUND (core_symb_table_vlo))
 #else
   if ((char *) core_symb_vect_ptr >= (char *) core_symb_table_vlo->bound ())
@@ -4993,7 +4993,7 @@ core_symb_vect_addr_get (struct set_core *set_core, struct symb *symb)
       struct core_symb_vect ***ptr, ***bound;
       int diff, i;
 
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
       diff = ((char *) core_symb_vect_ptr
 	      - (char *) VLO_BOUND (core_symb_table_vlo));
 #else
@@ -5003,7 +5003,7 @@ core_symb_vect_addr_get (struct set_core *set_core, struct symb *symb)
       diff += sizeof (struct core_symb_vect **);
       if (diff == sizeof (struct core_symb_vect **))
 	diff *= 10;
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
       VLO_EXPAND (core_symb_table_vlo, diff);
       core_symb_table
 	= (struct core_symb_vect ***) VLO_BEGIN (core_symb_table_vlo);
@@ -5019,7 +5019,7 @@ core_symb_vect_addr_get (struct set_core *set_core, struct symb *symb)
       ptr = bound - diff / sizeof (struct core_symb_vect **);
       while (ptr < bound)
 	{
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 	  OS_TOP_EXPAND (core_symb_tab_rows,
 			 (symbs_ptr->n_terms + symbs_ptr->n_nonterms)
 			 * sizeof (struct core_symb_vect *));
@@ -5070,7 +5070,7 @@ core_symb_vect_new (struct set_core *set_core, struct symb *symb)
   vlo_t *vlo_ptr;
 
   /* Create table element. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   OS_TOP_EXPAND (core_symb_vect_os, sizeof (struct core_symb_vect));
   triple = ((struct core_symb_vect *) OS_TOP_BEGIN (core_symb_vect_os));
 #else
@@ -5079,7 +5079,7 @@ core_symb_vect_new (struct set_core *set_core, struct symb *symb)
 #endif
   triple->set_core = set_core;
   triple->symb = symb;
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   OS_TOP_FINISH (core_symb_vect_os);
 #else
   core_symb_vect_os->top_finish ();
@@ -5096,7 +5096,7 @@ core_symb_vect_new (struct set_core *set_core, struct symb *symb)
   triple->transitions.intern = vlo_array_expand ();
   vlo_ptr = vlo_array_el (triple->transitions.intern);
   triple->transitions.len = 0;
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   triple->transitions.els = (int *) VLO_BEGIN (*vlo_ptr);
 #else
   triple->transitions.els = (int *) vlo_ptr->begin ();
@@ -5106,7 +5106,7 @@ core_symb_vect_new (struct set_core *set_core, struct symb *symb)
   triple->transitive_transitions.intern = vlo_array_expand ();
   vlo_ptr = vlo_array_el (triple->transitive_transitions.intern);
   triple->transitive_transitions.len = 0;
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   triple->transitive_transitions.els = (int *) VLO_BEGIN (*vlo_ptr);
 #else
   triple->transitive_transitions.els = (int *) vlo_ptr->begin ();
@@ -5116,7 +5116,7 @@ core_symb_vect_new (struct set_core *set_core, struct symb *symb)
   triple->reduces.intern = vlo_array_expand ();
   vlo_ptr = vlo_array_el (triple->reduces.intern);
   triple->reduces.len = 0;
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   triple->reduces.els = (int *) VLO_BEGIN (*vlo_ptr);
   VLO_ADD_MEMORY (new_core_symb_vect_vlo, &triple,
 		  sizeof (struct core_symb_vect *));
@@ -5137,7 +5137,7 @@ vect_new_add_el (struct vect *vec, int el)
 
   vec->len++;
   vlo_ptr = vlo_array_el (vec->intern);
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   VLO_ADD_MEMORY (*vlo_ptr, &el, sizeof (int));
   vec->els = (int *) VLO_BEGIN (*vlo_ptr);
 #else
@@ -5190,7 +5190,7 @@ process_core_symb_vect_el (struct core_symb_vect *core_symb_vect,
     vec->els = NULL;
   else
     {
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
       entry = find_hash_table_entry (*tab, core_symb_vect, TRUE);
 #else
       entry = (*tab)->find_entry (core_symb_vect, TRUE);
@@ -5207,7 +5207,7 @@ process_core_symb_vect_el (struct core_symb_vect *core_symb_vect,
       else
 	{
 	  *entry = (hash_table_entry_t) core_symb_vect;
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 	  OS_TOP_ADD_MEMORY (vect_els_os, vec->els, vec->len * sizeof (int));
 	  vec->els = OS_TOP_BEGIN (vect_els_os);
 	  OS_TOP_FINISH (vect_els_os);
@@ -5229,7 +5229,7 @@ core_symb_vect_new_all_stop (void)
 {
   struct core_symb_vect **triple_ptr;
 
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   for (triple_ptr = VLO_BEGIN (new_core_symb_vect_vlo);
        (char *) triple_ptr < (char *) VLO_BOUND (new_core_symb_vect_vlo);
        triple_ptr++)
@@ -5254,7 +5254,7 @@ core_symb_vect_new_all_stop (void)
 				 &n_reduce_vect_len);
     }
   vlo_array_nullify ();
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   VLO_NULLIFY (new_core_symb_vect_vlo);
 #else
   new_core_symb_vect_vlo->nullify ();
@@ -5265,7 +5265,7 @@ core_symb_vect_new_all_stop (void)
 static void
 core_symb_vect_fin (void)
 {
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   delete_hash_table (transition_els_tab);
 #ifdef TRANSITIVE_TRANSITION
   delete_hash_table (transitive_transition_els_tab);
@@ -5279,13 +5279,13 @@ core_symb_vect_fin (void)
   delete reduce_els_tab;
 #endif
 #ifdef USE_CORE_SYMB_HASH_TABLE
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   delete_hash_table (core_symb_to_vect_tab);
 #else
   delete core_symb_to_vect_tab;
 #endif
 #else
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   OS_DELETE (core_symb_tab_rows);
   VLO_DELETE (core_symb_table_vlo);
 #else
@@ -5294,7 +5294,7 @@ core_symb_vect_fin (void)
 #endif
 #endif
   vlo_array_fin ();
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   OS_DELETE (vect_els_os);
   VLO_DELETE (new_core_symb_vect_vlo);
   OS_DELETE (core_symb_vect_os);
@@ -5336,7 +5336,7 @@ error_func_for_allocate (void *ignored)
 }
 
 /* The following function allocates memory for new grammar. */
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 static
 #endif
 struct grammar *
@@ -5396,7 +5396,7 @@ yaep_empty_grammar (void)
 
 /* The function returns the last occurred error code for given
    grammar. */
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 static
 #endif
 int
@@ -5408,7 +5408,7 @@ yaep_error_code (struct grammar *g)
 
 /* The function returns message are always contains error message
    corresponding to the last occurred error code. */
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 static
 #endif
 const char *
@@ -5643,7 +5643,7 @@ check_grammar (int strict_p)
 /* The following function reads terminals/rules.  The function returns
    pointer to the grammar (or NULL if there were errors in
    grammar). */
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 static
 #endif
 int
@@ -5835,7 +5835,7 @@ yaep_read_grammar (struct grammar *g, int strict_p,
 /* The following functions set up parameter which affect parser work
    and return the previous parameter value. */
 
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 static
 #endif
 int
@@ -5849,7 +5849,7 @@ yaep_set_lookahead_level (struct grammar *grammar, int level)
   return old;
 }
 
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 static
 #endif
 int
@@ -5863,7 +5863,7 @@ yaep_set_debug_level (struct grammar *grammar, int level)
   return old;
 }
 
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 static
 #endif
 int
@@ -5877,7 +5877,7 @@ yaep_set_one_parse_flag (struct grammar *grammar, int flag)
   return old;
 }
 
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 static
 #endif
 int
@@ -5891,7 +5891,7 @@ yaep_set_cost_flag (struct grammar *grammar, int flag)
   return old;
 }
 
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 static
 #endif
 int
@@ -5905,7 +5905,7 @@ yaep_set_error_recovery_flag (struct grammar *grammar, int flag)
   return old;
 }
 
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 static
 #endif
 int
@@ -6385,7 +6385,7 @@ struct recovery_state
 };
 
 /* All tail sets of error recovery are saved in the following os. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t recovery_state_tail_sets;
 #else
 static os_t *recovery_state_tail_sets;
@@ -6404,7 +6404,7 @@ static int back_pl_frontier;
    This object only grows.  The last object sets may be used to
    restore original pl in order to try another error recovery state
    (alternative). */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static vlo_t original_pl_tail_stack;
 #else
 static vlo_t *original_pl_tail_stack;
@@ -6566,7 +6566,7 @@ new_recovery_state (int last_original_pl_el, int backward_move_cost)
 /* The following vlo is error recovery states stack.  The stack
    contains error recovery state which should be investigated to find
    the best error recovery. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static vlo_t recovery_state_stack;
 #else
 static vlo_t *recovery_state_stack;
@@ -7123,7 +7123,7 @@ struct parse_state
 };
 
 /* The following os contains all allocated parser states. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t parse_state_os;
 #else
 static os_t *parse_state_os;
@@ -7172,7 +7172,7 @@ parse_state_init (void)
   free_parse_state = NULL;
   OS_CREATE (parse_state_os, grammar->alloc, 0);
   if (!grammar->one_parse_p)
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
     parse_state_tab =
       create_hash_table (grammar->alloc, toks_len * 2, parse_state_hash,
 			 parse_state_eq);
@@ -7230,7 +7230,7 @@ parse_state_insert (struct parse_state *state, int *new_p)
 {
   hash_table_entry_t *entry;
 
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   entry = find_hash_table_entry (parse_state_tab, state, TRUE);
 #else
   entry = parse_state_tab->find_entry (state, TRUE);
@@ -7251,7 +7251,7 @@ static void
 parse_state_fin (void)
 {
   if (!grammar->one_parse_p)
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
     delete_hash_table (parse_state_tab);
 #else
     delete parse_state_tab;
@@ -7281,7 +7281,7 @@ static hash_table_t trans_visit_nodes_tab;
 
 /* All translation visit nodes are placed in the following stack.  All
    the nodes are in the table. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t trans_visit_nodes_os;
 #else
 static os_t *trans_visit_nodes_os;
@@ -7316,7 +7316,7 @@ visit_node (struct yaep_tree_node *node)
   hash_table_entry_t *entry;
 
   trans_visit_node.node = node;
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   entry = find_hash_table_entry (trans_visit_nodes_tab,
 				 &trans_visit_node, TRUE);
 #else
@@ -7476,7 +7476,7 @@ print_yaep_node (FILE * f, struct yaep_tree_node *node)
 static void
 print_parse (FILE * f, struct yaep_tree_node *root)
 {
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   trans_visit_nodes_tab =
     create_hash_table (grammar->alloc, toks_len * 2, trans_visit_node_hash,
 		       trans_visit_node_eq);
@@ -7489,7 +7489,7 @@ print_parse (FILE * f, struct yaep_tree_node *root)
   OS_CREATE (trans_visit_nodes_os, grammar->alloc, 0);
   print_yaep_node (f, root);
   OS_DELETE (trans_visit_nodes_os);
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   delete_hash_table (trans_visit_nodes_tab);
 #else
   delete trans_visit_nodes_tab;
@@ -7585,7 +7585,7 @@ reserv_mem_eq (hash_table_entry_t m1, hash_table_entry_t m2)
 
 /* The following vlo will contain references to memory which should be
    freed.  The same reference can be represented more on time. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static vlo_t tnodes_vlo;
 #else
 static vlo_t *tnodes_vlo;
@@ -7706,7 +7706,7 @@ find_minimal_translation (struct yaep_tree_node *root)
 
   if (parse_free != NULL)
     {
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
       reserv_mem_tab =
 	create_hash_table (grammar->alloc, toks_len * 4, reserv_mem_hash,
 			   reserv_mem_eq);
@@ -7736,7 +7736,7 @@ find_minimal_translation (struct yaep_tree_node *root)
 	     (*parse_free) (*node_ptr);
 	   }
       VLO_DELETE (tnodes_vlo);
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
       delete_hash_table (reserv_mem_tab);
 #else
       delete reserv_mem_tab;
@@ -7768,7 +7768,7 @@ make_parse (int *ambiguous_p)
   int parent_disp;
   int saved_one_parse_p;
   struct yaep_tree_node **term_node_array = NULL;
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   vlo_t stack, orig_states;
 #else
   vlo_t *stack, *orig_states;
@@ -8308,7 +8308,7 @@ parse_free_default (void *mem)
    will be also in error_code).  The function sets up
    *AMBIGUOUS_P if we found that the grammer is ambigous (it works even
    we asked only one parse tree without alternatives). */
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 static
 #endif
 int
@@ -8370,7 +8370,7 @@ yaep_parse (struct grammar *g,
   yaep_parse_init (toks_len);
   parse_init_p = TRUE;
   pl_create ();
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   tab_collisions = get_all_collisions ();
   tab_searches = get_all_searches ();
 #else
@@ -8379,7 +8379,7 @@ yaep_parse (struct grammar *g,
 #endif
   build_pl ();
   *root = make_parse (ambiguous_p);
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
   tab_collisions = get_all_collisions () - tab_collisions;
   tab_searches = get_all_searches () - tab_searches;
 #else
@@ -8452,7 +8452,7 @@ yaep_parse (struct grammar *g,
 }
 
 /* The following function frees memory allocated for the grammar. */
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 static
 #endif
 void
@@ -8610,7 +8610,7 @@ free_tree_sweep (struct yaep_tree_node *node, void (*parse_free) (void *),
   parse_free (node);
 }
 
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 static
 #endif
 void
@@ -8640,7 +8640,7 @@ yaep_free_tree (struct yaep_tree_node *root, void (*parse_free) (void *),
 #ifdef YAEP_TEST
 
 /* All parse_alloc memory is contained here. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t mem_os;
 #else
 static os_t *mem_os;
@@ -8790,7 +8790,7 @@ test_syntax_error (int err_tok_num, void *err_tok_attr,
        start_ignored_tok_num);
 }
 
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 /* The following two functions calls earley parser with two different
    ways of forming grammars. */
 static void
@@ -8847,7 +8847,7 @@ static const char *description =
   "  | '(' E ')' # 1\n"
   "  ;\n";
 
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static void
 use_description (int argc, char **argv)
 {
@@ -9034,7 +9034,7 @@ struct srule
 
 /* The following vlos contain all syntax terminal and syntax rule
    structures. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static vlo_t sterms, srules;
 #else
 static vlo_t *sterms, *srules;
@@ -9042,7 +9042,7 @@ static vlo_t *sterms, *srules;
 
 /* The following contain all right hand sides and translations arrays.
    See members rhs, trans in structure `rule'. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t srhs, strans; 
 #else
 static os_t *srhs, *strans; 
@@ -9064,7 +9064,7 @@ extern int yyparse (void);
 #line 159 "y.tab.c"
 
 # ifndef YY_CAST
-#  ifdef __cplusplus
+#  ifdef NOT_DEFINED
 #   define YY_CAST(Type, Val) static_cast<Type> (Val)
 #   define YY_REINTERPRET_CAST(Type, Val) reinterpret_cast<Type> (Val)
 #  else
@@ -9073,8 +9073,8 @@ extern int yyparse (void);
 #  endif
 # endif
 # ifndef YY_NULLPTR
-#  if defined __cplusplus
-#   if 201103L <= __cplusplus
+#  if defined NOT_DEFINED
+#   if 201103L <= NOT_DEFINED
 #    define YY_NULLPTR nullptr
 #   else
 #    define YY_NULLPTR 0
@@ -9361,7 +9361,7 @@ typedef int yy_state_fast_t;
 # define YY_INITIAL_VALUE(Value) /* Nothing. */
 #endif
 
-#if defined __cplusplus && defined __GNUC__ && ! defined __ICC && 6 <= __GNUC__
+#if defined NOT_DEFINED && defined __GNUC__ && ! defined __ICC && 6 <= __GNUC__
 # define YY_IGNORE_USELESS_CAST_BEGIN                          \
     _Pragma ("GCC diagnostic push")                            \
     _Pragma ("GCC diagnostic ignored \"-Wuseless-cast\"")
@@ -9420,7 +9420,7 @@ typedef int yy_state_fast_t;
 #  ifndef YYSTACK_ALLOC_MAXIMUM
 #   define YYSTACK_ALLOC_MAXIMUM YYSIZE_MAXIMUM
 #  endif
-#  if (defined __cplusplus && ! defined EXIT_SUCCESS \
+#  if (defined NOT_DEFINED && ! defined EXIT_SUCCESS \
        && ! ((defined YYMALLOC || defined malloc) \
              && (defined YYFREE || defined free)))
 #   include <stdlib.h> /* INFRINGES ON USER NAME SPACE */
@@ -9444,7 +9444,7 @@ void free (void *); /* INFRINGES ON USER NAME SPACE */
 #endif /* !defined yyoverflow */
 
 #if (! defined yyoverflow \
-     && (! defined __cplusplus \
+     && (! defined NOT_DEFINED \
          || (defined YYSTYPE_IS_TRIVIAL && YYSTYPE_IS_TRIVIAL)))
 
 /* A type that is properly aligned for any stack member.  */
@@ -10510,7 +10510,7 @@ static const char *curr_ch;
 static int ln;
 
 /* The following contains all representation of the syntax tokens. */
-#ifndef __cplusplus
+#ifndef NOT_DEFINED
 static os_t stoks;
 #else
 static os_t *stoks;
@@ -10775,7 +10775,7 @@ sread_rule (const char ***rhs, const char **abs_node, int *anode_cost,
 }
 
 /* The following function parses grammar desrciption. */
-#ifdef __cplusplus
+#ifdef NOT_DEFINED
 static
 #endif
   int

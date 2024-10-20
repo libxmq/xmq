@@ -1231,7 +1231,7 @@ const char *ixml_to_yaep_read_terminal(int *code);
 const char *ixml_to_yaep_read_terminal(int *code)
 {
     if (yaep_i_ >= yaep_state_->ixml_terminals->size) return NULL;
-    IXMLTerminal *t = element_at_vector(yaep_state_->ixml_terminals, yaep_i_);
+    IXMLTerminal *t = (IXMLTerminal*)element_at_vector(yaep_state_->ixml_terminals, yaep_i_);
     const char *name = t->name;
     *code = t->code;
     yaep_i_++;
@@ -1254,9 +1254,9 @@ const char *ixml_to_yaep_read_rule(const char ***rhs,
     if (rule->rule_name.alias) *abs_node = rule->rule_name.alias;
     size_t num_rhs = rule->rhs->size;
     if (yaep_tmp_rhs_) free(yaep_tmp_rhs_);
-    yaep_tmp_rhs_ = calloc(num_rhs+1, sizeof(char*));
+    yaep_tmp_rhs_ = (char**)calloc(num_rhs+1, sizeof(char*));
     if (yaep_tmp_transl_) free(yaep_tmp_transl_);
-    yaep_tmp_transl_ = calloc(num_rhs+1, sizeof(char*));
+    yaep_tmp_transl_ = (int*)calloc(num_rhs+1, sizeof(char*));
     for (size_t i = 0; i < num_rhs; ++i)
     {
         yaep_tmp_transl_[i] = (int)i;
