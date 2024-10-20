@@ -35,7 +35,7 @@ then
         echo
         echo Fetching libxml2 posix
         echo
-        git clone https://gitlab.gnome.org/GNOME/libxml2.git libxml2-posix
+        git clone https://github.com/GNOME/libxml2.git libxml2-posix
     fi
 
     # ./.libs/libxml2.a
@@ -54,7 +54,7 @@ then
         echo
         echo Fetching libxslt posix
         echo
-        git clone https://gitlab.gnome.org/GNOME/libxslt.git libxslt-posix
+        git clone https://github.com/GNOME/libxslt.git libxslt-posix
     fi
 
     cd libxslt-posix
@@ -95,7 +95,7 @@ then
         echo
         echo Fetching libxml2 posix aarch64
         echo
-        git clone https://gitlab.gnome.org/GNOME/libxml2.git libxml2-posix
+        git clone https://github.com/GNOME/libxml2.git libxml2-posix
         mv libxml2-posix libxml2-posix-aarch64
     fi
 
@@ -115,7 +115,7 @@ then
         echo
         echo Fetching libxslt posix aarch64
         echo
-        git clone https://gitlab.gnome.org/GNOME/libxslt.git libxslt-posix
+        git clone https://github.com/GNOME/libxslt.git libxslt-posix
         mv libxslt-posix libxslt-posix-aarch64
     fi
 
@@ -157,7 +157,7 @@ then
         echo
         echo Fetching libxml2 posix armv7l
         echo
-        git clone https://gitlab.gnome.org/GNOME/libxml2.git libxml2-posix
+        git clone https://github.com/GNOME/libxml2.git libxml2-posix
         mv libxml2-posix libxml2-posix-armv7l
     fi
 
@@ -177,7 +177,7 @@ then
         echo
         echo Fetching libxslt posix armv7l
         echo
-        git clone https://gitlab.gnome.org/GNOME/libxslt.git libxslt-posix
+        git clone https://github.com/GNOME/libxslt.git libxslt-posix
         mv libxslt-posix libxslt-posix-armv7l
     fi
 
@@ -218,7 +218,7 @@ then
         echo
         echo Fetching libxml2 winapi
         echo
-        git clone https://gitlab.gnome.org/GNOME/libxml2.git libxml2-winapi
+        git clone https://github.com/GNOME/libxml2.git libxml2-winapi
     fi
 
     cd libxml2-winapi
@@ -236,7 +236,7 @@ then
         echo
         echo Fetching libxslt winapi
         echo
-        git clone https://gitlab.gnome.org/GNOME/libxslt.git libxslt-winapi
+        git clone https://github.com/GNOME/libxslt.git libxslt-winapi
     fi
 
     cd libxslt-winapi
