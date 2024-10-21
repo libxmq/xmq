@@ -887,10 +887,6 @@ XMQParseState *xmqNewParseState(XMQParseCallbacks *callbacks, XMQOutputSettings 
     state->output_settings = output_settings;
     state->magic_cookie = MAGIC_COOKIE;
     state->element_stack = new_stack();
-    state->ixml_rules = new_vector();
-    state->ixml_terminals = new_vector();
-    state->ixml_terminals_map = hashmap_create(16);
-    state->ixml_rule_stack = new_stack();
 
     return state;
 }
@@ -1698,14 +1694,6 @@ void xmqFreeParseState(XMQParseState *state)
 {
     if (!state) return;
 
-    if (state->ixml_rules) free_vector(state->ixml_rules);
-    state->ixml_rules = NULL;
-    if (state->ixml_terminals) free_vector(state->ixml_terminals);
-    state->ixml_terminals = NULL;
-    hashmap_free(state->ixml_terminals_map);
-    state->ixml_terminals_map = NULL;
-    free_stack(state->ixml_rule_stack);
-    state->ixml_rule_stack = NULL;
     free(state->source_name);
     state->source_name = NULL;
     free(state->generated_error_msg);
@@ -1716,7 +1704,7 @@ void xmqFreeParseState(XMQParseState *state)
         state->generating_error_msg = NULL;
     }
     free_stack(state->element_stack);
-//    free(state->settings);
+    // Settings are not freed here.
     state->output_settings = NULL;
     free(state);
 }
@@ -4123,6 +4111,13 @@ bool xmq_parse_ixml_grammar(struct grammar *g,
     parse->magic_cookie = MAGIC_COOKIE;
 
     XMQParseState *state = xmqNewParseState(parse, os);
+
+    state->ixml_rules = new_vector();
+    state->ixml_terminals = new_vector();
+    state->ixml_terminals_map = hashmap_create(16);
+    state->ixml_non_terminals = new_vector();
+    state->ixml_rule_stack = new_stack();
+
     state->doq = doq;
     state->build_xml_of_ixml = build_xml_of_ixml;
 
@@ -4138,6 +4133,17 @@ bool xmq_parse_ixml_grammar(struct grammar *g,
         doq->errno_ = xmqStateErrno(state);
         doq->error_ = build_error_message("%s\n", xmqStateErrorMsg(state));
     }
+
+    free_vector(state->ixml_rules);
+    state->ixml_rules = NULL;
+    free_vector(state->ixml_terminals);
+    state->ixml_terminals = NULL;
+    hashmap_free(state->ixml_terminals_map);
+    state->ixml_terminals_map = NULL;
+    free_vector(state->ixml_non_terminals);
+    state->ixml_non_terminals = NULL;
+    free_stack(state->ixml_rule_stack);
+    state->ixml_rule_stack = NULL;
 
     xmqFreeParseState(state);
     xmqFreeParseCallbacks(parse);

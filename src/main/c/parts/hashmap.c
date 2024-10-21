@@ -184,6 +184,8 @@ void hashmap_free(HashMap* table)
         while (slot != NULL)
         {
             HashMapNode* tmp = slot;
+            if (tmp->key_) free((char*)tmp->key_);
+            tmp->key_ = NULL;
             slot = slot ->next_;
             free(tmp);
         }

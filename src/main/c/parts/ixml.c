@@ -714,6 +714,7 @@ void parse_ixml_factor(XMQParseState *state)
 
         parse_ixml_nonterminal(state);
 
+        push_back_vector(state->ixml_non_terminals, state->ixml_nonterminal);
         push_back_vector(state->ixml_rule->rhs, state->ixml_nonterminal);
         free(state->ixml_terminal);
         state->ixml_terminal = NULL;
@@ -1371,13 +1372,18 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
         IXMLRule *r = (IXMLRule*)element_at_vector(state->ixml_rules, i);
         free_ixml_rule(r);
     }
-/*
+
     for (size_t i = 0; i < state->ixml_terminals->size; ++i)
     {
         IXMLTerminal *t = (IXMLTerminal*)element_at_vector(state->ixml_terminals, i);
         free_ixml_terminal(t);
     }
-*/
+
+    for (size_t i = 0; i < state->ixml_non_terminals->size; ++i)
+    {
+        IXMLNonTerminal *nt = (IXMLNonTerminal*)element_at_vector(state->ixml_non_terminals, i);
+        free_ixml_nonterminal(nt);
+    }
 
     return true;
 }
@@ -1487,7 +1493,6 @@ void free_ixml_rule(IXMLRule *r)
 {
     if (r->rule_name) free_ixml_nonterminal(r->rule_name);
     r->rule_name = NULL;
-    free_vector_elements(r->rhs);
     free_vector(r->rhs);
     r->rhs = NULL;
     free(r);

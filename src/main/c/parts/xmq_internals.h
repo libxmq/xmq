@@ -287,12 +287,14 @@ struct XMQParseState
     size_t last_suspicios_quote_end_col;
 
     // When parsing an ixml grammar.
-    Vector *ixml_terminals;
-    HashMap *ixml_terminals_map;
-    Vector *ixml_rules;
+    Vector *ixml_terminals; // Points to terminal objects (name+code)
+    HashMap *ixml_terminals_map; // Used to check if terminal already seen.
+    Vector *ixml_non_terminals; // Points to non-terminal references (mark+name...)
+    // A non-terminal references is used to point to a rule.
+    Vector *ixml_rules; // Points to rules. The rule has a rule_name which is a non-terminal ref to itself.
     // Rule stack is pushed by groups (..), ?, * and +.
     Stack  *ixml_rule_stack;
-    // Active objects being modified while ixml parsing.
+    // Temporary object pointers when parsing ixml. These are eventually insert into the vectors above.
     IXMLRule *ixml_rule;
     IXMLNonTerminal *ixml_nonterminal;
     IXMLTerminal *ixml_terminal;
