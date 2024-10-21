@@ -138,7 +138,7 @@ void parse_ixml_prolog(XMQParseState *state);
 void parse_ixml_range(XMQParseState *state);
 void parse_ixml_quoted(XMQParseState *state);
 void parse_ixml_rule(XMQParseState *state);
-void parse_ixml_string(XMQParseState *state, const char **content_start, const char **content_stop);
+void parse_ixml_string(XMQParseState *state, char **content);
 void parse_ixml_term(XMQParseState *state);
 void parse_ixml_terminal(XMQParseState *state);
 void parse_ixml_whitespace(XMQParseState *state);
@@ -594,8 +594,9 @@ void parse_ixml_charset(XMQParseState *state)
         }
         else if (is_ixml_string_start(state))
         {
-            const char *start, *stop;
-            parse_ixml_string(state, &start, &stop);
+            char *content = NULL;
+            parse_ixml_string(state, &content);
+            free(content);
         }
 
         char c = *(state->i);
@@ -793,8 +794,9 @@ void parse_ixml_insertion(XMQParseState *state)
 
     if (is_ixml_string_start(state))
     {
-        const char *start, *stop;
-        parse_ixml_string(state, &start, &stop);
+        char *content = NULL;
+        parse_ixml_string(state, &content);
+        free(content);
     }
     else if (is_ixml_encoded_start(state))
     {
@@ -939,9 +941,9 @@ void parse_ixml_prolog(XMQParseState *state)
         longjmp(state->error_handler, 1);
     }
 
-    const char *content_start;
-    const char *content_stop;
-    parse_ixml_string(state, &content_start, &content_stop);
+    char *content;
+    parse_ixml_string(state, &content);
+    free(content);
 
     parse_ixml_whitespace(state);
 
@@ -965,8 +967,9 @@ void parse_ixml_range(XMQParseState *state)
 
     if (is_ixml_string_start(state))
     {
-        const char *start, *stop;
-        parse_ixml_string(state, &start, &stop);
+        char *content;
+        parse_ixml_string(state, &content);
+        free(content);
     }
     else
     {
@@ -982,8 +985,9 @@ void parse_ixml_range(XMQParseState *state)
 
     if (is_ixml_string_start(state))
     {
-        const char *start, *stop;
-        parse_ixml_string(state, &start, &stop);
+        char *content;
+        parse_ixml_string(state, &content);
+        free(content);
     }
     else if (is_ixml_encoded_start(state))
     {
@@ -1013,8 +1017,9 @@ void parse_ixml_quoted(XMQParseState *state)
         parse_ixml_whitespace(state);
     }
 
-    const char *start, *stop;
-    parse_ixml_string(state, &start, &stop);
+    char *content = NULL;
+    parse_ixml_string(state, &content);
+    free(content);
 
     parse_ixml_whitespace(state);
 
@@ -1070,7 +1075,7 @@ void parse_ixml_rule(XMQParseState *state)
     IXML_DONE(rule, state);
 }
 
-void parse_ixml_string(XMQParseState *state, const char **content_start, const char **content_stop)
+void parse_ixml_string(XMQParseState *state, char **content)
 {
     IXML_STEP(string, state);
 
@@ -1106,16 +1111,13 @@ void parse_ixml_string(XMQParseState *state, const char **content_start, const c
         membuffer_append_char(buf, *(state->i));
         EAT(string_inside, 1);
     }
-    // Add a zero termination to the string which is not used except for
-    // guaranteeing that there is at least one allocated byte for empty strings.
+    // Add a zero termination to the string.
     membuffer_append_null(buf);
 
     // Calculate the real length which might be less than the original
     // since escapes have disappeared. Add 1 to have at least something to allocate.
-    size_t len = membuffer_used(buf);
     char *quote = free_membuffer_but_return_trimmed_content(buf);
-    *content_start = quote;
-    *content_stop = quote+len-1; // Drop the zero byte.
+    *content = quote;
 
     IXML_DONE(string, state);
 }
