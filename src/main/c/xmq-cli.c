@@ -164,7 +164,6 @@ struct XMQCliCommand
     xmlSchemaPtr xsd; // The xsd to validate agains.
     const char *save_file; // Save output to this file name.
     xmlDocPtr   ixml_doc;  // A DOM containing the ixml grammar.
-    const char *ixml_yaep; // Yaep grammar source to be used.
     const char *ixml_ixml; // IXML grammar source to be used.
     const char *ixml_filename; // Where the ixml grammar was read from.
     bool build_xml_of_ixml; // Generate xml directly from ixml.
@@ -1492,7 +1491,7 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     {
         const char *file = arg+7;
 
-        if (command->ixml_doc != NULL || command->ixml_yaep != NULL || command->ixml_ixml != NULL)
+        if (command->ixml_doc != NULL || command->ixml_ixml != NULL)
         {
             printf("You have already specified an ixml grammar!\n");
             exit(1);
@@ -1502,24 +1501,17 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         if (len < 6 ||
             (strcmp(file+len-5, ".ixml") &&
              strcmp(file+len-4, ".xml") &&
-             strcmp(file+len-4, ".xmq") &&
-             strcmp(file+len-5, ".yaep")))
+             strcmp(file+len-4, ".xmq")))
         {
-            printf("For ixml you can specify: g.ixml g.xml g.xmq g.yaep\n");
+            printf("For ixml you can specify: g.ixml g.xml g.xmq\n");
             exit(1);
-        }
-        if (!strcmp(file+len-5, ".yaep"))
-        {
-            verbose_("(xmq) reading yaep file %s\n", file);
-            command->ixml_yaep = load_file_into_buffer(file);
-            return true;
         }
         if (!strcmp(file+len-5, ".ixml"))
         {
             verbose_("(xmq) reading ixml file %s\n", file);
             command->ixml_filename = strdup(file);
             command->ixml_ixml = load_file_into_buffer(file);
-            if (command->ixml_ixml == NULL) exit(1);
+            if (command->ixml_ixml == NULL) return false;
             return true;
         }
 
@@ -1878,9 +1870,9 @@ bool cmd_load(XMQCliCommand *command)
 
     if (command->ixml_ixml != NULL)
     {
-        struct grammar *g;
-        struct yaep_tree_node *root;
-        int ambiguous;
+        struct grammar *g = NULL;
+        struct yaep_tree_node *root = NULL;
+        int ambiguous = 0;
 
         g = yaep_create_grammar();
 
@@ -1898,38 +1890,35 @@ bool cmd_load(XMQCliCommand *command)
             exit(1);
         }
 
-        if (command->in == NULL)
+        if (command->in)
         {
-            return true;
-        }
+            input = load_file_into_buffer(command->in);
 
-        input = load_file_into_buffer(command->in);
+            int rc = yaep_parse (g,
+                                 read_token,
+                                 syntax_error,
+                                 NULL,
+                                 NULL,
+                                 &root,
+                                 &ambiguous);
 
-        int rc = yaep_parse (g,
-                             read_token,
-                             syntax_error,
-                             NULL,
-                             NULL,
-                             &root,
-                             &ambiguous);
+            if (rc)
+            {
+                printf("xmq: could not parse input using ixml/yaep grammar: %s\n", yaep_error_message(g));
+                return 1;
+            }
 
-        if (rc)
-        {
-            printf("xmq: could not parse input using ixml/yaep grammar: %s\n", yaep_error_message(g));
-            return 1;
+            xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
+
+            print_yaep_node(new_doc, NULL, root, 0, 0);
+
+            xmlFreeDoc(xmqGetImplementationDoc(command->env->doc));
+            xmqSetImplementationDoc(command->env->doc, new_doc);
         }
 
         xmqFreeDoc(doq);
-
-        xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
-
-        print_yaep_node(new_doc, NULL, root, 0, 0);
-
-        xmlFreeDoc(xmqGetImplementationDoc(command->env->doc));
-        xmqSetImplementationDoc(command->env->doc, new_doc);
-
         yaep_free_grammar (g);
-        yaep_free_tree(root, NULL, NULL);
+        if (root) yaep_free_tree(root, NULL, NULL);
 
         const char *from = "stdin";
         if (command->in) from = command->in;
@@ -1939,7 +1928,7 @@ bool cmd_load(XMQCliCommand *command)
         command->ixml_ixml = NULL;
         verbose_("(xmq) cmd-load-ixml %zu bytes from %s\n", xmqGetOriginalSize(command->env->doc), from);
     }
-    else if (command->ixml_yaep != NULL)
+    else if (false)
     {
         struct grammar *g;
         struct yaep_tree_node *root;
