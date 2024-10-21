@@ -1371,6 +1371,13 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
         IXMLRule *r = (IXMLRule*)element_at_vector(state->ixml_rules, i);
         free_ixml_rule(r);
     }
+/*
+    for (size_t i = 0; i < state->ixml_terminals->size; ++i)
+    {
+        IXMLTerminal *t = (IXMLTerminal*)element_at_vector(state->ixml_terminals, i);
+        free_ixml_terminal(t);
+    }
+*/
 
     return true;
 }
@@ -1505,6 +1512,12 @@ void free_ixml_nonterminal(IXMLNonTerminal *nt)
     if (nt->name) free(nt->name);
     nt->name = NULL;
     free(nt);
+}
+
+void free_ixml_terminal(IXMLTerminal *t)
+{
+    if (t->name) free(t->name);
+    free(t);
 }
 
 #else

@@ -3234,7 +3234,8 @@ INLINE
 static term_set_el_t *
 term_set_from_table (int num)
 {
-  assert (num < VLO_LENGTH (term_sets_ptr->tab_term_set_vlo)
+  assert (num >= 0);
+  assert ((long unsigned int)num < VLO_LENGTH (term_sets_ptr->tab_term_set_vlo)
 	  / sizeof (struct tab_term_set *));
   return ((struct tab_term_set **)
 	  VLO_BEGIN (term_sets_ptr->tab_term_set_vlo))[num]->set;
