@@ -1925,12 +1925,18 @@ bool cmd_load(XMQCliCommand *command)
 
         print_yaep_node(new_doc, NULL, root, 0, 0);
 
+        xmlFreeDoc(xmqGetImplementationDoc(command->env->doc));
         xmqSetImplementationDoc(command->env->doc, new_doc);
 
         yaep_free_grammar (g);
+        yaep_free_tree(root, NULL, NULL);
 
         const char *from = "stdin";
         if (command->in) from = command->in;
+        free((char*)command->ixml_filename);
+        command->ixml_filename = NULL;
+        free((char*)command->ixml_ixml);
+        command->ixml_ixml = NULL;
         verbose_("(xmq) cmd-load-ixml %zu bytes from %s\n", xmqGetOriginalSize(command->env->doc), from);
     }
     else if (command->ixml_yaep != NULL)
@@ -1965,6 +1971,7 @@ bool cmd_load(XMQCliCommand *command)
 
         print_yaep_node(new_doc, NULL, root, 0, 0);
 
+        xmlFreeDoc(xmqGetImplementationDoc(command->env->doc));
         xmqSetImplementationDoc(command->env->doc, new_doc);
 
         yaep_free_grammar (g);
