@@ -297,7 +297,10 @@ struct XMQParseState
     // Temporary object pointers when parsing ixml. These are eventually insert into the vectors above.
     IXMLRule *ixml_rule;
     IXMLNonTerminal *ixml_nonterminal;
-    IXMLTerminal *ixml_terminal;
+    // A single ixml #78 or 'x' or "x" adds a single terminal to this vector.
+    // The string 'xy' adds two terminals to this vector, etc.
+    // These terminals are then added to the rule's rhs.
+    Vector *ixml_tmp_terminals;
 
     // When debugging parsing of ixml, track indentation of depth here.
     int depth;

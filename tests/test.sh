@@ -1,5 +1,5 @@
 #!/bin/bash
-# libxmq - Copyright 2023 Fredrik Öhrström (spdx: MIT)
+# libxmq - Copyright 2023-2024 Fredrik Öhrström (spdx: MIT)
 
 #set -e
 BUILD=$1

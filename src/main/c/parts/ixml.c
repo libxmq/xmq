@@ -150,8 +150,15 @@ void skip_string(const char **i);
 void skip_tmark(const char **i);
 void skip_whitespace(const char **i);
 
-
+void allocate_yaep_tmp_terminals(XMQParseState *state);
+void free_yaep_tmp_terminals(XMQParseState *state);
+bool has_ixml_tmp_terminals(XMQParseState *state);
 void add_yaep_grammar_rule(char mark, const char *name_start, const char *name_stop);
+void add_yaep_terminal(XMQParseState *state, IXMLTerminal *terminal);
+void add_yaep_terminal_to_rule(XMQParseState *state, IXMLTerminal *terminal, IXMLRule *rule);
+void add_yaep_tmp_terminal(XMQParseState *state, char *name, int code);
+// Store all state->ixml_tmp_terminals on the rule rhs.
+void add_yaep_tmp_terminals_to_rule(XMQParseState *state, IXMLRule *rule);
 
 void do_ixml(XMQParseState *state);
 void do_ixml_comment(XMQParseState *state, const char *start, const char *stop);
@@ -166,6 +173,7 @@ IXMLTerminal *new_ixml_terminal();
 void free_ixml_terminal(IXMLTerminal *t);
 IXMLNonTerminal *new_ixml_nonterminal();
 void free_ixml_nonterminal(IXMLNonTerminal *t);
+
 //////////////////////////////////////////////////////////////////////////////////////
 
 bool is_ixml_eob(XMQParseState *state)
@@ -670,10 +678,10 @@ void parse_ixml_encoded(XMQParseState *state)
     parse_ixml_hex(state, &value);
     parse_ixml_whitespace(state);
 
-    state->ixml_terminal->code = value;
     char buffer[16];
     snprintf(buffer, 15, "#%x", value);
-    state->ixml_terminal->name = strdup(buffer);
+
+    add_yaep_tmp_terminal(state, strdup(buffer), value);
 
     IXML_DONE(encoded, state);
 }
@@ -685,29 +693,15 @@ void parse_ixml_factor(XMQParseState *state)
 
     if (is_ixml_terminal_start(state))
     {
-        state->ixml_terminal = new_ixml_terminal();
+        allocate_yaep_tmp_terminals(state);
 
         parse_ixml_terminal(state);
 
-        if (state->ixml_terminal->name != NULL) // Test needed while developing parser.
+        if (has_ixml_tmp_terminals(state)) // Test needed while developing parser.
         {
-            IXMLTerminal *t = (IXMLTerminal*)hashmap_get(state->ixml_terminals_map, state->ixml_terminal->name);
-            if (!t)
-            {
-                hashmap_put(state->ixml_terminals_map, state->ixml_terminal->name, state->ixml_terminal);
-                push_back_vector(state->ixml_terminals, state->ixml_terminal);
-                push_back_vector(state->ixml_rule->rhs, state->ixml_terminal);
-            }
-            else
-            {
-                free(state->ixml_terminal);
-            }
+            add_yaep_tmp_terminals_to_rule(state, state->ixml_rule);
         }
-        else
-        {
-            free(state->ixml_terminal);
-        }
-        state->ixml_terminal = NULL;
+        free_yaep_tmp_terminals(state);
     }
     else if (is_ixml_nonterminal_start(state))
     {
@@ -717,8 +711,6 @@ void parse_ixml_factor(XMQParseState *state)
 
         push_back_vector(state->ixml_non_terminals, state->ixml_nonterminal);
         push_back_vector(state->ixml_rule->rhs, state->ixml_nonterminal);
-        free(state->ixml_terminal);
-        state->ixml_terminal = NULL;
     }
     else  if (is_ixml_insertion_start(state))
     {
@@ -1019,6 +1011,11 @@ void parse_ixml_quoted(XMQParseState *state)
 
     char *content = NULL;
     parse_ixml_string(state, &content);
+
+    for (const char *i = content; *i; ++i)
+    {
+        add_yaep_tmp_terminal(state, strndup(i, 1), *i);
+    }
     free(content);
 
     parse_ixml_whitespace(state);
@@ -1114,8 +1111,6 @@ void parse_ixml_string(XMQParseState *state, char **content)
     // Add a zero termination to the string.
     membuffer_append_null(buf);
 
-    // Calculate the real length which might be less than the original
-    // since escapes have disappeared. Add 1 to have at least something to allocate.
     char *quote = free_membuffer_but_return_trimmed_content(buf);
     *content = quote;
 
@@ -1130,12 +1125,6 @@ void parse_ixml_term(XMQParseState *state)
     if (is_ixml_factor_start(state))
     {
         parse_ixml_factor(state);
-
-        if (state->ixml_terminal)
-        {
-            push_back_vector(state->ixml_rule->rhs, state->ixml_terminal);
-            state->ixml_terminal = NULL;
-        }
     }
     else
     {
@@ -1481,6 +1470,61 @@ void skip_whitespace(const char **i)
 
 void add_yaep_grammar_rule(char mark, const char *name_start, const char *name_stop)
 {
+}
+
+void add_yaep_terminal(XMQParseState *state, IXMLTerminal *terminal)
+{
+    hashmap_put(state->ixml_terminals_map, terminal->name, terminal);
+    push_back_vector(state->ixml_terminals, terminal);
+}
+
+void add_yaep_terminal_to_rule(XMQParseState *state, IXMLTerminal *terminal, IXMLRule *rule)
+{
+    push_back_vector(rule->rhs, terminal);
+}
+
+void add_yaep_tmp_terminal(XMQParseState *state, char *name, int code)
+{
+    IXMLTerminal *t = new_ixml_terminal();
+    t->name = name;
+    t->code = code;
+    push_back_vector(state->ixml_tmp_terminals, t);
+}
+
+void add_yaep_tmp_terminals_to_rule(XMQParseState *state, IXMLRule *rule)
+{
+    for (size_t i = 0; i < state->ixml_tmp_terminals->size; ++i)
+    {
+        IXMLTerminal *te = state->ixml_tmp_terminals->elements[i];
+        IXMLTerminal *t = (IXMLTerminal*)hashmap_get(state->ixml_terminals_map, te->name);
+        if (t == NULL)
+        {
+            fprintf(stderr, "ADDED >%s<\n", te->name);
+            add_yaep_terminal(state, te);
+        }
+        add_yaep_terminal_to_rule(state, te, rule);
+        state->ixml_tmp_terminals->elements[i] = NULL;
+    }
+}
+
+void allocate_yaep_tmp_terminals(XMQParseState *state)
+{
+    assert(state->ixml_tmp_terminals == NULL);
+    state->ixml_tmp_terminals = new_vector();
+}
+
+void free_yaep_tmp_terminals(XMQParseState *state)
+{
+    free_vector_elements(state->ixml_tmp_terminals);
+    free_vector(state->ixml_tmp_terminals);
+    state->ixml_tmp_terminals = NULL;
+}
+
+bool has_ixml_tmp_terminals(XMQParseState *state)
+{
+    assert(state->ixml_tmp_terminals);
+
+    return state->ixml_tmp_terminals->size > 0;
 }
 
 IXMLRule *new_ixml_rule()
