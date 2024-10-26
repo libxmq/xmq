@@ -2609,7 +2609,7 @@ void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings)
     xmlDocDumpMemoryEnc(doq->docptr_.xml,
                         &buffer,
                         &size,
-                        "utf8");
+                        "utf-8");
 
     membuffer_reuse(output_settings->output_buffer,
                     (char*)buffer,

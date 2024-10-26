@@ -3,7 +3,7 @@ START
 COMPACT
 IGNORE
 XMQ
-<?xml version="1.0" encoding="utf8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE row [
 <!ENTITY yes "YES">
 ]>
