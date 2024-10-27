@@ -1015,7 +1015,9 @@ void parse_ixml_quoted(XMQParseState *state)
 
     for (const char *i = content; *i; ++i)
     {
-        add_yaep_tmp_terminal(state, strndup(i, 1), *i);
+        char buf[16];
+        snprintf(buf, 15, "#%x", *i);
+        add_yaep_tmp_terminal(state, strdup(buf), *i);
     }
     free(content);
 
@@ -1330,6 +1332,7 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
     yaep_i_ = hashmap_iterate(state->ixml_terminals_map);
     yaep_state_ = state;
 
+    /*
     HashMapIterator *i = hashmap_iterate(state->ixml_terminals_map);
 
     const char *name;
@@ -1361,7 +1364,7 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
             }
         }
     }
-
+    */
     int rc = yaep_read_grammar(g, 0, ixml_to_yaep_read_terminal, ixml_to_yaep_read_rule);
 
     hashmap_free_iterator(yaep_i_);
