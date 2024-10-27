@@ -1072,7 +1072,7 @@ void parse_ixml_rule(XMQParseState *state)
 
     parse_ixml_whitespace(state);
 
-    state->ixml_rule = stack_pop(state->ixml_rule_stack);
+    state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
 
     IXML_DONE(rule, state);
 }
