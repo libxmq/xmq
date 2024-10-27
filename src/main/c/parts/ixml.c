@@ -171,6 +171,7 @@ void free_ixml_rule(IXMLRule *r);
 IXMLTerminal *new_ixml_terminal();
 void free_ixml_terminal(IXMLTerminal *t);
 IXMLNonTerminal *new_ixml_nonterminal();
+IXMLNonTerminal *copy_ixml_nonterminal(IXMLNonTerminal *nt);
 void free_ixml_nonterminal(IXMLNonTerminal *t);
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -550,6 +551,10 @@ void parse_ixml_alts(XMQParseState *state)
         EAT(choice, 1);
 
         parse_ixml_whitespace(state);
+        IXMLNonTerminal *name = state->ixml_rule->rule_name;
+        state->ixml_rule = new_ixml_rule();
+        state->ixml_rule->rule_name->name = strdup(name->name);
+        vector_push_back(state->ixml_rules, state->ixml_rule);
     }
 
     IXML_DONE(alts, state);
@@ -1031,15 +1036,15 @@ void parse_ixml_rule(XMQParseState *state)
     IXML_STEP(rule, state);
     ASSERT(is_ixml_naming_start(state));
 
-    IXMLRule *rule = new_ixml_rule();
-    vector_push_back(state->ixml_rules, rule);
-    stack_push(state->ixml_rule_stack, rule);
-    state->ixml_rule = rule;
+    stack_push(state->ixml_rule_stack, state->ixml_rule);
+
+    state->ixml_rule = new_ixml_rule();
+    vector_push_back(state->ixml_rules, state->ixml_rule);
 
     parse_ixml_naming(state,
-                      &rule->rule_name->mark,
-                      &rule->rule_name->name,
-                      &rule->rule_name->alias);
+                      &state->ixml_rule->rule_name->mark,
+                      &state->ixml_rule->rule_name->name,
+                      &state->ixml_rule->rule_name->alias);
 
     parse_ixml_whitespace(state);
 
@@ -1067,7 +1072,7 @@ void parse_ixml_rule(XMQParseState *state)
 
     parse_ixml_whitespace(state);
 
-    state->ixml_rule = NULL;
+    state->ixml_rule = stack_pop(state->ixml_rule_stack);
 
     IXML_DONE(rule, state);
 }
@@ -1568,6 +1573,14 @@ IXMLNonTerminal *new_ixml_nonterminal()
 {
     IXMLNonTerminal *t = (IXMLNonTerminal*)calloc(1, sizeof(IXMLNonTerminal));
     t->type = IXML_NON_TERMINAL;
+    return t;
+}
+
+IXMLNonTerminal *copy_ixml_nonterminal(IXMLNonTerminal *nt)
+{
+    IXMLNonTerminal *t = (IXMLNonTerminal*)calloc(1, sizeof(IXMLNonTerminal));
+    t->type = IXML_NON_TERMINAL;
+    t->name = strdup(nt->name);
     return t;
 }
 
