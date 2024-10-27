@@ -1503,7 +1503,7 @@ void add_yaep_tmp_terminals_to_rule(XMQParseState *state, IXMLRule *rule)
 {
     for (size_t i = 0; i < state->ixml_tmp_terminals->size; ++i)
     {
-        IXMLTerminal *te = state->ixml_tmp_terminals->elements[i];
+        IXMLTerminal *te = (IXMLTerminal*)state->ixml_tmp_terminals->elements[i];
         IXMLTerminal *t = (IXMLTerminal*)hashmap_get(state->ixml_terminals_map, te->name);
         if (t == NULL)
         {

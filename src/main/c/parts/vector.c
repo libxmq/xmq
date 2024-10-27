@@ -21,6 +21,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 #ifndef BUILDING_XMQ
 
+#include"always.h"
 #include"vector.h"
 #include<assert.h>
 #include<memory.h>
