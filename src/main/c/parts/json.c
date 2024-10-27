@@ -1315,7 +1315,7 @@ void json_print_element_with_children(XMQPrintState *ps,
 
     while (!container && ps->pre_nodes && ps->pre_nodes->size > 0)
     {
-        xmlNodePtr node = (xmlNodePtr)rock_stack(ps->pre_nodes);
+        xmlNodePtr node = (xmlNodePtr)stack_rock(ps->pre_nodes);
 
         if (is_doctype_node(node))
         {
@@ -1356,7 +1356,7 @@ void json_print_element_with_children(XMQPrintState *ps,
 
     while (!container && ps->post_nodes && ps->post_nodes->size > 0)
     {
-        xmlNodePtr node = (xmlNodePtr)rock_stack(ps->post_nodes);
+        xmlNodePtr node = (xmlNodePtr)stack_rock(ps->post_nodes);
 
         if (is_comment_node(node))
         {
@@ -1654,7 +1654,7 @@ void collect_leading_ending_comments_doctype(XMQPrintState *ps, xmlNodePtr *firs
     {
         if (is_doctype_node(node) || is_comment_node(node))
         {
-            push_stack(ps->pre_nodes, node);
+            stack_push(ps->pre_nodes, node);
             if (is_comment_node(node)) ps->pre_post_num_comments_total++;
             continue;
         }
@@ -1671,7 +1671,7 @@ void collect_leading_ending_comments_doctype(XMQPrintState *ps, xmlNodePtr *firs
     {
         if (is_comment_node(node))
         {
-            push_stack(ps->post_nodes, node);
+            stack_push(ps->post_nodes, node);
             ps->pre_post_num_comments_total++;
             continue;
         }

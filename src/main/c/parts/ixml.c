@@ -153,7 +153,6 @@ void skip_whitespace(const char **i);
 void allocate_yaep_tmp_terminals(XMQParseState *state);
 void free_yaep_tmp_terminals(XMQParseState *state);
 bool has_ixml_tmp_terminals(XMQParseState *state);
-void add_yaep_grammar_rule(char mark, const char *name_start, const char *name_stop);
 void add_yaep_terminal(XMQParseState *state, IXMLTerminal *terminal);
 void add_yaep_terminal_to_rule(XMQParseState *state, IXMLTerminal *terminal, IXMLRule *rule);
 void add_yaep_tmp_terminal(XMQParseState *state, char *name, int code);
@@ -1034,7 +1033,7 @@ void parse_ixml_rule(XMQParseState *state)
 
     IXMLRule *rule = new_ixml_rule();
     vector_push_back(state->ixml_rules, rule);
-//    push_stack(state->ixml_rule_stack, rule);
+    stack_push(state->ixml_rule_stack, rule);
     state->ixml_rule = rule;
 
     parse_ixml_naming(state,
@@ -1067,8 +1066,6 @@ void parse_ixml_rule(XMQParseState *state)
     EAT(rule_stop, 1);
 
     parse_ixml_whitespace(state);
-
-//    add_yaep_grammar_rule(0, name_start, name_stop);
 
     state->ixml_rule = NULL;
 
@@ -1298,7 +1295,7 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
     state->ixml_rules = vector_create();
     state->ixml_terminals_map = hashmap_create(16);
     state->ixml_non_terminals = vector_create();
-    state->ixml_rule_stack = new_stack();
+    state->ixml_rule_stack = stack_create();
 
     state->buffer_start = start;
     state->buffer_stop = stop;
@@ -1389,7 +1386,7 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
     vector_free_and_values(state->ixml_non_terminals, (FreeFuncPtr)free_ixml_nonterminal);
     state->ixml_non_terminals = NULL;
 
-    free_stack(state->ixml_rule_stack);
+    stack_free(state->ixml_rule_stack);
     state->ixml_rule_stack = NULL;
 
     return true;
@@ -1482,10 +1479,6 @@ void skip_whitespace(const char **i)
         else j++;
     }
     *i = j;
-}
-
-void add_yaep_grammar_rule(char mark, const char *name_start, const char *name_stop)
-{
 }
 
 void add_yaep_terminal(XMQParseState *state, IXMLTerminal *terminal)

@@ -31,14 +31,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 StackElement *find_element_above(Stack *s, StackElement *b);
 
-Stack *new_stack()
+Stack *stack_create()
 {
     Stack *s = (Stack*)malloc(sizeof(Stack));
     memset(s, 0, sizeof(Stack));
     return s;
 }
 
-void free_stack(Stack *stack)
+void stack_free(Stack *stack)
 {
     if (!stack) return;
 
@@ -53,7 +53,7 @@ void free_stack(Stack *stack)
     free(stack);
 }
 
-void push_stack(Stack *stack, void *data)
+void stack_push(Stack *stack, void *data)
 {
     assert(stack);
     StackElement *element = (StackElement*)malloc(sizeof(StackElement));
@@ -71,7 +71,7 @@ void push_stack(Stack *stack, void *data)
     stack->size++;
 }
 
-void *pop_stack(Stack *stack)
+void *stack_pop(Stack *stack)
 {
     assert(stack);
     assert(stack->top);
@@ -98,14 +98,14 @@ StackElement *find_element_above(Stack *s, StackElement *b)
     return NULL;
 }
 
-void *rock_stack(Stack *stack)
+void *stack_rock(Stack *stack)
 {
     assert(stack);
     assert(stack->bottom);
 
     assert(stack->size > 0);
 
-    if (stack->size == 1) return pop_stack(stack);
+    if (stack->size == 1) return stack_pop(stack);
 
     StackElement *element = stack->bottom;
     void *data = element->data;

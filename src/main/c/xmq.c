@@ -886,7 +886,7 @@ XMQParseState *xmqNewParseState(XMQParseCallbacks *callbacks, XMQOutputSettings 
     state->parse = callbacks;
     state->output_settings = output_settings;
     state->magic_cookie = MAGIC_COOKIE;
-    state->element_stack = new_stack();
+    state->element_stack = stack_create();
 
     return state;
 }
@@ -1703,7 +1703,8 @@ void xmqFreeParseState(XMQParseState *state)
         free_membuffer_and_free_content(state->generating_error_msg);
         state->generating_error_msg = NULL;
     }
-    free_stack(state->element_stack);
+    stack_free(state->element_stack);
+    state->element_stack = NULL;
     // Settings are not freed here.
     state->output_settings = NULL;
     free(state);
@@ -1781,7 +1782,7 @@ bool xmqParseBuffer(XMQDoc *doq, const char *start, const char *stop, const char
 
     state->implicit_root = implicit_root;
 
-    push_stack(state->element_stack, doq->docptr_.xml);
+    stack_push(state->element_stack, doq->docptr_.xml);
     // Now state->element_stack->top->data points to doq->docptr_;
     state->element_last = NULL; // Will be set when the first node is created.
     // The doc root will be set when the first element node is created.
@@ -2453,7 +2454,7 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
                 state->element_last = root;
                 xmlDocSetRootElement(state->doq->docptr_.xml, root);
                 state->doq->root_.node = root;
-                push_stack(state->element_stack, state->element_last);
+                stack_push(state->element_stack, state->element_last);
             }
         }
         xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
@@ -2550,7 +2551,7 @@ void do_brace_left(XMQParseState *state,
                    const char *stop,
                    const char *suffix)
 {
-    push_stack(state->element_stack, state->element_last);
+    stack_push(state->element_stack, state->element_last);
 }
 
 void do_brace_right(XMQParseState *state,
@@ -2560,7 +2561,7 @@ void do_brace_right(XMQParseState *state,
                     const char *stop,
                     const char *suffix)
 {
-    state->element_last = pop_stack(state->element_stack);
+    state->element_last = stack_pop(state->element_stack);
 }
 
 void do_apar_left(XMQParseState *state,
@@ -2570,7 +2571,7 @@ void do_apar_left(XMQParseState *state,
                  const char *stop,
                  const char *suffix)
 {
-    push_stack(state->element_stack, state->element_last);
+    stack_push(state->element_stack, state->element_last);
 }
 
 void do_apar_right(XMQParseState *state,
@@ -2580,7 +2581,7 @@ void do_apar_right(XMQParseState *state,
                   const char *stop,
                   const char *suffix)
 {
-    state->element_last = pop_stack(state->element_stack);
+    state->element_last = stack_pop(state->element_stack);
 }
 
 void do_cpar_left(XMQParseState *state,
@@ -2590,7 +2591,7 @@ void do_cpar_left(XMQParseState *state,
                   const char *stop,
                   const char *suffix)
 {
-    push_stack(state->element_stack, state->element_last);
+    stack_push(state->element_stack, state->element_last);
 }
 
 void do_cpar_right(XMQParseState *state,
@@ -2600,7 +2601,7 @@ void do_cpar_right(XMQParseState *state,
                    const char *stop,
                    const char *suffix)
 {
-    state->element_last = pop_stack(state->element_stack);
+    state->element_last = stack_pop(state->element_stack);
 }
 
 void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks)
@@ -2681,8 +2682,8 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
     void *last = doq->docptr_.xml->last;
 
     XMQPrintState ps = {};
-    ps.pre_nodes = new_stack();
-    ps.post_nodes = new_stack();
+    ps.pre_nodes = stack_create();
+    ps.post_nodes = stack_create();
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
     ps.doq = doq;
@@ -2696,8 +2697,8 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
     json_print_object_nodes(&ps, NULL, (xmlNode*)first, (xmlNode*)last);
     write(writer_state, "\n", NULL);
 
-    free_stack(ps.pre_nodes);
-    free_stack(ps.post_nodes);
+    stack_free(ps.pre_nodes);
+    stack_free(ps.post_nodes);
 }
 
 void text_print_node(XMQPrintState *ps, xmlNode *node)
@@ -4073,7 +4074,7 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
 
     state->implicit_root = implicit_root;
 
-    push_stack(state->element_stack, doq->docptr_.xml);
+    stack_push(state->element_stack, doq->docptr_.xml);
     // Now state->element_stack->top->data points to doq->docptr_;
     state->element_last = NULL; // Will be set when the first node is created.
     // The doc root will be set when the first element node is created.
@@ -4117,7 +4118,7 @@ bool xmq_parse_ixml_grammar(struct grammar *g,
 
     xmqSetStateSourceName(state, doq->source_name_);
 
-    push_stack(state->element_stack, doq->docptr_.xml);
+    stack_push(state->element_stack, doq->docptr_.xml);
 
     xmq_parse_buffer_ixml(state, start, stop, g);
 

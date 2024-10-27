@@ -76,15 +76,15 @@ void test_quicksort()
 
 void test_stack()
 {
-    Stack *stack = new_stack();
-    push_stack(stack, (void*)42);
+    Stack *stack = stack_create();
+    stack_push(stack, (void*)42);
     assert(stack->size == 1);
-    int64_t v = (int64_t)pop_stack(stack);
+    int64_t v = (int64_t)stack_pop(stack);
     if (v != 42) {
         printf("BAD STACK\n");
         all_ok_ = false;
     }
-    free_stack(stack);
+    stack_free(stack);
 }
 
 void test_colors()
