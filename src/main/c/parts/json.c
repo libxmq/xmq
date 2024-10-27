@@ -902,7 +902,7 @@ void json_print_object_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *fro
         i = xml_next_sibling(i);
     }
 
-    hashmap_free_and_values(map);
+    hashmap_free_and_values(map, free);
 }
 
 void json_print_array_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to)

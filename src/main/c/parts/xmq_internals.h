@@ -286,9 +286,10 @@ struct XMQParseState
     size_t last_suspicios_quote_end_line;
     size_t last_suspicios_quote_end_col;
 
-    // When parsing an ixml grammar.
-    Vector *ixml_terminals; // Points to terminal objects (name+code)
-    HashMap *ixml_terminals_map; // Used to check if terminal already seen.
+    ///////// The following variables are used when parsing ixml. //////////////////////////////////
+    // Collect all unique terminals in this map from the name. #78 and 'x' is the same terminal with code 120.
+    // The name is a utf8 encoded string for a single character.
+    HashMap *ixml_terminals_map;
     Vector *ixml_non_terminals; // Points to non-terminal references (mark+name...)
     // A non-terminal references is used to point to a rule.
     Vector *ixml_rules; // Points to rules. The rule has a rule_name which is a non-terminal ref to itself.

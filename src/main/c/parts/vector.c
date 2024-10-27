@@ -29,7 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 #ifdef VECTOR_MODULE
 
-Vector *new_vector()
+Vector *vector_create()
 {
     Vector *s = (Vector*)malloc(sizeof(Vector));
     memset(s, 0, sizeof(Vector));
@@ -38,7 +38,7 @@ Vector *new_vector()
     return s;
 }
 
-void free_vector(Vector *vector)
+void vector_free(Vector *vector)
 {
     if (!vector) return;
 
@@ -49,20 +49,21 @@ void free_vector(Vector *vector)
     free(vector);
 }
 
-void free_vector_elements(Vector *v)
+void vector_free_and_values(Vector *v, FreeFuncPtr freefunc)
 {
     for (size_t i = 0; i < v->size; ++i)
     {
         void *e = v->elements[i];
         if (e)
         {
-            free(e);
+            freefunc(e);
             v->elements[i] = 0;
         }
     }
+    vector_free(v);
 }
 
-void push_back_vector(Vector *vector, void *data)
+void vector_push_back(Vector *vector, void *data)
 {
     assert(vector);
 
@@ -82,7 +83,7 @@ void push_back_vector(Vector *vector, void *data)
     vector->elements[vector->size-1] = data;
 }
 
-void *element_at_vector(Vector *v, size_t i)
+void *vector_element_at(Vector *v, size_t i)
 {
     assert(i < v->size);
 

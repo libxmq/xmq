@@ -701,6 +701,7 @@ void parse_ixml_factor(XMQParseState *state)
         {
             add_yaep_tmp_terminals_to_rule(state, state->ixml_rule);
         }
+
         free_yaep_tmp_terminals(state);
     }
     else if (is_ixml_nonterminal_start(state))
@@ -709,8 +710,8 @@ void parse_ixml_factor(XMQParseState *state)
 
         parse_ixml_nonterminal(state);
 
-        push_back_vector(state->ixml_non_terminals, state->ixml_nonterminal);
-        push_back_vector(state->ixml_rule->rhs, state->ixml_nonterminal);
+        vector_push_back(state->ixml_non_terminals, state->ixml_nonterminal);
+        vector_push_back(state->ixml_rule->rhs, state->ixml_nonterminal);
     }
     else  if (is_ixml_insertion_start(state))
     {
@@ -1030,7 +1031,7 @@ void parse_ixml_rule(XMQParseState *state)
     ASSERT(is_ixml_naming_start(state));
 
     IXMLRule *rule = new_ixml_rule();
-    push_back_vector(state->ixml_rules, rule);
+    vector_push_back(state->ixml_rules, rule);
 //    push_stack(state->ixml_rule_stack, rule);
     state->ixml_rule = rule;
 
@@ -1214,19 +1215,25 @@ void parse_ixml_whitespace(XMQParseState *state)
 static __thread XMQParseState *yaep_state_ = NULL;
 static __thread char **yaep_tmp_rhs_ = NULL;
 static __thread int *yaep_tmp_transl_ = NULL;
-static __thread size_t yaep_i_ = 0;
+static __thread HashMapIterator *yaep_i_ = NULL;
 static __thread size_t yaep_j_ = 0;
 
 const char *ixml_to_yaep_read_terminal(int *code);
 
 const char *ixml_to_yaep_read_terminal(int *code)
 {
-    if (yaep_i_ >= yaep_state_->ixml_terminals->size) return NULL;
-    IXMLTerminal *t = (IXMLTerminal*)element_at_vector(yaep_state_->ixml_terminals, yaep_i_);
-    const char *name = t->name;
-    *code = t->code;
-    yaep_i_++;
-    return name;
+    const char *key;
+    void *val;
+    bool ok = hashmap_next_key_value(yaep_i_, &key, &val);
+
+    if (ok)
+    {
+        IXMLTerminal *t = (IXMLTerminal*)val;
+        *code = t->code;
+        return t->name;
+    }
+
+    return NULL;
 }
 
 const char *ixml_to_yaep_read_rule(const char ***rhs,
@@ -1240,7 +1247,7 @@ const char *ixml_to_yaep_read_rule(const char ***rhs,
                                    int **transl)
 {
     if (yaep_j_ >= yaep_state_->ixml_rules->size) return NULL;
-    IXMLRule *rule = (IXMLRule*)element_at_vector(yaep_state_->ixml_rules, yaep_j_);
+    IXMLRule *rule = (IXMLRule*)vector_element_at(yaep_state_->ixml_rules, yaep_j_);
     *abs_node = rule->rule_name->name;
     if (rule->rule_name->alias) *abs_node = rule->rule_name->alias;
     size_t num_rhs = rule->rhs->size;
@@ -1251,7 +1258,7 @@ const char *ixml_to_yaep_read_rule(const char ***rhs,
     for (size_t i = 0; i < num_rhs; ++i)
     {
         yaep_tmp_transl_[i] = (int)i;
-        IXMLTermType *tt = (IXMLTermType*)element_at_vector(rule->rhs, i);
+        IXMLTermType *tt = (IXMLTermType*)vector_element_at(rule->rhs, i);
         if (*tt == IXML_TERMINAL)
         {
             IXMLTerminal *t = (IXMLTerminal*)tt;
@@ -1286,6 +1293,11 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
         exit(1);
     }
 
+    state->ixml_rules = vector_create();
+    state->ixml_terminals_map = hashmap_create(16);
+    state->ixml_non_terminals = vector_create();
+    state->ixml_rule_stack = new_stack();
+
     state->buffer_start = start;
     state->buffer_stop = stop;
     state->i = start;
@@ -1315,23 +1327,28 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
     if (state->parse && state->parse->done) state->parse->done(state);
 
     // Now build vectors suitable for yaep.
-    yaep_i_ = 0;
+    yaep_i_ = hashmap_iterate(state->ixml_terminals_map);
     yaep_state_ = state;
 
-    /*
-    for (size_t i = 0; i < state->ixml_terminals->size; ++i)
+    HashMapIterator *i = hashmap_iterate(state->ixml_terminals_map);
+
+    const char *name;
+    void *val;
+    while (hashmap_next_key_value(i, &name, &val))
     {
-        IXMLTerminal *t = (IXMLTerminal*)element_at_vector(state->ixml_terminals, i);
+        IXMLTerminal *t = (IXMLTerminal*)val;
         printf("TERMINAL %s %d\n", t->name, t->code);
     }
 
+    hashmap_free_iterator(i);
+
     for (size_t i = 0; i < state->ixml_rules->size; ++i)
     {
-        IXMLRule *r = (IXMLRule*)element_at_vector(state->ixml_rules, i);
-        printf("RULE %c%s \n", r->rule_name.mark, r->rule_name.name);
+        IXMLRule *r = (IXMLRule*)vector_element_at(state->ixml_rules, i);
+        printf("RULE %c%s \n", r->rule_name->mark, r->rule_name->name);
         for (size_t j = 0; j < r->rhs->size; ++j)
         {
-            IXMLTermType *tt = (IXMLTermType*)element_at_vector(r->rhs, j);
+            IXMLTermType *tt = (IXMLTermType*)vector_element_at(r->rhs, j);
             if (*tt == IXML_TERMINAL)
             {
                 IXMLTerminal *t = (IXMLTerminal*)tt;
@@ -1344,8 +1361,10 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
             }
         }
     }
-    */
+
     int rc = yaep_read_grammar(g, 0, ixml_to_yaep_read_terminal, ixml_to_yaep_read_rule);
+
+    hashmap_free_iterator(yaep_i_);
 
     if (rc != 0)
     {
@@ -1358,23 +1377,17 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
     if (yaep_tmp_rhs_) free(yaep_tmp_rhs_);
     if (yaep_tmp_transl_) free(yaep_tmp_transl_);
 
-    for (size_t i = 0; i < state->ixml_rules->size; ++i)
-    {
-        IXMLRule *r = (IXMLRule*)element_at_vector(state->ixml_rules, i);
-        free_ixml_rule(r);
-    }
+    vector_free_and_values(state->ixml_rules, (FreeFuncPtr)free_ixml_rule);
+    state->ixml_rules = NULL;
 
-    for (size_t i = 0; i < state->ixml_terminals->size; ++i)
-    {
-        IXMLTerminal *t = (IXMLTerminal*)element_at_vector(state->ixml_terminals, i);
-        free_ixml_terminal(t);
-    }
+    hashmap_free_and_values(state->ixml_terminals_map, (FreeFuncPtr)free_ixml_terminal);
+    state->ixml_terminals_map = NULL;
 
-    for (size_t i = 0; i < state->ixml_non_terminals->size; ++i)
-    {
-        IXMLNonTerminal *nt = (IXMLNonTerminal*)element_at_vector(state->ixml_non_terminals, i);
-        free_ixml_nonterminal(nt);
-    }
+    vector_free_and_values(state->ixml_non_terminals, (FreeFuncPtr)free_ixml_nonterminal);
+    state->ixml_non_terminals = NULL;
+
+    free_stack(state->ixml_rule_stack);
+    state->ixml_rule_stack = NULL;
 
     return true;
 }
@@ -1475,12 +1488,11 @@ void add_yaep_grammar_rule(char mark, const char *name_start, const char *name_s
 void add_yaep_terminal(XMQParseState *state, IXMLTerminal *terminal)
 {
     hashmap_put(state->ixml_terminals_map, terminal->name, terminal);
-    push_back_vector(state->ixml_terminals, terminal);
 }
 
 void add_yaep_terminal_to_rule(XMQParseState *state, IXMLTerminal *terminal, IXMLRule *rule)
 {
-    push_back_vector(rule->rhs, terminal);
+    vector_push_back(rule->rhs, terminal);
 }
 
 void add_yaep_tmp_terminal(XMQParseState *state, char *name, int code)
@@ -1488,7 +1500,7 @@ void add_yaep_tmp_terminal(XMQParseState *state, char *name, int code)
     IXMLTerminal *t = new_ixml_terminal();
     t->name = name;
     t->code = code;
-    push_back_vector(state->ixml_tmp_terminals, t);
+    vector_push_back(state->ixml_tmp_terminals, t);
 }
 
 void add_yaep_tmp_terminals_to_rule(XMQParseState *state, IXMLRule *rule)
@@ -1499,7 +1511,6 @@ void add_yaep_tmp_terminals_to_rule(XMQParseState *state, IXMLRule *rule)
         IXMLTerminal *t = (IXMLTerminal*)hashmap_get(state->ixml_terminals_map, te->name);
         if (t == NULL)
         {
-            fprintf(stderr, "ADDED >%s<\n", te->name);
             add_yaep_terminal(state, te);
         }
         add_yaep_terminal_to_rule(state, te, rule);
@@ -1510,13 +1521,13 @@ void add_yaep_tmp_terminals_to_rule(XMQParseState *state, IXMLRule *rule)
 void allocate_yaep_tmp_terminals(XMQParseState *state)
 {
     assert(state->ixml_tmp_terminals == NULL);
-    state->ixml_tmp_terminals = new_vector();
+    state->ixml_tmp_terminals = vector_create();
 }
 
 void free_yaep_tmp_terminals(XMQParseState *state)
 {
-    free_vector_elements(state->ixml_tmp_terminals);
-    free_vector(state->ixml_tmp_terminals);
+    // Only free the vector, the content is copied to another array.
+    vector_free(state->ixml_tmp_terminals);
     state->ixml_tmp_terminals = NULL;
 }
 
@@ -1531,7 +1542,7 @@ IXMLRule *new_ixml_rule()
 {
     IXMLRule *r = (IXMLRule*)calloc(1, sizeof(IXMLRule));
     r->rule_name = new_ixml_nonterminal();
-    r->rhs = new_vector();
+    r->rhs = vector_create();
     return r;
 }
 
@@ -1539,7 +1550,7 @@ void free_ixml_rule(IXMLRule *r)
 {
     if (r->rule_name) free_ixml_nonterminal(r->rule_name);
     r->rule_name = NULL;
-    free_vector(r->rhs);
+    vector_free(r->rhs);
     r->rhs = NULL;
     free(r);
 }
@@ -1549,6 +1560,12 @@ IXMLTerminal *new_ixml_terminal()
     IXMLTerminal *t = (IXMLTerminal*)calloc(1, sizeof(IXMLTerminal));
     t->type = IXML_TERMINAL;
     return t;
+}
+
+void free_ixml_terminal(IXMLTerminal *t)
+{
+    if (t->name) free(t->name);
+    free(t);
 }
 
 IXMLNonTerminal *new_ixml_nonterminal()
@@ -1563,12 +1580,6 @@ void free_ixml_nonterminal(IXMLNonTerminal *nt)
     if (nt->name) free(nt->name);
     nt->name = NULL;
     free(nt);
-}
-
-void free_ixml_terminal(IXMLTerminal *t)
-{
-    if (t->name) free(t->name);
-    free(t);
 }
 
 #else

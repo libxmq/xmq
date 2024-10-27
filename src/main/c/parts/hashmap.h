@@ -19,8 +19,9 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include"parts/always.h"
+#include<stdio.h>
+#include<stdlib.h>
 #include<string.h>
 #include<stdbool.h>
 
@@ -34,15 +35,16 @@ struct HashMapIterator;
 typedef struct HashMapIterator HashMapIterator;
 
 HashMap *hashmap_create(size_t max_size);
-void hashmap_free_and_values(HashMap *map);
 // Returns NULL if no key is found.
 void *hashmap_get(HashMap* map, const char* key);
 // Putting a non-NULL value.
 void hashmap_put(HashMap* map, const char* key, void *val);
 // How many key-vals are there?
 size_t hashmap_size(HashMap *map);
-// Free it.
+// Free the hashmap itself.
 void hashmap_free(HashMap* map);
+// Free the hasmap and its contents.
+void hashmap_free_and_values(HashMap *map, FreeFuncPtr freefunc);
 
 HashMapIterator *hashmap_iterate(HashMap *map);
 bool hashmap_next_key_value(HashMapIterator *i, const char **key, void **val);

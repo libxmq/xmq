@@ -601,7 +601,7 @@ void free_cli_command(XMQCliCommand *cmd)
 {
     if (cmd->xslt_params)
     {
-        hashmap_free_and_values(cmd->xslt_params);
+        hashmap_free_and_values(cmd->xslt_params, free);
         cmd->xslt_params = NULL;
     }
     free(cmd);

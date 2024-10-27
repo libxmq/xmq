@@ -4112,12 +4112,6 @@ bool xmq_parse_ixml_grammar(struct grammar *g,
 
     XMQParseState *state = xmqNewParseState(parse, os);
 
-    state->ixml_rules = new_vector();
-    state->ixml_terminals = new_vector();
-    state->ixml_terminals_map = hashmap_create(16);
-    state->ixml_non_terminals = new_vector();
-    state->ixml_rule_stack = new_stack();
-
     state->doq = doq;
     state->build_xml_of_ixml = build_xml_of_ixml;
 
@@ -4133,17 +4127,6 @@ bool xmq_parse_ixml_grammar(struct grammar *g,
         doq->errno_ = xmqStateErrno(state);
         doq->error_ = build_error_message("%s\n", xmqStateErrorMsg(state));
     }
-
-    free_vector(state->ixml_rules);
-    state->ixml_rules = NULL;
-    free_vector(state->ixml_terminals);
-    state->ixml_terminals = NULL;
-    hashmap_free(state->ixml_terminals_map);
-    state->ixml_terminals_map = NULL;
-    free_vector(state->ixml_non_terminals);
-    state->ixml_non_terminals = NULL;
-    free_stack(state->ixml_rule_stack);
-    state->ixml_rule_stack = NULL;
 
     xmqFreeParseState(state);
     xmqFreeParseCallbacks(parse);

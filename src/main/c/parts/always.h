@@ -47,6 +47,9 @@ void check_malloc(void *a);
 char *strndup(const char *s, size_t l);
 #endif
 
+// A common free function ptr to be used when freeing collections.
+typedef void(*FreeFuncPtr)(void*);
+
 #define ALWAYS_MODULE
 
 #endif // ALWAYS_H
