@@ -1233,7 +1233,9 @@ tok_add (int code, void *attr)
   tok.attr = attr;
   tok.symb = symb_find_by_code (code);
   if (tok.symb == NULL)
-    yaep_error (YAEP_INVALID_TOKEN_CODE, "invalid token code %d", code);
+  {
+      yaep_error (YAEP_INVALID_TOKEN_CODE, "syntax error at offset %d '%c'", toks_len, code);
+  }
   VLO_ADD_MEMORY (toks_vlo, &tok, sizeof (struct tok));
   toks = (struct tok *) VLO_BEGIN (toks_vlo);
   toks_len++;
