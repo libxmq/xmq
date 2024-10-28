@@ -153,6 +153,7 @@ void skip_whitespace(const char **i);
 void allocate_yaep_tmp_terminals(XMQParseState *state);
 void free_yaep_tmp_terminals(XMQParseState *state);
 bool has_ixml_tmp_terminals(XMQParseState *state);
+void add_yaep_term_to_rule(XMQParseState *state, IXMLTerm *term);
 void add_yaep_terminal(XMQParseState *state, IXMLTerminal *terminal);
 void add_yaep_terminal_to_rule(XMQParseState *state, IXMLTerminal *terminal);
 void add_yaep_nonterminal(XMQParseState *state, IXMLNonTerminal *nonterminal);
@@ -177,6 +178,7 @@ IXMLNonTerminal *copy_ixml_nonterminal(IXMLNonTerminal *nt);
 void free_ixml_nonterminal(IXMLNonTerminal *t);
 
 char *generate_rule_name(XMQParseState *state);
+void make_last_term_optional(XMQParseState *state);
 
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -557,6 +559,9 @@ void parse_ixml_alts(XMQParseState *state)
         }
         EAT(choice, 1);
 
+        // The yaep grammar performs | by having mutiple rule entries
+        // with the same name. We reached an alternative version of this
+        // rule, create a new rule with the same name.
         parse_ixml_whitespace(state);
         IXMLNonTerminal *name = state->ixml_rule->rule_name;
         state->ixml_rule = new_ixml_rule();
@@ -1167,6 +1172,8 @@ void parse_ixml_term(XMQParseState *state)
     {
         EAT(option, 1);
         parse_ixml_whitespace(state);
+
+        make_last_term_optional(state);
     }
     else if (c == '*' || c == '+')
     {
@@ -1396,7 +1403,7 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
                 else
                 {
                     IXMLNonTerminal *nt = (IXMLNonTerminal*)tt;
-                    printf("  nt %c%s \n", nt->mark, nt->name);
+                    printf("   R %c%s \n", nt->mark, nt->name);
                 }
             }
         }
@@ -1520,6 +1527,11 @@ void skip_whitespace(const char **i)
     *i = j;
 }
 
+void add_yaep_term_to_rule(XMQParseState *state, IXMLTerm *term)
+{
+    vector_push_back(state->ixml_rule->rhs, term);
+}
+
 void add_yaep_terminal(XMQParseState *state, IXMLTerminal *terminal)
 {
     hashmap_put(state->ixml_terminals_map, terminal->name, terminal);
@@ -1641,6 +1653,45 @@ char *generate_rule_name(XMQParseState *state)
     snprintf(buf, 15, "/%d", state->num_generated_rules);
     state->num_generated_rules++;
     return strdup(buf);
+}
+
+void make_last_term_optional(XMQParseState *state)
+{
+    // Compose an anonymous rule.
+    // 'a'? is replaced with the nonterminal /17 (for example)
+    // Then /17 can be either 'a' or the empty string.
+    // /17 : 'a'.
+    // /17 : .
+
+    // Pop the last term.
+    IXMLTerm *term = vector_pop_back(state->ixml_rule->rhs);
+
+    IXMLNonTerminal *nt = new_ixml_nonterminal();
+    nt->name = generate_rule_name(state);
+
+    add_yaep_nonterminal(state, nt);
+    add_yaep_nonterminal_to_rule(state, nt);
+
+    stack_push(state->ixml_rule_stack, state->ixml_rule);
+
+    state->ixml_rule = new_ixml_rule();
+    vector_push_back(state->ixml_rules, state->ixml_rule);
+
+    free_ixml_nonterminal(state->ixml_rule->rule_name);
+    state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
+
+    // Single term in this rule alternative.
+    add_yaep_term_to_rule(state, term);
+
+    state->ixml_rule = new_ixml_rule();
+    vector_push_back(state->ixml_rules, state->ixml_rule);
+
+    free_ixml_nonterminal(state->ixml_rule->rule_name);
+    state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
+
+    // No terms in this rule alternative!
+
+    state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
 }
 
 #else

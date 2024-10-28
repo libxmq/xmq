@@ -1933,6 +1933,8 @@ bool cmd_load(XMQCliCommand *command)
             {
                 input_ = load_file_into_buffer(command->in);
             }
+            if (!input_) return false;
+
             num_toks_ = strlen(input_);
 
             yaep_set_error_recovery_flag(g, 0); // No error recovery.

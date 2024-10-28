@@ -84,6 +84,16 @@ void vector_push_back(Vector *vector, void *data)
     vector->elements[vector->size-1] = data;
 }
 
+void *vector_pop_back(Vector *v)
+{
+    assert(v->size > 0);
+
+    v->size--;
+    void *r = v->elements[v->size];
+    v->elements[v->size] = NULL;
+    return r;
+}
+
 void *vector_element_at(Vector *v, size_t i)
 {
     assert(i < v->size);

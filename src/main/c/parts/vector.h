@@ -37,6 +37,7 @@ Vector *vector_create();
 void vector_free(Vector *v);
 void vector_free_and_values(Vector *v, FreeFuncPtr freefunc);
 void vector_push_back(Vector *v, void *);
+void *vector_pop_back(Vector *v);
 void *vector_element_at(Vector *v, size_t i);
 
 #define VECTOR_MODULE
