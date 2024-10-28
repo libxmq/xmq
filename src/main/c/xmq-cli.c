@@ -1908,6 +1908,10 @@ bool cmd_load(XMQCliCommand *command)
                 return 1;
             }
 
+            if (ambiguous)
+            {
+                warnParsing("ixml", "The input can be parsed in multiple ways, ie it is ambiguous!");
+            }
             xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
 
             print_yaep_node(new_doc, NULL, root, 0, 0);
