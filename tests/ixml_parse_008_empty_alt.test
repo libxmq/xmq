@@ -1,0 +1,7 @@
+START
+simple : '1' , ( 'a' | ), '2'.
+INPUT
+12
+OUTPUT
+simple = 12
+END

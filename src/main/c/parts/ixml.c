@@ -534,7 +534,8 @@ void parse_ixml_alts(XMQParseState *state)
         parse_ixml_whitespace(state);
 
         if (is_ixml_eob(state) ||
-            is_ixml_rule_end(*(state->i))) break;
+            is_ixml_rule_end(*(state->i)) ||
+            is_ixml_group_end(state)) break;
 
         if (!is_ixml_alt_start(state))
         {

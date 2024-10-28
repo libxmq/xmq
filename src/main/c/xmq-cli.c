@@ -1934,7 +1934,6 @@ bool cmd_load(XMQCliCommand *command)
                 input_ = load_file_into_buffer(command->in);
             }
             num_toks_ = strlen(input_);
-            assert(num_toks_ > 0);
 
             yaep_set_error_recovery_flag(g, 0); // No error recovery.
 
