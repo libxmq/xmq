@@ -147,6 +147,7 @@ struct XMQCliCommand
     XMQCliCmd cmd;
     bool silent;
     const char *in;
+    bool in_is_content; // If set to true, then in is the actual content to be parsed.
     bool no_input; // If set to true, then no initial file is read nor any stdin is read.
     const char *out;
     const char *alias;
@@ -1386,6 +1387,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->no_input = true;
         return true;
     }
+    if (!strcmp(arg, "-w"))
+    {
+        command->in_is_content = true;
+        return true;
+    }
     if (!strcmp(arg, "--xml-of-ixml"))
     {
         command->build_xml_of_ixml = true;
@@ -1658,7 +1664,14 @@ bool cmd_tokenize(XMQCliCommand *command)
     }
 
     XMQParseState *state = xmqNewParseState(callbacks, output_settings);
-    xmqTokenizeFile(state, command->in);
+    if (command->in_is_content)
+    {
+        xmqTokenizeBuffer(state, command->in, NULL);
+    }
+    else
+    {
+        xmqTokenizeFile(state, command->in);
+    }
 
     int err = 0;
     if (xmqStateErrno(state))
@@ -1679,21 +1692,20 @@ void write_print(void *buffer, const char *content)
     printf("%s", content);
 }
 
-static char *input;
-static int ntok = 0;
+static char *input_;
+static size_t tok_ = 0;
+static size_t num_toks_ = 0;
 
 static int read_token(void **attr)
 {
-
   *attr = NULL;
-  if (input[ntok])
+  if (input_[tok_] && tok_ < num_toks_)
   {
-      return input [ntok++];
+      int r = input_[tok_];
+      tok_++;
+      return r;
   }
-  else
-  {
-      return -1;
-  }
+  return -1;
 }
 
 void syntax_error(int err_tok_num,
@@ -1703,7 +1715,18 @@ void syntax_error(int err_tok_num,
                   int start_recovered_tok_num,
                   void *start_recovered_tok_attr)
 {
-    printf("SYNTAX ERROR\n");
+    printf("ixml: syntax error\n");
+    int start = err_tok_num - 10;
+    if (start < 0) start = 0;
+    int stop = err_tok_num + 10;
+
+    for (int i = start; i < stop && input_[i] != 0; ++i)
+    {
+        printf("%c", input_[i]);
+    }
+    printf("\n");
+    for (int i = start; i < err_tok_num; ++i) printf (" ");
+    printf("^\n");
 }
 
 
@@ -1724,33 +1747,43 @@ const char *node_type_to_string(enum yaep_tree_node_type t)
     return "?";
 }
 
-void print_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, int depth, int index);
+void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, int depth, int index);
 
-void print_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, int depth, int index)
+void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, int depth, int index)
 {
     if (n == NULL) return;
     if (n->type == YAEP_ANODE)
     {
         struct yaep_anode *an = &n->val.anode;
 
-        xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)an->name, NULL);
-//        char buf[10];
-//        snprintf(buf, 10, "%d", an->cost);
-//        xmlNewProp(new_node, (xmlChar*)"cost", (xmlChar*)buf);
-
-        if (node == NULL)
+        if (an->name != NULL && an->name[0] != '/')
         {
-            xmlDocSetRootElement(doc, new_node);
+            // Normal node that should be generated.
+            xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)an->name, NULL);
+
+            if (node == NULL)
+            {
+                xmlDocSetRootElement(doc, new_node);
+            }
+            else
+            {
+                xmlAddChild(node, new_node);
+            }
+
+            for (int i=0; an->children[i] != NULL; ++i)
+            {
+                struct yaep_tree_node *nn = an->children[i];
+                generate_dom_from_yaep_node(doc, new_node, nn, depth+1, i);
+            }
         }
         else
         {
-            xmlAddChild(node, new_node);
-        }
-
-        for (int i=0; an->children[i] != NULL; ++i)
-        {
-            struct yaep_tree_node *nn = an->children[i];
-            print_yaep_node(doc, new_node, nn, depth+1, i);
+            // Skip anonymous node whose name starts with /
+            for (int i=0; an->children[i] != NULL; ++i)
+            {
+                struct yaep_tree_node *nn = an->children[i];
+                generate_dom_from_yaep_node(doc, node, nn, depth+1, i);
+            }
         }
     }
     else
@@ -1892,7 +1925,18 @@ bool cmd_load(XMQCliCommand *command)
 
         if (command->in)
         {
-            input = load_file_into_buffer(command->in);
+            if (command->in_is_content)
+            {
+                input_ = strdup(command->in);
+            }
+            else
+            {
+                input_ = load_file_into_buffer(command->in);
+            }
+            num_toks_ = strlen(input_);
+            assert(num_toks_ > 0);
+
+            yaep_set_error_recovery_flag(g, 0); // No error recovery.
 
             int rc = yaep_parse (g,
                                  read_token,
@@ -1904,7 +1948,7 @@ bool cmd_load(XMQCliCommand *command)
 
             if (rc)
             {
-                printf("xmq: could not parse input using ixml/yaep grammar: %s\n", yaep_error_message(g));
+                printf("xmq: could not parse input using ixml grammar: %s\n", yaep_error_message(g));
                 return 1;
             }
 
@@ -1914,7 +1958,7 @@ bool cmd_load(XMQCliCommand *command)
             }
             xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
 
-            print_yaep_node(new_doc, NULL, root, 0, 0);
+            generate_dom_from_yaep_node(new_doc, NULL, root, 0, 0);
 
             xmlFreeDoc(xmqGetImplementationDoc(command->env->doc));
             xmqSetImplementationDoc(command->env->doc, new_doc);
@@ -1932,54 +1976,27 @@ bool cmd_load(XMQCliCommand *command)
         command->ixml_ixml = NULL;
         verbose_("(xmq) cmd-load-ixml %zu bytes from %s\n", xmqGetOriginalSize(command->env->doc), from);
     }
-    else if (false)
-    {
-        struct grammar *g;
-        struct yaep_tree_node *root;
-        int ambiguous;
-
-        g = yaep_create_grammar();
-
-        //int rc = yaep_parse_grammar (g, 1, command->ixml_yaep);
-
-        int rc = yaep_read_grammar(g, 0, s_read_terminal, s_read_rule);
-
-        if (rc)
-        {
-            printf("xmq: could not parse yaep grammar: %s\n", yaep_error_message(g));
-            return 1;
-        }
-
-        input = load_file_into_buffer(command->in);
-
-        rc = yaep_parse (g,
-                         read_token,
-                         syntax_error,
-                         NULL,
-                         NULL,
-                         &root,
-                         &ambiguous);
-
-        xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
-
-        print_yaep_node(new_doc, NULL, root, 0, 0);
-
-        xmlFreeDoc(xmqGetImplementationDoc(command->env->doc));
-        xmqSetImplementationDoc(command->env->doc, new_doc);
-
-        yaep_free_grammar (g);
-
-        const char *from = "stdin";
-        if (command->in) from = command->in;
-        verbose_("(xmq) cmd-load-ixml %zu bytes from %s\n", xmqGetOriginalSize(command->env->doc), from);
-    }
     else
     {
-        bool ok = xmqParseFileWithType(command->env->doc,
-                                       command->in,
-                                       command->implicit_root,
-                                       command->in_format,
-                                       command->flags);
+        bool ok = false;
+        if (command->in_is_content)
+        {
+            ok = xmqParseBufferWithType(command->env->doc,
+                                        command->in,
+                                        NULL,
+                                        command->implicit_root,
+                                        command->in_format,
+                                        command->flags);
+        }
+        else
+        {
+            ok = xmqParseFileWithType(command->env->doc,
+                                      command->in,
+                                      command->implicit_root,
+                                      command->in_format,
+                                      command->flags);
+        }
+
         if (!ok)
         {
             const char *error = xmqDocError(command->env->doc);

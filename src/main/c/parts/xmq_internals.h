@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2023 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2023-2024 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -196,7 +196,7 @@ typedef enum IXMLTermType IXMLTermType;
 
 struct IXMLTerminal
 {
-    IXMLTermType type; // Keep first in struct for union.
+    IXMLTermType type; // Keep first in struct for union IXMLTerm.
     char *name;
     int code;
 };
@@ -204,7 +204,7 @@ typedef struct IXMLTerminal IXMLTerminal;
 
 struct IXMLNonTerminal
 {
-    IXMLTermType type; // Keep first in struct for union.
+    IXMLTermType type; // Keep first in struct for union IXMLTerm.
     char mark;
     char *name;
     char *alias;
@@ -213,7 +213,7 @@ typedef struct IXMLNonTerminal IXMLNonTerminal;
 
 union IXMLTerm
 {
-    IXMLTermType type;
+    IXMLTermType type; // Works for both t and nt since they have the type first.
     IXMLTerminal t;
     IXMLNonTerminal nt;
 };
@@ -288,16 +288,22 @@ struct XMQParseState
 
     ///////// The following variables are used when parsing ixml. //////////////////////////////////
     // Collect all unique terminals in this map from the name. #78 and 'x' is the same terminal with code 120.
-    // The name is a utf8 encoded string for a single character.
+    // The name is a #hex version of unicode codepoint.
     HashMap *ixml_terminals_map;
-    Vector *ixml_non_terminals; // Points to non-terminal references (mark+name...)
-    // A non-terminal references is used to point to a rule.
-    Vector *ixml_rules; // Points to rules. The rule has a rule_name which is a non-terminal ref to itself.
-    // Rule stack is pushed by groups (..), ?, * and +.
+    // References to non-terminals, ie rules (includes mark -^@).
+    Vector *ixml_non_terminals;
+    // Store all rules here. The rule has a rule_name which is a non-terminal ref to itself.
+    Vector *ixml_rules;
+    // Rule stack is pushed by groups (..), ?, *, **, + and ++.
     Stack  *ixml_rule_stack;
-    // Temporary object pointers when parsing ixml. These are eventually insert into the vectors above.
+    // Generated rule counter. Starts at 0 and increments after each generated
+    // anonymous rule, ie (..), ? etc. The rules will have the names /0 /1 /2 etc.
+    int num_generated_rules;
+    // The ixml_rule is the current rule that we are building.
     IXMLRule *ixml_rule;
+    // The ixml_nonterminal is the current rule reference.
     IXMLNonTerminal *ixml_nonterminal;
+    // The ixml_tmp_terminals is the current collection of terminals, ie characters.
     // A single ixml #78 or 'x' or "x" adds a single terminal to this vector.
     // The string 'xy' adds two terminals to this vector, etc.
     // These terminals are then added to the rule's rhs.
@@ -305,6 +311,7 @@ struct XMQParseState
 
     // When debugging parsing of ixml, track indentation of depth here.
     int depth;
+    // Generate xml as well.
     bool build_xml_of_ixml;
 };
 

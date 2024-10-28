@@ -900,6 +900,8 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
         exit(1);
     }
 
+    if (!stop) stop = start + strlen(start);
+
     XMQContentType detected_ct = xmqDetectContentType(start, stop);
     if (detected_ct != XMQ_CONTENT_XMQ)
     {
@@ -3832,6 +3834,8 @@ bool xmqParseBufferWithType(XMQDoc *doq,
                             int flags)
 {
     bool ok = true;
+
+    if (!stop) stop = start+strlen(start);
 
     // Unicode files might lead with a byte ordering mark.
     start = skip_any_potential_bom(start, stop);

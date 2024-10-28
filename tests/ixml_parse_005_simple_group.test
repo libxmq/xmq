@@ -1,0 +1,7 @@
+START
+dutta : ( 'abc' | 'xyz').
+INPUT
+xyz
+OUTPUT
+dutta = xyz
+END

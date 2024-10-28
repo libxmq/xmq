@@ -1,0 +1,7 @@
+START
+simple : ('1' , ( 'abc' | 'xyz' ) | '2' ).
+INPUT
+1abc
+OUTPUT
+simple = 1abc
+END
