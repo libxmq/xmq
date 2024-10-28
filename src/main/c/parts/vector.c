@@ -79,7 +79,7 @@ void vector_push_back(Vector *vector, void *data)
         {
             vector->elements_size *= 2;
         }
-        vector->elements = (void**)reallocarray(vector->elements, vector->elements_size, sizeof(void*));
+        vector->elements = (void**)realloc(vector->elements, vector->elements_size * sizeof(void*));
         assert(vector->elements);
     }
     vector->elements[vector->size-1] = data;
