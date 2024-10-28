@@ -1338,7 +1338,7 @@ bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *
     }
 
     state->ixml_rules = vector_create();
-    state->ixml_terminals_map = hashmap_create(16);
+    state->ixml_terminals_map = hashmap_create(256);
     state->ixml_non_terminals = vector_create();
     state->ixml_rule_stack = stack_create();
 
