@@ -551,6 +551,7 @@ const char *content_type_to_string(XMQContentType ct)
     case XMQ_CONTENT_XML: return "xml";
     case XMQ_CONTENT_HTML: return "html";
     case XMQ_CONTENT_JSON: return "json";
+    case XMQ_CONTENT_IXML: return "ixml";
     case XMQ_CONTENT_TEXT: return "text";
     }
     assert(false);

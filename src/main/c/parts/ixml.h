@@ -29,7 +29,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct grammar;
 struct yaep_tree_node;
 
-bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *stop, struct grammar *g);
+bool xmq_parse_buffer_ixml(XMQDoc *doc, const char *start, const char *stop);
+
+bool xmq_parse_buffer_using_ixml_grammar(XMQParseState *state, const char *start, const char *stop, struct grammar *g);
 bool xmq_parse_ixml_grammar(struct grammar *g,
                             struct yaep_tree_node **root,
                             int *ambiguous,

@@ -3881,6 +3881,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     case XMQ_CONTENT_XML: ok = xmq_parse_buffer_xml(doq, start, stop, flags); break;
     case XMQ_CONTENT_HTML: ok = xmq_parse_buffer_html(doq, start, stop, flags); break;
     case XMQ_CONTENT_JSON: ok = xmq_parse_buffer_json(doq, start, stop, implicit_root); break;
+    case XMQ_CONTENT_IXML: ok = xmq_parse_buffer_ixml(doq, start, stop); break;
     case XMQ_CONTENT_TEXT: ok = xmq_parse_buffer_text(doq, start, stop, implicit_root); break;
     default: break;
     }
@@ -4124,7 +4125,7 @@ bool xmq_parse_ixml_grammar(struct grammar *g,
 
     stack_push(state->element_stack, doq->docptr_.xml);
 
-    xmq_parse_buffer_ixml(state, start, stop, g);
+    xmq_parse_buffer_using_ixml_grammar(state, start, stop, g);
 
     if (xmqStateErrno(state))
     {

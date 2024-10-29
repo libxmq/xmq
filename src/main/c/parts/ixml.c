@@ -1328,7 +1328,7 @@ const char *ixml_to_yaep_read_rule(const char ***rhs,
     return rule->rule_name->name;
 }
 
-bool xmq_parse_buffer_ixml(XMQParseState *state, const char *start, const char *stop, struct grammar *g)
+bool xmq_parse_buffer_using_ixml_grammar(XMQParseState *state, const char *start, const char *stop, struct grammar *g)
 {
     if (state->magic_cookie != MAGIC_COOKIE)
     {
@@ -1694,6 +1694,11 @@ void make_last_term_optional(XMQParseState *state)
     state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
 }
 
+bool xmq_parse_buffer_ixml(XMQDoc *doc, const char *start, const char *stop)
+{
+    return false;
+}
+
 #else
 
 // Empty function when XMQ_NO_IXML is defined.
@@ -1704,6 +1709,11 @@ bool xmq_parse_ixml_grammar(struct grammar *g,
                             const char *start,
                             const char *stop,
                             bool build_xml_of_ixml)
+{
+    return false;
+}
+
+bool xmq_parse_buffer_ixml(XMQDoc *doc, const char *start, const char *stop)
 {
     return false;
 }
