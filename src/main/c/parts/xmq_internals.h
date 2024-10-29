@@ -567,6 +567,17 @@ size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...);
 size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop);
 void print_quote(XMQPrintState *ps, XMQColor c, const char *start, const char *stop);
 
+struct grammar;
+struct yaep_tree_node;
+
+bool xmq_parse_buffer_using_yaep_grammar(struct grammar *g,
+                                         struct yaep_tree_node **root,
+                                         int *ambiguous,
+                                         XMQDoc *doq,
+                                         const char *start,
+                                         const char *stop,
+                                         bool build_xml_of_ixml);
+
 typedef void (*XMQContentCallback)(XMQParseState *state,
                                    size_t start_line,
                                    size_t start_col,

@@ -355,6 +355,16 @@ void syntax_error(int err_tok_num,
 
 char *load_file_into_buffer(const char *file);
 
+
+// TODO REMOVE...
+bool xmq_parse_buffer_using_yaep_grammar(struct grammar *g,
+                                         struct yaep_tree_node **root,
+                                         int *ambiguous,
+                                         XMQDoc *doq,
+                                         const char *start,
+                                         const char *stop,
+                                         bool build_xml_of_ixml);
+
 /////////////////////////////////////////////////////////////////////////////////////
 
 const char *error_to_print_on_exit = NULL;

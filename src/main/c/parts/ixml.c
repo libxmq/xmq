@@ -1665,7 +1665,7 @@ void make_last_term_optional(XMQParseState *state)
     // /17 : .
 
     // Pop the last term.
-    IXMLTerm *term = vector_pop_back(state->ixml_rule->rhs);
+    IXMLTerm *term = (IXMLTerm*)vector_pop_back(state->ixml_rule->rhs);
 
     IXMLNonTerminal *nt = new_ixml_nonterminal();
     nt->name = generate_rule_name(state);
