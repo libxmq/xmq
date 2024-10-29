@@ -1329,7 +1329,7 @@ const char *ixml_to_yaep_read_rule(const char ***rhs,
     return rule->rule_name->name;
 }
 
-bool xmq_parse_buffer_using_ixml_grammar(XMQParseState *state, const char *start, const char *stop, struct grammar *g)
+bool ixml_build_yaep_grammar(struct grammar *g, XMQParseState *state, const char *start, const char *stop)
 {
     if (state->magic_cookie != MAGIC_COOKIE)
     {

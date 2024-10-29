@@ -4098,11 +4098,9 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
     return rc;
 }
 
-bool xmq_parse_buffer_build_yaep_grammar_from_ixml(struct yaep_tree_node **root,
-                                                   int *ambiguous,
+bool xmq_parse_buffer_build_yaep_grammar_from_ixml(XMQDoc *ixml_grammar,
                                                    const char *start,
-                                                   const char *stop,
-                                                   XMQDoc *ixml_grammar)
+                                                   const char *stop)
 {
     bool rc = true;
     if (!stop) stop = start+strlen(start);
@@ -4117,7 +4115,7 @@ bool xmq_parse_buffer_build_yaep_grammar_from_ixml(struct yaep_tree_node **root,
     state->doq = ixml_grammar;
     state->build_xml_of_ixml = false;
 
-    xmq_parse_buffer_using_ixml_grammar(state, start, stop, (struct grammar*)ixml_grammar->yaep_grammar_);
+    ixml_build_yaep_grammar((struct grammar*)ixml_grammar->yaep_grammar_, state, start, stop);
 
     if (xmqStateErrno(state))
     {

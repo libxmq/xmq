@@ -31,7 +31,7 @@ struct yaep_tree_node;
 
 bool xmq_parse_buffer_ixml(XMQDoc *doc, const char *start, const char *stop);
 
-bool xmq_parse_buffer_using_ixml_grammar(XMQParseState *state, const char *start, const char *stop, struct grammar *g);
+bool ixml_build_yaep_grammar(struct grammar *g, XMQParseState *state, const char *start, const char *stop);
 
 #define IXML_MODULE
 

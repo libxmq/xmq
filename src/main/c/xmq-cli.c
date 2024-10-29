@@ -360,11 +360,9 @@ char *load_file_into_buffer(const char *file);
 void xmq_set_yaep_grammar(XMQDoc *doc, struct grammar *g);
 struct grammar *xmq_get_yaep_grammar(XMQDoc *doc);
 
-bool xmq_parse_buffer_build_yaep_grammar_from_ixml(struct yaep_tree_node **root,
-                                                   int *ambiguous,
+bool xmq_parse_buffer_build_yaep_grammar_from_ixml(XMQDoc *ixml_grammar,
                                                    const char *start,
-                                                   const char *stop,
-                                                   XMQDoc *ixml_grammar);
+                                                   const char *stop);
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -1915,18 +1913,13 @@ bool cmd_load(XMQCliCommand *command)
 
     if (command->ixml_ixml != NULL)
     {
-        struct yaep_tree_node *root = NULL;
-        int ambiguous = 0;
-
         XMQDoc *ixml_grammar = xmqNewDoc();
         xmqSetDocSourceName(ixml_grammar, command->ixml_filename);
         xmq_set_yaep_grammar(ixml_grammar, yaep_create_grammar());
 
-        bool ok = xmq_parse_buffer_build_yaep_grammar_from_ixml(&root,
-                                                                &ambiguous,
+        bool ok = xmq_parse_buffer_build_yaep_grammar_from_ixml(ixml_grammar,
                                                                 command->ixml_ixml,
-                                                                NULL,
-                                                                ixml_grammar);
+                                                                NULL);
 
         if (!ok)
         {
@@ -1950,6 +1943,9 @@ bool cmd_load(XMQCliCommand *command)
 
             yaep_set_error_recovery_flag(xmq_get_yaep_grammar(ixml_grammar), 0); // No error recovery.
 
+            struct yaep_tree_node *root = NULL;
+            int ambiguous = 0;
+
             int rc = yaep_parse (xmq_get_yaep_grammar(ixml_grammar),
                                  read_token,
                                  syntax_error,
@@ -1972,13 +1968,14 @@ bool cmd_load(XMQCliCommand *command)
 
             generate_dom_from_yaep_node(new_doc, NULL, root, 0, 0);
 
+            if (root) yaep_free_tree(root, NULL, NULL);
+
             xmlFreeDoc(xmqGetImplementationDoc(command->env->doc));
             xmqSetImplementationDoc(command->env->doc, new_doc);
         }
 
         yaep_free_grammar (xmq_get_yaep_grammar(ixml_grammar));
         xmqFreeDoc(ixml_grammar);
-        if (root) yaep_free_tree(root, NULL, NULL);
 
         const char *from = "stdin";
         if (command->in) from = command->in;
