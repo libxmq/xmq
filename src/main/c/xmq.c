@@ -1732,7 +1732,7 @@ void xmqFreeDoc(XMQDoc *doq)
     }
     if (doq->yaep_grammar_)
     {
-        yaep_free_grammar (doq->yaep_grammar_);
+        yaep_free_grammar ((struct grammar*)doq->yaep_grammar_);
         doq->yaep_grammar_ = NULL;
     }
 
