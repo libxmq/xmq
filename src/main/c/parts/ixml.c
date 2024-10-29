@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 #include"text.h"
 #include"vector.h"
 #include"xml.h"
+#include"xmq.h"
 #include"yaep.h"
 
 #include<assert.h>

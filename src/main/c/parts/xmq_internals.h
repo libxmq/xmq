@@ -417,8 +417,6 @@ size_t count_necessary_slashes(const char *start, const char *stop);
 
 void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col);
 
-static const char *build_error_message(const char *fmt, ...);
-
 Level enter_compound_level(Level l);
 XMQColor level_to_quote_color(Level l);
 XMQColor level_to_entity_color(Level l);
@@ -513,6 +511,8 @@ void trim_node(xmlNode *node, int flags);
 void trim_text_node(xmlNode *node, int flags);
 
 // Output buffer functions ////////////////////////////////////////////////////////
+
+const char *build_error_message(const char *fmt, ...);
 
 void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
 

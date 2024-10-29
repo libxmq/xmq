@@ -127,6 +127,13 @@ void xmqSetupParseCallbacksNoop(XMQParseCallbacks *callbacks);
 bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, int flags);
 bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, int flags);
 bool xmq_parse_buffer_text(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root);
+bool xmq_parse_buffer_using_yaep_grammar(struct grammar *g,
+                                         struct yaep_tree_node **root,
+                                         int *ambiguous,
+                                         XMQDoc *doq,
+                                         const char *start,
+                                         const char *stop,
+                                         bool build_xml_of_ixml);
 void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *output_settings);
@@ -1202,7 +1209,7 @@ bool xmqVerbose() {
     return xmq_verbose_enabled_;
 }
 
-static const char *build_error_message(const char* fmt, ...)
+const char *build_error_message(const char* fmt, ...)
 {
     char *buf = (char*)malloc(4096);
     va_list args;
