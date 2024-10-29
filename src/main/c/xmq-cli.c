@@ -345,14 +345,6 @@ xmlDocPtr xmqDocDefaultLoaderFunc(const xmlChar * URI, xmlDictPtr dict, int opti
                                   void *ctxt /* ATTRIBUTE_UNUSED */,
                                   xsltLoadType type /* ATTRIBUTE_UNUSED*/);
 
-void syntax_error(int err_tok_num,
-                  void *err_tok_attr,
-                  int start_ignored_tok_num,
-                  void *start_ignored_tok_attr,
-                  int start_recovered_tok_num,
-                  void *start_recovered_tok_attr);
-
-
 char *load_file_into_buffer(const char *file);
 
 
@@ -1705,131 +1697,6 @@ void write_print(void *buffer, const char *content)
     printf("%s", content);
 }
 
-static char *input_;
-static size_t tok_ = 0;
-static size_t num_toks_ = 0;
-
-static int read_token(void **attr)
-{
-  *attr = NULL;
-  if (input_[tok_] && tok_ < num_toks_)
-  {
-      int r = input_[tok_];
-      tok_++;
-      return r;
-  }
-  return -1;
-}
-
-void syntax_error(int err_tok_num,
-                  void *err_tok_attr,
-                  int start_ignored_tok_num,
-                  void *start_ignored_tok_attr,
-                  int start_recovered_tok_num,
-                  void *start_recovered_tok_attr)
-{
-    printf("ixml: syntax error\n");
-    int start = err_tok_num - 10;
-    if (start < 0) start = 0;
-    int stop = err_tok_num + 10;
-
-    for (int i = start; i < stop && input_[i] != 0; ++i)
-    {
-        printf("%c", input_[i]);
-    }
-    printf("\n");
-    for (int i = start; i < err_tok_num; ++i) printf (" ");
-    printf("^\n");
-}
-
-
-const char *node_type_to_string(enum yaep_tree_node_type t);
-
-const char *node_type_to_string(enum yaep_tree_node_type t)
-{
-    switch (t)
-    {
-    case YAEP_NIL: return "NIL";
-    case YAEP_ERROR: return "ERROR";
-    case YAEP_TERM: return "TERM";
-    case YAEP_ANODE: return "ANODE";
-    case YAEP_ALT: return "ALT";
-    default:
-        return "?";
-    }
-    return "?";
-}
-
-void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, int depth, int index);
-
-void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, int depth, int index)
-{
-    if (n == NULL) return;
-    if (n->type == YAEP_ANODE)
-    {
-        struct yaep_anode *an = &n->val.anode;
-
-        if (an->name != NULL && an->name[0] != '/')
-        {
-            // Normal node that should be generated.
-            xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)an->name, NULL);
-
-            if (node == NULL)
-            {
-                xmlDocSetRootElement(doc, new_node);
-            }
-            else
-            {
-                xmlAddChild(node, new_node);
-            }
-
-            for (int i=0; an->children[i] != NULL; ++i)
-            {
-                struct yaep_tree_node *nn = an->children[i];
-                generate_dom_from_yaep_node(doc, new_node, nn, depth+1, i);
-            }
-        }
-        else
-        {
-            // Skip anonymous node whose name starts with /
-            for (int i=0; an->children[i] != NULL; ++i)
-            {
-                struct yaep_tree_node *nn = an->children[i];
-                generate_dom_from_yaep_node(doc, node, nn, depth+1, i);
-            }
-        }
-    }
-    else
-    if (n->type == YAEP_TERM)
-    {
-        struct yaep_term *at = &n->val.term;
-        char buf[4];
-        snprintf(buf, 4, "%c", at->code);
-        xmlNodePtr new_node = xmlNewDocText(doc, (xmlChar*)buf);
-
-        /*
-        xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)"term", NULL);
-        char buf[10];
-        snprintf(buf, 10, "%d", at->code);
-        xmlNewProp(new_node, (xmlChar*)"code", (xmlChar*)buf);
-        */
-        if (node == NULL)
-        {
-            xmlDocSetRootElement(doc, new_node);
-        }
-        else
-        {
-            xmlAddChild(node, new_node);
-        }
-    }
-    else
-    {
-        for (int i=0; i<depth; ++i) printf("    ");
-        printf("[%d] ", index);
-        printf("WOOT %s\n", node_type_to_string(n->type));
-    }
-}
-
 static int s_term_counter = 0;
 typedef struct {
     const char *name;
@@ -1931,47 +1798,12 @@ bool cmd_load(XMQCliCommand *command)
         {
             if (command->in_is_content)
             {
-                input_ = strdup(command->in);
+                ok = xmqParseBufferWithIXML(command->env->doc, command->in, NULL, ixml_grammar);
             }
             else
             {
-                input_ = load_file_into_buffer(command->in);
+                ok = xmqParseFileWithIXML(command->env->doc, command->in, ixml_grammar);
             }
-            if (!input_) return false;
-
-            num_toks_ = strlen(input_);
-
-            yaep_set_error_recovery_flag(xmq_get_yaep_grammar(ixml_grammar), 0); // No error recovery.
-
-            struct yaep_tree_node *root = NULL;
-            int ambiguous = 0;
-
-            int rc = yaep_parse (xmq_get_yaep_grammar(ixml_grammar),
-                                 read_token,
-                                 syntax_error,
-                                 NULL,
-                                 NULL,
-                                 &root,
-                                 &ambiguous);
-
-            if (rc)
-            {
-                printf("xmq: could not parse input using ixml grammar: %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
-                return 1;
-            }
-
-            if (ambiguous)
-            {
-                warnParsing("ixml", "The input can be parsed in multiple ways, ie it is ambiguous!");
-            }
-            xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
-
-            generate_dom_from_yaep_node(new_doc, NULL, root, 0, 0);
-
-            if (root) yaep_free_tree(root, NULL, NULL);
-
-            xmlFreeDoc(xmqGetImplementationDoc(command->env->doc));
-            xmqSetImplementationDoc(command->env->doc, new_doc);
         }
 
         xmqFreeDoc(ixml_grammar);

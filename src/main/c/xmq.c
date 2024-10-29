@@ -105,12 +105,17 @@ const char *find_next_line_end(XMQPrintState *ps, const char *start, const char 
 const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop);
 void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared);
 void fixup_comments(XMQDoc *doq, xmlNode *node, int depth);
+void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, int depth, int index);
+void handle_yaep_syntax_error(int err_tok_num, void *err_tok_attr, int start_ignored_tok_num, void *start_ignored_tok_attr,
+                              int start_recovered_tok_num, void *start_recovered_tok_attr);
+
 bool has_leading_ending_quote(const char *start, const char *stop);
 bool is_safe_char(const char *i, const char *stop);
 size_t line_length(const char *start, const char *stop, int *numq, int *lq, int *eq);
 bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **out_buffer);
 bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer);
 bool need_separation_before_entity(XMQPrintState *ps);
+const char *node_yaep_type_to_string(enum yaep_tree_node_type t);
 size_t num_utf8_bytes(char c);
 void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num);
 void reset_ansi(XMQParseState *state);
@@ -4151,6 +4156,182 @@ void xmq_set_yaep_grammar(XMQDoc *doc, struct grammar *g)
 struct grammar *xmq_get_yaep_grammar(XMQDoc *doc)
 {
     return (struct grammar *)doc->yaep_grammar_;
+}
+
+static char *input_;
+static size_t tok_ = 0;
+static size_t num_toks_ = 0;
+
+static int read_yaep_token(void **attr)
+{
+  *attr = NULL;
+  if (input_[tok_] && tok_ < num_toks_)
+  {
+      int r = input_[tok_];
+      tok_++;
+      return r;
+  }
+  return -1;
+}
+
+void handle_yaep_syntax_error(int err_tok_num,
+                              void *err_tok_attr,
+                              int start_ignored_tok_num,
+                              void *start_ignored_tok_attr,
+                              int start_recovered_tok_num,
+                              void *start_recovered_tok_attr)
+{
+    printf("ixml: syntax error\n");
+    int start = err_tok_num - 10;
+    if (start < 0) start = 0;
+    int stop = err_tok_num + 10;
+
+    for (int i = start; i < stop && input_[i] != 0; ++i)
+    {
+        printf("%c", input_[i]);
+    }
+    printf("\n");
+    for (int i = start; i < err_tok_num; ++i) printf (" ");
+    printf("^\n");
+}
+
+const char *node_yaep_type_to_string(enum yaep_tree_node_type t)
+{
+    switch (t)
+    {
+    case YAEP_NIL: return "NIL";
+    case YAEP_ERROR: return "ERROR";
+    case YAEP_TERM: return "TERM";
+    case YAEP_ANODE: return "ANODE";
+    case YAEP_ALT: return "ALT";
+    default:
+        return "?";
+    }
+    return "?";
+}
+
+void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, int depth, int index)
+{
+    if (n == NULL) return;
+    if (n->type == YAEP_ANODE)
+    {
+        struct yaep_anode *an = &n->val.anode;
+
+        if (an->name != NULL && an->name[0] != '/')
+        {
+            // Normal node that should be generated.
+            xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)an->name, NULL);
+
+            if (node == NULL)
+            {
+                xmlDocSetRootElement(doc, new_node);
+            }
+            else
+            {
+                xmlAddChild(node, new_node);
+            }
+
+            for (int i=0; an->children[i] != NULL; ++i)
+            {
+                struct yaep_tree_node *nn = an->children[i];
+                generate_dom_from_yaep_node(doc, new_node, nn, depth+1, i);
+            }
+        }
+        else
+        {
+            // Skip anonymous node whose name starts with /
+            for (int i=0; an->children[i] != NULL; ++i)
+            {
+                struct yaep_tree_node *nn = an->children[i];
+                generate_dom_from_yaep_node(doc, node, nn, depth+1, i);
+            }
+        }
+    }
+    else
+    if (n->type == YAEP_TERM)
+    {
+        struct yaep_term *at = &n->val.term;
+        char buf[4];
+        snprintf(buf, 4, "%c", at->code);
+        xmlNodePtr new_node = xmlNewDocText(doc, (xmlChar*)buf);
+
+        /*
+        xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)"term", NULL);
+        char buf[10];
+        snprintf(buf, 10, "%d", at->code);
+        xmlNewProp(new_node, (xmlChar*)"code", (xmlChar*)buf);
+        */
+        if (node == NULL)
+        {
+            xmlDocSetRootElement(doc, new_node);
+        }
+        else
+        {
+            xmlAddChild(node, new_node);
+        }
+    }
+    else
+    {
+        for (int i=0; i<depth; ++i) printf("    ");
+        printf("[%d] ", index);
+        printf("WOOT %s\n", node_yaep_type_to_string(n->type));
+    }
+}
+
+bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XMQDoc *ixml_grammar)
+{
+    if (!doc || !start || !ixml_grammar) return false;
+    if (!stop) stop = start+strlen(start);
+
+    input_ = strndup(start, stop-start);
+    if (!input_) return false;
+
+    num_toks_ = strlen(input_);
+
+    yaep_set_error_recovery_flag(xmq_get_yaep_grammar(ixml_grammar), 0); // No error recovery.
+
+    struct yaep_tree_node *root = NULL;
+    int ambiguous = 0;
+
+    int rc = yaep_parse (xmq_get_yaep_grammar(ixml_grammar),
+                         read_yaep_token,
+                         handle_yaep_syntax_error,
+                         NULL,
+                         NULL,
+                         &root,
+                         &ambiguous);
+
+    if (rc)
+    {
+        printf("xmq: could not parse input using ixml grammar: %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
+        return false;
+    }
+
+    if (ambiguous)
+    {
+        fprintf(stderr, "ixml: Warning! The input can be parsed in multiple ways, ie it is ambiguous!");
+    }
+
+    generate_dom_from_yaep_node(doc->docptr_.xml, NULL, root, 0, 0);
+
+    if (root) yaep_free_tree(root, NULL, NULL);
+
+    return true;
+}
+
+bool xmqParseFileWithIXML(XMQDoc *doc, const char *file_name, XMQDoc *ixml_grammar)
+{
+    const char *buffer;
+    size_t buffer_len = 0;
+    bool ok = load_file(doc, file_name, &buffer_len, &buffer);
+
+    if (!ok) return false;
+
+    ok = xmqParseBufferWithIXML(doc, buffer, buffer+buffer_len, ixml_grammar);
+
+    free((char*)buffer);
+
+    return ok;
 }
 
 #include"parts/always.c"
