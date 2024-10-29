@@ -1915,7 +1915,6 @@ bool cmd_load(XMQCliCommand *command)
     {
         XMQDoc *ixml_grammar = xmqNewDoc();
         xmqSetDocSourceName(ixml_grammar, command->ixml_filename);
-        xmq_set_yaep_grammar(ixml_grammar, yaep_create_grammar());
 
         bool ok = xmq_parse_buffer_build_yaep_grammar_from_ixml(ixml_grammar,
                                                                 command->ixml_ixml,
@@ -1974,7 +1973,6 @@ bool cmd_load(XMQCliCommand *command)
             xmqSetImplementationDoc(command->env->doc, new_doc);
         }
 
-        yaep_free_grammar (xmq_get_yaep_grammar(ixml_grammar));
         xmqFreeDoc(ixml_grammar);
 
         const char *from = "stdin";

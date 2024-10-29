@@ -1730,6 +1730,12 @@ void xmqFreeDoc(XMQDoc *doq)
         xmlFreeDoc(doq->docptr_.xml);
         doq->docptr_.xml = NULL;
     }
+    if (doq->yaep_grammar_)
+    {
+        yaep_free_grammar (doq->yaep_grammar_);
+        doq->yaep_grammar_ = NULL;
+    }
+
     debug("[XMQ] freeing xmq doc\n");
     free(doq);
 }
@@ -4102,6 +4108,8 @@ bool xmq_parse_buffer_build_yaep_grammar_from_ixml(XMQDoc *ixml_grammar,
                                                    const char *start,
                                                    const char *stop)
 {
+    assert(ixml_grammar->yaep_grammar_ == NULL);
+
     bool rc = true;
     if (!stop) stop = start+strlen(start);
 
@@ -4114,6 +4122,7 @@ bool xmq_parse_buffer_build_yaep_grammar_from_ixml(XMQDoc *ixml_grammar,
 
     state->doq = ixml_grammar;
     state->build_xml_of_ixml = false;
+    ixml_grammar->yaep_grammar_ = yaep_create_grammar();
 
     ixml_build_yaep_grammar((struct grammar*)ixml_grammar->yaep_grammar_, state, start, stop);
 
