@@ -115,6 +115,7 @@ struct XMQDoc
     XMQNode root_; // The root node.
     XMQContentType original_content_type_; // Remember if this document was created from xmq/xml etc.
     size_t original_size_; // Remember the original source size of the document it was loaded from.
+    void *yaep_grammar_; // Cached ixml grammar.
 };
 
 #ifdef __cplusplus
