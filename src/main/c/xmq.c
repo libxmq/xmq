@@ -4223,7 +4223,7 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tre
     {
         struct yaep_anode *an = &n->val.anode;
 
-        if (an->name != NULL && an->name[0] != '/')
+        if (an->name != NULL && an->name[0] != '/' && an->mark != '-')
         {
             // Normal node that should be generated.
             xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)an->name, NULL);
@@ -4245,7 +4245,7 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tre
         }
         else
         {
-            // Skip anonymous node whose name starts with /
+            // Skip anonymous node whose name starts with / and deleted nodes with mark=-
             for (int i=0; an->children[i] != NULL; ++i)
             {
                 struct yaep_tree_node *nn = an->children[i];

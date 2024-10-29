@@ -104,6 +104,8 @@ struct yaep_anode
 {
   /* The abstract node name. */
   const char *name;
+  /* The ixml mark. */
+  char mark;
   /* The following value is cost of the node plus costs of all
      children if the cost flag is set up.  Otherwise, the value is cost
      of the abstract node itself. */
@@ -201,7 +203,9 @@ yaep_read_grammar (struct grammar *g, int strict_p,
 		   const char *(*read_rule) (const char ***rhs,
 					     const char **abs_node,
                                              int *anode_cost,
-					     int **transl));
+					     int **transl,
+                                             char *mark,
+                                             char **marks));
 
 /* The following function is analogous to the previous one but it
    parses grammar description. */
@@ -341,7 +345,9 @@ public:
 			   const char *(*read_rule) (const char ***rhs,
 						     const char **abs_node,
 						     int *anode_cost,
-						     int **transl));
+						     int **transl,
+                                                     char *mark,
+                                                     char **marks));
 
   /* See comments for function yaep_parse_grammar. */
   int parse_grammar (int strict_p, const char *description);

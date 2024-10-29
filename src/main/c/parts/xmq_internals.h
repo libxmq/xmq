@@ -198,6 +198,7 @@ typedef enum IXMLTermType IXMLTermType;
 struct IXMLTerminal
 {
     IXMLTermType type; // Keep first in struct for union IXMLTerm.
+    char mark;
     char *name;
     int code;
 };
@@ -223,6 +224,7 @@ typedef union IXMLTerm IXMLTerm;
 struct IXMLRule
 {
     IXMLNonTerminal *rule_name;
+    char mark;
     Vector *rhs;
 };
 typedef struct IXMLRule IXMLRule;

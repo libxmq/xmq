@@ -1158,8 +1158,8 @@ void parse_ixml_string(XMQParseState *state, int **content)
         membuffer_append_int(buf, uc);
         EAT(string_inside, len);
     }
-    // Add a zero termination to the string.
-    membuffer_append_null(buf);
+    // Add a zero termination to the integer array.
+    membuffer_append_int(buf, 0);
 
     char *quote = free_membuffer_but_return_trimmed_content(buf);
     *content = (int*)quote;
@@ -1290,15 +1290,20 @@ const char *ixml_to_yaep_read_terminal(int *code)
 const char *ixml_to_yaep_read_rule(const char ***rhs,
                                    const char **abs_node,
                                    int *cost,
-                                   int **transl);
+                                   int **transl,
+                                   char *mark,
+                                   char **marks);
 
 const char *ixml_to_yaep_read_rule(const char ***rhs,
                                    const char **abs_node,
                                    int *cost,
-                                   int **transl)
+                                   int **transl,
+                                   char *mark,
+                                   char **marks)
 {
     if (yaep_j_ >= yaep_state_->ixml_rules->size) return NULL;
     IXMLRule *rule = (IXMLRule*)vector_element_at(yaep_state_->ixml_rules, yaep_j_);
+
     size_t num_rhs = rule->rhs->size;
 
     // Add rhs rules as translations.
@@ -1340,6 +1345,7 @@ const char *ixml_to_yaep_read_rule(const char ***rhs,
     *rhs = (const char **)yaep_tmp_rhs_;
     *transl = yaep_tmp_transl_;
     *cost = 1;
+    *mark = rule->rule_name->mark;
     yaep_j_++;
     return rule->rule_name->name;
 }
@@ -1653,6 +1659,7 @@ IXMLNonTerminal *copy_ixml_nonterminal(IXMLNonTerminal *nt)
     IXMLNonTerminal *t = (IXMLNonTerminal*)calloc(1, sizeof(IXMLNonTerminal));
     t->type = IXML_NON_TERMINAL;
     t->name = strdup(nt->name);
+    t->mark = nt->mark;
     return t;
 }
 

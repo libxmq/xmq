@@ -3299,8 +3299,12 @@ struct rule
   /* The following is nonterminal in the left hand side of the
      rule. */
   struct symb *lhs;
+  /* The ixml default mark of the rule */
+  char mark;
   /* The following is symbols in the right hand side of the rule. */
   struct symb **rhs;
+  /* The ixml marks for all the terms in the right hand side of the rule. */
+  char *marks;
   /* The following three members define rule translation. */
   const char *anode;		/* abstract node name if any. */
   int anode_cost;		/* the cost of the abstract node if any, otherwise 0. */
@@ -5654,13 +5658,15 @@ yaep_read_grammar (struct grammar *g, int strict_p,
 		   const char *(*read_terminal) (int *code),
 		   const char *(*read_rule) (const char ***rhs,
 					     const char **abs_node,
-					     int *anode_cost, int **transl))
+					     int *anode_cost, int **transl, char *mark, char **marks))
 {
   const char *name, *lhs, **rhs, *anode;
   struct symb *symb, *start;
   struct rule *rule;
   int anode_cost;
   int *transl;
+  char mark;
+  char *marks;
   int i, el, code;
 
   assert (g != NULL);
@@ -5699,7 +5705,7 @@ yaep_read_grammar (struct grammar *g, int strict_p,
   grammar->term_error = symb_add_term (TERM_ERROR_NAME, TERM_ERROR_CODE);
   grammar->term_error_num = grammar->term_error->u.term.term_num;
   grammar->axiom = grammar->end_marker = NULL;
-  while ((lhs = (*read_rule) (&rhs, &anode, &anode_cost, &transl)) != NULL)
+  while ((lhs = (*read_rule) (&rhs, &anode, &anode_cost, &transl, &mark, &marks)) != NULL)
     {
         // fprintf(stderr, "LHS >%s<\n", lhs); // DEBUGGING TODO REMOVE
       symb = symb_find_by_repr (lhs);
@@ -5752,6 +5758,8 @@ yaep_read_grammar (struct grammar *g, int strict_p,
 	  rhs++;
 	}
       rule_new_stop ();
+      rule->mark = mark;
+      rule->marks = marks;
       if (transl != NULL)
 	{
 	  for (i = 0; (el = transl[i]) >= 0; i++)
@@ -8123,6 +8131,7 @@ make_parse (int *ambiguous_p)
 			}
 		      node->val.anode.name = sit_rule->caller_anode;
 		      node->val.anode.cost = sit_rule->anode_cost;
+		      node->val.anode.mark = sit_rule->mark;
 		      node->val.anode.children
 			= ((struct yaep_tree_node **)
 			   ((char *) node + sizeof (struct yaep_tree_node)));
