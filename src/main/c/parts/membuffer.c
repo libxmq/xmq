@@ -133,6 +133,19 @@ void membuffer_append_char(MemBuffer *mb, char c)
     mb->used_ ++;
 }
 
+void membuffer_append_int(MemBuffer *mb, int i)
+{
+    size_t add = sizeof(i);
+    size_t max = pick_buffer_new_size(mb->max_, mb->used_, add);
+    if (max > mb->max_)
+    {
+        mb->buffer_ = (char*)realloc(mb->buffer_, max);
+        mb->max_ = max;
+    }
+    memcpy(mb->buffer_+mb->used_, &i, sizeof(i));
+    mb->used_ += add;
+}
+
 void membuffer_append_null(MemBuffer *mb)
 {
     membuffer_append_char(mb, 0);

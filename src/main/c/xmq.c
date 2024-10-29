@@ -4158,20 +4158,26 @@ struct grammar *xmq_get_yaep_grammar(XMQDoc *doc)
     return (struct grammar *)doc->yaep_grammar_;
 }
 
-static char *input_;
-static size_t tok_ = 0;
-static size_t num_toks_ = 0;
+static char *input_i_;
+static char *input_start_;
+static char *input_stop_;
 
 static int read_yaep_token(void **attr)
 {
   *attr = NULL;
-  if (input_[tok_] && tok_ < num_toks_)
+  if (input_i_ >= input_stop_) return -1;
+
+  int uc = 0;
+  size_t len = 0;
+  bool ok = decode_utf8(input_i_, input_stop_, &uc, &len);
+  if (!ok)
   {
-      int r = input_[tok_];
-      tok_++;
-      return r;
+      fprintf(stderr, "xmq: broken utf8\n");
+      exit(1);
   }
-  return -1;
+  input_i_ += len;
+
+  return uc;
 }
 
 void handle_yaep_syntax_error(int err_tok_num,
@@ -4186,9 +4192,9 @@ void handle_yaep_syntax_error(int err_tok_num,
     if (start < 0) start = 0;
     int stop = err_tok_num + 10;
 
-    for (int i = start; i < stop && input_[i] != 0; ++i)
+    for (int i = start; i < stop && input_i_[i] != 0; ++i)
     {
-        printf("%c", input_[i]);
+        printf("%c", input_i_[i]);
     }
     printf("\n");
     for (int i = start; i < err_tok_num; ++i) printf (" ");
@@ -4251,9 +4257,11 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tre
     if (n->type == YAEP_TERM)
     {
         struct yaep_term *at = &n->val.term;
-        char buf[4];
-        snprintf(buf, 4, "%c", at->code);
-        xmlNodePtr new_node = xmlNewDocText(doc, (xmlChar*)buf);
+        UTF8Char utf8;
+        size_t len = encode_utf8(at->code, &utf8);
+        utf8.bytes[len] = 0;
+
+        xmlNodePtr new_node = xmlNewDocText(doc, (xmlChar*)utf8.bytes);
 
         /*
         xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)"term", NULL);
@@ -4283,23 +4291,23 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     if (!doc || !start || !ixml_grammar) return false;
     if (!stop) stop = start+strlen(start);
 
-    input_ = strndup(start, stop-start);
-    if (!input_) return false;
+    input_start_ = input_i_ = strndup(start, stop-start);
+    if (!input_start_) return false;
 
-    num_toks_ = strlen(input_);
+    input_stop_ = input_start_ + strlen(input_start_);
 
     yaep_set_error_recovery_flag(xmq_get_yaep_grammar(ixml_grammar), 0); // No error recovery.
 
     struct yaep_tree_node *root = NULL;
     int ambiguous = 0;
 
-    int rc = yaep_parse (xmq_get_yaep_grammar(ixml_grammar),
-                         read_yaep_token,
-                         handle_yaep_syntax_error,
-                         NULL,
-                         NULL,
-                         &root,
-                         &ambiguous);
+    int rc = yaep_parse(xmq_get_yaep_grammar(ixml_grammar),
+                        read_yaep_token,
+                        handle_yaep_syntax_error,
+                        NULL,
+                        NULL,
+                        &root,
+                        &ambiguous);
 
     if (rc)
     {

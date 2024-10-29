@@ -139,7 +139,7 @@ void parse_ixml_prolog(XMQParseState *state);
 void parse_ixml_range(XMQParseState *state);
 void parse_ixml_quoted(XMQParseState *state);
 void parse_ixml_rule(XMQParseState *state);
-void parse_ixml_string(XMQParseState *state, char **content);
+void parse_ixml_string(XMQParseState *state, int **content);
 void parse_ixml_term(XMQParseState *state);
 void parse_ixml_terminal(XMQParseState *state);
 void parse_ixml_whitespace(XMQParseState *state);
@@ -625,7 +625,7 @@ void parse_ixml_charset(XMQParseState *state)
         }
         else if (is_ixml_string_start(state))
         {
-            char *content = NULL;
+            int *content = NULL;
             parse_ixml_string(state, &content);
             free(content);
         }
@@ -827,7 +827,7 @@ void parse_ixml_insertion(XMQParseState *state)
 
     if (is_ixml_string_start(state))
     {
-        char *content = NULL;
+        int *content = NULL;
         parse_ixml_string(state, &content);
         free(content);
     }
@@ -974,7 +974,7 @@ void parse_ixml_prolog(XMQParseState *state)
         longjmp(state->error_handler, 1);
     }
 
-    char *content;
+    int *content;
     parse_ixml_string(state, &content);
     free(content);
 
@@ -1000,7 +1000,7 @@ void parse_ixml_range(XMQParseState *state)
 
     if (is_ixml_string_start(state))
     {
-        char *content;
+        int *content;
         parse_ixml_string(state, &content);
         free(content);
     }
@@ -1018,7 +1018,7 @@ void parse_ixml_range(XMQParseState *state)
 
     if (is_ixml_string_start(state))
     {
-        char *content;
+        int *content;
         parse_ixml_string(state, &content);
         free(content);
     }
@@ -1050,10 +1050,10 @@ void parse_ixml_quoted(XMQParseState *state)
         parse_ixml_whitespace(state);
     }
 
-    char *content = NULL;
+    int *content = NULL;
     parse_ixml_string(state, &content);
 
-    for (const char *i = content; *i; ++i)
+    for (int *i = content; *i; ++i)
     {
         char buf[16];
         snprintf(buf, 15, "#%x", *i);
@@ -1113,7 +1113,7 @@ void parse_ixml_rule(XMQParseState *state)
     IXML_DONE(rule, state);
 }
 
-void parse_ixml_string(XMQParseState *state, char **content)
+void parse_ixml_string(XMQParseState *state, int **content)
 {
     IXML_STEP(string, state);
 
@@ -1146,14 +1146,23 @@ void parse_ixml_string(XMQParseState *state, char **content)
                 break;
             }
         }
-        membuffer_append_char(buf, *(state->i));
-        EAT(string_inside, 1);
+
+        int uc = 0;
+        size_t len = 0;
+        bool ok = decode_utf8(state->i, state->buffer_stop, &uc, &len);
+        if (!ok)
+        {
+            fprintf(stderr, "xmq: broken utf8\n");
+            exit(1);
+        }
+        membuffer_append_int(buf, uc);
+        EAT(string_inside, len);
     }
     // Add a zero termination to the string.
     membuffer_append_null(buf);
 
     char *quote = free_membuffer_but_return_trimmed_content(buf);
-    *content = quote;
+    *content = (int*)quote;
 
     IXML_DONE(string, state);
 }

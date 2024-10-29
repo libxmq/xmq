@@ -339,7 +339,6 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode);
 void restoreStdinTerminal();
 bool cmd_tokenize(XMQCliCommand *command);
 void verbose_(const char* fmt, ...);
-void write_print(void *buffer, const char *content);
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command);
 xmlDocPtr xmqDocDefaultLoaderFunc(const xmlChar * URI, xmlDictPtr dict, int options,
                                   void *ctxt /* ATTRIBUTE_UNUSED */,
@@ -1671,11 +1670,6 @@ bool cmd_tokenize(XMQCliCommand *command)
     xmqFreeOutputSettings(output_settings);
 
     return err == 0;
-}
-
-void write_print(void *buffer, const char *content)
-{
-    printf("%s", content);
 }
 
 bool cmd_load(XMQCliCommand *command)

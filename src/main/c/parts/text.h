@@ -31,8 +31,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     UTF8Char: storage for 1 to 4 utf8 bytes
 
     An utf8 char is at most 4 bytes since the max unicode nr is capped at U+10FFFF:
+
+    Add an extra byte that we can set to zero if we need.
 */
-#define MAX_NUM_UTF8_BYTES 4
+#define MAX_NUM_UTF8_BYTES (4+1)
 typedef struct
 {
     char bytes[MAX_NUM_UTF8_BYTES];
