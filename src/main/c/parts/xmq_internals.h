@@ -570,13 +570,11 @@ void print_quote(XMQPrintState *ps, XMQColor c, const char *start, const char *s
 struct grammar;
 struct yaep_tree_node;
 
-bool xmq_parse_buffer_using_yaep_grammar(struct grammar *g,
-                                         struct yaep_tree_node **root,
-                                         int *ambiguous,
-                                         XMQDoc *doq,
-                                         const char *start,
-                                         const char *stop,
-                                         bool build_xml_of_ixml);
+bool xmq_parse_buffer_build_yaep_grammar_from_ixml(struct yaep_tree_node **root,
+                                                   int *ambiguous,
+                                                   const char *start,
+                                                   const char *stop,
+                                                   XMQDoc *ixml_grammar);
 
 typedef void (*XMQContentCallback)(XMQParseState *state,
                                    size_t start_line,
@@ -614,6 +612,8 @@ struct XMQPrintCallbacks
 bool debug_enabled();
 
 void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
+void xmq_set_yaep_grammar(XMQDoc *doc, struct grammar *g);
+struct grammar *xmq_get_yaep_grammar(XMQDoc *doc);
 
 void set_node_namespace(XMQParseState *state, xmlNodePtr node, const char *node_name);
 

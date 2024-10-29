@@ -496,6 +496,15 @@ XMQDoc *xmqNewDoc();
 void xmqSetDocSourceName(XMQDoc *doq, const char *source_name);
 
 /**
+    xmqGetDocSourceName:
+    @doq: Document which source file name should be gotten.
+
+    Returns the source name used to make error message more readable when parsing fails.
+    The source name is often the file name, but can be "-" for stdin or anything you like.
+*/
+const char *xmqGetDocSourceName(XMQDoc *doq);
+
+/**
     xmqGetOriginalContentType:
 
     If available, return the original content type (xmq/htmq/xml/html/json/text) of this document.

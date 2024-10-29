@@ -1664,6 +1664,11 @@ void xmqSetDocSourceName(XMQDoc *doq, const char *source_name)
     }
 }
 
+const char *xmqGetDocSourceName(XMQDoc *doq)
+{
+    return doq->source_name_;
+}
+
 XMQContentType xmqGetOriginalContentType(XMQDoc *doq)
 {
     return doq->original_content_type_;
@@ -4093,13 +4098,11 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
     return rc;
 }
 
-bool xmq_parse_buffer_using_yaep_grammar(struct grammar *g,
-                                         struct yaep_tree_node **root,
-                                         int *ambiguous,
-                                         XMQDoc *doq,
-                                         const char *start,
-                                         const char *stop,
-                                         bool build_xml_of_ixml)
+bool xmq_parse_buffer_build_yaep_grammar_from_ixml(struct yaep_tree_node **root,
+                                                   int *ambiguous,
+                                                   const char *start,
+                                                   const char *stop,
+                                                   XMQDoc *ixml_grammar)
 {
     bool rc = true;
     if (!stop) stop = start+strlen(start);
@@ -4109,21 +4112,18 @@ bool xmq_parse_buffer_using_yaep_grammar(struct grammar *g,
     parse->magic_cookie = MAGIC_COOKIE;
 
     XMQParseState *state = xmqNewParseState(parse, os);
+    xmqSetStateSourceName(state, xmqGetDocSourceName(ixml_grammar));
 
-    state->doq = doq;
-    state->build_xml_of_ixml = build_xml_of_ixml;
+    state->doq = ixml_grammar;
+    state->build_xml_of_ixml = false;
 
-    xmqSetStateSourceName(state, doq->source_name_);
-
-    stack_push(state->element_stack, doq->docptr_.xml);
-
-    xmq_parse_buffer_using_ixml_grammar(state, start, stop, g);
+    xmq_parse_buffer_using_ixml_grammar(state, start, stop, (struct grammar*)ixml_grammar->yaep_grammar_);
 
     if (xmqStateErrno(state))
     {
         rc = false;
-        doq->errno_ = xmqStateErrno(state);
-        doq->error_ = build_error_message("%s\n", xmqStateErrorMsg(state));
+        ixml_grammar->errno_ = xmqStateErrno(state);
+        ixml_grammar->error_ = build_error_message("%s\n", xmqStateErrorMsg(state));
     }
 
     xmqFreeParseState(state);
@@ -4131,6 +4131,16 @@ bool xmq_parse_buffer_using_yaep_grammar(struct grammar *g,
     xmqFreeOutputSettings(os);
 
     return rc;
+}
+
+void xmq_set_yaep_grammar(XMQDoc *doc, struct grammar *g)
+{
+    doc->yaep_grammar_ = g;
+}
+
+struct grammar *xmq_get_yaep_grammar(XMQDoc *doc)
+{
+    return (struct grammar *)doc->yaep_grammar_;
 }
 
 #include"parts/always.c"

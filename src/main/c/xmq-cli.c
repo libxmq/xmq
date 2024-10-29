@@ -357,13 +357,14 @@ char *load_file_into_buffer(const char *file);
 
 
 // TODO REMOVE...
-bool xmq_parse_buffer_using_yaep_grammar(struct grammar *g,
-                                         struct yaep_tree_node **root,
-                                         int *ambiguous,
-                                         XMQDoc *doq,
-                                         const char *start,
-                                         const char *stop,
-                                         bool build_xml_of_ixml);
+void xmq_set_yaep_grammar(XMQDoc *doc, struct grammar *g);
+struct grammar *xmq_get_yaep_grammar(XMQDoc *doc);
+
+bool xmq_parse_buffer_build_yaep_grammar_from_ixml(struct yaep_tree_node **root,
+                                                   int *ambiguous,
+                                                   const char *start,
+                                                   const char *stop,
+                                                   XMQDoc *ixml_grammar);
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -1914,23 +1915,22 @@ bool cmd_load(XMQCliCommand *command)
 
     if (command->ixml_ixml != NULL)
     {
-        struct grammar *g = NULL;
         struct yaep_tree_node *root = NULL;
         int ambiguous = 0;
 
-        g = yaep_create_grammar();
+        XMQDoc *ixml_grammar = xmqNewDoc();
+        xmqSetDocSourceName(ixml_grammar, command->ixml_filename);
+        xmq_set_yaep_grammar(ixml_grammar, yaep_create_grammar());
 
-        XMQDoc *doq = xmqNewDoc();
-        xmqSetDocSourceName(doq, command->ixml_filename);
-
-        bool ok = xmq_parse_buffer_using_yaep_grammar(g, &root, &ambiguous, doq,
-                                                      command->ixml_ixml,
-                                                      NULL,
-                                                      command->build_xml_of_ixml);
+        bool ok = xmq_parse_buffer_build_yaep_grammar_from_ixml(&root,
+                                                                &ambiguous,
+                                                                command->ixml_ixml,
+                                                                NULL,
+                                                                ixml_grammar);
 
         if (!ok)
         {
-            fprintf(stderr, "%s\n", xmqDocError(doq));
+            fprintf(stderr, "%s\n", xmqDocError(ixml_grammar));
             exit(1);
         }
 
@@ -1948,9 +1948,9 @@ bool cmd_load(XMQCliCommand *command)
 
             num_toks_ = strlen(input_);
 
-            yaep_set_error_recovery_flag(g, 0); // No error recovery.
+            yaep_set_error_recovery_flag(xmq_get_yaep_grammar(ixml_grammar), 0); // No error recovery.
 
-            int rc = yaep_parse (g,
+            int rc = yaep_parse (xmq_get_yaep_grammar(ixml_grammar),
                                  read_token,
                                  syntax_error,
                                  NULL,
@@ -1960,7 +1960,7 @@ bool cmd_load(XMQCliCommand *command)
 
             if (rc)
             {
-                printf("xmq: could not parse input using ixml grammar: %s\n", yaep_error_message(g));
+                printf("xmq: could not parse input using ixml grammar: %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
                 return 1;
             }
 
@@ -1976,8 +1976,8 @@ bool cmd_load(XMQCliCommand *command)
             xmqSetImplementationDoc(command->env->doc, new_doc);
         }
 
-        xmqFreeDoc(doq);
-        yaep_free_grammar (g);
+        yaep_free_grammar (xmq_get_yaep_grammar(ixml_grammar));
+        xmqFreeDoc(ixml_grammar);
         if (root) yaep_free_tree(root, NULL, NULL);
 
         const char *from = "stdin";
