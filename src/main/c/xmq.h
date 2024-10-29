@@ -87,6 +87,7 @@ typedef struct XMQParseCallbacks XMQParseCallbacks;
     @XMQ_CONTENT_XML: xml detected
     @XMQ_CONTENT_HTML: html detected
     @XMQ_CONTENT_JSON: json detected
+    @XMQ_CONTENT_IXML: ixml selected
     @XMQ_CONTENT_TEXT: valid utf8 text input/output is selected
 
     Specify the file/buffer content type.
@@ -100,7 +101,8 @@ typedef enum
     XMQ_CONTENT_XML = 4,
     XMQ_CONTENT_HTML = 5,
     XMQ_CONTENT_JSON = 6,
-    XMQ_CONTENT_TEXT = 7
+    XMQ_CONTENT_IXML = 7,
+    XMQ_CONTENT_TEXT = 8
 } XMQContentType;
 
 /**
@@ -116,12 +118,12 @@ typedef enum
 */
 typedef enum
 {
-   XMQ_RENDER_PLAIN,
-   XMQ_RENDER_TERMINAL,
-   XMQ_RENDER_HTML,
-   XMQ_RENDER_HTMQ,
-   XMQ_RENDER_TEX,
-   XMQ_RENDER_RAW
+   XMQ_RENDER_PLAIN = 0,
+   XMQ_RENDER_TERMINAL = 1,
+   XMQ_RENDER_HTML = 2,
+   XMQ_RENDER_HTMQ = 3,
+   XMQ_RENDER_TEX = 4,
+   XMQ_RENDER_RAW = 5
 } XMQRenderFormat;
 
 /**
@@ -788,6 +790,25 @@ bool xmqParseFileWithType(XMQDoc *doc,
                           const char *implicit_root,
                           XMQContentType ct,
                           int flags);
+
+/**
+    xmqParseBufferWithIXML:
+
+    Parse buffer using the supplied IXML grammar.
+*/
+bool xmqParseBufferWithIXML(XMQDoc *doc,
+                            const char *start,
+                            const char *stop,
+                            XMQDoc *ixml_grammar);
+
+/**
+    xmqParseFileWithIXML:
+
+    Load a file and parse it using the supplied IXML grammar. If file is NULL read from stdin.
+*/
+bool xmqParseFileWithIXML(XMQDoc *doc,
+                          const char *file,
+                          XMQDoc *ixml_grammar);
 
 /**
    xmqSetupDefaultColors:
