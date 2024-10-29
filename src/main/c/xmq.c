@@ -3844,7 +3844,10 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     start = skip_any_potential_bom(start, stop);
     if (!start) return false;
 
-    XMQContentType detected_ct = xmqDetectContentType(start, stop);
+    XMQContentType detected_ct = XMQ_CONTENT_UNKNOWN;
+    if (ct != XMQ_CONTENT_IXML) detected_ct = xmqDetectContentType(start, stop);
+    else ct = XMQ_CONTENT_IXML;
+
     if (ct == XMQ_CONTENT_DETECT)
     {
         ct = detected_ct;
