@@ -1397,7 +1397,7 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->no_input = true;
         return true;
     }
-    if (!strcmp(arg, "-w"))
+    if (!strcmp(arg, "-i"))
     {
         command->in_is_content = true;
         return true;
@@ -1591,9 +1591,11 @@ bool cmd_help(XMQCliCommand *cmd)
            "             Not yet implemented: exact will trim exactly to the significant whitespace according to xml/html rules.\n"
            "  --verbose  Output extra information on stderr.\n"
            "  --version  Output version information and exit.\n"
-           "  --xmq|--htmq|--xml|--html|--json\n"
+           "  --xmq|--htmq|--xml|--html|--ixml|--json\n"
            "             The input format is normally auto detected but you can force the input format here.\n"
+           "  --ixml=grammar.ixml Parse the content using the supplied grammar file.\n"
            "  -z         Do not read from stdin nor from a file. Start with an empty dom.\n"
+           "  -i \"a=2\" Do not read from a file, use the next argument as the content to parse.\n"
            "\n"
            "To get help on the commands below: xmq help <command>\n\n"
            "COMMANDS\n"
