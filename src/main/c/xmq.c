@@ -134,13 +134,6 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_text(XMQDoc *doq, XMQOutputSettings *output_settings);
 char *xmq_quote_with_entity_newlines(const char *start, const char *stop, XMQQuoteSettings *settings);
 char *xmq_quote_default(int indent, const char *start, const char *stop, XMQQuoteSettings *settings);
-bool xmq_parse_ixml_grammar(struct grammar *g,
-                            struct yaep_tree_node **root,
-                            int *ambiguous,
-                            XMQDoc *doq,
-                            const char *start,
-                            const char *stop,
-                            bool build_xml_of_ixml);
 const char *xml_element_type_to_string(xmlElementType type);
 const char *indent_depth(int i);
 void free_indent_depths();
@@ -4100,13 +4093,13 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
     return rc;
 }
 
-bool xmq_parse_ixml_grammar(struct grammar *g,
-                            struct yaep_tree_node **root,
-                            int *ambiguous,
-                            XMQDoc *doq,
-                            const char *start,
-                            const char *stop,
-                            bool build_xml_of_ixml)
+bool xmq_parse_buffer_using_yaep_grammar(struct grammar *g,
+                                         struct yaep_tree_node **root,
+                                         int *ambiguous,
+                                         XMQDoc *doq,
+                                         const char *start,
+                                         const char *stop,
+                                         bool build_xml_of_ixml)
 {
     bool rc = true;
     if (!stop) stop = start+strlen(start);

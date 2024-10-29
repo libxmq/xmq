@@ -1913,10 +1913,10 @@ bool cmd_load(XMQCliCommand *command)
         XMQDoc *doq = xmqNewDoc();
         xmqSetDocSourceName(doq, command->ixml_filename);
 
-        bool ok = xmq_parse_ixml_grammar(g, &root, &ambiguous, doq,
-                                         command->ixml_ixml,
-                                         NULL,
-                                         command->build_xml_of_ixml);
+        bool ok = xmq_parse_buffer_using_yaep_grammar(g, &root, &ambiguous, doq,
+                                                      command->ixml_ixml,
+                                                      NULL,
+                                                      command->build_xml_of_ixml);
 
         if (!ok)
         {
