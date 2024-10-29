@@ -360,9 +360,9 @@ char *load_file_into_buffer(const char *file);
 void xmq_set_yaep_grammar(XMQDoc *doc, struct grammar *g);
 struct grammar *xmq_get_yaep_grammar(XMQDoc *doc);
 
-bool xmq_parse_buffer_build_yaep_grammar_from_ixml(XMQDoc *ixml_grammar,
-                                                   const char *start,
-                                                   const char *stop);
+bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
+                           const char *start,
+                           const char *stop);
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -1455,6 +1455,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->in_format=XMQ_CONTENT_XML;
         return true;
     }
+    if (!strcmp(arg, "--ixml"))
+    {
+        command->in_format=XMQ_CONTENT_IXML;
+        return true;
+    }
     if (!strcmp(arg, "--html"))
     {
         command->in_format=XMQ_CONTENT_HTML;
@@ -1916,9 +1921,9 @@ bool cmd_load(XMQCliCommand *command)
         XMQDoc *ixml_grammar = xmqNewDoc();
         xmqSetDocSourceName(ixml_grammar, command->ixml_filename);
 
-        bool ok = xmq_parse_buffer_build_yaep_grammar_from_ixml(ixml_grammar,
-                                                                command->ixml_ixml,
-                                                                NULL);
+        bool ok = xmq_parse_buffer_ixml(ixml_grammar,
+                                        command->ixml_ixml,
+                                        NULL);
 
         if (!ok)
         {

@@ -3851,7 +3851,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     }
     else
     {
-        if (ct != detected_ct && ct != XMQ_CONTENT_TEXT)
+        if (ct != detected_ct && ct != XMQ_CONTENT_TEXT && ct != XMQ_CONTENT_IXML)
         {
             if (detected_ct == XMQ_CONTENT_XML && ct == XMQ_CONTENT_HTML)
             {
@@ -4104,9 +4104,9 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
     return rc;
 }
 
-bool xmq_parse_buffer_build_yaep_grammar_from_ixml(XMQDoc *ixml_grammar,
-                                                   const char *start,
-                                                   const char *stop)
+bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
+                           const char *start,
+                           const char *stop)
 {
     assert(ixml_grammar->yaep_grammar_ == NULL);
 

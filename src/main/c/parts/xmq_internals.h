@@ -570,9 +570,7 @@ void print_quote(XMQPrintState *ps, XMQColor c, const char *start, const char *s
 struct grammar;
 struct yaep_tree_node;
 
-bool xmq_parse_buffer_build_yaep_grammar_from_ixml(XMQDoc *ixml_grammar,
-                                                   const char *start,
-                                                   const char *stop);
+bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar, const char *start, const char *stop);
 
 typedef void (*XMQContentCallback)(XMQParseState *state,
                                    size_t start_line,
