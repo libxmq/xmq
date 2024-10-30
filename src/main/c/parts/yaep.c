@@ -3457,7 +3457,7 @@ rule_print (FILE * f, struct rule *rule, int trans_p)
     }
   if (trans_p)
     {
-      fprintf (f, " # ");
+      fprintf (f, " ---- ");
       if (rule->anode != NULL)
 	fprintf (f, "%s (", rule->anode);
       for (i = 0; i < rule->trans_len; i++)
@@ -7400,10 +7400,9 @@ print_yaep_node (FILE * f, struct yaep_tree_node *node)
     case YAEP_ANODE:
       if (grammar->debug_level > 0)
 	{
-	  fprintf (f, "ABSTRACT: %s (", node->val.anode.name);
+          fprintf (f, "ABSTRACT: %c%s (", node->val.anode.mark?node->val.anode.mark:' ', node->val.anode.name);
 	  for (i = 0; (child = node->val.anode.children[i]) != NULL; i++)
 	    fprintf (f, " %d", canon_node_num (visit_node (child)->num));
-	  fprintf (f, " ) mark=%c\n", node->val.anode.mark?node->val.anode.mark:' ');
 	}
       else
 	{
@@ -8150,7 +8149,7 @@ make_parse (int *ambiguous_p)
                       if (rule->marks && rule->marks[pos])
                       {
                           // But override the mark with the rhs mark!
-                          node->val.term.mark = rule->marks[pos];
+                          node->val.anode.mark = rule->marks[pos];
                       }
                       /////////
 		      node->val.anode.children

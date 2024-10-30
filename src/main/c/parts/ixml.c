@@ -405,7 +405,7 @@ bool is_ixml_quoted_start(XMQParseState *state)
 
 bool is_ixml_rule_start(XMQParseState *state)
 {
-//  rule: (mark, s)?, name,
+    //  rule: (mark, s)?, name,
     if (is_ixml_naming_start(state)) return true;
 
     return false;
@@ -571,8 +571,11 @@ void parse_ixml_alts(XMQParseState *state)
         // rule, create a new rule with the same name.
         parse_ixml_whitespace(state);
         IXMLNonTerminal *name = state->ixml_rule->rule_name;
+        char mark = state->ixml_rule->rule_name->mark;
         state->ixml_rule = new_ixml_rule();
         state->ixml_rule->rule_name->name = strdup(name->name);
+        state->ixml_rule->rule_name->mark = mark;
+        state->ixml_rule->mark = mark;
         vector_push_back(state->ixml_rules, state->ixml_rule);
     }
 
