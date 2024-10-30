@@ -4217,6 +4217,38 @@ const char *node_yaep_type_to_string(enum yaep_tree_node_type t)
     return "?";
 }
 
+void collect_text(struct yaep_tree_node *n, MemBuffer *mb);
+
+void collect_text(struct yaep_tree_node *n, MemBuffer *mb)
+{
+    if (n == NULL) return;
+    if (n->type == YAEP_ANODE)
+    {
+        struct yaep_anode *an = &n->val.anode;
+        for (int i=0; an->children[i] != NULL; ++i)
+        {
+            struct yaep_tree_node *nn = an->children[i];
+            collect_text(nn, mb);
+        }
+    }
+    else
+    if (n->type == YAEP_TERM)
+    {
+        struct yaep_term *at = &n->val.term;
+        if (at->mark != '-')
+        {
+            UTF8Char utf8;
+            size_t len = encode_utf8(at->code, &utf8);
+            utf8.bytes[len] = 0;
+            membuffer_append(mb, utf8.bytes);
+        }
+    }
+    else
+    {
+        assert(false);
+    }
+}
+
 void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, int depth, int index)
 {
     if (n == NULL) return;
@@ -4226,22 +4258,34 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tre
 
         if (an != NULL && an->name != NULL && an->name[0] != '/' && an->mark != '-')
         {
-            // Normal node that should be generated.
-            xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)an->name, NULL);
-
-            if (node == NULL)
+            if (an->mark == '@')
             {
-                xmlDocSetRootElement(doc, new_node);
+                // This should become an attribute.
+                MemBuffer *mb = new_membuffer();
+                collect_text(n, mb);
+                membuffer_append_null(mb);
+                xmlNewProp(node, (xmlChar*)an->name, (xmlChar*)mb->buffer_);
+                free_membuffer_and_free_content(mb);
             }
             else
             {
-                xmlAddChild(node, new_node);
-            }
+                // Normal node that should be generated.
+                xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)an->name, NULL);
 
-            for (int i=0; an->children[i] != NULL; ++i)
-            {
-                struct yaep_tree_node *nn = an->children[i];
-                generate_dom_from_yaep_node(doc, new_node, nn, depth+1, i);
+                if (node == NULL)
+                {
+                    xmlDocSetRootElement(doc, new_node);
+                }
+                else
+                {
+                    xmlAddChild(node, new_node);
+                }
+
+                for (int i=0; an->children[i] != NULL; ++i)
+                {
+                    struct yaep_tree_node *nn = an->children[i];
+                    generate_dom_from_yaep_node(doc, new_node, nn, depth+1, i);
+                }
             }
         }
         else
@@ -4266,12 +4310,6 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tre
 
             xmlNodePtr new_node = xmlNewDocText(doc, (xmlChar*)utf8.bytes);
 
-            /*
-              xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)"term", NULL);
-              char buf[10];
-              snprintf(buf, 10, "%d", at->code);
-              xmlNewProp(new_node, (xmlChar*)"code", (xmlChar*)buf);
-            */
             if (node == NULL)
             {
                 xmlDocSetRootElement(doc, new_node);
