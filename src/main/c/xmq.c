@@ -4224,7 +4224,7 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tre
     {
         struct yaep_anode *an = &n->val.anode;
 
-        if (an->name != NULL && an->name[0] != '/' && an->mark != '-')
+        if (an != NULL && an->name != NULL && an->name[0] != '/' && an->mark != '-')
         {
             // Normal node that should be generated.
             xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)an->name, NULL);

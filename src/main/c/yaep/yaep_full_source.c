@@ -3445,22 +3445,16 @@ rule_print (FILE * f, struct rule *rule, int trans_p)
 {
   int i, j;
 
+  assert(rule->mark >= 0 && rule->mark < 128);
+  fprintf (f, "%c", rule->mark?rule->mark:' ');
   symb_print (f, rule->lhs, FALSE);
   fprintf (f, " :");
   for (i = 0; i < rule->rhs_len; i++)
     {
-      fprintf (f, " ");
+      assert(rule->marks[i] >= 0 && rule->marks[i] < 128);
+      fprintf (f, " %c", rule->marks[i]?rule->marks[i]:' ');
       symb_print (f, rule->rhs[i], FALSE);
     }
-  if (rule->marks)
-  {
-      fprintf (f, " [ %p %d", rule->marks, rule->rhs_len);
-      for (i = 0; i < rule->rhs_len; i++)
-      {
-          fprintf(f, " >%c< ", rule->marks[i]);
-      }
-      fprintf (f, "]");
-  }
   if (trans_p)
     {
       fprintf (f, " # ");
@@ -5770,6 +5764,7 @@ yaep_read_grammar (struct grammar *g, int strict_p,
 	  rhs++;
 	}
       rule_new_stop ();
+      // IXML
       rule->mark = mark;
       rule->marks = (char*)calloc(rhs_len, sizeof(char));
       memcpy(rule->marks, marks, rhs_len);
@@ -5778,7 +5773,6 @@ yaep_read_grammar (struct grammar *g, int strict_p,
 	{
 	  for (i = 0; (el = transl[i]) >= 0; i++)
           {
-              // fprintf(stderr, "   transl %d -> %d\n", i, transl[i]); // DEBUGGING TODO REMOVE
 	    if (el >= rule->rhs_len)
 	      {
 		if (el != YAEP_NIL_TRANSLATION_NUMBER)
@@ -7400,8 +7394,8 @@ print_yaep_node (FILE * f, struct yaep_tree_node *node)
       break;
     case YAEP_TERM:
       if (grammar->debug_level > 0)
-	fprintf (f, "TERMINAL: code=%d, repr=%s, mark=%c\n", node->val.term.code,
-		 symb_find_by_code (node->val.term.code)->repr, node->val.term.mark?node->val.term.mark:' ');
+	fprintf (f, "TERMINAL: code=%d, repr=%s, mark=%d %c\n", node->val.term.code,
+		 symb_find_by_code (node->val.term.code)->repr, node->val.term.mark, node->val.term.mark?node->val.term.mark:' ');
       break;
     case YAEP_ANODE:
       if (grammar->debug_level > 0)
@@ -7431,7 +7425,7 @@ print_yaep_node (FILE * f, struct yaep_tree_node *node)
 			   symb_find_by_code (child->val.term.code)->repr);
 		  break;
 		case YAEP_ANODE:
-		  fprintf (f, "%s", child->val.anode.name);
+                  fprintf (f, "%s", child->val.anode.name);
 		  break;
 		case YAEP_ALT:
 		  fprintf (f, "ALT");
@@ -7957,6 +7951,7 @@ make_parse (int *ambiguous_p)
                   // IXML
                   if (rule->marks && rule->marks[pos])
                   {
+                      // Copy the mark from the rhs position on to the terminal.
                       node->val.term.mark = rule->marks[pos];
                   }
 		  node->val.term.attr = toks[pl_ind].attr;
@@ -8150,7 +8145,14 @@ make_parse (int *ambiguous_p)
 			}
 		      node->val.anode.name = sit_rule->caller_anode;
 		      node->val.anode.cost = sit_rule->anode_cost;
+                      // IXML Copy the rule name -to the generated abstract node.
 		      node->val.anode.mark = sit_rule->mark;
+                      if (rule->marks && rule->marks[pos])
+                      {
+                          // But override the mark with the rhs mark!
+                          node->val.term.mark = rule->marks[pos];
+                      }
+                      /////////
 		      node->val.anode.children
 			= ((struct yaep_tree_node **)
 			   ((char *) node + sizeof (struct yaep_tree_node)));
