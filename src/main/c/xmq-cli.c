@@ -200,6 +200,7 @@ struct XMQCliCommand
     bool verbose;
     bool trace;
     int  add_indent;
+    bool omit_decl; // If true, then do not print <?xml ..?>
     bool compact;
     bool escape_newlines;
     bool escape_non_7bit;
@@ -222,6 +223,7 @@ struct XMQCliEnvironment
     const char *use_id;
     char *out_start; // Points to generated output: xml/xmq/htmq/html/json/text
     char *out_stop; // Points to byte after output, or NULL which means start is NULL terminated.
+    size_t out_skip; // Skip some leading part of the generated output. Used to skip the <?xml ..?>
 };
 
 typedef enum {
@@ -712,6 +714,16 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         {
             command->add_indent = 0;
             command->compact = true;
+            return true;
+        }
+    }
+
+    if (command->cmd == XMQ_CLI_CMD_TO_XML)
+    {
+        if (!strcmp(arg, "-o") ||
+            !strcmp(arg, "--omit-decl"))
+        {
+            command->omit_decl = true;
             return true;
         }
     }
@@ -1609,6 +1621,7 @@ bool cmd_tokenize(XMQCliCommand *command)
     verbose_("(xmq) cmd-tokenize %s\n", tokenize_type_to_string(command->tok_type));
     XMQOutputSettings *output_settings = xmqNewOutputSettings();
     xmqSetupPrintMemory(output_settings, &command->env->out_start, &command->env->out_stop);
+    xmqSetupPrintSkip(output_settings, &command->env->out_skip);
 
     XMQParseCallbacks *callbacks = xmqNewParseCallbacks();
 
@@ -1796,6 +1809,7 @@ bool cmd_to(XMQCliCommand *command)
     xmqSetRenderOnlyStyle(settings, command->only_style);
     xmqRenderHtmlSettings(settings, command->use_id, command->use_class);
     xmqSetRenderTheme(settings, command->render_theme);
+    xmqSetOmitDecl(settings, command->omit_decl);
     xmqSetupDefaultColors(settings);
 
     if (command->has_overrides)
@@ -1813,6 +1827,7 @@ bool cmd_to(XMQCliCommand *command)
              render_format_to_string(command->render_to));
 
     xmqSetupPrintMemory(settings, &command->env->out_start, &command->env->out_stop);
+    xmqSetupPrintSkip(settings, &command->env->out_skip);
     xmqPrint(command->env->doc, settings);
 
     xmqFreeOutputSettings(settings);
@@ -1835,14 +1850,14 @@ bool cmd_output(XMQCliCommand *command)
     if (command->cmd == XMQ_CLI_CMD_PRINT)
     {
         verbose_("(xmq) cmd-print output\n");
-        console_write(command->env->out_start, command->env->out_stop);
+        console_write(command->env->out_start + command->env->out_skip, command->env->out_stop);
         free(command->env->out_start);
         return true;
     }
     if (command->cmd == XMQ_CLI_CMD_PAGER)
     {
         verbose_("(xmq) cmd-pager output\n");
-        page(command->env->out_start, command->env->out_stop);
+        page(command->env->out_start + command->env->out_skip, command->env->out_stop);
         free(command->env->out_start);
         return true;
     }
@@ -1861,14 +1876,14 @@ bool cmd_output(XMQCliCommand *command)
             return false;
         }
         verbose_("(xmq) cmd-save output to %s\n", command->save_file);
-        size_t len = command->env->out_stop -  command->env->out_start;
+        size_t len = command->env->out_stop -  command->env->out_start - command->env->out_skip;
         FILE *f = fopen(command->save_file, "wb");
         if (!f)
         {
             fprintf(stderr, "xmq: %s: Cannot open file for writing\n", command->save_file);
             return false;
         }
-        size_t wrote = fwrite(command->env->out_start, 1, len, f);
+        size_t wrote = fwrite(command->env->out_start + command->env->out_skip, 1, len, f);
         if (wrote != len)
         {
             fprintf(stderr, "xmq: Failed to write all bytes to %s wrote %zu but expected %zu\n",
@@ -3007,7 +3022,7 @@ void browse(XMQCliCommand *c)
     // since such a link could trick you into overwriting something else.
     int fd = open(tmpfile, O_CREAT | O_TRUNC | O_NOFOLLOW | O_RDWR, 0666);
 #endif
-    size_t len = c->env->out_stop - c->env->out_start;
+    size_t len = c->env->out_stop - c->env->out_start - c->env->out_skip;
     size_t wrote = write(fd, c->env->out_start, len);
     close(fd);
 

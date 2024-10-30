@@ -743,6 +743,11 @@ void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format)
     os->output_format = output_format;
 }
 
+void xmqSetOmitDecl(XMQOutputSettings *os, bool omit_decl)
+{
+    os->omit_decl = omit_decl;
+}
+
 void xmqSetRenderFormat(XMQOutputSettings *os, XMQRenderFormat render_to)
 {
     os->render_to = render_to;
@@ -849,6 +854,11 @@ void xmqSetupPrintMemory(XMQOutputSettings *os, char **start, char **stop)
     os->content.write = (XMQWrite)(void*)membuffer_append_region;
     os->error.writer_state = os->output_buffer;
     os->error.write = (XMQWrite)(void*)membuffer_append_region;
+}
+
+void xmqSetupPrintSkip(XMQOutputSettings *os, size_t *skip)
+{
+    os->output_skip = skip;
 }
 
 XMQParseCallbacks *xmqNewParseCallbacks()
@@ -2635,7 +2645,6 @@ void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSet
     qs->compact = os->compact;
 }
 
-
 void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings)
 {
     xmq_fixup_html_before_writeout(doq);
@@ -2821,6 +2830,15 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
         char *buffer = free_membuffer_but_return_trimmed_content(output_settings->output_buffer);
         *output_settings->output_buffer_start = buffer;
         *output_settings->output_buffer_stop = buffer+size;
+        if (output_settings->output_skip)
+        {
+            *output_settings->output_skip = 0;
+            if (output_settings->output_format == XMQ_CONTENT_XML && output_settings->omit_decl)
+            {
+                // Skip <?xml version="1.0" encoding="utf-8"?>\n
+                *output_settings->output_skip = 39;
+            }
+        }
     }
 }
 

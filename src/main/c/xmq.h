@@ -593,6 +593,7 @@ void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines);
 void xmqSetEscapeNon7bit(XMQOutputSettings *os, bool escape_non_7bit);
 void xmqSetEscapeTabs(XMQOutputSettings *os, bool escape_tabs);
 void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format);
+void xmqSetOmitDecl(XMQOutputSettings *os, bool omit_decl);
 void xmqSetRenderFormat(XMQOutputSettings *os, XMQRenderFormat render_to);
 void xmqSetRenderTheme(XMQOutputSettings *os, const char *theme_name);
 void xmqSetRenderRaw(XMQOutputSettings *os, bool render_raw);
@@ -611,6 +612,9 @@ void xmqSetupPrintFileDescriptor(XMQOutputSettings *ps, int fd);
 
 /** Setup the printer to print to a dynamically memory buffer. */
 void xmqSetupPrintMemory(XMQOutputSettings *ps, char **start, char **stop);
+
+/** Setup where to store any potential skip. This is not an ideal solution. Fix? */
+void xmqSetupPrintSkip(XMQOutputSettings *ps, size_t *skip);
 
 /** Pretty print the document according to the settings. */
 void xmqPrint(XMQDoc *doc, XMQOutputSettings *settings);

@@ -42,6 +42,11 @@ do
     tests/test_ixml_parse.sh "$PROG" "$OUTPUT" "$i" || (echo "Testing aborted" ; exit 1)
 done
 
+for i in tests/ixml/correct/*.output.xmq
+do
+    tests/test_ixml_correct.sh "$PROG" "$OUTPUT" "$i" || (echo "Testing aborted" ; exit 1)
+done
+
 for i in tests/[0-9][0-9][0-9]_*.test
 do
     tests/test_single.sh "$PROG" "$OUTPUT" "$i"

@@ -152,6 +152,7 @@ struct XMQOutputSettings
 {
     int  add_indent;
     bool compact;
+    bool omit_decl;
     bool use_color;
     bool bg_dark_mode;
     bool escape_newlines;
@@ -171,6 +172,7 @@ struct XMQOutputSettings
     MemBuffer *output_buffer;
     char **output_buffer_start;
     char **output_buffer_stop;
+    size_t *output_skip;
 
     const char *indentation_space; // If NULL use " " can be replaced with any other string.
     const char *explicit_space; // If NULL use " " can be replaced with any other string.
