@@ -95,6 +95,8 @@ struct yaep_term
 {
   /* The terminal code. */
   int code;
+  /* The IXML mark. */
+  char mark;
   /* The terminal attributes. */
   void *attr;
 };

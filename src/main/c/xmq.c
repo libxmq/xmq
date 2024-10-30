@@ -4131,6 +4131,7 @@ bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
     state->doq = ixml_grammar;
     state->build_xml_of_ixml = false;
     ixml_grammar->yaep_grammar_ = yaep_create_grammar();
+    if (xmqTracing()) yaep_set_debug_level((struct grammar*)ixml_grammar->yaep_grammar_, 5);
 
     ixml_build_yaep_grammar((struct grammar*)ixml_grammar->yaep_grammar_, state, start, stop);
 
@@ -4257,25 +4258,28 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tre
     if (n->type == YAEP_TERM)
     {
         struct yaep_term *at = &n->val.term;
-        UTF8Char utf8;
-        size_t len = encode_utf8(at->code, &utf8);
-        utf8.bytes[len] = 0;
-
-        xmlNodePtr new_node = xmlNewDocText(doc, (xmlChar*)utf8.bytes);
-
-        /*
-        xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)"term", NULL);
-        char buf[10];
-        snprintf(buf, 10, "%d", at->code);
-        xmlNewProp(new_node, (xmlChar*)"code", (xmlChar*)buf);
-        */
-        if (node == NULL)
+        if (at->mark != '-')
         {
-            xmlDocSetRootElement(doc, new_node);
-        }
-        else
-        {
-            xmlAddChild(node, new_node);
+            UTF8Char utf8;
+            size_t len = encode_utf8(at->code, &utf8);
+            utf8.bytes[len] = 0;
+
+            xmlNodePtr new_node = xmlNewDocText(doc, (xmlChar*)utf8.bytes);
+
+            /*
+              xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)"term", NULL);
+              char buf[10];
+              snprintf(buf, 10, "%d", at->code);
+              xmlNewProp(new_node, (xmlChar*)"code", (xmlChar*)buf);
+            */
+            if (node == NULL)
+            {
+                xmlDocSetRootElement(doc, new_node);
+            }
+            else
+            {
+                xmlAddChild(node, new_node);
+            }
         }
     }
     else

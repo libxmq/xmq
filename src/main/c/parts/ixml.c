@@ -159,7 +159,7 @@ void add_yaep_terminal(XMQParseState *state, IXMLTerminal *terminal);
 void add_yaep_terminal_to_rule(XMQParseState *state, IXMLTerminal *terminal);
 void add_yaep_nonterminal(XMQParseState *state, IXMLNonTerminal *nonterminal);
 void add_yaep_nonterminal_to_rule(XMQParseState *state, IXMLNonTerminal *nonterminal);
-void add_yaep_tmp_terminal(XMQParseState *state, char *name, int code);
+void add_yaep_tmp_terminal(XMQParseState *state, char *name, int code, char mark);
 // Store all state->ixml_tmp_terminals on the rule rhs.
 void add_yaep_tmp_terminals_to_rule(XMQParseState *state, IXMLRule *rule);
 
@@ -679,8 +679,10 @@ void parse_ixml_encoded(XMQParseState *state)
     IXML_STEP(encoded, state);
     ASSERT(is_ixml_encoded_start(state));
 
+    char mark = 0;
     if (is_ixml_tmark_start(state))
     {
+        mark = *(state->i);
         EAT(encoded_tmark, 1);
     }
 
@@ -704,7 +706,7 @@ void parse_ixml_encoded(XMQParseState *state)
     char buffer[16];
     snprintf(buffer, 15, "#%x", value);
 
-    add_yaep_tmp_terminal(state, strdup(buffer), value);
+    add_yaep_tmp_terminal(state, strdup(buffer), value, mark);
 
     IXML_DONE(encoded, state);
 }
@@ -1044,8 +1046,10 @@ void parse_ixml_quoted(XMQParseState *state)
 
     ASSERT(is_ixml_quoted_start(state));
 
+    char mark = 0;
     if (is_ixml_tmark_start(state))
     {
+        mark = *(state->i);
         EAT(quoted_tmark, 1);
         parse_ixml_whitespace(state);
     }
@@ -1057,7 +1061,7 @@ void parse_ixml_quoted(XMQParseState *state)
     {
         char buf[16];
         snprintf(buf, 15, "#%x", *i);
-        add_yaep_tmp_terminal(state, strdup(buf), *i);
+        add_yaep_tmp_terminal(state, strdup(buf), *i, mark);
     }
     free(content);
 
@@ -1265,6 +1269,7 @@ void parse_ixml_whitespace(XMQParseState *state)
 
 static __thread XMQParseState *yaep_state_ = NULL;
 static __thread char **yaep_tmp_rhs_ = NULL;
+static __thread char *yaep_tmp_marks_ = NULL;
 static __thread int *yaep_tmp_transl_ = NULL;
 static __thread HashMapIterator *yaep_i_ = NULL;
 static __thread size_t yaep_j_ = 0;
@@ -1309,6 +1314,8 @@ const char *ixml_to_yaep_read_rule(const char ***rhs,
     // Add rhs rules as translations.
     if (yaep_tmp_rhs_) free(yaep_tmp_rhs_);
     yaep_tmp_rhs_ = (char**)calloc(num_rhs+1, sizeof(char*));
+    if (yaep_tmp_marks_) free(yaep_tmp_marks_);
+    yaep_tmp_marks_ = (char*)calloc(num_rhs+1, sizeof(char));
 
     for (size_t i = 0; i < num_rhs; ++i)
     {
@@ -1317,11 +1324,13 @@ const char *ixml_to_yaep_read_rule(const char ***rhs,
         {
             IXMLTerminal *t = (IXMLTerminal*)tt;
             yaep_tmp_rhs_[i] = t->name;
+            yaep_tmp_marks_[i] = t->mark;
         }
         else if (*tt == IXML_NON_TERMINAL)
         {
             IXMLNonTerminal *nt = (IXMLNonTerminal*)tt;
             yaep_tmp_rhs_[i] = nt->name;
+            yaep_tmp_marks_[i] = nt->mark;
         }
         else
         {
@@ -1343,6 +1352,7 @@ const char *ixml_to_yaep_read_rule(const char ***rhs,
 
     yaep_tmp_rhs_[num_rhs] = NULL;
     *rhs = (const char **)yaep_tmp_rhs_;
+    *marks = yaep_tmp_marks_;
     *transl = yaep_tmp_transl_;
     *cost = 1;
     *mark = rule->rule_name->mark;
@@ -1574,11 +1584,12 @@ void add_yaep_nonterminal_to_rule(XMQParseState *state, IXMLNonTerminal *nonterm
     vector_push_back(state->ixml_rule->rhs, nonterminal);
 }
 
-void add_yaep_tmp_terminal(XMQParseState *state, char *name, int code)
+void add_yaep_tmp_terminal(XMQParseState *state, char *name, int code, char mark)
 {
     IXMLTerminal *t = new_ixml_terminal();
     t->name = name;
     t->code = code;
+    t->mark = mark;
     vector_push_back(state->ixml_tmp_terminals, t);
 }
 
