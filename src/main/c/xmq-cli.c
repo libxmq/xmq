@@ -347,7 +347,7 @@ xmlDocPtr xmqDocDefaultLoaderFunc(const xmlChar * URI, xmlDictPtr dict, int opti
                                   xsltLoadType type /* ATTRIBUTE_UNUSED*/);
 
 char *load_file_into_buffer(const char *file);
-
+bool check_file_exists(const char *file);
 
 // TODO REMOVE...
 void xmq_set_yaep_grammar(XMQDoc *doc, struct grammar *g);
@@ -1531,7 +1531,8 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
             verbose_("(xmq) reading ixml file %s\n", file);
             command->ixml_filename = strdup(file);
             command->ixml_ixml = load_file_into_buffer(file);
-            if (command->ixml_ixml == NULL) return false;
+            if (command->ixml_ixml == NULL) exit(1);
+
             return true;
         }
 
@@ -1727,10 +1728,25 @@ bool cmd_load(XMQCliCommand *command)
             if (command->in_is_content)
             {
                 ok = xmqParseBufferWithIXML(command->env->doc, command->in, NULL, ixml_grammar);
+                if (!ok)
+                {
+                    printf("xmq: could not parse: %s\n", command->in);
+                    exit(1);
+                }
             }
             else
             {
+                ok = check_file_exists(command->in);
+                if (!ok)
+                {
+                    printf("xmq: could not read file %s\n", command->in);
+                    exit(1);
+                }
                 ok = xmqParseFileWithIXML(command->env->doc, command->in, ixml_grammar);
+                if (!ok)
+                {
+                    exit(1);
+                }
             }
         }
 
@@ -3866,4 +3882,12 @@ char *load_file_into_buffer(const char *file)
     if (n != sz) printf("ARRRRRGGGG\n");
     fclose(f);
     return buf;
+}
+
+bool check_file_exists(const char *file)
+{
+    FILE *f = fopen(file, "rb");
+    if (!f) return false;
+    fclose(f);
+    return true;
 }
