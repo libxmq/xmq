@@ -2370,6 +2370,8 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 #undef NDEBUG
 #endif
 
+#define TRACE(cformat, ...) fprintf(stderr, "TRACE: " cformat, __VA_ARGS__)
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <setjmp.h>
@@ -2513,21 +2515,6 @@ void yaep_free_grammar (struct grammar *g);
    stop error recovery alternative (state). */
 #define DEFAULT_RECOVERY_TOKEN_MATCHES 3
 
-/* Expand VLO to contain N_ELS integers.  Initilize the new elements
-   as zero. Return TRUE if we really made an expansion.  */
-static int
-expand_int_vlo (vlo_t * vlo, int n_els)
-{
-    int i, prev_n_els = VLO_LENGTH (*vlo) / sizeof (int);
-
-    if (prev_n_els >= n_els)
-        return FALSE;
-    VLO_EXPAND (*vlo, (n_els - prev_n_els) * sizeof (int));
-    for (i = prev_n_els; i < n_els; i++)
-        ((int *) VLO_BEGIN (*vlo))[i] = 0;
-    return TRUE;
-}
-
 /* This page is abstract data `grammar symbols'. */
 
 /* Forward declaration. */
@@ -2621,50 +2608,53 @@ struct symbs
 };
 
 /* Hash of symbol representation. */
-static unsigned
-symb_repr_hash (hash_table_entry_t s)
+static unsigned symb_repr_hash(hash_table_entry_t s)
 {
     unsigned result = jauquet_prime_mod32;
     const char *str = ((struct symb *) s)->repr;
     int i;
 
     for (i = 0; str[i] != '\0'; i++)
+    {
         result = result * hash_shift + (unsigned) str[i];
+    }
+    TRACE("symb_repr_hash %s -> %u\n", str, result);
     return result;
 }
 
 /* Equality of symbol representations. */
 static int
-symb_repr_eq (hash_table_entry_t s1, hash_table_entry_t s2)
+symb_repr_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
+    TRACE("symb_repr_eq %s %s\n", ((struct symb *) s1)->repr, ((struct symb *) s2)->repr);
     return strcmp (((struct symb *) s1)->repr, ((struct symb *) s2)->repr) == 0;
 }
 
 /* Hash of terminal code. */
-static unsigned
-symb_code_hash (hash_table_entry_t s)
+static unsigned symb_code_hash(hash_table_entry_t s)
 {
     struct symb *symb = ((struct symb *) s);
 
     assert (symb->term_p);
+    TRACE("symb_code_hash %d\n", symb->u.term.code);
     return symb->u.term.code;
 }
 
 /* Equality of terminal codes. */
-static int
-symb_code_eq (hash_table_entry_t s1, hash_table_entry_t s2)
+static int symb_code_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     struct symb *symb1 = ((struct symb *) s1);
     struct symb *symb2 = ((struct symb *) s2);
 
     assert (symb1->term_p && symb2->term_p);
+
+    TRACE("symb_code_eq %d %d\n", symb1->u.term.code, symb2->u.term.code);
     return symb1->u.term.code == symb2->u.term.code;
 }
 
 /* Initialize work with symbols and returns storage for the
    symbols. */
-static struct symbs *
-symb_init (void)
+static struct symbs *symb_init(void)
 {
     void *mem;
     struct symbs *result;
@@ -2675,61 +2665,62 @@ symb_init (void)
     VLO_CREATE (result->symbs_vlo, grammar->alloc, 1024);
     VLO_CREATE (result->terms_vlo, grammar->alloc, 512);
     VLO_CREATE (result->nonterms_vlo, grammar->alloc, 512);
-    result->repr_to_symb_tab =
-        create_hash_table (grammar->alloc, 300, symb_repr_hash, symb_repr_eq);
-    result->code_to_symb_tab =
-        create_hash_table (grammar->alloc, 200, symb_code_hash, symb_code_eq);
-
+    result->repr_to_symb_tab = create_hash_table (grammar->alloc, 300, symb_repr_hash, symb_repr_eq);
+    result->code_to_symb_tab = create_hash_table (grammar->alloc, 200, symb_code_hash, symb_code_eq);
     result->symb_code_trans_vect = NULL;
-
     result->n_nonterms = result->n_terms = 0;
+
+    TRACE("symb_init %c\n", ' ');
+
     return result;
 }
 
 /* Return symbol (or NULL if it does not exist) whose representation
    is REPR. */
-static struct symb *
-symb_find_by_repr (const char *repr)
+static struct symb *symb_find_by_repr(const char *repr)
 {
     struct symb symb;
-
     symb.repr = repr;
-    return (struct symb *) *find_hash_table_entry (symbs_ptr->repr_to_symb_tab,
-                                                   &symb, FALSE);
+    struct symb *r = (struct symb *) *find_hash_table_entry (symbs_ptr->repr_to_symb_tab, &symb, FALSE);
+
+    TRACE("symb_find_by_repr %s -> %p\n", repr, r);
+
+    return r;
 }
 
-/* Return symbol (or NULL if it does not exist) which is terminal with
-   CODE. */
-static struct symb *
-symb_find_by_code (int code)
+/* Return symbol (or NULL if it does not exist) which is terminal with CODE. */
+static struct symb *symb_find_by_code(int code)
 {
     struct symb symb;
 
     if (symbs_ptr->symb_code_trans_vect != NULL)
     {
-        if ((code < symbs_ptr->symb_code_trans_vect_start)
-            || (code >= symbs_ptr->symb_code_trans_vect_end))
+        if ((code < symbs_ptr->symb_code_trans_vect_start) || (code >= symbs_ptr->symb_code_trans_vect_end))
         {
+            TRACE("symb_find_by_code vec %d -> NULL\n", code);
             return NULL;
         }
         else
         {
-            return symbs_ptr->symb_code_trans_vect
-                [code - symbs_ptr->symb_code_trans_vect_start];
+            struct symb *r = symbs_ptr->symb_code_trans_vect[code - symbs_ptr->symb_code_trans_vect_start];
+            TRACE("symb_find_by_code vec %d -> %p\n", code, r);
+            return r;
         }
     }
 
     symb.term_p = TRUE;
     symb.u.term.code = code;
-    return (struct symb *) *find_hash_table_entry (symbs_ptr->code_to_symb_tab,
-                                                   &symb, FALSE);
+    struct symb *r = (struct symb *)*find_hash_table_entry(symbs_ptr->code_to_symb_tab, &symb, FALSE);
+
+    TRACE("symb_find_by_code hash %d -> %p\n", code, r);
+
+    return r;
 }
 
 /* The function creates new terminal symbol and returns reference for
    it.  The symbol should be not in the tables.  The function should
    create own copy of name for the new symbol. */
-static struct symb *
-symb_add_term (const char *name, int code)
+static struct symb *symb_add_term(const char *name, int code)
 {
     struct symb symb, *result;
     hash_table_entry_t *repr_entry, *code_entry;
@@ -2756,14 +2747,15 @@ symb_add_term (const char *name, int code)
     *code_entry = (hash_table_entry_t) result;
     VLO_ADD_MEMORY (symbs_ptr->symbs_vlo, &result, sizeof (struct symb *));
     VLO_ADD_MEMORY (symbs_ptr->terms_vlo, &result, sizeof (struct symb *));
+
+    TRACE("symb_add_term %s %d -> %p\n", name, code, result);
     return result;
 }
 
 /* The function creates new nonterminal symbol and returns reference
    for it.  The symbol should be not in the table.  The function
    should create own copy of name for the new symbol. */
-static struct symb *
-symb_add_nonterm (const char *name)
+static struct symb *symb_add_nonterm(const char *name)
 {
     struct symb symb, *result;
     hash_table_entry_t *entry;
@@ -2785,21 +2777,22 @@ symb_add_nonterm (const char *name)
     *entry = (hash_table_entry_t) result;
     VLO_ADD_MEMORY (symbs_ptr->symbs_vlo, &result, sizeof (struct symb *));
     VLO_ADD_MEMORY (symbs_ptr->nonterms_vlo, &result, sizeof (struct symb *));
+
+    TRACE("symb_add_nonterm %s -> %p\n", name, result);
     return result;
 }
 
-/* The following function return N-th symbol (if any) or NULL
-   otherwise. */
-static struct symb *
-symb_get (int n)
+/* The following function return N-th symbol (if any) or NULL otherwise. */
+static struct symb *symb_get(int n)
 {
-    struct symb *symb;
-
-    if (n < 0 || (VLO_LENGTH (symbs_ptr->symbs_vlo) / sizeof (struct symb *)
-                  <= (size_t) n))
+    if (n < 0 || (VLO_LENGTH (symbs_ptr->symbs_vlo) / sizeof (struct symb *) <= (size_t) n))
+    {
         return NULL;
-    symb = ((struct symb **) VLO_BEGIN (symbs_ptr->symbs_vlo))[n];
+    }
+    struct symb *symb = ((struct symb **) VLO_BEGIN (symbs_ptr->symbs_vlo))[n];
     assert (symb->num == n);
+
+    TRACE("symb_get %d -> %p\n", n, symb);
     return symb;
 }
 
@@ -2847,8 +2840,9 @@ symb_print (FILE * f, struct symb *symb, int code_p)
 
 #endif /* #ifndef NO_YAEP_DEBUG_PRINT */
 
-/* As of Unicode 16 there are 155063 allocated unicode code points. */
-#define MAX_SYMB_CODE_TRANS_VECT_SIZE 155063
+/* As of Unicode 16 there are 155_063 allocated unicode code points.
+   Lets pick 200_000 as the max, it shrinks to max-min code point anyway. */
+#define MAX_SYMB_CODE_TRANS_VECT_SIZE 200000
 
 static void
 symb_finish_adding_terms (void)
@@ -2869,19 +2863,26 @@ symb_finish_adding_terms (void)
 
     symbs_ptr->symb_code_trans_vect_start = min_code;
     symbs_ptr->symb_code_trans_vect_end = max_code + 1;
-    mem = yaep_malloc (grammar->alloc,
-                       sizeof (struct symb*) * (max_code - min_code + 1));
+
+    size_t num_codes = max_code - min_code + 1;
+    size_t vec_size = sizeof(struct symb*) * num_codes;
+    mem = yaep_malloc (grammar->alloc, vec_size);
+
+    fprintf(stderr, "yaep: num_codes=%zu size=%zu\n", num_codes, vec_size);
+
     symbs_ptr->symb_code_trans_vect = (struct symb **) mem;
+
     for (i = 0; (symb = term_get (i)) != NULL; i++)
+    {
         symbs_ptr->symb_code_trans_vect[symb->u.term.code - min_code] = symb;
+    }
 }
 
 /* Free memory for symbols. */
 static void
 symb_empty (struct symbs *symbs)
 {
-    if (symbs == NULL)
-        return;
+    if (symbs == NULL) return;
 
     if (symbs_ptr->symb_code_trans_vect != NULL)
     {
@@ -2902,8 +2903,7 @@ symb_empty (struct symbs *symbs)
 static void
 symb_fin (struct symbs *symbs)
 {
-    if (symbs == NULL)
-        return;
+    if (symbs == NULL) return;
 
     if (symbs_ptr->symb_code_trans_vect != NULL)
         yaep_free (grammar->alloc, symbs_ptr->symb_code_trans_vect);
@@ -2917,9 +2917,6 @@ symb_fin (struct symbs *symbs)
     yaep_free (grammar->alloc, symbs);
     symbs = NULL;
 }
-
-
-
 
 /* This page contains abstract data set of terminals. */
 
