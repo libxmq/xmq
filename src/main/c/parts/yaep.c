@@ -2409,12 +2409,6 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
    parser.  */
 #define USE_SET_HASH_TABLE
 
-/* Define the following macro if you want to use absolute distances
-   (in other words parsing list indexes) in Earley sets.  We don't
-   recommend this as it considerably slows down the parser (there are
-   much more unique triples [set, term, lookahead] in this case).  */
-/* #define ABSOLUTE_DISTANCES */
-
 /* Prime number (79087987342985798987987) mod 32 used for hash
    calculations.  */
 static const unsigned jauquet_prime_mod32 = 2053222611;
@@ -4261,11 +4255,7 @@ set_print (FILE * f, struct set *set, int set_dist, int nonstart_p,
         fprintf (f, ", %d\n",
                  (i < n_start_sits
                   ? dists[i] : i < n_all_dists ? parent_indexes[i]
-#ifndef ABSOLUTE_DISTANCES
                   : 0));
-#else
-        :		set_dist));
-#endif
 if (i == n_start_sits - 1)
 {
     if (!nonstart_p)
@@ -5638,20 +5628,14 @@ build_new_set (struct set *set, struct core_symb_vect *core_symb_vect,
             && !term_set_test (new_sit->lookahead, lookahead_term_num)
             && !term_set_test (new_sit->lookahead, grammar->term_error_num))
             continue;
-#ifndef ABSOLUTE_DISTANCES
         dist = 0;
-#else
-        dist = pl_curr;
-#endif
         if (sit_ind >= set_core->n_all_dists)
 	;
         else if (sit_ind < set_core->n_start_sits)
             dist = set->dists[sit_ind];
         else
             dist = set->dists[set_core->parent_indexes[sit_ind]];
-#ifndef ABSOLUTE_DISTANCES
         dist++;
-#endif
         if (sit_dist_insert (new_sit, dist))
             set_new_add_start_sit (new_sit, dist);
     }
@@ -5666,11 +5650,7 @@ build_new_set (struct set *set, struct core_symb_vect *core_symb_vect,
             /* All tail in new sitiation may derivate empty string so
                make reduce and add new situations. */
             new_dist = new_dists[i];
-#ifndef ABSOLUTE_DISTANCES
             place = pl_curr + 1 - new_dist;
-#else
-            place = new_dist;
-#endif
             prev_set = pl[place];
             prev_set_core = prev_set->core;
             prev_core_symb_vect = core_symb_vect_find (prev_set_core,
@@ -5695,11 +5675,7 @@ build_new_set (struct set *set, struct core_symb_vect *core_symb_vect,
                     && !term_set_test (new_sit->lookahead,
                                        grammar->term_error_num))
                     continue;
-#ifndef ABSOLUTE_DISTANCES
                 dist = 0;
-#else
-                dist = new_dist;
-#endif
                 if (sit_ind >= prev_set_core->n_all_dists)
 		;
                 else if (sit_ind < prev_set_core->n_start_sits)
@@ -5707,9 +5683,7 @@ build_new_set (struct set *set, struct core_symb_vect *core_symb_vect,
                 else
                     dist =
                         prev_set->dists[prev_set_core->parent_indexes[sit_ind]];
-#ifndef ABSOLUTE_DISTANCES
                 dist += new_dist;
-#endif
                 if (sit_dist_insert (new_sit, dist))
                     set_new_add_start_sit (new_sit, dist);
 	    }
@@ -7056,11 +7030,7 @@ make_parse (int *ambiguous_p)
     /* We have only one start situation: "$S : <start symb> $eof .".  */
     sit = (set->core->sits != NULL ? set->core->sits[0] : NULL);
     if (sit == NULL
-#ifndef ABSOLUTE_DISTANCES
         || set->dists[0] != pl_curr
-#else
-        || set->dists[0] != 0
-#endif
         || sit->rule->lhs != grammar->axiom || sit->pos != sit->rule->rhs_len)
     {
         /* It is possible only if error recovery is switched off.
@@ -7181,11 +7151,9 @@ make_parse (int *ambiguous_p)
 	{
             /* Terminal before dot: */
             pl_ind--;		/* l */
-#ifndef ABSOLUTE_DISTANCES
             /* Because of error recovery toks [pl_ind].symb may be not
                equal to symb. */
             assert (toks[pl_ind].symb == symb);
-#endif
             if (parent_anode != NULL && disp >= 0)
 	    {
                 /* We should generate and use the translation of the
@@ -7237,17 +7205,9 @@ make_parse (int *ambiguous_p)
             sit_ind = core_symb_vect->reduces.els[i];
             sit = set_core->sits[sit_ind];
             if (sit_ind < set_core->n_start_sits)
-#ifndef ABSOLUTE_DISTANCES
                 sit_orig = pl_ind - set->dists[sit_ind];
-#else
-	    sit_orig = set->dists[sit_ind];
-#endif
             else if (sit_ind < set_core->n_all_dists)
-#ifndef ABSOLUTE_DISTANCES
                 sit_orig = pl_ind - set->dists[set_core->parent_indexes[sit_ind]];
-#else
-	    sit_orig = set->dists[set_core->parent_indexes[sit_ind]];
-#endif
             else
                 sit_orig = pl_ind;
 #if !defined (NDEBUG) && !defined (NO_YAEP_DEBUG_PRINT)
@@ -7273,23 +7233,13 @@ make_parse (int *ambiguous_p)
                 if (check_sit_ind < check_set_core->n_all_dists)
 		{
                     if (check_sit_ind < check_set_core->n_start_sits)
-#ifndef ABSOLUTE_DISTANCES
                         check_sit_orig
                             = sit_orig - check_set->dists[check_sit_ind];
-#else
-		    check_sit_orig = check_set->dists[check_sit_ind];
-#endif
                     else
-#ifndef ABSOLUTE_DISTANCES
                         check_sit_orig
                             = (sit_orig
                                - check_set->dists[check_set_core->parent_indexes
                                                   [check_sit_ind]]);
-#else
-		    check_sit_orig
-                        = check_set->dists[check_set_core->parent_indexes
-                                           [check_sit_ind]];
-#endif
 		}
                 if (check_sit_orig == orig)
 		{
