@@ -25,8 +25,7 @@
 
 */
 
-/* ??? optimize grammar-> rules-> symbs->. */
-/* This file implements parsing any CFG with minimal error recovery
+/* This file implements parsing any context free grammar with minimal error recovery
    and syntax directed translation.  The algorithm is originated from
    Earley's algorithm.  The algorithm is sufficiently fast to be used
    in serious language processors. */
@@ -75,19 +74,16 @@
 #define SYMB_CODE_TRANS_VECT
 
 /* Define this if you want to reuse already calculated Earley's sets
-   and fast their reproduction.  It considerably speed up the
-   parser.  */
+   and fast their reproduction.  It considerably speed up the parser.  */
 #define USE_SET_HASH_TABLE
 
-/* Prime number (79087987342985798987987) mod 32 used for hash
-   calculations.  */
+/* Prime number (79087987342985798987987) mod 32 used for hash calculations.  */
 static const unsigned jauquet_prime_mod32 = 2053222611;
+
 /* Shift used for hash calculations.  */
 static const unsigned hash_shift = 611;
 
-
-/* The following is major structure which stores information about
-   grammar. */
+/* The following is major structure which stores information about the grammar. */
 struct grammar
 {
     /* The following member is TRUE if the grammar is undefined (you
@@ -99,6 +95,7 @@ struct grammar
     /* This member always contains the last occurred error code for
        given grammar. */
     int error_code;
+
     /* This member contains message are always contains error message
        corresponding to the last occurred error code. */
     char error_message[YAEP_MAX_ERROR_MESSAGE_LENGTH + 1];
@@ -106,18 +103,23 @@ struct grammar
     /* The following is grammar axiom.  There is only one rule with axiom
        in lhs. */
     struct symb *axiom;
+
     /* The following auxiliary symbol denotes EOF. */
     struct symb *end_marker;
+
     /* The following auxiliary symbol is used for describing error
        recovery. */
     struct symb *term_error;
+
     /* And its internal number. */
     int term_error_num;
+
     /* The level of usage of lookaheads:
        0    - no usage
        1    - static lookaheads
        >= 2 - dynamic lookaheads */
     int lookahead_level;
+
     /* The following value means how much subsequent tokens should be
        successfuly shifted to finish error recovery. */
     int recovery_token_matches;
@@ -136,8 +138,7 @@ struct grammar
     /* The following value is TRUE if we need only one parse. */
     int one_parse_p;
 
-    /* The following value is TRUE if we need parse(s) with minimal
-       costs. */
+    /* The following value is TRUE if we need parse(s) with minimal costs. */
     int cost_p;
 
     /* The following value is TRUE if we need to make error recovery. */
@@ -145,19 +146,23 @@ struct grammar
 
     /* The following vocabulary used for this grammar. */
     struct symbs *symbs_ptr;
+
     /* The following rules used for this grammar. */
     struct rules *rules_ptr;
+
     /* The following terminal sets used for this grammar. */
     struct term_sets *term_sets_ptr;
+
     /* Allocator. */
     YaepAllocator *alloc;
 };
 
-/* The following variable value is the reference for the current
-   grammar structure. */
+/* The following variable value is the reference for the current grammar structure. */
 static struct grammar *grammar;
+
 /* The following variable values are values of the corresponding
    members for the current grammar. */
+
 static struct symbs *symbs_ptr;
 static struct term_sets *term_sets_ptr;
 static struct rules *rules_ptr;
@@ -198,15 +203,12 @@ expand_int_vlo (vlo_t * vlo, int n_els)
     return TRUE;
 }
 
-
-
 /* This page is abstract data `grammar symbols'. */
 
 /* Forward declaration. */
 struct core_symb_vect;
 
-/* The following is type of element of array representing set of
-   terminals. */
+/* The following is type of element of array representing set of terminals. */
 typedef long int term_set_el_t;
 
 /* The following describes symbol of grammar. */
@@ -523,7 +525,8 @@ symb_print (FILE * f, struct symb *symb, int code_p)
 
 #ifdef SYMB_CODE_TRANS_VECT
 
-#define SYMB_CODE_TRANS_VECT_SIZE 10000
+/* As of Unicode 16 there are 155063 allocated unicode code points. */
+#define SYMB_CODE_TRANS_VECT_SIZE 155063
 
 static void
 symb_finish_adding_terms (void)
@@ -1808,7 +1811,7 @@ set_insert (void)
     new_core->n_start_sits = new_n_start_sits;
     new_core->sits = new_sits;
     new_set_ready_p = TRUE;
-#if defined(USE_DIST_HASH_TABLE) || defined (USE_SET_HASH_TABLE)
+#ifdef USE_SET_HASH_TABLE
     /* Insert dists into table. */
     setup_set_dists_hash (new_set);
     entry = find_hash_table_entry (set_dists_tab, new_set, TRUE);
