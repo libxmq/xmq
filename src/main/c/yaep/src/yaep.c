@@ -6092,7 +6092,6 @@ test_syntax_error (int err_tok_num, void *err_tok_attr,
              start_ignored_tok_num);
 }
 
-#ifndef __cplusplus
 /* The following two functions calls earley parser with two different
    ways of forming grammars. */
 static void
@@ -6134,7 +6133,6 @@ use_functions (int argc, char **argv)
     OS_DELETE (mem_os);
     yaep_free_grammar (g);
 }
-#endif
 
 static const char *description =
     "\n"
@@ -6149,7 +6147,6 @@ static const char *description =
     "  | '(' E ')' # 1\n"
     "  ;\n";
 
-#ifndef __cplusplus
 static void
 use_description (int argc, char **argv)
 {
@@ -6187,7 +6184,6 @@ use_description (int argc, char **argv)
     OS_DELETE (mem_os);
     yaep_free_grammar (g);
 }
-#endif
 
 int
 main (int argc, char **argv)
