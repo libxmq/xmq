@@ -2332,6 +2332,7 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
   YAEP (Yet Another Earley Parser)
 
   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
+  Copyright (c) 2024 Fredrik Öhrström <oehrstroem@gmail.com>
 
   Permission is hereby granted, free of charge, to any person obtaining a
   copy of this software and associated documentation files (the
@@ -2381,7 +2382,7 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 //include "vlobject.h"
 //include "objstack.h"
 //include "yaep.h"
-
+
 
 
 #ifndef NO_INLINE
@@ -2423,6 +2424,7 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
    is faster not to use hash tables but it requires more memory if
    symb codes are sparse.  */
 #define SYMB_CODE_TRANS_VECT
+
 /* Define this if you want to reuse already calculated Earley's sets
    and fast their reproduction.  It considerably speed up the
    parser.  */
@@ -2540,11 +2542,7 @@ static void (*parse_free) (void *mem);
 /* Forward decrlarations: */
 static void yaep_error (int code, const char *format, ...);
 
-#ifndef NOT_DEFINED
 extern
-#else
-static
-#endif
 void yaep_free_grammar (struct grammar *g);
 
 /* The following is default number of tokens sucessfully matched to
@@ -2556,7 +2554,6 @@ void yaep_free_grammar (struct grammar *g);
 static int
 expand_int_vlo (vlo_t * vlo, int n_els)
 {
-#ifndef NOT_DEFINED
     int i, prev_n_els = VLO_LENGTH (*vlo) / sizeof (int);
 
     if (prev_n_els >= n_els)
@@ -2565,18 +2562,8 @@ expand_int_vlo (vlo_t * vlo, int n_els)
     for (i = prev_n_els; i < n_els; i++)
         ((int *) VLO_BEGIN (*vlo))[i] = 0;
     return TRUE;
-#else
-    int i, prev_n_els = vlo->length () / sizeof (int);
-
-    if (prev_n_els >= n_els)
-        return FALSE;
-    vlo->expand ((n_els - prev_n_els) * sizeof (int));
-    for (i = prev_n_els; i < n_els; i++)
-        ((int *) vlo->begin ())[i] = 0;
-    return TRUE;
-#endif
 }
-
+
 
 
 /* This page is abstract data `grammar symbols'. */
@@ -2649,24 +2636,14 @@ struct symbs
     int n_terms, n_nonterms;
 
     /* All symbols are placed in the following object. */
-#ifndef NOT_DEFINED
     os_t symbs_os;
-#else
-    os_t *symbs_os;
-#endif
 
     /* All references to the symbols, terminals, nonterminals are stored
        in the following vlos.  The indexes in the arrays are the same as
        corresponding symbol, terminal, and nonterminal numbers. */
-#ifndef NOT_DEFINED
     vlo_t symbs_vlo;
     vlo_t terms_vlo;
     vlo_t nonterms_vlo;
-#else
-    vlo_t *symbs_vlo;
-    vlo_t *terms_vlo;
-    vlo_t *nonterms_vlo;
-#endif
 
     /* The following are tables to find terminal by its code and symbol by
        its representation. */
@@ -2986,7 +2963,7 @@ symb_fin (struct symbs *symbs)
     yaep_free (grammar->alloc, symbs);
     symbs = NULL;
 }
-
+
 
 
 
@@ -3005,11 +2982,7 @@ struct tab_term_set
 struct term_sets
 {
     /* All terminal sets are stored in the following os. */
-#ifndef NOT_DEFINED
     os_t term_set_os;
-#else
-    os_t *term_set_os;
-#endif
 
     /* The following variables can be read externally.  Their values are
        number of terminal sets and their overall size. */
@@ -3021,11 +2994,7 @@ struct term_sets
 
     /* References to all structure tab_term_set are stored in the
        following vlo. */
-#ifndef NOT_DEFINED
     vlo_t tab_term_set_vlo;
-#else
-    vlo_t *tab_term_set_vlo;
-#endif
 };
 
 /* Hash of table terminal set. */
@@ -3279,7 +3248,7 @@ term_set_fin (struct term_sets *term_sets)
     yaep_free (grammar->alloc, term_sets);
     term_sets = NULL;
 }
-
+
 
 
 /* This page is abstract data `grammar rules'. */
@@ -3338,11 +3307,7 @@ struct rules
        externally. */
     struct rule *curr_rule;
     /* All rules are placed in the following object. */
-#ifndef NOT_DEFINED
     os_t rules_os;
-#else
-    os_t *rules_os;
-#endif
 };
 
 /* Initialize work with rules and returns pointer to rules storage. */
@@ -3520,7 +3485,7 @@ rule_fin (struct rules *rules)
     yaep_free (grammar->alloc, rules);
     rules = NULL;
 }
-
+
 
 
 /* This page is abstract data `input tokens'. */
@@ -3547,11 +3512,7 @@ static int toks_len;
 static int tok_curr;
 
 /* The following array contains all input tokens. */
-#ifndef NOT_DEFINED
 static vlo_t toks_vlo;
-#else
-static vlo_t *toks_vlo;
-#endif
 
 /* Initialize work with tokens. */
 static void
@@ -3586,7 +3547,7 @@ tok_fin (void)
 {
     VLO_DELETE (toks_vlo);
 }
-
+
 
 
 /* This page is abstract data `situations'. */
@@ -3632,18 +3593,10 @@ static struct sit ***sit_table;
 /* The following vlo is indexed by situation context number and gives
    array which is indexed by situation number
    (sit->rule->rule_start_offset + sit->pos). */
-#ifndef NOT_DEFINED
 static vlo_t sit_table_vlo;
-#else
-static vlo_t *sit_table_vlo;
-#endif
 
 /* All situations are placed in the following object. */
-#ifndef NOT_DEFINED
 static os_t sits_os;
-#else
-static os_t *sits_os;
-#endif
 
 /* Initialize work with situations. */
 static void
@@ -3796,7 +3749,7 @@ sit_fin (void)
     VLO_DELETE (sit_table_vlo);
     OS_DELETE (sits_os);
 }
-
+
 
 
 /* This page is abstract data `sets'. */
@@ -3911,48 +3864,24 @@ static int n_sets, n_sets_start_sits;
 static int n_set_term_lookaheads;
 
 /* The set cores of formed sets are placed in the following os. */
-#ifndef NOT_DEFINED
 static os_t set_cores_os;
-#else
-static os_t *set_cores_os;
-#endif
 
 /* The situations of formed sets are placed in the following os. */
-#ifndef NOT_DEFINED
 static os_t set_sits_os;
-#else
-static os_t *set_sits_os;
-#endif
 
 /* The indexes of the parent start situations whose distances are used
    to get distances of some nonstart situations are placed in the
    following os. */
-#ifndef NOT_DEFINED
 static os_t set_parent_indexes_os;
-#else
-static os_t *set_parent_indexes_os;
-#endif
 
 /* The distances of formed sets are placed in the following os. */
-#ifndef NOT_DEFINED
 static os_t set_dists_os;
-#else
-static os_t *set_dists_os;
-#endif
 
 /* The sets themself are placed in the following os. */
-#ifndef NOT_DEFINED
 static os_t sets_os;
-#else
-static os_t *sets_os;
-#endif
 
 /* Container for triples (set, term, lookahead.  */
-#ifndef NOT_DEFINED
 static os_t set_term_lookahead_os;
-#else
-static os_t *set_term_lookahead_os;
-#endif
 
 /* The following 3 tables contain references for sets which refers
    for set cores or distances or both which are in the tables. */
@@ -4057,18 +3986,14 @@ set_term_lookahead_eq (hash_table_entry_t s1, hash_table_entry_t s2)
 
     return set1 == set2 && term1 == term2 && lookahead1 == lookahead2;
 }
-
+
 
 
 /* This page contains code for table of pairs (sit, dist).  */
 
-#ifndef NOT_DEFINED
 /* Vector implementing map: sit number -> vlo of the distance check
    indexed by the distance.  */
 static vlo_t sit_dist_vec_vlo;
-#else
-static vlo_t *sit_dist_vec_vlo;
-#endif
 
 /* The value used to check the validity of elements of check_dist
    structures.  */
@@ -4104,15 +4029,9 @@ sit_dist_insert (struct sit *sit, int dist)
     {
         VLO_EXPAND (sit_dist_vec_vlo, (sit_number + 1 - len) * sizeof (vlo_t));
         for (i = len; i <= sit_number; i++)
-#ifndef NOT_DEFINED
             VLO_CREATE (((vlo_t *) VLO_BEGIN (sit_dist_vec_vlo))[i],
                         grammar->alloc, 64);
-#else
-	((vlo_t **) VLO_BEGIN (sit_dist_vec_vlo))[i] =
-            new vlo (grammar->alloc, 64);
-#endif
     }
-#ifndef NOT_DEFINED
     check_dist_vlo = &((vlo_t *) VLO_BEGIN (sit_dist_vec_vlo))[sit_number];
     len = VLO_LENGTH (*check_dist_vlo) / sizeof (int);
     if (len <= dist)
@@ -4125,20 +4044,6 @@ sit_dist_insert (struct sit *sit, int dist)
         return FALSE;
     ((int *) VLO_BEGIN (*check_dist_vlo))[dist] = curr_sit_dist_vec_check;
     return TRUE;
-#else
-    check_dist_vlo = ((vlo_t **) VLO_BEGIN (sit_dist_vec_vlo))[sit_number];
-    len = check_dist_vlo->length () / sizeof (int);
-    if (len <= dist)
-    {
-        check_dist_vlo->expand ((dist + 1 - len) * sizeof (int));
-        for (i = len; i <= dist; i++)
-            ((int *) check_dist_vlo->begin ())[i] = 0;
-    }
-    if (((int *) check_dist_vlo->begin ())[dist] == curr_sit_dist_vec_check)
-        return FALSE;
-    ((int *) check_dist_vlo->begin ())[dist] = curr_sit_dist_vec_check;
-    return TRUE;
-#endif
 }
 
 /* Finish the set of pairs (sit, dist).  */
@@ -4148,14 +4053,10 @@ sit_dist_set_fin (void)
     int i, len = VLO_LENGTH (sit_dist_vec_vlo) / sizeof (vlo_t);
 
     for (i = 0; i < len; i++)
-#ifndef NOT_DEFINED
         VLO_DELETE (((vlo_t *) VLO_BEGIN (sit_dist_vec_vlo))[i]);
-#else
-    delete ((vlo_t **) VLO_BEGIN (sit_dist_vec_vlo))[i];
-#endif
     VLO_DELETE (sit_dist_vec_vlo);
 }
-
+
 
 
 #ifdef TRANSITIVE_TRANSITION
@@ -4167,15 +4068,10 @@ static int curr_sit_check;
    vectors:  */
 /*  The value is used to mark already processed symbols.  */
 static int core_symbol_check;
-#ifndef NOT_DEFINED
 /* The first is used to check already processed symbols.  The second
    contains symbols to be processed.  The third is a queue used during
    building transitive transitions.  */
 static vlo_t core_symbol_check_vlo, core_symbols_vlo, core_symbol_queue_vlo;
-#else
-static vlo_t *core_symbol_check_vlo, *core_symbols_vlo,
-    *core_symbol_queue_vlo;
-#endif
 
 #endif
 
@@ -4507,7 +4403,7 @@ set_fin (void)
     OS_DELETE (set_dists_os);
     OS_DELETE (set_cores_os);
 }
-
+
 
 
 /* This page is abstract data `parser list'. */
@@ -4545,7 +4441,7 @@ pl_fin (void)
     if (pl != NULL)
         yaep_free (grammar->alloc, pl);
 }
-
+
 
 
 
@@ -4553,11 +4449,7 @@ pl_fin (void)
    only to implement abstract data `core_symb_vect'. */
 
 /* All vlos being formed are placed in the following object. */
-#ifndef NOT_DEFINED
 static vlo_t vlo_array;
-#else
-static vlo_t *vlo_array;
-#endif
 
 /* The following is current number of elements in vlo_array. */
 static int vlo_array_len;
@@ -4569,11 +4461,7 @@ INLINE
 static void
 vlo_array_init (void)
 {
-#ifndef NOT_DEFINED
     VLO_CREATE (vlo_array, grammar->alloc, 4096);
-#else
-    vlo_array = new vlo (grammar->alloc, 4096);
-#endif
     vlo_array_len = 0;
 }
 
@@ -4585,7 +4473,6 @@ INLINE
 static int
 vlo_array_expand (void)
 {
-#ifndef NOT_DEFINED
     vlo_t *vlo_ptr;
 
     if ((unsigned) vlo_array_len >= VLO_LENGTH (vlo_array) / sizeof (vlo_t))
@@ -4599,21 +4486,6 @@ vlo_array_expand (void)
         vlo_ptr = &((vlo_t *) VLO_BEGIN (vlo_array))[vlo_array_len];
         VLO_NULLIFY (*vlo_ptr);
     }
-#else
-    vlo_t **vlo_ptr;
-
-    if ((unsigned) vlo_array_len >= vlo_array->length () / sizeof (vlo_t *))
-    {
-        vlo_array->expand (sizeof (vlo_t *));
-        vlo_ptr = &((vlo_t **) vlo_array->begin ())[vlo_array_len];
-        *vlo_ptr = new vlo (grammar->alloc, 64);
-    }
-    else
-    {
-        vlo_ptr = &((vlo_t **) vlo_array->begin ())[vlo_array_len];
-        (*vlo_ptr)->nullify ();
-    }
-#endif
     return vlo_array_len++;
 }
 
@@ -4635,11 +4507,7 @@ static vlo_t *
 vlo_array_el (int index)
 {
     assert (index >= 0 && vlo_array_len > index);
-#ifndef NOT_DEFINED
     return &((vlo_t *) VLO_BEGIN (vlo_array))[index];
-#else
-    return ((vlo_t **) vlo_array->begin ())[index];
-#endif
 }
 
 /* Finalize work with array of vlos. */
@@ -4649,23 +4517,14 @@ INLINE
 static void
 vlo_array_fin (void)
 {
-#ifndef NOT_DEFINED
     vlo_t *vlo_ptr;
 
     for (vlo_ptr = (vlo_t *) VLO_BEGIN (vlo_array);
          (char *) vlo_ptr < (char *) VLO_BOUND (vlo_array); vlo_ptr++)
         VLO_DELETE (*vlo_ptr);
     VLO_DELETE (vlo_array);
-#else
-    vlo_t **vlo_ptr;
-
-    for (vlo_ptr = (vlo_t **) vlo_array->begin ();
-         (char *) vlo_ptr < (char *) vlo_array->bound (); vlo_ptr++)
-        delete *vlo_ptr;
-    delete vlo_array;
-#endif
 }
-
+
 
 
 /* This page contains table for fast search for vector of indexes of
@@ -4731,28 +4590,16 @@ static int n_reduce_vects, n_reduce_vect_len;
 
 /* All triples (set core, symbol, vect) are placed in the following
    object. */
-#ifndef NOT_DEFINED
 static os_t core_symb_vect_os;
-#else
-static os_t *core_symb_vect_os;
-#endif
 
 /* Pointers to triples (set core, symbol, vect) being formed are
    placed in the following object. */
-#ifndef NOT_DEFINED
 static vlo_t new_core_symb_vect_vlo;
-#else
-static vlo_t *new_core_symb_vect_vlo;
-#endif
 
 /* All elements of vectors in the table (see
    (transitive_)transition_els_tab and reduce_els_tab) are placed in
    the following os. */
-#ifndef NOT_DEFINED
 static os_t vect_els_os;
-#else
-static os_t *vect_els_os;
-#endif
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
 static hash_table_t core_symb_to_vect_tab;	/* key is set_core and symb. */
@@ -4761,22 +4608,14 @@ static hash_table_t core_symb_to_vect_tab;	/* key is set_core and symb. */
    symbol)->core_symb_vect implemented as two dimensional array. */
 /* The following object contains pointers to the table rows for each
    set core. */
-#ifndef NOT_DEFINED
 static vlo_t core_symb_table_vlo;
-#else
-static vlo_t *core_symb_table_vlo;
-#endif
 
 /* The following is always start of the previous object. */
 static struct core_symb_vect ***core_symb_table;
 
 /* The following contains rows of the table.  The element in the rows
    are indexed by symbol number. */
-#ifndef NOT_DEFINED
 static os_t core_symb_tab_rows;
-#else
-static os_t *core_symb_tab_rows;
-#endif
 #endif
 
 /* The following tables contains references for core_symb_vect which
@@ -4892,40 +4731,22 @@ reduce_els_eq (hash_table_entry_t t1, hash_table_entry_t t2)
 static void
 core_symb_vect_init (void)
 {
-#ifndef NOT_DEFINED
     OS_CREATE (core_symb_vect_os, grammar->alloc, 0);
     VLO_CREATE (new_core_symb_vect_vlo, grammar->alloc, 0);
     OS_CREATE (vect_els_os, grammar->alloc, 0);
-#else
-    core_symb_vect_os = new os (grammar->alloc, 0);
-    new_core_symb_vect_vlo = new vlo (grammar->alloc, 0);
-    vect_els_os = new os (grammar->alloc, 0);
-#endif
+
     vlo_array_init ();
 #ifdef USE_CORE_SYMB_HASH_TABLE
-#ifndef NOT_DEFINED
     core_symb_to_vect_tab =
         create_hash_table (grammar->alloc, 3000, core_symb_vect_hash,
                            core_symb_vect_eq);
 #else
-    core_symb_to_vect_tab =
-        new hash_table (grammar->alloc, 3000, core_symb_vect_hash,
-                        core_symb_vect_eq);
-#endif
-#else
-#ifndef NOT_DEFINED
     VLO_CREATE (core_symb_table_vlo, grammar->alloc, 4096);
     core_symb_table
         = (struct core_symb_vect ***) VLO_BEGIN (core_symb_table_vlo);
     OS_CREATE (core_symb_tab_rows, grammar->alloc, 8192);
-#else
-    core_symb_table_vlo = new vlo (grammar->alloc, 4096);
-    core_symb_table = (struct core_symb_vect ***) core_symb_table_vlo->begin ();
-    core_symb_tab_rows = new os (grammar->alloc, 8192);
-#endif
 #endif
 
-#ifndef NOT_DEFINED
     transition_els_tab =
         create_hash_table (grammar->alloc, 3000, transition_els_hash,
                            transition_els_eq);
@@ -4936,18 +4757,7 @@ core_symb_vect_init (void)
 #endif
     reduce_els_tab =
         create_hash_table (grammar->alloc, 3000, reduce_els_hash, reduce_els_eq);
-#else
-    transition_els_tab =
-        new hash_table (grammar->alloc, 3000, transition_els_hash,
-                        transition_els_eq);
-#ifdef TRANSITIVE_TRANSITION
-    transitive_transition_els_tab =
-        new hash_table (grammar->alloc, 5000, transitive_transition_els_hash,
-                        transitive_transition_els_eq);
-#endif
-    reduce_els_tab =
-        new hash_table (grammar->alloc, 3000, reduce_els_hash, reduce_els_eq);
-#endif
+
     n_core_symb_pairs = n_core_symb_vect_len = 0;
     n_transition_vects = n_transition_vect_len = 0;
 #ifdef TRANSITIVE_TRANSITION
@@ -5316,7 +5126,7 @@ core_symb_vect_fin (void)
     delete core_symb_vect_os;
 #endif
 }
-
+
 
 
 /* Jump buffer for processing errors. */
@@ -6372,7 +6182,7 @@ build_new_set (struct set *set, struct core_symb_vect *core_symb_vect,
         new_core->term = core_symb_vect->symb;
     }
 }
-
+
 
 
 /* This page contains error recovery code.  This code finds minimal
@@ -6955,7 +6765,7 @@ error_recovery_fin (void)
     VLO_DELETE (recovery_state_stack);
     VLO_DELETE (original_pl_tail_stack);
 }
-
+
 
 
 
@@ -7114,7 +6924,7 @@ build_pl (void)
     }
     error_recovery_fin ();
 }
-
+
 
 
 /* This page contains code to work with parse states. */
@@ -7277,7 +7087,7 @@ parse_state_fin (void)
 #endif
     OS_DELETE (parse_state_os);
 }
-
+
 
 
 #ifndef NO_YAEP_DEBUG_PRINT
