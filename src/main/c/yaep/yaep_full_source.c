@@ -2796,33 +2796,32 @@ static struct symb *symb_get(int n)
     return symb;
 }
 
-/* The following function return N-th symbol (if any) or NULL
-   otherwise. */
-static struct symb *
-term_get (int n)
+/* The following function return N-th symbol (if any) or NULL otherwise. */
+static struct symb *term_get(int n)
 {
-    struct symb *symb;
-
-    if (n < 0 || (VLO_LENGTH (symbs_ptr->terms_vlo)
-                  / sizeof (struct symb *) <= (size_t) n))
+    if (n < 0 || (VLO_LENGTH (symbs_ptr->terms_vlo) / sizeof (struct symb *) <= (size_t) n))
+    {
         return NULL;
-    symb = ((struct symb **) VLO_BEGIN (symbs_ptr->terms_vlo))[n];
+    }
+    struct symb *symb = ((struct symb **) VLO_BEGIN (symbs_ptr->terms_vlo))[n];
     assert (symb->term_p && symb->u.term.term_num == n);
+
+    TRACE("term_get %d -> %p\n", n, symb);
     return symb;
 }
 
 /* The following function return N-th symbol (if any) or NULL
    otherwise. */
-static struct symb *
-nonterm_get (int n)
+static struct symb *nonterm_get(int n)
 {
-    struct symb *symb;
-
-    if (n < 0 || (VLO_LENGTH (symbs_ptr->nonterms_vlo) / sizeof (struct symb *)
-                  <= (size_t) n))
+    if (n < 0 || (VLO_LENGTH (symbs_ptr->nonterms_vlo) / sizeof (struct symb *) <= (size_t) n))
+    {
         return NULL;
-    symb = ((struct symb **) VLO_BEGIN (symbs_ptr->nonterms_vlo))[n];
+    }
+    struct symb *symb = ((struct symb **) VLO_BEGIN (symbs_ptr->nonterms_vlo))[n];
     assert (!symb->term_p && symb->u.nonterm.nonterm_num == n);
+
+    TRACE("nonterm_get %d -> %p\n", n, symb);
     return symb;
 }
 
@@ -2830,12 +2829,13 @@ nonterm_get (int n)
 
 /* The following function prints symbol SYMB to file F.  Terminal is
    printed with its code if CODE_P. */
-static void
-symb_print (FILE * f, struct symb *symb, int code_p)
+static void symb_print(FILE * f, struct symb *symb, int code_p)
 {
     fprintf (f, "%s", symb->repr);
     if (code_p && symb->term_p)
+    {
         fprintf (f, "(%d)", symb->u.term.code);
+    }
 }
 
 #endif /* #ifndef NO_YAEP_DEBUG_PRINT */
@@ -2844,8 +2844,7 @@ symb_print (FILE * f, struct symb *symb, int code_p)
    Lets pick 200_000 as the max, it shrinks to max-min code point anyway. */
 #define MAX_SYMB_CODE_TRANS_VECT_SIZE 200000
 
-static void
-symb_finish_adding_terms (void)
+static void symb_finish_adding_terms(void)
 {
     int i, max_code, min_code;
     struct symb *symb;
@@ -2853,10 +2852,8 @@ symb_finish_adding_terms (void)
 
     for (min_code = max_code = i = 0; (symb = term_get (i)) != NULL; i++)
     {
-        if (i == 0 || min_code > symb->u.term.code)
-            min_code = symb->u.term.code;
-        if (i == 0 || max_code < symb->u.term.code)
-            max_code = symb->u.term.code;
+        if (i == 0 || min_code > symb->u.term.code) min_code = symb->u.term.code;
+        if (i == 0 || max_code < symb->u.term.code) max_code = symb->u.term.code;
     }
     assert (i != 0);
     assert( (max_code - min_code) < MAX_SYMB_CODE_TRANS_VECT_SIZE);
@@ -2868,19 +2865,18 @@ symb_finish_adding_terms (void)
     size_t vec_size = sizeof(struct symb*) * num_codes;
     mem = yaep_malloc (grammar->alloc, vec_size);
 
-    fprintf(stderr, "yaep: num_codes=%zu size=%zu\n", num_codes, vec_size);
-
-    symbs_ptr->symb_code_trans_vect = (struct symb **) mem;
+    symbs_ptr->symb_code_trans_vect = (struct symb **)mem;
 
     for (i = 0; (symb = term_get (i)) != NULL; i++)
     {
         symbs_ptr->symb_code_trans_vect[symb->u.term.code - min_code] = symb;
     }
+
+    TRACE("symb_finish_adding_terms num_codes=%zu size=%zu\n", num_codes, vec_size);
 }
 
 /* Free memory for symbols. */
-static void
-symb_empty (struct symbs *symbs)
+static void symb_empty(struct symbs *symbs)
 {
     if (symbs == NULL) return;
 
@@ -2897,16 +2893,19 @@ symb_empty (struct symbs *symbs)
     VLO_NULLIFY (symbs->symbs_vlo);
     OS_EMPTY (symbs->symbs_os);
     symbs->n_nonterms = symbs->n_terms = 0;
+
+    TRACE("symb_empty %p\n" , symbs);
 }
 
 /* Finalize work with symbols. */
-static void
-symb_fin (struct symbs *symbs)
+static void symb_fin(struct symbs *symbs)
 {
     if (symbs == NULL) return;
 
     if (symbs_ptr->symb_code_trans_vect != NULL)
+    {
         yaep_free (grammar->alloc, symbs_ptr->symb_code_trans_vect);
+    }
 
     delete_hash_table (symbs_ptr->repr_to_symb_tab);
     delete_hash_table (symbs_ptr->code_to_symb_tab);
@@ -2915,7 +2914,8 @@ symb_fin (struct symbs *symbs)
     VLO_DELETE (symbs_ptr->symbs_vlo);
     OS_DELETE (symbs_ptr->symbs_os);
     yaep_free (grammar->alloc, symbs);
-    symbs = NULL;
+
+    TRACE("symb_fin %p\n" , symbs);
 }
 
 /* This page contains abstract data set of terminals. */
