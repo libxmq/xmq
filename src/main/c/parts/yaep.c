@@ -2415,15 +2415,6 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
    much more unique triples [set, term, lookahead] in this case).  */
 /* #define ABSOLUTE_DISTANCES */
 
-/* Define the following macro if you want to use transitive
-   transitions.  For some grammars it can improve the parser speed a
-   bit but in most cases the speed will not be improved.
-
-   For each core and symb, transitive transitions will contain all
-   shift situations and situations added by the completer from the
-   same set as the shifted original situation.  */
-/* #define TRANSITIVE_TRANSITION */
-
 /* Prime number (79087987342985798987987) mod 32 used for hash
    calculations.  */
 static const unsigned jauquet_prime_mod32 = 2053222611;
@@ -3528,11 +3519,6 @@ struct sit
        the corresponding terminal set in the table.  It is really used
        only for dynamic lookahead. */
     int context;
-#ifdef TRANSITIVE_TRANSITION
-    /* The following member is used for using transitive transition
-       vectors to exclude multiple situation processing.  */
-    int sit_check;
-#endif
     /* The following member is the situation lookahead it is equal to
        FIRST (the situation tail || FOLLOW (lhs)) for static lookaheads
        and FIRST (the situation tail || context) for dynamic ones. */
@@ -3656,9 +3642,6 @@ sit_create (struct rule *rule, int pos, int context)
     sit->sit_number = n_all_sits;
     sit->context = context;
     sit->empty_tail_p = sit_set_lookahead (sit);
-#ifdef TRANSITIVE_TRANSITION
-    sit->sit_check = 0;
-#endif
     (*context_sit_table_ptr)[rule->rule_start_offset + pos] = sit;
     return sit;
 }
@@ -4012,24 +3995,6 @@ sit_dist_set_fin (void)
     VLO_DELETE (sit_dist_vec_vlo);
 }
 
-
-
-#ifdef TRANSITIVE_TRANSITION
-/* The following varaibles are used for *using* transitive transition
-   vectors to exclude multiple situation processing.  */
-static int curr_sit_check;
-
-/* The following varaibles are used for *building* transitive transition
-   vectors:  */
-/*  The value is used to mark already processed symbols.  */
-static int core_symbol_check;
-/* The first is used to check already processed symbols.  The second
-   contains symbols to be processed.  The third is a queue used during
-   building transitive transitions.  */
-static vlo_t core_symbol_check_vlo, core_symbols_vlo, core_symbol_queue_vlo;
-
-#endif
-
 /* Initialize work with sets for parsing input with N_TOKS tokens. */
 static void
 set_init (int n_toks)
@@ -4058,13 +4023,6 @@ set_init (int n_toks)
     n_sets = n_sets_start_sits = 0;
     n_set_term_lookaheads = 0;
     sit_dist_set_init ();
-#ifdef TRANSITIVE_TRANSITION
-    curr_sit_check = 0;
-    VLO_CREATE (core_symbol_check_vlo, grammar->alloc, 0);
-    VLO_CREATE (core_symbols_vlo, grammar->alloc, 0);
-    VLO_CREATE (core_symbol_queue_vlo, grammar->alloc, 0);
-    core_symbol_check = 0;
-#endif
 }
 
 /* The following function starts forming of new set. */
@@ -4323,11 +4281,6 @@ if (i == n_start_sits - 1)
 static void
 set_fin (void)
 {
-#ifdef TRANSITIVE_TRANSITION
-    VLO_DELETE (core_symbol_queue_vlo);
-    VLO_DELETE (core_symbols_vlo);
-    VLO_DELETE (core_symbol_check_vlo);
-#endif
     sit_dist_set_fin ();
     delete_hash_table (set_term_lookahead_tab);
     delete_hash_table (set_tab);
@@ -4476,22 +4429,6 @@ struct core_symb_vect
     /* The following vector contains indexes of situations with given
        symb in situation after dot. */
     struct vect transitions;
-#ifdef TRANSITIVE_TRANSITION
-    /* The following vector contains indexes of situations with given
-       symb in situation after the dot and situations from the same set
-       core produced by reductions of the situations in this vector.
-       For example, if we have
-
-       N0 -> <...> . N1 <...>
-       N1 -> .N2
-       N2 -> .N3
-       N3 -> .t
-
-       the elements for t will contain also N1 -> .N2, N2 -> .N3, and
-       N0 -> <...> . N1 <...>
-    */
-    struct vect transitive_transitions;
-#endif
     /* The following vector contains indexes of reduce situations with
        given symb in lhs. */
     struct vect reduces;
@@ -4505,9 +4442,6 @@ struct core_symb_vect
    can be read externally. */
 static int n_core_symb_pairs, n_core_symb_vect_len;
 static int n_transition_vects, n_transition_vect_len;
-#ifdef TRANSITIVE_TRANSITION
-static int n_transitive_transition_vects, n_transitive_transition_vect_len;
-#endif
 static int n_reduce_vects, n_reduce_vect_len;
 
 /* All triples (set core, symbol, vect) are placed in the following
@@ -4545,9 +4479,6 @@ static os_t core_symb_tab_rows;
    refers for elements which are in the tables.  Sequence elements are
    stored in one exemplar to save memory. */
 static hash_table_t transition_els_tab;	/* key is elements. */
-#ifdef TRANSITIVE_TRANSITION
-static hash_table_t transitive_transition_els_tab;	/* key is elements. */
-#endif
 static hash_table_t reduce_els_tab;	/* key is elements. */
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
@@ -4615,25 +4546,6 @@ transition_els_eq (hash_table_entry_t t1, hash_table_entry_t t2)
                         &((struct core_symb_vect *) t2)->transitions);
 }
 
-#ifdef TRANSITIVE_TRANSITION
-/* Hash of vector transitive transition elements. */
-static unsigned
-transitive_transition_els_hash (hash_table_entry_t t)
-{
-    return vect_els_hash (&((struct core_symb_vect *) t)->
-                          transitive_transitions);
-}
-
-/* Equality of transitive transition vector elements. */
-static int
-transitive_transition_els_eq (hash_table_entry_t t1, hash_table_entry_t t2)
-{
-    return vect_els_eq (&((struct core_symb_vect *) t1)->transitive_transitions,
-                        &((struct core_symb_vect *) t2)->
-                        transitive_transitions);
-}
-#endif
-
 /* Hash of reduce vector elements. */
 static unsigned
 reduce_els_hash (hash_table_entry_t t)
@@ -4672,19 +4584,11 @@ core_symb_vect_init (void)
     transition_els_tab =
         create_hash_table (grammar->alloc, 3000, transition_els_hash,
                            transition_els_eq);
-#ifdef TRANSITIVE_TRANSITION
-    transitive_transition_els_tab =
-        create_hash_table (grammar->alloc, 5000, transitive_transition_els_hash,
-                           transitive_transition_els_eq);
-#endif
     reduce_els_tab =
         create_hash_table (grammar->alloc, 3000, reduce_els_hash, reduce_els_eq);
 
     n_core_symb_pairs = n_core_symb_vect_len = 0;
     n_transition_vects = n_transition_vect_len = 0;
-#ifdef TRANSITIVE_TRANSITION
-    n_transitive_transition_vects = n_transitive_transition_vect_len = 0;
-#endif
     n_reduce_vects = n_reduce_vect_len = 0;
 }
 
@@ -4798,13 +4702,6 @@ core_symb_vect_new (struct set_core *set_core, struct symb *symb)
     triple->transitions.len = 0;
     triple->transitions.els = (int *) VLO_BEGIN (*vlo_ptr);
 
-#ifdef TRANSITIVE_TRANSITION
-    triple->transitive_transitions.intern = vlo_array_expand ();
-    vlo_ptr = vlo_array_el (triple->transitive_transitions.intern);
-    triple->transitive_transitions.len = 0;
-    triple->transitive_transitions.els = (int *) VLO_BEGIN (*vlo_ptr);
-#endif
-
     triple->reduces.intern = vlo_array_expand ();
     vlo_ptr = vlo_array_el (triple->reduces.intern);
     triple->reduces.len = 0;
@@ -4837,17 +4734,6 @@ core_symb_vect_new_add_transition_el (struct core_symb_vect *core_symb_vect,
     vect_new_add_el (&core_symb_vect->transitions, el);
 }
 
-#ifdef TRANSITIVE_TRANSITION
-/* Add index EL to the transition vector of CORE_SYMB_VECT being
-   formed. */
-static void
-core_symb_vect_new_add_transitive_transition_el (struct core_symb_vect
-						 *core_symb_vect, int el)
-{
-    vect_new_add_el (&core_symb_vect->transitive_transitions, el);
-}
-#endif
-
 /* Add index EL to the reduce vector of CORE_SYMB_VECT being
    formed. */
 static void
@@ -4876,10 +4762,6 @@ process_core_symb_vect_el (struct core_symb_vect *core_symb_vect,
             vec->els
                 = (&core_symb_vect->transitions == vec
                    ? ((struct core_symb_vect *) *entry)->transitions.els
-#ifdef TRANSITIVE_TRANSITION
-                   : &core_symb_vect->transitive_transitions == vec
-                   ? ((struct core_symb_vect *) *entry)->transitive_transitions.els
-#endif
                    : ((struct core_symb_vect *) *entry)->reduces.els);
         else
 	{
@@ -4907,12 +4789,6 @@ core_symb_vect_new_all_stop (void)
         process_core_symb_vect_el (*triple_ptr, &(*triple_ptr)->transitions,
                                    &transition_els_tab, &n_transition_vects,
                                    &n_transition_vect_len);
-#ifdef TRANSITIVE_TRANSITION
-        process_core_symb_vect_el
-            (*triple_ptr, &(*triple_ptr)->transitive_transitions,
-             &transitive_transition_els_tab, &n_transitive_transition_vects,
-             &n_transitive_transition_vect_len);
-#endif
         process_core_symb_vect_el (*triple_ptr, &(*triple_ptr)->reduces,
                                    &reduce_els_tab, &n_reduce_vects,
                                    &n_reduce_vect_len);
@@ -4926,9 +4802,6 @@ static void
 core_symb_vect_fin (void)
 {
     delete_hash_table (transition_els_tab);
-#ifdef TRANSITIVE_TRANSITION
-    delete_hash_table (transitive_transition_els_tab);
-#endif
     delete_hash_table (reduce_els_tab);
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
@@ -5596,97 +5469,6 @@ add_derived_nonstart_sits (struct sit *sit, int parent)
         set_add_new_nonstart_sit (sit_create (rule, i + 1, context), parent);
 }
 
-#ifdef TRANSITIVE_TRANSITION
-/* Collect all symbols before the dot in new situations in
-   CORE_SYMBOL_VLO.  */
-static void
-collect_core_symbols (void)
-{
-    int i;
-    int *core_symbol_check_vec = (int *) VLO_BEGIN (core_symbol_check_vlo);
-    struct symb *symb;
-    struct sit *sit;
-
-    for (i = 0; i < new_core->n_sits; i++)
-    {
-        sit = new_sits[i];
-        if (sit->pos >= sit->rule->rhs_len)
-            continue;
-        /* There is a symbol after dot in the situation. */
-        symb = sit->rule->rhs[sit->pos];
-        if (core_symbol_check_vec[symb->num] == core_symbol_check
-            || symb == grammar->term_error)
-            continue;
-        core_symbol_check_vec[symb->num] = core_symbol_check;
-        VLO_ADD_MEMORY (core_symbols_vlo, &symb, sizeof (symb));
-    }
-}
-
-/* Create transitive transition vectors for the new situations.
-   Transition vectors should be already created.  */
-static void
-form_transitive_transition_vectors (void)
-{
-    int i, j, k, sit_ind;
-    struct symb *symb, *new_symb;
-    struct sit *sit;
-    struct core_symb_vect *core_symb_vect, *symb_core_symb_vect;
-
-    core_symbol_check++;
-    expand_int_vlo (&core_symbol_check_vlo,
-                    symbs_ptr->n_terms + symbs_ptr->n_nonterms);
-    VLO_NULLIFY (core_symbols_vlo);
-    collect_core_symbols ();
-    for (i = 0; i < VLO_LENGTH (core_symbols_vlo) / sizeof (struct symb *); i++)
-    {
-        symb = ((struct symb **) VLO_BEGIN (core_symbols_vlo))[i];
-        core_symb_vect = core_symb_vect_find (new_core, symb);
-        if (core_symb_vect == NULL)
-            core_symb_vect = core_symb_vect_new (new_core, symb);
-        core_symbol_check++;
-        VLO_NULLIFY (core_symbol_queue_vlo);
-        /* Put the symbol into the queue.  */
-        VLO_ADD_MEMORY (core_symbol_queue_vlo, &symb, sizeof (symb));
-        for (j = 0;
-             j < VLO_LENGTH (core_symbol_queue_vlo) / sizeof (struct symb *);
-             j++)
-	{
-            symb = ((struct symb **) VLO_BEGIN (core_symbol_queue_vlo))[j];
-            symb_core_symb_vect = core_symb_vect_find (new_core, symb);
-            if (symb_core_symb_vect == NULL)
-                continue;
-            for (k = 0; k < symb_core_symb_vect->transitions.len; k++)
-	    {
-                sit_ind = symb_core_symb_vect->transitions.els[k];
-                core_symb_vect_new_add_transitive_transition_el (core_symb_vect,
-                                                                 sit_ind);
-                if (sit_ind < new_core->n_all_dists)
-                    /* This situation is originated from other sets --
-                       stop.  */
-                    continue;
-                sit = new_sits[sit_ind];
-                sit = sit_create (sit->rule, sit->pos + 1, sit->context);
-                if (sit->empty_tail_p)
-		{
-                    new_symb = sit->rule->lhs;
-                    if (((int *) VLO_BEGIN (core_symbol_check_vlo))[new_symb->
-                                                                    num] !=
-                        core_symbol_check)
-		    {
-                        /* Put the LHS symbol into queue.  */
-                        VLO_ADD_MEMORY (core_symbol_queue_vlo,
-                                        &new_symb, sizeof (new_symb));
-                        ((int *) VLO_BEGIN (core_symbol_check_vlo))[new_symb->
-                                                                    num] =
-                            core_symbol_check;
-		    }
-		}
-	    }
-	}
-    }
-}
-#endif
-
 /* The following function adds the rest (non-start) situations to the
    new set and and forms triples (set core, symbol, indexes) for
    further fast search of start situations from given core by
@@ -5739,9 +5521,6 @@ expand_new_start_set (void)
             core_symb_vect_new_add_reduce_el (core_symb_vect, i);
 	}
     }
-#ifdef TRANSITIVE_TRANSITION
-    form_transitive_transition_vectors ();
-#endif
     if (grammar->lookahead_level > 1)
     {
         struct sit *new_sit, *shifted_sit;
@@ -5847,12 +5626,8 @@ build_new_set (struct set *set, struct core_symb_vect *core_symb_vect,
                              ? 0 : grammar->lookahead_level);
     set_core = set->core;
     set_new_start ();
-#ifdef TRANSITIVE_TRANSITION
-    curr_sit_check++;
-    transitions = &core_symb_vect->transitive_transitions;
-#else
     transitions = &core_symb_vect->transitions;
-#endif
+
     empty_sit_dist_set ();
     for (i = 0; i < transitions->len; i++)
     {
@@ -5869,11 +5644,7 @@ build_new_set (struct set *set, struct core_symb_vect *core_symb_vect,
         dist = pl_curr;
 #endif
         if (sit_ind >= set_core->n_all_dists)
-#ifdef TRANSITIVE_TRANSITION
-            new_sit->sit_check = curr_sit_check;
-#else
 	;
-#endif
         else if (sit_ind < set_core->n_start_sits)
             dist = set->dists[sit_ind];
         else
@@ -5888,9 +5659,6 @@ build_new_set (struct set *set, struct core_symb_vect *core_symb_vect,
     {
         new_sit = new_sits[i];
         if (new_sit->empty_tail_p
-#ifdef TRANSITIVE_TRANSITION
-            && new_sit->sit_check != curr_sit_check
-#endif
             )
 	{
             int *curr_el, *bound;
@@ -5912,13 +5680,9 @@ build_new_set (struct set *set, struct core_symb_vect *core_symb_vect,
                 assert (new_sit->rule->lhs == grammar->axiom);
                 continue;
 	    }
-#ifdef TRANSITIVE_TRANSITION
-            curr_el = prev_core_symb_vect->transitive_transitions.els;
-            bound = curr_el + prev_core_symb_vect->transitive_transitions.len;
-#else
             curr_el = prev_core_symb_vect->transitions.els;
             bound = curr_el + prev_core_symb_vect->transitions.len;
-#endif
+
             assert (curr_el != NULL);
             prev_sits = prev_set_core->sits;
             do
@@ -5937,11 +5701,7 @@ build_new_set (struct set *set, struct core_symb_vect *core_symb_vect,
                 dist = new_dist;
 #endif
                 if (sit_ind >= prev_set_core->n_all_dists)
-#ifdef TRANSITIVE_TRANSITION
-                    new_sit->sit_check = curr_sit_check;
-#else
 		;
-#endif
                 else if (sit_ind < prev_set_core->n_start_sits)
                     dist = prev_set->dists[sit_ind];
                 else
@@ -7940,12 +7700,6 @@ yaep_parse (struct grammar *g,
         fprintf (stderr,
                  "       #unique transition vectors = %d, their length = %d\n",
                  n_transition_vects, n_transition_vect_len);
-#ifdef TRANSITIVE_TRANSITION
-        fprintf (stderr,
-                 "       #unique transitive transition vectors = %d, their length = %d\n",
-                 n_transitive_transition_vects,
-                 n_transitive_transition_vect_len);
-#endif
         fprintf (stderr,
                  "       #unique reduce vectors = %d, their length = %d\n",
                  n_reduce_vects, n_reduce_vect_len);
