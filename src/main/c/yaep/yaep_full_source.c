@@ -4782,13 +4782,9 @@ core_symb_vect_addr_get (struct core_symb_vect *triple, int reserv_p)
     if (triple->symb->cached_core_symb_vect != NULL
         && triple->symb->cached_core_symb_vect->set_core == triple->set_core)
         return &triple->symb->cached_core_symb_vect;
-#ifndef NOT_DEFINED
     result = ((struct core_symb_vect **)
               find_hash_table_entry (core_symb_to_vect_tab, triple, reserv_p));
-#else
-    result = ((struct core_symb_vect **)
-              core_symb_to_vect_tab->find_entry (triple, reserv_p));
-#endif
+
     triple->symb->cached_core_symb_vect = *result;
     return result;
 }
@@ -4806,54 +4802,32 @@ core_symb_vect_addr_get (struct set_core *set_core, struct symb *symb)
     struct core_symb_vect ***core_symb_vect_ptr;
 
     core_symb_vect_ptr = core_symb_table + set_core->num;
-#ifndef NOT_DEFINED
+
     if ((char *) core_symb_vect_ptr >= (char *) VLO_BOUND (core_symb_table_vlo))
-#else
-        if ((char *) core_symb_vect_ptr >= (char *) core_symb_table_vlo->bound ())
-#endif
-        {
+    {
             struct core_symb_vect ***ptr, ***bound;
             int diff, i;
 
-#ifndef NOT_DEFINED
             diff = ((char *) core_symb_vect_ptr
                     - (char *) VLO_BOUND (core_symb_table_vlo));
-#else
-            diff = ((char *) core_symb_vect_ptr
-                    - (char *) core_symb_table_vlo->bound ());
-#endif
             diff += sizeof (struct core_symb_vect **);
             if (diff == sizeof (struct core_symb_vect **))
                 diff *= 10;
-#ifndef NOT_DEFINED
+
             VLO_EXPAND (core_symb_table_vlo, diff);
             core_symb_table
                 = (struct core_symb_vect ***) VLO_BEGIN (core_symb_table_vlo);
             core_symb_vect_ptr = core_symb_table + set_core->num;
             bound = (struct core_symb_vect ***) VLO_BOUND (core_symb_table_vlo);
-#else
-            core_symb_table_vlo->expand (diff);
-            core_symb_table
-                = (struct core_symb_vect ***) core_symb_table_vlo->begin ();
-            core_symb_vect_ptr = core_symb_table + set_core->num;
-            bound = (struct core_symb_vect ***) core_symb_table_vlo->bound ();
-#endif
+
             ptr = bound - diff / sizeof (struct core_symb_vect **);
             while (ptr < bound)
             {
-#ifndef NOT_DEFINED
                 OS_TOP_EXPAND (core_symb_tab_rows,
                                (symbs_ptr->n_terms + symbs_ptr->n_nonterms)
                                * sizeof (struct core_symb_vect *));
                 *ptr = (struct core_symb_vect **) OS_TOP_BEGIN (core_symb_tab_rows);
                 OS_TOP_FINISH (core_symb_tab_rows);
-#else
-                core_symb_tab_rows->top_expand
-                    ((symbs_ptr->n_terms + symbs_ptr->n_nonterms)
-                     * sizeof (struct core_symb_vect *));
-                *ptr = (struct core_symb_vect **) core_symb_tab_rows->top_begin ();
-                core_symb_tab_rows->top_finish ();
-#endif
                 for (i = 0; i < symbs_ptr->n_terms + symbs_ptr->n_nonterms; i++)
                     (*ptr)[i] = NULL;
                 ptr++;
@@ -4892,20 +4866,11 @@ core_symb_vect_new (struct set_core *set_core, struct symb *symb)
     vlo_t *vlo_ptr;
 
     /* Create table element. */
-#ifndef NOT_DEFINED
     OS_TOP_EXPAND (core_symb_vect_os, sizeof (struct core_symb_vect));
     triple = ((struct core_symb_vect *) OS_TOP_BEGIN (core_symb_vect_os));
-#else
-    core_symb_vect_os->top_expand (sizeof (struct core_symb_vect));
-    triple = ((struct core_symb_vect *) core_symb_vect_os->top_begin ());
-#endif
     triple->set_core = set_core;
     triple->symb = symb;
-#ifndef NOT_DEFINED
     OS_TOP_FINISH (core_symb_vect_os);
-#else
-    core_symb_vect_os->top_finish ();
-#endif
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
     addr = core_symb_vect_addr_get (triple, TRUE);
@@ -4918,35 +4883,21 @@ core_symb_vect_new (struct set_core *set_core, struct symb *symb)
     triple->transitions.intern = vlo_array_expand ();
     vlo_ptr = vlo_array_el (triple->transitions.intern);
     triple->transitions.len = 0;
-#ifndef NOT_DEFINED
     triple->transitions.els = (int *) VLO_BEGIN (*vlo_ptr);
-#else
-    triple->transitions.els = (int *) vlo_ptr->begin ();
-#endif
 
 #ifdef TRANSITIVE_TRANSITION
     triple->transitive_transitions.intern = vlo_array_expand ();
     vlo_ptr = vlo_array_el (triple->transitive_transitions.intern);
     triple->transitive_transitions.len = 0;
-#ifndef NOT_DEFINED
     triple->transitive_transitions.els = (int *) VLO_BEGIN (*vlo_ptr);
-#else
-    triple->transitive_transitions.els = (int *) vlo_ptr->begin ();
-#endif
 #endif
 
     triple->reduces.intern = vlo_array_expand ();
     vlo_ptr = vlo_array_el (triple->reduces.intern);
     triple->reduces.len = 0;
-#ifndef NOT_DEFINED
     triple->reduces.els = (int *) VLO_BEGIN (*vlo_ptr);
     VLO_ADD_MEMORY (new_core_symb_vect_vlo, &triple,
                     sizeof (struct core_symb_vect *));
-#else
-    triple->reduces.els = (int *) vlo_ptr->begin ();
-    new_core_symb_vect_vlo->add_memory (&triple,
-                                        sizeof (struct core_symb_vect *));
-#endif
     n_core_symb_pairs++;
     return triple;
 }
@@ -4959,13 +4910,8 @@ vect_new_add_el (struct vect *vec, int el)
 
     vec->len++;
     vlo_ptr = vlo_array_el (vec->intern);
-#ifndef NOT_DEFINED
     VLO_ADD_MEMORY (*vlo_ptr, &el, sizeof (int));
     vec->els = (int *) VLO_BEGIN (*vlo_ptr);
-#else
-    vlo_ptr->add_memory (&el, sizeof (int));
-    vec->els = (int *) vlo_ptr->begin ();
-#endif
     n_core_symb_vect_len++;
 }
 
@@ -5012,11 +4958,7 @@ process_core_symb_vect_el (struct core_symb_vect *core_symb_vect,
         vec->els = NULL;
     else
     {
-#ifndef NOT_DEFINED
         entry = find_hash_table_entry (*tab, core_symb_vect, TRUE);
-#else
-        entry = (*tab)->find_entry (core_symb_vect, TRUE);
-#endif
         if (*entry != NULL)
             vec->els
                 = (&core_symb_vect->transitions == vec
@@ -5029,15 +4971,9 @@ process_core_symb_vect_el (struct core_symb_vect *core_symb_vect,
         else
 	{
             *entry = (hash_table_entry_t) core_symb_vect;
-#ifndef NOT_DEFINED
             OS_TOP_ADD_MEMORY (vect_els_os, vec->els, vec->len * sizeof (int));
             vec->els = (int *) OS_TOP_BEGIN (vect_els_os);
             OS_TOP_FINISH (vect_els_os);
-#else
-            vect_els_os->top_add_memory (vec->els, vec->len * sizeof (int));
-            vec->els = (int *) vect_els_os->top_begin ();
-            vect_els_os->top_finish ();
-#endif
             (*n_vects)++;
             *n_vect_len += vec->len;
 	}
@@ -5051,16 +4987,9 @@ core_symb_vect_new_all_stop (void)
 {
     struct core_symb_vect **triple_ptr;
 
-#ifndef NOT_DEFINED
     for (triple_ptr = (struct core_symb_vect **) VLO_BEGIN (new_core_symb_vect_vlo);
          (char *) triple_ptr < (char *) VLO_BOUND (new_core_symb_vect_vlo);
          triple_ptr++)
-#else
-        for (triple_ptr
-                 = (struct core_symb_vect **) new_core_symb_vect_vlo->begin ();
-             (char *) triple_ptr < (char *) new_core_symb_vect_vlo->bound ();
-             triple_ptr++)
-#endif
         {
             process_core_symb_vect_el (*triple_ptr, &(*triple_ptr)->transitions,
                                        &transition_els_tab, &n_transition_vects,
@@ -5076,55 +5005,29 @@ core_symb_vect_new_all_stop (void)
                                        &n_reduce_vect_len);
         }
     vlo_array_nullify ();
-#ifndef NOT_DEFINED
     VLO_NULLIFY (new_core_symb_vect_vlo);
-#else
-    new_core_symb_vect_vlo->nullify ();
-#endif
 }
 
 /* Finalize work with all triples (set core, symbol, vector). */
 static void
 core_symb_vect_fin (void)
 {
-#ifndef NOT_DEFINED
     delete_hash_table (transition_els_tab);
 #ifdef TRANSITIVE_TRANSITION
     delete_hash_table (transitive_transition_els_tab);
 #endif
     delete_hash_table (reduce_els_tab);
-#else
-    delete transition_els_tab;
-#ifdef TRANSITIVE_TRANSITION
-    delete transitive_transition_els_tab;
-#endif
-    delete reduce_els_tab;
-#endif
+
 #ifdef USE_CORE_SYMB_HASH_TABLE
-#ifndef NOT_DEFINED
     delete_hash_table (core_symb_to_vect_tab);
 #else
-    delete core_symb_to_vect_tab;
-#endif
-#else
-#ifndef NOT_DEFINED
     OS_DELETE (core_symb_tab_rows);
     VLO_DELETE (core_symb_table_vlo);
-#else
-    delete core_symb_tab_rows;
-    delete core_symb_table_vlo;
-#endif
 #endif
     vlo_array_fin ();
-#ifndef NOT_DEFINED
     OS_DELETE (vect_els_os);
     VLO_DELETE (new_core_symb_vect_vlo);
     OS_DELETE (core_symb_vect_os);
-#else
-    delete vect_els_os;
-    delete new_core_symb_vect_vlo;
-    delete core_symb_vect_os;
-#endif
 }
 
 
@@ -5158,9 +5061,6 @@ error_func_for_allocate (void *ignored)
 }
 
 /* The following function allocates memory for new grammar. */
-#ifdef NOT_DEFINED
-static
-#endif
 struct grammar *
 yaep_create_grammar (void)
 {
@@ -5218,9 +5118,6 @@ yaep_empty_grammar (void)
 
 /* The function returns the last occurred error code for given
    grammar. */
-#ifdef NOT_DEFINED
-static
-#endif
 int
 yaep_error_code (struct grammar *g)
 {
@@ -5230,9 +5127,6 @@ yaep_error_code (struct grammar *g)
 
 /* The function returns message are always contains error message
    corresponding to the last occurred error code. */
-#ifdef NOT_DEFINED
-static
-#endif
 const char *
 yaep_error_message (struct grammar *g)
 {
