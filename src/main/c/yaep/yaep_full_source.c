@@ -4805,34 +4805,34 @@ core_symb_vect_addr_get (struct set_core *set_core, struct symb *symb)
 
     if ((char *) core_symb_vect_ptr >= (char *) VLO_BOUND (core_symb_table_vlo))
     {
-            struct core_symb_vect ***ptr, ***bound;
-            int diff, i;
+        struct core_symb_vect ***ptr, ***bound;
+        int diff, i;
 
-            diff = ((char *) core_symb_vect_ptr
-                    - (char *) VLO_BOUND (core_symb_table_vlo));
-            diff += sizeof (struct core_symb_vect **);
-            if (diff == sizeof (struct core_symb_vect **))
-                diff *= 10;
+        diff = ((char *) core_symb_vect_ptr
+                - (char *) VLO_BOUND (core_symb_table_vlo));
+        diff += sizeof (struct core_symb_vect **);
+        if (diff == sizeof (struct core_symb_vect **))
+            diff *= 10;
 
-            VLO_EXPAND (core_symb_table_vlo, diff);
-            core_symb_table
-                = (struct core_symb_vect ***) VLO_BEGIN (core_symb_table_vlo);
-            core_symb_vect_ptr = core_symb_table + set_core->num;
-            bound = (struct core_symb_vect ***) VLO_BOUND (core_symb_table_vlo);
+        VLO_EXPAND (core_symb_table_vlo, diff);
+        core_symb_table
+            = (struct core_symb_vect ***) VLO_BEGIN (core_symb_table_vlo);
+        core_symb_vect_ptr = core_symb_table + set_core->num;
+        bound = (struct core_symb_vect ***) VLO_BOUND (core_symb_table_vlo);
 
-            ptr = bound - diff / sizeof (struct core_symb_vect **);
-            while (ptr < bound)
-            {
-                OS_TOP_EXPAND (core_symb_tab_rows,
-                               (symbs_ptr->n_terms + symbs_ptr->n_nonterms)
-                               * sizeof (struct core_symb_vect *));
-                *ptr = (struct core_symb_vect **) OS_TOP_BEGIN (core_symb_tab_rows);
-                OS_TOP_FINISH (core_symb_tab_rows);
-                for (i = 0; i < symbs_ptr->n_terms + symbs_ptr->n_nonterms; i++)
-                    (*ptr)[i] = NULL;
-                ptr++;
-            }
+        ptr = bound - diff / sizeof (struct core_symb_vect **);
+        while (ptr < bound)
+        {
+            OS_TOP_EXPAND (core_symb_tab_rows,
+                           (symbs_ptr->n_terms + symbs_ptr->n_nonterms)
+                           * sizeof (struct core_symb_vect *));
+            *ptr = (struct core_symb_vect **) OS_TOP_BEGIN (core_symb_tab_rows);
+            OS_TOP_FINISH (core_symb_tab_rows);
+            for (i = 0; i < symbs_ptr->n_terms + symbs_ptr->n_nonterms; i++)
+                (*ptr)[i] = NULL;
+            ptr++;
         }
+    }
     return &(*core_symb_vect_ptr)[symb->num];
 }
 #endif
@@ -4990,20 +4990,20 @@ core_symb_vect_new_all_stop (void)
     for (triple_ptr = (struct core_symb_vect **) VLO_BEGIN (new_core_symb_vect_vlo);
          (char *) triple_ptr < (char *) VLO_BOUND (new_core_symb_vect_vlo);
          triple_ptr++)
-        {
-            process_core_symb_vect_el (*triple_ptr, &(*triple_ptr)->transitions,
-                                       &transition_els_tab, &n_transition_vects,
-                                       &n_transition_vect_len);
+    {
+        process_core_symb_vect_el (*triple_ptr, &(*triple_ptr)->transitions,
+                                   &transition_els_tab, &n_transition_vects,
+                                   &n_transition_vect_len);
 #ifdef TRANSITIVE_TRANSITION
-            process_core_symb_vect_el
-                (*triple_ptr, &(*triple_ptr)->transitive_transitions,
-                 &transitive_transition_els_tab, &n_transitive_transition_vects,
-                 &n_transitive_transition_vect_len);
+        process_core_symb_vect_el
+            (*triple_ptr, &(*triple_ptr)->transitive_transitions,
+             &transitive_transition_els_tab, &n_transitive_transition_vects,
+             &n_transitive_transition_vect_len);
 #endif
-            process_core_symb_vect_el (*triple_ptr, &(*triple_ptr)->reduces,
-                                       &reduce_els_tab, &n_reduce_vects,
-                                       &n_reduce_vect_len);
-        }
+        process_core_symb_vect_el (*triple_ptr, &(*triple_ptr)->reduces,
+                                   &reduce_els_tab, &n_reduce_vects,
+                                   &n_reduce_vect_len);
+    }
     vlo_array_nullify ();
     VLO_NULLIFY (new_core_symb_vect_vlo);
 }
@@ -8269,268 +8269,5 @@ yaep_free_tree (struct yaep_tree_node *root, void (*parse_free) (void *),
     free_tree_reduce (root);
     free_tree_sweep (root, parse_free, termcb);
 }
-
-/* This page contains a test code for Earley's algorithm.  To use it,
-   define macro YAEP_TEST during compilation. */
-
-#ifdef YAEP_TEST
-
-/* All parse_alloc memory is contained here. */
-static os_t mem_os;
-
-static void *
-test_parse_alloc (int size)
-{
-    void *result;
-
-    OS_TOP_EXPAND (mem_os, size);
-    result = OS_TOP_BEGIN (mem_os);
-    OS_TOP_FINISH (mem_os);
-    return result;
-}
-
-/* The following variable is the current number of next input grammar
-   terminal. */
-static int nterm;
-
-/* The following function imported by Earley's algorithm (see comments
-   in the interface file). */
-const char *
-read_terminal (int *code)
-{
-    nterm++;
-    switch (nterm)
-    {
-    case 1:
-        *code = 'a';
-        return "a";
-    case 2:
-        *code = '+';
-        return "+";
-    case 3:
-        *code = '*';
-        return "*";
-    case 4:
-        *code = '(';
-        return "(";
-    case 5:
-        *code = ')';
-        return ")";
-    default:
-        return NULL;
-    }
-}
-
-/* The following variable is the current number of next rule grammar
-   terminal. */
-static int nrule;
-
-/* The following function imported by Earley's algorithm (see comments
-   in the interface file). */
-const char *
-read_rule (const char ***rhs, const char **anode, int *anode_cost,
-	   int **transl)
-{
-    static const char *rhs_1[] = { "T", NULL };
-    static int tr_1[] = { 0, -1 };
-    static const char *rhs_2[] = { "E", "+", "T", NULL };
-    static int tr_2[] = { 0, 2, -1 };
-    static const char *rhs_3[] = { "F", NULL };
-    static int tr_3[] = { 0, -1 };
-    static const char *rhs_4[] = { "T", "*", "F", NULL };
-    static int tr_4[] = { 0, 2, -1 };
-    static const char *rhs_5[] = { "a", NULL };
-    static int tr_5[] = { 0, -1 };
-    static const char *rhs_6[] = { "(", "E", ")", NULL };
-    static int tr_6[] = { 1, -1 };
-
-    nrule++;
-    switch (nrule)
-    {
-    case 1:
-        *rhs = rhs_1;
-        *anode = NULL;
-        *anode_cost = 0;
-        *transl = tr_1;
-        return "E";
-    case 2:
-        *rhs = rhs_2;
-        *anode = "plus";
-        *transl = tr_2;
-        return "E";
-    case 3:
-        *rhs = rhs_3;
-        *anode = NULL;
-        *anode_cost = 0;
-        *transl = tr_3;
-        return "T";
-    case 4:
-        *rhs = rhs_4;
-        *anode = "mult";
-        *transl = tr_4;
-        return "T";
-    case 5:
-        *rhs = rhs_5;
-        *anode = NULL;
-        *anode_cost = 0;
-        *transl = tr_5;
-        return "F";
-    case 6:
-        *rhs = rhs_6;
-        *anode = NULL;
-        *anode_cost = 0;
-        *transl = tr_6;
-        return "F";
-    default:
-        return NULL;
-    }
-}
-
-/* The following variable is the current number of next input
-   token. */
-static int ntok;
-
-/* The following function imported by Earley's algorithm (see comments
-   in the interface file). */
-static int
-test_read_token (void **attr)
-{
-    const char input[] = "a+a*(a*a+a)";
-
-    ntok++;
-    *attr = NULL;
-    if (ntok < sizeof (input))
-        return input[ntok - 1];
-    else
-        return -1;
-}
-
-/* Printing syntax error. */
-static void
-test_syntax_error (int err_tok_num, void *err_tok_attr,
-		   int start_ignored_tok_num, void *start_ignored_tok_attr,
-		   int start_recovered_tok_num,
-		   void *start_recovered_tok_attr)
-{
-    if (start_ignored_tok_num < 0)
-        fprintf (stderr, "Syntax error on token %d\n", err_tok_num);
-    else
-        fprintf
-            (stderr,
-             "Syntax error on token %d:ignore %d tokens starting with token = %d\n",
-             err_tok_num, start_recovered_tok_num - start_ignored_tok_num,
-             start_ignored_tok_num);
-}
-
-/* The following two functions calls earley parser with two different
-   ways of forming grammars. */
-static void
-use_functions (int argc, char **argv)
-{
-    struct grammar *g;
-    struct yaep_tree_node *root;
-    int ambiguous_p;
-
-    nterm = nrule = 0;
-    fprintf (stderr, "Use functions\n");
-    if ((g = yaep_create_grammar ()) == NULL)
-    {
-        fprintf (stderr, "No memory\n");
-        exit (1);
-    }
-    OS_CREATE (mem_os, grammar->alloc, 0);
-    yaep_set_one_parse_flag (g, FALSE);
-    if (argc > 1)
-        yaep_set_lookahead_level (g, atoi (argv[1]));
-    if (argc > 2)
-        yaep_set_debug_level (g, atoi (argv[2]));
-    else
-        yaep_set_debug_level (g, 3);
-    if (argc > 3)
-        yaep_set_error_recovery_flag (g, atoi (argv[3]));
-    if (argc > 4)
-        yaep_set_one_parse_flag (g, atoi (argv[4]));
-    if (yaep_read_grammar (g, TRUE, read_terminal, read_rule) != 0)
-    {
-        fprintf (stderr, "%s\n", yaep_error_message (g));
-        OS_DELETE (mem_os);
-        exit (1);
-    }
-    ntok = 0;
-    if (yaep_parse (g, test_read_token, test_syntax_error, test_parse_alloc,
-                    NULL, &root, &ambiguous_p))
-        fprintf (stderr, "yaep_parse: %s\n", yaep_error_message (g));
-    OS_DELETE (mem_os);
-    yaep_free_grammar (g);
-}
-
-static const char *description =
-    "\n"
-    "TERM;\n"
-    "E : T         # 0\n"
-    "  | E '+' T   # plus (0 2)\n"
-    "  ;\n"
-    "T : F         # 0\n"
-    "  | T '*' F   # mult (0 2)\n"
-    "  ;\n"
-    "F : 'a'       # 0\n"
-    "  | '(' E ')' # 1\n"
-    "  ;\n";
-
-static void
-use_description (int argc, char **argv)
-{
-    struct grammar *g;
-    struct yaep_tree_node *root;
-    int ambiguous_p;
-
-    fprintf (stderr, "Use description\n");
-    if ((g = yaep_create_grammar ()) == NULL)
-    {
-        fprintf (stderr, "yaep_create_grammar: No memory\n");
-        exit (1);
-    }
-    OS_CREATE (mem_os, grammar->alloc, 0);
-    yaep_set_one_parse_flag (g, FALSE);
-    if (argc > 1)
-        yaep_set_lookahead_level (g, atoi (argv[1]));
-    if (argc > 2)
-        yaep_set_debug_level (g, atoi (argv[2]));
-    else
-        yaep_set_debug_level (g, 3);
-    if (argc > 3)
-        yaep_set_error_recovery_flag (g, atoi (argv[3]));
-    if (argc > 4)
-        yaep_set_one_parse_flag (g, atoi (argv[4]));
-    if (yaep_parse_grammar (g, TRUE, description) != 0)
-    {
-        fprintf (stderr, "%s\n", yaep_error_message (g));
-        OS_DELETE (mem_os);
-        exit (1);
-    }
-    if (yaep_parse (g, test_read_token, test_syntax_error, test_parse_alloc,
-                    NULL, &root, &ambiguous_p))
-        fprintf (stderr, "yaep_parse: %s\n", yaep_error_message (g));
-    OS_DELETE (mem_os);
-    yaep_free_grammar (g);
-}
-
-int
-main (int argc, char **argv)
-{
-    /* Don't expect the same statistics output because the order of
-       situations in sets may be different in different calls because of
-       memory allocations/freeing (we use situation address to order
-       situations in sets) . */
-    if (argc <= 1)
-        use_description (argc, argv);
-    else if (atoi (argv[1]))
-        use_description (argc - 1, argv + 1);
-    else
-        use_functions (argc - 1, argv + 1);
-    exit (0);
-}
-
-#endif /* #ifdef YAEP_TEST */
 /****************** YAEP parser single source file end **********************/
 #endif // YAEP_MODULE
