@@ -2383,23 +2383,6 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 //include "objstack.h"
 //include "yaep.h"
 
-
-
-#ifndef NO_INLINE
-#ifdef __GNUC__
-#define MAKE_INLINE 1
-#ifndef INLINE
-#define INLINE
-#endif
-#else /* #ifdef __GNUC__ */
-#if MAKE_INLINE
-#ifndef INLINE
-#define INLINE
-#endif
-#endif /* #if MAKE_INLINE */
-#endif /* #ifdef __GNUC__ */
-#endif /* #ifndef NO_INLINE */
-
 #ifndef FALSE
 #define FALSE 0
 #endif
@@ -2739,9 +2722,6 @@ symb_find_by_repr (const char *repr)
 
 /* Return symbol (or NULL if it does not exist) which is terminal with
    CODE. */
-#if MAKE_INLINE
-INLINE
-#endif
 static struct symb *
 symb_find_by_code (int code)
 {
@@ -3071,9 +3051,6 @@ term_set_create (void)
 }
 
 /* Make terminal SET empty. */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 term_set_clear (term_set_el_t * set)
 {
@@ -3088,9 +3065,6 @@ term_set_clear (term_set_el_t * set)
 }
 
 /* Copy SRC into DEST. */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 term_set_copy (term_set_el_t * dest, term_set_el_t * src)
 {
@@ -3106,9 +3080,6 @@ term_set_copy (term_set_el_t * dest, term_set_el_t * src)
 
 /* Add all terminals from set OP with to SET.  Return TRUE if SET has
    been changed. */
-#if MAKE_INLINE
-INLINE
-#endif
 static int
 term_set_or (term_set_el_t * set, term_set_el_t * op)
 {
@@ -3130,9 +3101,6 @@ term_set_or (term_set_el_t * set, term_set_el_t * op)
 
 /* Add terminal with number NUM to SET.  Return TRUE if SET has been
    changed. */
-#if MAKE_INLINE
-INLINE
-#endif
 static int
 term_set_up (term_set_el_t * set, int num)
 {
@@ -3148,9 +3116,6 @@ term_set_up (term_set_el_t * set, int num)
 }
 
 /* Return TRUE if terminal with number NUM is in SET. */
-#if MAKE_INLINE
-INLINE
-#endif
 static int
 term_set_test (term_set_el_t * set, int num)
 {
@@ -3197,9 +3162,6 @@ term_set_insert (term_set_el_t * set)
 
 /* The following function returns set which is in the table with
    number NUM. */
-#if MAKE_INLINE
-INLINE
-#endif
 static term_set_el_t *
 term_set_from_table (int num)
 {
@@ -3651,9 +3613,6 @@ sit_set_lookahead (struct sit *sit)
 /* The following function returns situations with given
    characteristics.  Remember that situations are stored in one
    exemplar. */
-#if MAKE_INLINE
-INLINE
-#endif
 static struct sit *
 sit_create (struct rule *rule, int pos, int context)
 {
@@ -4113,9 +4072,6 @@ set_init (int n_toks)
 }
 
 /* The following function starts forming of new set. */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 set_new_start (void)
 {
@@ -4129,9 +4085,6 @@ set_new_start (void)
 
 /* Add start SIT with distance DIST at the end of the situation array
    of the set being formed. */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 set_new_add_start_sit (struct sit *sit, int dist)
 {
@@ -4149,9 +4102,6 @@ set_new_add_start_sit (struct sit *sit, int dist)
    situation array of the set being formed.  If this is situation and
    there is already the same pair (situation, the corresponding
    distance), we do not add it. */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 set_add_new_nonstart_sit (struct sit *sit, int parent)
 {
@@ -4178,9 +4128,6 @@ set_add_new_nonstart_sit (struct sit *sit, int parent)
    situation array of the set being formed.  If this is non-start
    situation and there is already the same pair (situation, zero
    distance), we do not add it. */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 set_new_add_initial_sit (struct sit *sit)
 {
@@ -4229,9 +4176,6 @@ setup_set_core_hash (hash_table_entry_t s)
    remove duplicates and insert set into the set table.  If the
    function returns TRUE then set contains new set core (there was no
    such core in the table). */
-#if MAKE_INLINE
-INLINE
-#endif
 static int
 set_insert (void)
 {
@@ -4311,9 +4255,6 @@ set_insert (void)
 }
 
 /* The following function finishes work with set being formed. */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 set_new_core_stop (void)
 {
@@ -4455,9 +4396,6 @@ static vlo_t vlo_array;
 static int vlo_array_len;
 
 /* Initialize work with array of vlos. */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 vlo_array_init (void)
 {
@@ -4467,9 +4405,6 @@ vlo_array_init (void)
 
 /* The function forms new empty vlo at the end of the array of
    vlos. */
-#if MAKE_INLINE
-INLINE
-#endif
 static int
 vlo_array_expand (void)
 {
@@ -4490,9 +4425,6 @@ vlo_array_expand (void)
 }
 
 /* The function purges the array of vlos. */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 vlo_array_nullify (void)
 {
@@ -4500,9 +4432,6 @@ vlo_array_nullify (void)
 }
 
 /* The following function returns pointer to vlo with INDEX. */
-#if MAKE_INLINE
-INLINE
-#endif
 static vlo_t *
 vlo_array_el (int index)
 {
@@ -4511,9 +4440,6 @@ vlo_array_el (int index)
 }
 
 /* Finalize work with array of vlos. */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 vlo_array_fin (void)
 {
@@ -4771,9 +4697,6 @@ core_symb_vect_init (void)
 /* The following function returns entry in the table where pointer to
    corresponding triple with the same keys as TRIPLE ones is
    placed. */
-#if MAKE_INLINE
-INLINE
-#endif
 static struct core_symb_vect **
 core_symb_vect_addr_get (struct core_symb_vect *triple, int reserv_p)
 {
@@ -4793,9 +4716,6 @@ core_symb_vect_addr_get (struct core_symb_vect *triple, int reserv_p)
 
 /* The following function returns entry in the table where pointer to
    corresponding triple with SET_CORE and SYMB is placed. */
-#if MAKE_INLINE
-INLINE
-#endif
 static struct core_symb_vect **
 core_symb_vect_addr_get (struct set_core *set_core, struct symb *symb)
 {
@@ -4839,9 +4759,6 @@ core_symb_vect_addr_get (struct set_core *set_core, struct symb *symb)
 
 /* The following function returns the triple (if any) for given
    SET_CORE and SYMB. */
-#if MAKE_INLINE
-INLINE
-#endif
 static struct core_symb_vect *
 core_symb_vect_find (struct set_core *set_core, struct symb *symb)
 {
@@ -5671,9 +5588,6 @@ read_toks (void)
    which can derivate empty string and which is placed after dot in
    given situation.  The function returns TRUE if the dot is placed on
    the last position in given situation or in the added situations. */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 add_derived_nonstart_sits (struct sit *sit, int parent)
 {
@@ -5782,9 +5696,6 @@ form_transitive_transition_vectors (void)
    further fast search of start situations from given core by
    transition on given symbol (see comment for abstract data
    `core_symb_vect'). */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 expand_new_start_set (void)
 {
@@ -6111,9 +6022,6 @@ static int original_last_pl_el;
 /* The following function may be called if you know that pl has
    original sets upto LAST element (including it).  Such call can
    decrease number of restored sets. */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 set_original_set_bound (int last)
 {
@@ -6195,9 +6103,6 @@ restore_original_sets (int last_pl_el)
    Remember that zero pl set contains `.error' because we added such
    rule if it is necessary.  The function returns number of terminals
    (not taking error into account) on path (result, start_pl_set]. */
-#if MAKE_INLINE
-INLINE
-#endif
 static int
 find_error_pl_set (int start_pl_set, int *cost)
 {
@@ -6264,9 +6169,6 @@ static vlo_t recovery_state_stack;
 
 /* The following function creates new error recovery state and pushes
    it on the states stack top. */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 push_recovery_state (int last_original_pl_el, int backward_move_cost)
 {
@@ -6322,9 +6224,6 @@ set_recovery_state (struct recovery_state *state)
 /* The following function pops the top error recovery state from
    states stack.  The current parser state will be setup according to
    the state. */
-#if MAKE_INLINE
-INLINE
-#endif
 static struct recovery_state
 pop_recovery_state (void)
 {
@@ -6630,9 +6529,6 @@ error_recovery_fin (void)
 
 
 
-#if MAKE_INLINE
-INLINE
-#endif
 /* Return TRUE if goto set SET from parsing list PLACE can be used as
    the next set.  The criterium is that all origin sets of start
    situations are the same as from PLACE.  */
@@ -6864,9 +6760,6 @@ parse_state_init (void)
 }
 
 /* The following function returns new parser state. */
-#if MAKE_INLINE
-INLINE
-#endif
 static struct parse_state *
 parse_state_alloc (void)
 {
@@ -6887,9 +6780,6 @@ parse_state_alloc (void)
 }
 
 /* The following function frees STATE. */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 parse_state_free (struct parse_state *state)
 {
@@ -6902,9 +6792,6 @@ parse_state_free (struct parse_state *state)
    to the state in the table.  Otherwise the function makes copy of
    *STATE, inserts into the table and returns pointer to copied state.
    In the last case, the function also sets up *NEW_P. */
-#if MAKE_INLINE
-INLINE
-#endif
 static struct parse_state *
 parse_state_insert (struct parse_state *state, int *new_p)
 {
@@ -7003,9 +6890,6 @@ visit_node (struct yaep_tree_node *node)
 
 /* The following function returns the positive order number of node
    with number NUM. */
-#if MAKE_INLINE
-INLINE
-#endif
 static int
 canon_node_num (int num)
 {
@@ -7160,9 +7044,6 @@ static int n_parse_term_nodes, n_parse_abstract_nodes, n_parse_alt_nodes;
 
 /* The following function places translation NODE into *PLACE and
    creates alternative nodes if it is necessary. */
-#if MAKE_INLINE
-INLINE
-#endif
 static void
 place_translation (struct yaep_tree_node **place, struct yaep_tree_node *node)
 {
