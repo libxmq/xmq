@@ -1926,13 +1926,13 @@ set_print (FILE * f, struct set *set, int set_dist, int nonstart_p,
                  (i < n_start_sits
                   ? dists[i] : i < n_all_dists ? parent_indexes[i]
                   : 0));
-if (i == n_start_sits - 1)
-{
-    if (!nonstart_p)
-        break;
-    fprintf (f, "    -----------\n");
-}
-}
+        if (i == n_start_sits - 1)
+        {
+            if (!nonstart_p)
+                break;
+            fprintf (f, "    -----------\n");
+        }
+    }
 }
 
 #endif /* #ifndef NO_YAEP_DEBUG_PRINT */
@@ -3300,7 +3300,7 @@ build_new_set (struct set *set, struct core_symb_vect *core_symb_vect,
             continue;
         dist = 0;
         if (sit_ind >= set_core->n_all_dists)
-	;
+            ;
         else if (sit_ind < set_core->n_start_sits)
             dist = set->dists[sit_ind];
         else
@@ -3347,7 +3347,7 @@ build_new_set (struct set *set, struct core_symb_vect *core_symb_vect,
                     continue;
                 dist = 0;
                 if (sit_ind >= prev_set_core->n_all_dists)
-		;
+                    ;
                 else if (sit_ind < prev_set_core->n_start_sits)
                     dist = prev_set->dists[sit_ind];
                 else
