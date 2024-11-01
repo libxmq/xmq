@@ -2398,11 +2398,6 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 #define YAEP_MAX_ERROR_MESSAGE_LENGTH 200
 #endif
 
-/* Define if you don't want to use hash table: symb code -> code.  It
-   is faster not to use hash tables but it requires more memory if
-   symb codes are sparse.  */
-#define SYMB_CODE_TRANS_VECT
-
 /* Define this if you want to reuse already calculated Earley's sets
    and fast their reproduction.  It considerably speed up the parser.  */
 #define USE_SET_HASH_TABLE
@@ -2615,14 +2610,14 @@ struct symbs
        its representation. */
     hash_table_t repr_to_symb_tab;	/* key is `repr' */
     hash_table_t code_to_symb_tab;	/* key is `code' */
-#ifdef SYMB_CODE_TRANS_VECT
+
     /* If terminal symbol codes are not spared (in this case the member
        value is not NULL, we use translation vector instead of hash
        table.  */
     struct symb **symb_code_trans_vect;
     int symb_code_trans_vect_start;
     int symb_code_trans_vect_end;
-#endif
+
 };
 
 /* Hash of symbol representation. */
@@ -2684,9 +2679,9 @@ symb_init (void)
         create_hash_table (grammar->alloc, 300, symb_repr_hash, symb_repr_eq);
     result->code_to_symb_tab =
         create_hash_table (grammar->alloc, 200, symb_code_hash, symb_code_eq);
-#ifdef SYMB_CODE_TRANS_VECT
+
     result->symb_code_trans_vect = NULL;
-#endif
+
     result->n_nonterms = result->n_terms = 0;
     return result;
 }
@@ -2710,7 +2705,6 @@ symb_find_by_code (int code)
 {
     struct symb symb;
 
-#ifdef SYMB_CODE_TRANS_VECT
     if (symbs_ptr->symb_code_trans_vect != NULL)
     {
         if ((code < symbs_ptr->symb_code_trans_vect_start)
@@ -2724,7 +2718,7 @@ symb_find_by_code (int code)
                 [code - symbs_ptr->symb_code_trans_vect_start];
         }
     }
-#endif
+
     symb.term_p = TRUE;
     symb.u.term.code = code;
     return (struct symb *) *find_hash_table_entry (symbs_ptr->code_to_symb_tab,
@@ -2853,10 +2847,8 @@ symb_print (FILE * f, struct symb *symb, int code_p)
 
 #endif /* #ifndef NO_YAEP_DEBUG_PRINT */
 
-#ifdef SYMB_CODE_TRANS_VECT
-
 /* As of Unicode 16 there are 155063 allocated unicode code points. */
-#define SYMB_CODE_TRANS_VECT_SIZE 155063
+#define MAX_SYMB_CODE_TRANS_VECT_SIZE 155063
 
 static void
 symb_finish_adding_terms (void)
@@ -2873,18 +2865,16 @@ symb_finish_adding_terms (void)
             max_code = symb->u.term.code;
     }
     assert (i != 0);
-    if (max_code - min_code < SYMB_CODE_TRANS_VECT_SIZE)
-    {
-        symbs_ptr->symb_code_trans_vect_start = min_code;
-        symbs_ptr->symb_code_trans_vect_end = max_code + 1;
-        mem = yaep_malloc (grammar->alloc,
-                           sizeof (struct symb*) * (max_code - min_code + 1));
-        symbs_ptr->symb_code_trans_vect = (struct symb **) mem;
-        for (i = 0; (symb = term_get (i)) != NULL; i++)
-            symbs_ptr->symb_code_trans_vect[symb->u.term.code - min_code] = symb;
-    }
+    assert( (max_code - min_code) < MAX_SYMB_CODE_TRANS_VECT_SIZE);
+
+    symbs_ptr->symb_code_trans_vect_start = min_code;
+    symbs_ptr->symb_code_trans_vect_end = max_code + 1;
+    mem = yaep_malloc (grammar->alloc,
+                       sizeof (struct symb*) * (max_code - min_code + 1));
+    symbs_ptr->symb_code_trans_vect = (struct symb **) mem;
+    for (i = 0; (symb = term_get (i)) != NULL; i++)
+        symbs_ptr->symb_code_trans_vect[symb->u.term.code - min_code] = symb;
 }
-#endif
 
 /* Free memory for symbols. */
 static void
@@ -2892,13 +2882,13 @@ symb_empty (struct symbs *symbs)
 {
     if (symbs == NULL)
         return;
-#ifdef SYMB_CODE_TRANS_VECT
+
     if (symbs_ptr->symb_code_trans_vect != NULL)
     {
         yaep_free (grammar->alloc, symbs_ptr->symb_code_trans_vect);
         symbs_ptr->symb_code_trans_vect = NULL;
     }
-#endif
+
     empty_hash_table (symbs->repr_to_symb_tab);
     empty_hash_table (symbs->code_to_symb_tab);
     VLO_NULLIFY (symbs->nonterms_vlo);
@@ -2914,10 +2904,10 @@ symb_fin (struct symbs *symbs)
 {
     if (symbs == NULL)
         return;
-#ifdef SYMB_CODE_TRANS_VECT
+
     if (symbs_ptr->symb_code_trans_vect != NULL)
         yaep_free (grammar->alloc, symbs_ptr->symb_code_trans_vect);
-#endif
+
     delete_hash_table (symbs_ptr->repr_to_symb_tab);
     delete_hash_table (symbs_ptr->code_to_symb_tab);
     VLO_DELETE (symbs_ptr->nonterms_vlo);
@@ -3349,8 +3339,7 @@ rule_new_stop (void)
 
 #ifndef NO_YAEP_DEBUG_PRINT
 
-/* The following function prints RULE with its translation (if
-   TRANS_P) to file F. */
+/* The following function prints RULE with its translation (if TRANS_P) to file F. */
 static void
 rule_print (FILE * f, struct rule *rule, int trans_p)
 {
@@ -5293,9 +5282,9 @@ yaep_read_grammar (struct grammar *g, int strict_p,
         rule->trans_len = 0;
     }
     check_grammar (strict_p);
-#ifdef SYMB_CODE_TRANS_VECT
+
     symb_finish_adding_terms ();
-#endif
+
 #ifndef NO_YAEP_DEBUG_PRINT
     if (grammar->debug_level > 2)
     {
