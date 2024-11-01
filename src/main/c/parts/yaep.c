@@ -2391,10 +2391,6 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 #define TRUE 1
 #endif
 
-#ifndef UNDEF
-#define UNDEF 1
-#endif
-
 #ifndef CHAR_BIT
 #define CHAR_BIT 8
 #endif

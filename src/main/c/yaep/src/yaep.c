@@ -61,10 +61,6 @@
 #define TRUE 1
 #endif
 
-#ifndef UNDEF
-#define UNDEF 1
-#endif
-
 #ifndef CHAR_BIT
 #define CHAR_BIT 8
 #endif
