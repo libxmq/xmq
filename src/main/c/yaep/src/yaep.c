@@ -5065,7 +5065,7 @@ print_yaep_node (FILE * f, struct yaep_tree_node *node)
     case YAEP_TERM:
       if (grammar->debug_level > 0)
 	fprintf (f, "TERMINAL: code=%d, repr=%s, mark=%d %c\n", node->val.term.code,
-		 symb_find_by_code (node->val.term.code)->repr, node->val.term.mark, node->val.term.mark?node->val.term.mark:' ');
+		 symb_find_by_code (node->val.term.code)->repr, node->val.term.mark, node->val.term.mark>32?node->val.term.mark:' ');
       break;
     case YAEP_ANODE:
       if (grammar->debug_level > 0)
