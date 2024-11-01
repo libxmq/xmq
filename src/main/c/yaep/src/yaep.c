@@ -3029,9 +3029,6 @@ check_grammar (int strict_p)
 /* The following function reads terminals/rules.  The function returns
    pointer to the grammar (or NULL if there were errors in
    grammar). */
-#ifdef __cplusplus
-static
-#endif
 int
 yaep_read_grammar (struct grammar *g, int strict_p,
 		   const char *(*read_terminal) (int *code),
@@ -3228,9 +3225,6 @@ yaep_read_grammar (struct grammar *g, int strict_p,
 /* The following functions set up parameter which affect parser work
    and return the previous parameter value. */
 
-#ifdef __cplusplus
-static
-#endif
 int
 yaep_set_lookahead_level (struct grammar *grammar, int level)
 {
@@ -3242,9 +3236,6 @@ yaep_set_lookahead_level (struct grammar *grammar, int level)
     return old;
 }
 
-#ifdef __cplusplus
-static
-#endif
 int
 yaep_set_debug_level (struct grammar *grammar, int level)
 {
@@ -3256,9 +3247,6 @@ yaep_set_debug_level (struct grammar *grammar, int level)
     return old;
 }
 
-#ifdef __cplusplus
-static
-#endif
 int
 yaep_set_one_parse_flag (struct grammar *grammar, int flag)
 {
@@ -3270,9 +3258,6 @@ yaep_set_one_parse_flag (struct grammar *grammar, int flag)
     return old;
 }
 
-#ifdef __cplusplus
-static
-#endif
 int
 yaep_set_cost_flag (struct grammar *grammar, int flag)
 {
@@ -3284,9 +3269,6 @@ yaep_set_cost_flag (struct grammar *grammar, int flag)
     return old;
 }
 
-#ifdef __cplusplus
-static
-#endif
 int
 yaep_set_error_recovery_flag (struct grammar *grammar, int flag)
 {
@@ -3298,9 +3280,6 @@ yaep_set_error_recovery_flag (struct grammar *grammar, int flag)
     return old;
 }
 
-#ifdef __cplusplus
-static
-#endif
 int
 yaep_set_recovery_match (struct grammar *grammar, int n_toks)
 {
@@ -3778,11 +3757,7 @@ struct recovery_state
 };
 
 /* All tail sets of error recovery are saved in the following os. */
-#ifndef __cplusplus
 static os_t recovery_state_tail_sets;
-#else
-static os_t *recovery_state_tail_sets;
-#endif
 
 /* The following variable values is pl_curr and tok_curr at error
    recovery start (when the original syntax error has been fixed). */
@@ -3797,11 +3772,7 @@ static int back_pl_frontier;
    This object only grows.  The last object sets may be used to
    restore original pl in order to try another error recovery state
    (alternative). */
-#ifndef __cplusplus
 static vlo_t original_pl_tail_stack;
-#else
-static vlo_t *original_pl_tail_stack;
-#endif
 
 /* The following variable value is last pl element which is original
    set (set before the error_recovery start). */
@@ -3959,11 +3930,7 @@ new_recovery_state (int last_original_pl_el, int backward_move_cost)
 /* The following vlo is error recovery states stack.  The stack
    contains error recovery state which should be investigated to find
    the best error recovery. */
-#ifndef __cplusplus
 static vlo_t recovery_state_stack;
-#else
-static vlo_t *recovery_state_stack;
-#endif
 
 /* The following function creates new error recovery state and pushes
    it on the states stack top. */
@@ -4516,11 +4483,7 @@ struct parse_state
 };
 
 /* The following os contains all allocated parser states. */
-#ifndef __cplusplus
 static os_t parse_state_os;
-#else
-static os_t *parse_state_os;
-#endif
 
 /* The following variable refers to head of chain of already allocated
    and then freed parser states. */
@@ -4565,15 +4528,9 @@ parse_state_init (void)
     free_parse_state = NULL;
     OS_CREATE (parse_state_os, grammar->alloc, 0);
     if (!grammar->one_parse_p)
-#ifndef __cplusplus
         parse_state_tab =
             create_hash_table (grammar->alloc, toks_len * 2, parse_state_hash,
                                parse_state_eq);
-#else
-    parse_state_tab =
-        new hash_table (grammar->alloc, toks_len * 2, parse_state_hash,
-                        parse_state_eq);
-#endif
 }
 
 /* The following function returns new parser state. */
@@ -4623,11 +4580,8 @@ parse_state_insert (struct parse_state *state, int *new_p)
 {
     hash_table_entry_t *entry;
 
-#ifndef __cplusplus
     entry = find_hash_table_entry (parse_state_tab, state, TRUE);
-#else
-    entry = parse_state_tab->find_entry (state, TRUE);
-#endif
+
     *new_p = FALSE;
     if (*entry != NULL)
         return (struct parse_state *) *entry;
@@ -4644,11 +4598,7 @@ static void
 parse_state_fin (void)
 {
     if (!grammar->one_parse_p)
-#ifndef __cplusplus
         delete_hash_table (parse_state_tab);
-#else
-    delete parse_state_tab;
-#endif
     OS_DELETE (parse_state_os);
 }
 
@@ -4674,11 +4624,7 @@ static hash_table_t trans_visit_nodes_tab;
 
 /* All translation visit nodes are placed in the following stack.  All
    the nodes are in the table. */
-#ifndef __cplusplus
 static os_t trans_visit_nodes_os;
-#else
-static os_t *trans_visit_nodes_os;
-#endif
 
 /* The following value is number of translation visit nodes. */
 static int n_trans_visit_nodes;
@@ -4709,12 +4655,9 @@ visit_node (struct yaep_tree_node *node)
     hash_table_entry_t *entry;
 
     trans_visit_node.node = node;
-#ifndef __cplusplus
     entry = find_hash_table_entry (trans_visit_nodes_tab,
                                    &trans_visit_node, TRUE);
-#else
-    entry = trans_visit_nodes_tab->find_entry (&trans_visit_node, TRUE);
-#endif
+
     if (*entry == NULL)
     {
         /* If it is the new node, we did not visit it yet. */
@@ -4868,24 +4811,15 @@ print_yaep_node (FILE * f, struct yaep_tree_node *node)
 static void
 print_parse (FILE * f, struct yaep_tree_node *root)
 {
-#ifndef __cplusplus
     trans_visit_nodes_tab =
         create_hash_table (grammar->alloc, toks_len * 2, trans_visit_node_hash,
                            trans_visit_node_eq);
-#else
-    trans_visit_nodes_tab =
-        new hash_table (grammar->alloc, toks_len * 2, trans_visit_node_hash,
-                        trans_visit_node_eq);
-#endif
+
     n_trans_visit_nodes = 0;
     OS_CREATE (trans_visit_nodes_os, grammar->alloc, 0);
     print_yaep_node (f, root);
     OS_DELETE (trans_visit_nodes_os);
-#ifndef __cplusplus
     delete_hash_table (trans_visit_nodes_tab);
-#else
-    delete trans_visit_nodes_tab;
-#endif
 }
 
 #endif
@@ -4977,11 +4911,7 @@ reserv_mem_eq (hash_table_entry_t m1, hash_table_entry_t m2)
 
 /* The following vlo will contain references to memory which should be
    freed.  The same reference can be represented more on time. */
-#ifndef __cplusplus
 static vlo_t tnodes_vlo;
-#else
-static vlo_t *tnodes_vlo;
-#endif
 
 /* The following function sets up minimal cost for each abstract node.
    The function returns minimal translation corresponding to NODE.
@@ -5098,15 +5028,10 @@ find_minimal_translation (struct yaep_tree_node *root)
 
     if (parse_free != NULL)
     {
-#ifndef __cplusplus
         reserv_mem_tab =
             create_hash_table (grammar->alloc, toks_len * 4, reserv_mem_hash,
                                reserv_mem_eq);
-#else
-        reserv_mem_tab =
-            new hash_table (grammar->alloc, toks_len * 4, reserv_mem_hash,
-                            reserv_mem_eq);
-#endif
+
         VLO_CREATE (tnodes_vlo, grammar->alloc, toks_len * 4 * sizeof (void *));
     }
     root = prune_to_minimal (root, &cost);
@@ -5128,11 +5053,7 @@ find_minimal_translation (struct yaep_tree_node *root)
                 (*parse_free) (*node_ptr);
             }
         VLO_DELETE (tnodes_vlo);
-#ifndef __cplusplus
         delete_hash_table (reserv_mem_tab);
-#else
-        delete reserv_mem_tab;
-#endif
     }
     return root;
 }
@@ -5160,11 +5081,7 @@ make_parse (int *ambiguous_p)
     int parent_disp;
     int saved_one_parse_p;
     struct yaep_tree_node **term_node_array = NULL;
-#ifndef __cplusplus
     vlo_t stack, orig_states;
-#else
-    vlo_t *stack, *orig_states;
-#endif
 
     n_parse_term_nodes = n_parse_abstract_nodes = n_parse_alt_nodes = 0;
     set = pl[pl_curr];
@@ -5714,9 +5631,6 @@ parse_free_default (void *mem)
    will be also in error_code).  The function sets up
    *AMBIGUOUS_P if we found that the grammer is ambigous (it works even
    we asked only one parse tree without alternatives). */
-#ifdef __cplusplus
-static
-#endif
 int
 yaep_parse (struct grammar *g,
 	    int (*read) (void **attr),
@@ -5776,22 +5690,14 @@ yaep_parse (struct grammar *g,
     yaep_parse_init (toks_len);
     parse_init_p = TRUE;
     pl_create ();
-#ifndef __cplusplus
     tab_collisions = get_all_collisions ();
     tab_searches = get_all_searches ();
-#else
-    tab_collisions = hash_table::get_all_collisions ();
-    tab_searches = hash_table::get_all_searches ();
-#endif
+
     build_pl ();
     *root = make_parse (ambiguous_p);
-#ifndef __cplusplus
+
     tab_collisions = get_all_collisions () - tab_collisions;
     tab_searches = get_all_searches () - tab_searches;
-#else
-    tab_collisions = hash_table::get_all_collisions () - tab_collisions;
-    tab_searches = hash_table::get_all_searches () - tab_searches;
-#endif
 
 #ifndef NO_YAEP_DEBUG_PRINT
     if (grammar->debug_level > 0)
@@ -5858,9 +5764,6 @@ yaep_parse (struct grammar *g,
 }
 
 /* The following function frees memory allocated for the grammar. */
-#ifdef __cplusplus
-static
-#endif
 void
 yaep_free_grammar (struct grammar *g)
 {
@@ -6016,9 +5919,6 @@ free_tree_sweep (struct yaep_tree_node *node, void (*parse_free) (void *),
     parse_free (node);
 }
 
-#ifdef __cplusplus
-static
-#endif
 void
 yaep_free_tree (struct yaep_tree_node *root, void (*parse_free) (void *),
 		void (*termcb) (struct yaep_term *))
@@ -6046,11 +5946,7 @@ yaep_free_tree (struct yaep_tree_node *root, void (*parse_free) (void *),
 #ifdef YAEP_TEST
 
 /* All parse_alloc memory is contained here. */
-#ifndef __cplusplus
 static os_t mem_os;
-#else
-static os_t *mem_os;
-#endif
 
 static void *
 test_parse_alloc (int size)
