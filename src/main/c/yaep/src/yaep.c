@@ -115,6 +115,9 @@ typedef struct YaepSetCore YaepSetCore;
 struct YaepSet;
 typedef struct YaepSet YaepSet;
 
+struct YaepSituation;
+typedef struct YaepSituation YaepSituation;
+
 /* The following is type of element of array representing set of terminals. */
 typedef long int term_set_el_t;
 
@@ -359,7 +362,7 @@ struct YaepSetCore
        situations are placed.  You should access to a set situation only
        through this member or variable `new_sits'(in other words don't
        save the member value in another variable). */
-    struct sit **sits;
+    YaepSituation **sits;
     /* The following member is number of start situations and nonstart
       (noninitial) situations whose distance is defined from a start
        situation distance.  All nonstart initial situations have zero
@@ -388,6 +391,30 @@ struct YaepSet
        variable `new_dists'(in other words don't save the member value
        in another variable). */
     int *dists;
+};
+
+/* The following describes abstract data situation without distance of its original
+   set.  To save memory we extract such structure because there are
+   many duplicated structures. */
+struct YaepSituation
+{
+    /* The following is the situation rule. */
+    YaepRule *rule;
+    /* The following is position of dot in rhs of the situation rule. */
+    short pos;
+    /* The following member is TRUE if the tail can derive empty
+       string. */
+    char empty_tail_p;
+    /* unique situation number.  */
+    int sit_number;
+    /* The following is number of situation context which is number of
+       the corresponding terminal set in the table.  It is really used
+       only for dynamic lookahead. */
+    int context;
+    /* The following member is the situation lookahead it is equal to
+       FIRST(the situation tail || FOLLOW(lhs)) for static lookaheads
+       and FIRST(the situation tail || context) for dynamic ones. */
+    term_set_el_t *lookahead;
 };
 
 // Global variables /////////////////////////////////////////////////////
@@ -1261,33 +1288,6 @@ tok_fin()
 }
 
 
-
-/* This page is abstract data `situations'. */
-
-/* The following describes situation without distance of its original
-   set.  To save memory we extract such structure because there are
-   many duplicated structures. */
-struct sit
-{
-    /* The following is the situation rule. */
-    YaepRule *rule;
-    /* The following is position of dot in rhs of the situation rule. */
-    short pos;
-    /* The following member is TRUE if the tail can derive empty
-       string. */
-    char empty_tail_p;
-    /* unique situation number.  */
-    int sit_number;
-    /* The following is number of situation context which is number of
-       the corresponding terminal set in the table.  It is really used
-       only for dynamic lookahead. */
-    int context;
-    /* The following member is the situation lookahead it is equal to
-       FIRST(the situation tail || FOLLOW(lhs)) for static lookaheads
-       and FIRST(the situation tail || context) for dynamic ones. */
-    term_set_el_t *lookahead;
-};
-
 /* The following contains current number of unique situations.  It can
    be read externally. */
 static int n_all_sits;
@@ -1295,7 +1295,7 @@ static int n_all_sits;
 /* The following two dimensional array(the first dimension is context
    number, the second one is situation number) contains references to
    all possible situations. */
-static struct sit ***sit_table;
+static YaepSituation ***sit_table;
 
 /* The following vlo is indexed by situation context number and gives
    array which is indexed by situation number
@@ -1312,14 +1312,14 @@ sit_init()
     n_all_sits = 0;
     OS_CREATE(sits_os, grammar->alloc, 0);
     VLO_CREATE(sit_table_vlo, grammar->alloc, 4096);
-    sit_table =(struct sit ***) VLO_BEGIN(sit_table_vlo);
+    sit_table =(YaepSituation ***) VLO_BEGIN(sit_table_vlo);
 }
 
 /* The following function sets up lookahead of situation SIT.  The
    function returns TRUE if the situation tail may derive empty
    string. */
 static int
-sit_set_lookahead(struct sit *sit)
+sit_set_lookahead(YaepSituation *sit)
 {
     YaepSymb *symb, **symb_ptr;
 
@@ -1358,36 +1358,36 @@ sit_set_lookahead(struct sit *sit)
 /* The following function returns situations with given
    characteristics.  Remember that situations are stored in one
    exemplar. */
-static struct sit *
+static YaepSituation *
 sit_create(YaepRule *rule, int pos, int context)
 {
-    struct sit *sit;
-    struct sit ***context_sit_table_ptr;
+    YaepSituation *sit;
+    YaepSituation ***context_sit_table_ptr;
 
     assert(context >= 0);
     context_sit_table_ptr = sit_table + context;
     if ((char *) context_sit_table_ptr >=(char *) VLO_BOUND(sit_table_vlo))
     {
-        struct sit ***bound, ***ptr;
+        YaepSituation ***bound, ***ptr;
         int i, diff;
 
         assert((grammar->lookahead_level <= 1 && context == 0)
                 ||(grammar->lookahead_level > 1 && context >= 0));
         diff
             =(char *) context_sit_table_ptr -(char *) VLO_BOUND(sit_table_vlo);
-        diff += sizeof(struct sit **);
-        if (grammar->lookahead_level > 1 && diff == sizeof(struct sit **))
+        diff += sizeof(YaepSituation **);
+        if (grammar->lookahead_level > 1 && diff == sizeof(YaepSituation **))
             diff *= 10;
         VLO_EXPAND(sit_table_vlo, diff);
-        sit_table =(struct sit ***) VLO_BEGIN(sit_table_vlo);
-        bound =(struct sit ***) VLO_BOUND(sit_table_vlo);
+        sit_table =(YaepSituation ***) VLO_BEGIN(sit_table_vlo);
+        bound =(YaepSituation ***) VLO_BOUND(sit_table_vlo);
         context_sit_table_ptr = sit_table + context;
-        ptr = bound - diff / sizeof(struct sit **);
+        ptr = bound - diff / sizeof(YaepSituation **);
         while(ptr < bound)
 	{
             OS_TOP_EXPAND(sits_os,(rules_ptr->n_rhs_lens + rules_ptr->n_rules)
-                           * sizeof(struct sit *));
-            *ptr =(struct sit **) OS_TOP_BEGIN(sits_os);
+                           * sizeof(YaepSituation *));
+            *ptr =(YaepSituation **) OS_TOP_BEGIN(sits_os);
             OS_TOP_FINISH(sits_os);
             for(i = 0; i < rules_ptr->n_rhs_lens + rules_ptr->n_rules; i++)
                (*ptr)[i] = NULL;
@@ -1396,8 +1396,8 @@ sit_create(YaepRule *rule, int pos, int context)
     }
     if ((sit =(*context_sit_table_ptr)[rule->rule_start_offset + pos]) != NULL)
         return sit;
-    OS_TOP_EXPAND(sits_os, sizeof(struct sit));
-    sit =(struct sit *) OS_TOP_BEGIN(sits_os);
+    OS_TOP_EXPAND(sits_os, sizeof(YaepSituation));
+    sit =(YaepSituation *) OS_TOP_BEGIN(sits_os);
     OS_TOP_FINISH(sits_os);
     n_all_sits++;
     sit->rule = rule;
@@ -1414,7 +1414,7 @@ sit_create(YaepRule *rule, int pos, int context)
 /* The following function prints situation SIT to file F.  The
    situation is printed with the lookahead set if LOOKAHEAD_P. */
 static void
-sit_print(FILE * f, struct sit *sit, int lookahead_p)
+sit_print(FILE * f, YaepSituation *sit, int lookahead_p)
 {
     fprintf(f, "%3d ", sit->sit_number);
     rule_dot_print(f, sit->rule, sit->pos);
@@ -1429,7 +1429,7 @@ sit_print(FILE * f, struct sit *sit, int lookahead_p)
 
 /* Return hash of sequence of N_SITS situations in array SITS.  */
 static unsigned
-sits_hash(int n_sits, struct sit **sits)
+sits_hash(int n_sits, YaepSituation **sits)
 {
     int n, i;
     unsigned result;
@@ -1488,7 +1488,7 @@ static int new_set_ready_p;
    of new set.  They are always defined and correspondingly
    situations, distances, and the current number of start situations
    of the set being formed. */
-static struct sit **new_sits;
+static YaepSituation **new_sits;
 static int *new_dists;
 static int new_n_start_sits;
 
@@ -1545,7 +1545,7 @@ set_core_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepSetCore *set_core1 =((YaepSet *) s1)->core;
     YaepSetCore *set_core2 =((YaepSet *) s2)->core;
-    struct sit **sit_ptr1, **sit_ptr2, **sit_bound1;
+    YaepSituation **sit_ptr1, **sit_ptr2, **sit_bound1;
 
     if (set_core1->n_start_sits != set_core2->n_start_sits)
         return FALSE;
@@ -1658,7 +1658,7 @@ empty_sit_dist_set()
 /* Insert pair(SIT, DIST) into the set.  If such pair exists return
    FALSE, otherwise return TRUE.  */
 static int
-sit_dist_insert(struct sit *sit, int dist)
+sit_dist_insert(YaepSituation *sit, int dist)
 {
     int i, len, sit_number;
     vlo_t *check_dist_vlo;
@@ -1743,13 +1743,13 @@ set_new_start()
 /* Add start SIT with distance DIST at the end of the situation array
    of the set being formed. */
 static void
-set_new_add_start_sit(struct sit *sit, int dist)
+set_new_add_start_sit(YaepSituation *sit, int dist)
 {
     assert(!new_set_ready_p);
     OS_TOP_EXPAND(set_dists_os, sizeof(int));
     new_dists =(int *) OS_TOP_BEGIN(set_dists_os);
-    OS_TOP_EXPAND(set_sits_os, sizeof(struct sit *));
-    new_sits =(struct sit **) OS_TOP_BEGIN(set_sits_os);
+    OS_TOP_EXPAND(set_sits_os, sizeof(YaepSituation *));
+    new_sits =(YaepSituation **) OS_TOP_BEGIN(set_sits_os);
     new_sits[new_n_start_sits] = sit;
     new_dists[new_n_start_sits] = dist;
     new_n_start_sits++;
@@ -1760,7 +1760,7 @@ set_new_add_start_sit(struct sit *sit, int dist)
    there is already the same pair(situation, the corresponding
    distance), we do not add it. */
 static void
-set_add_new_nonstart_sit(struct sit *sit, int parent)
+set_add_new_nonstart_sit(YaepSituation *sit, int parent)
 {
     int i;
 
@@ -1771,8 +1771,8 @@ set_add_new_nonstart_sit(struct sit *sit, int parent)
     for(i = new_n_start_sits; i < new_core->n_sits; i++)
         if (new_sits[i] == sit && new_core->parent_indexes[i] == parent)
             return;
-    OS_TOP_EXPAND(set_sits_os, sizeof(struct sit *));
-    new_sits = new_core->sits =(struct sit **) OS_TOP_BEGIN(set_sits_os);
+    OS_TOP_EXPAND(set_sits_os, sizeof(YaepSituation *));
+    new_sits = new_core->sits =(YaepSituation **) OS_TOP_BEGIN(set_sits_os);
     OS_TOP_EXPAND(set_parent_indexes_os, sizeof(int));
     new_core->parent_indexes
         =(int *) OS_TOP_BEGIN(set_parent_indexes_os) - new_n_start_sits;
@@ -1786,7 +1786,7 @@ set_add_new_nonstart_sit(struct sit *sit, int parent)
    situation and there is already the same pair(situation, zero
    distance), we do not add it. */
 static void
-set_new_add_initial_sit(struct sit *sit)
+set_new_add_initial_sit(YaepSituation *sit)
 {
     int i;
 
@@ -1798,8 +1798,8 @@ set_new_add_initial_sit(struct sit *sit)
         if (new_sits[i] == sit)
             return;
     /* Remember we do not store distance for non-start situations. */
-    OS_TOP_ADD_MEMORY(set_sits_os, &sit, sizeof(struct sit *));
-    new_sits = new_core->sits =(struct sit **) OS_TOP_BEGIN(set_sits_os);
+    OS_TOP_ADD_MEMORY(set_sits_os, &sit, sizeof(YaepSituation *));
+    new_sits = new_core->sits =(YaepSituation **) OS_TOP_BEGIN(set_sits_os);
     new_core->n_sits++;
 }
 
@@ -1931,7 +1931,7 @@ set_print(FILE * f, YaepSet *set, int set_dist, int nonstart_p,
 {
     int i;
     int num, n_start_sits, n_sits, n_all_dists;
-    struct sit **sits;
+    YaepSituation **sits;
     int *dists, *parent_indexes;
 
     if (set == NULL && !new_set_ready_p)
@@ -3126,7 +3126,7 @@ read_toks()
    given situation.  The function returns TRUE if the dot is placed on
    the last position in given situation or in the added situations. */
 static void
-add_derived_nonstart_sits(struct sit *sit, int parent)
+add_derived_nonstart_sits(YaepSituation *sit, int parent)
 {
     YaepSymb *symb;
     YaepRule *rule = sit->rule;
@@ -3145,7 +3145,7 @@ add_derived_nonstart_sits(struct sit *sit, int parent)
 static void
 expand_new_start_set()
 {
-    struct sit *sit;
+    YaepSituation *sit;
     YaepSymb *symb;
     YaepCoreSymbVect *core_symb_vect;
     YaepRule *rule;
@@ -3191,7 +3191,7 @@ expand_new_start_set()
     }
     if (grammar->lookahead_level > 1)
     {
-        struct sit *new_sit, *shifted_sit;
+        YaepSituation *new_sit, *shifted_sit;
         term_set_el_t *context_set;
         int changed_p, sit_ind, context, j;
 
@@ -3239,7 +3239,7 @@ static void
 build_start_set()
 {
     YaepRule *rule;
-    struct sit *sit;
+    YaepSituation *sit;
     term_set_el_t *context_set;
     int context;
 
@@ -3284,7 +3284,7 @@ build_new_set(YaepSet *set, YaepCoreSymbVect *core_symb_vect,
 {
     YaepSet *prev_set;
     YaepSetCore *set_core, *prev_set_core;
-    struct sit *sit, *new_sit, **prev_sits;
+    YaepSituation *sit, *new_sit, **prev_sits;
     YaepCoreSymbVect *prev_core_symb_vect;
     int local_lookahead_level, dist, sit_ind, new_dist;
     int i, place;
@@ -4686,7 +4686,7 @@ make_parse(int *ambiguous_p)
 {
     YaepSet *set, *check_set;
     YaepSetCore *set_core, *check_set_core;
-    struct sit *sit, *check_sit;
+    YaepSituation *sit, *check_sit;
     YaepRule *rule, *sit_rule;
     YaepSymb *symb;
     YaepCoreSymbVect *core_symb_vect, *check_core_symb_vect;
