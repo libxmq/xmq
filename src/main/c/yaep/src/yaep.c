@@ -646,6 +646,44 @@ static vlo_t sit_dist_vec_vlo;
    structures. */
 static int curr_sit_dist_vec_check;
 
+///
+
+/* The following two variables represents Earley's parser list.  The
+   values of pl_curr and array*pl can be read and modified
+   externally.*/
+static YaepSet **pl;
+static int pl_curr;
+
+/* The following is number of created terminal, abstract, and
+   alternative nodes.*/
+static int n_parse_term_nodes, n_parse_abstract_nodes, n_parse_alt_nodes;
+
+/* This page contains code for work with array of vlos.  It is used
+   only to implement abstract data `core_symb_vect'.*/
+
+/* All vlos being formed are placed in the following object.*/
+static vlo_t vlo_array;
+
+/* The following is current number of elements in vlo_array.*/
+static int vlo_array_len;
+
+/* The following table is used to find allocated memory which should not be freed.*/
+static hash_table_t reserv_mem_tab;
+
+/* The following vlo will contain references to memory which should be
+   freed.  The same reference can be represented more on time.*/
+static vlo_t tnodes_vlo;
+
+/* The key of the following table is node itself.*/
+static hash_table_t trans_visit_nodes_tab;
+
+/* All translation visit nodes are placed in the following stack.  All
+   the nodes are in the table.*/
+static os_t trans_visit_nodes_os;
+
+/* The following value is number of translation visit nodes.*/
+static int n_trans_visit_nodes;
+
 // Implementations ////////////////////////////////////////////////////////////////////
 
 /* Hash of symbol representation. */
@@ -1645,24 +1683,21 @@ static int set_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 }
 
 /* Initiate the set of pairs(sit, dist). */
-static void
-sit_dist_set_init()
+static void sit_dist_set_init()
 {
     VLO_CREATE(sit_dist_vec_vlo, grammar->alloc, 8192);
     curr_sit_dist_vec_check = 0;
 }
 
 /* Make the set empty. */
-static void
-empty_sit_dist_set()
+static void empty_sit_dist_set()
 {
     curr_sit_dist_vec_check++;
 }
 
 /* Insert pair(SIT, DIST) into the set.  If such pair exists return
    FALSE, otherwise return TRUE. */
-static int
-sit_dist_insert(YaepSituation*sit, int dist)
+static int sit_dist_insert(YaepSituation*sit, int dist)
 {
     int i, len, sit_number;
     vlo_t*check_dist_vlo;
@@ -1692,8 +1727,7 @@ sit_dist_insert(YaepSituation*sit, int dist)
 }
 
 /* Finish the set of pairs(sit, dist). */
-static void
-sit_dist_set_fin()
+static void sit_dist_set_fin()
 {
     int i, len = VLO_LENGTH(sit_dist_vec_vlo) / sizeof(vlo_t);
 
@@ -1703,8 +1737,7 @@ sit_dist_set_fin()
 }
 
 /* Initialize work with sets for parsing input with N_TOKS tokens.*/
-static void
-set_init(int n_toks)
+static void set_init(int n_toks)
 {
     int n = n_toks >> 3;
 
@@ -1733,8 +1766,7 @@ set_init(int n_toks)
 }
 
 /* The following function starts forming of new set.*/
-static void
-set_new_start()
+static void set_new_start()
 {
     new_set = NULL;
     new_core = NULL;
@@ -1746,8 +1778,7 @@ set_new_start()
 
 /* Add start SIT with distance DIST at the end of the situation array
    of the set being formed.*/
-static void
-set_new_add_start_sit(YaepSituation*sit, int dist)
+static void set_new_add_start_sit(YaepSituation*sit, int dist)
 {
     assert(!new_set_ready_p);
     OS_TOP_EXPAND(set_dists_os, sizeof(int));
@@ -1763,8 +1794,7 @@ set_new_add_start_sit(YaepSituation*sit, int dist)
    situation array of the set being formed.  If this is situation and
    there is already the same pair(situation, the corresponding
    distance), we do not add it.*/
-static void
-set_add_new_nonstart_sit(YaepSituation*sit, int parent)
+static void set_add_new_nonstart_sit(YaepSituation*sit, int parent)
 {
     int i;
 
@@ -1789,8 +1819,7 @@ set_add_new_nonstart_sit(YaepSituation*sit, int parent)
    situation array of the set being formed.  If this is non-start
    situation and there is already the same pair(situation, zero
    distance), we do not add it.*/
-static void
-set_new_add_initial_sit(YaepSituation*sit)
+static void set_new_add_initial_sit(YaepSituation*sit)
 {
     int i;
 
@@ -1808,8 +1837,7 @@ set_new_add_initial_sit(YaepSituation*sit)
 }
 
 /* Set up hash of distances of set S.*/
-static void
-setup_set_dists_hash(hash_table_entry_t s)
+static void setup_set_dists_hash(hash_table_entry_t s)
 {
     YaepSet*set =((YaepSet*) s);
     int*dist_ptr = set->dists;
@@ -1825,8 +1853,7 @@ setup_set_dists_hash(hash_table_entry_t s)
 }
 
 /* Set up hash of core of set S.*/
-static void
-setup_set_core_hash(hash_table_entry_t s)
+static void setup_set_core_hash(hash_table_entry_t s)
 {
     YaepSetCore*set_core =((YaepSet*) s)->core;
 
@@ -1837,8 +1864,7 @@ setup_set_core_hash(hash_table_entry_t s)
    remove duplicates and insert set into the set table.  If the
    function returns TRUE then set contains new set core(there was no
    such core in the table).*/
-static int
-set_insert()
+static int set_insert()
 {
     hash_table_entry_t*entry;
     int result;
@@ -1916,8 +1942,7 @@ set_insert()
 }
 
 /* The following function finishes work with set being formed.*/
-static void
-set_new_core_stop()
+static void set_new_core_stop()
 {
     OS_TOP_FINISH(set_sits_os);
     OS_TOP_FINISH(set_parent_indexes_os);
@@ -1929,9 +1954,7 @@ set_new_core_stop()
    then print all situations.  The situations are printed with the
    lookahead set if LOOKAHEAD_P.  SET_DIST is used to print absolute
    distances of non-start situations. */
-static void
-set_print(FILE* f, YaepSet*set, int set_dist, int nonstart_p,
-	   int lookahead_p)
+static void set_print(FILE* f, YaepSet*set, int set_dist, int nonstart_p, int lookahead_p)
 {
     int i;
     int num, n_start_sits, n_sits, n_all_dists;
@@ -1981,8 +2004,7 @@ set_print(FILE* f, YaepSet*set, int set_dist, int nonstart_p,
 #endif /* #ifndef NO_YAEP_DEBUG_PRINT*/
 
 /* Finalize work with sets.*/
-static void
-set_fin()
+static void set_fin()
 {
     sit_dist_set_fin();
     delete_hash_table(set_term_lookahead_tab);
@@ -1997,68 +2019,41 @@ set_fin()
     OS_DELETE(set_cores_os);
 }
 
-
-
-/* This page is abstract data `parser list'.*/
-
-/* The following two variables represents Earley's parser list.  The
-   values of pl_curr and array*pl can be read and modified
-   externally.*/
-static YaepSet**pl;
-static int pl_curr;
-
 /* Initialize work with the parser list.*/
-static void
-pl_init()
+static void pl_init()
 {
     pl = NULL;
 }
 
 /* The following function creates Earley's parser list.*/
-static void
-pl_create()
+static void pl_create()
 {
-    void*mem;
+    void *mem;
 
     /* Because of error recovery we may have sets 2 times more than tokens.*/
-    mem =
-        yaep_malloc(grammar->alloc, sizeof(YaepSet*)*(toks_len + 1)* 2);
-    pl =(YaepSet**) mem;
+    mem = yaep_malloc(grammar->alloc, sizeof(YaepSet*)*(toks_len + 1)* 2);
+    pl = (YaepSet**)mem;
     pl_curr = -1;
 }
 
 /* Finalize work with the parser list.*/
-static void
-pl_fin()
+static void pl_fin()
 {
     if (pl != NULL)
+    {
         yaep_free(grammar->alloc, pl);
+    }
 }
 
-
-
-
-/* This page contains code for work with array of vlos.  It is used
-   only to implement abstract data `core_symb_vect'.*/
-
-/* All vlos being formed are placed in the following object.*/
-static vlo_t vlo_array;
-
-/* The following is current number of elements in vlo_array.*/
-static int vlo_array_len;
-
 /* Initialize work with array of vlos.*/
-static void
-vlo_array_init()
+static void vlo_array_init()
 {
     VLO_CREATE(vlo_array, grammar->alloc, 4096);
     vlo_array_len = 0;
 }
 
-/* The function forms new empty vlo at the end of the array of
-   vlos.*/
-static int
-vlo_array_expand()
+/* The function forms new empty vlo at the end of the array of vlos.*/
+static int vlo_array_expand()
 {
     vlo_t*vlo_ptr;
 
@@ -4246,37 +4241,23 @@ struct trans_visit_node
     struct yaep_tree_node*node;
 };
 
-/* The key of the following table is node itself.*/
-static hash_table_t trans_visit_nodes_tab;
-
-/* All translation visit nodes are placed in the following stack.  All
-   the nodes are in the table.*/
-static os_t trans_visit_nodes_os;
-
-/* The following value is number of translation visit nodes.*/
-static int n_trans_visit_nodes;
-
 /* Hash of translation visit node.*/
-static unsigned
-trans_visit_node_hash(hash_table_entry_t n)
+static unsigned trans_visit_node_hash(hash_table_entry_t n)
 {
     return(size_t)((struct trans_visit_node*) n)->node;
 }
 
 /* Equality of translation visit nodes.*/
-static int
-trans_visit_node_eq(hash_table_entry_t n1, hash_table_entry_t n2)
+static int trans_visit_node_eq(hash_table_entry_t n1, hash_table_entry_t n2)
 {
-    return(((struct trans_visit_node*) n1)->node
-            ==((struct trans_visit_node*) n2)->node);
+    return(((struct trans_visit_node*) n1)->node == ((struct trans_visit_node*) n2)->node);
 }
 
 /* The following function checks presence translation visit node with
    given NODE in the table and if it is not present in the table, the
    function creates the translation visit node and inserts it into
    the table.*/
-static struct trans_visit_node*
-visit_node(struct yaep_tree_node*node)
+static struct trans_visit_node *visit_node(struct yaep_tree_node*node)
 {
     struct trans_visit_node trans_visit_node;
     hash_table_entry_t*entry;
@@ -4298,19 +4279,16 @@ visit_node(struct yaep_tree_node*node)
     return(struct trans_visit_node*)*entry;
 }
 
-/* The following function returns the positive order number of node
-   with number NUM.*/
-static int
-canon_node_num(int num)
+/* The following function returns the positive order number of node with number NUM.*/
+static int canon_node_num(int num)
 {
-    return(num < 0 ? -num - 1 : num);
+    return (num < 0 ? -num - 1 : num);
 }
 
 /* The following recursive function prints NODE into file F and prints
    all its children(if debug_level < 0 output format is for
    graphviz).*/
-static void
-print_yaep_node(FILE* f, struct yaep_tree_node*node)
+static void print_yaep_node(FILE *f, struct yaep_tree_node *node)
 {
     struct trans_visit_node*trans_visit_node;
     struct yaep_tree_node*child;
@@ -4448,14 +4426,9 @@ print_parse(FILE* f, struct yaep_tree_node*root)
 
 #endif
 
-/* The following is number of created terminal, abstract, and
-   alternative nodes.*/
-static int n_parse_term_nodes, n_parse_abstract_nodes, n_parse_alt_nodes;
-
 /* The following function places translation NODE into*PLACE and
    creates alternative nodes if it is necessary.*/
-static void
-place_translation(struct yaep_tree_node**place, struct yaep_tree_node*node)
+static void place_translation(struct yaep_tree_node **place, struct yaep_tree_node *node)
 {
     struct yaep_tree_node*alt,*next_alt;
 
@@ -4497,39 +4470,32 @@ static struct yaep_tree_node *copy_anode(struct yaep_tree_node**place,
     struct yaep_tree_node*node;
     int i;
 
-    node =((struct yaep_tree_node*)
-           (*parse_alloc)(sizeof(struct yaep_tree_node)
-                            + sizeof(struct yaep_tree_node*)
-                           *(rule->trans_len + 1)));
+    node =((struct yaep_tree_node*)(*parse_alloc)(sizeof(struct yaep_tree_node)
+                                                  + sizeof(struct yaep_tree_node*)
+                                                  *(rule->trans_len + 1)));
    *node =*anode;
-    node->val.anode.children
-        =((struct yaep_tree_node**)
-          ((char*) node + sizeof(struct yaep_tree_node)));
+    node->val.anode.children = ((struct yaep_tree_node**)((char*) node + sizeof(struct yaep_tree_node)));
     for(i = 0; i <= rule->trans_len; i++)
+    {
         node->val.anode.children[i] = anode->val.anode.children[i];
+    }
     node->val.anode.children[disp] = NULL;
     place_translation(place, node);
+
     return node;
 }
 
-/* The following table is used to find allocated memory which should not be freed.*/
-static hash_table_t reserv_mem_tab;
-
-/* The hash of the memory reference.*/
+/* The hash of the memory reference. */
 static unsigned reserv_mem_hash(hash_table_entry_t m)
 {
-    return(size_t) m;
+    return (size_t)m;
 }
 
-/* The equity of the memory reference.*/
+/* The equity of the memory reference. */
 static int reserv_mem_eq(hash_table_entry_t m1, hash_table_entry_t m2)
 {
     return m1 == m2;
 }
-
-/* The following vlo will contain references to memory which should be
-   freed.  The same reference can be represented more on time.*/
-static vlo_t tnodes_vlo;
 
 /* The following function sets up minimal cost for each abstract node.
    The function returns minimal translation corresponding to NODE.
@@ -4635,7 +4601,7 @@ next:
     return;
 }
 
-/* The function finds and returns a minimal cost parse(s).*/
+/* The function finds and returns a minimal cost parse(s). */
 static struct yaep_tree_node *find_minimal_translation(struct yaep_tree_node *root)
 {
     struct yaep_tree_node**node_ptr;
@@ -5132,9 +5098,8 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
             n_candidates++;
 	}			/* For all reduces of the nonterminal.*/
         /* We should have a parse.*/
-        assert(n_candidates != 0
-                &&(!grammar->one_parse_p || n_candidates == 1));
-    }				/* For all parser states.*/
+        assert(n_candidates != 0 && (!grammar->one_parse_p || n_candidates == 1));
+    } /* For all parser states.*/
     VLO_DELETE(stack);
     if (!grammar->one_parse_p)
     {
@@ -5182,14 +5147,14 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
 	}
     }
 
-    assert(result != NULL
-            &&(!grammar->one_parse_p || n_parse_alt_nodes == 0));
+    assert(result != NULL && (!grammar->one_parse_p || n_parse_alt_nodes == 0));
+
     return result;
 }
 
 static void *parse_alloc_default(int nmemb)
 {
-    void*result;
+    void *result;
 
     assert(nmemb > 0);
 
@@ -5202,7 +5167,7 @@ static void *parse_alloc_default(int nmemb)
     return result;
 }
 
-static void parse_free_default(void*mem)
+static void parse_free_default(void *mem)
 {
     free(mem);
 }
@@ -5219,16 +5184,16 @@ static void parse_free_default(void*mem)
    will be also in error_code).  The function sets up
   *AMBIGUOUS_P if we found that the grammer is ambigous(it works even
    we asked only one parse tree without alternatives).*/
-int yaep_parse(YaepGrammar*g,
-               int(*read)(void**attr),
+int yaep_parse(YaepGrammar *g,
+               int(*read)(void **attr),
                void(*error)(int err_tok_num, void*err_tok_attr,
                             int start_ignored_tok_num,
-                            void*start_ignored_tok_attr,
+                            void *start_ignored_tok_attr,
                             int start_recovered_tok_num,
-                            void*start_recovered_tok_attr),
+                            void *start_recovered_tok_attr),
                void*(*alloc)(int nmemb),
-               void(*free)(void*mem),
-               struct yaep_tree_node**root, int*ambiguous_p)
+               void(*free)(void *mem),
+               struct yaep_tree_node **root, int *ambiguous_p)
 {
     int code, tok_init_p, parse_init_p;
     int tab_collisions, tab_searches;
@@ -5365,7 +5330,7 @@ void yaep_free_grammar(YaepGrammar *g)
 static void free_tree_reduce(struct yaep_tree_node*node)
 {
     enum yaep_tree_node_type type;
-    struct yaep_tree_node**childp;
+    struct yaep_tree_node **childp;
     size_t numChildren, pos, freePos;
 
     assert(node != NULL);
@@ -5447,7 +5412,8 @@ static void free_tree_reduce(struct yaep_tree_node*node)
     }
 }
 
-static void free_tree_sweep(struct yaep_tree_node*node, void(*parse_free)(void*),
+static void free_tree_sweep(struct yaep_tree_node *node,
+                            void(*parse_free)(void*),
                             void(*termcb)(struct yaep_term*))
 {
     enum yaep_tree_node_type type;
@@ -5497,9 +5463,9 @@ static void free_tree_sweep(struct yaep_tree_node*node, void(*parse_free)(void*)
     parse_free(node);
 }
 
-void
-yaep_free_tree(struct yaep_tree_node*root, void(*parse_free)(void*),
-		void(*termcb)(struct yaep_term*))
+void yaep_free_tree(struct yaep_tree_node *root,
+                    void(*parse_free)(void*),
+                    void(*termcb)(struct yaep_term*))
 {
     if (root == NULL)
     {
