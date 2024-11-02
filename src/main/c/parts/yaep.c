@@ -2465,6 +2465,8 @@ typedef struct YaepSetTermLookAhead YaepSetTermLookAhead;
 /* The following is type of element of array representing set of terminals.*/
 typedef long int term_set_el_t;
 
+// Structure definitions ////////////////////////////////////////////////////
+
 struct YaepGrammar
 {
     /* The following member is TRUE if the grammar is undefined(you
@@ -2846,17 +2848,21 @@ struct YaepRuleStorage
     os_t rules_os;
 };
 
+
+// Extern declarations ///////////////////////////////////////////////////
+
+void yaep_free_grammar(YaepGrammar *g);
+
 // Global variables /////////////////////////////////////////////////////
 
 /* The following variable value is the reference for the current grammar structure.*/
 static YaepGrammar*grammar;
 
-/* The following variable values are values of the corresponding
-   members for the current grammar.*/
+/* The following variable values are values of the corresponding members for the current grammar.*/
 
-static YaepVocabulary*symbs_ptr;
-static YaepTermStorage*term_sets_ptr;
-static YaepRuleStorage*rules_ptr;
+static YaepVocabulary *symbs_ptr;
+static YaepTermStorage *term_sets_ptr;
+static YaepRuleStorage *rules_ptr;
 
 /* The following is set up the parser amnd used globally.*/
 static int(*read_token)(void**attr);
@@ -2869,10 +2875,7 @@ static void(*syntax_error)(int err_tok_num,
 static void*(*parse_alloc)(int nmemb);
 static void(*parse_free)(void*mem);
 
-/* Forward decrlarations:*/
 static void yaep_error(int code, const char*format, ...);
-
-void yaep_free_grammar(YaepGrammar*g);
 
 /* The following variable is set being created.  It can be read
    externally.  It is defined only when new_set_ready_p is TRUE.*/
@@ -6801,9 +6804,9 @@ place_translation(struct yaep_tree_node**place, struct yaep_tree_node*node)
    *place = alt;
 }
 
-static struct yaep_tree_node*
-copy_anode(struct yaep_tree_node**place, struct yaep_tree_node*anode,
-	    YaepRule*rule, int disp)
+static struct yaep_tree_node *copy_anode(struct yaep_tree_node**place,
+                                         struct yaep_tree_node*anode,
+                                         YaepRule*rule, int disp)
 {
     struct yaep_tree_node*node;
     int i;
