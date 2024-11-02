@@ -2413,6 +2413,9 @@ static const unsigned hash_shift = 611;
 struct YaepSymb;
 typedef struct YaepSymb YaepSymb;
 
+struct YaepVocabulary;
+typedef struct YaepVocabulary YaepVocabulary;
+
 /* The following is major structure which stores information about the grammar. */
 struct YaepGrammar
 {
@@ -2472,7 +2475,7 @@ struct YaepGrammar
     int error_recovery_p;
 
     /* The following vocabulary used for this grammar. */
-    struct symbs *symbs_ptr;
+    YaepVocabulary *symbs_ptr;
 
     /* The following rules used for this grammar. */
     struct rules *rules_ptr;
@@ -2490,7 +2493,7 @@ static YaepGrammar *grammar;
 /* The following variable values are values of the corresponding
    members for the current grammar. */
 
-static struct symbs *symbs_ptr;
+static YaepVocabulary *symbs_ptr;
 static struct term_sets *term_sets_ptr;
 static struct rules *rules_ptr;
 
@@ -2508,7 +2511,6 @@ static void (*parse_free) (void *mem);
 /* Forward decrlarations: */
 static void yaep_error (int code, const char *format, ...);
 
-extern
 void yaep_free_grammar (YaepGrammar *g);
 
 /* The following is default number of tokens sucessfully matched to
@@ -2575,9 +2577,8 @@ struct YaepSymb
 #endif
 };
 
-/* The following structure contians all information about grammar
-   vocabulary. */
-struct symbs
+/* The following structure contians all information about grammar vocabulary. */
+struct YaepVocabulary
 {
     /* The following is number of all symbols and terminals.  The
        variables can be read externally. */
@@ -2654,13 +2655,13 @@ static int symb_code_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 
 /* Initialize work with symbols and returns storage for the
    symbols. */
-static struct symbs *symb_init(void)
+static YaepVocabulary *symb_init(void)
 {
     void *mem;
-    struct symbs *result;
+    YaepVocabulary *result;
 
-    mem = yaep_malloc (grammar->alloc, sizeof (struct symbs));
-    result = (struct symbs *) mem;
+    mem = yaep_malloc (grammar->alloc, sizeof (YaepVocabulary));
+    result = (YaepVocabulary *) mem;
     OS_CREATE (result->symbs_os, grammar->alloc, 0);
     VLO_CREATE (result->symbs_vlo, grammar->alloc, 1024);
     VLO_CREATE (result->terms_vlo, grammar->alloc, 512);
@@ -2810,8 +2811,7 @@ static YaepSymb *term_get(int n)
     return symb;
 }
 
-/* The following function return N-th symbol (if any) or NULL
-   otherwise. */
+/* The following function return N-th symbol (if any) or NULL otherwise. */
 static YaepSymb *nonterm_get(int n)
 {
     if (n < 0 || (VLO_LENGTH (symbs_ptr->nonterms_vlo) / sizeof (YaepSymb *) <= (size_t) n))
@@ -2876,7 +2876,7 @@ static void symb_finish_adding_terms(void)
 }
 
 /* Free memory for symbols. */
-static void symb_empty(struct symbs *symbs)
+static void symb_empty(YaepVocabulary *symbs)
 {
     if (symbs == NULL) return;
 
@@ -2898,7 +2898,7 @@ static void symb_empty(struct symbs *symbs)
 }
 
 /* Finalize work with symbols. */
-static void symb_fin(struct symbs *symbs)
+static void symb_fin(YaepVocabulary *symbs)
 {
     if (symbs == NULL) return;
 
