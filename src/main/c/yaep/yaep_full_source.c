@@ -2410,6 +2410,9 @@ static const unsigned jauquet_prime_mod32 = 2053222611;
 /* Shift used for hash calculations.  */
 static const unsigned hash_shift = 611;
 
+struct YaepSymb;
+typedef struct YaepSymb YaepSymb;
+
 /* The following is major structure which stores information about the grammar. */
 struct YaepGrammar
 {
@@ -2419,24 +2422,21 @@ struct YaepGrammar
        grammar). */
     int undefined_p;
 
-    /* This member always contains the last occurred error code for
-       given grammar. */
+    /* This member always contains the last occurred error code for given grammar. */
     int error_code;
 
     /* This member contains message are always contains error message
        corresponding to the last occurred error code. */
     char error_message[YAEP_MAX_ERROR_MESSAGE_LENGTH + 1];
 
-    /* The following is grammar axiom.  There is only one rule with axiom
-       in lhs. */
-    struct symb *axiom;
+    /* The following is grammar axiom.  There is only one rule with axiom in lhs. */
+    YaepSymb *axiom;
 
     /* The following auxiliary symbol denotes EOF. */
-    struct symb *end_marker;
+    YaepSymb *end_marker;
 
-    /* The following auxiliary symbol is used for describing error
-       recovery. */
-    struct symb *term_error;
+    /* The following auxiliary symbol is used for describing error recovery. */
+    YaepSymb *term_error;
 
     /* And its internal number. */
     int term_error_num;
@@ -2524,7 +2524,7 @@ struct core_symb_vect;
 typedef long int term_set_el_t;
 
 /* The following describes symbol of grammar. */
-struct symb
+struct YaepSymb
 {
     /* The following is external representation of the symbol.  It
        should be allocated by parse_alloc because the string will be
@@ -2601,7 +2601,7 @@ struct symbs
     /* If terminal symbol codes are not spared (in this case the member
        value is not NULL, we use translation vector instead of hash
        table.  */
-    struct symb **symb_code_trans_vect;
+    YaepSymb **symb_code_trans_vect;
     int symb_code_trans_vect_start;
     int symb_code_trans_vect_end;
 
@@ -2611,7 +2611,7 @@ struct symbs
 static unsigned symb_repr_hash(hash_table_entry_t s)
 {
     unsigned result = jauquet_prime_mod32;
-    const char *str = ((struct symb *) s)->repr;
+    const char *str = ((YaepSymb *) s)->repr;
     int i;
 
     for (i = 0; str[i] != '\0'; i++)
@@ -2626,14 +2626,14 @@ static unsigned symb_repr_hash(hash_table_entry_t s)
 static int
 symb_repr_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    TRACE("symb_repr_eq %s %s\n", ((struct symb *) s1)->repr, ((struct symb *) s2)->repr);
-    return strcmp (((struct symb *) s1)->repr, ((struct symb *) s2)->repr) == 0;
+    TRACE("symb_repr_eq %s %s\n", ((YaepSymb *) s1)->repr, ((YaepSymb *) s2)->repr);
+    return strcmp (((YaepSymb *) s1)->repr, ((YaepSymb *) s2)->repr) == 0;
 }
 
 /* Hash of terminal code. */
 static unsigned symb_code_hash(hash_table_entry_t s)
 {
-    struct symb *symb = ((struct symb *) s);
+    YaepSymb *symb = ((YaepSymb *) s);
 
     assert (symb->term_p);
     TRACE("symb_code_hash %d\n", symb->u.term.code);
@@ -2643,8 +2643,8 @@ static unsigned symb_code_hash(hash_table_entry_t s)
 /* Equality of terminal codes. */
 static int symb_code_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    struct symb *symb1 = ((struct symb *) s1);
-    struct symb *symb2 = ((struct symb *) s2);
+    YaepSymb *symb1 = ((YaepSymb *) s1);
+    YaepSymb *symb2 = ((YaepSymb *) s2);
 
     assert (symb1->term_p && symb2->term_p);
 
@@ -2677,11 +2677,11 @@ static struct symbs *symb_init(void)
 
 /* Return symbol (or NULL if it does not exist) whose representation
    is REPR. */
-static struct symb *symb_find_by_repr(const char *repr)
+static YaepSymb *symb_find_by_repr(const char *repr)
 {
-    struct symb symb;
+    YaepSymb symb;
     symb.repr = repr;
-    struct symb *r = (struct symb *) *find_hash_table_entry (symbs_ptr->repr_to_symb_tab, &symb, FALSE);
+    YaepSymb *r = (YaepSymb *) *find_hash_table_entry (symbs_ptr->repr_to_symb_tab, &symb, FALSE);
 
     TRACE("symb_find_by_repr %s -> %p\n", repr, r);
 
@@ -2689,9 +2689,9 @@ static struct symb *symb_find_by_repr(const char *repr)
 }
 
 /* Return symbol (or NULL if it does not exist) which is terminal with CODE. */
-static struct symb *symb_find_by_code(int code)
+static YaepSymb *symb_find_by_code(int code)
 {
-    struct symb symb;
+    YaepSymb symb;
 
     if (symbs_ptr->symb_code_trans_vect != NULL)
     {
@@ -2702,7 +2702,7 @@ static struct symb *symb_find_by_code(int code)
         }
         else
         {
-            struct symb *r = symbs_ptr->symb_code_trans_vect[code - symbs_ptr->symb_code_trans_vect_start];
+            YaepSymb *r = symbs_ptr->symb_code_trans_vect[code - symbs_ptr->symb_code_trans_vect_start];
             TRACE("symb_find_by_code vec %d -> %p\n", code, r);
             return r;
         }
@@ -2710,7 +2710,7 @@ static struct symb *symb_find_by_code(int code)
 
     symb.term_p = TRUE;
     symb.u.term.code = code;
-    struct symb *r = (struct symb *)*find_hash_table_entry(symbs_ptr->code_to_symb_tab, &symb, FALSE);
+    YaepSymb *r = (YaepSymb *)*find_hash_table_entry(symbs_ptr->code_to_symb_tab, &symb, FALSE);
 
     TRACE("symb_find_by_code hash %d -> %p\n", code, r);
 
@@ -2720,9 +2720,9 @@ static struct symb *symb_find_by_code(int code)
 /* The function creates new terminal symbol and returns reference for
    it.  The symbol should be not in the tables.  The function should
    create own copy of name for the new symbol. */
-static struct symb *symb_add_term(const char *name, int code)
+static YaepSymb *symb_add_term(const char *name, int code)
 {
-    struct symb symb, *result;
+    YaepSymb symb, *result;
     hash_table_entry_t *repr_entry, *code_entry;
 
     symb.repr = name;
@@ -2740,13 +2740,13 @@ static struct symb *symb_add_term(const char *name, int code)
     OS_TOP_ADD_STRING (symbs_ptr->symbs_os, name);
     symb.repr = (char *) OS_TOP_BEGIN (symbs_ptr->symbs_os);
     OS_TOP_FINISH (symbs_ptr->symbs_os);
-    OS_TOP_ADD_MEMORY (symbs_ptr->symbs_os, &symb, sizeof (struct symb));
-    result = (struct symb *) OS_TOP_BEGIN (symbs_ptr->symbs_os);
+    OS_TOP_ADD_MEMORY (symbs_ptr->symbs_os, &symb, sizeof (YaepSymb));
+    result = (YaepSymb *) OS_TOP_BEGIN (symbs_ptr->symbs_os);
     OS_TOP_FINISH (symbs_ptr->symbs_os);
     *repr_entry = (hash_table_entry_t) result;
     *code_entry = (hash_table_entry_t) result;
-    VLO_ADD_MEMORY (symbs_ptr->symbs_vlo, &result, sizeof (struct symb *));
-    VLO_ADD_MEMORY (symbs_ptr->terms_vlo, &result, sizeof (struct symb *));
+    VLO_ADD_MEMORY (symbs_ptr->symbs_vlo, &result, sizeof (YaepSymb *));
+    VLO_ADD_MEMORY (symbs_ptr->terms_vlo, &result, sizeof (YaepSymb *));
 
     TRACE("symb_add_term %s %d -> %p\n", name, code, result);
     return result;
@@ -2755,9 +2755,9 @@ static struct symb *symb_add_term(const char *name, int code)
 /* The function creates new nonterminal symbol and returns reference
    for it.  The symbol should be not in the table.  The function
    should create own copy of name for the new symbol. */
-static struct symb *symb_add_nonterm(const char *name)
+static YaepSymb *symb_add_nonterm(const char *name)
 {
-    struct symb symb, *result;
+    YaepSymb symb, *result;
     hash_table_entry_t *entry;
 
     symb.repr = name;
@@ -2771,25 +2771,25 @@ static struct symb *symb_add_nonterm(const char *name)
     OS_TOP_ADD_STRING (symbs_ptr->symbs_os, name);
     symb.repr = (char *) OS_TOP_BEGIN (symbs_ptr->symbs_os);
     OS_TOP_FINISH (symbs_ptr->symbs_os);
-    OS_TOP_ADD_MEMORY (symbs_ptr->symbs_os, &symb, sizeof (struct symb));
-    result = (struct symb *) OS_TOP_BEGIN (symbs_ptr->symbs_os);
+    OS_TOP_ADD_MEMORY (symbs_ptr->symbs_os, &symb, sizeof (YaepSymb));
+    result = (YaepSymb *) OS_TOP_BEGIN (symbs_ptr->symbs_os);
     OS_TOP_FINISH (symbs_ptr->symbs_os);
     *entry = (hash_table_entry_t) result;
-    VLO_ADD_MEMORY (symbs_ptr->symbs_vlo, &result, sizeof (struct symb *));
-    VLO_ADD_MEMORY (symbs_ptr->nonterms_vlo, &result, sizeof (struct symb *));
+    VLO_ADD_MEMORY (symbs_ptr->symbs_vlo, &result, sizeof (YaepSymb *));
+    VLO_ADD_MEMORY (symbs_ptr->nonterms_vlo, &result, sizeof (YaepSymb *));
 
     TRACE("symb_add_nonterm %s -> %p\n", name, result);
     return result;
 }
 
 /* The following function return N-th symbol (if any) or NULL otherwise. */
-static struct symb *symb_get(int n)
+static YaepSymb *symb_get(int n)
 {
-    if (n < 0 || (VLO_LENGTH (symbs_ptr->symbs_vlo) / sizeof (struct symb *) <= (size_t) n))
+    if (n < 0 || (VLO_LENGTH (symbs_ptr->symbs_vlo) / sizeof (YaepSymb *) <= (size_t) n))
     {
         return NULL;
     }
-    struct symb *symb = ((struct symb **) VLO_BEGIN (symbs_ptr->symbs_vlo))[n];
+    YaepSymb *symb = ((YaepSymb **) VLO_BEGIN (symbs_ptr->symbs_vlo))[n];
     assert (symb->num == n);
 
     TRACE("symb_get %d -> %p\n", n, symb);
@@ -2797,13 +2797,13 @@ static struct symb *symb_get(int n)
 }
 
 /* The following function return N-th symbol (if any) or NULL otherwise. */
-static struct symb *term_get(int n)
+static YaepSymb *term_get(int n)
 {
-    if (n < 0 || (VLO_LENGTH (symbs_ptr->terms_vlo) / sizeof (struct symb *) <= (size_t) n))
+    if (n < 0 || (VLO_LENGTH (symbs_ptr->terms_vlo) / sizeof (YaepSymb *) <= (size_t) n))
     {
         return NULL;
     }
-    struct symb *symb = ((struct symb **) VLO_BEGIN (symbs_ptr->terms_vlo))[n];
+    YaepSymb *symb = ((YaepSymb **) VLO_BEGIN (symbs_ptr->terms_vlo))[n];
     assert (symb->term_p && symb->u.term.term_num == n);
 
     TRACE("term_get %d -> %p\n", n, symb);
@@ -2812,13 +2812,13 @@ static struct symb *term_get(int n)
 
 /* The following function return N-th symbol (if any) or NULL
    otherwise. */
-static struct symb *nonterm_get(int n)
+static YaepSymb *nonterm_get(int n)
 {
-    if (n < 0 || (VLO_LENGTH (symbs_ptr->nonterms_vlo) / sizeof (struct symb *) <= (size_t) n))
+    if (n < 0 || (VLO_LENGTH (symbs_ptr->nonterms_vlo) / sizeof (YaepSymb *) <= (size_t) n))
     {
         return NULL;
     }
-    struct symb *symb = ((struct symb **) VLO_BEGIN (symbs_ptr->nonterms_vlo))[n];
+    YaepSymb *symb = ((YaepSymb **) VLO_BEGIN (symbs_ptr->nonterms_vlo))[n];
     assert (!symb->term_p && symb->u.nonterm.nonterm_num == n);
 
     TRACE("nonterm_get %d -> %p\n", n, symb);
@@ -2829,7 +2829,7 @@ static struct symb *nonterm_get(int n)
 
 /* The following function prints symbol SYMB to file F.  Terminal is
    printed with its code if CODE_P. */
-static void symb_print(FILE * f, struct symb *symb, int code_p)
+static void symb_print(FILE * f, YaepSymb *symb, int code_p)
 {
     fprintf (f, "%s", symb->repr);
     if (code_p && symb->term_p)
@@ -2847,7 +2847,7 @@ static void symb_print(FILE * f, struct symb *symb, int code_p)
 static void symb_finish_adding_terms(void)
 {
     int i, max_code, min_code;
-    struct symb *symb;
+    YaepSymb *symb;
     void *mem;
 
     for (min_code = max_code = i = 0; (symb = term_get (i)) != NULL; i++)
@@ -2865,7 +2865,7 @@ static void symb_finish_adding_terms(void)
     size_t vec_size = sizeof(struct symb*) * num_codes;
     mem = yaep_malloc (grammar->alloc, vec_size);
 
-    symbs_ptr->symb_code_trans_vect = (struct symb **)mem;
+    symbs_ptr->symb_code_trans_vect = (YaepSymb **)mem;
 
     for (i = 0; (symb = term_get (i)) != NULL; i++)
     {
@@ -3200,11 +3200,11 @@ struct rule
     struct rule *lhs_next;
     /* The following is nonterminal in the left hand side of the
        rule. */
-    struct symb *lhs;
+    YaepSymb *lhs;
     /* The ixml default mark of the rule */
     char mark;
     /* The following is symbols in the right hand side of the rule. */
-    struct symb **rhs;
+    YaepSymb **rhs;
     /* The ixml marks for all the terms in the right hand side of the rule. */
     char *marks;
     /* The following three members define rule translation. */
@@ -3260,10 +3260,10 @@ rule_init (void)
 
 /* Create new rule with LHS empty rhs. */
 static struct rule *
-rule_new_start (struct symb *lhs, const char *anode, int anode_cost)
+rule_new_start (YaepSymb *lhs, const char *anode, int anode_cost)
 {
     struct rule *rule;
-    struct symb *empty;
+    YaepSymb *empty;
 
     assert (!lhs->term_p);
     OS_TOP_EXPAND (rules_ptr->rules_os, sizeof (struct rule));
@@ -3292,8 +3292,8 @@ rule_new_start (struct symb *lhs, const char *anode, int anode_cost)
     lhs->u.nonterm.rules = rule;
     rule->rhs_len = 0;
     empty = NULL;
-    OS_TOP_ADD_MEMORY (rules_ptr->rules_os, &empty, sizeof (struct symb *));
-    rule->rhs = (struct symb **) OS_TOP_BEGIN (rules_ptr->rules_os);
+    OS_TOP_ADD_MEMORY (rules_ptr->rules_os, &empty, sizeof (YaepSymb *));
+    rule->rhs = (YaepSymb **) OS_TOP_BEGIN (rules_ptr->rules_os);
     rules_ptr->curr_rule = rule;
     if (rules_ptr->first_rule == NULL)
         rules_ptr->first_rule = rule;
@@ -3304,14 +3304,14 @@ rule_new_start (struct symb *lhs, const char *anode, int anode_cost)
 
 /* Add SYMB at the end of current rule rhs. */
 static void
-rule_new_symb_add (struct symb *symb)
+rule_new_symb_add (YaepSymb *symb)
 {
-    struct symb *empty;
+    YaepSymb *empty;
 
     empty = NULL;
-    OS_TOP_ADD_MEMORY (rules_ptr->rules_os, &empty, sizeof (struct symb *));
+    OS_TOP_ADD_MEMORY (rules_ptr->rules_os, &empty, sizeof (YaepSymb *));
     rules_ptr->curr_rule->rhs
-        = (struct symb **) OS_TOP_BEGIN (rules_ptr->rules_os);
+        = (YaepSymb **) OS_TOP_BEGIN (rules_ptr->rules_os);
     rules_ptr->curr_rule->rhs[rules_ptr->curr_rule->rhs_len] = symb;
     rules_ptr->curr_rule->rhs_len++;
     rules_ptr->n_rhs_lens++;
@@ -3432,7 +3432,7 @@ rule_fin (struct rules *rules)
 struct tok
 {
     /* The following is symb correseponding to the token. */
-    struct symb *symb;
+    YaepSymb *symb;
     /* The following is an attribute of the token. */
     void *attr;
 };
@@ -3541,7 +3541,7 @@ sit_init (void)
 static int
 sit_set_lookahead (struct sit *sit)
 {
-    struct symb *symb, **symb_ptr;
+    YaepSymb *symb, **symb_ptr;
 
     if (grammar->lookahead_level == 0)
         sit->lookahead = NULL;
@@ -3688,7 +3688,7 @@ struct set_core
     unsigned int hash;
     /* The following is term shifting which resulted into this core.  It
        is defined only after forming all set. */
-    struct symb *term;
+    YaepSymb *term;
     /* The following are numbers of all situations and start situations
        in the following array. */
     int n_sits;
@@ -3738,7 +3738,7 @@ struct set
 struct set_term_lookahead
 {
     struct set *set;
-    struct symb *term;
+    YaepSymb *term;
     int lookahead;
     /* Saved goto sets form a queue.  The last goto is saved at the
        following array elements whose index is given by CURR.  */
@@ -3887,7 +3887,7 @@ static unsigned
 set_term_lookahead_hash (hash_table_entry_t s)
 {
     struct set *set = ((struct set_term_lookahead *) s)->set;
-    struct symb *term = ((struct set_term_lookahead *) s)->term;
+    YaepSymb *term = ((struct set_term_lookahead *) s)->term;
     int lookahead = ((struct set_term_lookahead *) s)->lookahead;
 
     return ((set_core_dists_hash (set) * hash_shift
@@ -3900,8 +3900,8 @@ set_term_lookahead_eq (hash_table_entry_t s1, hash_table_entry_t s2)
 {
     struct set *set1 = ((struct set_term_lookahead *) s1)->set;
     struct set *set2 = ((struct set_term_lookahead *) s2)->set;
-    struct symb *term1 = ((struct set_term_lookahead *) s1)->term;
-    struct symb *term2 = ((struct set_term_lookahead *) s2)->term;
+    YaepSymb *term1 = ((struct set_term_lookahead *) s1)->term;
+    YaepSymb *term2 = ((struct set_term_lookahead *) s2)->term;
     int lookahead1 = ((struct set_term_lookahead *) s1)->lookahead;
     int lookahead2 = ((struct set_term_lookahead *) s2)->lookahead;
 
@@ -4404,7 +4404,7 @@ struct core_symb_vect
     /* The set core. */
     struct set_core *set_core;
     /* The symbol. */
-    struct symb *symb;
+    YaepSymb *symb;
     /* The following vector contains indexes of situations with given
        symb in situation after dot. */
     struct vect transitions;
@@ -4596,7 +4596,7 @@ core_symb_vect_addr_get (struct core_symb_vect *triple, int reserv_p)
 /* The following function returns entry in the table where pointer to
    corresponding triple with SET_CORE and SYMB is placed. */
 static struct core_symb_vect **
-core_symb_vect_addr_get (struct set_core *set_core, struct symb *symb)
+core_symb_vect_addr_get (struct set_core *set_core, YaepSymb *symb)
 {
     struct core_symb_vect ***core_symb_vect_ptr;
 
@@ -4639,7 +4639,7 @@ core_symb_vect_addr_get (struct set_core *set_core, struct symb *symb)
 /* The following function returns the triple (if any) for given
    SET_CORE and SYMB. */
 static struct core_symb_vect *
-core_symb_vect_find (struct set_core *set_core, struct symb *symb)
+core_symb_vect_find (struct set_core *set_core, YaepSymb *symb)
 {
 #ifdef USE_CORE_SYMB_HASH_TABLE
     struct core_symb_vect core_symb_vect;
@@ -4655,7 +4655,7 @@ core_symb_vect_find (struct set_core *set_core, struct symb *symb)
 /* Add given triple (SET_CORE, TERM, ...) to the table and return
    pointer to it. */
 static struct core_symb_vect *
-core_symb_vect_new (struct set_core *set_core, struct symb *symb)
+core_symb_vect_new (struct set_core *set_core, YaepSymb *symb)
 {
     struct core_symb_vect *triple;
     struct core_symb_vect **addr;
@@ -4904,7 +4904,7 @@ yaep_error_message (YaepGrammar *g)
 static void
 create_first_follow_sets (void)
 {
-    struct symb *symb, **rhs, *rhs_symb, *next_rhs_symb;
+    YaepSymb *symb, **rhs, *rhs_symb, *next_rhs_symb;
     struct rule *rule;
     int changed_p, first_continue_p;
     int i, j, k, rhs_len;
@@ -4971,7 +4971,7 @@ create_first_follow_sets (void)
 static void
 set_empty_access_derives (void)
 {
-    struct symb *symb, *rhs_symb;
+    YaepSymb *symb, *rhs_symb;
     struct rule *rule;
     int empty_p, derivation_p;
     int empty_changed_p, derivation_changed_p, accessibility_change_p;
@@ -5023,7 +5023,7 @@ set_empty_access_derives (void)
 static void
 set_loop_p (void)
 {
-    struct symb *symb, *lhs;
+    YaepSymb *symb, *lhs;
     struct rule *rule;
     int i, j, k, loop_p, changed_p;
 
@@ -5078,7 +5078,7 @@ set_loop_p (void)
 static void
 check_grammar (int strict_p)
 {
-    struct symb *symb;
+    YaepSymb *symb;
     int i;
 
     set_empty_access_derives ();
@@ -5132,7 +5132,7 @@ yaep_read_grammar (YaepGrammar *g, int strict_p,
 					     int *anode_cost, int **transl, char *mark, char **marks))
 {
     const char *name, *lhs, **rhs, *anode;
-    struct symb *symb, *start;
+    YaepSymb *symb, *start;
     struct rule *rule;
     int anode_cost;
     int *transl;
@@ -5399,7 +5399,7 @@ yaep_parse_init (int n_toks)
 #ifdef USE_CORE_SYMB_HASH_TABLE
     {
         int i;
-        struct symb *symb;
+        YaepSymb *symb;
 
         for (i = 0; (symb = symb_get (i)) != NULL; i++)
             symb->cached_core_symb_vect = NULL;
@@ -5439,7 +5439,7 @@ read_toks (void)
 static void
 add_derived_nonstart_sits (struct sit *sit, int parent)
 {
-    struct symb *symb;
+    YaepSymb *symb;
     struct rule *rule = sit->rule;
     int context = sit->context;
     int i;
@@ -5457,7 +5457,7 @@ static void
 expand_new_start_set (void)
 {
     struct sit *sit;
-    struct symb *symb;
+    YaepSymb *symb;
     struct core_symb_vect *core_symb_vect;
     struct rule *rule;
     int i;
@@ -6279,7 +6279,7 @@ static void
 build_pl (void)
 {
     int i;
-    struct symb *term;
+    YaepSymb *term;
     struct set *set;
     struct core_symb_vect *core_symb_vect;
     int lookahead_term_num;
@@ -6999,7 +6999,7 @@ make_parse (int *ambiguous_p)
     struct set_core *set_core, *check_set_core;
     struct sit *sit, *check_sit;
     struct rule *rule, *sit_rule;
-    struct symb *symb;
+    YaepSymb *symb;
     struct core_symb_vect *core_symb_vect, *check_core_symb_vect;
     int i, j, k, found, pos, orig, pl_ind, n_candidates, disp;
     int sit_ind, check_sit_ind, sit_orig, check_sit_orig, new_p;
