@@ -2422,7 +2422,7 @@ struct YaepVocabulary;
 typedef struct YaepVocabulary YaepVocabulary;
 
 struct YaepTabTermSet;
-typedef struct YaepTabTermSet YaepTarbTermSet;
+typedef struct YaepTabTermSet YaepTabTermSet;
 
 struct YaepTermStorage;
 typedef struct YaepTermStorage YaepTermStorage;
