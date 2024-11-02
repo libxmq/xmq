@@ -350,8 +350,8 @@ char *load_file_into_buffer(const char *file);
 bool check_file_exists(const char *file);
 
 // TODO REMOVE...
-void xmq_set_yaep_grammar(XMQDoc *doc, struct grammar *g);
-struct grammar *xmq_get_yaep_grammar(XMQDoc *doc);
+void xmq_set_yaep_grammar(XMQDoc *doc, YaepGrammar *g);
+YaepGrammar *xmq_get_yaep_grammar(XMQDoc *doc);
 
 /////////////////////////////////////////////////////////////////////////////////////
 

@@ -36,7 +36,8 @@
 
 /* The following is a forward declaration of grammar formed by function
    yaep_read_grammar. */
-struct grammar;
+struct YaepGrammar;
+typedef struct YaepGrammar YaepGrammar;
 
 /* The following value is reserved to be designation of empty node for
    translation.  It should be positive number which is not intersected
@@ -157,15 +158,15 @@ struct yaep_tree_node
 /* The following function creates undefined grammar.  The function
    returns NULL if there is no memory.  This function should be called
    the first. */
-struct grammar *yaep_create_grammar (void);
+YaepGrammar *yaep_create_grammar (void);
 
 /* The function returns the last occurred error code for given
    grammar. */
-int yaep_error_code (struct grammar *g);
+int yaep_error_code (YaepGrammar *g);
 
 /* The function returns message are always contains error message
    corresponding to the last occurred error code. */
-const char *yaep_error_message (struct grammar *g);
+const char *yaep_error_message (YaepGrammar *g);
 
 /* The following function reads terminals/rules into grammar G and
    checks it depending on STRICT_P.  It returns zero if it is all ok.
@@ -200,7 +201,7 @@ const char *yaep_error_message (struct grammar *g);
    The cost of the abstract node if given is passed through
    ANODE_COST. */
 int
-yaep_read_grammar (struct grammar *g, int strict_p,
+yaep_read_grammar (YaepGrammar *g, int strict_p,
 		   const char *(*read_terminal) (int *code),
 		   const char *(*read_rule) (const char ***rhs,
 					     const char **abs_node,
@@ -212,7 +213,7 @@ yaep_read_grammar (struct grammar *g, int strict_p,
 /* The following function is analogous to the previous one but it
    parses grammar description. */
 int
-yaep_parse_grammar (struct grammar *g, int strict_p,
+yaep_parse_grammar (YaepGrammar *g, int strict_p,
 		    const char *description);
 
 /* The following functions set up different parameters which affect
@@ -244,12 +245,12 @@ yaep_parse_grammar (struct grammar *g, int strict_p,
    o recovery_match means how much subsequent tokens should be
      successfully shifted to finish error recovery.  The default value
      is 3. */
-int yaep_set_lookahead_level (struct grammar *grammar, int level);
-int yaep_set_debug_level (struct grammar *grammar, int level);
-int yaep_set_one_parse_flag (struct grammar *grammar, int flag);
-int yaep_set_cost_flag (struct grammar *grammar, int flag);
-int yaep_set_error_recovery_flag (struct grammar *grammar, int flag);
-int yaep_set_recovery_match (struct grammar *grammar, int n_toks);
+int yaep_set_lookahead_level (YaepGrammar *grammar, int level);
+int yaep_set_debug_level (YaepGrammar *grammar, int level);
+int yaep_set_one_parse_flag (YaepGrammar *grammar, int flag);
+int yaep_set_cost_flag (YaepGrammar *grammar, int flag);
+int yaep_set_error_recovery_flag (YaepGrammar *grammar, int flag);
+int yaep_set_recovery_match (YaepGrammar *grammar, int n_toks);
 
 /* The following function parses input according read grammar.  The
    function returns the error code (which will be also in
@@ -289,7 +290,7 @@ int yaep_set_recovery_match (struct grammar *grammar, int n_toks);
    free memory allocated by PARSE_ALLOC. If PARSE_ALLOC is not NULL
    but PARSE_FREE is, the memory is not freed. In this case, the
    returned parse tree should also not be freed with yaep_free_tree(). */
-int yaep_parse (struct grammar *grammar,
+int yaep_parse (YaepGrammar *grammar,
 		       int (*read_token) (void **attr),
 		       void (*syntax_error) (int err_tok_num,
 					     void *err_tok_attr,
@@ -303,7 +304,7 @@ int yaep_parse (struct grammar *grammar,
 		       int *ambiguous_p);
 
 /* The following function frees memory allocated for the grammar. */
-void yaep_free_grammar (struct grammar *grammar);
+void yaep_free_grammar (YaepGrammar *grammar);
 
 /* The following function frees memory allocated for the parse tree.
    It must not be called until after yaep_free_grammar() has been called.
@@ -323,7 +324,7 @@ void yaep_free_tree( struct yaep_tree_node * root, void ( *parse_free )( void * 
 
 class yaep
 {
-  struct grammar *grammar;
+  YaepGrammar *grammar;
 
 public:
 

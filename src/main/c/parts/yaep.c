@@ -2411,7 +2411,7 @@ static const unsigned jauquet_prime_mod32 = 2053222611;
 static const unsigned hash_shift = 611;
 
 /* The following is major structure which stores information about the grammar. */
-struct grammar
+struct YaepGrammar
 {
     /* The following member is TRUE if the grammar is undefined (you
        should set up the grammar by yaep_read_grammar or
@@ -2485,7 +2485,7 @@ struct grammar
 };
 
 /* The following variable value is the reference for the current grammar structure. */
-static struct grammar *grammar;
+static YaepGrammar *grammar;
 
 /* The following variable values are values of the corresponding
    members for the current grammar. */
@@ -2509,7 +2509,7 @@ static void (*parse_free) (void *mem);
 static void yaep_error (int code, const char *format, ...);
 
 extern
-void yaep_free_grammar (struct grammar *g);
+void yaep_free_grammar (YaepGrammar *g);
 
 /* The following is default number of tokens sucessfully matched to
    stop error recovery alternative (state). */
@@ -4826,7 +4826,7 @@ error_func_for_allocate (void *ignored)
 }
 
 /* The following function allocates memory for new grammar. */
-struct grammar *
+YaepGrammar *
 yaep_create_grammar (void)
 {
     YaepAllocator *allocator;
@@ -4837,7 +4837,7 @@ yaep_create_grammar (void)
         return NULL;
     }
     grammar = NULL;
-    grammar = (struct grammar *) yaep_malloc (allocator, sizeof (*grammar));
+    grammar = (YaepGrammar *) yaep_malloc (allocator, sizeof (*grammar));
     if (grammar == NULL)
     {
         yaep_alloc_del (allocator);
@@ -4884,7 +4884,7 @@ yaep_empty_grammar (void)
 /* The function returns the last occurred error code for given
    grammar. */
 int
-yaep_error_code (struct grammar *g)
+yaep_error_code (YaepGrammar *g)
 {
     assert (g != NULL);
     return g->error_code;
@@ -4893,7 +4893,7 @@ yaep_error_code (struct grammar *g)
 /* The function returns message are always contains error message
    corresponding to the last occurred error code. */
 const char *
-yaep_error_message (struct grammar *g)
+yaep_error_message (YaepGrammar *g)
 {
     assert (g != NULL);
     return g->error_message;
@@ -5125,7 +5125,7 @@ check_grammar (int strict_p)
    pointer to the grammar (or NULL if there were errors in
    grammar). */
 int
-yaep_read_grammar (struct grammar *g, int strict_p,
+yaep_read_grammar (YaepGrammar *g, int strict_p,
 		   const char *(*read_terminal) (int *code),
 		   const char *(*read_rule) (const char ***rhs,
 					     const char **abs_node,
@@ -5321,7 +5321,7 @@ yaep_read_grammar (struct grammar *g, int strict_p,
    and return the previous parameter value. */
 
 int
-yaep_set_lookahead_level (struct grammar *grammar, int level)
+yaep_set_lookahead_level (YaepGrammar *grammar, int level)
 {
     int old;
 
@@ -5332,7 +5332,7 @@ yaep_set_lookahead_level (struct grammar *grammar, int level)
 }
 
 int
-yaep_set_debug_level (struct grammar *grammar, int level)
+yaep_set_debug_level (YaepGrammar *grammar, int level)
 {
     int old;
 
@@ -5343,7 +5343,7 @@ yaep_set_debug_level (struct grammar *grammar, int level)
 }
 
 int
-yaep_set_one_parse_flag (struct grammar *grammar, int flag)
+yaep_set_one_parse_flag (YaepGrammar *grammar, int flag)
 {
     int old;
 
@@ -5354,7 +5354,7 @@ yaep_set_one_parse_flag (struct grammar *grammar, int flag)
 }
 
 int
-yaep_set_cost_flag (struct grammar *grammar, int flag)
+yaep_set_cost_flag (YaepGrammar *grammar, int flag)
 {
     int old;
 
@@ -5365,7 +5365,7 @@ yaep_set_cost_flag (struct grammar *grammar, int flag)
 }
 
 int
-yaep_set_error_recovery_flag (struct grammar *grammar, int flag)
+yaep_set_error_recovery_flag (YaepGrammar *grammar, int flag)
 {
     int old;
 
@@ -5376,7 +5376,7 @@ yaep_set_error_recovery_flag (struct grammar *grammar, int flag)
 }
 
 int
-yaep_set_recovery_match (struct grammar *grammar, int n_toks)
+yaep_set_recovery_match (YaepGrammar *grammar, int n_toks)
 {
     int old;
 
@@ -7538,7 +7538,7 @@ parse_free_default (void *mem)
    *AMBIGUOUS_P if we found that the grammer is ambigous (it works even
    we asked only one parse tree without alternatives). */
 int
-yaep_parse (struct grammar *g,
+yaep_parse (YaepGrammar *g,
 	    int (*read) (void **attr),
 	    void (*error) (int err_tok_num, void *err_tok_attr,
 			   int start_ignored_tok_num,
@@ -7665,7 +7665,7 @@ yaep_parse (struct grammar *g,
 
 /* The following function frees memory allocated for the grammar. */
 void
-yaep_free_grammar (struct grammar *g)
+yaep_free_grammar (YaepGrammar *g)
 {
     YaepAllocator *allocator;
 

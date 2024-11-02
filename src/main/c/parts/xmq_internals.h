@@ -571,7 +571,8 @@ size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...);
 size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop);
 void print_quote(XMQPrintState *ps, XMQColor c, const char *start, const char *stop);
 
-struct grammar;
+struct YaepGrammar;
+typedef struct YaepGrammar YaepGrammar;
 struct yaep_tree_node;
 
 bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar, const char *start, const char *stop);
@@ -612,8 +613,8 @@ struct XMQPrintCallbacks
 bool debug_enabled();
 
 void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
-void xmq_set_yaep_grammar(XMQDoc *doc, struct grammar *g);
-struct grammar *xmq_get_yaep_grammar(XMQDoc *doc);
+void xmq_set_yaep_grammar(XMQDoc *doc, YaepGrammar *g);
+YaepGrammar *xmq_get_yaep_grammar(XMQDoc *doc);
 
 void set_node_namespace(XMQParseState *state, xmlNodePtr node, const char *node_name);
 

@@ -26,10 +26,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include"xmq.h"
 
-struct grammar;
+struct YaepGrammar;
+typedef struct YaepGrammar YaepGrammar;
 struct yaep_tree_node;
 
-bool ixml_build_yaep_grammar(struct grammar *g, XMQParseState *state, const char *start, const char *stop);
+bool ixml_build_yaep_grammar(YaepGrammar *g, XMQParseState *state, const char *start, const char *stop);
 
 #define IXML_MODULE
 

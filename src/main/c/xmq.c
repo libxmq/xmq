@@ -44,7 +44,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/xmq_printer.h"
 #include"parts/yaep.h"
 
-struct grammar;
+struct YaepGrammar;
+typedef struct YaepGrammar YaepGrammar;
 struct yaep_tree_node;
 
 // XMQ STRUCTURES ////////////////////////////////////////////////
@@ -1747,7 +1748,7 @@ void xmqFreeDoc(XMQDoc *doq)
     }
     if (doq->yaep_grammar_)
     {
-        yaep_free_grammar ((struct grammar*)doq->yaep_grammar_);
+        yaep_free_grammar ((YaepGrammar*)doq->yaep_grammar_);
         doq->yaep_grammar_ = NULL;
     }
 
@@ -4149,9 +4150,9 @@ bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
     state->doq = ixml_grammar;
     state->build_xml_of_ixml = false;
     ixml_grammar->yaep_grammar_ = yaep_create_grammar();
-    if (xmqTracing()) yaep_set_debug_level((struct grammar*)ixml_grammar->yaep_grammar_, 5);
+    if (xmqTracing()) yaep_set_debug_level((YaepGrammar*)ixml_grammar->yaep_grammar_, 5);
 
-    ixml_build_yaep_grammar((struct grammar*)ixml_grammar->yaep_grammar_, state, start, stop);
+    ixml_build_yaep_grammar((YaepGrammar*)ixml_grammar->yaep_grammar_, state, start, stop);
 
     if (xmqStateErrno(state))
     {
@@ -4167,14 +4168,14 @@ bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
     return rc;
 }
 
-void xmq_set_yaep_grammar(XMQDoc *doc, struct grammar *g)
+void xmq_set_yaep_grammar(XMQDoc *doc, YaepGrammar *g)
 {
     doc->yaep_grammar_ = g;
 }
 
-struct grammar *xmq_get_yaep_grammar(XMQDoc *doc)
+YaepGrammar *xmq_get_yaep_grammar(XMQDoc *doc)
 {
-    return (struct grammar *)doc->yaep_grammar_;
+    return (YaepGrammar *)doc->yaep_grammar_;
 }
 
 static char *input_i_;

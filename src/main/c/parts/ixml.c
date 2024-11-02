@@ -1363,7 +1363,7 @@ const char *ixml_to_yaep_read_rule(const char ***rhs,
     return rule->rule_name->name;
 }
 
-bool ixml_build_yaep_grammar(struct grammar *g, XMQParseState *state, const char *start, const char *stop)
+bool ixml_build_yaep_grammar(YaepGrammar *g, XMQParseState *state, const char *start, const char *stop)
 {
     if (state->magic_cookie != MAGIC_COOKIE)
     {
@@ -1734,7 +1734,7 @@ void make_last_term_optional(XMQParseState *state)
 #else
 
 // Empty function when XMQ_NO_IXML is defined.
-bool xmq_parse_ixml_grammar(struct grammar *g,
+bool xmq_parse_ixml_grammar(YaepGrammar *g,
                             struct yaep_tree_node **root,
                             int *ambiguous,
                             XMQDoc *doq,
