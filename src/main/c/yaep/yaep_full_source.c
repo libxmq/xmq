@@ -2949,9 +2949,36 @@ static int tok_curr;
 /* The following array contains all input tokens.*/
 static vlo_t toks_vlo;
 
+/* The following contains current number of unique situations.  It can
+   be read externally.*/
+static int n_all_sits;
+
+/* The following two dimensional array(the first dimension is context
+   number, the second one is situation number) contains references to
+   all possible situations.*/
+static YaepSituation***sit_table;
+
+/* The following vlo is indexed by situation context number and gives
+   array which is indexed by situation number
+  (sit->rule->rule_start_offset + sit->pos).*/
+static vlo_t sit_table_vlo;
+
+/* All situations are placed in the following object.*/
+static os_t sits_os;
+
+/* This page contains code for table of pairs(sit, dist). */
+
+/* Vector implementing map: sit number -> vlo of the distance check
+   indexed by the distance. */
+static vlo_t sit_dist_vec_vlo;
+
+/* The value used to check the validity of elements of check_dist
+   structures. */
+static int curr_sit_dist_vec_check;
+
 // Implementations ////////////////////////////////////////////////////////////////////
 
-/* Hash of symbol representation.*/
+/* Hash of symbol representation. */
 static unsigned symb_repr_hash(hash_table_entry_t s)
 {
     unsigned result = jauquet_prime_mod32;
@@ -2962,25 +2989,27 @@ static unsigned symb_repr_hash(hash_table_entry_t s)
     {
         result = result* hash_shift +(unsigned) str[i];
     }
+
     TRACE("symb_repr_hash %s -> %u\n", str, result);
     return result;
 }
 
-/* Equality of symbol representations.*/
-static int
-symb_repr_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+/* Equality of symbol representations. */
+static int symb_repr_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     TRACE("symb_repr_eq %s %s\n",((YaepSymb*) s1)->repr,((YaepSymb*) s2)->repr);
+
     return strcmp(((YaepSymb*) s1)->repr,((YaepSymb*) s2)->repr) == 0;
 }
 
-/* Hash of terminal code.*/
+/* Hash of terminal code. */
 static unsigned symb_code_hash(hash_table_entry_t s)
 {
     YaepSymb*symb =((YaepSymb*) s);
 
     assert(symb->term_p);
     TRACE("symb_code_hash %d\n", symb->u.term.code);
+
     return symb->u.term.code;
 }
 
@@ -2991,14 +3020,13 @@ static int symb_code_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     YaepSymb*symb2 =((YaepSymb*) s2);
 
     assert(symb1->term_p && symb2->term_p);
-
     TRACE("symb_code_eq %d %d\n", symb1->u.term.code, symb2->u.term.code);
+
     return symb1->u.term.code == symb2->u.term.code;
 }
 
-/* Initialize work with symbols and returns storage for the
-   symbols.*/
-static YaepVocabulary*symb_init()
+/* Initialize work with symbols and returns storage for the symbols.*/
+static YaepVocabulary *symb_init()
 {
     void*mem;
     YaepVocabulary*result;
@@ -3019,9 +3047,8 @@ static YaepVocabulary*symb_init()
     return result;
 }
 
-/* Return symbol(or NULL if it does not exist) whose representation
-   is REPR.*/
-static YaepSymb*symb_find_by_repr(const char*repr)
+/* Return symbol(or NULL if it does not exist) whose representation is REPR.*/
+static YaepSymb *symb_find_by_repr(const char*repr)
 {
     YaepSymb symb;
     symb.repr = repr;
@@ -3032,8 +3059,8 @@ static YaepSymb*symb_find_by_repr(const char*repr)
     return r;
 }
 
-/* Return symbol(or NULL if it does not exist) which is terminal with CODE.*/
-static YaepSymb*symb_find_by_code(int code)
+/* Return symbol(or NULL if it does not exist) which is terminal with CODE. */
+static YaepSymb *symb_find_by_code(int code)
 {
     YaepSymb symb;
 
@@ -3063,11 +3090,11 @@ static YaepSymb*symb_find_by_code(int code)
 
 /* The function creates new terminal symbol and returns reference for
    it.  The symbol should be not in the tables.  The function should
-   create own copy of name for the new symbol.*/
-static YaepSymb*symb_add_term(const char*name, int code)
+   create own copy of name for the new symbol. */
+static YaepSymb *symb_add_term(const char*name, int code)
 {
-    YaepSymb symb,*result;
-    hash_table_entry_t*repr_entry,*code_entry;
+    YaepSymb symb, *result;
+    hash_table_entry_t *repr_entry, *code_entry;
 
     symb.repr = name;
     symb.term_p = TRUE;
@@ -3091,13 +3118,14 @@ static YaepSymb*symb_add_term(const char*name, int code)
     VLO_ADD_MEMORY(symbs_ptr->terms_vlo, &result, sizeof(YaepSymb*));
 
     TRACE("symb_add_term %s %d -> %p\n", name, code, result);
+
     return result;
 }
 
 /* The function creates new nonterminal symbol and returns reference
-   for it.  The symbol should be not in the table.  The function
-   should create own copy of name for the new symbol.*/
-static YaepSymb*symb_add_nonterm(const char*name)
+   for it.  The symbol should be not in the table. The function
+   should create own copy of name for the new symbol. */
+static YaepSymb *symb_add_nonterm(const char *name)
 {
     YaepSymb symb,*result;
     hash_table_entry_t*entry;
@@ -3121,11 +3149,12 @@ static YaepSymb*symb_add_nonterm(const char*name)
     VLO_ADD_MEMORY(symbs_ptr->nonterms_vlo, &result, sizeof(YaepSymb*));
 
     TRACE("symb_add_nonterm %s -> %p\n", name, result);
+
     return result;
 }
 
-/* The following function return N-th symbol(if any) or NULL otherwise.*/
-static YaepSymb*symb_get(int n)
+/* The following function return N-th symbol(if any) or NULL otherwise. */
+static YaepSymb *symb_get(int n)
 {
     if (n < 0 ||(VLO_LENGTH(symbs_ptr->symbs_vlo) / sizeof(YaepSymb*) <=(size_t) n))
     {
@@ -3135,13 +3164,14 @@ static YaepSymb*symb_get(int n)
     assert(symb->num == n);
 
     TRACE("symb_get %d -> %p\n", n, symb);
+
     return symb;
 }
 
-/* The following function return N-th symbol(if any) or NULL otherwise.*/
-static YaepSymb*term_get(int n)
+/* The following function return N-th symbol(if any) or NULL otherwise. */
+static YaepSymb *term_get(int n)
 {
-    if (n < 0 ||(VLO_LENGTH(symbs_ptr->terms_vlo) / sizeof(YaepSymb*) <=(size_t) n))
+    if (n < 0 || (VLO_LENGTH(symbs_ptr->terms_vlo) / sizeof(YaepSymb*) <=(size_t) n))
     {
         return NULL;
     }
@@ -3149,11 +3179,12 @@ static YaepSymb*term_get(int n)
     assert(symb->term_p && symb->u.term.term_num == n);
 
     TRACE("term_get %d -> %p\n", n, symb);
+
     return symb;
 }
 
-/* The following function return N-th symbol(if any) or NULL otherwise.*/
-static YaepSymb*nonterm_get(int n)
+/* The following function return N-th symbol(if any) or NULL otherwise. */
+static YaepSymb *nonterm_get(int n)
 {
     if (n < 0 ||(VLO_LENGTH(symbs_ptr->nonterms_vlo) / sizeof(YaepSymb*) <=(size_t) n))
     {
@@ -3163,6 +3194,7 @@ static YaepSymb*nonterm_get(int n)
     assert(!symb->term_p && symb->u.nonterm.nonterm_num == n);
 
     TRACE("nonterm_get %d -> %p\n", n, symb);
+
     return symb;
 }
 
@@ -3179,7 +3211,7 @@ static void symb_print(FILE* f, YaepSymb*symb, int code_p)
     }
 }
 
-#endif /* #ifndef NO_YAEP_DEBUG_PRINT*/
+#endif
 
 static void symb_finish_adding_terms()
 {
@@ -3187,7 +3219,7 @@ static void symb_finish_adding_terms()
     YaepSymb*symb;
     void*mem;
 
-    for(min_code = max_code = i = 0;(symb = term_get(i)) != NULL; i++)
+    for (min_code = max_code = i = 0;(symb = term_get(i)) != NULL; i++)
     {
         if (i == 0 || min_code > symb->u.term.code) min_code = symb->u.term.code;
         if (i == 0 || max_code < symb->u.term.code) max_code = symb->u.term.code;
@@ -3212,8 +3244,8 @@ static void symb_finish_adding_terms()
     TRACE("symb_finish_adding_terms num_codes=%zu size=%zu\n", num_codes, vec_size);
 }
 
-/* Free memory for symbols.*/
-static void symb_empty(YaepVocabulary*symbs)
+/* Free memory for symbols. */
+static void symb_empty(YaepVocabulary *symbs)
 {
     if (symbs == NULL) return;
 
@@ -3234,8 +3266,8 @@ static void symb_empty(YaepVocabulary*symbs)
     TRACE("symb_empty %p\n" , symbs);
 }
 
-/* Finalize work with symbols.*/
-static void symb_fin(YaepVocabulary*symbs)
+/* Finalize work with symbols. */
+static void symb_fin(YaepVocabulary *symbs)
 {
     if (symbs == NULL) return;
 
@@ -3264,33 +3296,36 @@ static unsigned term_set_hash(hash_table_entry_t s)
     int size;
     unsigned result = jauquet_prime_mod32;
 
-    size =((symbs_ptr->n_terms + CHAR_BIT* sizeof(term_set_el_t) - 1)
-            /(CHAR_BIT* sizeof(term_set_el_t)));
+    size = ((symbs_ptr->n_terms + CHAR_BIT* sizeof(term_set_el_t) - 1) / (CHAR_BIT* sizeof(term_set_el_t)));
     bound = set + size;
     while(set < bound)
-        result = result* hash_shift +*set++;
+    {
+        result = result * hash_shift + *set++;
+    }
     return result;
 }
 
-/* Equality of terminal sets.*/
+/* Equality of terminal sets. */
 static int term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    term_set_el_t*set1 =((YaepTabTermSet*) s1)->set;
-    term_set_el_t*set2 =((YaepTabTermSet*) s2)->set;
-    term_set_el_t*bound;
+    term_set_el_t *set1 = ((YaepTabTermSet*)s1)->set;
+    term_set_el_t *set2 = ((YaepTabTermSet*)s2)->set;
+    term_set_el_t *bound;
     int size;
 
-    size =((symbs_ptr->n_terms + CHAR_BIT* sizeof(term_set_el_t) - 1)
-            /(CHAR_BIT* sizeof(term_set_el_t)));
+    size = ((symbs_ptr->n_terms + CHAR_BIT* sizeof(term_set_el_t) - 1) / (CHAR_BIT* sizeof(term_set_el_t)));
     bound = set1 + size;
     while(set1 < bound)
+    {
         if (*set1++ !=*set2++)
+        {
             return FALSE;
+        }
+    }
     return TRUE;
 }
 
-/* Initialize work with terminal sets and returns storage for terminal
-   sets.*/
+/* Initialize work with terminal sets and returns storage for terminal sets.*/
 static YaepTermStorage *term_set_init()
 {
     void*mem;
@@ -3299,14 +3334,14 @@ static YaepTermStorage *term_set_init()
     mem = yaep_malloc(grammar->alloc, sizeof(YaepTermStorage));
     result =(YaepTermStorage*) mem;
     OS_CREATE(result->term_set_os, grammar->alloc, 0);
-    result->term_set_tab =
-        create_hash_table(grammar->alloc, 1000, term_set_hash, term_set_eq);
+    result->term_set_tab = create_hash_table(grammar->alloc, 1000, term_set_hash, term_set_eq);
     VLO_CREATE(result->tab_term_set_vlo, grammar->alloc, 4096);
     result->n_term_sets = result->n_term_sets_size = 0;
+
     return result;
 }
 
-/* Return new terminal SET.  Its value is undefined.*/
+/* Return new terminal SET.  Its value is undefined. */
 static term_set_el_t *term_set_create()
 {
     int size;
@@ -3322,6 +3357,7 @@ static term_set_el_t *term_set_create()
     OS_TOP_FINISH(term_sets_ptr->term_set_os);
     term_sets_ptr->n_term_sets++;
     term_sets_ptr->n_term_sets_size += size;
+
     return result;
 }
 
@@ -3338,114 +3374,116 @@ static void term_set_clear(term_set_el_t* set)
        *set++ = 0;
 }
 
-/* Copy SRC into DEST.*/
-static void term_set_copy(term_set_el_t* dest, term_set_el_t* src)
+/* Copy SRC into DEST. */
+static void term_set_copy(term_set_el_t *dest, term_set_el_t *src)
 {
-    term_set_el_t*bound;
+    term_set_el_t *bound;
     int size;
 
-    size =((symbs_ptr->n_terms + CHAR_BIT* sizeof(term_set_el_t) - 1)
-            /(CHAR_BIT* sizeof(term_set_el_t)));
+    size = ((symbs_ptr->n_terms + CHAR_BIT* sizeof(term_set_el_t) - 1) / (CHAR_BIT* sizeof(term_set_el_t)));
     bound = dest + size;
-    while(dest < bound)
-       *dest++ =*src++;
+
+    while (dest < bound)
+    {
+       *dest++ = *src++;
+    }
 }
 
-/* Add all terminals from set OP with to SET.  Return TRUE if SET has
-   been changed.*/
-static int term_set_or(term_set_el_t* set, term_set_el_t* op)
+/* Add all terminals from set OP with to SET.  Return TRUE if SET has been changed.*/
+static int term_set_or(term_set_el_t *set, term_set_el_t *op)
 {
-    term_set_el_t*bound;
+    term_set_el_t *bound;
     int size, changed_p;
 
-    size =((symbs_ptr->n_terms + CHAR_BIT* sizeof(term_set_el_t) - 1)
-            /(CHAR_BIT* sizeof(term_set_el_t)));
+    size = ((symbs_ptr->n_terms + CHAR_BIT* sizeof(term_set_el_t) - 1) / (CHAR_BIT* sizeof(term_set_el_t)));
     bound = set + size;
     changed_p = 0;
-    while(set < bound)
+    while (set < bound)
     {
         if ((*set |*op) !=*set)
+        {
             changed_p = 1;
-       *set++ |=*op++;
+        }
+       *set++ |= *op++;
     }
     return changed_p;
 }
 
-/* Add terminal with number NUM to SET.  Return TRUE if SET has been
-   changed.*/
-static int term_set_up(term_set_el_t* set, int num)
+/* Add terminal with number NUM to SET.  Return TRUE if SET has been changed.*/
+static int term_set_up(term_set_el_t *set, int num)
 {
     int ind, changed_p;
     term_set_el_t bit;
 
     assert(num < symbs_ptr->n_terms);
-    ind = num /(CHAR_BIT* sizeof(term_set_el_t));
-    bit =((term_set_el_t) 1) <<(num %(CHAR_BIT* sizeof(term_set_el_t)));
+
+    ind = num / (CHAR_BIT* sizeof(term_set_el_t));
+    bit = ((term_set_el_t) 1) << (num %(CHAR_BIT* sizeof(term_set_el_t)));
     changed_p =(set[ind] & bit ? 0 : 1);
     set[ind] |= bit;
+
     return changed_p;
 }
 
-/* Return TRUE if terminal with number NUM is in SET.*/
-static int term_set_test(term_set_el_t* set, int num)
+/* Return TRUE if terminal with number NUM is in SET. */
+static int term_set_test(term_set_el_t *set, int num)
 {
     int ind;
     term_set_el_t bit;
 
     assert(num >= 0 && num < symbs_ptr->n_terms);
+
     ind = num /(CHAR_BIT* sizeof(term_set_el_t));
-    bit =((term_set_el_t) 1) <<(num %(CHAR_BIT* sizeof(term_set_el_t)));
-    return(set[ind] & bit) != 0;
+    bit = ((term_set_el_t) 1) << (num %(CHAR_BIT* sizeof(term_set_el_t)));
+
+    return (set[ind] & bit) != 0;
 }
 
 /* The following function inserts terminal SET into the table and
    returns its number.  If the set is already in table it returns -its
    number - 1(which is always negative).  Don't set after
    insertion!!!*/
-static int term_set_insert(term_set_el_t* set)
+static int term_set_insert(term_set_el_t *set)
 {
-    hash_table_entry_t*entry;
+    hash_table_entry_t *entry;
     YaepTabTermSet tab_term_set,*tab_term_set_ptr;
 
     tab_term_set.set = set;
-    entry =
-        find_hash_table_entry(term_sets_ptr->term_set_tab, &tab_term_set, TRUE);
+    entry = find_hash_table_entry(term_sets_ptr->term_set_tab, &tab_term_set, TRUE);
+
     if (*entry != NULL)
+    {
         return -((YaepTabTermSet*)*entry)->num - 1;
+    }
     else
     {
-        OS_TOP_EXPAND(term_sets_ptr->term_set_os,
-                       sizeof(YaepTabTermSet));
-        tab_term_set_ptr =
-           (YaepTabTermSet*) OS_TOP_BEGIN(term_sets_ptr->term_set_os);
+        OS_TOP_EXPAND(term_sets_ptr->term_set_os, sizeof(YaepTabTermSet));
+        tab_term_set_ptr = (YaepTabTermSet*)OS_TOP_BEGIN(term_sets_ptr->term_set_os);
         OS_TOP_FINISH(term_sets_ptr->term_set_os);
        *entry =(hash_table_entry_t) tab_term_set_ptr;
         tab_term_set_ptr->set = set;
-        tab_term_set_ptr->num =(VLO_LENGTH(term_sets_ptr->tab_term_set_vlo)
-                                 / sizeof(YaepTabTermSet*));
-        VLO_ADD_MEMORY(term_sets_ptr->tab_term_set_vlo, &tab_term_set_ptr,
-                        sizeof(YaepTabTermSet*));
+        tab_term_set_ptr->num = (VLO_LENGTH(term_sets_ptr->tab_term_set_vlo) / sizeof(YaepTabTermSet*));
+        VLO_ADD_MEMORY(term_sets_ptr->tab_term_set_vlo, &tab_term_set_ptr, sizeof(YaepTabTermSet*));
+
         return((YaepTabTermSet*)*entry)->num;
     }
 }
 
-/* The following function returns set which is in the table with
-   number NUM.*/
+/* The following function returns set which is in the table with number NUM.*/
 static term_set_el_t *term_set_from_table(int num)
 {
     assert(num >= 0);
-    assert((long unsigned int)num < VLO_LENGTH(term_sets_ptr->tab_term_set_vlo)
-            / sizeof(YaepTabTermSet*));
-    return((YaepTabTermSet**)
-            VLO_BEGIN(term_sets_ptr->tab_term_set_vlo))[num]->set;
+    assert((long unsigned int)num < VLO_LENGTH(term_sets_ptr->tab_term_set_vlo) / sizeof(YaepTabTermSet*));
+
+    return ((YaepTabTermSet**)VLO_BEGIN(term_sets_ptr->tab_term_set_vlo))[num]->set;
 }
 
-/* Print terminal SET into file F.*/
-static void term_set_print(FILE* f, term_set_el_t* set)
+/* Print terminal SET into file F. */
+static void term_set_print(FILE *f, term_set_el_t *set)
 {
     int i;
 
-    for(i = 0; i < symbs_ptr->n_terms; i++)
+    for (i = 0; i < symbs_ptr->n_terms; i++)
     {
         if (term_set_test(set, i))
         {
@@ -3455,21 +3493,22 @@ static void term_set_print(FILE* f, term_set_el_t* set)
     }
 }
 
-/* Free memory for terminal sets.*/
+/* Free memory for terminal sets. */
 static void term_set_empty(YaepTermStorage*term_sets)
 {
-    if (term_sets == NULL)
-        return;
+    if (term_sets == NULL) return;
+
     VLO_NULLIFY(term_sets->tab_term_set_vlo);
     empty_hash_table(term_sets->term_set_tab);
     OS_EMPTY(term_sets->term_set_os);
     term_sets->n_term_sets = term_sets->n_term_sets_size = 0;
 }
 
-/* Finalize work with terminal sets.*/
+/* Finalize work with terminal sets. */
 static void term_set_fin(YaepTermStorage*term_sets)
 {
     if (term_sets == NULL) return;
+
     VLO_DELETE(term_sets->tab_term_set_vlo);
     delete_hash_table(term_sets->term_set_tab);
     OS_DELETE(term_sets->term_set_os);
@@ -3478,28 +3517,29 @@ static void term_set_fin(YaepTermStorage*term_sets)
 }
 
 
-/* Initialize work with rules and returns pointer to rules storage.*/
-static YaepRuleStorage*rule_init()
+/* Initialize work with rules and returns pointer to rules storage. */
+static YaepRuleStorage *rule_init()
 {
-    void*mem;
-    YaepRuleStorage*result;
+    void *mem;
+    YaepRuleStorage *result;
 
     mem = yaep_malloc(grammar->alloc, sizeof(YaepRuleStorage));
-    result =(YaepRuleStorage*) mem;
+    result = (YaepRuleStorage*)mem;
     OS_CREATE(result->rules_os, grammar->alloc, 0);
     result->first_rule = result->curr_rule = NULL;
     result->n_rules = result->n_rhs_lens = 0;
+
     return result;
 }
 
-/* Create new rule with LHS empty rhs.*/
-static YaepRule*
-rule_new_start(YaepSymb*lhs, const char*anode, int anode_cost)
+/* Create new rule with LHS empty rhs. */
+static YaepRule *rule_new_start(YaepSymb *lhs, const char *anode, int anode_cost)
 {
-    YaepRule*rule;
-    YaepSymb*empty;
+    YaepRule *rule;
+    YaepSymb *empty;
 
     assert(!lhs->term_p);
+
     OS_TOP_EXPAND(rules_ptr->rules_os, sizeof(YaepRule));
     rule =(YaepRule*) OS_TOP_BEGIN(rules_ptr->rules_os);
     OS_TOP_FINISH(rules_ptr->rules_os);
@@ -3521,7 +3561,9 @@ rule_new_start(YaepSymb*lhs, const char*anode, int anode_cost)
     rule->order = NULL;
     rule->next = NULL;
     if (rules_ptr->curr_rule != NULL)
+    {
         rules_ptr->curr_rule->next = rule;
+    }
     rule->lhs_next = lhs->u.nonterm.rules;
     lhs->u.nonterm.rules = rule;
     rule->rhs_len = 0;
@@ -3530,22 +3572,23 @@ rule_new_start(YaepSymb*lhs, const char*anode, int anode_cost)
     rule->rhs =(YaepSymb**) OS_TOP_BEGIN(rules_ptr->rules_os);
     rules_ptr->curr_rule = rule;
     if (rules_ptr->first_rule == NULL)
+    {
         rules_ptr->first_rule = rule;
+    }
     rule->rule_start_offset = rules_ptr->n_rhs_lens + rules_ptr->n_rules;
     rule->num = rules_ptr->n_rules++;
+
     return rule;
 }
 
-/* Add SYMB at the end of current rule rhs.*/
-static void
-rule_new_symb_add(YaepSymb*symb)
+/* Add SYMB at the end of current rule rhs. */
+static void rule_new_symb_add(YaepSymb *symb)
 {
-    YaepSymb*empty;
+    YaepSymb *empty;
 
     empty = NULL;
     OS_TOP_ADD_MEMORY(rules_ptr->rules_os, &empty, sizeof(YaepSymb*));
-    rules_ptr->curr_rule->rhs
-        =(YaepSymb**) OS_TOP_BEGIN(rules_ptr->rules_os);
+    rules_ptr->curr_rule->rhs = (YaepSymb**)OS_TOP_BEGIN(rules_ptr->rules_os);
     rules_ptr->curr_rule->rhs[rules_ptr->curr_rule->rhs_len] = symb;
     rules_ptr->curr_rule->rhs_len++;
     rules_ptr->n_rhs_lens++;
@@ -3553,26 +3596,25 @@ rule_new_symb_add(YaepSymb*symb)
 
 /* The function should be called at end of forming each rule.  It
    creates and initializes situation cache.*/
-static void
-rule_new_stop()
+static void rule_new_stop()
 {
     int i;
 
     OS_TOP_FINISH(rules_ptr->rules_os);
-    OS_TOP_EXPAND(rules_ptr->rules_os,
-                   rules_ptr->curr_rule->rhs_len* sizeof(int));
+    OS_TOP_EXPAND(rules_ptr->rules_os, rules_ptr->curr_rule->rhs_len* sizeof(int));
     rules_ptr->curr_rule->marks =(char*)calloc(rules_ptr->curr_rule->rhs_len, sizeof(1)); // IXML
     rules_ptr->curr_rule->order =(int*) OS_TOP_BEGIN(rules_ptr->rules_os);
     OS_TOP_FINISH(rules_ptr->rules_os);
     for(i = 0; i < rules_ptr->curr_rule->rhs_len; i++)
+    {
         rules_ptr->curr_rule->order[i] = -1;
+    }
 }
 
 #ifndef NO_YAEP_DEBUG_PRINT
 
 /* The following function prints RULE with its translation(if TRANS_P) to file F.*/
-static void
-rule_print(FILE* f, YaepRule*rule, int trans_p)
+static void rule_print(FILE *f, YaepRule *rule, int trans_p)
 {
     int i, j;
 
@@ -3609,14 +3651,13 @@ rule_print(FILE* f, YaepRule*rule, int trans_p)
     fprintf(f, "\n");
 }
 
-/* The following function prints RULE to file F with dot in position
-   POS.*/
-static void
-rule_dot_print(FILE* f, YaepRule*rule, int pos)
+/* The following function prints RULE to file F with dot in position POS.*/
+static void rule_dot_print(FILE *f, YaepRule *rule, int pos)
 {
     int i;
 
     assert(pos >= 0 && pos <= rule->rhs_len);
+
     symb_print(f, rule->lhs, FALSE);
     fprintf(f, " :");
     for(i = 0; i < rule->rhs_len; i++)
@@ -3625,28 +3666,28 @@ rule_dot_print(FILE* f, YaepRule*rule, int pos)
         symb_print(f, rule->rhs[i], FALSE);
     }
     if (rule->rhs_len == pos)
+    {
         fprintf(f, ".");
+    }
 }
 
 #endif /* #ifndef NO_YAEP_DEBUG_PRINT*/
 
 /* The following function frees memory for rules.*/
-static void
-rule_empty(YaepRuleStorage*rules)
+static void rule_empty(YaepRuleStorage *rules)
 {
-    if (rules == NULL)
-        return;
+    if (rules == NULL) return;
+
     OS_EMPTY(rules->rules_os);
     rules->first_rule = rules->curr_rule = NULL;
     rules->n_rules = rules->n_rhs_lens = 0;
 }
 
 /* Finalize work with rules.*/
-static void
-rule_fin(YaepRuleStorage*rules)
+static void rule_fin(YaepRuleStorage *rules)
 {
-    if (rules == NULL)
-        return;
+    if (rules == NULL) return;
+
     OS_DELETE(rules->rules_os);
     yaep_free(grammar->alloc, rules);
     rules = NULL;
@@ -3655,15 +3696,12 @@ rule_fin(YaepRuleStorage*rules)
 /* Initialize work with tokens.*/
 static void tok_init()
 {
-    VLO_CREATE(toks_vlo, grammar->alloc,
-                YAEP_INIT_TOKENS_NUMBER* sizeof(YaepTok));
+    VLO_CREATE(toks_vlo, grammar->alloc, YAEP_INIT_TOKENS_NUMBER* sizeof(YaepTok));
     toks_len = 0;
 }
 
-/* Add input token with CODE and attribute at the end of input tokens
-   array.*/
-static void
-tok_add(int code, void*attr)
+/* Add input token with CODE and attribute at the end of input tokens array.*/
+static void tok_add(int code, void *attr)
 {
     YaepTok tok;
 
@@ -3674,80 +3712,68 @@ tok_add(int code, void*attr)
         yaep_error(YAEP_INVALID_TOKEN_CODE, "syntax error at offset %d '%c'", toks_len, code);
     }
     VLO_ADD_MEMORY(toks_vlo, &tok, sizeof(YaepTok));
-    toks =(YaepTok*) VLO_BEGIN(toks_vlo);
+    toks = (YaepTok*)VLO_BEGIN(toks_vlo);
     toks_len++;
 }
 
-/* Finalize work with tokens.*/
-static void
-tok_fin()
+/* Finalize work with tokens. */
+static void tok_fin()
 {
     VLO_DELETE(toks_vlo);
 }
 
-
-/* The following contains current number of unique situations.  It can
-   be read externally.*/
-static int n_all_sits;
-
-/* The following two dimensional array(the first dimension is context
-   number, the second one is situation number) contains references to
-   all possible situations.*/
-static YaepSituation***sit_table;
-
-/* The following vlo is indexed by situation context number and gives
-   array which is indexed by situation number
-  (sit->rule->rule_start_offset + sit->pos).*/
-static vlo_t sit_table_vlo;
-
-/* All situations are placed in the following object.*/
-static os_t sits_os;
-
 /* Initialize work with situations.*/
-static void
-sit_init()
+static void sit_init()
 {
     n_all_sits = 0;
     OS_CREATE(sits_os, grammar->alloc, 0);
     VLO_CREATE(sit_table_vlo, grammar->alloc, 4096);
-    sit_table =(YaepSituation***) VLO_BEGIN(sit_table_vlo);
+    sit_table = (YaepSituation***)VLO_BEGIN(sit_table_vlo);
 }
 
 /* The following function sets up lookahead of situation SIT.  The
    function returns TRUE if the situation tail may derive empty
    string.*/
-static int
-sit_set_lookahead(YaepSituation*sit)
+static int sit_set_lookahead(YaepSituation *sit)
 {
-    YaepSymb*symb,**symb_ptr;
+    YaepSymb *symb, **symb_ptr;
 
     if (grammar->lookahead_level == 0)
+    {
         sit->lookahead = NULL;
+    }
     else
     {
         sit->lookahead = term_set_create();
         term_set_clear(sit->lookahead);
     }
     symb_ptr = &sit->rule->rhs[sit->pos];
-    while((symb =*symb_ptr) != NULL)
+    while ((symb =*symb_ptr) != NULL)
     {
         if (grammar->lookahead_level != 0)
 	{
             if (symb->term_p)
+            {
                 term_set_up(sit->lookahead, symb->u.term.term_num);
+            }
             else
+            {
                 term_set_or(sit->lookahead, symb->u.nonterm.first);
+            }
 	}
-        if (!symb->empty_p)
-            break;
+        if (!symb->empty_p) break;
         symb_ptr++;
     }
     if (symb == NULL)
     {
         if (grammar->lookahead_level == 1)
+        {
             term_set_or(sit->lookahead, sit->rule->lhs->u.nonterm.follow);
+        }
         else if (grammar->lookahead_level != 0)
+        {
             term_set_or(sit->lookahead, term_set_from_table(sit->context));
+        }
         return TRUE;
     }
     return FALSE;
@@ -3756,26 +3782,26 @@ sit_set_lookahead(YaepSituation*sit)
 /* The following function returns situations with given
    characteristics.  Remember that situations are stored in one
    exemplar.*/
-static YaepSituation*
-sit_create(YaepRule*rule, int pos, int context)
+static YaepSituation *sit_create(YaepRule *rule, int pos, int context)
 {
     YaepSituation*sit;
     YaepSituation***context_sit_table_ptr;
 
     assert(context >= 0);
     context_sit_table_ptr = sit_table + context;
+
     if ((char*) context_sit_table_ptr >=(char*) VLO_BOUND(sit_table_vlo))
     {
         YaepSituation***bound,***ptr;
         int i, diff;
 
-        assert((grammar->lookahead_level <= 1 && context == 0)
-                ||(grammar->lookahead_level > 1 && context >= 0));
-        diff
-            =(char*) context_sit_table_ptr -(char*) VLO_BOUND(sit_table_vlo);
+        assert((grammar->lookahead_level <= 1 && context == 0) || (grammar->lookahead_level > 1 && context >= 0));
+        diff = (char*) context_sit_table_ptr -(char*) VLO_BOUND(sit_table_vlo);
         diff += sizeof(YaepSituation**);
         if (grammar->lookahead_level > 1 && diff == sizeof(YaepSituation**))
-            diff*= 10;
+        {
+            diff *= 10;
+        }
         VLO_EXPAND(sit_table_vlo, diff);
         sit_table =(YaepSituation***) VLO_BEGIN(sit_table_vlo);
         bound =(YaepSituation***) VLO_BOUND(sit_table_vlo);
@@ -3792,8 +3818,10 @@ sit_create(YaepRule*rule, int pos, int context)
             ptr++;
 	}
     }
-    if ((sit =(*context_sit_table_ptr)[rule->rule_start_offset + pos]) != NULL)
+    if ((sit = (*context_sit_table_ptr)[rule->rule_start_offset + pos]) != NULL)
+    {
         return sit;
+    }
     OS_TOP_EXPAND(sits_os, sizeof(YaepSituation));
     sit =(YaepSituation*) OS_TOP_BEGIN(sits_os);
     OS_TOP_FINISH(sits_os);
@@ -3803,7 +3831,8 @@ sit_create(YaepRule*rule, int pos, int context)
     sit->sit_number = n_all_sits;
     sit->context = context;
     sit->empty_tail_p = sit_set_lookahead(sit);
-   (*context_sit_table_ptr)[rule->rule_start_offset + pos] = sit;
+    (*context_sit_table_ptr)[rule->rule_start_offset + pos] = sit;
+
     return sit;
 }
 
@@ -3811,8 +3840,7 @@ sit_create(YaepRule*rule, int pos, int context)
 
 /* The following function prints situation SIT to file F.  The
    situation is printed with the lookahead set if LOOKAHEAD_P.*/
-static void
-sit_print(FILE* f, YaepSituation*sit, int lookahead_p)
+static void sit_print(FILE *f, YaepSituation *sit, int lookahead_p)
 {
     fprintf(f, "%3d ", sit->sit_number);
     rule_dot_print(f, sit->rule, sit->pos);
@@ -3826,8 +3854,7 @@ sit_print(FILE* f, YaepSituation*sit, int lookahead_p)
 #endif /* #ifndef NO_YAEP_DEBUG_PRINT*/
 
 /* Return hash of sequence of N_SITS situations in array SITS. */
-static unsigned
-sits_hash(int n_sits, YaepSituation**sits)
+static unsigned sits_hash(int n_sits, YaepSituation **sits)
 {
     int n, i;
     unsigned result;
@@ -3841,122 +3868,111 @@ sits_hash(int n_sits, YaepSituation**sits)
     return result;
 }
 
-/* Finalize work with situations.*/
-static void
-sit_fin()
+/* Finalize work with situations. */
+static void sit_fin()
 {
     VLO_DELETE(sit_table_vlo);
     OS_DELETE(sits_os);
 }
 
-
-/* Hash of set core.*/
-static unsigned
-set_core_hash(hash_table_entry_t s)
+/* Hash of set core. */
+static unsigned set_core_hash(hash_table_entry_t s)
 {
-    return((YaepSet*) s)->core->hash;
+    return ((YaepSet*)s)->core->hash;
 }
 
-/* Equality of set cores.*/
-static int
-set_core_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+/* Equality of set cores. */
+static int set_core_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    YaepSetCore*set_core1 =((YaepSet*) s1)->core;
-    YaepSetCore*set_core2 =((YaepSet*) s2)->core;
-    YaepSituation**sit_ptr1,**sit_ptr2,**sit_bound1;
+    YaepSetCore*set_core1 = ((YaepSet*) s1)->core;
+    YaepSetCore*set_core2 = ((YaepSet*) s2)->core;
+    YaepSituation **sit_ptr1, **sit_ptr2, **sit_bound1;
 
     if (set_core1->n_start_sits != set_core2->n_start_sits)
+    {
         return FALSE;
+    }
     sit_ptr1 = set_core1->sits;
     sit_bound1 = sit_ptr1 + set_core1->n_start_sits;
     sit_ptr2 = set_core2->sits;
     while(sit_ptr1 < sit_bound1)
+    {
         if (*sit_ptr1++ !=*sit_ptr2++)
+        {
             return FALSE;
+        }
+    }
     return TRUE;
 }
 
-/* Hash of set distances.*/
-static unsigned
-dists_hash(hash_table_entry_t s)
+/* Hash of set distances. */
+static unsigned dists_hash(hash_table_entry_t s)
 {
     return((YaepSet*) s)->dists_hash;
 }
 
-/* Equality of distances.*/
-static int
-dists_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+/* Equality of distances. */
+static int dists_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    int*dists1 =((YaepSet*) s1)->dists;
-    int*dists2 =((YaepSet*) s2)->dists;
-    int n_dists =((YaepSet*) s1)->core->n_start_sits;
-    int*bound;
+    int *dists1 =((YaepSet*)s1)->dists;
+    int *dists2 =((YaepSet*)s2)->dists;
+    int n_dists =((YaepSet*)s1)->core->n_start_sits;
+    int *bound;
 
-    if (n_dists !=((YaepSet*) s2)->core->n_start_sits)
+    if (n_dists !=((YaepSet*)s2)->core->n_start_sits)
+    {
         return FALSE;
+    }
     bound = dists1 + n_dists;
-    while(dists1 < bound)
+    while (dists1 < bound)
+    {
         if (*dists1++ !=*dists2++)
+        {
             return FALSE;
+        }
+    }
     return TRUE;
 }
 
-/* Hash of set core and distances.*/
-static unsigned
-set_core_dists_hash(hash_table_entry_t s)
+/* Hash of set core and distances. */
+static unsigned set_core_dists_hash(hash_table_entry_t s)
 {
     return set_core_hash(s)* hash_shift + dists_hash(s);
 }
 
-/* Equality of set cores and distances.*/
-static int
-set_core_dists_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+/* Equality of set cores and distances. */
+static int set_core_dists_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    YaepSetCore*set_core1 =((YaepSet*) s1)->core;
-    YaepSetCore*set_core2 =((YaepSet*) s2)->core;
-    int*dists1 =((YaepSet*) s1)->dists;
-    int*dists2 =((YaepSet*) s2)->dists;
+    YaepSetCore *set_core1 = ((YaepSet*)s1)->core;
+    YaepSetCore *set_core2 = ((YaepSet*)s2)->core;
+    int*dists1 = ((YaepSet*)s1)->dists;
+    int*dists2 = ((YaepSet*)s2)->dists;
 
     return set_core1 == set_core2 && dists1 == dists2;
 }
 
-/* Hash of triple(set, term, lookahead).*/
-static unsigned
-set_term_lookahead_hash(hash_table_entry_t s)
+/* Hash of triple(set, term, lookahead). */
+static unsigned set_term_lookahead_hash(hash_table_entry_t s)
 {
-    YaepSet*set =((YaepSetTermLookAhead*) s)->set;
-    YaepSymb*term =((YaepSetTermLookAhead*) s)->term;
-    int lookahead =((YaepSetTermLookAhead*) s)->lookahead;
+    YaepSet *set = ((YaepSetTermLookAhead*)s)->set;
+    YaepSymb *term = ((YaepSetTermLookAhead*)s)->term;
+    int lookahead = ((YaepSetTermLookAhead*)s)->lookahead;
 
-    return((set_core_dists_hash(set)* hash_shift
-             + term->u.term.term_num)* hash_shift + lookahead);
+    return ((set_core_dists_hash(set)* hash_shift + term->u.term.term_num)* hash_shift + lookahead);
 }
 
 /* Equality of tripes(set, term, lookahead).*/
-static int
-set_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static int set_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    YaepSet*set1 =((YaepSetTermLookAhead*) s1)->set;
-    YaepSet*set2 =((YaepSetTermLookAhead*) s2)->set;
-    YaepSymb*term1 =((YaepSetTermLookAhead*) s1)->term;
-    YaepSymb*term2 =((YaepSetTermLookAhead*) s2)->term;
-    int lookahead1 =((YaepSetTermLookAhead*) s1)->lookahead;
-    int lookahead2 =((YaepSetTermLookAhead*) s2)->lookahead;
+    YaepSet *set1 =((YaepSetTermLookAhead*)s1)->set;
+    YaepSet *set2 =((YaepSetTermLookAhead*)s2)->set;
+    YaepSymb *term1 =((YaepSetTermLookAhead*)s1)->term;
+    YaepSymb *term2 =((YaepSetTermLookAhead*)s2)->term;
+    int lookahead1 =((YaepSetTermLookAhead*)s1)->lookahead;
+    int lookahead2 =((YaepSetTermLookAhead*)s2)->lookahead;
 
     return set1 == set2 && term1 == term2 && lookahead1 == lookahead2;
 }
-
-
-
-/* This page contains code for table of pairs(sit, dist). */
-
-/* Vector implementing map: sit number -> vlo of the distance check
-   indexed by the distance. */
-static vlo_t sit_dist_vec_vlo;
-
-/* The value used to check the validity of elements of check_dist
-   structures. */
-static int curr_sit_dist_vec_check;
 
 /* Initiate the set of pairs(sit, dist). */
 static void
