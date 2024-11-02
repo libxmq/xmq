@@ -82,7 +82,6 @@ POSIX_TESTINTERNALS_OBJS:=$(filter-out %xmq-cli.o,$(POSIX_OBJS))
 POSIX_LIBS:=
 POSIX_SUFFIX:=
 
-YAEP := $(OUTPUT_ROOT)/$(TYPE)/libyaep.a
 EXTRA_LIBS := $($(PLATFORM)_LIBS)
 
 $(OUTPUT_ROOT)/generated_autocomplete.h: $(SRC_ROOT)/scripts/autocompletion_for_xmq.sh
@@ -103,7 +102,7 @@ SUFFIX:=$($(PLATFORM)_SUFFIX)
 $(OUTPUT_ROOT)/$(TYPE)/xmq_genautocomp.o: $(OUTPUT_ROOT)/generated_autocomplete.h
 $(OUTPUT_ROOT)/$(TYPE)/fileinfo.o: $(OUTPUT_ROOT)/generated_filetypes.h
 
-$(OUTPUT_ROOT)/$(TYPE)/%.o: $(SRC_ROOT)/src/main/c/%.c $(PARTS_SOURCES)
+$(OUTPUT_ROOT)/$(TYPE)/%.o: $(SRC_ROOT)/src/main/c/%.c $(PARTS_SOURCES) $(OUTPUT_ROOT)/update_yaep
 	@echo Compiling $(TYPE) $(CONF_MNEMONIC) $$(basename $<)
 	$(VERBOSE)$(CC) -fpic -g $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c -o $@
 	$(VERBOSE)$(CC) -E $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c > $@.source
@@ -190,18 +189,20 @@ BINARIES:=$(OUTPUT_ROOT)/$(TYPE)/libxmq.a \
           $(OUTPUT_ROOT)/$(TYPE)/testinternals \
           $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals
 
-$(YAEP):
-	@(cd $(SRC_ROOT)/src/main/c/yaep; ./configure; make)
-	@cp $(SRC_ROOT)/src/main/c/yaep/src/libyaep.a $(OUTPUT_ROOT)/$(TYPE)
-
 $(SRC_ROOT)/dist/xmq.h: $(SRC_ROOT)/src/main/c/xmq.h
 	@cp $< $@
 	@echo "Copied dist/xmq.h"
 
-$(SRC_ROOT)/dist/xmq.c: $(SRC_ROOT)/src/main/c/xmq.c $(PARTS_SOURCES) $(SRC_ROOT)/VERSION
+$(SRC_ROOT)/dist/xmq.c: $(SRC_ROOT)/src/main/c/xmq.c $(PARTS_SOURCES) $(SRC_ROOT)/VERSION $(OUTPUT_ROOT)/update_yaep
 	$(VERBOSE)$(SRC_ROOT)/scripts/build_xmq_from_parts.sh $(OUTPUT_ROOT) $<
 	$(VERBOSE)cp $(OUTPUT_ROOT)/xmq-in-progress $(SRC_ROOT)/dist/xmq.c
 	@echo "Generated dist/xmq.c"
+
+$(OUTPUT_ROOT)/update_yaep: $(SRC_ROOT)/src/main/c/yaep/src/yaep.c $(SRC_ROOT)/src/main/c/yaep/src/yaep.h
+	@rm -f $(SRC_ROOT)/src/main/c/parts/yaep.h $(SRC_ROOT)/src/main/c/parts/yaep.c
+	@(cd $(SRC_ROOT)/src/main/c/yaep ; ./build_single_yaep_source_file.sh)
+	@echo Generated yaep.h yaep.c
+	@touch $@
 
 ifeq ($(CLEAN),clean)
 # Clean!
@@ -209,6 +210,7 @@ release debug asan:
 	rm -f $(OUTPUT_ROOT)/$(TYPE)/*
 	rm -f $(OUTPUT_ROOT)/$(TYPE)/generated_autocomplete.h
 	rm -f $(OUTPUT_ROOT)/$(TYPE)/generated_filetypes.h
+	rm -f $(OUTPUT_ROOT)/update_yaep
 else
 # Build!
 release debug asan: $(BINARIES) $(EXTRA_LIBS)
