@@ -2437,7 +2437,8 @@ struct YaepVect;
 typedef struct YaepVect YaepVect;
 
 /* Forward declaration. */
-struct core_symb_vect;
+struct YaepCoreSymbVect;
+typedef struct YaepCoreSymbVect YaepCoreSymbVect;
 
 /* The following is type of element of array representing set of terminals. */
 typedef long int term_set_el_t;
@@ -2564,7 +2565,7 @@ struct YaepSymb
 #ifdef USE_CORE_SYMB_HASH_TABLE
     /* The following is used as cache for subsequent search for
        core_symb_vect with given symb. */
-    struct core_symb_vect *cached_core_symb_vect;
+    YaepCoreSymbVect *cached_core_symb_vect;
 #endif
 };
 
@@ -2644,7 +2645,7 @@ struct YaepVect
 };
 
 /* The following is element of the table. */
-struct core_symb_vect
+struct YaepCoreSymbVect
 {
     /* The set core. */
     struct set_core *set_core;
@@ -4463,7 +4464,7 @@ static hash_table_t core_symb_to_vect_tab;	/* key is set_core and symb. */
 static vlo_t core_symb_table_vlo;
 
 /* The following is always start of the previous object. */
-static struct core_symb_vect ***core_symb_table;
+static YaepCoreSymbVect ***core_symb_table;
 
 /* The following contains rows of the table.  The element in the rows
    are indexed by symbol number. */
@@ -4482,7 +4483,7 @@ static hash_table_t reduce_els_tab;	/* key is elements. */
 static unsigned
 core_symb_vect_hash(hash_table_entry_t t)
 {
-    struct core_symb_vect *core_symb_vect =(struct core_symb_vect *) t;
+    YaepCoreSymbVect *core_symb_vect =(YaepCoreSymbVect *) t;
 
     return((jauquet_prime_mod32 * hash_shift
              +(unsigned) core_symb_vect->set_core) * hash_shift
@@ -4493,8 +4494,8 @@ core_symb_vect_hash(hash_table_entry_t t)
 static int
 core_symb_vect_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 {
-    struct core_symb_vect *core_symb_vect1 =(struct core_symb_vect *) t1;
-    struct core_symb_vect *core_symb_vect2 =(struct core_symb_vect *) t2;
+    YaepCoreSymbVect *core_symb_vect1 =(YaepCoreSymbVect *) t1;
+    YaepCoreSymbVect *core_symb_vect2 =(YaepCoreSymbVect *) t2;
 
     return(core_symb_vect1->set_core == core_symb_vect2->set_core
             && core_symb_vect1->symb == core_symb_vect2->symb);
@@ -4531,30 +4532,30 @@ vect_els_eq(YaepVect *v1, YaepVect *v2)
 static unsigned
 transition_els_hash(hash_table_entry_t t)
 {
-    return vect_els_hash(&((struct core_symb_vect *) t)->transitions);
+    return vect_els_hash(&((YaepCoreSymbVect *) t)->transitions);
 }
 
 /* Equality of transition vector elements. */
 static int
 transition_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 {
-    return vect_els_eq(&((struct core_symb_vect *) t1)->transitions,
-                        &((struct core_symb_vect *) t2)->transitions);
+    return vect_els_eq(&((YaepCoreSymbVect *) t1)->transitions,
+                        &((YaepCoreSymbVect *) t2)->transitions);
 }
 
 /* Hash of reduce vector elements. */
 static unsigned
 reduce_els_hash(hash_table_entry_t t)
 {
-    return vect_els_hash(&((struct core_symb_vect *) t)->reduces);
+    return vect_els_hash(&((YaepCoreSymbVect *) t)->reduces);
 }
 
 /* Equality of reduce vector elements. */
 static int
 reduce_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 {
-    return vect_els_eq(&((struct core_symb_vect *) t1)->reduces,
-                        &((struct core_symb_vect *) t2)->reduces);
+    return vect_els_eq(&((YaepCoreSymbVect *) t1)->reduces,
+                        &((YaepCoreSymbVect *) t2)->reduces);
 }
 
 /* Initialize work with the triples(set core, symbol, vector). */
@@ -4573,7 +4574,7 @@ core_symb_vect_init()
 #else
     VLO_CREATE(core_symb_table_vlo, grammar->alloc, 4096);
     core_symb_table
-        =(struct core_symb_vect ***) VLO_BEGIN(core_symb_table_vlo);
+        =(YaepCoreSymbVect ***) VLO_BEGIN(core_symb_table_vlo);
     OS_CREATE(core_symb_tab_rows, grammar->alloc, 8192);
 #endif
 
@@ -4593,15 +4594,15 @@ core_symb_vect_init()
 /* The following function returns entry in the table where pointer to
    corresponding triple with the same keys as TRIPLE ones is
    placed. */
-static struct core_symb_vect **
-core_symb_vect_addr_get(struct core_symb_vect *triple, int reserv_p)
+static YaepCoreSymbVect **
+core_symb_vect_addr_get(YaepCoreSymbVect *triple, int reserv_p)
 {
-    struct core_symb_vect **result;
+    YaepCoreSymbVect **result;
 
     if (triple->symb->cached_core_symb_vect != NULL
         && triple->symb->cached_core_symb_vect->set_core == triple->set_core)
         return &triple->symb->cached_core_symb_vect;
-    result =((struct core_symb_vect **)
+    result =((YaepCoreSymbVect **)
               find_hash_table_entry(core_symb_to_vect_tab, triple, reserv_p));
 
     triple->symb->cached_core_symb_vect = *result;
@@ -4612,37 +4613,37 @@ core_symb_vect_addr_get(struct core_symb_vect *triple, int reserv_p)
 
 /* The following function returns entry in the table where pointer to
    corresponding triple with SET_CORE and SYMB is placed. */
-static struct core_symb_vect **
+static YaepCoreSymbVect **
 core_symb_vect_addr_get(struct set_core *set_core, YaepSymb *symb)
 {
-    struct core_symb_vect ***core_symb_vect_ptr;
+    YaepCoreSymbVect ***core_symb_vect_ptr;
 
     core_symb_vect_ptr = core_symb_table + set_core->num;
 
     if ((char *) core_symb_vect_ptr >=(char *) VLO_BOUND(core_symb_table_vlo))
     {
-        struct core_symb_vect ***ptr, ***bound;
+        YaepCoreSymbVect ***ptr, ***bound;
         int diff, i;
 
         diff =((char *) core_symb_vect_ptr
                 -(char *) VLO_BOUND(core_symb_table_vlo));
-        diff += sizeof(struct core_symb_vect **);
-        if (diff == sizeof(struct core_symb_vect **))
+        diff += sizeof(YaepCoreSymbVect **);
+        if (diff == sizeof(YaepCoreSymbVect **))
             diff *= 10;
 
         VLO_EXPAND(core_symb_table_vlo, diff);
         core_symb_table
-            =(struct core_symb_vect ***) VLO_BEGIN(core_symb_table_vlo);
+            =(YaepCoreSymbVect ***) VLO_BEGIN(core_symb_table_vlo);
         core_symb_vect_ptr = core_symb_table + set_core->num;
-        bound =(struct core_symb_vect ***) VLO_BOUND(core_symb_table_vlo);
+        bound =(YaepCoreSymbVect ***) VLO_BOUND(core_symb_table_vlo);
 
-        ptr = bound - diff / sizeof(struct core_symb_vect **);
+        ptr = bound - diff / sizeof(YaepCoreSymbVect **);
         while(ptr < bound)
         {
             OS_TOP_EXPAND(core_symb_tab_rows,
                           (symbs_ptr->n_terms + symbs_ptr->n_nonterms)
-                           * sizeof(struct core_symb_vect *));
-            *ptr =(struct core_symb_vect **) OS_TOP_BEGIN(core_symb_tab_rows);
+                           * sizeof(YaepCoreSymbVect *));
+            *ptr =(YaepCoreSymbVect **) OS_TOP_BEGIN(core_symb_tab_rows);
             OS_TOP_FINISH(core_symb_tab_rows);
             for(i = 0; i < symbs_ptr->n_terms + symbs_ptr->n_nonterms; i++)
                (*ptr)[i] = NULL;
@@ -4655,11 +4656,11 @@ core_symb_vect_addr_get(struct set_core *set_core, YaepSymb *symb)
 
 /* The following function returns the triple(if any) for given
    SET_CORE and SYMB. */
-static struct core_symb_vect *
+static YaepCoreSymbVect *
 core_symb_vect_find(struct set_core *set_core, YaepSymb *symb)
 {
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    struct core_symb_vect core_symb_vect;
+    YaepCoreSymbVect core_symb_vect;
 
     core_symb_vect.set_core = set_core;
     core_symb_vect.symb = symb;
@@ -4671,16 +4672,16 @@ core_symb_vect_find(struct set_core *set_core, YaepSymb *symb)
 
 /* Add given triple(SET_CORE, TERM, ...) to the table and return
    pointer to it. */
-static struct core_symb_vect *
+static YaepCoreSymbVect *
 core_symb_vect_new(struct set_core *set_core, YaepSymb *symb)
 {
-    struct core_symb_vect *triple;
-    struct core_symb_vect **addr;
+    YaepCoreSymbVect *triple;
+    YaepCoreSymbVect **addr;
     vlo_t *vlo_ptr;
 
     /* Create table element. */
-    OS_TOP_EXPAND(core_symb_vect_os, sizeof(struct core_symb_vect));
-    triple =((struct core_symb_vect *) OS_TOP_BEGIN(core_symb_vect_os));
+    OS_TOP_EXPAND(core_symb_vect_os, sizeof(YaepCoreSymbVect));
+    triple =((YaepCoreSymbVect *) OS_TOP_BEGIN(core_symb_vect_os));
     triple->set_core = set_core;
     triple->symb = symb;
     OS_TOP_FINISH(core_symb_vect_os);
@@ -4703,7 +4704,7 @@ core_symb_vect_new(struct set_core *set_core, YaepSymb *symb)
     triple->reduces.len = 0;
     triple->reduces.els =(int *) VLO_BEGIN(*vlo_ptr);
     VLO_ADD_MEMORY(new_core_symb_vect_vlo, &triple,
-                    sizeof(struct core_symb_vect *));
+                    sizeof(YaepCoreSymbVect *));
     n_core_symb_pairs++;
     return triple;
 }
@@ -4724,7 +4725,7 @@ vect_new_add_el(YaepVect *vec, int el)
 /* Add index EL to the transition vector of CORE_SYMB_VECT being
    formed. */
 static void
-core_symb_vect_new_add_transition_el(struct core_symb_vect *core_symb_vect,
+core_symb_vect_new_add_transition_el(YaepCoreSymbVect *core_symb_vect,
 				      int el)
 {
     vect_new_add_el(&core_symb_vect->transitions, el);
@@ -4733,7 +4734,7 @@ core_symb_vect_new_add_transition_el(struct core_symb_vect *core_symb_vect,
 /* Add index EL to the reduce vector of CORE_SYMB_VECT being
    formed. */
 static void
-core_symb_vect_new_add_reduce_el(struct core_symb_vect *core_symb_vect,
+core_symb_vect_new_add_reduce_el(YaepCoreSymbVect *core_symb_vect,
 				  int el)
 {
     vect_new_add_el(&core_symb_vect->reduces, el);
@@ -4743,7 +4744,7 @@ core_symb_vect_new_add_reduce_el(struct core_symb_vect *core_symb_vect,
  *N_VECTS and INT *N_VECT_LEN if it is a new vector in the
  table.  */
 static void
-process_core_symb_vect_el(struct core_symb_vect *core_symb_vect,
+process_core_symb_vect_el(YaepCoreSymbVect *core_symb_vect,
 			   YaepVect *vec,
 			   hash_table_t * tab, int *n_vects, int *n_vect_len)
 {
@@ -4757,8 +4758,8 @@ process_core_symb_vect_el(struct core_symb_vect *core_symb_vect,
         if (*entry != NULL)
             vec->els
                 =(&core_symb_vect->transitions == vec
-                   ?((struct core_symb_vect *) *entry)->transitions.els
-                   :((struct core_symb_vect *) *entry)->reduces.els);
+                   ?((YaepCoreSymbVect *) *entry)->transitions.els
+                   :((YaepCoreSymbVect *) *entry)->reduces.els);
         else
 	{
             *entry =(hash_table_entry_t) core_symb_vect;
@@ -4776,9 +4777,9 @@ process_core_symb_vect_el(struct core_symb_vect *core_symb_vect,
 static void
 core_symb_vect_new_all_stop()
 {
-    struct core_symb_vect **triple_ptr;
+    YaepCoreSymbVect **triple_ptr;
 
-    for(triple_ptr =(struct core_symb_vect **) VLO_BEGIN(new_core_symb_vect_vlo);
+    for(triple_ptr =(YaepCoreSymbVect **) VLO_BEGIN(new_core_symb_vect_vlo);
         (char *) triple_ptr <(char *) VLO_BOUND(new_core_symb_vect_vlo);
          triple_ptr++)
     {
@@ -5475,7 +5476,7 @@ expand_new_start_set()
 {
     struct sit *sit;
     YaepSymb *symb;
-    struct core_symb_vect *core_symb_vect;
+    YaepCoreSymbVect *core_symb_vect;
     YaepRule *rule;
     int i;
 
@@ -5607,13 +5608,13 @@ build_start_set()
    given in CORE_SYMB_VECT with given lookahead terminal number.  If
    the number is negative, we ignore lookahead at all. */
 static void
-build_new_set(struct set *set, struct core_symb_vect *core_symb_vect,
+build_new_set(struct set *set, YaepCoreSymbVect *core_symb_vect,
 	       int lookahead_term_num)
 {
     struct set *prev_set;
     struct set_core *set_core, *prev_set_core;
     struct sit *sit, *new_sit, **prev_sits;
-    struct core_symb_vect *prev_core_symb_vect;
+    YaepCoreSymbVect *prev_core_symb_vect;
     int local_lookahead_level, dist, sit_ind, new_dist;
     int i, place;
     YaepVect *transitions;
@@ -5985,7 +5986,7 @@ static void
 error_recovery(int *start, int *stop)
 {
     struct set *set;
-    struct core_symb_vect *core_symb_vect;
+    YaepCoreSymbVect *core_symb_vect;
     struct recovery_state best_state, state;
     int best_cost, cost, lookahead_term_num, n_matched_toks;
     int back_to_frontier_move_cost, backward_move_cost;
@@ -6298,7 +6299,7 @@ build_pl()
     int i;
     YaepSymb *term;
     struct set *set;
-    struct core_symb_vect *core_symb_vect;
+    YaepCoreSymbVect *core_symb_vect;
     int lookahead_term_num;
 #ifdef USE_SET_HASH_TABLE
     hash_table_entry_t *entry;
@@ -7017,7 +7018,7 @@ make_parse(int *ambiguous_p)
     struct sit *sit, *check_sit;
     YaepRule *rule, *sit_rule;
     YaepSymb *symb;
-    struct core_symb_vect *core_symb_vect, *check_core_symb_vect;
+    YaepCoreSymbVect *core_symb_vect, *check_core_symb_vect;
     int i, j, k, found, pos, orig, pl_ind, n_candidates, disp;
     int sit_ind, check_sit_ind, sit_orig, check_sit_orig, new_p;
     struct parse_state *state, *orig_state, *curr_state;
