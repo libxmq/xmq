@@ -2416,7 +2416,15 @@ typedef struct YaepSymb YaepSymb;
 struct YaepVocabulary;
 typedef struct YaepVocabulary YaepVocabulary;
 
-/* The following is major structure which stores information about the grammar. */
+struct YaepTermSets;
+typedef struct YaepTermSets YaepTermSets;
+
+struct YaepRule;
+typedef struct YaepRule YaepRule;
+
+struct YaepRuleStorage;
+typedef struct YaepRuleStorage YaepRuleStorage;
+
 struct YaepGrammar
 {
     /* The following member is TRUE if the grammar is undefined (you
@@ -2478,10 +2486,10 @@ struct YaepGrammar
     YaepVocabulary *symbs_ptr;
 
     /* The following rules used for this grammar. */
-    struct rules *rules_ptr;
+    YaepRuleStorage *rules_ptr;
 
     /* The following terminal sets used for this grammar. */
-    struct term_sets *term_sets_ptr;
+    YaepTermSets *term_sets_ptr;
 
     /* Allocator. */
     YaepAllocator *alloc;
@@ -2517,7 +2525,7 @@ struct YaepSymb
         {
             /* The following refers for all rules with the nonterminal
                symbol is in the left hand side of the rules. */
-            struct rule *rules;
+            YaepRule *rules;
             /* The following member is order number of the nonterminal. */
             int nonterm_num;
             /* The following value is nonzero if nonterminal may derivate
@@ -2590,7 +2598,7 @@ struct tab_term_set
 };
 
 /* The following container for the abstract data. */
-struct term_sets
+struct YaepTermSets
 {
     /* All terminal sets are stored in the following os. */
     os_t term_set_os;
@@ -2615,8 +2623,8 @@ static YaepGrammar *grammar;
    members for the current grammar. */
 
 static YaepVocabulary *symbs_ptr;
-static struct term_sets *term_sets_ptr;
-static struct rules *rules_ptr;
+static YaepTermSets *term_sets_ptr;
+static YaepRuleStorage *rules_ptr;
 
 /* The following is set up the parser amnd used globally. */
 static int (*read_token) (void **attr);
@@ -2983,14 +2991,14 @@ term_set_eq (hash_table_entry_t s1, hash_table_entry_t s2)
 
 /* Initialize work with terminal sets and returns storage for terminal
    sets. */
-static struct term_sets *
+static YaepTermSets *
 term_set_init (void)
 {
     void *mem;
-    struct term_sets *result;
+    YaepTermSets *result;
 
-    mem = yaep_malloc (grammar->alloc, sizeof (struct term_sets));
-    result = (struct term_sets *) mem;
+    mem = yaep_malloc (grammar->alloc, sizeof (YaepTermSets));
+    result = (YaepTermSets *) mem;
     OS_CREATE (result->term_set_os, grammar->alloc, 0);
     result->term_set_tab =
         create_hash_table (grammar->alloc, 1000, term_set_hash, term_set_eq);
@@ -3157,7 +3165,7 @@ term_set_print (FILE * f, term_set_el_t * set)
 
 /* Free memory for terminal sets. */
 static void
-term_set_empty (struct term_sets *term_sets)
+term_set_empty (YaepTermSets *term_sets)
 {
     if (term_sets == NULL)
         return;
@@ -3169,7 +3177,7 @@ term_set_empty (struct term_sets *term_sets)
 
 /* Finalize work with terminal sets. */
 static void
-term_set_fin (struct term_sets *term_sets)
+term_set_fin (YaepTermSets *term_sets)
 {
     if (term_sets == NULL)
         return;
@@ -3185,17 +3193,17 @@ term_set_fin (struct term_sets *term_sets)
 /* This page is abstract data `grammar rules'. */
 
 /* The following describes rule of grammar. */
-struct rule
+struct YaepRule
 {
     /* The following is order number of rule. */
     int num;
     /* The following is length of rhs. */
     int rhs_len;
     /* The following is the next grammar rule. */
-    struct rule *next;
+    YaepRule *next;
     /* The following is the next grammar rule with the same nonterminal
        in lhs of the rule. */
-    struct rule *lhs_next;
+    YaepRule *lhs_next;
     /* The following is nonterminal in the left hand side of the
        rule. */
     YaepSymb *lhs;
@@ -3227,29 +3235,32 @@ struct rule
 };
 
 /* The following container for the abstract data. */
-struct rules
+struct YaepRuleStorage
 {
     /* The following is number of all rules and their summary rhs
        length.  The variables can be read externally. */
     int n_rules, n_rhs_lens;
+
     /* The following is the first rule. */
-    struct rule *first_rule;
+    YaepRule *first_rule;
+
     /* The following is rule being formed.  It can be read
        externally. */
-    struct rule *curr_rule;
+    YaepRule *curr_rule;
+
     /* All rules are placed in the following object. */
     os_t rules_os;
 };
 
 /* Initialize work with rules and returns pointer to rules storage. */
-static struct rules *
+static YaepRuleStorage *
 rule_init (void)
 {
     void *mem;
-    struct rules *result;
+    YaepRuleStorage *result;
 
-    mem = yaep_malloc (grammar->alloc, sizeof (struct rules));
-    result = (struct rules *) mem;
+    mem = yaep_malloc (grammar->alloc, sizeof (YaepRuleStorage));
+    result = (YaepRuleStorage *) mem;
     OS_CREATE (result->rules_os, grammar->alloc, 0);
     result->first_rule = result->curr_rule = NULL;
     result->n_rules = result->n_rhs_lens = 0;
@@ -3257,15 +3268,15 @@ rule_init (void)
 }
 
 /* Create new rule with LHS empty rhs. */
-static struct rule *
+static YaepRule *
 rule_new_start (YaepSymb *lhs, const char *anode, int anode_cost)
 {
-    struct rule *rule;
+    YaepRule *rule;
     YaepSymb *empty;
 
     assert (!lhs->term_p);
-    OS_TOP_EXPAND (rules_ptr->rules_os, sizeof (struct rule));
-    rule = (struct rule *) OS_TOP_BEGIN (rules_ptr->rules_os);
+    OS_TOP_EXPAND (rules_ptr->rules_os, sizeof (YaepRule));
+    rule = (YaepRule *) OS_TOP_BEGIN (rules_ptr->rules_os);
     OS_TOP_FINISH (rules_ptr->rules_os);
     rule->lhs = lhs;
     if (anode == NULL)
@@ -3336,7 +3347,7 @@ rule_new_stop (void)
 
 /* The following function prints RULE with its translation (if TRANS_P) to file F. */
 static void
-rule_print (FILE * f, struct rule *rule, int trans_p)
+rule_print (FILE * f, YaepRule *rule, int trans_p)
 {
     int i, j;
 
@@ -3376,7 +3387,7 @@ rule_print (FILE * f, struct rule *rule, int trans_p)
 /* The following function prints RULE to file F with dot in position
    POS. */
 static void
-rule_dot_print (FILE * f, struct rule *rule, int pos)
+rule_dot_print (FILE * f, YaepRule *rule, int pos)
 {
     int i;
 
@@ -3396,7 +3407,7 @@ rule_dot_print (FILE * f, struct rule *rule, int pos)
 
 /* The following function frees memory for rules. */
 static void
-rule_empty (struct rules *rules)
+rule_empty (YaepRuleStorage *rules)
 {
     if (rules == NULL)
         return;
@@ -3407,7 +3418,7 @@ rule_empty (struct rules *rules)
 
 /* Finalize work with rules. */
 static void
-rule_fin (struct rules *rules)
+rule_fin (YaepRuleStorage *rules)
 {
     if (rules == NULL)
         return;
@@ -3488,7 +3499,7 @@ tok_fin (void)
 struct sit
 {
     /* The following is the situation rule. */
-    struct rule *rule;
+    YaepRule *rule;
     /* The following is position of dot in rhs of the situation rule. */
     short pos;
     /* The following member is TRUE if the tail can derive empty
@@ -3577,7 +3588,7 @@ sit_set_lookahead (struct sit *sit)
    characteristics.  Remember that situations are stored in one
    exemplar. */
 static struct sit *
-sit_create (struct rule *rule, int pos, int context)
+sit_create (YaepRule *rule, int pos, int context)
 {
     struct sit *sit;
     struct sit ***context_sit_table_ptr;
@@ -4903,7 +4914,7 @@ static void
 create_first_follow_sets (void)
 {
     YaepSymb *symb, **rhs, *rhs_symb, *next_rhs_symb;
-    struct rule *rule;
+    YaepRule *rule;
     int changed_p, first_continue_p;
     int i, j, k, rhs_len;
 
@@ -4970,7 +4981,7 @@ static void
 set_empty_access_derives (void)
 {
     YaepSymb *symb, *rhs_symb;
-    struct rule *rule;
+    YaepRule *rule;
     int empty_p, derivation_p;
     int empty_changed_p, derivation_changed_p, accessibility_change_p;
     int i, j;
@@ -5022,7 +5033,7 @@ static void
 set_loop_p (void)
 {
     YaepSymb *symb, *lhs;
-    struct rule *rule;
+    YaepRule *rule;
     int i, j, k, loop_p, changed_p;
 
     /* Initialize accoding to minimal criteria: There is a rule in which
@@ -5131,7 +5142,7 @@ yaep_read_grammar (YaepGrammar *g, int strict_p,
 {
     const char *name, *lhs, **rhs, *anode;
     YaepSymb *symb, *start;
-    struct rule *rule;
+    YaepRule *rule;
     int anode_cost;
     int *transl;
     char mark;
@@ -5389,7 +5400,7 @@ yaep_set_recovery_match (YaepGrammar *grammar, int n_toks)
 static void
 yaep_parse_init (int n_toks)
 {
-    struct rule *rule;
+    YaepRule *rule;
 
     sit_init ();
     set_init (n_toks);
@@ -5438,7 +5449,7 @@ static void
 add_derived_nonstart_sits (struct sit *sit, int parent)
 {
     YaepSymb *symb;
-    struct rule *rule = sit->rule;
+    YaepRule *rule = sit->rule;
     int context = sit->context;
     int i;
 
@@ -5457,7 +5468,7 @@ expand_new_start_set (void)
     struct sit *sit;
     YaepSymb *symb;
     struct core_symb_vect *core_symb_vect;
-    struct rule *rule;
+    YaepRule *rule;
     int i;
 
     /* Add non start situations with nonzero distances. */
@@ -5547,7 +5558,7 @@ expand_new_start_set (void)
 static void
 build_start_set (void)
 {
-    struct rule *rule;
+    YaepRule *rule;
     struct sit *sit;
     term_set_el_t *context_set;
     int context;
@@ -6407,7 +6418,7 @@ build_pl (void)
 struct parse_state
 {
     /* The rule which we are processing. */
-    struct rule *rule;
+    YaepRule *rule;
     /* Position in the rule where we are now. */
     int pos;
     /* The rule origin (start point of derivated string from rule rhs)
@@ -6500,7 +6511,7 @@ parse_state_alloc (void)
 static void
 parse_state_free (struct parse_state *state)
 {
-    state->rule = (struct rule *) free_parse_state;
+    state->rule = (YaepRule *) free_parse_state;
     free_parse_state = state;
 }
 
@@ -6799,7 +6810,7 @@ place_translation (struct yaep_tree_node **place, struct yaep_tree_node *node)
 
 static struct yaep_tree_node *
 copy_anode (struct yaep_tree_node **place, struct yaep_tree_node *anode,
-	    struct rule *rule, int disp)
+	    YaepRule *rule, int disp)
 {
     struct yaep_tree_node *node;
     int i;
@@ -6996,7 +7007,7 @@ make_parse (int *ambiguous_p)
     struct set *set, *check_set;
     struct set_core *set_core, *check_set_core;
     struct sit *sit, *check_sit;
-    struct rule *rule, *sit_rule;
+    YaepRule *rule, *sit_rule;
     YaepSymb *symb;
     struct core_symb_vect *core_symb_vect, *check_core_symb_vect;
     int i, j, k, found, pos, orig, pl_ind, n_candidates, disp;
