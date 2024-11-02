@@ -2421,8 +2421,11 @@ typedef struct YaepSymb YaepSymb;
 struct YaepVocabulary;
 typedef struct YaepVocabulary YaepVocabulary;
 
-struct YaepTermSets;
-typedef struct YaepTermSets YaepTermSets;
+struct YaepTabTermSet;
+typedef struct YaepTabTermSet YaepTarbTermSet;
+
+struct YaepTermStorage;
+typedef struct YaepTermStorage YaepTermStorage;
 
 struct YaepRule;
 typedef struct YaepRule YaepRule;
@@ -2503,7 +2506,7 @@ struct YaepGrammar
     YaepRuleStorage *rules_ptr;
 
     /* The following terminal sets used for this grammar. */
-    YaepTermSets *term_sets_ptr;
+    YaepTermStorage *term_sets_ptr;
 
     /* Allocator. */
     YaepAllocator *alloc;
@@ -2597,7 +2600,7 @@ struct YaepVocabulary
 };
 
 /* The following is element of term set hash table. */
-struct tab_term_set
+struct YaepTabTermSet
 {
     /* Number of set in the table. */
     int num;
@@ -2606,7 +2609,7 @@ struct tab_term_set
 };
 
 /* The following container for the abstract data. */
-struct YaepTermSets
+struct YaepTermStorage
 {
     /* All terminal sets are stored in the following os. */
     os_t term_set_os;
@@ -2664,7 +2667,7 @@ static YaepGrammar *grammar;
    members for the current grammar. */
 
 static YaepVocabulary *symbs_ptr;
-static YaepTermSets *term_sets_ptr;
+static YaepTermStorage *term_sets_ptr;
 static YaepRuleStorage *rules_ptr;
 
 /* The following is set up the parser amnd used globally. */
@@ -2995,7 +2998,7 @@ static void symb_fin(YaepVocabulary *symbs)
 /* Hash of table terminal set. */
 static unsigned term_set_hash(hash_table_entry_t s)
 {
-    term_set_el_t *set =((struct tab_term_set *) s)->set;
+    term_set_el_t *set =((YaepTabTermSet *) s)->set;
     term_set_el_t *bound;
     int size;
     unsigned result = jauquet_prime_mod32;
@@ -3012,8 +3015,8 @@ static unsigned term_set_hash(hash_table_entry_t s)
 static int
 term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    term_set_el_t *set1 =((struct tab_term_set *) s1)->set;
-    term_set_el_t *set2 =((struct tab_term_set *) s2)->set;
+    term_set_el_t *set1 =((YaepTabTermSet *) s1)->set;
+    term_set_el_t *set2 =((YaepTabTermSet *) s2)->set;
     term_set_el_t *bound;
     int size;
 
@@ -3028,14 +3031,14 @@ term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 
 /* Initialize work with terminal sets and returns storage for terminal
    sets. */
-static YaepTermSets *
+static YaepTermStorage *
 term_set_init()
 {
     void *mem;
-    YaepTermSets *result;
+    YaepTermStorage *result;
 
-    mem = yaep_malloc(grammar->alloc, sizeof(YaepTermSets));
-    result =(YaepTermSets *) mem;
+    mem = yaep_malloc(grammar->alloc, sizeof(YaepTermStorage));
+    result =(YaepTermStorage *) mem;
     OS_CREATE(result->term_set_os, grammar->alloc, 0);
     result->term_set_tab =
         create_hash_table(grammar->alloc, 1000, term_set_hash, term_set_eq);
@@ -3150,27 +3153,27 @@ static int
 term_set_insert(term_set_el_t * set)
 {
     hash_table_entry_t *entry;
-    struct tab_term_set tab_term_set, *tab_term_set_ptr;
+    YaepTabTermSet tab_term_set, *tab_term_set_ptr;
 
     tab_term_set.set = set;
     entry =
         find_hash_table_entry(term_sets_ptr->term_set_tab, &tab_term_set, TRUE);
     if (*entry != NULL)
-        return -((struct tab_term_set *) *entry)->num - 1;
+        return -((YaepTabTermSet *) *entry)->num - 1;
     else
     {
         OS_TOP_EXPAND(term_sets_ptr->term_set_os,
-                       sizeof(struct tab_term_set));
+                       sizeof(YaepTabTermSet));
         tab_term_set_ptr =
-           (struct tab_term_set *) OS_TOP_BEGIN(term_sets_ptr->term_set_os);
+           (YaepTabTermSet *) OS_TOP_BEGIN(term_sets_ptr->term_set_os);
         OS_TOP_FINISH(term_sets_ptr->term_set_os);
         *entry =(hash_table_entry_t) tab_term_set_ptr;
         tab_term_set_ptr->set = set;
         tab_term_set_ptr->num =(VLO_LENGTH(term_sets_ptr->tab_term_set_vlo)
-                                 / sizeof(struct tab_term_set *));
+                                 / sizeof(YaepTabTermSet *));
         VLO_ADD_MEMORY(term_sets_ptr->tab_term_set_vlo, &tab_term_set_ptr,
-                        sizeof(struct tab_term_set *));
-        return((struct tab_term_set *) *entry)->num;
+                        sizeof(YaepTabTermSet *));
+        return((YaepTabTermSet *) *entry)->num;
     }
 }
 
@@ -3181,8 +3184,8 @@ term_set_from_table(int num)
 {
     assert(num >= 0);
     assert((long unsigned int)num < VLO_LENGTH(term_sets_ptr->tab_term_set_vlo)
-            / sizeof(struct tab_term_set *));
-    return((struct tab_term_set **)
+            / sizeof(YaepTabTermSet*));
+    return((YaepTabTermSet**)
             VLO_BEGIN(term_sets_ptr->tab_term_set_vlo))[num]->set;
 }
 
@@ -3202,7 +3205,7 @@ term_set_print(FILE * f, term_set_el_t * set)
 
 /* Free memory for terminal sets. */
 static void
-term_set_empty(YaepTermSets *term_sets)
+term_set_empty(YaepTermStorage *term_sets)
 {
     if (term_sets == NULL)
         return;
@@ -3214,7 +3217,7 @@ term_set_empty(YaepTermSets *term_sets)
 
 /* Finalize work with terminal sets. */
 static void
-term_set_fin(YaepTermSets *term_sets)
+term_set_fin(YaepTermStorage *term_sets)
 {
     if (term_sets == NULL)
         return;
