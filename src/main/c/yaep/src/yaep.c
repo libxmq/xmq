@@ -132,6 +132,12 @@ typedef struct YaepTok YaepTok;
 struct YaepSetTermLookAhead;
 typedef struct YaepSetTermLookAhead YaepSetTermLookAhead;
 
+struct YaepParseState;
+typedef struct YaepParseState YaepParseState;
+
+struct YaepTransVisitNode;
+typedef struct YaepTransVisitNode YaepTransVisitNode;
+
 /* The following is type of element of array representing set of terminals.*/
 typedef long int term_set_el_t;
 
@@ -518,6 +524,38 @@ struct YaepRuleStorage
     os_t rules_os;
 };
 
+/* The following describes parser state.*/
+struct YaepParseState
+{
+    /* The rule which we are processing.*/
+    YaepRule*rule;
+    /* Position in the rule where we are now.*/
+    int pos;
+    /* The rule origin(start point of derivated string from rule rhs)
+       and parser list in which we are now.*/
+    int orig, pl_ind;
+    /* If the following value is NULL, then we do not need to create
+       translation for this rule.  If we should create abstract node
+       for this rule, the value refers for the abstract node and the
+       displacement is undefined.  Otherwise, the two members is
+       place into which we should place the translation of the rule.
+       The following member is used only for states in the stack.*/
+    YaepParseState*parent_anode_state;
+    int parent_disp;
+    /* The following is used only for states in the table.*/
+    struct yaep_tree_node*anode;
+};
+
+/* To make better traversing and don't waist tree parse memory,
+   we use the following structures to enumerate the tree node.*/
+struct YaepTransVisitNode
+{
+    /* The following member is order number of the node.  This value is
+       negative if we did not visit the node yet.*/
+    int num;
+    /* The tree node itself.*/
+    struct yaep_tree_node*node;
+};
 
 // Extern declarations ///////////////////////////////////////////////////
 
@@ -3529,8 +3567,7 @@ find_error_pl_set(int start_pl_set, int*cost)
 /* The following function creates and returns new error recovery state
    with charcteristics(LAST_ORIGINAL_PL_EL, BACKWARD_MOVE_COST,
    pl_curr, tok_curr).*/
-static struct recovery_state
-new_recovery_state(int last_original_pl_el, int backward_move_cost)
+static struct recovery_state new_recovery_state(int last_original_pl_el, int backward_move_cost)
 {
     struct recovery_state state;
     int i;
@@ -3575,9 +3612,8 @@ new_recovery_state(int last_original_pl_el, int backward_move_cost)
 static vlo_t recovery_state_stack;
 
 /* The following function creates new error recovery state and pushes
-   it on the states stack top.*/
-static void
-push_recovery_state(int last_original_pl_el, int backward_move_cost)
+   it on the states stack top. */
+static void push_recovery_state(int last_original_pl_el, int backward_move_cost)
 {
     struct recovery_state state;
 
@@ -3595,9 +3631,8 @@ push_recovery_state(int last_original_pl_el, int backward_move_cost)
 }
 
 /* The following function sets up parser state(pl, pl_curr, tok_curr)
-   according to error recovery STATE.*/
-static void
-set_recovery_state(struct recovery_state*state)
+   according to error recovery STATE. */
+static void set_recovery_state(struct recovery_state*state)
 {
     int i;
 
@@ -3630,11 +3665,10 @@ set_recovery_state(struct recovery_state*state)
 
 /* The following function pops the top error recovery state from
    states stack.  The current parser state will be setup according to
-   the state.*/
-static struct recovery_state
-pop_recovery_state()
+   the state. */
+static struct recovery_state pop_recovery_state()
 {
-    struct recovery_state*state;
+    struct recovery_state *state;
 
     state = &((struct recovery_state*) VLO_BOUND(recovery_state_stack))[-1];
     VLO_SHORTEN(recovery_state_stack, sizeof(struct recovery_state));
@@ -3652,8 +3686,7 @@ pop_recovery_state()
    of the first token which is not ignored.  If the number of ignored
    tokens is zero,*START will be equal to*STOP and number of token
    on which the error occurred.*/
-static void
-error_recovery(int*start, int*stop)
+static void error_recovery(int *start, int *stop)
 {
     YaepSet*set;
     YaepCoreSymbVect*core_symb_vect;
@@ -4087,38 +4120,12 @@ build_pl()
     error_recovery_fin();
 }
 
-
-
-/* This page contains code to work with parse states.*/
-
-/* The following describes parser state.*/
-struct parse_state
-{
-    /* The rule which we are processing.*/
-    YaepRule*rule;
-    /* Position in the rule where we are now.*/
-    int pos;
-    /* The rule origin(start point of derivated string from rule rhs)
-       and parser list in which we are now.*/
-    int orig, pl_ind;
-    /* If the following value is NULL, then we do not need to create
-       translation for this rule.  If we should create abstract node
-       for this rule, the value refers for the abstract node and the
-       displacement is undefined.  Otherwise, the two members is
-       place into which we should place the translation of the rule.
-       The following member is used only for states in the stack.*/
-    struct parse_state*parent_anode_state;
-    int parent_disp;
-    /* The following is used only for states in the table.*/
-    struct yaep_tree_node*anode;
-};
-
 /* The following os contains all allocated parser states.*/
 static os_t parse_state_os;
 
 /* The following variable refers to head of chain of already allocated
    and then freed parser states.*/
-static struct parse_state*free_parse_state;
+static YaepParseState*free_parse_state;
 
 /* The following table is used to make translation for ambiguous
    grammar more compact.  It is used only when we want all
@@ -4129,7 +4136,7 @@ static hash_table_t parse_state_tab;	/* Key is rule, orig, pl_ind.*/
 static unsigned
 parse_state_hash(hash_table_entry_t s)
 {
-    struct parse_state*state =((struct parse_state*) s);
+    YaepParseState*state =((YaepParseState*) s);
 
     /* The table contains only states with dot at the end of rule.*/
     assert(state->pos == state->rule->rhs_len);
@@ -4142,8 +4149,8 @@ parse_state_hash(hash_table_entry_t s)
 static int
 parse_state_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    struct parse_state*state1 =((struct parse_state*) s1);
-    struct parse_state*state2 =((struct parse_state*) s2);
+    YaepParseState*state1 =((YaepParseState*) s1);
+    YaepParseState*state2 =((YaepParseState*) s2);
 
     /* The table contains only states with dot at the end of rule.*/
     assert(state1->pos == state1->rule->rhs_len
@@ -4165,28 +4172,28 @@ parse_state_init()
 }
 
 /* The following function returns new parser state.*/
-static struct parse_state*
+static YaepParseState*
 parse_state_alloc()
 {
-    struct parse_state*result;
+    YaepParseState*result;
 
     if (free_parse_state == NULL)
     {
-        OS_TOP_EXPAND(parse_state_os, sizeof(struct parse_state));
-        result =(struct parse_state*) OS_TOP_BEGIN(parse_state_os);
+        OS_TOP_EXPAND(parse_state_os, sizeof(YaepParseState));
+        result =(YaepParseState*) OS_TOP_BEGIN(parse_state_os);
         OS_TOP_FINISH(parse_state_os);
     }
     else
     {
         result = free_parse_state;
-        free_parse_state =(struct parse_state*) free_parse_state->rule;
+        free_parse_state =(YaepParseState*) free_parse_state->rule;
     }
     return result;
 }
 
 /* The following function frees STATE.*/
 static void
-parse_state_free(struct parse_state*state)
+parse_state_free(YaepParseState*state)
 {
     state->rule =(YaepRule*) free_parse_state;
     free_parse_state = state;
@@ -4197,8 +4204,8 @@ parse_state_free(struct parse_state*state)
    to the state in the table.  Otherwise the function makes copy of
   *STATE, inserts into the table and returns pointer to copied state.
    In the last case, the function also sets up*NEW_P.*/
-static struct parse_state*
-parse_state_insert(struct parse_state*state, int*new_p)
+static YaepParseState*
+parse_state_insert(YaepParseState*state, int*new_p)
 {
     hash_table_entry_t*entry;
 
@@ -4206,13 +4213,13 @@ parse_state_insert(struct parse_state*state, int*new_p)
 
    *new_p = FALSE;
     if (*entry != NULL)
-        return(struct parse_state*)*entry;
+        return(YaepParseState*)*entry;
    *new_p = TRUE;
     /* We make copy because pl_ind can be changed in further processing
        state.*/
    *entry = parse_state_alloc();
-   *(struct parse_state*)*entry =*state;
-    return(struct parse_state*)*entry;
+   *(YaepParseState*)*entry =*state;
+    return(YaepParseState*)*entry;
 }
 
 /* The following function finalizes work with parser states.*/
@@ -4230,36 +4237,25 @@ parse_state_fin()
 
 /* This page conatins code to traverse translation.*/
 
-/* To make better traversing and don't waist tree parse memory,
-   we use the following structures to enumerate the tree node.*/
-struct trans_visit_node
-{
-    /* The following member is order number of the node.  This value is
-       negative if we did not visit the node yet.*/
-    int num;
-    /* The tree node itself.*/
-    struct yaep_tree_node*node;
-};
-
 /* Hash of translation visit node.*/
 static unsigned trans_visit_node_hash(hash_table_entry_t n)
 {
-    return(size_t)((struct trans_visit_node*) n)->node;
+    return(size_t)((YaepTransVisitNode*) n)->node;
 }
 
 /* Equality of translation visit nodes.*/
 static int trans_visit_node_eq(hash_table_entry_t n1, hash_table_entry_t n2)
 {
-    return(((struct trans_visit_node*) n1)->node == ((struct trans_visit_node*) n2)->node);
+    return(((YaepTransVisitNode*) n1)->node == ((YaepTransVisitNode*) n2)->node);
 }
 
 /* The following function checks presence translation visit node with
    given NODE in the table and if it is not present in the table, the
    function creates the translation visit node and inserts it into
    the table.*/
-static struct trans_visit_node *visit_node(struct yaep_tree_node*node)
+static YaepTransVisitNode *visit_node(struct yaep_tree_node*node)
 {
-    struct trans_visit_node trans_visit_node;
+    YaepTransVisitNode trans_visit_node;
     hash_table_entry_t*entry;
 
     trans_visit_node.node = node;
@@ -4276,7 +4272,7 @@ static struct trans_visit_node *visit_node(struct yaep_tree_node*node)
        *entry =(hash_table_entry_t) OS_TOP_BEGIN(trans_visit_nodes_os);
         OS_TOP_FINISH(trans_visit_nodes_os);
     }
-    return(struct trans_visit_node*)*entry;
+    return(YaepTransVisitNode*)*entry;
 }
 
 /* The following function returns the positive order number of node with number NUM.*/
@@ -4290,7 +4286,7 @@ static int canon_node_num(int num)
    graphviz).*/
 static void print_yaep_node(FILE *f, struct yaep_tree_node *node)
 {
-    struct trans_visit_node*trans_visit_node;
+    YaepTransVisitNode*trans_visit_node;
     struct yaep_tree_node*child;
     int i;
 
@@ -4653,9 +4649,9 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
     YaepCoreSymbVect*core_symb_vect,*check_core_symb_vect;
     int i, j, k, found, pos, orig, pl_ind, n_candidates, disp;
     int sit_ind, check_sit_ind, sit_orig, check_sit_orig, new_p;
-    struct parse_state*state,*orig_state,*curr_state;
-    struct parse_state*table_state,*parent_anode_state;
-    struct parse_state root_state;
+    YaepParseState*state,*orig_state,*curr_state;
+    YaepParseState*table_state,*parent_anode_state;
+    YaepParseState root_state;
     struct yaep_tree_node*result,*empty_node,*node,*error_node;
     struct yaep_tree_node*parent_anode,*anode, root_anode;
     int parent_disp;
@@ -4700,9 +4696,9 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
         VLO_CREATE(orig_states, grammar->alloc, 0);
     }
     VLO_CREATE(stack, grammar->alloc, 10000);
-    VLO_EXPAND(stack, sizeof(struct parse_state*));
+    VLO_EXPAND(stack, sizeof(YaepParseState*));
     state = parse_state_alloc();
-   ((struct parse_state**) VLO_BOUND(stack))[-1] = state;
+   ((YaepParseState**) VLO_BOUND(stack))[-1] = state;
     rule = state->rule = sit->rule;
     state->pos = sit->pos;
     state->orig = 0;
@@ -4729,7 +4725,7 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
             || grammar->debug_level > 3)
 	{
             fprintf(stderr, "Processing top %ld, set place = %d, sit = ",
-                    (long) VLO_LENGTH(stack) / sizeof(struct parse_state*) - 1,
+                    (long) VLO_LENGTH(stack) / sizeof(YaepParseState*) - 1,
                      state->pl_ind);
             rule_dot_print(stderr, state->rule, state->pos);
             fprintf(stderr, ", %d\n", state->orig);
@@ -4752,16 +4748,16 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
                 || grammar->debug_level > 3)
 	    {
                 fprintf(stderr, "Poping top %ld, set place = %d, sit = ",
-                        (long) VLO_LENGTH(stack) / sizeof(struct parse_state*) - 1,
+                        (long) VLO_LENGTH(stack) / sizeof(YaepParseState*) - 1,
                          state->pl_ind);
                 rule_dot_print(stderr, state->rule, 0);
                 fprintf(stderr, ", %d\n", state->orig);
 	    }
 #endif
             parse_state_free(state);
-            VLO_SHORTEN(stack, sizeof(struct parse_state*));
+            VLO_SHORTEN(stack, sizeof(YaepParseState*));
             if (VLO_LENGTH(stack) != 0)
-                state =((struct parse_state**) VLO_BOUND(stack))[-1];
+                state =((YaepParseState**) VLO_BOUND(stack))[-1];
             if (parent_anode != NULL && rule->trans_len == 0 && anode == NULL)
 	    {
                 /* We do produce nothing but we should.  So write empty
@@ -4909,19 +4905,19 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
                     assert(!grammar->one_parse_p);
                     if (n_candidates == 1)
 		    {
-                        VLO_EXPAND(orig_states, sizeof(struct parse_state*));
-                       ((struct parse_state**) VLO_BOUND(orig_states))[-1]
+                        VLO_EXPAND(orig_states, sizeof(YaepParseState*));
+                       ((YaepParseState**) VLO_BOUND(orig_states))[-1]
                             = orig_state;
 		    }
                     for(j =(VLO_LENGTH(orig_states)
-                              / sizeof(struct parse_state*) - 1); j >= 0; j--)
-                        if (((struct parse_state**)
+                              / sizeof(YaepParseState*) - 1); j >= 0; j--)
+                        if (((YaepParseState**)
                              VLO_BEGIN(orig_states))[j]->pl_ind == sit_orig)
                             break;
                     if (j >= 0)
 		    {
                         /* [A -> x., n] & [A -> y., n]*/
-                        curr_state =((struct parse_state**)
+                        curr_state =((YaepParseState**)
                                       VLO_BEGIN(orig_states))[j];
                         anode = curr_state->anode;
 		    }
@@ -4931,16 +4927,16 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
                         /* It is different from the previous ones so add
                            it to process.*/
                         state = parse_state_alloc();
-                        VLO_EXPAND(stack, sizeof(struct parse_state*));
-                       ((struct parse_state**) VLO_BOUND(stack))[-1] = state;
+                        VLO_EXPAND(stack, sizeof(YaepParseState*));
+                       ((YaepParseState**) VLO_BOUND(stack))[-1] = state;
                        *state =*orig_state;
                         state->pl_ind = sit_orig;
                         if (anode != NULL)
                             state->anode
                                 = copy_anode(parent_anode->val.anode.children
                                               + parent_disp, anode, rule, disp);
-                        VLO_EXPAND(orig_states, sizeof(struct parse_state*));
-                       ((struct parse_state**) VLO_BOUND(orig_states))[-1]
+                        VLO_EXPAND(orig_states, sizeof(YaepParseState*));
+                       ((YaepParseState**) VLO_BOUND(orig_states))[-1]
                             = state;
 #if !defined(NDEBUG) && !defined(NO_YAEP_DEBUG_PRINT)
                         if (grammar->debug_level > 3)
@@ -4948,7 +4944,7 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
                             fprintf(stderr,
                                      "  Adding top %ld, set place = %d, modified sit = ",
                                     (long) VLO_LENGTH(stack) /
-                                     sizeof(struct parse_state*) - 1,
+                                     sizeof(YaepParseState*) - 1,
                                      sit_orig);
                             rule_dot_print(stderr, state->rule, state->pos);
                             fprintf(stderr, ", %d\n", state->orig);
@@ -5004,8 +5000,8 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
                               ((char*) node + sizeof(struct yaep_tree_node)));
                         for(k = 0; k <= sit_rule->trans_len; k++)
                             node->val.anode.children[k] = NULL;
-                        VLO_EXPAND(stack, sizeof(struct parse_state*));
-                       ((struct parse_state**) VLO_BOUND(stack))[-1] = state;
+                        VLO_EXPAND(stack, sizeof(YaepParseState*));
+                       ((YaepParseState**) VLO_BOUND(stack))[-1] = state;
                         if (anode == NULL)
 			{
                             state->parent_anode_state
@@ -5023,7 +5019,7 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
                             fprintf(stderr,
                                      "  Adding top %ld, set place = %d, sit = ",
                                     (long) VLO_LENGTH(stack) /
-                                     sizeof(struct parse_state*) - 1, pl_ind);
+                                     sizeof(YaepParseState*) - 1, pl_ind);
                             sit_print(stderr, sit, grammar->debug_level > 5);
                             fprintf(stderr, ", %d\n", sit_orig);
 			}
@@ -5034,7 +5030,7 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
                         /* We allready have the translation.*/
                         assert(!grammar->one_parse_p);
                         parse_state_free(state);
-                        state =((struct parse_state**) VLO_BOUND(stack))[-1];
+                        state =((YaepParseState**) VLO_BOUND(stack))[-1];
                         node = table_state->anode;
                         assert(node != NULL);
 #if !defined(NDEBUG) && !defined(NO_YAEP_DEBUG_PRINT)
@@ -5059,8 +5055,8 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
                     /* We should generate and use the translation of the
                        nonterminal.  Add state to get a translation.*/
                     state = parse_state_alloc();
-                    VLO_EXPAND(stack, sizeof(struct parse_state*));
-                   ((struct parse_state**) VLO_BOUND(stack))[-1] = state;
+                    VLO_EXPAND(stack, sizeof(YaepParseState*));
+                   ((YaepParseState**) VLO_BOUND(stack))[-1] = state;
                     state->rule = sit_rule;
                     state->pos = sit->pos;
                     state->orig = sit_orig;
@@ -5077,7 +5073,7 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
                         fprintf(stderr,
                                  "  Adding top %ld, set place = %d, sit = ",
                                 (long) VLO_LENGTH(stack) /
-                                 sizeof(struct parse_state*) - 1, pl_ind);
+                                 sizeof(YaepParseState*) - 1, pl_ind);
                         sit_print(stderr, sit, grammar->debug_level > 5);
                         fprintf(stderr, ", %d\n", sit_orig);
 		    }
