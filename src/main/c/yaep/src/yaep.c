@@ -2110,8 +2110,7 @@ static int vlo_array_expand()
 }
 
 /* The function purges the array of vlos.*/
-static void
-vlo_array_nullify()
+static void vlo_array_nullify()
 {
     vlo_array_len = 0;
 }
@@ -2125,8 +2124,7 @@ vlo_array_el(int index)
 }
 
 /* Finalize work with array of vlos.*/
-static void
-vlo_array_fin()
+static void vlo_array_fin()
 {
     vlo_t*vlo_ptr;
 
@@ -2267,8 +2265,7 @@ reduce_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 }
 
 /* Initialize work with the triples(set core, symbol, vector).*/
-static void
-core_symb_vect_init()
+static void core_symb_vect_init()
 {
     OS_CREATE(core_symb_vect_os, grammar->alloc, 0);
     VLO_CREATE(new_core_symb_vect_vlo, grammar->alloc, 0);
@@ -2418,8 +2415,7 @@ core_symb_vect_new(YaepSetCore*set_core, YaepSymb*symb)
 }
 
 /* Add EL to vector VEC. */
-static void
-vect_new_add_el(YaepVect*vec, int el)
+static void vect_new_add_el(YaepVect*vec, int el)
 {
     vlo_t*vlo_ptr;
 
@@ -2432,29 +2428,25 @@ vect_new_add_el(YaepVect*vec, int el)
 
 /* Add index EL to the transition vector of CORE_SYMB_VECT being
    formed.*/
-static void
-core_symb_vect_new_add_transition_el(YaepCoreSymbVect*core_symb_vect,
+static void core_symb_vect_new_add_transition_el(YaepCoreSymbVect*core_symb_vect,
 				      int el)
 {
     vect_new_add_el(&core_symb_vect->transitions, el);
 }
 
-/* Add index EL to the reduce vector of CORE_SYMB_VECT being
-   formed.*/
-static void
-core_symb_vect_new_add_reduce_el(YaepCoreSymbVect*core_symb_vect,
-				  int el)
+/* Add index EL to the reduce vector of CORE_SYMB_VECT being formed.*/
+static void core_symb_vect_new_add_reduce_el(YaepCoreSymbVect*core_symb_vect, int el)
 {
     vect_new_add_el(&core_symb_vect->reduces, el);
 }
 
 /* Insert vector VEC from CORE_SYMB_VECT into table TAB.  Update
-*N_VECTS and INT*N_VECT_LEN if it is a new vector in the
- table. */
-static void
-process_core_symb_vect_el(YaepCoreSymbVect*core_symb_vect,
-			   YaepVect*vec,
-			   hash_table_t* tab, int*n_vects, int*n_vect_len)
+   *N_VECTS and INT*N_VECT_LEN if it is a new vector in the table. */
+static void process_core_symb_vect_el(YaepCoreSymbVect*core_symb_vect,
+                                      YaepVect*vec,
+                                      hash_table_t *tab,
+                                      int *n_vects,
+                                      int *n_vect_len)
 {
     hash_table_entry_t*entry;
 
@@ -2482,8 +2474,7 @@ process_core_symb_vect_el(YaepCoreSymbVect*core_symb_vect,
 }
 
 /* Finish forming all new triples core_symb_vect.*/
-static void
-core_symb_vect_new_all_stop()
+static void core_symb_vect_new_all_stop()
 {
     YaepCoreSymbVect**triple_ptr;
 
@@ -2503,8 +2494,7 @@ core_symb_vect_new_all_stop()
 }
 
 /* Finalize work with all triples(set core, symbol, vector).*/
-static void
-core_symb_vect_fin()
+static void core_symb_vect_fin()
 {
     delete_hash_table(transition_els_tab);
     delete_hash_table(reduce_els_tab);
@@ -2529,8 +2519,7 @@ static jmp_buf error_longjump_buff;
 /* The following function stores error CODE and MESSAGE.  The function
    makes long jump after that.  So the function is designed to process
    only one error.*/
-static void
-yaep_error(int code, const char*format, ...)
+static void yaep_error(int code, const char*format, ...)
 {
     va_list arguments;
 
@@ -2543,8 +2532,7 @@ yaep_error(int code, const char*format, ...)
 }
 
 /* The following function processes allocation errors.*/
-static void
-error_func_for_allocate(void*ignored)
+static void error_func_for_allocate(void*ignored)
 {
    (void) ignored;
 
@@ -2596,8 +2584,7 @@ yaep_create_grammar()
 }
 
 /* The following function makes grammar empty.*/
-static void
-yaep_empty_grammar()
+static void yaep_empty_grammar()
 {
     if (grammar != NULL)
     {
@@ -2627,8 +2614,7 @@ yaep_error_message(YaepGrammar*g)
 
 /* The following function creates sets FIRST and FOLLOW for all
    grammar nonterminals.*/
-static void
-create_first_follow_sets()
+static void create_first_follow_sets()
 {
     YaepSymb*symb,**rhs,*rhs_symb,*next_rhs_symb;
     YaepRule*rule;
@@ -2694,8 +2680,7 @@ create_first_follow_sets()
 
 /* The following function sets up flags empty_p, access_p and
    derivation_p for all grammar symbols.*/
-static void
-set_empty_access_derives()
+static void set_empty_access_derives()
 {
     YaepSymb*symb,*rhs_symb;
     YaepRule*rule;
@@ -2745,9 +2730,8 @@ set_empty_access_derives()
 
 }
 
-/* The following function sets up flags loop_p for nonterminals.*/
-static void
-set_loop_p()
+/* The following function sets up flags loop_p for nonterminals. */
+static void set_loop_p()
 {
     YaepSymb*symb,*lhs;
     YaepRule*rule;
@@ -2801,8 +2785,7 @@ set_loop_p()
 
 /* The following function evaluates different sets and flags for
    grammar and checks the grammar on correctness.*/
-static void
-check_grammar(int strict_p)
+static void check_grammar(int strict_p)
 {
     YaepSymb*symb;
     int i;
@@ -3114,8 +3097,7 @@ yaep_set_recovery_match(YaepGrammar*grammar, int n_toks)
 
 /* The function initializes all internal data for parser for N_TOKS
    tokens.*/
-static void
-yaep_parse_init(int n_toks)
+static void yaep_parse_init(int n_toks)
 {
     YaepRule*rule;
 
@@ -3137,8 +3119,7 @@ yaep_parse_init(int n_toks)
 
 /* The function should be called the last(it frees all allocated
    data for parser).*/
-static void
-yaep_parse_fin()
+static void yaep_parse_fin()
 {
     core_symb_vect_fin();
     set_fin();
@@ -3146,8 +3127,7 @@ yaep_parse_fin()
 }
 
 /* The following function reads all input tokens.*/
-static void
-read_toks()
+static void read_toks()
 {
     int code;
     void*attr;
@@ -3162,8 +3142,7 @@ read_toks()
    which can derivate empty string and which is placed after dot in
    given situation.  The function returns TRUE if the dot is placed on
    the last position in given situation or in the added situations.*/
-static void
-add_derived_nonstart_sits(YaepSituation*sit, int parent)
+static void add_derived_nonstart_sits(YaepSituation*sit, int parent)
 {
     YaepSymb*symb;
     YaepRule*rule = sit->rule;
@@ -3179,8 +3158,7 @@ add_derived_nonstart_sits(YaepSituation*sit, int parent)
    further fast search of start situations from given core by
    transition on given symbol(see comment for abstract data
    `core_symb_vect').*/
-static void
-expand_new_start_set()
+static void expand_new_start_set()
 {
     YaepSituation*sit;
     YaepSymb*symb;
@@ -3272,8 +3250,7 @@ expand_new_start_set()
 }
 
 /* The following function forms the 1st set.*/
-static void
-build_start_set()
+static void build_start_set()
 {
     YaepRule*rule;
     YaepSituation*sit;
@@ -3315,9 +3292,9 @@ build_start_set()
 /* The following function builds new set by shifting situations of SET
    given in CORE_SYMB_VECT with given lookahead terminal number.  If
    the number is negative, we ignore lookahead at all.*/
-static void
-build_new_set(YaepSet*set, YaepCoreSymbVect*core_symb_vect,
-	       int lookahead_term_num)
+static void build_new_set(YaepSet *set,
+                          YaepCoreSymbVect *core_symb_vect,
+                          int lookahead_term_num)
 {
     YaepSet*prev_set;
     YaepSetCore*set_core,*prev_set_core;
@@ -3467,8 +3444,7 @@ static int original_last_pl_el;
 /* The following function may be called if you know that pl has
    original sets upto LAST element(including it).  Such call can
    decrease number of restored sets.*/
-static void
-set_original_set_bound(int last)
+static void set_original_set_bound(int last)
 {
     assert(last >= 0 && last <= start_pl_curr
             && original_last_pl_el <= start_pl_curr);
@@ -3479,8 +3455,7 @@ set_original_set_bound(int last)
    starting with pl_curr(including the state) is saved.  The function
    should be called after any decreasing pl_curr with subsequent
    writing to pl [pl_curr].*/
-static void
-save_original_sets()
+static void save_original_sets()
 {
     int length, curr_pl;
 
@@ -3508,8 +3483,7 @@ save_original_sets()
 
 /* If it is necessary, the following function restores original pl
    part with states in range [0, last_pl_el].*/
-static void
-restore_original_sets(int last_pl_el)
+static void restore_original_sets(int last_pl_el)
 {
     assert(last_pl_el <= start_pl_curr
             && original_last_pl_el <= start_pl_curr);
@@ -3951,16 +3925,14 @@ static void error_recovery(int *start, int *stop)
 }
 
 /* Initialize work with error recovery.*/
-static void
-error_recovery_init()
+static void error_recovery_init()
 {
     VLO_CREATE(original_pl_tail_stack, grammar->alloc, 4096);
     VLO_CREATE(recovery_state_stack, grammar->alloc, 4096);
 }
 
 /* Finalize work with error recovery.*/
-static void
-error_recovery_fin()
+static void error_recovery_fin()
 {
     VLO_DELETE(recovery_state_stack);
     VLO_DELETE(original_pl_tail_stack);
@@ -3996,8 +3968,7 @@ static int n_goto_successes;
 
 /* The following function is major function forming parsing list in
    Earley's algorithm.*/
-static void
-build_pl()
+static void build_pl()
 {
     int i;
     YaepSymb*term;
@@ -4160,8 +4131,7 @@ parse_state_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 }
 
 /* The following function initializes work with parser states.*/
-static void
-parse_state_init()
+static void parse_state_init()
 {
     free_parse_state = NULL;
     OS_CREATE(parse_state_os, grammar->alloc, 0);
@@ -4192,8 +4162,7 @@ parse_state_alloc()
 }
 
 /* The following function frees STATE.*/
-static void
-parse_state_free(YaepParseState*state)
+static void parse_state_free(YaepParseState*state)
 {
     state->rule =(YaepRule*) free_parse_state;
     free_parse_state = state;
@@ -4223,8 +4192,7 @@ parse_state_insert(YaepParseState*state, int*new_p)
 }
 
 /* The following function finalizes work with parser states.*/
-static void
-parse_state_fin()
+static void parse_state_fin()
 {
     if (!grammar->one_parse_p)
         delete_hash_table(parse_state_tab);
@@ -4406,8 +4374,7 @@ static void print_yaep_node(FILE *f, struct yaep_tree_node *node)
 }
 
 /* The following function prints parse tree with ROOT.*/
-static void
-print_parse(FILE* f, struct yaep_tree_node*root)
+static void print_parse(FILE* f, struct yaep_tree_node*root)
 {
     trans_visit_nodes_tab =
         create_hash_table(grammar->alloc, toks_len* 2, trans_visit_node_hash,
