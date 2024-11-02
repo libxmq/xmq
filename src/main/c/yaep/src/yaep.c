@@ -75,9 +75,17 @@
    Lets pick 200_000 as the max, it shrinks to max-min code point anyway.*/
 #define MAX_SYMB_CODE_TRANS_VECT_SIZE 200000
 
+/* The initial length of array(in tokens) in which input tokens are placed.*/
+#ifndef YAEP_INIT_TOKENS_NUMBER
+#define YAEP_INIT_TOKENS_NUMBER 10000
+#endif
+
 /* Define this if you want to reuse already calculated Earley's sets
    and fast their reproduction.  It considerably speed up the parser. */
 #define USE_SET_HASH_TABLE
+
+/* Maximal goto sets saved for triple(set, terminal, lookahead). */
+#define MAX_CACHED_GOTO_RESULTS 3
 
 /* Prime number(79087987342985798987987) mod 32 used for hash calculations. */
 static const unsigned jauquet_prime_mod32 = 2053222611;
@@ -120,6 +128,9 @@ typedef struct YaepSituation YaepSituation;
 
 struct YaepTok;
 typedef struct YaepTok YaepTok;
+
+struct YaepSetTermLookAhead;
+typedef struct YaepSetTermLookAhead YaepSetTermLookAhead;
 
 /* The following is type of element of array representing set of terminals.*/
 typedef long int term_set_el_t;
@@ -429,6 +440,82 @@ struct YaepTok
     void*attr;
 };
 
+/* The triple and possible goto sets for it. */
+struct YaepSetTermLookAhead
+{
+    YaepSet*set;
+    YaepSymb*term;
+    int lookahead;
+    /* Saved goto sets form a queue.  The last goto is saved at the
+       following array elements whose index is given by CURR. */
+    int curr;
+    /* Saved goto sets to which we can go from SET by the terminal with
+       subsequent terminal LOOKAHEAD given by its code. */
+    YaepSet*result[MAX_CACHED_GOTO_RESULTS];
+    /* Corresponding places of the goto sets in the parsing list. */
+    int place[MAX_CACHED_GOTO_RESULTS];
+};
+
+/* The following describes rule of grammar.*/
+struct YaepRule
+{
+    /* The following is order number of rule.*/
+    int num;
+    /* The following is length of rhs.*/
+    int rhs_len;
+    /* The following is the next grammar rule.*/
+    YaepRule*next;
+    /* The following is the next grammar rule with the same nonterminal
+       in lhs of the rule.*/
+    YaepRule*lhs_next;
+    /* The following is nonterminal in the left hand side of the
+       rule.*/
+    YaepSymb*lhs;
+    /* The ixml default mark of the rule*/
+    char mark;
+    /* The following is symbols in the right hand side of the rule.*/
+    YaepSymb**rhs;
+    /* The ixml marks for all the terms in the right hand side of the rule.*/
+    char*marks;
+    /* The following three members define rule translation.*/
+    const char*anode;		/* abstract node name if any.*/
+    int anode_cost;		/* the cost of the abstract node if any, otherwise 0.*/
+    int trans_len;		/* number of symbol translations in the rule translation.*/
+    /* The following array elements correspond to element of rhs with
+       the same index.  The element value is order number of the
+       corresponding symbol translation in the rule translation.  If the
+       symbol translation is rejected, the corresponding element value is
+       negative.*/
+    int*order;
+    /* The following member value is equal to size of all previous rule
+       lengths + number of the previous rules.  Imagine that all left
+       hand symbol and right hand size symbols of the rules are stored
+       in array.  Then the following member is index of the rule lhs in
+       the array.*/
+    int rule_start_offset;
+    /* The following is the same string as anode but memory allocated in
+       parse_alloc.*/
+    char*caller_anode;
+};
+
+/* The following container for the abstract data.*/
+struct YaepRuleStorage
+{
+    /* The following is number of all rules and their summary rhs
+       length.  The variables can be read externally.*/
+    int n_rules, n_rhs_lens;
+
+    /* The following is the first rule.*/
+    YaepRule*first_rule;
+
+    /* The following is rule being formed.  It can be read
+       externally.*/
+    YaepRule*curr_rule;
+
+    /* All rules are placed in the following object.*/
+    os_t rules_os;
+};
+
 // Global variables /////////////////////////////////////////////////////
 
 /* The following variable value is the reference for the current grammar structure.*/
@@ -456,6 +543,78 @@ static void(*parse_free)(void*mem);
 static void yaep_error(int code, const char*format, ...);
 
 extern void yaep_free_grammar(YaepGrammar*g);
+
+/* The following variable is set being created.  It can be read
+   externally.  It is defined only when new_set_ready_p is TRUE.*/
+static YaepSet *new_set;
+
+/* The following variable is always set core of set being created.  It
+   can be read externally.  Member core of new_set has always the
+   following value.  It is defined only when new_set_ready_p is TRUE.*/
+static YaepSetCore *new_core;
+
+/* The following says that new_set, new_core and their members are
+   defined.  Before this the access to data of the set being formed
+   are possible only through the following variables.*/
+static int new_set_ready_p;
+
+/* To optimize code we use the following variables to access to data
+   of new set.  They are always defined and correspondingly
+   situations, distances, and the current number of start situations
+   of the set being formed.*/
+static YaepSituation **new_sits;
+static int *new_dists;
+static int new_n_start_sits;
+
+/* The following are number of unique set cores and their start
+   situations, unique distance vectors and their summary length, and
+   number of parent indexes.  The variables can be read externally.*/
+static int n_set_cores, n_set_core_start_sits;
+static int n_set_dists, n_set_dists_len, n_parent_indexes;
+
+/* Number unique sets and their start situations. */
+static int n_sets, n_sets_start_sits;
+
+/* Number unique triples(set, term, lookahead). */
+static int n_set_term_lookaheads;
+
+/* The set cores of formed sets are placed in the following os.*/
+static os_t set_cores_os;
+
+/* The situations of formed sets are placed in the following os.*/
+static os_t set_sits_os;
+
+/* The indexes of the parent start situations whose distances are used
+   to get distances of some nonstart situations are placed in the
+   following os.*/
+static os_t set_parent_indexes_os;
+
+/* The distances of formed sets are placed in the following os.*/
+static os_t set_dists_os;
+
+/* The sets themself are placed in the following os.*/
+static os_t sets_os;
+
+/* Container for triples(set, term, lookahead. */
+static os_t set_term_lookahead_os;
+
+/* The following 3 tables contain references for sets which refers
+   for set cores or distances or both which are in the tables.*/
+static hash_table_t set_core_tab;	/* key is only start situations.*/
+static hash_table_t set_dists_tab;	/* key is distances.*/
+static hash_table_t set_tab;	/* key is(core, distances).*/
+/* Table for triples(set, term, lookahead). */
+static hash_table_t set_term_lookahead_tab;	/* key is(core, distances, lookeahed).*/
+
+
+/* The following two variables contains all input tokens and their
+   number.  The variables can be read externally.*/
+static YaepTok*toks;
+static int toks_len;
+static int tok_curr;
+
+/* The following array contains all input tokens.*/
+static vlo_t toks_vlo;
 
 // Implementations ////////////////////////////////////////////////////////////////////
 
@@ -583,11 +742,9 @@ static YaepSymb*symb_add_term(const char*name, int code)
     symb.u.term.code = code;
     symb.u.term.term_num = symbs_ptr->n_terms++;
     symb.empty_p = FALSE;
-    repr_entry =
-        find_hash_table_entry(symbs_ptr->repr_to_symb_tab, &symb, TRUE);
+    repr_entry = find_hash_table_entry(symbs_ptr->repr_to_symb_tab, &symb, TRUE);
     assert(*repr_entry == NULL);
-    code_entry =
-        find_hash_table_entry(symbs_ptr->code_to_symb_tab, &symb, TRUE);
+    code_entry = find_hash_table_entry(symbs_ptr->code_to_symb_tab, &symb, TRUE);
     assert(*code_entry == NULL);
     OS_TOP_ADD_STRING(symbs_ptr->symbs_os, name);
     symb.repr =(char*) OS_TOP_BEGIN(symbs_ptr->symbs_os);
@@ -783,8 +940,7 @@ static unsigned term_set_hash(hash_table_entry_t s)
 }
 
 /* Equality of terminal sets.*/
-static int
-term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static int term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     term_set_el_t*set1 =((YaepTabTermSet*) s1)->set;
     term_set_el_t*set2 =((YaepTabTermSet*) s2)->set;
@@ -802,8 +958,7 @@ term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 
 /* Initialize work with terminal sets and returns storage for terminal
    sets.*/
-static YaepTermStorage*
-term_set_init()
+static YaepTermStorage *term_set_init()
 {
     void*mem;
     YaepTermStorage*result;
@@ -819,8 +974,7 @@ term_set_init()
 }
 
 /* Return new terminal SET.  Its value is undefined.*/
-static term_set_el_t*
-term_set_create()
+static term_set_el_t *term_set_create()
 {
     int size;
     term_set_el_t*result;
@@ -839,8 +993,7 @@ term_set_create()
 }
 
 /* Make terminal SET empty.*/
-static void
-term_set_clear(term_set_el_t* set)
+static void term_set_clear(term_set_el_t* set)
 {
     term_set_el_t*bound;
     int size;
@@ -853,8 +1006,7 @@ term_set_clear(term_set_el_t* set)
 }
 
 /* Copy SRC into DEST.*/
-static void
-term_set_copy(term_set_el_t* dest, term_set_el_t* src)
+static void term_set_copy(term_set_el_t* dest, term_set_el_t* src)
 {
     term_set_el_t*bound;
     int size;
@@ -868,8 +1020,7 @@ term_set_copy(term_set_el_t* dest, term_set_el_t* src)
 
 /* Add all terminals from set OP with to SET.  Return TRUE if SET has
    been changed.*/
-static int
-term_set_or(term_set_el_t* set, term_set_el_t* op)
+static int term_set_or(term_set_el_t* set, term_set_el_t* op)
 {
     term_set_el_t*bound;
     int size, changed_p;
@@ -889,8 +1040,7 @@ term_set_or(term_set_el_t* set, term_set_el_t* op)
 
 /* Add terminal with number NUM to SET.  Return TRUE if SET has been
    changed.*/
-static int
-term_set_up(term_set_el_t* set, int num)
+static int term_set_up(term_set_el_t* set, int num)
 {
     int ind, changed_p;
     term_set_el_t bit;
@@ -904,8 +1054,7 @@ term_set_up(term_set_el_t* set, int num)
 }
 
 /* Return TRUE if terminal with number NUM is in SET.*/
-static int
-term_set_test(term_set_el_t* set, int num)
+static int term_set_test(term_set_el_t* set, int num)
 {
     int ind;
     term_set_el_t bit;
@@ -920,8 +1069,7 @@ term_set_test(term_set_el_t* set, int num)
    returns its number.  If the set is already in table it returns -its
    number - 1(which is always negative).  Don't set after
    insertion!!!*/
-static int
-term_set_insert(term_set_el_t* set)
+static int term_set_insert(term_set_el_t* set)
 {
     hash_table_entry_t*entry;
     YaepTabTermSet tab_term_set,*tab_term_set_ptr;
@@ -950,8 +1098,7 @@ term_set_insert(term_set_el_t* set)
 
 /* The following function returns set which is in the table with
    number NUM.*/
-static term_set_el_t*
-term_set_from_table(int num)
+static term_set_el_t *term_set_from_table(int num)
 {
     assert(num >= 0);
     assert((long unsigned int)num < VLO_LENGTH(term_sets_ptr->tab_term_set_vlo)
@@ -961,22 +1108,22 @@ term_set_from_table(int num)
 }
 
 /* Print terminal SET into file F.*/
-static void
-term_set_print(FILE* f, term_set_el_t* set)
+static void term_set_print(FILE* f, term_set_el_t* set)
 {
     int i;
 
     for(i = 0; i < symbs_ptr->n_terms; i++)
+    {
         if (term_set_test(set, i))
         {
             fprintf(f, " ");
             symb_print(f, term_get(i), FALSE);
         }
+    }
 }
 
 /* Free memory for terminal sets.*/
-static void
-term_set_empty(YaepTermStorage*term_sets)
+static void term_set_empty(YaepTermStorage*term_sets)
 {
     if (term_sets == NULL)
         return;
@@ -987,11 +1134,9 @@ term_set_empty(YaepTermStorage*term_sets)
 }
 
 /* Finalize work with terminal sets.*/
-static void
-term_set_fin(YaepTermStorage*term_sets)
+static void term_set_fin(YaepTermStorage*term_sets)
 {
-    if (term_sets == NULL)
-        return;
+    if (term_sets == NULL) return;
     VLO_DELETE(term_sets->tab_term_set_vlo);
     delete_hash_table(term_sets->term_set_tab);
     OS_DELETE(term_sets->term_set_os);
@@ -999,69 +1144,6 @@ term_set_fin(YaepTermStorage*term_sets)
     term_sets = NULL;
 }
 
-
-
-/* This page is abstract data `grammar rules'.*/
-
-/* The following describes rule of grammar.*/
-struct YaepRule
-{
-    /* The following is order number of rule.*/
-    int num;
-    /* The following is length of rhs.*/
-    int rhs_len;
-    /* The following is the next grammar rule.*/
-    YaepRule*next;
-    /* The following is the next grammar rule with the same nonterminal
-       in lhs of the rule.*/
-    YaepRule*lhs_next;
-    /* The following is nonterminal in the left hand side of the
-       rule.*/
-    YaepSymb*lhs;
-    /* The ixml default mark of the rule*/
-    char mark;
-    /* The following is symbols in the right hand side of the rule.*/
-    YaepSymb**rhs;
-    /* The ixml marks for all the terms in the right hand side of the rule.*/
-    char*marks;
-    /* The following three members define rule translation.*/
-    const char*anode;		/* abstract node name if any.*/
-    int anode_cost;		/* the cost of the abstract node if any, otherwise 0.*/
-    int trans_len;		/* number of symbol translations in the rule translation.*/
-    /* The following array elements correspond to element of rhs with
-       the same index.  The element value is order number of the
-       corresponding symbol translation in the rule translation.  If the
-       symbol translation is rejected, the corresponding element value is
-       negative.*/
-    int*order;
-    /* The following member value is equal to size of all previous rule
-       lengths + number of the previous rules.  Imagine that all left
-       hand symbol and right hand size symbols of the rules are stored
-       in array.  Then the following member is index of the rule lhs in
-       the array.*/
-    int rule_start_offset;
-    /* The following is the same string as anode but memory allocated in
-       parse_alloc.*/
-    char*caller_anode;
-};
-
-/* The following container for the abstract data.*/
-struct YaepRuleStorage
-{
-    /* The following is number of all rules and their summary rhs
-       length.  The variables can be read externally.*/
-    int n_rules, n_rhs_lens;
-
-    /* The following is the first rule.*/
-    YaepRule*first_rule;
-
-    /* The following is rule being formed.  It can be read
-       externally.*/
-    YaepRule*curr_rule;
-
-    /* All rules are placed in the following object.*/
-    os_t rules_os;
-};
 
 /* Initialize work with rules and returns pointer to rules storage.*/
 static YaepRuleStorage*rule_init()
@@ -1237,28 +1319,8 @@ rule_fin(YaepRuleStorage*rules)
     rules = NULL;
 }
 
-
-
-/* This page is abstract data `input tokens'.*/
-
-/* The initial length of array(in tokens) in which input tokens are
-   placed.*/
-#ifndef YAEP_INIT_TOKENS_NUMBER
-#define YAEP_INIT_TOKENS_NUMBER 10000
-#endif
-
-/* The following two variables contains all input tokens and their
-   number.  The variables can be read externally.*/
-static YaepTok*toks;
-static int toks_len;
-static int tok_curr;
-
-/* The following array contains all input tokens.*/
-static vlo_t toks_vlo;
-
 /* Initialize work with tokens.*/
-static void
-tok_init()
+static void tok_init()
 {
     VLO_CREATE(toks_vlo, grammar->alloc,
                 YAEP_INIT_TOKENS_NUMBER* sizeof(YaepTok));
@@ -1454,86 +1516,6 @@ sit_fin()
     OS_DELETE(sits_os);
 }
 
-/* Maximal goto sets saved for triple(set, terminal, lookahead). */
-#define MAX_CACHED_GOTO_RESULTS 3
-
-/* The triple and possible goto sets for it. */
-struct set_term_lookahead
-{
-    YaepSet*set;
-    YaepSymb*term;
-    int lookahead;
-    /* Saved goto sets form a queue.  The last goto is saved at the
-       following array elements whose index is given by CURR. */
-    int curr;
-    /* Saved goto sets to which we can go from SET by the terminal with
-       subsequent terminal LOOKAHEAD given by its code. */
-    YaepSet*result[MAX_CACHED_GOTO_RESULTS];
-    /* Corresponding places of the goto sets in the parsing list. */
-    int place[MAX_CACHED_GOTO_RESULTS];
-};
-
-/* The following variable is set being created.  It can be read
-   externally.  It is defined only when new_set_ready_p is TRUE.*/
-static YaepSet*new_set;
-
-/* The following variable is always set core of set being created.  It
-   can be read externally.  Member core of new_set has always the
-   following value.  It is defined only when new_set_ready_p is TRUE.*/
-static YaepSetCore*new_core;
-
-/* The following says that new_set, new_core and their members are
-   defined.  Before this the access to data of the set being formed
-   are possible only through the following variables.*/
-static int new_set_ready_p;
-
-/* To optimize code we use the following variables to access to data
-   of new set.  They are always defined and correspondingly
-   situations, distances, and the current number of start situations
-   of the set being formed.*/
-static YaepSituation**new_sits;
-static int*new_dists;
-static int new_n_start_sits;
-
-/* The following are number of unique set cores and their start
-   situations, unique distance vectors and their summary length, and
-   number of parent indexes.  The variables can be read externally.*/
-static int n_set_cores, n_set_core_start_sits;
-static int n_set_dists, n_set_dists_len, n_parent_indexes;
-
-/* Number unique sets and their start situations. */
-static int n_sets, n_sets_start_sits;
-
-/* Number unique triples(set, term, lookahead). */
-static int n_set_term_lookaheads;
-
-/* The set cores of formed sets are placed in the following os.*/
-static os_t set_cores_os;
-
-/* The situations of formed sets are placed in the following os.*/
-static os_t set_sits_os;
-
-/* The indexes of the parent start situations whose distances are used
-   to get distances of some nonstart situations are placed in the
-   following os.*/
-static os_t set_parent_indexes_os;
-
-/* The distances of formed sets are placed in the following os.*/
-static os_t set_dists_os;
-
-/* The sets themself are placed in the following os.*/
-static os_t sets_os;
-
-/* Container for triples(set, term, lookahead. */
-static os_t set_term_lookahead_os;
-
-/* The following 3 tables contain references for sets which refers
-   for set cores or distances or both which are in the tables.*/
-static hash_table_t set_core_tab;	/* key is only start situations.*/
-static hash_table_t set_dists_tab;	/* key is distances.*/
-static hash_table_t set_tab;	/* key is(core, distances).*/
-/* Table for triples(set, term, lookahead). */
-static hash_table_t set_term_lookahead_tab;	/* key is(core, distances, lookeahed).*/
 
 /* Hash of set core.*/
 static unsigned
@@ -1609,9 +1591,9 @@ set_core_dists_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 static unsigned
 set_term_lookahead_hash(hash_table_entry_t s)
 {
-    YaepSet*set =((struct set_term_lookahead*) s)->set;
-    YaepSymb*term =((struct set_term_lookahead*) s)->term;
-    int lookahead =((struct set_term_lookahead*) s)->lookahead;
+    YaepSet*set =((YaepSetTermLookAhead*) s)->set;
+    YaepSymb*term =((YaepSetTermLookAhead*) s)->term;
+    int lookahead =((YaepSetTermLookAhead*) s)->lookahead;
 
     return((set_core_dists_hash(set)* hash_shift
              + term->u.term.term_num)* hash_shift + lookahead);
@@ -1621,12 +1603,12 @@ set_term_lookahead_hash(hash_table_entry_t s)
 static int
 set_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    YaepSet*set1 =((struct set_term_lookahead*) s1)->set;
-    YaepSet*set2 =((struct set_term_lookahead*) s2)->set;
-    YaepSymb*term1 =((struct set_term_lookahead*) s1)->term;
-    YaepSymb*term2 =((struct set_term_lookahead*) s2)->term;
-    int lookahead1 =((struct set_term_lookahead*) s1)->lookahead;
-    int lookahead2 =((struct set_term_lookahead*) s2)->lookahead;
+    YaepSet*set1 =((YaepSetTermLookAhead*) s1)->set;
+    YaepSet*set2 =((YaepSetTermLookAhead*) s2)->set;
+    YaepSymb*term1 =((YaepSetTermLookAhead*) s1)->term;
+    YaepSymb*term2 =((YaepSetTermLookAhead*) s2)->term;
+    int lookahead1 =((YaepSetTermLookAhead*) s1)->lookahead;
+    int lookahead2 =((YaepSetTermLookAhead*) s2)->lookahead;
 
     return set1 == set2 && term1 == term2 && lookahead1 == lookahead2;
 }
@@ -3977,7 +3959,7 @@ build_pl()
     int lookahead_term_num;
 #ifdef USE_SET_HASH_TABLE
     hash_table_entry_t*entry;
-    struct set_term_lookahead*new_set_term_lookahead;
+    YaepSetTermLookAhead*new_set_term_lookahead;
 #endif
 
     error_recovery_init();
@@ -4003,9 +3985,9 @@ build_pl()
         new_set = NULL;
 #ifdef USE_SET_HASH_TABLE
         OS_TOP_EXPAND(set_term_lookahead_os,
-                       sizeof(struct set_term_lookahead));
+                       sizeof(YaepSetTermLookAhead));
         new_set_term_lookahead =
-           (struct set_term_lookahead*) OS_TOP_BEGIN(set_term_lookahead_os);
+           (YaepSetTermLookAhead*) OS_TOP_BEGIN(set_term_lookahead_os);
         new_set_term_lookahead->set = set;
         new_set_term_lookahead->term = term;
         new_set_term_lookahead->lookahead = lookahead_term_num;
@@ -4022,11 +4004,11 @@ build_pl()
             OS_TOP_NULLIFY(set_term_lookahead_os);
             for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
                 if ((tab_set =
-                    ((struct set_term_lookahead*)*entry)->result[i]) == NULL)
+                    ((YaepSetTermLookAhead*)*entry)->result[i]) == NULL)
                     break;
                 else if (check_cached_transition_set
                         (tab_set,
-                         ((struct set_term_lookahead*)*entry)->place[i]))
+                         ((YaepSetTermLookAhead*)*entry)->place[i]))
                 {
                     new_set = tab_set;
                     n_goto_successes++;
@@ -4070,13 +4052,11 @@ build_pl()
             build_new_set(set, core_symb_vect, lookahead_term_num);
 #ifdef USE_SET_HASH_TABLE
             /* Save(set, term, lookahead) -> new_set in the table. */
-            i =((struct set_term_lookahead*)*entry)->curr;
-           ((struct set_term_lookahead*)*entry)->result[i] = new_set;
-           ((struct set_term_lookahead*)*entry)->place[i] = pl_curr;
-           ((struct set_term_lookahead*)*entry)->lookahead =
-                lookahead_term_num;
-           ((struct set_term_lookahead*)*entry)->curr =
-               (i + 1) % MAX_CACHED_GOTO_RESULTS;
+            i =((YaepSetTermLookAhead*)*entry)->curr;
+           ((YaepSetTermLookAhead*)*entry)->result[i] = new_set;
+           ((YaepSetTermLookAhead*)*entry)->place[i] = pl_curr;
+           ((YaepSetTermLookAhead*)*entry)->lookahead = lookahead_term_num;
+           ((YaepSetTermLookAhead*)*entry)->curr = (i + 1) % MAX_CACHED_GOTO_RESULTS;
 #endif
 	}
         pl[++pl_curr] = new_set;
@@ -4513,20 +4493,17 @@ copy_anode(struct yaep_tree_node**place, struct yaep_tree_node*anode,
     return node;
 }
 
-/* The following table is used to find allocated memory which should
-   not be freed.*/
+/* The following table is used to find allocated memory which should not be freed.*/
 static hash_table_t reserv_mem_tab;
 
 /* The hash of the memory reference.*/
-static unsigned
-reserv_mem_hash(hash_table_entry_t m)
+static unsigned reserv_mem_hash(hash_table_entry_t m)
 {
     return(size_t) m;
 }
 
 /* The equity of the memory reference.*/
-static int
-reserv_mem_eq(hash_table_entry_t m1, hash_table_entry_t m2)
+static int reserv_mem_eq(hash_table_entry_t m1, hash_table_entry_t m2)
 {
     return m1 == m2;
 }
@@ -4540,8 +4517,7 @@ static vlo_t tnodes_vlo;
    The function also collects references to memory which can be
    freed. Remeber that the translation is DAG, altenatives form lists
   (alt node may not refer for another alternative).*/
-static struct yaep_tree_node*
-prune_to_minimal(struct yaep_tree_node*node, int*cost)
+static struct yaep_tree_node *prune_to_minimal(struct yaep_tree_node *node, int *cost)
 {
     struct yaep_tree_node*child,*alt,*next_alt,*result = NULL;
     int i, min_cost = INT_MAX;
@@ -4600,8 +4576,7 @@ prune_to_minimal(struct yaep_tree_node*node, int*cost)
 
 /* The following function traverses the translation collecting
    reference to memory which may not be freed.*/
-static void
-traverse_pruned_translation(struct yaep_tree_node*node)
+static void traverse_pruned_translation(struct yaep_tree_node *node)
 {
     struct yaep_tree_node*child;
     hash_table_entry_t*entry;
@@ -4642,8 +4617,7 @@ next:
 }
 
 /* The function finds and returns a minimal cost parse(s).*/
-static struct yaep_tree_node*
-find_minimal_translation(struct yaep_tree_node*root)
+static struct yaep_tree_node *find_minimal_translation(struct yaep_tree_node *root)
 {
     struct yaep_tree_node**node_ptr;
     int cost;
@@ -4684,8 +4658,7 @@ find_minimal_translation(struct yaep_tree_node*root)
    function sets up*AMBIGUOUS_P if we found that the grammer is
    ambigous(it works even we asked only one parse tree without
    alternatives).*/
-static struct yaep_tree_node*
-make_parse(int*ambiguous_p)
+static struct yaep_tree_node *make_parse(int *ambiguous_p)
 {
     YaepSet*set,*check_set;
     YaepSetCore*set_core,*check_set_core;
@@ -5195,8 +5168,7 @@ make_parse(int*ambiguous_p)
     return result;
 }
 
-static void*
-parse_alloc_default(int nmemb)
+static void *parse_alloc_default(int nmemb)
 {
     void*result;
 
@@ -5211,8 +5183,7 @@ parse_alloc_default(int nmemb)
     return result;
 }
 
-static void
-parse_free_default(void*mem)
+static void parse_free_default(void*mem)
 {
     free(mem);
 }
@@ -5229,17 +5200,16 @@ parse_free_default(void*mem)
    will be also in error_code).  The function sets up
   *AMBIGUOUS_P if we found that the grammer is ambigous(it works even
    we asked only one parse tree without alternatives).*/
-int
-yaep_parse(YaepGrammar*g,
-	    int(*read)(void**attr),
-	    void(*error)(int err_tok_num, void*err_tok_attr,
-			   int start_ignored_tok_num,
-			   void*start_ignored_tok_attr,
-			   int start_recovered_tok_num,
-			   void*start_recovered_tok_attr),
-	    void*(*alloc)(int nmemb),
-	    void(*free)(void*mem),
-	    struct yaep_tree_node**root, int*ambiguous_p)
+int yaep_parse(YaepGrammar*g,
+               int(*read)(void**attr),
+               void(*error)(int err_tok_num, void*err_tok_attr,
+                            int start_ignored_tok_num,
+                            void*start_ignored_tok_attr,
+                            int start_recovered_tok_num,
+                            void*start_recovered_tok_attr),
+               void*(*alloc)(int nmemb),
+               void(*free)(void*mem),
+               struct yaep_tree_node**root, int*ambiguous_p)
 {
     int code, tok_init_p, parse_init_p;
     int tab_collisions, tab_searches;
@@ -5356,8 +5326,7 @@ yaep_parse(YaepGrammar*g,
 }
 
 /* The following function frees memory allocated for the grammar.*/
-void
-yaep_free_grammar(YaepGrammar*g)
+void yaep_free_grammar(YaepGrammar *g)
 {
     YaepAllocator*allocator;
 
