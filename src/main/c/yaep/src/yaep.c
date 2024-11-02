@@ -157,37 +157,9 @@ struct YaepGrammar
     YaepAllocator *alloc;
 };
 
-/* The following variable value is the reference for the current grammar structure. */
-static YaepGrammar *grammar;
-
-/* The following variable values are values of the corresponding
-   members for the current grammar. */
-
-static YaepVocabulary *symbs_ptr;
-static struct term_sets *term_sets_ptr;
-static struct rules *rules_ptr;
-
-/* The following is set up the parser amnd used globally. */
-static int (*read_token) (void **attr);
-static void (*syntax_error) (int err_tok_num,
-			     void *err_tok_attr,
-			     int start_ignored_tok_num,
-			     void *start_ignored_tok_attr,
-			     int start_recovered_tok_num,
-			     void *start_recovered_tok_attr);
-static void *(*parse_alloc) (int nmemb);
-static void (*parse_free) (void *mem);
-
-/* Forward decrlarations: */
-static void yaep_error (int code, const char *format, ...);
-
-extern void yaep_free_grammar (YaepGrammar *g);
-
 /* The following is default number of tokens sucessfully matched to
    stop error recovery alternative (state). */
 #define DEFAULT_RECOVERY_TOKEN_MATCHES 3
-
-/* This page is abstract data `grammar symbols'. */
 
 /* Forward declaration. */
 struct core_symb_vect;
@@ -277,6 +249,62 @@ struct YaepVocabulary
     int symb_code_trans_vect_end;
 
 };
+
+/* The following is element of term set hash table. */
+struct tab_term_set
+{
+    /* Number of set in the table. */
+    int num;
+    /* The terminal set itself. */
+    term_set_el_t *set;
+};
+
+/* The following container for the abstract data. */
+struct term_sets
+{
+    /* All terminal sets are stored in the following os. */
+    os_t term_set_os;
+
+    /* The following variables can be read externally.  Their values are
+       number of terminal sets and their overall size. */
+    int n_term_sets, n_term_sets_size;
+
+    /* The following is hash table of terminal sets (key is member
+       `set'). */
+    hash_table_t term_set_tab;
+
+    /* References to all structure tab_term_set are stored in the
+       following vlo. */
+    vlo_t tab_term_set_vlo;
+};
+
+/* The following variable value is the reference for the current grammar structure. */
+static YaepGrammar *grammar;
+
+/* The following variable values are values of the corresponding
+   members for the current grammar. */
+
+static YaepVocabulary *symbs_ptr;
+static struct term_sets *term_sets_ptr;
+static struct rules *rules_ptr;
+
+/* The following is set up the parser amnd used globally. */
+static int (*read_token) (void **attr);
+static void (*syntax_error) (int err_tok_num,
+			     void *err_tok_attr,
+			     int start_ignored_tok_num,
+			     void *start_ignored_tok_attr,
+			     int start_recovered_tok_num,
+			     void *start_recovered_tok_attr);
+static void *(*parse_alloc) (int nmemb);
+static void (*parse_free) (void *mem);
+
+/* Forward decrlarations: */
+static void yaep_error (int code, const char *format, ...);
+
+extern void yaep_free_grammar (YaepGrammar *g);
+
+// Implementations ////////////////////////////////////////////////////////////////////
 
 /* Hash of symbol representation. */
 static unsigned symb_repr_hash(hash_table_entry_t s)
@@ -588,39 +616,9 @@ static void symb_fin(YaepVocabulary *symbs)
     TRACE("symb_fin %p\n" , symbs);
 }
 
-/* This page contains abstract data set of terminals. */
-
-/* The following is element of term set hash table. */
-struct tab_term_set
-{
-    /* Number of set in the table. */
-    int num;
-    /* The terminal set itself. */
-    term_set_el_t *set;
-};
-
-/* The following container for the abstract data. */
-struct term_sets
-{
-    /* All terminal sets are stored in the following os. */
-    os_t term_set_os;
-
-    /* The following variables can be read externally.  Their values are
-       number of terminal sets and their overall size. */
-    int n_term_sets, n_term_sets_size;
-
-    /* The following is hash table of terminal sets (key is member
-       `set'). */
-    hash_table_t term_set_tab;
-
-    /* References to all structure tab_term_set are stored in the
-       following vlo. */
-    vlo_t tab_term_set_vlo;
-};
 
 /* Hash of table terminal set. */
-static unsigned
-term_set_hash (hash_table_entry_t s)
+static unsigned term_set_hash(hash_table_entry_t s)
 {
     term_set_el_t *set = ((struct tab_term_set *) s)->set;
     term_set_el_t *bound;
