@@ -158,7 +158,7 @@ struct yaep_tree_node
 /* The following function creates undefined grammar.  The function
    returns NULL if there is no memory.  This function should be called
    the first. */
-YaepGrammar *yaep_create_grammar (void);
+YaepGrammar *yaep_create_grammar();
 
 /* The function returns the last occurred error code for given
    grammar. */
@@ -330,17 +330,17 @@ public:
 
   /* The following constructor and destructor allocate and free memory
      for the grammar. */
-  yaep (void);
-  ~yaep (void);
+  yaep();
+  ~yaep();
 
   /* This function is used for freeing memory allocated for OS except
      for the first segment. */
 
   /* See comments for function yaep_error_code. */
-  int error_code (void);
+  int error_code();
 
   /* See comments for function yaep_error_message. */
-  const char *error_message (void);
+  const char *error_message();
 
   /* See comments for function yaep_read_grammar. */
   int read_grammar (int strict_p,

@@ -361,7 +361,7 @@ static int symb_code_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 
 /* Initialize work with symbols and returns storage for the
    symbols. */
-static YaepVocabulary *symb_init(void)
+static YaepVocabulary *symb_init()
 {
     void *mem;
     YaepVocabulary *result;
@@ -550,7 +550,7 @@ static void symb_print(FILE * f, YaepSymb *symb, int code_p)
    Lets pick 200_000 as the max, it shrinks to max-min code point anyway. */
 #define MAX_SYMB_CODE_TRANS_VECT_SIZE 200000
 
-static void symb_finish_adding_terms(void)
+static void symb_finish_adding_terms()
 {
     int i, max_code, min_code;
     YaepSymb *symb;
@@ -662,7 +662,7 @@ term_set_eq (hash_table_entry_t s1, hash_table_entry_t s2)
 /* Initialize work with terminal sets and returns storage for terminal
    sets. */
 static YaepTermSets *
-term_set_init (void)
+term_set_init()
 {
     void *mem;
     YaepTermSets *result;
@@ -679,7 +679,7 @@ term_set_init (void)
 
 /* Return new terminal SET.  Its value is undefined. */
 static term_set_el_t *
-term_set_create (void)
+term_set_create()
 {
     int size;
     term_set_el_t *result;
@@ -923,8 +923,7 @@ struct YaepRuleStorage
 };
 
 /* Initialize work with rules and returns pointer to rules storage. */
-static YaepRuleStorage *
-rule_init (void)
+static YaepRuleStorage *rule_init()
 {
     void *mem;
     YaepRuleStorage *result;
@@ -999,7 +998,7 @@ rule_new_symb_add (YaepSymb *symb)
 /* The function should be called at end of forming each rule.  It
    creates and initializes situation cache. */
 static void
-rule_new_stop (void)
+rule_new_stop()
 {
     int i;
 
@@ -1127,7 +1126,7 @@ static vlo_t toks_vlo;
 
 /* Initialize work with tokens. */
 static void
-tok_init (void)
+tok_init()
 {
     VLO_CREATE (toks_vlo, grammar->alloc,
                 YAEP_INIT_TOKENS_NUMBER * sizeof (struct tok));
@@ -1154,7 +1153,7 @@ tok_add (int code, void *attr)
 
 /* Finalize work with tokens. */
 static void
-tok_fin (void)
+tok_fin()
 {
     VLO_DELETE (toks_vlo);
 }
@@ -1206,7 +1205,7 @@ static os_t sits_os;
 
 /* Initialize work with situations. */
 static void
-sit_init (void)
+sit_init()
 {
     n_all_sits = 0;
     OS_CREATE (sits_os, grammar->alloc, 0);
@@ -1226,7 +1225,7 @@ sit_set_lookahead (struct sit *sit)
         sit->lookahead = NULL;
     else
     {
-        sit->lookahead = term_set_create ();
+        sit->lookahead = term_set_create();
         term_set_clear (sit->lookahead);
     }
     symb_ptr = &sit->rule->rhs[sit->pos];
@@ -1344,7 +1343,7 @@ sits_hash (int n_sits, struct sit **sits)
 
 /* Finalize work with situations. */
 static void
-sit_fin (void)
+sit_fin()
 {
     VLO_DELETE (sit_table_vlo);
     OS_DELETE (sits_os);
@@ -1601,7 +1600,7 @@ static int curr_sit_dist_vec_check;
 
 /* Initiate the set of pairs (sit, dist).  */
 static void
-sit_dist_set_init (void)
+sit_dist_set_init()
 {
     VLO_CREATE (sit_dist_vec_vlo, grammar->alloc, 8192);
     curr_sit_dist_vec_check = 0;
@@ -1609,7 +1608,7 @@ sit_dist_set_init (void)
 
 /* Make the set empty.  */
 static void
-empty_sit_dist_set (void)
+empty_sit_dist_set()
 {
     curr_sit_dist_vec_check++;
 }
@@ -1648,7 +1647,7 @@ sit_dist_insert (struct sit *sit, int dist)
 
 /* Finish the set of pairs (sit, dist).  */
 static void
-sit_dist_set_fin (void)
+sit_dist_set_fin()
 {
     int i, len = VLO_LENGTH (sit_dist_vec_vlo) / sizeof (vlo_t);
 
@@ -1684,12 +1683,12 @@ set_init (int n_toks)
     n_set_dists = n_set_dists_len = n_parent_indexes = 0;
     n_sets = n_sets_start_sits = 0;
     n_set_term_lookaheads = 0;
-    sit_dist_set_init ();
+    sit_dist_set_init();
 }
 
 /* The following function starts forming of new set. */
 static void
-set_new_start (void)
+set_new_start()
 {
     new_set = NULL;
     new_core = NULL;
@@ -1793,7 +1792,7 @@ setup_set_core_hash (hash_table_entry_t s)
    function returns TRUE then set contains new set core (there was no
    such core in the table). */
 static int
-set_insert (void)
+set_insert()
 {
     hash_table_entry_t *entry;
     int result;
@@ -1872,7 +1871,7 @@ set_insert (void)
 
 /* The following function finishes work with set being formed. */
 static void
-set_new_core_stop (void)
+set_new_core_stop()
 {
     OS_TOP_FINISH (set_sits_os);
     OS_TOP_FINISH (set_parent_indexes_os);
@@ -1937,9 +1936,9 @@ set_print (FILE * f, struct set *set, int set_dist, int nonstart_p,
 
 /* Finalize work with sets. */
 static void
-set_fin (void)
+set_fin()
 {
-    sit_dist_set_fin ();
+    sit_dist_set_fin();
     delete_hash_table (set_term_lookahead_tab);
     delete_hash_table (set_tab);
     delete_hash_table (set_dists_tab);
@@ -1964,14 +1963,14 @@ static int pl_curr;
 
 /* Initialize work with the parser list. */
 static void
-pl_init (void)
+pl_init()
 {
     pl = NULL;
 }
 
 /* The following function creates Earley's parser list. */
 static void
-pl_create (void)
+pl_create()
 {
     void *mem;
 
@@ -1984,7 +1983,7 @@ pl_create (void)
 
 /* Finalize work with the parser list. */
 static void
-pl_fin (void)
+pl_fin()
 {
     if (pl != NULL)
         yaep_free (grammar->alloc, pl);
@@ -2004,7 +2003,7 @@ static int vlo_array_len;
 
 /* Initialize work with array of vlos. */
 static void
-vlo_array_init (void)
+vlo_array_init()
 {
     VLO_CREATE (vlo_array, grammar->alloc, 4096);
     vlo_array_len = 0;
@@ -2013,7 +2012,7 @@ vlo_array_init (void)
 /* The function forms new empty vlo at the end of the array of
    vlos. */
 static int
-vlo_array_expand (void)
+vlo_array_expand()
 {
     vlo_t *vlo_ptr;
 
@@ -2033,7 +2032,7 @@ vlo_array_expand (void)
 
 /* The function purges the array of vlos. */
 static void
-vlo_array_nullify (void)
+vlo_array_nullify()
 {
     vlo_array_len = 0;
 }
@@ -2048,7 +2047,7 @@ vlo_array_el (int index)
 
 /* Finalize work with array of vlos. */
 static void
-vlo_array_fin (void)
+vlo_array_fin()
 {
     vlo_t *vlo_ptr;
 
@@ -2221,13 +2220,13 @@ reduce_els_eq (hash_table_entry_t t1, hash_table_entry_t t2)
 
 /* Initialize work with the triples (set core, symbol, vector). */
 static void
-core_symb_vect_init (void)
+core_symb_vect_init()
 {
     OS_CREATE (core_symb_vect_os, grammar->alloc, 0);
     VLO_CREATE (new_core_symb_vect_vlo, grammar->alloc, 0);
     OS_CREATE (vect_els_os, grammar->alloc, 0);
 
-    vlo_array_init ();
+    vlo_array_init();
 #ifdef USE_CORE_SYMB_HASH_TABLE
     core_symb_to_vect_tab =
         create_hash_table (grammar->alloc, 3000, core_symb_vect_hash,
@@ -2355,12 +2354,12 @@ core_symb_vect_new (struct set_core *set_core, YaepSymb *symb)
     assert (*addr == NULL);
     *addr = triple;
 
-    triple->transitions.intern = vlo_array_expand ();
+    triple->transitions.intern = vlo_array_expand();
     vlo_ptr = vlo_array_el (triple->transitions.intern);
     triple->transitions.len = 0;
     triple->transitions.els = (int *) VLO_BEGIN (*vlo_ptr);
 
-    triple->reduces.intern = vlo_array_expand ();
+    triple->reduces.intern = vlo_array_expand();
     vlo_ptr = vlo_array_el (triple->reduces.intern);
     triple->reduces.len = 0;
     triple->reduces.els = (int *) VLO_BEGIN (*vlo_ptr);
@@ -2436,7 +2435,7 @@ process_core_symb_vect_el (struct core_symb_vect *core_symb_vect,
 
 /* Finish forming all new triples core_symb_vect. */
 static void
-core_symb_vect_new_all_stop (void)
+core_symb_vect_new_all_stop()
 {
     struct core_symb_vect **triple_ptr;
 
@@ -2451,13 +2450,13 @@ core_symb_vect_new_all_stop (void)
                                    &reduce_els_tab, &n_reduce_vects,
                                    &n_reduce_vect_len);
     }
-    vlo_array_nullify ();
+    vlo_array_nullify();
     VLO_NULLIFY (new_core_symb_vect_vlo);
 }
 
 /* Finalize work with all triples (set core, symbol, vector). */
 static void
-core_symb_vect_fin (void)
+core_symb_vect_fin()
 {
     delete_hash_table (transition_els_tab);
     delete_hash_table (reduce_els_tab);
@@ -2468,7 +2467,7 @@ core_symb_vect_fin (void)
     OS_DELETE (core_symb_tab_rows);
     VLO_DELETE (core_symb_table_vlo);
 #endif
-    vlo_array_fin ();
+    vlo_array_fin();
     OS_DELETE (vect_els_os);
     VLO_DELETE (new_core_symb_vect_vlo);
     OS_DELETE (core_symb_vect_os);
@@ -2506,7 +2505,7 @@ error_func_for_allocate (void *ignored)
 
 /* The following function allocates memory for new grammar. */
 YaepGrammar *
-yaep_create_grammar (void)
+yaep_create_grammar()
 {
     YaepAllocator *allocator;
 
@@ -2542,15 +2541,15 @@ yaep_create_grammar (void)
     grammar->symbs_ptr = NULL;
     grammar->term_sets_ptr = NULL;
     grammar->rules_ptr = NULL;
-    grammar->symbs_ptr = symbs_ptr = symb_init ();
-    grammar->term_sets_ptr = term_sets_ptr = term_set_init ();
-    grammar->rules_ptr = rules_ptr = rule_init ();
+    grammar->symbs_ptr = symbs_ptr = symb_init();
+    grammar->term_sets_ptr = term_sets_ptr = term_set_init();
+    grammar->rules_ptr = rules_ptr = rule_init();
     return grammar;
 }
 
 /* The following function makes grammar empty. */
 static void
-yaep_empty_grammar (void)
+yaep_empty_grammar()
 {
     if (grammar != NULL)
     {
@@ -2581,7 +2580,7 @@ yaep_error_message (YaepGrammar *g)
 /* The following function creates sets FIRST and FOLLOW for all
    grammar nonterminals. */
 static void
-create_first_follow_sets (void)
+create_first_follow_sets()
 {
     YaepSymb *symb, **rhs, *rhs_symb, *next_rhs_symb;
     YaepRule *rule;
@@ -2590,9 +2589,9 @@ create_first_follow_sets (void)
 
     for (i = 0; (symb = nonterm_get (i)) != NULL; i++)
     {
-        symb->u.nonterm.first = term_set_create ();
+        symb->u.nonterm.first = term_set_create();
         term_set_clear (symb->u.nonterm.first);
-        symb->u.nonterm.follow = term_set_create ();
+        symb->u.nonterm.follow = term_set_create();
         term_set_clear (symb->u.nonterm.follow);
     }
     do
@@ -2648,7 +2647,7 @@ create_first_follow_sets (void)
 /* The following function sets up flags empty_p, access_p and
    derivation_p for all grammar symbols. */
 static void
-set_empty_access_derives (void)
+set_empty_access_derives()
 {
     YaepSymb *symb, *rhs_symb;
     YaepRule *rule;
@@ -2700,7 +2699,7 @@ set_empty_access_derives (void)
 
 /* The following function sets up flags loop_p for nonterminals. */
 static void
-set_loop_p (void)
+set_loop_p()
 {
     YaepSymb *symb, *lhs;
     YaepRule *rule;
@@ -2760,8 +2759,8 @@ check_grammar (int strict_p)
     YaepSymb *symb;
     int i;
 
-    set_empty_access_derives ();
-    set_loop_p ();
+    set_empty_access_derives();
+    set_loop_p();
     if (strict_p)
     {
         for (i = 0; (symb = nonterm_get (i)) != NULL; i++)
@@ -2787,7 +2786,7 @@ check_grammar (int strict_p)
                  "nonterm `%s' can derive only itself (grammar with loops)",
                  symb->repr);
     /* We should have correct flags empty_p here. */
-    create_first_follow_sets ();
+    create_first_follow_sets();
 }
 
 /* The following are names of additional symbols.  Don't use them in
@@ -2829,7 +2828,7 @@ yaep_read_grammar (YaepGrammar *g, int strict_p,
         return code;
     }
     if (!grammar->undefined_p)
-        yaep_empty_grammar ();
+        yaep_empty_grammar();
     while ((name = (*read_terminal) (&code)) != NULL)
     {
         // fprintf(stderr, "TERM >%s< %d\n", name, code); // DEBUGGING TODO REMOVE
@@ -2851,7 +2850,7 @@ yaep_read_grammar (YaepGrammar *g, int strict_p,
         yaep_error (YAEP_FIXED_NAME_USAGE,
                     "do not use fixed name `%s'", TERM_ERROR_NAME);
     if (symb_find_by_code (TERM_ERROR_CODE) != NULL)
-        abort ();
+        abort();
     grammar->term_error = symb_add_term (TERM_ERROR_NAME, TERM_ERROR_CODE);
     grammar->term_error_num = grammar->term_error->u.term.term_num;
     grammar->axiom = grammar->end_marker = NULL;
@@ -2886,14 +2885,14 @@ yaep_read_grammar (YaepGrammar *g, int strict_p,
                 yaep_error (YAEP_FIXED_NAME_USAGE,
                             "do not use fixed name `%s'", END_MARKER_NAME);
             if (symb_find_by_code (END_MARKER_CODE) != NULL)
-                abort ();
+                abort();
             grammar->end_marker = symb_add_term (END_MARKER_NAME,
                                                  END_MARKER_CODE);
             /* Add rules for start */
             rule = rule_new_start (grammar->axiom, NULL, 0);
             rule_new_symb_add (symb);
             rule_new_symb_add (grammar->end_marker);
-            rule_new_stop ();
+            rule_new_stop();
             rule->order[0] = 0;
             rule->trans_len = 1;
 	}
@@ -2908,7 +2907,7 @@ yaep_read_grammar (YaepGrammar *g, int strict_p,
             rule_new_symb_add (symb);
             rhs++;
 	}
-        rule_new_stop ();
+        rule_new_stop();
         // IXML
         rule->mark = mark;
         rule->marks = (char*)calloc(rhs_len, sizeof(char));
@@ -2954,12 +2953,12 @@ yaep_read_grammar (YaepGrammar *g, int strict_p,
         rule = rule_new_start (grammar->axiom, NULL, 0);
         rule_new_symb_add (grammar->term_error);
         rule_new_symb_add (grammar->end_marker);
-        rule_new_stop ();
+        rule_new_stop();
         rule->trans_len = 0;
     }
     check_grammar (strict_p);
 
-    symb_finish_adding_terms ();
+    symb_finish_adding_terms();
 
 #ifndef NO_YAEP_DEBUG_PRINT
     if (grammar->debug_level > 2)
@@ -3072,9 +3071,9 @@ yaep_parse_init (int n_toks)
 {
     YaepRule *rule;
 
-    sit_init ();
+    sit_init();
     set_init (n_toks);
-    core_symb_vect_init ();
+    core_symb_vect_init();
 #ifdef USE_CORE_SYMB_HASH_TABLE
     {
         int i;
@@ -3091,16 +3090,16 @@ yaep_parse_init (int n_toks)
 /* The function should be called the last (it frees all allocated
    data for parser). */
 static void
-yaep_parse_fin (void)
+yaep_parse_fin()
 {
-    core_symb_vect_fin ();
-    set_fin ();
-    sit_fin ();
+    core_symb_vect_fin();
+    set_fin();
+    sit_fin();
 }
 
 /* The following function reads all input tokens. */
 static void
-read_toks (void)
+read_toks()
 {
     int code;
     void *attr;
@@ -3133,7 +3132,7 @@ add_derived_nonstart_sits (struct sit *sit, int parent)
    transition on given symbol (see comment for abstract data
    `core_symb_vect'). */
 static void
-expand_new_start_set (void)
+expand_new_start_set()
 {
     struct sit *sit;
     YaepSymb *symb;
@@ -3187,7 +3186,7 @@ expand_new_start_set (void)
 
         /* Now we have incorrect initial situations because their
            context is not correct. */
-        context_set = term_set_create ();
+        context_set = term_set_create();
         do
 	{
             changed_p = FALSE;
@@ -3207,7 +3206,7 @@ expand_new_start_set (void)
 		}
                 context = term_set_insert (context_set);
                 if (context >= 0)
-                    context_set = term_set_create ();
+                    context_set = term_set_create();
                 else
                     context = -context - 1;
                 sit = sit_create (new_sit->rule, new_sit->pos, context);
@@ -3220,25 +3219,25 @@ expand_new_start_set (void)
 	}
         while (changed_p);
     }
-    set_new_core_stop ();
-    core_symb_vect_new_all_stop ();
+    set_new_core_stop();
+    core_symb_vect_new_all_stop();
 }
 
 /* The following function forms the 1st set. */
 static void
-build_start_set (void)
+build_start_set()
 {
     YaepRule *rule;
     struct sit *sit;
     term_set_el_t *context_set;
     int context;
 
-    set_new_start ();
+    set_new_start();
     if (grammar->lookahead_level <= 1)
         context = 0;
     else
     {
-        context_set = term_set_create ();
+        context_set = term_set_create();
         term_set_clear (context_set);
         context = term_set_insert (context_set);
         /* Empty context in the table has always number zero. */
@@ -3250,9 +3249,9 @@ build_start_set (void)
         sit = sit_create (rule, 0, context);
         set_new_add_start_sit (sit, 0);
     }
-    if (!set_insert ())
+    if (!set_insert())
         assert (FALSE);
-    expand_new_start_set ();
+    expand_new_start_set();
     pl[0] = new_set;
 #ifndef NO_YAEP_DEBUG_PRINT
     if (grammar->debug_level > 2)
@@ -3283,10 +3282,10 @@ build_new_set (struct set *set, struct core_symb_vect *core_symb_vect,
     local_lookahead_level = (lookahead_term_num < 0
                              ? 0 : grammar->lookahead_level);
     set_core = set->core;
-    set_new_start ();
+    set_new_start();
     transitions = &core_symb_vect->transitions;
 
-    empty_sit_dist_set ();
+    empty_sit_dist_set();
     for (i = 0; i < transitions->len; i++)
     {
         sit_ind = transitions->els[i];
@@ -3358,9 +3357,9 @@ build_new_set (struct set *set, struct core_symb_vect *core_symb_vect,
             while (curr_el < bound);
 	}
     }
-    if (set_insert ())
+    if (set_insert())
     {
-        expand_new_start_set ();
+        expand_new_start_set();
         new_core->term = core_symb_vect->symb;
     }
 }
@@ -3433,7 +3432,7 @@ set_original_set_bound (int last)
    should be called after any decreasing pl_curr with subsequent
    writing to pl [pl_curr]. */
 static void
-save_original_sets (void)
+save_original_sets()
 {
     int length, curr_pl;
 
@@ -3623,7 +3622,7 @@ set_recovery_state (struct recovery_state *state)
    states stack.  The current parser state will be setup according to
    the state. */
 static struct recovery_state
-pop_recovery_state (void)
+pop_recovery_state()
 {
     struct recovery_state *state;
 
@@ -3666,12 +3665,12 @@ error_recovery (int *start, int *stop)
     pl_curr
         = back_pl_frontier = find_error_pl_set (pl_curr, &backward_move_cost);
     back_to_frontier_move_cost = backward_move_cost;
-    save_original_sets ();
+    save_original_sets();
     push_recovery_state (back_pl_frontier, backward_move_cost);
     best_cost = 2 * toks_len;
     while (VLO_LENGTH (recovery_state_stack) > 0)
     {
-        state = pop_recovery_state ();
+        state = pop_recovery_state();
         cost = state.backward_move_cost;
         assert (cost >= 0);
         /* Advance back frontier. */
@@ -3691,7 +3690,7 @@ error_recovery (int *start, int *stop)
 	    {
                 back_pl_frontier = pl_curr;
                 tok_curr = start_tok_curr;
-                save_original_sets ();
+                save_original_sets();
                 back_to_frontier_move_cost += backward_move_cost;
                 push_recovery_state (back_pl_frontier,
                                      back_to_frontier_move_cost);
@@ -3910,7 +3909,7 @@ error_recovery (int *start, int *stop)
 
 /* Initialize work with error recovery. */
 static void
-error_recovery_init (void)
+error_recovery_init()
 {
     VLO_CREATE (original_pl_tail_stack, grammar->alloc, 4096);
     VLO_CREATE (recovery_state_stack, grammar->alloc, 4096);
@@ -3918,7 +3917,7 @@ error_recovery_init (void)
 
 /* Finalize work with error recovery. */
 static void
-error_recovery_fin (void)
+error_recovery_fin()
 {
     VLO_DELETE (recovery_state_stack);
     VLO_DELETE (original_pl_tail_stack);
@@ -3955,7 +3954,7 @@ static int n_goto_successes;
 /* The following function is major function forming parsing list in
    Earley's algorithm. */
 static void
-build_pl (void)
+build_pl()
 {
     int i;
     YaepSymb *term;
@@ -3967,8 +3966,8 @@ build_pl (void)
     struct set_term_lookahead *new_set_term_lookahead;
 #endif
 
-    error_recovery_init ();
-    build_start_set ();
+    error_recovery_init();
+    build_start_set();
     lookahead_term_num = -1;
     for (tok_curr = pl_curr = 0; tok_curr < toks_len; tok_curr++)
     {
@@ -4077,7 +4076,7 @@ build_pl (void)
 	}
 #endif
     }
-    error_recovery_fin ();
+    error_recovery_fin();
 }
 
 
@@ -4147,7 +4146,7 @@ parse_state_eq (hash_table_entry_t s1, hash_table_entry_t s2)
 
 /* The following function initializes work with parser states. */
 static void
-parse_state_init (void)
+parse_state_init()
 {
     free_parse_state = NULL;
     OS_CREATE (parse_state_os, grammar->alloc, 0);
@@ -4159,7 +4158,7 @@ parse_state_init (void)
 
 /* The following function returns new parser state. */
 static struct parse_state *
-parse_state_alloc (void)
+parse_state_alloc()
 {
     struct parse_state *result;
 
@@ -4203,14 +4202,14 @@ parse_state_insert (struct parse_state *state, int *new_p)
     *new_p = TRUE;
     /* We make copy because pl_ind can be changed in further processing
        state. */
-    *entry = parse_state_alloc ();
+    *entry = parse_state_alloc();
     *(struct parse_state *) *entry = *state;
     return (struct parse_state *) *entry;
 }
 
 /* The following function finalizes work with parser states. */
 static void
-parse_state_fin (void)
+parse_state_fin()
 {
     if (!grammar->one_parse_p)
         delete_hash_table (parse_state_tab);
@@ -4711,7 +4710,7 @@ make_parse (int *ambiguous_p)
         /* We need all parses to choose the minimal one */
         grammar->one_parse_p = FALSE;
     sit = set->core->sits[0];
-    parse_state_init ();
+    parse_state_init();
     if (!grammar->one_parse_p)
     {
         void *mem;
@@ -4730,7 +4729,7 @@ make_parse (int *ambiguous_p)
     }
     VLO_CREATE (stack, grammar->alloc, 10000);
     VLO_EXPAND (stack, sizeof (struct parse_state *));
-    state = parse_state_alloc ();
+    state = parse_state_alloc();
     ((struct parse_state **) VLO_BOUND (stack))[-1] = state;
     rule = state->rule = sit->rule;
     state->pos = sit->pos;
@@ -4959,7 +4958,7 @@ make_parse (int *ambiguous_p)
                         /* [A -> x., n] & [A -> y., m] where n != m. */
                         /* It is different from the previous ones so add
                            it to process. */
-                        state = parse_state_alloc ();
+                        state = parse_state_alloc();
                         VLO_EXPAND (stack, sizeof (struct parse_state *));
                         ((struct parse_state **) VLO_BOUND (stack))[-1] = state;
                         *state = *orig_state;
@@ -4990,7 +4989,7 @@ make_parse (int *ambiguous_p)
                 if (sit_rule->anode != NULL)
 		{
                     /* This rule creates abstract node. */
-                    state = parse_state_alloc ();
+                    state = parse_state_alloc();
                     state->rule = sit_rule;
                     state->pos = sit->pos;
                     state->orig = sit_orig;
@@ -5087,7 +5086,7 @@ make_parse (int *ambiguous_p)
 		{
                     /* We should generate and use the translation of the
                        nonterminal.  Add state to get a translation. */
-                    state = parse_state_alloc ();
+                    state = parse_state_alloc();
                     VLO_EXPAND (stack, sizeof (struct parse_state *));
                     ((struct parse_state **) VLO_BOUND (stack))[-1] = state;
                     state->rule = sit_rule;
@@ -5136,7 +5135,7 @@ make_parse (int *ambiguous_p)
         VLO_DELETE (orig_states);
         yaep_free (grammar->alloc, term_node_array);
     }
-    parse_state_fin ();
+    parse_state_fin();
     grammar->one_parse_p = saved_one_parse_p;
     if (grammar->cost_p && *ambiguous_p)
         /* We can not build minimal tree during building parsing list
@@ -5255,34 +5254,34 @@ yaep_parse (YaepGrammar *g,
     parse_free = free;
     *root = NULL;
     *ambiguous_p = FALSE;
-    pl_init ();
+    pl_init();
     tok_init_p = parse_init_p = FALSE;
     if ((code = setjmp (error_longjump_buff)) != 0)
     {
-        pl_fin ();
+        pl_fin();
         if (parse_init_p)
-            yaep_parse_fin ();
+            yaep_parse_fin();
         if (tok_init_p)
-            tok_fin ();
+            tok_fin();
         return code;
     }
     if (grammar->undefined_p)
         yaep_error (YAEP_UNDEFINED_OR_BAD_GRAMMAR, "undefined or bad grammar");
     n_goto_successes = 0;
-    tok_init ();
+    tok_init();
     tok_init_p = TRUE;
-    read_toks ();
+    read_toks();
     yaep_parse_init (toks_len);
     parse_init_p = TRUE;
-    pl_create ();
-    tab_collisions = get_all_collisions ();
-    tab_searches = get_all_searches ();
+    pl_create();
+    tab_collisions = get_all_collisions();
+    tab_searches = get_all_searches();
 
-    build_pl ();
+    build_pl();
     *root = make_parse (ambiguous_p);
 
-    tab_collisions = get_all_collisions () - tab_collisions;
-    tab_searches = get_all_searches () - tab_searches;
+    tab_collisions = get_all_collisions() - tab_collisions;
+    tab_searches = get_all_searches() - tab_searches;
 
 #ifndef NO_YAEP_DEBUG_PRINT
     if (grammar->debug_level > 0)
@@ -5337,8 +5336,8 @@ yaep_parse (YaepGrammar *g,
                  tab_collisions, tab_searches);
     }
 #endif
-    yaep_parse_fin ();
-    tok_fin ();
+    yaep_parse_fin();
+    tok_fin();
     return 0;
 }
 
@@ -5351,7 +5350,7 @@ yaep_free_grammar (YaepGrammar *g)
     if (g != NULL)
     {
         allocator = g->alloc;
-        pl_fin ();
+        pl_fin();
         rule_fin (g->rules_ptr);
         term_set_fin (g->term_sets_ptr);
         symb_fin (g->symbs_ptr);
