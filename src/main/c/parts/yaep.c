@@ -2436,9 +2436,11 @@ typedef struct YaepRuleStorage YaepRuleStorage;
 struct YaepVect;
 typedef struct YaepVect YaepVect;
 
-/* Forward declaration. */
 struct YaepCoreSymbVect;
 typedef struct YaepCoreSymbVect YaepCoreSymbVect;
+
+struct YaepSetCore;
+typedef struct YaepSetCore YaepSetCore;
 
 /* The following is type of element of array representing set of terminals. */
 typedef long int term_set_el_t;
@@ -2648,7 +2650,7 @@ struct YaepVect
 struct YaepCoreSymbVect
 {
     /* The set core. */
-    struct set_core *set_core;
+    YaepSetCore *set_core;
     /* The symbol. */
     YaepSymb *symb;
     /* The following vector contains indexes of situations with given
@@ -2657,6 +2659,62 @@ struct YaepCoreSymbVect
     /* The following vector contains indexes of reduce situations with
        given symb in lhs. */
     YaepVect reduces;
+};
+
+/* The following is set in Earley's algorithm without distance
+   information.  Because there are many duplications of such
+   structures we extract the set cores and store them in one
+   exemplar. */
+struct YaepSetCore
+{
+    /* The following is unique number of the set core. It is defined
+       only after forming all set. */
+    int num;
+    /* The set core hash.  We save it as it is used several times.  */
+    unsigned int hash;
+    /* The following is term shifting which resulted into this core.  It
+       is defined only after forming all set. */
+    YaepSymb *term;
+    /* The following are numbers of all situations and start situations
+       in the following array. */
+    int n_sits;
+    int n_start_sits;
+    /* Array of situations.  Start situations are always placed the
+       first in the order of their creation(with subsequent duplicates
+       are removed), then nonstart noninitial(situation with at least
+       one symbol before the dot) situations are placed and then initial
+       situations are placed.  You should access to a set situation only
+       through this member or variable `new_sits'(in other words don't
+       save the member value in another variable). */
+    struct sit **sits;
+    /* The following member is number of start situations and nonstart
+      (noninitial) situations whose distance is defined from a start
+       situation distance.  All nonstart initial situations have zero
+       distances.  This distances are not stored.  */
+    int n_all_dists;
+    /* The following is array containing number of start situation from
+       which distance of(nonstart noninitial) situation with given
+       index(between n_start_situations -> n_all_dists) is taken. */
+    int *parent_indexes;
+};
+
+/* The following describes set in Earley's algorithm. */
+struct set
+{
+    /* The following is set core of the set.  You should access to set
+       core only through this member or variable `new_core'(in other
+       words don't save the member value in another variable). */
+    YaepSetCore *core;
+    /* Hash of the set distances.  We save it as it is used several
+       times.  */
+    unsigned int dists_hash;
+    /* The following is distances only for start situations.  Other
+       situations have their distances equal to 0.  The start situation
+       in set core and the corresponding distance has the same index.
+       You should access to distances only through this member or
+       variable `new_dists'(in other words don't save the member value
+       in another variable). */
+    int *dists;
 };
 
 // Global variables /////////////////////////////////////////////////////
@@ -3720,66 +3778,6 @@ sit_fin()
     OS_DELETE(sits_os);
 }
 
-
-
-/* This page is abstract data `sets'. */
-
-/* The following is set in Earley's algorithm without distance
-   information.  Because there are many duplications of such
-   structures we extract the set cores and store them in one
-   exemplar. */
-struct set_core
-{
-    /* The following is unique number of the set core. It is defined
-       only after forming all set. */
-    int num;
-    /* The set core hash.  We save it as it is used several times.  */
-    unsigned int hash;
-    /* The following is term shifting which resulted into this core.  It
-       is defined only after forming all set. */
-    YaepSymb *term;
-    /* The following are numbers of all situations and start situations
-       in the following array. */
-    int n_sits;
-    int n_start_sits;
-    /* Array of situations.  Start situations are always placed the
-       first in the order of their creation(with subsequent duplicates
-       are removed), then nonstart noninitial(situation with at least
-       one symbol before the dot) situations are placed and then initial
-       situations are placed.  You should access to a set situation only
-       through this member or variable `new_sits'(in other words don't
-       save the member value in another variable). */
-    struct sit **sits;
-    /* The following member is number of start situations and nonstart
-      (noninitial) situations whose distance is defined from a start
-       situation distance.  All nonstart initial situations have zero
-       distances.  This distances are not stored.  */
-    int n_all_dists;
-    /* The following is array containing number of start situation from
-       which distance of(nonstart noninitial) situation with given
-       index(between n_start_situations -> n_all_dists) is taken. */
-    int *parent_indexes;
-};
-
-/* The following describes set in Earley's algorithm. */
-struct set
-{
-    /* The following is set core of the set.  You should access to set
-       core only through this member or variable `new_core'(in other
-       words don't save the member value in another variable). */
-    struct set_core *core;
-    /* Hash of the set distances.  We save it as it is used several
-       times.  */
-    unsigned int dists_hash;
-    /* The following is distances only for start situations.  Other
-       situations have their distances equal to 0.  The start situation
-       in set core and the corresponding distance has the same index.
-       You should access to distances only through this member or
-       variable `new_dists'(in other words don't save the member value
-       in another variable). */
-    int *dists;
-};
-
 /* Maximal goto sets saved for triple(set, terminal, lookahead).  */
 #define MAX_CACHED_GOTO_RESULTS 3
 
@@ -3806,7 +3804,7 @@ static struct set *new_set;
 /* The following variable is always set core of set being created.  It
    can be read externally.  Member core of new_set has always the
    following value.  It is defined only when new_set_ready_p is TRUE. */
-static struct set_core *new_core;
+static YaepSetCore *new_core;
 
 /* The following says that new_set, new_core and their members are
    defined.  Before this the access to data of the set being formed
@@ -3872,8 +3870,8 @@ set_core_hash(hash_table_entry_t s)
 static int
 set_core_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    struct set_core *set_core1 =((struct set *) s1)->core;
-    struct set_core *set_core2 =((struct set *) s2)->core;
+    YaepSetCore *set_core1 =((struct set *) s1)->core;
+    YaepSetCore *set_core2 =((struct set *) s2)->core;
     struct sit **sit_ptr1, **sit_ptr2, **sit_bound1;
 
     if (set_core1->n_start_sits != set_core2->n_start_sits)
@@ -3923,8 +3921,8 @@ set_core_dists_hash(hash_table_entry_t s)
 static int
 set_core_dists_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    struct set_core *set_core1 =((struct set *) s1)->core;
-    struct set_core *set_core2 =((struct set *) s2)->core;
+    YaepSetCore *set_core1 =((struct set *) s1)->core;
+    YaepSetCore *set_core2 =((struct set *) s2)->core;
     int *dists1 =((struct set *) s1)->dists;
     int *dists2 =((struct set *) s2)->dists;
 
@@ -4153,7 +4151,7 @@ setup_set_dists_hash(hash_table_entry_t s)
 static void
 setup_set_core_hash(hash_table_entry_t s)
 {
-    struct set_core *set_core =((struct set *) s)->core;
+    YaepSetCore *set_core =((struct set *) s)->core;
 
     set_core->hash = sits_hash(set_core->n_start_sits, set_core->sits);
 }
@@ -4171,8 +4169,8 @@ set_insert()
     OS_TOP_EXPAND(sets_os, sizeof(struct set));
     new_set =(struct set *) OS_TOP_BEGIN(sets_os);
     new_set->dists = new_dists;
-    OS_TOP_EXPAND(set_cores_os, sizeof(struct set_core));
-    new_set->core = new_core =(struct set_core *) OS_TOP_BEGIN(set_cores_os);
+    OS_TOP_EXPAND(set_cores_os, sizeof(YaepSetCore));
+    new_set->core = new_core =(YaepSetCore *) OS_TOP_BEGIN(set_cores_os);
     new_core->n_start_sits = new_n_start_sits;
     new_core->sits = new_sits;
     new_set_ready_p = TRUE;
@@ -4614,7 +4612,7 @@ core_symb_vect_addr_get(YaepCoreSymbVect *triple, int reserv_p)
 /* The following function returns entry in the table where pointer to
    corresponding triple with SET_CORE and SYMB is placed. */
 static YaepCoreSymbVect **
-core_symb_vect_addr_get(struct set_core *set_core, YaepSymb *symb)
+core_symb_vect_addr_get(YaepSetCore *set_core, YaepSymb *symb)
 {
     YaepCoreSymbVect ***core_symb_vect_ptr;
 
@@ -4657,7 +4655,7 @@ core_symb_vect_addr_get(struct set_core *set_core, YaepSymb *symb)
 /* The following function returns the triple(if any) for given
    SET_CORE and SYMB. */
 static YaepCoreSymbVect *
-core_symb_vect_find(struct set_core *set_core, YaepSymb *symb)
+core_symb_vect_find(YaepSetCore *set_core, YaepSymb *symb)
 {
 #ifdef USE_CORE_SYMB_HASH_TABLE
     YaepCoreSymbVect core_symb_vect;
@@ -4673,7 +4671,7 @@ core_symb_vect_find(struct set_core *set_core, YaepSymb *symb)
 /* Add given triple(SET_CORE, TERM, ...) to the table and return
    pointer to it. */
 static YaepCoreSymbVect *
-core_symb_vect_new(struct set_core *set_core, YaepSymb *symb)
+core_symb_vect_new(YaepSetCore *set_core, YaepSymb *symb)
 {
     YaepCoreSymbVect *triple;
     YaepCoreSymbVect **addr;
@@ -5612,7 +5610,7 @@ build_new_set(struct set *set, YaepCoreSymbVect *core_symb_vect,
 	       int lookahead_term_num)
 {
     struct set *prev_set;
-    struct set_core *set_core, *prev_set_core;
+    YaepSetCore *set_core, *prev_set_core;
     struct sit *sit, *new_sit, **prev_sits;
     YaepCoreSymbVect *prev_core_symb_vect;
     int local_lookahead_level, dist, sit_ind, new_dist;
@@ -7014,7 +7012,7 @@ static struct yaep_tree_node *
 make_parse(int *ambiguous_p)
 {
     struct set *set, *check_set;
-    struct set_core *set_core, *check_set_core;
+    YaepSetCore *set_core, *check_set_core;
     struct sit *sit, *check_sit;
     YaepRule *rule, *sit_rule;
     YaepSymb *symb;
