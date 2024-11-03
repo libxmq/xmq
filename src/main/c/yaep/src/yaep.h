@@ -169,8 +169,8 @@ struct YaepTreeNode
     YaepErrorNode error;
     YaepTermNode term;
     YaepAbstractNode anode;
-    _YaepAnodeName _anode_name; /* Internal use only */
     YaepAltNode alt;
+    _YaepAnodeName _anode_name; /* Internal use only */
   } val;
 };
 
