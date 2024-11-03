@@ -2,6 +2,7 @@
    YAEP (Yet Another Earley Parser)
 
    Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
+  Copyright(c) 2024 Fredrik Öhrström <oehrstroem@gmail.com>
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the
@@ -34,8 +35,6 @@
 
 #include <limits.h>
 
-/* The following is a forward declaration of grammar formed by function
-   yaep_read_grammar. */
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
 
@@ -43,8 +42,6 @@ typedef struct YaepGrammar YaepGrammar;
    translation.  It should be positive number which is not intersected
    with symbol numbers. */
 #define YAEP_NIL_TRANSLATION_NUMBER       INT_MAX
-
-/* The following values are YAEP error codes. */
 
 #define YAEP_NO_MEMORY                     1
 #define YAEP_UNDEFINED_OR_BAD_GRAMMAR      2
