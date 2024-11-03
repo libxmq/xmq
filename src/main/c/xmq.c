@@ -4178,7 +4178,7 @@ static char *input_i_;
 static char *input_start_;
 static char *input_stop_;
 
-static int read_yaep_token(void **attr)
+static int read_yaep_token(YaepGrammar *g, YaepParseState *s, void **attr)
 {
   *attr = NULL;
   if (input_i_ >= input_stop_) return -1;
@@ -4355,16 +4355,10 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
     yaep_set_error_recovery_flag(xmq_get_yaep_grammar(ixml_grammar), 0); // No error recovery.
 
-    YaepTreeNode *root = NULL;
-    int ambiguous = 0;
-
-    int rc = yaep_parse(xmq_get_yaep_grammar(ixml_grammar),
-                        read_yaep_token,
-                        handle_yaep_syntax_error,
-                        NULL,
-                        NULL,
-                        &root,
-                        &ambiguous);
+    YaepParseState *state = yaepNewParseState();
+    state->read_token = read_yaep_token;
+    state->syntax_error = handle_yaep_syntax_error;
+    int rc = yaepParse(xmq_get_yaep_grammar(ixml_grammar), state);
 
     if (rc)
     {
@@ -4372,14 +4366,16 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
         return false;
     }
 
-    if (ambiguous)
+    if (state->ambiguous_p)
     {
         fprintf(stderr, "ixml: Warning! The input can be parsed in multiple ways, ie it is ambiguous!");
     }
 
-    generate_dom_from_yaep_node(doc->docptr_.xml, NULL, root, 0, 0);
+    generate_dom_from_yaep_node(doc->docptr_.xml, NULL, state->root, 0, 0);
 
-    if (root) yaepFreeTree(root, NULL, NULL);
+    if (state->root) yaepFreeTree(state->root, NULL, NULL);
+
+    yaepFreeParseState(state);
 
     return true;
 }

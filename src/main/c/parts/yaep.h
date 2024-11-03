@@ -37,6 +37,9 @@
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
 
+struct YaepParseState;
+typedef struct YaepParseState YaepParseState;
+
 struct YaepAltNode;
 typedef struct YaepAltNode YaepAltNode;
 
@@ -77,6 +80,33 @@ typedef struct YaepTreeNode YaepTreeNode;
 #define YAEP_NONTERM_DERIVATION            15
 #define YAEP_LOOP_NONTERM                  16
 #define YAEP_INVALID_TOKEN_CODE            17
+
+struct YaepParseState
+{
+    void *user_data; // Points to user supplied data, useful inside the callbacked read_token and syntax_error.
+    int *buffer_start; // Points to first token.
+    int *buffer_stop; // Points to address after last token.
+    int *buffer_i; // Points to the next token to read.
+    // If read_token is NULL then use the built in read_token that uses buffer start,stop and i.
+    int (*read_token)(YaepGrammar *g, YaepParseState *ps, void **attr);
+    // If syntax_error is NULL then use the built in stderr error message printer.
+    void (*syntax_error)(int err_tok_num,
+                         void *err_tok_attr,
+                         int start_ignored_tok_num,
+                         void *start_ignored_tok_attr,
+                         int start_recovered_tok_num,
+                         void *start_recovered_tok_attr);
+    // If parse_alloc is NULL then use the built in allocator (malloc).
+    void *(*parse_alloc)(int nmemb);
+    // If parse_free is NULL then use the built in free (free).
+    void (*parse_free)(void *mem);
+    // The resulting DOM tree is stored here.
+    YaepTreeNode *root;
+    // Set to 1 if the parse was ambigious.
+    int ambiguous_p;
+    // This object continues with more data inside the implementation....
+    // Do not allocate this object yourself, use yaepNewParseState andyaepFreeParseState instead.
+};
 
 /* The following describes the type of parse tree node. */
 enum YaepTreeNodeType
@@ -178,6 +208,10 @@ struct YaepTreeNode
    returns NULL if there is no memory.  This function should be called
    the first. */
 YaepGrammar *yaepNewGrammar();
+
+/* The following function creates a parse state. You will be able to
+   perform multiple concurrent parses over several cpu:s using a single grammar. */
+YaepParseState *yaepNewParseState();
 
 /* Set a pointer to a user structure that is available when callbacks are invoked,
    such as read_token when parsing. */
@@ -313,21 +347,13 @@ int yaep_set_recovery_match(YaepGrammar *grammar, int n_toks);
    free memory allocated by PARSE_ALLOC. If PARSE_ALLOC is not NULL
    but PARSE_FREE is, the memory is not freed. In this case, the
    returned parse tree should also not be freed with yaep_free_tree(). */
-int yaep_parse (YaepGrammar *grammar,
-		       int (*read_token)(void **attr),
-		       void (*syntax_error)(int err_tok_num,
-                                            void *err_tok_attr,
-                                            int start_ignored_tok_num,
-                                            void *start_ignored_tok_attr,
-                                            int start_recovered_tok_num,
-                                            void *start_recovered_tok_attr),
-		       void *(*parse_alloc)(int nmemb),
-		       void (*parse_free)(void *mem),
-		       YaepTreeNode **root,
-		       int *ambiguous_p);
+int yaepParse(YaepGrammar *g, YaepParseState *ps);
+
+/* The following function frees memory allocated for the parse state. */
+void yaepFreeParseState(YaepParseState *ps);
 
 /* The following function frees memory allocated for the grammar. */
-void yaepFreeGrammar(YaepGrammar *grammar);
+void yaepFreeGrammar(YaepGrammar *g);
 
 /* The following function frees memory allocated for the parse tree.
    It must not be called until after yaep_free_grammar() has been called.
