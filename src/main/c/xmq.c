@@ -4145,7 +4145,7 @@ bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
 
     state->doq = ixml_grammar;
     state->build_xml_of_ixml = false;
-    ixml_grammar->yaep_grammar_ = yaep_create_grammar();
+    ixml_grammar->yaep_grammar_ = yaepCreateGrammar();
     if (xmqTracing()) yaep_set_debug_level((YaepGrammar*)ixml_grammar->yaep_grammar_, 5);
 
     ixml_build_yaep_grammar((YaepGrammar*)ixml_grammar->yaep_grammar_, state, start, stop);
@@ -4379,7 +4379,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
     generate_dom_from_yaep_node(doc->docptr_.xml, NULL, root, 0, 0);
 
-    if (root) yaep_free_tree(root, NULL, NULL);
+    if (root) yaepFreeTree(root, NULL, NULL);
 
     return true;
 }

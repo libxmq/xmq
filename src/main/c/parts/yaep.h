@@ -177,10 +177,16 @@ struct YaepTreeNode
 /* The following function creates undefined grammar.  The function
    returns NULL if there is no memory.  This function should be called
    the first. */
-YaepGrammar *yaep_create_grammar();
+YaepGrammar *yaepCreateGrammar();
 
-/* The function returns the last occurred error code for given
-   grammar. */
+/* Set a pointer to a user structure that is available when callbacks are invoked,
+   such as read_token when parsing. */
+void yaepSetUserData(YaepGrammar *g, void *data);
+
+/* Get the user data pointer from the grammar. */
+void *yaepGetUserData(YaepGrammar *g);
+
+/* The function returns the last occurred error code for given grammar. */
 int yaep_error_code(YaepGrammar *g);
 
 /* The function returns message are always contains error message
@@ -335,9 +341,9 @@ void yaep_free_grammar(YaepGrammar *grammar);
    exactly once for each term node in the parse tree.
    The TERMCB callback can be used by the caller
    to free the term attributes. The term node itself must not be freed. */
-void yaep_free_tree(YaepTreeNode *root,
-                           void (*parse_free)(void*),
-                           void (*termcb)(YaepTermNode *term));
+void yaepFreeTree(YaepTreeNode *root,
+                         void (*parse_free)(void*),
+                         void (*termcb)(YaepTermNode *term));
 
 #define YAEP_MODULE
 

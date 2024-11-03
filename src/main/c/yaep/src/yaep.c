@@ -159,13 +159,13 @@ struct YaepGrammar
     char error_message[YAEP_MAX_ERROR_MESSAGE_LENGTH + 1];
 
     /* The following is grammar axiom.  There is only one rule with axiom in lhs.*/
-    YaepSymb*axiom;
+    YaepSymb *axiom;
 
     /* The following auxiliary symbol denotes EOF.*/
-    YaepSymb*end_marker;
+    YaepSymb *end_marker;
 
     /* The following auxiliary symbol is used for describing error recovery.*/
-    YaepSymb*term_error;
+    YaepSymb *term_error;
 
     /* And its internal number.*/
     int term_error_num;
@@ -211,6 +211,9 @@ struct YaepGrammar
 
     /* Allocator.*/
     YaepAllocator*alloc;
+
+    /* A user supplied pointer that is available to user callbacks through the grammar pointer. */
+    void *user_data;
 };
 
 /* The following is default number of tokens sucessfully matched to
@@ -2561,11 +2564,9 @@ static void error_func_for_allocate(void*ignored)
     yaep_error(YAEP_NO_MEMORY, "no memory");
 }
 
-/* The following function allocates memory for new grammar.*/
-YaepGrammar*
-yaep_create_grammar()
+YaepGrammar *yaepCreateGrammar()
 {
-    YaepAllocator*allocator;
+    YaepAllocator *allocator;
 
     allocator = yaep_alloc_new(NULL, NULL, NULL, NULL);
     if (allocator == NULL)
@@ -2603,6 +2604,16 @@ yaep_create_grammar()
     grammar->term_sets_ptr = term_sets_ptr = term_set_init();
     grammar->rules_ptr = rules_ptr = rule_init();
     return grammar;
+}
+
+void yaepSetUserData(YaepGrammar *g, void *data)
+{
+    g->user_data = data;
+}
+
+void *yaepGetUserData(YaepGrammar *g)
+{
+    return g->user_data;
 }
 
 /* The following function makes grammar empty.*/
@@ -5398,9 +5409,9 @@ static void free_tree_sweep(YaepTreeNode *node,
     parse_free(node);
 }
 
-void yaep_free_tree(YaepTreeNode *root,
-                    void(*parse_free)(void*),
-                    void(*termcb)(YaepTermNode*))
+void yaepFreeTree(YaepTreeNode *root,
+                  void(*parse_free)(void*),
+                  void(*termcb)(YaepTermNode*))
 {
     if (root == NULL)
     {
@@ -5412,9 +5423,9 @@ void yaep_free_tree(YaepTreeNode *root,
     }
 
     /* Since the parse tree is actually a DAG, we must carefully avoid
-    * double free errors. Therefore, we walk the parse tree twice.
-    * On the first walk, we reduce the DAG to an actual tree.
-    * On the second walk, we recursively free the tree nodes.*/
+       double free errors. Therefore, we walk the parse tree twice.
+       On the first walk, we reduce the DAG to an actual tree.
+       On the second walk, we recursively free the tree nodes. */
     free_tree_reduce(root);
     free_tree_sweep(root, parse_free, termcb);
 }
