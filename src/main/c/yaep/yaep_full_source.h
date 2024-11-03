@@ -2,7 +2,7 @@
    YAEP (Yet Another Earley Parser)
 
    Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
-  Copyright(c) 2024 Fredrik Öhrström <oehrstroem@gmail.com>
+   Copyright (c) 2024 Fredrik Öhrström <oehrstroem@gmail.com>
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the
@@ -22,12 +22,11 @@
    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 */
 
-/* This is interface file of general (working on any CFG) syntax
-   parser with minimal error recovery and syntax directed translation.
-   The algorithm is originated from Earley's algorithm.  The algorithm
+/* This is interface file of general (working on any context free grammar)
+   syntax parser with minimal error recovery and syntax directed translation.
+   The algorithm is originated from Earley's algorithm. The algorithm
    is sufficiently fast to be used in serious language processors. */
 
 #ifndef YAEP_H
@@ -62,16 +61,21 @@ typedef struct YaepGrammar YaepGrammar;
 #define YAEP_INVALID_TOKEN_CODE            17
 
 /* The following describes the type of parse tree node. */
-enum yaep_tree_node_type
+enum YaepTreeNodeType
 {
-  YAEP_NIL,
-  YAEP_ERROR,
-  YAEP_TERM,
-  YAEP_ANODE,
-  YAEP_ALT,
-  _yaep_VISITED = 0x80, /* _yaep_VISITED is not part of the interface and for internal use only */
-  _yaep_MAX = 0xFF, /* _yaep_MAX is not part of the interface and is just here to ensure a logical OR of _yaep_VISITED with the other enum values does not produce an out-of-range enum */
+    YAEP_NIL,
+    YAEP_ERROR,
+    YAEP_TERM,
+    YAEP_ANODE,
+    YAEP_ALT,
+    /* _yaep_VISITED is not part of the interface and for internal use only */
+    _yaep_VISITED = 0x80,
+    /* _yaep_MAX is not part of the interface and is just here to ensure a
+       logical OR of _yaep_VISITED with the other enum values does not produce
+       an out-of-range enum */
+    _yaep_MAX = 0xFF,
 };
+typedef enum YaepTreeNodeType YaepTreeNodeType;
 
 /* The following node exists in one example. See comment to read_rule. */
 struct yaep_nil
@@ -137,7 +141,8 @@ struct yaep_alt
 struct yaep_tree_node
 {
   /* The type of node. */
-  enum yaep_tree_node_type type;
+  YaepTreeNodeType type;
+
   /* The node itself. */
   union
   {
@@ -149,8 +154,6 @@ struct yaep_tree_node
     struct yaep_alt alt;
   } val;
 };
-
-#ifndef NOT_DEFINED
 
 /* The following function creates undefined grammar.  The function
    returns NULL if there is no memory.  This function should be called
@@ -197,21 +200,21 @@ const char *yaep_error_message (YaepGrammar *g);
    translation of the symbol in RHS given by the single array element.
    The cost of the abstract node if given is passed through
    ANODE_COST. */
-int
-yaep_read_grammar (YaepGrammar *g, int strict_p,
-		   const char *(*read_terminal) (int *code),
-		   const char *(*read_rule) (const char ***rhs,
-					     const char **abs_node,
-                                             int *anode_cost,
-					     int **transl,
-                                             char *mark,
-                                             char **marks));
+int yaep_read_grammar(YaepGrammar *g,
+                             int strict_p,
+                             const char *(*read_terminal) (int *code),
+                             const char *(*read_rule) (const char ***rhs,
+                                                       const char **abs_node,
+                                                       int *anode_cost,
+                                                       int **transl,
+                                                       char *mark,
+                                                       char **marks));
 
 /* The following function is analogous to the previous one but it
    parses grammar description. */
-int
-yaep_parse_grammar (YaepGrammar *g, int strict_p,
-		    const char *description);
+int yaep_parse_grammar(YaepGrammar *g,
+                              int strict_p,
+                              const char *description);
 
 /* The following functions set up different parameters which affect
    parser work.  The functions return the previous parameter value.
@@ -240,14 +243,13 @@ yaep_parse_grammar (YaepGrammar *g, int strict_p,
      (although syntax_error is called once).  The default value is 1.
 
    o recovery_match means how much subsequent tokens should be
-     successfully shifted to finish error recovery.  The default value
-     is 3. */
-int yaep_set_lookahead_level (YaepGrammar *grammar, int level);
-int yaep_set_debug_level (YaepGrammar *grammar, int level);
-int yaep_set_one_parse_flag (YaepGrammar *grammar, int flag);
-int yaep_set_cost_flag (YaepGrammar *grammar, int flag);
-int yaep_set_error_recovery_flag (YaepGrammar *grammar, int flag);
-int yaep_set_recovery_match (YaepGrammar *grammar, int n_toks);
+     successfully shifted to finish error recovery.  The default value is 3. */
+int yaep_set_lookahead_level(YaepGrammar *grammar, int level);
+int yaep_set_debug_level(YaepGrammar *grammar, int level);
+int yaep_set_one_parse_flag(YaepGrammar *grammar, int flag);
+int yaep_set_cost_flag(YaepGrammar *grammar, int flag);
+int yaep_set_error_recovery_flag(YaepGrammar *grammar, int flag);
+int yaep_set_recovery_match(YaepGrammar *grammar, int n_toks);
 
 /* The following function parses input according read grammar.  The
    function returns the error code (which will be also in
@@ -272,7 +274,6 @@ int yaep_set_recovery_match (YaepGrammar *grammar, int n_toks);
    `yaep_set_error_recovery_flag'), the third and fifth parameters
    will be negative and forth and sixth parameters will be NULL.
 
-
    Function PARSE_ALLOC is used by YAEP to allocate memory
    for parse tree representation.  After calling yaep_fin we free
    all memory allocated by yaep parser.  At this point it is
@@ -288,20 +289,20 @@ int yaep_set_recovery_match (YaepGrammar *grammar, int n_toks);
    but PARSE_FREE is, the memory is not freed. In this case, the
    returned parse tree should also not be freed with yaep_free_tree(). */
 int yaep_parse (YaepGrammar *grammar,
-		       int (*read_token) (void **attr),
-		       void (*syntax_error) (int err_tok_num,
-					     void *err_tok_attr,
-					     int start_ignored_tok_num,
-					     void *start_ignored_tok_attr,
-					     int start_recovered_tok_num,
-					     void *start_recovered_tok_attr),
-		       void *(*parse_alloc) (int nmemb),
-		       void (*parse_free) (void *mem),
+		       int (*read_token)(void **attr),
+		       void (*syntax_error)(int err_tok_num,
+                                            void *err_tok_attr,
+                                            int start_ignored_tok_num,
+                                            void *start_ignored_tok_attr,
+                                            int start_recovered_tok_num,
+                                            void *start_recovered_tok_attr),
+		       void *(*parse_alloc)(int nmemb),
+		       void (*parse_free)(void *mem),
 		       struct yaep_tree_node **root,
 		       int *ambiguous_p);
 
 /* The following function frees memory allocated for the grammar. */
-void yaep_free_grammar (YaepGrammar *grammar);
+void yaep_free_grammar(YaepGrammar *grammar);
 
 /* The following function frees memory allocated for the parse tree.
    It must not be called until after yaep_free_grammar() has been called.
@@ -315,72 +316,10 @@ void yaep_free_grammar (YaepGrammar *grammar);
    exactly once for each term node in the parse tree.
    The TERMCB callback can be used by the caller
    to free the term attributes. The term node itself must not be freed. */
-void yaep_free_tree( struct yaep_tree_node * root, void ( *parse_free )( void * ), void ( *termcb )( struct yaep_term * term ) );
-
-#else /* #ifndef NOT_DEFINED */
-
-class yaep
-{
-  YaepGrammar *grammar;
-
-public:
-
-  /* The following constructor and destructor allocate and free memory
-     for the grammar. */
-  yaep();
-  ~yaep();
-
-  /* This function is used for freeing memory allocated for OS except
-     for the first segment. */
-
-  /* See comments for function yaep_error_code. */
-  int error_code();
-
-  /* See comments for function yaep_error_message. */
-  const char *error_message();
-
-  /* See comments for function yaep_read_grammar. */
-  int read_grammar (int strict_p,
-			   const char *(*read_terminal) (int *code),
-			   const char *(*read_rule) (const char ***rhs,
-						     const char **abs_node,
-						     int *anode_cost,
-						     int **transl,
-                                                     char *mark,
-                                                     char **marks));
-
-  /* See comments for function yaep_parse_grammar. */
-  int parse_grammar (int strict_p, const char *description);
-
-  /* See comments for corresponding C functions. */
-  int set_lookahead_level (int level);
-  int set_debug_level (int level);
-  int set_one_parse_flag (int flag);
-  int set_cost_flag (int flag);
-  int set_error_recovery_flag (int flag);
-  int set_recovery_match (int n_toks);
-
-  /* See comments for function yaep_parse. */
-  int parse (int (*read_token) (void **attr),
-	     void (*syntax_error) (int err_tok_num,
-				   void *err_tok_attr,
-				   int start_ignored_tok_num,
-				   void *start_ignored_tok_attr,
-				   int start_recovered_tok_num,
-				   void *start_recovered_tok_attr),
-	     void *(*parse_alloc) (int nmemb),
-	     void (*parse_free) (void *mem),
-	     struct yaep_tree_node **root,
-	     int *ambiguous_p);
-
-  /* See comments for function yaep_free_tree().
-     This is a static member function because the lifetime of the
-     parse tree exceeds the lifetime of the yaep instance it
-     came from. */
-  static void free_tree( struct yaep_tree_node * root, void ( *parse_free )( void * ), void ( *termcb )( struct yaep_term * term ) );
-};
-
-#endif /* #ifndef NOT_DEFINED */
+void yaep_free_tree(struct yaep_tree_node *root,
+                           void (*parse_free)(void*),
+                           void (*termcb)(struct yaep_term *term));
 
 #define YAEP_MODULE
-#endif // YAEP_H
+
+#endif

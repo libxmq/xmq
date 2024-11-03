@@ -116,7 +116,7 @@ size_t line_length(const char *start, const char *stop, int *numq, int *lq, int 
 bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **out_buffer);
 bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer);
 bool need_separation_before_entity(XMQPrintState *ps);
-const char *node_yaep_type_to_string(enum yaep_tree_node_type t);
+const char *node_yaep_type_to_string(YaepTreeNodeType t);
 size_t num_utf8_bytes(char c);
 void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num);
 void reset_ansi(XMQParseState *state);
@@ -4221,7 +4221,7 @@ void handle_yaep_syntax_error(int err_tok_num,
     printf("^\n");
 }
 
-const char *node_yaep_type_to_string(enum yaep_tree_node_type t)
+const char *node_yaep_type_to_string(YaepTreeNodeType t)
 {
     switch (t)
     {

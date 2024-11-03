@@ -5264,7 +5264,7 @@ void yaep_free_grammar(YaepGrammar *g)
 
 static void free_tree_reduce(struct yaep_tree_node*node)
 {
-    enum yaep_tree_node_type type;
+    YaepTreeNodeType type;
     struct yaep_tree_node **childp;
     size_t numChildren, pos, freePos;
 
@@ -5272,7 +5272,7 @@ static void free_tree_reduce(struct yaep_tree_node*node)
     assert((node->type & _yaep_VISITED) == 0);
 
     type = node->type;
-    node->type =(enum yaep_tree_node_type)(node->type | _yaep_VISITED);
+    node->type =(YaepTreeNodeType)(node->type | _yaep_VISITED);
 
     switch(type)
     {
@@ -5351,7 +5351,7 @@ static void free_tree_sweep(struct yaep_tree_node *node,
                             void(*parse_free)(void*),
                             void(*termcb)(struct yaep_term*))
 {
-    enum yaep_tree_node_type type;
+    YaepTreeNodeType type;
     struct yaep_tree_node*next;
     struct yaep_tree_node**childp;
 
@@ -5361,7 +5361,7 @@ static void free_tree_sweep(struct yaep_tree_node *node,
     }
 
     assert(node->type & _yaep_VISITED);
-    type =(enum yaep_tree_node_type)(node->type & ~_yaep_VISITED);
+    type =(YaepTreeNodeType)(node->type & ~_yaep_VISITED);
 
     switch(type)
     {
