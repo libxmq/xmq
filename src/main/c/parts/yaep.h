@@ -37,6 +37,21 @@
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
 
+struct YaepAltNode;
+typedef struct YaepAltNode YaepAltNode;
+
+struct YaepAbstractNode;
+typedef struct YaepAbstractNode YaepAbstractNode;
+
+struct YaepNilNode;
+typedef struct YaepNilNode YaepNilNode;
+
+struct YaepTermNode;
+typedef struct YaepTermNode YaepTermNode;
+
+struct YaepTreeNode;
+typedef struct YaepTreeNode YaepTreeNode;
+
 /* The following value is reserved to be designation of empty node for
    translation.  It should be positive number which is not intersected
    with symbol numbers. */
@@ -80,8 +95,8 @@ typedef enum YaepTreeNodeType YaepTreeNodeType;
 /* The following node exists in one example. See comment to read_rule. */
 struct YaepNilNode
 {
-  /* Whether this node has been used in the parse tree. */
-  int used;
+    /* Whether this node has been used in the parse tree. */
+    int used;
 };
 typedef struct YaepNilNode YaepNilNode;
 
@@ -89,60 +104,59 @@ typedef struct YaepNilNode YaepNilNode;
    translation of pseudo terminal `error'. */
 struct YaepErrorNode
 {
-  /* Whether this node has been used in the parse tree. */
-  int used;
+    /* Whether this node has been used in the parse tree. */
+    int used;
 };
 typedef struct YaepErrorNode YaepErrorNode;
 
 /* The following structure describes terminal node. */
 struct YaepTermNode
 {
-  /* The terminal code. */
-  int code;
-  /* The IXML mark. */
-  char mark;
-  /* The terminal attributes. */
-  void *attr;
+    /* The terminal code. */
+    int code;
+    /* The IXML mark. */
+    char mark;
+    /* The terminal attributes. */
+    void *attr;
 };
-typedef struct YaepTermNode YaepTermNode;
 
 /* The following structure describes abstract node. */
 struct YaepAbstractNode
 {
-  /* The abstract node name. */
-  const char *name;
-  /* The ixml mark. */
-  char mark;
-  /* The following value is cost of the node plus costs of all
-     children if the cost flag is set up.  Otherwise, the value is cost
-     of the abstract node itself. */
-  int cost;
-  /* References for nodes for which the abstract node refers.  The end
-     marker of the array is value NULL. */
-  struct yaep_tree_node **children;
+    /* The abstract node name. */
+    const char *name;
+    /* The ixml mark. */
+    char mark;
+    /* The following value is cost of the node plus costs of all
+       children if the cost flag is set up.  Otherwise, the value is cost
+       of the abstract node itself. */
+    int cost;
+    /* References for nodes for which the abstract node refers.  The end
+       marker of the array is value NULL. */
+    YaepTreeNode **children;
 };
-typedef struct YaepAbstractNode YaepAbstractNode;
 
 /* The following structure is not part of the interface and for internal use only */
-struct _yaep_anode_name {
-  /* Allocated abstract node name. */
-  char * name;
+struct _YaepAnodeName
+{
+    /* Allocated abstract node name. */
+    char * name;
 };
+typedef struct _YaepAnodeName _YaepAnodeName;
 
 /* The following structure describes alternatives in the parse tree.
    Which are presents only for ambiguous grammar. */
-struct yaep_alt
+struct YaepAltNode
 {
-  /* The node (all node types but alternative) for this
-     alternative. */
-  struct yaep_tree_node *node;
+  /* The node (all node types but alternative) for this alternative. */
+  YaepTreeNode *node;
+
   /* The next alternative. */
-  struct yaep_tree_node *next;
+  YaepTreeNode *next;
 };
 
-/* The following structure describes generalized node of the parse
-   tree. */
-struct yaep_tree_node
+/* The following structure describes generalized node of the parse tree. */
+struct YaepTreeNode
 {
   /* The type of node. */
   YaepTreeNodeType type;
@@ -154,10 +168,11 @@ struct yaep_tree_node
     YaepErrorNode error;
     YaepTermNode term;
     YaepAbstractNode anode;
-    struct _yaep_anode_name _anode_name; /* Internal use only */
-    struct yaep_alt alt;
+    _YaepAnodeName _anode_name; /* Internal use only */
+    YaepAltNode alt;
   } val;
 };
+typedef struct YaepTreeNode YaepTreeNode;
 
 /* The following function creates undefined grammar.  The function
    returns NULL if there is no memory.  This function should be called
@@ -166,11 +181,11 @@ YaepGrammar *yaep_create_grammar();
 
 /* The function returns the last occurred error code for given
    grammar. */
-int yaep_error_code (YaepGrammar *g);
+int yaep_error_code(YaepGrammar *g);
 
 /* The function returns message are always contains error message
    corresponding to the last occurred error code. */
-const char *yaep_error_message (YaepGrammar *g);
+const char *yaep_error_message(YaepGrammar *g);
 
 /* The following function reads terminals/rules into grammar G and
    checks it depending on STRICT_P.  It returns zero if it is all ok.
@@ -302,7 +317,7 @@ int yaep_parse (YaepGrammar *grammar,
                                             void *start_recovered_tok_attr),
 		       void *(*parse_alloc)(int nmemb),
 		       void (*parse_free)(void *mem),
-		       struct yaep_tree_node **root,
+		       YaepTreeNode **root,
 		       int *ambiguous_p);
 
 /* The following function frees memory allocated for the grammar. */
@@ -320,7 +335,7 @@ void yaep_free_grammar(YaepGrammar *grammar);
    exactly once for each term node in the parse tree.
    The TERMCB callback can be used by the caller
    to free the term attributes. The term node itself must not be freed. */
-void yaep_free_tree(struct yaep_tree_node *root,
+void yaep_free_tree(YaepTreeNode *root,
                            void (*parse_free)(void*),
                            void (*termcb)(YaepTermNode *term));
 

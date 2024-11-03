@@ -543,7 +543,7 @@ struct YaepParseState
     YaepParseState*parent_anode_state;
     int parent_disp;
     /* The following is used only for states in the table.*/
-    struct yaep_tree_node*anode;
+    YaepTreeNode*anode;
 };
 
 /* To make better traversing and don't waist tree parse memory,
@@ -554,14 +554,14 @@ struct YaepTransVisitNode
        negative if we did not visit the node yet.*/
     int num;
     /* The tree node itself.*/
-    struct yaep_tree_node*node;
+    YaepTreeNode*node;
 };
 
 // Declarations ///////////////////////////////////////////////////
 
-extern void yaep_free_grammar(YaepGrammar *g);
-
+static void print_yaep_node(FILE *f, YaepTreeNode *node);
 static void yaep_error(int code, const char*format, ...);
+extern void yaep_free_grammar(YaepGrammar *g);
 
 // Global variables /////////////////////////////////////////////////////
 
@@ -4193,7 +4193,7 @@ static int trans_visit_node_eq(hash_table_entry_t n1, hash_table_entry_t n2)
    given NODE in the table and if it is not present in the table, the
    function creates the translation visit node and inserts it into
    the table.*/
-static YaepTransVisitNode *visit_node(struct yaep_tree_node*node)
+static YaepTransVisitNode *visit_node(YaepTreeNode*node)
 {
     YaepTransVisitNode trans_visit_node;
     hash_table_entry_t*entry;
@@ -4224,10 +4224,10 @@ static int canon_node_num(int num)
 /* The following recursive function prints NODE into file F and prints
    all its children(if debug_level < 0 output format is for
    graphviz).*/
-static void print_yaep_node(FILE *f, struct yaep_tree_node *node)
+static void print_yaep_node(FILE *f, YaepTreeNode *node)
 {
     YaepTransVisitNode*trans_visit_node;
-    struct yaep_tree_node*child;
+    YaepTreeNode*child;
     int i;
 
     assert(node != NULL);
@@ -4346,7 +4346,7 @@ static void print_yaep_node(FILE *f, struct yaep_tree_node *node)
 }
 
 /* The following function prints parse tree with ROOT.*/
-static void print_parse(FILE* f, struct yaep_tree_node*root)
+static void print_parse(FILE* f, YaepTreeNode*root)
 {
     trans_visit_nodes_tab =
         create_hash_table(grammar->alloc, toks_len* 2, trans_visit_node_hash,
@@ -4363,9 +4363,9 @@ static void print_parse(FILE* f, struct yaep_tree_node*root)
 
 /* The following function places translation NODE into*PLACE and
    creates alternative nodes if it is necessary.*/
-static void place_translation(struct yaep_tree_node **place, struct yaep_tree_node *node)
+static void place_translation(YaepTreeNode **place, YaepTreeNode *node)
 {
-    struct yaep_tree_node*alt,*next_alt;
+    YaepTreeNode*alt,*next_alt;
 
     assert(place != NULL);
     if (*place == NULL)
@@ -4377,8 +4377,8 @@ static void place_translation(struct yaep_tree_node **place, struct yaep_tree_no
 #ifndef NO_YAEP_DEBUG_PRINT
     n_parse_alt_nodes++;
 #endif
-    alt =(struct yaep_tree_node*)(*parse_alloc)(sizeof
-                                                   (struct yaep_tree_node));
+    alt =(YaepTreeNode*)(*parse_alloc)(sizeof
+                                                   (YaepTreeNode));
     alt->type = YAEP_ALT;
     alt->val.alt.node = node;
     if ((*place)->type == YAEP_ALT)
@@ -4389,8 +4389,8 @@ static void place_translation(struct yaep_tree_node **place, struct yaep_tree_no
            alternative too.*/
         n_parse_alt_nodes++;
         next_alt = alt->val.alt.next
-            =((struct yaep_tree_node*)
-              (*parse_alloc)(sizeof(struct yaep_tree_node)));
+            =((YaepTreeNode*)
+              (*parse_alloc)(sizeof(YaepTreeNode)));
         next_alt->type = YAEP_ALT;
         next_alt->val.alt.node =*place;
         next_alt->val.alt.next = NULL;
@@ -4398,18 +4398,18 @@ static void place_translation(struct yaep_tree_node **place, struct yaep_tree_no
    *place = alt;
 }
 
-static struct yaep_tree_node *copy_anode(struct yaep_tree_node**place,
-                                         struct yaep_tree_node*anode,
+static YaepTreeNode *copy_anode(YaepTreeNode**place,
+                                         YaepTreeNode*anode,
                                          YaepRule*rule, int disp)
 {
-    struct yaep_tree_node*node;
+    YaepTreeNode*node;
     int i;
 
-    node =((struct yaep_tree_node*)(*parse_alloc)(sizeof(struct yaep_tree_node)
-                                                  + sizeof(struct yaep_tree_node*)
+    node =((YaepTreeNode*)(*parse_alloc)(sizeof(YaepTreeNode)
+                                                  + sizeof(YaepTreeNode*)
                                                   *(rule->trans_len + 1)));
    *node =*anode;
-    node->val.anode.children = ((struct yaep_tree_node**)((char*) node + sizeof(struct yaep_tree_node)));
+    node->val.anode.children = ((YaepTreeNode**)((char*) node + sizeof(YaepTreeNode)));
     for(i = 0; i <= rule->trans_len; i++)
     {
         node->val.anode.children[i] = anode->val.anode.children[i];
@@ -4437,9 +4437,9 @@ static int reserv_mem_eq(hash_table_entry_t m1, hash_table_entry_t m2)
    The function also collects references to memory which can be
    freed. Remeber that the translation is DAG, altenatives form lists
   (alt node may not refer for another alternative).*/
-static struct yaep_tree_node *prune_to_minimal(struct yaep_tree_node *node, int *cost)
+static YaepTreeNode *prune_to_minimal(YaepTreeNode *node, int *cost)
 {
-    struct yaep_tree_node*child,*alt,*next_alt,*result = NULL;
+    YaepTreeNode*child,*alt,*next_alt,*result = NULL;
     int i, min_cost = INT_MAX;
 
     assert(node != NULL);
@@ -4496,9 +4496,9 @@ static struct yaep_tree_node *prune_to_minimal(struct yaep_tree_node *node, int 
 
 /* The following function traverses the translation collecting
    reference to memory which may not be freed.*/
-static void traverse_pruned_translation(struct yaep_tree_node *node)
+static void traverse_pruned_translation(YaepTreeNode *node)
 {
-    struct yaep_tree_node*child;
+    YaepTreeNode*child;
     hash_table_entry_t*entry;
     int i;
 
@@ -4537,9 +4537,9 @@ next:
 }
 
 /* The function finds and returns a minimal cost parse(s). */
-static struct yaep_tree_node *find_minimal_translation(struct yaep_tree_node *root)
+static YaepTreeNode *find_minimal_translation(YaepTreeNode *root)
 {
-    struct yaep_tree_node**node_ptr;
+    YaepTreeNode**node_ptr;
     int cost;
 
     if (parse_free != NULL)
@@ -4554,8 +4554,8 @@ static struct yaep_tree_node *find_minimal_translation(struct yaep_tree_node *ro
     traverse_pruned_translation(root);
     if (parse_free != NULL)
     {
-        for(node_ptr =(struct yaep_tree_node**) VLO_BEGIN(tnodes_vlo);
-             node_ptr <(struct yaep_tree_node**) VLO_BOUND(tnodes_vlo);
+        for(node_ptr =(YaepTreeNode**) VLO_BEGIN(tnodes_vlo);
+             node_ptr <(YaepTreeNode**) VLO_BOUND(tnodes_vlo);
              node_ptr++)
             if (*find_hash_table_entry(reserv_mem_tab,*node_ptr, TRUE) == NULL)
             {
@@ -4578,7 +4578,7 @@ static struct yaep_tree_node *find_minimal_translation(struct yaep_tree_node *ro
    function sets up*AMBIGUOUS_P if we found that the grammer is
    ambigous(it works even we asked only one parse tree without
    alternatives).*/
-static struct yaep_tree_node *make_parse(int *ambiguous_p)
+static YaepTreeNode *make_parse(int *ambiguous_p)
 {
     YaepSet*set,*check_set;
     YaepSetCore*set_core,*check_set_core;
@@ -4591,11 +4591,11 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
     YaepParseState*state,*orig_state,*curr_state;
     YaepParseState*table_state,*parent_anode_state;
     YaepParseState root_state;
-    struct yaep_tree_node*result,*empty_node,*node,*error_node;
-    struct yaep_tree_node*parent_anode,*anode, root_anode;
+    YaepTreeNode*result,*empty_node,*node,*error_node;
+    YaepTreeNode*parent_anode,*anode, root_anode;
     int parent_disp;
     int saved_one_parse_p;
-    struct yaep_tree_node**term_node_array = NULL;
+    YaepTreeNode**term_node_array = NULL;
     vlo_t stack, orig_states;
 
     n_parse_term_nodes = n_parse_abstract_nodes = n_parse_alt_nodes = 0;
@@ -4626,8 +4626,8 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
            generation of several parses.*/
         mem =
             yaep_malloc(grammar->alloc,
-                         sizeof(struct yaep_tree_node*)* toks_len);
-        term_node_array =(struct yaep_tree_node**) mem;
+                         sizeof(YaepTreeNode*)* toks_len);
+        term_node_array =(YaepTreeNode**) mem;
         for(i = 0; i < toks_len; i++)
             term_node_array[i] = NULL;
         /* The following is used to check necessity to create current
@@ -4649,12 +4649,12 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
     state->parent_disp = 0;
     state->anode = NULL;
     /* Create empty and error node:*/
-    empty_node =((struct yaep_tree_node*)
-                 (*parse_alloc)(sizeof(struct yaep_tree_node)));
+    empty_node =((YaepTreeNode*)
+                 (*parse_alloc)(sizeof(YaepTreeNode)));
     empty_node->type = YAEP_NIL;
     empty_node->val.nil.used = 0;
-    error_node =((struct yaep_tree_node*)
-                 (*parse_alloc)(sizeof(struct yaep_tree_node)));
+    error_node =((YaepTreeNode*)
+                 (*parse_alloc)(sizeof(YaepTreeNode)));
     error_node->type = YAEP_ERROR;
     error_node->val.error.used = 0;
     while(VLO_LENGTH(stack) != 0)
@@ -4743,8 +4743,8 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
                 else
 		{
                     n_parse_term_nodes++;
-                    node =((struct yaep_tree_node*)
-                           (*parse_alloc)(sizeof(struct yaep_tree_node)));
+                    node =((YaepTreeNode*)
+                           (*parse_alloc)(sizeof(YaepTreeNode)));
                     node->type = YAEP_TERM;
                     node->val.term.code = symb->u.term.code;
                     // IXML
@@ -4909,9 +4909,9 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
                         /* We need new abtract node.*/
                         n_parse_abstract_nodes++;
                         node
-                            =((struct yaep_tree_node*)
-                              (*parse_alloc)(sizeof(struct yaep_tree_node)
-                                               + sizeof(struct yaep_tree_node*)
+                            =((YaepTreeNode*)
+                              (*parse_alloc)(sizeof(YaepTreeNode)
+                                               + sizeof(YaepTreeNode*)
                                               *(sit_rule->trans_len + 1)));
                         state->anode = node;
                         if (table_state != NULL)
@@ -4935,8 +4935,8 @@ static struct yaep_tree_node *make_parse(int *ambiguous_p)
                         }
                         /////////
                         node->val.anode.children
-                            =((struct yaep_tree_node**)
-                              ((char*) node + sizeof(struct yaep_tree_node)));
+                            =((YaepTreeNode**)
+                              ((char*) node + sizeof(YaepTreeNode)));
                         for(k = 0; k <= sit_rule->trans_len; k++)
                             node->val.anode.children[k] = NULL;
                         VLO_EXPAND(stack, sizeof(YaepParseState*));
@@ -5128,7 +5128,7 @@ int yaep_parse(YaepGrammar *g,
                             void *start_recovered_tok_attr),
                void*(*alloc)(int nmemb),
                void(*free)(void *mem),
-               struct yaep_tree_node **root, int *ambiguous_p)
+               YaepTreeNode **root, int *ambiguous_p)
 {
     int code, tok_init_p, parse_init_p;
     int tab_collisions, tab_searches;
@@ -5262,10 +5262,10 @@ void yaep_free_grammar(YaepGrammar *g)
     grammar = NULL;
 }
 
-static void free_tree_reduce(struct yaep_tree_node*node)
+static void free_tree_reduce(YaepTreeNode*node)
 {
     YaepTreeNodeType type;
-    struct yaep_tree_node **childp;
+    YaepTreeNode **childp;
     size_t numChildren, pos, freePos;
 
     assert(node != NULL);
@@ -5347,13 +5347,13 @@ static void free_tree_reduce(struct yaep_tree_node*node)
     }
 }
 
-static void free_tree_sweep(struct yaep_tree_node *node,
+static void free_tree_sweep(YaepTreeNode *node,
                             void(*parse_free)(void*),
                             void(*termcb)(YaepTermNode*))
 {
     YaepTreeNodeType type;
-    struct yaep_tree_node*next;
-    struct yaep_tree_node**childp;
+    YaepTreeNode *next;
+    YaepTreeNode **childp;
 
     if (node == NULL)
     {
@@ -5398,7 +5398,7 @@ static void free_tree_sweep(struct yaep_tree_node *node,
     parse_free(node);
 }
 
-void yaep_free_tree(struct yaep_tree_node *root,
+void yaep_free_tree(YaepTreeNode *root,
                     void(*parse_free)(void*),
                     void(*termcb)(YaepTermNode*))
 {

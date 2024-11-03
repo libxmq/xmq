@@ -44,10 +44,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/xmq_printer.h"
 #include"parts/yaep.h"
 
-struct YaepGrammar;
-typedef struct YaepGrammar YaepGrammar;
-struct yaep_tree_node;
-
 // XMQ STRUCTURES ////////////////////////////////////////////////
 
 #include"parts/xmq_internals.h"
@@ -106,7 +102,7 @@ const char *find_next_line_end(XMQPrintState *ps, const char *start, const char 
 const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop);
 void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared);
 void fixup_comments(XMQDoc *doq, xmlNode *node, int depth);
-void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, int depth, int index);
+void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, int depth, int index);
 void handle_yaep_syntax_error(int err_tok_num, void *err_tok_attr, int start_ignored_tok_num, void *start_ignored_tok_attr,
                               int start_recovered_tok_num, void *start_recovered_tok_attr);
 
@@ -4236,9 +4232,9 @@ const char *node_yaep_type_to_string(YaepTreeNodeType t)
     return "?";
 }
 
-void collect_text(struct yaep_tree_node *n, MemBuffer *mb);
+void collect_text(YaepTreeNode *n, MemBuffer *mb);
 
-void collect_text(struct yaep_tree_node *n, MemBuffer *mb)
+void collect_text(YaepTreeNode *n, MemBuffer *mb)
 {
     if (n == NULL) return;
     if (n->type == YAEP_ANODE)
@@ -4246,7 +4242,7 @@ void collect_text(struct yaep_tree_node *n, MemBuffer *mb)
         YaepAbstractNode *an = &n->val.anode;
         for (int i=0; an->children[i] != NULL; ++i)
         {
-            struct yaep_tree_node *nn = an->children[i];
+            YaepTreeNode *nn = an->children[i];
             collect_text(nn, mb);
         }
     }
@@ -4268,7 +4264,7 @@ void collect_text(struct yaep_tree_node *n, MemBuffer *mb)
     }
 }
 
-void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tree_node *n, int depth, int index)
+void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, int depth, int index)
 {
     if (n == NULL) return;
     if (n->type == YAEP_ANODE)
@@ -4302,7 +4298,7 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tre
 
                 for (int i=0; an->children[i] != NULL; ++i)
                 {
-                    struct yaep_tree_node *nn = an->children[i];
+                    YaepTreeNode *nn = an->children[i];
                     generate_dom_from_yaep_node(doc, new_node, nn, depth+1, i);
                 }
             }
@@ -4312,7 +4308,7 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tre
             // Skip anonymous node whose name starts with / and deleted nodes with mark=-
             for (int i=0; an->children[i] != NULL; ++i)
             {
-                struct yaep_tree_node *nn = an->children[i];
+                YaepTreeNode *nn = an->children[i];
                 generate_dom_from_yaep_node(doc, node, nn, depth+1, i);
             }
         }
@@ -4359,7 +4355,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
     yaep_set_error_recovery_flag(xmq_get_yaep_grammar(ixml_grammar), 0); // No error recovery.
 
-    struct yaep_tree_node *root = NULL;
+    YaepTreeNode *root = NULL;
     int ambiguous = 0;
 
     int rc = yaep_parse(xmq_get_yaep_grammar(ixml_grammar),
