@@ -42,3 +42,5 @@ cat src/yaep.h  |  \
 
 cp yaep_full_source.h ../parts/yaep.h
 cp yaep_full_source.c ../parts/yaep.c
+
+rm yaep_full_source.h yaep_full_source.c

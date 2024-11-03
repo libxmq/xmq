@@ -1,3 +1,7 @@
+2024-10-31 Fredrik Öhrström <oehrstrome@gmail.com>
+
+	* Refactor code to fit IXML use case inside xmq.
+
 2018-11-02  Vladimir Makarov  <vmakarov@gcc.gnu.org>
 
 	* src/yape.c (traverse_pruned_translation): Process next alt node
@@ -51,4 +55,3 @@
 	checking MSTA.  Add big test.
 	* yaep_part.sgml.in, yaep_part++.sgml.in: New.
 	* whole_gcc_test.i: New.
-
