@@ -172,7 +172,7 @@ struct YaepGrammar
 
     /* The level of usage of lookaheads:
        0    - no usage
-       1    - static lookaheads
+       1    - statik lookaheads
        >= 2 - dynamic lookaheads*/
     int lookahead_level;
 
@@ -557,9 +557,11 @@ struct YaepTransVisitNode
     struct yaep_tree_node*node;
 };
 
-// Extern declarations ///////////////////////////////////////////////////
+// Declarations ///////////////////////////////////////////////////
 
 extern void yaep_free_grammar(YaepGrammar *g);
+
+static void yaep_error(int code, const char*format, ...);
 
 // Global variables /////////////////////////////////////////////////////
 
@@ -573,8 +575,8 @@ static YaepTermStorage *term_sets_ptr;
 static YaepRuleStorage *rules_ptr;
 
 /* The following is set up the parser amnd used globally.*/
-static int(*read_token)(void**attr);
-static void(*syntax_error)(int err_tok_num,
+static int (*read_token)(void**attr);
+static void (*syntax_error)(int err_tok_num,
                             void*err_tok_attr,
                             int start_ignored_tok_num,
                             void*start_ignored_tok_attr,
@@ -582,8 +584,6 @@ static void(*syntax_error)(int err_tok_num,
                             void*start_recovered_tok_attr);
 static void*(*parse_alloc)(int nmemb);
 static void(*parse_free)(void*mem);
-
-static void yaep_error(int code, const char*format, ...);
 
 /* The following variable is set being created.  It can be read
    externally.  It is defined only when new_set_ready_p is TRUE.*/
@@ -684,7 +684,51 @@ static vlo_t sit_dist_vec_vlo;
    structures. */
 static int curr_sit_dist_vec_check;
 
-///
+/* The following are number of unique(set core, symbol) pairs and
+   their summary(transitive) transition and reduce vectors length,
+   unique(transitive) transition vectors and their summary length,
+   and unique reduce vectors and their summary length.  The variables
+   can be read externally.*/
+static int n_core_symb_pairs, n_core_symb_vect_len;
+static int n_transition_vects, n_transition_vect_len;
+static int n_reduce_vects, n_reduce_vect_len;
+
+/* All triples(set core, symbol, vect) are placed in the following
+   object.*/
+static os_t core_symb_vect_os;
+
+/* Pointers to triples(set core, symbol, vect) being formed are
+   placed in the following object.*/
+static vlo_t new_core_symb_vect_vlo;
+
+/* All elements of vectors in the table(see
+  (transitive_)transition_els_tab and reduce_els_tab) are placed in
+   the following os.*/
+static os_t vect_els_os;
+
+#ifdef USE_CORE_SYMB_HASH_TABLE
+static hash_table_t core_symb_to_vect_tab;	/* key is set_core and symb.*/
+#else
+/* The following two variables contains table(set core,
+   symbol)->core_symb_vect implemented as two dimensional array.*/
+/* The following object contains pointers to the table rows for each
+   set core.*/
+static vlo_t core_symb_table_vlo;
+
+/* The following is always start of the previous object.*/
+static YaepCoreSymbVect ***core_symb_table;
+
+/* The following contains rows of the table.  The element in the rows
+   are indexed by symbol number.*/
+static os_t core_symb_tab_rows;
+#endif
+
+/* The following tables contains references for core_symb_vect which
+  (through(transitive) transitions and reduces correspondingly)
+   refers for elements which are in the tables.  Sequence elements are
+   stored in one exemplar to save memory.*/
+static hash_table_t transition_els_tab;	/* key is elements.*/
+static hash_table_t reduce_els_tab;	/* key is elements.*/
 
 /* The following two variables represents Earley's parser list.  The
    values of pl_curr and array*pl can be read and modified
@@ -695,6 +739,29 @@ static int pl_curr;
 /* The following is number of created terminal, abstract, and
    alternative nodes.*/
 static int n_parse_term_nodes, n_parse_abstract_nodes, n_parse_alt_nodes;
+
+
+/* All tail sets of error recovery are saved in the following os.*/
+static os_t recovery_state_tail_sets;
+
+/* The following variable values is pl_curr and tok_curr at error
+   recovery start(when the original syntax error has been fixed).*/
+static int start_pl_curr, start_tok_curr;
+
+/* The following variable value means that all error sets in pl with
+   indexes [back_pl_frontier, start_pl_curr] are being processed or
+   have been processed.*/
+static int back_pl_frontier;
+
+/* The following variable stores original pl tail in reversed order.
+   This object only grows.  The last object sets may be used to
+   restore original pl in order to try another error recovery state
+  (alternative).*/
+static vlo_t original_pl_tail_stack;
+
+/* The following variable value is last pl element which is original
+   set(set before the error_recovery start).*/
+static int original_last_pl_el;
 
 /* This page contains code for work with array of vlos.  It is used
    only to implement abstract data `core_symb_vect'.*/
@@ -721,6 +788,9 @@ static os_t trans_visit_nodes_os;
 
 /* The following value is number of translation visit nodes.*/
 static int n_trans_visit_nodes;
+
+/* How many times we reuse Earley's sets without their recalculation. */
+static int n_goto_successes;
 
 // Implementations ////////////////////////////////////////////////////////////////////
 
@@ -2116,8 +2186,7 @@ static void vlo_array_nullify()
 }
 
 /* The following function returns pointer to vlo with INDEX.*/
-static vlo_t*
-vlo_array_el(int index)
+static vlo_t *vlo_array_el(int index)
 {
     assert(index >= 0 && vlo_array_len > index);
     return &((vlo_t*) VLO_BEGIN(vlo_array))[index];
@@ -2134,60 +2203,9 @@ static void vlo_array_fin()
     VLO_DELETE(vlo_array);
 }
 
-
-
-
-
-/* The following are number of unique(set core, symbol) pairs and
-   their summary(transitive) transition and reduce vectors length,
-   unique(transitive) transition vectors and their summary length,
-   and unique reduce vectors and their summary length.  The variables
-   can be read externally.*/
-static int n_core_symb_pairs, n_core_symb_vect_len;
-static int n_transition_vects, n_transition_vect_len;
-static int n_reduce_vects, n_reduce_vect_len;
-
-/* All triples(set core, symbol, vect) are placed in the following
-   object.*/
-static os_t core_symb_vect_os;
-
-/* Pointers to triples(set core, symbol, vect) being formed are
-   placed in the following object.*/
-static vlo_t new_core_symb_vect_vlo;
-
-/* All elements of vectors in the table(see
-  (transitive_)transition_els_tab and reduce_els_tab) are placed in
-   the following os.*/
-static os_t vect_els_os;
-
-#ifdef USE_CORE_SYMB_HASH_TABLE
-static hash_table_t core_symb_to_vect_tab;	/* key is set_core and symb.*/
-#else
-/* The following two variables contains table(set core,
-   symbol)->core_symb_vect implemented as two dimensional array.*/
-/* The following object contains pointers to the table rows for each
-   set core.*/
-static vlo_t core_symb_table_vlo;
-
-/* The following is always start of the previous object.*/
-static YaepCoreSymbVect***core_symb_table;
-
-/* The following contains rows of the table.  The element in the rows
-   are indexed by symbol number.*/
-static os_t core_symb_tab_rows;
-#endif
-
-/* The following tables contains references for core_symb_vect which
-  (through(transitive) transitions and reduces correspondingly)
-   refers for elements which are in the tables.  Sequence elements are
-   stored in one exemplar to save memory.*/
-static hash_table_t transition_els_tab;	/* key is elements.*/
-static hash_table_t reduce_els_tab;	/* key is elements.*/
-
 #ifdef USE_CORE_SYMB_HASH_TABLE
 /* Hash of core_symb_vect.*/
-static unsigned
-core_symb_vect_hash(hash_table_entry_t t)
+static unsigned core_symb_vect_hash(hash_table_entry_t t)
 {
     YaepCoreSymbVect*core_symb_vect =(YaepCoreSymbVect*) t;
 
@@ -2197,8 +2215,7 @@ core_symb_vect_hash(hash_table_entry_t t)
 }
 
 /* Equality of core_symb_vects.*/
-static int
-core_symb_vect_eq(hash_table_entry_t t1, hash_table_entry_t t2)
+static int core_symb_vect_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 {
     YaepCoreSymbVect*core_symb_vect1 =(YaepCoreSymbVect*) t1;
     YaepCoreSymbVect*core_symb_vect2 =(YaepCoreSymbVect*) t2;
@@ -2209,8 +2226,7 @@ core_symb_vect_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 #endif
 
 /* Return hash of vector V. */
-static unsigned
-vect_els_hash(YaepVect*v)
+static unsigned vect_els_hash(YaepVect*v)
 {
     unsigned result = jauquet_prime_mod32;
     int i;
@@ -2221,8 +2237,7 @@ vect_els_hash(YaepVect*v)
 }
 
 /* Return TRUE if V1 is equal to V2. */
-static unsigned
-vect_els_eq(YaepVect*v1, YaepVect*v2)
+static unsigned vect_els_eq(YaepVect*v1, YaepVect*v2)
 {
     int i;
     if (v1->len != v2->len)
@@ -2235,30 +2250,26 @@ vect_els_eq(YaepVect*v1, YaepVect*v2)
 }
 
 /* Hash of vector transition elements.*/
-static unsigned
-transition_els_hash(hash_table_entry_t t)
+static unsigned transition_els_hash(hash_table_entry_t t)
 {
     return vect_els_hash(&((YaepCoreSymbVect*) t)->transitions);
 }
 
 /* Equality of transition vector elements.*/
-static int
-transition_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
+static int transition_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 {
     return vect_els_eq(&((YaepCoreSymbVect*) t1)->transitions,
                         &((YaepCoreSymbVect*) t2)->transitions);
 }
 
 /* Hash of reduce vector elements.*/
-static unsigned
-reduce_els_hash(hash_table_entry_t t)
+static unsigned reduce_els_hash(hash_table_entry_t t)
 {
     return vect_els_hash(&((YaepCoreSymbVect*) t)->reduces);
 }
 
 /* Equality of reduce vector elements.*/
-static int
-reduce_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
+static int reduce_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 {
     return vect_els_eq(&((YaepCoreSymbVect*) t1)->reduces,
                         &((YaepCoreSymbVect*) t2)->reduces);
@@ -2299,8 +2310,7 @@ static void core_symb_vect_init()
 /* The following function returns entry in the table where pointer to
    corresponding triple with the same keys as TRIPLE ones is
    placed.*/
-static YaepCoreSymbVect**
-core_symb_vect_addr_get(YaepCoreSymbVect*triple, int reserv_p)
+static YaepCoreSymbVect **core_symb_vect_addr_get(YaepCoreSymbVect*triple, int reserv_p)
 {
     YaepCoreSymbVect**result;
 
@@ -2318,8 +2328,7 @@ core_symb_vect_addr_get(YaepCoreSymbVect*triple, int reserv_p)
 
 /* The following function returns entry in the table where pointer to
    corresponding triple with SET_CORE and SYMB is placed.*/
-static YaepCoreSymbVect**
-core_symb_vect_addr_get(YaepSetCore*set_core, YaepSymb*symb)
+static YaepCoreSymbVect **core_symb_vect_addr_get(YaepSetCore*set_core, YaepSymb*symb)
 {
     YaepCoreSymbVect***core_symb_vect_ptr;
 
@@ -2361,8 +2370,7 @@ core_symb_vect_addr_get(YaepSetCore*set_core, YaepSymb*symb)
 
 /* The following function returns the triple(if any) for given
    SET_CORE and SYMB.*/
-static YaepCoreSymbVect*
-core_symb_vect_find(YaepSetCore*set_core, YaepSymb*symb)
+static YaepCoreSymbVect *core_symb_vect_find(YaepSetCore*set_core, YaepSymb*symb)
 {
 #ifdef USE_CORE_SYMB_HASH_TABLE
     YaepCoreSymbVect core_symb_vect;
@@ -2377,8 +2385,7 @@ core_symb_vect_find(YaepSetCore*set_core, YaepSymb*symb)
 
 /* Add given triple(SET_CORE, TERM, ...) to the table and return
    pointer to it.*/
-static YaepCoreSymbVect*
-core_symb_vect_new(YaepSetCore*set_core, YaepSymb*symb)
+static YaepCoreSymbVect *core_symb_vect_new(YaepSetCore*set_core, YaepSymb*symb)
 {
     YaepCoreSymbVect*triple;
     YaepCoreSymbVect**addr;
@@ -2510,8 +2517,6 @@ static void core_symb_vect_fin()
     VLO_DELETE(new_core_symb_vect_vlo);
     OS_DELETE(core_symb_vect_os);
 }
-
-
 
 /* Jump buffer for processing errors.*/
 static jmp_buf error_longjump_buff;
@@ -3418,29 +3423,6 @@ struct recovery_state
        order to achieved given error recovery state.*/
     int backward_move_cost;
 };
-
-/* All tail sets of error recovery are saved in the following os.*/
-static os_t recovery_state_tail_sets;
-
-/* The following variable values is pl_curr and tok_curr at error
-   recovery start(when the original syntax error has been fixed).*/
-static int start_pl_curr, start_tok_curr;
-
-/* The following variable value means that all error sets in pl with
-   indexes [back_pl_frontier, start_pl_curr] are being processed or
-   have been processed.*/
-static int back_pl_frontier;
-
-/* The following variable stores original pl tail in reversed order.
-   This object only grows.  The last object sets may be used to
-   restore original pl in order to try another error recovery state
-  (alternative).*/
-static vlo_t original_pl_tail_stack;
-
-/* The following variable value is last pl element which is original
-   set(set before the error_recovery start).*/
-static int original_last_pl_el;
-
 /* The following function may be called if you know that pl has
    original sets upto LAST element(including it).  Such call can
    decrease number of restored sets.*/
@@ -3522,8 +3504,7 @@ static void restore_original_sets(int last_pl_el)
    Remember that zero pl set contains `.error' because we added such
    rule if it is necessary.  The function returns number of terminals
   (not taking error into account) on path(result, start_pl_set].*/
-static int
-find_error_pl_set(int start_pl_set, int*cost)
+static int find_error_pl_set(int start_pl_set, int*cost)
 {
     int curr_pl;
 
@@ -3944,8 +3925,7 @@ static void error_recovery_fin()
 /* Return TRUE if goto set SET from parsing list PLACE can be used as
    the next set.  The criterium is that all origin sets of start
    situations are the same as from PLACE. */
-static int
-check_cached_transition_set(YaepSet*set, int place)
+static int check_cached_transition_set(YaepSet*set, int place)
 {
     int i, dist;
     int*dists = set->dists;
@@ -3961,10 +3941,6 @@ check_cached_transition_set(YaepSet*set, int place)
     }
     return TRUE;
 }
-
-/* How many times we reuse Earley's sets without their
-   recalculation. */
-static int n_goto_successes;
 
 /* The following function is major function forming parsing list in
    Earley's algorithm.*/
@@ -4096,7 +4072,7 @@ static os_t parse_state_os;
 
 /* The following variable refers to head of chain of already allocated
    and then freed parser states.*/
-static YaepParseState*free_parse_state;
+static YaepParseState *free_parse_state;
 
 /* The following table is used to make translation for ambiguous
    grammar more compact.  It is used only when we want all
@@ -4104,8 +4080,7 @@ static YaepParseState*free_parse_state;
 static hash_table_t parse_state_tab;	/* Key is rule, orig, pl_ind.*/
 
 /* Hash of parse state.*/
-static unsigned
-parse_state_hash(hash_table_entry_t s)
+static unsigned parse_state_hash(hash_table_entry_t s)
 {
     YaepParseState*state =((YaepParseState*) s);
 
@@ -4117,8 +4092,7 @@ parse_state_hash(hash_table_entry_t s)
 }
 
 /* Equality of parse states.*/
-static int
-parse_state_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static int parse_state_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepParseState*state1 =((YaepParseState*) s1);
     YaepParseState*state2 =((YaepParseState*) s2);
@@ -4142,8 +4116,7 @@ static void parse_state_init()
 }
 
 /* The following function returns new parser state.*/
-static YaepParseState*
-parse_state_alloc()
+static YaepParseState *parse_state_alloc()
 {
     YaepParseState*result;
 
@@ -4173,8 +4146,7 @@ static void parse_state_free(YaepParseState*state)
    to the state in the table.  Otherwise the function makes copy of
   *STATE, inserts into the table and returns pointer to copied state.
    In the last case, the function also sets up*NEW_P.*/
-static YaepParseState*
-parse_state_insert(YaepParseState*state, int*new_p)
+static YaepParseState *parse_state_insert(YaepParseState *state, int *new_p)
 {
     hash_table_entry_t*entry;
 
