@@ -78,11 +78,12 @@ enum YaepTreeNodeType
 typedef enum YaepTreeNodeType YaepTreeNodeType;
 
 /* The following node exists in one example. See comment to read_rule. */
-struct yaep_nil
+struct YaepNilNode
 {
   /* Whether this node has been used in the parse tree. */
   int used;
 };
+typedef struct YaepNilNode YaepNilNode;
 
 /* The following node exists in one example.  It is used as
    translation of pseudo terminal `error'. */
@@ -146,7 +147,7 @@ struct yaep_tree_node
   /* The node itself. */
   union
   {
-    struct yaep_nil nil;
+    YaepNilNode nil;
     struct yaep_error error;
     struct yaep_term term;
     struct yaep_anode anode;
