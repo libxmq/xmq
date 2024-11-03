@@ -5349,7 +5349,7 @@ static void free_tree_reduce(struct yaep_tree_node*node)
 
 static void free_tree_sweep(struct yaep_tree_node *node,
                             void(*parse_free)(void*),
-                            void(*termcb)(struct yaep_term*))
+                            void(*termcb)(YaepTermNode*))
 {
     YaepTreeNodeType type;
     struct yaep_tree_node*next;
@@ -5400,7 +5400,7 @@ static void free_tree_sweep(struct yaep_tree_node *node,
 
 void yaep_free_tree(struct yaep_tree_node *root,
                     void(*parse_free)(void*),
-                    void(*termcb)(struct yaep_term*))
+                    void(*termcb)(YaepTermNode*))
 {
     if (root == NULL)
     {

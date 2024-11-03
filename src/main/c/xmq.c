@@ -4243,7 +4243,7 @@ void collect_text(struct yaep_tree_node *n, MemBuffer *mb)
     if (n == NULL) return;
     if (n->type == YAEP_ANODE)
     {
-        struct yaep_anode *an = &n->val.anode;
+        YaepAbstractNode *an = &n->val.anode;
         for (int i=0; an->children[i] != NULL; ++i)
         {
             struct yaep_tree_node *nn = an->children[i];
@@ -4253,7 +4253,7 @@ void collect_text(struct yaep_tree_node *n, MemBuffer *mb)
     else
     if (n->type == YAEP_TERM)
     {
-        struct yaep_term *at = &n->val.term;
+        YaepTermNode *at = &n->val.term;
         if (at->mark != '-')
         {
             UTF8Char utf8;
@@ -4273,7 +4273,7 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tre
     if (n == NULL) return;
     if (n->type == YAEP_ANODE)
     {
-        struct yaep_anode *an = &n->val.anode;
+        YaepAbstractNode *an = &n->val.anode;
 
         if (an != NULL && an->name != NULL && an->name[0] != '/' && an->mark != '-')
         {
@@ -4320,7 +4320,7 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, struct yaep_tre
     else
     if (n->type == YAEP_TERM)
     {
-        struct yaep_term *at = &n->val.term;
+        YaepTermNode *at = &n->val.term;
         if (at->mark != '-')
         {
             UTF8Char utf8;

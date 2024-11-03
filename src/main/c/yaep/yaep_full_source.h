@@ -87,14 +87,15 @@ typedef struct YaepNilNode YaepNilNode;
 
 /* The following node exists in one example.  It is used as
    translation of pseudo terminal `error'. */
-struct yaep_error
+struct YaepErrorNode
 {
   /* Whether this node has been used in the parse tree. */
   int used;
 };
+typedef struct YaepErrorNode YaepErrorNode;
 
 /* The following structure describes terminal node. */
-struct yaep_term
+struct YaepTermNode
 {
   /* The terminal code. */
   int code;
@@ -103,9 +104,10 @@ struct yaep_term
   /* The terminal attributes. */
   void *attr;
 };
+typedef struct YaepTermNode YaepTermNode;
 
 /* The following structure describes abstract node. */
-struct yaep_anode
+struct YaepAbstractNode
 {
   /* The abstract node name. */
   const char *name;
@@ -119,6 +121,7 @@ struct yaep_anode
      marker of the array is value NULL. */
   struct yaep_tree_node **children;
 };
+typedef struct YaepAbstractNode YaepAbstractNode;
 
 /* The following structure is not part of the interface and for internal use only */
 struct _yaep_anode_name {
@@ -148,9 +151,9 @@ struct yaep_tree_node
   union
   {
     YaepNilNode nil;
-    struct yaep_error error;
-    struct yaep_term term;
-    struct yaep_anode anode;
+    YaepErrorNode error;
+    YaepTermNode term;
+    YaepAbstractNode anode;
     struct _yaep_anode_name _anode_name; /* Internal use only */
     struct yaep_alt alt;
   } val;
@@ -319,7 +322,7 @@ void yaep_free_grammar(YaepGrammar *grammar);
    to free the term attributes. The term node itself must not be freed. */
 void yaep_free_tree(struct yaep_tree_node *root,
                            void (*parse_free)(void*),
-                           void (*termcb)(struct yaep_term *term));
+                           void (*termcb)(YaepTermNode *term));
 
 #define YAEP_MODULE
 
