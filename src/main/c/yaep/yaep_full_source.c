@@ -2764,7 +2764,7 @@ struct YaepSituation
        only for dynamic lookahead.*/
     int context;
     /* The following member is the situation lookahead it is equal to
-       FIRST(the situation tail || FOLLOW(lhs)) for static lookaheads
+       FIRST(the situation tail || FOLLOW(lhs)) for statik lookaheads
        and FIRST(the situation tail || context) for dynamic ones.*/
     term_set_el_t*lookahead;
 };
@@ -3121,6 +3121,26 @@ static int n_trans_visit_nodes;
 
 /* How many times we reuse Earley's sets without their recalculation. */
 static int n_goto_successes;
+
+/* Jump buffer for processing errors.*/
+static jmp_buf error_longjump_buff;
+
+/* The following vlo is error recovery states stack.  The stack
+   contains error recovery state which should be investigated to find
+   the best error recovery.*/
+static vlo_t recovery_state_stack;
+
+/* The following os contains all allocated parser states.*/
+static os_t parse_state_os;
+
+/* The following variable refers to head of chain of already allocated
+   and then freed parser states.*/
+static YaepParseState *free_parse_state;
+
+/* The following table is used to make translation for ambiguous
+   grammar more compact.  It is used only when we want all
+   translations.*/
+static hash_table_t parse_state_tab;	/* Key is rule, orig, pl_ind.*/
 
 // Implementations ////////////////////////////////////////////////////////////////////
 
@@ -4848,9 +4868,6 @@ static void core_symb_vect_fin()
     OS_DELETE(core_symb_vect_os);
 }
 
-/* Jump buffer for processing errors.*/
-static jmp_buf error_longjump_buff;
-
 /* The following function stores error CODE and MESSAGE.  The function
    makes long jump after that.  So the function is designed to process
    only one error.*/
@@ -5891,11 +5908,6 @@ static struct recovery_state new_recovery_state(int last_original_pl_el, int bac
     return state;
 }
 
-/* The following vlo is error recovery states stack.  The stack
-   contains error recovery state which should be investigated to find
-   the best error recovery.*/
-static vlo_t recovery_state_stack;
-
 /* The following function creates new error recovery state and pushes
    it on the states stack top. */
 static void push_recovery_state(int last_original_pl_el, int backward_move_cost)
@@ -6396,18 +6408,6 @@ static void build_pl()
     }
     error_recovery_fin();
 }
-
-/* The following os contains all allocated parser states.*/
-static os_t parse_state_os;
-
-/* The following variable refers to head of chain of already allocated
-   and then freed parser states.*/
-static YaepParseState *free_parse_state;
-
-/* The following table is used to make translation for ambiguous
-   grammar more compact.  It is used only when we want all
-   translations.*/
-static hash_table_t parse_state_tab;	/* Key is rule, orig, pl_ind.*/
 
 /* Hash of parse state.*/
 static unsigned parse_state_hash(hash_table_entry_t s)
@@ -7440,7 +7440,7 @@ static void parse_free_default(void *mem)
 /* The following function parses input according read grammar.
    ONE_PARSE_FLAG means build only one parse tree.  For unambiguous
    grammar the flag does not affect the result.  LA_LEVEL means usage
-   of static(if 1) or dynamic(2) lookahead to decrease size of sets.
+   of statik(if 1) or dynamic(2) lookahead to decrease size of sets.
    Static lookaheads gives the best results with the point of space
    and speed, dynamic ones does sligthly worse, and no usage of
    lookaheds does the worst.  D_LEVEL says what debugging information
