@@ -177,7 +177,7 @@ struct YaepTreeNode
 /* The following function creates undefined grammar.  The function
    returns NULL if there is no memory.  This function should be called
    the first. */
-extern YaepGrammar *yaepCreateGrammar();
+extern YaepGrammar *yaepNewGrammar();
 
 /* Set a pointer to a user structure that is available when callbacks are invoked,
    such as read_token when parsing. */
@@ -327,7 +327,7 @@ extern int yaep_parse (YaepGrammar *grammar,
 		       int *ambiguous_p);
 
 /* The following function frees memory allocated for the grammar. */
-extern void yaep_free_grammar(YaepGrammar *grammar);
+extern void yaepFreeGrammar(YaepGrammar *grammar);
 
 /* The following function frees memory allocated for the parse tree.
    It must not be called until after yaep_free_grammar() has been called.

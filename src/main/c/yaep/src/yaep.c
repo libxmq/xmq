@@ -564,7 +564,6 @@ struct YaepTransVisitNode
 
 static void print_yaep_node(FILE *f, YaepTreeNode *node);
 static void yaep_error(int code, const char*format, ...);
-extern void yaep_free_grammar(YaepGrammar *g);
 
 // Global variables /////////////////////////////////////////////////////
 
@@ -2564,7 +2563,7 @@ static void error_func_for_allocate(void*ignored)
     yaep_error(YAEP_NO_MEMORY, "no memory");
 }
 
-YaepGrammar *yaepCreateGrammar()
+YaepGrammar *yaepNewGrammar()
 {
     YaepAllocator *allocator;
 
@@ -2585,7 +2584,7 @@ YaepGrammar *yaepCreateGrammar()
                        yaep_alloc_getuserptr(allocator));
     if (setjmp(error_longjump_buff) != 0)
     {
-        yaep_free_grammar(grammar);
+        yaepFreeGrammar(grammar);
         return NULL;
     }
     grammar->undefined_p = TRUE;
@@ -5256,7 +5255,7 @@ int yaep_parse(YaepGrammar *g,
 }
 
 /* The following function frees memory allocated for the grammar.*/
-void yaep_free_grammar(YaepGrammar *g)
+void yaepFreeGrammar(YaepGrammar *g)
 {
     YaepAllocator*allocator;
 
