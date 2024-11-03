@@ -40,6 +40,9 @@ typedef struct YaepGrammar YaepGrammar;
 struct YaepAltNode;
 typedef struct YaepAltNode YaepAltNode;
 
+struct YaepErrorNode;
+typedef struct YaepErrorNode YaepErrorNode;
+
 struct YaepAbstractNode;
 typedef struct YaepAbstractNode YaepAbstractNode;
 
@@ -98,7 +101,6 @@ struct YaepNilNode
     /* Whether this node has been used in the parse tree. */
     int used;
 };
-typedef struct YaepNilNode YaepNilNode;
 
 /* The following node exists in one example.  It is used as
    translation of pseudo terminal `error'. */
@@ -107,7 +109,6 @@ struct YaepErrorNode
     /* Whether this node has been used in the parse tree. */
     int used;
 };
-typedef struct YaepErrorNode YaepErrorNode;
 
 /* The following structure describes terminal node. */
 struct YaepTermNode
@@ -172,7 +173,6 @@ struct YaepTreeNode
     YaepAltNode alt;
   } val;
 };
-typedef struct YaepTreeNode YaepTreeNode;
 
 /* The following function creates undefined grammar.  The function
    returns NULL if there is no memory.  This function should be called
