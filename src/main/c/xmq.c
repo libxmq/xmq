@@ -1744,8 +1744,10 @@ void xmqFreeDoc(XMQDoc *doq)
     }
     if (doq->yaep_grammar_)
     {
-        yaepFreeGrammar ((YaepGrammar*)doq->yaep_grammar_);
+        yaepFreeGrammar ((YaepParseState*)doq->yaep_parse_state_, (YaepGrammar*)doq->yaep_grammar_);
+        yaepFreeParseState ((YaepParseState*)doq->yaep_parse_state_);
         doq->yaep_grammar_ = NULL;
+        doq->yaep_parse_state_ = NULL;
     }
 
     debug("[XMQ] freeing xmq doc\n");
@@ -4145,10 +4147,15 @@ bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
 
     state->doq = ixml_grammar;
     state->build_xml_of_ixml = false;
-    ixml_grammar->yaep_grammar_ = yaepNewGrammar();
+    ixml_grammar->yaep_parse_state_ = yaepNewParseState();
+    ixml_grammar->yaep_grammar_ = yaepNewGrammar((YaepParseState*)ixml_grammar->yaep_parse_state_);
     if (xmqTracing()) yaep_set_debug_level((YaepGrammar*)ixml_grammar->yaep_grammar_, 5);
 
-    ixml_build_yaep_grammar((YaepGrammar*)ixml_grammar->yaep_grammar_, state, start, stop);
+    ixml_build_yaep_grammar((YaepParseState*)ixml_grammar->yaep_parse_state_,
+                            (YaepGrammar*)ixml_grammar->yaep_grammar_,
+                            state,
+                            start,
+                            stop);
 
     if (xmqStateErrno(state))
     {
@@ -4174,11 +4181,16 @@ YaepGrammar *xmq_get_yaep_grammar(XMQDoc *doc)
     return (YaepGrammar *)doc->yaep_grammar_;
 }
 
+YaepParseState *xmq_get_yaep_parse_state(XMQDoc *doc)
+{
+    return (YaepParseState*)doc->yaep_parse_state_;
+}
+
 static char *input_i_;
 static char *input_start_;
 static char *input_stop_;
 
-static int read_yaep_token(YaepGrammar *g, YaepParseState *s, void **attr)
+static int read_yaep_token(YaepParseState *ps, void **attr)
 {
   *attr = NULL;
   if (input_i_ >= input_stop_) return -1;
@@ -4355,10 +4367,11 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
     yaep_set_error_recovery_flag(xmq_get_yaep_grammar(ixml_grammar), 0); // No error recovery.
 
-    YaepParseState *state = yaepNewParseState();
+    YaepParseState *state = xmq_get_yaep_parse_state(ixml_grammar);
     state->read_token = read_yaep_token;
     state->syntax_error = handle_yaep_syntax_error;
-    int rc = yaepParse(xmq_get_yaep_grammar(ixml_grammar), state);
+    int rc = yaepParse(xmq_get_yaep_parse_state(ixml_grammar),
+                       xmq_get_yaep_grammar(ixml_grammar));
 
     if (rc)
     {
@@ -4374,8 +4387,6 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     generate_dom_from_yaep_node(doc->docptr_.xml, NULL, state->root, 0, 0);
 
     if (state->root) yaepFreeTree(state->root, NULL, NULL);
-
-    yaepFreeParseState(state);
 
     return true;
 }

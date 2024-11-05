@@ -88,7 +88,7 @@ struct YaepParseState
     int *buffer_stop; // Points to address after last token.
     int *buffer_i; // Points to the next token to read.
     // If read_token is NULL then use the built in read_token that uses buffer start,stop and i.
-    int (*read_token)(YaepGrammar *g, YaepParseState *ps, void **attr);
+    int (*read_token)(YaepParseState *ps, void **attr);
     // If syntax_error is NULL then use the built in stderr error message printer.
     void (*syntax_error)(int err_tok_num,
                          void *err_tok_attr,
@@ -104,8 +104,9 @@ struct YaepParseState
     YaepTreeNode *root;
     // Set to 1 if the parse was ambigious.
     int ambiguous_p;
-    // This object continues with more data inside the implementation....
-    // Do not allocate this object yourself, use yaepNewParseState andyaepFreeParseState instead.
+
+    // We are parsing with this grammar.
+    YaepGrammar *grammar;
 
     /* The following value is debug level:
        <0 - print translation for graphviz.
@@ -117,6 +118,9 @@ struct YaepParseState
        5 - print also nonstart situations.
        6 - print additionally lookaheads. */
     int debug_level;
+
+    // This object continues with more data inside the implementation....
+    // Do not allocate this object yourself, use yaepNewParseState andyaepFreeParseState instead.
 };
 
 /* The following describes the type of parse tree node. */
@@ -215,14 +219,14 @@ struct YaepTreeNode
   } val;
 };
 
-/* The following function creates undefined grammar.  The function
-   returns NULL if there is no memory.  This function should be called
-   the first. */
-extern YaepGrammar *yaepNewGrammar();
-
 /* The following function creates a parse state. You will be able to
    perform multiple concurrent parses over several cpu:s using a single grammar. */
 extern YaepParseState *yaepNewParseState();
+
+/* The following function creates undefined grammar.  The function
+   returns NULL if there is no memory.  This function should be called
+   the first. */
+extern YaepGrammar *yaepNewGrammar(YaepParseState *ps);
 
 /* Set a pointer to a user structure that is available when callbacks are invoked,
    such as read_token when parsing. */
@@ -270,7 +274,8 @@ extern const char *yaep_error_message(YaepGrammar *g);
    translation of the symbol in RHS given by the single array element.
    The cost of the abstract node if given is passed through
    ANODE_COST. */
-extern int yaep_read_grammar(YaepGrammar *g,
+extern int yaep_read_grammar(YaepParseState *ps,
+                             YaepGrammar *g,
                              int strict_p,
                              const char *(*read_terminal) (int *code),
                              const char *(*read_rule) (const char ***rhs,
@@ -358,13 +363,13 @@ extern int yaep_set_recovery_match(YaepGrammar *grammar, int n_toks);
    free memory allocated by PARSE_ALLOC. If PARSE_ALLOC is not NULL
    but PARSE_FREE is, the memory is not freed. In this case, the
    returned parse tree should also not be freed with yaep_free_tree(). */
-extern int yaepParse(YaepGrammar *g, YaepParseState *ps);
+extern int yaepParse(YaepParseState *ps, YaepGrammar *g);
 
 /* The following function frees memory allocated for the parse state. */
 extern void yaepFreeParseState(YaepParseState *ps);
 
 /* The following function frees memory allocated for the grammar. */
-extern void yaepFreeGrammar(YaepGrammar *g);
+extern void yaepFreeGrammar(YaepParseState *ps, YaepGrammar *g);
 
 /* The following function frees memory allocated for the parse tree.
    It must not be called until after yaep_free_grammar() has been called.

@@ -28,9 +28,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
+struct YaepParseState;
+typedef struct YaepParseState YaepParseState;
 struct yaep_tree_node;
 
-bool ixml_build_yaep_grammar(YaepGrammar *g, XMQParseState *state, const char *start, const char *stop);
+bool ixml_build_yaep_grammar(YaepParseState *ps, YaepGrammar *g, XMQParseState *state, const char *start, const char *stop);
 
 #define IXML_MODULE
 

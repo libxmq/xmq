@@ -1364,7 +1364,7 @@ const char *ixml_to_yaep_read_rule(const char ***rhs,
     return rule->rule_name->name;
 }
 
-bool ixml_build_yaep_grammar(YaepGrammar *g, XMQParseState *state, const char *start, const char *stop)
+bool ixml_build_yaep_grammar(YaepParseState *ps, YaepGrammar *g, XMQParseState *state, const char *start, const char *stop)
 {
     if (state->magic_cookie != MAGIC_COOKIE)
     {
@@ -1373,6 +1373,7 @@ bool ixml_build_yaep_grammar(YaepGrammar *g, XMQParseState *state, const char *s
         exit(1);
     }
 
+    ps->grammar = g;
     state->ixml_rules = vector_create();
     state->ixml_terminals_map = hashmap_create(256);
     state->ixml_non_terminals = vector_create();
@@ -1444,7 +1445,7 @@ bool ixml_build_yaep_grammar(YaepGrammar *g, XMQParseState *state, const char *s
             }
         }
     }
-    int rc = yaep_read_grammar(g, 0, ixml_to_yaep_read_terminal, ixml_to_yaep_read_rule);
+    int rc = yaep_read_grammar(ps, g, 0, ixml_to_yaep_read_terminal, ixml_to_yaep_read_rule);
 
     hashmap_free_iterator(yaep_i_);
 
