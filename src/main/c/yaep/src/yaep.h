@@ -106,6 +106,17 @@ struct YaepParseState
     int ambiguous_p;
     // This object continues with more data inside the implementation....
     // Do not allocate this object yourself, use yaepNewParseState andyaepFreeParseState instead.
+
+    /* The following value is debug level:
+       <0 - print translation for graphviz.
+       0 - print nothing.
+       1 - print statistics.
+       2 - print parse tree.
+       3 - print rules, parser list
+       4 - print sets.
+       5 - print also nonstart situations.
+       6 - print additionally lookaheads. */
+    int debug_level;
 };
 
 /* The following describes the type of parse tree node. */

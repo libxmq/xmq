@@ -2370,8 +2370,10 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 #undef NDEBUG
 #endif
 
-#define TRACE_F fprintf(stderr, "TRACE %s\n", __func__)
-#define TRACE_FA(cformat, ...) fprintf(stderr, "TRACE %s " cformat "\n", __func__, __VA_ARGS__)
+#define TRACE_F
+//fprintf(stderr, "TRACE %s\n", __func__)
+#define TRACE_FA(cformat, ...)
+//fprintf(stderr, "TRACE %s " cformat "\n", __func__, __VA_ARGS__)
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -2623,12 +2625,10 @@ struct YaepVocabulary
     hash_table_t code_to_symb_tab;	/* key is `code'*/
 
     /* If terminal symbol codes are not spared(in this case the member
-       value is not NULL, we use translation vector instead of hash
-       table. */
-    YaepSymb**symb_code_trans_vect;
+       value is not NULL, we use translation vector instead of hash table. */
+    YaepSymb **symb_code_trans_vect;
     int symb_code_trans_vect_start;
     int symb_code_trans_vect_end;
-
 };
 
 /* The following is element of term set hash table.*/
@@ -2892,6 +2892,11 @@ struct YaepTransVisitNode
 
 static void read_toks(YaepGrammar *g, YaepParseState *s);
 static void print_yaep_node(FILE *f, YaepTreeNode *node);
+static void rule_dot_print(FILE *f, YaepRule *rule, int pos);
+static void rule_print(FILE *f, YaepRule *rule, int trans_p);
+static void set_print(FILE* f, YaepSet*set, int set_dist, int nonstart_p, int lookahead_p);
+static void sit_print(FILE *f, YaepSituation *sit, int lookahead_p);
+static void symb_print(FILE* f, YaepSymb*symb, int code_p);
 static void yaep_error(int code, const char*format, ...);
 
 // Global variables /////////////////////////////////////////////////////
@@ -3365,21 +3370,6 @@ static YaepSymb *nonterm_get(int n)
     return symb;
 }
 
-#ifndef NO_YAEP_DEBUG_PRINT
-
-/* The following function prints symbol SYMB to file F.  Terminal is
-   printed with its code if CODE_P.*/
-static void symb_print(FILE* f, YaepSymb*symb, int code_p)
-{
-    fprintf(f, "%s", symb->repr);
-    if (code_p && symb->term_p)
-    {
-        fprintf(f, "(%d)", symb->u.term.code);
-    }
-}
-
-#endif
-
 static void symb_finish_adding_terms()
 {
     int i, max_code, min_code;
@@ -3408,7 +3398,7 @@ static void symb_finish_adding_terms()
         symbs_ptr->symb_code_trans_vect[symb->u.term.code - min_code] = symb;
     }
 
-    TRACE_FA("num_codes=%zu size=%zu\n", num_codes, vec_size);
+    TRACE_FA("num_codes=%zu size=%zu", num_codes, vec_size);
 }
 
 /* Free memory for symbols. */
@@ -3781,68 +3771,6 @@ static void rule_new_stop()
     OS_TOP_FINISH(rules_ptr->rules_os);
 }
 
-#ifndef NO_YAEP_DEBUG_PRINT
-
-/* The following function prints RULE with its translation(if TRANS_P) to file F.*/
-static void rule_print(FILE *f, YaepRule *rule, int trans_p)
-{
-    int i, j;
-
-    assert(rule->mark >= 0 && rule->mark < 128);
-    fprintf(f, "%c", rule->mark?rule->mark:' ');
-    symb_print(f, rule->lhs, FALSE);
-    fprintf(f, " :");
-    for(i = 0; i < rule->rhs_len; i++)
-    {
-        assert(rule->marks[i] >= 0 && rule->marks[i] < 128);
-        fprintf(f, " %c", rule->marks[i]?rule->marks[i]:' ');
-        symb_print(f, rule->rhs[i], FALSE);
-    }
-    if (trans_p)
-    {
-        fprintf(f, " ---- ");
-        if (rule->anode != NULL)
-            fprintf(f, "%s(", rule->anode);
-        for(i = 0; i < rule->trans_len; i++)
-	{
-            for(j = 0; j < rule->rhs_len; j++)
-                if (rule->order[j] == i)
-                {
-                    fprintf(f, " %d:", j);
-                    symb_print(f, rule->rhs[j], FALSE);
-                    break;
-                }
-            if (j >= rule->rhs_len)
-                fprintf(f, " nil");
-	}
-        if (rule->anode != NULL)
-            fprintf(f, " )");
-    }
-    fprintf(f, "\n");
-}
-
-/* The following function prints RULE to file F with dot in position POS.*/
-static void rule_dot_print(FILE *f, YaepRule *rule, int pos)
-{
-    int i;
-
-    assert(pos >= 0 && pos <= rule->rhs_len);
-
-    symb_print(f, rule->lhs, FALSE);
-    fprintf(f, " :");
-    for(i = 0; i < rule->rhs_len; i++)
-    {
-        fprintf(f, i == pos ? " ." : " ");
-        symb_print(f, rule->rhs[i], FALSE);
-    }
-    if (rule->rhs_len == pos)
-    {
-        fprintf(f, ".");
-    }
-}
-
-#endif /* #ifndef NO_YAEP_DEBUG_PRINT*/
-
 /* The following function frees memory for rules.*/
 static void rule_empty(YaepRuleStorage *rules)
 {
@@ -4006,22 +3934,6 @@ static YaepSituation *sit_create(YaepRule *rule, int pos, int context)
     return sit;
 }
 
-#ifndef NO_YAEP_DEBUG_PRINT
-
-/* The following function prints situation SIT to file F.  The
-   situation is printed with the lookahead set if LOOKAHEAD_P.*/
-static void sit_print(FILE *f, YaepSituation *sit, int lookahead_p)
-{
-    fprintf(f, "%3d ", sit->sit_number);
-    rule_dot_print(f, sit->rule, sit->pos);
-    if (grammar->lookahead_level != 0 && lookahead_p)
-    {
-        fprintf(f, ",");
-        term_set_print(f, sit->lookahead);
-    }
-}
-
-#endif /* #ifndef NO_YAEP_DEBUG_PRINT*/
 
 /* Return hash of sequence of N_SITS situations in array SITS. */
 static unsigned sits_hash(int n_sits, YaepSituation **sits)
@@ -4413,60 +4325,6 @@ static void set_new_core_stop()
     OS_TOP_FINISH(set_parent_indexes_os);
 }
 
-#ifndef NO_YAEP_DEBUG_PRINT
-
-/* The following function prints SET to file F.  If NONSTART_P is TRUE
-   then print all situations.  The situations are printed with the
-   lookahead set if LOOKAHEAD_P.  SET_DIST is used to print absolute
-   distances of non-start situations. */
-static void set_print(FILE* f, YaepSet*set, int set_dist, int nonstart_p, int lookahead_p)
-{
-    int i;
-    int num, n_start_sits, n_sits, n_all_dists;
-    YaepSituation**sits;
-    int*dists,*parent_indexes;
-
-    if (set == NULL && !new_set_ready_p)
-    {
-        /* The following is necessary if we call the function from a
-           debugger.  In this case new_set, new_core and their members
-           may be not set up yet.*/
-        num = -1;
-        n_start_sits = n_sits = n_all_dists = new_n_start_sits;
-        sits = new_sits;
-        dists = new_dists;
-        parent_indexes = NULL;
-    }
-    else
-    {
-        num = set->core->num;
-        n_sits = set->core->n_sits;
-        sits = set->core->sits;
-        n_start_sits = set->core->n_start_sits;
-        dists = set->dists;
-        n_all_dists = set->core->n_all_dists;
-        parent_indexes = set->core->parent_indexes;
-        n_start_sits = set->core->n_start_sits;
-    }
-    fprintf(f, "  Set core = %d\n", num);
-    for(i = 0; i < n_sits; i++)
-    {
-        fprintf(f, "    ");
-        sit_print(f, sits[i], lookahead_p);
-        fprintf(f, ", %d\n",
-                (i < n_start_sits
-                  ? dists[i] : i < n_all_dists ? parent_indexes[i]
-                  : 0));
-        if (i == n_start_sits - 1)
-        {
-            if (!nonstart_p)
-                break;
-            fprintf(f, "    -----------\n");
-        }
-    }
-}
-
-#endif /* #ifndef NO_YAEP_DEBUG_PRINT*/
 
 /* Finalize work with sets.*/
 static void set_fin()
@@ -5370,7 +5228,6 @@ yaep_read_grammar(YaepGrammar*g, int strict_p,
 
     symb_finish_adding_terms();
 
-#ifndef NO_YAEP_DEBUG_PRINT
     if (grammar->debug_level > 2)
     {
         /* Print rules.*/
@@ -5398,7 +5255,7 @@ yaep_read_grammar(YaepGrammar*g, int strict_p,
 	    }
 	}
     }
-#endif
+
     grammar->undefined_p = FALSE;
     return 0;
 }
@@ -5655,19 +5512,18 @@ static void build_start_set()
         sit = sit_create(rule, 0, context);
         set_new_add_start_sit(sit, 0);
     }
-    if (!set_insert())
-        assert(FALSE);
+    if (!set_insert()) assert(FALSE);
     expand_new_start_set();
     pl[0] = new_set;
-#ifndef NO_YAEP_DEBUG_PRINT
+
     if (grammar->debug_level > 2)
     {
         fprintf(stderr, "\nParsing start...\n");
         if (grammar->debug_level > 3)
-            set_print(stderr, new_set, 0, grammar->debug_level > 4,
-                       grammar->debug_level > 5);
+        {
+            set_print(stderr, new_set, 0, grammar->debug_level > 4, grammar->debug_level > 5);
+        }
     }
-#endif
 }
 
 /* The following function builds new set by shifting situations of SET
@@ -6727,16 +6583,17 @@ static void print_parse(FILE* f, YaepTreeNode*root)
 
 #endif
 
-/* The following function places translation NODE into*PLACE and
-   creates alternative nodes if it is necessary.*/
+/* The following function places translation NODE into *PLACE and
+   creates alternative nodes if it is necessary. */
 static void place_translation(YaepTreeNode **place, YaepTreeNode *node)
 {
-    YaepTreeNode*alt,*next_alt;
+    YaepTreeNode *alt, *next_alt;
 
     assert(place != NULL);
     if (*place == NULL)
     {
-       *place = node;
+        TRACE_FA("immediate %p %p", place, node);
+        *place = node;
         return;
     }
     /* We need an alternative.*/
@@ -6748,7 +6605,9 @@ static void place_translation(YaepTreeNode **place, YaepTreeNode *node)
     alt->type = YAEP_ALT;
     alt->val.alt.node = node;
     if ((*place)->type == YAEP_ALT)
+    {
         alt->val.alt.next =*place;
+    }
     else
     {
         /* We need alternative node for the 1st
@@ -6762,6 +6621,8 @@ static void place_translation(YaepTreeNode **place, YaepTreeNode *node)
         next_alt->val.alt.next = NULL;
     }
    *place = alt;
+
+   TRACE_FA("ind %p %p", place, node);
 }
 
 static YaepTreeNode *copy_anode(YaepTreeNode**place,
@@ -6770,6 +6631,8 @@ static YaepTreeNode *copy_anode(YaepTreeNode**place,
 {
     YaepTreeNode*node;
     int i;
+
+    TRACE_F;
 
     node =((YaepTreeNode*)(*parse_alloc)(sizeof(YaepTreeNode)
                                                   + sizeof(YaepTreeNode*)
@@ -6807,6 +6670,8 @@ static YaepTreeNode *prune_to_minimal(YaepTreeNode *node, int *cost)
 {
     YaepTreeNode*child,*alt,*next_alt,*result = NULL;
     int i, min_cost = INT_MAX;
+
+    TRACE_F;
 
     assert(node != NULL);
     switch(node->type)
@@ -6899,6 +6764,9 @@ next:
     default:
         assert(FALSE);
     }
+
+    TRACE_F;
+
     return;
 }
 
@@ -6937,6 +6805,9 @@ static YaepTreeNode *find_minimal_translation(YaepTreeNode *root)
         VLO_DELETE(tnodes_vlo);
         delete_hash_table(reserv_mem_tab);
     }
+
+    TRACE_F;
+
     return root;
 }
 
@@ -7627,9 +7498,11 @@ void yaepFreeGrammar(YaepGrammar *g)
         yaep_alloc_del(allocator);
     }
     grammar = NULL;
+
+    TRACE_F;
 }
 
-static void free_tree_reduce(YaepTreeNode*node)
+static void free_tree_reduce(YaepTreeNode *node)
 {
     YaepTreeNodeType type;
     YaepTreeNode **childp;
@@ -7637,6 +7510,8 @@ static void free_tree_reduce(YaepTreeNode*node)
 
     assert(node != NULL);
     assert((node->type & _yaep_VISITED) == 0);
+
+    TRACE_FA("%p", node);
 
     type = node->type;
     node->type =(YaepTreeNodeType)(node->type | _yaep_VISITED);
@@ -7727,6 +7602,8 @@ static void free_tree_sweep(YaepTreeNode *node,
         return;
     }
 
+    TRACE_FA("%p", node);
+
     assert(node->type & _yaep_VISITED);
     type =(YaepTreeNodeType)(node->type & ~_yaep_VISITED);
 
@@ -7784,6 +7661,144 @@ void yaepFreeTree(YaepTreeNode *root,
        On the second walk, we recursively free the tree nodes. */
     free_tree_reduce(root);
     free_tree_sweep(root, parse_free, termcb);
+    TRACE_F;
 }
+
+#ifndef NO_YAEP_DEBUG_PRINT
+
+/* The following function prints symbol SYMB to file F.  Terminal is
+   printed with its code if CODE_P.*/
+static void symb_print(FILE* f, YaepSymb*symb, int code_p)
+{
+    fprintf(f, "%s", symb->repr);
+    if (code_p && symb->term_p)
+    {
+        fprintf(f, "(%d)", symb->u.term.code);
+    }
+}
+
+/* The following function prints RULE with its translation(if TRANS_P) to file F.*/
+static void rule_print(FILE *f, YaepRule *rule, int trans_p)
+{
+    int i, j;
+
+    assert(rule->mark >= 0 && rule->mark < 128);
+    fprintf(f, "%c", rule->mark?rule->mark:' ');
+    symb_print(f, rule->lhs, FALSE);
+    fprintf(f, " :");
+    for(i = 0; i < rule->rhs_len; i++)
+    {
+        assert(rule->marks[i] >= 0 && rule->marks[i] < 128);
+        fprintf(f, " %c", rule->marks[i]?rule->marks[i]:' ');
+        symb_print(f, rule->rhs[i], FALSE);
+    }
+    if (trans_p)
+    {
+        fprintf(f, " ---- ");
+        if (rule->anode != NULL)
+            fprintf(f, "%s(", rule->anode);
+        for(i = 0; i < rule->trans_len; i++)
+	{
+            for(j = 0; j < rule->rhs_len; j++)
+                if (rule->order[j] == i)
+                {
+                    fprintf(f, " %d:", j);
+                    symb_print(f, rule->rhs[j], FALSE);
+                    break;
+                }
+            if (j >= rule->rhs_len)
+                fprintf(f, " nil");
+	}
+        if (rule->anode != NULL)
+            fprintf(f, " )");
+    }
+    fprintf(f, "\n");
+}
+
+/* The following function prints RULE to file F with dot in position POS.*/
+static void rule_dot_print(FILE *f, YaepRule *rule, int pos)
+{
+    int i;
+
+    assert(pos >= 0 && pos <= rule->rhs_len);
+
+    symb_print(f, rule->lhs, FALSE);
+    fprintf(f, " :");
+    for(i = 0; i < rule->rhs_len; i++)
+    {
+        fprintf(f, i == pos ? " ." : " ");
+        symb_print(f, rule->rhs[i], FALSE);
+    }
+    if (rule->rhs_len == pos)
+    {
+        fprintf(f, ".");
+    }
+}
+
+/* The following function prints situation SIT to file F.  The
+   situation is printed with the lookahead set if LOOKAHEAD_P.*/
+static void sit_print(FILE *f, YaepSituation *sit, int lookahead_p)
+{
+    fprintf(f, "%3d ", sit->sit_number);
+    rule_dot_print(f, sit->rule, sit->pos);
+    if (grammar->lookahead_level != 0 && lookahead_p)
+    {
+        fprintf(f, ",");
+        term_set_print(f, sit->lookahead);
+    }
+}
+
+/* The following function prints SET to file F.  If NONSTART_P is TRUE
+   then print all situations.  The situations are printed with the
+   lookahead set if LOOKAHEAD_P.  SET_DIST is used to print absolute
+   distances of non-start situations. */
+static void set_print(FILE* f, YaepSet*set, int set_dist, int nonstart_p, int lookahead_p)
+{
+    int i;
+    int num, n_start_sits, n_sits, n_all_dists;
+    YaepSituation**sits;
+    int*dists,*parent_indexes;
+
+    if (set == NULL && !new_set_ready_p)
+    {
+        /* The following is necessary if we call the function from a
+           debugger.  In this case new_set, new_core and their members
+           may be not set up yet.*/
+        num = -1;
+        n_start_sits = n_sits = n_all_dists = new_n_start_sits;
+        sits = new_sits;
+        dists = new_dists;
+        parent_indexes = NULL;
+    }
+    else
+    {
+        num = set->core->num;
+        n_sits = set->core->n_sits;
+        sits = set->core->sits;
+        n_start_sits = set->core->n_start_sits;
+        dists = set->dists;
+        n_all_dists = set->core->n_all_dists;
+        parent_indexes = set->core->parent_indexes;
+        n_start_sits = set->core->n_start_sits;
+    }
+    fprintf(f, "  Set core = %d\n", num);
+    for(i = 0; i < n_sits; i++)
+    {
+        fprintf(f, "    ");
+        sit_print(f, sits[i], lookahead_p);
+        fprintf(f, ", %d\n",
+                (i < n_start_sits
+                  ? dists[i] : i < n_all_dists ? parent_indexes[i]
+                  : 0));
+        if (i == n_start_sits - 1)
+        {
+            if (!nonstart_p)
+                break;
+            fprintf(f, "    -----------\n");
+        }
+    }
+}
+
+#endif
 /****************** YAEP parser single source file end **********************/
 #endif // YAEP_MODULE
