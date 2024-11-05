@@ -40,8 +40,8 @@
 #undef NDEBUG
 #endif
 
-#define TRACE(cformat, ...) {}
-//fprintf(stderr, "TRACE: " cformat, __VA_ARGS__)
+#define TRACE_F fprintf(stderr, "TRACE %s\n", __func__)
+#define TRACE_FA(cformat, ...) fprintf(stderr, "TRACE %s " cformat "\n", __func__, __VA_ARGS__)
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -827,14 +827,14 @@ static unsigned symb_repr_hash(hash_table_entry_t s)
         result = result* hash_shift +(unsigned) str[i];
     }
 
-    TRACE("symb_repr_hash %s -> %u\n", str, result);
+    TRACE_FA("%s -> %u", str, result);
     return result;
 }
 
 /* Equality of symbol representations. */
 static int symb_repr_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    TRACE("symb_repr_eq %s %s\n",((YaepSymb*) s1)->repr,((YaepSymb*) s2)->repr);
+    TRACE_FA("%s %s",((YaepSymb*) s1)->repr,((YaepSymb*) s2)->repr);
 
     return strcmp(((YaepSymb*) s1)->repr,((YaepSymb*) s2)->repr) == 0;
 }
@@ -845,7 +845,7 @@ static unsigned symb_code_hash(hash_table_entry_t s)
     YaepSymb*symb =((YaepSymb*) s);
 
     assert(symb->term_p);
-    TRACE("symb_code_hash %d\n", symb->u.term.code);
+    TRACE_FA("%d", symb->u.term.code);
 
     return symb->u.term.code;
 }
@@ -857,7 +857,7 @@ static int symb_code_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     YaepSymb*symb2 =((YaepSymb*) s2);
 
     assert(symb1->term_p && symb2->term_p);
-    TRACE("symb_code_eq %d %d\n", symb1->u.term.code, symb2->u.term.code);
+    TRACE_FA("%d %d", symb1->u.term.code, symb2->u.term.code);
 
     return symb1->u.term.code == symb2->u.term.code;
 }
@@ -879,7 +879,7 @@ static YaepVocabulary *symb_init()
     result->symb_code_trans_vect = NULL;
     result->n_nonterms = result->n_terms = 0;
 
-    TRACE("symb_init %c\n", ' ');
+    TRACE_F;
 
     return result;
 }
@@ -891,7 +891,7 @@ static YaepSymb *symb_find_by_repr(const char*repr)
     symb.repr = repr;
     YaepSymb*r =(YaepSymb*)*find_hash_table_entry(symbs_ptr->repr_to_symb_tab, &symb, FALSE);
 
-    TRACE("symb_find_by_repr %s -> %p\n", repr, r);
+    TRACE_FA("%s -> %p", repr, r);
 
     return r;
 }
@@ -905,13 +905,13 @@ static YaepSymb *symb_find_by_code(int code)
     {
         if ((code < symbs_ptr->symb_code_trans_vect_start) ||(code >= symbs_ptr->symb_code_trans_vect_end))
         {
-            TRACE("symb_find_by_code vec %d -> NULL\n", code);
+            TRACE_FA("vec %d -> NULL", code);
             return NULL;
         }
         else
         {
             YaepSymb*r = symbs_ptr->symb_code_trans_vect[code - symbs_ptr->symb_code_trans_vect_start];
-            TRACE("symb_find_by_code vec %d -> %p\n", code, r);
+            TRACE_FA("vec %d -> %p", code, r);
             return r;
         }
     }
@@ -920,7 +920,7 @@ static YaepSymb *symb_find_by_code(int code)
     symb.u.term.code = code;
     YaepSymb*r =(YaepSymb*)*find_hash_table_entry(symbs_ptr->code_to_symb_tab, &symb, FALSE);
 
-    TRACE("symb_find_by_code hash %d -> %p\n", code, r);
+    TRACE_FA("hash %d -> %p", code, r);
 
     return r;
 }
@@ -954,7 +954,7 @@ static YaepSymb *symb_add_term(const char*name, int code)
     VLO_ADD_MEMORY(symbs_ptr->symbs_vlo, &result, sizeof(YaepSymb*));
     VLO_ADD_MEMORY(symbs_ptr->terms_vlo, &result, sizeof(YaepSymb*));
 
-    TRACE("symb_add_term %s %d -> %p\n", name, code, result);
+    TRACE_FA("%s %d -> %p", name, code, result);
 
     return result;
 }
@@ -985,7 +985,7 @@ static YaepSymb *symb_add_nonterm(const char *name)
     VLO_ADD_MEMORY(symbs_ptr->symbs_vlo, &result, sizeof(YaepSymb*));
     VLO_ADD_MEMORY(symbs_ptr->nonterms_vlo, &result, sizeof(YaepSymb*));
 
-    TRACE("symb_add_nonterm %s -> %p\n", name, result);
+    TRACE_FA("%s -> %p", name, result);
 
     return result;
 }
@@ -1000,7 +1000,7 @@ static YaepSymb *symb_get(int n)
     YaepSymb*symb =((YaepSymb**) VLO_BEGIN(symbs_ptr->symbs_vlo))[n];
     assert(symb->num == n);
 
-    TRACE("symb_get %d -> %p\n", n, symb);
+    TRACE_FA("%d -> %p", n, symb);
 
     return symb;
 }
@@ -1015,7 +1015,7 @@ static YaepSymb *term_get(int n)
     YaepSymb*symb =((YaepSymb**) VLO_BEGIN(symbs_ptr->terms_vlo))[n];
     assert(symb->term_p && symb->u.term.term_num == n);
 
-    TRACE("term_get %d -> %p\n", n, symb);
+    TRACE_FA("%d -> %p", n, symb);
 
     return symb;
 }
@@ -1030,7 +1030,7 @@ static YaepSymb *nonterm_get(int n)
     YaepSymb*symb =((YaepSymb**) VLO_BEGIN(symbs_ptr->nonterms_vlo))[n];
     assert(!symb->term_p && symb->u.nonterm.nonterm_num == n);
 
-    TRACE("nonterm_get %d -> %p\n", n, symb);
+    TRACE_FA("%d -> %p", n, symb);
 
     return symb;
 }
@@ -1078,7 +1078,7 @@ static void symb_finish_adding_terms()
         symbs_ptr->symb_code_trans_vect[symb->u.term.code - min_code] = symb;
     }
 
-    TRACE("symb_finish_adding_terms num_codes=%zu size=%zu\n", num_codes, vec_size);
+    TRACE_FA("num_codes=%zu size=%zu\n", num_codes, vec_size);
 }
 
 /* Free memory for symbols. */
@@ -1100,7 +1100,7 @@ static void symb_empty(YaepVocabulary *symbs)
     OS_EMPTY(symbs->symbs_os);
     symbs->n_nonterms = symbs->n_terms = 0;
 
-    TRACE("symb_empty %p\n" , symbs);
+    TRACE_FA("%p\n" , symbs);
 }
 
 /* Finalize work with symbols. */
@@ -1121,7 +1121,7 @@ static void symb_fin(YaepVocabulary *symbs)
     OS_DELETE(symbs_ptr->symbs_os);
     yaep_free(grammar->alloc, symbs);
 
-    TRACE("symb_fin %p\n" , symbs);
+    TRACE_FA("%p\n" , symbs);
 }
 
 
@@ -2311,21 +2311,15 @@ static void core_symb_vect_init()
 
     vlo_array_init();
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    core_symb_to_vect_tab =
-        create_hash_table(grammar->alloc, 3000, core_symb_vect_hash,
-                           core_symb_vect_eq);
+    core_symb_to_vect_tab = create_hash_table(grammar->alloc, 3000, core_symb_vect_hash, core_symb_vect_eq);
 #else
     VLO_CREATE(core_symb_table_vlo, grammar->alloc, 4096);
-    core_symb_table
-        =(YaepCoreSymbVect***) VLO_BEGIN(core_symb_table_vlo);
+    core_symb_table = (YaepCoreSymbVect***)VLO_BEGIN(core_symb_table_vlo);
     OS_CREATE(core_symb_tab_rows, grammar->alloc, 8192);
 #endif
 
-    transition_els_tab =
-        create_hash_table(grammar->alloc, 3000, transition_els_hash,
-                           transition_els_eq);
-    reduce_els_tab =
-        create_hash_table(grammar->alloc, 3000, reduce_els_hash, reduce_els_eq);
+    transition_els_tab = create_hash_table(grammar->alloc, 3000, transition_els_hash, transition_els_eq);
+    reduce_els_tab = create_hash_table(grammar->alloc, 3000, reduce_els_hash, reduce_els_eq);
 
     n_core_symb_pairs = n_core_symb_vect_len = 0;
     n_transition_vects = n_transition_vect_len = 0;
@@ -2343,11 +2337,14 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepCoreSymbVect*triple, int r
 
     if (triple->symb->cached_core_symb_vect != NULL
         && triple->symb->cached_core_symb_vect->set_core == triple->set_core)
+    {
         return &triple->symb->cached_core_symb_vect;
-    result =((YaepCoreSymbVect**)
-              find_hash_table_entry(core_symb_to_vect_tab, triple, reserv_p));
+    }
 
-    triple->symb->cached_core_symb_vect =*result;
+    result = ((YaepCoreSymbVect**)find_hash_table_entry(core_symb_to_vect_tab, triple, reserv_p));
+
+    triple->symb->cached_core_symb_vect = *result;
+
     return result;
 }
 
@@ -2395,19 +2392,24 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepSetCore*set_core, YaepSymb
 }
 #endif
 
-/* The following function returns the triple(if any) for given
-   SET_CORE and SYMB.*/
-static YaepCoreSymbVect *core_symb_vect_find(YaepSetCore*set_core, YaepSymb*symb)
+/* The following function returns the triple(if any) for given SET_CORE and SYMB. */
+static YaepCoreSymbVect *core_symb_vect_find(YaepSetCore *set_core, YaepSymb *symb)
 {
+    YaepCoreSymbVect *r;
+
 #ifdef USE_CORE_SYMB_HASH_TABLE
     YaepCoreSymbVect core_symb_vect;
 
     core_symb_vect.set_core = set_core;
     core_symb_vect.symb = symb;
-    return*core_symb_vect_addr_get(&core_symb_vect, FALSE);
+    r = *core_symb_vect_addr_get(&core_symb_vect, FALSE);
 #else
-    return*core_symb_vect_addr_get(set_core, symb);
+    r = *core_symb_vect_addr_get(set_core, symb);
 #endif
+
+    TRACE_FA("%p %s -> %p", set_core, symb->repr, r);
+
+    return r;
 }
 
 /* Add given triple(SET_CORE, TERM, ...) to the table and return
