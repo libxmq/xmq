@@ -580,14 +580,6 @@ static YaepVocabulary *symbs_ptr;
 static YaepTermStorage *term_sets_ptr;
 static YaepRuleStorage *rules_ptr;
 
-/* The following is set up the parser and used globally. */
-static int (*read_token)(YaepParseState *ps, void**attr);
-static void (*syntax_error)(int err_tok_num,
-                            void *err_tok_attr,
-                            int start_ignored_tok_num,
-                            void *start_ignored_tok_attr,
-                            int start_recovered_tok_num,
-                            void *start_recovered_tok_attr);
 static void*(*parse_alloc)(int nmemb);
 static void(*parse_free)(void *mem);
 
@@ -3054,7 +3046,7 @@ static void read_toks(YaepParseState *ps)
     int code;
     void *attr;
 
-    while((code = read_token(ps, &attr)) >= 0)
+    while((code = ps->read_token(ps, &attr)) >= 0)
     {
         tok_add(ps, code, attr);
     }
@@ -3952,15 +3944,15 @@ static void build_pl(YaepParseState *ps)
                 if (ps->grammar->error_recovery_p)
 		{
                     error_recovery(ps, &start, &stop);
-                    syntax_error(saved_tok_curr, toks[saved_tok_curr].attr,
-                                  start, toks[start].attr, stop,
-                                  toks[stop].attr);
+                    ps->syntax_error(saved_tok_curr, toks[saved_tok_curr].attr,
+                                     start, toks[start].attr, stop,
+                                     toks[stop].attr);
                     continue;
 		}
                 else
 		{
-                    syntax_error(saved_tok_curr, toks[saved_tok_curr].attr,
-                                  -1, NULL, -1, NULL);
+                    ps->syntax_error(saved_tok_curr, toks[saved_tok_curr].attr,
+                                     -1, NULL, -1, NULL);
                     break;
 		}
 	    }
@@ -5045,12 +5037,6 @@ static void parse_free_default(void *mem)
 int yaepParse(YaepParseState *ps, YaepGrammar *g)
 {
     ps->grammar = g;
-    int(*read)(YaepParseState *ps, void **attr) = ps->read_token;
-    void(*error)(int err_tok_num, void*err_tok_attr,
-                 int start_ignored_tok_num,
-                 void *start_ignored_tok_attr,
-                 int start_recovered_tok_num,
-                 void *start_recovered_tok_attr) = ps->syntax_error;
     void*(*alloc)(int nmemb) = ps->parse_alloc;
     void(*free)(void *mem) = ps->parse_free;
     YaepTreeNode **root = &ps->root;
@@ -5076,8 +5062,6 @@ int yaepParse(YaepParseState *ps, YaepGrammar *g)
     symbs_ptr = g->symbs_ptr;
     term_sets_ptr = g->term_sets_ptr;
     rules_ptr = g->rules_ptr;
-    read_token = read;
-    syntax_error = error;
     parse_alloc = alloc;
     parse_free = free;
    *root = NULL;
