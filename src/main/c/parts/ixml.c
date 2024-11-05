@@ -177,6 +177,7 @@ void free_ixml_terminal(IXMLTerminal *t);
 IXMLNonTerminal *new_ixml_nonterminal();
 IXMLNonTerminal *copy_ixml_nonterminal(IXMLNonTerminal *nt);
 void free_ixml_nonterminal(IXMLNonTerminal *t);
+void free_ixml_term(IXMLTerm *t);
 
 char *generate_rule_name(XMQParseState *state);
 void make_last_term_optional(XMQParseState *state);
@@ -1604,9 +1605,17 @@ void add_yaep_tmp_terminals_to_rule(XMQParseState *state, IXMLRule *rule)
         IXMLTerminal *t = (IXMLTerminal*)hashmap_get(state->ixml_terminals_map, te->name);
         if (t == NULL)
         {
+            // This terminal was not already in the map. Add it.
             add_yaep_terminal(state, te);
+            t = te;
         }
-        add_yaep_terminal_to_rule(state, te);
+        else
+        {
+            // This terminal was already in the map. Free the terminal and add a
+            // pointer the already stored termina to the rule.
+            free_ixml_terminal(te);
+        }
+        add_yaep_terminal_to_rule(state, t);
         state->ixml_tmp_terminals->elements[i] = NULL;
     }
 }
@@ -1643,6 +1652,7 @@ void free_ixml_rule(IXMLRule *r)
 {
     if (r->rule_name) free_ixml_nonterminal(r->rule_name);
     r->rule_name = NULL;
+//    vector_free_and_values(r->rhs, (FreeFuncPtr)free_ixml_term);
     vector_free(r->rhs);
     r->rhs = NULL;
     free(r);
@@ -1682,6 +1692,21 @@ void free_ixml_nonterminal(IXMLNonTerminal *nt)
     if (nt->name) free(nt->name);
     nt->name = NULL;
     free(nt);
+}
+
+void free_ixml_term(IXMLTerm *t)
+{
+    if (t->type == IXML_TERMINAL)
+    {
+        IXMLTerminal *te = (IXMLTerminal*)t;
+        free_ixml_terminal(te);
+    }
+    else if (t->type == IXML_NON_TERMINAL)
+    {
+        IXMLNonTerminal *nt = (IXMLNonTerminal*)t;
+        free_ixml_nonterminal(nt);
+    }
+    else assert(false);
 }
 
 char *generate_rule_name(XMQParseState *state)
@@ -1732,18 +1757,6 @@ void make_last_term_optional(XMQParseState *state)
 }
 
 #else
-
-// Empty function when XMQ_NO_IXML is defined.
-bool xmq_parse_ixml_grammar(YaepGrammar *g,
-                            struct yaep_tree_node **root,
-                            int *ambiguous,
-                            XMQDoc *doq,
-                            const char *start,
-                            const char *stop,
-                            bool build_xml_of_ixml)
-{
-    return false;
-}
 
 
 #endif // IXML_MODULE

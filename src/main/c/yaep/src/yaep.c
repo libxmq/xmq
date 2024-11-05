@@ -651,7 +651,7 @@ static hash_table_t set_term_lookahead_tab;	/* key is(core, distances, lookeahed
 
 /* The following two variables contains all input tokens and their
    number.  The variables can be read externally.*/
-static YaepTok*toks;
+static YaepTok *toks;
 static int toks_len;
 static int tok_curr;
 
@@ -665,7 +665,7 @@ static int n_all_sits;
 /* The following two dimensional array(the first dimension is context
    number, the second one is situation number) contains references to
    all possible situations.*/
-static YaepSituation***sit_table;
+static YaepSituation ***sit_table;
 
 /* The following vlo is indexed by situation context number and gives
    array which is indexed by situation number
@@ -1439,13 +1439,16 @@ static void rule_new_stop()
 
     OS_TOP_FINISH(rules_ptr->rules_os);
     OS_TOP_EXPAND(rules_ptr->rules_os, rules_ptr->curr_rule->rhs_len* sizeof(int));
-    rules_ptr->curr_rule->marks =(char*)calloc(rules_ptr->curr_rule->rhs_len, sizeof(1)); // IXML
-    rules_ptr->curr_rule->order =(int*) OS_TOP_BEGIN(rules_ptr->rules_os);
+    rules_ptr->curr_rule->order = (int*)OS_TOP_BEGIN(rules_ptr->rules_os);
     OS_TOP_FINISH(rules_ptr->rules_os);
     for(i = 0; i < rules_ptr->curr_rule->rhs_len; i++)
     {
         rules_ptr->curr_rule->order[i] = -1;
     }
+
+    OS_TOP_EXPAND(rules_ptr->rules_os, rules_ptr->curr_rule->rhs_len* sizeof(char));
+    rules_ptr->curr_rule->marks = (char*)OS_TOP_BEGIN(rules_ptr->rules_os);
+    OS_TOP_FINISH(rules_ptr->rules_os);
 }
 
 #ifndef NO_YAEP_DEBUG_PRINT
@@ -1932,13 +1935,16 @@ static void set_add_new_nonstart_sit(YaepSituation*sit, int parent)
       (situation, the corresponding distance) without duplicates
        because we also forms core_symb_vect at that time.*/
     for(i = new_n_start_sits; i < new_core->n_sits; i++)
+    {
         if (new_sits[i] == sit && new_core->parent_indexes[i] == parent)
+        {
             return;
+        }
+    }
     OS_TOP_EXPAND(set_sits_os, sizeof(YaepSituation*));
     new_sits = new_core->sits =(YaepSituation**) OS_TOP_BEGIN(set_sits_os);
     OS_TOP_EXPAND(set_parent_indexes_os, sizeof(int));
-    new_core->parent_indexes
-        =(int*) OS_TOP_BEGIN(set_parent_indexes_os) - new_n_start_sits;
+    new_core->parent_indexes = (int*)OS_TOP_BEGIN(set_parent_indexes_os) - new_n_start_sits;
     new_sits[new_core->n_sits++] = sit;
     new_core->parent_indexes[new_core->n_all_dists++] = parent;
     n_parent_indexes++;
@@ -2983,7 +2989,6 @@ yaep_read_grammar(YaepGrammar*g, int strict_p,
         rule_new_stop();
         // IXML
         rule->mark = mark;
-        rule->marks =(char*)calloc(rhs_len, sizeof(char));
         memcpy(rule->marks, marks, rhs_len);
 
         if (transl != NULL)
@@ -3997,9 +4002,16 @@ static void build_pl()
     {
         term = toks[tok_curr].symb;
         if (grammar->lookahead_level != 0)
-            lookahead_term_num =(tok_curr < toks_len - 1
-                                  ? toks[tok_curr +
-                                         1].symb->u.term.term_num : -1);
+        {
+            if (tok_curr < toks_len-1)
+            {
+                lookahead_term_num = toks[tok_curr+1].symb->u.term.term_num;
+            }
+            else
+            {
+                lookahead_term_num = -1;
+            }
+        }
 
 #ifndef NO_YAEP_DEBUG_PRINT
         if (grammar->debug_level > 2)
