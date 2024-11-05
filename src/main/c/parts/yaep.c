@@ -2910,9 +2910,6 @@ static YaepVocabulary *symbs_ptr;
 static YaepTermStorage *term_sets_ptr;
 static YaepRuleStorage *rules_ptr;
 
-static void*(*parse_alloc)(int nmemb);
-static void(*parse_free)(void *mem);
-
 /* The following variable is set being created.  It can be read
    externally.  It is defined only when new_set_ready_p is TRUE.*/
 static YaepSet *new_set;
@@ -6594,7 +6591,7 @@ static void print_parse(YaepParseState *ps, FILE* f, YaepTreeNode*root)
 
 /* The following function places translation NODE into *PLACE and
    creates alternative nodes if it is necessary. */
-static void place_translation(YaepTreeNode **place, YaepTreeNode *node)
+static void place_translation(YaepParseState *ps, YaepTreeNode **place, YaepTreeNode *node)
 {
     YaepTreeNode *alt, *next_alt;
 
@@ -6609,8 +6606,7 @@ static void place_translation(YaepTreeNode **place, YaepTreeNode *node)
 #ifndef NO_YAEP_DEBUG_PRINT
     n_parse_alt_nodes++;
 #endif
-    alt =(YaepTreeNode*)(*parse_alloc)(sizeof
-                                                   (YaepTreeNode));
+    alt =(YaepTreeNode*)(*ps->parse_alloc)(sizeof(YaepTreeNode));
     alt->type = YAEP_ALT;
     alt->val.alt.node = node;
     if ((*place)->type == YAEP_ALT)
@@ -6624,7 +6620,7 @@ static void place_translation(YaepTreeNode **place, YaepTreeNode *node)
         n_parse_alt_nodes++;
         next_alt = alt->val.alt.next
             =((YaepTreeNode*)
-              (*parse_alloc)(sizeof(YaepTreeNode)));
+              (*ps->parse_alloc)(sizeof(YaepTreeNode)));
         next_alt->type = YAEP_ALT;
         next_alt->val.alt.node =*place;
         next_alt->val.alt.next = NULL;
@@ -6634,18 +6630,20 @@ static void place_translation(YaepTreeNode **place, YaepTreeNode *node)
    TRACE_FA("ind %p %p", place, node);
 }
 
-static YaepTreeNode *copy_anode(YaepTreeNode**place,
-                                         YaepTreeNode*anode,
-                                         YaepRule*rule, int disp)
+static YaepTreeNode *copy_anode(YaepParseState *ps,
+                                YaepTreeNode **place,
+                                YaepTreeNode *anode,
+                                YaepRule *rule,
+                                int disp)
 {
     YaepTreeNode*node;
     int i;
 
     TRACE_F;
 
-    node =((YaepTreeNode*)(*parse_alloc)(sizeof(YaepTreeNode)
-                                                  + sizeof(YaepTreeNode*)
-                                                  *(rule->trans_len + 1)));
+    node = ((YaepTreeNode*)(*ps->parse_alloc)(sizeof(YaepTreeNode)
+                                              + sizeof(YaepTreeNode*)
+                                              *(rule->trans_len + 1)));
    *node =*anode;
     node->val.anode.children = ((YaepTreeNode**)((char*) node + sizeof(YaepTreeNode)));
     for(i = 0; i <= rule->trans_len; i++)
@@ -6653,7 +6651,7 @@ static YaepTreeNode *copy_anode(YaepTreeNode**place,
         node->val.anode.children[i] = anode->val.anode.children[i];
     }
     node->val.anode.children[disp] = NULL;
-    place_translation(place, node);
+    place_translation(ps, place, node);
 
     return node;
 }
@@ -6688,15 +6686,19 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
     case YAEP_NIL:
     case YAEP_ERROR:
     case YAEP_TERM:
-        if (parse_free != NULL)
+        if (ps->parse_free != NULL)
+        {
             VLO_ADD_MEMORY(tnodes_vlo, &node, sizeof(node));
+        }
        *cost = 0;
         return node;
     case YAEP_ANODE:
         if (node->val.anode.cost >= 0)
 	{
-            if (parse_free != NULL)
+            if (ps->parse_free != NULL)
+            {
                 VLO_ADD_MEMORY(tnodes_vlo, &node, sizeof(node));
+            }
             for(i = 0;(child = node->val.anode.children[i]) != NULL; i++)
 	    {
                 node->val.anode.children[i] = prune_to_minimal(ps, child, cost);
@@ -6709,8 +6711,10 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
     case YAEP_ALT:
         for(alt = node; alt != NULL; alt = next_alt)
 	{
-            if (parse_free != NULL)
+            if (ps->parse_free != NULL)
+            {
                 VLO_ADD_MEMORY(tnodes_vlo, &alt, sizeof(alt));
+            }
             next_alt = alt->val.alt.next;
             alt->val.alt.node = prune_to_minimal(ps, alt->val.alt.node, cost);
             if (alt == node || min_cost >*cost)
@@ -6736,7 +6740,7 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
 
 /* The following function traverses the translation collecting
    reference to memory which may not be freed.*/
-static void traverse_pruned_translation(YaepTreeNode *node)
+static void traverse_pruned_translation(YaepParseState *ps, YaepTreeNode *node)
 {
     YaepTreeNode*child;
     hash_table_entry_t*entry;
@@ -6744,10 +6748,10 @@ static void traverse_pruned_translation(YaepTreeNode *node)
 
 next:
     assert(node != NULL);
-    if (parse_free != NULL
-        &&*(entry =
-             find_hash_table_entry(reserv_mem_tab, node, TRUE)) == NULL)
-       *entry =(hash_table_entry_t) node;
+    if (ps->parse_free != NULL && *(entry = find_hash_table_entry(reserv_mem_tab, node, TRUE)) == NULL)
+    {
+       *entry = (hash_table_entry_t)node;
+    }
     switch(node->type)
     {
     case YAEP_NIL:
@@ -6755,18 +6759,21 @@ next:
     case YAEP_TERM:
         break;
     case YAEP_ANODE:
-        if (parse_free != NULL
-            &&*(entry = find_hash_table_entry(reserv_mem_tab,
-                                                node->val.anode.name,
-                                                TRUE)) == NULL)
-           *entry =(hash_table_entry_t) node->val.anode.name;
+        if (ps->parse_free != NULL && *(entry = find_hash_table_entry(reserv_mem_tab,
+                                                                      node->val.anode.name,
+                                                                      TRUE)) == NULL)
+        {
+            *entry =(hash_table_entry_t) node->val.anode.name;
+        }
         for(i = 0;(child = node->val.anode.children[i]) != NULL; i++)
-            traverse_pruned_translation(child);
+        {
+            traverse_pruned_translation(ps, child);
+        }
         assert(node->val.anode.cost < 0);
         node->val.anode.cost = -node->val.anode.cost - 1;
         break;
     case YAEP_ALT:
-        traverse_pruned_translation(node->val.alt.node);
+        traverse_pruned_translation(ps, node->val.alt.node);
         if ((node = node->val.alt.next) != NULL)
             goto next;
         break;
@@ -6785,17 +6792,16 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
     YaepTreeNode**node_ptr;
     int cost;
 
-    if (parse_free != NULL)
+    if (ps->parse_free != NULL)
     {
-        reserv_mem_tab =
-            create_hash_table(ps->grammar->alloc, toks_len* 4, reserv_mem_hash,
-                               reserv_mem_eq);
+        reserv_mem_tab = create_hash_table(ps->grammar->alloc, toks_len* 4, reserv_mem_hash,
+                                           reserv_mem_eq);
 
         VLO_CREATE(tnodes_vlo, ps->grammar->alloc, toks_len* 4* sizeof(void*));
     }
     root = prune_to_minimal(ps, root, &cost);
-    traverse_pruned_translation(root);
-    if (parse_free != NULL)
+    traverse_pruned_translation(ps, root);
+    if (ps->parse_free != NULL)
     {
         for(node_ptr =(YaepTreeNode**) VLO_BEGIN(tnodes_vlo);
              node_ptr <(YaepTreeNode**) VLO_BOUND(tnodes_vlo);
@@ -6807,9 +6813,9 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
 					      (*node_ptr)->val.anode.name,
 					       TRUE) == NULL)
                 {
-                   (*parse_free)((void*)(*node_ptr)->val.anode.name);
+                   (*ps->parse_free)((void*)(*node_ptr)->val.anode.name);
                 }
-               (*parse_free)(*node_ptr);
+               (*ps->parse_free)(*node_ptr);
             }
         VLO_DELETE(tnodes_vlo);
         delete_hash_table(reserv_mem_tab);
@@ -6896,10 +6902,10 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
     state->parent_disp = 0;
     state->anode = NULL;
     /* Create empty and error node:*/
-    empty_node =((YaepTreeNode*)(*parse_alloc)(sizeof(YaepTreeNode)));
+    empty_node =((YaepTreeNode*)(*ps->parse_alloc)(sizeof(YaepTreeNode)));
     empty_node->type = YAEP_NIL;
     empty_node->val.nil.used = 0;
-    error_node =((YaepTreeNode*)(*parse_alloc)(sizeof(YaepTreeNode)));
+    error_node =((YaepTreeNode*)(*ps->parse_alloc)(sizeof(YaepTreeNode)));
     error_node->type = YAEP_ERROR;
     error_node->val.error.used = 0;
     while(VLO_LENGTH(stack) != 0)
@@ -6946,8 +6952,7 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
 	    {
                 /* We do produce nothing but we should.  So write empty
                    node.*/
-                place_translation(parent_anode->val.anode.children +
-                                   parent_disp, empty_node);
+                place_translation(ps, parent_anode->val.anode.children + parent_disp, empty_node);
                 empty_node->val.nil.used = 1;
 	    }
             else if (anode != NULL)
@@ -6989,7 +6994,7 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
 		{
                     n_parse_term_nodes++;
                     node =((YaepTreeNode*)
-                           (*parse_alloc)(sizeof(YaepTreeNode)));
+                           (*ps->parse_alloc)(sizeof(YaepTreeNode)));
                     node->type = YAEP_TERM;
                     node->val.term.code = symb->u.term.code;
                     // IXML
@@ -7002,9 +7007,10 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
                     if (!ps->grammar->one_parse_p)
                         term_node_array[pl_ind] = node;
 		}
-                place_translation
-                   (anode != NULL ? anode->val.anode.children + disp
-                     : parent_anode->val.anode.children + parent_disp, node);
+                place_translation(ps,
+                                  anode != NULL ?
+                                  anode->val.anode.children + disp
+                                  : parent_anode->val.anode.children + parent_disp, node);
 	    }
             if (pos != 0)
                 state->pl_ind = pl_ind;
@@ -7117,7 +7123,7 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
                         state->pl_ind = sit_orig;
                         if (anode != NULL)
                             state->anode
-                                = copy_anode(parent_anode->val.anode.children
+                                = copy_anode(ps, parent_anode->val.anode.children
                                               + parent_disp, anode, rule, disp);
                         VLO_EXPAND(orig_states, sizeof(YaepInternalParseState*));
                        ((YaepInternalParseState**) VLO_BOUND(orig_states))[-1]
@@ -7155,7 +7161,7 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
                         n_parse_abstract_nodes++;
                         node
                             =((YaepTreeNode*)
-                              (*parse_alloc)(sizeof(YaepTreeNode)
+                              (*ps->parse_alloc)(sizeof(YaepTreeNode)
                                                + sizeof(YaepTreeNode*)
                                               *(sit_rule->trans_len + 1)));
                         state->anode = node;
@@ -7166,7 +7172,7 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
 			{
                             sit_rule->caller_anode
                                 =((char*)
-                                  (*parse_alloc)(strlen(sit_rule->anode) + 1));
+                                  (*ps->parse_alloc)(strlen(sit_rule->anode) + 1));
                             strcpy(sit_rule->caller_anode, sit_rule->anode);
 			}
                         node->val.anode.name = sit_rule->caller_anode;
@@ -7228,7 +7234,7 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
 			}
 #endif
 		    }
-                    place_translation(anode == NULL
+                    place_translation(ps, anode == NULL
                                        ? parent_anode->val.anode.children
                                        + parent_disp
                                        : anode->val.anode.children + disp,
@@ -7267,7 +7273,7 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
 		{
                     /* Empty rule should produce something not abtract
                        node.  So place empty node.*/
-                    place_translation(anode == NULL
+                    place_translation(ps, anode == NULL
                                        ? parent_anode->val.anode.children
                                        + parent_disp
                                        : anode->val.anode.children + disp,
@@ -7315,15 +7321,15 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
 #endif
 
     /* Free empty and error node if they have not been used*/
-    if (parse_free != NULL)
+    if (ps->parse_free != NULL)
     {
         if (!empty_node->val.nil.used)
 	{
-            parse_free(empty_node);
+            ps->parse_free(empty_node);
 	}
         if (!error_node->val.error.used)
 	{
-            parse_free(error_node);
+            ps->parse_free(error_node);
 	}
     }
 
@@ -7367,8 +7373,6 @@ static void parse_free_default(void *mem)
 int yaepParse(YaepParseState *ps, YaepGrammar *g)
 {
     ps->grammar = g;
-    void*(*alloc)(int nmemb) = ps->parse_alloc;
-    void(*free)(void *mem) = ps->parse_free;
     YaepTreeNode **root = &ps->root;
     int *ambiguous_p = &ps->ambiguous_p;
 
@@ -7376,24 +7380,22 @@ int yaepParse(YaepParseState *ps, YaepGrammar *g)
     int tab_collisions, tab_searches;
 
     /* Set up parse allocation*/
-    if (alloc == NULL)
+    if (ps->parse_alloc == NULL)
     {
-        if (free != NULL)
+        if (ps->parse_free != NULL)
 	{
             /* Cannot allocate memory with a null function*/
             return YAEP_NO_MEMORY;
 	}
         /* Set up defaults*/
-        alloc = parse_alloc_default;
-        free = parse_free_default;
+        ps->parse_alloc = parse_alloc_default;
+        ps->parse_free = parse_free_default;
     }
 
     assert(ps->grammar != NULL);
     symbs_ptr = g->symbs_ptr;
     term_sets_ptr = g->term_sets_ptr;
     rules_ptr = g->rules_ptr;
-    parse_alloc = alloc;
-    parse_free = free;
    *root = NULL;
    *ambiguous_p = FALSE;
     pl_init();
