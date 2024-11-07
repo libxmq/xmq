@@ -4756,11 +4756,8 @@ static void error_func_for_allocate(void *ps)
    yaep_error((YaepParseState*)ps, YAEP_NO_MEMORY, "no memory");
 }
 
-YaepGrammar *yaepNewGrammar(YaepParseRun *pr)
+YaepGrammar *yaepNewGrammar()
 {
-    YaepParseState *ps = (YaepParseState*)pr;
-    assert(CHECK_PARSE_STATE_MAGIC(ps));
-
     YaepAllocator *allocator;
 
     allocator = yaep_alloc_new(NULL, NULL, NULL, NULL);
@@ -4769,7 +4766,6 @@ YaepGrammar *yaepNewGrammar(YaepParseRun *pr)
         return NULL;
     }
     YaepGrammar *grammar = (YaepGrammar*)yaep_malloc(allocator, sizeof(*grammar));
-    ps->run.grammar = grammar;
 
     if (grammar == NULL)
     {
@@ -4781,7 +4777,8 @@ YaepGrammar *yaepNewGrammar(YaepParseRun *pr)
                       yaep_alloc_getuserptr(allocator));
     if (setjmp(error_longjump_buff) != 0)
     {
-        yaepFreeGrammar(pr, grammar);
+        //yaepFreeGrammar(pr, grammar);
+        assert(0);
         return NULL;
     }
     grammar->undefined_p = TRUE;
@@ -4802,16 +4799,20 @@ YaepGrammar *yaepNewGrammar(YaepParseRun *pr)
     return grammar;
 }
 
-YaepParseRun *yaepNewParseRun()
+YaepParseRun *yaepNewParseRun(YaepGrammar *g)
 {
     YaepParseState *ps = (YaepParseState*)calloc(1, sizeof(YaepParseState));
     INSTALL_PARSE_STATE_MAGIC(ps);
+
+    ps->run.grammar = g;
     return (YaepParseRun*)ps;
 }
 
-void yaepFreeParseRun(YaepParseRun *s)
+void yaepFreeParseRun(YaepParseRun *pr)
 {
-    free(s);
+    YaepParseState *ps = (YaepParseState*)pr;
+    assert(CHECK_PARSE_STATE_MAGIC(ps));
+    free(ps);
 }
 
 void yaepSetUserData(YaepGrammar *g, void *data)

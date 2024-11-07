@@ -32,7 +32,8 @@
 #ifndef YAEP_H
 #define YAEP_H
 
-#include <limits.h>
+#include<assert.h>
+#include<limits.h>
 
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
@@ -219,14 +220,13 @@ struct YaepTreeNode
   } val;
 };
 
-/* The following function creates a parse state. You will be able to
-   perform multiple concurrent parses over several cpu:s using a single grammar. */
-extern YaepParseRun *yaepNewParseRun();
+/* The following function creates an empty grammar. */
+extern YaepGrammar *yaepNewGrammar();
 
-/* The following function creates undefined grammar.  The function
-   returns NULL if there is no memory.  This function should be called
-   the first. */
-extern YaepGrammar *yaepNewGrammar(YaepParseRun *ps);
+/* The following function creates a parse run that uses the specified grammar.
+   Each concurrent parse using the shared grammar needs a run to store the
+   parse progress/state. */
+extern YaepParseRun *yaepNewParseRun(YaepGrammar *g);
 
 /* Set a pointer to a user structure that is available when callbacks are invoked,
    such as read_token when parsing. */
