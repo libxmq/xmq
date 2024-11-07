@@ -115,8 +115,8 @@ struct XMQDoc
     XMQNode root_; // The root node.
     XMQContentType original_content_type_; // Remember if this document was created from xmq/xml etc.
     size_t original_size_; // Remember the original source size of the document it was loaded from.
-    void *yaep_parse_state_; // Cached ixml parse state.
-    void *yaep_grammar_; // Cached ixml grammar.
+    void *yaep_parse_run_; // The currently executing parse variables.
+    void *yaep_grammar_; // The yaep grammar to be used by the run.
 };
 
 #ifdef __cplusplus
@@ -574,8 +574,8 @@ void print_quote(XMQPrintState *ps, XMQColor c, const char *start, const char *s
 
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
-struct YaepParseState;
-typedef struct YaepParseState YaepParseState;
+struct YaepParseRun;
+typedef struct YaepParseRun YaepParseRun;
 struct yaep_tree_node;
 
 bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar, const char *start, const char *stop);
@@ -618,7 +618,7 @@ bool debug_enabled();
 void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 void xmq_set_yaep_grammar(XMQDoc *doc, YaepGrammar *g);
 YaepGrammar *xmq_get_yaep_grammar(XMQDoc *doc);
-YaepParseState *xmq_get_yaep_parse_state(XMQDoc *doc);
+YaepParseRun *xmq_get_yaep_parse_run(XMQDoc *doc);
 
 void set_node_namespace(XMQParseState *state, xmlNodePtr node, const char *node_name);
 
