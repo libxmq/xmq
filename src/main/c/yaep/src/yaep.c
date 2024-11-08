@@ -1292,12 +1292,12 @@ static int term_set_insert(YaepParseState *ps, term_set_el_t *set)
 }
 
 /* The following function returns set which is in the table with number NUM.*/
-static term_set_el_t *term_set_from_table(int num)
+static term_set_el_t *term_set_from_table(YaepParseState *ps, int num)
 {
     assert(num >= 0);
-    assert((long unsigned int)num < VLO_LENGTH(state__->run.grammar->term_sets_ptr->tab_term_set_vlo) / sizeof(YaepTabTermSet*));
+    assert((long unsigned int)num < VLO_LENGTH(ps->run.grammar->term_sets_ptr->tab_term_set_vlo) / sizeof(YaepTabTermSet*));
 
-    return ((YaepTabTermSet**)VLO_BEGIN(state__->run.grammar->term_sets_ptr->tab_term_set_vlo))[num]->set;
+    return ((YaepTabTermSet**)VLO_BEGIN(ps->run.grammar->term_sets_ptr->tab_term_set_vlo))[num]->set;
 }
 
 /* Print terminal SET into file F. */
@@ -1535,7 +1535,7 @@ static int sit_set_lookahead(YaepParseState *ps, YaepSituation *sit)
         }
         else if (ps->run.grammar->lookahead_level != 0)
         {
-            term_set_or(sit->lookahead, term_set_from_table(sit->context), state__->run.grammar->symbs_ptr->nn_terms);
+            term_set_or(sit->lookahead, term_set_from_table(ps, sit->context), state__->run.grammar->symbs_ptr->nn_terms);
         }
         return TRUE;
     }
