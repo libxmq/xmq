@@ -562,7 +562,9 @@ struct YaepParseState
 {
     YaepParseRun run;
     int magic_cookie; // Must be set to 736268273 when the state is created.
-    int gurka;
+
+   /* The following variable is set being created. It is defined only when new_set_ready_p is TRUE. */
+    YaepSet *new_set;
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -589,10 +591,6 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 
 // Temporary global variable while migrating to thread safe code.
 static YaepParseState *state__;
-
-/* The following variable is set being created.  It can be read
-   externally.  It is defined only when new_set_ready_p is TRUE.*/
-static YaepSet *new_set;
 
 /* The following variable is always set core of set being created.  It
    can be read externally.  Member core of new_set has always the
@@ -1809,9 +1807,9 @@ static void set_init(YaepParseState *ps, int n_toks)
 }
 
 /* The following function starts forming of new set.*/
-static void set_new_start()
+static void set_new_start(YaepParseState *ps)
 {
-    new_set = NULL;
+    ps->new_set = NULL;
     new_core = NULL;
     new_set_ready_p = FALSE;
     new_n_start_sits = 0;
@@ -1916,26 +1914,26 @@ static int set_insert()
     int result;
 
     OS_TOP_EXPAND(sets_os, sizeof(YaepSet));
-    new_set =(YaepSet*) OS_TOP_BEGIN(sets_os);
-    new_set->dists = new_dists;
+    state__->new_set = (YaepSet*)OS_TOP_BEGIN(sets_os);
+    state__->new_set->dists = new_dists;
     OS_TOP_EXPAND(set_cores_os, sizeof(YaepSetCore));
-    new_set->core = new_core =(YaepSetCore*) OS_TOP_BEGIN(set_cores_os);
+    state__->new_set->core = new_core =(YaepSetCore*) OS_TOP_BEGIN(set_cores_os);
     new_core->n_start_sits = new_n_start_sits;
     new_core->sits = new_sits;
     new_set_ready_p = TRUE;
 #ifdef USE_SET_HASH_TABLE
     /* Insert dists into table.*/
-    setup_set_dists_hash(new_set);
-    entry = find_hash_table_entry(set_dists_tab, new_set, TRUE);
+    setup_set_dists_hash(state__->new_set);
+    entry = find_hash_table_entry(set_dists_tab, state__->new_set, TRUE);
     if (*entry != NULL)
     {
-        new_dists = new_set->dists =((YaepSet*)*entry)->dists;
+        new_dists = state__->new_set->dists =((YaepSet*)*entry)->dists;
         OS_TOP_NULLIFY(set_dists_os);
     }
     else
     {
         OS_TOP_FINISH(set_dists_os);
-       *entry =(hash_table_entry_t) new_set;
+       *entry =(hash_table_entry_t)state__->new_set;
         n_set_dists++;
         n_set_dists_len += new_n_start_sits;
     }
@@ -1945,12 +1943,12 @@ static int set_insert()
     n_set_dists_len += new_n_start_sits;
 #endif
     /* Insert set core into table.*/
-    setup_set_core_hash(new_set);
-    entry = find_hash_table_entry(set_core_tab, new_set, TRUE);
+    setup_set_core_hash(state__->new_set);
+    entry = find_hash_table_entry(set_core_tab, state__->new_set, TRUE);
     if (*entry != NULL)
     {
         OS_TOP_NULLIFY(set_cores_os);
-        new_set->core = new_core =((YaepSet*)*entry)->core;
+        state__->new_set->core = new_core =((YaepSet*)*entry)->core;
         new_sits = new_core->sits;
         OS_TOP_NULLIFY(set_sits_os);
         result = FALSE;
@@ -1962,23 +1960,23 @@ static int set_insert()
         new_core->n_sits = new_n_start_sits;
         new_core->n_all_dists = new_n_start_sits;
         new_core->parent_indexes = NULL;
-       *entry =(hash_table_entry_t) new_set;
+       *entry =(hash_table_entry_t)state__->new_set;
         n_set_core_start_sits += new_n_start_sits;
         result = TRUE;
     }
 #ifdef USE_SET_HASH_TABLE
     /* Insert set into table.*/
-    entry = find_hash_table_entry(set_tab, new_set, TRUE);
+    entry = find_hash_table_entry(set_tab, state__->new_set, TRUE);
     if (*entry == NULL)
     {
-       *entry =(hash_table_entry_t) new_set;
+       *entry =(hash_table_entry_t)state__->new_set;
         n_sets++;
         n_sets_start_sits += new_n_start_sits;
         OS_TOP_FINISH(sets_os);
     }
     else
     {
-        new_set =(YaepSet*)*entry;
+        state__->new_set = (YaepSet*)*entry;
         OS_TOP_NULLIFY(sets_os);
     }
 #else
@@ -3188,7 +3186,7 @@ static void build_start_set(YaepParseState *ps)
     term_set_el_t*context_set;
     int context;
 
-    set_new_start();
+    set_new_start(ps);
     if (ps->run.grammar->lookahead_level <= 1)
         context = 0;
     else
@@ -3207,14 +3205,14 @@ static void build_start_set(YaepParseState *ps)
     }
     if (!set_insert()) assert(FALSE);
     expand_new_start_set(ps);
-    pl[0] = new_set;
+    pl[0] = state__->new_set;
 
     if (ps->run.grammar->debug_level > 2)
     {
         fprintf(stderr, "\nParsing start...\n");
         if (ps->run.grammar->debug_level > 3)
         {
-            set_print(ps, stderr, new_set, 0, ps->run.grammar->debug_level > 4, ps->run.grammar->debug_level > 5);
+            set_print(ps, stderr, state__->new_set, 0, ps->run.grammar->debug_level > 4, ps->run.grammar->debug_level > 5);
         }
     }
 }
@@ -3238,7 +3236,7 @@ static void build_new_set(YaepParseState *ps,
     local_lookahead_level =(lookahead_term_num < 0
                              ? 0 : ps->run.grammar->lookahead_level);
     set_core = set->core;
-    set_new_start();
+    set_new_start(ps);
     transitions = &core_symb_vect->transitions;
 
     empty_sit_dist_set();
@@ -3656,14 +3654,14 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             fprintf(stderr, "++++Making error shift in set=%d\n", pl_curr);
 #endif
         build_new_set(ps, set, core_symb_vect, -1);
-        pl[++pl_curr] = new_set;
+        pl[++pl_curr] = ps->new_set;
 #ifndef NO_YAEP_DEBUG_PRINT
         if (ps->run.grammar->debug_level > 2)
 	{
             fprintf(stderr, "++Trying new set=%d\n", pl_curr);
             if (ps->run.grammar->debug_level > 3)
 	    {
-                set_print(ps, stderr, new_set, pl_curr, ps->run.grammar->debug_level > 4,
+                set_print(ps, stderr, ps->new_set, pl_curr, ps->run.grammar->debug_level > 4,
                           ps->run.grammar->debug_level > 5);
                 fprintf(stderr, "\n");
 	    }
@@ -3720,14 +3718,14 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         /* Shift the found token.*/
         lookahead_term_num =(tok_curr + 1 < toks_len
                               ? toks[tok_curr + 1].symb->u.term.term_num : -1);
-        build_new_set(ps, new_set, core_symb_vect, lookahead_term_num);
-        pl[++pl_curr] = new_set;
+        build_new_set(ps, ps->new_set, core_symb_vect, lookahead_term_num);
+        pl[++pl_curr] = ps->new_set;
 #ifndef NO_YAEP_DEBUG_PRINT
         if (ps->run.grammar->debug_level > 3)
 	{
             fprintf(stderr, "++++++++Building new set=%d\n", pl_curr);
             if (ps->run.grammar->debug_level > 3)
-                set_print(ps, stderr, new_set, pl_curr, ps->run.grammar->debug_level > 4,
+                set_print(ps, stderr, ps->new_set, pl_curr, ps->run.grammar->debug_level > 4,
                           ps->run.grammar->debug_level > 5);
 	}
 #endif
@@ -3771,8 +3769,8 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             lookahead_term_num =(tok_curr + 1 < toks_len
                                   ? toks[tok_curr + 1].symb->u.term.term_num
                                   : -1);
-            build_new_set(ps, new_set, core_symb_vect, lookahead_term_num);
-            pl[++pl_curr] = new_set;
+            build_new_set(ps, ps->new_set, core_symb_vect, lookahead_term_num);
+            pl[++pl_curr] = ps->new_set;
 	}
         if (n_matched_toks >= ps->run.grammar->recovery_token_matches
             || tok_curr >= toks_len)
@@ -3905,7 +3903,7 @@ static void build_pl(YaepParseState *ps)
 	}
 #endif
         set = pl[pl_curr];
-        new_set = NULL;
+        ps->new_set = NULL;
 #ifdef USE_SET_HASH_TABLE
         OS_TOP_EXPAND(set_term_lookahead_os,
                        sizeof(YaepSetTermLookAhead));
@@ -3933,7 +3931,7 @@ static void build_pl(YaepParseState *ps)
                         (tab_set,
                          ((YaepSetTermLookAhead*)*entry)->place[i]))
                 {
-                    new_set = tab_set;
+                    ps->new_set = tab_set;
                     n_goto_successes++;
                     break;
                 }
@@ -3946,7 +3944,7 @@ static void build_pl(YaepParseState *ps)
 	}
 
 #endif
-        if (new_set == NULL)
+        if (ps->new_set == NULL)
 	{
             core_symb_vect = core_symb_vect_find(set->core, term);
             if (core_symb_vect == NULL)
@@ -3976,19 +3974,19 @@ static void build_pl(YaepParseState *ps)
 #ifdef USE_SET_HASH_TABLE
             /* Save(set, term, lookahead) -> new_set in the table. */
             i =((YaepSetTermLookAhead*)*entry)->curr;
-           ((YaepSetTermLookAhead*)*entry)->result[i] = new_set;
+           ((YaepSetTermLookAhead*)*entry)->result[i] = ps->new_set;
            ((YaepSetTermLookAhead*)*entry)->place[i] = pl_curr;
            ((YaepSetTermLookAhead*)*entry)->lookahead = lookahead_term_num;
            ((YaepSetTermLookAhead*)*entry)->curr = (i + 1) % MAX_CACHED_GOTO_RESULTS;
 #endif
 	}
-        pl[++pl_curr] = new_set;
+        pl[++pl_curr] = ps->new_set;
 #ifndef NO_YAEP_DEBUG_PRINT
         if (ps->run.grammar->debug_level > 2)
 	{
             fprintf(stderr, "New set=%d\n", pl_curr);
             if (ps->run.grammar->debug_level > 3)
-                set_print(ps, stderr, new_set, pl_curr, ps->run.grammar->debug_level > 4,
+                set_print(ps, stderr, ps->new_set, pl_curr, ps->run.grammar->debug_level > 4,
                           ps->run.grammar->debug_level > 5);
 	}
 #endif
