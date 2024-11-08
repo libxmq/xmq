@@ -3010,6 +3010,23 @@ struct YaepParseState
        the following os. */
     os_t vect_els_os;
 
+#ifdef USE_CORE_SYMB_HASH_TABLE
+    hash_table_t core_symb_to_vect_tab;	/* key is set_core and symb.*/
+#else
+    /* The following two variables contains table(set core,
+       symbol)->core_symb_vect implemented as two dimensional array.*/
+    /* The following object contains pointers to the table rows for each
+       set core.*/
+    vlo_t core_symb_table_vlo;
+
+    /* The following is always start of the previous object.*/
+    YaepCoreSymbVect ***core_symb_table;
+
+    /* The following contains rows of the table.  The element in the rows
+       are indexed by symbol number.*/
+    os_t core_symb_tab_rows;
+#endif
+
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -3036,23 +3053,6 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 
 // Temporary global variable while migrating to thread safe code.
 static YaepParseState *state__;
-
-#ifdef USE_CORE_SYMB_HASH_TABLE
-static hash_table_t core_symb_to_vect_tab;	/* key is set_core and symb.*/
-#else
-/* The following two variables contains table(set core,
-   symbol)->core_symb_vect implemented as two dimensional array.*/
-/* The following object contains pointers to the table rows for each
-   set core.*/
-static vlo_t core_symb_table_vlo;
-
-/* The following is always start of the previous object.*/
-static YaepCoreSymbVect ***core_symb_table;
-
-/* The following contains rows of the table.  The element in the rows
-   are indexed by symbol number.*/
-static os_t core_symb_tab_rows;
-#endif
 
 /* The following tables contains references for core_symb_vect which
   (through(transitive) transitions and reduces correspondingly)
@@ -4491,11 +4491,11 @@ static void core_symb_vect_init(YaepParseState *ps)
 
     vlo_array_init(ps);
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    core_symb_to_vect_tab = create_hash_table(ps->run.grammar->alloc, 3000, core_symb_vect_hash, core_symb_vect_eq);
+    ps->core_symb_to_vect_tab = create_hash_table(ps->run.grammar->alloc, 3000, core_symb_vect_hash, core_symb_vect_eq);
 #else
-    VLO_CREATE(core_symb_table_vlo, ps->run.grammar->alloc, 4096);
-    core_symb_table = (YaepCoreSymbVect***)VLO_BEGIN(core_symb_table_vlo);
-    OS_CREATE(core_symb_tab_rows, ps->run.grammar->alloc, 8192);
+    VLO_CREATE(ps->core_symb_table_vlo, ps->run.grammar->alloc, 4096);
+    ps->core_symb_table = (YaepCoreSymbVect***)VLO_BEGIN(ps->core_symb_table_vlo);
+    OS_CREATE(ps->core_symb_tab_rows, ps->run.grammar->alloc, 8192);
 #endif
 
     transition_els_tab = create_hash_table(ps->run.grammar->alloc, 3000, transition_els_hash, transition_els_eq);
@@ -4521,7 +4521,7 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepCoreSy
         return &triple->symb->cached_core_symb_vect;
     }
 
-    result = ((YaepCoreSymbVect**)find_hash_table_entry(core_symb_to_vect_tab, triple, reserv_p));
+    result = ((YaepCoreSymbVect**)find_hash_table_entry(ps->core_symb_to_vect_tab, triple, reserv_p));
 
     triple->symb->cached_core_symb_vect = *result;
 
@@ -4536,33 +4536,33 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepSetCor
 {
     YaepCoreSymbVect***core_symb_vect_ptr;
 
-    core_symb_vect_ptr = core_symb_table + set_core->num;
+    core_symb_vect_ptr = ps->core_symb_table + set_core->num;
 
-    if ((char*) core_symb_vect_ptr >=(char*) VLO_BOUND(core_symb_table_vlo))
+    if ((char*) core_symb_vect_ptr >=(char*) VLO_BOUND(ps->core_symb_table_vlo))
     {
         YaepCoreSymbVect***ptr,***bound;
         int diff, i;
 
         diff =((char*) core_symb_vect_ptr
-                -(char*) VLO_BOUND(core_symb_table_vlo));
+                -(char*) VLO_BOUND(ps->core_symb_table_vlo));
         diff += sizeof(YaepCoreSymbVect**);
         if (diff == sizeof(YaepCoreSymbVect**))
             diff*= 10;
 
-        VLO_EXPAND(core_symb_table_vlo, diff);
-        core_symb_table
-            =(YaepCoreSymbVect***) VLO_BEGIN(core_symb_table_vlo);
-        core_symb_vect_ptr = core_symb_table + set_core->num;
-        bound =(YaepCoreSymbVect***) VLO_BOUND(core_symb_table_vlo);
+        VLO_EXPAND(ps->core_symb_table_vlo, diff);
+        ps->core_symb_table
+            =(YaepCoreSymbVect***) VLO_BEGIN(ps->core_symb_table_vlo);
+        core_symb_vect_ptr = ps->core_symb_table + set_core->num;
+        bound =(YaepCoreSymbVect***) VLO_BOUND(ps->core_symb_table_vlo);
 
         ptr = bound - diff / sizeof(YaepCoreSymbVect**);
         while(ptr < bound)
         {
-            OS_TOP_EXPAND(core_symb_tab_rows,
+            OS_TOP_EXPAND(ps->core_symb_tab_rows,
                           (ps->run.grammar->symbs_ptr->nn_terms + ps->run.grammar->symbs_ptr->n_nonterms)
                           * sizeof(YaepCoreSymbVect*));
-           *ptr =(YaepCoreSymbVect**) OS_TOP_BEGIN(core_symb_tab_rows);
-            OS_TOP_FINISH(core_symb_tab_rows);
+           *ptr =(YaepCoreSymbVect**) OS_TOP_BEGIN(ps->core_symb_tab_rows);
+            OS_TOP_FINISH(ps->core_symb_tab_rows);
             for(i = 0; i < ps->run.grammar->symbs_ptr->nn_terms + ps->run.grammar->symbs_ptr->n_nonterms; i++)
                (*ptr)[i] = NULL;
             ptr++;
@@ -4719,10 +4719,10 @@ static void core_symb_vect_fin(YaepParseState *ps)
     delete_hash_table(reduce_els_tab);
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    delete_hash_table(core_symb_to_vect_tab);
+    delete_hash_table(ps->core_symb_to_vect_tab);
 #else
-    OS_DELETE(core_symb_tab_rows);
-    VLO_DELETE(core_symb_table_vlo);
+    OS_DELETE(ps->core_symb_tab_rows);
+    VLO_DELETE(ps->core_symb_table_vlo);
 #endif
     vlo_array_fin();
     OS_DELETE(ps->vect_els_os);
