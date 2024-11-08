@@ -2946,6 +2946,14 @@ struct YaepParseState
     /* Container for triples(set, term, lookahead. */
     os_t set_term_lookahead_os;
 
+    /* The following 3 tables contain references for sets which refers
+       for set cores or distances or both which are in the tables.*/
+    hash_table_t set_core_tab;	/* key is only start situations.*/
+    hash_table_t set_dists_tab;	/* key is distances.*/
+    hash_table_t set_tab;	/* key is(core, distances).*/
+
+    /* Table for triples(set, term, lookahead). */
+    hash_table_t set_term_lookahead_tab;	/* key is(core, distances, lookeahed).*/
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -2973,13 +2981,6 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 // Temporary global variable while migrating to thread safe code.
 static YaepParseState *state__;
 
-/* The following 3 tables contain references for sets which refers
-   for set cores or distances or both which are in the tables.*/
-static hash_table_t set_core_tab;	/* key is only start situations.*/
-static hash_table_t set_dists_tab;	/* key is distances.*/
-static hash_table_t set_tab;	/* key is(core, distances).*/
-/* Table for triples(set, term, lookahead). */
-static hash_table_t set_term_lookahead_tab;	/* key is(core, distances, lookeahed).*/
 
 
 /* The following two variables contains all input tokens and their
@@ -4119,11 +4120,11 @@ static void set_init(YaepParseState *ps, int n_toks)
     OS_CREATE(ps->set_dists_os, ps->run.grammar->alloc, 2048);
     OS_CREATE(ps->sets_os, ps->run.grammar->alloc, 0);
     OS_CREATE(ps->set_term_lookahead_os, ps->run.grammar->alloc, 0);
-    set_core_tab = create_hash_table(ps->run.grammar->alloc, 2000, set_core_hash, set_core_eq);
-    set_dists_tab = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, dists_hash, dists_eq);
-    set_tab = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
+    ps->set_core_tab = create_hash_table(ps->run.grammar->alloc, 2000, set_core_hash, set_core_eq);
+    ps->set_dists_tab = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, dists_hash, dists_eq);
+    ps->set_tab = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
                                 set_core_dists_hash, set_core_dists_eq);
-    set_term_lookahead_tab = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
+    ps->set_term_lookahead_tab = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
                                                set_term_lookahead_hash, set_term_lookahead_eq);
     ps->n_set_cores = ps->n_set_core_start_sits = 0;
     ps->n_set_dists = ps->n_set_dists_len = ps->n_parent_indexes = 0;
@@ -4250,7 +4251,7 @@ static int set_insert(YaepParseState *ps)
 #ifdef USE_SET_HASH_TABLE
     /* Insert dists into table.*/
     setup_set_dists_hash(ps->new_set);
-    entry = find_hash_table_entry(set_dists_tab, ps->new_set, TRUE);
+    entry = find_hash_table_entry(ps->set_dists_tab, ps->new_set, TRUE);
     if (*entry != NULL)
     {
         ps->new_dists = ps->new_set->dists =((YaepSet*)*entry)->dists;
@@ -4270,7 +4271,7 @@ static int set_insert(YaepParseState *ps)
 #endif
     /* Insert set core into table.*/
     setup_set_core_hash(ps->new_set);
-    entry = find_hash_table_entry(set_core_tab, ps->new_set, TRUE);
+    entry = find_hash_table_entry(ps->set_core_tab, ps->new_set, TRUE);
     if (*entry != NULL)
     {
         OS_TOP_NULLIFY(ps->set_cores_os);
@@ -4292,7 +4293,7 @@ static int set_insert(YaepParseState *ps)
     }
 #ifdef USE_SET_HASH_TABLE
     /* Insert set into table.*/
-    entry = find_hash_table_entry(set_tab, ps->new_set, TRUE);
+    entry = find_hash_table_entry(ps->set_tab, ps->new_set, TRUE);
     if (*entry == NULL)
     {
        *entry =(hash_table_entry_t)ps->new_set;
@@ -4323,10 +4324,10 @@ static void set_new_core_stop(YaepParseState *ps)
 static void set_fin(YaepParseState *ps)
 {
     sit_dist_set_fin(ps);
-    delete_hash_table(set_term_lookahead_tab);
-    delete_hash_table(set_tab);
-    delete_hash_table(set_dists_tab);
-    delete_hash_table(set_core_tab);
+    delete_hash_table(ps->set_term_lookahead_tab);
+    delete_hash_table(ps->set_tab);
+    delete_hash_table(ps->set_dists_tab);
+    delete_hash_table(ps->set_core_tab);
     OS_DELETE(ps->set_term_lookahead_os);
     OS_DELETE(ps->sets_os);
     OS_DELETE(ps->set_parent_indexes_os);
@@ -6235,7 +6236,7 @@ static void build_pl(YaepParseState *ps)
         for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
             new_set_term_lookahead->result[i] = NULL;
         new_set_term_lookahead->curr = 0;
-        entry = find_hash_table_entry(set_term_lookahead_tab, new_set_term_lookahead, TRUE);
+        entry = find_hash_table_entry(ps->set_term_lookahead_tab, new_set_term_lookahead, TRUE);
         if (*entry != NULL)
 	{
             YaepSet*tab_set;
