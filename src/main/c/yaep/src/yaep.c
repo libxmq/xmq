@@ -668,6 +668,18 @@ struct YaepParseState
     int n_transition_vects, n_transition_vect_len;
     int n_reduce_vects, n_reduce_vect_len;
 
+    /* All triples(set core, symbol, vect) are placed in the following object. */
+    os_t core_symb_vect_os;
+
+    /* Pointers to triples(set core, symbol, vect) being formed are
+       placed in the following object. */
+    vlo_t new_core_symb_vect_vlo;
+
+    /* All elements of vectors in the table(see
+       (transitive_)transition_els_tab and reduce_els_tab) are placed in
+       the following os. */
+    os_t vect_els_os;
+
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -694,20 +706,6 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 
 // Temporary global variable while migrating to thread safe code.
 static YaepParseState *state__;
-
-
-/* All triples(set core, symbol, vect) are placed in the following
-   object.*/
-static os_t core_symb_vect_os;
-
-/* Pointers to triples(set core, symbol, vect) being formed are
-   placed in the following object.*/
-static vlo_t new_core_symb_vect_vlo;
-
-/* All elements of vectors in the table(see
-  (transitive_)transition_els_tab and reduce_els_tab) are placed in
-   the following os.*/
-static os_t vect_els_os;
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
 static hash_table_t core_symb_to_vect_tab;	/* key is set_core and symb.*/
@@ -2157,9 +2155,9 @@ static int reduce_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 /* Initialize work with the triples(set core, symbol, vector).*/
 static void core_symb_vect_init(YaepParseState *ps)
 {
-    OS_CREATE(core_symb_vect_os, ps->run.grammar->alloc, 0);
-    VLO_CREATE(new_core_symb_vect_vlo, ps->run.grammar->alloc, 0);
-    OS_CREATE(vect_els_os, ps->run.grammar->alloc, 0);
+    OS_CREATE(ps->core_symb_vect_os, ps->run.grammar->alloc, 0);
+    VLO_CREATE(ps->new_core_symb_vect_vlo, ps->run.grammar->alloc, 0);
+    OS_CREATE(ps->vect_els_os, ps->run.grammar->alloc, 0);
 
     vlo_array_init(ps);
 #ifdef USE_CORE_SYMB_HASH_TABLE
@@ -2273,11 +2271,11 @@ static YaepCoreSymbVect *core_symb_vect_new(YaepParseState *ps, YaepSetCore*set_
     vlo_t*vlo_ptr;
 
     /* Create table element.*/
-    OS_TOP_EXPAND(core_symb_vect_os, sizeof(YaepCoreSymbVect));
-    triple =((YaepCoreSymbVect*) OS_TOP_BEGIN(core_symb_vect_os));
+    OS_TOP_EXPAND(ps->core_symb_vect_os, sizeof(YaepCoreSymbVect));
+    triple =((YaepCoreSymbVect*) OS_TOP_BEGIN(ps->core_symb_vect_os));
     triple->set_core = set_core;
     triple->symb = symb;
-    OS_TOP_FINISH(core_symb_vect_os);
+    OS_TOP_FINISH(ps->core_symb_vect_os);
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
     addr = core_symb_vect_addr_get(ps, triple, TRUE);
@@ -2296,7 +2294,7 @@ static YaepCoreSymbVect *core_symb_vect_new(YaepParseState *ps, YaepSetCore*set_
     vlo_ptr = vlo_array_el(triple->reduces.intern);
     triple->reduces.len = 0;
     triple->reduces.els =(int*) VLO_BEGIN(*vlo_ptr);
-    VLO_ADD_MEMORY(new_core_symb_vect_vlo, &triple,
+    VLO_ADD_MEMORY(ps->new_core_symb_vect_vlo, &triple,
                     sizeof(YaepCoreSymbVect*));
     ps->n_core_symb_pairs++;
     return triple;
@@ -2332,8 +2330,9 @@ static void core_symb_vect_new_add_reduce_el(YaepParseState *ps,
 
 /* Insert vector VEC from CORE_SYMB_VECT into table TAB.  Update
    *N_VECTS and INT*N_VECT_LEN if it is a new vector in the table. */
-static void process_core_symb_vect_el(YaepCoreSymbVect*core_symb_vect,
-                                      YaepVect*vec,
+static void process_core_symb_vect_el(YaepParseState *ps,
+                                      YaepCoreSymbVect *core_symb_vect,
+                                      YaepVect *vec,
                                       hash_table_t *tab,
                                       int *n_vects,
                                       int *n_vect_len)
@@ -2353,9 +2352,9 @@ static void process_core_symb_vect_el(YaepCoreSymbVect*core_symb_vect,
         else
 	{
            *entry =(hash_table_entry_t) core_symb_vect;
-            OS_TOP_ADD_MEMORY(vect_els_os, vec->els, vec->len* sizeof(int));
-            vec->els =(int*) OS_TOP_BEGIN(vect_els_os);
-            OS_TOP_FINISH(vect_els_os);
+            OS_TOP_ADD_MEMORY(ps->vect_els_os, vec->els, vec->len* sizeof(int));
+            vec->els =(int*) OS_TOP_BEGIN(ps->vect_els_os);
+            OS_TOP_FINISH(ps->vect_els_os);
            (*n_vects)++;
            *n_vect_len += vec->len;
 	}
@@ -2368,23 +2367,23 @@ static void core_symb_vect_new_all_stop(YaepParseState *ps)
 {
     YaepCoreSymbVect**triple_ptr;
 
-    for(triple_ptr =(YaepCoreSymbVect**) VLO_BEGIN(new_core_symb_vect_vlo);
-        (char*) triple_ptr <(char*) VLO_BOUND(new_core_symb_vect_vlo);
+    for(triple_ptr =(YaepCoreSymbVect**) VLO_BEGIN(ps->new_core_symb_vect_vlo);
+        (char*) triple_ptr <(char*) VLO_BOUND(ps->new_core_symb_vect_vlo);
          triple_ptr++)
     {
-        process_core_symb_vect_el(*triple_ptr, &(*triple_ptr)->transitions,
-                                   &transition_els_tab, &ps->n_transition_vects,
-                                   &ps->n_transition_vect_len);
-        process_core_symb_vect_el(*triple_ptr, &(*triple_ptr)->reduces,
-                                   &reduce_els_tab, &ps->n_reduce_vects,
-                                   &ps->n_reduce_vect_len);
+        process_core_symb_vect_el(ps, *triple_ptr, &(*triple_ptr)->transitions,
+                                  &transition_els_tab, &ps->n_transition_vects,
+                                  &ps->n_transition_vect_len);
+        process_core_symb_vect_el(ps, *triple_ptr, &(*triple_ptr)->reduces,
+                                  &reduce_els_tab, &ps->n_reduce_vects,
+                                  &ps->n_reduce_vect_len);
     }
     vlo_array_nullify();
-    VLO_NULLIFY(new_core_symb_vect_vlo);
+    VLO_NULLIFY(ps->new_core_symb_vect_vlo);
 }
 
 /* Finalize work with all triples(set core, symbol, vector).*/
-static void core_symb_vect_fin()
+static void core_symb_vect_fin(YaepParseState *ps)
 {
     delete_hash_table(transition_els_tab);
     delete_hash_table(reduce_els_tab);
@@ -2396,9 +2395,9 @@ static void core_symb_vect_fin()
     VLO_DELETE(core_symb_table_vlo);
 #endif
     vlo_array_fin();
-    OS_DELETE(vect_els_os);
-    VLO_DELETE(new_core_symb_vect_vlo);
-    OS_DELETE(core_symb_vect_os);
+    OS_DELETE(ps->vect_els_os);
+    VLO_DELETE(ps->new_core_symb_vect_vlo);
+    OS_DELETE(ps->core_symb_vect_os);
 }
 
 /* The following function stores error CODE and MESSAGE.  The function
@@ -3047,7 +3046,7 @@ static void yaep_parse_init(YaepParseState *ps, int n_toks)
    data for parser).*/
 static void yaep_parse_fin(YaepParseState *ps)
 {
-    core_symb_vect_fin();
+    core_symb_vect_fin(ps);
     set_fin(ps);
     sit_fin(ps);
 }
