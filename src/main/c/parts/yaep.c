@@ -2893,8 +2893,18 @@ struct YaepParseState
     YaepParseRun run;
     int magic_cookie; // Must be set to 736268273 when the state is created.
 
-   /* The following variable is set being created. It is defined only when new_set_ready_p is TRUE. */
+    /* The following says that new_set, new_core and their members are
+       defined. Before this the access to data of the set being formed
+       are possible only through the following variables. */
+    int new_set_ready_p;
+
+    /* The following variable is set being created. It is defined only when new_set_ready_p is TRUE. */
     YaepSet *new_set;
+
+   /* The following variable is always set core of set being created.  It
+      can be read externally.  Member core of new_set has always the
+      following value.  It is defined only when new_set_ready_p is TRUE. */
+    YaepSetCore *new_core;
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -2921,16 +2931,6 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 
 // Temporary global variable while migrating to thread safe code.
 static YaepParseState *state__;
-
-/* The following variable is always set core of set being created.  It
-   can be read externally.  Member core of new_set has always the
-   following value.  It is defined only when new_set_ready_p is TRUE.*/
-static YaepSetCore *new_core;
-
-/* The following says that new_set, new_core and their members are
-   defined.  Before this the access to data of the set being formed
-   are possible only through the following variables.*/
-static int new_set_ready_p;
 
 /* To optimize code we use the following variables to access to data
    of new set.  They are always defined and correspondingly
@@ -3597,13 +3597,13 @@ static int term_set_test(term_set_el_t *set, int num, int num_terms)
    returns its number.  If the set is already in table it returns -its
    number - 1(which is always negative).  Don't set after
    insertion!!!*/
-static int term_set_insert(term_set_el_t *set)
+static int term_set_insert(YaepParseState *ps, term_set_el_t *set)
 {
     hash_table_entry_t *entry;
     YaepTabTermSet tab_term_set,*tab_term_set_ptr;
 
     tab_term_set.set = set;
-    entry = find_hash_table_entry(state__->run.grammar->term_sets_ptr->term_set_tab, &tab_term_set, TRUE);
+    entry = find_hash_table_entry(ps->run.grammar->term_sets_ptr->term_set_tab, &tab_term_set, TRUE);
 
     if (*entry != NULL)
     {
@@ -3611,13 +3611,13 @@ static int term_set_insert(term_set_el_t *set)
     }
     else
     {
-        OS_TOP_EXPAND(state__->run.grammar->term_sets_ptr->term_set_os, sizeof(YaepTabTermSet));
-        tab_term_set_ptr = (YaepTabTermSet*)OS_TOP_BEGIN(state__->run.grammar->term_sets_ptr->term_set_os);
-        OS_TOP_FINISH(state__->run.grammar->term_sets_ptr->term_set_os);
+        OS_TOP_EXPAND(ps->run.grammar->term_sets_ptr->term_set_os, sizeof(YaepTabTermSet));
+        tab_term_set_ptr = (YaepTabTermSet*)OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->term_set_os);
+        OS_TOP_FINISH(ps->run.grammar->term_sets_ptr->term_set_os);
        *entry =(hash_table_entry_t) tab_term_set_ptr;
         tab_term_set_ptr->set = set;
-        tab_term_set_ptr->num = (VLO_LENGTH(state__->run.grammar->term_sets_ptr->tab_term_set_vlo) / sizeof(YaepTabTermSet*));
-        VLO_ADD_MEMORY(state__->run.grammar->term_sets_ptr->tab_term_set_vlo, &tab_term_set_ptr, sizeof(YaepTabTermSet*));
+        tab_term_set_ptr->num = (VLO_LENGTH(ps->run.grammar->term_sets_ptr->tab_term_set_vlo) / sizeof(YaepTabTermSet*));
+        VLO_ADD_MEMORY(ps->run.grammar->term_sets_ptr->tab_term_set_vlo, &tab_term_set_ptr, sizeof(YaepTabTermSet*));
 
         return((YaepTabTermSet*)*entry)->num;
     }
@@ -4140,8 +4140,8 @@ static void set_init(YaepParseState *ps, int n_toks)
 static void set_new_start(YaepParseState *ps)
 {
     ps->new_set = NULL;
-    new_core = NULL;
-    new_set_ready_p = FALSE;
+    ps->new_core = NULL;
+    ps->new_set_ready_p = FALSE;
     new_n_start_sits = 0;
     new_sits = NULL;
     new_dists = NULL;
@@ -4149,9 +4149,9 @@ static void set_new_start(YaepParseState *ps)
 
 /* Add start SIT with distance DIST at the end of the situation array
    of the set being formed.*/
-static void set_new_add_start_sit(YaepSituation*sit, int dist)
+static void set_new_add_start_sit(YaepParseState *ps, YaepSituation*sit, int dist)
 {
-    assert(!new_set_ready_p);
+    assert(!ps->new_set_ready_p);
     OS_TOP_EXPAND(set_dists_os, sizeof(int));
     new_dists =(int*) OS_TOP_BEGIN(set_dists_os);
     OS_TOP_EXPAND(set_sits_os, sizeof(YaepSituation*));
@@ -4165,27 +4165,27 @@ static void set_new_add_start_sit(YaepSituation*sit, int dist)
    situation array of the set being formed.  If this is situation and
    there is already the same pair(situation, the corresponding
    distance), we do not add it.*/
-static void set_add_new_nonstart_sit(YaepSituation*sit, int parent)
+static void set_add_new_nonstart_sit(YaepParseState *ps, YaepSituation*sit, int parent)
 {
     int i;
 
-    assert(new_set_ready_p);
+    assert(ps->new_set_ready_p);
     /* When we add non-start situations we need to have pairs
       (situation, the corresponding distance) without duplicates
        because we also forms core_symb_vect at that time.*/
-    for(i = new_n_start_sits; i < new_core->n_sits; i++)
+    for(i = new_n_start_sits; i < ps->new_core->n_sits; i++)
     {
-        if (new_sits[i] == sit && new_core->parent_indexes[i] == parent)
+        if (new_sits[i] == sit && ps->new_core->parent_indexes[i] == parent)
         {
             return;
         }
     }
     OS_TOP_EXPAND(set_sits_os, sizeof(YaepSituation*));
-    new_sits = new_core->sits =(YaepSituation**) OS_TOP_BEGIN(set_sits_os);
+    new_sits = ps->new_core->sits =(YaepSituation**) OS_TOP_BEGIN(set_sits_os);
     OS_TOP_EXPAND(set_parent_indexes_os, sizeof(int));
-    new_core->parent_indexes = (int*)OS_TOP_BEGIN(set_parent_indexes_os) - new_n_start_sits;
-    new_sits[new_core->n_sits++] = sit;
-    new_core->parent_indexes[new_core->n_all_dists++] = parent;
+    ps->new_core->parent_indexes = (int*)OS_TOP_BEGIN(set_parent_indexes_os) - new_n_start_sits;
+    new_sits[ps->new_core->n_sits++] = sit;
+    ps->new_core->parent_indexes[ps->new_core->n_all_dists++] = parent;
     n_parent_indexes++;
 }
 
@@ -4193,21 +4193,21 @@ static void set_add_new_nonstart_sit(YaepSituation*sit, int parent)
    situation array of the set being formed.  If this is non-start
    situation and there is already the same pair(situation, zero
    distance), we do not add it.*/
-static void set_new_add_initial_sit(YaepSituation*sit)
+static void set_new_add_initial_sit(YaepParseState *ps, YaepSituation*sit)
 {
     int i;
 
-    assert(new_set_ready_p);
+    assert(ps->new_set_ready_p);
     /* When we add non-start situations we need to have pairs
       (situation, the corresponding distance) without duplicates
        because we also forms core_symb_vect at that time.*/
-    for(i = new_n_start_sits; i < new_core->n_sits; i++)
+    for(i = new_n_start_sits; i < ps->new_core->n_sits; i++)
         if (new_sits[i] == sit)
             return;
     /* Remember we do not store distance for non-start situations.*/
     OS_TOP_ADD_MEMORY(set_sits_os, &sit, sizeof(YaepSituation*));
-    new_sits = new_core->sits =(YaepSituation**) OS_TOP_BEGIN(set_sits_os);
-    new_core->n_sits++;
+    new_sits = ps->new_core->sits =(YaepSituation**) OS_TOP_BEGIN(set_sits_os);
+    ps->new_core->n_sits++;
 }
 
 /* Set up hash of distances of set S.*/
@@ -4238,32 +4238,32 @@ static void setup_set_core_hash(hash_table_entry_t s)
    remove duplicates and insert set into the set table.  If the
    function returns TRUE then set contains new set core(there was no
    such core in the table).*/
-static int set_insert()
+static int set_insert(YaepParseState *ps)
 {
     hash_table_entry_t*entry;
     int result;
 
     OS_TOP_EXPAND(sets_os, sizeof(YaepSet));
-    state__->new_set = (YaepSet*)OS_TOP_BEGIN(sets_os);
-    state__->new_set->dists = new_dists;
+    ps->new_set = (YaepSet*)OS_TOP_BEGIN(sets_os);
+    ps->new_set->dists = new_dists;
     OS_TOP_EXPAND(set_cores_os, sizeof(YaepSetCore));
-    state__->new_set->core = new_core =(YaepSetCore*) OS_TOP_BEGIN(set_cores_os);
-    new_core->n_start_sits = new_n_start_sits;
-    new_core->sits = new_sits;
-    new_set_ready_p = TRUE;
+    ps->new_set->core = ps->new_core = (YaepSetCore*) OS_TOP_BEGIN(set_cores_os);
+    ps->new_core->n_start_sits = new_n_start_sits;
+    ps->new_core->sits = new_sits;
+    ps->new_set_ready_p = TRUE;
 #ifdef USE_SET_HASH_TABLE
     /* Insert dists into table.*/
-    setup_set_dists_hash(state__->new_set);
-    entry = find_hash_table_entry(set_dists_tab, state__->new_set, TRUE);
+    setup_set_dists_hash(ps->new_set);
+    entry = find_hash_table_entry(set_dists_tab, ps->new_set, TRUE);
     if (*entry != NULL)
     {
-        new_dists = state__->new_set->dists =((YaepSet*)*entry)->dists;
+        new_dists = ps->new_set->dists =((YaepSet*)*entry)->dists;
         OS_TOP_NULLIFY(set_dists_os);
     }
     else
     {
         OS_TOP_FINISH(set_dists_os);
-       *entry =(hash_table_entry_t)state__->new_set;
+       *entry =(hash_table_entry_t)ps->new_set;
         n_set_dists++;
         n_set_dists_len += new_n_start_sits;
     }
@@ -4273,40 +4273,40 @@ static int set_insert()
     n_set_dists_len += new_n_start_sits;
 #endif
     /* Insert set core into table.*/
-    setup_set_core_hash(state__->new_set);
-    entry = find_hash_table_entry(set_core_tab, state__->new_set, TRUE);
+    setup_set_core_hash(ps->new_set);
+    entry = find_hash_table_entry(set_core_tab, ps->new_set, TRUE);
     if (*entry != NULL)
     {
         OS_TOP_NULLIFY(set_cores_os);
-        state__->new_set->core = new_core =((YaepSet*)*entry)->core;
-        new_sits = new_core->sits;
+        ps->new_set->core = ps->new_core = ((YaepSet*)*entry)->core;
+        new_sits = ps->new_core->sits;
         OS_TOP_NULLIFY(set_sits_os);
         result = FALSE;
     }
     else
     {
         OS_TOP_FINISH(set_cores_os);
-        new_core->num = n_set_cores++;
-        new_core->n_sits = new_n_start_sits;
-        new_core->n_all_dists = new_n_start_sits;
-        new_core->parent_indexes = NULL;
-       *entry =(hash_table_entry_t)state__->new_set;
+        ps->new_core->num = n_set_cores++;
+        ps->new_core->n_sits = new_n_start_sits;
+        ps->new_core->n_all_dists = new_n_start_sits;
+        ps->new_core->parent_indexes = NULL;
+       *entry =(hash_table_entry_t)ps->new_set;
         n_set_core_start_sits += new_n_start_sits;
         result = TRUE;
     }
 #ifdef USE_SET_HASH_TABLE
     /* Insert set into table.*/
-    entry = find_hash_table_entry(set_tab, state__->new_set, TRUE);
+    entry = find_hash_table_entry(set_tab, ps->new_set, TRUE);
     if (*entry == NULL)
     {
-       *entry =(hash_table_entry_t)state__->new_set;
+       *entry =(hash_table_entry_t)ps->new_set;
         n_sets++;
         n_sets_start_sits += new_n_start_sits;
         OS_TOP_FINISH(sets_os);
     }
     else
     {
-        state__->new_set = (YaepSet*)*entry;
+        ps->new_set = (YaepSet*)*entry;
         OS_TOP_NULLIFY(sets_os);
     }
 #else
@@ -4516,7 +4516,7 @@ static void core_symb_vect_init(YaepParseState *ps)
 /* The following function returns entry in the table where pointer to
    corresponding triple with the same keys as TRIPLE ones is
    placed.*/
-static YaepCoreSymbVect **core_symb_vect_addr_get(YaepCoreSymbVect *triple, int reserv_p)
+static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepCoreSymbVect *triple, int reserv_p)
 {
     YaepCoreSymbVect**result;
 
@@ -4537,7 +4537,7 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepCoreSymbVect *triple, int 
 
 /* The following function returns entry in the table where pointer to
    corresponding triple with SET_CORE and SYMB is placed.*/
-static YaepCoreSymbVect **core_symb_vect_addr_get(YaepSetCore *set_core, YaepSymb *symb)
+static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepSetCore *set_core, YaepSymb *symb)
 {
     YaepCoreSymbVect***core_symb_vect_ptr;
 
@@ -4564,11 +4564,11 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepSetCore *set_core, YaepSym
         while(ptr < bound)
         {
             OS_TOP_EXPAND(core_symb_tab_rows,
-                          (state__->run.grammar->symbs_ptr->nn_terms + state__->run.grammar->symbs_ptr->n_nonterms)
+                          (ps->run.grammar->symbs_ptr->nn_terms + ps->run.grammar->symbs_ptr->n_nonterms)
                           * sizeof(YaepCoreSymbVect*));
            *ptr =(YaepCoreSymbVect**) OS_TOP_BEGIN(core_symb_tab_rows);
             OS_TOP_FINISH(core_symb_tab_rows);
-            for(i = 0; i < state__->run.grammar->symbs_ptr->nn_terms + state__->run.grammar->symbs_ptr->n_nonterms; i++)
+            for(i = 0; i < ps->run.grammar->symbs_ptr->nn_terms + ps->run.grammar->symbs_ptr->n_nonterms; i++)
                (*ptr)[i] = NULL;
             ptr++;
         }
@@ -4578,7 +4578,7 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepSetCore *set_core, YaepSym
 #endif
 
 /* The following function returns the triple(if any) for given SET_CORE and SYMB. */
-static YaepCoreSymbVect *core_symb_vect_find(YaepSetCore *set_core, YaepSymb *symb)
+static YaepCoreSymbVect *core_symb_vect_find(YaepParseState *ps, YaepSetCore *set_core, YaepSymb *symb)
 {
     YaepCoreSymbVect *r;
 
@@ -4587,9 +4587,9 @@ static YaepCoreSymbVect *core_symb_vect_find(YaepSetCore *set_core, YaepSymb *sy
 
     core_symb_vect.set_core = set_core;
     core_symb_vect.symb = symb;
-    r = *core_symb_vect_addr_get(&core_symb_vect, FALSE);
+    r = *core_symb_vect_addr_get(ps, &core_symb_vect, FALSE);
 #else
-    r = *core_symb_vect_addr_get(set_core, symb);
+    r = *core_symb_vect_addr_get(ps, set_core, symb);
 #endif
 
     TRACE_FA("%p %s -> %p", set_core, symb->repr, r);
@@ -4613,9 +4613,9 @@ static YaepCoreSymbVect *core_symb_vect_new(YaepParseState *ps, YaepSetCore*set_
     OS_TOP_FINISH(core_symb_vect_os);
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    addr = core_symb_vect_addr_get(triple, TRUE);
+    addr = core_symb_vect_addr_get(ps, triple, TRUE);
 #else
-    addr = core_symb_vect_addr_get(set_core, symb);
+    addr = core_symb_vect_addr_get(ps, set_core, symb);
 #endif
     assert(*addr == NULL);
    *addr = triple;
@@ -5409,7 +5409,7 @@ static void add_derived_nonstart_sits(YaepParseState *ps, YaepSituation*sit, int
     int i;
 
     for(i = sit->pos;(symb = rule->rhs[i]) != NULL && symb->empty_p; i++)
-        set_add_new_nonstart_sit(sit_create(ps, rule, i + 1, context), parent);
+        set_add_new_nonstart_sit(ps, sit_create(ps, rule, i + 1, context), parent);
 }
 
 /* The following function adds the rest(non-start) situations to the
@@ -5429,37 +5429,37 @@ static void expand_new_start_set(YaepParseState *ps)
     for(i = 0; i < new_n_start_sits; i++)
         add_derived_nonstart_sits(ps, new_sits[i], i);
     /* Add non start situations and form transitions vectors.*/
-    for(i = 0; i < new_core->n_sits; i++)
+    for(i = 0; i < ps->new_core->n_sits; i++)
     {
         sit = new_sits[i];
         if (sit->pos < sit->rule->rhs_len)
 	{
             /* There is a symbol after dot in the situation.*/
             symb = sit->rule->rhs[sit->pos];
-            core_symb_vect = core_symb_vect_find(new_core, symb);
+            core_symb_vect = core_symb_vect_find(ps, ps->new_core, symb);
             if (core_symb_vect == NULL)
 	    {
-                core_symb_vect = core_symb_vect_new(ps, new_core, symb);
+                core_symb_vect = core_symb_vect_new(ps, ps->new_core, symb);
                 if (!symb->term_p)
                     for(rule = symb->u.nonterm.rules;
                          rule != NULL; rule = rule->lhs_next)
-                        set_new_add_initial_sit(sit_create(ps, rule, 0, 0));
+                        set_new_add_initial_sit(ps, sit_create(ps, rule, 0, 0));
 	    }
             core_symb_vect_new_add_transition_el(core_symb_vect, i);
-            if (symb->empty_p && i >= new_core->n_all_dists)
-                set_new_add_initial_sit(sit_create(ps, sit->rule, sit->pos + 1, 0));
+            if (symb->empty_p && i >= ps->new_core->n_all_dists)
+                set_new_add_initial_sit(ps, sit_create(ps, sit->rule, sit->pos + 1, 0));
 	}
     }
     /* Now forming reduce vectors.*/
-    for(i = 0; i < new_core->n_sits; i++)
+    for(i = 0; i < ps->new_core->n_sits; i++)
     {
         sit = new_sits[i];
         if (sit->pos == sit->rule->rhs_len)
 	{
             symb = sit->rule->lhs;
-            core_symb_vect = core_symb_vect_find(new_core, symb);
+            core_symb_vect = core_symb_vect_find(ps, ps->new_core, symb);
             if (core_symb_vect == NULL)
-                core_symb_vect = core_symb_vect_new(ps, new_core, symb);
+                core_symb_vect = core_symb_vect_new(ps, ps->new_core, symb);
             core_symb_vect_new_add_reduce_el(core_symb_vect, i);
 	}
     }
@@ -5475,12 +5475,11 @@ static void expand_new_start_set(YaepParseState *ps)
         do
 	{
             changed_p = FALSE;
-            for(i = new_core->n_all_dists; i < new_core->n_sits; i++)
+            for(i = ps->new_core->n_all_dists; i < ps->new_core->n_sits; i++)
 	    {
                 term_set_clear(context_set, state__->run.grammar->symbs_ptr->nn_terms);
                 new_sit = new_sits[i];
-                core_symb_vect = core_symb_vect_find(new_core,
-                                                      new_sit->rule->lhs);
+                core_symb_vect = core_symb_vect_find(ps, ps->new_core, new_sit->rule->lhs);
                 for(j = 0; j < core_symb_vect->transitions.len; j++)
 		{
                     sit_ind = core_symb_vect->transitions.els[j];
@@ -5489,7 +5488,7 @@ static void expand_new_start_set(YaepParseState *ps)
                                               sit->context);
                     term_set_or(context_set, shifted_sit->lookahead, state__->run.grammar->symbs_ptr->nn_terms);
 		}
-                context = term_set_insert(context_set);
+                context = term_set_insert(ps, context_set);
                 if (context >= 0)
                     context_set = term_set_create(state__->run.grammar->symbs_ptr->nn_terms);
                 else
@@ -5523,7 +5522,7 @@ static void build_start_set(YaepParseState *ps)
     {
         context_set = term_set_create(state__->run.grammar->symbs_ptr->nn_terms);
         term_set_clear(context_set, state__->run.grammar->symbs_ptr->nn_terms);
-        context = term_set_insert(context_set);
+        context = term_set_insert(ps, context_set);
         /* Empty context in the table has always number zero.*/
         assert(context == 0);
     }
@@ -5531,9 +5530,9 @@ static void build_start_set(YaepParseState *ps)
          rule != NULL; rule = rule->lhs_next)
     {
         sit = sit_create(ps, rule, 0, context);
-        set_new_add_start_sit(sit, 0);
+        set_new_add_start_sit(ps, sit, 0);
     }
-    if (!set_insert()) assert(FALSE);
+    if (!set_insert(ps)) assert(FALSE);
     expand_new_start_set(ps);
     pl[0] = state__->new_set;
 
@@ -5588,7 +5587,7 @@ static void build_new_set(YaepParseState *ps,
             dist = set->dists[set_core->parent_indexes[sit_ind]];
         dist++;
         if (sit_dist_insert(ps, new_sit, dist))
-            set_new_add_start_sit(new_sit, dist);
+            set_new_add_start_sit(ps, new_sit, dist);
     }
     for(i = 0; i < new_n_start_sits; i++)
     {
@@ -5604,8 +5603,7 @@ static void build_new_set(YaepParseState *ps,
             place = pl_curr + 1 - new_dist;
             prev_set = pl[place];
             prev_set_core = prev_set->core;
-            prev_core_symb_vect = core_symb_vect_find(prev_set_core,
-                                                       new_sit->rule->lhs);
+            prev_core_symb_vect = core_symb_vect_find(ps, prev_set_core, new_sit->rule->lhs);
             if (prev_core_symb_vect == NULL)
 	    {
                 assert(new_sit->rule->lhs == ps->run.grammar->axiom);
@@ -5637,15 +5635,15 @@ static void build_new_set(YaepParseState *ps,
                         prev_set->dists[prev_set_core->parent_indexes[sit_ind]];
                 dist += new_dist;
                 if (sit_dist_insert(ps, new_sit, dist))
-                    set_new_add_start_sit(new_sit, dist);
+                    set_new_add_start_sit(ps, new_sit, dist);
 	    }
             while(curr_el < bound);
 	}
     }
-    if (set_insert())
+    if (set_insert(ps))
     {
         expand_new_start_set(ps);
-        new_core->term = core_symb_vect->symb;
+        ps->new_core->term = core_symb_vect->symb;
     }
 }
 
@@ -5766,7 +5764,7 @@ static int find_error_pl_set(YaepParseState *ps, int start_pl_set, int*cost)
     assert(start_pl_set >= 0);
    *cost = 0;
     for(curr_pl = start_pl_set; curr_pl >= 0; curr_pl--)
-        if (core_symb_vect_find(pl[curr_pl]->core, ps->run.grammar->term_error) != NULL)
+        if (core_symb_vect_find(ps, pl[curr_pl]->core, ps->run.grammar->term_error) != NULL)
             break;
         else if (pl[curr_pl]->core->term != ps->run.grammar->term_error)
            (*cost)++;
@@ -5977,7 +5975,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 	}
 #endif
         /* Shift error:*/
-        core_symb_vect = core_symb_vect_find(set->core, ps->run.grammar->term_error);
+        core_symb_vect = core_symb_vect_find(ps, set->core, ps->run.grammar->term_error);
         assert(core_symb_vect != NULL);
 #ifndef NO_YAEP_DEBUG_PRINT
         if (ps->run.grammar->debug_level > 2)
@@ -6000,8 +5998,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         /* Search the first right token.*/
         while(tok_curr < toks_len)
 	{
-            core_symb_vect = core_symb_vect_find(new_core,
-                                                  toks[tok_curr].symb);
+            core_symb_vect = core_symb_vect_find(ps, ps->new_core, toks[tok_curr].symb);
             if (core_symb_vect != NULL)
                 break;
 #ifndef NO_YAEP_DEBUG_PRINT
@@ -6077,7 +6074,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             if (tok_curr >= toks_len)
                 break;
             /* Push secondary recovery state(with error in set).*/
-            if (core_symb_vect_find(new_core, ps->run.grammar->term_error) != NULL)
+            if (core_symb_vect_find(ps, ps->new_core, ps->run.grammar->term_error) != NULL)
 	    {
 #ifndef NO_YAEP_DEBUG_PRINT
                 if (ps->run.grammar->debug_level > 2)
@@ -6093,7 +6090,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
                 push_recovery_state(ps, state.last_original_pl_el, cost);
 	    }
             core_symb_vect
-                = core_symb_vect_find(new_core, toks[tok_curr].symb);
+                = core_symb_vect_find(ps, ps->new_core, toks[tok_curr].symb);
             if (core_symb_vect == NULL)
                 break;
             lookahead_term_num =(tok_curr + 1 < toks_len
@@ -6276,7 +6273,7 @@ static void build_pl(YaepParseState *ps)
 #endif
         if (ps->new_set == NULL)
 	{
-            core_symb_vect = core_symb_vect_find(set->core, term);
+            core_symb_vect = core_symb_vect_find(ps, set->core, term);
             if (core_symb_vect == NULL)
 	    {
                 int saved_tok_curr, start, stop;
@@ -7036,7 +7033,7 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
         /* Nonterminal before dot:*/
         set = pl[pl_ind];
         set_core = set->core;
-        core_symb_vect = core_symb_vect_find(set_core, symb);
+        core_symb_vect = core_symb_vect_find(ps, set_core, symb);
         assert(core_symb_vect->reduces.len != 0);
         n_candidates = 0;
         orig_state = state;
@@ -7062,7 +7059,7 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
 #endif
             check_set = pl[sit_orig];
             check_set_core = check_set->core;
-            check_core_symb_vect = core_symb_vect_find(check_set_core, symb);
+            check_core_symb_vect = core_symb_vect_find(ps, check_set_core, symb);
             assert(check_core_symb_vect != NULL);
             found = FALSE;
             for(j = 0; j < check_core_symb_vect->transitions.len; j++)
@@ -7784,7 +7781,7 @@ static void set_print(YaepParseState *ps, FILE* f, YaepSet*set, int set_dist, in
     YaepSituation**sits;
     int*dists,*parent_indexes;
 
-    if (set == NULL && !new_set_ready_p)
+    if (set == NULL && !ps->new_set_ready_p)
     {
         /* The following is necessary if we call the function from a
            debugger.  In this case new_set, new_core and their members
