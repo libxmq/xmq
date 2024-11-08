@@ -3051,6 +3051,21 @@ struct YaepParseState
        recovery start(when the original syntax error has been fixed).*/
     int start_pl_curr, start_tok_curr;
 
+    /* The following variable value means that all error sets in pl with
+       indexes [back_pl_frontier, start_pl_curr] are being processed or
+       have been processed.*/
+    int back_pl_frontier;
+
+    /* The following variable stores original pl tail in reversed order.
+       This object only grows.  The last object sets may be used to
+       restore original pl in order to try another error recovery state
+       (alternative).*/
+    vlo_t original_pl_tail_stack;
+
+    /* The following variable value is last pl element which is original
+       set(set before the error_recovery start).*/
+    int original_last_pl_el;
+
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -3077,21 +3092,6 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 
 // Temporary global variable while migrating to thread safe code.
 static YaepParseState *state__;
-
-/* The following variable value means that all error sets in pl with
-   indexes [back_pl_frontier, start_pl_curr] are being processed or
-   have been processed.*/
-static int back_pl_frontier;
-
-/* The following variable stores original pl tail in reversed order.
-   This object only grows.  The last object sets may be used to
-   restore original pl in order to try another error recovery state
-  (alternative).*/
-static vlo_t original_pl_tail_stack;
-
-/* The following variable value is last pl element which is original
-   set(set before the error_recovery start).*/
-static int original_last_pl_el;
 
 /* This page contains code for work with array of vlos.  It is used
    only to implement abstract data `core_symb_vect'.*/
@@ -5676,8 +5676,8 @@ struct recovery_state
 static void set_original_set_bound(YaepParseState *ps, int last)
 {
     assert(last >= 0 && last <= ps->start_pl_curr
-            && original_last_pl_el <= ps->start_pl_curr);
-    original_last_pl_el = last;
+            && ps->original_last_pl_el <= ps->start_pl_curr);
+    ps->original_last_pl_el = last;
 }
 
 /* The following function guarantees that original pl tail sets
@@ -5688,11 +5688,11 @@ static void save_original_sets(YaepParseState *ps)
 {
     int length, curr_pl;
 
-    assert(ps->pl_curr >= 0 && original_last_pl_el <= ps->start_pl_curr);
-    length = VLO_LENGTH(original_pl_tail_stack) / sizeof(YaepSet*);
+    assert(ps->pl_curr >= 0 && ps->original_last_pl_el <= ps->start_pl_curr);
+    length = VLO_LENGTH(ps->original_pl_tail_stack) / sizeof(YaepSet*);
     for(curr_pl = ps->start_pl_curr - length; curr_pl >= ps->pl_curr; curr_pl--)
     {
-        VLO_ADD_MEMORY(original_pl_tail_stack, &ps->pl[curr_pl],
+        VLO_ADD_MEMORY(ps->original_pl_tail_stack, &ps->pl[curr_pl],
                         sizeof(YaepSet*));
 #ifndef NO_YAEP_DEBUG_PRINT
         if (ps->run.grammar->debug_level > 2)
@@ -5707,7 +5707,7 @@ static void save_original_sets(YaepParseState *ps)
 	}
 #endif
     }
-    original_last_pl_el = ps->pl_curr - 1;
+    ps->original_last_pl_el = ps->pl_curr - 1;
 }
 
 /* If it is necessary, the following function restores original pl
@@ -5715,32 +5715,32 @@ static void save_original_sets(YaepParseState *ps)
 static void restore_original_sets(YaepParseState *ps, int last_pl_el)
 {
     assert(last_pl_el <= ps->start_pl_curr
-            && original_last_pl_el <= ps->start_pl_curr);
-    if (original_last_pl_el >= last_pl_el)
+            && ps->original_last_pl_el <= ps->start_pl_curr);
+    if (ps->original_last_pl_el >= last_pl_el)
     {
-        original_last_pl_el = last_pl_el;
+        ps->original_last_pl_el = last_pl_el;
         return;
     }
     for(;;)
     {
-        original_last_pl_el++;
-        ps->pl[original_last_pl_el]
-            =((YaepSet**) VLO_BEGIN(original_pl_tail_stack))
-            [ps->start_pl_curr - original_last_pl_el];
+        ps->original_last_pl_el++;
+        ps->pl[ps->original_last_pl_el]
+            =((YaepSet**) VLO_BEGIN(ps->original_pl_tail_stack))
+            [ps->start_pl_curr - ps->original_last_pl_el];
 #ifndef NO_YAEP_DEBUG_PRINT
         if (ps->run.grammar->debug_level > 2)
 	{
             fprintf(stderr, "++++++Restore original set=%d\n",
-                     original_last_pl_el);
+                     ps->original_last_pl_el);
             if (ps->run.grammar->debug_level > 3)
 	    {
-                set_print(ps, stderr, ps->pl[original_last_pl_el], original_last_pl_el,
+                set_print(ps, stderr, ps->pl[ps->original_last_pl_el], ps->original_last_pl_el,
                           ps->run.grammar->debug_level > 4, ps->run.grammar->debug_level > 5);
                 fprintf(stderr, "\n");
 	    }
 	}
 #endif
-        if (original_last_pl_el >= last_pl_el)
+        if (ps->original_last_pl_el >= last_pl_el)
             break;
     }
 }
@@ -5897,16 +5897,16 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 #endif
    *stop =*start = -1;
     OS_CREATE(ps->recovery_state_tail_sets, ps->run.grammar->alloc, 0);
-    VLO_NULLIFY(original_pl_tail_stack);
+    VLO_NULLIFY(ps->original_pl_tail_stack);
     VLO_NULLIFY(recovery_state_stack);
     ps->start_pl_curr = ps->pl_curr;
     ps->start_tok_curr = ps->tok_curr;
     /* Initialize error recovery state stack.*/
     ps->pl_curr
-        = back_pl_frontier = find_error_pl_set(ps, ps->pl_curr, &backward_move_cost);
+        = ps->back_pl_frontier = find_error_pl_set(ps, ps->pl_curr, &backward_move_cost);
     back_to_frontier_move_cost = backward_move_cost;
     save_original_sets(ps);
-    push_recovery_state(ps, back_pl_frontier, backward_move_cost);
+    push_recovery_state(ps, ps->back_pl_frontier, backward_move_cost);
     best_cost = 2* ps->toks_len;
     while(VLO_LENGTH(recovery_state_stack) > 0)
     {
@@ -5914,25 +5914,25 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         cost = state.backward_move_cost;
         assert(cost >= 0);
         /* Advance back frontier.*/
-        if (back_pl_frontier > 0)
+        if (ps->back_pl_frontier > 0)
 	{
             int saved_pl_curr = ps->pl_curr, saved_tok_curr = ps->tok_curr;
 
             /* Advance back frontier.*/
-            ps->pl_curr = find_error_pl_set(ps, back_pl_frontier - 1,
+            ps->pl_curr = find_error_pl_set(ps, ps->back_pl_frontier - 1,
                                          &backward_move_cost);
 #ifndef NO_YAEP_DEBUG_PRINT
             if (ps->run.grammar->debug_level > 2)
                 fprintf(stderr, "++++Advance back frontier: old=%d, new=%d\n",
-                         back_pl_frontier, ps->pl_curr);
+                         ps->back_pl_frontier, ps->pl_curr);
 #endif
             if (best_cost >= back_to_frontier_move_cost + backward_move_cost)
 	    {
-                back_pl_frontier = ps->pl_curr;
+                ps->back_pl_frontier = ps->pl_curr;
                 ps->tok_curr = ps->start_tok_curr;
                 save_original_sets(ps);
                 back_to_frontier_move_cost += backward_move_cost;
-                push_recovery_state(ps, back_pl_frontier,
+                push_recovery_state(ps, ps->back_pl_frontier,
                                     back_to_frontier_move_cost);
                 set_original_set_bound(ps, state.last_original_pl_el);
                 ps->tok_curr = saved_tok_curr;
@@ -6149,19 +6149,16 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 /* Initialize work with error recovery.*/
 static void error_recovery_init(YaepParseState *ps)
 {
-    VLO_CREATE(original_pl_tail_stack, ps->run.grammar->alloc, 4096);
+    VLO_CREATE(ps->original_pl_tail_stack, ps->run.grammar->alloc, 4096);
     VLO_CREATE(recovery_state_stack, ps->run.grammar->alloc, 4096);
 }
 
 /* Finalize work with error recovery.*/
-static void error_recovery_fin()
+static void error_recovery_fin(YaepParseState *ps)
 {
     VLO_DELETE(recovery_state_stack);
-    VLO_DELETE(original_pl_tail_stack);
+    VLO_DELETE(ps->original_pl_tail_stack);
 }
-
-
-
 
 /* Return TRUE if goto set SET from parsing list PLACE can be used as
    the next set.  The criterium is that all origin sets of start
@@ -6310,7 +6307,7 @@ static void build_pl(YaepParseState *ps)
 	}
 #endif
     }
-    error_recovery_fin();
+    error_recovery_fin(ps);
 }
 
 /* Hash of parse state.*/
