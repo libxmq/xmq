@@ -589,6 +589,10 @@ struct YaepParseState
        number of parent indexes.  The variables can be read externally.*/
     int n_set_cores, n_set_core_start_sits;
     int n_set_dists, n_set_dists_len, n_parent_indexes;
+
+    /* Number unique sets and their start situations. */
+    int n_sets, n_sets_start_sits;
+
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -616,9 +620,6 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 // Temporary global variable while migrating to thread safe code.
 static YaepParseState *state__;
 
-
-/* Number unique sets and their start situations. */
-static int n_sets, n_sets_start_sits;
 
 /* Number unique triples(set, term, lookahead). */
 static int n_set_term_lookaheads;
@@ -1802,7 +1803,7 @@ static void set_init(YaepParseState *ps, int n_toks)
                            set_term_lookahead_hash, set_term_lookahead_eq);
     ps->n_set_cores = ps->n_set_core_start_sits = 0;
     ps->n_set_dists = ps->n_set_dists_len = ps->n_parent_indexes = 0;
-    n_sets = n_sets_start_sits = 0;
+    ps->n_sets = ps->n_sets_start_sits = 0;
     n_set_term_lookaheads = 0;
     sit_dist_set_init(ps);
 }
@@ -1971,8 +1972,8 @@ static int set_insert(YaepParseState *ps)
     if (*entry == NULL)
     {
        *entry =(hash_table_entry_t)ps->new_set;
-        n_sets++;
-        n_sets_start_sits += ps->new_n_start_sits;
+        ps->n_sets++;
+        ps->n_sets_start_sits += ps->new_n_start_sits;
         OS_TOP_FINISH(sets_os);
     }
     else
@@ -5138,7 +5139,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  ps->n_set_dists, ps->n_set_dists_len);
         fprintf(stderr,
                  "       #unique sets = %d, #their start situations = %d\n",
-                 n_sets, n_sets_start_sits);
+                 ps->n_sets, ps->n_sets_start_sits);
         fprintf(stderr,
                  "       #unique triples(set, term, lookahead) = %d, goto successes=%d\n",
                  n_set_term_lookaheads, n_goto_successes);
