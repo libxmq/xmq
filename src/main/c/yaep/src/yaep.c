@@ -648,6 +648,17 @@ struct YaepParseState
       (sit->rule->rule_start_offset + sit->pos).*/
     vlo_t sit_table_vlo;
 
+    /* All situations are placed in the following object.*/
+    os_t sits_os;
+
+    /* Vector implementing map: sit number -> vlo of the distance check
+       indexed by the distance. */
+    vlo_t sit_dist_vec_vlo;
+
+    /* The value used to check the validity of elements of check_dist
+       structures. */
+    int curr_sit_dist_vec_check;
+
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -674,19 +685,6 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 
 // Temporary global variable while migrating to thread safe code.
 static YaepParseState *state__;
-
-/* All situations are placed in the following object.*/
-static os_t sits_os;
-
-/* This page contains code for table of pairs(sit, dist). */
-
-/* Vector implementing map: sit number -> vlo of the distance check
-   indexed by the distance. */
-static vlo_t sit_dist_vec_vlo;
-
-/* The value used to check the validity of elements of check_dist
-   structures. */
-static int curr_sit_dist_vec_check;
 
 /* The following are number of unique(set core, symbol) pairs and
    their summary(transitive) transition and reduce vectors length,
@@ -1492,7 +1490,7 @@ static void tok_fin(YaepParseState *ps)
 static void sit_init(YaepParseState *ps)
 {
     ps->n_all_sits = 0;
-    OS_CREATE(sits_os, ps->run.grammar->alloc, 0);
+    OS_CREATE(ps->sits_os, ps->run.grammar->alloc, 0);
     VLO_CREATE(ps->sit_table_vlo, ps->run.grammar->alloc, 4096);
     ps->sit_table = (YaepSituation***)VLO_BEGIN(ps->sit_table_vlo);
 }
@@ -1575,10 +1573,10 @@ static YaepSituation *sit_create(YaepParseState *ps, YaepRule *rule, int pos, in
         ptr = bound - diff / sizeof(YaepSituation**);
         while(ptr < bound)
 	{
-            OS_TOP_EXPAND(sits_os,(state__->run.grammar->rules_ptr->n_rhs_lens + state__->run.grammar->rules_ptr->n_rules)
+            OS_TOP_EXPAND(ps->sits_os,(state__->run.grammar->rules_ptr->n_rhs_lens + state__->run.grammar->rules_ptr->n_rules)
                           * sizeof(YaepSituation*));
-           *ptr =(YaepSituation**) OS_TOP_BEGIN(sits_os);
-            OS_TOP_FINISH(sits_os);
+           *ptr =(YaepSituation**) OS_TOP_BEGIN(ps->sits_os);
+            OS_TOP_FINISH(ps->sits_os);
             for(i = 0; i < state__->run.grammar->rules_ptr->n_rhs_lens + state__->run.grammar->rules_ptr->n_rules; i++)
                (*ptr)[i] = NULL;
             ptr++;
@@ -1588,9 +1586,9 @@ static YaepSituation *sit_create(YaepParseState *ps, YaepRule *rule, int pos, in
     {
         return sit;
     }
-    OS_TOP_EXPAND(sits_os, sizeof(YaepSituation));
-    sit =(YaepSituation*) OS_TOP_BEGIN(sits_os);
-    OS_TOP_FINISH(sits_os);
+    OS_TOP_EXPAND(ps->sits_os, sizeof(YaepSituation));
+    sit =(YaepSituation*) OS_TOP_BEGIN(ps->sits_os);
+    OS_TOP_FINISH(ps->sits_os);
     ps->n_all_sits++;
     sit->rule = rule;
     sit->pos = pos;
@@ -1622,7 +1620,7 @@ static unsigned sits_hash(int n_sits, YaepSituation **sits)
 static void sit_fin(YaepParseState *ps)
 {
     VLO_DELETE(ps->sit_table_vlo);
-    OS_DELETE(sits_os);
+    OS_DELETE(ps->sits_os);
 }
 
 /* Hash of set core. */
@@ -1727,14 +1725,14 @@ static int set_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 /* Initiate the set of pairs(sit, dist). */
 static void sit_dist_set_init(YaepParseState *ps)
 {
-    VLO_CREATE(sit_dist_vec_vlo, ps->run.grammar->alloc, 8192);
-    curr_sit_dist_vec_check = 0;
+    VLO_CREATE(ps->sit_dist_vec_vlo, ps->run.grammar->alloc, 8192);
+    ps->curr_sit_dist_vec_check = 0;
 }
 
 /* Make the set empty. */
-static void empty_sit_dist_set()
+static void empty_sit_dist_set(YaepParseState *ps)
 {
-    curr_sit_dist_vec_check++;
+    ps->curr_sit_dist_vec_check++;
 }
 
 /* Insert pair(SIT, DIST) into the set.  If such pair exists return
@@ -1746,15 +1744,15 @@ static int sit_dist_insert(YaepParseState *ps, YaepSituation*sit, int dist)
 
     sit_number = sit->sit_number;
     /* Expand the set to accommodate possibly a new situation. */
-    len = VLO_LENGTH(sit_dist_vec_vlo) / sizeof(vlo_t);
+    len = VLO_LENGTH(ps->sit_dist_vec_vlo) / sizeof(vlo_t);
     if (len <= sit_number)
     {
-        VLO_EXPAND(sit_dist_vec_vlo,(sit_number + 1 - len)* sizeof(vlo_t));
+        VLO_EXPAND(ps->sit_dist_vec_vlo,(sit_number + 1 - len)* sizeof(vlo_t));
         for(i = len; i <= sit_number; i++)
-            VLO_CREATE(((vlo_t*) VLO_BEGIN(sit_dist_vec_vlo))[i],
+            VLO_CREATE(((vlo_t*) VLO_BEGIN(ps->sit_dist_vec_vlo))[i],
                         ps->run.grammar->alloc, 64);
     }
-    check_dist_vlo = &((vlo_t*) VLO_BEGIN(sit_dist_vec_vlo))[sit_number];
+    check_dist_vlo = &((vlo_t*) VLO_BEGIN(ps->sit_dist_vec_vlo))[sit_number];
     len = VLO_LENGTH(*check_dist_vlo) / sizeof(int);
     if (len <= dist)
     {
@@ -1762,20 +1760,22 @@ static int sit_dist_insert(YaepParseState *ps, YaepSituation*sit, int dist)
         for(i = len; i <= dist; i++)
            ((int*) VLO_BEGIN(*check_dist_vlo))[i] = 0;
     }
-    if (((int*) VLO_BEGIN(*check_dist_vlo))[dist] == curr_sit_dist_vec_check)
+    if (((int*) VLO_BEGIN(*check_dist_vlo))[dist] == ps->curr_sit_dist_vec_check)
         return FALSE;
-   ((int*) VLO_BEGIN(*check_dist_vlo))[dist] = curr_sit_dist_vec_check;
+   ((int*) VLO_BEGIN(*check_dist_vlo))[dist] = ps->curr_sit_dist_vec_check;
     return TRUE;
 }
 
 /* Finish the set of pairs(sit, dist). */
-static void sit_dist_set_fin()
+static void sit_dist_set_fin(YaepParseState *ps)
 {
-    int i, len = VLO_LENGTH(sit_dist_vec_vlo) / sizeof(vlo_t);
+    int i, len = VLO_LENGTH(ps->sit_dist_vec_vlo) / sizeof(vlo_t);
 
     for(i = 0; i < len; i++)
-        VLO_DELETE(((vlo_t*) VLO_BEGIN(sit_dist_vec_vlo))[i]);
-    VLO_DELETE(sit_dist_vec_vlo);
+    {
+        VLO_DELETE(((vlo_t*) VLO_BEGIN(ps->sit_dist_vec_vlo))[i]);
+    }
+    VLO_DELETE(ps->sit_dist_vec_vlo);
 }
 
 /* Initialize work with sets for parsing input with N_TOKS tokens.*/
@@ -3234,7 +3234,7 @@ static void build_new_set(YaepParseState *ps,
     set_new_start(ps);
     transitions = &core_symb_vect->transitions;
 
-    empty_sit_dist_set();
+    empty_sit_dist_set(ps);
     for(i = 0; i < transitions->len; i++)
     {
         sit_ind = transitions->els[i];
