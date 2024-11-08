@@ -631,6 +631,23 @@ struct YaepParseState
     int toks_len;
     int tok_curr;
 
+    /* The following array contains all input tokens.*/
+    vlo_t toks_vlo;
+
+    /* The following contains current number of unique situations.  It can
+       be read externally.*/
+    int n_all_sits;
+
+    /* The following two dimensional array(the first dimension is context
+       number, the second one is situation number) contains references to
+       all possible situations.*/
+    YaepSituation ***sit_table;
+
+    /* The following vlo is indexed by situation context number and gives
+       array which is indexed by situation number
+      (sit->rule->rule_start_offset + sit->pos).*/
+    vlo_t sit_table_vlo;
+
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -657,26 +674,6 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 
 // Temporary global variable while migrating to thread safe code.
 static YaepParseState *state__;
-
-
-
-
-/* The following array contains all input tokens.*/
-static vlo_t toks_vlo;
-
-/* The following contains current number of unique situations.  It can
-   be read externally.*/
-static int n_all_sits;
-
-/* The following two dimensional array(the first dimension is context
-   number, the second one is situation number) contains references to
-   all possible situations.*/
-static YaepSituation ***sit_table;
-
-/* The following vlo is indexed by situation context number and gives
-   array which is indexed by situation number
-  (sit->rule->rule_start_offset + sit->pos).*/
-static vlo_t sit_table_vlo;
 
 /* All situations are placed in the following object.*/
 static os_t sits_os;
@@ -1465,7 +1462,7 @@ static void rule_fin(YaepGrammar *grammar, YaepRuleStorage *rules)
 /* Initialize work with tokens.*/
 static void tok_init(YaepParseState *ps)
 {
-    VLO_CREATE(toks_vlo, ps->run.grammar->alloc, YAEP_INIT_TOKENS_NUMBER* sizeof(YaepTok));
+    VLO_CREATE(ps->toks_vlo, ps->run.grammar->alloc, YAEP_INIT_TOKENS_NUMBER* sizeof(YaepTok));
     ps->toks_len = 0;
 }
 
@@ -1480,24 +1477,24 @@ static void tok_add(YaepParseState *ps, int code, void *attr)
     {
         yaep_error(ps, YAEP_INVALID_TOKEN_CODE, "syntax error at offset %d '%c'", ps->toks_len, code);
     }
-    VLO_ADD_MEMORY(toks_vlo, &tok, sizeof(YaepTok));
-    ps->toks = (YaepTok*)VLO_BEGIN(toks_vlo);
+    VLO_ADD_MEMORY(ps->toks_vlo, &tok, sizeof(YaepTok));
+    ps->toks = (YaepTok*)VLO_BEGIN(ps->toks_vlo);
     ps->toks_len++;
 }
 
 /* Finalize work with tokens. */
-static void tok_fin()
+static void tok_fin(YaepParseState *ps)
 {
-    VLO_DELETE(toks_vlo);
+    VLO_DELETE(ps->toks_vlo);
 }
 
 /* Initialize work with situations.*/
 static void sit_init(YaepParseState *ps)
 {
-    n_all_sits = 0;
+    ps->n_all_sits = 0;
     OS_CREATE(sits_os, ps->run.grammar->alloc, 0);
-    VLO_CREATE(sit_table_vlo, ps->run.grammar->alloc, 4096);
-    sit_table = (YaepSituation***)VLO_BEGIN(sit_table_vlo);
+    VLO_CREATE(ps->sit_table_vlo, ps->run.grammar->alloc, 4096);
+    ps->sit_table = (YaepSituation***)VLO_BEGIN(ps->sit_table_vlo);
 }
 
 /* The following function sets up lookahead of situation SIT.  The
@@ -1557,24 +1554,24 @@ static YaepSituation *sit_create(YaepParseState *ps, YaepRule *rule, int pos, in
     YaepSituation***context_sit_table_ptr;
 
     assert(context >= 0);
-    context_sit_table_ptr = sit_table + context;
+    context_sit_table_ptr = ps->sit_table + context;
 
-    if ((char*) context_sit_table_ptr >=(char*) VLO_BOUND(sit_table_vlo))
+    if ((char*) context_sit_table_ptr >=(char*) VLO_BOUND(ps->sit_table_vlo))
     {
         YaepSituation***bound,***ptr;
         int i, diff;
 
         assert((ps->run.grammar->lookahead_level <= 1 && context == 0) || (ps->run.grammar->lookahead_level > 1 && context >= 0));
-        diff = (char*) context_sit_table_ptr -(char*) VLO_BOUND(sit_table_vlo);
+        diff = (char*) context_sit_table_ptr -(char*) VLO_BOUND(ps->sit_table_vlo);
         diff += sizeof(YaepSituation**);
         if (ps->run.grammar->lookahead_level > 1 && diff == sizeof(YaepSituation**))
         {
             diff *= 10;
         }
-        VLO_EXPAND(sit_table_vlo, diff);
-        sit_table =(YaepSituation***) VLO_BEGIN(sit_table_vlo);
-        bound =(YaepSituation***) VLO_BOUND(sit_table_vlo);
-        context_sit_table_ptr = sit_table + context;
+        VLO_EXPAND(ps->sit_table_vlo, diff);
+        ps->sit_table =(YaepSituation***) VLO_BEGIN(ps->sit_table_vlo);
+        bound =(YaepSituation***) VLO_BOUND(ps->sit_table_vlo);
+        context_sit_table_ptr = ps->sit_table + context;
         ptr = bound - diff / sizeof(YaepSituation**);
         while(ptr < bound)
 	{
@@ -1594,10 +1591,10 @@ static YaepSituation *sit_create(YaepParseState *ps, YaepRule *rule, int pos, in
     OS_TOP_EXPAND(sits_os, sizeof(YaepSituation));
     sit =(YaepSituation*) OS_TOP_BEGIN(sits_os);
     OS_TOP_FINISH(sits_os);
-    n_all_sits++;
+    ps->n_all_sits++;
     sit->rule = rule;
     sit->pos = pos;
-    sit->sit_number = n_all_sits;
+    sit->sit_number = ps->n_all_sits;
     sit->context = context;
     sit->empty_tail_p = sit_set_lookahead(ps, sit);
     (*context_sit_table_ptr)[rule->rule_start_offset + pos] = sit;
@@ -1624,7 +1621,7 @@ static unsigned sits_hash(int n_sits, YaepSituation **sits)
 /* Finalize work with situations. */
 static void sit_fin(YaepParseState *ps)
 {
-    VLO_DELETE(sit_table_vlo);
+    VLO_DELETE(ps->sit_table_vlo);
     OS_DELETE(sits_os);
 }
 
@@ -5087,7 +5084,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
         if (parse_init_p)
             yaep_parse_fin(ps);
         if (tok_init_p)
-            tok_fin();
+            tok_fin(ps);
         return code;
     }
     if (g->undefined_p)
@@ -5120,7 +5117,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  state__->run.grammar->rules_ptr->n_rules,
                  state__->run.grammar->rules_ptr->n_rhs_lens + state__->run.grammar->rules_ptr->n_rules);
         fprintf(stderr, "Input: #tokens = %d, #unique situations = %d\n",
-                 ps->toks_len, n_all_sits);
+                 ps->toks_len, ps->n_all_sits);
         fprintf(stderr, "       #terminal sets = %d, their size = %d\n",
                  state__->run.grammar->term_sets_ptr->n_term_sets, state__->run.grammar->term_sets_ptr->n_term_sets_size);
         fprintf(stderr,
@@ -5164,7 +5161,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     }
 #endif
     yaep_parse_fin(ps);
-    tok_fin();
+    tok_fin(ps);
     return 0;
 }
 
