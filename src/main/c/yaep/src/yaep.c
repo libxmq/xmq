@@ -1051,18 +1051,18 @@ static void symb_finish_adding_terms(YaepParseState *ps)
     assert(i != 0);
     assert((max_code - min_code) < MAX_SYMB_CODE_TRANS_VECT_SIZE);
 
-    state__->run.grammar->symbs_ptr->symb_code_trans_vect_start = min_code;
-    state__->run.grammar->symbs_ptr->symb_code_trans_vect_end = max_code + 1;
+    ps->run.grammar->symbs_ptr->symb_code_trans_vect_start = min_code;
+    ps->run.grammar->symbs_ptr->symb_code_trans_vect_end = max_code + 1;
 
     size_t num_codes = max_code - min_code + 1;
     size_t vec_size = sizeof(YaepSymb*)* num_codes;
     mem = yaep_malloc(ps->run.grammar->alloc, vec_size);
 
-    state__->run.grammar->symbs_ptr->symb_code_trans_vect =(YaepSymb**)mem;
+    ps->run.grammar->symbs_ptr->symb_code_trans_vect =(YaepSymb**)mem;
 
     for(i = 0;(symb = term_get(i)) != NULL; i++)
     {
-        state__->run.grammar->symbs_ptr->symb_code_trans_vect[symb->u.term.code - min_code] = symb;
+        ps->run.grammar->symbs_ptr->symb_code_trans_vect[symb->u.term.code - min_code] = symb;
     }
 
     TRACE_FA("num_codes=%zu size=%zu", num_codes, vec_size);
@@ -1073,10 +1073,10 @@ static void symb_empty(YaepParseState *ps, YaepVocabulary *symbs)
 {
     if (symbs == NULL) return;
 
-    if (state__->run.grammar->symbs_ptr->symb_code_trans_vect != NULL)
+    if (ps->run.grammar->symbs_ptr->symb_code_trans_vect != NULL)
     {
-        yaep_free(ps->run.grammar->alloc, state__->run.grammar->symbs_ptr->symb_code_trans_vect);
-        state__->run.grammar->symbs_ptr->symb_code_trans_vect = NULL;
+        yaep_free(ps->run.grammar->alloc, ps->run.grammar->symbs_ptr->symb_code_trans_vect);
+        ps->run.grammar->symbs_ptr->symb_code_trans_vect = NULL;
     }
 
     empty_hash_table(symbs->repr_to_symb_tab);
@@ -1091,22 +1091,22 @@ static void symb_empty(YaepParseState *ps, YaepVocabulary *symbs)
 }
 
 /* Finalize work with symbols. */
-static void symb_fin(YaepGrammar *grammar, YaepVocabulary *symbs)
+static void symb_fin(YaepParseState *ps, YaepVocabulary *symbs)
 {
     if (symbs == NULL) return;
 
-    if (state__->run.grammar->symbs_ptr->symb_code_trans_vect != NULL)
+    if (ps->run.grammar->symbs_ptr->symb_code_trans_vect != NULL)
     {
-        yaep_free(grammar->alloc, state__->run.grammar->symbs_ptr->symb_code_trans_vect);
+        yaep_free(ps->run.grammar->alloc, ps->run.grammar->symbs_ptr->symb_code_trans_vect);
     }
 
-    delete_hash_table(state__->run.grammar->symbs_ptr->repr_to_symb_tab);
-    delete_hash_table(state__->run.grammar->symbs_ptr->code_to_symb_tab);
-    VLO_DELETE(state__->run.grammar->symbs_ptr->nonterms_vlo);
-    VLO_DELETE(state__->run.grammar->symbs_ptr->terms_vlo);
-    VLO_DELETE(state__->run.grammar->symbs_ptr->symbs_vlo);
-    OS_DELETE(state__->run.grammar->symbs_ptr->symbs_os);
-    yaep_free(grammar->alloc, symbs);
+    delete_hash_table(ps->run.grammar->symbs_ptr->repr_to_symb_tab);
+    delete_hash_table(ps->run.grammar->symbs_ptr->code_to_symb_tab);
+    VLO_DELETE(ps->run.grammar->symbs_ptr->nonterms_vlo);
+    VLO_DELETE(ps->run.grammar->symbs_ptr->terms_vlo);
+    VLO_DELETE(ps->run.grammar->symbs_ptr->symbs_vlo);
+    OS_DELETE(ps->run.grammar->symbs_ptr->symbs_os);
+    yaep_free(ps->run.grammar->alloc, symbs);
 
     TRACE_FA("%p\n" , symbs);
 }
@@ -5189,7 +5189,7 @@ void yaepFreeGrammar(YaepParseRun *pr, YaepGrammar *g)
         pl_fin(ps);
         rule_fin(g, g->rules_ptr);
         term_set_fin(g, g->term_sets_ptr);
-        symb_fin(g, g->symbs_ptr);
+        symb_fin(ps, g->symbs_ptr);
         yaep_free(allocator, g);
         yaep_alloc_del(allocator);
     }
