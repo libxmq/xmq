@@ -2650,7 +2650,7 @@ static void set_loop_p(YaepParseState *ps)
     /* Initialize accoding to minimal criteria: There is a rule in which
        the nonterminal stands and all the rest symbols can derive empty
        strings.*/
-    for(rule = state__->run.grammar->rules_ptr->first_rule; rule != NULL; rule = rule->next)
+    for(rule = ps->run.grammar->rules_ptr->first_rule; rule != NULL; rule = rule->next)
         for(i = 0; i < rule->rhs_len; i++)
             if (!(symb = rule->rhs[i])->term_p)
             {
@@ -2919,7 +2919,7 @@ int yaep_read_grammar(YaepParseRun *pr,
     {
         /* Print rules.*/
         fprintf(stderr, "Rules:\n");
-        for(rule = state__->run.grammar->rules_ptr->first_rule; rule != NULL; rule = rule->next)
+        for(rule = ps->run.grammar->rules_ptr->first_rule; rule != NULL; rule = rule->next)
 	{
             fprintf(stderr, "  ");
             rule_print(ps, stderr, rule, TRUE);
@@ -2935,9 +2935,9 @@ int yaep_read_grammar(YaepParseRun *pr,
             if (ps->run.grammar->debug_level > 3)
 	    {
                 fprintf(stderr, "  First: ");
-                term_set_print(ps, stderr, symb->u.nonterm.first, state__->run.grammar->symbs_ptr->nn_terms);
+                term_set_print(ps, stderr, symb->u.nonterm.first, ps->run.grammar->symbs_ptr->nn_terms);
                 fprintf(stderr, "\n  Follow: ");
-                term_set_print(ps, stderr, symb->u.nonterm.follow, state__->run.grammar->symbs_ptr->nn_terms);
+                term_set_print(ps, stderr, symb->u.nonterm.follow, ps->run.grammar->symbs_ptr->nn_terms);
                 fprintf(stderr, "\n\n");
 	    }
 	}
@@ -3036,7 +3036,7 @@ static void yaep_parse_init(YaepParseState *ps, int n_toks)
             symb->cached_core_symb_vect = NULL;
     }
 #endif
-    for(rule = state__->run.grammar->rules_ptr->first_rule; rule != NULL; rule = rule->next)
+    for(rule = ps->run.grammar->rules_ptr->first_rule; rule != NULL; rule = rule->next)
         rule->caller_anode = NULL;
 }
 
@@ -3137,13 +3137,13 @@ static void expand_new_start_set(YaepParseState *ps)
 
         /* Now we have incorrect initial situations because their
            context is not correct.*/
-        context_set = term_set_create(state__->run.grammar->symbs_ptr->nn_terms);
+        context_set = term_set_create(ps->run.grammar->symbs_ptr->nn_terms);
         do
 	{
             changed_p = FALSE;
             for(i = ps->new_core->n_all_dists; i < ps->new_core->n_sits; i++)
 	    {
-                term_set_clear(context_set, state__->run.grammar->symbs_ptr->nn_terms);
+                term_set_clear(context_set, ps->run.grammar->symbs_ptr->nn_terms);
                 new_sit = ps->new_sits[i];
                 core_symb_vect = core_symb_vect_find(ps, ps->new_core, new_sit->rule->lhs);
                 for(j = 0; j < core_symb_vect->transitions.len; j++)
@@ -3152,11 +3152,11 @@ static void expand_new_start_set(YaepParseState *ps)
                     sit = ps->new_sits[sit_ind];
                     shifted_sit = sit_create(ps, sit->rule, sit->pos + 1,
                                               sit->context);
-                    term_set_or(context_set, shifted_sit->lookahead, state__->run.grammar->symbs_ptr->nn_terms);
+                    term_set_or(context_set, shifted_sit->lookahead, ps->run.grammar->symbs_ptr->nn_terms);
 		}
                 context = term_set_insert(ps, context_set);
                 if (context >= 0)
-                    context_set = term_set_create(state__->run.grammar->symbs_ptr->nn_terms);
+                    context_set = term_set_create(ps->run.grammar->symbs_ptr->nn_terms);
                 else
                     context = -context - 1;
                 sit = sit_create(ps, new_sit->rule, new_sit->pos, context);
@@ -3186,8 +3186,8 @@ static void build_start_set(YaepParseState *ps)
         context = 0;
     else
     {
-        context_set = term_set_create(state__->run.grammar->symbs_ptr->nn_terms);
-        term_set_clear(context_set, state__->run.grammar->symbs_ptr->nn_terms);
+        context_set = term_set_create(ps->run.grammar->symbs_ptr->nn_terms);
+        term_set_clear(context_set, ps->run.grammar->symbs_ptr->nn_terms);
         context = term_set_insert(ps, context_set);
         /* Empty context in the table has always number zero.*/
         assert(context == 0);
@@ -3200,14 +3200,14 @@ static void build_start_set(YaepParseState *ps)
     }
     if (!set_insert(ps)) assert(FALSE);
     expand_new_start_set(ps);
-    ps->pl[0] = state__->new_set;
+    ps->pl[0] = ps->new_set;
 
     if (ps->run.grammar->debug_level > 2)
     {
         fprintf(stderr, "\nParsing start...\n");
         if (ps->run.grammar->debug_level > 3)
         {
-            set_print(ps, stderr, state__->new_set, 0, ps->run.grammar->debug_level > 4, ps->run.grammar->debug_level > 5);
+            set_print(ps, stderr, ps->new_set, 0, ps->run.grammar->debug_level > 4, ps->run.grammar->debug_level > 5);
         }
     }
 }
@@ -3241,8 +3241,8 @@ static void build_new_set(YaepParseState *ps,
         sit = set_core->sits[sit_ind];
         new_sit = sit_create(ps, sit->rule, sit->pos + 1, sit->context);
         if (local_lookahead_level != 0
-            && !term_set_test(new_sit->lookahead, lookahead_term_num, state__->run.grammar->symbs_ptr->nn_terms)
-            && !term_set_test(new_sit->lookahead, ps->run.grammar->term_error_num, state__->run.grammar->symbs_ptr->nn_terms))
+            && !term_set_test(new_sit->lookahead, lookahead_term_num, ps->run.grammar->symbs_ptr->nn_terms)
+            && !term_set_test(new_sit->lookahead, ps->run.grammar->term_error_num, ps->run.grammar->symbs_ptr->nn_terms))
             continue;
         dist = 0;
         if (sit_ind >= set_core->n_all_dists)
@@ -3285,10 +3285,10 @@ static void build_new_set(YaepParseState *ps,
                 sit = prev_sits[sit_ind];
                 new_sit = sit_create(ps, sit->rule, sit->pos + 1, sit->context);
                 if (local_lookahead_level != 0
-                    && !term_set_test(new_sit->lookahead, lookahead_term_num, state__->run.grammar->symbs_ptr->nn_terms)
+                    && !term_set_test(new_sit->lookahead, lookahead_term_num, ps->run.grammar->symbs_ptr->nn_terms)
                     && !term_set_test(new_sit->lookahead,
                                       ps->run.grammar->term_error_num,
-                                      state__->run.grammar->symbs_ptr->nn_terms))
+                                      ps->run.grammar->symbs_ptr->nn_terms))
                     continue;
                 dist = 0;
                 if (sit_ind >= prev_set_core->n_all_dists)
@@ -5109,14 +5109,14 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     {
         fprintf(stderr, "%sGrammar: #terms = %d, #nonterms = %d, ",
                 *ambiguous_p ? "AMBIGUOUS " : "",
-                 state__->run.grammar->symbs_ptr->nn_terms, state__->run.grammar->symbs_ptr->n_nonterms);
+                 ps->run.grammar->symbs_ptr->nn_terms, ps->run.grammar->symbs_ptr->n_nonterms);
         fprintf(stderr, "#rules = %d, rules size = %d\n",
-                 state__->run.grammar->rules_ptr->n_rules,
-                 state__->run.grammar->rules_ptr->n_rhs_lens + state__->run.grammar->rules_ptr->n_rules);
+                 ps->run.grammar->rules_ptr->n_rules,
+                 ps->run.grammar->rules_ptr->n_rhs_lens + ps->run.grammar->rules_ptr->n_rules);
         fprintf(stderr, "Input: #tokens = %d, #unique situations = %d\n",
                  ps->toks_len, ps->n_all_sits);
         fprintf(stderr, "       #terminal sets = %d, their size = %d\n",
-                 state__->run.grammar->term_sets_ptr->n_term_sets, state__->run.grammar->term_sets_ptr->n_term_sets_size);
+                 ps->run.grammar->term_sets_ptr->n_term_sets, ps->run.grammar->term_sets_ptr->n_term_sets_size);
         fprintf(stderr,
                  "       #unique set cores = %d, #their start situations = %d\n",
                  ps->n_set_cores, ps->n_set_core_start_sits);
@@ -5426,7 +5426,7 @@ static void sit_print(YaepParseState *ps, FILE *f, YaepSituation *sit, int looka
     if (ps->run.grammar->lookahead_level != 0 && lookahead_p)
     {
         fprintf(f, ",");
-        term_set_print(ps, f, sit->lookahead, state__->run.grammar->symbs_ptr->nn_terms);
+        term_set_print(ps, f, sit->lookahead, ps->run.grammar->symbs_ptr->nn_terms);
     }
 }
 
