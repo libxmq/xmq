@@ -2923,6 +2923,29 @@ struct YaepParseState
     /* Number unique sets and their start situations. */
     int n_sets, n_sets_start_sits;
 
+    /* Number unique triples(set, term, lookahead). */
+    int n_set_term_lookaheads;
+
+    /* The set cores of formed sets are placed in the following os.*/
+    os_t set_cores_os;
+
+    /* The situations of formed sets are placed in the following os.*/
+    os_t set_sits_os;
+
+    /* The indexes of the parent start situations whose distances are used
+       to get distances of some nonstart situations are placed in the
+       following os.*/
+    os_t set_parent_indexes_os;
+
+    /* The distances of formed sets are placed in the following os.*/
+    os_t set_dists_os;
+
+    /* The sets themself are placed in the following os.*/
+    os_t sets_os;
+
+    /* Container for triples(set, term, lookahead. */
+    os_t set_term_lookahead_os;
+
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -2949,30 +2972,6 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 
 // Temporary global variable while migrating to thread safe code.
 static YaepParseState *state__;
-
-
-/* Number unique triples(set, term, lookahead). */
-static int n_set_term_lookaheads;
-
-/* The set cores of formed sets are placed in the following os.*/
-static os_t set_cores_os;
-
-/* The situations of formed sets are placed in the following os.*/
-static os_t set_sits_os;
-
-/* The indexes of the parent start situations whose distances are used
-   to get distances of some nonstart situations are placed in the
-   following os.*/
-static os_t set_parent_indexes_os;
-
-/* The distances of formed sets are placed in the following os.*/
-static os_t set_dists_os;
-
-/* The sets themself are placed in the following os.*/
-static os_t sets_os;
-
-/* Container for triples(set, term, lookahead. */
-static os_t set_term_lookahead_os;
 
 /* The following 3 tables contain references for sets which refers
    for set cores or distances or both which are in the tables.*/
@@ -3650,7 +3649,7 @@ static void term_set_print(YaepParseState *ps, FILE *f, term_set_el_t *set, int 
 }
 
 /* Free memory for terminal sets. */
-static void term_set_empty(YaepTermStorage*term_sets)
+static void term_set_empty(YaepTermStorage *term_sets)
 {
     if (term_sets == NULL) return;
 
@@ -3950,7 +3949,7 @@ static unsigned sits_hash(int n_sits, YaepSituation **sits)
 }
 
 /* Finalize work with situations. */
-static void sit_fin()
+static void sit_fin(YaepParseState *ps)
 {
     VLO_DELETE(sit_table_vlo);
     OS_DELETE(sits_os);
@@ -4114,27 +4113,22 @@ static void set_init(YaepParseState *ps, int n_toks)
 {
     int n = n_toks >> 3;
 
-    OS_CREATE(set_cores_os, ps->run.grammar->alloc, 0);
-    OS_CREATE(set_sits_os, ps->run.grammar->alloc, 2048);
-    OS_CREATE(set_parent_indexes_os, ps->run.grammar->alloc, 2048);
-    OS_CREATE(set_dists_os, ps->run.grammar->alloc, 2048);
-    OS_CREATE(sets_os, ps->run.grammar->alloc, 0);
-    OS_CREATE(set_term_lookahead_os, ps->run.grammar->alloc, 0);
-    set_core_tab =
-        create_hash_table(ps->run.grammar->alloc, 2000, set_core_hash, set_core_eq);
-    set_dists_tab =
-        create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, dists_hash,
-                           dists_eq);
-    set_tab =
-        create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
-                           set_core_dists_hash, set_core_dists_eq);
-    set_term_lookahead_tab =
-        create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
-                           set_term_lookahead_hash, set_term_lookahead_eq);
+    OS_CREATE(ps->set_cores_os, ps->run.grammar->alloc, 0);
+    OS_CREATE(ps->set_sits_os, ps->run.grammar->alloc, 2048);
+    OS_CREATE(ps->set_parent_indexes_os, ps->run.grammar->alloc, 2048);
+    OS_CREATE(ps->set_dists_os, ps->run.grammar->alloc, 2048);
+    OS_CREATE(ps->sets_os, ps->run.grammar->alloc, 0);
+    OS_CREATE(ps->set_term_lookahead_os, ps->run.grammar->alloc, 0);
+    set_core_tab = create_hash_table(ps->run.grammar->alloc, 2000, set_core_hash, set_core_eq);
+    set_dists_tab = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, dists_hash, dists_eq);
+    set_tab = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
+                                set_core_dists_hash, set_core_dists_eq);
+    set_term_lookahead_tab = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
+                                               set_term_lookahead_hash, set_term_lookahead_eq);
     ps->n_set_cores = ps->n_set_core_start_sits = 0;
     ps->n_set_dists = ps->n_set_dists_len = ps->n_parent_indexes = 0;
     ps->n_sets = ps->n_sets_start_sits = 0;
-    n_set_term_lookaheads = 0;
+    ps->n_set_term_lookaheads = 0;
     sit_dist_set_init(ps);
 }
 
@@ -4154,10 +4148,10 @@ static void set_new_start(YaepParseState *ps)
 static void set_new_add_start_sit(YaepParseState *ps, YaepSituation*sit, int dist)
 {
     assert(!ps->new_set_ready_p);
-    OS_TOP_EXPAND(set_dists_os, sizeof(int));
-    ps->new_dists =(int*) OS_TOP_BEGIN(set_dists_os);
-    OS_TOP_EXPAND(set_sits_os, sizeof(YaepSituation*));
-    ps->new_sits =(YaepSituation**) OS_TOP_BEGIN(set_sits_os);
+    OS_TOP_EXPAND(ps->set_dists_os, sizeof(int));
+    ps->new_dists =(int*) OS_TOP_BEGIN(ps->set_dists_os);
+    OS_TOP_EXPAND(ps->set_sits_os, sizeof(YaepSituation*));
+    ps->new_sits =(YaepSituation**) OS_TOP_BEGIN(ps->set_sits_os);
     ps->new_sits[ps->new_n_start_sits] = sit;
     ps->new_dists[ps->new_n_start_sits] = dist;
     ps->new_n_start_sits++;
@@ -4182,10 +4176,10 @@ static void set_add_new_nonstart_sit(YaepParseState *ps, YaepSituation*sit, int 
             return;
         }
     }
-    OS_TOP_EXPAND(set_sits_os, sizeof(YaepSituation*));
-    ps->new_sits = ps->new_core->sits =(YaepSituation**) OS_TOP_BEGIN(set_sits_os);
-    OS_TOP_EXPAND(set_parent_indexes_os, sizeof(int));
-    ps->new_core->parent_indexes = (int*)OS_TOP_BEGIN(set_parent_indexes_os) - ps->new_n_start_sits;
+    OS_TOP_EXPAND(ps->set_sits_os, sizeof(YaepSituation*));
+    ps->new_sits = ps->new_core->sits =(YaepSituation**) OS_TOP_BEGIN(ps->set_sits_os);
+    OS_TOP_EXPAND(ps->set_parent_indexes_os, sizeof(int));
+    ps->new_core->parent_indexes = (int*)OS_TOP_BEGIN(ps->set_parent_indexes_os) - ps->new_n_start_sits;
     ps->new_sits[ps->new_core->n_sits++] = sit;
     ps->new_core->parent_indexes[ps->new_core->n_all_dists++] = parent;
     ps->n_parent_indexes++;
@@ -4207,8 +4201,8 @@ static void set_new_add_initial_sit(YaepParseState *ps, YaepSituation*sit)
         if (ps->new_sits[i] == sit)
             return;
     /* Remember we do not store distance for non-start situations.*/
-    OS_TOP_ADD_MEMORY(set_sits_os, &sit, sizeof(YaepSituation*));
-    ps->new_sits = ps->new_core->sits =(YaepSituation**) OS_TOP_BEGIN(set_sits_os);
+    OS_TOP_ADD_MEMORY(ps->set_sits_os, &sit, sizeof(YaepSituation*));
+    ps->new_sits = ps->new_core->sits =(YaepSituation**) OS_TOP_BEGIN(ps->set_sits_os);
     ps->new_core->n_sits++;
 }
 
@@ -4245,11 +4239,11 @@ static int set_insert(YaepParseState *ps)
     hash_table_entry_t*entry;
     int result;
 
-    OS_TOP_EXPAND(sets_os, sizeof(YaepSet));
-    ps->new_set = (YaepSet*)OS_TOP_BEGIN(sets_os);
+    OS_TOP_EXPAND(ps->sets_os, sizeof(YaepSet));
+    ps->new_set = (YaepSet*)OS_TOP_BEGIN(ps->sets_os);
     ps->new_set->dists = ps->new_dists;
-    OS_TOP_EXPAND(set_cores_os, sizeof(YaepSetCore));
-    ps->new_set->core = ps->new_core = (YaepSetCore*) OS_TOP_BEGIN(set_cores_os);
+    OS_TOP_EXPAND(ps->set_cores_os, sizeof(YaepSetCore));
+    ps->new_set->core = ps->new_core = (YaepSetCore*) OS_TOP_BEGIN(ps->set_cores_os);
     ps->new_core->n_start_sits = ps->new_n_start_sits;
     ps->new_core->sits = ps->new_sits;
     ps->new_set_ready_p = TRUE;
@@ -4260,17 +4254,17 @@ static int set_insert(YaepParseState *ps)
     if (*entry != NULL)
     {
         ps->new_dists = ps->new_set->dists =((YaepSet*)*entry)->dists;
-        OS_TOP_NULLIFY(set_dists_os);
+        OS_TOP_NULLIFY(ps->set_dists_os);
     }
     else
     {
-        OS_TOP_FINISH(set_dists_os);
+        OS_TOP_FINISH(ps->set_dists_os);
        *entry =(hash_table_entry_t)ps->new_set;
         ps->n_set_dists++;
         ps->n_set_dists_len += ps->new_n_start_sits;
     }
 #else
-    OS_TOP_FINISH(set_dists_os);
+    OS_TOP_FINISH(ps->set_dists_os);
     ps->n_set_dists++;
     ps->n_set_dists_len += ps->new_n_start_sits;
 #endif
@@ -4279,15 +4273,15 @@ static int set_insert(YaepParseState *ps)
     entry = find_hash_table_entry(set_core_tab, ps->new_set, TRUE);
     if (*entry != NULL)
     {
-        OS_TOP_NULLIFY(set_cores_os);
+        OS_TOP_NULLIFY(ps->set_cores_os);
         ps->new_set->core = ps->new_core = ((YaepSet*)*entry)->core;
         ps->new_sits = ps->new_core->sits;
-        OS_TOP_NULLIFY(set_sits_os);
+        OS_TOP_NULLIFY(ps->set_sits_os);
         result = FALSE;
     }
     else
     {
-        OS_TOP_FINISH(set_cores_os);
+        OS_TOP_FINISH(ps->set_cores_os);
         ps->new_core->num = ps->n_set_cores++;
         ps->new_core->n_sits = ps->new_n_start_sits;
         ps->new_core->n_all_dists = ps->new_n_start_sits;
@@ -4304,41 +4298,41 @@ static int set_insert(YaepParseState *ps)
        *entry =(hash_table_entry_t)ps->new_set;
         ps->n_sets++;
         ps->n_sets_start_sits += ps->new_n_start_sits;
-        OS_TOP_FINISH(sets_os);
+        OS_TOP_FINISH(ps->sets_os);
     }
     else
     {
         ps->new_set = (YaepSet*)*entry;
-        OS_TOP_NULLIFY(sets_os);
+        OS_TOP_NULLIFY(ps->sets_os);
     }
 #else
-    OS_TOP_FINISH(sets_os);
+    OS_TOP_FINISH(ps->sets_os);
 #endif
     return result;
 }
 
 /* The following function finishes work with set being formed.*/
-static void set_new_core_stop()
+static void set_new_core_stop(YaepParseState *ps)
 {
-    OS_TOP_FINISH(set_sits_os);
-    OS_TOP_FINISH(set_parent_indexes_os);
+    OS_TOP_FINISH(ps->set_sits_os);
+    OS_TOP_FINISH(ps->set_parent_indexes_os);
 }
 
 
 /* Finalize work with sets.*/
-static void set_fin()
+static void set_fin(YaepParseState *ps)
 {
-    sit_dist_set_fin();
+    sit_dist_set_fin(ps);
     delete_hash_table(set_term_lookahead_tab);
     delete_hash_table(set_tab);
     delete_hash_table(set_dists_tab);
     delete_hash_table(set_core_tab);
-    OS_DELETE(set_term_lookahead_os);
-    OS_DELETE(sets_os);
-    OS_DELETE(set_parent_indexes_os);
-    OS_DELETE(set_sits_os);
-    OS_DELETE(set_dists_os);
-    OS_DELETE(set_cores_os);
+    OS_DELETE(ps->set_term_lookahead_os);
+    OS_DELETE(ps->sets_os);
+    OS_DELETE(ps->set_parent_indexes_os);
+    OS_DELETE(ps->set_sits_os);
+    OS_DELETE(ps->set_dists_os);
+    OS_DELETE(ps->set_cores_os);
 }
 
 /* Initialize work with the parser list.*/
@@ -5378,11 +5372,11 @@ static void yaep_parse_init(YaepParseState *ps, int n_toks)
 
 /* The function should be called the last(it frees all allocated
    data for parser).*/
-static void yaep_parse_fin()
+static void yaep_parse_fin(YaepParseState *ps)
 {
     core_symb_vect_fin();
-    set_fin();
-    sit_fin();
+    set_fin(ps);
+    sit_fin(ps);
 }
 
 /* The following function reads all input tokens.*/
@@ -5505,7 +5499,7 @@ static void expand_new_start_set(YaepParseState *ps)
 	}
         while(changed_p);
     }
-    set_new_core_stop();
+    set_new_core_stop(ps);
     core_symb_vect_new_all_stop();
 }
 
@@ -6233,24 +6227,20 @@ static void build_pl(YaepParseState *ps)
         set = pl[pl_curr];
         ps->new_set = NULL;
 #ifdef USE_SET_HASH_TABLE
-        OS_TOP_EXPAND(set_term_lookahead_os,
-                       sizeof(YaepSetTermLookAhead));
-        new_set_term_lookahead =
-           (YaepSetTermLookAhead*) OS_TOP_BEGIN(set_term_lookahead_os);
+        OS_TOP_EXPAND(ps->set_term_lookahead_os, sizeof(YaepSetTermLookAhead));
+        new_set_term_lookahead = (YaepSetTermLookAhead*) OS_TOP_BEGIN(ps->set_term_lookahead_os);
         new_set_term_lookahead->set = set;
         new_set_term_lookahead->term = term;
         new_set_term_lookahead->lookahead = lookahead_term_num;
         for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
             new_set_term_lookahead->result[i] = NULL;
         new_set_term_lookahead->curr = 0;
-        entry =
-            find_hash_table_entry(set_term_lookahead_tab, new_set_term_lookahead,
-                                   TRUE);
+        entry = find_hash_table_entry(set_term_lookahead_tab, new_set_term_lookahead, TRUE);
         if (*entry != NULL)
 	{
             YaepSet*tab_set;
 
-            OS_TOP_NULLIFY(set_term_lookahead_os);
+            OS_TOP_NULLIFY(ps->set_term_lookahead_os);
             for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
                 if ((tab_set =
                     ((YaepSetTermLookAhead*)*entry)->result[i]) == NULL)
@@ -6266,9 +6256,9 @@ static void build_pl(YaepParseState *ps)
 	}
         else
 	{
-            OS_TOP_FINISH(set_term_lookahead_os);
-           *entry =(hash_table_entry_t) new_set_term_lookahead;
-            n_set_term_lookaheads++;
+            OS_TOP_FINISH(ps->set_term_lookahead_os);
+            *entry =(hash_table_entry_t) new_set_term_lookahead;
+            ps->n_set_term_lookaheads++;
 	}
 
 #endif
@@ -7420,7 +7410,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     {
         pl_fin(ps);
         if (parse_init_p)
-            yaep_parse_fin();
+            yaep_parse_fin(ps);
         if (tok_init_p)
             tok_fin();
         return code;
@@ -7472,7 +7462,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  ps->n_sets, ps->n_sets_start_sits);
         fprintf(stderr,
                  "       #unique triples(set, term, lookahead) = %d, goto successes=%d\n",
-                 n_set_term_lookaheads, n_goto_successes);
+                ps->n_set_term_lookaheads, n_goto_successes);
         fprintf(stderr,
                  "       #pairs(set core, symb) = %d, their trans+reduce vects length = %d\n",
                  n_core_symb_pairs, n_core_symb_vect_len);
@@ -7498,7 +7488,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  tab_collisions, tab_searches);
     }
 #endif
-    yaep_parse_fin();
+    yaep_parse_fin(ps);
     tok_fin();
     return 0;
 }
