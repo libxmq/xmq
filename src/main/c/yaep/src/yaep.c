@@ -575,6 +575,14 @@ struct YaepParseState
       can be read externally.  Member core of new_set has always the
       following value.  It is defined only when new_set_ready_p is TRUE. */
     YaepSetCore *new_core;
+
+   /* To optimize code we use the following variables to access to data
+      of new set.  They are always defined and correspondingly
+      situations, distances, and the current number of start situations
+      of the set being formed.*/
+    YaepSituation **new_sits;
+    int *new_dists;
+    int new_n_start_sits;
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -601,14 +609,6 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 
 // Temporary global variable while migrating to thread safe code.
 static YaepParseState *state__;
-
-/* To optimize code we use the following variables to access to data
-   of new set.  They are always defined and correspondingly
-   situations, distances, and the current number of start situations
-   of the set being formed.*/
-static YaepSituation **new_sits;
-static int *new_dists;
-static int new_n_start_sits;
 
 /* The following are number of unique set cores and their start
    situations, unique distance vectors and their summary length, and
@@ -1812,9 +1812,9 @@ static void set_new_start(YaepParseState *ps)
     ps->new_set = NULL;
     ps->new_core = NULL;
     ps->new_set_ready_p = FALSE;
-    new_n_start_sits = 0;
-    new_sits = NULL;
-    new_dists = NULL;
+    ps->new_sits = NULL;
+    ps->new_dists = NULL;
+    ps->new_n_start_sits = 0;
 }
 
 /* Add start SIT with distance DIST at the end of the situation array
@@ -1823,12 +1823,12 @@ static void set_new_add_start_sit(YaepParseState *ps, YaepSituation*sit, int dis
 {
     assert(!ps->new_set_ready_p);
     OS_TOP_EXPAND(set_dists_os, sizeof(int));
-    new_dists =(int*) OS_TOP_BEGIN(set_dists_os);
+    ps->new_dists =(int*) OS_TOP_BEGIN(set_dists_os);
     OS_TOP_EXPAND(set_sits_os, sizeof(YaepSituation*));
-    new_sits =(YaepSituation**) OS_TOP_BEGIN(set_sits_os);
-    new_sits[new_n_start_sits] = sit;
-    new_dists[new_n_start_sits] = dist;
-    new_n_start_sits++;
+    ps->new_sits =(YaepSituation**) OS_TOP_BEGIN(set_sits_os);
+    ps->new_sits[ps->new_n_start_sits] = sit;
+    ps->new_dists[ps->new_n_start_sits] = dist;
+    ps->new_n_start_sits++;
 }
 
 /* Add nonstart, noninitial SIT with distance DIST at the end of the
@@ -1843,18 +1843,18 @@ static void set_add_new_nonstart_sit(YaepParseState *ps, YaepSituation*sit, int 
     /* When we add non-start situations we need to have pairs
       (situation, the corresponding distance) without duplicates
        because we also forms core_symb_vect at that time.*/
-    for(i = new_n_start_sits; i < ps->new_core->n_sits; i++)
+    for(i = ps->new_n_start_sits; i < ps->new_core->n_sits; i++)
     {
-        if (new_sits[i] == sit && ps->new_core->parent_indexes[i] == parent)
+        if (ps->new_sits[i] == sit && ps->new_core->parent_indexes[i] == parent)
         {
             return;
         }
     }
     OS_TOP_EXPAND(set_sits_os, sizeof(YaepSituation*));
-    new_sits = ps->new_core->sits =(YaepSituation**) OS_TOP_BEGIN(set_sits_os);
+    ps->new_sits = ps->new_core->sits =(YaepSituation**) OS_TOP_BEGIN(set_sits_os);
     OS_TOP_EXPAND(set_parent_indexes_os, sizeof(int));
-    ps->new_core->parent_indexes = (int*)OS_TOP_BEGIN(set_parent_indexes_os) - new_n_start_sits;
-    new_sits[ps->new_core->n_sits++] = sit;
+    ps->new_core->parent_indexes = (int*)OS_TOP_BEGIN(set_parent_indexes_os) - ps->new_n_start_sits;
+    ps->new_sits[ps->new_core->n_sits++] = sit;
     ps->new_core->parent_indexes[ps->new_core->n_all_dists++] = parent;
     n_parent_indexes++;
 }
@@ -1871,12 +1871,12 @@ static void set_new_add_initial_sit(YaepParseState *ps, YaepSituation*sit)
     /* When we add non-start situations we need to have pairs
       (situation, the corresponding distance) without duplicates
        because we also forms core_symb_vect at that time.*/
-    for(i = new_n_start_sits; i < ps->new_core->n_sits; i++)
-        if (new_sits[i] == sit)
+    for(i = ps->new_n_start_sits; i < ps->new_core->n_sits; i++)
+        if (ps->new_sits[i] == sit)
             return;
     /* Remember we do not store distance for non-start situations.*/
     OS_TOP_ADD_MEMORY(set_sits_os, &sit, sizeof(YaepSituation*));
-    new_sits = ps->new_core->sits =(YaepSituation**) OS_TOP_BEGIN(set_sits_os);
+    ps->new_sits = ps->new_core->sits =(YaepSituation**) OS_TOP_BEGIN(set_sits_os);
     ps->new_core->n_sits++;
 }
 
@@ -1915,11 +1915,11 @@ static int set_insert(YaepParseState *ps)
 
     OS_TOP_EXPAND(sets_os, sizeof(YaepSet));
     ps->new_set = (YaepSet*)OS_TOP_BEGIN(sets_os);
-    ps->new_set->dists = new_dists;
+    ps->new_set->dists = ps->new_dists;
     OS_TOP_EXPAND(set_cores_os, sizeof(YaepSetCore));
     ps->new_set->core = ps->new_core = (YaepSetCore*) OS_TOP_BEGIN(set_cores_os);
-    ps->new_core->n_start_sits = new_n_start_sits;
-    ps->new_core->sits = new_sits;
+    ps->new_core->n_start_sits = ps->new_n_start_sits;
+    ps->new_core->sits = ps->new_sits;
     ps->new_set_ready_p = TRUE;
 #ifdef USE_SET_HASH_TABLE
     /* Insert dists into table.*/
@@ -1927,7 +1927,7 @@ static int set_insert(YaepParseState *ps)
     entry = find_hash_table_entry(set_dists_tab, ps->new_set, TRUE);
     if (*entry != NULL)
     {
-        new_dists = ps->new_set->dists =((YaepSet*)*entry)->dists;
+        ps->new_dists = ps->new_set->dists =((YaepSet*)*entry)->dists;
         OS_TOP_NULLIFY(set_dists_os);
     }
     else
@@ -1935,12 +1935,12 @@ static int set_insert(YaepParseState *ps)
         OS_TOP_FINISH(set_dists_os);
        *entry =(hash_table_entry_t)ps->new_set;
         n_set_dists++;
-        n_set_dists_len += new_n_start_sits;
+        n_set_dists_len += ps->new_n_start_sits;
     }
 #else
     OS_TOP_FINISH(set_dists_os);
     n_set_dists++;
-    n_set_dists_len += new_n_start_sits;
+    n_set_dists_len += ps->new_n_start_sits;
 #endif
     /* Insert set core into table.*/
     setup_set_core_hash(ps->new_set);
@@ -1949,7 +1949,7 @@ static int set_insert(YaepParseState *ps)
     {
         OS_TOP_NULLIFY(set_cores_os);
         ps->new_set->core = ps->new_core = ((YaepSet*)*entry)->core;
-        new_sits = ps->new_core->sits;
+        ps->new_sits = ps->new_core->sits;
         OS_TOP_NULLIFY(set_sits_os);
         result = FALSE;
     }
@@ -1957,11 +1957,11 @@ static int set_insert(YaepParseState *ps)
     {
         OS_TOP_FINISH(set_cores_os);
         ps->new_core->num = n_set_cores++;
-        ps->new_core->n_sits = new_n_start_sits;
-        ps->new_core->n_all_dists = new_n_start_sits;
+        ps->new_core->n_sits = ps->new_n_start_sits;
+        ps->new_core->n_all_dists = ps->new_n_start_sits;
         ps->new_core->parent_indexes = NULL;
        *entry =(hash_table_entry_t)ps->new_set;
-        n_set_core_start_sits += new_n_start_sits;
+        n_set_core_start_sits += ps->new_n_start_sits;
         result = TRUE;
     }
 #ifdef USE_SET_HASH_TABLE
@@ -1971,7 +1971,7 @@ static int set_insert(YaepParseState *ps)
     {
        *entry =(hash_table_entry_t)ps->new_set;
         n_sets++;
-        n_sets_start_sits += new_n_start_sits;
+        n_sets_start_sits += ps->new_n_start_sits;
         OS_TOP_FINISH(sets_os);
     }
     else
@@ -3096,12 +3096,12 @@ static void expand_new_start_set(YaepParseState *ps)
     int i;
 
     /* Add non start situations with nonzero distances.*/
-    for(i = 0; i < new_n_start_sits; i++)
-        add_derived_nonstart_sits(ps, new_sits[i], i);
+    for(i = 0; i < ps->new_n_start_sits; i++)
+        add_derived_nonstart_sits(ps, ps->new_sits[i], i);
     /* Add non start situations and form transitions vectors.*/
     for(i = 0; i < ps->new_core->n_sits; i++)
     {
-        sit = new_sits[i];
+        sit = ps->new_sits[i];
         if (sit->pos < sit->rule->rhs_len)
 	{
             /* There is a symbol after dot in the situation.*/
@@ -3123,7 +3123,7 @@ static void expand_new_start_set(YaepParseState *ps)
     /* Now forming reduce vectors.*/
     for(i = 0; i < ps->new_core->n_sits; i++)
     {
-        sit = new_sits[i];
+        sit = ps->new_sits[i];
         if (sit->pos == sit->rule->rhs_len)
 	{
             symb = sit->rule->lhs;
@@ -3148,12 +3148,12 @@ static void expand_new_start_set(YaepParseState *ps)
             for(i = ps->new_core->n_all_dists; i < ps->new_core->n_sits; i++)
 	    {
                 term_set_clear(context_set, state__->run.grammar->symbs_ptr->nn_terms);
-                new_sit = new_sits[i];
+                new_sit = ps->new_sits[i];
                 core_symb_vect = core_symb_vect_find(ps, ps->new_core, new_sit->rule->lhs);
                 for(j = 0; j < core_symb_vect->transitions.len; j++)
 		{
                     sit_ind = core_symb_vect->transitions.els[j];
-                    sit = new_sits[sit_ind];
+                    sit = ps->new_sits[sit_ind];
                     shifted_sit = sit_create(ps, sit->rule, sit->pos + 1,
                                               sit->context);
                     term_set_or(context_set, shifted_sit->lookahead, state__->run.grammar->symbs_ptr->nn_terms);
@@ -3166,7 +3166,7 @@ static void expand_new_start_set(YaepParseState *ps)
                 sit = sit_create(ps, new_sit->rule, new_sit->pos, context);
                 if (sit != new_sit)
 		{
-                    new_sits[i] = sit;
+                    ps->new_sits[i] = sit;
                     changed_p = TRUE;
 		}
 	    }
@@ -3259,17 +3259,16 @@ static void build_new_set(YaepParseState *ps,
         if (sit_dist_insert(ps, new_sit, dist))
             set_new_add_start_sit(ps, new_sit, dist);
     }
-    for(i = 0; i < new_n_start_sits; i++)
+    for(i = 0; i < ps->new_n_start_sits; i++)
     {
-        new_sit = new_sits[i];
-        if (new_sit->empty_tail_p
-            )
+        new_sit = ps->new_sits[i];
+        if (new_sit->empty_tail_p)
 	{
             int*curr_el,*bound;
 
             /* All tail in new sitiation may derivate empty string so
                make reduce and add new situations.*/
-            new_dist = new_dists[i];
+            new_dist = ps->new_dists[i];
             place = pl_curr + 1 - new_dist;
             prev_set = pl[place];
             prev_set_core = prev_set->core;
@@ -5457,9 +5456,9 @@ static void set_print(YaepParseState *ps, FILE* f, YaepSet*set, int set_dist, in
            debugger.  In this case new_set, new_core and their members
            may be not set up yet.*/
         num = -1;
-        n_start_sits = n_sits = n_all_dists = new_n_start_sits;
-        sits = new_sits;
-        dists = new_dists;
+        n_start_sits = n_sits = n_all_dists = ps->new_n_start_sits;
+        sits = ps->new_sits;
+        dists = ps->new_dists;
         parent_indexes = NULL;
     }
     else
