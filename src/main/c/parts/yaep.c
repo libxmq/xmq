@@ -3066,6 +3066,53 @@ struct YaepParseState
        set(set before the error_recovery start).*/
     int original_last_pl_el;
 
+    /// GURKA
+
+    /* This page contains code for work with array of vlos.  It is used
+       only to implement abstract data `core_symb_vect'.*/
+
+    /* All vlos being formed are placed in the following object.*/
+    vlo_t vlo_array;
+
+    /* The following is current number of elements in vlo_array.*/
+    int vlo_array_len;
+
+    /* The following table is used to find allocated memory which should not be freed.*/
+    hash_table_t reserv_mem_tab;
+
+    /* The following vlo will contain references to memory which should be
+       freed.  The same reference can be represented more on time.*/
+    vlo_t tnodes_vlo;
+
+    /* The key of the following table is node itself.*/
+    hash_table_t trans_visit_nodes_tab;
+
+    /* All translation visit nodes are placed in the following stack.  All
+       the nodes are in the table.*/
+    os_t trans_visit_nodes_os;
+
+    /* The following value is number of translation visit nodes.*/
+    int n_trans_visit_nodes;
+
+    /* How many times we reuse Earley's sets without their recalculation. */
+    int n_goto_successes;
+
+    /* The following vlo is error recovery states stack.  The stack
+       contains error recovery state which should be investigated to find
+       the best error recovery.*/
+    vlo_t recovery_state_stack;
+
+    /* The following os contains all allocated parser states.*/
+    os_t parse_state_os;
+
+    /* The following variable refers to head of chain of already allocated
+       and then freed parser states.*/
+    YaepInternalParseState *free_parse_state;
+
+    /* The following table is used to make translation for ambiguous
+       grammar more compact.  It is used only when we want all
+       translations.*/
+    hash_table_t parse_state_tab;	/* Key is rule, orig, pl_ind.*/
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -3093,54 +3140,8 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 // Temporary global variable while migrating to thread safe code.
 static YaepParseState *state__;
 
-/* This page contains code for work with array of vlos.  It is used
-   only to implement abstract data `core_symb_vect'.*/
-
-/* All vlos being formed are placed in the following object.*/
-static vlo_t vlo_array;
-
-/* The following is current number of elements in vlo_array.*/
-static int vlo_array_len;
-
-/* The following table is used to find allocated memory which should not be freed.*/
-static hash_table_t reserv_mem_tab;
-
-/* The following vlo will contain references to memory which should be
-   freed.  The same reference can be represented more on time.*/
-static vlo_t tnodes_vlo;
-
-/* The key of the following table is node itself.*/
-static hash_table_t trans_visit_nodes_tab;
-
-/* All translation visit nodes are placed in the following stack.  All
-   the nodes are in the table.*/
-static os_t trans_visit_nodes_os;
-
-/* The following value is number of translation visit nodes.*/
-static int n_trans_visit_nodes;
-
-/* How many times we reuse Earley's sets without their recalculation. */
-static int n_goto_successes;
-
 /* Jump buffer for processing errors.*/
-static jmp_buf error_longjump_buff;
-
-/* The following vlo is error recovery states stack.  The stack
-   contains error recovery state which should be investigated to find
-   the best error recovery.*/
-static vlo_t recovery_state_stack;
-
-/* The following os contains all allocated parser states.*/
-static os_t parse_state_os;
-
-/* The following variable refers to head of chain of already allocated
-   and then freed parser states.*/
-static YaepInternalParseState *free_parse_state;
-
-/* The following table is used to make translation for ambiguous
-   grammar more compact.  It is used only when we want all
-   translations.*/
-static hash_table_t parse_state_tab;	/* Key is rule, orig, pl_ind.*/
+jmp_buf error_longjump_buff;
 
 // Implementations ////////////////////////////////////////////////////////////////////
 
@@ -4360,8 +4361,8 @@ static void pl_fin(YaepParseState *ps)
 /* Initialize work with array of vlos.*/
 static void vlo_array_init(YaepParseState *ps)
 {
-    VLO_CREATE(vlo_array, ps->run.grammar->alloc, 4096);
-    vlo_array_len = 0;
+    VLO_CREATE(ps->vlo_array, ps->run.grammar->alloc, 4096);
+    ps->vlo_array_len = 0;
 }
 
 /* The function forms new empty vlo at the end of the array of vlos.*/
@@ -4369,42 +4370,43 @@ static int vlo_array_expand(YaepParseState *ps)
 {
     vlo_t*vlo_ptr;
 
-    if ((unsigned) vlo_array_len >= VLO_LENGTH(vlo_array) / sizeof(vlo_t))
+    if ((unsigned) ps->vlo_array_len >= VLO_LENGTH(ps->vlo_array) / sizeof(vlo_t))
     {
-        VLO_EXPAND(vlo_array, sizeof(vlo_t));
-        vlo_ptr = &((vlo_t*) VLO_BEGIN(vlo_array))[vlo_array_len];
+        VLO_EXPAND(ps->vlo_array, sizeof(vlo_t));
+        vlo_ptr = &((vlo_t*) VLO_BEGIN(ps->vlo_array))[ps->vlo_array_len];
         VLO_CREATE(*vlo_ptr, ps->run.grammar->alloc, 64);
     }
     else
     {
-        vlo_ptr = &((vlo_t*) VLO_BEGIN(vlo_array))[vlo_array_len];
+        vlo_ptr = &((vlo_t*) VLO_BEGIN(ps->vlo_array))[ps->vlo_array_len];
         VLO_NULLIFY(*vlo_ptr);
     }
-    return vlo_array_len++;
+    return ps->vlo_array_len++;
 }
 
 /* The function purges the array of vlos.*/
-static void vlo_array_nullify()
+static void vlo_array_nullify(YaepParseState *ps)
 {
-    vlo_array_len = 0;
+    ps->vlo_array_len = 0;
 }
 
 /* The following function returns pointer to vlo with INDEX.*/
-static vlo_t *vlo_array_el(int index)
+static vlo_t *vlo_array_el(YaepParseState *ps, int index)
 {
-    assert(index >= 0 && vlo_array_len > index);
-    return &((vlo_t*) VLO_BEGIN(vlo_array))[index];
+    assert(index >= 0 && ps->vlo_array_len > index);
+    return &((vlo_t*) VLO_BEGIN(ps->vlo_array))[index];
 }
 
 /* Finalize work with array of vlos.*/
-static void vlo_array_fin()
+static void vlo_array_fin(YaepParseState *ps)
 {
-    vlo_t*vlo_ptr;
+    vlo_t *vlo_ptr;
 
-    for(vlo_ptr =(vlo_t*) VLO_BEGIN(vlo_array);
-        (char*) vlo_ptr <(char*) VLO_BOUND(vlo_array); vlo_ptr++)
+    for (vlo_ptr = (vlo_t*)VLO_BEGIN(ps->vlo_array); (char*) vlo_ptr < (char*) VLO_BOUND(ps->vlo_array); vlo_ptr++)
+    {
         VLO_DELETE(*vlo_ptr);
-    VLO_DELETE(vlo_array);
+    }
+    VLO_DELETE(ps->vlo_array);
 }
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
@@ -4613,12 +4615,12 @@ static YaepCoreSymbVect *core_symb_vect_new(YaepParseState *ps, YaepSetCore*set_
    *addr = triple;
 
     triple->transitions.intern = vlo_array_expand(ps);
-    vlo_ptr = vlo_array_el(triple->transitions.intern);
+    vlo_ptr = vlo_array_el(ps, triple->transitions.intern);
     triple->transitions.len = 0;
     triple->transitions.els =(int*) VLO_BEGIN(*vlo_ptr);
 
     triple->reduces.intern = vlo_array_expand(ps);
-    vlo_ptr = vlo_array_el(triple->reduces.intern);
+    vlo_ptr = vlo_array_el(ps, triple->reduces.intern);
     triple->reduces.len = 0;
     triple->reduces.els =(int*) VLO_BEGIN(*vlo_ptr);
     VLO_ADD_MEMORY(ps->new_core_symb_vect_vlo, &triple,
@@ -4633,7 +4635,7 @@ static void vect_new_add_el(YaepParseState *ps, YaepVect*vec, int el)
     vlo_t*vlo_ptr;
 
     vec->len++;
-    vlo_ptr = vlo_array_el(vec->intern);
+    vlo_ptr = vlo_array_el(ps, vec->intern);
     VLO_ADD_MEMORY(*vlo_ptr, &el, sizeof(int));
     vec->els =(int*) VLO_BEGIN(*vlo_ptr);
     ps->n_core_symb_vect_len++;
@@ -4705,7 +4707,7 @@ static void core_symb_vect_new_all_stop(YaepParseState *ps)
                                   &ps->reduce_els_tab, &ps->n_reduce_vects,
                                   &ps->n_reduce_vect_len);
     }
-    vlo_array_nullify();
+    vlo_array_nullify(ps);
     VLO_NULLIFY(ps->new_core_symb_vect_vlo);
 }
 
@@ -4721,7 +4723,7 @@ static void core_symb_vect_fin(YaepParseState *ps)
     OS_DELETE(ps->core_symb_tab_rows);
     VLO_DELETE(ps->core_symb_table_vlo);
 #endif
-    vlo_array_fin();
+    vlo_array_fin(ps);
     OS_DELETE(ps->vect_els_os);
     VLO_DELETE(ps->new_core_symb_vect_vlo);
     OS_DELETE(ps->core_symb_vect_os);
@@ -5824,7 +5826,7 @@ static void push_recovery_state(YaepParseState *ps, int last_original_pl_el, int
         fprintf(stderr, "\n");
     }
 #endif
-    VLO_ADD_MEMORY(recovery_state_stack, &state, sizeof(state));
+    VLO_ADD_MEMORY(ps->recovery_state_stack, &state, sizeof(state));
 }
 
 /* The following function sets up parser state(pl, pl_curr, ps->tok_curr)
@@ -5867,8 +5869,8 @@ static struct recovery_state pop_recovery_state(YaepParseState *ps)
 {
     struct recovery_state *state;
 
-    state = &((struct recovery_state*) VLO_BOUND(recovery_state_stack))[-1];
-    VLO_SHORTEN(recovery_state_stack, sizeof(struct recovery_state));
+    state = &((struct recovery_state*) VLO_BOUND(ps->recovery_state_stack))[-1];
+    VLO_SHORTEN(ps->recovery_state_stack, sizeof(struct recovery_state));
 #ifndef NO_YAEP_DEBUG_PRINT
     if (ps->run.grammar->debug_level > 2)
         fprintf(stderr, "++++Pop error recovery state\n");
@@ -5898,7 +5900,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
    *stop =*start = -1;
     OS_CREATE(ps->recovery_state_tail_sets, ps->run.grammar->alloc, 0);
     VLO_NULLIFY(ps->original_pl_tail_stack);
-    VLO_NULLIFY(recovery_state_stack);
+    VLO_NULLIFY(ps->recovery_state_stack);
     ps->start_pl_curr = ps->pl_curr;
     ps->start_tok_curr = ps->tok_curr;
     /* Initialize error recovery state stack.*/
@@ -5908,7 +5910,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
     save_original_sets(ps);
     push_recovery_state(ps, ps->back_pl_frontier, backward_move_cost);
     best_cost = 2* ps->toks_len;
-    while(VLO_LENGTH(recovery_state_stack) > 0)
+    while(VLO_LENGTH(ps->recovery_state_stack) > 0)
     {
         state = pop_recovery_state(ps);
         cost = state.backward_move_cost;
@@ -6150,13 +6152,13 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 static void error_recovery_init(YaepParseState *ps)
 {
     VLO_CREATE(ps->original_pl_tail_stack, ps->run.grammar->alloc, 4096);
-    VLO_CREATE(recovery_state_stack, ps->run.grammar->alloc, 4096);
+    VLO_CREATE(ps->recovery_state_stack, ps->run.grammar->alloc, 4096);
 }
 
 /* Finalize work with error recovery.*/
 static void error_recovery_fin(YaepParseState *ps)
 {
-    VLO_DELETE(recovery_state_stack);
+    VLO_DELETE(ps->recovery_state_stack);
     VLO_DELETE(ps->original_pl_tail_stack);
 }
 
@@ -6248,7 +6250,7 @@ static void build_pl(YaepParseState *ps)
                                                      ((YaepSetTermLookAhead*)*entry)->place[i]))
                 {
                     ps->new_set = tab_set;
-                    n_goto_successes++;
+                    ps->n_goto_successes++;
                     break;
                 }
 	}
@@ -6338,38 +6340,38 @@ static int parse_state_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 /* The following function initializes work with parser states.*/
 static void parse_state_init(YaepParseState *ps)
 {
-    free_parse_state = NULL;
-    OS_CREATE(parse_state_os, ps->run.grammar->alloc, 0);
+    ps->free_parse_state = NULL;
+    OS_CREATE(ps->parse_state_os, ps->run.grammar->alloc, 0);
     if (!ps->run.grammar->one_parse_p)
-        parse_state_tab =
+        ps->parse_state_tab =
             create_hash_table(ps->run.grammar->alloc, ps->toks_len* 2, parse_state_hash,
                                parse_state_eq);
 }
 
 /* The following function returns new parser state.*/
-static YaepInternalParseState *parse_state_alloc()
+static YaepInternalParseState *parse_state_alloc(YaepParseState *ps)
 {
     YaepInternalParseState*result;
 
-    if (free_parse_state == NULL)
+    if (ps->free_parse_state == NULL)
     {
-        OS_TOP_EXPAND(parse_state_os, sizeof(YaepInternalParseState));
-        result =(YaepInternalParseState*) OS_TOP_BEGIN(parse_state_os);
-        OS_TOP_FINISH(parse_state_os);
+        OS_TOP_EXPAND(ps->parse_state_os, sizeof(YaepInternalParseState));
+        result =(YaepInternalParseState*) OS_TOP_BEGIN(ps->parse_state_os);
+        OS_TOP_FINISH(ps->parse_state_os);
     }
     else
     {
-        result = free_parse_state;
-        free_parse_state =(YaepInternalParseState*) free_parse_state->rule;
+        result = ps->free_parse_state;
+        ps->free_parse_state =(YaepInternalParseState*) ps->free_parse_state->rule;
     }
     return result;
 }
 
 /* The following function frees STATE.*/
-static void parse_state_free(YaepInternalParseState*state)
+static void parse_state_free(YaepParseState *ps, YaepInternalParseState*state)
 {
-    state->rule =(YaepRule*) free_parse_state;
-    free_parse_state = state;
+    state->rule = (YaepRule*)ps->free_parse_state;
+    ps->free_parse_state = state;
 }
 
 /* The following function searches for state in the table with the
@@ -6377,11 +6379,11 @@ static void parse_state_free(YaepInternalParseState*state)
    to the state in the table.  Otherwise the function makes copy of
   *STATE, inserts into the table and returns pointer to copied state.
    In the last case, the function also sets up*NEW_P.*/
-static YaepInternalParseState *parse_state_insert(YaepInternalParseState *state, int *new_p)
+static YaepInternalParseState *parse_state_insert(YaepParseState *ps, YaepInternalParseState *state, int *new_p)
 {
     hash_table_entry_t*entry;
 
-    entry = find_hash_table_entry(parse_state_tab, state, TRUE);
+    entry = find_hash_table_entry(ps->parse_state_tab, state, TRUE);
 
    *new_p = FALSE;
     if (*entry != NULL)
@@ -6389,7 +6391,7 @@ static YaepInternalParseState *parse_state_insert(YaepInternalParseState *state,
    *new_p = TRUE;
     /* We make copy because pl_ind can be changed in further processing
        state.*/
-   *entry = parse_state_alloc();
+   *entry = parse_state_alloc(ps);
    *(YaepInternalParseState*)*entry =*state;
     return(YaepInternalParseState*)*entry;
 }
@@ -6398,8 +6400,8 @@ static YaepInternalParseState *parse_state_insert(YaepInternalParseState *state,
 static void parse_state_fin(YaepParseState *ps)
 {
     if (!ps->run.grammar->one_parse_p)
-        delete_hash_table(parse_state_tab);
-    OS_DELETE(parse_state_os);
+        delete_hash_table(ps->parse_state_tab);
+    OS_DELETE(ps->parse_state_os);
 }
 
 
@@ -6424,24 +6426,24 @@ static int trans_visit_node_eq(hash_table_entry_t n1, hash_table_entry_t n2)
    given NODE in the table and if it is not present in the table, the
    function creates the translation visit node and inserts it into
    the table.*/
-static YaepTransVisitNode *visit_node(YaepTreeNode*node)
+static YaepTransVisitNode *visit_node(YaepParseState *ps, YaepTreeNode*node)
 {
     YaepTransVisitNode trans_visit_node;
     hash_table_entry_t*entry;
 
     trans_visit_node.node = node;
-    entry = find_hash_table_entry(trans_visit_nodes_tab,
+    entry = find_hash_table_entry(ps->trans_visit_nodes_tab,
                                    &trans_visit_node, TRUE);
 
     if (*entry == NULL)
     {
         /* If it is the new node, we did not visit it yet.*/
-        trans_visit_node.num = -1 - n_trans_visit_nodes;
-        n_trans_visit_nodes++;
-        OS_TOP_ADD_MEMORY(trans_visit_nodes_os,
+        trans_visit_node.num = -1 - ps->n_trans_visit_nodes;
+        ps->n_trans_visit_nodes++;
+        OS_TOP_ADD_MEMORY(ps->trans_visit_nodes_os,
                            &trans_visit_node, sizeof(trans_visit_node));
-       *entry =(hash_table_entry_t) OS_TOP_BEGIN(trans_visit_nodes_os);
-        OS_TOP_FINISH(trans_visit_nodes_os);
+       *entry =(hash_table_entry_t) OS_TOP_BEGIN(ps->trans_visit_nodes_os);
+        OS_TOP_FINISH(ps->trans_visit_nodes_os);
     }
     return(YaepTransVisitNode*)*entry;
 }
@@ -6462,7 +6464,7 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
     int i;
 
     assert(node != NULL);
-    trans_visit_node = visit_node(node);
+    trans_visit_node = visit_node(ps, node);
     if (trans_visit_node->num >= 0)
         return;
     trans_visit_node->num = -trans_visit_node->num - 1;
@@ -6488,7 +6490,7 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
 	{
             fprintf(f, "ABSTRACT: %c%s(", node->val.anode.mark?node->val.anode.mark:' ', node->val.anode.name);
             for(i = 0;(child = node->val.anode.children[i]) != NULL; i++)
-                fprintf(f, " %d", canon_node_num(visit_node(child)->num));
+                fprintf(f, " %d", canon_node_num(visit_node(ps, child)->num));
 	}
         else
 	{
@@ -6496,7 +6498,7 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
 	    {
                 fprintf(f, "  \"%d: %s\" -> \"%d: ", trans_visit_node->num,
                          node->val.anode.name,
-                         canon_node_num(visit_node(child)->num));
+                        canon_node_num(visit_node(ps, child)->num));
                 switch(child->type)
 		{
 		case YAEP_NIL:
@@ -6528,17 +6530,17 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
         if (ps->run.grammar->debug_level > 0)
 	{
             fprintf(f, "ALTERNATIVE: node=%d, next=",
-                     canon_node_num(visit_node(node->val.alt.node)->num));
+                    canon_node_num(visit_node(ps, node->val.alt.node)->num));
             if (node->val.alt.next != NULL)
                 fprintf(f, "%d\n",
-                         canon_node_num(visit_node(node->val.alt.next)->num));
+                        canon_node_num(visit_node(ps, node->val.alt.next)->num));
             else
                 fprintf(f, "nil\n");
 	}
         else
 	{
             fprintf(f, "  \"%d: ALT\" -> \"%d: ", trans_visit_node->num,
-                     canon_node_num(visit_node(node->val.alt.node)->num));
+                    canon_node_num(visit_node(ps, node->val.alt.node)->num));
             switch(node->val.alt.node->type)
 	    {
 	    case YAEP_NIL:
@@ -6565,7 +6567,7 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
             if (node->val.alt.next != NULL)
                 fprintf(f, "  \"%d: ALT\" -> \"%d: ALT\";\n",
                          trans_visit_node->num,
-                         canon_node_num(visit_node(node->val.alt.next)->num));
+                        canon_node_num(visit_node(ps, node->val.alt.next)->num));
 	}
         print_yaep_node(ps, f, node->val.alt.node);
         if (node->val.alt.next != NULL)
@@ -6579,15 +6581,15 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
 /* The following function prints parse tree with ROOT.*/
 static void print_parse(YaepParseState *ps, FILE* f, YaepTreeNode*root)
 {
-    trans_visit_nodes_tab =
+    ps->trans_visit_nodes_tab =
         create_hash_table(ps->run.grammar->alloc, ps->toks_len* 2, trans_visit_node_hash,
                            trans_visit_node_eq);
 
-    n_trans_visit_nodes = 0;
-    OS_CREATE(trans_visit_nodes_os, ps->run.grammar->alloc, 0);
+    ps->n_trans_visit_nodes = 0;
+    OS_CREATE(ps->trans_visit_nodes_os, ps->run.grammar->alloc, 0);
     print_yaep_node(ps, f, root);
-    OS_DELETE(trans_visit_nodes_os);
-    delete_hash_table(trans_visit_nodes_tab);
+    OS_DELETE(ps->trans_visit_nodes_os);
+    delete_hash_table(ps->trans_visit_nodes_tab);
 }
 
 #endif
@@ -6691,7 +6693,7 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
     case YAEP_TERM:
         if (ps->run.parse_free != NULL)
         {
-            VLO_ADD_MEMORY(tnodes_vlo, &node, sizeof(node));
+            VLO_ADD_MEMORY(ps->tnodes_vlo, &node, sizeof(node));
         }
        *cost = 0;
         return node;
@@ -6700,7 +6702,7 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
 	{
             if (ps->run.parse_free != NULL)
             {
-                VLO_ADD_MEMORY(tnodes_vlo, &node, sizeof(node));
+                VLO_ADD_MEMORY(ps->tnodes_vlo, &node, sizeof(node));
             }
             for(i = 0;(child = node->val.anode.children[i]) != NULL; i++)
 	    {
@@ -6716,7 +6718,7 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
 	{
             if (ps->run.parse_free != NULL)
             {
-                VLO_ADD_MEMORY(tnodes_vlo, &alt, sizeof(alt));
+                VLO_ADD_MEMORY(ps->tnodes_vlo, &alt, sizeof(alt));
             }
             next_alt = alt->val.alt.next;
             alt->val.alt.node = prune_to_minimal(ps, alt->val.alt.node, cost);
@@ -6751,7 +6753,7 @@ static void traverse_pruned_translation(YaepParseState *ps, YaepTreeNode *node)
 
 next:
     assert(node != NULL);
-    if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(reserv_mem_tab, node, TRUE)) == NULL)
+    if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->reserv_mem_tab, node, TRUE)) == NULL)
     {
        *entry = (hash_table_entry_t)node;
     }
@@ -6762,7 +6764,7 @@ next:
     case YAEP_TERM:
         break;
     case YAEP_ANODE:
-        if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(reserv_mem_tab,
+        if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->reserv_mem_tab,
                                                                       node->val.anode.name,
                                                                       TRUE)) == NULL)
         {
@@ -6797,22 +6799,22 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
 
     if (ps->run.parse_free != NULL)
     {
-        reserv_mem_tab = create_hash_table(ps->run.grammar->alloc, ps->toks_len* 4, reserv_mem_hash,
+        ps->reserv_mem_tab = create_hash_table(ps->run.grammar->alloc, ps->toks_len* 4, reserv_mem_hash,
                                            reserv_mem_eq);
 
-        VLO_CREATE(tnodes_vlo, ps->run.grammar->alloc, ps->toks_len* 4* sizeof(void*));
+        VLO_CREATE(ps->tnodes_vlo, ps->run.grammar->alloc, ps->toks_len* 4* sizeof(void*));
     }
     root = prune_to_minimal(ps, root, &cost);
     traverse_pruned_translation(ps, root);
     if (ps->run.parse_free != NULL)
     {
-        for(node_ptr =(YaepTreeNode**) VLO_BEGIN(tnodes_vlo);
-             node_ptr <(YaepTreeNode**) VLO_BOUND(tnodes_vlo);
+        for(node_ptr =(YaepTreeNode**) VLO_BEGIN(ps->tnodes_vlo);
+             node_ptr <(YaepTreeNode**) VLO_BOUND(ps->tnodes_vlo);
              node_ptr++)
-            if (*find_hash_table_entry(reserv_mem_tab,*node_ptr, TRUE) == NULL)
+            if (*find_hash_table_entry(ps->reserv_mem_tab,*node_ptr, TRUE) == NULL)
             {
                 if ((*node_ptr)->type == YAEP_ANODE
-                    &&*find_hash_table_entry(reserv_mem_tab,
+                    &&*find_hash_table_entry(ps->reserv_mem_tab,
 					      (*node_ptr)->val.anode.name,
 					       TRUE) == NULL)
                 {
@@ -6820,8 +6822,8 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
                 }
                (*ps->run.parse_free)(*node_ptr);
             }
-        VLO_DELETE(tnodes_vlo);
-        delete_hash_table(reserv_mem_tab);
+        VLO_DELETE(ps->tnodes_vlo);
+        delete_hash_table(ps->reserv_mem_tab);
     }
 
     TRACE_F;
@@ -6892,7 +6894,7 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
     }
     VLO_CREATE(stack, ps->run.grammar->alloc, 10000);
     VLO_EXPAND(stack, sizeof(YaepInternalParseState*));
-    state = parse_state_alloc();
+    state = parse_state_alloc(ps);
    ((YaepInternalParseState**) VLO_BOUND(stack))[-1] = state;
     rule = state->rule = sit->rule;
     state->pos = sit->pos;
@@ -6947,7 +6949,7 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
                 fprintf(stderr, ", %d\n", state->orig);
 	    }
 #endif
-            parse_state_free(state);
+            parse_state_free(ps, state);
             VLO_SHORTEN(stack, sizeof(YaepInternalParseState*));
             if (VLO_LENGTH(stack) != 0)
                 state =((YaepInternalParseState**) VLO_BOUND(stack))[-1];
@@ -7119,7 +7121,7 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
                         /* [A -> x., n] & [A -> y., m] where n != m.*/
                         /* It is different from the previous ones so add
                            it to process.*/
-                        state = parse_state_alloc();
+                        state = parse_state_alloc(ps);
                         VLO_EXPAND(stack, sizeof(YaepInternalParseState*));
                        ((YaepInternalParseState**) VLO_BOUND(stack))[-1] = state;
                        *state =*orig_state;
@@ -7150,14 +7152,14 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
                 if (sit_rule->anode != NULL)
 		{
                     /* This rule creates abstract node.*/
-                    state = parse_state_alloc();
+                    state = parse_state_alloc(ps);
                     state->rule = sit_rule;
                     state->pos = sit->pos;
                     state->orig = sit_orig;
                     state->pl_ind = pl_ind;
                     table_state = NULL;
                     if (!ps->run.grammar->one_parse_p)
-                        table_state = parse_state_insert(state, &new_p);
+                        table_state = parse_state_insert(ps, state, &new_p);
                     if (table_state == NULL || new_p)
 		    {
                         /* We need new abtract node.*/
@@ -7222,7 +7224,7 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
 		    {
                         /* We allready have the translation.*/
                         assert(!ps->run.grammar->one_parse_p);
-                        parse_state_free(state);
+                        parse_state_free(ps, state);
                         state =((YaepInternalParseState**) VLO_BOUND(stack))[-1];
                         node = table_state->anode;
                         assert(node != NULL);
@@ -7247,7 +7249,7 @@ static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
 		{
                     /* We should generate and use the translation of the
                        nonterminal.  Add state to get a translation.*/
-                    state = parse_state_alloc();
+                    state = parse_state_alloc(ps);
                     VLO_EXPAND(stack, sizeof(YaepInternalParseState*));
                    ((YaepInternalParseState**) VLO_BOUND(stack))[-1] = state;
                     state->rule = sit_rule;
@@ -7417,7 +7419,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     {
         yaep_error(ps, YAEP_UNDEFINED_OR_BAD_GRAMMAR, "undefined or bad grammar");
     }
-    n_goto_successes = 0;
+    ps->n_goto_successes = 0;
     tok_init(ps);
     tok_init_p = TRUE;
     read_toks(ps);
@@ -7460,7 +7462,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  ps->n_sets, ps->n_sets_start_sits);
         fprintf(stderr,
                  "       #unique triples(set, term, lookahead) = %d, goto successes=%d\n",
-                ps->n_set_term_lookaheads, n_goto_successes);
+                ps->n_set_term_lookaheads, ps->n_goto_successes);
         fprintf(stderr,
                  "       #pairs(set core, symb) = %d, their trans+reduce vects length = %d\n",
                  ps->n_core_symb_pairs, ps->n_core_symb_vect_len);
