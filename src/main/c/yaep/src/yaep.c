@@ -659,6 +659,15 @@ struct YaepParseState
        structures. */
     int curr_sit_dist_vec_check;
 
+    /* The following are number of unique(set core, symbol) pairs and
+       their summary(transitive) transition and reduce vectors length,
+       unique(transitive) transition vectors and their summary length,
+       and unique reduce vectors and their summary length.  The variables
+       can be read externally. */
+    int n_core_symb_pairs, n_core_symb_vect_len;
+    int n_transition_vects, n_transition_vect_len;
+    int n_reduce_vects, n_reduce_vect_len;
+
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -686,14 +695,6 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 // Temporary global variable while migrating to thread safe code.
 static YaepParseState *state__;
 
-/* The following are number of unique(set core, symbol) pairs and
-   their summary(transitive) transition and reduce vectors length,
-   unique(transitive) transition vectors and their summary length,
-   and unique reduce vectors and their summary length.  The variables
-   can be read externally.*/
-static int n_core_symb_pairs, n_core_symb_vect_len;
-static int n_transition_vects, n_transition_vect_len;
-static int n_reduce_vects, n_reduce_vect_len;
 
 /* All triples(set core, symbol, vect) are placed in the following
    object.*/
@@ -2172,9 +2173,9 @@ static void core_symb_vect_init(YaepParseState *ps)
     transition_els_tab = create_hash_table(ps->run.grammar->alloc, 3000, transition_els_hash, transition_els_eq);
     reduce_els_tab = create_hash_table(ps->run.grammar->alloc, 3000, reduce_els_hash, reduce_els_eq);
 
-    n_core_symb_pairs = n_core_symb_vect_len = 0;
-    n_transition_vects = n_transition_vect_len = 0;
-    n_reduce_vects = n_reduce_vect_len = 0;
+    ps->n_core_symb_pairs = ps->n_core_symb_vect_len = 0;
+    ps->n_transition_vects = ps->n_transition_vect_len = 0;
+    ps->n_reduce_vects = ps->n_reduce_vect_len = 0;
 }
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
@@ -2297,12 +2298,12 @@ static YaepCoreSymbVect *core_symb_vect_new(YaepParseState *ps, YaepSetCore*set_
     triple->reduces.els =(int*) VLO_BEGIN(*vlo_ptr);
     VLO_ADD_MEMORY(new_core_symb_vect_vlo, &triple,
                     sizeof(YaepCoreSymbVect*));
-    n_core_symb_pairs++;
+    ps->n_core_symb_pairs++;
     return triple;
 }
 
 /* Add EL to vector VEC. */
-static void vect_new_add_el(YaepVect*vec, int el)
+static void vect_new_add_el(YaepParseState *ps, YaepVect*vec, int el)
 {
     vlo_t*vlo_ptr;
 
@@ -2310,21 +2311,23 @@ static void vect_new_add_el(YaepVect*vec, int el)
     vlo_ptr = vlo_array_el(vec->intern);
     VLO_ADD_MEMORY(*vlo_ptr, &el, sizeof(int));
     vec->els =(int*) VLO_BEGIN(*vlo_ptr);
-    n_core_symb_vect_len++;
+    ps->n_core_symb_vect_len++;
 }
 
-/* Add index EL to the transition vector of CORE_SYMB_VECT being
-   formed.*/
-static void core_symb_vect_new_add_transition_el(YaepCoreSymbVect*core_symb_vect,
-				      int el)
+/* Add index EL to the transition vector of CORE_SYMB_VECT being formed.*/
+static void core_symb_vect_new_add_transition_el(YaepParseState *ps,
+                                                 YaepCoreSymbVect *core_symb_vect,
+                                                 int el)
 {
-    vect_new_add_el(&core_symb_vect->transitions, el);
+    vect_new_add_el(ps, &core_symb_vect->transitions, el);
 }
 
 /* Add index EL to the reduce vector of CORE_SYMB_VECT being formed.*/
-static void core_symb_vect_new_add_reduce_el(YaepCoreSymbVect*core_symb_vect, int el)
+static void core_symb_vect_new_add_reduce_el(YaepParseState *ps,
+                                             YaepCoreSymbVect *core_symb_vect,
+                                             int el)
 {
-    vect_new_add_el(&core_symb_vect->reduces, el);
+    vect_new_add_el(ps, &core_symb_vect->reduces, el);
 }
 
 /* Insert vector VEC from CORE_SYMB_VECT into table TAB.  Update
@@ -2361,7 +2364,7 @@ static void process_core_symb_vect_el(YaepCoreSymbVect*core_symb_vect,
 }
 
 /* Finish forming all new triples core_symb_vect.*/
-static void core_symb_vect_new_all_stop()
+static void core_symb_vect_new_all_stop(YaepParseState *ps)
 {
     YaepCoreSymbVect**triple_ptr;
 
@@ -2370,11 +2373,11 @@ static void core_symb_vect_new_all_stop()
          triple_ptr++)
     {
         process_core_symb_vect_el(*triple_ptr, &(*triple_ptr)->transitions,
-                                   &transition_els_tab, &n_transition_vects,
-                                   &n_transition_vect_len);
+                                   &transition_els_tab, &ps->n_transition_vects,
+                                   &ps->n_transition_vect_len);
         process_core_symb_vect_el(*triple_ptr, &(*triple_ptr)->reduces,
-                                   &reduce_els_tab, &n_reduce_vects,
-                                   &n_reduce_vect_len);
+                                   &reduce_els_tab, &ps->n_reduce_vects,
+                                   &ps->n_reduce_vect_len);
     }
     vlo_array_nullify();
     VLO_NULLIFY(new_core_symb_vect_vlo);
@@ -3111,7 +3114,7 @@ static void expand_new_start_set(YaepParseState *ps)
                          rule != NULL; rule = rule->lhs_next)
                         set_new_add_initial_sit(ps, sit_create(ps, rule, 0, 0));
 	    }
-            core_symb_vect_new_add_transition_el(core_symb_vect, i);
+            core_symb_vect_new_add_transition_el(ps, core_symb_vect, i);
             if (symb->empty_p && i >= ps->new_core->n_all_dists)
                 set_new_add_initial_sit(ps, sit_create(ps, sit->rule, sit->pos + 1, 0));
 	}
@@ -3126,7 +3129,7 @@ static void expand_new_start_set(YaepParseState *ps)
             core_symb_vect = core_symb_vect_find(ps, ps->new_core, symb);
             if (core_symb_vect == NULL)
                 core_symb_vect = core_symb_vect_new(ps, ps->new_core, symb);
-            core_symb_vect_new_add_reduce_el(core_symb_vect, i);
+            core_symb_vect_new_add_reduce_el(ps, core_symb_vect, i);
 	}
     }
     if (ps->run.grammar->lookahead_level > 1)
@@ -3170,7 +3173,7 @@ static void expand_new_start_set(YaepParseState *ps)
         while(changed_p);
     }
     set_new_core_stop(ps);
-    core_symb_vect_new_all_stop();
+    core_symb_vect_new_all_stop(ps);
 }
 
 /* The following function forms the 1st set.*/
@@ -5137,13 +5140,13 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                 ps->n_set_term_lookaheads, n_goto_successes);
         fprintf(stderr,
                  "       #pairs(set core, symb) = %d, their trans+reduce vects length = %d\n",
-                 n_core_symb_pairs, n_core_symb_vect_len);
+                 ps->n_core_symb_pairs, ps->n_core_symb_vect_len);
         fprintf(stderr,
                  "       #unique transition vectors = %d, their length = %d\n",
-                 n_transition_vects, n_transition_vect_len);
+                ps->n_transition_vects, ps->n_transition_vect_len);
         fprintf(stderr,
                  "       #unique reduce vectors = %d, their length = %d\n",
-                 n_reduce_vects, n_reduce_vect_len);
+                 ps->n_reduce_vects, ps->n_reduce_vect_len);
         fprintf(stderr,
                  "       #term nodes = %d, #abstract nodes = %d\n",
                  n_parse_term_nodes, n_parse_abstract_nodes);
