@@ -2913,6 +2913,12 @@ struct YaepParseState
     YaepSituation **new_sits;
     int *new_dists;
     int new_n_start_sits;
+
+    /* The following are number of unique set cores and their start
+       situations, unique distance vectors and their summary length, and
+       number of parent indexes.  The variables can be read externally.*/
+    int n_set_cores, n_set_core_start_sits;
+    int n_set_dists, n_set_dists_len, n_parent_indexes;
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -2940,11 +2946,6 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 // Temporary global variable while migrating to thread safe code.
 static YaepParseState *state__;
 
-/* The following are number of unique set cores and their start
-   situations, unique distance vectors and their summary length, and
-   number of parent indexes.  The variables can be read externally.*/
-static int n_set_cores, n_set_core_start_sits;
-static int n_set_dists, n_set_dists_len, n_parent_indexes;
 
 /* Number unique sets and their start situations. */
 static int n_sets, n_sets_start_sits;
@@ -4129,8 +4130,8 @@ static void set_init(YaepParseState *ps, int n_toks)
     set_term_lookahead_tab =
         create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
                            set_term_lookahead_hash, set_term_lookahead_eq);
-    n_set_cores = n_set_core_start_sits = 0;
-    n_set_dists = n_set_dists_len = n_parent_indexes = 0;
+    ps->n_set_cores = ps->n_set_core_start_sits = 0;
+    ps->n_set_dists = ps->n_set_dists_len = ps->n_parent_indexes = 0;
     n_sets = n_sets_start_sits = 0;
     n_set_term_lookaheads = 0;
     sit_dist_set_init(ps);
@@ -4186,7 +4187,7 @@ static void set_add_new_nonstart_sit(YaepParseState *ps, YaepSituation*sit, int 
     ps->new_core->parent_indexes = (int*)OS_TOP_BEGIN(set_parent_indexes_os) - ps->new_n_start_sits;
     ps->new_sits[ps->new_core->n_sits++] = sit;
     ps->new_core->parent_indexes[ps->new_core->n_all_dists++] = parent;
-    n_parent_indexes++;
+    ps->n_parent_indexes++;
 }
 
 /* Add non-start(initial) SIT with zero distance at the end of the
@@ -4264,13 +4265,13 @@ static int set_insert(YaepParseState *ps)
     {
         OS_TOP_FINISH(set_dists_os);
        *entry =(hash_table_entry_t)ps->new_set;
-        n_set_dists++;
-        n_set_dists_len += ps->new_n_start_sits;
+        ps->n_set_dists++;
+        ps->n_set_dists_len += ps->new_n_start_sits;
     }
 #else
     OS_TOP_FINISH(set_dists_os);
-    n_set_dists++;
-    n_set_dists_len += ps->new_n_start_sits;
+    ps->n_set_dists++;
+    ps->n_set_dists_len += ps->new_n_start_sits;
 #endif
     /* Insert set core into table.*/
     setup_set_core_hash(ps->new_set);
@@ -4286,12 +4287,12 @@ static int set_insert(YaepParseState *ps)
     else
     {
         OS_TOP_FINISH(set_cores_os);
-        ps->new_core->num = n_set_cores++;
+        ps->new_core->num = ps->n_set_cores++;
         ps->new_core->n_sits = ps->new_n_start_sits;
         ps->new_core->n_all_dists = ps->new_n_start_sits;
         ps->new_core->parent_indexes = NULL;
        *entry =(hash_table_entry_t)ps->new_set;
-        n_set_core_start_sits += ps->new_n_start_sits;
+        ps->n_set_core_start_sits += ps->new_n_start_sits;
         result = TRUE;
     }
 #ifdef USE_SET_HASH_TABLE
@@ -7458,13 +7459,13 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  state__->run.grammar->term_sets_ptr->n_term_sets, state__->run.grammar->term_sets_ptr->n_term_sets_size);
         fprintf(stderr,
                  "       #unique set cores = %d, #their start situations = %d\n",
-                 n_set_cores, n_set_core_start_sits);
+                 ps->n_set_cores, ps->n_set_core_start_sits);
         fprintf(stderr,
                  "       #parent indexes for some non start situations = %d\n",
-                 n_parent_indexes);
+                 ps->n_parent_indexes);
         fprintf(stderr,
                  "       #unique set dist. vects = %d, their length = %d\n",
-                 n_set_dists, n_set_dists_len);
+                 ps->n_set_dists, ps->n_set_dists_len);
         fprintf(stderr,
                  "       #unique sets = %d, #their start situations = %d\n",
                  n_sets, n_sets_start_sits);
