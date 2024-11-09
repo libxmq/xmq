@@ -65,9 +65,13 @@
 #define TRUE 1
 #endif
 
-#ifndef CHAR_BIT
-#define CHAR_BIT 8
-#endif
+/* Terminals are stored a in term set using bits in a bit array.
+   The array consists of long ints, typedefed as term_set_el_t.
+   A long int is 8 bytes, ie 64 bits. */
+typedef long int term_set_el_t;
+
+/* Calculate the number of required term set elements from the number of bits we want to store. */
+#define CALC_NUM_ELEMENTS(num_bits) ((num_bits+63)/64)
 
 #ifndef YAEP_MAX_ERROR_MESSAGE_LENGTH
 #define YAEP_MAX_ERROR_MESSAGE_LENGTH 200
@@ -143,9 +147,6 @@ typedef struct YaepInternalParseState YaepInternalParseState;
 
 struct YaepTransVisitNode;
 typedef struct YaepTransVisitNode YaepTransVisitNode;
-
-/* The following is type of element of array representing set of terminals.*/
-typedef long int term_set_el_t;
 
 // Structure definitions ////////////////////////////////////////////////////
 
@@ -301,13 +302,16 @@ struct YaepVocabulary
     int symb_code_trans_vect_end;
 };
 
-/* The following is element of term set hash table.*/
+/* A set of terminals represented as a bit array. */
 struct YaepTabTermSet
 {
-    /* Number of set in the table. */
-    int num;
+    // Set identity.
+    int id;
 
-    /* The terminal set itself. */
+    // Number of long ints (term_set_el_t) used to store the bit array.
+    int num_elements;
+
+    // The bit array itself.
     term_set_el_t *set;
 };
 
@@ -1113,14 +1117,13 @@ static void symb_fin(YaepParseState *ps, YaepVocabulary *symbs)
 /* Hash of table terminal set.*/
 static unsigned term_set_hash(hash_table_entry_t s)
 {
-    term_set_el_t*set =((YaepTabTermSet*) s)->set;
-    term_set_el_t*bound;
-    int size;
+    YaepTabTermSet *ts = (YaepTabTermSet*)s;
+    term_set_el_t *set = ts->set;
+    int num_elements = ts->num_elements;
+    term_set_el_t *bound = set + num_elements;
     unsigned result = jauquet_prime_mod32;
 
-    size = ((state__->run.grammar->symbs_ptr->nn_terms + CHAR_BIT* sizeof(term_set_el_t) - 1) / (CHAR_BIT* sizeof(term_set_el_t)));
-    bound = set + size;
-    while(set < bound)
+    while (set < bound)
     {
         result = result * hash_shift + *set++;
     }
@@ -1275,7 +1278,7 @@ static int term_set_insert(YaepParseState *ps, term_set_el_t *set)
 
     if (*entry != NULL)
     {
-        return -((YaepTabTermSet*)*entry)->num - 1;
+        return -((YaepTabTermSet*)*entry)->id - 1;
     }
     else
     {
@@ -1284,10 +1287,12 @@ static int term_set_insert(YaepParseState *ps, term_set_el_t *set)
         OS_TOP_FINISH(ps->run.grammar->term_sets_ptr->term_set_os);
        *entry =(hash_table_entry_t) tab_term_set_ptr;
         tab_term_set_ptr->set = set;
-        tab_term_set_ptr->num = (VLO_LENGTH(ps->run.grammar->term_sets_ptr->tab_term_set_vlo) / sizeof(YaepTabTermSet*));
+        tab_term_set_ptr->id = (VLO_LENGTH(ps->run.grammar->term_sets_ptr->tab_term_set_vlo) / sizeof(YaepTabTermSet*));
+        tab_term_set_ptr->num_elements = CALC_NUM_ELEMENTS(ps->run.grammar->symbs_ptr->nn_terms);
+
         VLO_ADD_MEMORY(ps->run.grammar->term_sets_ptr->tab_term_set_vlo, &tab_term_set_ptr, sizeof(YaepTabTermSet*));
 
-        return((YaepTabTermSet*)*entry)->num;
+        return((YaepTabTermSet*)*entry)->id;
     }
 }
 
