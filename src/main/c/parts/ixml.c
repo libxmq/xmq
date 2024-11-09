@@ -1411,6 +1411,7 @@ bool ixml_build_yaep_grammar(YaepParseRun *ps, YaepGrammar *g, XMQParseState *st
     yaep_i_ = hashmap_iterate(state->ixml_terminals_map);
     yaep_state_ = state;
 
+    /*
     if (xmq_trace_enabled_)
     {
         HashMapIterator *i = hashmap_iterate(state->ixml_terminals_map);
@@ -1445,6 +1446,7 @@ bool ixml_build_yaep_grammar(YaepParseRun *ps, YaepGrammar *g, XMQParseState *st
             }
         }
     }
+    */
     int rc = yaep_read_grammar(ps, g, 0, ixml_to_yaep_read_terminal, ixml_to_yaep_read_rule);
 
     hashmap_free_iterator(yaep_i_);

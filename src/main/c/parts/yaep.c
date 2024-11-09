@@ -2363,11 +2363,11 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 #include <assert.h>
 
 #define TRACE_F(ps) { \
-        if (ps->run.debug_level>5) fprintf(stderr, "TRACE %s\n", __func__); \
+        if (0 && ps->run.debug_level>5) fprintf(stderr, "TRACE %s\n", __func__); \
     }
 
 #define TRACE_FA(ps, cformat, ...) { \
-    if (ps->run.debug_level>5) fprintf(stderr, "TRACE %s " cformat "\n", __func__, __VA_ARGS__); \
+    if (0 && ps->run.debug_level>5) fprintf(stderr, "TRACE %s " cformat "\n", __func__, __VA_ARGS__); \
 }
 
 #include <stdio.h>
@@ -2453,11 +2453,11 @@ typedef struct YaepVect YaepVect;
 struct YaepCoreSymbVect;
 typedef struct YaepCoreSymbVect YaepCoreSymbVect;
 
-struct YaepSetCore;
-typedef struct YaepSetCore YaepSetCore;
+struct YaepStateSetCore;
+typedef struct YaepStateSetCore YaepStateSetCore;
 
-struct YaepSet;
-typedef struct YaepSet YaepSet;
+struct YaepStateSet;
+typedef struct YaepStateSet YaepStateSet;
 
 struct YaepSituation;
 typedef struct YaepSituation YaepSituation;
@@ -2465,8 +2465,8 @@ typedef struct YaepSituation YaepSituation;
 struct YaepTok;
 typedef struct YaepTok YaepTok;
 
-struct YaepSetTermLookAhead;
-typedef struct YaepSetTermLookAhead YaepSetTermLookAhead;
+struct YaepStateSetTermLookAhead;
+typedef struct YaepStateSetTermLookAhead YaepStateSetTermLookAhead;
 
 struct YaepInternalParseState;
 typedef struct YaepInternalParseState YaepInternalParseState;
@@ -2667,7 +2667,7 @@ struct YaepVect
 struct YaepCoreSymbVect
 {
     /* The set core.*/
-    YaepSetCore*set_core;
+    YaepStateSetCore*set_core;
     /* The symbol.*/
     YaepSymb*symb;
     /* The following vector contains indexes of situations with given
@@ -2682,7 +2682,7 @@ struct YaepCoreSymbVect
    information.  Because there are many duplications of such
    structures we extract the set cores and store them in one
    exemplar.*/
-struct YaepSetCore
+struct YaepStateSetCore
 {
     /* The following is unique number of the set core. It is defined
        only after forming all set.*/
@@ -2716,14 +2716,14 @@ struct YaepSetCore
 };
 
 /* The following describes set in Earley's algorithm.*/
-struct YaepSet
+struct YaepStateSet
 {
     /* The following is set core of the set.  You should access to set
        core only through this member or variable `new_core'(in other
        words don't save the member value in another variable).*/
-    YaepSetCore *core;
-    /* Hash of the set distances.  We save it as it is used several
-       times. */
+    YaepStateSetCore *core;
+
+    /* Hash of the set distances. We save it as it is used several times. */
     unsigned int dists_hash;
     /* The following is distances only for start situations.  Other
        situations have their distances equal to 0.  The start situation
@@ -2767,9 +2767,9 @@ struct YaepTok
 };
 
 /* The triple and possible goto sets for it. */
-struct YaepSetTermLookAhead
+struct YaepStateSetTermLookAhead
 {
-    YaepSet*set;
+    YaepStateSet*set;
     YaepSymb*term;
     int lookahead;
     /* Saved goto sets form a queue.  The last goto is saved at the
@@ -2777,7 +2777,7 @@ struct YaepSetTermLookAhead
     int curr;
     /* Saved goto sets to which we can go from SET by the terminal with
        subsequent terminal LOOKAHEAD given by its code. */
-    YaepSet*result[MAX_CACHED_GOTO_RESULTS];
+    YaepStateSet*result[MAX_CACHED_GOTO_RESULTS];
     /* Corresponding places of the goto sets in the parsing list. */
     int place[MAX_CACHED_GOTO_RESULTS];
 };
@@ -2886,12 +2886,12 @@ struct YaepParseState
     int new_set_ready_p;
 
     /* The following variable is set being created. It is defined only when new_set_ready_p is TRUE. */
-    YaepSet *new_set;
+    YaepStateSet *new_set;
 
    /* The following variable is always set core of set being created.  It
       can be read externally.  Member core of new_set has always the
       following value.  It is defined only when new_set_ready_p is TRUE. */
-    YaepSetCore *new_core;
+    YaepStateSetCore *new_core;
 
    /* To optimize code we use the following variables to access to data
       of new set.  They are always defined and correspondingly
@@ -3024,7 +3024,7 @@ struct YaepParseState
     /* The following two variables represents Earley's parser list.  The
        values of pl_curr and array*pl can be read and modified
        externally.*/
-    YaepSet **pl;
+    YaepStateSet **pl;
     int pl_curr;
 
     /* The following is number of created terminal, abstract, and
@@ -3112,7 +3112,7 @@ static void read_toks(YaepParseState *ps);
 static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
 static void rule_dot_print(YaepParseState *ps, FILE *f, YaepRule *rule, int pos);
 static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, int trans_p);
-static void set_print(YaepParseState *ps, FILE* f, YaepSet*set, int set_dist, int nonstart_p, int lookahead_p);
+static void set_print(YaepParseState *ps, FILE* f, YaepStateSet*set, int set_dist, int nonstart_p, int lookahead_p);
 static void sit_print(YaepParseState *ps, FILE *f, YaepSituation *sit, int lookahead_p);
 static YaepVocabulary *symb_init(YaepGrammar *g);
 static void symb_empty(YaepParseState *ps, YaepVocabulary *symbs);
@@ -3617,14 +3617,16 @@ static void term_set_print(YaepParseState *ps, FILE *f, term_set_el_t *set, int 
 {
     int i;
 
+    fprintf(f, "(");
     for (i = 0; i < num_terms; i++)
     {
         if (term_set_test(set, i, num_terms))
         {
-            fprintf(f, " ");
+            if (i) fprintf(f, " ");
             symb_print(f, term_get(ps, i), FALSE);
         }
     }
+    fprintf(f, ")");
 }
 
 /* Free memory for terminal sets. */
@@ -3937,14 +3939,14 @@ static void sit_fin(YaepParseState *ps)
 /* Hash of set core. */
 static unsigned set_core_hash(hash_table_entry_t s)
 {
-    return ((YaepSet*)s)->core->hash;
+    return ((YaepStateSet*)s)->core->hash;
 }
 
 /* Equality of set cores. */
 static int set_core_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    YaepSetCore*set_core1 = ((YaepSet*) s1)->core;
-    YaepSetCore*set_core2 = ((YaepSet*) s2)->core;
+    YaepStateSetCore*set_core1 = ((YaepStateSet*) s1)->core;
+    YaepStateSetCore*set_core2 = ((YaepStateSet*) s2)->core;
     YaepSituation **sit_ptr1, **sit_ptr2, **sit_bound1;
 
     if (set_core1->n_start_sits != set_core2->n_start_sits)
@@ -3967,18 +3969,18 @@ static int set_core_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 /* Hash of set distances. */
 static unsigned dists_hash(hash_table_entry_t s)
 {
-    return((YaepSet*) s)->dists_hash;
+    return((YaepStateSet*) s)->dists_hash;
 }
 
 /* Equality of distances. */
 static int dists_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    int *dists1 =((YaepSet*)s1)->dists;
-    int *dists2 =((YaepSet*)s2)->dists;
-    int n_dists =((YaepSet*)s1)->core->n_start_sits;
+    int *dists1 =((YaepStateSet*)s1)->dists;
+    int *dists2 =((YaepStateSet*)s2)->dists;
+    int n_dists =((YaepStateSet*)s1)->core->n_start_sits;
     int *bound;
 
-    if (n_dists !=((YaepSet*)s2)->core->n_start_sits)
+    if (n_dists !=((YaepStateSet*)s2)->core->n_start_sits)
     {
         return FALSE;
     }
@@ -4002,10 +4004,10 @@ static unsigned set_core_dists_hash(hash_table_entry_t s)
 /* Equality of set cores and distances. */
 static int set_core_dists_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    YaepSetCore *set_core1 = ((YaepSet*)s1)->core;
-    YaepSetCore *set_core2 = ((YaepSet*)s2)->core;
-    int*dists1 = ((YaepSet*)s1)->dists;
-    int*dists2 = ((YaepSet*)s2)->dists;
+    YaepStateSetCore *set_core1 = ((YaepStateSet*)s1)->core;
+    YaepStateSetCore *set_core2 = ((YaepStateSet*)s2)->core;
+    int*dists1 = ((YaepStateSet*)s1)->dists;
+    int*dists2 = ((YaepStateSet*)s2)->dists;
 
     return set_core1 == set_core2 && dists1 == dists2;
 }
@@ -4013,9 +4015,9 @@ static int set_core_dists_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 /* Hash of triple(set, term, lookahead). */
 static unsigned set_term_lookahead_hash(hash_table_entry_t s)
 {
-    YaepSet *set = ((YaepSetTermLookAhead*)s)->set;
-    YaepSymb *term = ((YaepSetTermLookAhead*)s)->term;
-    int lookahead = ((YaepSetTermLookAhead*)s)->lookahead;
+    YaepStateSet *set = ((YaepStateSetTermLookAhead*)s)->set;
+    YaepSymb *term = ((YaepStateSetTermLookAhead*)s)->term;
+    int lookahead = ((YaepStateSetTermLookAhead*)s)->lookahead;
 
     return ((set_core_dists_hash(set)* hash_shift + term->u.term.term_id)* hash_shift + lookahead);
 }
@@ -4023,12 +4025,12 @@ static unsigned set_term_lookahead_hash(hash_table_entry_t s)
 /* Equality of tripes(set, term, lookahead).*/
 static int set_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    YaepSet *set1 =((YaepSetTermLookAhead*)s1)->set;
-    YaepSet *set2 =((YaepSetTermLookAhead*)s2)->set;
-    YaepSymb *term1 =((YaepSetTermLookAhead*)s1)->term;
-    YaepSymb *term2 =((YaepSetTermLookAhead*)s2)->term;
-    int lookahead1 =((YaepSetTermLookAhead*)s1)->lookahead;
-    int lookahead2 =((YaepSetTermLookAhead*)s2)->lookahead;
+    YaepStateSet *set1 =((YaepStateSetTermLookAhead*)s1)->set;
+    YaepStateSet *set2 =((YaepStateSetTermLookAhead*)s2)->set;
+    YaepSymb *term1 =((YaepStateSetTermLookAhead*)s1)->term;
+    YaepSymb *term2 =((YaepStateSetTermLookAhead*)s2)->term;
+    int lookahead1 =((YaepStateSetTermLookAhead*)s1)->lookahead;
+    int lookahead2 =((YaepStateSetTermLookAhead*)s2)->lookahead;
 
     return set1 == set2 && term1 == term2 && lookahead1 == lookahead2;
 }
@@ -4172,25 +4174,26 @@ static void set_add_new_nonstart_sit(YaepParseState *ps, YaepSituation*sit, int 
    distance), we do not add it.*/
 static void set_new_add_initial_sit(YaepParseState *ps, YaepSituation*sit)
 {
-    int i;
-
     assert(ps->new_set_ready_p);
+
     /* When we add non-start situations we need to have pairs
       (situation, the corresponding distance) without duplicates
-       because we also forms core_symb_vect at that time.*/
-    for(i = ps->new_n_start_sits; i < ps->new_core->n_sits; i++)
-        if (ps->new_sits[i] == sit)
-            return;
+       because we also form core_symb_vect at that time.*/
+    for (int i = ps->new_n_start_sits; i < ps->new_core->n_sits; i++)
+    {
+        // Check if already added.
+        if (ps->new_sits[i] == sit) return;
+    }
     /* Remember we do not store distance for non-start situations.*/
     OS_TOP_ADD_MEMORY(ps->set_sits_os, &sit, sizeof(YaepSituation*));
-    ps->new_sits = ps->new_core->sits =(YaepSituation**) OS_TOP_BEGIN(ps->set_sits_os);
+    ps->new_sits = ps->new_core->sits = (YaepSituation**)OS_TOP_BEGIN(ps->set_sits_os);
     ps->new_core->n_sits++;
 }
 
 /* Set up hash of distances of set S.*/
 static void setup_set_dists_hash(hash_table_entry_t s)
 {
-    YaepSet*set =((YaepSet*) s);
+    YaepStateSet *set = ((YaepStateSet*) s);
     int*dist_ptr = set->dists;
     int n_dists = set->core->n_start_sits;
     int*dist_bound;
@@ -4199,14 +4202,16 @@ static void setup_set_dists_hash(hash_table_entry_t s)
     dist_bound = dist_ptr + n_dists;
     result = jauquet_prime_mod32;
     while(dist_ptr < dist_bound)
+    {
         result = result* hash_shift +*dist_ptr++;
+    }
     set->dists_hash = result;
 }
 
 /* Set up hash of core of set S.*/
 static void setup_set_core_hash(hash_table_entry_t s)
 {
-    YaepSetCore*set_core =((YaepSet*) s)->core;
+    YaepStateSetCore*set_core =((YaepStateSet*) s)->core;
 
     set_core->hash = sits_hash(set_core->n_start_sits, set_core->sits);
 }
@@ -4220,11 +4225,11 @@ static int set_insert(YaepParseState *ps)
     hash_table_entry_t*entry;
     int result;
 
-    OS_TOP_EXPAND(ps->sets_os, sizeof(YaepSet));
-    ps->new_set = (YaepSet*)OS_TOP_BEGIN(ps->sets_os);
+    OS_TOP_EXPAND(ps->sets_os, sizeof(YaepStateSet));
+    ps->new_set = (YaepStateSet*)OS_TOP_BEGIN(ps->sets_os);
     ps->new_set->dists = ps->new_dists;
-    OS_TOP_EXPAND(ps->set_cores_os, sizeof(YaepSetCore));
-    ps->new_set->core = ps->new_core = (YaepSetCore*) OS_TOP_BEGIN(ps->set_cores_os);
+    OS_TOP_EXPAND(ps->set_cores_os, sizeof(YaepStateSetCore));
+    ps->new_set->core = ps->new_core = (YaepStateSetCore*) OS_TOP_BEGIN(ps->set_cores_os);
     ps->new_core->n_start_sits = ps->new_n_start_sits;
     ps->new_core->sits = ps->new_sits;
     ps->new_set_ready_p = TRUE;
@@ -4234,7 +4239,7 @@ static int set_insert(YaepParseState *ps)
     entry = find_hash_table_entry(ps->set_dists_tab, ps->new_set, TRUE);
     if (*entry != NULL)
     {
-        ps->new_dists = ps->new_set->dists =((YaepSet*)*entry)->dists;
+        ps->new_dists = ps->new_set->dists =((YaepStateSet*)*entry)->dists;
         OS_TOP_NULLIFY(ps->set_dists_os);
     }
     else
@@ -4255,7 +4260,7 @@ static int set_insert(YaepParseState *ps)
     if (*entry != NULL)
     {
         OS_TOP_NULLIFY(ps->set_cores_os);
-        ps->new_set->core = ps->new_core = ((YaepSet*)*entry)->core;
+        ps->new_set->core = ps->new_core = ((YaepStateSet*)*entry)->core;
         ps->new_sits = ps->new_core->sits;
         OS_TOP_NULLIFY(ps->set_sits_os);
         result = FALSE;
@@ -4283,7 +4288,7 @@ static int set_insert(YaepParseState *ps)
     }
     else
     {
-        ps->new_set = (YaepSet*)*entry;
+        ps->new_set = (YaepStateSet*)*entry;
         OS_TOP_NULLIFY(ps->sets_os);
     }
 #else
@@ -4326,8 +4331,8 @@ static void pl_init(YaepParseState *ps)
 static void pl_create(YaepParseState *ps)
 {
     /* Because of error recovery we may have sets 2 times more than tokens.*/
-    void *mem = yaep_malloc(ps->run.grammar->alloc, sizeof(YaepSet*)*(ps->toks_len + 1)* 2);
-    ps->pl = (YaepSet**)mem;
+    void *mem = yaep_malloc(ps->run.grammar->alloc, sizeof(YaepStateSet*)*(ps->toks_len + 1)* 2);
+    ps->pl = (YaepStateSet**)mem;
     ps->pl_curr = -1;
 }
 
@@ -4513,7 +4518,7 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepCoreSy
 
 /* The following function returns entry in the table where pointer to
    corresponding triple with SET_CORE and SYMB is placed.*/
-static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepSetCore *set_core, YaepSymb *symb)
+static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepStateSetCore *set_core, YaepSymb *symb)
 {
     YaepCoreSymbVect***core_symb_vect_ptr;
 
@@ -4554,7 +4559,7 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepSetCor
 #endif
 
 /* The following function returns the triple(if any) for given SET_CORE and SYMB. */
-static YaepCoreSymbVect *core_symb_vect_find(YaepParseState *ps, YaepSetCore *set_core, YaepSymb *symb)
+static YaepCoreSymbVect *core_symb_vect_find(YaepParseState *ps, YaepStateSetCore *set_core, YaepSymb *symb)
 {
     YaepCoreSymbVect *r;
 
@@ -4575,7 +4580,7 @@ static YaepCoreSymbVect *core_symb_vect_find(YaepParseState *ps, YaepSetCore *se
 
 /* Add given triple(SET_CORE, TERM, ...) to the table and return
    pointer to it.*/
-static YaepCoreSymbVect *core_symb_vect_new(YaepParseState *ps, YaepSetCore*set_core, YaepSymb*symb)
+static YaepCoreSymbVect *core_symb_vect_new(YaepParseState *ps, YaepStateSetCore*set_core, YaepSymb*symb)
 {
     YaepCoreSymbVect*triple;
     YaepCoreSymbVect**addr;
@@ -5536,12 +5541,12 @@ static void build_start_set(YaepParseState *ps)
    given in CORE_SYMB_VECT with given lookahead terminal number.  If
    the number is negative, we ignore lookahead at all.*/
 static void build_new_set(YaepParseState *ps,
-                          YaepSet *set,
+                          YaepStateSet *set,
                           YaepCoreSymbVect *core_symb_vect,
                           int lookahead_term_id)
 {
-    YaepSet*prev_set;
-    YaepSetCore*set_core,*prev_set_core;
+    YaepStateSet*prev_set;
+    YaepStateSetCore*set_core,*prev_set_core;
     YaepSituation*sit,*new_sit,**prev_sits;
     YaepCoreSymbVect*prev_core_symb_vect;
     int local_lookahead_level, dist, sit_ind, new_dist;
@@ -5653,7 +5658,7 @@ struct recovery_state
     /* The following two members define tail of pl for this error
        recovery state.*/
     int pl_tail_length;
-    YaepSet**pl_tail;
+    YaepStateSet**pl_tail;
     /* The following member is index of start token for given error
        recovery state.*/
     int start_tok;
@@ -5680,11 +5685,11 @@ static void save_original_sets(YaepParseState *ps)
     int length, curr_pl;
 
     assert(ps->pl_curr >= 0 && ps->original_last_pl_el <= ps->start_pl_curr);
-    length = VLO_LENGTH(ps->original_pl_tail_stack) / sizeof(YaepSet*);
+    length = VLO_LENGTH(ps->original_pl_tail_stack) / sizeof(YaepStateSet*);
     for(curr_pl = ps->start_pl_curr - length; curr_pl >= ps->pl_curr; curr_pl--)
     {
         VLO_ADD_MEMORY(ps->original_pl_tail_stack, &ps->pl[curr_pl],
-                        sizeof(YaepSet*));
+                        sizeof(YaepStateSet*));
 
         if (ps->run.debug_level > 2)
 	{
@@ -5716,7 +5721,7 @@ static void restore_original_sets(YaepParseState *ps, int last_pl_el)
     {
         ps->original_last_pl_el++;
         ps->pl[ps->original_last_pl_el]
-            =((YaepSet**) VLO_BEGIN(ps->original_pl_tail_stack))
+            =((YaepStateSet**) VLO_BEGIN(ps->original_pl_tail_stack))
             [ps->start_pl_curr - ps->original_last_pl_el];
 
         if (ps->run.debug_level > 2)
@@ -5792,7 +5797,7 @@ static struct recovery_state new_recovery_state(YaepParseState *ps, int last_ori
 	}
 
     }
-    state.pl_tail =(YaepSet**) OS_TOP_BEGIN(ps->recovery_state_tail_sets);
+    state.pl_tail =(YaepStateSet**) OS_TOP_BEGIN(ps->recovery_state_tail_sets);
     OS_TOP_FINISH(ps->recovery_state_tail_sets);
     state.start_tok = ps->tok_curr;
     state.backward_move_cost = backward_move_cost;
@@ -5876,7 +5881,7 @@ static struct recovery_state pop_recovery_state(YaepParseState *ps)
    on which the error occurred.*/
 static void error_recovery(YaepParseState *ps, int *start, int *stop)
 {
-    YaepSet*set;
+    YaepStateSet*set;
     YaepCoreSymbVect*core_symb_vect;
     struct recovery_state best_state, state;
     int best_cost, cost, lookahead_term_id, n_matched_toks;
@@ -6154,7 +6159,7 @@ static void error_recovery_fin(YaepParseState *ps)
 /* Return TRUE if goto set SET from parsing list PLACE can be used as
    the next set.  The criterium is that all origin sets of start
    situations are the same as from PLACE. */
-static int check_cached_transition_set(YaepParseState *ps, YaepSet*set, int place)
+static int check_cached_transition_set(YaepParseState *ps, YaepStateSet*set, int place)
 {
     int i, dist;
     int*dists = set->dists;
@@ -6171,18 +6176,17 @@ static int check_cached_transition_set(YaepParseState *ps, YaepSet*set, int plac
     return TRUE;
 }
 
-/* The following function is major function forming parsing list in
-   Earley's algorithm.*/
-static void build_pl(YaepParseState *ps)
+/* The following function is major function forming parsing list in Earley's algorithm.*/
+static void perform_parse(YaepParseState *ps)
 {
     int i;
     YaepSymb*term;
-    YaepSet*set;
+    YaepStateSet*set;
     YaepCoreSymbVect*core_symb_vect;
     int lookahead_term_id;
 #ifdef USE_SET_HASH_TABLE
     hash_table_entry_t*entry;
-    YaepSetTermLookAhead*new_set_term_lookahead;
+    YaepStateSetTermLookAhead*new_set_term_lookahead;
 #endif
 
     error_recovery_init(ps);
@@ -6208,7 +6212,6 @@ static void build_pl(YaepParseState *ps)
             }
         }
 
-
         if (ps->run.debug_level > 2)
 	{
             fprintf(stderr, "\nReading %d=", ps->tok_curr);
@@ -6219,8 +6222,8 @@ static void build_pl(YaepParseState *ps)
         set = ps->pl[ps->pl_curr];
         ps->new_set = NULL;
 #ifdef USE_SET_HASH_TABLE
-        OS_TOP_EXPAND(ps->set_term_lookahead_os, sizeof(YaepSetTermLookAhead));
-        new_set_term_lookahead = (YaepSetTermLookAhead*) OS_TOP_BEGIN(ps->set_term_lookahead_os);
+        OS_TOP_EXPAND(ps->set_term_lookahead_os, sizeof(YaepStateSetTermLookAhead));
+        new_set_term_lookahead = (YaepStateSetTermLookAhead*) OS_TOP_BEGIN(ps->set_term_lookahead_os);
         new_set_term_lookahead->set = set;
         new_set_term_lookahead->term = term;
         new_set_term_lookahead->lookahead = lookahead_term_id;
@@ -6232,16 +6235,16 @@ static void build_pl(YaepParseState *ps)
         entry = find_hash_table_entry(ps->set_term_lookahead_tab, new_set_term_lookahead, TRUE);
         if (*entry != NULL)
 	{
-            YaepSet*tab_set;
+            YaepStateSet*tab_set;
 
             OS_TOP_NULLIFY(ps->set_term_lookahead_os);
             for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
                 if ((tab_set =
-                    ((YaepSetTermLookAhead*)*entry)->result[i]) == NULL)
+                    ((YaepStateSetTermLookAhead*)*entry)->result[i]) == NULL)
                     break;
                 else if (check_cached_transition_set(ps,
                                                      tab_set,
-                                                     ((YaepSetTermLookAhead*)*entry)->place[i]))
+                                                     ((YaepStateSetTermLookAhead*)*entry)->place[i]))
                 {
                     ps->new_set = tab_set;
                     ps->n_goto_successes++;
@@ -6285,11 +6288,11 @@ static void build_pl(YaepParseState *ps)
             build_new_set(ps, set, core_symb_vect, lookahead_term_id);
 #ifdef USE_SET_HASH_TABLE
             /* Save(set, term, lookahead) -> new_set in the table. */
-            i =((YaepSetTermLookAhead*)*entry)->curr;
-           ((YaepSetTermLookAhead*)*entry)->result[i] = ps->new_set;
-           ((YaepSetTermLookAhead*)*entry)->place[i] = ps->pl_curr;
-           ((YaepSetTermLookAhead*)*entry)->lookahead = lookahead_term_id;
-           ((YaepSetTermLookAhead*)*entry)->curr = (i + 1) % MAX_CACHED_GOTO_RESULTS;
+            i =((YaepStateSetTermLookAhead*)*entry)->curr;
+           ((YaepStateSetTermLookAhead*)*entry)->result[i] = ps->new_set;
+           ((YaepStateSetTermLookAhead*)*entry)->place[i] = ps->pl_curr;
+           ((YaepStateSetTermLookAhead*)*entry)->lookahead = lookahead_term_id;
+           ((YaepStateSetTermLookAhead*)*entry)->curr = (i + 1) % MAX_CACHED_GOTO_RESULTS;
 #endif
 	}
         ps->pl[++ps->pl_curr] = ps->new_set;
@@ -6824,10 +6827,10 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
    function sets up*AMBIGUOUS_P if we found that the grammer is
    ambigous(it works even we asked only one parse tree without
    alternatives).*/
-static YaepTreeNode *make_parse(YaepParseState *ps, int *ambiguous_p)
+static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
 {
-    YaepSet *set, *check_set;
-    YaepSetCore *set_core, *check_set_core;
+    YaepStateSet *set, *check_set;
+    YaepStateSetCore *set_core, *check_set_core;
     YaepSituation *sit, *check_sit;
     YaepRule *rule, *sit_rule;
     YaepSymb *symb;
@@ -7418,8 +7421,10 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     tab_collisions = get_all_collisions();
     tab_searches = get_all_searches();
 
-    build_pl(ps);
-    *root = make_parse(ps, ambiguous_p);
+    fprintf(stderr, "\n\nPARSING----------------\n\n");
+    perform_parse(ps);
+    fprintf(stderr, "\n\nDONE PARSING----------------\n\n");
+    *root = build_parse_tree(ps, ambiguous_p);
 
     tab_collisions = get_all_collisions() - tab_collisions;
     tab_searches = get_all_searches() - tab_searches;
@@ -7719,7 +7724,9 @@ static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, int trans_p)
     fprintf(f, "\n");
 }
 
-/* The following function prints RULE to file F with dot in position POS.*/
+/* The following function prints RULE to file F with dot in position pos.
+   Pos == 0 means that the dot is all the way to the left in the starting position.
+   Pos == rhs_len means that the whole rule has been matched. */
 static void rule_dot_print(YaepParseState *ps, FILE *f, YaepRule *rule, int pos)
 {
     int i;
@@ -7730,12 +7737,12 @@ static void rule_dot_print(YaepParseState *ps, FILE *f, YaepRule *rule, int pos)
     fprintf(f, " :");
     for(i = 0; i < rule->rhs_len; i++)
     {
-        fprintf(f, i == pos ? " ." : " ");
+        fprintf(f, i == pos ? " 🞄 " : " ");
         symb_print(f, rule->rhs[i], FALSE);
     }
     if (rule->rhs_len == pos)
     {
-        fprintf(f, ".");
+        fprintf(f, " 🞄 ");
     }
 }
 
@@ -7745,9 +7752,10 @@ static void sit_print(YaepParseState *ps, FILE *f, YaepSituation *sit, int looka
 {
     fprintf(f, "%3d ", sit->sit_id);
     rule_dot_print(ps, f, sit->rule, sit->pos);
+
     if (ps->run.grammar->lookahead_level != 0 && lookahead_p)
     {
-        fprintf(f, ",");
+        fprintf(f, "    ");
         term_set_print(ps, f, sit->lookahead, ps->run.grammar->symbs_ptr->num_terms);
     }
 }
@@ -7756,7 +7764,7 @@ static void sit_print(YaepParseState *ps, FILE *f, YaepSituation *sit, int looka
    then print all situations.  The situations are printed with the
    lookahead set if LOOKAHEAD_P.  SET_DIST is used to print absolute
    distances of non-start situations. */
-static void set_print(YaepParseState *ps, FILE* f, YaepSet*set, int set_dist, int nonstart_p, int lookahead_p)
+static void set_print(YaepParseState *ps, FILE* f, YaepStateSet*set, int set_dist, int nonstart_p, int lookahead_p)
 {
     int i;
     int num, n_start_sits, n_sits, n_all_dists;
@@ -7789,15 +7797,20 @@ static void set_print(YaepParseState *ps, FILE* f, YaepSet*set, int set_dist, in
     for(i = 0; i < n_sits; i++)
     {
         fprintf(f, "    ");
+
         sit_print(ps, f, sits[i], lookahead_p);
-        fprintf(f, ", %d\n",
-                (i < n_start_sits
-                  ? dists[i] : i < n_all_dists ? parent_indexes[i]
-                  : 0));
+
+        int p = 0;
+        if (i < n_start_sits) p = dists[i];
+        else if (i < n_all_dists) p = parent_indexes[i];
+
+        fprintf(f, " %d\n", p);
+
+        assert(p == (i < n_start_sits ? dists[i] : i < n_all_dists ? parent_indexes[i] : 0));
+
         if (i == n_start_sits - 1)
         {
-            if (!nonstart_p)
-                break;
+            if (!nonstart_p) break;
             fprintf(f, "    -----------\n");
         }
     }
