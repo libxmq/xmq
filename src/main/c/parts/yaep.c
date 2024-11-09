@@ -3316,7 +3316,7 @@ static YaepSymb *symb_get(YaepParseState *ps, int n)
     YaepSymb*symb =((YaepSymb**) VLO_BEGIN(ps->run.grammar->symbs_ptr->symbs_vlo))[n];
     assert(symb->num == n);
 
-    TRACE_FA(ps, "%d -> %p", n, symb);
+    TRACE_FA(ps, "%d -> %s", n, symb->repr);
 
     return symb;
 }
@@ -3331,7 +3331,7 @@ static YaepSymb *term_get(YaepParseState *ps, int n)
     YaepSymb*symb =((YaepSymb**) VLO_BEGIN(ps->run.grammar->symbs_ptr->terms_vlo))[n];
     assert(symb->term_p && symb->u.term.term_num == n);
 
-    TRACE_FA(ps, "%d -> %p", n, symb);
+    TRACE_FA(ps, "%d -> %s", n, symb->repr);
 
     return symb;
 }
@@ -3346,7 +3346,7 @@ static YaepSymb *nonterm_get(YaepParseState *ps, int n)
     YaepSymb*symb =((YaepSymb**) VLO_BEGIN(ps->run.grammar->symbs_ptr->nonterms_vlo))[n];
     assert(!symb->term_p && symb->u.nonterm.nonterm_num == n);
 
-    TRACE_FA(ps, "%d -> %p", n, symb);
+    TRACE_FA(ps, "%d -> %s", n, symb->repr);
 
     return symb;
 }
@@ -5125,39 +5125,54 @@ int yaep_read_grammar(YaepParseRun *pr,
     ps->run.grammar->term_error = symb_add_term(ps, TERM_ERROR_NAME, TERM_ERROR_CODE);
     ps->run.grammar->term_error_num = ps->run.grammar->term_error->u.term.term_num;
     ps->run.grammar->axiom = ps->run.grammar->end_marker = NULL;
-    while((lhs =(*read_rule)(&rhs, &anode, &anode_cost, &transl, &mark, &marks)) != NULL)
+
+    for (;;)
     {
-        // fprintf(stderr, "LHS >%s<\n", lhs); // DEBUGGING TODO REMOVE
+        lhs = (*read_rule)(&rhs, &anode, &anode_cost, &transl, &mark, &marks);
+        if (lhs == NULL) break;
+
+        fprintf(stderr, "READ RULE  >%s<\n", lhs); // DEBUGGING TODO REMOVE
         symb = symb_find_by_repr(ps, lhs);
         if (symb == NULL)
+        {
             symb = symb_add_nonterm(ps, lhs);
+        }
         else if (symb->term_p)
+        {
             yaep_error(ps, YAEP_TERM_IN_RULE_LHS,
                         "term `%s' in the left hand side of rule", lhs);
+        }
         if (anode == NULL && transl != NULL &&*transl >= 0 && transl[1] >= 0)
+        {
             yaep_error(ps, YAEP_INCORRECT_TRANSLATION,
                         "rule for `%s' has incorrect translation", lhs);
+        }
         if (anode != NULL && anode_cost < 0)
+        {
             yaep_error(ps, YAEP_NEGATIVE_COST,
                         "translation for `%s' has negative cost", lhs);
+        }
         if (ps->run.grammar->axiom == NULL)
 	{
-            /* We made this here becuase we want that the start rule has
-               number 0.*/
+            /* We made this here becuase we want that the start rule has number 0.*/
             /* Add axiom and end marker.*/
             start = symb;
             ps->run.grammar->axiom = symb_find_by_repr(ps, AXIOM_NAME);
             if (ps->run.grammar->axiom != NULL)
+            {
                 yaep_error(ps, YAEP_FIXED_NAME_USAGE,
                             "do not use fixed name `%s'", AXIOM_NAME);
+            }
             ps->run.grammar->axiom = symb_add_nonterm(ps, AXIOM_NAME);
             ps->run.grammar->end_marker = symb_find_by_repr(ps, END_MARKER_NAME);
             if (ps->run.grammar->end_marker != NULL)
+            {
                 yaep_error(ps, YAEP_FIXED_NAME_USAGE,
                             "do not use fixed name `%s'", END_MARKER_NAME);
-            if (symb_find_by_code(ps, END_MARKER_CODE) != NULL)
-                abort();
+            }
+            if (symb_find_by_code(ps, END_MARKER_CODE) != NULL) abort();
             ps->run.grammar->end_marker = symb_add_term(ps, END_MARKER_NAME, END_MARKER_CODE);
+
             /* Add rules for start*/
             rule = rule_new_start(ps, ps->run.grammar->axiom, NULL, 0);
             rule_new_symb_add(ps, symb);
@@ -5173,7 +5188,9 @@ int yaep_read_grammar(YaepParseRun *pr,
             rhs_len++;
             symb = symb_find_by_repr(ps, *rhs);
             if (symb == NULL)
+            {
                 symb = symb_add_nonterm(ps, *rhs);
+            }
             rule_new_symb_add(ps, symb);
             rhs++;
 	}
@@ -5214,13 +5231,20 @@ int yaep_read_grammar(YaepParseRun *pr,
             }
 	}
     }
+
     if (ps->run.grammar->axiom == NULL)
+    {
         yaep_error(ps, YAEP_NO_RULES, "grammar does not contains rules");
+    }
+
     assert(start != NULL);
+
     /* Adding axiom : error $eof if it is neccessary.*/
     for(rule = start->u.nonterm.rules; rule != NULL; rule = rule->lhs_next)
-        if (rule->rhs[0] == ps->run.grammar->term_error)
-            break;
+    {
+        if (rule->rhs[0] == ps->run.grammar->term_error) break;
+    }
+
     if (rule == NULL)
     {
         rule = rule_new_start(ps, ps->run.grammar->axiom, NULL, 0);
@@ -5228,7 +5252,9 @@ int yaep_read_grammar(YaepParseRun *pr,
         rule_new_symb_add(ps, ps->run.grammar->end_marker);
         rule_new_stop(ps);
         rule->trans_len = 0;
+        rule->mark = 0;
     }
+
     check_grammar(ps, strict_p);
 
     symb_finish_adding_terms(ps);
@@ -7672,8 +7698,16 @@ static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, int trans_p)
     fprintf(f, " :");
     for(i = 0; i < rule->rhs_len; i++)
     {
-        assert(rule->marks[i] >= 0 && rule->marks[i] < 128);
-        fprintf(f, " %c", rule->marks[i]?rule->marks[i]:' ');
+        char m = rule->marks[i];
+        if (m >= 32 && m < 127)
+        {
+            fprintf(f, " %c", m);
+        }
+        else
+        {
+            if (!m) fprintf(f, "  ");
+            else    fprintf(f, " ?%d?", rule->marks[i]);
+        }
         symb_print(f, rule->rhs[i], FALSE);
     }
     if (trans_p)

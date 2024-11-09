@@ -1428,7 +1428,7 @@ bool ixml_build_yaep_grammar(YaepParseRun *ps, YaepGrammar *g, XMQParseState *st
         for (size_t i = 0; i < state->ixml_rules->size; ++i)
         {
             IXMLRule *r = (IXMLRule*)vector_element_at(state->ixml_rules, i);
-            printf("RULE %c%s \n", r->rule_name->mark, r->rule_name->name);
+            printf("RULE %c%s \n", r->rule_name->mark?r->rule_name->mark:' ', r->rule_name->name);
             for (size_t j = 0; j < r->rhs->size; ++j)
             {
                 IXMLTermType *tt = (IXMLTermType*)vector_element_at(r->rhs, j);
