@@ -2416,8 +2416,8 @@ typedef long int term_set_el_t;
 #define MAX_SYMB_CODE_TRANS_VECT_SIZE 200000
 
 /* The initial length of array(in tokens) in which input tokens are placed.*/
-#ifndef YAEP_INIT_TOKENS_NUMBER
-#define YAEP_INIT_TOKENS_NUMBER 10000
+#ifndef NUM_INITIAL_YAEP_INIT_TOKENS
+#define NUM_INITIAL_YAEP_TOKENS 10000
 #endif
 
 /* The following is default number of tokens sucessfully matched to
@@ -2509,7 +2509,7 @@ struct YaepGrammar
     YaepSymb *term_error;
 
     /* And its internal number.*/
-    int term_error_num;
+    int term_error_id;
 
     /* The level of usage of lookaheads:
        0    - no usage
@@ -2755,7 +2755,7 @@ struct YaepSituation
     /* The following member is TRUE if the tail can derive empty string. */
     char empty_tail_p;
     /* unique situation number. */
-    int sit_number;
+    int sit_id;
     /* The following is number of situation context which is number of
        the corresponding terminal set in the table.  It is really used
        only for dynamic lookahead. */
@@ -3780,7 +3780,7 @@ static void rule_fin(YaepGrammar *grammar, YaepRuleStorage *rules)
 /* Initialize work with tokens.*/
 static void tok_init(YaepParseState *ps)
 {
-    VLO_CREATE(ps->toks_vlo, ps->run.grammar->alloc, YAEP_INIT_TOKENS_NUMBER* sizeof(YaepTok));
+    VLO_CREATE(ps->toks_vlo, ps->run.grammar->alloc, NUM_INITIAL_YAEP_TOKENS * sizeof(YaepTok));
     ps->toks_len = 0;
 }
 
@@ -3912,7 +3912,7 @@ static YaepSituation *sit_create(YaepParseState *ps, YaepRule *rule, int pos, in
     ps->n_all_sits++;
     sit->rule = rule;
     sit->pos = pos;
-    sit->sit_number = ps->n_all_sits;
+    sit->sit_id = ps->n_all_sits;
     sit->context = context;
     sit->empty_tail_p = sit_set_lookahead(ps, sit);
     (*context_sit_table_ptr)[rule->rule_start_offset + pos] = sit;
@@ -3930,7 +3930,7 @@ static unsigned sits_hash(int n_sits, YaepSituation **sits)
     result = jauquet_prime_mod32;
     for(i = 0; i < n_sits; i++)
     {
-        n = sits[i]->sit_number;
+        n = sits[i]->sit_id;
         result = result* hash_shift + n;
     }
     return result;
@@ -4059,20 +4059,20 @@ static void empty_sit_dist_set(YaepParseState *ps)
    FALSE, otherwise return TRUE. */
 static int sit_dist_insert(YaepParseState *ps, YaepSituation*sit, int dist)
 {
-    int i, len, sit_number;
+    int i, len, sit_id;
     vlo_t*check_dist_vlo;
 
-    sit_number = sit->sit_number;
+    sit_id = sit->sit_id;
     /* Expand the set to accommodate possibly a new situation. */
     len = VLO_LENGTH(ps->sit_dist_vec_vlo) / sizeof(vlo_t);
-    if (len <= sit_number)
+    if (len <= sit_id)
     {
-        VLO_EXPAND(ps->sit_dist_vec_vlo,(sit_number + 1 - len)* sizeof(vlo_t));
-        for(i = len; i <= sit_number; i++)
+        VLO_EXPAND(ps->sit_dist_vec_vlo,(sit_id + 1 - len)* sizeof(vlo_t));
+        for(i = len; i <= sit_id; i++)
             VLO_CREATE(((vlo_t*) VLO_BEGIN(ps->sit_dist_vec_vlo))[i],
                         ps->run.grammar->alloc, 64);
     }
-    check_dist_vlo = &((vlo_t*) VLO_BEGIN(ps->sit_dist_vec_vlo))[sit_number];
+    check_dist_vlo = &((vlo_t*) VLO_BEGIN(ps->sit_dist_vec_vlo))[sit_id];
     len = VLO_LENGTH(*check_dist_vlo) / sizeof(int);
     if (len <= dist)
     {
@@ -5124,7 +5124,7 @@ int yaep_read_grammar(YaepParseRun *pr,
     if (symb_find_by_code(ps, TERM_ERROR_CODE) != NULL)
         abort();
     ps->run.grammar->term_error = symb_add_term(ps, TERM_ERROR_NAME, TERM_ERROR_CODE);
-    ps->run.grammar->term_error_num = ps->run.grammar->term_error->u.term.term_id;
+    ps->run.grammar->term_error_id = ps->run.grammar->term_error->u.term.term_id;
     ps->run.grammar->axiom = ps->run.grammar->end_marker = NULL;
 
     for (;;)
@@ -5575,7 +5575,7 @@ static void build_new_set(YaepParseState *ps,
         new_sit = sit_create(ps, sit->rule, sit->pos + 1, sit->context);
         if (local_lookahead_level != 0
             && !term_set_test(new_sit->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
-            && !term_set_test(new_sit->lookahead, ps->run.grammar->term_error_num, ps->run.grammar->symbs_ptr->num_terms))
+            && !term_set_test(new_sit->lookahead, ps->run.grammar->term_error_id, ps->run.grammar->symbs_ptr->num_terms))
             continue;
         dist = 0;
         if (sit_ind >= set_core->n_all_dists)
@@ -5620,7 +5620,7 @@ static void build_new_set(YaepParseState *ps,
                 if (local_lookahead_level != 0
                     && !term_set_test(new_sit->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
                     && !term_set_test(new_sit->lookahead,
-                                      ps->run.grammar->term_error_num,
+                                      ps->run.grammar->term_error_id,
                                       ps->run.grammar->symbs_ptr->num_terms))
                     continue;
                 dist = 0;
@@ -6455,9 +6455,9 @@ static YaepTransVisitNode *visit_node(YaepParseState *ps, YaepTreeNode*node)
 }
 
 /* The following function returns the positive order number of node with number NUM.*/
-static int canon_node_num(int num)
+static int canon_node_id(int id)
 {
-    return (num < 0 ? -num - 1 : num);
+    return (id < 0 ? -id-1 : id);
 }
 
 /* The following recursive function prints NODE into file F and prints
@@ -6496,7 +6496,7 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
 	{
             fprintf(f, "ABSTRACT: %c%s(", node->val.anode.mark?node->val.anode.mark:' ', node->val.anode.name);
             for(i = 0;(child = node->val.anode.children[i]) != NULL; i++)
-                fprintf(f, " %d", canon_node_num(visit_node(ps, child)->num));
+                fprintf(f, " %d", canon_node_id(visit_node(ps, child)->num));
 	}
         else
 	{
@@ -6504,7 +6504,7 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
 	    {
                 fprintf(f, "  \"%d: %s\" -> \"%d: ", trans_visit_node->num,
                          node->val.anode.name,
-                        canon_node_num(visit_node(ps, child)->num));
+                        canon_node_id(visit_node(ps, child)->num));
                 switch(child->type)
 		{
 		case YAEP_NIL:
@@ -6536,17 +6536,17 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
         if (ps->run.debug_level > 0)
 	{
             fprintf(f, "ALTERNATIVE: node=%d, next=",
-                    canon_node_num(visit_node(ps, node->val.alt.node)->num));
+                    canon_node_id(visit_node(ps, node->val.alt.node)->num));
             if (node->val.alt.next != NULL)
                 fprintf(f, "%d\n",
-                        canon_node_num(visit_node(ps, node->val.alt.next)->num));
+                        canon_node_id(visit_node(ps, node->val.alt.next)->num));
             else
                 fprintf(f, "nil\n");
 	}
         else
 	{
             fprintf(f, "  \"%d: ALT\" -> \"%d: ", trans_visit_node->num,
-                    canon_node_num(visit_node(ps, node->val.alt.node)->num));
+                    canon_node_id(visit_node(ps, node->val.alt.node)->num));
             switch(node->val.alt.node->type)
 	    {
 	    case YAEP_NIL:
@@ -6572,8 +6572,8 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
             fprintf(f, "\";\n");
             if (node->val.alt.next != NULL)
                 fprintf(f, "  \"%d: ALT\" -> \"%d: ALT\";\n",
-                         trans_visit_node->num,
-                        canon_node_num(visit_node(ps, node->val.alt.next)->num));
+                        trans_visit_node->num,
+                        canon_node_id(visit_node(ps, node->val.alt.next)->num));
 	}
         print_yaep_node(ps, f, node->val.alt.node);
         if (node->val.alt.next != NULL)
@@ -7761,7 +7761,7 @@ static void rule_dot_print(YaepParseState *ps, FILE *f, YaepRule *rule, int pos)
    situation is printed with the lookahead set if LOOKAHEAD_P.*/
 static void sit_print(YaepParseState *ps, FILE *f, YaepSituation *sit, int lookahead_p)
 {
-    fprintf(f, "%3d ", sit->sit_number);
+    fprintf(f, "%3d ", sit->sit_id);
     rule_dot_print(ps, f, sit->rule, sit->pos);
     if (ps->run.grammar->lookahead_level != 0 && lookahead_p)
     {
