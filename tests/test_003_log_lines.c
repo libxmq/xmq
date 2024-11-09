@@ -21,7 +21,7 @@ int main(int argc, char **argv)
                              "date=", "%04d-%02d-%02d", 2024, 10, 23,
                              "}");
 
-    const char *expected = "login{user=fredrik id=123 name='Ann K. Mantra' date=2024-10-23}";
+    const char *expected = "login{user=fredrik id=123 name='Ann K. Mantra'date=2024-10-23}";
     if (strcmp(l1, expected))
     {
         printf("EXPECTED >%s<\nBUT GOT  >%s<\n", expected, l1);

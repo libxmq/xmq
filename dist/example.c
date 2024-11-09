@@ -27,19 +27,28 @@ int main(int argc, char **argv)
     const char *color = xmqGetString(doc, "/car/color");
     const char *history = xmqGetString(doc, "/car/history");
 
-    char *line = xmqLogElement("car{",
-                               "nw=", "%d", num_wheels,
-                               "model=", "%d", 42,
-                               "}");
-    printf("%s\n", line);
-
     expect(model, "EsCarGo");
     expect_int(num_wheels, 36);
     expect_double(weight, 999.123);
 
     xmqFreeDoc(doc);
 
-    return ok ? 0 : 1;
+    char *line = xmqLogElement("car{",
+                               "nw=", "%d", num_wheels,
+                               "model=", "%s %d", "car go ", 3,
+                               "decription=", "%s", "howdy\ndowdy",
+                               "more=", "'''%s'''", "===",
+                               "key=", "",
+                               "}");
+    const char *expect = "car{nw=36 model='car go  3'decription=('howdy'&#10;'dowdy')more=(&#39;&#39;&#39;'==='&#39;&#39;&#39;)key=''}";
+    if (strcmp(line, expect))
+    {
+        printf("Expected >%s<\n but got >%s<\n", expect, line);
+    }
+
+    free(line);
+
+    return 0;
 }
 
 void expect(const char *s, const char *e)

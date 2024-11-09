@@ -4412,21 +4412,6 @@ char *xmqLogDoc(XMQDoc *doc)
     return strdup("{howdy}");
 }
 
-int count_args(const char *format);
-int count_args(const char *format)
-{
-    const char *i = format;
-    int n = 0;
-
-    while (*i)
-    {
-        if (*i == '%' && *(i+1) != '%') n++;
-        i++;
-    }
-
-    return n;
-}
-
 char *xmqLogElement(const char *element_name, ...)
 {
     va_list ap;
@@ -4437,7 +4422,6 @@ char *xmqLogElement(const char *element_name, ...)
 
     char *buf = (char*)malloc(1024);
     size_t buf_size = 1024;
-    bool space = false;
 
     for (;;)
     {
@@ -4447,8 +4431,12 @@ char *xmqLogElement(const char *element_name, ...)
         size_t kl = strlen(key);
         if (key[kl-1] != '=') break;
 
-        if (space) membuffer_append(mb, " ");
-        space = true;
+        char last = membuffer_back(mb);
+
+        if (last != '\'' && last != '(' && last != ')'  && last != '{' && last != '}')
+        {
+            membuffer_append(mb, " ");
+        }
         membuffer_append(mb, key);
 
         const char *format = va_arg(ap, const char *);
@@ -4465,6 +4453,8 @@ char *xmqLogElement(const char *element_name, ...)
 
         XMQOutputSettings os;
         memset(&os, 0, sizeof(os));
+        os.compact = true;
+        os.escape_newlines = true;
         os.output_buffer = mb;
         os.content.writer_state = os.output_buffer;
         os.content.write = (XMQWrite)(void*)membuffer_append_region;
@@ -4477,7 +4467,10 @@ char *xmqLogElement(const char *element_name, ...)
         memset(&ps, 0, sizeof(ps));
         ps.output_settings = &os;
 
-        print_value_internal_text(&ps, buf, NULL, LEVEL_ELEMENT_VALUE);
+        xmlNode node;
+        memset(&node, 0, sizeof(node));
+        node.content = (xmlChar*)buf;
+        print_value(&ps , &node, LEVEL_ATTR_VALUE);
     }
     free(buf);
 

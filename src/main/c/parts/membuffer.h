@@ -54,6 +54,7 @@ void membuffer_append_entity(MemBuffer *mb, char c);
 void membuffer_append_null(MemBuffer *mb);
 void membuffer_drop_last_null(MemBuffer *mb);
 void membuffer_append_pointer(MemBuffer *mb, void *ptr);
+char membuffer_back(MemBuffer *mb);
 
 #define MEMBUFFER_MODULE
 
