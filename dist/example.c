@@ -27,6 +27,12 @@ int main(int argc, char **argv)
     const char *color = xmqGetString(doc, "/car/color");
     const char *history = xmqGetString(doc, "/car/history");
 
+    char *line = xmqLogElement("car{",
+                               "nw=", "%d", num_wheels,
+                               "model=", "%d", 42,
+                               "}");
+    printf("%s\n", line);
+
     expect(model, "EsCarGo");
     expect_int(num_wheels, 36);
     expect_double(weight, 999.123);

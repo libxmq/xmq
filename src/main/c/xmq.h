@@ -873,6 +873,27 @@ void xmqOverrideColor(XMQOutputSettings *settings,
                       const char *post,
                       const char *ns);
 
+/**
+   xmqLogLine:
+
+   Generate a compact single line xmq string containing no newlines at all, for logging.
+*/
+char *xmqLogDoc(XMQDoc *doc);
+
+/**
+   xmqLogLineArgs:
+
+   Generate a compact single line xmq string containing no newlines at all, for logging.
+   The content is constructed from printf formatted strings:
+   xmqLogElement("car{",
+                 "model=", "%s", modelstring,
+                 "id=", "%d", idnumber,
+                 "description=", "desc: %s", multilinedescription,
+                 "}");
+   Generates:
+   car{model=Volvo id=123 description=('desc: lines of'&#10;'next line')}
+*/
+char *xmqLogElement(const char *element_name, ...);
 
 #ifdef __cplusplus
 _hideRBfromEditor

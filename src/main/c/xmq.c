@@ -4407,6 +4407,88 @@ bool xmqParseFileWithIXML(XMQDoc *doc, const char *file_name, XMQDoc *ixml_gramm
     return ok;
 }
 
+char *xmqLogDoc(XMQDoc *doc)
+{
+    return strdup("{howdy}");
+}
+
+int count_args(const char *format);
+int count_args(const char *format)
+{
+    const char *i = format;
+    int n = 0;
+
+    while (*i)
+    {
+        if (*i == '%' && *(i+1) != '%') n++;
+        i++;
+    }
+
+    return n;
+}
+
+char *xmqLogElement(const char *element_name, ...)
+{
+    va_list ap;
+    va_start(ap, element_name);
+
+    MemBuffer *mb = new_membuffer();
+    membuffer_append(mb, element_name);
+
+    char *buf = (char*)malloc(1024);
+    size_t buf_size = 1024;
+    bool space = false;
+
+    for (;;)
+    {
+        const char *key = va_arg(ap, const char*);
+        if (!key) break;
+        if (*key == '}') break;
+        size_t kl = strlen(key);
+        if (key[kl-1] != '=') break;
+
+        if (space) membuffer_append(mb, " ");
+        space = true;
+        membuffer_append(mb, key);
+
+        const char *format = va_arg(ap, const char *);
+
+        for (;;)
+        {
+            size_t n = vsnprintf(buf, buf_size, format, ap);
+            if (n < buf_size) break;
+
+            buf_size *= 2;
+            free(buf);
+            buf = (char*)malloc(buf_size);
+        }
+
+        XMQOutputSettings os;
+        memset(&os, 0, sizeof(os));
+        os.output_buffer = mb;
+        os.content.writer_state = os.output_buffer;
+        os.content.write = (XMQWrite)(void*)membuffer_append_region;
+        os.error.writer_state = os.output_buffer;
+        os.error.write = (XMQWrite)(void*)membuffer_append_region;
+        os.explicit_space = " ";
+        os.explicit_tab = "\t";
+
+        XMQPrintState ps;
+        memset(&ps, 0, sizeof(ps));
+        ps.output_settings = &os;
+
+        print_value_internal_text(&ps, buf, NULL, LEVEL_ELEMENT_VALUE);
+    }
+    free(buf);
+
+    va_end(ap);
+
+    membuffer_append(mb, "}");
+    membuffer_append_null(mb);
+
+    return free_membuffer_but_return_trimmed_content(mb);
+}
+
 #include"parts/always.c"
 #include"parts/colors.c"
 #include"parts/core.c"
