@@ -4147,9 +4147,11 @@ bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
 
     state->doq = ixml_grammar;
     state->build_xml_of_ixml = false;
-    ixml_grammar->yaep_grammar_ = yaepNewGrammar();
-    ixml_grammar->yaep_parse_run_ = yaepNewParseRun((YaepGrammar*)ixml_grammar->yaep_grammar_);
-    if (xmqTracing()) yaep_set_debug_level((YaepGrammar*)ixml_grammar->yaep_grammar_, 5);
+    YaepGrammar *grammar = yaepNewGrammar();
+    YaepParseRun *run = yaepNewParseRun(grammar);
+    ixml_grammar->yaep_grammar_ = grammar;
+    ixml_grammar->yaep_parse_run_ = run;
+    if (xmqTracing()) run->debug_level = 7;
 
     ixml_build_yaep_grammar((YaepParseRun*)ixml_grammar->yaep_parse_run_,
                             (YaepGrammar*)ixml_grammar->yaep_grammar_,

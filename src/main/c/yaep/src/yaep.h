@@ -320,7 +320,6 @@ extern int yaep_parse_grammar(YaepGrammar *g,
    o recovery_match means how much subsequent tokens should be
      successfully shifted to finish error recovery.  The default value is 3. */
 extern int yaep_set_lookahead_level(YaepGrammar *grammar, int level);
-extern int yaep_set_debug_level(YaepGrammar *grammar, int level);
 extern int yaep_set_one_parse_flag(YaepGrammar *grammar, int flag);
 extern int yaep_set_cost_flag(YaepGrammar *grammar, int flag);
 extern int yaep_set_error_recovery_flag(YaepGrammar *grammar, int flag);
