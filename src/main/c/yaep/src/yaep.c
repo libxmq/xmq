@@ -318,33 +318,36 @@ struct YaepTermStorage
 };
 
 /* This page contains table for fast search for vector of indexes of
-   situations with symbol after dot in given set core.*/
+   situations with symbol after dot in given set core. */
 struct YaepVect
 {
     /* The following member is used internally.  The value is
        nonnegative for core_symb_vect being formed.  It is index of vlo
        in vlos array which contains the vector elements.*/
     int intern;
+
     /* The following memebers defines array of indexes of situations in
        given set core.  You should access to values through these
        members(in other words don't save the member values in another
        variable).*/
     int len;
-    int*els;
+    int *els;
 };
 
 /* The following is element of the table.*/
 struct YaepCoreSymbVect
 {
     /* The set core.*/
-    YaepStateSetCore*set_core;
+    YaepStateSetCore *set_core;
+
     /* The symbol.*/
-    YaepSymb*symb;
+    YaepSymb *symb;
+
     /* The following vector contains indexes of situations with given
        symb in situation after dot.*/
     YaepVect transitions;
-    /* The following vector contains indexes of reduce situations with
-       given symb in lhs.*/
+
+    /* The following vector contains indexes of reduce situations with given symb in lhs. */
     YaepVect reduces;
 };
 
@@ -357,15 +360,19 @@ struct YaepStateSetCore
     /* The following is unique number of the set core. It is defined
        only after forming all set.*/
     int num;
+
     /* The set core hash.  We save it as it is used several times. */
     unsigned int hash;
+
     /* The following is term shifting which resulted into this core.  It
        is defined only after forming all set.*/
-    YaepSymb*term;
+    YaepSymb *term;
+
     /* The following are numbers of all situations and start situations
        in the following array.*/
     int n_sits;
     int n_start_sits;
+
     /* Array of situations.  Start situations are always placed the
        first in the order of their creation(with subsequent duplicates
        are removed), then nonstart noninitial(situation with at least
@@ -373,19 +380,21 @@ struct YaepStateSetCore
        situations are placed.  You should access to a set situation only
        through this member or variable `new_sits'(in other words don't
        save the member value in another variable).*/
-    YaepSituation**sits;
+    YaepSituation **sits;
+
     /* The following member is number of start situations and nonstart
       (noninitial) situations whose distance is defined from a start
        situation distance.  All nonstart initial situations have zero
        distances.  This distances are not stored. */
     int n_all_dists;
+
     /* The following is array containing number of start situation from
        which distance of(nonstart noninitial) situation with given
        index(between n_start_situations -> n_all_dists) is taken.*/
-    int*parent_indexes;
+    int *parent_indexes;
 };
 
-/* The following describes set in Earley's algorithm.*/
+/* The following describes set in Earley's algorithm. */
 struct YaepStateSet
 {
     /* The following is set core of the set.  You should access to set
@@ -395,13 +404,14 @@ struct YaepStateSet
 
     /* Hash of the set distances. We save it as it is used several times. */
     unsigned int dists_hash;
+
     /* The following is distances only for start situations.  Other
        situations have their distances equal to 0.  The start situation
        in set core and the corresponding distance has the same index.
        You should access to distances only through this member or
        variable `new_dists'(in other words don't save the member value
-       in another variable).*/
-    int*dists;
+       in another variable). */
+    int *dists;
 };
 
 /* The following describes abstract data situation without distance of its original
@@ -409,18 +419,23 @@ struct YaepStateSet
    many duplicated structures. */
 struct YaepSituation
 {
+    /* Unique situation identifier. */
+    int sit_id;
+
     /* The following is the situation rule. */
     YaepRule*rule;
+
     /* The following is position of dot in rhs of the situation rule. */
     short pos;
+
     /* The following member is TRUE if the tail can derive empty string. */
     char empty_tail_p;
-    /* unique situation number. */
-    int sit_id;
+
     /* The following is number of situation context which is number of
        the corresponding terminal set in the table.  It is really used
        only for dynamic lookahead. */
     int context;
+
     /* The following member is the situation lookahead it is equal to
        FIRST(the situation tail || FOLLOW(lhs)) for statik lookaheads
        and FIRST(the situation tail || context) for dynamic ones. */
