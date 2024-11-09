@@ -3139,11 +3139,6 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 
 // Global variables /////////////////////////////////////////////////////
 
-/* The following variable values are values of the corresponding members for the current grammar.*/
-
-// Temporary global variable while migrating to thread safe code.
-static YaepParseState *state__;
-
 /* Jump buffer for processing errors.*/
 jmp_buf error_longjump_buff;
 
@@ -3463,16 +3458,19 @@ static unsigned term_set_hash(hash_table_entry_t s)
 /* Equality of terminal sets. */
 static int term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    term_set_el_t *set1 = ((YaepTabTermSet*)s1)->set;
-    term_set_el_t *set2 = ((YaepTabTermSet*)s2)->set;
-    term_set_el_t *bound;
-    int size;
+    YaepTabTermSet *ts1 = (YaepTabTermSet*)s1;
+    YaepTabTermSet *ts2 = (YaepTabTermSet*)s2;
+    term_set_el_t *i = ts1->set;
+    term_set_el_t *j = ts2->set;
 
-    size = ((state__->run.grammar->symbs_ptr->nn_terms + CHAR_BIT* sizeof(term_set_el_t) - 1) / (CHAR_BIT* sizeof(term_set_el_t)));
-    bound = set1 + size;
-    while(set1 < bound)
+    assert(ts1->num_elements == ts2->num_elements);
+
+    int num_elements = ts1->num_elements;
+    term_set_el_t *i_bound = i + num_elements;
+
+    while (i < i_bound)
     {
-        if (*set1++ !=*set2++)
+        if (*i++ != *j++)
         {
             return FALSE;
         }
@@ -4801,7 +4799,6 @@ YaepParseRun *yaepNewParseRun(YaepGrammar *g)
     INSTALL_PARSE_STATE_MAGIC(ps);
 
     ps->run.grammar = g;
-    state__ = ps;
 
     return (YaepParseRun*)ps;
 }
