@@ -2508,7 +2508,7 @@ struct YaepGrammar
     /* The following auxiliary symbol is used for describing error recovery.*/
     YaepSymb *term_error;
 
-    /* And its internal number.*/
+    /* And its internal id.*/
     int term_error_id;
 
     /* The level of usage of lookaheads:
@@ -2550,29 +2550,29 @@ struct YaepSymb
 {
     /* The following is external representation of the symbol.  It
        should be allocated by parse_alloc because the string will be
-       referred from parse tree.*/
+       referred from parse tree. */
     const char *repr;
     union
     {
         struct
         {
-            /* The following value is code of the terminal symbol.*/
+            /* The code is specified when the grammar is reading the terminals. */
             int code;
-            /* The id is just the order number of the terminal. */
+            /* Each term is given a unique integer starting from 0. */
             int term_id;
         } term;
         struct
         {
             /* The following refers for all rules with the nonterminal
-               symbol is in the left hand side of the rules.*/
+               symbol is in the left hand side of the rules. */
             YaepRule*rules;
-            /* The id is just the order number of the nonterminal. */
+            /* Each nonterm is given a unique integer starting from 0. */
             int nonterm_id;
             /* The following value is nonzero if nonterminal may derivate
                itself.  In other words there is a grammar loop for this
                nonterminal.*/
             int loop_p;
-            /* The following members are FIRST and FOLLOW sets of the nonterminal.*/
+            /* The following members are FIRST and FOLLOW sets of the nonterminal. */
             term_set_el_t *first, *follow;
         } nonterm;
     } u;
@@ -5102,7 +5102,6 @@ int yaep_read_grammar(YaepParseRun *pr,
     }
     while((name =(*read_terminal)(&code)) != NULL)
     {
-        // fprintf(stderr, "TERM >%s< %d\n", name, code); // DEBUGGING TODO REMOVE
         if (code < 0)
             yaep_error(ps, YAEP_NEGATIVE_TERM_CODE,
                         "term `%s' has negative code", name);
