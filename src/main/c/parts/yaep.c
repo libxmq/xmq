@@ -2637,19 +2637,18 @@ struct YaepTermSet
 /* The following container for the abstract data.*/
 struct YaepTermStorage
 {
-    /* All terminal sets are stored in the following os.*/
+    /* All terminal sets are stored in the following os. */
     os_t term_set_os;
 
     /* The following variables can be read externally.  Their values are
        number of terminal sets and their overall size.*/
     int n_term_sets, n_term_sets_size;
 
-    /* The following is hash table of terminal sets (key is member `set').*/
-    hash_table_t map_term_set_to_id;
-
-    /* References to all structure term_set are stored in the
-       following vlo.*/
+    /* The YaepTermSet objects are stored in this vlo. */
     vlo_t term_set_vlo;
+
+    /* Hashmap from key set (a bit array) to the YaepTermSet object from which we use the id. */
+    hash_table_t map_term_set_to_id;
 };
 
 /* This page contains table for fast search for vector of indexes of
