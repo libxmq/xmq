@@ -727,10 +727,10 @@ struct YaepParseState
 
     /* The following variable values is state_set_curr and tok_curr at error
        recovery start(when the original syntax error has been fixed).*/
-    int start_state_set_curr, start_tok_curr;
+    int recovery_start_set_curr, recovery_start_tok_curr;
 
     /* The following variable value means that all error sets in pl with
-       indexes [back_state_set_frontier, start_state_set_curr] are being processed or
+       indexes [back_state_set_frontier, recovery_start_set_curr] are being processed or
        have been processed.*/
     int back_state_set_frontier;
 
@@ -3366,8 +3366,8 @@ struct recovery_state
    decrease number of restored sets.*/
 static void set_original_set_bound(YaepParseState *ps, int last)
 {
-    assert(last >= 0 && last <= ps->start_state_set_curr
-            && ps->original_last_state_set_el <= ps->start_state_set_curr);
+    assert(last >= 0 && last <= ps->recovery_start_set_curr
+            && ps->original_last_state_set_el <= ps->recovery_start_set_curr);
     ps->original_last_state_set_el = last;
 }
 
@@ -3379,10 +3379,10 @@ static void save_original_sets(YaepParseState *ps)
 {
     int length, curr_pl;
 
-    assert(ps->state_set_curr >= 0 && ps->original_last_state_set_el <= ps->start_state_set_curr);
+    assert(ps->state_set_curr >= 0 && ps->original_last_state_set_el <= ps->recovery_start_set_curr);
     length = VLO_LENGTH(ps->original_state_set_tail_stack) / sizeof(YaepStateSet*);
 
-    for(curr_pl = ps->start_state_set_curr - length; curr_pl >= ps->state_set_curr; curr_pl--)
+    for(curr_pl = ps->recovery_start_set_curr - length; curr_pl >= ps->state_set_curr; curr_pl--)
     {
         VLO_ADD_MEMORY(ps->original_state_set_tail_stack, &ps->state_sets[curr_pl],
                         sizeof(YaepStateSet*));
@@ -3410,8 +3410,8 @@ static void save_original_sets(YaepParseState *ps)
    part with states in range [0, last_state_set_el].*/
 static void restore_original_sets(YaepParseState *ps, int last_state_set_el)
 {
-    assert(last_state_set_el <= ps->start_state_set_curr
-            && ps->original_last_state_set_el <= ps->start_state_set_curr);
+    assert(last_state_set_el <= ps->recovery_start_set_curr
+            && ps->original_last_state_set_el <= ps->recovery_start_set_curr);
     if (ps->original_last_state_set_el >= last_state_set_el)
     {
         ps->original_last_state_set_el = last_state_set_el;
@@ -3422,7 +3422,7 @@ static void restore_original_sets(YaepParseState *ps, int last_state_set_el)
         ps->original_last_state_set_el++;
         ps->state_sets[ps->original_last_state_set_el]
             =((YaepStateSet**) VLO_BEGIN(ps->original_state_set_tail_stack))
-            [ps->start_state_set_curr - ps->original_last_state_set_el];
+            [ps->recovery_start_set_curr - ps->original_last_state_set_el];
 
         if (ps->run.debug_level > 2)
 	{
@@ -3595,8 +3595,8 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
     OS_CREATE(ps->recovery_state_tail_sets, ps->run.grammar->alloc, 0);
     VLO_NULLIFY(ps->original_state_set_tail_stack);
     VLO_NULLIFY(ps->recovery_state_stack);
-    ps->start_state_set_curr = ps->state_set_curr;
-    ps->start_tok_curr = ps->tok_curr;
+    ps->recovery_start_set_curr = ps->state_set_curr;
+    ps->recovery_start_tok_curr = ps->tok_curr;
     /* Initialize error recovery state stack.*/
     ps->state_set_curr
         = ps->back_state_set_frontier = find_error_state_set_set(ps, ps->state_set_curr, &backward_move_cost);
@@ -3625,7 +3625,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             if (best_cost >= back_to_frontier_move_cost + backward_move_cost)
 	    {
                 ps->back_state_set_frontier = ps->state_set_curr;
-                ps->tok_curr = ps->start_tok_curr;
+                ps->tok_curr = ps->recovery_start_tok_curr;
                 save_original_sets(ps);
                 back_to_frontier_move_cost += backward_move_cost;
                 push_recovery_state(ps, ps->back_state_set_frontier,
@@ -3809,7 +3809,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
                                                  /* It may be any constant here
                                                     because it is not used.*/
                                                  0);
-               *start = ps->start_tok_curr - state.backward_move_cost;
+               *start = ps->recovery_start_tok_curr - state.backward_move_cost;
                *stop =*start + cost;
 	    }
 
