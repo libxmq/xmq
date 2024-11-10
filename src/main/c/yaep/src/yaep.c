@@ -281,8 +281,8 @@ struct YaepVocabulary
 
     /* The following are tables to find terminal by its code and symbol by
        its representation.*/
-    hash_table_t repr_to_symb_tab;	/* key is `repr'*/
-    hash_table_t code_to_symb_tab;	/* key is `code'*/
+    hash_table_t map_repr_to_symb;	/* key is `repr'*/
+    hash_table_t map_code_to_symb;	/* key is `code'*/
 
     /* If terminal symbol codes are not spared(in this case the member
        value is not NULL, we use translation vector instead of hash table. */
@@ -314,8 +314,7 @@ struct YaepTermStorage
        number of terminal sets and their overall size.*/
     int n_term_sets, n_term_sets_size;
 
-    /* The following is hash table of terminal sets(key is member
-       `set').*/
+    /* The following is hash table of terminal sets (key is member `set').*/
     hash_table_t term_set_tab;
 
     /* References to all structure tab_term_set are stored in the
@@ -658,8 +657,7 @@ struct YaepParseState
     /* All productions are placed in the following object.*/
     os_t prods_os;
 
-    /* Vector implementing map: prod id -> vlo of the distance check
-       indexed by the distance. */
+    /* Vector implementing map: prod id -> vlo of the distance check indexed by the distance. */
     vlo_t production_distance_vec_vlo;
 
     /* The value used to check the validity of elements of check_dist structures. */
@@ -877,8 +875,8 @@ static YaepVocabulary *symb_init(YaepGrammar *grammar)
     VLO_CREATE(result->symbs_vlo, grammar->alloc, 1024);
     VLO_CREATE(result->terms_vlo, grammar->alloc, 512);
     VLO_CREATE(result->nonterms_vlo, grammar->alloc, 512);
-    result->repr_to_symb_tab = create_hash_table(grammar->alloc, 300, symb_repr_hash, symb_repr_eq);
-    result->code_to_symb_tab = create_hash_table(grammar->alloc, 200, symb_code_hash, symb_code_eq);
+    result->map_repr_to_symb = create_hash_table(grammar->alloc, 300, symb_repr_hash, symb_repr_eq);
+    result->map_code_to_symb = create_hash_table(grammar->alloc, 200, symb_code_hash, symb_code_eq);
     result->symb_code_trans_vect = NULL;
     result->num_nonterms = 0;
     result->num_terms = 0;
@@ -891,7 +889,7 @@ static YaepSymb *symb_find_by_repr(YaepParseState *ps, const char*repr)
 {
     YaepSymb symb;
     symb.repr = repr;
-    YaepSymb*r = (YaepSymb*)*find_hash_table_entry(ps->run.grammar->symbs_ptr->repr_to_symb_tab, &symb, FALSE);
+    YaepSymb*r = (YaepSymb*)*find_hash_table_entry(ps->run.grammar->symbs_ptr->map_repr_to_symb, &symb, FALSE);
 
     TRACE_FA(ps, "%s -> %p", repr, r);
 
@@ -920,7 +918,7 @@ static YaepSymb *symb_find_by_code(YaepParseState *ps, int code)
 
     symb.term_p = TRUE;
     symb.u.term.code = code;
-    YaepSymb*r =(YaepSymb*)*find_hash_table_entry(ps->run.grammar->symbs_ptr->code_to_symb_tab, &symb, FALSE);
+    YaepSymb*r =(YaepSymb*)*find_hash_table_entry(ps->run.grammar->symbs_ptr->map_code_to_symb, &symb, FALSE);
 
     TRACE_FA(ps, "hash %d -> %p", code, r);
 
@@ -941,9 +939,9 @@ static YaepSymb *symb_add_term(YaepParseState *ps, const char*name, int code)
     symb.u.term.code = code;
     symb.u.term.term_id = ps->run.grammar->symbs_ptr->num_terms++;
     symb.empty_p = FALSE;
-    repr_entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->repr_to_symb_tab, &symb, TRUE);
+    repr_entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_repr_to_symb, &symb, TRUE);
     assert(*repr_entry == NULL);
-    code_entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->code_to_symb_tab, &symb, TRUE);
+    code_entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_code_to_symb, &symb, TRUE);
     assert(*code_entry == NULL);
     OS_TOP_ADD_STRING(ps->run.grammar->symbs_ptr->symbs_os, name);
     symb.repr =(char*) OS_TOP_BEGIN(ps->run.grammar->symbs_ptr->symbs_os);
@@ -975,7 +973,7 @@ static YaepSymb *symb_add_nonterm(YaepParseState *ps, const char *name)
     symb.u.nonterm.rules = NULL;
     symb.u.nonterm.loop_p = 0;
     symb.u.nonterm.nonterm_id = ps->run.grammar->symbs_ptr->num_nonterms++;
-    entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->repr_to_symb_tab, &symb, TRUE);
+    entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_repr_to_symb, &symb, TRUE);
     assert(*entry == NULL);
     OS_TOP_ADD_STRING(ps->run.grammar->symbs_ptr->symbs_os, name);
     symb.repr =(char*) OS_TOP_BEGIN(ps->run.grammar->symbs_ptr->symbs_os);
@@ -1079,8 +1077,8 @@ static void symb_empty(YaepParseState *ps, YaepVocabulary *symbs)
         ps->run.grammar->symbs_ptr->symb_code_trans_vect = NULL;
     }
 
-    empty_hash_table(symbs->repr_to_symb_tab);
-    empty_hash_table(symbs->code_to_symb_tab);
+    empty_hash_table(symbs->map_repr_to_symb);
+    empty_hash_table(symbs->map_code_to_symb);
     VLO_NULLIFY(symbs->nonterms_vlo);
     VLO_NULLIFY(symbs->terms_vlo);
     VLO_NULLIFY(symbs->symbs_vlo);
@@ -1100,8 +1098,8 @@ static void symb_fin(YaepParseState *ps, YaepVocabulary *symbs)
         yaep_free(ps->run.grammar->alloc, ps->run.grammar->symbs_ptr->symb_code_trans_vect);
     }
 
-    delete_hash_table(ps->run.grammar->symbs_ptr->repr_to_symb_tab);
-    delete_hash_table(ps->run.grammar->symbs_ptr->code_to_symb_tab);
+    delete_hash_table(ps->run.grammar->symbs_ptr->map_repr_to_symb);
+    delete_hash_table(ps->run.grammar->symbs_ptr->map_code_to_symb);
     VLO_DELETE(ps->run.grammar->symbs_ptr->nonterms_vlo);
     VLO_DELETE(ps->run.grammar->symbs_ptr->terms_vlo);
     VLO_DELETE(ps->run.grammar->symbs_ptr->symbs_vlo);
@@ -3771,63 +3769,64 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 
             n_matched_toks++;
             if (n_matched_toks >= ps->run.grammar->recovery_token_matches)
+            {
                 break;
+            }
             ps->tok_curr++;
             if (ps->tok_curr >= ps->toks_len)
+            {
                 break;
+            }
             /* Push secondary recovery state(with error in set).*/
             if (core_symb_vect_find(ps, ps->new_core, ps->run.grammar->term_error) != NULL)
 	    {
-
                 if (ps->run.debug_level > 2)
 		{
-                    fprintf
-                       (stderr,
-                         "++++Found secondary state: original set=%d, tok=%d, ",
-                         state.last_original_state_set_el, ps->tok_curr);
+                    fprintf(stderr, "++++Found secondary state: original set=%d, tok=%d, ",
+                            state.last_original_state_set_el, ps->tok_curr);
                     symb_print(stderr, ps->toks[ps->tok_curr].symb, TRUE);
                     fprintf(stderr, "\n");
 		}
 
                 push_recovery_state(ps, state.last_original_state_set_el, cost);
 	    }
-            core_symb_vect
-                = core_symb_vect_find(ps, ps->new_core, ps->toks[ps->tok_curr].symb);
+            core_symb_vect = core_symb_vect_find(ps, ps->new_core, ps->toks[ps->tok_curr].symb);
             if (core_symb_vect == NULL)
+            {
                 break;
+            }
             lookahead_term_id =(ps->tok_curr + 1 < ps->toks_len
                                   ? ps->toks[ps->tok_curr + 1].symb->u.term.term_id
                                   : -1);
             complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, lookahead_term_id);
             ps->state_sets[++ps->state_set_curr] = ps->new_set;
 	}
-        if (n_matched_toks >= ps->run.grammar->recovery_token_matches
-            || ps->tok_curr >= ps->toks_len)
+        if (n_matched_toks >= ps->run.grammar->recovery_token_matches || ps->tok_curr >= ps->toks_len)
 	{
             /* We found an error recovery.  Compare costs.*/
             if (best_cost > cost)
 	    {
 
                 if (ps->run.debug_level > 2)
-                    fprintf
-                       (stderr,
-                         "++++Ignore %d tokens(the best recovery now): Save it:\n",
-                         cost);
-
+                {
+                    fprintf(stderr, "++++Ignore %d tokens(the best recovery now): Save it:\n", cost);
+                }
                 best_cost = cost;
                 if (ps->tok_curr == ps->toks_len)
+                {
                     ps->tok_curr--;
+                }
                 best_state = new_recovery_state(ps, state.last_original_state_set_el,
                                                  /* It may be any constant here
                                                     because it is not used.*/
                                                  0);
                *start = ps->recovery_start_tok_curr - state.backward_move_cost;
-               *stop =*start + cost;
+               *stop = *start + cost;
 	    }
-
             else if (ps->run.debug_level > 2)
+            {
                 fprintf(stderr, "++++Ignore %d tokens(worse recovery)\n", cost);
-
+            }
 	}
 
         else if (cost < best_cost && ps->run.debug_level > 2)
@@ -3847,8 +3846,11 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         symb_print(stderr, ps->toks[ps->tok_curr].symb, TRUE);
         fprintf(stderr, ", Current set=%d:\n", ps->state_set_curr);
         if (ps->run.debug_level > 3)
-            print_state_set(ps, stderr, ps->state_sets[ps->state_set_curr], ps->state_set_curr, ps->run.debug_level > 4,
-                      ps->run.debug_level > 5);
+        {
+            print_state_set(ps, stderr, ps->state_sets[ps->state_set_curr],
+                            ps->state_set_curr, ps->run.debug_level > 4,
+                            ps->run.debug_level > 5);
+        }
     }
 
     OS_DELETE(ps->recovery_state_tail_sets);
@@ -3961,9 +3963,11 @@ static void perform_parse(YaepParseState *ps)
 
             OS_TOP_NULLIFY(ps->set_term_lookahead_os);
             for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
-                if ((tab_set =
-                    ((YaepStateSetTermLookAhead*)*entry)->result[i]) == NULL)
+            {
+                if ((tab_set = ((YaepStateSetTermLookAhead*)*entry)->result[i]) == NULL)
+                {
                     break;
+                }
                 else if (check_cached_transition_set(ps,
                                                      tab_set,
                                                      ((YaepStateSetTermLookAhead*)*entry)->place[i]))
@@ -3972,6 +3976,7 @@ static void perform_parse(YaepParseState *ps)
                     ps->n_goto_successes++;
                     break;
                 }
+            }
 	}
         else
 	{
