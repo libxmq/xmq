@@ -315,7 +315,7 @@ struct YaepTermStorage
     int n_term_sets, n_term_sets_size;
 
     /* The following is hash table of terminal sets (key is member `set').*/
-    hash_table_t term_set_tab;
+    hash_table_t map_term_set_to_id;
 
     /* References to all structure term_set are stored in the
        following vlo.*/
@@ -1158,7 +1158,7 @@ static YaepTermStorage *term_set_init(YaepGrammar *grammar)
     mem = yaep_malloc(grammar->alloc, sizeof(YaepTermStorage));
     result =(YaepTermStorage*) mem;
     OS_CREATE(result->term_set_os, grammar->alloc, 0);
-    result->term_set_tab = create_hash_table(grammar->alloc, 1000, term_set_hash, term_set_eq);
+    result->map_term_set_to_id = create_hash_table(grammar->alloc, 1000, term_set_hash, term_set_eq);
     VLO_CREATE(result->term_set_vlo, grammar->alloc, 4096);
     result->n_term_sets = result->n_term_sets_size = 0;
 
@@ -1273,7 +1273,7 @@ static int term_set_insert(YaepParseState *ps, term_set_el_t *set)
     YaepTermSet term_set,*term_set_ptr;
 
     term_set.set = set;
-    entry = find_hash_table_entry(ps->run.grammar->term_sets_ptr->term_set_tab, &term_set, TRUE);
+    entry = find_hash_table_entry(ps->run.grammar->term_sets_ptr->map_term_set_to_id, &term_set, TRUE);
 
     if (*entry != NULL)
     {
@@ -1327,7 +1327,7 @@ static void term_set_empty(YaepTermStorage *term_sets)
     if (term_sets == NULL) return;
 
     VLO_NULLIFY(term_sets->term_set_vlo);
-    empty_hash_table(term_sets->term_set_tab);
+    empty_hash_table(term_sets->map_term_set_to_id);
     OS_EMPTY(term_sets->term_set_os);
     term_sets->n_term_sets = term_sets->n_term_sets_size = 0;
 }
@@ -1338,7 +1338,7 @@ static void term_set_fin(YaepGrammar *grammar, YaepTermStorage *term_sets)
     if (term_sets == NULL) return;
 
     VLO_DELETE(term_sets->term_set_vlo);
-    delete_hash_table(term_sets->term_set_tab);
+    delete_hash_table(term_sets->map_term_set_to_id);
     OS_DELETE(term_sets->term_set_os);
     yaep_free(grammar->alloc, term_sets);
     term_sets = NULL;
