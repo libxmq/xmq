@@ -3115,7 +3115,7 @@ struct YaepParseState
     /* The following table is used to make translation for ambiguous
        grammar more compact.  It is used only when we want all
        translations.*/
-    hash_table_t parse_state_tab;	/* Key is rule, orig, state_set_ind.*/
+    hash_table_t map_rule_orig_statesetind_to_internalstate;	/* Key is rule, orig, state_set_ind.*/
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -6405,7 +6405,7 @@ static void parse_state_init(YaepParseState *ps)
     ps->free_parse_state = NULL;
     OS_CREATE(ps->parse_state_os, ps->run.grammar->alloc, 0);
     if (!ps->run.grammar->one_parse_p)
-        ps->parse_state_tab =
+        ps->map_rule_orig_statesetind_to_internalstate =
             create_hash_table(ps->run.grammar->alloc, ps->toks_len* 2, parse_state_hash,
                                parse_state_eq);
 }
@@ -6445,7 +6445,7 @@ static YaepInternalParseState *parse_state_insert(YaepParseState *ps, YaepIntern
 {
     hash_table_entry_t*entry;
 
-    entry = find_hash_table_entry(ps->parse_state_tab, state, TRUE);
+    entry = find_hash_table_entry(ps->map_rule_orig_statesetind_to_internalstate, state, TRUE);
 
    *new_p = FALSE;
     if (*entry != NULL)
@@ -6462,7 +6462,9 @@ static YaepInternalParseState *parse_state_insert(YaepParseState *ps, YaepIntern
 static void parse_state_fin(YaepParseState *ps)
 {
     if (!ps->run.grammar->one_parse_p)
-        delete_hash_table(ps->parse_state_tab);
+    {
+        delete_hash_table(ps->map_rule_orig_statesetind_to_internalstate);
+    }
     OS_DELETE(ps->parse_state_os);
 }
 
