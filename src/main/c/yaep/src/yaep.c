@@ -3219,24 +3219,23 @@ static void build_start_set(YaepParseState *ps)
     ps->state_sets[0] = ps->new_set;
 }
 
-/* The following function builds new set by shifting productions of SET
+/* The following function predicts a new state set by shifting productions of SET
    given in CORE_SYMB_VECT with given lookahead terminal number.  If
    the number is negative, we ignore lookahead at all.*/
-static void build_new_set(YaepParseState *ps,
-                          YaepStateSet *set,
-                          YaepCoreSymbVect *core_symb_vect,
-                          int lookahead_term_id)
+static void complete_and_predict_new_state_set(YaepParseState *ps,
+                                               YaepStateSet *set,
+                                               YaepCoreSymbVect *core_symb_vect,
+                                               int lookahead_term_id)
 {
-    YaepStateSet*prev_set;
-    YaepStateSetCore*set_core,*prev_set_core;
-    YaepProduction*prod,*new_prod,**prev_prods;
-    YaepCoreSymbVect*prev_core_symb_vect;
+    YaepStateSet *prev_set;
+    YaepStateSetCore *set_core, *prev_set_core;
+    YaepProduction *prod, *new_prod, **prev_prods;
+    YaepCoreSymbVect *prev_core_symb_vect;
     int local_lookahead_level, dist, prod_ind, new_dist;
     int i, place;
-    YaepVect*transitions;
+    YaepVect *transitions;
 
-    local_lookahead_level =(lookahead_term_id < 0
-                             ? 0 : ps->run.grammar->lookahead_level);
+    local_lookahead_level = (lookahead_term_id < 0 ? 0 : ps->run.grammar->lookahead_level);
     set_core = set->core;
     set_new_start(ps);
     transitions = &core_symb_vect->transitions;
@@ -3656,7 +3655,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         if (ps->run.debug_level > 2)
             fprintf(stderr, "++++Making error shift in set=%d\n", ps->state_set_curr);
 
-        build_new_set(ps, set, core_symb_vect, -1);
+        complete_and_predict_new_state_set(ps, set, core_symb_vect, -1);
         ps->state_sets[++ps->state_set_curr] = ps->new_set;
 
         if (ps->run.debug_level > 2)
@@ -3720,7 +3719,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         /* Shift the found token.*/
         lookahead_term_id =(ps->tok_curr + 1 < ps->toks_len
                               ? ps->toks[ps->tok_curr + 1].symb->u.term.term_id : -1);
-        build_new_set(ps, ps->new_set, core_symb_vect, lookahead_term_id);
+        complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, lookahead_term_id);
         ps->state_sets[++ps->state_set_curr] = ps->new_set;
 
         if (ps->run.debug_level > 3)
@@ -3771,7 +3770,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             lookahead_term_id =(ps->tok_curr + 1 < ps->toks_len
                                   ? ps->toks[ps->tok_curr + 1].symb->u.term.term_id
                                   : -1);
-            build_new_set(ps, ps->new_set, core_symb_vect, lookahead_term_id);
+            complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, lookahead_term_id);
             ps->state_sets[++ps->state_set_curr] = ps->new_set;
 	}
         if (n_matched_toks >= ps->run.grammar->recovery_token_matches
@@ -3959,6 +3958,7 @@ static void perform_parse(YaepParseState *ps)
             core_symb_vect = core_symb_vect_find(ps, set->core, term);
             if (core_symb_vect == NULL)
 	    {
+                fprintf(stderr, "ERRRRRRRRRRRRRRRRRRRRRRRRR\n\n");
                 int saved_tok_curr, start, stop;
 
                 /* Error recovery.  We do not check transition vector
@@ -3975,15 +3975,17 @@ static void perform_parse(YaepParseState *ps)
 		}
                 else
 		{
-                    ps->run.syntax_error(saved_tok_curr, ps->toks[saved_tok_curr].attr,
-                                     -1, NULL, -1, NULL);
+                    ps->run.syntax_error(saved_tok_curr, ps->toks[saved_tok_curr].attr, -1, NULL, -1, NULL);
                     break;
 		}
 	    }
-            build_new_set(ps, set, core_symb_vect, lookahead_term_id);
+
+            complete_and_predict_new_state_set(ps, set, core_symb_vect, lookahead_term_id);
+
 #ifdef USE_SET_HASH_TABLE
+
             /* Save(set, term, lookahead) -> new_set in the table. */
-            i =((YaepStateSetTermLookAhead*)*entry)->curr;
+            i = ((YaepStateSetTermLookAhead*)*entry)->curr;
             ((YaepStateSetTermLookAhead*)*entry)->result[i] = ps->new_set;
             ((YaepStateSetTermLookAhead*)*entry)->place[i] = ps->state_set_curr;
             ((YaepStateSetTermLookAhead*)*entry)->lookahead = lookahead_term_id;
