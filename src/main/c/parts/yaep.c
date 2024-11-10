@@ -2424,7 +2424,7 @@ typedef long int term_set_el_t;
 
 /* Define this if you want to reuse already calculated state sets.
    It considerably speed up the parser. */
-//define USE_SET_HASH_TABLE
+#define USE_SET_HASH_TABLE
 
 /* Maximal goto sets saved for triple(set, terminal, lookahead). */
 #define MAX_CACHED_GOTO_RESULTS 3
