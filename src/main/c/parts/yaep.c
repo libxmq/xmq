@@ -2422,9 +2422,9 @@ typedef long int term_set_el_t;
    stop error recovery alternative(state).*/
 #define DEFAULT_RECOVERY_TOKEN_MATCHES 3
 
-/* Define this if you want to reuse already calculated Earley's sets
-   and fast their reproduction.  It considerably speed up the parser. */
-#define USE_SET_HASH_TABLE
+/* Define this if you want to reuse already calculated state sets.
+   It considerably speed up the parser. */
+//define USE_SET_HASH_TABLE
 
 /* Maximal goto sets saved for triple(set, terminal, lookahead). */
 #define MAX_CACHED_GOTO_RESULTS 3
@@ -2702,8 +2702,7 @@ struct YaepStateSetCore
        is defined only after forming all set.*/
     YaepSymb *term;
 
-    /* The following are numbers of all productions and start productions
-       in the following array.*/
+    /* The variable num_prods are all productions in the set. Both starting and predicted. */
     int num_prods;
     int num_start_prods;
 
@@ -3133,7 +3132,12 @@ static void read_toks(YaepParseState *ps);
 static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
 static void print_rule_with_dot(YaepParseState *ps, FILE *f, YaepRule *rule, int pos);
 static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, int trans_p);
-static void print_state_set(YaepParseState *ps, FILE* f, YaepStateSet*set, int set_dist, int nonstart_p, int lookahead_p);
+static void print_state_set(YaepParseState *ps,
+                            FILE* f,
+                            YaepStateSet*set,
+                            int set_dist,
+                            int print_all_productions,
+                            int lookahead_p);
 static void print_production(YaepParseState *ps, FILE *f, YaepProduction *prod, int lookahead_p, int origin);
 static YaepVocabulary *symb_init(YaepGrammar *g);
 static void symb_empty(YaepParseState *ps, YaepVocabulary *symbs);
@@ -7817,7 +7821,7 @@ static void print_state_set(YaepParseState *ps,
                             FILE* f,
                             YaepStateSet *state_set,
                             int set_dist,
-                            int nonstart_p,
+                            int print_all_productions,
                             int lookahead_p)
 {
     int i;
@@ -7847,7 +7851,10 @@ static void print_state_set(YaepParseState *ps,
         parent_indexes = state_set->core->parent_indexes;
         num_start_prods = state_set->core->num_start_prods;
     }
-    fprintf(f, "  S(%d)\n", num);
+
+    // This is
+    fprintf(f, "  core(%d)\n", num);
+
     for(i = 0; i < num_prods; i++)
     {
         fprintf(f, "    ");
@@ -7860,10 +7867,14 @@ static void print_state_set(YaepParseState *ps,
 
         print_production(ps, f, prods[i], lookahead_p, dist);
 
-        if (i == num_start_prods - 1)
+        if (i == num_start_prods - 1 && num_prods > num_start_prods)
         {
-            if (!nonstart_p) break;
-            fprintf(f, "    -----------\n");
+            if (!print_all_productions)
+            {
+                // We have printed the start productions. Stop here.
+                break;
+            }
+            fprintf(f, "    ----------- predictions\n");
         }
     }
 }
