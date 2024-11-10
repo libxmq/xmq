@@ -6291,20 +6291,20 @@ static void perform_parse(YaepParseState *ps)
         entry = find_hash_table_entry(ps->set_term_lookahead_tab, new_set_term_lookahead, TRUE);
         if (*entry != NULL)
 	{
-            YaepStateSet*tab_set;
+            YaepStateSet *s;
 
             OS_TOP_NULLIFY(ps->triplet_set_term_lookahead_os);
             for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
             {
-                if ((tab_set = ((YaepStateSetTermLookAhead*)*entry)->result[i]) == NULL)
+                if ((s = ((YaepStateSetTermLookAhead*)*entry)->result[i]) == NULL)
                 {
                     break;
                 }
                 else if (check_cached_transition_set(ps,
-                                                     tab_set,
+                                                     s,
                                                      ((YaepStateSetTermLookAhead*)*entry)->place[i]))
                 {
-                    ps->new_set = tab_set;
+                    ps->new_set = s;
                     ps->n_goto_successes++;
                     break;
                 }
@@ -7442,7 +7442,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     int *ambiguous_p = &ps->run.ambiguous_p;
 
     int code, tok_init_p, parse_init_p;
-    int tab_collisions, tab_searches;
+    int table_collisions, table_searches;
 
     /* Set up parse allocation*/
     if (ps->run.parse_alloc == NULL)
@@ -7482,14 +7482,14 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     yaep_parse_init(ps, ps->toks_len);
     parse_init_p = TRUE;
     pl_create(ps);
-    tab_collisions = get_all_collisions();
-    tab_searches = get_all_searches();
+    table_collisions = get_all_collisions();
+    table_searches = get_all_searches();
 
     perform_parse(ps);
     *root = build_parse_tree(ps, ambiguous_p);
 
-    tab_collisions = get_all_collisions() - tab_collisions;
-    tab_searches = get_all_searches() - tab_searches;
+    table_collisions = get_all_collisions() - table_collisions;
+    table_searches = get_all_searches() - table_searches;
 
 
     if (ps->run.debug_level > 0)
@@ -7536,12 +7536,12 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  ps->n_parse_alt_nodes,
                  ps->n_parse_term_nodes + ps->n_parse_abstract_nodes
                  + ps->n_parse_alt_nodes);
-        if (tab_searches == 0)
-            tab_searches++;
+        if (table_searches == 0)
+            table_searches++;
         fprintf(stderr,
                  "       #table collisions = %.2g%%(%d out of %d)\n",
-                 tab_collisions* 100.0 / tab_searches,
-                 tab_collisions, tab_searches);
+                 table_collisions* 100.0 / table_searches,
+                 table_collisions, table_searches);
     }
 
     yaep_parse_fin(ps);
