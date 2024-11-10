@@ -2355,10 +2355,16 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 
 */
 
-/* This file implements parsing any context free grammar with minimal error recovery
-   and syntax directed translation.  The algorithm is originated from
-   Earley's algorithm.  The algorithm is sufficiently fast to be used
-   in serious language processors.*/
+/* This file implements parsing any context free grammar with minimal
+   error recovery and syntax directed translation.  The algorithm is
+   originated from Earley's algorithm.  The algorithm is sufficiently
+   fast to be used in serious language processors.
+
+   Rule: a grammar rule S -> NP VP
+   Production: a rule put into production: NP 🞄 VP [origin]
+   StateSet: e.g. S(1) a number of Productions.
+   StateSetCore: part of a state set that can be shared.
+*/
 
 #include <assert.h>
 
