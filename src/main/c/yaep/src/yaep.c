@@ -450,9 +450,10 @@ struct YaepProduction
 /* The following describes input token.*/
 struct YaepTok
 {
-    /* The following is symb correseponding to the token.*/
+    /* The following is symb correseponding to the token. */
     YaepSymb *symb;
-    /* The following is an attribute of the token.*/
+
+    /* The following is an attribute of the token. */
     void *attr;
 };
 
@@ -5480,7 +5481,7 @@ static void print_state_set(YaepParseState *ps,
     {
         /* The following is necessary if we call the function from a
            debugger.  In this case new_set, new_core and their members
-           may be not set up yet.*/
+           may be not set up yet. */
         num = -1;
         num_start_prods = num_prods = n_all_dists = ps->new_num_start_prods;
         prods = ps->new_prods;
