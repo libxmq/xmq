@@ -21,11 +21,13 @@ fi
 
 mkdir -p $OUTPUT
 
+ARGS=$(grep ^ARGS $TEST_FILE | cut -b 6- | tr -d '\n')
+
 sed -n '/^START$/,/^INPUT$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.ixml
 sed -n '/^INPUT$/,/^OUTPUT$/p' $TEST_FILE | tail -n +2 | sed '$d' | tr -d '\n' > $OUTPUT/${TEST_NAME}.input
 sed -n '/^OUTPUT$/,/^END$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.expected
 
-$PROG --ixml=$OUTPUT/${TEST_NAME}.ixml $OUTPUT/${TEST_NAME}.input > $OUTPUT/${TEST_NAME}.output 2>/dev/null
+$PROG --ixml=$OUTPUT/${TEST_NAME}.ixml $ARGS $OUTPUT/${TEST_NAME}.input > $OUTPUT/${TEST_NAME}.output 2>/dev/null
 
 if diff $OUTPUT/${TEST_NAME}.expected $OUTPUT/${TEST_NAME}.output
 then

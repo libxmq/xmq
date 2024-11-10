@@ -261,6 +261,7 @@ struct XMQParseState
     bool parsing_pi; // True when parsing a processing instruction, pi.
     bool merge_text; // Merge text nodes and character entities.
     bool no_trim_quotes; // No trimming if quotes, used when reading json strings.
+    bool ixml_all_parses; // If IXML parse is ambiguous then print all parses.
     const char *pi_name; // Name of the pi node just started.
     XMQOutputSettings *output_settings; // Used when coloring existing text using the tokenizer.
     int magic_cookie; // Used to check that the state has been properly initialized.
@@ -578,7 +579,7 @@ struct YaepParseRun;
 typedef struct YaepParseRun YaepParseRun;
 struct yaep_tree_node;
 
-bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar, const char *start, const char *stop);
+bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar, const char *start, const char *stop, int flags);
 
 typedef void (*XMQContentCallback)(XMQParseState *state,
                                    size_t start_line,

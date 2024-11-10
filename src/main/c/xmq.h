@@ -132,6 +132,7 @@ typedef enum
     @XMQ_FLAG_TRIM_HEURISTIC: Remove leading/ending whitespace, but try to keep significant, remove incidental indentation.
     @XMQ_FLAG_TRIM_EXACT: Trim exactly according to XML rules. Depends on your XSD,space:preserve and more and is COMPLICATED!
     @XMQ_FLAG_NOMERGE: Do not merge text and character entities.
+    @XMQ_FLAG_IXML_ALL_PARSES: When ixml parse is ambiguous generate all parses.
 
     If a 0 is provided as the flags to the parse functions, then it will parse using the these default settings:
     When loading xml/html:
@@ -154,6 +155,7 @@ typedef enum
     XMQ_FLAG_TRIM_HEURISTIC = 2,
     XMQ_FLAG_TRIM_EXACT = 4,
     XMQ_FLAG_NOMERGE = 8,
+    XMQ_FLAG_IXML_ALL_PARSES = 16,
 } XMQFlagBits;
 
 /**
@@ -477,6 +479,15 @@ int xmqStateErrno(XMQParseState *state);
     If the parse fails then use this function to get a string explaining the error.
 */
 const char *xmqStateErrorMsg(XMQParseState *state);
+
+/**
+   xmqSetPrintAllParsesIXML:
+   @state: the parse state.
+   @all_parses: if true then generate all possible trees.
+
+   If the parse is ambiguous generate all possible trees.
+*/
+void xmqSetPrintAllParsesIXML(XMQParseState *state, bool all_parses);
 
 /**
     xmqNewDoc:
@@ -812,7 +823,8 @@ bool xmqParseFileWithType(XMQDoc *doc,
 bool xmqParseBufferWithIXML(XMQDoc *doc,
                             const char *start,
                             const char *stop,
-                            XMQDoc *ixml_grammar);
+                            XMQDoc *ixml_grammar,
+                            int flags);
 
 /**
     xmqParseFileWithIXML:
@@ -821,7 +833,8 @@ bool xmqParseBufferWithIXML(XMQDoc *doc,
 */
 bool xmqParseFileWithIXML(XMQDoc *doc,
                           const char *file,
-                          XMQDoc *ixml_grammar);
+                          XMQDoc *ixml_grammar,
+                          int flags);
 
 /**
    xmqSetupDefaultColors:

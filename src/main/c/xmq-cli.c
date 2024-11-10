@@ -167,6 +167,7 @@ struct XMQCliCommand
     xmlDocPtr   ixml_doc;  // A DOM containing the ixml grammar.
     const char *ixml_ixml; // IXML grammar source to be used.
     const char *ixml_filename; // Where the ixml grammar was read from.
+    bool ixml_all_parses; // Print all possible parses when parse is ambiguous.
     bool build_xml_of_ixml; // Generate xml directly from ixml.
     // xmq --ixml=grammar.ixml --xml-of-ixml # This will print the grammar as xmq.
     // xmq --ixml=ixml.ixml grammar.ixml # This will print the same grammar as xmq,
@@ -1459,6 +1460,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->in_format=XMQ_CONTENT_IXML;
         return true;
     }
+    if (!strcmp(arg, "--ixml-all-parses"))
+    {
+        command->ixml_all_parses=true;
+        return true;
+    }
     if (!strcmp(arg, "--html"))
     {
         command->in_format=XMQ_CONTENT_HTML;
@@ -1723,11 +1729,14 @@ bool cmd_load(XMQCliCommand *command)
             exit(1);
         }
 
+        int flags = 0;
+        if (command->ixml_all_parses) flags |= XMQ_FLAG_IXML_ALL_PARSES;
+
         if (command->in)
         {
             if (command->in_is_content)
             {
-                ok = xmqParseBufferWithIXML(command->env->doc, command->in, NULL, ixml_grammar);
+                ok = xmqParseBufferWithIXML(command->env->doc, command->in, NULL, ixml_grammar, flags);
                 if (!ok)
                 {
                     printf("xmq: could not parse: %s\n", command->in);
@@ -1742,7 +1751,7 @@ bool cmd_load(XMQCliCommand *command)
                     printf("xmq: could not read file %s\n", command->in);
                     exit(1);
                 }
-                ok = xmqParseFileWithIXML(command->env->doc, command->in, ixml_grammar);
+                ok = xmqParseFileWithIXML(command->env->doc, command->in, ixml_grammar, flags);
                 if (!ok)
                 {
                     exit(1);

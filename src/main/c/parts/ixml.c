@@ -1364,7 +1364,11 @@ const char *ixml_to_yaep_read_rule(const char ***rhs,
     return rule->rule_name->name;
 }
 
-bool ixml_build_yaep_grammar(YaepParseRun *ps, YaepGrammar *g, XMQParseState *state, const char *start, const char *stop)
+bool ixml_build_yaep_grammar(YaepParseRun *ps,
+                             YaepGrammar *g,
+                             XMQParseState *state,
+                             const char *start,
+                             const char *stop)
 {
     if (state->magic_cookie != MAGIC_COOKIE)
     {
@@ -1390,6 +1394,7 @@ bool ixml_build_yaep_grammar(YaepParseRun *ps, YaepGrammar *g, XMQParseState *st
 
     if (!setjmp(state->error_handler))
     {
+        // Parse the IXML grammar.
         parse_ixml(state);
         if (state->i < state->buffer_stop)
         {

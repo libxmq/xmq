@@ -6066,6 +6066,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
                tokens array.*/
             continue;
 	}
+
         /* Shift the found token.*/
         lookahead_term_id =(ps->tok_curr + 1 < ps->toks_len
                               ? ps->toks[ps->tok_curr + 1].symb->u.term.term_id : -1);

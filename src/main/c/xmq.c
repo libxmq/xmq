@@ -3289,6 +3289,11 @@ void xmqSetStateSourceName(XMQParseState *state, const char *source_name)
     }
 }
 
+void xmqSetPrintAllParsesIXML(XMQParseState *state, bool all_parses)
+{
+    state->ixml_all_parses = all_parses;
+}
+
 size_t calculate_buffer_size(const char *start, const char *stop, int indent, const char *pre_line, const char *post_line)
 {
     size_t pre_n = strlen(pre_line);
@@ -3909,7 +3914,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     case XMQ_CONTENT_XML: ok = xmq_parse_buffer_xml(doq, start, stop, flags); break;
     case XMQ_CONTENT_HTML: ok = xmq_parse_buffer_html(doq, start, stop, flags); break;
     case XMQ_CONTENT_JSON: ok = xmq_parse_buffer_json(doq, start, stop, implicit_root); break;
-    case XMQ_CONTENT_IXML: ok = xmq_parse_buffer_ixml(doq, start, stop); break;
+    case XMQ_CONTENT_IXML: ok = xmq_parse_buffer_ixml(doq, start, stop, flags); break;
     case XMQ_CONTENT_TEXT: ok = xmq_parse_buffer_text(doq, start, stop, implicit_root); break;
     default: break;
     }
@@ -4131,7 +4136,8 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
 
 bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
                            const char *start,
-                           const char *stop)
+                           const char *stop,
+                           int flags)
 {
     assert(ixml_grammar->yaep_grammar_ == NULL);
 
@@ -4153,6 +4159,8 @@ bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
     ixml_grammar->yaep_parse_run_ = run;
     if (xmqTracing()) run->debug_level = 7;
 
+    // Lets parse the ixml source to construct a yaep grammar.
+    // This yaep grammar is cached in ixml_grammar->yaep_grammar_.
     ixml_build_yaep_grammar((YaepParseRun*)ixml_grammar->yaep_parse_run_,
                             (YaepGrammar*)ixml_grammar->yaep_grammar_,
                             state,
@@ -4327,6 +4335,30 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
             }
         }
     }
+    else if (n->type == YAEP_ALT)
+    {
+        xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)"AMBIGUOUS", NULL);
+        if (node == NULL)
+        {
+            xmlDocSetRootElement(doc, new_node);
+        }
+        else
+        {
+            xmlAddChild(node, new_node);
+        }
+
+        YaepTreeNode *alt = n;
+
+        generate_dom_from_yaep_node(doc, new_node, alt->val.alt.node, depth+1, 0);
+
+        alt = alt->val.alt.next;
+
+        while (alt && alt->type == YAEP_ALT)
+        {
+            generate_dom_from_yaep_node(doc, new_node, alt->val.alt.node, depth+1, 0);
+            alt = alt->val.alt.next;
+        }
+    }
     else
     if (n->type == YAEP_TERM)
     {
@@ -4357,7 +4389,7 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
     }
 }
 
-bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XMQDoc *ixml_grammar)
+bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XMQDoc *ixml_grammar, int flags)
 {
     if (!doc || !start || !ixml_grammar) return false;
     if (!stop) stop = start+strlen(start);
@@ -4367,11 +4399,17 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
     input_stop_ = input_start_ + strlen(input_start_);
 
+    if (flags & XMQ_FLAG_IXML_ALL_PARSES)
+    {
+        yaep_set_one_parse_flag(xmq_get_yaep_grammar(ixml_grammar), 0);
+    }
     yaep_set_error_recovery_flag(xmq_get_yaep_grammar(ixml_grammar), 0); // No error recovery.
     YaepParseRun *run = xmq_get_yaep_parse_run(ixml_grammar);
     YaepGrammar *grammar = xmq_get_yaep_grammar(ixml_grammar);
     run->read_token = read_yaep_token;
     run->syntax_error = handle_yaep_syntax_error;
+
+    // Parse source content using the yaep grammar, previously generated from the ixml source.
     int rc = yaepParse(run, grammar);
 
     if (rc)
@@ -4380,9 +4418,9 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
         return false;
     }
 
-    if (run->ambiguous_p)
+    if (run->ambiguous_p && !(flags & XMQ_FLAG_IXML_ALL_PARSES))
     {
-        fprintf(stderr, "ixml: Warning! The input can be parsed in multiple ways, ie it is ambiguous!");
+        fprintf(stderr, "ixml: Warning! The input can be parsed in multiple ways, ie it is ambiguous!\n");
     }
 
     generate_dom_from_yaep_node(doc->docptr_.xml, NULL, run->root, 0, 0);
@@ -4392,7 +4430,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     return true;
 }
 
-bool xmqParseFileWithIXML(XMQDoc *doc, const char *file_name, XMQDoc *ixml_grammar)
+bool xmqParseFileWithIXML(XMQDoc *doc, const char *file_name, XMQDoc *ixml_grammar, int flags)
 {
     const char *buffer;
     size_t buffer_len = 0;
@@ -4400,7 +4438,7 @@ bool xmqParseFileWithIXML(XMQDoc *doc, const char *file_name, XMQDoc *ixml_gramm
 
     if (!ok) return false;
 
-    ok = xmqParseBufferWithIXML(doc, buffer, buffer+buffer_len, ixml_grammar);
+    ok = xmqParseBufferWithIXML(doc, buffer, buffer+buffer_len, ixml_grammar, flags);
 
     free((char*)buffer);
 
