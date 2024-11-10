@@ -2477,8 +2477,8 @@ typedef struct YaepStateSetTermLookAhead YaepStateSetTermLookAhead;
 struct YaepInternalParseState;
 typedef struct YaepInternalParseState YaepInternalParseState;
 
-struct YaepTransVisitNode;
-typedef struct YaepTransVisitNode YaepTransVisitNode;
+struct YaepTreeNodeVisit;
+typedef struct YaepTreeNodeVisit YaepTreeNodeVisit;
 
 // Structure definitions ////////////////////////////////////////////////////
 
@@ -2883,8 +2883,8 @@ struct YaepInternalParseState
 };
 
 /* To make better traversing and don't waist tree parse memory,
-   we use the following structures to enumerate the tree node.*/
-struct YaepTransVisitNode
+   we use the following structures to enumerate the tree node. */
+struct YaepTreeNodeVisit
 {
     /* The following member is order number of the node.  This value is
        negative if we did not visit the node yet.*/
@@ -3088,14 +3088,14 @@ struct YaepParseState
     vlo_t tnodes_vlo;
 
     /* The key of the following table is node itself.*/
-    hash_table_t trans_visit_nodes_tab;
+    hash_table_t map_node_to_visit;
 
     /* All translation visit nodes are placed in the following stack.  All
        the nodes are in the table.*/
-    os_t trans_visit_nodes_os;
+    os_t node_visits_os;
 
     /* The following value is number of translation visit nodes.*/
-    int n_trans_visit_nodes;
+    int num_nodes_visits;
 
     /* How many times we reuse Earley's sets without their recalculation. */
     int n_goto_successes;
@@ -6471,39 +6471,39 @@ static void parse_state_fin(YaepParseState *ps)
 /* Hash of translation visit node.*/
 static unsigned trans_visit_node_hash(hash_table_entry_t n)
 {
-    return(size_t)((YaepTransVisitNode*) n)->node;
+    return(size_t)((YaepTreeNodeVisit*) n)->node;
 }
 
 /* Equality of translation visit nodes.*/
 static int trans_visit_node_eq(hash_table_entry_t n1, hash_table_entry_t n2)
 {
-    return(((YaepTransVisitNode*) n1)->node == ((YaepTransVisitNode*) n2)->node);
+    return(((YaepTreeNodeVisit*) n1)->node == ((YaepTreeNodeVisit*) n2)->node);
 }
 
 /* The following function checks presence translation visit node with
    given NODE in the table and if it is not present in the table, the
    function creates the translation visit node and inserts it into
    the table.*/
-static YaepTransVisitNode *visit_node(YaepParseState *ps, YaepTreeNode*node)
+static YaepTreeNodeVisit *visit_node(YaepParseState *ps, YaepTreeNode*node)
 {
-    YaepTransVisitNode trans_visit_node;
+    YaepTreeNodeVisit trans_visit_node;
     hash_table_entry_t*entry;
 
     trans_visit_node.node = node;
-    entry = find_hash_table_entry(ps->trans_visit_nodes_tab,
+    entry = find_hash_table_entry(ps->map_node_to_visit,
                                    &trans_visit_node, TRUE);
 
     if (*entry == NULL)
     {
         /* If it is the new node, we did not visit it yet.*/
-        trans_visit_node.num = -1 - ps->n_trans_visit_nodes;
-        ps->n_trans_visit_nodes++;
-        OS_TOP_ADD_MEMORY(ps->trans_visit_nodes_os,
+        trans_visit_node.num = -1 - ps->num_nodes_visits;
+        ps->num_nodes_visits++;
+        OS_TOP_ADD_MEMORY(ps->node_visits_os,
                            &trans_visit_node, sizeof(trans_visit_node));
-       *entry =(hash_table_entry_t) OS_TOP_BEGIN(ps->trans_visit_nodes_os);
-        OS_TOP_FINISH(ps->trans_visit_nodes_os);
+       *entry =(hash_table_entry_t) OS_TOP_BEGIN(ps->node_visits_os);
+        OS_TOP_FINISH(ps->node_visits_os);
     }
-    return(YaepTransVisitNode*)*entry;
+    return(YaepTreeNodeVisit*)*entry;
 }
 
 /* The following function returns the positive order number of node with number NUM.*/
@@ -6517,7 +6517,7 @@ static int canon_node_id(int id)
    graphviz).*/
 static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
 {
-    YaepTransVisitNode*trans_visit_node;
+    YaepTreeNodeVisit*trans_visit_node;
     YaepTreeNode*child;
     int i;
 
@@ -6639,15 +6639,15 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
 /* The following function prints parse tree with ROOT.*/
 static void print_parse(YaepParseState *ps, FILE* f, YaepTreeNode*root)
 {
-    ps->trans_visit_nodes_tab =
+    ps->map_node_to_visit =
         create_hash_table(ps->run.grammar->alloc, ps->toks_len* 2, trans_visit_node_hash,
                            trans_visit_node_eq);
 
-    ps->n_trans_visit_nodes = 0;
-    OS_CREATE(ps->trans_visit_nodes_os, ps->run.grammar->alloc, 0);
+    ps->num_nodes_visits = 0;
+    OS_CREATE(ps->node_visits_os, ps->run.grammar->alloc, 0);
     print_yaep_node(ps, f, root);
-    OS_DELETE(ps->trans_visit_nodes_os);
-    delete_hash_table(ps->trans_visit_nodes_tab);
+    OS_DELETE(ps->node_visits_os);
+    delete_hash_table(ps->map_node_to_visit);
 }
 
 
