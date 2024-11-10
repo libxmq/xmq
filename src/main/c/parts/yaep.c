@@ -3014,7 +3014,7 @@ struct YaepParseState
     os_t vect_els_os;
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    hash_table_t core_symb_to_vect_tab;	/* key is set_core and symb.*/
+    hash_table_t map_core_symb_to_vect;	/* key is set_core and symb.*/
 #else
     /* The following two variables contains table(set core,
        symbol)->core_symb_vect implemented as two dimensional array.*/
@@ -4500,7 +4500,7 @@ static void core_symb_vect_init(YaepParseState *ps)
 
     vlo_array_init(ps);
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    ps->core_symb_to_vect_tab = create_hash_table(ps->run.grammar->alloc, 3000, core_symb_vect_hash, core_symb_vect_eq);
+    ps->map_core_symb_to_vect = create_hash_table(ps->run.grammar->alloc, 3000, core_symb_vect_hash, core_symb_vect_eq);
 #else
     VLO_CREATE(ps->core_symb_table_vlo, ps->run.grammar->alloc, 4096);
     ps->core_symb_table = (YaepCoreSymbVect***)VLO_BEGIN(ps->core_symb_table_vlo);
@@ -4530,7 +4530,7 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepCoreSy
         return &triple->symb->cached_core_symb_vect;
     }
 
-    result = ((YaepCoreSymbVect**)find_hash_table_entry(ps->core_symb_to_vect_tab, triple, reserv_p));
+    result = ((YaepCoreSymbVect**)find_hash_table_entry(ps->map_core_symb_to_vect, triple, reserv_p));
 
     triple->symb->cached_core_symb_vect = *result;
 
@@ -4728,7 +4728,7 @@ static void core_symb_vect_fin(YaepParseState *ps)
     delete_hash_table(ps->reduce_els_tab);
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    delete_hash_table(ps->core_symb_to_vect_tab);
+    delete_hash_table(ps->map_core_symb_to_vect);
 #else
     OS_DELETE(ps->core_symb_tab_rows);
     VLO_DELETE(ps->core_symb_table_vlo);
