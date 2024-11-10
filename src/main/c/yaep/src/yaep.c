@@ -625,10 +625,10 @@ struct YaepParseState
        for set cores or distances or both which are in the tables.*/
     hash_table_t set_core_tab;	/* key is only start productions.*/
     hash_table_t set_distances_tab;	/* key is distances.*/
-    hash_table_t set_tab;	/* key is(core, distances).*/
+    hash_table_t set_of_tuples_core_distances;	/* key is(core, distances).*/
 
-    /* Table for triples(core, term, lookahead). */
-    hash_table_t set_of_triplets_core_term_lookahead;	/* key is (core, distances, lookeahed).*/
+    /* Table for triplets (core, term, lookahead). */
+    hash_table_t set_of_triplets_core_term_lookahead;	/* key is (core, term, lookeahed). */
 
     /* The following two variables contains all input tokens and their
        number.  The variables can be read externally.*/
@@ -1797,7 +1797,7 @@ static void set_init(YaepParseState *ps, int n_toks)
     OS_CREATE(ps->triplet_core_term_lookahead_os, ps->run.grammar->alloc, 0);
     ps->set_core_tab = create_hash_table(ps->run.grammar->alloc, 2000, set_core_hash, set_core_eq);
     ps->set_distances_tab = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, distances_hash, distances_eq);
-    ps->set_tab = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
+    ps->set_of_tuples_core_distances = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
                                 set_core_distances_hash, set_core_distances_eq);
     ps->set_of_triplets_core_term_lookahead = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
                                                core_term_lookahead_hash, core_term_lookahead_eq);
@@ -1971,7 +1971,7 @@ static int set_insert(YaepParseState *ps)
     }
 #ifdef USE_SET_HASH_TABLE
     /* Insert set into table.*/
-    entry = find_hash_table_entry(ps->set_tab, ps->new_set, TRUE);
+    entry = find_hash_table_entry(ps->set_of_tuples_core_distances, ps->new_set, TRUE);
     if (*entry == NULL)
     {
        *entry =(hash_table_entry_t)ps->new_set;
@@ -2003,7 +2003,7 @@ static void set_fin(YaepParseState *ps)
 {
     production_distance_set_fin(ps);
     delete_hash_table(ps->set_of_triplets_core_term_lookahead);
-    delete_hash_table(ps->set_tab);
+    delete_hash_table(ps->set_of_tuples_core_distances);
     delete_hash_table(ps->set_distances_tab);
     delete_hash_table(ps->set_core_tab);
     OS_DELETE(ps->triplet_core_term_lookahead_os);
