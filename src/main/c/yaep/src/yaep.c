@@ -623,8 +623,8 @@ struct YaepParseState
 
     /* The following 3 tables contain references for sets which refers
        for set cores or distances or both which are in the tables.*/
-    hash_table_t set_core_tab;	/* key is only start productions.*/
-    hash_table_t set_distances_tab;	/* key is distances.*/
+    hash_table_t set_of_cores;	/* key is only start productions.*/
+    hash_table_t set_of_distances;	/* key is distances.*/
     hash_table_t set_of_tuples_core_distances;	/* key is(core, distances).*/
 
     /* Table for triplets (core, term, lookahead). */
@@ -1795,8 +1795,8 @@ static void set_init(YaepParseState *ps, int n_toks)
     OS_CREATE(ps->set_distances_os, ps->run.grammar->alloc, 2048);
     OS_CREATE(ps->sets_os, ps->run.grammar->alloc, 0);
     OS_CREATE(ps->triplet_core_term_lookahead_os, ps->run.grammar->alloc, 0);
-    ps->set_core_tab = create_hash_table(ps->run.grammar->alloc, 2000, set_core_hash, set_core_eq);
-    ps->set_distances_tab = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, distances_hash, distances_eq);
+    ps->set_of_cores = create_hash_table(ps->run.grammar->alloc, 2000, set_core_hash, set_core_eq);
+    ps->set_of_distanceses = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, distances_hash, distances_eq);
     ps->set_of_tuples_core_distances = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
                                 set_core_distances_hash, set_core_distances_eq);
     ps->set_of_triplets_core_term_lookahead = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
@@ -1929,7 +1929,7 @@ static int set_insert(YaepParseState *ps)
 #ifdef USE_SET_HASH_TABLE
     /* Insert distances into table.*/
     setup_set_distances_hash(ps->new_set);
-    entry = find_hash_table_entry(ps->set_distances_tab, ps->new_set, TRUE);
+    entry = find_hash_table_entry(ps->set_of_distanceses, ps->new_set, TRUE);
     if (*entry != NULL)
     {
         ps->new_distances = ps->new_set->distances =((YaepStateSet*)*entry)->distances;
@@ -1949,7 +1949,7 @@ static int set_insert(YaepParseState *ps)
 #endif
     /* Insert set core into table.*/
     setup_set_core_hash(ps->new_set);
-    entry = find_hash_table_entry(ps->set_core_tab, ps->new_set, TRUE);
+    entry = find_hash_table_entry(ps->set_of_cores, ps->new_set, TRUE);
     if (*entry != NULL)
     {
         OS_TOP_NULLIFY(ps->set_cores_os);
@@ -2004,8 +2004,8 @@ static void set_fin(YaepParseState *ps)
     production_distance_set_fin(ps);
     delete_hash_table(ps->set_of_triplets_core_term_lookahead);
     delete_hash_table(ps->set_of_tuples_core_distances);
-    delete_hash_table(ps->set_distances_tab);
-    delete_hash_table(ps->set_core_tab);
+    delete_hash_table(ps->set_of_distanceses);
+    delete_hash_table(ps->set_of_cores);
     OS_DELETE(ps->triplet_core_term_lookahead_os);
     OS_DELETE(ps->sets_os);
     OS_DELETE(ps->set_parent_indexes_os);
