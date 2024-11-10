@@ -3294,6 +3294,11 @@ void xmqSetPrintAllParsesIXML(XMQParseState *state, bool all_parses)
     state->ixml_all_parses = all_parses;
 }
 
+void xmqSetTryToRecoverIXML(XMQParseState *state, bool try_recover)
+{
+    state->ixml_try_to_recover = try_recover;
+}
+
 size_t calculate_buffer_size(const char *start, const char *stop, int indent, const char *pre_line, const char *post_line)
 {
     size_t pre_n = strlen(pre_line);
@@ -4399,11 +4404,12 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
     input_stop_ = input_start_ + strlen(input_start_);
 
-    if (flags & XMQ_FLAG_IXML_ALL_PARSES)
-    {
-        yaep_set_one_parse_flag(xmq_get_yaep_grammar(ixml_grammar), 0);
-    }
-    yaep_set_error_recovery_flag(xmq_get_yaep_grammar(ixml_grammar), 0); // No error recovery.
+    yaep_set_one_parse_flag(xmq_get_yaep_grammar(ixml_grammar),
+                            (flags & XMQ_FLAG_IXML_ALL_PARSES)?0:1);
+
+    yaep_set_error_recovery_flag(xmq_get_yaep_grammar(ixml_grammar),
+                                 (flags & XMQ_FLAG_IXML_TRY_TO_RECOVER)?1:0);
+
     YaepParseRun *run = xmq_get_yaep_parse_run(ixml_grammar);
     YaepGrammar *grammar = xmq_get_yaep_grammar(ixml_grammar);
     run->read_token = read_yaep_token;

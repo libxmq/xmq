@@ -168,6 +168,7 @@ struct XMQCliCommand
     const char *ixml_ixml; // IXML grammar source to be used.
     const char *ixml_filename; // Where the ixml grammar was read from.
     bool ixml_all_parses; // Print all possible parses when parse is ambiguous.
+    bool ixml_try_to_recover; // Try to recover when parsing with an ixml grammar.
     bool build_xml_of_ixml; // Generate xml directly from ixml.
     // xmq --ixml=grammar.ixml --xml-of-ixml # This will print the grammar as xmq.
     // xmq --ixml=ixml.ixml grammar.ixml # This will print the same grammar as xmq,
@@ -1465,6 +1466,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->ixml_all_parses=true;
         return true;
     }
+    if (!strcmp(arg, "--ixml-try-to-recover"))
+    {
+        command->ixml_try_to_recover=true;
+        return true;
+    }
     if (!strcmp(arg, "--html"))
     {
         command->in_format=XMQ_CONTENT_HTML;
@@ -1731,6 +1737,7 @@ bool cmd_load(XMQCliCommand *command)
 
         int flags = 0;
         if (command->ixml_all_parses) flags |= XMQ_FLAG_IXML_ALL_PARSES;
+        if (command->ixml_try_to_recover) flags |= XMQ_FLAG_IXML_TRY_TO_RECOVER;
 
         if (command->in)
         {

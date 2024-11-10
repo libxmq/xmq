@@ -133,6 +133,7 @@ typedef enum
     @XMQ_FLAG_TRIM_EXACT: Trim exactly according to XML rules. Depends on your XSD,space:preserve and more and is COMPLICATED!
     @XMQ_FLAG_NOMERGE: Do not merge text and character entities.
     @XMQ_FLAG_IXML_ALL_PARSES: When ixml parse is ambiguous generate all parses.
+    @XMQ_FLAG_IXML_TRY_TO_RECOVER: When ixml parse fails, try to recover.
 
     If a 0 is provided as the flags to the parse functions, then it will parse using the these default settings:
     When loading xml/html:
@@ -156,6 +157,7 @@ typedef enum
     XMQ_FLAG_TRIM_EXACT = 4,
     XMQ_FLAG_NOMERGE = 8,
     XMQ_FLAG_IXML_ALL_PARSES = 16,
+    XMQ_FLAG_IXML_TRY_TO_RECOVER = 32,
 } XMQFlagBits;
 
 /**
@@ -488,6 +490,15 @@ const char *xmqStateErrorMsg(XMQParseState *state);
    If the parse is ambiguous generate all possible trees.
 */
 void xmqSetPrintAllParsesIXML(XMQParseState *state, bool all_parses);
+
+/**
+   xmqSetTryToRecoverIXML:
+   @state: the parse state.
+   @try_recover: if true then try to recover a failed parse.
+
+   If the parse fails then try to recover.
+*/
+void xmqSetTryToRecoverIXML(XMQParseState *state, bool try_recover);
 
 /**
     xmqNewDoc:

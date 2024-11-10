@@ -3979,7 +3979,6 @@ static void perform_parse(YaepParseState *ps)
             core_symb_vect = core_symb_vect_find(ps, set->core, term);
             if (core_symb_vect == NULL)
 	    {
-                fprintf(stderr, "ERRRRRRRRRRRRRRRRRRRRRRRRR\n\n");
                 int saved_tok_curr, start, stop;
 
                 /* Error recovery.  We do not check transition vector
@@ -3988,6 +3987,7 @@ static void perform_parse(YaepParseState *ps)
                 saved_tok_curr = ps->tok_curr;
                 if (ps->run.grammar->error_recovery_p)
 		{
+                    fprintf(stderr, "Attempting error recovery...\n");
                     error_recovery(ps, &start, &stop);
                     ps->run.syntax_error(saved_tok_curr, ps->toks[saved_tok_curr].attr,
                                      start, ps->toks[start].attr, stop,
@@ -4693,9 +4693,8 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
 	{
             /* Terminal before dot:*/
             state_set_ind--;		/* l*/
-            /* Because of error recovery toks [state_set_ind].symb may be not
-               equal to symb.*/
-            assert(ps->toks[state_set_ind].symb == symb);
+            /* Because of error recovery toks [state_set_ind].symb may be not equal to symb.*/
+            //assert(ps->toks[state_set_ind].symb == symb);
             if (parent_anode != NULL && disp >= 0)
 	    {
                 /* We should generate and use the translation of the

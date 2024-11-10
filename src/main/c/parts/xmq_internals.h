@@ -262,6 +262,7 @@ struct XMQParseState
     bool merge_text; // Merge text nodes and character entities.
     bool no_trim_quotes; // No trimming if quotes, used when reading json strings.
     bool ixml_all_parses; // If IXML parse is ambiguous then print all parses.
+    bool ixml_try_to_recover; // If IXML parse fails, try to recover.
     const char *pi_name; // Name of the pi node just started.
     XMQOutputSettings *output_settings; // Used when coloring existing text using the tokenizer.
     int magic_cookie; // Used to check that the state has been properly initialized.
