@@ -2990,11 +2990,10 @@ struct YaepParseState
 
     /* Vector implementing map: prod id -> vlo of the distance check
        indexed by the distance. */
-    vlo_t prod_dist_vec_vlo;
+    vlo_t production_distance_vec_vlo;
 
-    /* The value used to check the validity of elements of check_dist
-       structures. */
-    int curr_prod_dist_vec_check;
+    /* The value used to check the validity of elements of check_dist structures. */
+    int curr_production_distance_vec_check;
 
     /* The following are number of unique(set core, symbol) pairs and
        their summary(transitive) transition and reduce vectors length,
@@ -4063,36 +4062,36 @@ static int set_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 }
 
 /* Initiate the set of pairs(sit, dist). */
-static void prod_dist_set_init(YaepParseState *ps)
+static void production_distance_set_init(YaepParseState *ps)
 {
-    VLO_CREATE(ps->prod_dist_vec_vlo, ps->run.grammar->alloc, 8192);
-    ps->curr_prod_dist_vec_check = 0;
+    VLO_CREATE(ps->production_distance_vec_vlo, ps->run.grammar->alloc, 8192);
+    ps->curr_production_distance_vec_check = 0;
 }
 
 /* Make the set empty. */
-static void empty_prod_dist_set(YaepParseState *ps)
+static void clear_production_distance_set(YaepParseState *ps)
 {
-    ps->curr_prod_dist_vec_check++;
+    ps->curr_production_distance_vec_check++;
 }
 
 /* Insert pair(SIT, DIST) into the set.  If such pair exists return
    FALSE, otherwise return TRUE. */
-static int prod_dist_insert(YaepParseState *ps, YaepProduction*prod, int dist)
+static int production_distance_insert(YaepParseState *ps, YaepProduction*prod, int dist)
 {
     int i, len, prod_id;
     vlo_t*check_dist_vlo;
 
     prod_id = prod->prod_id;
     /* Expand the set to accommodate possibly a new production. */
-    len = VLO_LENGTH(ps->prod_dist_vec_vlo) / sizeof(vlo_t);
+    len = VLO_LENGTH(ps->production_distance_vec_vlo) / sizeof(vlo_t);
     if (len <= prod_id)
     {
-        VLO_EXPAND(ps->prod_dist_vec_vlo,(prod_id + 1 - len)* sizeof(vlo_t));
+        VLO_EXPAND(ps->production_distance_vec_vlo,(prod_id + 1 - len)* sizeof(vlo_t));
         for(i = len; i <= prod_id; i++)
-            VLO_CREATE(((vlo_t*) VLO_BEGIN(ps->prod_dist_vec_vlo))[i],
+            VLO_CREATE(((vlo_t*) VLO_BEGIN(ps->production_distance_vec_vlo))[i],
                         ps->run.grammar->alloc, 64);
     }
-    check_dist_vlo = &((vlo_t*) VLO_BEGIN(ps->prod_dist_vec_vlo))[prod_id];
+    check_dist_vlo = &((vlo_t*) VLO_BEGIN(ps->production_distance_vec_vlo))[prod_id];
     len = VLO_LENGTH(*check_dist_vlo) / sizeof(int);
     if (len <= dist)
     {
@@ -4100,22 +4099,22 @@ static int prod_dist_insert(YaepParseState *ps, YaepProduction*prod, int dist)
         for(i = len; i <= dist; i++)
            ((int*) VLO_BEGIN(*check_dist_vlo))[i] = 0;
     }
-    if (((int*) VLO_BEGIN(*check_dist_vlo))[dist] == ps->curr_prod_dist_vec_check)
+    if (((int*) VLO_BEGIN(*check_dist_vlo))[dist] == ps->curr_production_distance_vec_check)
         return FALSE;
-   ((int*) VLO_BEGIN(*check_dist_vlo))[dist] = ps->curr_prod_dist_vec_check;
+   ((int*) VLO_BEGIN(*check_dist_vlo))[dist] = ps->curr_production_distance_vec_check;
     return TRUE;
 }
 
 /* Finish the set of pairs(sit, dist). */
-static void prod_dist_set_fin(YaepParseState *ps)
+static void production_distance_set_fin(YaepParseState *ps)
 {
-    int i, len = VLO_LENGTH(ps->prod_dist_vec_vlo) / sizeof(vlo_t);
+    int i, len = VLO_LENGTH(ps->production_distance_vec_vlo) / sizeof(vlo_t);
 
     for(i = 0; i < len; i++)
     {
-        VLO_DELETE(((vlo_t*) VLO_BEGIN(ps->prod_dist_vec_vlo))[i]);
+        VLO_DELETE(((vlo_t*) VLO_BEGIN(ps->production_distance_vec_vlo))[i]);
     }
-    VLO_DELETE(ps->prod_dist_vec_vlo);
+    VLO_DELETE(ps->production_distance_vec_vlo);
 }
 
 /* Initialize work with sets for parsing input with N_TOKS tokens.*/
@@ -4139,7 +4138,7 @@ static void set_init(YaepParseState *ps, int n_toks)
     ps->n_set_dists = ps->n_set_dists_len = ps->n_parent_indexes = 0;
     ps->n_sets = ps->n_sets_start_prods = 0;
     ps->n_set_term_lookaheads = 0;
-    prod_dist_set_init(ps);
+    production_distance_set_init(ps);
 }
 
 /* The following function starts forming of new set.*/
@@ -4335,7 +4334,7 @@ static void set_new_core_stop(YaepParseState *ps)
 /* Finalize work with sets.*/
 static void set_fin(YaepParseState *ps)
 {
-    prod_dist_set_fin(ps);
+    production_distance_set_fin(ps);
     delete_hash_table(ps->set_term_lookahead_tab);
     delete_hash_table(ps->set_tab);
     delete_hash_table(ps->set_dists_tab);
@@ -5585,7 +5584,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
     set_new_start(ps);
     transitions = &core_symb_vect->transitions;
 
-    empty_prod_dist_set(ps);
+    clear_production_distance_set(ps);
     for(i = 0; i < transitions->len; i++)
     {
         prod_ind = transitions->els[i];
@@ -5594,26 +5593,34 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
         if (local_lookahead_level != 0
             && !term_set_test(new_prod->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
             && !term_set_test(new_prod->lookahead, ps->run.grammar->term_error_id, ps->run.grammar->symbs_ptr->num_terms))
+        {
             continue;
+        }
         dist = 0;
         if (prod_ind >= set_core->n_all_dists)
-            ;
+        {
+        }
         else if (prod_ind < set_core->num_start_prods)
+        {
             dist = set->dists[prod_ind];
+        }
         else
+        {
             dist = set->dists[set_core->parent_indexes[prod_ind]];
+        }
         dist++;
-        if (prod_dist_insert(ps, new_prod, dist))
+        if (production_distance_insert(ps, new_prod, dist))
         {
             set_new_add_start_prod(ps, new_prod, dist);
         }
     }
+
     for(i = 0; i < ps->new_num_start_prods; i++)
     {
         new_prod = ps->new_prods[i];
         if (new_prod->empty_tail_p)
 	{
-            int*curr_el,*bound;
+            int *curr_el, *bound;
 
             /* All tail in new sitiation may derivate empty string so
                make reduce and add new productions.*/
@@ -5652,7 +5659,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                     dist =
                         prev_set->dists[prev_set_core->parent_indexes[prod_ind]];
                 dist += new_dist;
-                if (prod_dist_insert(ps, new_prod, dist))
+                if (production_distance_insert(ps, new_prod, dist))
                 {
                     set_new_add_start_prod(ps, new_prod, dist);
                 }
