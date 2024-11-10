@@ -2928,8 +2928,8 @@ struct YaepParseState
     /* Number unique sets and their start productions. */
     int n_sets, n_sets_start_prods;
 
-    /* Number unique triples(set, term, lookahead). */
-    int num_triplets_set_term_lookahead;
+    /* Number unique triples(core, term, lookahead). */
+    int num_triplets_core_term_lookahead;
 
     /* The set cores of formed sets are placed in the following os.*/
     os_t set_cores_os;
@@ -2949,7 +2949,7 @@ struct YaepParseState
     os_t sets_os;
 
     /* Container for triples(set, term, lookahead. */
-    os_t triplet_set_term_lookahead_os;
+    os_t triplet_core_term_lookahead_os;
 
     /* The following 3 tables contain references for sets which refers
        for set cores or distances or both which are in the tables.*/
@@ -2957,8 +2957,8 @@ struct YaepParseState
     hash_table_t set_distances_tab;	/* key is distances.*/
     hash_table_t set_tab;	/* key is(core, distances).*/
 
-    /* Table for triples(set, term, lookahead). */
-    hash_table_t set_term_lookahead_tab;	/* key is(core, distances, lookeahed).*/
+    /* Table for triples(core, term, lookahead). */
+    hash_table_t set_of_triplets_core_term_lookahead;	/* key is (core, distances, lookeahed).*/
 
     /* The following two variables contains all input tokens and their
        number.  The variables can be read externally.*/
@@ -4036,7 +4036,7 @@ static int set_core_distances_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 }
 
 /* Hash of triple(set, term, lookahead). */
-static unsigned set_term_lookahead_hash(hash_table_entry_t s)
+static unsigned core_term_lookahead_hash(hash_table_entry_t s)
 {
     YaepStateSet *set = ((YaepStateSetTermLookAhead*)s)->set;
     YaepSymb *term = ((YaepStateSetTermLookAhead*)s)->term;
@@ -4046,7 +4046,7 @@ static unsigned set_term_lookahead_hash(hash_table_entry_t s)
 }
 
 /* Equality of tripes(set, term, lookahead).*/
-static int set_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static int core_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepStateSet *set1 =((YaepStateSetTermLookAhead*)s1)->set;
     YaepStateSet *set2 =((YaepStateSetTermLookAhead*)s2)->set;
@@ -4124,17 +4124,17 @@ static void set_init(YaepParseState *ps, int n_toks)
     OS_CREATE(ps->set_parent_indexes_os, ps->run.grammar->alloc, 2048);
     OS_CREATE(ps->set_distances_os, ps->run.grammar->alloc, 2048);
     OS_CREATE(ps->sets_os, ps->run.grammar->alloc, 0);
-    OS_CREATE(ps->triplet_set_term_lookahead_os, ps->run.grammar->alloc, 0);
+    OS_CREATE(ps->triplet_core_term_lookahead_os, ps->run.grammar->alloc, 0);
     ps->set_core_tab = create_hash_table(ps->run.grammar->alloc, 2000, set_core_hash, set_core_eq);
     ps->set_distances_tab = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, distances_hash, distances_eq);
     ps->set_tab = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
                                 set_core_distances_hash, set_core_distances_eq);
-    ps->set_term_lookahead_tab = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
-                                               set_term_lookahead_hash, set_term_lookahead_eq);
+    ps->set_of_triplets_core_term_lookahead = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
+                                               core_term_lookahead_hash, core_term_lookahead_eq);
     ps->n_set_cores = ps->n_set_core_start_prods = 0;
     ps->n_set_distances = ps->n_set_distances_len = ps->n_parent_indexes = 0;
     ps->n_sets = ps->n_sets_start_prods = 0;
-    ps->num_triplets_set_term_lookahead = 0;
+    ps->num_triplets_core_term_lookahead = 0;
     production_distance_set_init(ps);
 }
 
@@ -4332,11 +4332,11 @@ static void set_new_core_stop(YaepParseState *ps)
 static void set_fin(YaepParseState *ps)
 {
     production_distance_set_fin(ps);
-    delete_hash_table(ps->set_term_lookahead_tab);
+    delete_hash_table(ps->set_of_triplets_core_term_lookahead);
     delete_hash_table(ps->set_tab);
     delete_hash_table(ps->set_distances_tab);
     delete_hash_table(ps->set_core_tab);
-    OS_DELETE(ps->triplet_set_term_lookahead_os);
+    OS_DELETE(ps->triplet_core_term_lookahead_os);
     OS_DELETE(ps->sets_os);
     OS_DELETE(ps->set_parent_indexes_os);
     OS_DELETE(ps->set_prods_os);
@@ -6232,7 +6232,7 @@ static void perform_parse(YaepParseState *ps)
     int lookahead_term_id;
 #ifdef USE_SET_HASH_TABLE
     hash_table_entry_t*entry;
-    YaepStateSetTermLookAhead*new_set_term_lookahead;
+    YaepStateSetTermLookAhead*new_core_term_lookahead;
 #endif
 
     error_recovery_init(ps);
@@ -6278,22 +6278,22 @@ static void perform_parse(YaepParseState *ps)
         set = ps->state_sets[ps->state_set_curr];
         ps->new_set = NULL;
 #ifdef USE_SET_HASH_TABLE
-        OS_TOP_EXPAND(ps->triplet_set_term_lookahead_os, sizeof(YaepStateSetTermLookAhead));
-        new_set_term_lookahead = (YaepStateSetTermLookAhead*) OS_TOP_BEGIN(ps->triplet_set_term_lookahead_os);
-        new_set_term_lookahead->set = set;
-        new_set_term_lookahead->term = term;
-        new_set_term_lookahead->lookahead = lookahead_term_id;
+        OS_TOP_EXPAND(ps->triplet_core_term_lookahead_os, sizeof(YaepStateSetTermLookAhead));
+        new_core_term_lookahead = (YaepStateSetTermLookAhead*) OS_TOP_BEGIN(ps->triplet_core_term_lookahead_os);
+        new_core_term_lookahead->set = set;
+        new_core_term_lookahead->term = term;
+        new_core_term_lookahead->lookahead = lookahead_term_id;
         for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
         {
-            new_set_term_lookahead->result[i] = NULL;
+            new_core_term_lookahead->result[i] = NULL;
         }
-        new_set_term_lookahead->curr = 0;
-        entry = find_hash_table_entry(ps->set_term_lookahead_tab, new_set_term_lookahead, TRUE);
+        new_core_term_lookahead->curr = 0;
+        entry = find_hash_table_entry(ps->set_of_triplets_core_term_lookahead, new_core_term_lookahead, TRUE);
         if (*entry != NULL)
 	{
             YaepStateSet *s;
 
-            OS_TOP_NULLIFY(ps->triplet_set_term_lookahead_os);
+            OS_TOP_NULLIFY(ps->triplet_core_term_lookahead_os);
             for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
             {
                 if ((s = ((YaepStateSetTermLookAhead*)*entry)->result[i]) == NULL)
@@ -6312,9 +6312,9 @@ static void perform_parse(YaepParseState *ps)
 	}
         else
 	{
-            OS_TOP_FINISH(ps->triplet_set_term_lookahead_os);
-            *entry =(hash_table_entry_t) new_set_term_lookahead;
-            ps->num_triplets_set_term_lookahead++;
+            OS_TOP_FINISH(ps->triplet_core_term_lookahead_os);
+            *entry =(hash_table_entry_t) new_core_term_lookahead;
+            ps->num_triplets_core_term_lookahead++;
 	}
 
 #endif
@@ -7518,7 +7518,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  ps->n_sets, ps->n_sets_start_prods);
         fprintf(stderr,
                  "       #unique triples(set, term, lookahead) = %d, goto successes=%d\n",
-                ps->num_triplets_set_term_lookahead, ps->n_goto_successes);
+                ps->num_triplets_core_term_lookahead, ps->n_goto_successes);
         fprintf(stderr,
                  "       #pairs(set core, symb) = %d, their trans+reduce vects length = %d\n",
                  ps->n_core_symb_pairs, ps->n_core_symb_vect_len);
