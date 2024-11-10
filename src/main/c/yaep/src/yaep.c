@@ -147,8 +147,8 @@ typedef struct YaepStateSetTermLookAhead YaepStateSetTermLookAhead;
 struct YaepInternalParseState;
 typedef struct YaepInternalParseState YaepInternalParseState;
 
-struct YaepTransVisitNode;
-typedef struct YaepTransVisitNode YaepTransVisitNode;
+struct YaepTreeNodeVisit;
+typedef struct YaepTreeNodeVisit YaepTreeNodeVisit;
 
 // Structure definitions ////////////////////////////////////////////////////
 
@@ -553,8 +553,8 @@ struct YaepInternalParseState
 };
 
 /* To make better traversing and don't waist tree parse memory,
-   we use the following structures to enumerate the tree node.*/
-struct YaepTransVisitNode
+   we use the following structures to enumerate the tree node. */
+struct YaepTreeNodeVisit
 {
     /* The following member is order number of the node.  This value is
        negative if we did not visit the node yet.*/
@@ -624,7 +624,7 @@ struct YaepParseState
     /* The following 3 tables contain references for sets which refers
        for set cores or distances or both which are in the tables.*/
     hash_table_t set_of_cores;	/* key is only start productions.*/
-    hash_table_t set_of_distances;	/* key is distances.*/
+    hash_table_t set_of_distanceses;	/* key is distances we have a set of distanceses.*/
     hash_table_t set_of_tuples_core_distances;	/* key is(core, distances).*/
 
     /* Table for triplets (core, term, lookahead). */
@@ -684,7 +684,7 @@ struct YaepParseState
     os_t vect_els_os;
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    hash_table_t core_symb_to_vect_tab;	/* key is set_core and symb.*/
+    hash_table_t map_core_symb_to_vect;	/* key is set_core and symb.*/
 #else
     /* The following two variables contains table(set core,
        symbol)->core_symb_vect implemented as two dimensional array.*/
@@ -704,8 +704,8 @@ struct YaepParseState
        (through(transitive) transitions and reduces correspondingly)
        refers for elements which are in the tables.  Sequence elements are
        stored in one exemplar to save memory.*/
-    hash_table_t transition_els_tab;	/* key is elements.*/
-    hash_table_t reduce_els_tab;	/* key is elements.*/
+    hash_table_t map_transition_to_coresymbvect;	/* key is elements.*/
+    hash_table_t map_reduce_to_coresymbvect;	/* key is elements.*/
 
     /* The following two variables represents Earley's parser list.  The
        values of state_set_curr and array*pl can be read and modified
@@ -751,21 +751,21 @@ struct YaepParseState
     int vlo_array_len;
 
     /* The following table is used to find allocated memory which should not be freed.*/
-    hash_table_t reserv_mem_tab;
+    hash_table_t set_of_reserved_memory; // (key is memory pointer)
 
     /* The following vlo will contain references to memory which should be
        freed.  The same reference can be represented more on time.*/
     vlo_t tnodes_vlo;
 
     /* The key of the following table is node itself.*/
-    hash_table_t trans_visit_nodes_tab;
+    hash_table_t map_node_to_visit;
 
     /* All translation visit nodes are placed in the following stack.  All
        the nodes are in the table.*/
-    os_t trans_visit_nodes_os;
+    os_t node_visits_os;
 
     /* The following value is number of translation visit nodes.*/
-    int n_trans_visit_nodes;
+    int num_nodes_visits;
 
     /* How many times we reuse Earley's sets without their recalculation. */
     int n_goto_successes;
@@ -785,7 +785,7 @@ struct YaepParseState
     /* The following table is used to make translation for ambiguous
        grammar more compact.  It is used only when we want all
        translations.*/
-    hash_table_t parse_state_tab;	/* Key is rule, orig, state_set_ind.*/
+    hash_table_t map_rule_orig_statesetind_to_internalstate;	/* Key is rule, orig, state_set_ind.*/
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -2170,15 +2170,15 @@ static void core_symb_vect_init(YaepParseState *ps)
 
     vlo_array_init(ps);
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    ps->core_symb_to_vect_tab = create_hash_table(ps->run.grammar->alloc, 3000, core_symb_vect_hash, core_symb_vect_eq);
+    ps->map_core_symb_to_vect = create_hash_table(ps->run.grammar->alloc, 3000, core_symb_vect_hash, core_symb_vect_eq);
 #else
     VLO_CREATE(ps->core_symb_table_vlo, ps->run.grammar->alloc, 4096);
     ps->core_symb_table = (YaepCoreSymbVect***)VLO_BEGIN(ps->core_symb_table_vlo);
     OS_CREATE(ps->core_symb_tab_rows, ps->run.grammar->alloc, 8192);
 #endif
 
-    ps->transition_els_tab = create_hash_table(ps->run.grammar->alloc, 3000, transition_els_hash, transition_els_eq);
-    ps->reduce_els_tab = create_hash_table(ps->run.grammar->alloc, 3000, reduce_els_hash, reduce_els_eq);
+    ps->map_transition_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000, transition_els_hash, transition_els_eq);
+    ps->map_reduce_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000, reduce_els_hash, reduce_els_eq);
 
     ps->n_core_symb_pairs = ps->n_core_symb_vect_len = 0;
     ps->n_transition_vects = ps->n_transition_vect_len = 0;
@@ -2200,7 +2200,7 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepCoreSy
         return &triple->symb->cached_core_symb_vect;
     }
 
-    result = ((YaepCoreSymbVect**)find_hash_table_entry(ps->core_symb_to_vect_tab, triple, reserv_p));
+    result = ((YaepCoreSymbVect**)find_hash_table_entry(ps->map_core_symb_to_vect, triple, reserv_p));
 
     triple->symb->cached_core_symb_vect = *result;
 
@@ -2381,10 +2381,10 @@ static void core_symb_vect_new_all_stop(YaepParseState *ps)
          triple_ptr++)
     {
         process_core_symb_vect_el(ps, *triple_ptr, &(*triple_ptr)->transitions,
-                                  &ps->transition_els_tab, &ps->n_transition_vects,
+                                  &ps->map_transition_to_coresymbvect, &ps->n_transition_vects,
                                   &ps->n_transition_vect_len);
         process_core_symb_vect_el(ps, *triple_ptr, &(*triple_ptr)->reduces,
-                                  &ps->reduce_els_tab, &ps->n_reduce_vects,
+                                  &ps->map_reduce_to_coresymbvect, &ps->n_reduce_vects,
                                   &ps->n_reduce_vect_len);
     }
     vlo_array_nullify(ps);
@@ -2394,11 +2394,11 @@ static void core_symb_vect_new_all_stop(YaepParseState *ps)
 /* Finalize work with all triples(set core, symbol, vector).*/
 static void core_symb_vect_fin(YaepParseState *ps)
 {
-    delete_hash_table(ps->transition_els_tab);
-    delete_hash_table(ps->reduce_els_tab);
+    delete_hash_table(ps->map_transition_to_coresymbvect);
+    delete_hash_table(ps->map_reduce_to_coresymbvect);
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    delete_hash_table(ps->core_symb_to_vect_tab);
+    delete_hash_table(ps->map_core_symb_to_vect);
 #else
     OS_DELETE(ps->core_symb_tab_rows);
     VLO_DELETE(ps->core_symb_table_vlo);
@@ -4075,7 +4075,7 @@ static void parse_state_init(YaepParseState *ps)
     ps->free_parse_state = NULL;
     OS_CREATE(ps->parse_state_os, ps->run.grammar->alloc, 0);
     if (!ps->run.grammar->one_parse_p)
-        ps->parse_state_tab =
+        ps->map_rule_orig_statesetind_to_internalstate =
             create_hash_table(ps->run.grammar->alloc, ps->toks_len* 2, parse_state_hash,
                                parse_state_eq);
 }
@@ -4115,7 +4115,7 @@ static YaepInternalParseState *parse_state_insert(YaepParseState *ps, YaepIntern
 {
     hash_table_entry_t*entry;
 
-    entry = find_hash_table_entry(ps->parse_state_tab, state, TRUE);
+    entry = find_hash_table_entry(ps->map_rule_orig_statesetind_to_internalstate, state, TRUE);
 
    *new_p = FALSE;
     if (*entry != NULL)
@@ -4132,7 +4132,9 @@ static YaepInternalParseState *parse_state_insert(YaepParseState *ps, YaepIntern
 static void parse_state_fin(YaepParseState *ps)
 {
     if (!ps->run.grammar->one_parse_p)
-        delete_hash_table(ps->parse_state_tab);
+    {
+        delete_hash_table(ps->map_rule_orig_statesetind_to_internalstate);
+    }
     OS_DELETE(ps->parse_state_os);
 }
 
@@ -4141,39 +4143,39 @@ static void parse_state_fin(YaepParseState *ps)
 /* Hash of translation visit node.*/
 static unsigned trans_visit_node_hash(hash_table_entry_t n)
 {
-    return(size_t)((YaepTransVisitNode*) n)->node;
+    return(size_t)((YaepTreeNodeVisit*) n)->node;
 }
 
 /* Equality of translation visit nodes.*/
 static int trans_visit_node_eq(hash_table_entry_t n1, hash_table_entry_t n2)
 {
-    return(((YaepTransVisitNode*) n1)->node == ((YaepTransVisitNode*) n2)->node);
+    return(((YaepTreeNodeVisit*) n1)->node == ((YaepTreeNodeVisit*) n2)->node);
 }
 
 /* The following function checks presence translation visit node with
    given NODE in the table and if it is not present in the table, the
    function creates the translation visit node and inserts it into
    the table.*/
-static YaepTransVisitNode *visit_node(YaepParseState *ps, YaepTreeNode*node)
+static YaepTreeNodeVisit *visit_node(YaepParseState *ps, YaepTreeNode*node)
 {
-    YaepTransVisitNode trans_visit_node;
+    YaepTreeNodeVisit trans_visit_node;
     hash_table_entry_t*entry;
 
     trans_visit_node.node = node;
-    entry = find_hash_table_entry(ps->trans_visit_nodes_tab,
+    entry = find_hash_table_entry(ps->map_node_to_visit,
                                    &trans_visit_node, TRUE);
 
     if (*entry == NULL)
     {
         /* If it is the new node, we did not visit it yet.*/
-        trans_visit_node.num = -1 - ps->n_trans_visit_nodes;
-        ps->n_trans_visit_nodes++;
-        OS_TOP_ADD_MEMORY(ps->trans_visit_nodes_os,
+        trans_visit_node.num = -1 - ps->num_nodes_visits;
+        ps->num_nodes_visits++;
+        OS_TOP_ADD_MEMORY(ps->node_visits_os,
                            &trans_visit_node, sizeof(trans_visit_node));
-       *entry =(hash_table_entry_t) OS_TOP_BEGIN(ps->trans_visit_nodes_os);
-        OS_TOP_FINISH(ps->trans_visit_nodes_os);
+       *entry =(hash_table_entry_t) OS_TOP_BEGIN(ps->node_visits_os);
+        OS_TOP_FINISH(ps->node_visits_os);
     }
-    return(YaepTransVisitNode*)*entry;
+    return(YaepTreeNodeVisit*)*entry;
 }
 
 /* The following function returns the positive order number of node with number NUM.*/
@@ -4187,7 +4189,7 @@ static int canon_node_id(int id)
    graphviz).*/
 static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
 {
-    YaepTransVisitNode*trans_visit_node;
+    YaepTreeNodeVisit*trans_visit_node;
     YaepTreeNode*child;
     int i;
 
@@ -4309,15 +4311,15 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
 /* The following function prints parse tree with ROOT.*/
 static void print_parse(YaepParseState *ps, FILE* f, YaepTreeNode*root)
 {
-    ps->trans_visit_nodes_tab =
+    ps->map_node_to_visit =
         create_hash_table(ps->run.grammar->alloc, ps->toks_len* 2, trans_visit_node_hash,
                            trans_visit_node_eq);
 
-    ps->n_trans_visit_nodes = 0;
-    OS_CREATE(ps->trans_visit_nodes_os, ps->run.grammar->alloc, 0);
+    ps->num_nodes_visits = 0;
+    OS_CREATE(ps->node_visits_os, ps->run.grammar->alloc, 0);
     print_yaep_node(ps, f, root);
-    OS_DELETE(ps->trans_visit_nodes_os);
-    delete_hash_table(ps->trans_visit_nodes_tab);
+    OS_DELETE(ps->node_visits_os);
+    delete_hash_table(ps->map_node_to_visit);
 }
 
 
@@ -4480,7 +4482,7 @@ static void traverse_pruned_translation(YaepParseState *ps, YaepTreeNode *node)
 
 next:
     assert(node != NULL);
-    if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->reserv_mem_tab, node, TRUE)) == NULL)
+    if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->set_of_reserved_memory, node, TRUE)) == NULL)
     {
        *entry = (hash_table_entry_t)node;
     }
@@ -4491,7 +4493,7 @@ next:
     case YAEP_TERM:
         break;
     case YAEP_ANODE:
-        if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->reserv_mem_tab,
+        if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->set_of_reserved_memory,
                                                                       node->val.anode.name,
                                                                       TRUE)) == NULL)
         {
@@ -4526,7 +4528,7 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
 
     if (ps->run.parse_free != NULL)
     {
-        ps->reserv_mem_tab = create_hash_table(ps->run.grammar->alloc, ps->toks_len* 4, reserv_mem_hash,
+        ps->set_of_reserved_memory = create_hash_table(ps->run.grammar->alloc, ps->toks_len* 4, reserv_mem_hash,
                                            reserv_mem_eq);
 
         VLO_CREATE(ps->tnodes_vlo, ps->run.grammar->alloc, ps->toks_len* 4* sizeof(void*));
@@ -4538,10 +4540,10 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
         for(node_ptr =(YaepTreeNode**) VLO_BEGIN(ps->tnodes_vlo);
              node_ptr <(YaepTreeNode**) VLO_BOUND(ps->tnodes_vlo);
              node_ptr++)
-            if (*find_hash_table_entry(ps->reserv_mem_tab,*node_ptr, TRUE) == NULL)
+            if (*find_hash_table_entry(ps->set_of_reserved_memory,*node_ptr, TRUE) == NULL)
             {
                 if ((*node_ptr)->type == YAEP_ANODE
-                    &&*find_hash_table_entry(ps->reserv_mem_tab,
+                    &&*find_hash_table_entry(ps->set_of_reserved_memory,
 					      (*node_ptr)->val.anode.name,
 					       TRUE) == NULL)
                 {
@@ -4550,7 +4552,7 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
                (*ps->run.parse_free)(*node_ptr);
             }
         VLO_DELETE(ps->tnodes_vlo);
-        delete_hash_table(ps->reserv_mem_tab);
+        delete_hash_table(ps->set_of_reserved_memory);
     }
 
     TRACE_F(ps);
