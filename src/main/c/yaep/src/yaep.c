@@ -599,7 +599,7 @@ struct YaepParseState
     int n_sets, n_sets_start_prods;
 
     /* Number unique triples(set, term, lookahead). */
-    int n_set_term_lookaheads;
+    int num_triplets_set_term_lookahead;
 
     /* The set cores of formed sets are placed in the following os.*/
     os_t set_cores_os;
@@ -619,7 +619,7 @@ struct YaepParseState
     os_t sets_os;
 
     /* Container for triples(set, term, lookahead. */
-    os_t set_term_lookahead_os;
+    os_t triplet_set_term_lookahead_os;
 
     /* The following 3 tables contain references for sets which refers
        for set cores or distances or both which are in the tables.*/
@@ -1794,7 +1794,7 @@ static void set_init(YaepParseState *ps, int n_toks)
     OS_CREATE(ps->set_parent_indexes_os, ps->run.grammar->alloc, 2048);
     OS_CREATE(ps->set_distances_os, ps->run.grammar->alloc, 2048);
     OS_CREATE(ps->sets_os, ps->run.grammar->alloc, 0);
-    OS_CREATE(ps->set_term_lookahead_os, ps->run.grammar->alloc, 0);
+    OS_CREATE(ps->triplet_set_term_lookahead_os, ps->run.grammar->alloc, 0);
     ps->set_core_tab = create_hash_table(ps->run.grammar->alloc, 2000, set_core_hash, set_core_eq);
     ps->set_distances_tab = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, distances_hash, distances_eq);
     ps->set_tab = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
@@ -1804,7 +1804,7 @@ static void set_init(YaepParseState *ps, int n_toks)
     ps->n_set_cores = ps->n_set_core_start_prods = 0;
     ps->n_set_distances = ps->n_set_distances_len = ps->n_parent_indexes = 0;
     ps->n_sets = ps->n_sets_start_prods = 0;
-    ps->n_set_term_lookaheads = 0;
+    ps->num_triplets_set_term_lookahead = 0;
     production_distance_set_init(ps);
 }
 
@@ -2006,7 +2006,7 @@ static void set_fin(YaepParseState *ps)
     delete_hash_table(ps->set_tab);
     delete_hash_table(ps->set_distances_tab);
     delete_hash_table(ps->set_core_tab);
-    OS_DELETE(ps->set_term_lookahead_os);
+    OS_DELETE(ps->triplet_set_term_lookahead_os);
     OS_DELETE(ps->sets_os);
     OS_DELETE(ps->set_parent_indexes_os);
     OS_DELETE(ps->set_prods_os);
@@ -3948,8 +3948,8 @@ static void perform_parse(YaepParseState *ps)
         set = ps->state_sets[ps->state_set_curr];
         ps->new_set = NULL;
 #ifdef USE_SET_HASH_TABLE
-        OS_TOP_EXPAND(ps->set_term_lookahead_os, sizeof(YaepStateSetTermLookAhead));
-        new_set_term_lookahead = (YaepStateSetTermLookAhead*) OS_TOP_BEGIN(ps->set_term_lookahead_os);
+        OS_TOP_EXPAND(ps->triplet_set_term_lookahead_os, sizeof(YaepStateSetTermLookAhead));
+        new_set_term_lookahead = (YaepStateSetTermLookAhead*) OS_TOP_BEGIN(ps->triplet_set_term_lookahead_os);
         new_set_term_lookahead->set = set;
         new_set_term_lookahead->term = term;
         new_set_term_lookahead->lookahead = lookahead_term_id;
@@ -3963,7 +3963,7 @@ static void perform_parse(YaepParseState *ps)
 	{
             YaepStateSet*tab_set;
 
-            OS_TOP_NULLIFY(ps->set_term_lookahead_os);
+            OS_TOP_NULLIFY(ps->triplet_set_term_lookahead_os);
             for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
             {
                 if ((tab_set = ((YaepStateSetTermLookAhead*)*entry)->result[i]) == NULL)
@@ -3982,9 +3982,9 @@ static void perform_parse(YaepParseState *ps)
 	}
         else
 	{
-            OS_TOP_FINISH(ps->set_term_lookahead_os);
+            OS_TOP_FINISH(ps->triplet_set_term_lookahead_os);
             *entry =(hash_table_entry_t) new_set_term_lookahead;
-            ps->n_set_term_lookaheads++;
+            ps->num_triplets_set_term_lookahead++;
 	}
 
 #endif
@@ -5188,7 +5188,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  ps->n_sets, ps->n_sets_start_prods);
         fprintf(stderr,
                  "       #unique triples(set, term, lookahead) = %d, goto successes=%d\n",
-                ps->n_set_term_lookaheads, ps->n_goto_successes);
+                ps->num_triplets_set_term_lookahead, ps->n_goto_successes);
         fprintf(stderr,
                  "       #pairs(set core, symb) = %d, their trans+reduce vects length = %d\n",
                  ps->n_core_symb_pairs, ps->n_core_symb_vect_len);
