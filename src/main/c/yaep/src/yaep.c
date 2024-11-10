@@ -317,9 +317,9 @@ struct YaepTermStorage
     /* The following is hash table of terminal sets (key is member `set').*/
     hash_table_t term_set_tab;
 
-    /* References to all structure tab_term_set are stored in the
+    /* References to all structure term_set are stored in the
        following vlo.*/
-    vlo_t tab_term_set_vlo;
+    vlo_t term_set_vlo;
 };
 
 /* This page contains table for fast search for vector of indexes of
@@ -1159,7 +1159,7 @@ static YaepTermStorage *term_set_init(YaepGrammar *grammar)
     result =(YaepTermStorage*) mem;
     OS_CREATE(result->term_set_os, grammar->alloc, 0);
     result->term_set_tab = create_hash_table(grammar->alloc, 1000, term_set_hash, term_set_eq);
-    VLO_CREATE(result->tab_term_set_vlo, grammar->alloc, 4096);
+    VLO_CREATE(result->term_set_vlo, grammar->alloc, 4096);
     result->n_term_sets = result->n_term_sets_size = 0;
 
     return result;
@@ -1270,10 +1270,10 @@ static int term_set_test(term_set_el_t *set, int num, int num_terms)
 static int term_set_insert(YaepParseState *ps, term_set_el_t *set)
 {
     hash_table_entry_t *entry;
-    YaepTermSet tab_term_set,*tab_term_set_ptr;
+    YaepTermSet term_set,*term_set_ptr;
 
-    tab_term_set.set = set;
-    entry = find_hash_table_entry(ps->run.grammar->term_sets_ptr->term_set_tab, &tab_term_set, TRUE);
+    term_set.set = set;
+    entry = find_hash_table_entry(ps->run.grammar->term_sets_ptr->term_set_tab, &term_set, TRUE);
 
     if (*entry != NULL)
     {
@@ -1282,14 +1282,14 @@ static int term_set_insert(YaepParseState *ps, term_set_el_t *set)
     else
     {
         OS_TOP_EXPAND(ps->run.grammar->term_sets_ptr->term_set_os, sizeof(YaepTermSet));
-        tab_term_set_ptr = (YaepTermSet*)OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->term_set_os);
+        term_set_ptr = (YaepTermSet*)OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->term_set_os);
         OS_TOP_FINISH(ps->run.grammar->term_sets_ptr->term_set_os);
-       *entry =(hash_table_entry_t) tab_term_set_ptr;
-        tab_term_set_ptr->set = set;
-        tab_term_set_ptr->id = (VLO_LENGTH(ps->run.grammar->term_sets_ptr->tab_term_set_vlo) / sizeof(YaepTermSet*));
-        tab_term_set_ptr->num_elements = CALC_NUM_ELEMENTS(ps->run.grammar->symbs_ptr->num_terms);
+       *entry =(hash_table_entry_t) term_set_ptr;
+        term_set_ptr->set = set;
+        term_set_ptr->id = (VLO_LENGTH(ps->run.grammar->term_sets_ptr->term_set_vlo) / sizeof(YaepTermSet*));
+        term_set_ptr->num_elements = CALC_NUM_ELEMENTS(ps->run.grammar->symbs_ptr->num_terms);
 
-        VLO_ADD_MEMORY(ps->run.grammar->term_sets_ptr->tab_term_set_vlo, &tab_term_set_ptr, sizeof(YaepTermSet*));
+        VLO_ADD_MEMORY(ps->run.grammar->term_sets_ptr->term_set_vlo, &term_set_ptr, sizeof(YaepTermSet*));
 
         return((YaepTermSet*)*entry)->id;
     }
@@ -1299,9 +1299,9 @@ static int term_set_insert(YaepParseState *ps, term_set_el_t *set)
 static term_set_el_t *term_set_from_table(YaepParseState *ps, int num)
 {
     assert(num >= 0);
-    assert((long unsigned int)num < VLO_LENGTH(ps->run.grammar->term_sets_ptr->tab_term_set_vlo) / sizeof(YaepTermSet*));
+    assert((long unsigned int)num < VLO_LENGTH(ps->run.grammar->term_sets_ptr->term_set_vlo) / sizeof(YaepTermSet*));
 
-    return ((YaepTermSet**)VLO_BEGIN(ps->run.grammar->term_sets_ptr->tab_term_set_vlo))[num]->set;
+    return ((YaepTermSet**)VLO_BEGIN(ps->run.grammar->term_sets_ptr->term_set_vlo))[num]->set;
 }
 
 /* Print terminal SET into file F. */
@@ -1326,7 +1326,7 @@ static void term_set_empty(YaepTermStorage *term_sets)
 {
     if (term_sets == NULL) return;
 
-    VLO_NULLIFY(term_sets->tab_term_set_vlo);
+    VLO_NULLIFY(term_sets->term_set_vlo);
     empty_hash_table(term_sets->term_set_tab);
     OS_EMPTY(term_sets->term_set_os);
     term_sets->n_term_sets = term_sets->n_term_sets_size = 0;
@@ -1337,7 +1337,7 @@ static void term_set_fin(YaepGrammar *grammar, YaepTermStorage *term_sets)
 {
     if (term_sets == NULL) return;
 
-    VLO_DELETE(term_sets->tab_term_set_vlo);
+    VLO_DELETE(term_sets->term_set_vlo);
     delete_hash_table(term_sets->term_set_tab);
     OS_DELETE(term_sets->term_set_os);
     yaep_free(grammar->alloc, term_sets);
