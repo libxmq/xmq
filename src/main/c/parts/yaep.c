@@ -3081,7 +3081,7 @@ struct YaepParseState
     int vlo_array_len;
 
     /* The following table is used to find allocated memory which should not be freed.*/
-    hash_table_t reserv_mem_tab;
+    hash_table_t set_of_reserved_memory; // (key is memory pointer)
 
     /* The following vlo will contain references to memory which should be
        freed.  The same reference can be represented more on time.*/
@@ -6810,7 +6810,7 @@ static void traverse_pruned_translation(YaepParseState *ps, YaepTreeNode *node)
 
 next:
     assert(node != NULL);
-    if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->reserv_mem_tab, node, TRUE)) == NULL)
+    if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->set_of_reserved_memory, node, TRUE)) == NULL)
     {
        *entry = (hash_table_entry_t)node;
     }
@@ -6821,7 +6821,7 @@ next:
     case YAEP_TERM:
         break;
     case YAEP_ANODE:
-        if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->reserv_mem_tab,
+        if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->set_of_reserved_memory,
                                                                       node->val.anode.name,
                                                                       TRUE)) == NULL)
         {
@@ -6856,7 +6856,7 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
 
     if (ps->run.parse_free != NULL)
     {
-        ps->reserv_mem_tab = create_hash_table(ps->run.grammar->alloc, ps->toks_len* 4, reserv_mem_hash,
+        ps->set_of_reserved_memory = create_hash_table(ps->run.grammar->alloc, ps->toks_len* 4, reserv_mem_hash,
                                            reserv_mem_eq);
 
         VLO_CREATE(ps->tnodes_vlo, ps->run.grammar->alloc, ps->toks_len* 4* sizeof(void*));
@@ -6868,10 +6868,10 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
         for(node_ptr =(YaepTreeNode**) VLO_BEGIN(ps->tnodes_vlo);
              node_ptr <(YaepTreeNode**) VLO_BOUND(ps->tnodes_vlo);
              node_ptr++)
-            if (*find_hash_table_entry(ps->reserv_mem_tab,*node_ptr, TRUE) == NULL)
+            if (*find_hash_table_entry(ps->set_of_reserved_memory,*node_ptr, TRUE) == NULL)
             {
                 if ((*node_ptr)->type == YAEP_ANODE
-                    &&*find_hash_table_entry(ps->reserv_mem_tab,
+                    &&*find_hash_table_entry(ps->set_of_reserved_memory,
 					      (*node_ptr)->val.anode.name,
 					       TRUE) == NULL)
                 {
@@ -6880,7 +6880,7 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
                (*ps->run.parse_free)(*node_ptr);
             }
         VLO_DELETE(ps->tnodes_vlo);
-        delete_hash_table(ps->reserv_mem_tab);
+        delete_hash_table(ps->set_of_reserved_memory);
     }
 
     TRACE_F(ps);
