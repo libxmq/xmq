@@ -1663,22 +1663,24 @@ static unsigned dists_hash(hash_table_entry_t s)
     return((YaepStateSet*) s)->dists_hash;
 }
 
-/* Equality of distances. */
+/* Compare all the distances stored in the two state sets. */
 static int dists_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    int *dists1 =((YaepStateSet*)s1)->dists;
-    int *dists2 =((YaepStateSet*)s2)->dists;
-    int n_dists =((YaepStateSet*)s1)->core->num_start_prods;
-    int *bound;
+    YaepStateSet *st1 = (YaepStateSet*)s1;
+    YaepStateSet *st2 = (YaepStateSet*)s2;
+    int *i = st1->dists;
+    int *j = st2->dists;
+    int n_dists = st1->core->num_start_prods;
 
-    if (n_dists !=((YaepStateSet*)s2)->core->num_start_prods)
+    if (n_dists != st2->core->num_start_prods)
     {
         return FALSE;
     }
-    bound = dists1 + n_dists;
-    while (dists1 < bound)
+
+    int *bound = i + n_dists;
+    while (i < bound)
     {
-        if (*dists1++ !=*dists2++)
+        if (*i++ != *j++)
         {
             return FALSE;
         }
@@ -1818,8 +1820,8 @@ static void set_new_start(YaepParseState *ps)
 }
 
 /* Add start PROD with distance DIST at the end of the production array
-   of the set being formed.*/
-static void set_new_add_start_sit(YaepParseState *ps, YaepProduction*prod, int dist)
+   of the state set being formed. */
+static void set_new_add_start_prod(YaepParseState *ps, YaepProduction*prod, int dist)
 {
     assert(!ps->new_set_ready_p);
     OS_TOP_EXPAND(ps->set_dists_os, sizeof(int));
@@ -1835,7 +1837,7 @@ static void set_new_add_start_sit(YaepParseState *ps, YaepProduction*prod, int d
    production array of the set being formed.  If this is production and
    there is already the same pair(production, the corresponding
    distance), we do not add it.*/
-static void set_add_new_nonstart_sit(YaepParseState *ps, YaepProduction*prod, int parent)
+static void set_add_new_nonstart_prod(YaepParseState *ps, YaepProduction*prod, int parent)
 {
     int i;
 
@@ -1863,7 +1865,7 @@ static void set_add_new_nonstart_sit(YaepParseState *ps, YaepProduction*prod, in
    production array of the set being formed.  If this is non-start
    production and there is already the same pair(production, zero
    distance), we do not add it.*/
-static void set_new_add_initial_sit(YaepParseState *ps, YaepProduction*prod)
+static void set_new_add_initial_prod(YaepParseState *ps, YaepProduction*prod)
 {
     assert(ps->new_set_ready_p);
 
@@ -3091,7 +3093,9 @@ static void add_derived_nonstart_prods(YaepParseState *ps, YaepProduction*prod, 
     int i;
 
     for(i = prod->dot_pos;(symb = rule->rhs[i]) != NULL && symb->empty_p; i++)
-        set_add_new_nonstart_sit(ps, prod_create(ps, rule, i + 1, context), parent);
+    {
+        set_add_new_nonstart_prod(ps, prod_create(ps, rule, i + 1, context), parent);
+    }
 }
 
 /* The following function adds the rest(non-start) productions to the
@@ -3101,10 +3105,10 @@ static void add_derived_nonstart_prods(YaepParseState *ps, YaepProduction*prod, 
    `core_symb_vect').*/
 static void expand_new_start_set(YaepParseState *ps)
 {
-    YaepProduction*prod;
-    YaepSymb*symb;
-    YaepCoreSymbVect*core_symb_vect;
-    YaepRule*rule;
+    YaepProduction *prod;
+    YaepSymb *symb;
+    YaepCoreSymbVect *core_symb_vect;
+    YaepRule *rule;
     int i;
 
     /* Add non start productions with nonzero distances.*/
@@ -3123,13 +3127,18 @@ static void expand_new_start_set(YaepParseState *ps)
 	    {
                 core_symb_vect = core_symb_vect_new(ps, ps->new_core, symb);
                 if (!symb->term_p)
-                    for(rule = symb->u.nonterm.rules;
-                         rule != NULL; rule = rule->lhs_next)
-                        set_new_add_initial_sit(ps, prod_create(ps, rule, 0, 0));
+                {
+                    for(rule = symb->u.nonterm.rules; rule != NULL; rule = rule->lhs_next)
+                    {
+                        set_new_add_initial_prod(ps, prod_create(ps, rule, 0, 0));
+                    }
+                }
 	    }
             core_symb_vect_new_add_transition_el(ps, core_symb_vect, i);
             if (symb->empty_p && i >= ps->new_core->n_all_dists)
-                set_new_add_initial_sit(ps, prod_create(ps, prod->rule, prod->dot_pos + 1, 0));
+            {
+                set_new_add_initial_prod(ps, prod_create(ps, prod->rule, prod->dot_pos + 1, 0));
+            }
 	}
     }
     /* Now forming reduce vectors.*/
@@ -3148,11 +3157,10 @@ static void expand_new_start_set(YaepParseState *ps)
     if (ps->run.grammar->lookahead_level > 1)
     {
         YaepProduction *new_prod, *shifted_prod;
-        term_set_el_t*context_set;
+        term_set_el_t *context_set;
         int changed_p, prod_ind, context, j;
 
-        /* Now we have incorrect initial productions because their
-           context is not correct.*/
+        /* Now we have incorrect initial productions because their context is not correct. */
         context_set = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terms);
         do
 	{
@@ -3172,9 +3180,13 @@ static void expand_new_start_set(YaepParseState *ps)
 		}
                 context = term_set_insert(ps, context_set);
                 if (context >= 0)
+                {
                     context_set = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terms);
+                }
                 else
+                {
                     context = -context - 1;
+                }
                 prod = prod_create(ps, new_prod->rule, new_prod->dot_pos, context);
                 if (prod != new_prod)
 		{
@@ -3192,36 +3204,35 @@ static void expand_new_start_set(YaepParseState *ps)
 /* The following function forms the 1st set.*/
 static void build_start_set(YaepParseState *ps)
 {
-    YaepRule*rule;
-    YaepProduction*prod;
-    term_set_el_t*context_set;
-    int context;
+    int context = 0;
 
     set_new_start(ps);
-    if (ps->run.grammar->lookahead_level <= 1)
-        context = 0;
-    else
+
+    if (ps->run.grammar->lookahead_level > 1)
     {
-        context_set = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terms);
-        term_set_clear(context_set, ps->run.grammar->symbs_ptr->num_terms);
-        context = term_set_insert(ps, context_set);
+        term_set_el_t *empty_context_set = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terms);
+        term_set_clear(empty_context_set, ps->run.grammar->symbs_ptr->num_terms);
+        context = term_set_insert(ps, empty_context_set);
+
         /* Empty context in the table has always number zero.*/
         assert(context == 0);
     }
-    for(rule = ps->run.grammar->axiom->u.nonterm.rules;
-         rule != NULL; rule = rule->lhs_next)
+
+    for (YaepRule *rule = ps->run.grammar->axiom->u.nonterm.rules; rule != NULL; rule = rule->lhs_next)
     {
-        prod = prod_create(ps, rule, 0, context);
-        set_new_add_start_sit(ps, prod, 0);
+        YaepProduction *prod = prod_create(ps, rule, 0, context);
+        set_new_add_start_prod(ps, prod, 0);
     }
+
     if (!set_insert(ps)) assert(FALSE);
+
     expand_new_start_set(ps);
     ps->state_sets[0] = ps->new_set;
 }
 
-/* The following function predicts a new state set by shifting productions of SET
-   given in CORE_SYMB_VECT with given lookahead terminal number.  If
-   the number is negative, we ignore lookahead at all.*/
+/* The following function predicts a new state set by shifting productions
+   of SET given in CORE_SYMB_VECT with given lookahead terminal number.
+   If the number is negative, we ignore lookahead at all.*/
 static void complete_and_predict_new_state_set(YaepParseState *ps,
                                                YaepStateSet *set,
                                                YaepCoreSymbVect *core_symb_vect,
@@ -3259,7 +3270,9 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
             dist = set->dists[set_core->parent_indexes[prod_ind]];
         dist++;
         if (prod_dist_insert(ps, new_prod, dist))
-            set_new_add_start_sit(ps, new_prod, dist);
+        {
+            set_new_add_start_prod(ps, new_prod, dist);
+        }
     }
     for(i = 0; i < ps->new_num_start_prods; i++)
     {
@@ -3306,11 +3319,14 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                         prev_set->dists[prev_set_core->parent_indexes[prod_ind]];
                 dist += new_dist;
                 if (prod_dist_insert(ps, new_prod, dist))
-                    set_new_add_start_sit(ps, new_prod, dist);
+                {
+                    set_new_add_start_prod(ps, new_prod, dist);
+                }
 	    }
             while(curr_el < bound);
 	}
     }
+
     if (set_insert(ps))
     {
         expand_new_start_set(ps);
