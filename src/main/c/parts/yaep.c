@@ -3034,8 +3034,8 @@ struct YaepParseState
        (through(transitive) transitions and reduces correspondingly)
        refers for elements which are in the tables.  Sequence elements are
        stored in one exemplar to save memory.*/
-    hash_table_t transition_els_tab;	/* key is elements.*/
-    hash_table_t reduce_els_tab;	/* key is elements.*/
+    hash_table_t map_transition_to_coresymbvect;	/* key is elements.*/
+    hash_table_t map_reduce_to_coresymbvect;	/* key is elements.*/
 
     /* The following two variables represents Earley's parser list.  The
        values of state_set_curr and array*pl can be read and modified
@@ -4507,8 +4507,8 @@ static void core_symb_vect_init(YaepParseState *ps)
     OS_CREATE(ps->core_symb_tab_rows, ps->run.grammar->alloc, 8192);
 #endif
 
-    ps->transition_els_tab = create_hash_table(ps->run.grammar->alloc, 3000, transition_els_hash, transition_els_eq);
-    ps->reduce_els_tab = create_hash_table(ps->run.grammar->alloc, 3000, reduce_els_hash, reduce_els_eq);
+    ps->map_transition_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000, transition_els_hash, transition_els_eq);
+    ps->map_reduce_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000, reduce_els_hash, reduce_els_eq);
 
     ps->n_core_symb_pairs = ps->n_core_symb_vect_len = 0;
     ps->n_transition_vects = ps->n_transition_vect_len = 0;
@@ -4711,10 +4711,10 @@ static void core_symb_vect_new_all_stop(YaepParseState *ps)
          triple_ptr++)
     {
         process_core_symb_vect_el(ps, *triple_ptr, &(*triple_ptr)->transitions,
-                                  &ps->transition_els_tab, &ps->n_transition_vects,
+                                  &ps->map_transition_to_coresymbvect, &ps->n_transition_vects,
                                   &ps->n_transition_vect_len);
         process_core_symb_vect_el(ps, *triple_ptr, &(*triple_ptr)->reduces,
-                                  &ps->reduce_els_tab, &ps->n_reduce_vects,
+                                  &ps->map_reduce_to_coresymbvect, &ps->n_reduce_vects,
                                   &ps->n_reduce_vect_len);
     }
     vlo_array_nullify(ps);
@@ -4724,8 +4724,8 @@ static void core_symb_vect_new_all_stop(YaepParseState *ps)
 /* Finalize work with all triples(set core, symbol, vector).*/
 static void core_symb_vect_fin(YaepParseState *ps)
 {
-    delete_hash_table(ps->transition_els_tab);
-    delete_hash_table(ps->reduce_els_tab);
+    delete_hash_table(ps->map_transition_to_coresymbvect);
+    delete_hash_table(ps->map_reduce_to_coresymbvect);
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
     delete_hash_table(ps->map_core_symb_to_vect);
