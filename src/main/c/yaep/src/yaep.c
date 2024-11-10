@@ -111,8 +111,8 @@ typedef struct YaepSymb YaepSymb;
 struct YaepVocabulary;
 typedef struct YaepVocabulary YaepVocabulary;
 
-struct YaepTabTermSet;
-typedef struct YaepTabTermSet YaepTabTermSet;
+struct YaepTermSet;
+typedef struct YaepTermSet YaepTermSet;
 
 struct YaepTermStorage;
 typedef struct YaepTermStorage YaepTermStorage;
@@ -292,7 +292,7 @@ struct YaepVocabulary
 };
 
 /* A set of terminals represented as a bit array. */
-struct YaepTabTermSet
+struct YaepTermSet
 {
     // Set identity.
     int id;
@@ -1113,7 +1113,7 @@ static void symb_fin(YaepParseState *ps, YaepVocabulary *symbs)
 /* Hash of table terminal set.*/
 static unsigned term_set_hash(hash_table_entry_t s)
 {
-    YaepTabTermSet *ts = (YaepTabTermSet*)s;
+    YaepTermSet *ts = (YaepTermSet*)s;
     term_set_el_t *set = ts->set;
     int num_elements = ts->num_elements;
     term_set_el_t *bound = set + num_elements;
@@ -1129,8 +1129,8 @@ static unsigned term_set_hash(hash_table_entry_t s)
 /* Equality of terminal sets. */
 static int term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    YaepTabTermSet *ts1 = (YaepTabTermSet*)s1;
-    YaepTabTermSet *ts2 = (YaepTabTermSet*)s2;
+    YaepTermSet *ts1 = (YaepTermSet*)s1;
+    YaepTermSet *ts2 = (YaepTermSet*)s2;
     term_set_el_t *i = ts1->set;
     term_set_el_t *j = ts2->set;
 
@@ -1270,28 +1270,28 @@ static int term_set_test(term_set_el_t *set, int num, int num_terms)
 static int term_set_insert(YaepParseState *ps, term_set_el_t *set)
 {
     hash_table_entry_t *entry;
-    YaepTabTermSet tab_term_set,*tab_term_set_ptr;
+    YaepTermSet tab_term_set,*tab_term_set_ptr;
 
     tab_term_set.set = set;
     entry = find_hash_table_entry(ps->run.grammar->term_sets_ptr->term_set_tab, &tab_term_set, TRUE);
 
     if (*entry != NULL)
     {
-        return -((YaepTabTermSet*)*entry)->id - 1;
+        return -((YaepTermSet*)*entry)->id - 1;
     }
     else
     {
-        OS_TOP_EXPAND(ps->run.grammar->term_sets_ptr->term_set_os, sizeof(YaepTabTermSet));
-        tab_term_set_ptr = (YaepTabTermSet*)OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->term_set_os);
+        OS_TOP_EXPAND(ps->run.grammar->term_sets_ptr->term_set_os, sizeof(YaepTermSet));
+        tab_term_set_ptr = (YaepTermSet*)OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->term_set_os);
         OS_TOP_FINISH(ps->run.grammar->term_sets_ptr->term_set_os);
        *entry =(hash_table_entry_t) tab_term_set_ptr;
         tab_term_set_ptr->set = set;
-        tab_term_set_ptr->id = (VLO_LENGTH(ps->run.grammar->term_sets_ptr->tab_term_set_vlo) / sizeof(YaepTabTermSet*));
+        tab_term_set_ptr->id = (VLO_LENGTH(ps->run.grammar->term_sets_ptr->tab_term_set_vlo) / sizeof(YaepTermSet*));
         tab_term_set_ptr->num_elements = CALC_NUM_ELEMENTS(ps->run.grammar->symbs_ptr->num_terms);
 
-        VLO_ADD_MEMORY(ps->run.grammar->term_sets_ptr->tab_term_set_vlo, &tab_term_set_ptr, sizeof(YaepTabTermSet*));
+        VLO_ADD_MEMORY(ps->run.grammar->term_sets_ptr->tab_term_set_vlo, &tab_term_set_ptr, sizeof(YaepTermSet*));
 
-        return((YaepTabTermSet*)*entry)->id;
+        return((YaepTermSet*)*entry)->id;
     }
 }
 
@@ -1299,9 +1299,9 @@ static int term_set_insert(YaepParseState *ps, term_set_el_t *set)
 static term_set_el_t *term_set_from_table(YaepParseState *ps, int num)
 {
     assert(num >= 0);
-    assert((long unsigned int)num < VLO_LENGTH(ps->run.grammar->term_sets_ptr->tab_term_set_vlo) / sizeof(YaepTabTermSet*));
+    assert((long unsigned int)num < VLO_LENGTH(ps->run.grammar->term_sets_ptr->tab_term_set_vlo) / sizeof(YaepTermSet*));
 
-    return ((YaepTabTermSet**)VLO_BEGIN(ps->run.grammar->term_sets_ptr->tab_term_set_vlo))[num]->set;
+    return ((YaepTermSet**)VLO_BEGIN(ps->run.grammar->term_sets_ptr->tab_term_set_vlo))[num]->set;
 }
 
 /* Print terminal SET into file F. */
@@ -3711,17 +3711,18 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             cost++;
             ps->tok_curr++;
             if (cost >= best_cost)
+            {
                 /* This state is worse.  Reject it.*/
                 break;
+            }
 	}
         if (cost >= best_cost)
 	{
 
             if (ps->run.debug_level > 2)
-                fprintf
-                   (stderr,
-                     "++++Too many ignored tokens %d(already worse recovery)\n",
-                     cost);
+            {
+                fprintf(stderr, "++++Too many ignored tokens %d(already worse recovery)\n", cost);
+            }
 
             /* This state is worse.  Reject it.*/
             continue;
@@ -3730,9 +3731,9 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 	{
 
             if (ps->run.debug_level > 2)
-                fprintf
-                   (stderr,
-                     "++++We achieved EOF without matching -- reject this state\n");
+            {
+                fprintf(stderr, "++++We achieved EOF without matching -- reject this state\n");
+            }
 
             /* Go to the next recovery state.  To guarantee that state set does
                not grows to much we don't push secondary error recovery
@@ -3752,8 +3753,10 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 	{
             fprintf(stderr, "++++++++Building new set=%d\n", ps->state_set_curr);
             if (ps->run.debug_level > 3)
+            {
                 print_state_set(ps, stderr, ps->new_set, ps->state_set_curr, ps->run.debug_level > 4,
                           ps->run.debug_level > 5);
+            }
 	}
 
         n_matched_toks = 0;
