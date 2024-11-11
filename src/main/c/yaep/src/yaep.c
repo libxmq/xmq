@@ -3985,9 +3985,6 @@ static void save_cached_set(YaepParseState *ps, YaepStateSetTermLookAhead *entry
 /* The following function is major function forming parsing list in Earley's algorithm.*/
 static void perform_parse(YaepParseState *ps)
 {
-    YaepStateSet *set;
-    YaepCoreSymbVect *core_symb_vect;
-
     error_recovery_init(ps);
     build_start_set(ps);
 
@@ -4018,7 +4015,7 @@ static void perform_parse(YaepParseState *ps)
             fprintf(stderr, "\n");
 	}
 
-        set = ps->state_sets[ps->state_set_curr];
+        YaepStateSet *set = ps->state_sets[ps->state_set_curr];
         ps->new_set = NULL;
 
 #ifdef USE_SET_HASH_TABLE
@@ -4026,7 +4023,7 @@ static void perform_parse(YaepParseState *ps)
 #endif
         if (ps->new_set == NULL)
 	{
-            core_symb_vect = core_symb_vect_find(ps, set->core, THE_TERM);
+            YaepCoreSymbVect *core_symb_vect = core_symb_vect_find(ps, set->core, THE_TERM);
 
             if (core_symb_vect == NULL)
 	    {
