@@ -2869,7 +2869,7 @@ struct YaepInternalParseState
     int dot_pos;
     /* The rule origin(start point of derivated string from rule rhs)
        and parser list in which we are now.*/
-    int orig, state_set_ind;
+    int origin, state_set_ind;
     /* If the following value is NULL, then we do not need to create
        translation for this rule.  If we should create abstract node
        for this rule, the value refers for the abstract node and the
@@ -3115,7 +3115,7 @@ struct YaepParseState
     /* The following table is used to make translation for ambiguous
        grammar more compact.  It is used only when we want all
        translations.*/
-    hash_table_t map_rule_orig_statesetind_to_internalstate;	/* Key is rule, orig, state_set_ind.*/
+    hash_table_t map_rule_orig_statesetind_to_internalstate;	/* Key is rule, origin, state_set_ind.*/
 };
 typedef struct YaepParseState YaepParseState;
 
@@ -6383,7 +6383,7 @@ static unsigned parse_state_hash(hash_table_entry_t s)
     assert(state->dot_pos == state->rule->rhs_len);
     return(((jauquet_prime_mod32* hash_shift +
              (unsigned)(size_t) state->rule)* hash_shift +
-             state->orig)* hash_shift + state->state_set_ind);
+             state->origin)* hash_shift + state->state_set_ind);
 }
 
 /* Equality of parse states.*/
@@ -6395,7 +6395,7 @@ static int parse_state_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     /* The table contains only states with dot at the end of rule.*/
     assert(state1->dot_pos == state1->rule->rhs_len
             && state2->dot_pos == state2->rule->rhs_len);
-    return(state1->rule == state2->rule && state1->orig == state2->orig
+    return(state1->rule == state2->rule && state1->origin == state2->origin
             && state1->state_set_ind == state2->state_set_ind);
 }
 
@@ -6902,8 +6902,8 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
     YaepRule *rule, *prod_rule;
     YaepSymb *symb;
     YaepCoreSymbVect *core_symb_vect, *check_core_symb_vect;
-    int i, j, k, found, pos, orig, state_set_ind, n_candidates, disp;
-    int prod_ind, check_prod_ind, prod_orig, check_prod_orig, new_p;
+    int i, j, k, found, pos, origin, state_set_ind, n_candidates, disp;
+    int prod_ind, check_prod_ind, prod_origin, check_prod_origin, new_p;
     YaepInternalParseState *state, *orig_state, *curr_state;
     YaepInternalParseState *table_state, *parent_anode_state;
     YaepInternalParseState root_state;
@@ -6957,7 +6957,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
    ((YaepInternalParseState**) VLO_BOUND(stack))[-1] = state;
     rule = state->rule = prod->rule;
     state->dot_pos = prod->dot_pos;
-    state->orig = 0;
+    state->origin = 0;
     state->state_set_ind = ps->state_set_curr;
     result = NULL;
     root_state.anode = &root_anode;
@@ -6982,7 +6982,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                     (long) VLO_LENGTH(stack) / sizeof(YaepInternalParseState*) - 1,
                      state->state_set_ind);
             print_rule_with_dot(ps, stderr, state->rule, state->dot_pos);
-            fprintf(stderr, ", %d\n", state->orig);
+            fprintf(stderr, ", %d\n", state->origin);
 	}
 
         pos = --state->dot_pos;
@@ -6993,7 +6993,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
         anode = state->anode;
         disp = rule->order[pos];
         state_set_ind = state->state_set_ind;
-        orig = state->orig;
+        origin = state->origin;
         if (pos < 0)
 	{
             /* We've processed all rhs of the rule.*/
@@ -7005,7 +7005,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                         (long) VLO_LENGTH(stack) / sizeof(YaepInternalParseState*) - 1,
                          state->state_set_ind);
                 print_rule_with_dot(ps, stderr, state->rule, 0);
-                fprintf(stderr, ", %d\n", state->orig);
+                fprintf(stderr, ", %d\n", state->origin);
 	    }
 
             parse_state_free(ps, state);
@@ -7093,20 +7093,20 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
             prod_ind = core_symb_vect->reduces.els[i];
             prod = set_core->prods[prod_ind];
             if (prod_ind < set_core->num_start_prods)
-                prod_orig = state_set_ind - set->distances[prod_ind];
+                prod_origin = state_set_ind - set->distances[prod_ind];
             else if (prod_ind < set_core->n_all_distances)
-                prod_orig = state_set_ind - set->distances[set_core->parent_indexes[prod_ind]];
+                prod_origin = state_set_ind - set->distances[set_core->parent_indexes[prod_ind]];
             else
-                prod_orig = state_set_ind;
+                prod_origin = state_set_ind;
 
             if (ps->run.debug_level > 3)
 	    {
                 fprintf(stderr, "    Trying set place = %d, prod = ", state_set_ind);
                 print_production(ps, stderr, prod, ps->run.debug_level > 5, -1);
-                fprintf(stderr, ", %d\n", prod_orig);
+                fprintf(stderr, ", %d\n", prod_origin);
 	    }
 
-            check_set = ps->state_sets[prod_orig];
+            check_set = ps->state_sets[prod_origin];
             check_set_core = check_set->core;
             check_core_symb_vect = core_symb_vect_find(ps, check_set_core, symb);
             assert(check_core_symb_vect != NULL);
@@ -7117,19 +7117,19 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                 check_prod = check_set->core->prods[check_prod_ind];
                 if (check_prod->rule != rule || check_prod->dot_pos != pos)
                     continue;
-                check_prod_orig = prod_orig;
+                check_prod_origin = prod_origin;
                 if (check_prod_ind < check_set_core->n_all_distances)
 		{
                     if (check_prod_ind < check_set_core->num_start_prods)
-                        check_prod_orig
-                            = prod_orig - check_set->distances[check_prod_ind];
+                        check_prod_origin
+                            = prod_origin - check_set->distances[check_prod_ind];
                     else
-                        check_prod_orig
-                            =(prod_orig
+                        check_prod_origin
+                            =(prod_origin
                                - check_set->distances[check_set_core->parent_indexes
                                                   [check_prod_ind]]);
 		}
-                if (check_prod_orig == orig)
+                if (check_prod_origin == origin)
 		{
                     found = TRUE;
                     break;
@@ -7145,7 +7145,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
 	    }
             prod_rule = prod->rule;
             if (n_candidates == 0)
-                orig_state->state_set_ind = prod_orig;
+                orig_state->state_set_ind = prod_origin;
             if (parent_anode != NULL && disp >= 0)
 	    {
                 /* We should generate and use the translation of the
@@ -7165,7 +7165,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                     for(j =(VLO_LENGTH(orig_states)
                               / sizeof(YaepInternalParseState*) - 1); j >= 0; j--)
                         if (((YaepInternalParseState**)
-                             VLO_BEGIN(orig_states))[j]->state_set_ind == prod_orig)
+                             VLO_BEGIN(orig_states))[j]->state_set_ind == prod_origin)
                             break;
                     if (j >= 0)
 		    {
@@ -7183,7 +7183,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                         VLO_EXPAND(stack, sizeof(YaepInternalParseState*));
                        ((YaepInternalParseState**) VLO_BOUND(stack))[-1] = state;
                        *state =*orig_state;
-                        state->state_set_ind = prod_orig;
+                        state->state_set_ind = prod_origin;
                         if (anode != NULL)
                             state->anode
                                 = copy_anode(ps, parent_anode->val.anode.children
@@ -7198,9 +7198,9 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                                      "  Adding top %ld, set place = %d, modified prod = ",
                                     (long) VLO_LENGTH(stack) /
                                      sizeof(YaepInternalParseState*) - 1,
-                                     prod_orig);
+                                     prod_origin);
                             print_rule_with_dot(ps, stderr, state->rule, state->dot_pos);
-                            fprintf(stderr, ", %d\n", state->orig);
+                            fprintf(stderr, ", %d\n", state->origin);
 			}
 
                         curr_state = state;
@@ -7213,7 +7213,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                     state = parse_state_alloc(ps);
                     state->rule = prod_rule;
                     state->dot_pos = prod->dot_pos;
-                    state->orig = prod_orig;
+                    state->origin = prod_origin;
                     state->state_set_ind = state_set_ind;
                     table_state = NULL;
                     if (!ps->run.grammar->one_parse_p)
@@ -7274,7 +7274,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                                     (long) VLO_LENGTH(stack) /
                                      sizeof(YaepInternalParseState*) - 1, state_set_ind);
                             print_production(ps, stderr, prod, ps->run.debug_level > 5, -1);
-                            fprintf(stderr, ", %d\n", prod_orig);
+                            fprintf(stderr, ", %d\n", prod_origin);
 			}
 
 		    }
@@ -7293,7 +7293,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                                      "  Found prev. translation: set place = %d, prod = ",
                                      state_set_ind);
                             print_production(ps, stderr, prod, ps->run.debug_level > 5, -1);
-                            fprintf(stderr, ", %d\n", prod_orig);
+                            fprintf(stderr, ", %d\n", prod_origin);
 			}
 
 		    }
@@ -7312,7 +7312,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                    ((YaepInternalParseState**) VLO_BOUND(stack))[-1] = state;
                     state->rule = prod_rule;
                     state->dot_pos = prod->dot_pos;
-                    state->orig = prod_orig;
+                    state->origin = prod_origin;
                     state->state_set_ind = state_set_ind;
                     state->parent_anode_state =(anode == NULL
                                                  ? curr_state->
@@ -7328,7 +7328,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                                 (long) VLO_LENGTH(stack) /
                                  sizeof(YaepInternalParseState*) - 1, state_set_ind);
                         print_production(ps, stderr, prod, ps->run.debug_level > 5, -1);
-                        fprintf(stderr, ", %d\n", prod_orig);
+                        fprintf(stderr, ", %d\n", prod_origin);
 		    }
 
 		}
