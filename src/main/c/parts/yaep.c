@@ -2424,7 +2424,7 @@ typedef long int term_set_el_t;
 
 /* Define this if you want to reuse already calculated state sets.
    It considerably speed up the parser. */
-#define USE_SET_HASH_TABLE
+//define USE_SET_HASH_TABLE
 
 /* Maximal goto sets saved for triple(set, terminal, lookahead). */
 #define MAX_CACHED_GOTO_RESULTS 3
@@ -6222,6 +6222,32 @@ static int check_cached_transition_set(YaepParseState *ps, YaepStateSet*set, int
     return TRUE;
 }
 
+static int try_to_recover(YaepParseState *ps)
+{
+    int saved_tok_curr, start, stop;
+
+    /* Error recovery.  We do not check transition vector
+       because for terminal transition vector is never NULL
+       and reduce is always NULL. */
+
+    saved_tok_curr = ps->tok_curr;
+    if (ps->run.grammar->error_recovery_p)
+    {
+        fprintf(stderr, "Attempting error recovery...\n");
+        error_recovery(ps, &start, &stop);
+        ps->run.syntax_error(saved_tok_curr, ps->toks[saved_tok_curr].attr,
+                             start, ps->toks[start].attr, stop,
+                             ps->toks[stop].attr);
+        return 1;
+    }
+    else
+    {
+        ps->run.syntax_error(saved_tok_curr, ps->toks[saved_tok_curr].attr, -1, NULL, -1, NULL);
+        return 2;
+    }
+
+    return 0;
+}
 
 static YaepStateSetTermLookAhead *lookup_cached_set(YaepParseState *ps,
                                                     YaepSymb *THE_TERM,
@@ -6336,26 +6362,9 @@ static void perform_parse(YaepParseState *ps)
 
             if (core_symb_vect == NULL)
 	    {
-                int saved_tok_curr, start, stop;
-
-                /* Error recovery.  We do not check transition vector
-                   because for terminal transition vector is never NULL
-                   and reduce is always NULL. */
-                saved_tok_curr = ps->tok_curr;
-                if (ps->run.grammar->error_recovery_p)
-		{
-                    fprintf(stderr, "Attempting error recovery...\n");
-                    error_recovery(ps, &start, &stop);
-                    ps->run.syntax_error(saved_tok_curr, ps->toks[saved_tok_curr].attr,
-                                     start, ps->toks[start].attr, stop,
-                                     ps->toks[stop].attr);
-                    continue;
-		}
-                else
-		{
-                    ps->run.syntax_error(saved_tok_curr, ps->toks[saved_tok_curr].attr, -1, NULL, -1, NULL);
-                    break;
-		}
+                int c = try_to_recover(ps);
+                if (c == 1) continue;
+                else if (c == 2) break;
 	    }
 
             complete_and_predict_new_state_set(ps, set, core_symb_vect, lookahead_term_id);
