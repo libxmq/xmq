@@ -2266,7 +2266,7 @@ static YaepCoreSymbVect *core_symb_vect_find(YaepParseState *ps, YaepStateSetCor
     r = *core_symb_vect_addr_get(ps, set_core, symb);
 #endif
 
-    TRACE_FA(ps, "%p %s -> %p", set_core, symb->repr, r);
+    TRACE_FA(ps, "core=%d %s -> %p", set_core->core_id, symb->repr, r);
 
     return r;
 }
@@ -3892,18 +3892,67 @@ static int check_cached_transition_set(YaepParseState *ps, YaepStateSet*set, int
     return TRUE;
 }
 
+
+static YaepStateSetTermLookAhead *lookup_cached_set(YaepParseState *ps,
+                                                    YaepSymb *THE_TERM,
+                                                    int lookahead_term_id,
+                                                    YaepStateSet *set)
+{
+    int i;
+    hash_table_entry_t *entry;
+    YaepStateSetTermLookAhead *new_core_term_lookahead;
+
+    OS_TOP_EXPAND(ps->triplet_core_term_lookahead_os, sizeof(YaepStateSetTermLookAhead));
+
+    new_core_term_lookahead = (YaepStateSetTermLookAhead*) OS_TOP_BEGIN(ps->triplet_core_term_lookahead_os);
+    new_core_term_lookahead->set = set;
+    new_core_term_lookahead->term = THE_TERM;
+    new_core_term_lookahead->lookahead = lookahead_term_id;
+    for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
+    {
+        new_core_term_lookahead->result[i] = NULL;
+    }
+    new_core_term_lookahead->curr = 0;
+    entry = find_hash_table_entry(ps->set_of_triplets_core_term_lookahead, new_core_term_lookahead, TRUE);
+
+    if (*entry != NULL)
+    {
+        YaepStateSet *s;
+
+        OS_TOP_NULLIFY(ps->triplet_core_term_lookahead_os);
+        for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
+        {
+            if ((s = ((YaepStateSetTermLookAhead*)*entry)->result[i]) == NULL)
+            {
+                break;
+            }
+            else if (check_cached_transition_set(ps,
+                                                 s,
+                                                 ((YaepStateSetTermLookAhead*)*entry)->place[i]))
+            {
+                ps->new_set = s;
+                ps->n_goto_successes++;
+                break;
+            }
+        }
+    }
+    else
+    {
+        OS_TOP_FINISH(ps->triplet_core_term_lookahead_os);
+        *entry =(hash_table_entry_t) new_core_term_lookahead;
+        ps->num_triplets_core_term_lookahead++;
+    }
+
+    return (YaepStateSetTermLookAhead*)*entry;
+}
+
 /* The following function is major function forming parsing list in Earley's algorithm.*/
 static void perform_parse(YaepParseState *ps)
 {
-    int i;
-    YaepSymb*term;
-    YaepStateSet*set;
-    YaepCoreSymbVect*core_symb_vect;
+    YaepSymb *THE_TERM;
+    YaepStateSet *set;
+    YaepCoreSymbVect *core_symb_vect;
     int lookahead_term_id;
-#ifdef USE_SET_HASH_TABLE
-    hash_table_entry_t*entry;
-    YaepStateSetTermLookAhead*new_core_term_lookahead;
-#endif
 
     error_recovery_init(ps);
     build_start_set(ps);
@@ -3924,7 +3973,7 @@ static void perform_parse(YaepParseState *ps)
 
     for(; ps->tok_curr < ps->toks_len; ps->tok_curr++)
     {
-        term = ps->toks[ps->tok_curr].symb;
+        THE_TERM = ps->toks[ps->tok_curr].symb;
 
         if (ps->run.grammar->lookahead_level != 0)
         {
@@ -3941,56 +3990,20 @@ static void perform_parse(YaepParseState *ps)
         if (ps->run.debug_level > 2)
 	{
             fprintf(stderr, "\nScan toks[%d]= ", ps->tok_curr);
-            symb_print(stderr, term, TRUE);
+            symb_print(stderr, THE_TERM, TRUE);
             fprintf(stderr, "\n");
 	}
 
         set = ps->state_sets[ps->state_set_curr];
         ps->new_set = NULL;
+
 #ifdef USE_SET_HASH_TABLE
-        OS_TOP_EXPAND(ps->triplet_core_term_lookahead_os, sizeof(YaepStateSetTermLookAhead));
-        new_core_term_lookahead = (YaepStateSetTermLookAhead*) OS_TOP_BEGIN(ps->triplet_core_term_lookahead_os);
-        new_core_term_lookahead->set = set;
-        new_core_term_lookahead->term = term;
-        new_core_term_lookahead->lookahead = lookahead_term_id;
-        for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
-        {
-            new_core_term_lookahead->result[i] = NULL;
-        }
-        new_core_term_lookahead->curr = 0;
-        entry = find_hash_table_entry(ps->set_of_triplets_core_term_lookahead, new_core_term_lookahead, TRUE);
-        if (*entry != NULL)
-	{
-            YaepStateSet *s;
-
-            OS_TOP_NULLIFY(ps->triplet_core_term_lookahead_os);
-            for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
-            {
-                if ((s = ((YaepStateSetTermLookAhead*)*entry)->result[i]) == NULL)
-                {
-                    break;
-                }
-                else if (check_cached_transition_set(ps,
-                                                     s,
-                                                     ((YaepStateSetTermLookAhead*)*entry)->place[i]))
-                {
-                    ps->new_set = s;
-                    ps->n_goto_successes++;
-                    break;
-                }
-            }
-	}
-        else
-	{
-            OS_TOP_FINISH(ps->triplet_core_term_lookahead_os);
-            *entry =(hash_table_entry_t) new_core_term_lookahead;
-            ps->num_triplets_core_term_lookahead++;
-	}
-
+        YaepStateSetTermLookAhead *entry =  lookup_cached_set(ps, THE_TERM, lookahead_term_id, set);
 #endif
         if (ps->new_set == NULL)
 	{
-            core_symb_vect = core_symb_vect_find(ps, set->core, term);
+            core_symb_vect = core_symb_vect_find(ps, set->core, THE_TERM);
+
             if (core_symb_vect == NULL)
 	    {
                 int saved_tok_curr, start, stop;
@@ -4020,11 +4033,11 @@ static void perform_parse(YaepParseState *ps)
 #ifdef USE_SET_HASH_TABLE
 
             /* Save(set, term, lookahead) -> new_set in the table. */
-            i = ((YaepStateSetTermLookAhead*)*entry)->curr;
-            ((YaepStateSetTermLookAhead*)*entry)->result[i] = ps->new_set;
-            ((YaepStateSetTermLookAhead*)*entry)->place[i] = ps->state_set_curr;
-            ((YaepStateSetTermLookAhead*)*entry)->lookahead = lookahead_term_id;
-            ((YaepStateSetTermLookAhead*)*entry)->curr = (i + 1) % MAX_CACHED_GOTO_RESULTS;
+            int i = entry->curr;
+            entry->result[i] = ps->new_set;
+            entry->place[i] = ps->state_set_curr;
+            entry->lookahead = lookahead_term_id;
+            entry->curr = (i + 1) % MAX_CACHED_GOTO_RESULTS;
 #endif
 	}
 
