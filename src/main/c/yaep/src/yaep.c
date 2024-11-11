@@ -3972,13 +3972,21 @@ static YaepStateSetTermLookAhead *lookup_cached_set(YaepParseState *ps,
     return (YaepStateSetTermLookAhead*)*entry;
 }
 
+/* Save(set, term, lookahead) -> new_set in the table. */
+static void save_cached_set(YaepParseState *ps, YaepStateSetTermLookAhead *entry, int lookahead_term_id)
+{
+    int i = entry->curr;
+    entry->result[i] = ps->new_set;
+    entry->place[i] = ps->state_set_curr;
+    entry->lookahead = lookahead_term_id;
+    entry->curr = (i + 1) % MAX_CACHED_GOTO_RESULTS;
+}
+
 /* The following function is major function forming parsing list in Earley's algorithm.*/
 static void perform_parse(YaepParseState *ps)
 {
-    YaepSymb *THE_TERM;
     YaepStateSet *set;
     YaepCoreSymbVect *core_symb_vect;
-    int lookahead_term_id;
 
     error_recovery_init(ps);
     build_start_set(ps);
@@ -3986,31 +3994,21 @@ static void perform_parse(YaepParseState *ps)
     if (ps->run.debug_level > 2)
     {
         fprintf(stderr, "\n\n------ Parsing start ---------------\n\n");
-        if (ps->run.debug_level > 3)
-        {
-            print_state_set(ps, stderr, ps->new_set, 0, ps->run.debug_level > 4, ps->run.debug_level > 5);
-        }
-    }
 
-    lookahead_term_id = -1;
+        print_state_set(ps, stderr, ps->new_set, 0, ps->run.debug_level > 4, ps->run.debug_level > 5);
+    }
 
     ps->tok_curr = 0;
     ps->state_set_curr = 0;
 
     for(; ps->tok_curr < ps->toks_len; ps->tok_curr++)
     {
-        THE_TERM = ps->toks[ps->tok_curr].symb;
+        YaepSymb *THE_TERM = ps->toks[ps->tok_curr].symb;
+        int lookahead_term_id = -1;
 
-        if (ps->run.grammar->lookahead_level != 0)
+        if (ps->run.grammar->lookahead_level != 0 && ps->tok_curr < ps->toks_len-1)
         {
-            if (ps->tok_curr < ps->toks_len-1)
-            {
-                lookahead_term_id = ps->toks[ps->tok_curr+1].symb->u.term.term_id;
-            }
-            else
-            {
-                lookahead_term_id = -1;
-            }
+            lookahead_term_id = ps->toks[ps->tok_curr+1].symb->u.term.term_id;
         }
 
         if (ps->run.debug_level > 2)
@@ -4040,13 +4038,7 @@ static void perform_parse(YaepParseState *ps)
             complete_and_predict_new_state_set(ps, set, core_symb_vect, lookahead_term_id);
 
 #ifdef USE_SET_HASH_TABLE
-
-            /* Save(set, term, lookahead) -> new_set in the table. */
-            int i = entry->curr;
-            entry->result[i] = ps->new_set;
-            entry->place[i] = ps->state_set_curr;
-            entry->lookahead = lookahead_term_id;
-            entry->curr = (i + 1) % MAX_CACHED_GOTO_RESULTS;
+            save_cached_set(ps, entry, lookahead_term_id);
 #endif
 	}
 
