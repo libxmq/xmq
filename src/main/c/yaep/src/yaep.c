@@ -4652,7 +4652,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                     (long) VLO_LENGTH(stack) / sizeof(YaepInternalParseState*) - 1,
                      state->state_set_ind);
             print_rule_with_dot(ps, stderr, state->rule, state->dot_pos);
-            fprintf(stderr, ", %d\n", state->origin);
+            fprintf(stderr, ", o=%d\n", state->origin);
 	}
 
         pos = --state->dot_pos;
@@ -4675,7 +4675,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                         (long) VLO_LENGTH(stack) / sizeof(YaepInternalParseState*) - 1,
                          state->state_set_ind);
                 print_rule_with_dot(ps, stderr, state->rule, 0);
-                fprintf(stderr, ", %d\n", state->origin);
+                fprintf(stderr, ", o=%d\n", state->origin);
 	    }
 
             parse_state_free(ps, state);
@@ -4773,7 +4773,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
 	    {
                 fprintf(stderr, "    Trying set place = %d, prod = ", state_set_ind);
                 print_production(ps, stderr, prod, ps->run.debug_level > 5, -1);
-                fprintf(stderr, ", %d\n", prod_origin);
+                fprintf(stderr, ", o=%d\n", prod_origin);
 	    }
 
             check_set = ps->state_sets[prod_origin];
@@ -4870,7 +4870,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                                      sizeof(YaepInternalParseState*) - 1,
                                      prod_origin);
                             print_rule_with_dot(ps, stderr, state->rule, state->dot_pos);
-                            fprintf(stderr, ", %d\n", state->origin);
+                            fprintf(stderr, ", o=%d\n", state->origin);
 			}
 
                         curr_state = state;
@@ -5484,7 +5484,7 @@ static void print_rule_with_dot(YaepParseState *ps, FILE *f, YaepRule *rule, int
    production is printed with the lookahead set if LOOKAHEAD_P.*/
 static void print_production(YaepParseState *ps, FILE *f, YaepProduction *prod, int lookahead_p, int origin)
 {
-    fprintf(f, "%3d    ", prod->prod_id);
+    fprintf(f, "(%3d)    ", prod->prod_id);
     print_rule_with_dot(ps, f, prod->rule, prod->dot_pos);
 
     if (origin >= 0)
