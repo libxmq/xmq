@@ -34,6 +34,8 @@
 
 #include<assert.h>
 #include<limits.h>
+#include<stdbool.h>
+#include<stdlib.h>
 
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
@@ -109,16 +111,9 @@ struct YaepParseRun
     // We are parsing with this grammar.
     YaepGrammar *grammar;
 
-    /* The following value is debug level:
-       <0 - print translation for graphviz.
-       0 - print nothing.
-       1 - print statistics.
-       2 - print parse tree.
-       3 - print rules, parser list
-       4 - print sets.
-       5 - print also nonstart situations.
-       6 - print additionally lookaheads. */
-    int debug_level;
+    bool verbose;
+    bool debug;
+    bool trace;
 
     // This object continues with more data inside the implementation....
     // Do not allocate this object yourself, use yaepNewParseRun andyaepFreeParseRun instead.
@@ -299,10 +294,6 @@ extern int yaep_parse_grammar(YaepGrammar *g,
      best results with the point of space and speed, dynamic ones does
      slightly worse, and no usage of lookaheads does the worst.  The
      default value is 1.
-
-   o debug_level says what debugging information to output (it works
-     only if we compiled without defined macro NO_YAEP_DEBUG_PRINT).
-     The default value is 0.
 
    o one_parse_flag means building only one parse tree.  For
      unambiguous grammar the flag does not affect the result.  The

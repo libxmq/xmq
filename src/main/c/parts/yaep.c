@@ -2369,11 +2369,11 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 #include <assert.h>
 
 #define TRACE_F(ps) { \
-        if (0 && ps->run.debug_level>5) fprintf(stderr, "TRACE %s\n", __func__); \
+        if (0 && ps->run.trace) fprintf(stderr, "TRACE %s\n", __func__); \
     }
 
 #define TRACE_FA(ps, cformat, ...) { \
-    if (0 && ps->run.debug_level>5) fprintf(stderr, "TRACE %s " cformat "\n", __func__, __VA_ARGS__); \
+    if (0 && ps->run.trace) fprintf(stderr, "TRACE %s " cformat "\n", __func__, __VA_ARGS__); \
 }
 
 #include <stdio.h>
@@ -5282,7 +5282,7 @@ int yaep_read_grammar(YaepParseRun *pr,
 
     symb_finish_adding_terms(ps);
 
-    if (ps->run.debug_level > 2)
+    if (ps->run.verbose)
     {
         /* Print rules.*/
         fprintf(stderr, "Rules:\n");
@@ -5299,7 +5299,7 @@ int yaep_read_grammar(YaepParseRun *pr,
                      symb->repr,(symb->empty_p ? "Yes" : "No"),
                     (symb->access_p ? "Yes" : "No"),
                     (symb->derivation_p ? "Yes" : "No"));
-            if (ps->run.debug_level > 3)
+            if (ps->run.debug)
 	    {
                 fprintf(stderr, "  First: ");
                 term_set_print(ps, stderr, symb->u.nonterm.first, ps->run.grammar->symbs_ptr->num_terms);
@@ -5725,19 +5725,16 @@ static void save_original_sets(YaepParseState *ps)
         VLO_ADD_MEMORY(ps->original_state_set_tail_stack, &ps->state_sets[curr_pl],
                         sizeof(YaepStateSet*));
 
-        if (ps->run.debug_level > 2)
+        if (ps->run.debug)
 	{
             fprintf(stderr, "++++Save original set=%d\n", curr_pl);
-            if (ps->run.debug_level > 3)
-	    {
-                print_state_set(ps,
-                                stderr,
-                                ps->state_sets[curr_pl],
-                                curr_pl,
-                                ps->run.debug_level > 4,
-                                ps->run.debug_level > 5);
-                fprintf(stderr, "\n");
-	    }
+            print_state_set(ps,
+                            stderr,
+                            ps->state_sets[curr_pl],
+                            curr_pl,
+                            ps->run.debug,
+                            ps->run.debug);
+            fprintf(stderr, "\n");
 	}
 
     }
@@ -5762,16 +5759,12 @@ static void restore_original_sets(YaepParseState *ps, int last_state_set_el)
             =((YaepStateSet**) VLO_BEGIN(ps->original_state_set_tail_stack))
             [ps->recovery_start_set_curr - ps->original_last_state_set_el];
 
-        if (ps->run.debug_level > 2)
+        if (ps->run.debug)
 	{
-            fprintf(stderr, "++++++Restore original set=%d\n",
-                     ps->original_last_state_set_el);
-            if (ps->run.debug_level > 3)
-	    {
-                print_state_set(ps, stderr, ps->state_sets[ps->original_last_state_set_el], ps->original_last_state_set_el,
-                          ps->run.debug_level > 4, ps->run.debug_level > 5);
-                fprintf(stderr, "\n");
-	    }
+            fprintf(stderr, "++++++Restore original set=%d\n", ps->original_last_state_set_el);
+            print_state_set(ps, stderr, ps->state_sets[ps->original_last_state_set_el], ps->original_last_state_set_el,
+                            ps->run.debug, ps->run.debug);
+            fprintf(stderr, "\n");
 	}
 
         if (ps->original_last_state_set_el >= last_state_set_el)
@@ -5810,11 +5803,10 @@ static struct recovery_state new_recovery_state(YaepParseState *ps, int last_ori
 
     assert(backward_move_cost >= 0);
 
-    if (ps->run.debug_level > 2)
+    if (ps->run.debug)
     {
-        fprintf(stderr,
-                 "++++Creating recovery state: original set=%d, tok=%d, ",
-                 last_original_state_set_el, ps->tok_curr);
+        fprintf(stderr, "++++Creating recovery state: original set=%d, tok=%d, ",
+                last_original_state_set_el, ps->tok_curr);
         symb_print(stderr, ps->toks[ps->tok_curr].symb, TRUE);
         fprintf(stderr, "\n");
     }
@@ -5826,11 +5818,11 @@ static struct recovery_state new_recovery_state(YaepParseState *ps, int last_ori
     {
         OS_TOP_ADD_MEMORY(ps->recovery_state_tail_sets, &ps->state_sets[i], sizeof(ps->state_sets[i]));
 
-        if (ps->run.debug_level > 3)
+        if (ps->run.debug)
 	{
             fprintf(stderr, "++++++Saving set=%d\n", i);
-            print_state_set(ps, stderr, ps->state_sets[i], i, ps->run.debug_level > 4,
-                      ps->run.debug_level > 5);
+            print_state_set(ps, stderr, ps->state_sets[i], i, ps->run.debug,
+                            ps->run.debug);
             fprintf(stderr, "\n");
 	}
 
@@ -5850,7 +5842,7 @@ static void push_recovery_state(YaepParseState *ps, int last_original_state_set_
 
     state = new_recovery_state(ps, last_original_state_set_el, backward_move_cost);
 
-    if (ps->run.debug_level > 2)
+    if (ps->run.debug)
     {
         fprintf(stderr, "++++Push recovery state: original set=%d, tok=%d, ",
                  last_original_state_set_el, ps->tok_curr);
@@ -5871,7 +5863,7 @@ static void set_recovery_state(YaepParseState *ps, struct recovery_state*state)
     restore_original_sets(ps, state->last_original_state_set_el);
     ps->state_set_curr = state->last_original_state_set_el;
 
-    if (ps->run.debug_level > 2)
+    if (ps->run.debug)
     {
         fprintf(stderr, "++++Set recovery state: set=%d, tok=%d, ",
                  ps->state_set_curr, ps->tok_curr);
@@ -5883,11 +5875,11 @@ static void set_recovery_state(YaepParseState *ps, struct recovery_state*state)
     {
         ps->state_sets[++ps->state_set_curr] = state->state_set_tail[i];
 
-        if (ps->run.debug_level > 3)
+        if (ps->run.debug)
 	{
             fprintf(stderr, "++++++Add saved set=%d\n", ps->state_set_curr);
-            print_state_set(ps, stderr, ps->state_sets[ps->state_set_curr], ps->state_set_curr, ps->run.debug_level > 4,
-                      ps->run.debug_level > 5);
+            print_state_set(ps, stderr, ps->state_sets[ps->state_set_curr], ps->state_set_curr, ps->run.debug,
+                      ps->run.debug);
             fprintf(stderr, "\n");
 	}
 
@@ -5904,7 +5896,7 @@ static struct recovery_state pop_recovery_state(YaepParseState *ps)
     state = &((struct recovery_state*) VLO_BOUND(ps->recovery_state_stack))[-1];
     VLO_SHORTEN(ps->recovery_state_stack, sizeof(struct recovery_state));
 
-    if (ps->run.debug_level > 2)
+    if (ps->run.debug)
         fprintf(stderr, "++++Pop error recovery state\n");
 
     set_recovery_state(ps, state);
@@ -5926,7 +5918,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
     int back_to_frontier_move_cost, backward_move_cost;
 
 
-    if (ps->run.debug_level > 2)
+    if (ps->run.verbose)
         fprintf(stderr, "\n++Error recovery start\n");
 
    *stop =*start = -1;
@@ -5956,7 +5948,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             ps->state_set_curr = find_error_state_set_set(ps, ps->back_state_set_frontier - 1,
                                          &backward_move_cost);
 
-            if (ps->run.debug_level > 2)
+            if (ps->run.debug)
                 fprintf(stderr, "++++Advance back frontier: old=%d, new=%d\n",
                          ps->back_state_set_frontier, ps->state_set_curr);
 
@@ -5980,7 +5972,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             if (ps->tok_curr < ps->toks_len)
 	    {
 
-                if (ps->run.debug_level > 2)
+                if (ps->run.debug)
 		{
                     fprintf(stderr,
                              "++++Advance head frontier(one pos): tok=%d, ",
@@ -5995,7 +5987,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 	}
         set = ps->state_sets[ps->state_set_curr];
 
-        if (ps->run.debug_level > 2)
+        if (ps->run.debug)
 	{
             fprintf(stderr, "++++Trying set=%d, tok=%d, ", ps->state_set_curr, ps->tok_curr);
             symb_print(stderr, ps->toks[ps->tok_curr].symb, TRUE);
@@ -6006,21 +5998,17 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         core_symb_vect = core_symb_vect_find(ps, set->core, ps->run.grammar->term_error);
         assert(core_symb_vect != NULL);
 
-        if (ps->run.debug_level > 2)
+        if (ps->run.debug)
             fprintf(stderr, "++++Making error shift in set=%d\n", ps->state_set_curr);
 
         complete_and_predict_new_state_set(ps, set, core_symb_vect, -1);
         ps->state_sets[++ps->state_set_curr] = ps->new_set;
 
-        if (ps->run.debug_level > 2)
+        if (ps->run.debug)
 	{
             fprintf(stderr, "++Trying new set=%d\n", ps->state_set_curr);
-            if (ps->run.debug_level > 3)
-	    {
-                print_state_set(ps, stderr, ps->new_set, ps->state_set_curr, ps->run.debug_level > 4,
-                          ps->run.debug_level > 5);
-                fprintf(stderr, "\n");
-	    }
+            print_state_set(ps, stderr, ps->new_set, ps->state_set_curr, ps->run.debug, ps->run.debug);
+            fprintf(stderr, "\n");
 	}
 
         /* Search the first right token.*/
@@ -6030,7 +6018,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             if (core_symb_vect != NULL)
                 break;
 
-            if (ps->run.debug_level > 2)
+            if (ps->run.debug)
 	    {
                 fprintf(stderr, "++++++Skipping=%d ", ps->tok_curr);
                 symb_print(stderr, ps->toks[ps->tok_curr].symb, TRUE);
@@ -6048,7 +6036,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         if (cost >= best_cost)
 	{
 
-            if (ps->run.debug_level > 2)
+            if (ps->run.debug)
             {
                 fprintf(stderr, "++++Too many ignored tokens %d(already worse recovery)\n", cost);
             }
@@ -6059,7 +6047,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         if (ps->tok_curr >= ps->toks_len)
 	{
 
-            if (ps->run.debug_level > 2)
+            if (ps->run.debug)
             {
                 fprintf(stderr, "++++We achieved EOF without matching -- reject this state\n");
             }
@@ -6078,13 +6066,12 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, lookahead_term_id);
         ps->state_sets[++ps->state_set_curr] = ps->new_set;
 
-        if (ps->run.debug_level > 3)
+        if (ps->run.debug)
 	{
             fprintf(stderr, "++++++++Building new set=%d\n", ps->state_set_curr);
-            if (ps->run.debug_level > 3)
+            if (ps->run.debug)
             {
-                print_state_set(ps, stderr, ps->new_set, ps->state_set_curr, ps->run.debug_level > 4,
-                          ps->run.debug_level > 5);
+                print_state_set(ps, stderr, ps->new_set, ps->state_set_curr, ps->run.debug, ps->run.debug);
             }
 	}
 
@@ -6092,7 +6079,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         for(;;)
 	{
 
-            if (ps->run.debug_level > 2)
+            if (ps->run.debug)
 	    {
                 fprintf(stderr, "++++++Matching=%d ", ps->tok_curr);
                 symb_print(stderr, ps->toks[ps->tok_curr].symb, TRUE);
@@ -6112,7 +6099,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             /* Push secondary recovery state(with error in set).*/
             if (core_symb_vect_find(ps, ps->new_core, ps->run.grammar->term_error) != NULL)
 	    {
-                if (ps->run.debug_level > 2)
+                if (ps->run.debug)
 		{
                     fprintf(stderr, "++++Found secondary state: original set=%d, tok=%d, ",
                             state.last_original_state_set_el, ps->tok_curr);
@@ -6139,7 +6126,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             if (best_cost > cost)
 	    {
 
-                if (ps->run.debug_level > 2)
+                if (ps->run.debug)
                 {
                     fprintf(stderr, "++++Ignore %d tokens(the best recovery now): Save it:\n", cost);
                 }
@@ -6155,33 +6142,32 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
                *start = ps->recovery_start_tok_curr - state.backward_move_cost;
                *stop = *start + cost;
 	    }
-            else if (ps->run.debug_level > 2)
+            else if (ps->run.debug)
             {
                 fprintf(stderr, "++++Ignore %d tokens(worse recovery)\n", cost);
             }
 	}
 
-        else if (cost < best_cost && ps->run.debug_level > 2)
+        else if (cost < best_cost && ps->run.debug)
             fprintf(stderr, "++++No %d matched tokens  -- reject this state\n",
                      ps->run.grammar->recovery_token_matches);
 
     }
 
-    if (ps->run.debug_level > 2)
+    if (ps->run.debug)
         fprintf(stderr, "\n++Finishing error recovery: Restore best state\n");
 
     set_recovery_state(ps, &best_state);
 
-    if (ps->run.debug_level > 2)
+    if (ps->run.debug)
     {
         fprintf(stderr, "\n++Error recovery end: curr token %d=", ps->tok_curr);
         symb_print(stderr, ps->toks[ps->tok_curr].symb, TRUE);
         fprintf(stderr, ", Current set=%d:\n", ps->state_set_curr);
-        if (ps->run.debug_level > 3)
+        if (ps->run.debug)
         {
             print_state_set(ps, stderr, ps->state_sets[ps->state_set_curr],
-                            ps->state_set_curr, ps->run.debug_level > 4,
-                            ps->run.debug_level > 5);
+                            ps->state_set_curr, ps->run.debug, ps->run.debug);
         }
     }
 
@@ -6318,11 +6304,11 @@ static void perform_parse(YaepParseState *ps)
     error_recovery_init(ps);
     build_start_set(ps);
 
-    if (ps->run.debug_level > 2)
+    if (ps->run.debug)
     {
         fprintf(stderr, "\n\n------ Parsing start ---------------\n\n");
 
-        print_state_set(ps, stderr, ps->new_set, 0, ps->run.debug_level > 4, ps->run.debug_level > 5);
+        print_state_set(ps, stderr, ps->new_set, 0, ps->run.debug, ps->run.debug);
     }
 
     ps->tok_curr = 0;
@@ -6338,7 +6324,7 @@ static void perform_parse(YaepParseState *ps)
             lookahead_term_id = ps->toks[ps->tok_curr+1].symb->u.term.term_id;
         }
 
-        if (ps->run.debug_level > 2)
+        if (ps->run.debug)
 	{
             fprintf(stderr, "\nScan toks[%d]= ", ps->tok_curr);
             symb_print(stderr, THE_TERM, TRUE);
@@ -6349,7 +6335,7 @@ static void perform_parse(YaepParseState *ps)
         ps->new_set = NULL;
 
 #ifdef USE_SET_HASH_TABLE
-        YaepStateSetTermLookAhead *entry =  lookup_cached_set(ps, THE_TERM, lookahead_term_id, set);
+        YaepStateSetTermLookAhead *entry = lookup_cached_set(ps, THE_TERM, lookahead_term_id, set);
 #endif
         if (ps->new_set == NULL)
 	{
@@ -6372,14 +6358,14 @@ static void perform_parse(YaepParseState *ps)
         ps->state_set_curr++;
         ps->state_sets[ps->state_set_curr] = ps->new_set;
 
-        if (ps->run.debug_level > 2)
+        if (ps->run.debug)
 	{
-            print_state_set(ps, stderr, ps->new_set, ps->state_set_curr, ps->run.debug_level > 4, ps->run.debug_level > 5);
+            print_state_set(ps, stderr, ps->new_set, ps->state_set_curr, ps->run.debug, ps->run.debug);
 	}
     }
     error_recovery_fin(ps);
 
-    if (ps->run.debug_level > 2)
+    if (ps->run.debug)
     {
         fprintf(stderr, "\n\n----- Parsing done -----------------\n\n\n");
     }
@@ -6526,8 +6512,7 @@ static int canon_node_id(int id)
 }
 
 /* The following recursive function prints NODE into file F and prints
-   all its children(if debug_level < 0 output format is for
-   graphviz).*/
+   all its children(if debug_level < 0 output format is for graphviz).*/
 static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
 {
     YaepTreeNodeVisit*trans_visit_node;
@@ -6539,25 +6524,24 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
     if (trans_visit_node->num >= 0)
         return;
     trans_visit_node->num = -trans_visit_node->num - 1;
-    if (ps->run.debug_level > 0)
-        fprintf(f, "%7d: ", trans_visit_node->num);
+    if (ps->run.debug) fprintf(f, "%7d: ", trans_visit_node->num);
     switch(node->type)
     {
     case YAEP_NIL:
-        if (ps->run.debug_level > 0)
+        if (ps->run.debug)
             fprintf(f, "EMPTY\n");
         break;
     case YAEP_ERROR:
-        if (ps->run.debug_level > 0)
+        if (ps->run.debug > 0)
             fprintf(f, "ERROR\n");
         break;
     case YAEP_TERM:
-        if (ps->run.debug_level > 0)
+        if (ps->run.debug)
             fprintf(f, "TERMINAL: code=%d, repr=%s, mark=%d %c\n", node->val.term.code,
                     symb_find_by_code(ps, node->val.term.code)->repr, node->val.term.mark, node->val.term.mark>32?node->val.term.mark:' ');
         break;
     case YAEP_ANODE:
-        if (ps->run.debug_level > 0)
+        if (ps->run.debug)
 	{
             fprintf(f, "ABSTRACT: %c%s(", node->val.anode.mark?node->val.anode.mark:' ', node->val.anode.name);
             for(i = 0;(child = node->val.anode.children[i]) != NULL; i++)
@@ -6598,7 +6582,7 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
             print_yaep_node(ps, f, child);
         break;
     case YAEP_ALT:
-        if (ps->run.debug_level > 0)
+        if (ps->run.debug)
 	{
             fprintf(f, "ALTERNATIVE: node=%d, next=",
                     canon_node_id(visit_node(ps, node->val.alt.node)->num));
@@ -6985,9 +6969,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
     error_node->val.error.used = 0;
     while(VLO_LENGTH(stack) != 0)
     {
-
-        if ((ps->run.debug_level > 2 && state->dot_pos == state->rule->rhs_len)
-            || ps->run.debug_level > 3)
+        if (ps->run.debug && state->dot_pos == state->rule->rhs_len)
 	{
             fprintf(stderr, "Processing top %ld, set place = %d, prod = ",
                     (long) VLO_LENGTH(stack) / sizeof(YaepInternalParseState*) - 1,
@@ -7009,8 +6991,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
 	{
             /* We've processed all rhs of the rule.*/
 
-            if ((ps->run.debug_level > 2 && state->dot_pos == state->rule->rhs_len)
-                || ps->run.debug_level > 3)
+            if (ps->run.debug && state->dot_pos == state->rule->rhs_len)
 	    {
                 fprintf(stderr, "Poping top %ld, set place = %d, prod = ",
                         (long) VLO_LENGTH(stack) / sizeof(YaepInternalParseState*) - 1,
@@ -7110,10 +7091,10 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
             else
                 prod_origin = state_set_ind;
 
-            if (ps->run.debug_level > 3)
+            if (ps->run.debug)
 	    {
                 fprintf(stderr, "    Trying set place = %d, prod = ", state_set_ind);
-                print_production(ps, stderr, prod, ps->run.debug_level > 5, -1);
+                print_production(ps, stderr, prod, ps->run.debug, -1);
                 fprintf(stderr, ", o=%d\n", prod_origin);
 	    }
 
@@ -7203,7 +7184,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                        ((YaepInternalParseState**) VLO_BOUND(orig_states))[-1]
                             = state;
 
-                        if (ps->run.debug_level > 3)
+                        if (ps->run.debug)
 			{
                             fprintf(stderr,
                                      "  Adding top %ld, set place = %d, modified prod = ",
@@ -7278,13 +7259,13 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                             state->parent_disp = disp;
 			}
 
-                        if (ps->run.debug_level > 3)
+                        if (ps->run.debug)
 			{
                             fprintf(stderr,
                                      "  Adding top %ld, set place = %d, prod = ",
                                     (long) VLO_LENGTH(stack) /
                                      sizeof(YaepInternalParseState*) - 1, state_set_ind);
-                            print_production(ps, stderr, prod, ps->run.debug_level > 5, -1);
+                            print_production(ps, stderr, prod, ps->run.debug, -1);
                             fprintf(stderr, ", %d\n", prod_origin);
 			}
 
@@ -7298,12 +7279,12 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                         node = table_state->anode;
                         assert(node != NULL);
 
-                        if (ps->run.debug_level > 3)
+                        if (ps->run.debug)
 			{
                             fprintf(stderr,
                                      "  Found prev. translation: set place = %d, prod = ",
                                      state_set_ind);
-                            print_production(ps, stderr, prod, ps->run.debug_level > 5, -1);
+                            print_production(ps, stderr, prod, ps->run.debug, -1);
                             fprintf(stderr, ", %d\n", prod_origin);
 			}
 
@@ -7332,13 +7313,13 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                     state->parent_disp = anode == NULL ? parent_disp : disp;
                     state->anode = NULL;
 
-                    if (ps->run.debug_level > 3)
+                    if (ps->run.debug)
 		    {
                         fprintf(stderr,
                                  "  Adding top %ld, set place = %d, prod = ",
                                 (long) VLO_LENGTH(stack) /
                                  sizeof(YaepInternalParseState*) - 1, state_set_ind);
-                        print_production(ps, stderr, prod, ps->run.debug_level > 5, -1);
+                        print_production(ps, stderr, prod, ps->run.debug, -1);
                         fprintf(stderr, ", %d\n", prod_origin);
 		    }
 
@@ -7375,14 +7356,15 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
            their children.*/
         result = find_minimal_translation(ps, result);
 
-    if (ps->run.debug_level > 1)
+    if (ps->run.debug)
     {
         fprintf(stderr, "Translation:\n");
         print_parse(ps, stderr, result);
         fprintf(stderr, "\n");
     }
-    else if (ps->run.debug_level < 0)
+    else if (ps->run.debug)
     {
+        // Graphviz
         fprintf(stderr, "digraph CFG {\n");
         fprintf(stderr, "  node [shape=ellipse, fontsize=200];\n");
         fprintf(stderr, "  ratio=fill;\n");
@@ -7505,7 +7487,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     table_searches = get_all_searches() - table_searches;
 
 
-    if (ps->run.debug_level > 0)
+    if (ps->run.verbose)
     {
         fprintf(stderr, "%sGrammar: #terms = %d, #nonterms = %d, ",
                 *ambiguous_p ? "AMBIGUOUS " : "",

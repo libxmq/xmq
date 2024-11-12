@@ -4162,7 +4162,9 @@ bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
     YaepParseRun *run = yaepNewParseRun(grammar);
     ixml_grammar->yaep_grammar_ = grammar;
     ixml_grammar->yaep_parse_run_ = run;
-    if (xmqTracing()) run->debug_level = 7;
+    if (xmqVerbose()) run->verbose = true;
+    if (xmqDebugging()) run->debug = true;
+    if (xmqTracing()) run->trace = true;
 
     // Lets parse the ixml source to construct a yaep grammar.
     // This yaep grammar is cached in ixml_grammar->yaep_grammar_.
