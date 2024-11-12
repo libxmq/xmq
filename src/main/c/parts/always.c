@@ -8,9 +8,17 @@
 #include<string.h>
 #include<stdarg.h>
 
+char *xmqLogElementVA(const char *element_name, va_list ap);
+char *xmqLogElementVA(const char *element_name, va_list ap)
+{
+    return strdup("?");
+}
+
 #endif
 
 #ifdef ALWAYS_MODULE
+
+char *xmqLogElementVA(const char *element_name, va_list ap);
 
 void check_malloc(void *a)
 {
@@ -37,11 +45,28 @@ bool xmq_debug_enabled_ = false;
 
 void debug__(const char* fmt, ...)
 {
-    if (xmq_debug_enabled_) {
-        va_list args;
-        va_start(args, fmt);
-        vfprintf(stderr, fmt, args);
-        va_end(args);
+    assert(fmt);
+
+    if (xmq_debug_enabled_)
+    {
+        char c = fmt[strlen(fmt)-1];
+
+        if (xmq_log_xmq_enabled_ || c == '{' || c == '=')
+        {
+            va_list args;
+            va_start(args, fmt);
+            char *line = xmqLogElementVA(fmt, args);
+            fprintf(stderr, "%s\n", line);
+            free(line);
+            va_end(args);
+        }
+        else
+        {
+            va_list args;
+            va_start(args, fmt);
+            vfprintf(stderr, fmt, args);
+            va_end(args);
+        }
     }
 }
 
@@ -56,6 +81,8 @@ void trace__(const char* fmt, ...)
         va_end(args);
     }
 }
+
+bool xmq_log_xmq_enabled_ = false;
 
 #ifdef PLATFORM_WINAPI
 char *strndup(const char *s, size_t l)

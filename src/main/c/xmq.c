@@ -1214,6 +1214,15 @@ bool xmqVerbose() {
     return xmq_verbose_enabled_;
 }
 
+void xmqSetLogXMQ(bool e)
+{
+    xmq_log_xmq_enabled_ = e;
+}
+
+bool xmqLoggingXMQ() {
+    return xmq_log_xmq_enabled_;
+}
+
 const char *build_error_message(const char* fmt, ...)
 {
     char *buf = (char*)malloc(4096);
@@ -1751,6 +1760,8 @@ void xmqFreeDoc(XMQDoc *doq)
     }
 
     debug("[XMQ] freeing xmq doc\n");
+//    debug("xmq.free{", "source-name=", "%s", doq->source_name_, "}");
+//    debug("xmq.info=", "reading %d lines", 5);
     free(doq);
 }
 
@@ -4163,8 +4174,8 @@ bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
     ixml_grammar->yaep_grammar_ = grammar;
     ixml_grammar->yaep_parse_run_ = run;
     if (xmqVerbose()) run->verbose = true;
-    if (xmqDebugging()) run->debug = true;
-    if (xmqTracing()) run->trace = true;
+    if (xmqDebugging()) run->debug = run->verbose = true;
+    if (xmqTracing()) run->trace = run->debug = run->verbose = true;
 
     // Lets parse the ixml source to construct a yaep grammar.
     // This yaep grammar is cached in ixml_grammar->yaep_grammar_.
@@ -4458,11 +4469,8 @@ char *xmqLogDoc(XMQDoc *doc)
     return strdup("{howdy}");
 }
 
-char *xmqLogElement(const char *element_name, ...)
+char *xmqLogElementVA(const char *element_name, va_list ap)
 {
-    va_list ap;
-    va_start(ap, element_name);
-
     MemBuffer *mb = new_membuffer();
     membuffer_append(mb, element_name);
 
@@ -4520,12 +4528,22 @@ char *xmqLogElement(const char *element_name, ...)
     }
     free(buf);
 
-    va_end(ap);
-
     membuffer_append(mb, "}");
     membuffer_append_null(mb);
 
     return free_membuffer_but_return_trimmed_content(mb);
+}
+
+char *xmqLogElement(const char *element_name, ...)
+{
+    va_list ap;
+    va_start(ap, element_name);
+
+    char *v = xmqLogElement(element_name, ap);
+
+    va_end(ap);
+
+    return v;
 }
 
 #include"parts/always.c"

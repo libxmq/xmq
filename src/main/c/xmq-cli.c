@@ -173,6 +173,7 @@ struct XMQCliCommand
     // xmq --ixml=grammar.ixml --xml-of-ixml # This will print the grammar as xmq.
     // xmq --ixml=ixml.ixml grammar.ixml # This will print the same grammar as xmq,
     // but uses the ixml early parser instead of the hand coded parser.
+    bool log_xmq; // Output verbose,debug,trace as xmq lines.
     xmlDocPtr   node_doc;
     xmlNodePtr  node_content; // Tree content to replace something.
     XMQContentType in_format;
@@ -318,6 +319,7 @@ void find_next_page(const char **line_offset, const char **in_line_offset, const
 void find_prev_page(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width, int height);
 void find_next_line(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width);
 void find_prev_line(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width);
+bool has_trace(int argc, const char **argv);
 bool has_debug(int argc, const char **argv);
 bool has_verbose(int argc, const char **argv);
 bool handle_global_option(const char *arg, XMQCliCommand *command);
@@ -394,6 +396,8 @@ void trace_(const char* fmt, ...)
         va_end(args);
     }
 }
+
+bool logxmq_enabled__ = false;
 
 XMQCliCmd cmd_from(const char *s)
 {
@@ -1469,6 +1473,12 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     if (!strcmp(arg, "--ixml-try-to-recover"))
     {
         command->ixml_try_to_recover=true;
+        return true;
+    }
+    if (!strcmp(arg, "--log-xmq"))
+    {
+        command->log_xmq = true;
+        logxmq_enabled__ = true;
         return true;
     }
     if (!strcmp(arg, "--html"))
@@ -3242,13 +3252,13 @@ void invoke_shell(xmlNode *n, const char *shell_command)
         if (pid == -1) {
             perror("(shell) could not fork!\n");
         }
-        debug_("(shell) waiting for child %d to complete.\n", pid);
+        debug_("[shell] waiting for child %d to complete.\n", pid);
         // Wait for the child to finish!
         waitpid(pid, &status, 0);
         if (WIFEXITED(status)) {
             // Child exited properly.
             int rc = WEXITSTATUS(status);
-            debug_("(shell) %s: return code %d\n", "/bin/sh", rc);
+            debug_("[shell] %s: return code %d\n", "/bin/sh", rc);
             if (rc != 0) {
                 verbose_("(shell) %s exited with non-zero return code: %d\n", "/bin/sh", rc);
             }
@@ -3726,6 +3736,15 @@ bool has_debug(int argc, const char **argv)
     return false;
 }
 
+bool has_trace(int argc, const char **argv)
+{
+    for (const char **i = argv; *i; ++i)
+    {
+        if (!strcmp(*i, "--trace")) return true;
+    }
+    return false;
+}
+
 xmlDocPtr
 xmqDocDefaultLoaderFunc(const xmlChar * URI,
                         xmlDictPtr dict,
@@ -3807,6 +3826,7 @@ int main(int argc, const char **argv)
 
     verbose_enabled__ = has_verbose(argc, argv);
     debug_enabled__ = has_debug(argc, argv);
+    trace_enabled__ = has_trace(argc, argv);
 
     XMQCliEnvironment env;
     memset(&env, 0, sizeof(env));
@@ -3841,6 +3861,7 @@ int main(int argc, const char **argv)
     xmqSetTrace(trace_enabled__);
     xmqSetDebug(debug_enabled__);
     xmqSetVerbose(verbose_enabled__);
+    xmqSetLogXMQ(logxmq_enabled__);
 
     if (load_command->print_version) print_version_and_exit();
     if (load_command->print_help) cmd_help(NULL);

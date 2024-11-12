@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 extern bool xmq_trace_enabled_;
 extern bool xmq_debug_enabled_;
 extern bool xmq_verbose_enabled_;
+extern bool xmq_log_xmq_enabled_;
 
 void verbose__(const char* fmt, ...);
 void debug__(const char* fmt, ...);

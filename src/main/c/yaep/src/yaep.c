@@ -94,7 +94,7 @@ typedef long int term_set_el_t;
 
 /* Define this if you want to reuse already calculated state sets.
    It considerably speed up the parser. */
-//define USE_SET_HASH_TABLE
+#define USE_SET_HASH_TABLE
 
 /* Maximal goto sets saved for triple(set, terminal, lookahead). */
 #define MAX_CACHED_GOTO_RESULTS 3
@@ -3236,7 +3236,7 @@ static void build_start_set(YaepParseState *ps)
 static void complete_and_predict_new_state_set(YaepParseState *ps,
                                                YaepStateSet *set,
                                                YaepCoreSymbVect *core_symb_vect,
-                                               int lookahead_term_id)
+                                               YaepSymb *NEXT_TERM)
 {
     YaepStateSet *prev_set;
     YaepStateSetCore *set_core, *prev_set_core;
@@ -3246,6 +3246,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
     int i, place;
     YaepVect *transitions;
 
+    int lookahead_term_id = NEXT_TERM?NEXT_TERM->u.term.term_id:-1;
     local_lookahead_level = (lookahead_term_id < 0 ? 0 : ps->run.grammar->lookahead_level);
     set_core = set->core;
     set_new_start(ps);
@@ -3256,7 +3257,9 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
     {
         prod_ind = transitions->els[i];
         prod = set_core->prods[prod_ind];
+
         new_prod = prod_create(ps, prod->rule, prod->dot_pos + 1, prod->context);
+
         if (local_lookahead_level != 0
             && !term_set_test(new_prod->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
             && !term_set_test(new_prod->lookahead, ps->run.grammar->term_error_id, ps->run.grammar->symbs_ptr->num_terms))
@@ -3907,7 +3910,7 @@ static int try_to_recover(YaepParseState *ps)
 
 static YaepStateSetTermLookAhead *lookup_cached_set(YaepParseState *ps,
                                                     YaepSymb *THE_TERM,
-                                                    int lookahead_term_id,
+                                                    YaepSymb *NEXT_TERM,
                                                     YaepStateSet *set)
 {
     int i;
@@ -3919,7 +3922,8 @@ static YaepStateSetTermLookAhead *lookup_cached_set(YaepParseState *ps,
     new_core_term_lookahead = (YaepStateSetTermLookAhead*) OS_TOP_BEGIN(ps->triplet_core_term_lookahead_os);
     new_core_term_lookahead->set = set;
     new_core_term_lookahead->term = THE_TERM;
-    new_core_term_lookahead->lookahead = lookahead_term_id;
+    new_core_term_lookahead->lookahead = NEXT_TERM?NEXT_TERM->u.term.term_id:-1;
+
     for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
     {
         new_core_term_lookahead->result[i] = NULL;
@@ -3987,11 +3991,13 @@ static void perform_parse(YaepParseState *ps)
     for(; ps->tok_curr < ps->toks_len; ps->tok_curr++)
     {
         YaepSymb *THE_TERM = ps->toks[ps->tok_curr].symb;
+        YaepSymb *NEXT_TERM = NULL;
         int lookahead_term_id = -1;
 
         if (ps->run.grammar->lookahead_level != 0 && ps->tok_curr < ps->toks_len-1)
         {
-            lookahead_term_id = ps->toks[ps->tok_curr+1].symb->u.term.term_id;
+            NEXT_TERM = ps->toks[ps->tok_curr+1].symb;
+            lookahead_term_id = NEXT_TERM->u.term.term_id;
         }
 
         if (ps->run.debug)
@@ -4005,7 +4011,7 @@ static void perform_parse(YaepParseState *ps)
         ps->new_set = NULL;
 
 #ifdef USE_SET_HASH_TABLE
-        YaepStateSetTermLookAhead *entry = lookup_cached_set(ps, THE_TERM, lookahead_term_id, set);
+        YaepStateSetTermLookAhead *entry = lookup_cached_set(ps, THE_TERM, NEXT_TERM, set);
 #endif
         if (ps->new_set == NULL)
 	{
@@ -4018,7 +4024,7 @@ static void perform_parse(YaepParseState *ps)
                 else if (c == 2) break;
 	    }
 
-            complete_and_predict_new_state_set(ps, set, core_symb_vect, lookahead_term_id);
+            complete_and_predict_new_state_set(ps, set, core_symb_vect, NEXT_TERM);
 
 #ifdef USE_SET_HASH_TABLE
             save_cached_set(ps, entry, lookahead_term_id);

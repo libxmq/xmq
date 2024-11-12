@@ -35,6 +35,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 extern "C" _hideLBfromEditor
 #endif
 
+#include<stdarg.h>
 #include<stdbool.h>
 #include<stdlib.h>
 #include<stdint.h>
@@ -804,6 +805,20 @@ bool xmqDebugging();
 bool xmqTracing();
 
 /**
+    xmqSetLogXMQ
+
+    Enable/Disable verbose/debug/tracing output in pure xmq format.
+*/
+void xmqSetLogXMQ(bool e);
+
+/**
+   xmqLogXMQ:
+
+   Return whether logging in pure xmq is enabled or not.
+*/
+bool xmqLoggingXMQ();
+
+/**
     xmqParseBufferWithType:
 
     Parse buffer.
@@ -918,6 +933,8 @@ char *xmqLogDoc(XMQDoc *doc);
    car{model=Volvo id=123 description=('desc: lines of'&#10;'next line')}
 */
 char *xmqLogElement(const char *element_name, ...);
+
+char *xmqLogElementVA(const char *element_name, va_list ap);
 
 #ifdef __cplusplus
 _hideRBfromEditor
