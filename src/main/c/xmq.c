@@ -4539,7 +4539,7 @@ char *xmqLogElement(const char *element_name, ...)
     va_list ap;
     va_start(ap, element_name);
 
-    char *v = xmqLogElement(element_name, ap);
+    char *v = xmqLogElementVA(element_name, ap);
 
     va_end(ap);
 

@@ -2366,6 +2366,7 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
    StateSetCore: part of a state set that can be shared.
 */
 
+
 #include <assert.h>
 
 #define TRACE_F(ps) { \
@@ -6067,9 +6068,9 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         YaepSymb *NEXT_TERM = NULL;
         if (ps->tok_curr + 1 < ps->toks_len)
         {
-            NEXT_TERM =  ps->toks[ps->tok_curr + 1].symb;
+            NEXT_TERM = ps->toks[ps->tok_curr + 1].symb;
         }
-        complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERM),
+        complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERM);
         ps->state_sets[++ps->state_set_curr] = ps->new_set;
 
         if (ps->run.debug)
@@ -6123,7 +6124,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             YaepSymb *NEXT_TERM = NULL;
             if (ps->tok_curr + 1 < ps->toks_len)
             {
-                NEXT_TERM =  ps->toks[ps->tok_curr + 1].symb;
+                NEXT_TERM = ps->toks[ps->tok_curr + 1].symb;
             }
             complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERM);
             ps->state_sets[++ps->state_set_curr] = ps->new_set;

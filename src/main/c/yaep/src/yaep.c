@@ -36,6 +36,7 @@
    StateSetCore: part of a state set that can be shared.
 */
 
+
 #include <assert.h>
 
 #define TRACE_F(ps) { \
@@ -3587,7 +3588,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
     YaepStateSet*set;
     YaepCoreSymbVect*core_symb_vect;
     struct recovery_state best_state, state;
-    int best_cost, cost, lookahead_term_id, n_matched_toks;
+    int best_cost, cost, n_matched_toks;
     int back_to_frontier_move_cost, backward_move_cost;
 
 
@@ -3674,7 +3675,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         if (ps->run.debug)
             fprintf(stderr, "++++Making error shift in set=%d\n", ps->state_set_curr);
 
-        complete_and_predict_new_state_set(ps, set, core_symb_vect, -1);
+        complete_and_predict_new_state_set(ps, set, core_symb_vect, NULL);
         ps->state_sets[++ps->state_set_curr] = ps->new_set;
 
         if (ps->run.debug)
@@ -3734,9 +3735,12 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 	}
 
         /* Shift the found token.*/
-        lookahead_term_id =(ps->tok_curr + 1 < ps->toks_len
-                              ? ps->toks[ps->tok_curr + 1].symb->u.term.term_id : -1);
-        complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, lookahead_term_id);
+        YaepSymb *NEXT_TERM = NULL;
+        if (ps->tok_curr + 1 < ps->toks_len)
+        {
+            NEXT_TERM = ps->toks[ps->tok_curr + 1].symb;
+        }
+        complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERM);
         ps->state_sets[++ps->state_set_curr] = ps->new_set;
 
         if (ps->run.debug)
@@ -3787,10 +3791,12 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             {
                 break;
             }
-            lookahead_term_id =(ps->tok_curr + 1 < ps->toks_len
-                                  ? ps->toks[ps->tok_curr + 1].symb->u.term.term_id
-                                  : -1);
-            complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, lookahead_term_id);
+            YaepSymb *NEXT_TERM = NULL;
+            if (ps->tok_curr + 1 < ps->toks_len)
+            {
+                NEXT_TERM = ps->toks[ps->tok_curr + 1].symb;
+            }
+            complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERM);
             ps->state_sets[++ps->state_set_curr] = ps->new_set;
 	}
         if (n_matched_toks >= ps->run.grammar->recovery_token_matches || ps->tok_curr >= ps->toks_len)
