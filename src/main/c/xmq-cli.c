@@ -372,12 +372,12 @@ void verbose_(const char* fmt, ...)
 {
     if (verbose_enabled__)
     {
-        va_list args;
-        va_start(args, fmt);
-        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
-        fprintf(stderr, "IFFO %s\n", line);
+        va_list ap;
+        va_start(ap, fmt);
+        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, ap);
+        fprintf(stderr, "VERBOSE >%s<\n", line);
         free(line);
-        va_end(args);
+        va_end(ap);
     }
 }
 
@@ -3850,6 +3850,18 @@ int main(int argc, const char **argv)
     debug_enabled__ = has_debug(argc, argv);
     trace_enabled__ = has_trace(argc, argv);
     log_human_readable__ = has_log_human_readable(argc, argv);
+    xmqSetTrace(trace_enabled__);
+    xmqSetDebug(debug_enabled__);
+    xmqSetVerbose(verbose_enabled__);
+    xmqSetLogHumanReadable(log_human_readable__);
+
+    fprintf(stderr, "PRUTT\n");
+    verbose_("hejsan{", "a=", "%d", 42, "}");
+    verbose_("hejsan %d", 42);
+    verbose_("xmq.cli=", "hejsan");
+    //(    verbose_("xmq.cli{", "hejsan=", "%d", 42);
+
+    exit(0);
 
     XMQCliEnvironment env;
     memset(&env, 0, sizeof(env));

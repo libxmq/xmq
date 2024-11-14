@@ -4513,6 +4513,26 @@ char *xmqLineDoc(XMQLineConfig *lc, XMQDoc *doc)
     return strdup("{howdy}");
 }
 
+char *buf_vsnprintf(const char *format, va_list ap);
+char *buf_vsnprintf(const char *format, va_list ap)
+{
+    size_t buf_size = 1024;
+    char *buf = (char*)malloc(buf_size);
+
+    for (;;)
+    {
+        size_t n = vsnprintf(buf, buf_size, format, ap);
+        if (n < buf_size) break;
+        buf_size *= 2;
+        free(buf);
+        // Why not realloc? Well, we are goint to redo the printf anyway overwriting
+        // the buffer again. So why allow realloc to spend time copying the content before
+        // it is overwritten?
+        buf = (char*)malloc(buf_size);
+    }
+    return buf;
+}
+
 char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap)
 {
     // Lets check that last character. We can have:
@@ -4530,40 +4550,26 @@ char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap)
 
     if (c != '{')
     {
+        MemBuffer *mb = new_membuffer();
+        const char *format;
         if ( c != '=')
         {
             // User forgot to indicate either { or =.
-            size_t buf_size = 1024;
-            char *buf = (char*)malloc(buf_size);
-
-            for (;;)
-            {
-                size_t n = vsnprintf(buf, buf_size, element_name, ap);
-                if (n < buf_size) break;
-
-                buf_size *= 2;
-                free(buf);
-                buf = (char*)malloc(buf_size);
-            }
-            return buf;
+            format = element_name;
+            membuffer_append(mb, "log=");
         }
-
-        const char *format = va_arg(ap, const char *);
-        size_t buf_size = 1024;
-        char *buf = (char*)malloc(buf_size);
-
-        for (;;)
+        else
         {
-            size_t n = vsnprintf(buf, buf_size, format, ap);
-            if (n < buf_size) break;
-
-            buf_size *= 2;
-            free(buf);
-            buf = (char*)malloc(buf_size);
+            format = va_arg(ap, const char *);
+            membuffer_append(mb, element_name);
         }
-        return buf;
+        char *buf = buf_vsnprintf(format, ap);
+        char *q = xmqCompactQuote(buf);
+        free(buf);
+        membuffer_append(mb, q);
+        membuffer_append_null(mb);
+        return free_membuffer_but_return_trimmed_content(mb);
     }
-
 
     MemBuffer *mb = new_membuffer();
     membuffer_append(mb, element_name);
