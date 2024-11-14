@@ -1757,8 +1757,6 @@ void xmqFreeDoc(XMQDoc *doq)
     }
 
     debug("xmq=", "freeing xmq doc");
-    debug("xmq.free{", "source-name=", "%s", doq->source_name_, "}");
-    debug("xmq.info=", "reading %d lines", 5);
     free(doq);
 }
 
@@ -2267,7 +2265,7 @@ void do_ns_declaration(XMQParseState *state,
         }
         if (element->ns == NULL)
         {
-            debug("[XMQ] set default namespace in element %s prefix=%s href=%s\n", element->name, ns->prefix, ns->href);
+            debug("xmq=", "set default namespace in element %s prefix=%s href=%s", element->name, ns->prefix, ns->href);
             xmlSetNs(element, ns);
         }
         state->default_namespace = ns;
@@ -2366,12 +2364,12 @@ void update_namespace_href(XMQParseState *state,
 
     char *href = strndup(start, stop-start);
     ns->href = (const xmlChar*)href;
-    debug("[XMQ] update namespace prefix=%s with href=%s\n", ns->prefix, href);
+    debug("xmq=", "update namespace prefix=%s with href=%s", ns->prefix, href);
 
     if (start[0] == 0 && ns == state->default_namespace)
     {
         xmlNodePtr element = (xmlNode*)state->element_stack->top->data;
-        debug("[XMQ] remove default namespace in element %s\n", element->name);
+        debug("xmq=", "remove default namespace in element %s", element->name);
         xmlSetNs(element, NULL);
         state->default_namespace = NULL;
         return;
@@ -2500,9 +2498,9 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
                 ns = xmlNewNs(new_node,
                               NULL,
                               (const xmlChar *)state->element_namespace);
-                debug("[XMQ] created namespace prefix=%s in element %s\n", state->element_namespace, name);
+                debug("xmq=", "created namespace prefix=%s in element %s", state->element_namespace, name);
             }
-            debug("[XMQ] setting namespace prefix=%s for element %s\n", state->element_namespace, name);
+            debug("xmq=", "setting namespace prefix=%s for element %s", state->element_namespace, name);
             xmlSetNs(new_node, ns);
             free(state->element_namespace);
             state->element_namespace = NULL;
@@ -2512,7 +2510,7 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
             // We have a default namespace.
             xmlNsPtr ns = (xmlNsPtr)state->default_namespace;
             assert(ns->prefix == NULL);
-            debug("[XMQ] set default namespace with href=%s for element %s\n", ns->href, name);
+            debug("xmq=", "set default namespace with href=%s for element %s", ns->href, name);
             xmlSetNs(new_node, ns);
         }
 
@@ -2667,7 +2665,7 @@ void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings)
                     (char*)buffer,
                     size);
 
-    debug("[XMQ] xmq_print_xml wrote %zu bytes\n", size);
+    debug("xmq=", "xmq_print_xml wrote %zu bytes", size);
 }
 
 void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
@@ -2680,7 +2678,7 @@ void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
         const xmlChar *buffer = xmlBufferContent((xmlBuffer *)out->buffer);
         MemBuffer *membuf = output_settings->output_buffer;
         membuffer_append(membuf, (char*)buffer);
-        debug("[XMQ] xmq_print_html wrote %zu bytes\n", membuf->used_);
+        debug("xmq=", "xmq_print_html wrote %zu bytes", membuf->used_);
         xmlOutputBufferClose(out);
     }
     /*
@@ -2890,7 +2888,7 @@ void trim_text_node(xmlNode *node, int flags)
 
 void trim_node(xmlNode *node, int flags)
 {
-    debug("[XMQ] trim %s\n", xml_element_type_to_string(node->type));
+    debug("xmq=", "trim %s", xml_element_type_to_string(node->type));
 
     if (is_content_node(node))
     {
@@ -2936,7 +2934,7 @@ xmlNode *merge_surrounding_text_nodes(xmlNode *node)
     // Not a hex entity.
     if (val[0] != '#' || val[1] != 'x') return node->next;
 
-    debug("[XMQ] merge hex %s chars %s\n", val, xml_element_type_to_string(node->type));
+    debug("xmq=", "merge hex %s chars %s", val, xml_element_type_to_string(node->type));
 
     UTF8Char uni;
     int uc = strtol(val+2, NULL, 16);
@@ -2952,7 +2950,7 @@ xmlNode *merge_surrounding_text_nodes(xmlNode *node)
         xmlNodeAddContentLen(prev, (xmlChar*)buf, len);
         xmlUnlinkNode(node);
         xmlFreeNode(node);
-        debug("[XMQ] merge left\n");
+        debug("xmq=", "merge left");
     }
     if (next && next->type == XML_TEXT_NODE)
     {
@@ -2961,7 +2959,7 @@ xmlNode *merge_surrounding_text_nodes(xmlNode *node)
         xmlUnlinkNode(next);
         xmlFreeNode(next);
         next = n;
-        debug("[XMQ] merge right\n");
+        debug("xmq=", "merge right");
     }
 
     return next;
@@ -3227,7 +3225,7 @@ const char *xml_element_type_to_string(xmlElementType type)
 
 void fixup_comments(XMQDoc *doq, xmlNode *node, int depth)
 {
-    debug("[XMQ] fixup comments %s|%s %s\n", indent_depth(depth), node->name, xml_element_type_to_string(node->type));
+    debug("xmq=", "fixup comments %s|%s %s", indent_depth(depth), node->name, xml_element_type_to_string(node->type));
     if (node->type == XML_COMMENT_NODE)
     {
         // An xml comment containing dle escapes for example: -␐-␐- is replaceed with ---.
@@ -3239,7 +3237,7 @@ void fixup_comments(XMQDoc *doq, xmlNode *node, int depth)
             {
                 char *from = xmq_quote_as_c((const char*)node->content, NULL);
                 char *to = xmq_quote_as_c(content_needed_escaping, NULL);
-                debug("[XMQ] fix comment \"%s\" to \"%s\"\n", from, to);
+                debug("xmq=", "fix comment \"%s\" to \"%s\"", from, to);
             }
 
             xmlNodePtr new_node = xmlNewComment((const xmlChar*)content_needed_escaping);
@@ -3267,7 +3265,7 @@ void xmq_fixup_comments_after_readin(XMQDoc *doq)
     xmlNodePtr i = doq->docptr_.xml->children;
     if (!doq || !i) return;
 
-    debug("[XMQ] fixup comments after readin\n");
+    debug("xmq=", "fixup comments after readin");
 
     while (i)
     {
@@ -4007,7 +4005,7 @@ bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **ou
     size_t fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    debug("[XMQ] file size %zu\n", fsize);
+    debug("xmq=", "file size %zu", fsize);
 
     buffer = (char*)malloc(fsize + 1);
     if (!buffer)
@@ -4023,12 +4021,12 @@ bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **ou
     do {
         if (n + block_size > fsize) block_size = fsize - n;
         size_t r = fread(buffer+n, 1, block_size, f);
-        debug("[XMQ] read %zu bytes total %zu\n", r, n);
+        debug("xmq=", "read %zu bytes total %zu", r, n);
         if (!r) break;
         n += r;
     } while (n < fsize);
 
-    debug("[XMQ] read total %zu bytes fsize %zu bytes\n", n, fsize);
+    debug("xmq=", "read total %zu bytes fsize %zu bytes", n, fsize);
 
     if (n != fsize) {
         rc = false;
@@ -4534,7 +4532,107 @@ char *buf_vsnprintf(const char *format, va_list ap)
     return buf;
 }
 
-char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap)
+char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list ap);
+char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list ap)
+{
+    // Lets check that last character. We can have:
+    // 1) A complete xmq object.
+    //    debug("xmq{", "alfa=", "%d", 42, "}");
+    //    logs as: (xmq) alfa=42
+    // 2) A single string.
+    //    debug("xmq=", "size=%zu name=%s", the_size, the_name);
+    //    logs as: (xmq) size=42 name=info
+    // 3) Forgot to indicate { or =.
+    //    debug("Fix me!");
+    //    logs as: (log) Fix me!
+
+    char c = element_name[strlen(element_name)-1];
+
+    if (c != '{')
+    {
+        MemBuffer *mb = new_membuffer();
+        const char *format;
+        if ( c != '=')
+        {
+            // User forgot to indicate either { or =.
+            format = element_name;
+            membuffer_append(mb, "(log) ");
+        }
+        else
+        {
+            format = va_arg(ap, const char *);
+            membuffer_append(mb, "(");
+            membuffer_append_region(mb, element_name, element_name+strlen(element_name)-1);
+            membuffer_append(mb, ") ");
+        }
+        char *buf = buf_vsnprintf(format, ap);
+        membuffer_append(mb, buf);
+        free(buf);
+        membuffer_append_null(mb);
+        return free_membuffer_but_return_trimmed_content(mb);
+    }
+
+    MemBuffer *mb = new_membuffer();
+    membuffer_append(mb, "(");
+    membuffer_append(mb, element_name);
+    membuffer_append(mb, ") ");
+
+    char *buf = (char*)malloc(1024);
+    size_t buf_size = 1024;
+    memset(buf, 0, buf_size);
+
+    bool first = true;
+
+    for (;;)
+    {
+        const char *key = va_arg(ap, const char*);
+        if (!key) break;
+        if (*key == '}') break;
+
+        size_t kl = strlen(key);
+
+        if (!first)
+        {
+            membuffer_append(mb, " ");
+            first = false;
+        }
+
+        if (key[kl-1] != '=')
+        {
+            warning("xmq.warn=", "Warning erroneous api usage! Line printf key \"%s\" does not end with = sign!", key);
+            break;
+        }
+
+        membuffer_append_region(mb, key, key+kl-1);
+        membuffer_append(mb, ":");
+
+        const char *format = va_arg(ap, const char *);
+        for (;;)
+        {
+            size_t n = vsnprintf(buf, buf_size, format, ap);
+
+            if (n < buf_size)
+            {
+                // The generated output fitted in the allocated buffer.
+                break;
+            }
+
+            buf_size *= 2;
+            free(buf);
+            buf = (char*)malloc(buf_size);
+            memset(buf, 0, buf_size);
+        }
+        membuffer_append(mb, buf);
+    }
+
+    free(buf);
+    membuffer_append_null(mb);
+
+    return free_membuffer_but_return_trimmed_content(mb);
+}
+
+char *xmq_line_vprintf_xmq(XMQLineConfig *lc, const char *element_name, va_list ap);
+char *xmq_line_vprintf_xmq(XMQLineConfig *lc, const char *element_name, va_list ap)
 {
     // Lets check that last character. We can have:
     // 1) A complete xmq object.
@@ -4627,6 +4725,15 @@ char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap)
     membuffer_append_null(mb);
 
     return free_membuffer_but_return_trimmed_content(mb);
+}
+
+char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap)
+{
+    if (lc->human_readable_)
+    {
+        return xmq_line_vprintf_hr(lc, element_name, ap);
+    }
+    return xmq_line_vprintf_xmq(lc, element_name, ap);
 }
 
 char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)

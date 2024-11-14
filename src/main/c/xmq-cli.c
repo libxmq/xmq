@@ -173,7 +173,7 @@ struct XMQCliCommand
     // xmq --ixml=grammar.ixml --xml-of-ixml # This will print the grammar as xmq.
     // xmq --ixml=ixml.ixml grammar.ixml # This will print the same grammar as xmq,
     // but uses the ixml early parser instead of the hand coded parser.
-    bool log_human_readable; // Output verbose,debug,trace as human readable lines instead of xmq.
+    bool log_xmq; // Output verbose,debug,trace as human readable lines instead of xmq.
     xmlDocPtr   node_doc;
     xmlNodePtr  node_content; // Tree content to replace something.
     XMQContentType in_format;
@@ -319,7 +319,7 @@ void find_next_page(const char **line_offset, const char **in_line_offset, const
 void find_prev_page(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width, int height);
 void find_next_line(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width);
 void find_prev_line(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width);
-bool has_log_human_readable(int argc, const char **argv);
+bool has_log_xmq(int argc, const char **argv);
 bool has_trace(int argc, const char **argv);
 bool has_debug(int argc, const char **argv);
 bool has_verbose(int argc, const char **argv);
@@ -365,7 +365,7 @@ const char *error_to_print_on_exit = NULL;
 
 XMQLineConfig xmq_log_line_config__;
 
-bool log_human_readable__ = false;
+bool log_xmq__ = false;
 
 void error_(const char* fmt, ...)
 {
@@ -1500,9 +1500,9 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->ixml_try_to_recover=true;
         return true;
     }
-    if (!strcmp(arg, "--log-hr"))
+    if (!strcmp(arg, "--log-xmq") || !strcmp(arg, "-lx"))
     {
-        log_human_readable__ = true;
+        log_xmq__ = true;
         return true;
     }
     if (!strcmp(arg, "--html"))
@@ -3657,37 +3657,37 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
 #ifdef PLATFORM_WINAPI
 void enableAnsiColorsWindowsConsole()
 {
-    debug_("xmq=", "enable ansi colors terminal\n");
+    debug_("xmq=", "enable ansi colors terminal");
     debug_("xmq=", "GetStdHandle");
 
     HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hStdOut == INVALID_HANDLE_VALUE) return; // Fail
 
-    debug_("[xmq] GetConsoleMode\n");
+    debug_("xmq=", "GetConsoleMode");
     DWORD mode;
     if (!GetConsoleMode(hStdOut, &mode)) return; // Fail
 
     DWORD enabled = (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) ? true : false;
 
-    debug_("[xmq] enabled %x\n", enabled);
+    debug_("xmq=", "enabled %x", enabled);
 
     if (enabled) return; // Already enabled colors.
 
     mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 
-    debug_("[xmq] SetConsoleMode %x\n", mode);
+    debug_("xmq=", "SetConsoleMode %x", mode);
 
     SetConsoleMode(hStdOut, mode);
 
-    debug_("[xmq] SetConsoleOutputCP\n");
+    debug_("xmq=", "SetConsoleOutputCP");
     SetConsoleOutputCP(CP_UTF8);
 
-    debug_("[xmq] Ansi done\n");
+    debug_("xmq=", "Ansi done");
 }
 
 void enableRawStdinTerminal()
 {
-    debug_("[xmq] enable raw stdin terminal\n");
+    debug_("xmq=", "enable raw stdin terminal");
 
     HANDLE handle = GetStdHandle(STD_INPUT_HANDLE);
     if (handle == INVALID_HANDLE_VALUE) return; // Fail
@@ -3698,11 +3698,11 @@ void enableRawStdinTerminal()
     mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
     mode &= ~(ENABLE_LINE_INPUT|ENABLE_ECHO_INPUT);
 
-    debug_("[xmq] SetConsoleMode %x\n", mode);
+    debug_("xmq=", "SetConsoleMode %x", mode);
 
     SetConsoleMode(handle, mode);
 
-    debug_("[xmq] raw stdin done\n");
+    debug_("xmq=", "raw stdin done");
 }
 
 void restoreStdinTerminal()
@@ -3768,11 +3768,11 @@ bool has_trace(int argc, const char **argv)
     return false;
 }
 
-bool has_log_human_readable(int argc, const char **argv)
+bool has_log_xmq(int argc, const char **argv)
 {
     for (const char **i = argv; *i; ++i)
     {
-        if (!strcmp(*i, "--log-hr")) return true;
+        if (!strcmp(*i, "--log-xmq") || !strcmp(*i, "-lx")) return true;
     }
     return false;
 }
@@ -3859,11 +3859,11 @@ int main(int argc, const char **argv)
     verbose_enabled__ = has_verbose(argc, argv);
     debug_enabled__ = has_debug(argc, argv);
     trace_enabled__ = has_trace(argc, argv);
-    log_human_readable__ = has_log_human_readable(argc, argv);
+    log_xmq__ = has_log_xmq(argc, argv);
     xmqSetTrace(trace_enabled__);
-    xmqSetDebug(debug_enabled__);
-    xmqSetVerbose(verbose_enabled__);
-    xmqSetLogHumanReadable(log_human_readable__);
+    xmqSetDebug(debug_enabled__ || trace_enabled__);
+    xmqSetVerbose(verbose_enabled__ || debug_enabled__ || trace_enabled__);
+    xmqSetLogHumanReadable(!log_xmq__);
 
     XMQCliEnvironment env;
     memset(&env, 0, sizeof(env));
@@ -3893,12 +3893,12 @@ int main(int argc, const char **argv)
     }
 
     trace_enabled__ = load_command->trace;
-    debug_enabled__ = load_command->debug;
-    verbose_enabled__ = load_command->verbose || debug_enabled__;
+    debug_enabled__ = load_command->debug || load_command->trace;
+    verbose_enabled__ = load_command->verbose || load_command->debug || load_command->trace;
     xmqSetTrace(trace_enabled__);
     xmqSetDebug(debug_enabled__);
     xmqSetVerbose(verbose_enabled__);
-    xmqSetLogHumanReadable(log_human_readable__);
+    xmqSetLogHumanReadable(!log_xmq__);
 
     if (load_command->print_version) print_version_and_exit();
     if (load_command->print_help) cmd_help(NULL);
@@ -3912,7 +3912,7 @@ int main(int argc, const char **argv)
     // Execute commands.
     while (c)
     {
-        debug_("[xmq] performing %s\n", cmd_name(c->cmd));
+        debug_("xmq=", "performing %s", cmd_name(c->cmd));
         bool ok = perform_command(c);
         if (!ok)
         {
