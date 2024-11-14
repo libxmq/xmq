@@ -4576,17 +4576,17 @@ char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap)
 
     char *buf = (char*)malloc(1024);
     size_t buf_size = 1024;
+    memset(buf, 0, buf_size);
 
     for (;;)
     {
         const char *key = va_arg(ap, const char*);
         if (!key) break;
         if (*key == '}') break;
+
         size_t kl = strlen(key);
         assert(key[kl-1] == '=');
-
         char last = membuffer_back(mb);
-
         if (last != '\'' && last != '(' && last != ')'  && last != '{' && last != '}')
         {
             membuffer_append(mb, " ");
@@ -4594,24 +4594,29 @@ char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap)
 
         // The key has an = sign at the end. E.g. size=
         membuffer_append(mb, key);
-
         const char *format = va_arg(ap, const char *);
-
         for (;;)
         {
             size_t n = vsnprintf(buf, buf_size, format, ap);
-            if (n < buf_size) break;
+
+            if (n < buf_size)
+            {
+                // The generated output fitted in the allocated buffer.
+                break;
+            }
 
             buf_size *= 2;
             free(buf);
             buf = (char*)malloc(buf_size);
+            memset(buf, 0, buf_size);
         }
 
         char *quote = xmqCompactQuote(buf);
         membuffer_append(mb, quote);
-        free(buf);
+        free(quote);
     }
 
+    free(buf);
     membuffer_append(mb, "}");
     membuffer_append_null(mb);
 

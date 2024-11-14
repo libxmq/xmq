@@ -3855,14 +3855,6 @@ int main(int argc, const char **argv)
     xmqSetVerbose(verbose_enabled__);
     xmqSetLogHumanReadable(log_human_readable__);
 
-    fprintf(stderr, "PRUTT\n");
-    verbose_("hejsan{", "a=", "%d", 42, "}");
-    verbose_("hejsan %d", 42);
-    verbose_("xmq.cli=", "hejsan");
-    //(    verbose_("xmq.cli{", "hejsan=", "%d", 42);
-
-    exit(0);
-
     XMQCliEnvironment env;
     memset(&env, 0, sizeof(env));
 
