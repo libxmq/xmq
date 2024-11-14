@@ -14,7 +14,9 @@ int main(int argc, char **argv)
     char *initials = "K.";
     char *surname = "Mantra";
 
-    char *l1 = xmqLogElement("login{",
+    XMQLineConfig *lc = xmqNewLineConfig();
+    char *l1 = xmqLinePrintf(lc,
+                             "login{",
                              "user=", "%s", user,
                              "id=", "%d", id,
                              "name=", "%s %s %s", first_name, initials, surname,
@@ -28,6 +30,7 @@ int main(int argc, char **argv)
         ok = false;
     }
     free(l1);
+    xmqFreeLineConfig(lc);
 
     return ok ? 0 : 1;
 }

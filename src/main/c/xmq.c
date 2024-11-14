@@ -1214,13 +1214,9 @@ bool xmqVerbose() {
     return xmq_verbose_enabled_;
 }
 
-void xmqSetLogXMQ(bool e)
+void xmqSetLogHumanReadable(bool e)
 {
-    xmq_log_xmq_enabled_ = e;
-}
-
-bool xmqLoggingXMQ() {
-    return xmq_log_xmq_enabled_;
+    xmq_log_line_config_.human_readable_ = e;
 }
 
 const char *build_error_message(const char* fmt, ...)
@@ -4464,13 +4460,111 @@ bool xmqParseFileWithIXML(XMQDoc *doc, const char *file_name, XMQDoc *ixml_gramm
     return ok;
 }
 
-char *xmqLogDoc(XMQDoc *doc)
+char *xmqCompactQuote(const char *content)
+{
+    MemBuffer *mb = new_membuffer();
+
+    XMQOutputSettings os;
+    memset(&os, 0, sizeof(os));
+    os.compact = true;
+    os.escape_newlines = true;
+    os.output_buffer = mb;
+    os.content.writer_state = os.output_buffer;
+    os.content.write = (XMQWrite)(void*)membuffer_append_region;
+    os.error.writer_state = os.output_buffer;
+    os.error.write = (XMQWrite)(void*)membuffer_append_region;
+    os.explicit_space = " ";
+    os.explicit_tab = "\t";
+
+    XMQPrintState ps;
+    memset(&ps, 0, sizeof(ps));
+    ps.output_settings = &os;
+
+    xmlNode node;
+    memset(&node, 0, sizeof(node));
+    node.content = (xmlChar*)content;
+    print_value(&ps , &node, LEVEL_ATTR_VALUE);
+
+    membuffer_append_null(mb);
+
+    return free_membuffer_but_return_trimmed_content(mb);
+}
+
+
+XMQLineConfig *xmqNewLineConfig()
+{
+    XMQLineConfig *lc = (XMQLineConfig*)malloc(sizeof(XMQLineConfig));
+    memset(lc, 0, sizeof(XMQLineConfig));
+    return lc;
+}
+
+void xmqFreeLineConfig(XMQLineConfig *lc)
+{
+    free(lc);
+}
+
+void xmqSetLineHumanReadable(XMQLineConfig *lc, bool enabled)
+{
+    lc->human_readable_ = enabled;
+}
+
+char *xmqLineDoc(XMQLineConfig *lc, XMQDoc *doc)
 {
     return strdup("{howdy}");
 }
 
-char *xmqLogElementVA(const char *element_name, va_list ap)
+char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap)
 {
+    // Lets check that last character. We can have:
+    // 1) A complete xmq object.
+    //    debug("xmq.cli{", "alfa=", "%d", 42, "}");
+    //    logs as: xmq.cli{alfa=42}
+    // 2) A single string.
+    //    debug("xmq.cli=", "size=%zu name=%s", the_size, the_name);
+    //    logs as: xmq.cli='size=42 name=info'
+    // 3) Forgot to indicate { or =.
+    //    debug("Fix me!");
+    //    logs as: log='Fix me!'
+
+    char c = element_name[strlen(element_name)-1];
+
+    if (c != '{')
+    {
+        if ( c != '=')
+        {
+            // User forgot to indicate either { or =.
+            size_t buf_size = 1024;
+            char *buf = (char*)malloc(buf_size);
+
+            for (;;)
+            {
+                size_t n = vsnprintf(buf, buf_size, element_name, ap);
+                if (n < buf_size) break;
+
+                buf_size *= 2;
+                free(buf);
+                buf = (char*)malloc(buf_size);
+            }
+            return buf;
+        }
+
+        const char *format = va_arg(ap, const char *);
+        size_t buf_size = 1024;
+        char *buf = (char*)malloc(buf_size);
+
+        for (;;)
+        {
+            size_t n = vsnprintf(buf, buf_size, format, ap);
+            if (n < buf_size) break;
+
+            buf_size *= 2;
+            free(buf);
+            buf = (char*)malloc(buf_size);
+        }
+        return buf;
+    }
+
+
     MemBuffer *mb = new_membuffer();
     membuffer_append(mb, element_name);
 
@@ -4483,7 +4577,7 @@ char *xmqLogElementVA(const char *element_name, va_list ap)
         if (!key) break;
         if (*key == '}') break;
         size_t kl = strlen(key);
-        if (key[kl-1] != '=') break;
+        assert(key[kl-1] == '=');
 
         char last = membuffer_back(mb);
 
@@ -4491,6 +4585,8 @@ char *xmqLogElementVA(const char *element_name, va_list ap)
         {
             membuffer_append(mb, " ");
         }
+
+        // The key has an = sign at the end. E.g. size=
         membuffer_append(mb, key);
 
         const char *format = va_arg(ap, const char *);
@@ -4505,28 +4601,10 @@ char *xmqLogElementVA(const char *element_name, va_list ap)
             buf = (char*)malloc(buf_size);
         }
 
-        XMQOutputSettings os;
-        memset(&os, 0, sizeof(os));
-        os.compact = true;
-        os.escape_newlines = true;
-        os.output_buffer = mb;
-        os.content.writer_state = os.output_buffer;
-        os.content.write = (XMQWrite)(void*)membuffer_append_region;
-        os.error.writer_state = os.output_buffer;
-        os.error.write = (XMQWrite)(void*)membuffer_append_region;
-        os.explicit_space = " ";
-        os.explicit_tab = "\t";
-
-        XMQPrintState ps;
-        memset(&ps, 0, sizeof(ps));
-        ps.output_settings = &os;
-
-        xmlNode node;
-        memset(&node, 0, sizeof(node));
-        node.content = (xmlChar*)buf;
-        print_value(&ps , &node, LEVEL_ATTR_VALUE);
+        char *quote = xmqCompactQuote(buf);
+        membuffer_append(mb, quote);
+        free(buf);
     }
-    free(buf);
 
     membuffer_append(mb, "}");
     membuffer_append_null(mb);
@@ -4534,12 +4612,12 @@ char *xmqLogElementVA(const char *element_name, va_list ap)
     return free_membuffer_but_return_trimmed_content(mb);
 }
 
-char *xmqLogElement(const char *element_name, ...)
+char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
 {
     va_list ap;
     va_start(ap, element_name);
 
-    char *v = xmqLogElementVA(element_name, ap);
+    char *v = xmqLineVPrintf(lc, element_name, ap);
 
     va_end(ap);
 

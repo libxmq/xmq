@@ -376,6 +376,8 @@ typedef enum
     XMQ_CORE_IPV6_ADDRESS
 } XMQCoreType;
 
+typedef struct XMQLineConfig XMQLineConfig;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////// FUNCTIONS  /////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -645,6 +647,10 @@ void xmqPrint(XMQDoc *doc, XMQOutputSettings *settings);
 /** Trim xml whitespace. */
 void xmqTrimWhitespace(XMQDoc *doc, int flags);
 
+/** Create a compact single line quote safely storing the content.
+    Output can for example be: 123, John, 'John Doe', '''There's a light!''', (&#10;'a line'&10;) */
+char *xmqCompactQuote(const char *content);
+
 /** A parsing error will be described here! */
 const char *xmqDocError(XMQDoc *doc);
 
@@ -805,11 +811,12 @@ bool xmqDebugging();
 bool xmqTracing();
 
 /**
-    xmqSetLogXMQ
+    xmqSetLogHumanReadable:
 
-    Enable/Disable verbose/debug/tracing output in pure xmq format.
+    Enable/Disable verbose/debug/tracing output as human readable.
+    The default is in xmq format.
 */
-void xmqSetLogXMQ(bool e);
+void xmqSetLogHumanReadable(bool e);
 
 /**
    xmqLogXMQ:
@@ -912,19 +919,42 @@ void xmqOverrideColor(XMQOutputSettings *settings,
                       const char *post,
                       const char *ns);
 
-/**
-   xmqLogLine:
 
-   Generate a compact single line xmq string containing no newlines at all, for logging.
+/**
+    xmqNewLineConfig:
+
+    Allocate a default XMQLineConfig.
 */
-char *xmqLogDoc(XMQDoc *doc);
+XMQLineConfig *xmqNewLineConfig();
 
 /**
-   xmqLogLineArgs:
+    xmqFreeLineConfig:
+
+    Free the XMQLineConfig structure.
+*/
+void xmqFreeLineConfig(XMQLineConfig *lc);
+
+/**
+    xmqSetLineHumanReadable(XMQLineConfig *lc, bool enable);
+
+    If enable is true then generate a more human readable log line.
+*/
+void xmqSetLineHumanReadable(XMQLineConfig *lc, bool enable);
+
+/**
+   xmqLineDoc:
+
+   Generate from the doc a compact single line xmq string containing no newlines at all, for logging.
+*/
+char *xmqLineDoc(XMQLineConfig *lc, XMQDoc *doc);
+
+/**
+   xmqLinePrintf:
 
    Generate a compact single line xmq string containing no newlines at all, for logging.
    The content is constructed from printf formatted strings:
-   xmqLogElement("car{",
+   xmqLogElement(&lc,
+                 "car{",
                  "model=", "%s", modelstring,
                  "id=", "%d", idnumber,
                  "description=", "desc: %s", multilinedescription,
@@ -932,9 +962,8 @@ char *xmqLogDoc(XMQDoc *doc);
    Generates:
    car{model=Volvo id=123 description=('desc: lines of'&#10;'next line')}
 */
-char *xmqLogElement(const char *element_name, ...);
-
-char *xmqLogElementVA(const char *element_name, va_list ap);
+char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...);
+char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap);
 
 #ifdef __cplusplus
 _hideRBfromEditor

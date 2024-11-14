@@ -8,8 +8,8 @@
 #include<string.h>
 #include<stdarg.h>
 
-char *xmqLogElementVA(const char *element_name, va_list ap);
-char *xmqLogElementVA(const char *element_name, va_list ap)
+char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap);
+char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap)
 {
     return strdup("?");
 }
@@ -18,7 +18,7 @@ char *xmqLogElementVA(const char *element_name, va_list ap)
 
 #ifdef ALWAYS_MODULE
 
-char *xmqLogElementVA(const char *element_name, va_list ap);
+char *xmqLogElementVA(int flags, const char *element_name, va_list ap);
 
 void check_malloc(void *a)
 {
@@ -29,14 +29,19 @@ void check_malloc(void *a)
     }
 }
 
+XMQLineConfig xmq_log_line_config_;
+
 bool xmq_verbose_enabled_ = false;
 
 void verbose__(const char* fmt, ...)
 {
-    if (xmq_verbose_enabled_) {
+    if (xmq_verbose_enabled_)
+    {
         va_list args;
         va_start(args, fmt);
-        vfprintf(stderr, fmt, args);
+        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
+        fprintf(stderr, "%s\n", line);
+        free(line);
         va_end(args);
     }
 }
@@ -49,24 +54,12 @@ void debug__(const char* fmt, ...)
 
     if (xmq_debug_enabled_)
     {
-        char c = fmt[strlen(fmt)-1];
-
-        if (xmq_log_xmq_enabled_ || c == '{' || c == '=')
-        {
-            va_list args;
-            va_start(args, fmt);
-            char *line = xmqLogElementVA(fmt, args);
-            fprintf(stderr, "%s\n", line);
-            free(line);
-            va_end(args);
-        }
-        else
-        {
-            va_list args;
-            va_start(args, fmt);
-            vfprintf(stderr, fmt, args);
-            va_end(args);
-        }
+        va_list args;
+        va_start(args, fmt);
+        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
+        fprintf(stderr, "%s\n", line);
+        free(line);
+        va_end(args);
     }
 }
 
@@ -77,12 +70,12 @@ void trace__(const char* fmt, ...)
     if (xmq_trace_enabled_) {
         va_list args;
         va_start(args, fmt);
-        vfprintf(stderr, fmt, args);
+        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
+        fprintf(stderr, "%s\n", line);
+        free(line);
         va_end(args);
     }
 }
-
-bool xmq_log_xmq_enabled_ = false;
 
 #ifdef PLATFORM_WINAPI
 char *strndup(const char *s, size_t l)

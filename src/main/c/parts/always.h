@@ -27,10 +27,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<stdbool.h>
 #include<stdlib.h>
 
+struct XMQLineConfig
+{
+    bool human_readable_;
+};
+typedef struct XMQLineConfig XMQLineConfig;
+
 extern bool xmq_trace_enabled_;
 extern bool xmq_debug_enabled_;
 extern bool xmq_verbose_enabled_;
-extern bool xmq_log_xmq_enabled_;
+extern struct XMQLineConfig xmq_log_line_config_;
 
 void verbose__(const char* fmt, ...);
 void debug__(const char* fmt, ...);

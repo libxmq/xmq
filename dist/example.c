@@ -48,6 +48,24 @@ int main(int argc, char **argv)
 
     free(line);
 
+    line = xmqLogElement(0, "work=", "pi is %f", 3.14159);
+
+    expect = "work='pi is 3.14159'";
+    if (strcmp(line, expect))
+    {
+        printf("Expected >%s<\n but got >%s<\n", expect, line);
+    }
+
+    line = xmqLogElement(XMQ_LOG_HUMAN_READABLE, "work=", "pi is %f", 3.14159);
+
+    expect = "(work) pi is 3.14159";
+    if (strcmp(line, expect))
+    {
+        printf("Expected >%s<\n but got >%s<\n", expect, line);
+    }
+
+
+
     return 0;
 }
 
