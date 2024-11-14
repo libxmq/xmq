@@ -2389,6 +2389,7 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 //include "objstack.h"
 //include "yaep.h"
 //include "xmq.h"
+//include "parts/always.h"
 
 #ifndef FALSE
 #define FALSE 0
@@ -6299,12 +6300,12 @@ static YaepStateSetTermLookAhead *lookup_cached_set(YaepParseState *ps,
 }
 
 /* Save(set, term, lookahead) -> new_set in the table. */
-static void save_cached_set(YaepParseState *ps, YaepStateSetTermLookAhead *entry, int lookahead_term_id)
+static void save_cached_set(YaepParseState *ps, YaepStateSetTermLookAhead *entry, YaepSymb *NEXT_TERM)
 {
     int i = entry->curr;
     entry->result[i] = ps->new_set;
     entry->place[i] = ps->state_set_curr;
-    entry->lookahead = lookahead_term_id;
+    entry->lookahead = NEXT_TERM ? NEXT_TERM->u.term.term_id : -1;
     entry->curr = (i + 1) % MAX_CACHED_GOTO_RESULTS;
 }
 
@@ -6328,12 +6329,10 @@ static void perform_parse(YaepParseState *ps)
     {
         YaepSymb *THE_TERM = ps->toks[ps->tok_curr].symb;
         YaepSymb *NEXT_TERM = NULL;
-        int lookahead_term_id = -1;
 
         if (ps->run.grammar->lookahead_level != 0 && ps->tok_curr < ps->toks_len-1)
         {
             NEXT_TERM = ps->toks[ps->tok_curr+1].symb;
-            lookahead_term_id = NEXT_TERM->u.term.term_id;
         }
 
         if (ps->run.debug)
@@ -6363,7 +6362,7 @@ static void perform_parse(YaepParseState *ps)
             complete_and_predict_new_state_set(ps, set, core_symb_vect, NEXT_TERM);
 
 #ifdef USE_SET_HASH_TABLE
-            save_cached_set(ps, entry, lookahead_term_id);
+            save_cached_set(ps, entry, NEXT_TERM);
 #endif
 	}
 
