@@ -178,7 +178,7 @@ void xmqSetupDefaultColors(XMQOutputSettings *os)
         }
     }
 
-    verbose("(xmq) use theme %s\n", os->render_theme);
+    verbose("xmq=", "use theme %s", os->render_theme);
     installDefaultThemeColors(theme);
 
     os->indentation_space = theme->indentation_space; // " ";
@@ -310,6 +310,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_m
     theme->apar_right.pre   = NOCOLOR;
     theme->ns_colon.pre = NOCOLOR;
 
+    theme->document.post = NOCOLOR;
 }
 
 void setup_html_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode, bool use_color, bool render_raw)
@@ -1049,7 +1050,7 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                     *(i+3) == 'm' &&
                     *(i+4) == 'l')
                 {
-                    debug("[XMQ] content detected as xml since <?xml found\n");
+                    debug("xmq=", "content detected as xml since <?xml found");
                     return XMQ_CONTENT_XML;
                 }
 
@@ -1070,7 +1071,7 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                     // No closing comment, return as xml.
                     if (i >= stop)
                     {
-                        debug("[XMQ] content detected as xml since comment start found\n");
+                        debug("xmq=", "content detected as xml since comment start found");
                         return XMQ_CONTENT_XML;
                     }
                     // Pick up after the comment.
@@ -1081,7 +1082,7 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                 const char *is_html = find_word_ignore_case(i+1, stop, "html");
                 if (is_html)
                 {
-                    debug("[XMQ] content detected as html since html found\n");
+                    debug("xmq=", "content detected as html since html found");
                     return XMQ_CONTENT_HTML;
                 }
 
@@ -1093,18 +1094,18 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                     is_html = find_word_ignore_case(is_doctype+1, stop, "html");
                     if (is_html)
                     {
-                        debug("[XMQ] content detected as html since doctype html found\n");
+                        debug("xmq=", "content detected as html since doctype html found");
                         return XMQ_CONTENT_HTML;
                     }
                 }
                 // Otherwise we assume it is xml. If you are working with html content inside
                 // the html, then use --html
-                debug("[XMQ] content assumed to be xml\n");
+                debug("xmq=", "content assumed to be xml");
                 return XMQ_CONTENT_XML; // Or HTML...
             }
             if (c == '{' || c == '"' || c == '[' || (c >= '0' && c <= '9')) // "
             {
-                debug("[XMQ] content detected as json\n");
+                debug("xmq=", "content detected as json");
                 return XMQ_CONTENT_JSON;
             }
             // Strictly speaking true,false and null are valid xmq files. But we assume
@@ -1124,19 +1125,19 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                             !strncmp(i, "false", 5) ||
                             !strncmp(i, "null", 4))
                         {
-                            debug("[XMQ] content detected as json since true/false/null found\n");
+                            debug("xmq=", "content detected as json since true/false/null found");
                             return XMQ_CONTENT_JSON;
                         }
                     }
                 }
             }
-            debug("[XMQ] content assumed to be xmq\n");
+            debug("xmq=", "content assumed to be xmq");
             return XMQ_CONTENT_XMQ;
         }
         i++;
     }
 
-    debug("[XMQ] empty content assumed to be xmq\n");
+    debug("xmq=", "empty content assumed to be xmq");
     return XMQ_CONTENT_XMQ;
 }
 
@@ -1731,19 +1732,19 @@ void xmqFreeDoc(XMQDoc *doq)
     if (!doq) return;
     if (doq->source_name_)
     {
-        debug("[XMQ] freeing source name\n");
+        debug("xmq=", "freeing source name");
         free((void*)doq->source_name_);
         doq->source_name_ = NULL;
     }
     if (doq->error_)
     {
-        debug("[XMQ] freeing error message\n");
+        debug("xmq=", "freeing error message");
         free((void*)doq->error_);
         doq->error_ = NULL;
     }
     if (doq->docptr_.xml)
     {
-        debug("[XMQ] freeing xml doc\n");
+        debug("xmq=", "freeing xml doc");
         xmlFreeDoc(doq->docptr_.xml);
         doq->docptr_.xml = NULL;
     }
@@ -1755,9 +1756,9 @@ void xmqFreeDoc(XMQDoc *doq)
         doq->yaep_parse_run_ = NULL;
     }
 
-    debug("[XMQ] freeing xmq doc\n");
-//    debug("xmq.free{", "source-name=", "%s", doq->source_name_, "}");
-//    debug("xmq.info=", "reading %d lines", 5);
+    debug("xmq=", "freeing xmq doc");
+    debug("xmq.free{", "source-name=", "%s", doq->source_name_, "}");
+    debug("xmq.info=", "reading %d lines", 5);
     free(doq);
 }
 
@@ -1869,12 +1870,12 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root, int 
         // We need to read smaller blocks because of a bug in Windows C-library..... blech.
         if (n + block_size > fsize) block_size = fsize - n;
         size_t r = fread(buffer+n, 1, block_size, f);
-        debug("[XMQ] read %zu bytes total %zu\n", r, n);
+        debug("xmq=", "read %zu bytes total %zu", r, n);
         if (!r) break;
         n += r;
     } while (n < fsize);
 
-    debug("[XMQ] read total %zu bytes\n", n);
+    debug("xmq=", "read total %zu bytes", n);
 
     if (n != fsize)
     {
@@ -2247,7 +2248,7 @@ void do_ns_declaration(XMQParseState *state,
         ns = xmlNewNs(element,
                       NULL,
                       NULL);
-        debug("[XMQ] create default namespace in element %s\n", element->name);
+        debug("xmq=", "create default namespace in element %s", element->name);
         if (!ns)
         {
             // Oups, this element already has a default namespace.
@@ -4585,11 +4586,16 @@ char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap)
         if (*key == '}') break;
 
         size_t kl = strlen(key);
-        assert(key[kl-1] == '=');
         char last = membuffer_back(mb);
         if (last != '\'' && last != '(' && last != ')'  && last != '{' && last != '}')
         {
             membuffer_append(mb, " ");
+        }
+
+        if (key[kl-1] != '=')
+        {
+            warning("xmq.warn=", "Warning erroneous api usage! Line printf key \"%s\" does not end with = sign!", key);
+            break;
         }
 
         // The key has an = sign at the end. E.g. size=

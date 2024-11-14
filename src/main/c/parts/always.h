@@ -38,11 +38,15 @@ extern bool xmq_debug_enabled_;
 extern bool xmq_verbose_enabled_;
 extern struct XMQLineConfig xmq_log_line_config_;
 
+void error__(const char* fmt, ...);
+void warning__(const char* fmt, ...);
 void verbose__(const char* fmt, ...);
 void debug__(const char* fmt, ...);
 void trace__(const char* fmt, ...);
 void check_malloc(void *a);
 
+#define error(...) error__(__VA_ARGS__)
+#define warning(...) warning__(__VA_ARGS__)
 #define verbose(...) if (xmq_verbose_enabled_) { verbose__(__VA_ARGS__); }
 #define debug(...) if (xmq_debug_enabled_) {debug__(__VA_ARGS__); }
 #define trace(...) if (xmq_trace_enabled_) {trace__(__VA_ARGS__); }

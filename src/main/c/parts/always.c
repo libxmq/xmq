@@ -31,6 +31,26 @@ void check_malloc(void *a)
 
 XMQLineConfig xmq_log_line_config_;
 
+void error__(const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
+    fprintf(stderr, "%s\n", line);
+    free(line);
+    va_end(args);
+}
+
+void warning__(const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
+    fprintf(stderr, "%s\n", line);
+    free(line);
+    va_end(args);
+}
+
 bool xmq_verbose_enabled_ = false;
 
 void verbose__(const char* fmt, ...)

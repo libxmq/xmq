@@ -345,6 +345,7 @@ bool query_xterm_bgcolor();
 XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode);
 void restoreStdinTerminal();
 bool cmd_tokenize(XMQCliCommand *command);
+void error_(const char* fmt, ...);
 void verbose_(const char* fmt, ...);
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command);
 xmlDocPtr xmqDocDefaultLoaderFunc(const xmlChar * URI, xmlDictPtr dict, int options,
@@ -366,6 +367,16 @@ XMQLineConfig xmq_log_line_config__;
 
 bool log_human_readable__ = false;
 
+void error_(const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, ap);
+    fprintf(stderr, "%s\n", line);
+    free(line);
+    va_end(ap);
+}
+
 bool verbose_enabled__ = false;
 
 void verbose_(const char* fmt, ...)
@@ -375,7 +386,7 @@ void verbose_(const char* fmt, ...)
         va_list ap;
         va_start(ap, fmt);
         char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, ap);
-        fprintf(stderr, "VERBOSE >%s<\n", line);
+        fprintf(stderr, "%s\n", line);
         free(line);
         va_end(ap);
     }
@@ -977,11 +988,11 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         if (!strncmp(arg, "--with-text-file=", 17))
         {
             const char *file = arg+17;
-            verbose_("(xmq) reading text file %s\n", file);
+            verbose_("xmq=", "reading text file %s", file);
             FILE *f = fopen(file, "rb");
             if (!f)
             {
-                fprintf(stderr, "xmq: %s: No such file or directory\n", file);
+                error_("xmq.err=", "%s: No such file or directory", file);
                 return false;
             }
             fseek(f, 0L, SEEK_END);
@@ -1078,7 +1089,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
                 return false;
             }
 
-            verbose_("(xmq) loaded xslt %s\n", arg);
+            verbose_("xmq=", "loaded xslt %s", arg);
 
             xmlDocPtr xslt = (xmlDocPtr)xmqGetImplementationDoc(doq);
             if (xmqGetOriginalContentType(doq) == XMQ_CONTENT_XMQ ||
@@ -1135,7 +1146,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             command->xsd_name = arg;
             command->xsd_doq = doq;
 
-            verbose_("(xmq) loaded xsd %zu bytes from %s\n", xmqGetOriginalSize(doq), arg);
+            verbose_("xmq=", "loaded xsd %zu bytes from %s", xmqGetOriginalSize(doq), arg);
 
             xmlDocPtr xsd = (xmlDocPtr)xmqGetImplementationDoc(doq);
 
@@ -1279,7 +1290,7 @@ bool query_xterm_bgcolor()
     }
     else
     {
-        verbose_("(xmq) bad response from terminal, assuming dark background.\n");
+        verbose_("xmq=", "bad response from terminal, assuming dark background.");
         is_dark = true;
     }
 
@@ -1297,7 +1308,7 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
 {
     const char *term = getenv("TERM");
     if (!term) term = "NULL";
-    debug_("[xmq] detected terminal %s\n", term);
+    verbose_("xmq=", "detected terminal %s", term);
 
     char *xmq_mode = getenv("XMQ_THEME");
     if (xmq_mode != NULL)
@@ -1306,26 +1317,26 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
         {
             *use_color = false;
             *bg_dark_mode = false;
-            verbose_("(xmq) XMQ_THEME set to mono\n");
+            verbose_("xmq=", "XMQ_THEME set to mono");
             return XMQ_RENDER_MONO;
         }
         if (!strcmp(xmq_mode, "lightbg"))
         {
             *use_color = true;
             *bg_dark_mode = false;
-            verbose_("(xmq) XMQ_THEME set to lightbg\n");
+            verbose_("xmq=", "XMQ_THEME set to lightbg");
             return XMQ_RENDER_COLOR_LIGHTBG;
         }
         if (!strcmp(xmq_mode, "darkbg"))
         {
             *use_color = true;
             *bg_dark_mode = true;
-            verbose_("(xmq) XMQ_THEME set to darkbg\n");
+            verbose_("xmq=", "XMQ_THEME set to darkbg");
             return XMQ_RENDER_COLOR_DARKBG;
         }
         *use_color = false;
         *bg_dark_mode = false;
-        verbose_("(xmq) XMQ_THEME content is bad, using mono\n");
+        verbose_("xmq=", "XMQ_THEME content is bad, using mono");
         return XMQ_RENDER_MONO;
     }
 
@@ -1334,14 +1345,14 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
         // The Linux vt console is by default black. So dark-mode.
         *use_color = true;
         *bg_dark_mode = true;
-        verbose_("(xmq) assuming vt console has dark bg\n");
+        verbose_("xmq=", "assuming vt console has dark bg");
         return XMQ_RENDER_COLOR_DARKBG;
     }
 
 #ifdef PLATFORM_WINAPI
     *use_color = true;
     *bg_dark_mode = true;
-    verbose_("(xmq) assuming console has dark background\n");
+    verbose_("xmq=", "assuming console has dark background");
     return XMQ_RENDER_COLOR_DARKBG;
 #else
 
@@ -1352,7 +1363,7 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
         {
             *use_color = true;
             *bg_dark_mode = true;
-            verbose_("(xmq) cannot query xterm assuming console has dark background\n");
+            verbose_("xmq=", "cannot query xterm assuming console has dark background");
             return XMQ_RENDER_COLOR_DARKBG;
         }
 
@@ -1363,12 +1374,12 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
         {
             *use_color = true;
             *bg_dark_mode = true;
-            verbose_("GURKA %s", "terminal responds with dark background");
+            verbose_("xmq=", "terminal responds with dark background");
             return XMQ_RENDER_COLOR_DARKBG;
         }
         *use_color = true;
         *bg_dark_mode = false;
-        verbose_("xmq.cli", "URKA %s", "terminal responds with light background");
+        verbose_("xmq=", "terminal responds with light background");
         return XMQ_RENDER_COLOR_LIGHTBG;
     }
 
@@ -1387,24 +1398,24 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
 	{
 	    *use_color = true;
             *bg_dark_mode = true;
-            verbose_("(xmq) COLORFGBG means dark \"%s\"\n", colorfgbg);
+            verbose_("xmq=", "COLORFGBG means dark \"%s\"", colorfgbg);
             return XMQ_RENDER_COLOR_DARKBG;
 	}
 	*use_color = true;
         *bg_dark_mode = false;
-        verbose_("(xmq) COLORFGBG means light \"%s\"\n", colorfgbg);
+        verbose_("xmq=", "COLORFGBG means light \"%s\"", colorfgbg);
         return XMQ_RENDER_COLOR_LIGHTBG;
     }
 
     *use_color = true;
     *bg_dark_mode = true;
-    verbose_("(xmq) unknown terminal \"%s\" defaults to colors and dark background\n", term);
+    verbose_("xmq=", "unknown terminal \"%s\" defaults to colors and dark background", term);
     return XMQ_RENDER_COLOR_DARKBG;
 }
 
 bool handle_global_option(const char *arg, XMQCliCommand *command)
 {
-    debug_("[xmq] option %s\n", arg);
+    debug_("xmq=", "option %s", arg);
     if (!strcmp(arg, "--help") ||
         !strcmp(arg, "-h"))
     {
@@ -1563,7 +1574,7 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         }
         if (!strcmp(file+len-5, ".ixml"))
         {
-            verbose_("(xmq) reading ixml file %s\n", file);
+            verbose_("xmq=", "reading ixml file %s", file);
             command->ixml_filename = strdup(file);
             command->ixml_ixml = load_file_into_buffer(file);
             if (command->ixml_ixml == NULL) exit(1);
@@ -1654,7 +1665,7 @@ void print_version_and_exit()
 
 bool cmd_tokenize(XMQCliCommand *command)
 {
-    verbose_("(xmq) cmd-tokenize %s\n", tokenize_type_to_string(command->tok_type));
+    verbose_("xmq=", "cmd-tokenize %s", tokenize_type_to_string(command->tok_type));
     XMQOutputSettings *output_settings = xmqNewOutputSettings();
     xmqSetupPrintMemory(output_settings, &command->env->out_start, &command->env->out_stop);
     xmqSetupPrintSkip(output_settings, &command->env->out_skip);
@@ -1741,7 +1752,7 @@ bool cmd_load(XMQCliCommand *command)
         command->in = NULL;
     }
 
-    verbose_("(xmq) cmd-load %s\n", command->in);
+    verbose_("xmq=", "cmd-load %s", command->in);
 
     command->env->load = command;
 
@@ -1797,7 +1808,7 @@ bool cmd_load(XMQCliCommand *command)
         command->ixml_filename = NULL;
         free((char*)command->ixml_ixml);
         command->ixml_ixml = NULL;
-        verbose_("(xmq) cmd-load-ixml %zu bytes from %s\n", xmqGetOriginalSize(command->env->doc), from);
+        verbose_("xmq=", "cmd-load-ixml %zu bytes from %s", xmqGetOriginalSize(command->env->doc), from);
     }
     else
     {
@@ -1832,7 +1843,7 @@ bool cmd_load(XMQCliCommand *command)
         }
         const char *from = "stdin";
         if (command->in) from = command->in;
-        verbose_("(xmq) cmd-load %zu bytes from %s\n", xmqGetOriginalSize(command->env->doc), from);
+        verbose_("xmq=", "cmd-load %zu bytes from %s", xmqGetOriginalSize(command->env->doc), from);
     }
 
     return true;
@@ -1842,7 +1853,7 @@ void cmd_unload(XMQCliCommand *command)
 {
     if (command && command->env && command->env->doc)
     {
-        verbose_("(xmq) cmd-unload document\n");
+        verbose_("xmq=", "cmd-unload document");
         xmqFreeDoc(command->env->doc);
         command->env->doc = NULL;
     }
@@ -1877,7 +1888,7 @@ bool cmd_to(XMQCliCommand *command)
                             command->explicit_nl);
     }
 
-    verbose_("(xmq) cmd-to %s render %s\n",
+    verbose_("xmq=", "cmd-to %s render %s",
              content_type_to_string(command->out_format),
              render_format_to_string(command->render_to));
 
@@ -1904,21 +1915,21 @@ bool cmd_output(XMQCliCommand *command)
     }
     if (command->cmd == XMQ_CLI_CMD_PRINT)
     {
-        verbose_("(xmq) cmd-print output\n");
+        verbose_("xmq=", "cmd-print output");
         console_write(command->env->out_start + command->env->out_skip, command->env->out_stop);
         free(command->env->out_start);
         return true;
     }
     if (command->cmd == XMQ_CLI_CMD_PAGER)
     {
-        verbose_("(xmq) cmd-pager output\n");
+        verbose_("xmq=", "cmd-pager output");
         page(command->env->out_start + command->env->out_skip, command->env->out_stop);
         free(command->env->out_start);
         return true;
     }
     if (command->cmd == XMQ_CLI_CMD_BROWSER)
     {
-        verbose_("(xmq) cmd-browser output\n");
+        verbose_("xmq=", "cmd-browser output");
         browse(command);
         free(command->env->out_start);
         return true;
@@ -1930,7 +1941,7 @@ bool cmd_output(XMQCliCommand *command)
             fprintf(stderr, "xmq: save command missing file name\n");
             return false;
         }
-        verbose_("(xmq) cmd-save output to %s\n", command->save_file);
+        verbose_("xmq=", "cmd-save output to %s", command->save_file);
         size_t len = command->env->out_stop -  command->env->out_start - command->env->out_skip;
         FILE *f = fopen(command->save_file, "wb");
         if (!f)
@@ -1956,7 +1967,7 @@ bool cmd_output(XMQCliCommand *command)
 bool cmd_transform(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    verbose_("(xmq) transforming\n");
+    verbose_("xmq=", "transforming");
 
     xsltSetLoaderFunc(xmqDocDefaultLoaderFunc);
 
@@ -1976,12 +1987,12 @@ bool cmd_transform(XMQCliCommand *command)
         {
             params[j++] = key;
             params[j++] = (const char*)val;
-            verbose_("(xmq) param %s %s\n", key, val);
+            verbose_("xmq=", "param %s %s", key, val);
         }
         params[j++] = NULL;
     }
 
-    verbose_("(xmq) applying stylesheet\n");
+    verbose_("xmq=", "applying stylesheet");
     xmlDocPtr new_doc = xsltApplyStylesheet(command->xslt, doc, params);
 
     if (params)
@@ -2005,7 +2016,7 @@ bool cmd_transform(XMQCliCommand *command)
 bool cmd_validate(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    verbose_("(xmq) validating\n");
+    verbose_("xmq=", "validating");
 
     xmlSchemaValidCtxtPtr validation_ctxt = xmlSchemaNewValidCtxt(command->xsd);
 
@@ -2051,13 +2062,13 @@ bool cmd_delete(XMQCliCommand *command)
 {
     if (command->xpath)
     {
-        verbose_("(xmq) cmd-delete xpath %s\n", command->xpath);
+        verbose_("xmq=", "cmd-delete xpath %s", command->xpath);
         return delete_xpath(command);
     }
 
     if (command->entity)
     {
-        verbose_("(xmq) cmd-delete entity %s\n", command->entity);
+        verbose_("xmq=", "cmd-delete entity %s", command->entity);
         return delete_entity(command);
     }
 
@@ -2067,7 +2078,7 @@ bool cmd_delete(XMQCliCommand *command)
 bool cmd_select(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    verbose_("(xmq) selecting\n");
+    verbose_("xmq=", "selecting");
 
     xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
     assert(ctx);
@@ -2116,7 +2127,7 @@ bool cmd_select(XMQCliCommand *command)
 bool cmd_for_each(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    verbose_("(xmq) for each\n");
+    verbose_("xmq=", "for each");
 
     xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
     assert(ctx);
@@ -2158,7 +2169,7 @@ bool cmd_for_each(XMQCliCommand *command)
 bool cmd_add(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    verbose_("(xmq) adding xmq >%s<\n", command->add_xmq);
+    verbose_("xmq=", "adding xmq >%s<", command->add_xmq);
 
     XMQDoc *doq = xmqNewDoc();
     const char *start = command->add_xmq;
@@ -2197,7 +2208,7 @@ bool cmd_add(XMQCliCommand *command)
 bool cmd_add_root(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    verbose_("(xmq) adding root\n");
+    verbose_("xmq=", "adding root");
 
     xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
 
@@ -2328,7 +2339,7 @@ void add_key_value(xmlDoc *doc, xmlNode *root, const char *key, size_t value)
 bool cmd_statistics(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    verbose_("(xmq) calculating statistics\n");
+    verbose_("xmq=", "calculating statistics");
     Stats stats;
     memset(&stats, 0, sizeof(stats));
 
@@ -2403,7 +2414,7 @@ void delete_entities(XMQDoc *doq, const char *entity)
 
 bool delete_entity(XMQCliCommand *command)
 {
-    verbose_("(xmq) deleting entity %s\n", command->entity);
+    verbose_("xmq=", "deleting entity %s", command->entity);
 
     delete_entities(command->env->doc, command->entity);
 
@@ -2421,7 +2432,7 @@ bool delete_xpath(XMQCliCommand *command)
 
     if (objects == NULL)
     {
-        verbose_("(xmq) no nodes deleted\n");
+        verbose_("xmq=", "no nodes deleted");
         xmlXPathFreeContext(ctx);
         return true;
     }
@@ -2534,12 +2545,12 @@ bool cmd_replace(XMQCliCommand *command)
 
     if (command->xpath)
     {
-        verbose_("(xmq) replacing xpath %s\n", command->xpath);
+        verbose_("xmq=", "replacing xpath %s", command->xpath);
     }
 
     if (command->entity)
     {
-        verbose_("(xmq) replacing entity %s\n", command->entity);
+        verbose_("xmq=", "replacing entity %s", command->entity);
 
         replace_entities(doc, command->entity, command->content, command->node_content);
     }
@@ -2604,13 +2615,13 @@ bool cmd_substitute(XMQCliCommand *command)
 
     if (command->cmd == XMQ_CLI_CMD_SUBSTITUTE_ENTITY)
     {
-        verbose_("(xmq) substituting entity %s\n", command->entity);
+        verbose_("xmq=", "substituting entity %s", command->entity);
 
         substitute_entity(doc, root, command->entity, false);
     }
     if (command->cmd == XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES)
     {
-        verbose_("(xmq) substituting all char entities\n");
+        verbose_("xmq=", "substituting all char entities");
 
         substitute_entity(doc, root, NULL, true);
     }
@@ -3265,15 +3276,15 @@ void invoke_shell(xmlNode *n, const char *shell_command)
         if (pid == -1) {
             perror("(shell) could not fork!\n");
         }
-        debug_("[shell] waiting for child %d to complete.\n", pid);
+        debug_("shell=", "waiting for child %d to complete.", pid);
         // Wait for the child to finish!
         waitpid(pid, &status, 0);
         if (WIFEXITED(status)) {
             // Child exited properly.
             int rc = WEXITSTATUS(status);
-            debug_("[shell] %s: return code %d\n", "/bin/sh", rc);
+            debug_("shell=", "%s: return code %d\n", "/bin/sh", rc);
             if (rc != 0) {
-                verbose_("(shell) %s exited with non-zero return code: %d\n", "/bin/sh", rc);
+                verbose_("shell=", "%s exited with non-zero return code: %d\n", "/bin/sh", rc);
             }
         }
         free(argv);
@@ -3529,7 +3540,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
 
         while (command->cmd != XMQ_CLI_CMD_NONE)
         {
-            verbose_("(xmq) found command %s\n", cmd_name(command->cmd));
+            verbose_("xmq=", "found command %s", cmd_name(command->cmd));
 
             // Now handle any command options and args.
             for (; argv[i]; ++i)
@@ -3608,11 +3619,11 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
         {
             command->next = to;
             command = to;
-            verbose_("(xmq) added to-xmq command\n");
+            verbose_("xmq=", "added to-xmq command");
         }
         else
         {
-            verbose_("(xmq) inserted to-xmq command before output\n");
+            verbose_("xmq=", "inserted to-xmq command before output");
             // We have a print but no to-xmq, lets insert
             // the to-xmq before the print.
             XMQCliCommand *prev = load_command;
@@ -3637,7 +3648,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
         command->next = allocate_cli_command(command->env);
         command->next->cmd = XMQ_CLI_CMD_PRINT;
         prepare_command(command->next, load_command);
-        verbose_("(xmq) added print command\n");
+        verbose_("xmq=", "added print command");
     }
 
     return true;
@@ -3646,9 +3657,8 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
 #ifdef PLATFORM_WINAPI
 void enableAnsiColorsWindowsConsole()
 {
-    debug_("[xmq] enable ansi colors terminal\n");
-
-    debug_("[xmq] GetStdHandle\n");
+    debug_("xmq=", "enable ansi colors terminal\n");
+    debug_("xmq=", "GetStdHandle");
 
     HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hStdOut == INVALID_HANDLE_VALUE) return; // Fail
@@ -3776,7 +3786,7 @@ xmqDocDefaultLoaderFunc(const xmlChar * URI,
 {
     XMQDoc *doq = xmqNewDoc();
 
-    verbose_("(xmq) xsl-document-load %s\n", URI);
+    verbose_("xmq=", "xsl-document-load %s", URI);
 
     bool ok = xmqParseFileWithType(doq,
                                    (const char*)URI,
@@ -3793,7 +3803,7 @@ xmqDocDefaultLoaderFunc(const xmlChar * URI,
         return NULL;
     }
 
-    verbose_("(xmq) xsl-document-load %zu bytes from %s\n", xmqGetOriginalSize(doq), URI);
+    verbose_("xmq=", "xsl-document-load %zu bytes from %s", xmqGetOriginalSize(doq), URI);
 
     return xmqGetImplementationDoc(doq);
 
@@ -3870,7 +3880,7 @@ int main(int argc, const char **argv)
     else
     {
         env.use_color = false;
-        verbose_("(xmq) using mono since output is not a tty\n");
+        verbose_("xmq=", "using mono since output is not a tty");
     }
     XMQCliCommand *load_command = allocate_cli_command(&env);
     load_command->cmd = XMQ_CLI_CMD_LOAD;
@@ -3878,7 +3888,7 @@ int main(int argc, const char **argv)
 
     bool ok = xmq_parse_cmd_line(argc, argv, load_command);
     if (!ok) {
-        verbose_("(xmq) parse cmd line failed\n");
+        verbose_("xmq=", "parse cmd line failed");
         return 1;
     }
 
