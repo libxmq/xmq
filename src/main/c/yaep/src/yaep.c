@@ -40,11 +40,11 @@
 #include <assert.h>
 
 #define TRACE_F(ps) { \
-        if (0 && ps->run.trace) fprintf(stderr, "TRACE %s\n", __func__); \
+        if (false && ps->run.trace) fprintf(stderr, "TRACE %s\n", __func__); \
     }
 
 #define TRACE_FA(ps, cformat, ...) { \
-    if (0 && ps->run.trace) fprintf(stderr, "TRACE %s " cformat "\n", __func__, __VA_ARGS__); \
+    if (false && ps->run.trace) fprintf(stderr, "TRACE %s " cformat "\n", __func__, __VA_ARGS__); \
 }
 
 #include <stdio.h>
@@ -96,7 +96,10 @@ typedef long int term_set_el_t;
 
 /* Define this if you want to reuse already calculated state sets.
    It considerably speed up the parser. */
-#define USE_SET_HASH_TABLE
+//define USE_SET_HASH_TABLE
+
+/* This does not seem to be enabled by default? */
+//define USE_CORE_SYMB_HASH_TABLE
 
 /* Maximal goto sets saved for triple(set, terminal, lookahead). */
 #define MAX_CACHED_GOTO_RESULTS 3
@@ -261,7 +264,7 @@ struct YaepSymb
 #ifdef USE_CORE_SYMB_HASH_TABLE
     /* The following is used as cache for subsequent search for
        core_symb_vect with given symb.*/
-    YaepCoreSymbVect*cached_core_symb_vect;
+    YaepCoreSymbVect *cached_core_symb_vect;
 #endif
 };
 
@@ -324,7 +327,7 @@ struct YaepTermStorage
 };
 
 /* This page contains table for fast search for vector of indexes of
-   situations with symbol after dot in given set core. */
+   productions with symbol after dot in given set core. */
 struct YaepVect
 {
     /* The following member is used internally.  The value is
@@ -332,7 +335,7 @@ struct YaepVect
        in vlos array which contains the vector elements.*/
     int intern;
 
-    /* The following memebers defines array of indexes of situations in
+    /* The following memebers defines array of indexes of productions in
        given set core.  You should access to values through these
        members(in other words don't save the member values in another
        variable).*/
@@ -2098,8 +2101,8 @@ static unsigned core_symb_vect_hash(hash_table_entry_t t)
     YaepCoreSymbVect*core_symb_vect =(YaepCoreSymbVect*) t;
 
     return((jauquet_prime_mod32* hash_shift
-             +(unsigned) core_symb_vect->set_core)* hash_shift
-            +(unsigned) core_symb_vect->symb);
+            +(size_t)/* was unsigned */core_symb_vect->set_core)* hash_shift
+           +(size_t)/* was unsigned */core_symb_vect->symb);
 }
 
 /* Equality of core_symb_vects.*/
@@ -3988,7 +3991,6 @@ static void perform_parse(YaepParseState *ps)
     if (ps->run.debug)
     {
         fprintf(stderr, "\n\n------ Parsing start ---------------\n\n");
-
         print_state_set(ps, stderr, ps->new_set, 0, ps->run.debug, ps->run.debug);
     }
 
@@ -4009,7 +4011,7 @@ static void perform_parse(YaepParseState *ps)
 	{
             fprintf(stderr, "\nScan toks[%d]= ", ps->tok_curr);
             symb_print(stderr, THE_TERM, TRUE);
-            fprintf(stderr, "\n");
+            fprintf(stderr, " state_set_curr=%d\n", ps->state_set_curr);
 	}
 
         YaepStateSet *set = ps->state_sets[ps->state_set_curr];
@@ -4018,6 +4020,7 @@ static void perform_parse(YaepParseState *ps)
 #ifdef USE_SET_HASH_TABLE
         YaepStateSetTermLookAhead *entry = lookup_cached_set(ps, THE_TERM, NEXT_TERM, set);
 #endif
+
         if (ps->new_set == NULL)
 	{
             YaepCoreSymbVect *core_symb_vect = core_symb_vect_find(ps, set->core, THE_TERM);
