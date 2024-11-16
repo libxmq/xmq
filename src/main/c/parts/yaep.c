@@ -689,13 +689,17 @@ typedef struct
   /* The real length of the first memory segment. */
   size_t initial_segment_length;
   struct _os_segment *os_current_segment;
+
   /* Pointer to memory currently used for storing the top object. */
   char *os_top_object_start;
+
   /* Pointer to first byte after the last byte of the top object. */
   char *os_top_object_free;
+
   /* Pointer to first byte after the memory allocated for storing
      the OS segment and the top object. */
   char *os_boundary;
+
   /* Pointer to allocator. */
   YaepAllocator *os_alloc;
 } os_t;
@@ -706,7 +710,7 @@ typedef struct
    memory segments length is equal to `OS_DEFAULT_SEGMENT_LENGTH'.
    But in any case the segment length is always not less than maximum
    alignment.  OS must be created before any using other macros of the
-   package for work with given OS.  The macro has not side effects. */
+   package for work with given OS.  The macro has no side effects. */
 
 #define OS_CREATE( os, allocator, initial_segment_length ) \
   do { \
@@ -717,17 +721,17 @@ typedef struct
 
 /* This macro is used for freeing memory allocated for OS.  Any work
    (except for creation) with given OS is not possible after
-   evaluation of this macros.  The macro has not side effects. */
+   evaluation of this macros.  The macro has no side effects. */
 
 #define OS_DELETE(os) _OS_delete_function (& (os))
 
 /* This macro is used for freeing memory allocated for OS except for
-   the first segment.  The macro has not side effects. */
+   the first segment.  The macro has no side effects. */
 
 #define OS_EMPTY(os) _OS_empty_function (& (os))
 
 /* This macro makes that length of variable length object on the top
-   of OS will be equal to zero.  The macro has not side effects. */
+   of OS will be equal to zero.  The macro has no side effects. */
 
 #define OS_TOP_NULLIFY(os)\
   do\
@@ -807,7 +811,7 @@ typedef struct
 
 /* This macro removes N bytes from the end of variable length object
    on the top of OS.  The top variable length object is nullified if
-   its length is less than N.  The macro has not side effects. */
+   its length is less than N.  The macro has no side effects. */
 
 #define OS_TOP_SHORTEN(os, n)\
   do\
@@ -825,7 +829,7 @@ typedef struct
 /* This macro increases length of variable length object on the top of
    OS on given number of bytes.  The values of bytes added to the end
    of variable length object on the top of OS will be not defined.
-   The macro has not side effects. */
+   The macro has no side effects. */
 
 #define OS_TOP_EXPAND(os, length)\
   do\
@@ -840,7 +844,7 @@ typedef struct
   while (0)
 
 /* This macro adds byte to the end of variable length object on the
-   top of OS.  The macro has not side effects. */
+   top of OS.  The macro has no side effects. */
 
 #define OS_TOP_ADD_BYTE(os, b)\
   do\
@@ -854,7 +858,7 @@ typedef struct
   while (0)
 
 /* This macro adds memory bytes to the end of variable length object
-   on the top of OS.  The macro has not side effects. */
+   on the top of OS.  The macro has no side effects. */
 
 #define OS_TOP_ADD_MEMORY(os, str, length)\
   do\
@@ -872,7 +876,7 @@ typedef struct
 /* This macro adds C string (with end marker '\0') to the end of
    variable length object on the top of OS.  Before the addition the
    macro delete last character of the object.  The last character is
-   suggested to be C string end marker '\0'.  The macro has not side
+   suggested to be C string end marker '\0'.  The macro has no side
    effects. */
 
 #define OS_TOP_ADD_STRING(os, str) _OS_add_string_function(&(os), (str))
