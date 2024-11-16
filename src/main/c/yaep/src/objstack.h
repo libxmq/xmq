@@ -107,10 +107,6 @@ struct _os_auxiliary_struct
 #define OS_DEFAULT_SEGMENT_LENGTH 512
 #endif
 
-
-
-#ifndef __cplusplus
-
 /* This internal structure describes segment of an object stack. */
 
 struct _os_segment
@@ -135,11 +131,11 @@ typedef struct
   char *os_top_object_start;
 
   /* Pointer to first byte after the last byte of the top object. */
-  char *os_top_object_free;
+  char *os_top_object_stop;
 
   /* Pointer to first byte after the memory allocated for storing
      the OS segment and the top object. */
-  char *os_boundary;
+  char *os_segment_stop;
 
   /* Pointer to allocator. */
   YaepAllocator *os_alloc;
@@ -179,7 +175,7 @@ typedef struct
   {\
     os_t *_temp_os = &(os);\
     assert (_temp_os->os_top_object_start != NULL);\
-    _temp_os->os_top_object_free = _temp_os->os_top_object_start;\
+    _temp_os->os_top_object_stop = _temp_os->os_top_object_start;\
   }\
   while (0)
 
@@ -195,8 +191,8 @@ typedef struct
     os_t *_temp_os = &(os);\
     assert (_temp_os->os_top_object_start != NULL);\
     _temp_os->os_top_object_start\
-        = (char *) _OS_ALIGNED_ADDRESS (_temp_os->os_top_object_free);    \
-    _temp_os->os_top_object_free = _temp_os->os_top_object_start;\
+        = (char *) _OS_ALIGNED_ADDRESS (_temp_os->os_top_object_stop);    \
+    _temp_os->os_top_object_stop = _temp_os->os_top_object_start;\
   }\
   while (0)
 
@@ -206,10 +202,10 @@ typedef struct
 #ifndef NDEBUG
 #define OS_TOP_LENGTH(os)\
   ((os).os_top_object_start != NULL\
-   ? (os).os_top_object_free - (os).os_top_object_start\
+   ? (os).os_top_object_stop - (os).os_top_object_start\
    : (abort (), 0))
 #else
-#define OS_TOP_LENGTH(os)  ((os).os_top_object_free - (os).os_top_object_start)
+#define OS_TOP_LENGTH(os)  ((os).os_top_object_stop - (os).os_top_object_start)
 #endif
 
 /* This macro returns pointer to the first byte of variable length
@@ -231,10 +227,10 @@ typedef struct
 
 #ifndef NDEBUG
 #define OS_TOP_END(os)\
-  ((os).os_top_object_start != NULL ? (void *) ((os).os_top_object_free - 1)\
+  ((os).os_top_object_start != NULL ? (void *) ((os).os_top_object_stop - 1)\
                                     : (abort (), (void *) 0))
 #else
-#define OS_TOP_END(os) ((void *) ((os).os_top_object_free - 1))
+#define OS_TOP_END(os) ((void *) ((os).os_top_object_stop - 1))
 #endif
 
 /* This macro returns pointer (of type `void *') to the next byte of
@@ -244,10 +240,10 @@ typedef struct
 
 #ifndef NDEBUG
 #define OS_TOP_BOUND(os)\
-  ((os).os_top_object_start != NULL ? (void *) (os).os_top_object_free\
+  ((os).os_top_object_start != NULL ? (void *) (os).os_top_object_stop\
                                     : (abort (), (void *) 0))
 #else
-#define OS_TOP_BOUND(os) ((void *) (os).os_top_object_free)
+#define OS_TOP_BOUND(os) ((void *) (os).os_top_object_stop)
 #endif
 
 /* This macro removes N bytes from the end of variable length object
@@ -261,9 +257,9 @@ typedef struct
     size_t _temp_n = (n);\
     assert (_temp_os->os_top_object_start != NULL);\
     if ((size_t) OS_TOP_LENGTH (*_temp_os) < _temp_n)\
-      _temp_os->os_top_object_free = _temp_os->os_top_object_start;\
+      _temp_os->os_top_object_stop = _temp_os->os_top_object_start;\
     else\
-      _temp_os->os_top_object_free -= _temp_n;\
+      _temp_os->os_top_object_stop -= _temp_n;\
   }\
   while (0)
 
@@ -278,9 +274,9 @@ typedef struct
     os_t *_temp_os = &(os);\
     size_t _temp_length = (length);\
     assert (_temp_os->os_top_object_start != NULL);\
-    if (_temp_os->os_top_object_free + _temp_length > _temp_os->os_boundary)\
+    if (_temp_os->os_top_object_stop + _temp_length > _temp_os->os_segment_stop)\
       _OS_expand_memory (_temp_os, _temp_length);\
-    _temp_os->os_top_object_free += _temp_length;\
+    _temp_os->os_top_object_stop += _temp_length;\
   }\
   while (0)
 
@@ -292,9 +288,9 @@ typedef struct
   {\
     os_t *_temp_os = &(os);\
     assert (_temp_os->os_top_object_start != NULL);\
-    if (_temp_os->os_top_object_free >= _temp_os->os_boundary)\
+    if (_temp_os->os_top_object_stop >= _temp_os->os_segment_stop)\
       _OS_expand_memory (_temp_os, 1);\
-    *_temp_os->os_top_object_free++ = (b);\
+    *_temp_os->os_top_object_stop++ = (b);\
   }\
   while (0)
 
@@ -307,10 +303,10 @@ typedef struct
     os_t *_temp_os = &(os);\
     size_t _temp_length = (length);\
     assert (_temp_os->os_top_object_start != NULL);\
-    if (_temp_os->os_top_object_free + _temp_length > _temp_os->os_boundary)\
+    if (_temp_os->os_top_object_stop + _temp_length > _temp_os->os_segment_stop)\
       _OS_expand_memory (_temp_os, _temp_length);\
-    memcpy( _temp_os->os_top_object_free, ( str ), _temp_length ); \
-    _temp_os->os_top_object_free += _temp_length;\
+    memcpy( _temp_os->os_top_object_stop, ( str ), _temp_length ); \
+    _temp_os->os_top_object_stop += _temp_length;\
   }\
   while (0)
 
@@ -331,202 +327,5 @@ extern void _OS_delete_function (os_t *os);
 extern void _OS_empty_function (os_t *os);
 extern void _OS_add_string_function (os_t *os, const char *str);
 extern void _OS_expand_memory (os_t *os, size_t additional_length);
-
-#else /* #ifndef __cplusplus */
-
-/* This class describes a descriptor of stack of objects.  All work
-   with stack of objects is executed by member functions.  It should
-   remember that work with the stack through several descriptors is
-   not safe. */
-
-class os
-{
-  /* The real length of the first memory segment. */
-  size_t initial_segment_length;
-  class _os_segment *os_current_segment;
-  /* Pointer to memory currently used for storing the top object. */
-  char *os_top_object_start;
-  /* Pointer to the first byte after the last byte of the top
-     object. */
-  char *os_top_object_free;
-  /* Pointer to first byte after the memory allocated for storing the
-     OS segment and the top object. */
-  char *os_boundary;
-  /* Pointer to allocator. */
-  YaepAllocator *os_alloc;
-
-public:
-
-  /* These constructors create OS which contains the single zero
-     length object.  If initial length of OS segment is equal to zero
-     or absent, the allocated memory segments length is equal to
-     `OS_DEFAULT_SEGMENT_LENGTH'.  But in any case the segment length
-     is always not less than maximum alignment. */
-
-    explicit os (YaepAllocator * allocator, size_t initial_segment_length =
-		 OS_DEFAULT_SEGMENT_LENGTH);
-
-  /* This destructor is used for freeing memory allocated for OS. */
-
-   ~os (void);
-
-  /* This function is used for freeing memory allocated for OS except
-     for the first segment. */
-
-  void empty (void);
-
-  /* This function makes that length of variable length object on the
-     top of OS will be equal to zero. */
-
-  inline void top_nullify (void)
-  {
-    assert (os_top_object_start != NULL);
-    os_top_object_free = os_top_object_start;
-  }
-
-  /* The function creates new variable length object with initial zero
-     length on the top of OS.  The work (analogous to one with
-     variable length object) with object which was on the top of OS
-     are finished, i.e. the object will never more change address. */
-
-  inline void top_finish (void)
-  {
-    assert (os_top_object_start != NULL);
-    os_top_object_start = (char *) _OS_ALIGNED_ADDRESS (os_top_object_free);
-    os_top_object_free = os_top_object_start;
-  }
-
-  /* This function returns current length of variable length object on
-     the top of OS. */
-
-  inline size_t top_length (void)
-  {
-#ifndef NDEBUG
-    return (os_top_object_start != NULL
-	    ? os_top_object_free - os_top_object_start : (abort (), 0));
-#else
-    return (os_top_object_free - os_top_object_start);
-#endif
-  }
-
-  /* This function returns pointer to the first byte of variable
-     length object on the top of OS.  Remember also that the top
-     object may change own place after any addition. */
-
-  inline void *top_begin (void)
-  {
-#ifndef NDEBUG
-    return (os_top_object_start != NULL
-	    ? (void *) os_top_object_start : (abort (), (void *) 0));
-#else
-    return ((void *) os_top_object_start);
-#endif
-  }
-
-  /* This function returns pointer (of type `void *') to the last byte
-     of variable length object on the top OS.  Remember also that the
-     top object may change own place after any addition. */
-
-  inline void *top_end (void)
-  {
-#ifndef NDEBUG
-    return (os_top_object_start != NULL
-	    ? (void *) (os_top_object_free - 1) : (abort (), (void *) 0));
-#else
-    return ((void *) (os_top_object_free - 1));
-#endif
-  }
-
-  /* This function returns pointer (of type `void *') to the next byte
-     of the last byte of variable length object on the top OS.
-     Remember also that the top object may change own place after any
-     addition. */
-
-  inline void *top_bound (void)
-  {
-#ifndef NDEBUG
-    return (os_top_object_start != NULL
-	    ? (void *) os_top_object_free : (abort (), (void *) 0));
-#else
-    return ((void *) os_top_object_free);
-#endif
-  }
-
-  /* This function removes N bytes from the end of variable length
-     object on the top of OS.  The top variable length object is
-     nullified if its length is less than N. */
-
-  inline void top_shorten (size_t n)
-  {
-    assert (os_top_object_start != NULL);
-    if (top_length () < n)
-      os_top_object_free = os_top_object_start;
-    else
-      os_top_object_free -= n;
-  }
-
-  /* This function increases length of variable length object on the
-     top of OS on given number of bytes.  The values of bytes added to
-     the end of variable length object on the top of OS will be not
-     defined. */
-
-  inline void top_expand (size_t length)
-  {
-    assert (os_top_object_start != NULL);
-    if (os_top_object_free + length > os_boundary)
-      _OS_expand_memory (length);
-    os_top_object_free += length;
-  }
-
-  /* This function adds byte to the end of variable length object on
-     the top of OS. */
-
-  inline void top_add_byte (int b)
-  {
-    assert (os_top_object_start != NULL);
-    if (os_top_object_free >= os_boundary)
-      _OS_expand_memory (1);
-    *os_top_object_free++ = b;
-  }
-
-  /* This function adds memory bytes to the end of variable length
-     object on the top of OS. */
-
-  inline void top_add_memory (const void *str, size_t length)
-  {
-    assert (os_top_object_start != NULL);
-    if (os_top_object_free + length > os_boundary)
-      _OS_expand_memory (length);
-    memcpy (os_top_object_free, str, length);
-    os_top_object_free += length;
-  }
-
-  /* This function adds C string (with end marker '\0') to the end of
-     variable length object on the top of OS.  Before the addition the
-     macro delete last character of the object.  The last character is
-     suggested to be C string end marker '\0'. */
-
-  void top_add_string (const char *str);
-
-  /* The following function is used only by the package functions. */
-
-  void _OS_expand_memory (size_t additional_length);
-};
-
-typedef os os_t;
-
-/* This internal structure describes segment of an object stack. */
-
-class _os_segment
-{
-  class _os_segment *os_previous_segment;
-  char os_segment_contest[_OS_ALIGNMENT];
-  friend os::os (YaepAllocator *, size_t);
-  friend os::~os (void);
-  friend void os::empty (void);
-  friend void os::_OS_expand_memory (size_t additional_length);
-};
-
-#endif /* #ifndef __cplusplus */
 
 #endif /* #ifndef __OS__ */

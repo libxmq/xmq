@@ -66,10 +66,10 @@ _VLO_tailor_function (vlo_t * vlo)
   new_vlo_start = (char*)yaep_realloc (vlo->vlo_alloc, vlo->vlo_start, vlo_length);
   if (new_vlo_start != vlo->vlo_start)
     {
-      vlo->vlo_free += new_vlo_start - vlo->vlo_start;
+      vlo->vlo_stop += new_vlo_start - vlo->vlo_start;
       vlo->vlo_start = new_vlo_start;
     }
-  vlo->vlo_boundary = vlo->vlo_start + vlo_length;
+  vlo->vlo_segment_stop = vlo->vlo_start + vlo_length;
 }
 
 /* The following function implements macro `VLO_ADD_STRING' (addition
@@ -84,13 +84,13 @@ _VLO_add_string_function (vlo_t * vlo, const char *str)
   assert (vlo->vlo_start != NULL);
   if (str == NULL)
     return;
-  if (vlo->vlo_free != vlo->vlo_start)
+  if (vlo->vlo_stop != vlo->vlo_start)
     VLO_SHORTEN (*vlo, 1);
   length = strlen (str) + 1;
-  if (vlo->vlo_free + length > vlo->vlo_boundary)
+  if (vlo->vlo_stop + length > vlo->vlo_segment_stop)
     _VLO_expand_memory (vlo, length);
-  memcpy( vlo->vlo_free, str, length );
-  vlo->vlo_free = vlo->vlo_free + length;
+  memcpy( vlo->vlo_stop, str, length );
+  vlo->vlo_stop = vlo->vlo_stop + length;
 }
 
 /* The following function changes size of memory allocated for VLO.
@@ -110,8 +110,8 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
   new_vlo_start = (char*)yaep_realloc (vlo->vlo_alloc, vlo->vlo_start, vlo_length);
   if (new_vlo_start != vlo->vlo_start)
     {
-      vlo->vlo_free += new_vlo_start - vlo->vlo_start;
+      vlo->vlo_stop += new_vlo_start - vlo->vlo_start;
       vlo->vlo_start = new_vlo_start;
     }
-  vlo->vlo_boundary = vlo->vlo_start + vlo_length;
+  vlo->vlo_segment_stop = vlo->vlo_start + vlo_length;
 }

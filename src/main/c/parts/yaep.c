@@ -666,10 +666,6 @@ struct _os_auxiliary_struct
 #define OS_DEFAULT_SEGMENT_LENGTH 512
 #endif
 
-
-
-#ifndef NOT_DEFINED
-
 /* This internal structure describes segment of an object stack. */
 
 struct _os_segment
@@ -694,11 +690,11 @@ typedef struct
   char *os_top_object_start;
 
   /* Pointer to first byte after the last byte of the top object. */
-  char *os_top_object_free;
+  char *os_top_object_stop;
 
   /* Pointer to first byte after the memory allocated for storing
      the OS segment and the top object. */
-  char *os_boundary;
+  char *os_segment_stop;
 
   /* Pointer to allocator. */
   YaepAllocator *os_alloc;
@@ -738,7 +734,7 @@ typedef struct
   {\
     os_t *_temp_os = &(os);\
     assert (_temp_os->os_top_object_start != NULL);\
-    _temp_os->os_top_object_free = _temp_os->os_top_object_start;\
+    _temp_os->os_top_object_stop = _temp_os->os_top_object_start;\
   }\
   while (0)
 
@@ -754,8 +750,8 @@ typedef struct
     os_t *_temp_os = &(os);\
     assert (_temp_os->os_top_object_start != NULL);\
     _temp_os->os_top_object_start\
-        = (char *) _OS_ALIGNED_ADDRESS (_temp_os->os_top_object_free);    \
-    _temp_os->os_top_object_free = _temp_os->os_top_object_start;\
+        = (char *) _OS_ALIGNED_ADDRESS (_temp_os->os_top_object_stop);    \
+    _temp_os->os_top_object_stop = _temp_os->os_top_object_start;\
   }\
   while (0)
 
@@ -765,10 +761,10 @@ typedef struct
 #ifndef NDEBUG
 #define OS_TOP_LENGTH(os)\
   ((os).os_top_object_start != NULL\
-   ? (os).os_top_object_free - (os).os_top_object_start\
+   ? (os).os_top_object_stop - (os).os_top_object_start\
    : (abort (), 0))
 #else
-#define OS_TOP_LENGTH(os)  ((os).os_top_object_free - (os).os_top_object_start)
+#define OS_TOP_LENGTH(os)  ((os).os_top_object_stop - (os).os_top_object_start)
 #endif
 
 /* This macro returns pointer to the first byte of variable length
@@ -790,10 +786,10 @@ typedef struct
 
 #ifndef NDEBUG
 #define OS_TOP_END(os)\
-  ((os).os_top_object_start != NULL ? (void *) ((os).os_top_object_free - 1)\
+  ((os).os_top_object_start != NULL ? (void *) ((os).os_top_object_stop - 1)\
                                     : (abort (), (void *) 0))
 #else
-#define OS_TOP_END(os) ((void *) ((os).os_top_object_free - 1))
+#define OS_TOP_END(os) ((void *) ((os).os_top_object_stop - 1))
 #endif
 
 /* This macro returns pointer (of type `void *') to the next byte of
@@ -803,10 +799,10 @@ typedef struct
 
 #ifndef NDEBUG
 #define OS_TOP_BOUND(os)\
-  ((os).os_top_object_start != NULL ? (void *) (os).os_top_object_free\
+  ((os).os_top_object_start != NULL ? (void *) (os).os_top_object_stop\
                                     : (abort (), (void *) 0))
 #else
-#define OS_TOP_BOUND(os) ((void *) (os).os_top_object_free)
+#define OS_TOP_BOUND(os) ((void *) (os).os_top_object_stop)
 #endif
 
 /* This macro removes N bytes from the end of variable length object
@@ -820,9 +816,9 @@ typedef struct
     size_t _temp_n = (n);\
     assert (_temp_os->os_top_object_start != NULL);\
     if ((size_t) OS_TOP_LENGTH (*_temp_os) < _temp_n)\
-      _temp_os->os_top_object_free = _temp_os->os_top_object_start;\
+      _temp_os->os_top_object_stop = _temp_os->os_top_object_start;\
     else\
-      _temp_os->os_top_object_free -= _temp_n;\
+      _temp_os->os_top_object_stop -= _temp_n;\
   }\
   while (0)
 
@@ -837,9 +833,9 @@ typedef struct
     os_t *_temp_os = &(os);\
     size_t _temp_length = (length);\
     assert (_temp_os->os_top_object_start != NULL);\
-    if (_temp_os->os_top_object_free + _temp_length > _temp_os->os_boundary)\
+    if (_temp_os->os_top_object_stop + _temp_length > _temp_os->os_segment_stop)\
       _OS_expand_memory (_temp_os, _temp_length);\
-    _temp_os->os_top_object_free += _temp_length;\
+    _temp_os->os_top_object_stop += _temp_length;\
   }\
   while (0)
 
@@ -851,9 +847,9 @@ typedef struct
   {\
     os_t *_temp_os = &(os);\
     assert (_temp_os->os_top_object_start != NULL);\
-    if (_temp_os->os_top_object_free >= _temp_os->os_boundary)\
+    if (_temp_os->os_top_object_stop >= _temp_os->os_segment_stop)\
       _OS_expand_memory (_temp_os, 1);\
-    *_temp_os->os_top_object_free++ = (b);\
+    *_temp_os->os_top_object_stop++ = (b);\
   }\
   while (0)
 
@@ -866,10 +862,10 @@ typedef struct
     os_t *_temp_os = &(os);\
     size_t _temp_length = (length);\
     assert (_temp_os->os_top_object_start != NULL);\
-    if (_temp_os->os_top_object_free + _temp_length > _temp_os->os_boundary)\
+    if (_temp_os->os_top_object_stop + _temp_length > _temp_os->os_segment_stop)\
       _OS_expand_memory (_temp_os, _temp_length);\
-    memcpy( _temp_os->os_top_object_free, ( str ), _temp_length ); \
-    _temp_os->os_top_object_free += _temp_length;\
+    memcpy( _temp_os->os_top_object_stop, ( str ), _temp_length ); \
+    _temp_os->os_top_object_stop += _temp_length;\
   }\
   while (0)
 
@@ -890,203 +886,6 @@ void _OS_delete_function (os_t *os);
 void _OS_empty_function (os_t *os);
 void _OS_add_string_function (os_t *os, const char *str);
 void _OS_expand_memory (os_t *os, size_t additional_length);
-
-#else /* #ifndef NOT_DEFINED */
-
-/* This class describes a descriptor of stack of objects.  All work
-   with stack of objects is executed by member functions.  It should
-   remember that work with the stack through several descriptors is
-   not safe. */
-
-class os
-{
-  /* The real length of the first memory segment. */
-  size_t initial_segment_length;
-  class _os_segment *os_current_segment;
-  /* Pointer to memory currently used for storing the top object. */
-  char *os_top_object_start;
-  /* Pointer to the first byte after the last byte of the top
-     object. */
-  char *os_top_object_free;
-  /* Pointer to first byte after the memory allocated for storing the
-     OS segment and the top object. */
-  char *os_boundary;
-  /* Pointer to allocator. */
-  YaepAllocator *os_alloc;
-
-public:
-
-  /* These constructors create OS which contains the single zero
-     length object.  If initial length of OS segment is equal to zero
-     or absent, the allocated memory segments length is equal to
-     `OS_DEFAULT_SEGMENT_LENGTH'.  But in any case the segment length
-     is always not less than maximum alignment. */
-
-    explicit os (YaepAllocator * allocator, size_t initial_segment_length =
-		 OS_DEFAULT_SEGMENT_LENGTH);
-
-  /* This destructor is used for freeing memory allocated for OS. */
-
-   ~os (void);
-
-  /* This function is used for freeing memory allocated for OS except
-     for the first segment. */
-
-  void empty (void);
-
-  /* This function makes that length of variable length object on the
-     top of OS will be equal to zero. */
-
-  inline void top_nullify (void)
-  {
-    assert (os_top_object_start != NULL);
-    os_top_object_free = os_top_object_start;
-  }
-
-  /* The function creates new variable length object with initial zero
-     length on the top of OS.  The work (analogous to one with
-     variable length object) with object which was on the top of OS
-     are finished, i.e. the object will never more change address. */
-
-  inline void top_finish (void)
-  {
-    assert (os_top_object_start != NULL);
-    os_top_object_start = (char *) _OS_ALIGNED_ADDRESS (os_top_object_free);
-    os_top_object_free = os_top_object_start;
-  }
-
-  /* This function returns current length of variable length object on
-     the top of OS. */
-
-  inline size_t top_length (void)
-  {
-#ifndef NDEBUG
-    return (os_top_object_start != NULL
-	    ? os_top_object_free - os_top_object_start : (abort (), 0));
-#else
-    return (os_top_object_free - os_top_object_start);
-#endif
-  }
-
-  /* This function returns pointer to the first byte of variable
-     length object on the top of OS.  Remember also that the top
-     object may change own place after any addition. */
-
-  inline void *top_begin (void)
-  {
-#ifndef NDEBUG
-    return (os_top_object_start != NULL
-	    ? (void *) os_top_object_start : (abort (), (void *) 0));
-#else
-    return ((void *) os_top_object_start);
-#endif
-  }
-
-  /* This function returns pointer (of type `void *') to the last byte
-     of variable length object on the top OS.  Remember also that the
-     top object may change own place after any addition. */
-
-  inline void *top_end (void)
-  {
-#ifndef NDEBUG
-    return (os_top_object_start != NULL
-	    ? (void *) (os_top_object_free - 1) : (abort (), (void *) 0));
-#else
-    return ((void *) (os_top_object_free - 1));
-#endif
-  }
-
-  /* This function returns pointer (of type `void *') to the next byte
-     of the last byte of variable length object on the top OS.
-     Remember also that the top object may change own place after any
-     addition. */
-
-  inline void *top_bound (void)
-  {
-#ifndef NDEBUG
-    return (os_top_object_start != NULL
-	    ? (void *) os_top_object_free : (abort (), (void *) 0));
-#else
-    return ((void *) os_top_object_free);
-#endif
-  }
-
-  /* This function removes N bytes from the end of variable length
-     object on the top of OS.  The top variable length object is
-     nullified if its length is less than N. */
-
-  inline void top_shorten (size_t n)
-  {
-    assert (os_top_object_start != NULL);
-    if (top_length () < n)
-      os_top_object_free = os_top_object_start;
-    else
-      os_top_object_free -= n;
-  }
-
-  /* This function increases length of variable length object on the
-     top of OS on given number of bytes.  The values of bytes added to
-     the end of variable length object on the top of OS will be not
-     defined. */
-
-  inline void top_expand (size_t length)
-  {
-    assert (os_top_object_start != NULL);
-    if (os_top_object_free + length > os_boundary)
-      _OS_expand_memory (length);
-    os_top_object_free += length;
-  }
-
-  /* This function adds byte to the end of variable length object on
-     the top of OS. */
-
-  inline void top_add_byte (int b)
-  {
-    assert (os_top_object_start != NULL);
-    if (os_top_object_free >= os_boundary)
-      _OS_expand_memory (1);
-    *os_top_object_free++ = b;
-  }
-
-  /* This function adds memory bytes to the end of variable length
-     object on the top of OS. */
-
-  inline void top_add_memory (const void *str, size_t length)
-  {
-    assert (os_top_object_start != NULL);
-    if (os_top_object_free + length > os_boundary)
-      _OS_expand_memory (length);
-    memcpy (os_top_object_free, str, length);
-    os_top_object_free += length;
-  }
-
-  /* This function adds C string (with end marker '\0') to the end of
-     variable length object on the top of OS.  Before the addition the
-     macro delete last character of the object.  The last character is
-     suggested to be C string end marker '\0'. */
-
-  void top_add_string (const char *str);
-
-  /* The following function is used only by the package functions. */
-
-  void _OS_expand_memory (size_t additional_length);
-};
-
-typedef os os_t;
-
-/* This internal structure describes segment of an object stack. */
-
-class _os_segment
-{
-  class _os_segment *os_previous_segment;
-  char os_segment_contest[_OS_ALIGNMENT];
-  friend os::os (YaepAllocator *, size_t);
-  friend os::~os (void);
-  friend void os::empty (void);
-  friend void os::_OS_expand_memory (size_t additional_length);
-};
-
-#endif /* #ifndef NOT_DEFINED */
 
 #endif /* #ifndef __OS__ */
 /*
@@ -1177,10 +976,10 @@ typedef struct
   /* Pointer to memory currently used for storing the VLO. */
   char *vlo_start;
   /* Pointer to first byte after the last VLO byte. */
-  char *vlo_free;
+  char *vlo_stop;
   /* Pointer to first byte after the memory currently allocated for storing
      the VLO. */
-  char *vlo_boundary;
+  char *vlo_segment_stop;
   /* Pointer to allocator. */
   YaepAllocator *vlo_alloc;
 } vlo_t;
@@ -1201,8 +1000,8 @@ typedef struct
     temp_initial_length = (temp_initial_length != 0 ? temp_initial_length\
                                                     : VLO_DEFAULT_LENGTH);\
     _temp_vlo->vlo_start = (char*)yaep_malloc( _temp_alloc, temp_initial_length ); \
-    _temp_vlo->vlo_boundary = _temp_vlo->vlo_start + temp_initial_length;\
-    _temp_vlo->vlo_free = _temp_vlo->vlo_start;\
+    _temp_vlo->vlo_segment_stop = _temp_vlo->vlo_start + temp_initial_length;\
+    _temp_vlo->vlo_stop = _temp_vlo->vlo_start;\
     _temp_vlo->vlo_alloc = _temp_alloc; \
   }\
   while (0)
@@ -1239,7 +1038,7 @@ typedef struct
   {\
     vlo_t *_temp_vlo = &(vlo);\
     assert (_temp_vlo->vlo_start != NULL);\
-    _temp_vlo->vlo_free = _temp_vlo->vlo_start;\
+    _temp_vlo->vlo_stop = _temp_vlo->vlo_start;\
   }\
   while (0)
 
@@ -1255,10 +1054,10 @@ typedef struct
 
 #ifndef NDEBUG
 #define VLO_LENGTH(vlo) ((vlo).vlo_start != NULL\
-                         ? (vlo).vlo_free - (vlo).vlo_start\
+                         ? (vlo).vlo_stop - (vlo).vlo_start\
                          : (abort (), 0))
 #else
-#define VLO_LENGTH(vlo) ((vlo).vlo_free - (vlo).vlo_start)
+#define VLO_LENGTH(vlo) ((vlo).vlo_stop - (vlo).vlo_start)
 #endif /* #ifndef NDEBUG */
 
 
@@ -1280,10 +1079,10 @@ typedef struct
 
 #ifndef NDEBUG
 #define VLO_END(vlo) ((vlo).vlo_start != NULL\
-                      ? (void *) ((vlo).vlo_free - 1)\
+                      ? (void *) ((vlo).vlo_stop - 1)\
                       : (abort (), (void *) 0))
 #else
-#define VLO_END(vlo) ((void *) ((vlo).vlo_free - 1))
+#define VLO_END(vlo) ((void *) ((vlo).vlo_stop - 1))
 #endif /* #ifndef NDEBUG */
 
 /* This macro returns pointer (of type `void *') to the next byte of
@@ -1292,10 +1091,10 @@ typedef struct
 
 #ifndef NDEBUG
 #define VLO_BOUND(vlo) ((vlo).vlo_start != NULL\
-                        ? (void *) (vlo).vlo_free\
+                        ? (void *) (vlo).vlo_stop\
                         : (abort (), (void *) 0))
 #else
-#define VLO_BOUND(vlo) ((void *) (vlo).vlo_free)
+#define VLO_BOUND(vlo) ((void *) (vlo).vlo_stop)
 #endif /* #ifndef NDEBUG */
 
 /* This macro removes N bytes from the end of VLO.  VLO is nullified
@@ -1308,9 +1107,9 @@ typedef struct
     size_t _temp_n = (n);\
     assert (_temp_vlo->vlo_start != NULL);\
     if ((size_t) VLO_LENGTH (*_temp_vlo) < _temp_n)\
-      _temp_vlo->vlo_free = _temp_vlo->vlo_start;\
+      _temp_vlo->vlo_stop = _temp_vlo->vlo_start;\
     else\
-      _temp_vlo->vlo_free -= _temp_n;\
+      _temp_vlo->vlo_stop -= _temp_n;\
   }\
   while (0)
 
@@ -1325,9 +1124,9 @@ typedef struct
     vlo_t *_temp_vlo = &(vlo);\
     size_t _temp_length = (length);\
     assert (_temp_vlo->vlo_start != NULL);\
-    if (_temp_vlo->vlo_free + _temp_length > _temp_vlo->vlo_boundary)\
+    if (_temp_vlo->vlo_stop + _temp_length > _temp_vlo->vlo_segment_stop)\
       _VLO_expand_memory (_temp_vlo, _temp_length);\
-    _temp_vlo->vlo_free += _temp_length;\
+    _temp_vlo->vlo_stop += _temp_length;\
   }\
   while (0)
 
@@ -1340,9 +1139,9 @@ typedef struct
   {\
     vlo_t *_temp_vlo = &(vlo);\
     assert (_temp_vlo->vlo_start != NULL);\
-    if (_temp_vlo->vlo_free >= _temp_vlo->vlo_boundary)\
+    if (_temp_vlo->vlo_stop >= _temp_vlo->vlo_segment_stop)\
       _VLO_expand_memory (_temp_vlo, 1);\
-    *_temp_vlo->vlo_free++ = (b);\
+    *_temp_vlo->vlo_stop++ = (b);\
   }\
   while (0)
 
@@ -1356,10 +1155,10 @@ typedef struct
     vlo_t *_temp_vlo = &(vlo);\
     size_t _temp_length = (length);\
     assert (_temp_vlo->vlo_start != NULL);\
-    if (_temp_vlo->vlo_free + _temp_length > _temp_vlo->vlo_boundary)\
+    if (_temp_vlo->vlo_stop + _temp_length > _temp_vlo->vlo_segment_stop)\
       _VLO_expand_memory (_temp_vlo, _temp_length);\
-    memcpy( _temp_vlo->vlo_free, ( str ), _temp_length ); \
-    _temp_vlo->vlo_free += _temp_length;\
+    memcpy( _temp_vlo->vlo_stop, ( str ), _temp_length ); \
+    _temp_vlo->vlo_stop += _temp_length;\
   }\
   while (0)
 
@@ -1392,10 +1191,10 @@ class vlo
   /* Pointer to memory currently used for storing the VLO. */
   char *vlo_start;
   /* Pointer to first byte after the last VLO byte. */
-  char *vlo_free;
+  char *vlo_stop;
   /* Pointer to first byte after the memory currently allocated for storing
      the VLO. */
-  char *vlo_boundary;
+  char *vlo_segment_stop;
   /* Pointer to allocator. */
   YaepAllocator *vlo_alloc;
 public:
@@ -1410,8 +1209,8 @@ public:
     initial_length = (initial_length != 0
 		      ? initial_length : VLO_DEFAULT_LENGTH);
     vlo_start = (char *) yaep_malloc (vlo_alloc, initial_length);
-    vlo_boundary = vlo_start + initial_length;
-    vlo_free = vlo_start;
+    vlo_segment_stop = vlo_start + initial_length;
+    vlo_stop = vlo_start;
   }
 
 
@@ -1436,7 +1235,7 @@ public:
   inline void nullify (void)
   {
     assert (vlo_start != NULL);
-    vlo_free = vlo_start;
+    vlo_stop = vlo_start;
   }
 
 
@@ -1451,7 +1250,7 @@ public:
   inline size_t length (void)
   {
     assert (vlo_start != NULL);
-    return vlo_free - vlo_start;
+    return vlo_stop - vlo_start;
   }
 
 
@@ -1472,7 +1271,7 @@ public:
   inline void *end (void)
   {
     assert (vlo_start != NULL);
-    return (void *) (vlo_free - 1);
+    return (void *) (vlo_stop - 1);
   }
 
   /* This function returns pointer (of type `void *') to the next byte
@@ -1482,7 +1281,7 @@ public:
   inline void *bound (void)
   {
     assert (vlo_start != NULL);
-    return (void *) vlo_free;
+    return (void *) vlo_stop;
   }
 
   /* This function removes N bytes from the end of VLO.  VLO is nullified
@@ -1492,9 +1291,9 @@ public:
   {
     assert (vlo_start != NULL);
     if (length () < n)
-      vlo_free = vlo_start;
+      vlo_stop = vlo_start;
     else
-      vlo_free -= n;
+      vlo_stop -= n;
   }
 
 
@@ -1504,9 +1303,9 @@ public:
   void expand (size_t length)
   {
     assert (vlo_start != NULL);
-    if (vlo_free + length > vlo_boundary)
+    if (vlo_stop + length > vlo_segment_stop)
       _VLO_expand_memory (length);
-    vlo_free += length;
+    vlo_stop += length;
   }
 
 
@@ -1515,9 +1314,9 @@ public:
   inline void add_byte (int b)
   {
     assert (vlo_start != NULL);
-    if (vlo_free >= vlo_boundary)
+    if (vlo_stop >= vlo_segment_stop)
       _VLO_expand_memory (1);
-    *vlo_free++ = b;
+    *vlo_stop++ = b;
   }
 
 
@@ -1526,10 +1325,10 @@ public:
   inline void add_memory (const void *str, size_t length)
   {
     assert (vlo_start != NULL);
-    if (vlo_free + length > vlo_boundary)
+    if (vlo_stop + length > vlo_segment_stop)
       _VLO_expand_memory (length);
-    memcpy (vlo_free, str, length);
-    vlo_free += length;
+    memcpy (vlo_stop, str, length);
+    vlo_stop += length;
   }
 
 
@@ -2093,17 +1892,14 @@ hash_table_elements_number (hash_table_t htab)
 void
 _OS_create_function (os_t * os, size_t initial_segment_length)
 {
-  if (initial_segment_length == 0)
-    initial_segment_length = OS_DEFAULT_SEGMENT_LENGTH;
-  os->os_current_segment = (struct _os_segment*)
-    yaep_malloc (os->os_alloc,
-		 initial_segment_length + sizeof (struct _os_segment));
+  if (initial_segment_length == 0) initial_segment_length = OS_DEFAULT_SEGMENT_LENGTH;
+
+  os->os_current_segment = (struct _os_segment*)yaep_malloc (os->os_alloc,
+                                                             initial_segment_length + sizeof (struct _os_segment));
   os->os_current_segment->os_previous_segment = NULL;
-  os->os_top_object_start
-    =
-    (char *) _OS_ALIGNED_ADDRESS (os->os_current_segment->os_segment_contest);
-  os->os_top_object_free = os->os_top_object_start;
-  os->os_boundary = os->os_top_object_start + initial_segment_length;
+  os->os_top_object_start = (char *)_OS_ALIGNED_ADDRESS (os->os_current_segment->os_segment_contest);
+  os->os_top_object_stop = os->os_top_object_start;
+  os->os_segment_stop = os->os_top_object_start + initial_segment_length;
   os->initial_segment_length = initial_segment_length;
 }
 
@@ -2148,8 +1944,8 @@ _OS_empty_function (os_t * os)
   os->os_current_segment = current_segment;
   os->os_top_object_start
     = (char *) _OS_ALIGNED_ADDRESS (current_segment->os_segment_contest);
-  os->os_top_object_free = os->os_top_object_start;
-  os->os_boundary = os->os_top_object_start + os->initial_segment_length;
+  os->os_top_object_stop = os->os_top_object_start;
+  os->os_segment_stop = os->os_top_object_start + os->initial_segment_length;
 }
 
 /* The function implements macro `OS_ADD_STRING' (addition of string
@@ -2164,13 +1960,13 @@ _OS_add_string_function (os_t * os, const char *str)
   assert (os->os_top_object_start != NULL);
   if (str == NULL)
     return;
-  if (os->os_top_object_free != os->os_top_object_start)
+  if (os->os_top_object_stop != os->os_top_object_start)
     OS_TOP_SHORTEN (*os, 1);
   string_length = strlen (str) + 1;
-  if (os->os_top_object_free + string_length > os->os_boundary)
+  if (os->os_top_object_stop + string_length > os->os_segment_stop)
     _OS_expand_memory (os, string_length);
-  memcpy( os->os_top_object_free, str, string_length );
-  os->os_top_object_free = os->os_top_object_free + string_length;
+  memcpy( os->os_top_object_stop, str, string_length );
+  os->os_top_object_stop = os->os_top_object_stop + string_length;
 }
 
 /* The function creates new segment for OS.  The segment becames
@@ -2212,8 +2008,8 @@ _OS_expand_memory (os_t * os, size_t additional_length)
   os->os_current_segment = new_segment;
   new_segment->os_previous_segment = previous_segment;
   os->os_top_object_start = new_os_top_object_start;
-  os->os_top_object_free = os->os_top_object_start + os_top_object_length;
-  os->os_boundary = os->os_top_object_start + segment_length;
+  os->os_top_object_stop = os->os_top_object_start + os_top_object_length;
+  os->os_segment_stop = os->os_top_object_start + segment_length;
 }
 /*
    YAEP (Yet Another Earley Parser)
@@ -2283,10 +2079,10 @@ _VLO_tailor_function (vlo_t * vlo)
   new_vlo_start = (char*)yaep_realloc (vlo->vlo_alloc, vlo->vlo_start, vlo_length);
   if (new_vlo_start != vlo->vlo_start)
     {
-      vlo->vlo_free += new_vlo_start - vlo->vlo_start;
+      vlo->vlo_stop += new_vlo_start - vlo->vlo_start;
       vlo->vlo_start = new_vlo_start;
     }
-  vlo->vlo_boundary = vlo->vlo_start + vlo_length;
+  vlo->vlo_segment_stop = vlo->vlo_start + vlo_length;
 }
 
 /* The following function implements macro `VLO_ADD_STRING' (addition
@@ -2301,13 +2097,13 @@ _VLO_add_string_function (vlo_t * vlo, const char *str)
   assert (vlo->vlo_start != NULL);
   if (str == NULL)
     return;
-  if (vlo->vlo_free != vlo->vlo_start)
+  if (vlo->vlo_stop != vlo->vlo_start)
     VLO_SHORTEN (*vlo, 1);
   length = strlen (str) + 1;
-  if (vlo->vlo_free + length > vlo->vlo_boundary)
+  if (vlo->vlo_stop + length > vlo->vlo_segment_stop)
     _VLO_expand_memory (vlo, length);
-  memcpy( vlo->vlo_free, str, length );
-  vlo->vlo_free = vlo->vlo_free + length;
+  memcpy( vlo->vlo_stop, str, length );
+  vlo->vlo_stop = vlo->vlo_stop + length;
 }
 
 /* The following function changes size of memory allocated for VLO.
@@ -2327,10 +2123,10 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
   new_vlo_start = (char*)yaep_realloc (vlo->vlo_alloc, vlo->vlo_start, vlo_length);
   if (new_vlo_start != vlo->vlo_start)
     {
-      vlo->vlo_free += new_vlo_start - vlo->vlo_start;
+      vlo->vlo_stop += new_vlo_start - vlo->vlo_start;
       vlo->vlo_start = new_vlo_start;
     }
-  vlo->vlo_boundary = vlo->vlo_start + vlo_length;
+  vlo->vlo_segment_stop = vlo->vlo_start + vlo_length;
 }
 /*
   YAEP(Yet Another Earley Parser)

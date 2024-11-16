@@ -55,17 +55,14 @@
 void
 _OS_create_function (os_t * os, size_t initial_segment_length)
 {
-  if (initial_segment_length == 0)
-    initial_segment_length = OS_DEFAULT_SEGMENT_LENGTH;
-  os->os_current_segment = (struct _os_segment*)
-    yaep_malloc (os->os_alloc,
-		 initial_segment_length + sizeof (struct _os_segment));
+  if (initial_segment_length == 0) initial_segment_length = OS_DEFAULT_SEGMENT_LENGTH;
+
+  os->os_current_segment = (struct _os_segment*)yaep_malloc (os->os_alloc,
+                                                             initial_segment_length + sizeof (struct _os_segment));
   os->os_current_segment->os_previous_segment = NULL;
-  os->os_top_object_start
-    =
-    (char *) _OS_ALIGNED_ADDRESS (os->os_current_segment->os_segment_contest);
-  os->os_top_object_free = os->os_top_object_start;
-  os->os_boundary = os->os_top_object_start + initial_segment_length;
+  os->os_top_object_start = (char *)_OS_ALIGNED_ADDRESS (os->os_current_segment->os_segment_contest);
+  os->os_top_object_stop = os->os_top_object_start;
+  os->os_segment_stop = os->os_top_object_start + initial_segment_length;
   os->initial_segment_length = initial_segment_length;
 }
 
@@ -110,8 +107,8 @@ _OS_empty_function (os_t * os)
   os->os_current_segment = current_segment;
   os->os_top_object_start
     = (char *) _OS_ALIGNED_ADDRESS (current_segment->os_segment_contest);
-  os->os_top_object_free = os->os_top_object_start;
-  os->os_boundary = os->os_top_object_start + os->initial_segment_length;
+  os->os_top_object_stop = os->os_top_object_start;
+  os->os_segment_stop = os->os_top_object_start + os->initial_segment_length;
 }
 
 /* The function implements macro `OS_ADD_STRING' (addition of string
@@ -126,13 +123,13 @@ _OS_add_string_function (os_t * os, const char *str)
   assert (os->os_top_object_start != NULL);
   if (str == NULL)
     return;
-  if (os->os_top_object_free != os->os_top_object_start)
+  if (os->os_top_object_stop != os->os_top_object_start)
     OS_TOP_SHORTEN (*os, 1);
   string_length = strlen (str) + 1;
-  if (os->os_top_object_free + string_length > os->os_boundary)
+  if (os->os_top_object_stop + string_length > os->os_segment_stop)
     _OS_expand_memory (os, string_length);
-  memcpy( os->os_top_object_free, str, string_length );
-  os->os_top_object_free = os->os_top_object_free + string_length;
+  memcpy( os->os_top_object_stop, str, string_length );
+  os->os_top_object_stop = os->os_top_object_stop + string_length;
 }
 
 /* The function creates new segment for OS.  The segment becames
@@ -174,6 +171,6 @@ _OS_expand_memory (os_t * os, size_t additional_length)
   os->os_current_segment = new_segment;
   new_segment->os_previous_segment = previous_segment;
   os->os_top_object_start = new_os_top_object_start;
-  os->os_top_object_free = os->os_top_object_start + os_top_object_length;
-  os->os_boundary = os->os_top_object_start + segment_length;
+  os->os_top_object_stop = os->os_top_object_start + os_top_object_length;
+  os->os_segment_stop = os->os_top_object_start + segment_length;
 }

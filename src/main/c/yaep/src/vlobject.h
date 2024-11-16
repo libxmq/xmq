@@ -86,10 +86,10 @@ typedef struct
   /* Pointer to memory currently used for storing the VLO. */
   char *vlo_start;
   /* Pointer to first byte after the last VLO byte. */
-  char *vlo_free;
+  char *vlo_stop;
   /* Pointer to first byte after the memory currently allocated for storing
      the VLO. */
-  char *vlo_boundary;
+  char *vlo_segment_stop;
   /* Pointer to allocator. */
   YaepAllocator *vlo_alloc;
 } vlo_t;
@@ -110,8 +110,8 @@ typedef struct
     temp_initial_length = (temp_initial_length != 0 ? temp_initial_length\
                                                     : VLO_DEFAULT_LENGTH);\
     _temp_vlo->vlo_start = (char*)yaep_malloc( _temp_alloc, temp_initial_length ); \
-    _temp_vlo->vlo_boundary = _temp_vlo->vlo_start + temp_initial_length;\
-    _temp_vlo->vlo_free = _temp_vlo->vlo_start;\
+    _temp_vlo->vlo_segment_stop = _temp_vlo->vlo_start + temp_initial_length;\
+    _temp_vlo->vlo_stop = _temp_vlo->vlo_start;\
     _temp_vlo->vlo_alloc = _temp_alloc; \
   }\
   while (0)
@@ -148,7 +148,7 @@ typedef struct
   {\
     vlo_t *_temp_vlo = &(vlo);\
     assert (_temp_vlo->vlo_start != NULL);\
-    _temp_vlo->vlo_free = _temp_vlo->vlo_start;\
+    _temp_vlo->vlo_stop = _temp_vlo->vlo_start;\
   }\
   while (0)
 
@@ -164,10 +164,10 @@ typedef struct
 
 #ifndef NDEBUG
 #define VLO_LENGTH(vlo) ((vlo).vlo_start != NULL\
-                         ? (vlo).vlo_free - (vlo).vlo_start\
+                         ? (vlo).vlo_stop - (vlo).vlo_start\
                          : (abort (), 0))
 #else
-#define VLO_LENGTH(vlo) ((vlo).vlo_free - (vlo).vlo_start)
+#define VLO_LENGTH(vlo) ((vlo).vlo_stop - (vlo).vlo_start)
 #endif /* #ifndef NDEBUG */
 
 
@@ -189,10 +189,10 @@ typedef struct
 
 #ifndef NDEBUG
 #define VLO_END(vlo) ((vlo).vlo_start != NULL\
-                      ? (void *) ((vlo).vlo_free - 1)\
+                      ? (void *) ((vlo).vlo_stop - 1)\
                       : (abort (), (void *) 0))
 #else
-#define VLO_END(vlo) ((void *) ((vlo).vlo_free - 1))
+#define VLO_END(vlo) ((void *) ((vlo).vlo_stop - 1))
 #endif /* #ifndef NDEBUG */
 
 /* This macro returns pointer (of type `void *') to the next byte of
@@ -201,10 +201,10 @@ typedef struct
 
 #ifndef NDEBUG
 #define VLO_BOUND(vlo) ((vlo).vlo_start != NULL\
-                        ? (void *) (vlo).vlo_free\
+                        ? (void *) (vlo).vlo_stop\
                         : (abort (), (void *) 0))
 #else
-#define VLO_BOUND(vlo) ((void *) (vlo).vlo_free)
+#define VLO_BOUND(vlo) ((void *) (vlo).vlo_stop)
 #endif /* #ifndef NDEBUG */
 
 /* This macro removes N bytes from the end of VLO.  VLO is nullified
@@ -217,9 +217,9 @@ typedef struct
     size_t _temp_n = (n);\
     assert (_temp_vlo->vlo_start != NULL);\
     if ((size_t) VLO_LENGTH (*_temp_vlo) < _temp_n)\
-      _temp_vlo->vlo_free = _temp_vlo->vlo_start;\
+      _temp_vlo->vlo_stop = _temp_vlo->vlo_start;\
     else\
-      _temp_vlo->vlo_free -= _temp_n;\
+      _temp_vlo->vlo_stop -= _temp_n;\
   }\
   while (0)
 
@@ -234,9 +234,9 @@ typedef struct
     vlo_t *_temp_vlo = &(vlo);\
     size_t _temp_length = (length);\
     assert (_temp_vlo->vlo_start != NULL);\
-    if (_temp_vlo->vlo_free + _temp_length > _temp_vlo->vlo_boundary)\
+    if (_temp_vlo->vlo_stop + _temp_length > _temp_vlo->vlo_segment_stop)\
       _VLO_expand_memory (_temp_vlo, _temp_length);\
-    _temp_vlo->vlo_free += _temp_length;\
+    _temp_vlo->vlo_stop += _temp_length;\
   }\
   while (0)
 
@@ -249,9 +249,9 @@ typedef struct
   {\
     vlo_t *_temp_vlo = &(vlo);\
     assert (_temp_vlo->vlo_start != NULL);\
-    if (_temp_vlo->vlo_free >= _temp_vlo->vlo_boundary)\
+    if (_temp_vlo->vlo_stop >= _temp_vlo->vlo_segment_stop)\
       _VLO_expand_memory (_temp_vlo, 1);\
-    *_temp_vlo->vlo_free++ = (b);\
+    *_temp_vlo->vlo_stop++ = (b);\
   }\
   while (0)
 
@@ -265,10 +265,10 @@ typedef struct
     vlo_t *_temp_vlo = &(vlo);\
     size_t _temp_length = (length);\
     assert (_temp_vlo->vlo_start != NULL);\
-    if (_temp_vlo->vlo_free + _temp_length > _temp_vlo->vlo_boundary)\
+    if (_temp_vlo->vlo_stop + _temp_length > _temp_vlo->vlo_segment_stop)\
       _VLO_expand_memory (_temp_vlo, _temp_length);\
-    memcpy( _temp_vlo->vlo_free, ( str ), _temp_length ); \
-    _temp_vlo->vlo_free += _temp_length;\
+    memcpy( _temp_vlo->vlo_stop, ( str ), _temp_length ); \
+    _temp_vlo->vlo_stop += _temp_length;\
   }\
   while (0)
 
@@ -301,10 +301,10 @@ class vlo
   /* Pointer to memory currently used for storing the VLO. */
   char *vlo_start;
   /* Pointer to first byte after the last VLO byte. */
-  char *vlo_free;
+  char *vlo_stop;
   /* Pointer to first byte after the memory currently allocated for storing
      the VLO. */
-  char *vlo_boundary;
+  char *vlo_segment_stop;
   /* Pointer to allocator. */
   YaepAllocator *vlo_alloc;
 public:
@@ -319,8 +319,8 @@ public:
     initial_length = (initial_length != 0
 		      ? initial_length : VLO_DEFAULT_LENGTH);
     vlo_start = (char *) yaep_malloc (vlo_alloc, initial_length);
-    vlo_boundary = vlo_start + initial_length;
-    vlo_free = vlo_start;
+    vlo_segment_stop = vlo_start + initial_length;
+    vlo_stop = vlo_start;
   }
 
 
@@ -345,7 +345,7 @@ public:
   inline void nullify (void)
   {
     assert (vlo_start != NULL);
-    vlo_free = vlo_start;
+    vlo_stop = vlo_start;
   }
 
 
@@ -360,7 +360,7 @@ public:
   inline size_t length (void)
   {
     assert (vlo_start != NULL);
-    return vlo_free - vlo_start;
+    return vlo_stop - vlo_start;
   }
 
 
@@ -381,7 +381,7 @@ public:
   inline void *end (void)
   {
     assert (vlo_start != NULL);
-    return (void *) (vlo_free - 1);
+    return (void *) (vlo_stop - 1);
   }
 
   /* This function returns pointer (of type `void *') to the next byte
@@ -391,7 +391,7 @@ public:
   inline void *bound (void)
   {
     assert (vlo_start != NULL);
-    return (void *) vlo_free;
+    return (void *) vlo_stop;
   }
 
   /* This function removes N bytes from the end of VLO.  VLO is nullified
@@ -401,9 +401,9 @@ public:
   {
     assert (vlo_start != NULL);
     if (length () < n)
-      vlo_free = vlo_start;
+      vlo_stop = vlo_start;
     else
-      vlo_free -= n;
+      vlo_stop -= n;
   }
 
 
@@ -413,9 +413,9 @@ public:
   void expand (size_t length)
   {
     assert (vlo_start != NULL);
-    if (vlo_free + length > vlo_boundary)
+    if (vlo_stop + length > vlo_segment_stop)
       _VLO_expand_memory (length);
-    vlo_free += length;
+    vlo_stop += length;
   }
 
 
@@ -424,9 +424,9 @@ public:
   inline void add_byte (int b)
   {
     assert (vlo_start != NULL);
-    if (vlo_free >= vlo_boundary)
+    if (vlo_stop >= vlo_segment_stop)
       _VLO_expand_memory (1);
-    *vlo_free++ = b;
+    *vlo_stop++ = b;
   }
 
 
@@ -435,10 +435,10 @@ public:
   inline void add_memory (const void *str, size_t length)
   {
     assert (vlo_start != NULL);
-    if (vlo_free + length > vlo_boundary)
+    if (vlo_stop + length > vlo_segment_stop)
       _VLO_expand_memory (length);
-    memcpy (vlo_free, str, length);
-    vlo_free += length;
+    memcpy (vlo_stop, str, length);
+    vlo_stop += length;
   }
 
 
