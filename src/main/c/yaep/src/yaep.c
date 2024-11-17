@@ -25,17 +25,24 @@
 
 */
 
-/* This file implements parsing any context free grammar with minimal
+/* 1997-2018 Vladimir Makarov
+   This file implements parsing any context free grammar with minimal
    error recovery and syntax directed translation.  The algorithm is
    originated from Earley's algorithm.  The algorithm is sufficiently
    fast to be used in serious language processors.
 
+   2024 Fredrik Öhrström
+   Refactored to fit ixml use case, removed global variables, restructured
+   code, commented and renamed variables and structures, added ixml charset
+   matching.
+
+   Terminology:
+
    Rule: a grammar rule S -> NP VP
    Production: a rule put into production: NP 🞄 VP [origin]
-   StateSet: e.g. S(1) a number of Productions.
+   StateSet: e.g. S(1) a number of Productions with distances.
    StateSetCore: part of a state set that can be shared.
 */
-
 
 #include <assert.h>
 
@@ -228,9 +235,15 @@ struct YaepSymb
     {
         struct
         {
-            /* The code is specified when the grammar is reading the terminals. */
+            /* The code is a unique number per terminal type and is specified when
+               read_grammar fetches the terminals. For grammars with a lexer preprocessing
+               step, the code means 1 = "BEGIN", 2 = "END, 3 = "IDENTIFIER" etc.
+               For ixml grammars, each code is instead a unicode codepoint.
+               I.e. 65 = A, 0x1f600 = 😀  etc. */
             int code;
-            /* Each term is given a unique integer starting from 0. */
+            /* Each term is given a unique integer starting from 0. If the code range
+               starts with 100 and ends with 129,then the term_ids goes from 0 to 29.
+               The term_ids are used for picking the bit in the bit arrays.*/
             int term_id;
         } term;
         struct
@@ -359,8 +372,8 @@ struct YaepCoreSymbVect
     YaepVect reduces;
 };
 
-/* The following is set in Earley's algorithm without distance
-   information.  Because there are many duplications of such
+/* A StateSetCore is a set in Earley's algorithm however without
+   distance information. Because there are many duplications of such
    structures we extract the set cores and store them in one
    exemplar. */
 struct YaepStateSetCore
@@ -417,6 +430,7 @@ struct YaepStateSet
        You should access to distances only through this member or
        variable `new_distances'(in other words don't save the member value
        in another variable). */
+
     int *distances;
 };
 
@@ -525,11 +539,11 @@ struct YaepRuleStorage
     int n_rules, n_rhs_lens;
 
     /* The following is the first rule.*/
-    YaepRule*first_rule;
+    YaepRule *first_rule;
 
     /* The following is rule being formed.  It can be read
        externally.*/
-    YaepRule*curr_rule;
+    YaepRule *curr_rule;
 
     /* All rules are placed in the following object.*/
     os_t rules_os;
