@@ -675,11 +675,15 @@ struct YaepParseState
     /* All productions are placed in the following object.*/
     os_t prods_os;
 
-    /* Vector implementing map: prod id -> vlo of the distance check indexed by the distance. */
+    /* The set of pairs (production,distance) used for test-setting such pairs
+       is implemented using a map<prod id,map<distance,generation> since prod_id
+       is unique and incrementing, we use a vector[max_prod_id] to find another vector[max_distance]
+       each distance entry storing a generation number. To clear the set of pairs
+       we only need to increment the current generation below. Yay! No need to free, alloc, memset.*/
     vlo_t production_distance_vec_vlo;
 
     /* The value used to check the validity of elements of check_dist structures. */
-    int curr_production_distance_vec_check;
+    int production_distance_vec_generation;
 
     /* The following are number of unique(set core, symbol) pairs and
        their summary(transitive) transition and reduce vectors length,
@@ -1751,44 +1755,65 @@ static int core_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 static void production_distance_set_init(YaepParseState *ps)
 {
     VLO_CREATE(ps->production_distance_vec_vlo, ps->run.grammar->alloc, 8192);
-    ps->curr_production_distance_vec_check = 0;
+    ps->production_distance_vec_generation = 0;
 }
 
-/* Make the set empty. */
+/* The clear the set we only need to increment the generation.
+   The test for set membership compares with the active generation.
+   Thus all previously stored memberships are immediatly invalidated
+   through the increment below. Thus clearing the set! */
 static void clear_production_distance_set(YaepParseState *ps)
 {
-    ps->curr_production_distance_vec_check++;
+    ps->production_distance_vec_generation++;
 }
 
-/* Insert pair(SIT, DIST) into the set.  If such pair exists return
-   FALSE, otherwise return TRUE. */
-static int production_distance_insert(YaepParseState *ps, YaepProduction*prod, int dist)
+/* Insert pair(PROD, DIST) into the ps->production_distance_vec_vlo.
+   Each production has a unique prod_id incrementally counted from 0 to the most recent production added.
+   This prod_id is used as in index into the vector, the vector storing vlo objects.
+   Each vlo object maintains a memory region used for an integer array of distances.
+
+   If such pair exists return true (was FALSE), otherwise return false. (was TRUE). */
+static bool production_distance_test_and_set(YaepParseState *ps, YaepProduction *prod, int dist)
 {
     int i, len, prod_id;
-    vlo_t*check_dist_vlo;
+    vlo_t *dist_vlo;
 
     prod_id = prod->prod_id;
-    /* Expand the set to accommodate possibly a new production. */
-    len = VLO_LENGTH(ps->production_distance_vec_vlo) / sizeof(vlo_t);
+
+    // Expand the vector to accommodate a new production.
+    len = VLO_LENGTH(ps->production_distance_vec_vlo)/sizeof(vlo_t);
     if (len <= prod_id)
     {
         VLO_EXPAND(ps->production_distance_vec_vlo,(prod_id + 1 - len)* sizeof(vlo_t));
         for(i = len; i <= prod_id; i++)
-            VLO_CREATE(((vlo_t*) VLO_BEGIN(ps->production_distance_vec_vlo))[i],
-                        ps->run.grammar->alloc, 64);
+        {
+            // For each new slot in the vector, initialize a new vlo, to be used for distances.
+            VLO_CREATE(((vlo_t*) VLO_BEGIN(ps->production_distance_vec_vlo))[i], ps->run.grammar->alloc, 64);
+        }
     }
-    check_dist_vlo = &((vlo_t*) VLO_BEGIN(ps->production_distance_vec_vlo))[prod_id];
-    len = VLO_LENGTH(*check_dist_vlo) / sizeof(int);
+
+    // Now fetch the vlo for this prod_id, which is either an existing vlo or a freshly initialized vlo.
+    // The vlo stores an array of integersCheck if the vlo is big enough for this distance?
+    dist_vlo = &((vlo_t*)VLO_BEGIN(ps->production_distance_vec_vlo))[prod_id];
+    len = VLO_LENGTH(*dist_vlo) / sizeof(int);
     if (len <= dist)
     {
-        VLO_EXPAND(*check_dist_vlo,(dist + 1 - len)* sizeof(int));
+        VLO_EXPAND(*dist_vlo,(dist + 1 - len)* sizeof(int));
         for(i = len; i <= dist; i++)
-           ((int*) VLO_BEGIN(*check_dist_vlo))[i] = 0;
+        {
+           ((int*) VLO_BEGIN(*dist_vlo))[i] = 0;
+        }
     }
-    if (((int*) VLO_BEGIN(*check_dist_vlo))[dist] == ps->curr_production_distance_vec_check)
-        return FALSE;
-   ((int*) VLO_BEGIN(*check_dist_vlo))[dist] = ps->curr_production_distance_vec_check;
-    return TRUE;
+    int *generation = (int*)VLO_BEGIN(*dist_vlo) + dist;
+    if (*generation == ps->production_distance_vec_generation)
+    {
+        // The pair was already inserted! Since we found the current generation in this slot.
+        // Remember that we clear the set by incrementing the current generation.
+        return true;
+    }
+    // Insert this pair my marking the vec[prod_id][dist] with the current generation.
+    *generation = ps->production_distance_vec_generation;
+    return false;
 }
 
 /* Finish the set of pairs(sit, dist). */
@@ -3298,8 +3323,9 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
             dist = set->distances[set_core->parent_indexes[prod_ind]];
         }
         dist++;
-        if (production_distance_insert(ps, new_prod, dist))
+        if (!production_distance_test_and_set(ps, new_prod, dist))
         {
+            // This combo prod+dist did not already exist, lets add it.
             set_new_add_start_prod(ps, new_prod, dist);
         }
     }
@@ -3330,7 +3356,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
             prev_prods = prev_set_core->prods;
             do
 	    {
-                prod_ind =*curr_el++;
+                prod_ind = *curr_el++;
                 prod = prev_prods[prod_ind];
                 new_prod = prod_create(ps, prod->rule, prod->dot_pos + 1, prod->context);
                 if (local_lookahead_level != 0
@@ -3338,18 +3364,26 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                     && !term_set_test(new_prod->lookahead,
                                       ps->run.grammar->term_error_id,
                                       ps->run.grammar->symbs_ptr->num_terms))
+                {
                     continue;
+                }
                 dist = 0;
                 if (prod_ind >= prev_set_core->n_all_distances)
-                    ;
-                else if (prod_ind < prev_set_core->num_start_prods)
-                    dist = prev_set->distances[prod_ind];
-                else
-                    dist =
-                        prev_set->distances[prev_set_core->parent_indexes[prod_ind]];
-                dist += new_dist;
-                if (production_distance_insert(ps, new_prod, dist))
                 {
+                }
+                else if (prod_ind < prev_set_core->num_start_prods)
+                {
+                    dist = prev_set->distances[prod_ind];
+                }
+                else
+                {
+                    dist = prev_set->distances[prev_set_core->parent_indexes[prod_ind]];
+                }
+                dist += new_dist;
+
+                if (!production_distance_test_and_set(ps, new_prod, dist))
+                {
+                    // This combo prod+dist did not already exist, lets add it.
                     set_new_add_start_prod(ps, new_prod, dist);
                 }
 	    }
@@ -3363,8 +3397,6 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
         ps->new_core->term = core_symb_vect->symb;
     }
 }
-
-
 
 /* This page contains error recovery code.  This code finds minimal
    cost error recovery.  The cost of error recovery is number of
