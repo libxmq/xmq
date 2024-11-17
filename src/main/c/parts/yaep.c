@@ -2168,7 +2168,7 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 
    Terminology:
 
-   Input vector: A vector with input symbols, the tokens can be lexer token or unicode characters (IXML).
+   Input tokens: The content to be parsed. The tokens can be lexer tokens or unicode characters (IXML).
    Rule: a grammar rule S -> NP VP
    Production: a rule put into production: NP 🞄 VP [origin]
    StateSet: The state of a parse, has started and not-yet-started productions (copies of rules)
@@ -2285,8 +2285,8 @@ typedef struct YaepStateSet YaepStateSet;
 struct YaepProduction;
 typedef struct YaepProduction YaepProduction;
 
-struct YaepTok;
-typedef struct YaepTok YaepTok;
+struct YaepInputToken;
+typedef struct YaepInputToken YaepInputToken;
 
 struct YaepStateSetTermLookAhead;
 typedef struct YaepStateSetTermLookAhead YaepStateSetTermLookAhead;
@@ -2600,7 +2600,7 @@ struct YaepProduction
 };
 
 /* The following describes input token.*/
-struct YaepTok
+struct YaepInputToken
 {
     /* The following is symb correseponding to the token. */
     YaepSymb *symb;
@@ -2679,7 +2679,7 @@ struct YaepRuleStorage
 
     /* The following is rule being formed.  It can be read
        externally.*/
-    YaepRule *curr_rule;
+    YaepRule *current_rule;
 
     /* All rules are placed in the following object.*/
     os_t rules_os;
@@ -2787,7 +2787,7 @@ struct YaepParseState
 
     /* The following two variables contains all input tokens and their
        number.  The variables can be read externally.*/
-    YaepTok *input_tokens;
+    YaepInputToken *input_tokens;
     int input_tokens_len;
     int current_input_token;
 
@@ -3512,7 +3512,7 @@ static YaepRuleStorage *rule_init(YaepGrammar *grammar)
     mem = yaep_malloc(grammar->alloc, sizeof(YaepRuleStorage));
     result = (YaepRuleStorage*)mem;
     OS_CREATE(result->rules_os, grammar->alloc, 0);
-    result->first_rule = result->curr_rule = NULL;
+    result->first_rule = result->current_rule = NULL;
     result->n_rules = result->n_rhs_lens = 0;
 
     return result;
@@ -3546,9 +3546,9 @@ static YaepRule *rule_new_start(YaepParseState *ps, YaepSymb *lhs, const char *a
     rule->marks = NULL;
     rule->order = NULL;
     rule->next = NULL;
-    if (ps->run.grammar->rules_ptr->curr_rule != NULL)
+    if (ps->run.grammar->rules_ptr->current_rule != NULL)
     {
-        ps->run.grammar->rules_ptr->curr_rule->next = rule;
+        ps->run.grammar->rules_ptr->current_rule->next = rule;
     }
     rule->lhs_next = lhs->u.nonterm.rules;
     lhs->u.nonterm.rules = rule;
@@ -3556,7 +3556,7 @@ static YaepRule *rule_new_start(YaepParseState *ps, YaepSymb *lhs, const char *a
     empty = NULL;
     OS_TOP_ADD_MEMORY(ps->run.grammar->rules_ptr->rules_os, &empty, sizeof(YaepSymb*));
     rule->rhs =(YaepSymb**) OS_TOP_BEGIN(ps->run.grammar->rules_ptr->rules_os);
-    ps->run.grammar->rules_ptr->curr_rule = rule;
+    ps->run.grammar->rules_ptr->current_rule = rule;
     if (ps->run.grammar->rules_ptr->first_rule == NULL)
     {
         ps->run.grammar->rules_ptr->first_rule = rule;
@@ -3574,9 +3574,9 @@ static void rule_new_symb_add(YaepParseState *ps, YaepSymb *symb)
 
     empty = NULL;
     OS_TOP_ADD_MEMORY(ps->run.grammar->rules_ptr->rules_os, &empty, sizeof(YaepSymb*));
-    ps->run.grammar->rules_ptr->curr_rule->rhs = (YaepSymb**)OS_TOP_BEGIN(ps->run.grammar->rules_ptr->rules_os);
-    ps->run.grammar->rules_ptr->curr_rule->rhs[ps->run.grammar->rules_ptr->curr_rule->rhs_len] = symb;
-    ps->run.grammar->rules_ptr->curr_rule->rhs_len++;
+    ps->run.grammar->rules_ptr->current_rule->rhs = (YaepSymb**)OS_TOP_BEGIN(ps->run.grammar->rules_ptr->rules_os);
+    ps->run.grammar->rules_ptr->current_rule->rhs[ps->run.grammar->rules_ptr->current_rule->rhs_len] = symb;
+    ps->run.grammar->rules_ptr->current_rule->rhs_len++;
     ps->run.grammar->rules_ptr->n_rhs_lens++;
 }
 
@@ -3587,16 +3587,16 @@ static void rule_new_stop(YaepParseState *ps)
     int i;
 
     OS_TOP_FINISH(ps->run.grammar->rules_ptr->rules_os);
-    OS_TOP_EXPAND(ps->run.grammar->rules_ptr->rules_os, ps->run.grammar->rules_ptr->curr_rule->rhs_len* sizeof(int));
-    ps->run.grammar->rules_ptr->curr_rule->order = (int*)OS_TOP_BEGIN(ps->run.grammar->rules_ptr->rules_os);
+    OS_TOP_EXPAND(ps->run.grammar->rules_ptr->rules_os, ps->run.grammar->rules_ptr->current_rule->rhs_len* sizeof(int));
+    ps->run.grammar->rules_ptr->current_rule->order = (int*)OS_TOP_BEGIN(ps->run.grammar->rules_ptr->rules_os);
     OS_TOP_FINISH(ps->run.grammar->rules_ptr->rules_os);
-    for(i = 0; i < ps->run.grammar->rules_ptr->curr_rule->rhs_len; i++)
+    for(i = 0; i < ps->run.grammar->rules_ptr->current_rule->rhs_len; i++)
     {
-        ps->run.grammar->rules_ptr->curr_rule->order[i] = -1;
+        ps->run.grammar->rules_ptr->current_rule->order[i] = -1;
     }
 
-    OS_TOP_EXPAND(ps->run.grammar->rules_ptr->rules_os, ps->run.grammar->rules_ptr->curr_rule->rhs_len* sizeof(char));
-    ps->run.grammar->rules_ptr->curr_rule->marks = (char*)OS_TOP_BEGIN(ps->run.grammar->rules_ptr->rules_os);
+    OS_TOP_EXPAND(ps->run.grammar->rules_ptr->rules_os, ps->run.grammar->rules_ptr->current_rule->rhs_len* sizeof(char));
+    ps->run.grammar->rules_ptr->current_rule->marks = (char*)OS_TOP_BEGIN(ps->run.grammar->rules_ptr->rules_os);
     OS_TOP_FINISH(ps->run.grammar->rules_ptr->rules_os);
 }
 
@@ -3606,7 +3606,7 @@ static void rule_empty(YaepRuleStorage *rules)
     if (rules == NULL) return;
 
     OS_EMPTY(rules->rules_os);
-    rules->first_rule = rules->curr_rule = NULL;
+    rules->first_rule = rules->current_rule = NULL;
     rules->n_rules = rules->n_rhs_lens = 0;
 }
 
@@ -3623,14 +3623,14 @@ static void rule_fin(YaepGrammar *grammar, YaepRuleStorage *rules)
 /* Initialize work with tokens.*/
 static void tok_init(YaepParseState *ps)
 {
-    VLO_CREATE(ps->input_tokens_vlo, ps->run.grammar->alloc, NUM_INITIAL_YAEP_TOKENS * sizeof(YaepTok));
+    VLO_CREATE(ps->input_tokens_vlo, ps->run.grammar->alloc, NUM_INITIAL_YAEP_TOKENS * sizeof(YaepInputToken));
     ps->input_tokens_len = 0;
 }
 
 /* Add input token with CODE and attribute at the end of input tokens array.*/
 static void tok_add(YaepParseState *ps, int code, void *attr)
 {
-    YaepTok tok;
+    YaepInputToken tok;
 
     tok.attr = attr;
     tok.symb = symb_find_by_code(ps, code);
@@ -3638,8 +3638,8 @@ static void tok_add(YaepParseState *ps, int code, void *attr)
     {
         yaep_error(ps, YAEP_INVALID_TOKEN_CODE, "syntax error at offset %d '%c'", ps->input_tokens_len, code);
     }
-    VLO_ADD_MEMORY(ps->input_tokens_vlo, &tok, sizeof(YaepTok));
-    ps->input_tokens = (YaepTok*)VLO_BEGIN(ps->input_tokens_vlo);
+    VLO_ADD_MEMORY(ps->input_tokens_vlo, &tok, sizeof(YaepInputToken));
+    ps->input_tokens = (YaepInputToken*)VLO_BEGIN(ps->input_tokens_vlo);
     ps->input_tokens_len++;
 }
 
