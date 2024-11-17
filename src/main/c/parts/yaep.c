@@ -2520,7 +2520,8 @@ struct YaepStateSetCore
 
     /* The variable num_prods are all productions in the set. Both starting and predicted. */
     int num_prods;
-    int num_start_prods;
+    int num_started_prods;
+    // num_not_yet_started_prods == num_prods-num_started_prods
 
     /* Array of productions.  Start productions are always placed the
        first in the order of their creation(with subsequent duplicates
@@ -2736,7 +2737,7 @@ struct YaepParseState
       of the set being formed.*/
     YaepProduction **new_prods;
     int *new_distances;
-    int new_num_start_prods;
+    int new_num_started_prods;
 
     /* The following are number of unique set cores and their start
        productions, unique distance vectors and their summary length, and
@@ -3793,12 +3794,12 @@ static int set_core_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     YaepStateSetCore*set_core2 = ((YaepStateSet*) s2)->core;
     YaepProduction **prod_ptr1, **prod_ptr2, **prod_bound1;
 
-    if (set_core1->num_start_prods != set_core2->num_start_prods)
+    if (set_core1->num_started_prods != set_core2->num_started_prods)
     {
         return FALSE;
     }
     prod_ptr1 = set_core1->prods;
-    prod_bound1 = prod_ptr1 + set_core1->num_start_prods;
+    prod_bound1 = prod_ptr1 + set_core1->num_started_prods;
     prod_ptr2 = set_core2->prods;
     while(prod_ptr1 < prod_bound1)
     {
@@ -3823,9 +3824,9 @@ static int distances_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     YaepStateSet *st2 = (YaepStateSet*)s2;
     int *i = st1->distances;
     int *j = st2->distances;
-    int n_distances = st1->core->num_start_prods;
+    int n_distances = st1->core->num_started_prods;
 
-    if (n_distances != st2->core->num_start_prods)
+    if (n_distances != st2->core->num_started_prods)
     {
         return FALSE;
     }
@@ -3991,7 +3992,7 @@ static void set_new_start(YaepParseState *ps)
     ps->new_set_ready_p = FALSE;
     ps->new_prods = NULL;
     ps->new_distances = NULL;
-    ps->new_num_start_prods = 0;
+    ps->new_num_started_prods = 0;
 }
 
 /* Add start PROD with distance DIST at the end of the production array
@@ -4003,9 +4004,9 @@ static void set_new_add_start_prod(YaepParseState *ps, YaepProduction*prod, int 
     ps->new_distances =(int*) OS_TOP_BEGIN(ps->set_distances_os);
     OS_TOP_EXPAND(ps->set_prods_os, sizeof(YaepProduction*));
     ps->new_prods =(YaepProduction**) OS_TOP_BEGIN(ps->set_prods_os);
-    ps->new_prods[ps->new_num_start_prods] = prod;
-    ps->new_distances[ps->new_num_start_prods] = dist;
-    ps->new_num_start_prods++;
+    ps->new_prods[ps->new_num_started_prods] = prod;
+    ps->new_distances[ps->new_num_started_prods] = dist;
+    ps->new_num_started_prods++;
 }
 
 /* Add nonstart, noninitial PROD with distance DIST at the end of the
@@ -4017,10 +4018,10 @@ static void set_add_new_nonstart_prod(YaepParseState *ps, YaepProduction*prod, i
     int i;
 
     assert(ps->new_set_ready_p);
-    /* When we add non-start productions we need to have pairs
+    /* When we add not-yet-started productions we need to have pairs
       (production, the corresponding distance) without duplicates
        because we also forms core_symb_vect at that time.*/
-    for(i = ps->new_num_start_prods; i < ps->new_core->num_prods; i++)
+    for(i = ps->new_num_started_prods; i < ps->new_core->num_prods; i++)
     {
         if (ps->new_prods[i] == prod && ps->new_core->parent_indexes[i] == parent)
         {
@@ -4030,29 +4031,28 @@ static void set_add_new_nonstart_prod(YaepParseState *ps, YaepProduction*prod, i
     OS_TOP_EXPAND(ps->set_prods_os, sizeof(YaepProduction*));
     ps->new_prods = ps->new_core->prods =(YaepProduction**) OS_TOP_BEGIN(ps->set_prods_os);
     OS_TOP_EXPAND(ps->set_parent_indexes_os, sizeof(int));
-    ps->new_core->parent_indexes = (int*)OS_TOP_BEGIN(ps->set_parent_indexes_os) - ps->new_num_start_prods;
+    ps->new_core->parent_indexes = (int*)OS_TOP_BEGIN(ps->set_parent_indexes_os) - ps->new_num_started_prods;
     ps->new_prods[ps->new_core->num_prods++] = prod;
     ps->new_core->parent_indexes[ps->new_core->n_all_distances++] = parent;
     ps->n_parent_indexes++;
 }
 
-/* Add non-start(initial) PROD with zero distance at the end of the
-   production array of the set being formed.  If this is non-start
-   production and there is already the same pair(production, zero
-   distance), we do not add it.*/
+/* Add a not-yet-started production (initial) PROD with zero distance at the end of the
+   production array of the set being formed.  If this is not-yet-started
+   production and there is already the same pair(production, zero distance), we do not add it.*/
 static void set_new_add_initial_prod(YaepParseState *ps, YaepProduction*prod)
 {
     assert(ps->new_set_ready_p);
 
-    /* When we add non-start productions we need to have pairs
+    /* When we add not-yet-started productions we need to have pairs
       (production, the corresponding distance) without duplicates
        because we also form core_symb_vect at that time.*/
-    for (int i = ps->new_num_start_prods; i < ps->new_core->num_prods; i++)
+    for (int i = ps->new_num_started_prods; i < ps->new_core->num_prods; i++)
     {
         // Check if already added.
         if (ps->new_prods[i] == prod) return;
     }
-    /* Remember we do not store distance for non-start productions.*/
+    /* Remember we do not store distance for not-yet-started productions.*/
     OS_TOP_ADD_MEMORY(ps->set_prods_os, &prod, sizeof(YaepProduction*));
     ps->new_prods = ps->new_core->prods = (YaepProduction**)OS_TOP_BEGIN(ps->set_prods_os);
     ps->new_core->num_prods++;
@@ -4063,7 +4063,7 @@ static void setup_set_distances_hash(hash_table_entry_t s)
 {
     YaepStateSet *set = ((YaepStateSet*) s);
     int*dist_ptr = set->distances;
-    int n_distances = set->core->num_start_prods;
+    int n_distances = set->core->num_started_prods;
     int*dist_bound;
     unsigned result;
 
@@ -4081,7 +4081,7 @@ static void setup_set_core_hash(hash_table_entry_t s)
 {
     YaepStateSetCore*set_core =((YaepStateSet*) s)->core;
 
-    set_core->hash = prods_hash(set_core->num_start_prods, set_core->prods);
+    set_core->hash = prods_hash(set_core->num_started_prods, set_core->prods);
 }
 
 /* The new set should contain only start productions.  Sort productions,
@@ -4098,7 +4098,7 @@ static int set_insert(YaepParseState *ps)
     ps->new_set->distances = ps->new_distances;
     OS_TOP_EXPAND(ps->set_cores_os, sizeof(YaepStateSetCore));
     ps->new_set->core = ps->new_core = (YaepStateSetCore*) OS_TOP_BEGIN(ps->set_cores_os);
-    ps->new_core->num_start_prods = ps->new_num_start_prods;
+    ps->new_core->num_started_prods = ps->new_num_started_prods;
     ps->new_core->prods = ps->new_prods;
     ps->new_set_ready_p = TRUE;
 #ifdef USE_SET_HASH_TABLE
@@ -4115,12 +4115,12 @@ static int set_insert(YaepParseState *ps)
         OS_TOP_FINISH(ps->set_distances_os);
        *entry =(hash_table_entry_t)ps->new_set;
         ps->n_set_distances++;
-        ps->n_set_distances_len += ps->new_num_start_prods;
+        ps->n_set_distances_len += ps->new_num_started_prods;
     }
 #else
     OS_TOP_FINISH(ps->set_distances_os);
     ps->n_set_distances++;
-    ps->n_set_distances_len += ps->new_num_start_prods;
+    ps->n_set_distances_len += ps->new_num_started_prods;
 #endif
     /* Insert set core into table.*/
     setup_set_core_hash(ps->new_set);
@@ -4137,11 +4137,11 @@ static int set_insert(YaepParseState *ps)
     {
         OS_TOP_FINISH(ps->set_cores_os);
         ps->new_core->core_id = ps->n_set_cores++;
-        ps->new_core->num_prods = ps->new_num_start_prods;
-        ps->new_core->n_all_distances = ps->new_num_start_prods;
+        ps->new_core->num_prods = ps->new_num_started_prods;
+        ps->new_core->n_all_distances = ps->new_num_started_prods;
         ps->new_core->parent_indexes = NULL;
        *entry =(hash_table_entry_t)ps->new_set;
-        ps->n_set_core_start_prods += ps->new_num_start_prods;
+        ps->n_set_core_start_prods += ps->new_num_started_prods;
         result = TRUE;
     }
 #ifdef USE_SET_HASH_TABLE
@@ -4151,7 +4151,7 @@ static int set_insert(YaepParseState *ps)
     {
        *entry =(hash_table_entry_t)ps->new_set;
         ps->n_sets++;
-        ps->n_sets_start_prods += ps->new_num_start_prods;
+        ps->n_sets_start_prods += ps->new_num_started_prods;
         OS_TOP_FINISH(ps->sets_os);
     }
     else
@@ -5273,7 +5273,7 @@ static void add_derived_nonstart_prods(YaepParseState *ps, YaepProduction*prod, 
     }
 }
 
-/* The following function adds the rest(non-start) productions to the
+/* The following function adds the rest(not-yet-started) productions to the
    new set and and forms triples(set core, symbol, indexes) for
    further fast search of start productions from given core by
    transition on given symbol(see comment for abstract data
@@ -5287,7 +5287,7 @@ static void expand_new_start_set(YaepParseState *ps)
     int i;
 
     /* Add non start productions with nonzero distances.*/
-    for(i = 0; i < ps->new_num_start_prods; i++)
+    for(i = 0; i < ps->new_num_started_prods; i++)
         add_derived_nonstart_prods(ps, ps->new_prods[i], i);
     /* Add non start productions and form transitions vectors.*/
     for(i = 0; i < ps->new_core->num_prods; i++)
@@ -5445,7 +5445,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
         if (prod_ind >= set_core->n_all_distances)
         {
         }
-        else if (prod_ind < set_core->num_start_prods)
+        else if (prod_ind < set_core->num_started_prods)
         {
             dist = set->distances[prod_ind];
         }
@@ -5461,7 +5461,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
         }
     }
 
-    for(i = 0; i < ps->new_num_start_prods; i++)
+    for(i = 0; i < ps->new_num_started_prods; i++)
     {
         new_prod = ps->new_prods[i];
         if (new_prod->empty_tail_p)
@@ -5502,7 +5502,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                 if (prod_ind >= prev_set_core->n_all_distances)
                 {
                 }
-                else if (prod_ind < prev_set_core->num_start_prods)
+                else if (prod_ind < prev_set_core->num_started_prods)
                 {
                     dist = prev_set->distances[prod_ind];
                 }
@@ -6056,7 +6056,7 @@ static int check_cached_transition_set(YaepParseState *ps, YaepStateSet*set, int
     int i, dist;
     int*distances = set->distances;
 
-    for(i = set->core->num_start_prods - 1; i >= 0; i--)
+    for(i = set->core->num_started_prods - 1; i >= 0; i--)
     {
         if ((dist = distances[i]) <= 1)
             continue;
@@ -6945,7 +6945,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
 	{
             prod_ind = core_symb_vect->reduces.els[i];
             prod = set_core->prods[prod_ind];
-            if (prod_ind < set_core->num_start_prods)
+            if (prod_ind < set_core->num_started_prods)
                 prod_origin = state_set_ind - set->distances[prod_ind];
             else if (prod_ind < set_core->n_all_distances)
                 prod_origin = state_set_ind - set->distances[set_core->parent_indexes[prod_ind]];
@@ -6973,7 +6973,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                 check_prod_origin = prod_origin;
                 if (check_prod_ind < check_set_core->n_all_distances)
 		{
-                    if (check_prod_ind < check_set_core->num_start_prods)
+                    if (check_prod_ind < check_set_core->num_started_prods)
                         check_prod_origin
                             = prod_origin - check_set->distances[check_prod_ind];
                     else
@@ -7686,7 +7686,7 @@ static void print_production(YaepParseState *ps, FILE *f, YaepProduction *prod, 
 /* The following function prints SET to file F.  If NONSTART_P is TRUE
    then print all productions.  The productions are printed with the
    lookahead set if LOOKAHEAD_P.  SET_DIST is used to print absolute
-   distances of non-start productions. */
+   distances of not-yet-started productions. */
 static void print_state_set(YaepParseState *ps,
                             FILE* f,
                             YaepStateSet *state_set,
@@ -7695,7 +7695,7 @@ static void print_state_set(YaepParseState *ps,
                             int lookahead_p)
 {
     int i;
-    int num, num_start_prods, num_prods, n_all_distances;
+    int num, num_started_prods, num_prods, n_all_distances;
     YaepProduction**prods;
     int*distances,*parent_indexes;
 
@@ -7705,7 +7705,7 @@ static void print_state_set(YaepParseState *ps,
            debugger.  In this case new_set, new_core and their members
            may be not set up yet. */
         num = -1;
-        num_start_prods = num_prods = n_all_distances = ps->new_num_start_prods;
+        num_started_prods = num_prods = n_all_distances = ps->new_num_started_prods;
         prods = ps->new_prods;
         distances = ps->new_distances;
         parent_indexes = NULL;
@@ -7715,11 +7715,11 @@ static void print_state_set(YaepParseState *ps,
         num = state_set->core->core_id;
         num_prods = state_set->core->num_prods;
         prods = state_set->core->prods;
-        num_start_prods = state_set->core->num_start_prods;
+        num_started_prods = state_set->core->num_started_prods;
         distances = state_set->distances;
         n_all_distances = state_set->core->n_all_distances;
         parent_indexes = state_set->core->parent_indexes;
-        num_start_prods = state_set->core->num_start_prods;
+        num_started_prods = state_set->core->num_started_prods;
     }
 
     // This is
@@ -7730,14 +7730,14 @@ static void print_state_set(YaepParseState *ps,
         fprintf(f, "    ");
 
         int dist = 0;
-        if (i < num_start_prods) dist = distances[i];
+        if (i < num_started_prods) dist = distances[i];
         else if (i < n_all_distances) dist = parent_indexes[i];
 
-        assert(dist == (i < num_start_prods ? distances[i] : i < n_all_distances ? parent_indexes[i] : 0));
+        assert(dist == (i < num_started_prods ? distances[i] : i < n_all_distances ? parent_indexes[i] : 0));
 
         print_production(ps, f, prods[i], lookahead_p, dist);
 
-        if (i == num_start_prods - 1 && num_prods > num_start_prods)
+        if (i == num_started_prods - 1 && num_prods > num_started_prods)
         {
             if (!print_all_productions)
             {
