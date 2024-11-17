@@ -594,11 +594,12 @@ struct YaepParseState
     YaepParseRun run;
     int magic_cookie; // Must be set to 736268273 when the state is created.
 
-    // The input token array to be parsed.
+    /* The input token array to be parsed. */
     YaepInputToken *input_tokens;
     int input_tokens_len;
     vlo_t input_tokens_vlo;
-    // When parsing, the current input token is incremented from 0 to len.
+
+    /* When parsing, the current input token is incremented from 0 to len. */
     int current_input_token;
 
     /* The following says that new_set, new_core and their members are
