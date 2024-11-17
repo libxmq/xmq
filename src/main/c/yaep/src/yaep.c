@@ -388,10 +388,10 @@ struct YaepStateSetCore
        is defined only after forming all set.*/
     YaepSymb *term;
 
-    /* The variable num_prods are all productions in the set. Both starting and predicted. */
+    /* The variable num_productionsare all productions in the set. Both starting and predicted. */
     int num_productions;
     int num_started_productions;
-    // num_not_yet_started_prods == num_productions-num_started_productions
+    // num_not_yet_started_productions== num_productions-num_started_productions
 
     /* Array of productions.  Start productions are always placed the
        first in the order of their creation(with subsequent duplicates
@@ -612,11 +612,11 @@ struct YaepParseState
     /* The following are number of unique set cores and their start
        productions, unique distance vectors and their summary length, and
        number of parent indexes.  The variables can be read externally.*/
-    int n_set_cores, n_set_core_start_prods;
+    int n_set_cores, n_set_core_start_productions;
     int n_set_distances, n_set_distances_len, n_parent_indexes;
 
     /* Number unique sets and their start productions. */
-    int n_sets, n_sets_start_prods;
+    int n_sets, n_sets_start_productions;
 
     /* Number unique triples(core, term, lookahead). */
     int num_triplets_core_term_lookahead;
@@ -661,7 +661,7 @@ struct YaepParseState
 
     /* The following contains current number of unique productions.  It can
        be read externally.*/
-    int n_all_prods;
+    int n_all_productions;
 
     /* The following two dimensional array(the first dimension is context
        number, the second one is production number) contains references to
@@ -1517,7 +1517,7 @@ static void tok_fin(YaepParseState *ps)
 /* Initialize work with productions.*/
 static void prod_init(YaepParseState *ps)
 {
-    ps->n_all_prods = 0;
+    ps->n_all_productions= 0;
     OS_CREATE(ps->prods_os, ps->run.grammar->alloc, 0);
     VLO_CREATE(ps->prod_table_vlo, ps->run.grammar->alloc, 4096);
     ps->prod_table = (YaepProduction***)VLO_BEGIN(ps->prod_table_vlo);
@@ -1617,10 +1617,10 @@ static YaepProduction *prod_create(YaepParseState *ps, YaepRule *rule, int pos, 
     OS_TOP_EXPAND(ps->prods_os, sizeof(YaepProduction));
     prod =(YaepProduction*) OS_TOP_BEGIN(ps->prods_os);
     OS_TOP_FINISH(ps->prods_os);
-    ps->n_all_prods++;
+    ps->n_all_productions++;
     prod->rule = rule;
     prod->dot_pos = pos;
-    prod->prod_id = ps->n_all_prods;
+    prod->prod_id = ps->n_all_productions;
     prod->context = context;
     prod->empty_tail_p = prod_set_lookahead(ps, prod);
     (*context_prod_table_ptr)[rule->rule_start_offset + pos] = prod;
@@ -1847,9 +1847,9 @@ static void set_init(YaepParseState *ps, int n_toks)
                                 set_core_distances_hash, set_core_distances_eq);
     ps->set_of_triplets_core_term_lookahead = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
                                                core_term_lookahead_hash, core_term_lookahead_eq);
-    ps->n_set_cores = ps->n_set_core_start_prods = 0;
+    ps->n_set_cores = ps->n_set_core_start_productions= 0;
     ps->n_set_distances = ps->n_set_distances_len = ps->n_parent_indexes = 0;
-    ps->n_sets = ps->n_sets_start_prods = 0;
+    ps->n_sets = ps->n_sets_start_productions= 0;
     ps->num_triplets_core_term_lookahead = 0;
     production_distance_set_init(ps);
 }
@@ -2011,7 +2011,7 @@ static int set_insert(YaepParseState *ps)
         ps->new_core->n_all_distances = ps->new_num_started_productions;
         ps->new_core->parent_indexes = NULL;
        *entry =(hash_table_entry_t)ps->new_set;
-        ps->n_set_core_start_prods += ps->new_num_started_productions;
+        ps->n_set_core_start_productions+= ps->new_num_started_productions;
         result = TRUE;
     }
 #ifdef USE_SET_HASH_TABLE
@@ -2021,7 +2021,7 @@ static int set_insert(YaepParseState *ps)
     {
        *entry =(hash_table_entry_t)ps->new_set;
         ps->n_sets++;
-        ps->n_sets_start_prods += ps->new_num_started_productions;
+        ps->n_sets_start_productions+= ps->new_num_started_productions;
         OS_TOP_FINISH(ps->sets_os);
     }
     else
@@ -3285,7 +3285,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 {
     YaepStateSet *prev_set;
     YaepStateSetCore *set_core, *prev_set_core;
-    YaepProduction *prod, *new_prod, **prev_prods;
+    YaepProduction *prod, *new_prod, **prev_productions;
     YaepCoreSymbVect *prev_core_symb_vect;
     int local_lookahead_level, dist, prod_ind, new_dist;
     int i, place;
@@ -3354,11 +3354,11 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
             bound = curr_el + prev_core_symb_vect->transitions.len;
 
             assert(curr_el != NULL);
-            prev_prods = prev_set_core->prods;
+            prev_productions= prev_set_core->prods;
             do
 	    {
                 prod_ind = *curr_el++;
-                prod = prev_prods[prod_ind];
+                prod = prev_productions[prod_ind];
                 new_prod = prod_create(ps, prod->rule, prod->dot_pos + 1, prod->context);
                 if (local_lookahead_level != 0
                     && !term_set_test(new_prod->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
@@ -5227,12 +5227,12 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  ps->run.grammar->rules_ptr->n_rules,
                  ps->run.grammar->rules_ptr->n_rhs_lens + ps->run.grammar->rules_ptr->n_rules);
         fprintf(stderr, "Input: #tokens = %d, #unique productions = %d\n",
-                 ps->toks_len, ps->n_all_prods);
+                 ps->toks_len, ps->n_all_productions);
         fprintf(stderr, "       #terminal sets = %d, their size = %d\n",
                  ps->run.grammar->term_sets_ptr->n_term_sets, ps->run.grammar->term_sets_ptr->n_term_sets_size);
         fprintf(stderr,
                  "       #unique set cores = %d, #their start productions = %d\n",
-                 ps->n_set_cores, ps->n_set_core_start_prods);
+                 ps->n_set_cores, ps->n_set_core_start_productions);
         fprintf(stderr,
                  "       #parent indexes for some non start productions = %d\n",
                  ps->n_parent_indexes);
@@ -5241,7 +5241,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  ps->n_set_distances, ps->n_set_distances_len);
         fprintf(stderr,
                  "       #unique sets = %d, #their start productions = %d\n",
-                 ps->n_sets, ps->n_sets_start_prods);
+                 ps->n_sets, ps->n_sets_start_productions);
         fprintf(stderr,
                  "       #unique triples(set, term, lookahead) = %d, goto successes=%d\n",
                 ps->num_triplets_core_term_lookahead, ps->n_goto_successes);
