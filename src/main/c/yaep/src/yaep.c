@@ -38,7 +38,8 @@
 
    Terminology:
 
-   Input tokens: The content to be parsed. The tokens can be lexer tokens or unicode characters (IXML).
+   Input tokens: The content to be parsed stored as an array of symbols (with attribytes attached).
+                 The symbols can be lexer symbols or unicode characters (IXML).
    Rule: a grammar rule S -> NP VP
    Production: a rule put into production: NP 🞄 VP [origin]
    StateSet: The state of a parse, has started and not-yet-started productions (copies of rules)
@@ -436,7 +437,6 @@ struct YaepStateSet
        You should access to distances only through this member or
        variable `new_distances'(in other words don't save the member value
        in another variable). */
-
     int *distances;
 };
 
@@ -472,10 +472,11 @@ struct YaepProduction
 /* The following describes input token.*/
 struct YaepInputToken
 {
-    /* The following is symb correseponding to the token. */
+    /* A symbol has a name "BEGIN",code 17, or for ixml "A",code 65. */
     YaepSymb *symb;
 
-    /* The following is an attribute of the token. */
+    /* The token can have a provided attribute attached. This does not affect
+       the parse, but can be extracted from the final parse tree. */
     void *attr;
 };
 
@@ -593,6 +594,13 @@ struct YaepParseState
     YaepParseRun run;
     int magic_cookie; // Must be set to 736268273 when the state is created.
 
+    // The input token array to be parsed.
+    YaepInputToken *input_tokens;
+    int input_tokens_len;
+    vlo_t input_tokens_vlo;
+    // When parsing, the current input token is incremented from 0 to len.
+    int current_input_token;
+
     /* The following says that new_set, new_core and their members are
        defined. Before this the access to data of the set being formed
        are possible only through the following variables. */
@@ -654,15 +662,6 @@ struct YaepParseState
 
     /* Table for triplets (core, term, lookahead). */
     hash_table_t set_of_triplets_core_term_lookahead;	/* key is (core, term, lookeahed). */
-
-    /* The following two variables contains all input tokens and their
-       number.  The variables can be read externally.*/
-    YaepInputToken *input_tokens;
-    int input_tokens_len;
-    int current_input_token;
-
-    /* The following array contains all input tokens.*/
-    vlo_t input_tokens_vlo;
 
     /* The following contains current number of unique productions.  It can
        be read externally.*/
