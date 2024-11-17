@@ -2464,8 +2464,7 @@ struct YaepTermStorage
     /* All terminal sets are stored in the following os. */
     os_t term_set_os;
 
-    /* The following variables can be read externally.  Their values are
-       number of terminal sets and their overall size.*/
+    /* Their values are number of terminal sets and their overall size.*/
     int n_term_sets, n_term_sets_size;
 
     /* The YaepTermSet objects are stored in this vlo. */
@@ -2538,15 +2537,15 @@ struct YaepStateSetCore
        save the member value in another variable).*/
     YaepProduction **productions;
 
-    /* The following member is number of start productions and nonstart
-      (noninitial) productions whose distance is defined from a start
-       production distance.  All nonstart initial productions have zero
+    /* The following member is number of started productions and not-yet-started
+       (noninitial) productions whose distance is defined from a start
+       production distance.  All not-yet-started initial productions have zero
        distances.  This distances are not stored. */
     int n_all_distances;
 
     /* The following is array containing number of start production from
        which distance of(nonstart noninitial) production with given
-       index(between n_start_productions -> n_all_distances) is taken.*/
+       index(between n_start_productions -> n_all_distances) is taken. */
     int *parent_indexes;
 };
 
@@ -2561,11 +2560,11 @@ struct YaepStateSet
     /* Hash of the set distances. We save it as it is used several times. */
     unsigned int distances_hash;
 
-    /* The following is distances only for start productions.  Other
-       productions have their distances equal to 0.  The start production
-       in set core and the corresponding distance has the same index.
+    /* The following is distances only for started productions.  Not-yet-started
+       productions have their distances set to 0 implicitly.  A started production
+       in the set core and its corresponding distance have the same index.
        You should access to distances only through this member or
-       variable `new_distances'(in other words don't save the member value
+       variable `new_distances' (in other words don't save the member value
        in another variable). */
     int *distances;
 };
@@ -2631,55 +2630,63 @@ struct YaepRule
 {
     /* The following is order number of rule.*/
     int num;
+
     /* The following is length of rhs.*/
     int rhs_len;
+
     /* The following is the next grammar rule.*/
-    YaepRule*next;
+    YaepRule *next;
+
     /* The following is the next grammar rule with the same nonterminal
        in lhs of the rule.*/
     YaepRule*lhs_next;
-    /* The following is nonterminal in the left hand side of the
-       rule.*/
-    YaepSymb*lhs;
+
+    /* The following is nonterminal in the left hand side of the rule.*/
+    YaepSymb *lhs;
+
     /* The ixml default mark of the rule*/
     char mark;
+
     /* The following is symbols in the right hand side of the rule.*/
-    YaepSymb**rhs;
+    YaepSymb **rhs;
+
     /* The ixml marks for all the terms in the right hand side of the rule.*/
-    char*marks;
+    char *marks;
     /* The following three members define rule translation.*/
-    const char*anode;		/* abstract node name if any.*/
+
+    const char *anode;		/* abstract node name if any.*/
     int anode_cost;		/* the cost of the abstract node if any, otherwise 0.*/
     int trans_len;		/* number of symbol translations in the rule translation.*/
+
     /* The following array elements correspond to element of rhs with
        the same index.  The element value is order number of the
        corresponding symbol translation in the rule translation.  If the
        symbol translation is rejected, the corresponding element value is
        negative.*/
-    int*order;
+    int *order;
+
     /* The following member value is equal to size of all previous rule
        lengths + number of the previous rules.  Imagine that all left
        hand symbol and right hand size symbols of the rules are stored
        in array.  Then the following member is index of the rule lhs in
        the array.*/
     int rule_start_offset;
+
     /* The following is the same string as anode but memory allocated in
        parse_alloc.*/
-    char*caller_anode;
+    char *caller_anode;
 };
 
 /* The following container for the abstract data.*/
 struct YaepRuleStorage
 {
-    /* The following is number of all rules and their summary rhs
-       length.  The variables can be read externally.*/
+    /* The following is number of all rules and their summary rhs length. */
     int n_rules, n_rhs_lens;
 
     /* The following is the first rule.*/
     YaepRule *first_rule;
 
-    /* The following is rule being formed.  It can be read
-       externally.*/
+    /* The following is rule being formed. */
     YaepRule *current_rule;
 
     /* All rules are placed in the following object.*/
@@ -2740,8 +2747,8 @@ struct YaepParseState
     /* The following variable is set being created. It is defined only when new_set_ready_p is TRUE. */
     YaepStateSet *new_set;
 
-   /* The following variable is always set core of set being created.  It
-      can be read externally.  Member core of new_set has always the
+   /* The following variable is always set core of set being created.
+      Member core of new_set has always the
       following value.  It is defined only when new_set_ready_p is TRUE. */
     YaepStateSetCore *new_core;
 
@@ -2755,7 +2762,7 @@ struct YaepParseState
 
     /* The following are number of unique set cores and their start
        productions, unique distance vectors and their summary length, and
-       number of parent indexes.  The variables can be read externally.*/
+       number of parent indexes. */
     int n_set_cores, n_set_core_start_productions;
     int n_set_distances, n_set_distances_len, n_parent_indexes;
 
@@ -2794,8 +2801,7 @@ struct YaepParseState
     /* Table for triplets (core, term, lookahead). */
     hash_table_t set_of_triplets_core_term_lookahead;	/* key is (core, term, lookeahed). */
 
-    /* The following contains current number of unique productions.  It can
-       be read externally.*/
+    /* The following contains current number of unique productions. */
     int n_all_productions;
 
     /* The following two dimensional array(the first dimension is context
@@ -2812,7 +2818,7 @@ struct YaepParseState
     os_t productions_os;
 
     /* The set of pairs (production,distance) used for test-setting such pairs
-       is implemented using a map<prod id,map<distance,generation> since prod_id
+       is implemented using a vec[prod id] -> vec[distance] -> generation since prod_id
        is unique and incrementing, we use a vector[max_prod_id] to find another vector[max_distance]
        each distance entry storing a generation number. To clear the set of pairs
        we only need to increment the current generation below. Yay! No need to free, alloc, memset.*/
@@ -2824,8 +2830,7 @@ struct YaepParseState
     /* The following are number of unique(set core, symbol) pairs and
        their summary(transitive) transition and reduce vectors length,
        unique(transitive) transition vectors and their summary length,
-       and unique reduce vectors and their summary length.  The variables
-       can be read externally. */
+       and unique reduce vectors and their summary length. */
     int n_core_symb_pairs, n_core_symb_vect_len;
     int n_transition_vects, n_transition_vect_len;
     int n_reduce_vects, n_reduce_vect_len;
@@ -2866,9 +2871,7 @@ struct YaepParseState
     hash_table_t map_transition_to_coresymbvect;	/* key is elements.*/
     hash_table_t map_reduce_to_coresymbvect;	/* key is elements.*/
 
-    /* The following two variables represents Earley's parser list.  The
-       values of state_set_curr and array*pl can be read and modified
-       externally.*/
+    /* The following two variables represents Earley's parser list. */
     YaepStateSet **state_sets;
     int state_set_curr;
 
@@ -6951,11 +6954,17 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
             prod_ind = core_symb_vect->reduces.els[i];
             prod = set_core->productions[prod_ind];
             if (prod_ind < set_core->num_started_productions)
+            {
                 prod_origin = state_set_ind - set->distances[prod_ind];
+            }
             else if (prod_ind < set_core->n_all_distances)
+            {
                 prod_origin = state_set_ind - set->distances[set_core->parent_indexes[prod_ind]];
+            }
             else
+            {
                 prod_origin = state_set_ind;
+            }
 
             if (ps->run.debug)
 	    {
@@ -7671,14 +7680,14 @@ static void print_rule_with_dot(YaepParseState *ps, FILE *f, YaepRule *rule, int
 
 /* The following function prints production PROD to file F.  The
    production is printed with the lookahead set if LOOKAHEAD_P.*/
-static void print_production(YaepParseState *ps, FILE *f, YaepProduction *prod, int lookahead_p, int origin)
+static void print_production(YaepParseState *ps, FILE *f, YaepProduction *prod, int lookahead_p, int distance)
 {
     fprintf(f, "(%3d)    ", prod->prod_id);
     print_rule_with_dot(ps, f, prod->rule, prod->dot_pos);
 
-    if (origin >= 0)
+    if (distance >= 0)
     {
-        fprintf(f, ", %d", origin);
+        fprintf(f, ", distance %d", distance);
     }
     if (ps->run.grammar->lookahead_level != 0 && lookahead_p)
     {
@@ -7727,7 +7736,6 @@ static void print_state_set(YaepParseState *ps,
         num_started_productions = state_set->core->num_started_productions;
     }
 
-    // This is
     fprintf(f, "  core(%d)\n", num);
 
     for(i = 0; i < num_productions; i++)
@@ -7737,6 +7745,7 @@ static void print_state_set(YaepParseState *ps,
         int dist = 0;
         if (i < num_started_productions) dist = distances[i];
         else if (i < n_all_distances) dist = parent_indexes[i];
+        else assert(false);
 
         assert(dist == (i < num_started_productions ? distances[i] : i < n_all_distances ? parent_indexes[i] : 0));
 
