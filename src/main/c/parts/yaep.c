@@ -3937,10 +3937,11 @@ static bool production_distance_test_and_set(YaepParseState *ps, YaepProduction 
     int *generation = (int*)VLO_BEGIN(*dist_vlo) + dist;
     if (*generation == ps->production_distance_vec_generation)
     {
-        // The pair was already inserted! Since we found the current generation in this slot.
+        // The pair was already inserted! We know this since we found the current generation in this slot.
         // Remember that we clear the set by incrementing the current generation.
         return true;
     }
+    // The pair did not exist in the set. (Since the generation number did not match.)
     // Insert this pair my marking the vec[prod_id][dist] with the current generation.
     *generation = ps->production_distance_vec_generation;
     return false;
