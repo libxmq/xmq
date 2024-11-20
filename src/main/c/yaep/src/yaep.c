@@ -207,7 +207,6 @@ struct YaepGrammar
     int recovery_token_matches;
 
     /* The following value is TRUE if we need only one parse.*/
-
     bool one_parse_p;
 
     /* The following value is TRUE if we need parse(s) with minimal costs.*/
@@ -263,22 +262,22 @@ struct YaepSymb
             /* The following value is nonzero if nonterminal may derivate
                itself.  In other words there is a grammar loop for this
                nonterminal.*/
-            int loop_p;
+            bool loop_p;
             /* The following members are FIRST and FOLLOW sets of the nonterminal. */
             term_set_el_t *first, *follow;
         } nonterm;
     } u;
     /* The following member is TRUE if it is nonterminal.*/
-    char term_p;
+    bool term_p;
     /* The following member value(if defined) is TRUE if the symbol is
        accessible(derivated) from the axiom.*/
-    char access_p;
+    bool access_p;
     /* The following member is TRUE if it is a termainal or it is a
        nonterminal which derivates a terminal string.*/
-    char derivation_p;
+    bool derivation_p;
     /* The following is TRUE if it is nonterminal which may derivate
        empty string.*/
-    char empty_p;
+    bool empty_p;
     /* The following member is order number of symbol.*/
     int num;
 #ifdef USE_CORE_SYMB_HASH_TABLE
@@ -835,18 +834,18 @@ typedef struct YaepParseState YaepParseState;
 static void read_input_tokens(YaepParseState *ps);
 static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
 static void print_rule_with_dot(YaepParseState *ps, FILE *f, YaepRule *rule, int pos);
-static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, int trans_p);
+static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, bool trans_p);
 static void print_state_set(YaepParseState *ps,
                             FILE* f,
                             YaepStateSet*set,
                             int set_dist,
                             int print_all_productions,
                             int lookahead_p);
-static void print_production(YaepParseState *ps, FILE *f, YaepProduction *prod, int lookahead_p, int origin);
+static void print_production(YaepParseState *ps, FILE *f, YaepProduction *prod, bool lookahead_p, int origin);
 static YaepVocabulary *symb_init(YaepGrammar *g);
 static void symb_empty(YaepParseState *ps, YaepVocabulary *symbs);
 static void symb_finish_adding_terms(YaepParseState *ps);
-static void symb_print(FILE* f, YaepSymb*symb, int code_p);
+static void symb_print(FILE* f, YaepSymb *symb, bool code_p);
 static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 
 // Global variables /////////////////////////////////////////////////////
@@ -871,7 +870,7 @@ static unsigned symb_repr_hash(hash_table_entry_t s)
 }
 
 /* Equality of symbol representations. */
-static int symb_repr_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool symb_repr_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepSymb *sym1 = (YaepSymb*)s1;
     YaepSymb *sym2 = (YaepSymb*)s2;
@@ -890,7 +889,7 @@ static unsigned symb_code_hash(hash_table_entry_t s)
 }
 
 /* Equality of terminal codes.*/
-static int symb_code_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool symb_code_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepSymb *sym1 = (YaepSymb*)s1;
     YaepSymb *sym2 = (YaepSymb*)s2;
@@ -953,7 +952,7 @@ static YaepSymb *symb_find_by_code(YaepParseState *ps, int code)
         }
     }
 
-    symb.term_p = TRUE;
+    symb.term_p = true;
     symb.u.term.code = code;
     YaepSymb*r =(YaepSymb*)*find_hash_table_entry(ps->run.grammar->symbs_ptr->map_code_to_symb, &symb, FALSE);
 
@@ -971,14 +970,14 @@ static YaepSymb *symb_add_term(YaepParseState *ps, const char*name, int code)
     hash_table_entry_t *repr_entry, *code_entry;
 
     symb.repr = name;
-    symb.term_p = TRUE;
+    symb.term_p = true;
     symb.num = ps->run.grammar->symbs_ptr->num_nonterms + ps->run.grammar->symbs_ptr->num_terms;
     symb.u.term.code = code;
     symb.u.term.term_id = ps->run.grammar->symbs_ptr->num_terms++;
     symb.empty_p = FALSE;
-    repr_entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_repr_to_symb, &symb, TRUE);
+    repr_entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_repr_to_symb, &symb, true);
     assert(*repr_entry == NULL);
-    code_entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_code_to_symb, &symb, TRUE);
+    code_entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_code_to_symb, &symb, true);
     assert(*code_entry == NULL);
     OS_TOP_ADD_STRING(ps->run.grammar->symbs_ptr->symbs_os, name);
     symb.repr =(char*) OS_TOP_BEGIN(ps->run.grammar->symbs_ptr->symbs_os);
@@ -1005,12 +1004,12 @@ static YaepSymb *symb_add_nonterm(YaepParseState *ps, const char *name)
     hash_table_entry_t*entry;
 
     symb.repr = name;
-    symb.term_p = FALSE;
+    symb.term_p = false;
     symb.num = ps->run.grammar->symbs_ptr->num_nonterms + ps->run.grammar->symbs_ptr->num_terms;
     symb.u.nonterm.rules = NULL;
-    symb.u.nonterm.loop_p = 0;
+    symb.u.nonterm.loop_p = false;
     symb.u.nonterm.nonterm_id = ps->run.grammar->symbs_ptr->num_nonterms++;
-    entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_repr_to_symb, &symb, TRUE);
+    entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_repr_to_symb, &symb, true);
     assert(*entry == NULL);
     OS_TOP_ADD_STRING(ps->run.grammar->symbs_ptr->symbs_os, name);
     symb.repr =(char*) OS_TOP_BEGIN(ps->run.grammar->symbs_ptr->symbs_os);
@@ -1164,7 +1163,7 @@ static unsigned term_set_hash(hash_table_entry_t s)
 }
 
 /* Equality of terminal sets. */
-static int term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepTermSet *ts1 = (YaepTermSet*)s1;
     YaepTermSet *ts2 = (YaepTermSet*)s2;
@@ -1180,10 +1179,10 @@ static int term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     {
         if (*i++ != *j++)
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 /* Initialize work with terminal sets and returns storage for terminal sets.*/
@@ -1251,19 +1250,20 @@ static void term_set_copy(term_set_el_t *dest, term_set_el_t *src, int num_terms
 }
 
 /* Add all terminals from set OP with to SET.  Return TRUE if SET has been changed.*/
-static int term_set_or(term_set_el_t *set, term_set_el_t *op, int num_terms)
+static bool term_set_or(term_set_el_t *set, term_set_el_t *op, int num_terms)
 {
     term_set_el_t *bound;
-    int size, changed_p;
+    int size;
+    bool changed_p;
 
     size = ((num_terms + CHAR_BIT* sizeof(term_set_el_t) - 1) / (CHAR_BIT* sizeof(term_set_el_t)));
     bound = set + size;
-    changed_p = 0;
+    changed_p = false;
     while (set < bound)
     {
         if ((*set |*op) !=*set)
         {
-            changed_p = 1;
+            changed_p = true;
         }
        *set++ |= *op++;
     }
@@ -1271,16 +1271,17 @@ static int term_set_or(term_set_el_t *set, term_set_el_t *op, int num_terms)
 }
 
 /* Add terminal with number NUM to SET.  Return TRUE if SET has been changed.*/
-static int term_set_up(term_set_el_t *set, int num, int num_terms)
+static bool term_set_up(term_set_el_t *set, int num, int num_terms)
 {
-    int ind, changed_p;
+    int ind;
     term_set_el_t bit;
+    bool changed_p;
 
     assert(num < num_terms);
 
     ind = num / (CHAR_BIT* sizeof(term_set_el_t));
     bit = ((term_set_el_t) 1) << (num %(CHAR_BIT* sizeof(term_set_el_t)));
-    changed_p =(set[ind] & bit ? 0 : 1);
+    changed_p = (set[ind] & bit ? false : true);
     set[ind] |= bit;
 
     return changed_p;
@@ -1310,7 +1311,7 @@ static int term_set_insert(YaepParseState *ps, term_set_el_t *set)
     YaepTermSet term_set,*term_set_ptr;
 
     term_set.set = set;
-    entry = find_hash_table_entry(ps->run.grammar->term_sets_ptr->map_term_set_to_id, &term_set, TRUE);
+    entry = find_hash_table_entry(ps->run.grammar->term_sets_ptr->map_term_set_to_id, &term_set, true);
 
     if (*entry != NULL)
     {
@@ -1352,7 +1353,7 @@ static void term_set_print(YaepParseState *ps, FILE *f, term_set_el_t *set, int 
         if (term_set_test(set, i, num_terms))
         {
             if (i) fprintf(f, " ");
-            symb_print(f, term_get(ps, i), FALSE);
+            symb_print(f, term_get(ps, i), false);
         }
     }
     fprintf(f, "]");
@@ -1672,7 +1673,7 @@ static unsigned set_core_hash(hash_table_entry_t s)
 }
 
 /* Equality of set cores. */
-static int set_core_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool set_core_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepStateSetCore*set_core1 = ((YaepStateSet*) s1)->core;
     YaepStateSetCore*set_core2 = ((YaepStateSet*) s2)->core;
@@ -1689,10 +1690,10 @@ static int set_core_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     {
         if (*prod_ptr1++ !=*prod_ptr2++)
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 /* Hash of set distances. */
@@ -1702,7 +1703,7 @@ static unsigned distances_hash(hash_table_entry_t s)
 }
 
 /* Compare all the distances stored in the two state sets. */
-static int distances_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool distances_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepStateSet *st1 = (YaepStateSet*)s1;
     YaepStateSet *st2 = (YaepStateSet*)s2;
@@ -1720,10 +1721,10 @@ static int distances_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     {
         if (*i++ != *j++)
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 /* Hash of set core and distances. */
@@ -1733,7 +1734,7 @@ static unsigned set_core_distances_hash(hash_table_entry_t s)
 }
 
 /* Equality of set cores and distances. */
-static int set_core_distances_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool set_core_distances_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepStateSetCore *set_core1 = ((YaepStateSet*)s1)->core;
     YaepStateSetCore *set_core2 = ((YaepStateSet*)s2)->core;
@@ -1754,7 +1755,7 @@ static unsigned core_term_lookahead_hash(hash_table_entry_t s)
 }
 
 /* Equality of tripes(set, term, lookahead).*/
-static int core_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool core_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepStateSet *set1 =((YaepStateSetTermLookAhead*)s1)->set;
     YaepStateSet *set2 =((YaepStateSetTermLookAhead*)s2)->set;
@@ -1984,11 +1985,11 @@ static int set_insert(YaepParseState *ps)
     ps->new_set->core = ps->new_core = (YaepStateSetCore*) OS_TOP_BEGIN(ps->set_cores_os);
     ps->new_core->num_started_productions = ps->new_num_started_productions;
     ps->new_core->productions = ps->new_productions;
-    ps->new_set_ready_p = TRUE;
+    ps->new_set_ready_p = true;
 #ifdef USE_SET_HASH_TABLE
     /* Insert distances into table.*/
     setup_set_distances_hash(ps->new_set);
-    entry = find_hash_table_entry(ps->set_of_distanceses, ps->new_set, TRUE);
+    entry = find_hash_table_entry(ps->set_of_distanceses, ps->new_set, true);
     if (*entry != NULL)
     {
         ps->new_distances = ps->new_set->distances =((YaepStateSet*)*entry)->distances;
@@ -2008,7 +2009,7 @@ static int set_insert(YaepParseState *ps)
 #endif
     /* Insert set core into table.*/
     setup_set_core_hash(ps->new_set);
-    entry = find_hash_table_entry(ps->set_of_cores, ps->new_set, TRUE);
+    entry = find_hash_table_entry(ps->set_of_cores, ps->new_set, true);
     if (*entry != NULL)
     {
         OS_TOP_NULLIFY(ps->set_cores_os);
@@ -2026,11 +2027,11 @@ static int set_insert(YaepParseState *ps)
         ps->new_core->parent_indexes = NULL;
        *entry =(hash_table_entry_t)ps->new_set;
         ps->n_set_core_start_productions+= ps->new_num_started_productions;
-        result = TRUE;
+        result = true;
     }
 #ifdef USE_SET_HASH_TABLE
     /* Insert set into table.*/
-    entry = find_hash_table_entry(ps->set_of_tuples_core_distances, ps->new_set, TRUE);
+    entry = find_hash_table_entry(ps->set_of_tuples_core_distances, ps->new_set, true);
     if (*entry == NULL)
     {
        *entry =(hash_table_entry_t)ps->new_set;
@@ -2160,7 +2161,7 @@ static unsigned core_symb_vect_hash(hash_table_entry_t t)
 }
 
 /* Equality of core_symb_vects.*/
-static int core_symb_vect_eq(hash_table_entry_t t1, hash_table_entry_t t2)
+static bool core_symb_vect_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 {
     YaepCoreSymbVect*core_symb_vect1 =(YaepCoreSymbVect*) t1;
     YaepCoreSymbVect*core_symb_vect2 =(YaepCoreSymbVect*) t2;
@@ -2182,7 +2183,7 @@ static unsigned vect_els_hash(YaepVect*v)
 }
 
 /* Return TRUE if V1 is equal to V2. */
-static unsigned vect_els_eq(YaepVect*v1, YaepVect*v2)
+static bool vect_els_eq(YaepVect*v1, YaepVect*v2)
 {
     int i;
     if (v1->len != v2->len)
@@ -2190,8 +2191,8 @@ static unsigned vect_els_eq(YaepVect*v1, YaepVect*v2)
 
     for(i = 0; i < v1->len; i++)
         if (v1->els[i] != v2->els[i])
-            return FALSE;
-    return TRUE;
+            return false;
+    return true;
 }
 
 /* Hash of vector transition elements.*/
@@ -2201,7 +2202,7 @@ static unsigned transition_els_hash(hash_table_entry_t t)
 }
 
 /* Equality of transition vector elements.*/
-static int transition_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
+static bool transition_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 {
     return vect_els_eq(&((YaepCoreSymbVect*) t1)->transitions,
                         &((YaepCoreSymbVect*) t2)->transitions);
@@ -2214,7 +2215,7 @@ static unsigned reduce_els_hash(hash_table_entry_t t)
 }
 
 /* Equality of reduce vector elements.*/
-static int reduce_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
+static bool reduce_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 {
     return vect_els_eq(&((YaepCoreSymbVect*) t1)->reduces,
                         &((YaepCoreSymbVect*) t2)->reduces);
@@ -2346,7 +2347,7 @@ static YaepCoreSymbVect *core_symb_vect_new(YaepParseState *ps, YaepStateSetCore
     OS_TOP_FINISH(ps->core_symb_vect_os);
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    addr = core_symb_vect_addr_get(ps, triple, TRUE);
+    addr = core_symb_vect_addr_get(ps, triple, true);
 #else
     addr = core_symb_vect_addr_get(ps, set_core, symb);
 #endif
@@ -2411,7 +2412,7 @@ static void process_core_symb_vect_el(YaepParseState *ps,
         vec->els = NULL;
     else
     {
-        entry = find_hash_table_entry(*tab, core_symb_vect, TRUE);
+        entry = find_hash_table_entry(*tab, core_symb_vect, true);
         if (*entry != NULL)
             vec->els
                 =(&core_symb_vect->transitions == vec
@@ -2590,8 +2591,8 @@ static void create_first_follow_sets(YaepParseState *ps)
 {
     YaepSymb *symb, **rhs, *rhs_symb, *next_rhs_symb;
     YaepRule *rule;
-    int changed_p, first_continue_p;
     int i, j, k, rhs_len;
+    bool changed_p, first_continue_p;
 
     for (i = 0; (symb = nonterm_get(ps, i)) != NULL; i++)
     {
@@ -2602,12 +2603,12 @@ static void create_first_follow_sets(YaepParseState *ps)
     }
     do
     {
-        changed_p = 0;
+        changed_p = false;
         for(i = 0;(symb = nonterm_get(ps, i)) != NULL; i++)
             for(rule = symb->u.nonterm.rules;
                  rule != NULL; rule = rule->lhs_next)
             {
-                first_continue_p = TRUE;
+                first_continue_p = true;
                 rhs = rule->rhs;
                 rhs_len = rule->rhs_len;
                 for(j = 0; j < rhs_len; j++)
@@ -2648,7 +2649,7 @@ static void create_first_follow_sets(YaepParseState *ps)
                                                      ps->run.grammar->symbs_ptr->num_terms);
                     }
                     if (!rhs_symb->empty_p)
-                        first_continue_p = FALSE;
+                        first_continue_p = false;
                 }
             }
     }
@@ -2661,20 +2662,20 @@ static void set_empty_access_derives(YaepParseState *ps)
 {
     YaepSymb*symb,*rhs_symb;
     YaepRule*rule;
-    int empty_p, derivation_p;
-    int empty_changed_p, derivation_changed_p, accessibility_change_p;
+    bool empty_p, derivation_p;
+    bool empty_changed_p, derivation_changed_p, accessibility_change_p;
     int i, j;
 
     for(i = 0;(symb = symb_get(ps, i)) != NULL; i++)
     {
-        symb->empty_p = 0;
-        symb->derivation_p =(symb->term_p ? 1 : 0);
-        symb->access_p = 0;
+        symb->empty_p = false;
+        symb->derivation_p = (symb->term_p ? true : false);
+        symb->access_p = false;
     }
     ps->run.grammar->axiom->access_p = 1;
     do
     {
-        empty_changed_p = derivation_changed_p = accessibility_change_p = 0;
+        empty_changed_p = derivation_changed_p = accessibility_change_p = false;
         for(i = 0;(symb = nonterm_get(ps, i)) != NULL; i++)
             for(rule = symb->u.nonterm.rules;
                  rule != NULL; rule = rule->lhs_next)
@@ -2712,8 +2713,8 @@ static void set_loop_p(YaepParseState *ps)
 {
     YaepSymb*symb,*lhs;
     YaepRule*rule;
-    int i, j, k, loop_p, changed_p;
-
+    int i, j, k;
+    bool loop_p, changed_p;
     /* Initialize accoding to minimal criteria: There is a rule in which
        the nonterminal stands and all the rest symbols can derive empty
        strings.*/
@@ -2727,18 +2728,18 @@ static void set_loop_p(YaepParseState *ps)
                     else if (!rule->rhs[j]->empty_p)
                         break;
                 if (j >= rule->rhs_len)
-                    symb->u.nonterm.loop_p = 1;
+                    symb->u.nonterm.loop_p = true;
             }
     /* Major cycle: Check looped nonterminal that there is a rule with
        the nonterminal in lhs with a looped nonterminal in rhs and all
        the rest rhs symbols deriving empty string.*/
     do
     {
-        changed_p = FALSE;
+        changed_p = false;
         for(i = 0;(lhs = nonterm_get(ps, i)) != NULL; i++)
             if (lhs->u.nonterm.loop_p)
             {
-                loop_p = 0;
+                loop_p = false;
                 for(rule = lhs->u.nonterm.rules;
                      rule != NULL; rule = rule->lhs_next)
                     for(j = 0; j < rule->rhs_len; j++)
@@ -2750,10 +2751,10 @@ static void set_loop_p(YaepParseState *ps)
                                 else if (!rule->rhs[k]->empty_p)
                                     break;
                             if (k >= rule->rhs_len)
-                                loop_p = 1;
+                                loop_p = true;
                         }
                 if (!loop_p)
-                    changed_p = TRUE;
+                    changed_p = true;
                 lhs->u.nonterm.loop_p = loop_p;
             }
     }
@@ -3018,7 +3019,7 @@ int yaep_read_grammar(YaepParseRun *pr,
         for(rule = ps->run.grammar->rules_ptr->first_rule; rule != NULL; rule = rule->next)
 	{
             fprintf(stderr, "  ");
-            rule_print(ps, stderr, rule, TRUE);
+            rule_print(ps, stderr, rule, true);
 	}
         fprintf(stderr, "\n");
         /* Print symbol sets.*/
@@ -3210,13 +3211,14 @@ static void expand_new_start_set(YaepParseState *ps)
     {
         YaepProduction *new_prod, *shifted_prod;
         term_set_el_t *context_set;
-        int changed_p, prod_ind, context, j;
+        int prod_ind, context, j;
+        bool changed_p;
 
         /* Now we have incorrect initial productions because their context is not correct. */
         context_set = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terms);
         do
 	{
-            changed_p = FALSE;
+            changed_p = false;
             for(i = ps->new_core->n_all_distances; i < ps->new_core->num_productions; i++)
 	    {
                 term_set_clear(context_set, ps->run.grammar->symbs_ptr->num_terms);
@@ -3243,7 +3245,7 @@ static void expand_new_start_set(YaepParseState *ps)
                 if (prod != new_prod)
 		{
                     ps->new_productions[i] = prod;
-                    changed_p = TRUE;
+                    changed_p = true;
 		}
 	    }
 	}
@@ -3539,7 +3541,7 @@ static struct recovery_state new_recovery_state(YaepParseState *ps, int last_ori
     {
         fprintf(stderr, "++++Creating recovery state: original set=%d, tok=%d, ",
                 last_original_state_set_el, ps->current_input_token_i);
-        symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, TRUE);
+        symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
         fprintf(stderr, "\n");
     }
 
@@ -3578,7 +3580,7 @@ static void push_recovery_state(YaepParseState *ps, int last_original_state_set_
     {
         fprintf(stderr, "++++Push recovery state: original set=%d, tok=%d, ",
                  last_original_state_set_el, ps->current_input_token_i);
-        symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, TRUE);
+        symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
         fprintf(stderr, "\n");
     }
 
@@ -3599,7 +3601,7 @@ static void set_recovery_state(YaepParseState *ps, struct recovery_state*state)
     {
         fprintf(stderr, "++++Set recovery state: set=%d, tok=%d, ",
                  ps->state_set_curr, ps->current_input_token_i);
-        symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, TRUE);
+        symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
         fprintf(stderr, "\n");
     }
 
@@ -3710,7 +3712,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
                     fprintf(stderr,
                              "++++Advance head frontier(one pos): tok=%d, ",
                              ps->current_input_token_i);
-                    symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, TRUE);
+                    symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
                     fprintf(stderr, "\n");
 
 		}
@@ -3723,7 +3725,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         if (ps->run.debug)
 	{
             fprintf(stderr, "++++Trying set=%d, tok=%d, ", ps->state_set_curr, ps->current_input_token_i);
-            symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, TRUE);
+            symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
             fprintf(stderr, "\n");
 	}
 
@@ -3754,7 +3756,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             if (ps->run.debug)
 	    {
                 fprintf(stderr, "++++++Skipping=%d ", ps->current_input_token_i);
-                symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, TRUE);
+                symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
                 fprintf(stderr, "\n");
 	    }
 
@@ -3818,7 +3820,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             if (ps->run.debug)
 	    {
                 fprintf(stderr, "++++++Matching=%d ", ps->current_input_token_i);
-                symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, TRUE);
+                symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
                 fprintf(stderr, "\n");
 	    }
 
@@ -3839,7 +3841,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 		{
                     fprintf(stderr, "++++Found secondary state: original set=%d, tok=%d, ",
                             state.last_original_state_set_el, ps->current_input_token_i);
-                    symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, TRUE);
+                    symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
                     fprintf(stderr, "\n");
 		}
 
@@ -3900,7 +3902,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
     if (ps->run.debug)
     {
         fprintf(stderr, "\n++Error recovery end: curr token %d=", ps->current_input_token_i);
-        symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, TRUE);
+        symb_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
         fprintf(stderr, ", Current set=%d:\n", ps->state_set_curr);
         if (ps->run.debug)
         {
@@ -3929,7 +3931,7 @@ static void error_recovery_fin(YaepParseState *ps)
 /* Return TRUE if goto set SET from parsing list PLACE can be used as
    the next set.  The criterium is that all origin sets of start
    productions are the same as from PLACE. */
-static int check_cached_transition_set(YaepParseState *ps, YaepStateSet*set, int place)
+static bool check_cached_transition_set(YaepParseState *ps, YaepStateSet*set, int place)
 {
     int i, dist;
     int*distances = set->distances;
@@ -3941,9 +3943,9 @@ static int check_cached_transition_set(YaepParseState *ps, YaepStateSet*set, int
         /* Sets at origins of productions with distance one are supposed
            to be the same. */
         if (ps->state_sets[ps->state_set_curr + 1 - dist] != ps->state_sets[place + 1 - dist])
-            return FALSE;
+            return false;
     }
-    return TRUE;
+    return true;
 }
 
 static int try_to_recover(YaepParseState *ps)
@@ -3994,7 +3996,7 @@ static YaepStateSetTermLookAhead *lookup_cached_set(YaepParseState *ps,
         new_core_term_lookahead->result[i] = NULL;
     }
     new_core_term_lookahead->curr = 0;
-    entry = find_hash_table_entry(ps->set_of_triplets_core_term_lookahead, new_core_term_lookahead, TRUE);
+    entry = find_hash_table_entry(ps->set_of_triplets_core_term_lookahead, new_core_term_lookahead, true);
 
     if (*entry != NULL)
     {
@@ -4066,7 +4068,7 @@ static void perform_parse(YaepParseState *ps)
         if (ps->run.debug)
 	{
             fprintf(stderr, "\nScan input_tokens[%d]= ", ps->current_input_token_i);
-            symb_print(stderr, THE_TERM, TRUE);
+            symb_print(stderr, THE_TERM, true);
             fprintf(stderr, " state_set_curr=%d\n", ps->state_set_curr);
 	}
 
@@ -4124,7 +4126,7 @@ static unsigned parse_state_hash(hash_table_entry_t s)
 }
 
 /* Equality of parse states.*/
-static int parse_state_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool parse_state_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepInternalParseState*state1 =((YaepInternalParseState*) s1);
     YaepInternalParseState*state2 =((YaepInternalParseState*) s2);
@@ -4178,16 +4180,16 @@ static void parse_state_free(YaepParseState *ps, YaepInternalParseState*state)
    to the state in the table.  Otherwise the function makes copy of
   *STATE, inserts into the table and returns pointer to copied state.
    In the last case, the function also sets up*NEW_P.*/
-static YaepInternalParseState *parse_state_insert(YaepParseState *ps, YaepInternalParseState *state, int *new_p)
+static YaepInternalParseState *parse_state_insert(YaepParseState *ps, YaepInternalParseState *state, bool *new_p)
 {
     hash_table_entry_t*entry;
 
-    entry = find_hash_table_entry(ps->map_rule_orig_statesetind_to_internalstate, state, TRUE);
+    entry = find_hash_table_entry(ps->map_rule_orig_statesetind_to_internalstate, state, true);
 
-   *new_p = FALSE;
+   *new_p = false;
     if (*entry != NULL)
         return(YaepInternalParseState*)*entry;
-   *new_p = TRUE;
+   *new_p = true;
     /* We make copy because current_state_set_i can be changed in further processing state.*/
    *entry = parse_state_alloc(ps);
    *(YaepInternalParseState*)*entry =*state;
@@ -4213,7 +4215,7 @@ static unsigned trans_visit_node_hash(hash_table_entry_t n)
 }
 
 /* Equality of translation visit nodes.*/
-static int trans_visit_node_eq(hash_table_entry_t n1, hash_table_entry_t n2)
+static bool trans_visit_node_eq(hash_table_entry_t n1, hash_table_entry_t n2)
 {
     return(((YaepTreeNodeVisit*) n1)->node == ((YaepTreeNodeVisit*) n2)->node);
 }
@@ -4229,7 +4231,7 @@ static YaepTreeNodeVisit *visit_node(YaepParseState *ps, YaepTreeNode*node)
 
     trans_visit_node.node = node;
     entry = find_hash_table_entry(ps->map_node_to_visit,
-                                   &trans_visit_node, TRUE);
+                                   &trans_visit_node, true);
 
     if (*entry == NULL)
     {
@@ -4461,7 +4463,7 @@ static unsigned reserv_mem_hash(hash_table_entry_t m)
 }
 
 /* The equity of the memory reference. */
-static int reserv_mem_eq(hash_table_entry_t m1, hash_table_entry_t m2)
+static bool reserv_mem_eq(hash_table_entry_t m1, hash_table_entry_t m2)
 {
     return m1 == m2;
 }
@@ -4546,7 +4548,7 @@ static void traverse_pruned_translation(YaepParseState *ps, YaepTreeNode *node)
 
 next:
     assert(node != NULL);
-    if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->set_of_reserved_memory, node, TRUE)) == NULL)
+    if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->set_of_reserved_memory, node, true)) == NULL)
     {
        *entry = (hash_table_entry_t)node;
     }
@@ -4559,7 +4561,7 @@ next:
     case YAEP_ANODE:
         if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->set_of_reserved_memory,
                                                                       node->val.anode.name,
-                                                                      TRUE)) == NULL)
+                                                                      true)) == NULL)
         {
             *entry =(hash_table_entry_t) node->val.anode.name;
         }
@@ -4604,12 +4606,12 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
         for(node_ptr =(YaepTreeNode**) VLO_BEGIN(ps->tnodes_vlo);
              node_ptr <(YaepTreeNode**) VLO_BOUND(ps->tnodes_vlo);
              node_ptr++)
-            if (*find_hash_table_entry(ps->set_of_reserved_memory,*node_ptr, TRUE) == NULL)
+            if (*find_hash_table_entry(ps->set_of_reserved_memory,*node_ptr, true) == NULL)
             {
                 if ((*node_ptr)->type == YAEP_ANODE
                     &&*find_hash_table_entry(ps->set_of_reserved_memory,
 					      (*node_ptr)->val.anode.name,
-					       TRUE) == NULL)
+					       true) == NULL)
                 {
                    (*ps->run.parse_free)((void*)(*node_ptr)->val.anode.name);
                 }
@@ -4628,7 +4630,7 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
    function sets up*AMBIGUOUS_P if we found that the grammer is
    ambigous(it works even we asked only one parse tree without
    alternatives).*/
-static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
+static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 {
     YaepStateSet *set, *check_set;
     YaepStateSetCore *set_core, *check_set_core;
@@ -4637,7 +4639,8 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
     YaepSymb *symb;
     YaepCoreSymbVect *core_symb_vect, *check_core_symb_vect;
     int i, j, k, found, pos, origin, current_state_set_i, n_candidates, disp;
-    int prod_ind, check_prod_ind, prod_origin, check_prod_origin, new_p;
+    int prod_ind, check_prod_ind, prod_origin, check_prod_origin;
+    bool new_p;
     YaepInternalParseState *state, *orig_state, *curr_state;
     YaepInternalParseState *table_state, *parent_anode_state;
     YaepInternalParseState root_state;
@@ -4876,7 +4879,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
 		}
                 if (check_prod_origin == origin)
 		{
-                    found = TRUE;
+                    found = true;
                     break;
 		}
 	    }
@@ -4884,7 +4887,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
                 continue;
             if (n_candidates != 0)
 	    {
-               *ambiguous_p = TRUE;
+               *ambiguous_p = true;
                 if (ps->run.grammar->one_parse_p)
                     break;
 	    }
@@ -5185,9 +5188,10 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
 
     ps->run.grammar = g;
     YaepTreeNode **root = &ps->run.root;
-    int *ambiguous_p = &ps->run.ambiguous_p;
+    bool *ambiguous_p = &ps->run.ambiguous_p;
 
-    int code, tok_init_p, parse_init_p;
+    int code;
+    bool tok_init_p, parse_init_p;
     int table_collisions, table_searches;
 
     /* Set up parse allocation*/
@@ -5205,7 +5209,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
 
     assert(ps->run.grammar != NULL);
    *root = NULL;
-   *ambiguous_p = FALSE;
+   *ambiguous_p = false;
     pl_init(ps);
     tok_init_p = parse_init_p = FALSE;
     if ((code = setjmp(error_longjump_buff)) != 0)
@@ -5223,10 +5227,10 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     }
     ps->n_goto_successes = 0;
     tok_init(ps);
-    tok_init_p = TRUE;
+    tok_init_p = true;
     read_input_tokens(ps);
     yaep_parse_init(ps, ps->input_tokens_len);
-    parse_init_p = TRUE;
+    parse_init_p = true;
     pl_create(ps);
     table_collisions = get_all_collisions();
     table_searches = get_all_searches();
@@ -5477,7 +5481,7 @@ void yaepFreeTree(YaepTreeNode *root,
 
 /* The following function prints symbol SYMB to file F.  Terminal is
    printed with its code if CODE_P.*/
-static void symb_print(FILE* f, YaepSymb*symb, int code_p)
+static void symb_print(FILE* f, YaepSymb*symb, bool code_p)
 {
     fprintf(f, "%s", symb->repr);
     if (code_p && symb->term_p)
@@ -5487,7 +5491,7 @@ static void symb_print(FILE* f, YaepSymb*symb, int code_p)
 }
 
 /* The following function prints RULE with its translation(if TRANS_P) to file F.*/
-static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, int trans_p)
+static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, bool trans_p)
 {
     int i, j;
 
@@ -5556,7 +5560,7 @@ static void print_rule_with_dot(YaepParseState *ps, FILE *f, YaepRule *rule, int
 
 /* The following function prints production PROD to file F.  The
    production is printed with the lookahead set if LOOKAHEAD_P.*/
-static void print_production(YaepParseState *ps, FILE *f, YaepProduction *prod, int lookahead_p, int distance)
+static void print_production(YaepParseState *ps, FILE *f, YaepProduction *prod, bool lookahead_p, int distance)
 {
     fprintf(f, "(%3d)    ", prod->prod_id);
     print_rule_with_dot(ps, f, prod->rule, prod->dot_i);

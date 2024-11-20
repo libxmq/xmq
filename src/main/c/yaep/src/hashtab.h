@@ -74,8 +74,8 @@ typedef struct
   unsigned (*hash_function) (hash_table_entry_t el_ptr);
   /* Pointer to function for test on equality of hash table elements (two
      parameter of type hash_table_entry_t. */
-  int (*eq_function) (hash_table_entry_t el1_ptr,
-                      hash_table_entry_t el2_ptr);
+  bool (*eq_function) (hash_table_entry_t el1_ptr,
+                       hash_table_entry_t el2_ptr);
   /* Table itself */
   hash_table_entry_t *entries;
   /* Allocator */
@@ -95,16 +95,18 @@ typedef struct
 
 /* The prototypes of the package functions. */
 
-extern hash_table_t create_hash_table(
-  YaepAllocator * allocator, size_t size, unsigned int ( *hash_function )( hash_table_entry_t el_ptr ), int ( *eq_function )( hash_table_entry_t el1_ptr, hash_table_entry_t el2_ptr )
-);
+extern hash_table_t create_hash_table(YaepAllocator * allocator,
+                                      size_t size,
+                                      unsigned int ( *hash_function )( hash_table_entry_t el_ptr ),
+                                      bool (*eq_function)(hash_table_entry_t el1_ptr,hash_table_entry_t el2_ptr));
 
 extern void empty_hash_table (hash_table_t htab);
 
 extern void delete_hash_table (hash_table_t htab);
 
-extern hash_table_entry_t *find_hash_table_entry
-  (hash_table_t htab, hash_table_entry_t element, int reserve);
+extern hash_table_entry_t *find_hash_table_entry(hash_table_t htab,
+                                                 hash_table_entry_t element,
+                                                 int reserve);
 
 extern void remove_element_from_hash_table_entry (hash_table_t htab,
                                                   hash_table_entry_t element);
@@ -174,7 +176,7 @@ class hash_table
   unsigned (*hash_function) (hash_table_entry_t el_ptr);
   /* Pointer to function for test on equality of hash table elements (two
      parameter of type hash_table_entry_t. */
-  int (*eq_function) (hash_table_entry_t el1_ptr,
+  bool (*eq_function) (hash_table_entry_t el1_ptr,
                       hash_table_entry_t el2_ptr);
   /* Table itself */
   hash_table_entry_t *entries;
@@ -194,7 +196,7 @@ class hash_table
 public:
 
   /* Constructor. */
-  hash_table( YaepAllocator * allocator, size_t size, unsigned int ( *hash_function )( hash_table_entry_t el_ptr ), int ( *eq_function )( hash_table_entry_t el1_ptr, hash_table_entry_t el2_ptr ) );
+  hash_table( YaepAllocator * allocator, size_t size, unsigned int ( *hash_function )( hash_table_entry_t el_ptr ), bool ( *eq_function )( hash_table_entry_t el1_ptr, hash_table_entry_t el2_ptr ) );
   /* Destructor. */
   ~hash_table (void);
 

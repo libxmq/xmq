@@ -106,7 +106,7 @@ struct YaepParseRun
     // The resulting DOM tree is stored here.
     YaepTreeNode *root;
     // Set to 1 if the parse was ambigious.
-    int ambiguous_p;
+    bool ambiguous_p;
 
     // We are parsing with this grammar.
     YaepGrammar *grammar;

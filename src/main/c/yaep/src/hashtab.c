@@ -89,8 +89,8 @@ higher_prime_number (unsigned long number)
 hash_table_t
 create_hash_table (YaepAllocator * allocator, size_t size,
 		   unsigned int (*hash_function) (hash_table_entry_t el_ptr),
-		   int (*eq_function) (hash_table_entry_t el1_ptr,
-				       hash_table_entry_t el2_ptr))
+		   bool (*eq_function) (hash_table_entry_t el1_ptr,
+	 			        hash_table_entry_t el2_ptr))
 {
   hash_table_t result;
   hash_table_entry_t *entry_ptr;
