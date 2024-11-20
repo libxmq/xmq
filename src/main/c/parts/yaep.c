@@ -2344,7 +2344,7 @@ struct YaepGrammar
     bool cost_p;
 
     /* The following value is TRUE if we need to make error recovery.*/
-    int error_recovery_p;
+    bool error_recovery_p;
 
     /* The following vocabulary used for this grammar.*/
     YaepVocabulary *symbs_ptr;
@@ -4650,7 +4650,7 @@ YaepGrammar *yaepNewGrammar()
     grammar->lookahead_level = 1;
     grammar->one_parse_p = true;
     grammar->cost_p = false;
-    grammar->error_recovery_p = 1;
+    grammar->error_recovery_p = true;
     grammar->recovery_token_matches = DEFAULT_RECOVERY_TOKEN_MATCHES;
     grammar->symbs_ptr = symb_init(grammar);
     grammar->term_sets_ptr = term_set_init(grammar);
@@ -5219,8 +5219,7 @@ int yaep_set_recovery_match(YaepGrammar *grammar, int n_input_tokens)
     return old;
 }
 
-/* The function initializes all internal data for parser for N_INPUT_TOKENS
-   tokens.*/
+/* The function initializes all internal data for parser for N_INPUT_TOKENS tokens. */
 static void yaep_parse_init(YaepParseState *ps, int n_input_tokens)
 {
     YaepRule*rule;
