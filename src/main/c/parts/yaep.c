@@ -2305,7 +2305,7 @@ struct YaepGrammar
     /* The following member is TRUE if the grammar is undefined(you
        should set up the grammar by yaep_read_grammar or yaep_parse_grammar)
        or bad(error was occured in setting up the grammar). */
-    int undefined_p;
+    bool undefined_p;
 
     /* This member always contains the last occurred error code for given grammar. */
     int error_code;
@@ -2337,7 +2337,8 @@ struct YaepGrammar
     int recovery_token_matches;
 
     /* The following value is TRUE if we need only one parse.*/
-    int one_parse_p;
+
+    bool one_parse_p;
 
     /* The following value is TRUE if we need parse(s) with minimal costs.*/
     int cost_p;
@@ -4643,11 +4644,11 @@ YaepGrammar *yaepNewGrammar()
         assert(0);
         return NULL;
     }
-    grammar->undefined_p = TRUE;
+    grammar->undefined_p = true;
     grammar->error_code = 0;
    *grammar->error_message = '\0';
     grammar->lookahead_level = 1;
-    grammar->one_parse_p = 1;
+    grammar->one_parse_p = true;
     grammar->cost_p = 0;
     grammar->error_recovery_p = 1;
     grammar->recovery_token_matches = DEFAULT_RECOVERY_TOKEN_MATCHES;
@@ -5168,7 +5169,7 @@ int yaep_read_grammar(YaepParseRun *pr,
 	}
     }
 
-    ps->run.grammar->undefined_p = FALSE;
+    ps->run.grammar->undefined_p = false;
     return 0;
 }
 
@@ -5184,12 +5185,10 @@ int yaep_set_lookahead_level(YaepGrammar *grammar, int level)
     return old;
 }
 
-int yaep_set_one_parse_flag(YaepGrammar *grammar, int flag)
+bool yaep_set_one_parse_flag(YaepGrammar *grammar, bool flag)
 {
-    int old;
-
     assert(grammar != NULL);
-    old = grammar->one_parse_p;
+    bool old = grammar->one_parse_p;
     grammar->one_parse_p = flag;
     return old;
 }
@@ -6780,7 +6779,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
     YaepTreeNode *result, *empty_node, *node, *error_node;
     YaepTreeNode *parent_anode, *anode, root_anode;
     int parent_disp;
-    int saved_one_parse_p;
+    bool saved_one_parse_p;
     YaepTreeNode **term_node_array = NULL;
     vlo_t stack, orig_states;
 
@@ -6801,7 +6800,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
     saved_one_parse_p = ps->run.grammar->one_parse_p;
     if (ps->run.grammar->cost_p)
         /* We need all parses to choose the minimal one*/
-        ps->run.grammar->one_parse_p = FALSE;
+        ps->run.grammar->one_parse_p = false;
     prod = set->core->productions[0];
     parse_state_init(ps);
     if (!ps->run.grammar->one_parse_p)
