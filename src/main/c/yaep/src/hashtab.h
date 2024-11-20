@@ -106,7 +106,7 @@ extern void delete_hash_table (hash_table_t htab);
 
 extern hash_table_entry_t *find_hash_table_entry(hash_table_t htab,
                                                  hash_table_entry_t element,
-                                                 int reserve);
+                                                 bool reserve);
 
 extern void remove_element_from_hash_table_entry (hash_table_t htab,
                                                   hash_table_entry_t element);

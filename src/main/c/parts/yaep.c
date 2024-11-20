@@ -400,7 +400,7 @@ void delete_hash_table (hash_table_t htab);
 
 hash_table_entry_t *find_hash_table_entry(hash_table_t htab,
                                                  hash_table_entry_t element,
-                                                 int reserve);
+                                                 bool reserve);
 
 void remove_element_from_hash_table_entry (hash_table_t htab,
                                                   hash_table_entry_t element);
@@ -1722,8 +1722,7 @@ expand_hash_table (hash_table_t htab)
        entry_ptr++)
     if (*entry_ptr != EMPTY_ENTRY && *entry_ptr != DELETED_ENTRY)
       {
-	new_entry_ptr = find_hash_table_entry (new_htab, *entry_ptr,
-					       1 /* TRUE */ );
+	new_entry_ptr = find_hash_table_entry (new_htab, *entry_ptr, true);
 	assert (*new_entry_ptr == EMPTY_ENTRY);
 	*new_entry_ptr = (*entry_ptr);
       }
@@ -1756,7 +1755,8 @@ int all_collisions = 0;
 
 hash_table_entry_t *
 find_hash_table_entry (hash_table_t htab,
-		       hash_table_entry_t element, int reserve)
+		       hash_table_entry_t element,
+                       bool reserve)
 {
   hash_table_entry_t *entry_ptr;
   hash_table_entry_t *first_deleted_entry_ptr;
@@ -1813,7 +1813,7 @@ remove_element_from_hash_table_entry (hash_table_t htab,
   hash_table_entry_t *entry_ptr;
 
   assert (htab != NULL);
-  entry_ptr = find_hash_table_entry (htab, element, 0);
+  entry_ptr = find_hash_table_entry (htab, element, false);
   assert (*entry_ptr != EMPTY_ENTRY && *entry_ptr != DELETED_ENTRY);
   *entry_ptr = DELETED_ENTRY;
   htab->number_of_deleted_elements++;
@@ -2206,14 +2206,6 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 //include "xmq.h"
 //include "parts/always.h"
 
-#ifndef FALSE
-#define FALSE 0
-#endif
-
-#ifndef TRUE
-#define TRUE 1
-#endif
-
 /* Terminals are stored a in term set using bits in a bit array.
    The array consists of long ints, typedefed as term_set_el_t.
    A long int is 8 bytes, ie 64 bits. */
@@ -2304,7 +2296,7 @@ typedef struct YaepTreeNodeVisit YaepTreeNodeVisit;
 
 struct YaepGrammar
 {
-    /* The following member is TRUE if the grammar is undefined(you
+    /* The following member is true if the grammar is undefined(you
        should set up the grammar by yaep_read_grammar or yaep_parse_grammar)
        or bad(error was occured in setting up the grammar). */
     bool undefined_p;
@@ -2338,13 +2330,13 @@ struct YaepGrammar
        successfuly shifted to finish error recovery.*/
     int recovery_token_matches;
 
-    /* The following value is TRUE if we need only one parse.*/
+    /* The following value is true if we need only one parse.*/
     bool one_parse_p;
 
-    /* The following value is TRUE if we need parse(s) with minimal costs.*/
+    /* The following value is true if we need parse(s) with minimal costs.*/
     bool cost_p;
 
-    /* The following value is TRUE if we need to make error recovery.*/
+    /* The following value is true if we need to make error recovery.*/
     bool error_recovery_p;
 
     /* The following vocabulary used for this grammar.*/
@@ -2399,15 +2391,15 @@ struct YaepSymb
             term_set_el_t *first, *follow;
         } nonterm;
     } u;
-    /* The following member is TRUE if it is nonterminal.*/
+    /* The following member is true if it is nonterminal.*/
     bool term_p;
-    /* The following member value(if defined) is TRUE if the symbol is
+    /* The following member value(if defined) is true if the symbol is
        accessible(derivated) from the axiom.*/
     bool access_p;
-    /* The following member is TRUE if it is a termainal or it is a
+    /* The following member is true if it is a termainal or it is a
        nonterminal which derivates a terminal string.*/
     bool derivation_p;
-    /* The following is TRUE if it is nonterminal which may derivate
+    /* The following is true if it is nonterminal which may derivate
        empty string.*/
     bool empty_p;
     /* The following member is order number of symbol.*/
@@ -2586,7 +2578,7 @@ struct YaepProduction
        Starts at 0 (left of all rhs terms) and ends at rhs.len (right of all rhs terms). */
     short dot_i;
 
-    /* The following member is TRUE if the tail can derive empty string. */
+    /* The following member is true if the tail can derive empty string. */
     bool empty_tail_p;
 
     /* The following is number of production context which is number of
@@ -2751,12 +2743,12 @@ struct YaepParseState
        are possible only through the following variables. */
     int new_set_ready_p;
 
-    /* The following variable is set being created. It is defined only when new_set_ready_p is TRUE. */
+    /* The following variable is set being created. It is defined only when new_set_ready_p is true. */
     YaepStateSet *new_set;
 
    /* The following variable is always set core of set being created.
       Member core of new_set has always the
-      following value.  It is defined only when new_set_ready_p is TRUE. */
+      following value.  It is defined only when new_set_ready_p is true. */
     YaepStateSetCore *new_core;
 
    /* To optimize code we use the following variables to access to data
@@ -3057,7 +3049,7 @@ static YaepSymb *symb_find_by_repr(YaepParseState *ps, const char*repr)
 {
     YaepSymb symb;
     symb.repr = repr;
-    YaepSymb*r = (YaepSymb*)*find_hash_table_entry(ps->run.grammar->symbs_ptr->map_repr_to_symb, &symb, FALSE);
+    YaepSymb*r = (YaepSymb*)*find_hash_table_entry(ps->run.grammar->symbs_ptr->map_repr_to_symb, &symb, false);
 
     TRACE_FA(ps, "%s -> %p", repr, r);
 
@@ -3086,7 +3078,7 @@ static YaepSymb *symb_find_by_code(YaepParseState *ps, int code)
 
     symb.term_p = true;
     symb.u.term.code = code;
-    YaepSymb*r =(YaepSymb*)*find_hash_table_entry(ps->run.grammar->symbs_ptr->map_code_to_symb, &symb, FALSE);
+    YaepSymb*r =(YaepSymb*)*find_hash_table_entry(ps->run.grammar->symbs_ptr->map_code_to_symb, &symb, false);
 
     TRACE_FA(ps, "hash %d -> %p", code, r);
 
@@ -3106,7 +3098,7 @@ static YaepSymb *symb_add_term(YaepParseState *ps, const char*name, int code)
     symb.num = ps->run.grammar->symbs_ptr->num_nonterms + ps->run.grammar->symbs_ptr->num_terms;
     symb.u.term.code = code;
     symb.u.term.term_id = ps->run.grammar->symbs_ptr->num_terms++;
-    symb.empty_p = FALSE;
+    symb.empty_p = false;
     repr_entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_repr_to_symb, &symb, true);
     assert(*repr_entry == NULL);
     code_entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_code_to_symb, &symb, true);
@@ -3381,7 +3373,7 @@ static void term_set_copy(term_set_el_t *dest, term_set_el_t *src, int num_terms
     }
 }
 
-/* Add all terminals from set OP with to SET.  Return TRUE if SET has been changed.*/
+/* Add all terminals from set OP with to SET.  Return true if SET has been changed.*/
 static bool term_set_or(term_set_el_t *set, term_set_el_t *op, int num_terms)
 {
     term_set_el_t *bound;
@@ -3402,7 +3394,7 @@ static bool term_set_or(term_set_el_t *set, term_set_el_t *op, int num_terms)
     return changed_p;
 }
 
-/* Add terminal with number NUM to SET.  Return TRUE if SET has been changed.*/
+/* Add terminal with number NUM to SET.  Return true if SET has been changed.*/
 static bool term_set_up(term_set_el_t *set, int num, int num_terms)
 {
     int ind;
@@ -3419,7 +3411,7 @@ static bool term_set_up(term_set_el_t *set, int num, int num_terms)
     return changed_p;
 }
 
-/* Return TRUE if terminal with number NUM is in SET. */
+/* Return true if terminal with number NUM is in SET. */
 static int term_set_test(term_set_el_t *set, int num, int num_terms)
 {
     int ind;
@@ -3671,7 +3663,7 @@ static void prod_init(YaepParseState *ps)
 }
 
 /* The following function sets up lookahead of production SIT.  The
-   function returns TRUE if the production tail may derive empty
+   function returns true if the production tail may derive empty
    string.*/
 static bool prod_set_lookahead(YaepParseState *ps, YaepProduction *prod)
 {
@@ -3813,7 +3805,7 @@ static bool set_core_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 
     if (set_core1->num_started_productions != set_core2->num_started_productions)
     {
-        return FALSE;
+        return false;
     }
     prod_ptr1 = set_core1->productions;
     prod_bound1 = prod_ptr1 + set_core1->num_started_productions;
@@ -3845,7 +3837,7 @@ static bool distances_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 
     if (n_distances != st2->core->num_started_productions)
     {
-        return FALSE;
+        return false;
     }
 
     int *bound = i + n_distances;
@@ -3920,7 +3912,7 @@ static void clear_production_distance_set(YaepParseState *ps)
    This prod_id is used as in index into the vector, the vector storing vlo objects.
    Each vlo object maintains a memory region used for an integer array of distances.
 
-   If such pair exists return true (was FALSE), otherwise return false. (was TRUE). */
+   If such pair exists return true (was false), otherwise return false. (was true). */
 static bool production_distance_test_and_set(YaepParseState *ps, YaepProduction *prod, int dist)
 {
     int i, len, prod_id;
@@ -4006,7 +3998,7 @@ static void set_new_start(YaepParseState *ps)
 {
     ps->new_set = NULL;
     ps->new_core = NULL;
-    ps->new_set_ready_p = FALSE;
+    ps->new_set_ready_p = false;
     ps->new_productions = NULL;
     ps->new_distances = NULL;
     ps->new_num_started_productions = 0;
@@ -4103,7 +4095,7 @@ static void setup_set_core_hash(hash_table_entry_t s)
 
 /* The new set should contain only start productions.  Sort productions,
    remove duplicates and insert set into the set table.  If the
-   function returns TRUE then set contains new set core(there was no
+   function returns true then set contains new set core(there was no
    such core in the table).*/
 static int set_insert(YaepParseState *ps)
 {
@@ -4148,7 +4140,7 @@ static int set_insert(YaepParseState *ps)
         ps->new_set->core = ps->new_core = ((YaepStateSet*)*entry)->core;
         ps->new_productions = ps->new_core->productions;
         OS_TOP_NULLIFY(ps->set_productions_os);
-        result = FALSE;
+        result = false;
     }
     else
     {
@@ -4314,12 +4306,12 @@ static unsigned vect_els_hash(YaepVect*v)
     return result;
 }
 
-/* Return TRUE if V1 is equal to V2. */
+/* Return true if V1 is equal to V2. */
 static bool vect_els_eq(YaepVect*v1, YaepVect*v2)
 {
     int i;
     if (v1->len != v2->len)
-        return FALSE;
+        return false;
 
     for(i = 0; i < v1->len; i++)
         if (v1->els[i] != v2->els[i])
@@ -4453,7 +4445,7 @@ static YaepCoreSymbVect *core_symb_vect_find(YaepParseState *ps, YaepStateSetCor
 
     core_symb_vect.set_core = set_core;
     core_symb_vect.symb = symb;
-    r = *core_symb_vect_addr_get(ps, &core_symb_vect, FALSE);
+    r = *core_symb_vect_addr_get(ps, &core_symb_vect, false);
 #else
     r = *core_symb_vect_addr_get(ps, set_core, symb);
 #endif
@@ -5268,7 +5260,7 @@ static void read_input_tokens(YaepParseState *ps)
 /* The following function add start productions which is formed from
    given start production PROD with distance DIST by reducing symbol
    which can derivate empty string and which is placed after dot in
-   given production.  The function returns TRUE if the dot is placed on
+   given production.  The function returns true if the dot is placed on
    the last position in given production or in the added productions.*/
 static void add_derived_nonstart_productions(YaepParseState *ps, YaepProduction*prod, int parent)
 {
@@ -5410,7 +5402,7 @@ static void build_start_set(YaepParseState *ps)
         set_new_add_start_prod(ps, prod, 0);
     }
 
-    if (!set_insert(ps)) assert(FALSE);
+    if (!set_insert(ps)) assert(false);
 
     expand_new_start_set(ps);
     ps->state_sets[0] = ps->new_set;
@@ -6060,7 +6052,7 @@ static void error_recovery_fin(YaepParseState *ps)
     VLO_DELETE(ps->original_state_set_tail_stack);
 }
 
-/* Return TRUE if goto set SET from parsing list PLACE can be used as
+/* Return true if goto set SET from parsing list PLACE can be used as
    the next set.  The criterium is that all origin sets of start
    productions are the same as from PLACE. */
 static bool check_cached_transition_set(YaepParseState *ps, YaepStateSet*set, int place)
@@ -6446,7 +6438,7 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
                     fprintf(f, "ALT");
                     break;
 		default:
-                    assert(FALSE);
+                    assert(false);
 		}
                 fprintf(f, "\";\n");
 	    }
@@ -6489,7 +6481,7 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
                 fprintf(f, "ALT");
                 break;
 	    default:
-                assert(FALSE);
+                assert(false);
 	    }
             fprintf(f, "\";\n");
             if (node->val.alt.next != NULL)
@@ -6502,7 +6494,7 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
             print_yaep_node(ps, f, node->val.alt.next);
         break;
     default:
-        assert(FALSE);
+        assert(false);
     }
 }
 
@@ -6664,7 +6656,7 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
        *cost = min_cost;
         return(result->val.alt.next == NULL ? result->val.alt.node : result);
     default:
-        assert(FALSE);
+        assert(false);
     }
    *cost = 0;
     return NULL;
@@ -6710,7 +6702,7 @@ next:
             goto next;
         break;
     default:
-        assert(FALSE);
+        assert(false);
     }
 
     TRACE_F(ps);
@@ -6990,7 +6982,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             check_set_core = check_set->core;
             check_core_symb_vect = core_symb_vect_find(ps, check_set_core, symb);
             assert(check_core_symb_vect != NULL);
-            found = FALSE;
+            found = false;
             for(j = 0; j < check_core_symb_vect->transitions.len; j++)
 	    {
                 check_prod_ind = check_core_symb_vect->transitions.els[j];
@@ -7343,7 +7335,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
    *root = NULL;
    *ambiguous_p = false;
     pl_init(ps);
-    tok_init_p = parse_init_p = FALSE;
+    tok_init_p = parse_init_p = false;
     if ((code = setjmp(error_longjump_buff)) != 0)
     {
         pl_fin(ps);
@@ -7629,7 +7621,7 @@ static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, bool trans_p
 
     assert(rule->mark >= 0 && rule->mark < 128);
     fprintf(f, "%c", rule->mark?rule->mark:' ');
-    symb_print(f, rule->lhs, FALSE);
+    symb_print(f, rule->lhs, false);
     fprintf(f, " :");
     for(i = 0; i < rule->rhs_len; i++)
     {
@@ -7643,7 +7635,7 @@ static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, bool trans_p
             if (!m) fprintf(f, "  ");
             else    fprintf(f, " ?%d?", rule->marks[i]);
         }
-        symb_print(f, rule->rhs[i], FALSE);
+        symb_print(f, rule->rhs[i], false);
     }
     if (trans_p)
     {
@@ -7656,7 +7648,7 @@ static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, bool trans_p
                 if (rule->order[j] == i)
                 {
                     fprintf(f, " %d:", j);
-                    symb_print(f, rule->rhs[j], FALSE);
+                    symb_print(f, rule->rhs[j], false);
                     break;
                 }
             if (j >= rule->rhs_len)
@@ -7677,12 +7669,12 @@ static void print_rule_with_dot(YaepParseState *ps, FILE *f, YaepRule *rule, int
 
     assert(pos >= 0 && pos <= rule->rhs_len);
 
-    symb_print(f, rule->lhs, FALSE);
+    symb_print(f, rule->lhs, false);
     fprintf(f, " → ");
     for(i = 0; i < rule->rhs_len; i++)
     {
         fprintf(f, i == pos ? " 🞄 " : " ");
-        symb_print(f, rule->rhs[i], FALSE);
+        symb_print(f, rule->rhs[i], false);
     }
     if (rule->rhs_len == pos)
     {
@@ -7709,7 +7701,7 @@ static void print_production(YaepParseState *ps, FILE *f, YaepProduction *prod, 
     if (distance != -1) fprintf(f, "\n");
 }
 
-/* The following function prints SET to file F.  If NONSTART_P is TRUE
+/* The following function prints SET to file F.  If NONSTART_P is true
    then print all productions.  The productions are printed with the
    lookahead set if LOOKAHEAD_P.  SET_DIST is used to print absolute
    distances of not-yet-started productions. */

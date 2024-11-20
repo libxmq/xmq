@@ -161,8 +161,7 @@ expand_hash_table (hash_table_t htab)
        entry_ptr++)
     if (*entry_ptr != EMPTY_ENTRY && *entry_ptr != DELETED_ENTRY)
       {
-	new_entry_ptr = find_hash_table_entry (new_htab, *entry_ptr,
-					       1 /* TRUE */ );
+	new_entry_ptr = find_hash_table_entry (new_htab, *entry_ptr, true);
 	assert (*new_entry_ptr == EMPTY_ENTRY);
 	*new_entry_ptr = (*entry_ptr);
       }
@@ -195,7 +194,8 @@ int all_collisions = 0;
 
 hash_table_entry_t *
 find_hash_table_entry (hash_table_t htab,
-		       hash_table_entry_t element, int reserve)
+		       hash_table_entry_t element,
+                       bool reserve)
 {
   hash_table_entry_t *entry_ptr;
   hash_table_entry_t *first_deleted_entry_ptr;
@@ -252,7 +252,7 @@ remove_element_from_hash_table_entry (hash_table_t htab,
   hash_table_entry_t *entry_ptr;
 
   assert (htab != NULL);
-  entry_ptr = find_hash_table_entry (htab, element, 0);
+  entry_ptr = find_hash_table_entry (htab, element, false);
   assert (*entry_ptr != EMPTY_ENTRY && *entry_ptr != DELETED_ENTRY);
   *entry_ptr = DELETED_ENTRY;
   htab->number_of_deleted_elements++;
