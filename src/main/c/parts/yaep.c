@@ -2703,7 +2703,8 @@ struct YaepInternalParseState
     int dot_pos;
 
     /* The rule origin (start point of derivated string from rule rhs)
-       and state set in which we are now. */
+       and the current state set index position. I.e. the same
+       as the current_input_token_i. */
     int origin_pos, current_state_set_i;
 
     /* If the following value is NULL, then we do not need to create
