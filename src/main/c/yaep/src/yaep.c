@@ -455,7 +455,7 @@ struct YaepProduction
     short dot_i;
 
     /* The following member is TRUE if the tail can derive empty string. */
-    char empty_tail_p;
+    bool empty_tail_p;
 
     /* The following is number of production context which is number of
        the corresponding terminal set in the table.  It is really used
@@ -1539,7 +1539,7 @@ static void prod_init(YaepParseState *ps)
 /* The following function sets up lookahead of production SIT.  The
    function returns TRUE if the production tail may derive empty
    string.*/
-static int prod_set_lookahead(YaepParseState *ps, YaepProduction *prod)
+static bool prod_set_lookahead(YaepParseState *ps, YaepProduction *prod)
 {
     YaepSymb *symb, **symb_ptr;
 
@@ -1579,9 +1579,9 @@ static int prod_set_lookahead(YaepParseState *ps, YaepProduction *prod)
         {
             term_set_or(prod->lookahead, term_set_from_table(ps, prod->context), ps->run.grammar->symbs_ptr->num_terms);
         }
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
 /* The following function returns productions with given
