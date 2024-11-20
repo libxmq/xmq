@@ -312,7 +312,7 @@ int yaep_parse_grammar(YaepGrammar *g,
      successfully shifted to finish error recovery.  The default value is 3. */
 int yaep_set_lookahead_level(YaepGrammar *grammar, int level);
 bool yaep_set_one_parse_flag(YaepGrammar *grammar, bool flag);
-int yaep_set_cost_flag(YaepGrammar *grammar, int flag);
+bool yaep_set_cost_flag(YaepGrammar *grammar, bool flag);
 int yaep_set_error_recovery_flag(YaepGrammar *grammar, int flag);
 int yaep_set_recovery_match(YaepGrammar *grammar, int n_toks);
 

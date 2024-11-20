@@ -211,7 +211,7 @@ struct YaepGrammar
     bool one_parse_p;
 
     /* The following value is TRUE if we need parse(s) with minimal costs.*/
-    int cost_p;
+    bool cost_p;
 
     /* The following value is TRUE if we need to make error recovery.*/
     int error_recovery_p;
@@ -2519,7 +2519,7 @@ YaepGrammar *yaepNewGrammar()
    *grammar->error_message = '\0';
     grammar->lookahead_level = 1;
     grammar->one_parse_p = true;
-    grammar->cost_p = 0;
+    grammar->cost_p = false;
     grammar->error_recovery_p = 1;
     grammar->recovery_token_matches = DEFAULT_RECOVERY_TOKEN_MATCHES;
     grammar->symbs_ptr = symb_init(grammar);
@@ -3063,12 +3063,10 @@ bool yaep_set_one_parse_flag(YaepGrammar *grammar, bool flag)
     return old;
 }
 
-int yaep_set_cost_flag(YaepGrammar *grammar, int flag)
+bool yaep_set_cost_flag(YaepGrammar *grammar, bool flag)
 {
-    int old;
-
     assert(grammar != NULL);
-    old = grammar->cost_p;
+    bool old = grammar->cost_p;
     grammar->cost_p = flag;
     return old;
 }
