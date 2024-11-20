@@ -3071,12 +3071,10 @@ bool yaep_set_cost_flag(YaepGrammar *grammar, bool flag)
     return old;
 }
 
-int yaep_set_error_recovery_flag(YaepGrammar *grammar, int flag)
+bool yaep_set_error_recovery_flag(YaepGrammar *grammar, bool flag)
 {
-    int old;
-
     assert(grammar != NULL);
-    old = grammar->error_recovery_p;
+    bool old = grammar->error_recovery_p;
     grammar->error_recovery_p = flag;
     return old;
 }
@@ -5103,7 +5101,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, int *ambiguous_p)
     }
     parse_state_fin(ps);
     ps->run.grammar->one_parse_p = saved_one_parse_p;
-    if (ps->run.grammar->cost_p &&*ambiguous_p)
+    if (ps->run.grammar->cost_p && *ambiguous_p)
         /* We can not build minimal tree during building parsing list
            because we have not the translation yet.  We can not make it
            during parsing because the abstract nodes are created before
