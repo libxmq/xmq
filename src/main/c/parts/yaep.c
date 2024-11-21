@@ -2170,15 +2170,27 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 
    Terminology:
 
-   Input tokens: The content to be parsed stored as an array of symbols (with attribytes attached).
-                 The symbols can be lexer symbols or unicode characters (IXML).
-   Rule: a grammar rule S -> NP VP
-   Production: a rule put into production: NP 🞄 VP [origin]
-   StateSet: The state of a parse, has started and not-yet-started productions (copies of rules)
-       The started productions have distances to their origin in the source
-       StateSetCore + distances
-   StateSetCore: part of a state set that can be shared.
+   Input tokens: The content to be parsed stored as an array of symbols
+                 (with user supplied attributes attached).
+                 The tokens can be lexer symbols or unicode characters (IXML).
 
+   Rule: A grammar rule S = NP, VP.
+
+   Production: A rule put into production: NP 🞄 VP [origin] and stored in a StateSet.
+
+   StateSet: For each input token, we build a state set with all possible productions:
+             started (some match) and not-yet-started (no match yet). Theses productions
+             come from the scan/complete/predict algorithm.
+             Since each token has a state set: current_state_set_i == current_input_token_i
+
+             A started production stores a distance to its origin_i token.
+             We compress the StateSet with an immutable StateSetCore combined with a
+             set of distances.
+
+   StateSetCore: The part of a state set that can be shared between StateSets.
+                 I.e. everything except the distances.
+                 The distances are used to build the final parse tree after a parse has
+                 been found.
 
 */
 
@@ -2327,28 +2339,28 @@ struct YaepGrammar
     int lookahead_level;
 
     /* The following value means how much subsequent tokens should be
-       successfuly shifted to finish error recovery.*/
+       successfuly shifted to finish error recovery. */
     int recovery_token_matches;
 
-    /* The following value is true if we need only one parse.*/
+    /* The following value is true if we need only one parse. */
     bool one_parse_p;
 
     /* The following value is true if we need parse(s) with minimal costs.*/
     bool cost_p;
 
-    /* The following value is true if we need to make error recovery.*/
+    /* The following value is true if we need to make error recovery. */
     bool error_recovery_p;
 
-    /* The following vocabulary used for this grammar.*/
+    /* The following vocabulary used for this grammar. */
     YaepVocabulary *symbs_ptr;
 
-    /* The following rules used for this grammar.*/
+    /* The following rules used for this grammar. */
     YaepRuleStorage *rules_ptr;
 
-    /* The following terminal sets used for this grammar.*/
+    /* The following terminal sets used for this grammar. */
     YaepTermStorage *term_sets_ptr;
 
-    /* Allocator.*/
+    /* Allocator. */
     YaepAllocator *alloc;
 
     /* A user supplied pointer that is available to user callbacks through the grammar pointer. */
@@ -2485,7 +2497,6 @@ struct YaepVect
     int *els;
 };
 
-/* The following is element of the table.*/
 struct YaepCoreSymbVect
 {
     /* The set core.*/
@@ -2494,7 +2505,7 @@ struct YaepCoreSymbVect
     /* The symbol.*/
     YaepSymb *symb;
 
-    /* The following vector contains indexes of productions with given symb in production after dot.*/
+    /* The following vector contains indexes of productions with given symb in production after dot. */
     YaepVect transitions;
 
     /* The following vector contains indexes of reduce production with given symb in lhs. */
@@ -4295,54 +4306,48 @@ static bool core_symb_vect_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 }
 #endif
 
-/* Return hash of vector V. */
 static unsigned vect_els_hash(YaepVect*v)
 {
     unsigned result = jauquet_prime_mod32;
-    int i;
 
-    for(i = 0; i < v->len; i++)
+    for (int i = 0; i < v->len; i++)
+    {
         result = result* hash_shift + v->els[i];
+    }
     return result;
 }
 
-/* Return true if V1 is equal to V2. */
-static bool vect_els_eq(YaepVect*v1, YaepVect*v2)
+static bool vect_els_eq(YaepVect *v1, YaepVect *v2)
 {
-    int i;
-    if (v1->len != v2->len)
-        return false;
+    if (v1->len != v2->len) return false;
 
-    for(i = 0; i < v1->len; i++)
-        if (v1->els[i] != v2->els[i])
-            return false;
+    for (int i = 0; i < v1->len; i++)
+    {
+        if (v1->els[i] != v2->els[i]) return false;
+    }
     return true;
 }
 
-/* Hash of vector transition elements.*/
 static unsigned transition_els_hash(hash_table_entry_t t)
 {
-    return vect_els_hash(&((YaepCoreSymbVect*) t)->transitions);
+    return vect_els_hash(&((YaepCoreSymbVect*)t)->transitions);
 }
 
-/* Equality of transition vector elements.*/
 static bool transition_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 {
-    return vect_els_eq(&((YaepCoreSymbVect*) t1)->transitions,
-                        &((YaepCoreSymbVect*) t2)->transitions);
+    return vect_els_eq(&((YaepCoreSymbVect*)t1)->transitions,
+                       &((YaepCoreSymbVect*)t2)->transitions);
 }
 
-/* Hash of reduce vector elements.*/
 static unsigned reduce_els_hash(hash_table_entry_t t)
 {
-    return vect_els_hash(&((YaepCoreSymbVect*) t)->reduces);
+    return vect_els_hash(&((YaepCoreSymbVect*)t)->reduces);
 }
 
-/* Equality of reduce vector elements.*/
 static bool reduce_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 {
     return vect_els_eq(&((YaepCoreSymbVect*) t1)->reduces,
-                        &((YaepCoreSymbVect*) t2)->reduces);
+                       &((YaepCoreSymbVect*) t2)->reduces);
 }
 
 /* Initialize work with the triples(set core, symbol, vector).*/
