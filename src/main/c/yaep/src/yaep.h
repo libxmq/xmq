@@ -87,9 +87,9 @@ typedef struct YaepTreeNode YaepTreeNode;
 struct YaepParseRun
 {
     void *user_data; // Points to user supplied data, useful inside the callbacked read_token and syntax_error.
-    int *buffer_start; // Points to first token.
-    int *buffer_stop; // Points to address after last token.
-    int *buffer_i; // Points to the next token to read.
+    const char *buffer_start; // Points to first token.
+    const char *buffer_stop; // Points to address after last token.
+    const char *buffer_i; // Points to the next token to read.
     // If read_token is NULL then use the built in read_token that uses buffer start,stop and i.
     int (*read_token)(YaepParseRun *ps, void **attr);
     // If syntax_error is NULL then use the built in stderr error message printer.

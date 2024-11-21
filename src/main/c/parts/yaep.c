@@ -2217,6 +2217,7 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 //include "yaep.h"
 //include "xmq.h"
 //include "parts/always.h"
+//include "parts/text.h"
 
 /* Terminals are stored a in term set using bits in a bit array.
    The array consists of long ints, typedefed as term_set_el_t.
@@ -2391,7 +2392,7 @@ struct YaepSymb
         {
             /* The following refers for all rules with the nonterminal
                symbol is in the left hand side of the rules. */
-            YaepRule*rules;
+            YaepRule *rules;
             /* Each nonterm is given a unique integer starting from 0. */
             int nonterm_id;
             /* The following value is nonzero if nonterminal may derivate
@@ -2978,6 +2979,7 @@ static void symb_empty(YaepParseState *ps, YaepVocabulary *symbs);
 static void symb_finish_adding_terms(YaepParseState *ps);
 static void symb_print(FILE* f, YaepSymb *symb, bool code_p);
 static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
+static int default_read_token(YaepParseRun *ps, void **attr);
 
 // Global variables /////////////////////////////////////////////////////
 
@@ -7337,6 +7339,9 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
    *ambiguous_p = false;
     pl_init(ps);
     tok_init_p = parse_init_p = false;
+
+    if (!ps->run.read_token) ps->run.read_token = default_read_token;
+
     if ((code = setjmp(error_longjump_buff)) != 0)
     {
         pl_fin(ps);
@@ -7766,6 +7771,24 @@ static void print_state_set(YaepParseState *ps,
             fprintf(f, "    ----------- predictions\n");
         }
     }
+}
+
+static int default_read_token(YaepParseRun *ps, void **attr)
+{
+    *attr = NULL;
+    if (ps->buffer_i >= ps->buffer_stop) return -1;
+
+    int uc = 0;
+    size_t len = 0;
+    bool ok = decode_utf8(ps->buffer_i, ps->buffer_stop, &uc, &len);
+    if (!ok)
+    {
+        fprintf(stderr, "xmq: broken utf8\n");
+        exit(1);
+    }
+    ps->buffer_i += len;
+
+    return uc;
 }
 /****************** YAEP parser single source file end **********************/
 #endif // YAEP_MODULE

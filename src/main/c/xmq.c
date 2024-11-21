@@ -4209,28 +4209,6 @@ YaepParseRun *xmq_get_yaep_parse_run(XMQDoc *doc)
     return (YaepParseRun*)doc->yaep_parse_run_;
 }
 
-static char *input_i_;
-static char *input_start_;
-static char *input_stop_;
-
-static int read_yaep_token(YaepParseRun *ps, void **attr)
-{
-  *attr = NULL;
-  if (input_i_ >= input_stop_) return -1;
-
-  int uc = 0;
-  size_t len = 0;
-  bool ok = decode_utf8(input_i_, input_stop_, &uc, &len);
-  if (!ok)
-  {
-      fprintf(stderr, "xmq: broken utf8\n");
-      exit(1);
-  }
-  input_i_ += len;
-
-  return uc;
-}
-
 void handle_yaep_syntax_error(int err_tok_num,
                               void *err_tok_attr,
                               int start_ignored_tok_num,
@@ -4239,6 +4217,7 @@ void handle_yaep_syntax_error(int err_tok_num,
                               void *start_recovered_tok_attr)
 {
     printf("ixml: syntax error\n");
+    /*
     int start = err_tok_num - 10;
     if (start < 0) start = 0;
     int stop = err_tok_num + 10;
@@ -4250,6 +4229,7 @@ void handle_yaep_syntax_error(int err_tok_num,
     printf("\n");
     for (int i = start; i < err_tok_num; ++i) printf (" ");
     printf("^\n");
+    */
 }
 
 const char *node_yaep_type_to_string(YaepTreeNodeType t)
@@ -4407,11 +4387,6 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     if (!doc || !start || !ixml_grammar) return false;
     if (!stop) stop = start+strlen(start);
 
-    input_start_ = input_i_ = strndup(start, stop-start);
-    if (!input_start_) return false;
-
-    input_stop_ = input_start_ + strlen(input_start_);
-
     yaep_set_one_parse_flag(xmq_get_yaep_grammar(ixml_grammar),
                             (flags & XMQ_FLAG_IXML_ALL_PARSES)?0:1);
 
@@ -4419,8 +4394,11 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
                                  (flags & XMQ_FLAG_IXML_TRY_TO_RECOVER)?1:0);
 
     YaepParseRun *run = xmq_get_yaep_parse_run(ixml_grammar);
+    run->buffer_start = start;
+    run->buffer_stop = stop;
+    run->buffer_i = start;
+
     YaepGrammar *grammar = xmq_get_yaep_grammar(ixml_grammar);
-    run->read_token = read_yaep_token;
     run->syntax_error = handle_yaep_syntax_error;
 
     // Parse source content using the yaep grammar, previously generated from the ixml source.
