@@ -27,8 +27,8 @@
 
 /* 1997-2018 Vladimir Makarov
    This file implements parsing any context free grammar with minimal
-   error recovery and syntax directed translation.  The algorithm is
-   originated from Earley's algorithm.  The algorithm is sufficiently
+   error recovery and syntax directed translation.  The parser is based
+   on Earley's algorithm from 1968. The implementation is sufficiently
    fast to be used in serious language processors.
 
    2024 Fredrik Öhrström
@@ -40,7 +40,7 @@
 
    Input tokens: The content to be parsed stored as an array of symbols
                  (with user supplied attributes attached).
-                 The tokens can be lexer symbols or unicode characters (IXML).
+                 The tokens can be lexer symbols or unicode characters (ixml).
 
    Rule: A grammar rule S = NP, VP.
 
@@ -107,8 +107,7 @@ typedef long int term_set_el_t;
 #define NUM_INITIAL_YAEP_TOKENS 10000
 #endif
 
-/* The following is default number of tokens sucessfully matched to
-   stop error recovery alternative(state).*/
+/* The default number of tokens sucessfully matched to stop error recovery alternative(state). */
 #define DEFAULT_RECOVERY_TOKEN_MATCHES 3
 
 /* Define this if you want to reuse already calculated state sets.
@@ -176,9 +175,9 @@ typedef struct YaepTreeNodeVisit YaepTreeNodeVisit;
 
 struct YaepGrammar
 {
-    /* The following member is true if the grammar is undefined(you
-       should set up the grammar by yaep_read_grammar or yaep_parse_grammar)
-       or bad(error was occured in setting up the grammar). */
+    /* Set to true if the grammar is undefined(you should set up the grammar
+       by yaep_read_grammar or yaep_parse_grammar) or bad(error was occured
+       in setting up the grammar). */
     bool undefined_p;
 
     /* This member always contains the last occurred error code for given grammar. */
@@ -191,10 +190,10 @@ struct YaepGrammar
     /* The grammar axiom is named $S. */
     YaepSymb *axiom;
 
-    /* The following auxiliary symbol denotes EOF.*/
+    /* The end marker denotes EOF in the input token sequence. */
     YaepSymb *end_marker;
 
-    /* The following auxiliary symbol is used for describing error recovery.*/
+    /* The term error is used for create error recovery nodes. */
     YaepSymb *term_error;
 
     /* And its internal id.*/
@@ -206,23 +205,23 @@ struct YaepGrammar
        >= 2 - dynamic lookaheads*/
     int lookahead_level;
 
-    /* The following value means how much subsequent tokens should be
-       successfuly shifted to finish error recovery. */
+    /* How many subsequent tokens should be successfuly shifted to finish error recovery. */
     int recovery_token_matches;
 
-    /* The following value is true if we need only one parse. */
+    /* If true then stop at first successful parse.
+       If false then follow all possible parses. */
     bool one_parse_p;
 
-    /* The following value is true if we need parse(s) with minimal costs.*/
+    /* If true then find parse with minimal cost. */
     bool cost_p;
 
-    /* The following value is true if we need to make error recovery. */
+    /* If true them try to recover from errors. */
     bool error_recovery_p;
 
-    /* The following vocabulary used for this grammar. */
+    /* These are all the symbols used in this grammar. */
     YaepVocabulary *symbs_ptr;
 
-    /* The following rules used for this grammar. */
+    /* These are all the rules used in this grammar. */
     YaepRuleStorage *rules_ptr;
 
     /* The following terminal sets used for this grammar. */
@@ -447,7 +446,7 @@ struct YaepStateSet
    many duplicated structures. */
 struct YaepProduction
 {
-    /* Unique production identifier. */
+    /* Unique production identifier. Starts at 0 and increments for each new production. */
     int prod_id;
 
     /* The following is the production rule. */
@@ -471,7 +470,6 @@ struct YaepProduction
     term_set_el_t *lookahead;
 };
 
-/* The following describes input token.*/
 struct YaepInputToken
 {
     /* A symbol has a name "BEGIN",code 17, or for ixml "A",code 65. */
@@ -498,55 +496,53 @@ struct YaepStateSetTermLookAhead
     int place[MAX_CACHED_GOTO_RESULTS];
 };
 
-/* The following describes rule of grammar.*/
 struct YaepRule
 {
-    /* The following is order number of rule.*/
+    /* The following is order number of rule. */
     int num;
 
-    /* The following is length of rhs.*/
+    /* The following is length of rhs. */
     int rhs_len;
 
-    /* The following is the next grammar rule.*/
+    /* The following is the next grammar rule. */
     YaepRule *next;
 
     /* The following is the next grammar rule with the same nonterminal
        in lhs of the rule.*/
-    YaepRule*lhs_next;
+    YaepRule *lhs_next;
 
-    /* The following is nonterminal in the left hand side of the rule.*/
+    /* The following is nonterminal in the left hand side of the rule. */
     YaepSymb *lhs;
 
-    /* The ixml default mark of the rule*/
+    /* The ixml default mark of the rule. -@^ */
     char mark;
 
-    /* The following is symbols in the right hand side of the rule.*/
+    /* The following is symbols in the right hand side of the rule. */
     YaepSymb **rhs;
 
-    /* The ixml marks for all the terms in the right hand side of the rule.*/
+    /* The ixml marks for all the terms in the right hand side of the rule. */
     char *marks;
-    /* The following three members define rule translation.*/
+    /* The following three members define rule translation. */
 
-    const char *anode;		/* abstract node name if any.*/
-    int anode_cost;		/* the cost of the abstract node if any, otherwise 0.*/
-    int trans_len;		/* number of symbol translations in the rule translation.*/
+    const char *anode;		/* abstract node name if any. */
+    int anode_cost;		/* the cost of the abstract node if any, otherwise 0. */
+    int trans_len;		/* number of symbol translations in the rule translation. */
 
     /* The following array elements correspond to element of rhs with
        the same index.  The element value is order number of the
        corresponding symbol translation in the rule translation.  If the
        symbol translation is rejected, the corresponding element value is
-       negative.*/
+       negative. */
     int *order;
 
     /* The following member value is equal to size of all previous rule
        lengths + number of the previous rules.  Imagine that all left
        hand symbol and right hand size symbols of the rules are stored
        in array.  Then the following member is index of the rule lhs in
-       the array.*/
+       the array. */
     int rule_start_offset;
 
-    /* The following is the same string as anode but memory allocated in
-       parse_alloc.*/
+    /* The following is the same string as anode but memory allocated in parse_alloc. */
     char *caller_anode;
 };
 
