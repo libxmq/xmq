@@ -6975,18 +6975,18 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             prod = set_core->productions[prod_ind];
             if (prod_ind < set_core->num_started_productions)
             {
-                fprintf(stderr, "PRUTT current_state_set_i %d set->distances[prod_ind] = %d prod_ind = %d\n",
-                        current_state_set_i, set->distances[prod_ind], prod_ind);
+                /*fprintf(stderr, "PR1 current_state_set_i %d set->distances[prod_ind] = %d prod_ind = %d\n",
+                  current_state_set_i, set->distances[prod_ind], prod_ind);*/
                 prod_origin = current_state_set_i - set->distances[prod_ind];
             }
             else if (prod_ind < set_core->n_all_distances)
             {
-                fprintf(stderr, "BAJS\n");
+                //fprintf(stderr, "PR2 \n");
                 prod_origin = current_state_set_i - set->distances[set_core->parent_indexes[prod_ind]];
             }
             else
             {
-                fprintf(stderr, "KISS\n");
+                // fprintf(stderr, "PR3 \n");
                 prod_origin = current_state_set_i;
             }
 
