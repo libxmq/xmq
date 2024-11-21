@@ -519,13 +519,16 @@ void parse_ixml_alt(XMQParseState *state)
             is_ixml_group_end(state) ||
             is_ixml_rule_end(c)) break;
 
-        if (c != ',')
+        if (c == ',')
         {
-            state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
-            state->error_info = "expected , or . here";
-            longjmp(state->error_handler, 1);
+            if (c != ',')
+            {
+                state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+                state->error_info = "expected , or . here";
+                longjmp(state->error_handler, 1);
+            }
+            EAT(comma, 1);
         }
-        EAT(comma, 1);
 
         parse_ixml_whitespace(state);
     }
