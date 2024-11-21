@@ -547,17 +547,21 @@ void parse_ixml_alts(XMQParseState *state)
             is_ixml_rule_end(*(state->i)) ||
             is_ixml_group_end(state)) break;
 
-        if (!is_ixml_alt_start(state))
-        {
-            state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR; // TODO
-            state->error_info = "expected alt here";
-            longjmp(state->error_handler, 1);
-        }
-        parse_ixml_alt(state);
-
-        parse_ixml_whitespace(state);
-
         char c = *(state->i);
+        if (c != '|')
+        {
+            if (!is_ixml_alt_start(state))
+            {
+                state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR; // TODO
+                state->error_info = "expected alt here";
+                longjmp(state->error_handler, 1);
+            }
+            parse_ixml_alt(state);
+
+            parse_ixml_whitespace(state);
+        }
+
+        c = *(state->i);
         if (is_ixml_rule_end(c) || is_ixml_group_end(state)) break;
         if (c != '|' && c != ';')
         {

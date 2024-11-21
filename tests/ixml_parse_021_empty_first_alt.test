@@ -1,0 +1,12 @@
+START
+S = 's', bug.
+bug = | 'bc'.
+INPUT
+s
+OUTPUT
+S {
+    's'
+    bug
+}
+END
+ARGS=

@@ -594,4 +594,30 @@ char *potentially_add_leading_ending_space(const char *start, const char *stop)
     return content;
 }
 
+bool find_line_col(const char *start, const char *stop, size_t at, int *out_line, int *out_col)
+{
+    const char *i = start;
+    int line = 1;
+    int col = 1;
+    while (i < stop && at > 0)
+    {
+        int oc;
+        size_t ol;
+        bool ok = decode_utf8(i, stop, &oc, &ol);
+        assert(ok);
+        i += ol;
+        col++;
+        if (oc == 10)
+        {
+            line++;
+            col=0;
+        }
+        at--;
+    }
+
+    *out_line = line;
+    *out_col = col;
+    return true;
+}
+
 #endif // TEXT_MODULE

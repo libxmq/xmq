@@ -64,6 +64,7 @@ bool utf8_char_to_codepoint_string(UTF8Char *uc, char *buf);
 char *xmq_quote_as_c(const char *start, const char *stop);
 char *xmq_unquote_as_c(const char *start, const char *stop);
 char *potentially_add_leading_ending_space(const char *start, const char *stop);
+bool find_line_col(const char *start, const char *stop, size_t at, int *line, int *col);
 
 #define TEXT_MODULE
 

@@ -103,8 +103,13 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
 void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared);
 void fixup_comments(XMQDoc *doq, xmlNode *node, int depth);
 void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, int depth, int index);
-void handle_yaep_syntax_error(int err_tok_num, void *err_tok_attr, int start_ignored_tok_num, void *start_ignored_tok_attr,
-                              int start_recovered_tok_num, void *start_recovered_tok_attr);
+void handle_yaep_syntax_error(YaepParseRun *pr,
+                              int err_tok_num,
+                              void *err_tok_attr,
+                              int start_ignored_tok_num,
+                              void *start_ignored_tok_attr,
+                              int start_recovered_tok_num,
+                              void *start_recovered_tok_attr);
 
 bool has_leading_ending_quote(const char *start, const char *stop);
 bool is_safe_char(const char *i, const char *stop);
@@ -4209,27 +4214,30 @@ YaepParseRun *xmq_get_yaep_parse_run(XMQDoc *doc)
     return (YaepParseRun*)doc->yaep_parse_run_;
 }
 
-void handle_yaep_syntax_error(int err_tok_num,
+void handle_yaep_syntax_error(YaepParseRun *pr,
+                              int err_tok_num,
                               void *err_tok_attr,
                               int start_ignored_tok_num,
                               void *start_ignored_tok_attr,
                               int start_recovered_tok_num,
                               void *start_recovered_tok_attr)
 {
-    printf("ixml: syntax error\n");
-    /*
-    int start = err_tok_num - 10;
-    if (start < 0) start = 0;
-    int stop = err_tok_num + 10;
+    int line = 0, col = 0;
+    find_line_col(pr->buffer_start, pr->buffer_stop, err_tok_num, &line, &col);
 
-    for (int i = start; i < stop && input_i_[i] != 0; ++i)
+    // source.foo:2:26: syntax error
+    printf("ixml:%d:%d: syntax error\n", line, col);
+    int start = err_tok_num - 20;
+    if (start < 0) start = 0;
+    int stop = err_tok_num + 20;
+
+    for (int i = start; i < stop && pr->buffer_start[i] != 0; ++i)
     {
-        printf("%c", input_i_[i]);
+        printf("%c", pr->buffer_start[i]);
     }
     printf("\n");
     for (int i = start; i < err_tok_num; ++i) printf (" ");
     printf("^\n");
-    */
 }
 
 const char *node_yaep_type_to_string(YaepTreeNodeType t)

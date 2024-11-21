@@ -91,9 +91,10 @@ struct YaepParseRun
     const char *buffer_stop; // Points to address after last token.
     const char *buffer_i; // Points to the next token to read.
     // If read_token is NULL then use the built in read_token that uses buffer start,stop and i.
-    int (*read_token)(YaepParseRun *ps, void **attr);
+    int (*read_token)(YaepParseRun *pr, void **attr);
     // If syntax_error is NULL then use the built in stderr error message printer.
-    void (*syntax_error)(int err_tok_num,
+    void (*syntax_error)(YaepParseRun *pr,
+                         int err_tok_num,
                          void *err_tok_attr,
                          int start_ignored_tok_num,
                          void *start_ignored_tok_attr,

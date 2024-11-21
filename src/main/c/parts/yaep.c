@@ -2219,6 +2219,10 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 //include "parts/always.h"
 //include "parts/text.h"
 
+#ifndef BUILDING_XMQ
+bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
+#endif
+
 /* Terminals are stored a in term set using bits in a bit array.
    The array consists of long ints, typedefed as term_set_el_t.
    A long int is 8 bytes, ie 64 bits. */
@@ -6088,14 +6092,26 @@ static int try_to_recover(YaepParseState *ps)
     {
         fprintf(stderr, "Attempting error recovery...\n");
         error_recovery(ps, &start, &stop);
-        ps->run.syntax_error(saved_current_input_token_i, ps->input_tokens[saved_current_input_token_i].attr,
-                             start, ps->input_tokens[start].attr, stop,
-                             ps->input_tokens[stop].attr);
+        ps->run.syntax_error(
+            (YaepParseRun*)ps,
+            saved_current_input_token_i,
+            ps->input_tokens[saved_current_input_token_i].attr,
+            start,
+            ps->input_tokens[start].attr,
+            stop,
+            ps->input_tokens[stop].attr);
         return 1;
     }
     else
     {
-        ps->run.syntax_error(saved_current_input_token_i, ps->input_tokens[saved_current_input_token_i].attr, -1, NULL, -1, NULL);
+        ps->run.syntax_error(
+            (YaepParseRun*)ps,
+            saved_current_input_token_i,
+            ps->input_tokens[saved_current_input_token_i].attr,
+            -1,
+            NULL,
+            -1,
+            NULL);
         return 2;
     }
 
