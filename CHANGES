@@ -1,3 +1,10 @@
+2024-11-24: Version 2.17.0
+
+For-each now prints the node name for $ {..} in shell.
+XML encoding should be utf-8 not utf8.
+Update language exposé.
+An xslt transform can now load xmq/xml/json using document(...)
+
 2024-10-11: Version 2.16.0
 
 You can now write an xsl transform in json!
