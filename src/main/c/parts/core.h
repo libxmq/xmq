@@ -33,6 +33,6 @@ bool coreParseI8(const char *s, int8_t *out);
 bool coreParseI16(const char *s, int16_t *out);
 bool coreParseI32(const char *s, int32_t *out);
 bool coreParseI64(const char *s, int64_t *out);
-bool coreParseI128(const char *s, __int128 *out);
+//bool coreParseI128(const char *s, __int128 *out);
 
 #endif // CORE_H

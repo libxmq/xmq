@@ -3926,13 +3926,26 @@ bool xmq_parse_buffer_text(XMQDoc *doq, const char *start, const char *stop, con
     return true;
 }
 
+bool xmq_prepare_node(const char *start, const char *stop);
+
+bool xmq_prepare_node(const char *start, const char *stop)
+{
+    const char *i = start;
+
+    if (*i != '/') return false;
+
+    while (i < stop)
+    {
+    }
+    return false;
+}
+
 bool xmq_parse_buffer_clines(XMQDoc *doq, const char *start, const char *stop)
 {
     char *buffer = strndup(start, stop-start);
     xmlNodePtr text = xmlNewDocText(doq->docptr_.xml, (xmlChar*)buffer);
     free(buffer);
 
-    // There is no implicit root. Text is the new root node.
     xmlDocSetRootElement(doq->docptr_.xml, text);
 
     return true;
