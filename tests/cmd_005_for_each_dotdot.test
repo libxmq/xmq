@@ -1,0 +1,17 @@
+INPUT
+enter {
+   test {
+       name = Howdy
+       data = '1 2 3'
+   }
+   test {
+       name = Dowdy
+       data = '4 5 6'
+   }
+}
+OUTPUT
+name=Howdy
+name=Dowdy
+END
+ARGS
+CMDS for-each /enter/test/name --shell='echo ${..}="${.}"'

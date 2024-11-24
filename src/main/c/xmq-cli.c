@@ -2955,6 +2955,11 @@ char *grab_content(xmlNode *n, const char *name)
 {
     MemBuffer *buf = new_membuffer();
 
+    if (!strcmp(name, ".."))
+    {
+        membuffer_append(buf, (char*)n->name);
+    }
+    else
     if (!strcmp(name, "."))
     {
         append_text_node(buf, n);
