@@ -130,6 +130,7 @@ lcov:
 	@for x in $(BUILDDIRS); do echo; echo Bulding $$(basename $$x) ; $(MAKE) --no-print-directory -C $$x debug lcov ; done
 
 dist:
+	@cat CHANGES | sed '/20..-..-..:/q'  | head -n -1 | sed '$d' > RELEASE
 	@rm -f dist/xmq.c dist/xmq.h
 	@$(MAKE) --no-print-directory -C $(FIRSTDIR) release $(shell pwd)/dist/xmq.c $(shell pwd)/dist/xmq.h
 	@(cd dist; make example; make examplecc)

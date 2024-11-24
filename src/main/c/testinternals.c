@@ -86,6 +86,7 @@ const char *content_type_to_string(XMQContentType t)
     case XMQ_CONTENT_HTML: return "html";
     case XMQ_CONTENT_JSON: return "json";
     case XMQ_CONTENT_TEXT: return "text";
+    case XMQ_CONTENT_CLINES: return "clines";
     }
     assert(0);
     return "?";
@@ -133,9 +134,9 @@ void test_trim_quote(int start_col, const char *in, const char *expected)
     if (strcmp(out, expected))
     {
         all_ok_ = false;
-        char *inb = xmq_quote_as_c(in, in+strlen(in));
-        char *exb = xmq_quote_as_c(expected, expected+strlen(expected));
-        char *gob = xmq_quote_as_c(out, out+strlen(out));
+        char *inb = xmq_quote_as_c(in, in+strlen(in), false);
+        char *exb = xmq_quote_as_c(expected, expected+strlen(expected), false);
+        char *gob = xmq_quote_as_c(out, out+strlen(out), false);
 
         printf("Trimming \"%s\"\n", inb);
         printf("expected \"%s\"\n", exb);
@@ -155,9 +156,9 @@ void test_trim_quote_special(const char *in, const char *expected)
     if (strcmp(out, expected))
     {
         all_ok_ = false;
-        char *inb = xmq_quote_as_c(in, in+strlen(in));
-        char *exb = xmq_quote_as_c(expected, expected+strlen(expected));
-        char *gob = xmq_quote_as_c(out, out+strlen(out));
+        char *inb = xmq_quote_as_c(in, in+strlen(in), false);
+        char *exb = xmq_quote_as_c(expected, expected+strlen(expected), false);
+        char *gob = xmq_quote_as_c(out, out+strlen(out), false);
 
         printf("Trimming \"%s\"\n", inb);
         printf("expected \"%s\"\n", exb);
@@ -177,9 +178,9 @@ void test_trim_comment(int start_col, const char *in, const char *expected)
     if (strcmp(out, expected))
     {
         all_ok_ = false;
-        char *inb = xmq_quote_as_c(in, in+strlen(in));
-        char *exb = xmq_quote_as_c(expected, expected+strlen(expected));
-        char *gob = xmq_quote_as_c(out, out+strlen(out));
+        char *inb = xmq_quote_as_c(in, in+strlen(in), false);
+        char *exb = xmq_quote_as_c(expected, expected+strlen(expected), false);
+        char *gob = xmq_quote_as_c(out, out+strlen(out), false);
 
         printf("Trimming \"%s\"\n", inb);
         printf("expected \"%s\"\n", exb);
@@ -290,9 +291,9 @@ void test_quote(int indent, bool compact, char *in, char *expected)
     if (strcmp(out, expected))
     {
         all_ok_ = false;
-        char *inb = xmq_quote_as_c(in, in+strlen(in));
-        char *exb = xmq_quote_as_c(expected, expected+strlen(expected));
-        char *gob = xmq_quote_as_c(out, out+strlen(out));
+        char *inb = xmq_quote_as_c(in, in+strlen(in), false);
+        char *exb = xmq_quote_as_c(expected, expected+strlen(expected), false);
+        char *gob = xmq_quote_as_c(out, out+strlen(out), false);
 
         printf("Quoting \"%s\" with indent %d\n", inb, indent);
         printf("expected \"%s\"\n", exb);
@@ -316,9 +317,9 @@ void test_quote(int indent, bool compact, char *in, char *expected)
         if (strcmp(trimmed, in))
         {
             all_ok_ = false;
-            char *inb = xmq_quote_as_c(out, out+strlen(out));
-            char *exb = xmq_quote_as_c(in, in+strlen(in));
-            char *gob = xmq_quote_as_c(trimmed, trimmed+strlen(trimmed));
+            char *inb = xmq_quote_as_c(out, out+strlen(out), false);
+            char *exb = xmq_quote_as_c(in, in+strlen(in), false);
+            char *gob = xmq_quote_as_c(trimmed, trimmed+strlen(trimmed), false);
 
             printf("Trimming back  \"%s\"\n", inb);
             printf("expected \"%s\"\n", exb);

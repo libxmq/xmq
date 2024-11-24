@@ -1,8 +1,31 @@
-You can now write an xsl transform in json!
-(Just as you can write the xsl transform in xml/xmq.)
+Added commands: to-clines quote-c unquote-c
 
-This transform can then work on xml/xmq/json and produce xml/xmq/json.
+Use to-clines for printing greppable lines: xmq test.xmq to-clines
 
-For example: xmq dostuff.xslt to-json > dostuff.xslj
+alfa(A) {
+    empty
+    'Hejsan'
+    beta = hoppsan
+    'Svejsan'
+}
 
-Then run: xmq source.json transform dostuff.xslj to-json
+outputs:
+
+/alfa/@A=""
+/alfa/empty=""
+/alfa="Hejsan"
+/alfa/beta="hoppsan"
+/alfa="Svejsan"
+
+The right hand side is an ansi-c quoted string probably compatible with json.
+
+You can quote/unquote ansi-c strings like this:
+echo -ne "hello\nworld!" | xmq --text quote-c to-text
+outputs:
+"hello\nworld!"
+
+echo '"hello\nworld!"' | ./xmq --text unquote-c to-text
+outputs:
+hello
+world!
+

@@ -88,6 +88,7 @@ typedef struct XMQParseCallbacks XMQParseCallbacks;
     @XMQ_CONTENT_HTML: html detected
     @XMQ_CONTENT_JSON: json detected
     @XMQ_CONTENT_TEXT: valid utf8 text input/output is selected
+    @XMQ_CONTENT_CLINES: xpath="c-escaped string"
 
     Specify the file/buffer content type.
 */
@@ -100,7 +101,8 @@ typedef enum
     XMQ_CONTENT_XML = 4,
     XMQ_CONTENT_HTML = 5,
     XMQ_CONTENT_JSON = 6,
-    XMQ_CONTENT_TEXT = 7
+    XMQ_CONTENT_TEXT = 7,
+    XMQ_CONTENT_CLINES = 8
 } XMQContentType;
 
 /**

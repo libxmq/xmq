@@ -464,22 +464,39 @@ char to_hex(int c)
 
     Escape the in string using c/json quotes. I.e. Surround with " and newline becomes \n and " become \" etc.
 */
-char *xmq_quote_as_c(const char *start, const char *stop)
+char *xmq_quote_as_c(const char *start, const char *stop, bool add_quotes)
 {
     if (!stop) stop = start+strlen(start);
     if (stop == start)
     {
-        char *tmp = (char*)malloc(1);
-        tmp[0] = 0;
-        return tmp;
+        if (add_quotes)
+        {
+            char *tmp = (char*)malloc(3);
+            tmp[0] = '"';
+            tmp[1] = '"';
+            tmp[2] = 0;
+            return tmp;
+        }
+        else
+        {
+            char *tmp = (char*)malloc(1);
+            tmp[0] = 0;
+            return tmp;
+        }
     }
     assert(stop > start);
-    size_t len = 1+(stop-start)*4; // Worst case expansion of all chars.
+    size_t len = 1+(stop-start)*4+2; // Worst case expansion of all chars. +2 for qutes.
     char *buf = (char*)malloc(len);
 
     const char *i = start;
     char *o = buf;
     size_t real = 0;
+
+    if (add_quotes)
+    {
+        real++;
+        *o++ = '"';
+    }
 
     for (; i < stop; ++i)
     {
@@ -509,6 +526,10 @@ char *xmq_quote_as_c(const char *start, const char *stop)
         else if (c == '\r') { *o++ = '\\'; *o++ = 'r'; real+=2; }
         else { *o++ = '\\'; *o++ = 'x'; *o++ = to_hex((c>>4)&0xf); *o++ = to_hex(c&0xf); real+=4; }
     }
+    if (add_quotes) {
+        real++;
+        *o++ = '"';
+    }
     real++;
     *o = 0;
     buf = (char*)realloc(buf, real);
@@ -520,7 +541,7 @@ char *xmq_quote_as_c(const char *start, const char *stop)
 
     Unescape the in string using c/json quotes. I.e. Replace \" with ", \n with newline etc.
 */
-char *xmq_unquote_as_c(const char *start, const char *stop)
+char *xmq_unquote_as_c(const char *start, const char *stop, bool remove_quotes)
 {
     if (stop == start)
     {
@@ -536,7 +557,14 @@ char *xmq_unquote_as_c(const char *start, const char *stop)
     char *o = buf;
     size_t real = 0;
 
-    for (; i < stop; ++i, real++)
+    if (remove_quotes)
+    {
+        for (; i < stop && is_xml_whitespace(*i); ++i);
+        if (*i != '"') return strdup("[Not a valid C escaped string]");
+        i++;
+    }
+
+    for (; i < stop && (!remove_quotes || *i != '"'); ++i, real++)
     {
         char c = *i;
         if (c == '\\') {
@@ -557,6 +585,10 @@ char *xmq_unquote_as_c(const char *start, const char *stop)
         {
             *o++ = *i;
         }
+    }
+    if (remove_quotes)
+    {
+        if (*i != '"') return strdup("[Not a valid C escaped string]");
     }
     real++;
     *o = 0;

@@ -86,6 +86,7 @@ typedef enum
     XMQ_CLI_CMD_TO_HTML,
     XMQ_CLI_CMD_TO_JSON,
     XMQ_CLI_CMD_TO_TEXT,
+    XMQ_CLI_CMD_TO_CLINES,
     XMQ_CLI_CMD_NO_OUTPUT,
     XMQ_CLI_CMD_PRINT,
     XMQ_CLI_CMD_SAVE,
@@ -109,6 +110,10 @@ typedef enum
     XMQ_CLI_CMD_ADD,
     XMQ_CLI_CMD_ADD_ROOT,
     XMQ_CLI_CMD_STATISTICS,
+    XMQ_CLI_CMD_QUOTE_C,
+    XMQ_CLI_CMD_UNQUOTE_C,
+    XMQ_CLI_CMD_QUOTE_XMQ,
+    XMQ_CLI_CMD_UNQUOTE_XMQ
 } XMQCliCmd;
 
 typedef enum {
@@ -126,6 +131,7 @@ typedef enum {
     XMQ_CLI_CMD_GROUP_TRANSFORM,
     XMQ_CLI_CMD_GROUP_VALIDATE,
     XMQ_CLI_CMD_GROUP_OUTPUT,
+    XMQ_CLI_CMD_GROUP_QUOTE,
 } XMQCliCmdGroup;
 
 typedef enum {
@@ -173,6 +179,7 @@ struct XMQCliCommand
     bool bg_dark_mode; // Terminal has dark background.
     const char *use_id; // When rendering html mark the pre tag with this id.
     const char *use_class; // When rendering html mark the pre tag with this class.
+    bool add_nl; // Add newline at end of quote/unquote printing.
 
     // Overrides of output settings.
     const char *indentation_space;
@@ -284,6 +291,7 @@ bool cmd_output(XMQCliCommand *command);
 bool cmd_transform(XMQCliCommand *command);
 bool cmd_validate(XMQCliCommand *command);
 void cmd_unload(XMQCliCommand *command);
+bool cmd_quote_unquote(XMQCliCommand *command);
 const char *content_type_to_string(XMQContentType ct);
 const char *tokenize_type_to_string(XMQCliTokenizeType type);
 void debug_(const char* fmt, ...);
@@ -371,6 +379,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "to-html")) return XMQ_CLI_CMD_TO_HTML;
     if (!strcmp(s, "to-json")) return XMQ_CLI_CMD_TO_JSON;
     if (!strcmp(s, "to-text")) return XMQ_CLI_CMD_TO_TEXT;
+    if (!strcmp(s, "to-clines")) return XMQ_CLI_CMD_TO_CLINES;
     if (!strcmp(s, "no-output")) return XMQ_CLI_CMD_NO_OUTPUT;
     if (!strcmp(s, "print")) return XMQ_CLI_CMD_PRINT;
     if (!strcmp(s, "save")) return XMQ_CLI_CMD_SAVE;
@@ -396,6 +405,10 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "add")) return XMQ_CLI_CMD_ADD;
     if (!strcmp(s, "add-root")) return XMQ_CLI_CMD_ADD_ROOT;
     if (!strcmp(s, "statistics")) return XMQ_CLI_CMD_STATISTICS;
+    if (!strcmp(s, "quote-c")) return XMQ_CLI_CMD_QUOTE_C;
+    if (!strcmp(s, "unquote-c")) return XMQ_CLI_CMD_UNQUOTE_C;
+    if (!strcmp(s, "quote-xmq")) return XMQ_CLI_CMD_QUOTE_XMQ;
+    if (!strcmp(s, "unquote-xmq")) return XMQ_CLI_CMD_UNQUOTE_XMQ;
     return XMQ_CLI_CMD_NONE;
 }
 
@@ -412,6 +425,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TO_HTML: return "to-html";
     case XMQ_CLI_CMD_TO_JSON: return "to-json";
     case XMQ_CLI_CMD_TO_TEXT: return "to-text";
+    case XMQ_CLI_CMD_TO_CLINES: return "to-clines";
     case XMQ_CLI_CMD_NO_OUTPUT: return "no-output";
     case XMQ_CLI_CMD_PRINT: return "print";
     case XMQ_CLI_CMD_SAVE: return "save";
@@ -435,6 +449,10 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_ADD: return "add";
     case XMQ_CLI_CMD_ADD_ROOT: return "add-root";
     case XMQ_CLI_CMD_STATISTICS: return "statistics";
+    case XMQ_CLI_CMD_QUOTE_C: return "quote-c";
+    case XMQ_CLI_CMD_UNQUOTE_C: return "unquote-c";
+    case XMQ_CLI_CMD_QUOTE_XMQ: return "quote-xmq";
+    case XMQ_CLI_CMD_UNQUOTE_XMQ: return "unquote-xmq";
     }
     return "?";
 }
@@ -452,6 +470,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TO_HTML:
     case XMQ_CLI_CMD_TO_JSON:
     case XMQ_CLI_CMD_TO_TEXT:
+    case XMQ_CLI_CMD_TO_CLINES:
         return XMQ_CLI_CMD_GROUP_TO;
 
     case XMQ_CLI_CMD_NO_OUTPUT:
@@ -493,6 +512,12 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TRANSFORM:
         return XMQ_CLI_CMD_GROUP_TRANSFORM;
 
+    case XMQ_CLI_CMD_QUOTE_C:
+    case XMQ_CLI_CMD_UNQUOTE_C:
+    case XMQ_CLI_CMD_QUOTE_XMQ:
+    case XMQ_CLI_CMD_UNQUOTE_XMQ:
+        return XMQ_CLI_CMD_GROUP_QUOTE;
+
     case XMQ_CLI_CMD_VALIDATE:
         return XMQ_CLI_CMD_GROUP_VALIDATE;
 
@@ -517,6 +542,7 @@ const char *content_type_to_string(XMQContentType ct)
     case XMQ_CONTENT_HTML: return "html";
     case XMQ_CONTENT_JSON: return "json";
     case XMQ_CONTENT_TEXT: return "text";
+    case XMQ_CONTENT_CLINES: return "clines";
     }
     assert(false);
     return "?";
@@ -680,6 +706,15 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         {
             command->add_indent = 0;
             command->compact = true;
+            return true;
+        }
+    }
+
+    if (group == XMQ_CLI_CMD_GROUP_QUOTE)
+    {
+        if (!strcmp(arg, "--add-nl"))
+        {
+            command->add_nl = true;
             return true;
         }
     }
@@ -1387,6 +1422,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->in_format=XMQ_CONTENT_JSON;
         return true;
     }
+    if (!strcmp(arg, "--clines"))
+    {
+        command->in_format=XMQ_CONTENT_CLINES;
+        return true;
+    }
     if (!strcmp(arg, "--xml"))
     {
         command->in_format=XMQ_CONTENT_XML;
@@ -1400,6 +1440,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     if (!strcmp(arg, "--text"))
     {
         command->in_format=XMQ_CONTENT_TEXT;
+        return true;
+    }
+    if (!strcmp(arg, "--clines"))
+    {
+        command->in_format=XMQ_CONTENT_CLINES;
         return true;
     }
     if (!strncmp(arg, "--root=", 7))
@@ -1474,8 +1519,8 @@ bool cmd_help(XMQCliCommand *cmd)
            "             Not yet implemented: exact will trim exactly to the significant whitespace according to xml/html rules.\n"
            "  --verbose  Output extra information on stderr.\n"
            "  --version  Output version information and exit.\n"
-           "  --xmq|--htmq|--xml|--html|--json\n"
-           "             The input format is normally auto detected but you can force the input format here.\n"
+           "  --xmq|--htmq|--xml|--html|--json|--clines\n"
+           "             The input format is auto detected for xmq/xml/json but you can force the input format here.\n"
            "  -z         Do not read from stdin nor from a file. Start with an empty dom.\n"
            "\n"
            "To get help on the commands below: xmq help <command>\n\n"
@@ -1489,10 +1534,11 @@ bool cmd_help(XMQCliCommand *cmd)
            "  no-output\n"
            "  render-html render-terminal render-tex\n"
            "  replace replace-entity\n"
+           "  quote-c unquote-c quote-xmq unquote-xmq\n"
            "  select\n"
            "  statistics\n"
            "  substitite-char-entities substitute-entity\n"
-           "  to-html to-htmq to-json to-text to-xml to-xmq\n"
+           "  to-html to-htmq to-json to-lines to-text to-xml to-xmq\n"
            "  tokenize\n"
            "  transform\n"
            "  validate\n\n"
@@ -1788,6 +1834,60 @@ bool cmd_transform(XMQCliCommand *command)
     command->xslt = NULL;
 
     return true;
+}
+
+bool cmd_quote_unquote(XMQCliCommand *command)
+{
+    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    verbose_("(xmq) transforming\n");
+
+    if (command->cmd == XMQ_CLI_CMD_QUOTE_C)
+    {
+        char *value = (char*)xmlNodeListGetString(doc, doc->children, 1);
+        char *quoted_value = xmq_quote_as_c(value, value+strlen(value), true);
+        if (command->add_nl)
+        {
+            size_t len = strlen(quoted_value);
+            char *q = malloc(len+2);
+            strcpy(q, quoted_value);
+            strcat(q, "\n");
+            free(quoted_value);
+            quoted_value = q;
+        }
+
+        xmlNodePtr text = xmlNewDocText(doc, (xmlChar*)quoted_value);
+
+        for (xmlNode *i = doc->children; i; i = i->next)
+        {
+            xmlUnlinkNode(i);
+            xmlFreeNode(i);
+        }
+
+        xmlDocSetRootElement(doc, text);
+        free(quoted_value);
+        xmlFree(value);
+        return true;
+    }
+
+    if (command->cmd == XMQ_CLI_CMD_UNQUOTE_C)
+    {
+        char *value = (char*)xmlNodeListGetString(doc, doc->children, 1);
+        char *unquoted_value = xmq_unquote_as_c(value, value+strlen(value), true);
+        xmlNodePtr text = xmlNewDocText(doc, (xmlChar*)unquoted_value);
+
+        for (xmlNode *i = doc->children; i; i = i->next)
+        {
+            xmlUnlinkNode(i);
+            xmlFreeNode(i);
+        }
+
+        xmlDocSetRootElement(doc, text);
+        free(unquoted_value);
+        xmlFree(value);
+        return true;
+    }
+
+    return false;
 }
 
 bool cmd_validate(XMQCliCommand *command)
@@ -2427,6 +2527,9 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
     case XMQ_CLI_CMD_TO_TEXT:
         c->out_format = XMQ_CONTENT_TEXT;
         return;
+    case XMQ_CLI_CMD_TO_CLINES:
+        c->out_format = XMQ_CONTENT_CLINES;
+        return;
     case XMQ_CLI_CMD_PAGER:
         c->out_format = XMQ_CONTENT_UNKNOWN;
         c->render_to = XMQ_RENDER_TERMINAL;
@@ -2489,6 +2592,11 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
     case XMQ_CLI_CMD_ADD:
         return;
     case XMQ_CLI_CMD_STATISTICS:
+        return;
+    case XMQ_CLI_CMD_QUOTE_C:
+    case XMQ_CLI_CMD_UNQUOTE_C:
+    case XMQ_CLI_CMD_QUOTE_XMQ:
+    case XMQ_CLI_CMD_UNQUOTE_XMQ:
         return;
     case XMQ_CLI_CMD_NONE:
         return;
@@ -3225,6 +3333,7 @@ bool perform_command(XMQCliCommand *c)
     case XMQ_CLI_CMD_TO_HTML:
     case XMQ_CLI_CMD_TO_JSON:
     case XMQ_CLI_CMD_TO_TEXT:
+    case XMQ_CLI_CMD_TO_CLINES:
     case XMQ_CLI_CMD_RENDER_TERMINAL:
     case XMQ_CLI_CMD_RENDER_HTML:
     case XMQ_CLI_CMD_RENDER_TEX:
@@ -3260,6 +3369,11 @@ bool perform_command(XMQCliCommand *c)
         return cmd_add_root(c);
     case XMQ_CLI_CMD_STATISTICS:
         return cmd_statistics(c);
+    case XMQ_CLI_CMD_QUOTE_C:
+    case XMQ_CLI_CMD_UNQUOTE_C:
+    case XMQ_CLI_CMD_QUOTE_XMQ:
+    case XMQ_CLI_CMD_UNQUOTE_XMQ:
+        return cmd_quote_unquote(c);
     case XMQ_CLI_CMD_HELP:
         return cmd_help(c);
     }
