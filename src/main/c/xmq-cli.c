@@ -111,9 +111,7 @@ typedef enum
     XMQ_CLI_CMD_ADD_ROOT,
     XMQ_CLI_CMD_STATISTICS,
     XMQ_CLI_CMD_QUOTE_C,
-    XMQ_CLI_CMD_UNQUOTE_C,
-    XMQ_CLI_CMD_QUOTE_XMQ,
-    XMQ_CLI_CMD_UNQUOTE_XMQ
+    XMQ_CLI_CMD_UNQUOTE_C
 } XMQCliCmd;
 
 typedef enum {
@@ -407,8 +405,6 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "statistics")) return XMQ_CLI_CMD_STATISTICS;
     if (!strcmp(s, "quote-c")) return XMQ_CLI_CMD_QUOTE_C;
     if (!strcmp(s, "unquote-c")) return XMQ_CLI_CMD_UNQUOTE_C;
-    if (!strcmp(s, "quote-xmq")) return XMQ_CLI_CMD_QUOTE_XMQ;
-    if (!strcmp(s, "unquote-xmq")) return XMQ_CLI_CMD_UNQUOTE_XMQ;
     return XMQ_CLI_CMD_NONE;
 }
 
@@ -451,8 +447,6 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_STATISTICS: return "statistics";
     case XMQ_CLI_CMD_QUOTE_C: return "quote-c";
     case XMQ_CLI_CMD_UNQUOTE_C: return "unquote-c";
-    case XMQ_CLI_CMD_QUOTE_XMQ: return "quote-xmq";
-    case XMQ_CLI_CMD_UNQUOTE_XMQ: return "unquote-xmq";
     }
     return "?";
 }
@@ -514,8 +508,6 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
 
     case XMQ_CLI_CMD_QUOTE_C:
     case XMQ_CLI_CMD_UNQUOTE_C:
-    case XMQ_CLI_CMD_QUOTE_XMQ:
-    case XMQ_CLI_CMD_UNQUOTE_XMQ:
         return XMQ_CLI_CMD_GROUP_QUOTE;
 
     case XMQ_CLI_CMD_VALIDATE:
@@ -1534,7 +1526,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  no-output\n"
            "  render-html render-terminal render-tex\n"
            "  replace replace-entity\n"
-           "  quote-c unquote-c quote-xmq unquote-xmq\n"
+           "  quote-c unquote-c\n"
            "  select\n"
            "  statistics\n"
            "  substitite-char-entities substitute-entity\n"
@@ -1845,6 +1837,8 @@ bool cmd_quote_unquote(XMQCliCommand *command)
     {
         char *value = (char*)xmlNodeListGetString(doc, doc->children, 1);
         char *quoted_value = xmq_quote_as_c(value, value+strlen(value), true);
+        xmlFree(value);
+
         if (command->add_nl)
         {
             size_t len = strlen(quoted_value);
@@ -1855,17 +1849,15 @@ bool cmd_quote_unquote(XMQCliCommand *command)
             quoted_value = q;
         }
 
-        xmlNodePtr text = xmlNewDocText(doc, (xmlChar*)quoted_value);
-
-        for (xmlNode *i = doc->children; i; i = i->next)
-        {
-            xmlUnlinkNode(i);
-            xmlFreeNode(i);
-        }
-
-        xmlDocSetRootElement(doc, text);
+        xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
+        xmlNodePtr new_node = xmlNewDocText(new_doc, (xmlChar*)quoted_value);
         free(quoted_value);
-        xmlFree(value);
+
+        xml_add_root_child(new_doc, new_node);
+
+        xmlFreeDoc(doc);
+        xmqSetImplementationDoc(command->env->doc, new_doc);
+
         return true;
     }
 
@@ -1873,17 +1865,17 @@ bool cmd_quote_unquote(XMQCliCommand *command)
     {
         char *value = (char*)xmlNodeListGetString(doc, doc->children, 1);
         char *unquoted_value = xmq_unquote_as_c(value, value+strlen(value), true);
-        xmlNodePtr text = xmlNewDocText(doc, (xmlChar*)unquoted_value);
-
-        for (xmlNode *i = doc->children; i; i = i->next)
-        {
-            xmlUnlinkNode(i);
-            xmlFreeNode(i);
-        }
-
-        xmlDocSetRootElement(doc, text);
-        free(unquoted_value);
         xmlFree(value);
+
+        xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
+        xmlNodePtr new_node = xmlNewDocText(new_doc, (xmlChar*)unquoted_value);
+        free(unquoted_value);
+
+        xml_add_root_child(new_doc, new_node);
+
+        xmlFreeDoc(doc);
+        xmqSetImplementationDoc(command->env->doc, new_doc);
+
         return true;
     }
 
@@ -2595,8 +2587,6 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
         return;
     case XMQ_CLI_CMD_QUOTE_C:
     case XMQ_CLI_CMD_UNQUOTE_C:
-    case XMQ_CLI_CMD_QUOTE_XMQ:
-    case XMQ_CLI_CMD_UNQUOTE_XMQ:
         return;
     case XMQ_CLI_CMD_NONE:
         return;
@@ -3371,8 +3361,6 @@ bool perform_command(XMQCliCommand *c)
         return cmd_statistics(c);
     case XMQ_CLI_CMD_QUOTE_C:
     case XMQ_CLI_CMD_UNQUOTE_C:
-    case XMQ_CLI_CMD_QUOTE_XMQ:
-    case XMQ_CLI_CMD_UNQUOTE_XMQ:
         return cmd_quote_unquote(c);
     case XMQ_CLI_CMD_HELP:
         return cmd_help(c);
