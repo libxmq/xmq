@@ -1,0 +1,15 @@
+START
+
+"rad1\n\nrad2\n\nrad3\n"
+
+COMPACT
+IGNORE
+XMQ
+rad1
+
+rad2
+
+rad3
+END
+ARGS --text
+CMDS unquote-c to-text

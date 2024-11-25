@@ -46,7 +46,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 #ifdef DEBUG_IXML_GRAMMAR
 #define IXML_STEP(name,state) {                 \
     if (false && xmq_trace_enabled_) {                                \
-        char *tmp = xmq_quote_as_c(state->i, state->i+10); \
+        char *tmp = xmq_quote_as_c(state->i, state->i+10, false);           \
         for (int i=0; i<state->depth; ++i) trace("    "); \
         trace("dbg " #name " >%s...\n", tmp);       \
         for (int i=0; i<state->depth; ++i) trace("    "); \
@@ -57,7 +57,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 }
 #define IXML_DONE(name,state) {                 \
     if (false && xmq_trace_enabled_) {                                \
-        char *tmp = xmq_quote_as_c(state->i, state->i+10); \
+        char *tmp = xmq_quote_as_c(state->i, state->i+10, false);           \
         state->depth--; \
         for (int i=0; i<state->depth; ++i) trace("    "); \
         trace("}\n"); \
@@ -67,7 +67,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 #define EAT(name, num) { \
     if (false && xmq_trace_enabled_) { \
-        char *tmp = xmq_quote_as_c(state->i, state->i+num);       \
+        char *tmp = xmq_quote_as_c(state->i, state->i+num, false);        \
         for (int i=0; i<state->depth; ++i) fprintf(stderr, "    "); \
         fprintf(stderr, "eat %s %s\n", #name, tmp);       \
         free(tmp); \

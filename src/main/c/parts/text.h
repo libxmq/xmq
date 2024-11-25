@@ -61,8 +61,8 @@ size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc);
 void str_b_u_len(const char *start, const char *stop, size_t *b_len, size_t *u_len);
 char to_hex(int c);
 bool utf8_char_to_codepoint_string(UTF8Char *uc, char *buf);
-char *xmq_quote_as_c(const char *start, const char *stop);
-char *xmq_unquote_as_c(const char *start, const char *stop);
+char *xmq_quote_as_c(const char *start, const char *stop, bool add_quotes);
+char *xmq_unquote_as_c(const char *start, const char *stop, bool remove_quotes);
 char *potentially_add_leading_ending_space(const char *start, const char *stop);
 bool find_line_col(const char *start, const char *stop, size_t at, int *line, int *col);
 

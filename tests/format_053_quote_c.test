@@ -1,0 +1,13 @@
+START
+rad1
+
+rad2
+
+rad3
+COMPACT
+IGNORE
+XMQ
+"rad1\n\nrad2\n\nrad3\n"
+END
+ARGS --text
+CMDS quote-c --add-nl to-text

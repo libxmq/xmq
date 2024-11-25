@@ -1147,7 +1147,7 @@ void json_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, Level level
                     const char *value = xml_element_content(node);
                     if (value)
                     {
-                        char *quoted_value = xmq_quote_as_c(value, value+strlen(value));
+                        char *quoted_value = xmq_quote_as_c(value, value+strlen(value), false);
                         print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
                         free(quoted_value);
                     }
@@ -1216,7 +1216,7 @@ void json_print_attribute(XMQPrintState *ps, xmlAttr *a)
 
     json_check_comma(ps);
 
-    char *quoted_key = xmq_quote_as_c(key, key+strlen(key));
+    char *quoted_key = xmq_quote_as_c(key, key+strlen(key), false);
     print_utf8(ps, COLOR_none, 1, "\"_", NULL);
     if (prefix)
     {
@@ -1229,8 +1229,8 @@ void json_print_attribute(XMQPrintState *ps, xmlAttr *a)
     if (a->children != NULL)
     {
         char *value = (char*)xmlNodeListGetString(a->doc, a->children, 1);
-        char *quoted_value = xmq_quote_as_c(value, value+strlen(value));
-        print_utf8(ps, COLOR_none, 3, "\"", NULL, quoted_value, NULL, "\"", NULL);
+        char *quoted_value = xmq_quote_as_c(value, value+strlen(value), true);
+        print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
         free(quoted_value);
         xmlFree(value);
     }
@@ -1404,7 +1404,7 @@ void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *nod
             // The key was stored inside the attribute because it could not
             // be used as the element name.
             char *value = (char*)xmlNodeListGetString(node->doc, a->children, 1);
-            char *quoted_value = xmq_quote_as_c(value, value+strlen(value));
+            char *quoted_value = xmq_quote_as_c(value, value+strlen(value), false);
             print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
             free(quoted_value);
             xmlFree(value);
@@ -1502,8 +1502,8 @@ void json_print_doctype_node(XMQPrintState *ps, xmlNodePtr node)
     xmlBuffer *buffer = xmlBufferCreate();
     xmlNodeDump(buffer, (xmlDocPtr)ps->doq->docptr_.xml, node, 0, 0);
     char *c = (char*)xmlBufferContent(buffer);
-    char *quoted_value = xmq_quote_as_c(c+10, c+strlen(c)-1);
-    print_utf8(ps, COLOR_none, 3, "\"", NULL, quoted_value, NULL, "\"", NULL);
+    char *quoted_value = xmq_quote_as_c(c+10, c+strlen(c)-1, true);
+    print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
     free(quoted_value);
     xmlBufferFree(buffer);
     ps->last_char = '"';
@@ -1523,7 +1523,7 @@ void json_print_standalone_quote(XMQPrintState *ps, xmlNodePtr container, xmlNod
 {
     json_check_comma(ps);
     const char *value = xml_element_content(node);
-    char *quoted_value = xmq_quote_as_c(value, value+strlen(value));
+    char *quoted_value = xmq_quote_as_c(value, value+strlen(value), false);
     if (total == 1)
     {
         print_utf8(ps, COLOR_none, 3, "\"|\":\"", NULL, quoted_value, NULL, "\"", NULL);

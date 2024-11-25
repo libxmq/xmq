@@ -68,9 +68,9 @@ bool coreParseI64(const char *s, int64_t *out)
     return false;
 }
 
-bool coreParseI128(const char *s, __int128 *out)
+/*bool coreParseI128(const char *s, __int128 *out)
 {
     return false;
-}
+}*/
 
 #endif // CORE_MODULE

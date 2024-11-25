@@ -1,0 +1,22 @@
+START
+alfa(A) {
+    empty
+    'Hejsan'
+    beta = hoppsan
+    'Svejsan'
+}
+COMPACT
+/alfa/@A=""
+/alfa/empty=""
+/alfa="Hejsan"
+/alfa/beta="hoppsan"
+/alfa="Svejsan"
+XMQ
+/alfa/@A=""
+/alfa/empty=""
+/alfa="Hejsan"
+/alfa/beta="hoppsan"
+/alfa="Svejsan"
+END
+ARGS
+CMDS to-clines

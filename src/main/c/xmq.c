@@ -125,6 +125,11 @@ void reset_ansi_nl(XMQParseState *state);
 const char *skip_any_potential_bom(const char *start, const char *stop);
 void text_print_node(XMQPrintState *ps, xmlNode *node);
 void text_print_nodes(XMQPrintState *ps, xmlNode *from);
+void cline_print_node(XMQPrintState *ps, xmlNode *node);
+void cline_print_nodes(XMQPrintState *ps, xmlNode *from);
+void cline_print_xpath(XMQPrintState *ps, xmlNode *node);
+void cline_print_attributes(XMQPrintState *ps, xmlNode *node);
+void cline_print_attr(XMQPrintState *ps, xmlAttr *a);
 bool write_print_stderr(void *writer_state_ignored, const char *start, const char *stop);
 bool write_print_stdout(void *writer_state_ignored, const char *start, const char *stop);
 void write_safe_html(XMQWrite write, void *writer_state, const char *start, const char *stop);
@@ -134,11 +139,13 @@ void xmqSetupParseCallbacksNoop(XMQParseCallbacks *callbacks);
 bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, int flags);
 bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, int flags);
 bool xmq_parse_buffer_text(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root);
+bool xmq_parse_buffer_clines(XMQDoc *doq, const char *start, const char *stop);
 void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_json(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_text(XMQDoc *doq, XMQOutputSettings *output_settings);
+void xmq_print_clines(XMQDoc *doq, XMQOutputSettings *output_settings);
 char *xmq_quote_with_entity_newlines(const char *start, const char *stop, XMQQuoteSettings *settings);
 char *xmq_quote_default(int indent, const char *start, const char *stop, XMQQuoteSettings *settings);
 const char *xml_element_type_to_string(xmlElementType type);
@@ -1559,7 +1566,7 @@ LIST_OF_XMQ_TOKENS
     WRITE_ARGS("["#TYPE, NULL); \
     if (state->simulated) { WRITE_ARGS(" SIM", NULL); } \
     WRITE_ARGS(" \"", NULL); \
-    char *tmp = xmq_quote_as_c(start, stop); \
+    char *tmp = xmq_quote_as_c(start, stop, false);   \
     WRITE_ARGS(tmp, NULL); \
     free(tmp); \
     WRITE_ARGS("\"", NULL); \
@@ -1590,7 +1597,7 @@ void debug_content_value(XMQParseState *state,
                          const char *stop,
                          const char *suffix)
 {
-    char *tmp = xmq_quote_as_c(start, stop);
+    char *tmp = xmq_quote_as_c(start, stop, false);
     WRITE_ARGS("{value \"", NULL);
     WRITE_ARGS(tmp, NULL);
     WRITE_ARGS("\"}", NULL);
@@ -1607,7 +1614,7 @@ void debug_content_quote(XMQParseState *state,
 {
     size_t indent = start_col-1;
     char *trimmed = xmq_un_quote(indent, ' ', start, stop, true);
-    char *tmp = xmq_quote_as_c(trimmed, trimmed+strlen(trimmed));
+    char *tmp = xmq_quote_as_c(trimmed, trimmed+strlen(trimmed), false);
     WRITE_ARGS("{quote \"", NULL);
     WRITE_ARGS(tmp, NULL);
     WRITE_ARGS("\"}", NULL);
@@ -1624,7 +1631,7 @@ void debug_content_comment(XMQParseState *state,
 {
     size_t indent = start_col-1;
     char *trimmed = xmq_un_comment(indent, ' ', start, stop);
-    char *tmp = xmq_quote_as_c(trimmed, trimmed+strlen(trimmed));
+    char *tmp = xmq_quote_as_c(trimmed, trimmed+strlen(trimmed), false);
     WRITE_ARGS("{comment \"", NULL);
     WRITE_ARGS(tmp, NULL);
     WRITE_ARGS("\"}", NULL);
@@ -2776,6 +2783,123 @@ void xmq_print_text(XMQDoc *doq, XMQOutputSettings *os)
     text_print_nodes(&ps, (xmlNode*)first);
 }
 
+void cline_print_xpath(XMQPrintState *ps, xmlNode *node)
+{
+    XMQOutputSettings *output_settings = ps->output_settings;
+    XMQWrite write = output_settings->content.write;
+    void *writer_state = output_settings->content.writer_state;
+
+    if (!node) return;
+    if (node->parent)
+    {
+        cline_print_xpath(ps, node->parent);
+        write(writer_state, "/", NULL);
+    }
+    write(writer_state, xml_element_name(node), NULL);
+}
+
+void cline_print_node(XMQPrintState *ps, xmlNode *node)
+{
+    XMQOutputSettings *output_settings = ps->output_settings;
+    XMQWrite write = output_settings->content.write;
+    void *writer_state = output_settings->content.writer_state;
+
+    if (has_attributes(node))
+    {
+        cline_print_attributes(ps, node);
+    }
+    if (is_content_node(node))
+    {
+        cline_print_xpath(ps, node->parent);
+        write(writer_state, "=", NULL);
+        const char *content = xml_element_content(node);
+        char *q = xmq_quote_as_c(content, NULL, false);
+        write(writer_state, "\"", NULL);
+        write(writer_state, q, NULL);
+        write(writer_state, "\"", NULL);
+        free(q);
+        write(writer_state, "\n", NULL);
+    }
+    else if (node->children)
+    {
+        cline_print_nodes(ps, node->children);
+    }
+    else if (is_element_node(node))
+    {
+        cline_print_xpath(ps, node);
+        write(writer_state, "=\"\"\n", NULL);
+    }
+    else if (is_entity_node(node))
+    {
+    }
+}
+
+void cline_print_nodes(XMQPrintState *ps, xmlNode *from)
+{
+    xmlNode *i = from;
+
+    while (i)
+    {
+        cline_print_node(ps, i);
+        i = xml_next_sibling(i);
+    }
+}
+
+void cline_print_attributes(XMQPrintState *ps, xmlNode *node)
+{
+    xmlAttr *i = xml_first_attribute(node);
+
+    while (i)
+    {
+        cline_print_attr(ps, i);
+        i = xml_next_attribute(i);
+    }
+}
+
+void cline_print_attr(XMQPrintState *ps, xmlAttr *a)
+{
+    cline_print_xpath(ps, a->parent);
+
+    const char *key;
+    const char *prefix;
+    size_t total_u_len;
+    attr_strlen_name_prefix(a, &key, &prefix, &total_u_len);
+
+    print_utf8(ps, COLOR_none, 1, "/@", NULL);
+    if (prefix)
+    {
+        print_utf8(ps, COLOR_none, 2, prefix, NULL, ":", NULL);
+    }
+    print_utf8(ps, COLOR_none, 2, key, NULL, "=", NULL);
+
+    if (a->children != NULL)
+    {
+        char *value = (char*)xmlNodeListGetString(a->doc, a->children, 1);
+        char *quoted_value = xmq_quote_as_c(value, value+strlen(value), true);
+        print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
+        free(quoted_value);
+        xmlFree(value);
+    }
+    else
+    {
+        print_utf8(ps, COLOR_none, 1, "\"\"", NULL);
+    }
+
+    print_utf8(ps, COLOR_none, 1, "\n", NULL);
+}
+
+void xmq_print_clines(XMQDoc *doq, XMQOutputSettings *os)
+{
+    void *first = doq->docptr_.xml->children;
+    if (!doq || !first) return;
+
+    XMQPrintState ps = {};
+    ps.doq = doq;
+    ps.output_settings = os;
+
+    cline_print_nodes(&ps, (xmlNode*)first);
+}
+
 void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
 {
     if (doq == NULL || doq->docptr_.xml == NULL) return;
@@ -2826,6 +2950,10 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
     else if (output_settings->output_format == XMQ_CONTENT_TEXT)
     {
         xmq_print_text(doq, output_settings);
+    }
+    else if (output_settings->output_format == XMQ_CONTENT_CLINES)
+    {
+        xmq_print_clines(doq, output_settings);
     }
     else
     {
@@ -3240,8 +3368,8 @@ void fixup_comments(XMQDoc *doq, xmlNode *node, int depth)
         {
             if (xmq_debug_enabled_)
             {
-                char *from = xmq_quote_as_c((const char*)node->content, NULL);
-                char *to = xmq_quote_as_c(content_needed_escaping, NULL);
+                char *from = xmq_quote_as_c((const char*)node->content, NULL, false);
+                char *to = xmq_quote_as_c(content_needed_escaping, NULL, false);
                 debug("xmq=", "fix comment \"%s\" to \"%s\"", from, to);
             }
 
@@ -3872,6 +4000,31 @@ bool xmq_parse_buffer_text(XMQDoc *doq, const char *start, const char *stop, con
     return true;
 }
 
+bool xmq_prepare_node(const char *start, const char *stop);
+
+bool xmq_prepare_node(const char *start, const char *stop)
+{
+    const char *i = start;
+
+    if (*i != '/') return false;
+
+    while (i < stop)
+    {
+    }
+    return false;
+}
+
+bool xmq_parse_buffer_clines(XMQDoc *doq, const char *start, const char *stop)
+{
+    char *buffer = strndup(start, stop-start);
+    xmlNodePtr text = xmlNewDocText(doq->docptr_.xml, (xmlChar*)buffer);
+    free(buffer);
+
+    xmlDocSetRootElement(doq->docptr_.xml, text);
+
+    return true;
+}
+
 bool xmqParseBufferWithType(XMQDoc *doq,
                             const char *start,
                             const char *stop,
@@ -3932,6 +4085,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     case XMQ_CONTENT_JSON: ok = xmq_parse_buffer_json(doq, start, stop, implicit_root); break;
     case XMQ_CONTENT_IXML: ok = xmq_parse_buffer_ixml(doq, start, stop, flags); break;
     case XMQ_CONTENT_TEXT: ok = xmq_parse_buffer_text(doq, start, stop, implicit_root); break;
+    case XMQ_CONTENT_CLINES: ok = xmq_parse_buffer_clines(doq, start, stop); break;
     default: break;
     }
 
