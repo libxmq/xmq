@@ -463,6 +463,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "to-text")) return XMQ_CLI_CMD_TO_TEXT;
     if (!strcmp(s, "to-xml")) return XMQ_CLI_CMD_TO_XML;
     if (!strcmp(s, "to-xmq")) return XMQ_CLI_CMD_TO_XMQ;
+    if (!strcmp(s, "to-clines")) return XMQ_CLI_CMD_TO_CLINES;
     if (!strcmp(s, "tokenize")) return XMQ_CLI_CMD_TOKENIZE;
     if (!strcmp(s, "transform")) return XMQ_CLI_CMD_TRANSFORM;
     if (!strcmp(s, "validate")) return XMQ_CLI_CMD_VALIDATE;
