@@ -1,33 +1,4 @@
-Added commands: to-clines quote-c unquote-c
-
-Use to-clines for printing greppable lines: xmq test.xmq to-clines
-
-alfa(A) {
-    empty
-    'Hejsan'
-    beta = hoppsan
-    'Svejsan'
-}
-
-outputs:
-
-/alfa/@A=""
-/alfa/empty=""
-/alfa="Hejsan"
-/alfa/beta="hoppsan"
-/alfa="Svejsan"
-
-The right hand side is an ansi-c quoted string probably compatible with json.
-
-You can quote/unquote ansi-c strings like this:
-echo -ne "hello\nworld!" | xmq --text quote-c to-text
-outputs:
-"hello\nworld!"
-
-echo '"hello\nworld!"' | ./xmq --text unquote-c to-text
-outputs:
-hello
-world!
+Release artifacts for Posix platformas are now tar.gz archives with a single executable binary.
 
 2024-11-24: Version 2.17.0
 

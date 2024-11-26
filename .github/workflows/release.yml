@@ -56,12 +56,12 @@ jobs:
       - id: TEST
         run: eatmydata make test
       - id: CREATE_RELEASE_ARCHIVE
-        run: gzip -c build/default/release/xmq > build/xmq-gnulinux-release.gz
+        run: tar czf build/xmq-gnu-linux-release.tar.gz -C build/default/release xmq
       - id: UPLOAD_ASSETS_RELEASE
         uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ needs.job_create_release.outputs.upload_url }}
-          asset_path: build/xmq-gnulinux-release.gz
+          asset_path: build/xmq-gnu-linux-release.tar.gz
 
   job_release_macosx:
     needs: [job_create_release]
@@ -76,12 +76,12 @@ jobs:
       - id: TEST
         run: make test
       - id: CREATE_RELEASE_ARCHIVE
-        run: gzip -c build/default/release/xmq > build/xmq-macosx-release.gz
+        run: tar czf build/xmq-macos-release.tar.gz -C build/default/release xmq
       - id: UPLOAD_ASSETS_RELEASE
         uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ needs.job_create_release.outputs.upload_url }}
-          asset_path: ./build/xmq-macosx-release.gz
+          asset_path: ./build/xmq-macos-release.tar.gz
 
   job_release_windows:
     needs: [job_create_release]
