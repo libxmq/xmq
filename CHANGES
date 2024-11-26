@@ -1,3 +1,5 @@
+2024-11-26: Version 2.18.0
+
 Release artifacts for Posix platformas are now tar.gz archives with a single executable binary.
 
 2024-11-24: Version 2.17.0
