@@ -92,7 +92,7 @@ typedef enum
     XMQ_CLI_CMD_TO_CLINES,
     XMQ_CLI_CMD_NO_OUTPUT,
     XMQ_CLI_CMD_PRINT,
-    XMQ_CLI_CMD_SAVE,
+    XMQ_CLI_CMD_SAVE_TO,
     XMQ_CLI_CMD_PAGER,
     XMQ_CLI_CMD_BROWSER,
     XMQ_CLI_CMD_RENDER_TERMINAL,
@@ -452,7 +452,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "render-tex")) return XMQ_CLI_CMD_RENDER_TEX;
     if (!strcmp(s, "replace")) return XMQ_CLI_CMD_REPLACE;
     if (!strcmp(s, "replace-entity")) return XMQ_CLI_CMD_REPLACE_ENTITY;
-    if (!strcmp(s, "save")) return XMQ_CLI_CMD_SAVE;
+    if (!strcmp(s, "save-to")) return XMQ_CLI_CMD_SAVE_TO;
     if (!strcmp(s, "select")) return XMQ_CLI_CMD_SELECT;
     if (!strcmp(s, "statistics")) return XMQ_CLI_CMD_STATISTICS;
     if (!strcmp(s, "substitute-char-entities")) return XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES;
@@ -489,7 +489,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TO_CLINES: return "to-clines";
     case XMQ_CLI_CMD_NO_OUTPUT: return "no-output";
     case XMQ_CLI_CMD_PRINT: return "print";
-    case XMQ_CLI_CMD_SAVE: return "save";
+    case XMQ_CLI_CMD_SAVE_TO: return "save-to";
     case XMQ_CLI_CMD_PAGER: return "pager";
     case XMQ_CLI_CMD_BROWSER: return "browser";
     case XMQ_CLI_CMD_RENDER_TERMINAL: return "render-terminal";
@@ -534,7 +534,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
 
     case XMQ_CLI_CMD_NO_OUTPUT:
     case XMQ_CLI_CMD_PRINT:
-    case XMQ_CLI_CMD_SAVE:
+    case XMQ_CLI_CMD_SAVE_TO:
     case XMQ_CLI_CMD_PAGER:
     case XMQ_CLI_CMD_BROWSER:
         return XMQ_CLI_CMD_GROUP_OUTPUT;
@@ -742,7 +742,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
 
     XMQCliCmdGroup group = cmd_group(command->cmd);
 
-    if (command->cmd == XMQ_CLI_CMD_SAVE)
+    if (command->cmd == XMQ_CLI_CMD_SAVE_TO)
     {
         if (command->save_file == NULL)
         {
@@ -1973,7 +1973,7 @@ bool cmd_output(XMQCliCommand *command)
         free(command->env->out_start);
         return true;
     }
-    if (command->cmd == XMQ_CLI_CMD_SAVE)
+    if (command->cmd == XMQ_CLI_CMD_SAVE_TO)
     {
         if (!command->save_file)
         {
@@ -2758,7 +2758,7 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
         c->out_format = XMQ_CONTENT_UNKNOWN;
         c->render_to = XMQ_RENDER_TERMINAL;
         return;
-    case XMQ_CLI_CMD_SAVE:
+    case XMQ_CLI_CMD_SAVE_TO:
         c->out_format = XMQ_CONTENT_UNKNOWN;
         c->render_to = XMQ_RENDER_PLAIN;
         return;
@@ -3554,7 +3554,7 @@ bool perform_command(XMQCliCommand *c)
     case XMQ_CLI_CMD_RENDER_RAW:
         return cmd_to(c);
     case XMQ_CLI_CMD_PRINT:
-    case XMQ_CLI_CMD_SAVE:
+    case XMQ_CLI_CMD_SAVE_TO:
     case XMQ_CLI_CMD_PAGER:
     case XMQ_CLI_CMD_BROWSER:
         return cmd_output(c);
