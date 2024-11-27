@@ -204,6 +204,7 @@ struct XMQCliCommand
     bool print_help;
     const char *help_command;
     bool print_version;
+    bool print_license;
     bool debug;
     bool verbose;
     bool trace;
@@ -338,6 +339,7 @@ void open_browser(const char *file);
 bool perform_command(XMQCliCommand *c);
 void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command);
 void print_version_and_exit();
+void print_license_and_exit();
 int get_char();
 void put_char(int c);
 void console_write(const char *start, const char *stop);
@@ -1486,6 +1488,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         verbose_enabled__ = true;
         return true;
     }
+    if (!strcmp(arg, "--license"))
+    {
+        command->print_license = true;
+        return true;
+    }
     if (!strcmp(arg, "--version"))
     {
         command->print_version = true;
@@ -1699,6 +1706,37 @@ bool cmd_help(XMQCliCommand *cmd)
 void print_version_and_exit()
 {
     printf("xmq: %s\n", xmqVersion());
+    exit(0);
+}
+
+void print_license_and_exit()
+{
+    puts(
+"  LibXMQ\n"
+"  Copyright (c) 2019-2024 Fredrik Öhrström <oehrstroem@gmail.com>\n"
+"\n"
+"  YAEP (Yet Another Earley Parser)\n"
+"  Copyright(c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>\n"
+"  Copyright(c) 2024 Fredrik Öhrström <oehrstroem@gmail.com>\n"
+"\n"
+"  Permission is hereby granted, free of charge, to any person obtaining a copy\n"
+"  of this software and associated documentation files (the \"Software\"), to deal\n"
+"  in the Software without restriction, including without limitation the rights\n"
+"  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n"
+"  copies of the Software, and to permit persons to whom the Software is\n"
+"  furnished to do so, subject to the following conditions:\n"
+"\n"
+"  The above copyright notice and this permission notice shall be included in all\n"
+"  copies or substantial portions of the Software.\n"
+"\n"
+"  THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n"
+"  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n"
+"  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n"
+"  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n"
+"  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n"
+"  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n"
+"  SOFTWARE.");
+
     exit(0);
 }
 
@@ -4009,6 +4047,7 @@ int main(int argc, const char **argv)
     xmqSetLogHumanReadable(!log_xmq__);
 
     if (load_command->print_version) print_version_and_exit();
+    if (load_command->print_license) print_license_and_exit();
     if (load_command->print_help) cmd_help(NULL);
     if (load_command->next && load_command->next->cmd == XMQ_CLI_CMD_HELP)
     {

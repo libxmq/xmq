@@ -5266,17 +5266,16 @@ static void read_input_tokens(YaepParseState *ps)
     tok_add(ps, END_MARKER_CODE, NULL);
 }
 
-/* Add derived not yet started productions which is formed from
+/* Add predicted (derived) not yet started productions which is formed from
    given start production PROD with distance DIST by reducing symbol
    which can derivate empty string and which is placed after dot in
    given production. */
-static void add_derived_not_yet_started_productions(YaepParseState *ps, YaepProduction *prod, int parent)
+static void add_predicted_not_yet_started_productions(YaepParseState *ps, YaepProduction *prod, int parent)
 {
-    YaepSymb *symb;
     YaepRule *rule = prod->rule;
     int context = prod->context;
 
-    for(int i = prod->dot_i;(symb = rule->rhs[i]) != NULL && symb->empty_p; i++)
+    for(int i = prod->dot_i; rule->rhs[i] && rule->rhs[i]->empty_p; i++)
     {
         set_add_new_not_yet_started_prod(ps, prod_create(ps, rule, i + 1, context), parent);
     }
@@ -5297,7 +5296,9 @@ static void expand_new_start_set(YaepParseState *ps)
 
     /* Add non start productions with nonzero distances.*/
     for(i = 0; i < ps->new_num_started_productions; i++)
-        add_derived_not_yet_started_productions(ps, ps->new_productions[i], i);
+    {
+        add_predicted_not_yet_started_productions(ps, ps->new_productions[i], i);
+    }
     /* Add non start productions and form transitions vectors.*/
     for(i = 0; i < ps->new_core->num_productions; i++)
     {
