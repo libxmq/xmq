@@ -2539,7 +2539,7 @@ struct YaepStateSetCore
 
     /* Array of productions.  Start productions are always placed the
        first in the order of their creation(with subsequent duplicates
-       are removed), then nonstart noninitial(production with at least
+       are removed), then not_yet_started noninitial(production with at least
        one symbol before the dot) productions are placed and then initial
        productions are placed.  You should access to a set production only
        through this member or variable `new_productions'(in other words don't
@@ -2553,7 +2553,7 @@ struct YaepStateSetCore
     int n_all_distances;
 
     /* The following is array containing number of start production from
-       which distance of(nonstart noninitial) production with given
+       which distance of(not_yet_started noninitial) production with given
        index(between n_start_productions -> n_all_distances) is taken. */
     int *parent_indexes;
 };
@@ -2790,7 +2790,7 @@ struct YaepParseState
     os_t set_productions_os;
 
     /* The indexes of the parent start productions whose distances are used
-       to get distances of some nonstart productions are placed in the
+       to get distances of some not_yet_started productions are placed in the
        following os.*/
     os_t set_parent_indexes_os;
 
@@ -4031,11 +4031,11 @@ static void set_new_add_start_prod(YaepParseState *ps, YaepProduction*prod, int 
     ps->new_num_started_productions++;
 }
 
-/* Add nonstart, noninitial PROD with distance DIST at the end of the
+/* Add not_yet_started, noninitial PROD with distance DIST at the end of the
    production array of the set being formed.  If this is production and
    there is already the same pair(production, the corresponding
    distance), we do not add it.*/
-static void set_add_new_nonstart_prod(YaepParseState *ps, YaepProduction*prod, int parent)
+static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepProduction*prod, int parent)
 {
     int i;
 
@@ -5266,21 +5266,19 @@ static void read_input_tokens(YaepParseState *ps)
     tok_add(ps, END_MARKER_CODE, NULL);
 }
 
-/* The following function add start productions which is formed from
+/* Add derived not yet started productions which is formed from
    given start production PROD with distance DIST by reducing symbol
    which can derivate empty string and which is placed after dot in
-   given production.  The function returns true if the dot is placed on
-   the last position in given production or in the added productions.*/
-static void add_derived_nonstart_productions(YaepParseState *ps, YaepProduction*prod, int parent)
+   given production. */
+static void add_derived_not_yet_started_productions(YaepParseState *ps, YaepProduction *prod, int parent)
 {
-    YaepSymb*symb;
-    YaepRule*rule = prod->rule;
+    YaepSymb *symb;
+    YaepRule *rule = prod->rule;
     int context = prod->context;
-    int i;
 
-    for(i = prod->dot_i;(symb = rule->rhs[i]) != NULL && symb->empty_p; i++)
+    for(int i = prod->dot_i;(symb = rule->rhs[i]) != NULL && symb->empty_p; i++)
     {
-        set_add_new_nonstart_prod(ps, prod_create(ps, rule, i + 1, context), parent);
+        set_add_new_not_yet_started_prod(ps, prod_create(ps, rule, i + 1, context), parent);
     }
 }
 
@@ -5299,7 +5297,7 @@ static void expand_new_start_set(YaepParseState *ps)
 
     /* Add non start productions with nonzero distances.*/
     for(i = 0; i < ps->new_num_started_productions; i++)
-        add_derived_nonstart_productions(ps, ps->new_productions[i], i);
+        add_derived_not_yet_started_productions(ps, ps->new_productions[i], i);
     /* Add non start productions and form transitions vectors.*/
     for(i = 0; i < ps->new_core->num_productions; i++)
     {
@@ -7725,7 +7723,7 @@ static void print_production(YaepParseState *ps, FILE *f, YaepProduction *prod, 
     if (distance != -1) fprintf(f, "\n");
 }
 
-/* The following function prints SET to file F.  If NONSTART_P is true
+/* The following function prints SET to file F.  If NOT_YET_STARTED_P is true
    then print all productions.  The productions are printed with the
    lookahead set if LOOKAHEAD_P.  SET_DIST is used to print absolute
    distances of not-yet-started productions. */
