@@ -1653,6 +1653,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "\n"
            "  --debug    Output debug information on stderr.\n"
            "  --help     Display this help and exit.\n"
+           "  --license  Print license.\n"
            "  --lines    Assume each input line is a separate document.\n"
            "  --nomerge  When loading xmq do not merge text quotes and character entities.\n"
            "  --root=<name>\n"

@@ -4035,15 +4035,14 @@ static void set_new_add_start_prod(YaepParseState *ps, YaepProduction*prod, int 
    production array of the set being formed.  If this is production and
    there is already the same pair(production, the corresponding
    distance), we do not add it.*/
-static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepProduction*prod, int parent)
+static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepProduction *prod, int parent)
 {
-    int i;
-
     assert(ps->new_set_ready_p);
+
     /* When we add not-yet-started productions we need to have pairs
       (production, the corresponding distance) without duplicates
        because we also forms core_symb_vect at that time.*/
-    for(i = ps->new_num_started_productions; i < ps->new_core->num_productions; i++)
+    for(int i = ps->new_num_started_productions; i < ps->new_core->num_productions; i++)
     {
         if (ps->new_productions[i] == prod && ps->new_core->parent_indexes[i] == parent)
         {
