@@ -10,7 +10,9 @@ _xmq()
 
     compopt +o default
 
-    opts="--clines --html --htmq --ixml= --json --lines --text --trim= --xml --xmq --empty
+    opts="--clines --empty --html --htmq --ixml= --json --text --xml --xmq -z
+          --debug --lines --log-xmq --no-merge --trace --trim= --verbose
+          --ixml-all-parses --ixml-try-to-recover
           delete load no-output replace save-to statistics
           to-clines to-html to-json to-xml
           transform page browse
@@ -19,7 +21,7 @@ _xmq()
           replace-entity
           --with-file= --with-text-file=
           render-html
-          --compact --id= --class= --theme= --nostyle --onlystyle
+          --id= --class= --theme= --nostyle --onlystyle
           render-tex"
 
 #    echo -e "\nCUR=>${cur}< PREV=>${prev}< PPREV=>${prevprev}<\n"

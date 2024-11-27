@@ -200,8 +200,6 @@ typedef enum IXMLTermType IXMLTermType;
 
 struct IXMLTerminal
 {
-    IXMLTermType type; // Keep first in struct for union IXMLTerm.
-    char mark;
     char *name;
     int code;
 };
@@ -209,26 +207,26 @@ typedef struct IXMLTerminal IXMLTerminal;
 
 struct IXMLNonTerminal
 {
-    IXMLTermType type; // Keep first in struct for union IXMLTerm.
-    char mark;
+    char default_mark; // If the rule is declared as: -rr: A, B; then rr will by default not be printed.
     char *name;
     char *alias;
 };
 typedef struct IXMLNonTerminal IXMLNonTerminal;
 
-union IXMLTerm
+struct IXMLTerm // A term is an element in the rhs vector in the rule.
 {
-    IXMLTermType type; // Works for both t and nt since they have the type first.
-    IXMLTerminal t;
-    IXMLNonTerminal nt;
+    IXMLTermType type;
+    char mark; // Exclude a term in a rule's rhs: rr: -A, B;  then only the contents of A will be printed.
+    IXMLTerminal *t;
+    IXMLNonTerminal *nt;
 };
-typedef union IXMLTerm IXMLTerm;
+typedef struct IXMLTerm IXMLTerm;
 
 struct IXMLRule
 {
     IXMLNonTerminal *rule_name;
     char mark;
-    Vector *rhs;
+    Vector *rhs_terms;
 };
 typedef struct IXMLRule IXMLRule;
 
@@ -316,6 +314,13 @@ struct XMQParseState
     // The string 'xy' adds two terminals to this vector, etc.
     // These terminals are then added to the rule's rhs.
     Vector *ixml_tmp_terminals;
+    // The ixml_tmp_terms is the current collection of terms (terminal or non-terminals),
+    // These terms are then added to the rule's rhs.
+//    Vector *ixml_rhs_tmp_terms;
+    // These are the marks @-^ for the terminals.
+    Vector *ixml_rhs_tmp_marks;
+    // The most recently parsed mark.
+    char ixml_mark;
 
     // When debugging parsing of ixml, track indentation of depth here.
     int depth;

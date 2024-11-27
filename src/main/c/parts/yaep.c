@@ -5082,7 +5082,9 @@ int yaep_read_grammar(YaepParseRun *pr,
         // IXML
         rule->mark = mark;
         memcpy(rule->marks, marks, rhs_len);
-
+/*        printf("MARKS %s >", lhs);
+        for (int i=0; i<rhs_len; ++i) printf("%c", rule->marks[i]);
+        printf("<\n");*/
         if (transl != NULL)
 	{
             for(i = 0;(el = transl[i]) >= 0; i++)

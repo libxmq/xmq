@@ -1,33 +1,11 @@
-Added commands: to-clines quote-c unquote-c
 
-Use to-clines for printing greppable lines: xmq test.xmq to-clines
+You can read clines input with --clines.
+You can add content using a path,
+e.g. quickest way to build a web page:
 
-alfa(A) {
-    empty
-    'Hejsan'
-    beta = hoppsan
-    'Svejsan'
-}
+xmq -z add "!doctype=html" add /html/body/h1=Welcome to-html > index.html
 
-outputs:
-
-/alfa/@A=""
-/alfa/empty=""
-/alfa="Hejsan"
-/alfa/beta="hoppsan"
-/alfa="Svejsan"
-
-The right hand side is an ansi-c quoted string probably compatible with json.
-
-You can quote/unquote ansi-c strings like this:
-echo -ne "hello\nworld!" | xmq --text quote-c to-text
-outputs:
-"hello\nworld!"
-
-echo '"hello\nworld!"' | ./xmq --text unquote-c to-text
-outputs:
-hello
-world!
+The command save is now called save-to.
 
 2024-11-24: Version 2.17.0
 

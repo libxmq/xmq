@@ -1563,7 +1563,7 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->lines = true;
         return true;
     }
-    if (!strcmp(arg, "--nomerge"))
+    if (!strcmp(arg, "--no-merge"))
     {
         command->flags |= XMQ_FLAG_NOMERGE;
         return true;
