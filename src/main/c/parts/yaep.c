@@ -2373,6 +2373,8 @@ struct YaepGrammar
 
 struct YaepSymb
 {
+    /* A unique number 0,1,2... (num_terminals + num_non_terminals -1) */
+    int symb_id;
     /* The following is external representation of the symbol.  It
        should be allocated by parse_alloc because the string will be
        referred from parse tree. */
@@ -2407,22 +2409,19 @@ struct YaepSymb
             term_set_el_t *first, *follow;
         } nonterm;
     } u;
-    /* The following member is true if it is nonterminal.*/
+    /* The following member is true if it is nonterminal. */
     bool term_p;
     /* The following member value(if defined) is true if the symbol is
-       accessible(derivated) from the axiom.*/
+       accessible(derivated) from the axiom. */
     bool access_p;
     /* The following member is true if it is a termainal or it is a
-       nonterminal which derivates a terminal string.*/
+       nonterminal which derivates a terminal string. */
     bool derivation_p;
-    /* The following is true if it is nonterminal which may derivate
-       empty string.*/
+    /* The following is true if it is nonterminal which may derivate empty string. */
     bool empty_p;
-    /* The following member is order number of symbol.*/
-    int num;
 #ifdef USE_CORE_SYMB_HASH_TABLE
     /* The following is used as cache for subsequent search for
-       core_symb_vect with given symb.*/
+       core_symb_vect with given symb. */
     YaepCoreSymbVect *cached_core_symb_vect;
 #endif
 };
@@ -3114,7 +3113,8 @@ static YaepSymb *symb_add_term(YaepParseState *ps, const char*name, int code)
 
     symb.repr = name;
     symb.term_p = true;
-    symb.num = ps->run.grammar->symbs_ptr->num_nonterms + ps->run.grammar->symbs_ptr->num_terms;
+    // Assign the next available id.
+    symb.symb_id = ps->run.grammar->symbs_ptr->num_nonterms + ps->run.grammar->symbs_ptr->num_terms;
     symb.u.term.code = code;
     symb.u.term.term_id = ps->run.grammar->symbs_ptr->num_terms++;
     symb.empty_p = false;
@@ -3148,7 +3148,8 @@ static YaepSymb *symb_add_nonterm(YaepParseState *ps, const char *name)
 
     symb.repr = name;
     symb.term_p = false;
-    symb.num = ps->run.grammar->symbs_ptr->num_nonterms + ps->run.grammar->symbs_ptr->num_terms;
+    // Assign the next available id.
+    symb.symb_id = ps->run.grammar->symbs_ptr->num_nonterms + ps->run.grammar->symbs_ptr->num_terms;
     symb.u.nonterm.rules = NULL;
     symb.u.nonterm.loop_p = false;
     symb.u.nonterm.nonterm_id = ps->run.grammar->symbs_ptr->num_nonterms++;
@@ -3170,16 +3171,17 @@ static YaepSymb *symb_add_nonterm(YaepParseState *ps, const char *name)
 }
 
 /* The following function return N-th symbol(if any) or NULL otherwise. */
-static YaepSymb *symb_get(YaepParseState *ps, int n)
+static YaepSymb *symb_get(YaepParseState *ps, int id)
 {
-    if (n < 0 ||(VLO_LENGTH(ps->run.grammar->symbs_ptr->symbs_vlo) / sizeof(YaepSymb*) <=(size_t) n))
+    if (id < 0 ||(VLO_LENGTH(ps->run.grammar->symbs_ptr->symbs_vlo) / sizeof(YaepSymb*) <=(size_t) id))
     {
         return NULL;
     }
-    YaepSymb*symb =((YaepSymb**) VLO_BEGIN(ps->run.grammar->symbs_ptr->symbs_vlo))[n];
-    assert(symb->num == n);
+    YaepSymb **vect = VLO_BEGIN(ps->run.grammar->symbs_ptr->symbs_vlo);
+    YaepSymb *symb = vect[id];
+    assert(symb->symb_id == id);
 
-    TRACE_FA(ps, "%d -> %s", n, symb->repr);
+    TRACE_FA(ps, "%d -> %s", id, symb->repr);
 
     return symb;
 }
@@ -4411,7 +4413,7 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepCoreSy
 #else
 
 /* The following function returns entry in the table where pointer to
-   corresponding triple with SET_CORE and SYMB is placed.*/
+   corresponding triple with SET_CORE and SYMB is placed. */
 static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepStateSetCore *set_core, YaepSymb *symb)
 {
     YaepCoreSymbVect***core_symb_vect_ptr;
@@ -4448,7 +4450,7 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepStateS
             ptr++;
         }
     }
-    return &(*core_symb_vect_ptr)[symb->num];
+    return &(*core_symb_vect_ptr)[symb->symb_id];
 }
 #endif
 
