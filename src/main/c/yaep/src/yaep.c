@@ -1350,10 +1350,8 @@ static term_set_el_t *term_set_from_table(YaepParseState *ps, int num)
 /* Print terminal SET into file F. */
 static void term_set_print(YaepParseState *ps, FILE *f, term_set_el_t *set, int num_terms)
 {
-    int i;
-
     fprintf(f, "[");
-    for (i = 0; i < num_terms; i++)
+    for (int i = 0; i < num_terms; i++)
     {
         if (term_set_test(set, i, num_terms))
         {
@@ -1917,11 +1915,18 @@ static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepProduction 
             return;
         }
     }
+    // Increase the object stack storing productions, with the size of a new production.
     OS_TOP_EXPAND(ps->set_productions_os, sizeof(YaepProduction*));
-    ps->new_productions = ps->new_core->productions =(YaepProduction**) OS_TOP_BEGIN(ps->set_productions_os);
+    ps->new_productions = ps->new_core->productions = (YaepProduction**)OS_TOP_BEGIN(ps->set_productions_os);
+
+    // Increase the parent index vector with another int.
+    // This integer points to ...?
     OS_TOP_EXPAND(ps->set_parent_indexes_os, sizeof(int));
     ps->new_core->parent_indexes = (int*)OS_TOP_BEGIN(ps->set_parent_indexes_os) - ps->new_num_started_productions;
+
+    // Store prod into new productions.
     ps->new_productions[ps->new_core->num_productions++] = prod;
+    // Store parent index. Meanst what...?
     ps->new_core->parent_indexes[ps->new_core->n_all_distances++] = parent;
     ps->n_parent_indexes++;
 }
@@ -3148,31 +3153,30 @@ static void add_predicted_not_yet_started_productions(YaepParseState *ps, YaepPr
     }
 }
 
-/* The following function adds the rest(not-yet-started) productions to the
+/* The following function adds the rest(predicted not-yet-started) productions to the
    new set and and forms triples(set core, symbol, indexes) for
    further fast search of start productions from given core by
-   transition on given symbol(see comment for abstract data
-   `core_symb_vect').*/
+   transition on given symbol(see comment for abstract data `core_symb_vect'). */
 static void expand_new_start_set(YaepParseState *ps)
 {
     YaepProduction *prod;
     YaepSymb *symb;
     YaepCoreSymbVect *core_symb_vect;
     YaepRule *rule;
-    int i;
 
-    /* Add non start productions with nonzero distances.*/
-    for(i = 0; i < ps->new_num_started_productions; i++)
+    /* Add not yet started productions with nonzero distances. */
+    for(int i = 0; i < ps->new_num_started_productions; i++)
     {
         add_predicted_not_yet_started_productions(ps, ps->new_productions[i], i);
     }
-    /* Add non start productions and form transitions vectors.*/
-    for(i = 0; i < ps->new_core->num_productions; i++)
+
+    /* Add not yet started productions and form transitions vectors. */
+    for(int i = 0; i < ps->new_core->num_productions; i++)
     {
         prod = ps->new_productions[i];
         if (prod->dot_i < prod->rule->rhs_len)
 	{
-            /* There is a symbol after dot in the production.*/
+            /* There is a symbol after dot in the production. */
             symb = prod->rule->rhs[prod->dot_i];
             core_symb_vect = core_symb_vect_find(ps, ps->new_core, symb);
             if (core_symb_vect == NULL)
@@ -3193,8 +3197,9 @@ static void expand_new_start_set(YaepParseState *ps)
             }
 	}
     }
-    /* Now forming reduce vectors.*/
-    for(i = 0; i < ps->new_core->num_productions; i++)
+
+    /* Now forming reduce vectors. */
+    for(int i = 0; i < ps->new_core->num_productions; i++)
     {
         prod = ps->new_productions[i];
         if (prod->dot_i == prod->rule->rhs_len)
@@ -3202,10 +3207,13 @@ static void expand_new_start_set(YaepParseState *ps)
             symb = prod->rule->lhs;
             core_symb_vect = core_symb_vect_find(ps, ps->new_core, symb);
             if (core_symb_vect == NULL)
+            {
                 core_symb_vect = core_symb_vect_new(ps, ps->new_core, symb);
+            }
             core_symb_vect_new_add_reduce_el(ps, core_symb_vect, i);
 	}
     }
+
     if (ps->run.grammar->lookahead_level > 1)
     {
         YaepProduction *new_prod, *shifted_prod;
@@ -3218,7 +3226,7 @@ static void expand_new_start_set(YaepParseState *ps)
         do
 	{
             changed_p = false;
-            for(i = ps->new_core->n_all_distances; i < ps->new_core->num_productions; i++)
+            for(int i = ps->new_core->n_all_distances; i < ps->new_core->num_productions; i++)
 	    {
                 term_set_clear(context_set, ps->run.grammar->symbs_ptr->num_terms);
                 new_prod = ps->new_productions[i];
@@ -3254,7 +3262,7 @@ static void expand_new_start_set(YaepParseState *ps)
     core_symb_vect_new_all_stop(ps);
 }
 
-/* The following function forms the 1st set.*/
+/* The following function forms the 1st set. */
 static void build_start_set(YaepParseState *ps)
 {
     int context = 0;
