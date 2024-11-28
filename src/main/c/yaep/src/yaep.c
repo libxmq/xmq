@@ -170,8 +170,8 @@ typedef struct YaepInputToken YaepInputToken;
 struct YaepStateSetTermLookAhead;
 typedef struct YaepStateSetTermLookAhead YaepStateSetTermLookAhead;
 
-struct YaepInternalParseState;
-typedef struct YaepInternalParseState YaepInternalParseState;
+struct YaepParseTreeBuildState;
+typedef struct YaepParseTreeBuildState YaepParseTreeBuildState;
 
 struct YaepTreeNodeVisit;
 typedef struct YaepTreeNodeVisit YaepTreeNodeVisit;
@@ -446,9 +446,14 @@ struct YaepStateSet
     int *distances;
 };
 
-/* The following describes abstract data production without distance of its original
-   set.  To save memory we extract such structure because there are
-   many duplicated structures. */
+/* A production stores:
+       reference to a rule,
+       current dot position,
+       lookup bitset for a quick terminal lookahead check, to see if this producion should be applied.
+
+   We do not store an index to its original set where this production belongs.
+   This is stored separately and this means that we can reuse production objects to save memory,
+   since ref,dot,lookup is recurring often. */
 struct YaepProduction
 {
     /* Unique production identifier. Starts at 0 and increments for each new production. */
@@ -563,17 +568,17 @@ struct YaepRuleStorage
     /* The following is rule being formed. */
     YaepRule *current_rule;
 
-    /* All rules are placed in the following object.*/
+    /* All rules are placed in the following object. */
     os_t rules_os;
 };
 
-/* The following describes parser state.*/
-struct YaepInternalParseState
+/* This state is used when reconstricting the parse tree from the productions. */
+struct YaepParseTreeBuildState
 {
-    /* The rule which we are processing.*/
+    /* The rule which we are processing. */
     YaepRule *rule;
 
-    /* Position in the rule where we are now.*/
+    /* Position in the rule where we are now. */
     int dot_i;
 
     /* The rule origin (start point of derivated string from rule rhs)
@@ -586,11 +591,11 @@ struct YaepInternalParseState
        for this rule, the value refers for the abstract node and the
        displacement is undefined.  Otherwise, the two members is
        place into which we should place the translation of the rule.
-       The following member is used only for states in the stack.*/
-    YaepInternalParseState *parent_anode_state;
+       The following member is used only for states in the stack. */
+    YaepParseTreeBuildState *parent_anode_state;
     int parent_disp;
 
-    /* The following is used only for states in the table.*/
+    /* The following is used only for states in the table. */
     YaepTreeNode *anode;
 };
 
@@ -599,9 +604,10 @@ struct YaepInternalParseState
 struct YaepTreeNodeVisit
 {
     /* The following member is order number of the node.  This value is
-       negative if we did not visit the node yet.*/
+       negative if we did not visit the node yet. */
     int num;
-    /* The tree node itself.*/
+
+    /* The tree node itself. */
     YaepTreeNode*node;
 };
 
@@ -821,7 +827,7 @@ struct YaepParseState
 
     /* The following variable refers to head of chain of already allocated
        and then freed parser states.*/
-    YaepInternalParseState *free_parse_state;
+    YaepParseTreeBuildState *free_parse_state;
 
     /* The following table is used to make translation for ambiguous
        grammar more compact.  It is used only when we want all
@@ -1079,8 +1085,8 @@ static YaepSymb *nonterm_get(YaepParseState *ps, int n)
 static void symb_finish_adding_terms(YaepParseState *ps)
 {
     int i, max_code, min_code;
-    YaepSymb*symb;
-    void*mem;
+    YaepSymb *symb;
+    void *mem;
 
     for (min_code = max_code = i = 0;(symb = term_get(ps, i)) != NULL; i++)
     {
@@ -1193,8 +1199,8 @@ static bool term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 /* Initialize work with terminal sets and returns storage for terminal sets.*/
 static YaepTermStorage *term_set_init(YaepGrammar *grammar)
 {
-    void*mem;
-    YaepTermStorage*result;
+    void *mem;
+    YaepTermStorage *result;
 
     mem = yaep_malloc(grammar->alloc, sizeof(YaepTermStorage));
     result =(YaepTermStorage*) mem;
@@ -1232,7 +1238,7 @@ static void term_set_clear(term_set_el_t* set, int num_terms)
     term_set_el_t*bound;
     int size;
 
-    size =((num_terms + CHAR_BIT* sizeof(term_set_el_t) - 1)
+    size = ((num_terms + CHAR_BIT* sizeof(term_set_el_t) - 1)
             /(CHAR_BIT* sizeof(term_set_el_t)));
     bound = set + size;
     while(set < bound)
@@ -1309,7 +1315,7 @@ static int term_set_test(term_set_el_t *set, int num, int num_terms)
 /* The following function inserts terminal SET into the table and
    returns its number.  If the set is already in table it returns -its
    number - 1(which is always negative).  Don't set after
-   insertion!!!*/
+   insertion!!! */
 static int term_set_insert(YaepParseState *ps, term_set_el_t *set)
 {
     hash_table_entry_t *entry;
@@ -1338,7 +1344,7 @@ static int term_set_insert(YaepParseState *ps, term_set_el_t *set)
     }
 }
 
-/* The following function returns set which is in the table with number NUM.*/
+/* The following function returns set which is in the table with number NUM. */
 static term_set_el_t *term_set_from_table(YaepParseState *ps, int num)
 {
     assert(num >= 0);
@@ -4135,7 +4141,7 @@ static void perform_parse(YaepParseState *ps)
 /* Hash of parse state.*/
 static unsigned parse_state_hash(hash_table_entry_t s)
 {
-    YaepInternalParseState*state =((YaepInternalParseState*) s);
+    YaepParseTreeBuildState*state =((YaepParseTreeBuildState*) s);
 
     /* The table contains only states with dot at the end of rule.*/
     assert(state->dot_i == state->rule->rhs_len);
@@ -4147,8 +4153,8 @@ static unsigned parse_state_hash(hash_table_entry_t s)
 /* Equality of parse states.*/
 static bool parse_state_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    YaepInternalParseState*state1 =((YaepInternalParseState*) s1);
-    YaepInternalParseState*state2 =((YaepInternalParseState*) s2);
+    YaepParseTreeBuildState*state1 =((YaepParseTreeBuildState*) s1);
+    YaepParseTreeBuildState*state2 =((YaepParseTreeBuildState*) s2);
 
     /* The table contains only states with dot at the end of rule.*/
     assert(state1->dot_i == state1->rule->rhs_len
@@ -4169,37 +4175,37 @@ static void parse_state_init(YaepParseState *ps)
 }
 
 /* The following function returns new parser state.*/
-static YaepInternalParseState *parse_state_alloc(YaepParseState *ps)
+static YaepParseTreeBuildState *parse_state_alloc(YaepParseState *ps)
 {
-    YaepInternalParseState*result;
+    YaepParseTreeBuildState*result;
 
     if (ps->free_parse_state == NULL)
     {
-        OS_TOP_EXPAND(ps->parse_state_os, sizeof(YaepInternalParseState));
-        result =(YaepInternalParseState*) OS_TOP_BEGIN(ps->parse_state_os);
+        OS_TOP_EXPAND(ps->parse_state_os, sizeof(YaepParseTreeBuildState));
+        result =(YaepParseTreeBuildState*) OS_TOP_BEGIN(ps->parse_state_os);
         OS_TOP_FINISH(ps->parse_state_os);
     }
     else
     {
         result = ps->free_parse_state;
-        ps->free_parse_state =(YaepInternalParseState*) ps->free_parse_state->rule;
+        ps->free_parse_state =(YaepParseTreeBuildState*) ps->free_parse_state->rule;
     }
     return result;
 }
 
 /* The following function frees STATE.*/
-static void parse_state_free(YaepParseState *ps, YaepInternalParseState*state)
+static void parse_state_free(YaepParseState *ps, YaepParseTreeBuildState*state)
 {
     state->rule = (YaepRule*)ps->free_parse_state;
     ps->free_parse_state = state;
 }
 
 /* The following function searches for state in the table with the
-   same characteristics as*STATE.  If it found it, it returns pointer
+   same characteristics as "state".  If found, then it returns a pointer
    to the state in the table.  Otherwise the function makes copy of
   *STATE, inserts into the table and returns pointer to copied state.
    In the last case, the function also sets up*NEW_P.*/
-static YaepInternalParseState *parse_state_insert(YaepParseState *ps, YaepInternalParseState *state, bool *new_p)
+static YaepParseTreeBuildState *parse_state_insert(YaepParseState *ps, YaepParseTreeBuildState *state, bool *new_p)
 {
     hash_table_entry_t*entry;
 
@@ -4207,12 +4213,12 @@ static YaepInternalParseState *parse_state_insert(YaepParseState *ps, YaepIntern
 
    *new_p = false;
     if (*entry != NULL)
-        return(YaepInternalParseState*)*entry;
+        return(YaepParseTreeBuildState*)*entry;
    *new_p = true;
     /* We make copy because current_state_set_i can be changed in further processing state.*/
    *entry = parse_state_alloc(ps);
-   *(YaepInternalParseState*)*entry =*state;
-    return(YaepInternalParseState*)*entry;
+   *(YaepParseTreeBuildState*)*entry =*state;
+    return(YaepParseTreeBuildState*)*entry;
 }
 
 /* The following function finalizes work with parser states.*/
@@ -4622,20 +4628,22 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
     traverse_pruned_translation(ps, root);
     if (ps->run.parse_free != NULL)
     {
-        for(node_ptr =(YaepTreeNode**) VLO_BEGIN(ps->tnodes_vlo);
-             node_ptr <(YaepTreeNode**) VLO_BOUND(ps->tnodes_vlo);
-             node_ptr++)
+        for(node_ptr = (YaepTreeNode**)VLO_BEGIN(ps->tnodes_vlo);
+            node_ptr <(YaepTreeNode**)VLO_BOUND(ps->tnodes_vlo);
+            node_ptr++)
+        {
             if (*find_hash_table_entry(ps->set_of_reserved_memory,*node_ptr, true) == NULL)
             {
                 if ((*node_ptr)->type == YAEP_ANODE
                     &&*find_hash_table_entry(ps->set_of_reserved_memory,
-					      (*node_ptr)->val.anode.name,
-					       true) == NULL)
+                                             (*node_ptr)->val.anode.name,
+                                             true) == NULL)
                 {
-                   (*ps->run.parse_free)((void*)(*node_ptr)->val.anode.name);
+                    (*ps->run.parse_free)((void*)(*node_ptr)->val.anode.name);
                 }
-               (*ps->run.parse_free)(*node_ptr);
+                (*ps->run.parse_free)(*node_ptr);
             }
+        }
         VLO_DELETE(ps->tnodes_vlo);
         delete_hash_table(ps->set_of_reserved_memory);
     }
@@ -4648,7 +4656,7 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
 /* The following function finds parse tree of parsed input.  The
    function sets up*AMBIGUOUS_P if we found that the grammer is
    ambigous(it works even we asked only one parse tree without
-   alternatives).*/
+   alternatives). */
 static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 {
     YaepStateSet *set, *check_set;
@@ -4660,9 +4668,9 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     int i, j, k, found, pos, origin, current_state_set_i, n_candidates, disp;
     int prod_ind, check_prod_ind, prod_origin, check_prod_origin;
     bool new_p;
-    YaepInternalParseState *state, *orig_state, *curr_state;
-    YaepInternalParseState *table_state, *parent_anode_state;
-    YaepInternalParseState root_state;
+    YaepParseTreeBuildState *state, *orig_state, *curr_state;
+    YaepParseTreeBuildState *table_state, *parent_anode_state;
+    YaepParseTreeBuildState root_state;
     YaepTreeNode *result, *empty_node, *node, *error_node;
     YaepTreeNode *parent_anode, *anode, root_anode;
     int parent_disp;
@@ -4708,9 +4716,9 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         VLO_CREATE(orig_states, ps->run.grammar->alloc, 0);
     }
     VLO_CREATE(stack, ps->run.grammar->alloc, 10000);
-    VLO_EXPAND(stack, sizeof(YaepInternalParseState*));
+    VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
     state = parse_state_alloc(ps);
-   ((YaepInternalParseState**) VLO_BOUND(stack))[-1] = state;
+   ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
     rule = state->rule = prod->rule;
     state->dot_i = prod->dot_i;
     state->origin_i = 0;
@@ -4733,7 +4741,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         if (ps->run.debug && state->dot_i == state->rule->rhs_len)
 	{
             fprintf(stderr, "\n\nProcessing top %ld, current_state_set_i = %d, prod = ",
-                    (long) VLO_LENGTH(stack) / sizeof(YaepInternalParseState*) - 1,
+                    (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                      state->current_state_set_i);
             print_rule_with_dot(ps, stderr, state->rule, state->dot_i);
             fprintf(stderr, ", state->origin_i=%d\n", state->origin_i);
@@ -4755,7 +4763,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             if (ps->run.debug && state->dot_i == state->rule->rhs_len)
 	    {
                 fprintf(stderr, "Poping top %ld, current_state_set_i = %d, prod = ",
-                        (long) VLO_LENGTH(stack) / sizeof(YaepInternalParseState*) - 1,
+                        (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                         state->current_state_set_i);
 
                 print_rule_with_dot(ps, stderr, state->rule, 0);
@@ -4764,9 +4772,9 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 	    }
 
             parse_state_free(ps, state);
-            VLO_SHORTEN(stack, sizeof(YaepInternalParseState*));
+            VLO_SHORTEN(stack, sizeof(YaepParseTreeBuildState*));
             if (VLO_LENGTH(stack) != 0)
-                state =((YaepInternalParseState**) VLO_BOUND(stack))[-1];
+                state =((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1];
             if (parent_anode != NULL && rule->trans_len == 0 && anode == NULL)
 	    {
                 /* We do produce nothing but we should.  So write empty
@@ -4925,19 +4933,19 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                     assert(!ps->run.grammar->one_parse_p);
                     if (n_candidates == 1)
 		    {
-                        VLO_EXPAND(orig_states, sizeof(YaepInternalParseState*));
-                       ((YaepInternalParseState**) VLO_BOUND(orig_states))[-1]
+                        VLO_EXPAND(orig_states, sizeof(YaepParseTreeBuildState*));
+                       ((YaepParseTreeBuildState**) VLO_BOUND(orig_states))[-1]
                             = orig_state;
 		    }
                     for(j =(VLO_LENGTH(orig_states)
-                              / sizeof(YaepInternalParseState*) - 1); j >= 0; j--)
-                        if (((YaepInternalParseState**)
+                              / sizeof(YaepParseTreeBuildState*) - 1); j >= 0; j--)
+                        if (((YaepParseTreeBuildState**)
                              VLO_BEGIN(orig_states))[j]->current_state_set_i == prod_origin)
                             break;
                     if (j >= 0)
 		    {
                         /* [A -> x., n] & [A -> y., n]*/
-                        curr_state =((YaepInternalParseState**)
+                        curr_state =((YaepParseTreeBuildState**)
                                       VLO_BEGIN(orig_states))[j];
                         anode = curr_state->anode;
 		    }
@@ -4947,23 +4955,23 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                         /* It is different from the previous ones so add
                            it to process.*/
                         state = parse_state_alloc(ps);
-                        VLO_EXPAND(stack, sizeof(YaepInternalParseState*));
-                       ((YaepInternalParseState**) VLO_BOUND(stack))[-1] = state;
+                        VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
+                       ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
                        *state =*orig_state;
                         state->current_state_set_i = prod_origin;
                         if (anode != NULL)
                             state->anode
                                 = copy_anode(ps, parent_anode->val.anode.children
                                               + parent_disp, anode, rule, disp);
-                        VLO_EXPAND(orig_states, sizeof(YaepInternalParseState*));
-                       ((YaepInternalParseState**) VLO_BOUND(orig_states))[-1]
+                        VLO_EXPAND(orig_states, sizeof(YaepParseTreeBuildState*));
+                       ((YaepParseTreeBuildState**) VLO_BOUND(orig_states))[-1]
                             = state;
 
                         if (ps->run.debug)
 			{
                             fprintf(stderr,
                                      "  Adding top %ld, prod_origin = %d, modified prod = ",
-                                    (long) VLO_LENGTH(stack) / sizeof(YaepInternalParseState*) - 1,
+                                    (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                                      prod_origin);
                             print_rule_with_dot(ps, stderr, state->rule, state->dot_i);
                             fprintf(stderr, ", state->origin_i = %d\n", state->origin_i);
@@ -4975,7 +4983,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 		}		/* if (n_candidates != 0)*/
                 if (prod_rule->anode != NULL)
 		{
-                    /* This rule creates abstract node.*/
+                    /* This rule creates abstract node. */
                     state = parse_state_alloc(ps);
                     state->rule = prod_rule;
                     state->dot_i = prod->dot_i;
@@ -4983,25 +4991,23 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                     state->current_state_set_i = current_state_set_i;
                     table_state = NULL;
                     if (!ps->run.grammar->one_parse_p)
+                    {
                         table_state = parse_state_insert(ps, state, &new_p);
+                    }
                     if (table_state == NULL || new_p)
 		    {
                         /* We need new abtract node.*/
                         ps->n_parse_abstract_nodes++;
-                        node
-                            =((YaepTreeNode*)
-                              (*ps->run.parse_alloc)(sizeof(YaepTreeNode)
-                                               + sizeof(YaepTreeNode*)
-                                              *(prod_rule->trans_len + 1)));
+                        node = ((YaepTreeNode*)(*ps->run.parse_alloc)(sizeof(YaepTreeNode)
+                                                                      + sizeof(YaepTreeNode*)
+                                                                      *(prod_rule->trans_len + 1)));
                         state->anode = node;
                         if (table_state != NULL)
                             table_state->anode = node;
                         node->type = YAEP_ANODE;
                         if (prod_rule->caller_anode == NULL)
 			{
-                            prod_rule->caller_anode
-                                =((char*)
-                                  (*ps->run.parse_alloc)(strlen(prod_rule->anode) + 1));
+                            prod_rule->caller_anode = ((char*)(*ps->run.parse_alloc)(strlen(prod_rule->anode) + 1));
                             strcpy(prod_rule->caller_anode, prod_rule->anode);
 			}
                         node->val.anode.name = prod_rule->caller_anode;
@@ -5014,17 +5020,16 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                             node->val.anode.mark = rule->marks[pos];
                         }
                         /////////
-                        node->val.anode.children
-                            =((YaepTreeNode**)
-                              ((char*) node + sizeof(YaepTreeNode)));
+                        node->val.anode.children = ((YaepTreeNode**)((char*) node + sizeof(YaepTreeNode)));
                         for(k = 0; k <= prod_rule->trans_len; k++)
+                        {
                             node->val.anode.children[k] = NULL;
-                        VLO_EXPAND(stack, sizeof(YaepInternalParseState*));
-                       ((YaepInternalParseState**) VLO_BOUND(stack))[-1] = state;
+                        }
+                        VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
+                        ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
                         if (anode == NULL)
 			{
-                            state->parent_anode_state
-                                = curr_state->parent_anode_state;
+                            state->parent_anode_state = curr_state->parent_anode_state;
                             state->parent_disp = parent_disp;
 			}
                         else
@@ -5036,7 +5041,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                         if (ps->run.debug)
 			{
                             fprintf(stderr, "  Adding top %ld, current_state_set_i = %d, prod = ",
-                                    (long) VLO_LENGTH(stack) / sizeof(YaepInternalParseState*) - 1,
+                                    (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                                     current_state_set_i);
                             print_production(ps, stderr, prod, ps->run.debug, -1);
                             fprintf(stderr, ", %d\n", prod_origin);
@@ -5048,7 +5053,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                         /* We allready have the translation.*/
                         assert(!ps->run.grammar->one_parse_p);
                         parse_state_free(ps, state);
-                        state =((YaepInternalParseState**) VLO_BOUND(stack))[-1];
+                        state =((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1];
                         node = table_state->anode;
                         assert(node != NULL);
 
@@ -5073,8 +5078,8 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                     /* We should generate and use the translation of the
                        nonterminal.  Add state to get a translation.*/
                     state = parse_state_alloc(ps);
-                    VLO_EXPAND(stack, sizeof(YaepInternalParseState*));
-                   ((YaepInternalParseState**) VLO_BOUND(stack))[-1] = state;
+                    VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
+                   ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
                     state->rule = prod_rule;
                     state->dot_i = prod->dot_i;
                     state->origin_i = prod_origin;
@@ -5090,7 +5095,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 		    {
                         fprintf(stderr,
                                  "  Adding top %ld, current_state_set_i = %d, prod = ",
-                                (long) VLO_LENGTH(stack) / sizeof(YaepInternalParseState*) - 1,
+                                (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                                 current_state_set_i);
                         print_production(ps, stderr, prod, ps->run.debug, -1);
                         fprintf(stderr, ", %d\n", prod_origin);
@@ -5198,7 +5203,7 @@ static void parse_free_default(void *mem)
    NO_YAEP_DEBUG_PRINT).  The function returns the error code(which
    will be also in error_code).  The function sets up
   *AMBIGUOUS_P if we found that the grammer is ambigous(it works even
-   we asked only one parse tree without alternatives).*/
+   we asked only one parse tree without alternatives). */
 int yaepParse(YaepParseRun *pr, YaepGrammar *g)
 {
     YaepParseState *ps = (YaepParseState*)pr;
