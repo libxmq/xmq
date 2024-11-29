@@ -1599,11 +1599,11 @@ static bool prod_set_lookahead(YaepParseState *ps, YaepProduction *prod)
 
 /* The following function returns productions with given
    characteristics.  Remember that productions are stored in one
-   exemplar.*/
+   exemplar. */
 static YaepProduction *prod_create(YaepParseState *ps, YaepRule *rule, int pos, int context)
 {
-    YaepProduction*prod;
-    YaepProduction***context_prod_table_ptr;
+    YaepProduction *prod;
+    YaepProduction ***context_prod_table_ptr;
 
     assert(context >= 0);
     context_prod_table_ptr = ps->prod_table + context;
@@ -1625,14 +1625,20 @@ static YaepProduction *prod_create(YaepParseState *ps, YaepRule *rule, int pos, 
         bound =(YaepProduction***) VLO_BOUND(ps->prod_table_vlo);
         context_prod_table_ptr = ps->prod_table + context;
         ptr = bound - diff / sizeof(YaepProduction**);
+
         while(ptr < bound)
 	{
-            OS_TOP_EXPAND(ps->productions_os,(ps->run.grammar->rules_ptr->n_rhs_lens + ps->run.grammar->rules_ptr->num_rules)
-                          * sizeof(YaepProduction*));
-           *ptr =(YaepProduction**) OS_TOP_BEGIN(ps->productions_os);
+            OS_TOP_EXPAND(ps->productions_os,
+                          (ps->run.grammar->rules_ptr->n_rhs_lens + ps->run.grammar->rules_ptr->num_rules)
+                          *sizeof(YaepProduction*));
+
+           *ptr = (YaepProduction**)OS_TOP_BEGIN(ps->productions_os);
             OS_TOP_FINISH(ps->productions_os);
+
             for(i = 0; i < ps->run.grammar->rules_ptr->n_rhs_lens + ps->run.grammar->rules_ptr->num_rules; i++)
-               (*ptr)[i] = NULL;
+            {
+                (*ptr)[i] = NULL;
+            }
             ptr++;
 	}
     }
