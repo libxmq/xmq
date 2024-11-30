@@ -2836,7 +2836,7 @@ struct YaepParseState
     hash_table_t set_of_triplets_core_term_lookahead;	/* key is (core, term, lookeahed). */
 
     /* The following contains current number of unique dotted_rules. */
-    int n_all_dotted_rules;
+    int num_all_dotted_rules;
 
     /* The following two dimensional array(the first dimension is context
        number, the second one is dotted_rule number) contains references to
@@ -3688,7 +3688,7 @@ static void free_input(YaepParseState *ps)
 
 static void create_dotted_rules(YaepParseState *ps)
 {
-    ps->n_all_dotted_rules= 0;
+    ps->num_all_dotted_rules= 0;
     OS_CREATE(ps->dotted_rules_os, ps->run.grammar->alloc, 0);
     VLO_CREATE(ps->dotted_rules_table_vlo, ps->run.grammar->alloc, 4096);
     ps->dotted_rules_table = (YaepDottedRule***)VLO_BEGIN(ps->dotted_rules_table_vlo);
@@ -3794,10 +3794,10 @@ static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, in
     OS_TOP_EXPAND(ps->dotted_rules_os, sizeof(YaepDottedRule));
     dotted_rule =(YaepDottedRule*) OS_TOP_BEGIN(ps->dotted_rules_os);
     OS_TOP_FINISH(ps->dotted_rules_os);
-    ps->n_all_dotted_rules++;
+    ps->num_all_dotted_rules++;
     dotted_rule->rule = rule;
     dotted_rule->dot_i = pos;
-    dotted_rule->id = ps->n_all_dotted_rules;
+    dotted_rule->id = ps->num_all_dotted_rules;
     dotted_rule->context = context;
     dotted_rule->empty_tail_p = dotted_rule_set_lookahead(ps, dotted_rule);
     (*context_dotted_rules_table_ptr)[rule->rule_start_offset + pos] = dotted_rule;
@@ -7440,7 +7440,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  ps->run.grammar->rulestorage_ptr->num_rules,
                  ps->run.grammar->rulestorage_ptr->n_rhs_lens + ps->run.grammar->rulestorage_ptr->num_rules);
         fprintf(stderr, "Input: #tokens = %d, #unique dotted_rules = %d\n",
-                 ps->input_len, ps->n_all_dotted_rules);
+                 ps->input_len, ps->num_all_dotted_rules);
         fprintf(stderr, "       #terminal sets = %d, their size = %d\n",
                  ps->run.grammar->term_sets_ptr->n_term_sets, ps->run.grammar->term_sets_ptr->n_term_sets_size);
         fprintf(stderr,
