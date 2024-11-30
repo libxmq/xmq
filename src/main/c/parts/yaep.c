@@ -2769,7 +2769,7 @@ struct YaepParseState
     vlo_t input_tokens_vlo;
 
     /* When parsing, the current input token is incremented from 0 to len. */
-    int current_input_token_i;
+    int tok_i;
 
     /* The following says that new_set, new_core and their members are
        defined. Before this the access to data of the set being formed
@@ -2914,9 +2914,9 @@ struct YaepParseState
     /* All tail sets of error recovery are saved in the following os.*/
     os_t recovery_state_tail_sets;
 
-    /* The following variable values is state_set_curr and current_input_token_i at error
+    /* The following variable values is state_set_curr and tok_i at error
        recovery start(when the original syntax error has been fixed).*/
-    int recovery_start_set_curr, recovery_start_current_input_token_i;
+    int recovery_start_set_curr, recovery_start_tok_i;
 
     /* The following variable value means that all error sets in pl with
        indexes [back_state_set_frontier, recovery_start_set_curr] are being processed or
@@ -5685,7 +5685,7 @@ static int find_error_state_set_set(YaepParseState *ps, int start_state_set_set,
 
 /* The following function creates and returns new error recovery state
    with charcteristics(LAST_ORIGINAL_STATE_SET_EL, BACKWARD_MOVE_COST,
-   state_set_curr, current_input_token_i).*/
+   state_set_curr, tok_i).*/
 static struct recovery_state new_recovery_state(YaepParseState *ps, int last_original_state_set_el, int backward_move_cost)
 {
     struct recovery_state state;
@@ -5696,8 +5696,8 @@ static struct recovery_state new_recovery_state(YaepParseState *ps, int last_ori
     if (ps->run.debug)
     {
         fprintf(stderr, "++++Creating recovery state: original set=%d, tok=%d, ",
-                last_original_state_set_el, ps->current_input_token_i);
-        symbol_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
+                last_original_state_set_el, ps->tok_i);
+        symbol_print(stderr, ps->input_tokens[ps->tok_i].symb, true);
         fprintf(stderr, "\n");
     }
 
@@ -5719,7 +5719,7 @@ static struct recovery_state new_recovery_state(YaepParseState *ps, int last_ori
     }
     state.state_set_tail =(YaepStateSet**) OS_TOP_BEGIN(ps->recovery_state_tail_sets);
     OS_TOP_FINISH(ps->recovery_state_tail_sets);
-    state.start_tok = ps->current_input_token_i;
+    state.start_tok = ps->tok_i;
     state.backward_move_cost = backward_move_cost;
     return state;
 }
@@ -5735,29 +5735,29 @@ static void push_recovery_state(YaepParseState *ps, int last_original_state_set_
     if (ps->run.debug)
     {
         fprintf(stderr, "++++Push recovery state: original set=%d, tok=%d, ",
-                 last_original_state_set_el, ps->current_input_token_i);
-        symbol_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
+                 last_original_state_set_el, ps->tok_i);
+        symbol_print(stderr, ps->input_tokens[ps->tok_i].symb, true);
         fprintf(stderr, "\n");
     }
 
     VLO_ADD_MEMORY(ps->recovery_state_stack, &state, sizeof(state));
 }
 
-/* The following function sets up parser state(pl, state_set_curr, ps->current_input_token_i)
+/* The following function sets up parser state(pl, state_set_curr, ps->tok_i)
    according to error recovery STATE. */
 static void set_recovery_state(YaepParseState *ps, struct recovery_state*state)
 {
     int i;
 
-    ps->current_input_token_i = state->start_tok;
+    ps->tok_i = state->start_tok;
     restore_original_sets(ps, state->last_original_state_set_el);
     ps->state_set_curr = state->last_original_state_set_el;
 
     if (ps->run.debug)
     {
         fprintf(stderr, "++++Set recovery state: set=%d, tok=%d, ",
-                 ps->state_set_curr, ps->current_input_token_i);
-        symbol_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
+                 ps->state_set_curr, ps->tok_i);
+        symbol_print(stderr, ps->input_tokens[ps->tok_i].symb, true);
         fprintf(stderr, "\n");
     }
 
@@ -5816,7 +5816,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
     VLO_NULLIFY(ps->original_state_set_tail_stack);
     VLO_NULLIFY(ps->recovery_state_stack);
     ps->recovery_start_set_curr = ps->state_set_curr;
-    ps->recovery_start_current_input_token_i = ps->current_input_token_i;
+    ps->recovery_start_tok_i = ps->tok_i;
     /* Initialize error recovery state stack.*/
     ps->state_set_curr
         = ps->back_state_set_frontier = find_error_state_set_set(ps, ps->state_set_curr, &backward_move_cost);
@@ -5833,7 +5833,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         if (ps->back_state_set_frontier > 0)
 	{
             int saved_state_set_curr = ps->state_set_curr;
-            int saved_current_input_token_i = ps->current_input_token_i;
+            int saved_tok_i = ps->tok_i;
 
             /* Advance back frontier.*/
             ps->state_set_curr = find_error_state_set_set(ps, ps->back_state_set_frontier - 1,
@@ -5846,42 +5846,42 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             if (best_cost >= back_to_frontier_move_cost + backward_move_cost)
 	    {
                 ps->back_state_set_frontier = ps->state_set_curr;
-                ps->current_input_token_i = ps->recovery_start_current_input_token_i;
+                ps->tok_i = ps->recovery_start_tok_i;
                 save_original_sets(ps);
                 back_to_frontier_move_cost += backward_move_cost;
                 push_recovery_state(ps, ps->back_state_set_frontier,
                                     back_to_frontier_move_cost);
                 set_original_set_bound(ps, state.last_original_state_set_el);
-                ps->current_input_token_i = saved_current_input_token_i;
+                ps->tok_i = saved_tok_i;
 	    }
             ps->state_set_curr = saved_state_set_curr;
 	}
         /* Advance head frontier.*/
         if (best_cost >= cost + 1)
 	{
-            ps->current_input_token_i++;
-            if (ps->current_input_token_i < ps->input_tokens_len)
+            ps->tok_i++;
+            if (ps->tok_i < ps->input_tokens_len)
 	    {
 
                 if (ps->run.debug)
 		{
                     fprintf(stderr,
                              "++++Advance head frontier(one pos): tok=%d, ",
-                             ps->current_input_token_i);
-                    symbol_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
+                             ps->tok_i);
+                    symbol_print(stderr, ps->input_tokens[ps->tok_i].symb, true);
                     fprintf(stderr, "\n");
 
 		}
                 push_recovery_state(ps, state.last_original_state_set_el, cost + 1);
 	    }
-            ps->current_input_token_i--;
+            ps->tok_i--;
 	}
         set = ps->state_sets[ps->state_set_curr];
 
         if (ps->run.debug)
 	{
-            fprintf(stderr, "++++Trying set=%d, tok=%d, ", ps->state_set_curr, ps->current_input_token_i);
-            symbol_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
+            fprintf(stderr, "++++Trying set=%d, tok=%d, ", ps->state_set_curr, ps->tok_i);
+            symbol_print(stderr, ps->input_tokens[ps->tok_i].symb, true);
             fprintf(stderr, "\n");
 	}
 
@@ -5903,21 +5903,21 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 	}
 
         /* Search the first right token.*/
-        while(ps->current_input_token_i < ps->input_tokens_len)
+        while(ps->tok_i < ps->input_tokens_len)
 	{
-            core_symb_vect = core_symb_vect_find(ps, ps->new_core, ps->input_tokens[ps->current_input_token_i].symb);
+            core_symb_vect = core_symb_vect_find(ps, ps->new_core, ps->input_tokens[ps->tok_i].symb);
             if (core_symb_vect != NULL)
                 break;
 
             if (ps->run.debug)
 	    {
-                fprintf(stderr, "++++++Skipping=%d ", ps->current_input_token_i);
-                symbol_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
+                fprintf(stderr, "++++++Skipping=%d ", ps->tok_i);
+                symbol_print(stderr, ps->input_tokens[ps->tok_i].symb, true);
                 fprintf(stderr, "\n");
 	    }
 
             cost++;
-            ps->current_input_token_i++;
+            ps->tok_i++;
             if (cost >= best_cost)
             {
                 /* This state is worse.  Reject it.*/
@@ -5935,7 +5935,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             /* This state is worse.  Reject it.*/
             continue;
 	}
-        if (ps->current_input_token_i >= ps->input_tokens_len)
+        if (ps->tok_i >= ps->input_tokens_len)
 	{
 
             if (ps->run.debug)
@@ -5953,9 +5953,9 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 
         /* Shift the found token.*/
         YaepSymb *NEXT_TERM = NULL;
-        if (ps->current_input_token_i + 1 < ps->input_tokens_len)
+        if (ps->tok_i + 1 < ps->input_tokens_len)
         {
-            NEXT_TERM = ps->input_tokens[ps->current_input_token_i + 1].symb;
+            NEXT_TERM = ps->input_tokens[ps->tok_i + 1].symb;
         }
         complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERM);
         ps->state_sets[++ps->state_set_curr] = ps->new_set;
@@ -5975,8 +5975,8 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 
             if (ps->run.debug)
 	    {
-                fprintf(stderr, "++++++Matching=%d ", ps->current_input_token_i);
-                symbol_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
+                fprintf(stderr, "++++++Matching=%d ", ps->tok_i);
+                symbol_print(stderr, ps->input_tokens[ps->tok_i].symb, true);
                 fprintf(stderr, "\n");
 	    }
 
@@ -5985,8 +5985,8 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             {
                 break;
             }
-            ps->current_input_token_i++;
-            if (ps->current_input_token_i >= ps->input_tokens_len)
+            ps->tok_i++;
+            if (ps->tok_i >= ps->input_tokens_len)
             {
                 break;
             }
@@ -5996,27 +5996,27 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
                 if (ps->run.debug)
 		{
                     fprintf(stderr, "++++Found secondary state: original set=%d, tok=%d, ",
-                            state.last_original_state_set_el, ps->current_input_token_i);
-                    symbol_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
+                            state.last_original_state_set_el, ps->tok_i);
+                    symbol_print(stderr, ps->input_tokens[ps->tok_i].symb, true);
                     fprintf(stderr, "\n");
 		}
 
                 push_recovery_state(ps, state.last_original_state_set_el, cost);
 	    }
-            core_symb_vect = core_symb_vect_find(ps, ps->new_core, ps->input_tokens[ps->current_input_token_i].symb);
+            core_symb_vect = core_symb_vect_find(ps, ps->new_core, ps->input_tokens[ps->tok_i].symb);
             if (core_symb_vect == NULL)
             {
                 break;
             }
             YaepSymb *NEXT_TERM = NULL;
-            if (ps->current_input_token_i + 1 < ps->input_tokens_len)
+            if (ps->tok_i + 1 < ps->input_tokens_len)
             {
-                NEXT_TERM = ps->input_tokens[ps->current_input_token_i + 1].symb;
+                NEXT_TERM = ps->input_tokens[ps->tok_i + 1].symb;
             }
             complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERM);
             ps->state_sets[++ps->state_set_curr] = ps->new_set;
 	}
-        if (n_matched_input_tokens >= ps->run.grammar->recovery_token_matches || ps->current_input_token_i >= ps->input_tokens_len)
+        if (n_matched_input_tokens >= ps->run.grammar->recovery_token_matches || ps->tok_i >= ps->input_tokens_len)
 	{
             /* We found an error recovery.  Compare costs.*/
             if (best_cost > cost)
@@ -6027,15 +6027,15 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
                     fprintf(stderr, "++++Ignore %d tokens(the best recovery now): Save it:\n", cost);
                 }
                 best_cost = cost;
-                if (ps->current_input_token_i == ps->input_tokens_len)
+                if (ps->tok_i == ps->input_tokens_len)
                 {
-                    ps->current_input_token_i--;
+                    ps->tok_i--;
                 }
                 best_state = new_recovery_state(ps, state.last_original_state_set_el,
                                                  /* It may be any constant here
                                                     because it is not used.*/
                                                  0);
-               *start = ps->recovery_start_current_input_token_i - state.backward_move_cost;
+               *start = ps->recovery_start_tok_i - state.backward_move_cost;
                *stop = *start + cost;
 	    }
             else if (ps->run.debug)
@@ -6057,8 +6057,8 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 
     if (ps->run.debug)
     {
-        fprintf(stderr, "\n++Error recovery end: curr token %d=", ps->current_input_token_i);
-        symbol_print(stderr, ps->input_tokens[ps->current_input_token_i].symb, true);
+        fprintf(stderr, "\n++Error recovery end: curr token %d=", ps->tok_i);
+        symbol_print(stderr, ps->input_tokens[ps->tok_i].symb, true);
         fprintf(stderr, ", Current set=%d:\n", ps->state_set_curr);
         if (ps->run.debug)
         {
@@ -6106,21 +6106,21 @@ static bool check_cached_transition_set(YaepParseState *ps, YaepStateSet*set, in
 
 static int try_to_recover(YaepParseState *ps)
 {
-    int saved_current_input_token_i, start, stop;
+    int saved_tok_i, start, stop;
 
     /* Error recovery.  We do not check transition vector
        because for terminal transition vector is never NULL
        and reduce is always NULL. */
 
-    saved_current_input_token_i = ps->current_input_token_i;
+    saved_tok_i = ps->tok_i;
     if (ps->run.grammar->error_recovery_p)
     {
         fprintf(stderr, "Attempting error recovery...\n");
         error_recovery(ps, &start, &stop);
         ps->run.syntax_error(
             (YaepParseRun*)ps,
-            saved_current_input_token_i,
-            ps->input_tokens[saved_current_input_token_i].attr,
+            saved_tok_i,
+            ps->input_tokens[saved_tok_i].attr,
             start,
             ps->input_tokens[start].attr,
             stop,
@@ -6131,8 +6131,8 @@ static int try_to_recover(YaepParseState *ps)
     {
         ps->run.syntax_error(
             (YaepParseRun*)ps,
-            saved_current_input_token_i,
-            ps->input_tokens[saved_current_input_token_i].attr,
+            saved_tok_i,
+            ps->input_tokens[saved_tok_i].attr,
             -1,
             NULL,
             -1,
@@ -6219,23 +6219,23 @@ static void perform_parse(YaepParseState *ps)
         print_state_set(ps, stderr, ps->new_set, 0, ps->run.debug, ps->run.debug);
     }
 
-    ps->current_input_token_i = 0;
+    ps->tok_i = 0;
     ps->state_set_curr = 0;
 
-    for(; ps->current_input_token_i < ps->input_tokens_len; ps->current_input_token_i++)
+    for(; ps->tok_i < ps->input_tokens_len; ps->tok_i++)
     {
-        assert(ps->state_set_curr == ps->current_input_token_i);
-        YaepSymb *THE_TERM = ps->input_tokens[ps->current_input_token_i].symb;
+        assert(ps->state_set_curr == ps->tok_i);
+        YaepSymb *THE_TERM = ps->input_tokens[ps->tok_i].symb;
         YaepSymb *NEXT_TERM = NULL;
 
-        if (ps->run.grammar->lookahead_level != 0 && ps->current_input_token_i < ps->input_tokens_len-1)
+        if (ps->run.grammar->lookahead_level != 0 && ps->tok_i < ps->input_tokens_len-1)
         {
-            NEXT_TERM = ps->input_tokens[ps->current_input_token_i + 1].symb;
+            NEXT_TERM = ps->input_tokens[ps->tok_i + 1].symb;
         }
 
         if (ps->run.debug)
 	{
-            fprintf(stderr, "\nScan input_tokens[%d]= ", ps->current_input_token_i);
+            fprintf(stderr, "\nScan input_tokens[%d]= ", ps->tok_i);
             symbol_print(stderr, THE_TERM, true);
             fprintf(stderr, " state_set_curr=%d\n", ps->state_set_curr);
 	}
