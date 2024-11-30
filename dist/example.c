@@ -32,8 +32,9 @@ int main(int argc, char **argv)
     expect_double(weight, 999.123);
 
     xmqFreeDoc(doc);
-
-    char *line = xmqLogElement("car{",
+    XMQLineConfig *lc = xmqNewLineConfig();
+    char *line = xmqLinePrintf(lc,
+                               "car{",
                                "nw=", "%d", num_wheels,
                                "model=", "%s %d", "car go ", 3,
                                "decription=", "%s", "howdy\ndowdy",
@@ -48,23 +49,22 @@ int main(int argc, char **argv)
 
     free(line);
 
-    line = xmqLogElement(0, "work=", "pi is %f", 3.14159);
+    line = xmqLinePrintf(lc, "work=", "pi is %f", 3.141590);
 
-    expect = "work='pi is 3.14159'";
+    expect = "work='pi is 3.141590'";
     if (strcmp(line, expect))
     {
         printf("Expected >%s<\n but got >%s<\n", expect, line);
     }
 
-    line = xmqLogElement(XMQ_LOG_HUMAN_READABLE, "work=", "pi is %f", 3.14159);
+    xmqSetLineHumanReadable(lc, true);
+    line = xmqLinePrintf(lc, "work=", "pi is %f", 3.141590);
 
-    expect = "(work) pi is 3.14159";
+    expect = "(work) pi is 3.141590";
     if (strcmp(line, expect))
     {
         printf("Expected >%s<\n but got >%s<\n", expect, line);
     }
-
-
 
     return 0;
 }

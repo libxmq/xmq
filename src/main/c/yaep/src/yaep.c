@@ -1063,7 +1063,7 @@ static YaepSymbol *symb_get(YaepParseState *ps, int id)
     {
         return NULL;
     }
-    YaepSymbol **vect = VLO_BEGIN(ps->run.grammar->symbs_ptr->symbs_vlo);
+    YaepSymbol **vect = (YaepSymbol**)VLO_BEGIN(ps->run.grammar->symbs_ptr->symbs_vlo);
     YaepSymbol *symb = vect[id];
     assert(symb->id == id);
 

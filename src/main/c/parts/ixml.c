@@ -1575,7 +1575,7 @@ void skip_whitespace(const char **i)
 
 void add_yaep_term_to_rule(XMQParseState *state, char mark, IXMLTerminal *t, IXMLNonTerminal *nt)
 {
-    IXMLTerm *term = calloc(1, sizeof(IXMLTerm));
+    IXMLTerm *term = (IXMLTerm*)calloc(1, sizeof(IXMLTerm));
     assert( (t || nt) && !(t && nt) );
     term->type = t ? IXML_TERMINAL :  IXML_NON_TERMINAL;
     term->mark = mark;

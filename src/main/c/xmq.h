@@ -955,7 +955,7 @@ char *xmqLineDoc(XMQLineConfig *lc, XMQDoc *doc);
 
    Generate a compact single line xmq string containing no newlines at all, for logging.
    The content is constructed from printf formatted strings:
-   xmqLogElement(&lc,
+   xmqLinePrintf(&lc,
                  "car{",
                  "model=", "%s", modelstring,
                  "id=", "%d", idnumber,
