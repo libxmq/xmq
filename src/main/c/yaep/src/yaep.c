@@ -851,7 +851,7 @@ static void print_state_set(YaepParseState *ps,
                             int print_all_productions,
                             int lookahead_p);
 static void print_production(YaepParseState *ps, FILE *f, YaepProduction *prod, bool lookahead_p, int origin);
-static YaepVocabulary *symb_init(YaepGrammar *g);
+static YaepVocabulary *create_symbols(YaepGrammar *g);
 static void symb_empty(YaepParseState *ps, YaepVocabulary *symbs);
 static void symb_finish_adding_terms(YaepParseState *ps);
 static void symb_print(FILE* f, YaepSymb *symb, bool code_p);
@@ -910,7 +910,7 @@ static bool symb_code_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 }
 
 /* Initialize work with symbols and returns storage for the symbols.*/
-static YaepVocabulary *symb_init(YaepGrammar *grammar)
+static YaepVocabulary *create_symbols(YaepGrammar *grammar)
 {
     void*mem;
     YaepVocabulary*result;
@@ -1137,8 +1137,7 @@ static void symb_empty(YaepParseState *ps, YaepVocabulary *symbs)
     TRACE_FA(ps, "%p\n" , symbs);
 }
 
-/* Finalize work with symbols. */
-static void symb_fin(YaepParseState *ps, YaepVocabulary *symbs)
+static void free_symbols(YaepParseState *ps, YaepVocabulary *symbs)
 {
     if (symbs == NULL) return;
 
@@ -1199,7 +1198,7 @@ static bool term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 }
 
 /* Initialize work with terminal sets and returns storage for terminal sets.*/
-static YaepTermStorage *term_set_init(YaepGrammar *grammar)
+static YaepTermStorage *create_term_sets(YaepGrammar *grammar)
 {
     void *mem;
     YaepTermStorage *result;
@@ -1381,8 +1380,7 @@ static void term_set_empty(YaepTermStorage *term_sets)
     term_sets->n_term_sets = term_sets->n_term_sets_size = 0;
 }
 
-/* Finalize work with terminal sets. */
-static void term_set_fin(YaepGrammar *grammar, YaepTermStorage *term_sets)
+static void free_term_sets(YaepGrammar *grammar, YaepTermStorage *term_sets)
 {
     if (term_sets == NULL) return;
 
@@ -1502,7 +1500,7 @@ static void rule_empty(YaepRuleStorage *rules)
 }
 
 /* Finalize work with rules.*/
-static void rule_fin(YaepGrammar *grammar, YaepRuleStorage *rules)
+static void free_rules(YaepGrammar *grammar, YaepRuleStorage *rules)
 {
     if (rules == NULL) return;
 
@@ -1534,8 +1532,7 @@ static void tok_add(YaepParseState *ps, int code, void *attr)
     ps->input_tokens_len++;
 }
 
-/* Finalize work with tokens. */
-static void tok_fin(YaepParseState *ps)
+static void free_tokens(YaepParseState *ps)
 {
     VLO_DELETE(ps->input_tokens_vlo);
 }
@@ -1608,7 +1605,7 @@ static YaepProduction *prod_create(YaepParseState *ps, YaepRule *rule, int pos, 
     assert(context >= 0);
     context_prod_table_ptr = ps->prod_table + context;
 
-    if ((char*) context_prod_table_ptr >=(char*) VLO_BOUND(ps->prod_table_vlo))
+    if ((char*) context_prod_table_ptr >= (char*) VLO_BOUND(ps->prod_table_vlo))
     {
         YaepProduction***bound,***ptr;
         int i, diff;
@@ -1677,7 +1674,7 @@ static unsigned productions_hash(int num_productions, YaepProduction **productio
 }
 
 /* Finalize work with productions. */
-static void prod_fin(YaepParseState *ps)
+static void free_productions(YaepParseState *ps)
 {
     VLO_DELETE(ps->prod_table_vlo);
     OS_DELETE(ps->productions_os);
@@ -1850,8 +1847,7 @@ static bool production_distance_test_and_set(YaepParseState *ps, YaepProduction 
     return false;
 }
 
-/* Finish the set of pairs(sit, dist). */
-static void production_distance_set_fin(YaepParseState *ps)
+static void free_production_distance_sets(YaepParseState *ps)
 {
     int i, len = VLO_LENGTH(ps->production_distance_vec_vlo) / sizeof(vlo_t);
 
@@ -1920,8 +1916,8 @@ static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepProduction 
     assert(ps->new_set_ready_p);
 
     /* When we add not-yet-started productions we need to have pairs
-      (production, the corresponding distance) without duplicates
-       because we also forms core_symb_vect at that time.*/
+       (production, the corresponding distance) without duplicates
+       because we also forms core_symb_vect at that time. */
     for(int i = ps->new_num_started_productions; i < ps->new_core->num_productions; i++)
     {
         if (ps->new_productions[i] == prod && ps->new_core->parent_indexes[i] == parent)
@@ -2081,10 +2077,9 @@ static void set_new_core_stop(YaepParseState *ps)
 }
 
 
-/* Finalize work with sets.*/
-static void set_fin(YaepParseState *ps)
+static void free_sets(YaepParseState *ps)
 {
-    production_distance_set_fin(ps);
+    free_production_distance_sets(ps);
     delete_hash_table(ps->set_of_triplets_core_term_lookahead);
     delete_hash_table(ps->set_of_tuples_core_distances);
     delete_hash_table(ps->set_of_distanceses);
@@ -2112,8 +2107,7 @@ static void pl_create(YaepParseState *ps)
     ps->state_set_curr = -1;
 }
 
-/* Finalize work with the parser list.*/
-static void pl_fin(YaepParseState *ps)
+static void free_state_sets(YaepParseState *ps)
 {
     if (ps->state_sets != NULL)
     {
@@ -2160,8 +2154,7 @@ static vlo_t *vlo_array_el(YaepParseState *ps, int index)
     return &((vlo_t*) VLO_BEGIN(ps->vlo_array))[index];
 }
 
-/* Finalize work with array of vlos.*/
-static void vlo_array_fin(YaepParseState *ps)
+static void free_vlo_array(YaepParseState *ps)
 {
     vlo_t *vlo_ptr;
 
@@ -2469,7 +2462,7 @@ static void core_symb_vect_new_all_stop(YaepParseState *ps)
 }
 
 /* Finalize work with all triples(set core, symbol, vector).*/
-static void core_symb_vect_fin(YaepParseState *ps)
+static void free_core_symb_to_vect_lookup(YaepParseState *ps)
 {
     delete_hash_table(ps->map_transition_to_coresymbvect);
     delete_hash_table(ps->map_reduce_to_coresymbvect);
@@ -2480,7 +2473,7 @@ static void core_symb_vect_fin(YaepParseState *ps)
     OS_DELETE(ps->core_symb_tab_rows);
     VLO_DELETE(ps->core_symb_table_vlo);
 #endif
-    vlo_array_fin(ps);
+    free_vlo_array(ps);
     OS_DELETE(ps->vect_els_os);
     VLO_DELETE(ps->new_core_symb_vect_vlo);
     OS_DELETE(ps->core_symb_vect_os);
@@ -2540,8 +2533,8 @@ YaepGrammar *yaepNewGrammar()
     grammar->cost_p = false;
     grammar->error_recovery_p = true;
     grammar->recovery_token_matches = DEFAULT_RECOVERY_TOKEN_MATCHES;
-    grammar->symbs_ptr = symb_init(grammar);
-    grammar->term_sets_ptr = term_set_init(grammar);
+    grammar->symbs_ptr = create_symbols(grammar);
+    grammar->term_sets_ptr = create_term_sets(grammar);
     grammar->rules_ptr = rule_init(grammar);
     return grammar;
 }
@@ -3130,13 +3123,11 @@ static void yaep_parse_init(YaepParseState *ps, int n_input_tokens)
         rule->caller_anode = NULL;
 }
 
-/* The function should be called the last(it frees all allocated
-   data for parser).*/
-static void yaep_parse_fin(YaepParseState *ps)
+static void free_inside_parse_state(YaepParseState *ps)
 {
-    core_symb_vect_fin(ps);
-    set_fin(ps);
-    prod_fin(ps);
+    free_core_symb_to_vect_lookup(ps);
+    free_sets(ps);
+    free_productions(ps);
 }
 
 /* The following function reads all input tokens.*/
@@ -3943,7 +3934,7 @@ static void error_recovery_init(YaepParseState *ps)
 }
 
 /* Finalize work with error recovery.*/
-static void error_recovery_fin(YaepParseState *ps)
+static void free_error_recovery(YaepParseState *ps)
 {
     VLO_DELETE(ps->recovery_state_stack);
     VLO_DELETE(ps->original_state_set_tail_stack);
@@ -4138,7 +4129,7 @@ static void perform_parse(YaepParseState *ps)
             print_state_set(ps, stderr, ps->new_set, ps->state_set_curr, ps->run.debug, ps->run.debug);
 	}
     }
-    error_recovery_fin(ps);
+    free_error_recovery(ps);
 
     if (ps->run.debug)
     {
@@ -4229,8 +4220,7 @@ static YaepParseTreeBuildState *parse_state_insert(YaepParseState *ps, YaepParse
     return(YaepParseTreeBuildState*)*entry;
 }
 
-/* The following function finalizes work with parser states.*/
-static void parse_state_fin(YaepParseState *ps)
+static void free_parse_state(YaepParseState *ps)
 {
     if (!ps->run.grammar->one_parse_p)
     {
@@ -5133,7 +5123,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         VLO_DELETE(orig_states);
         yaep_free(ps->run.grammar->alloc, term_node_array);
     }
-    parse_state_fin(ps);
+    free_parse_state(ps);
     ps->run.grammar->one_parse_p = saved_one_parse_p;
     if (ps->run.grammar->cost_p && *ambiguous_p)
         /* We can not build minimal tree during building parsing list
@@ -5249,11 +5239,11 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
 
     if ((code = setjmp(error_longjump_buff)) != 0)
     {
-        pl_fin(ps);
+        free_state_sets(ps);
         if (parse_init_p)
-            yaep_parse_fin(ps);
+            free_inside_parse_state(ps);
         if (tok_init_p)
-            tok_fin(ps);
+            free_tokens(ps);
         return code;
     }
     if (g->undefined_p)
@@ -5329,8 +5319,8 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  table_collisions, table_searches);
     }
 
-    yaep_parse_fin(ps);
-    tok_fin(ps);
+    free_inside_parse_state(ps);
+    free_tokens(ps);
     return 0;
 }
 
@@ -5345,10 +5335,10 @@ void yaepFreeGrammar(YaepParseRun *pr, YaepGrammar *g)
     if (g != NULL)
     {
         allocator = g->alloc;
-        pl_fin(ps);
-        rule_fin(g, g->rules_ptr);
-        term_set_fin(g, g->term_sets_ptr);
-        symb_fin(ps, g->symbs_ptr);
+        free_state_sets(ps);
+        free_rules(g, g->rules_ptr);
+        free_term_sets(g, g->term_sets_ptr);
+        free_symbols(ps, g->symbs_ptr);
         yaep_free(allocator, g);
         yaep_alloc_del(allocator);
     }
