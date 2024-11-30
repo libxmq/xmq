@@ -3319,7 +3319,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 {
     YaepStateSet *prev_set;
     YaepStateSetCore *set_core, *prev_set_core;
-    YaepDottedRule *prod, *new_dotted_rule, **prev_dotted_rules;
+    YaepDottedRule *dotted_rule, *new_dotted_rule, **prev_dotted_rules;
     YaepCoreSymbVect *prev_core_symb_vect;
     int local_lookahead_level, matched_length, prod_ind, new_matched_length;
     int i, place;
@@ -3335,9 +3335,9 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
     for(i = 0; i < transitions->len; i++)
     {
         prod_ind = transitions->els[i];
-        prod = set_core->dotted_rules[prod_ind];
+        dotted_rule = set_core->dotted_rules[prod_ind];
 
-        new_dotted_rule = create_dotted_rule(ps, prod->rule, prod->dot_i + 1, prod->context);
+        new_dotted_rule = create_dotted_rule(ps, dotted_rule->rule, dotted_rule->dot_i + 1, dotted_rule->context);
 
         if (local_lookahead_level != 0
             && !term_set_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
@@ -3392,8 +3392,8 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
             do
 	    {
                 prod_ind = *curr_el++;
-                prod = prev_dotted_rules[prod_ind];
-                new_dotted_rule = create_dotted_rule(ps, prod->rule, prod->dot_i + 1, prod->context);
+                dotted_rule = prev_dotted_rules[prod_ind];
+                new_dotted_rule = create_dotted_rule(ps, dotted_rule->rule, dotted_rule->dot_i + 1, dotted_rule->context);
                 if (local_lookahead_level != 0
                     && !term_set_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
                     && !term_set_test(new_dotted_rule->lookahead,
