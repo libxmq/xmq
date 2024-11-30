@@ -1490,7 +1490,7 @@ static void rule_new_stop(YaepParseState *ps)
 }
 
 /* The following function frees memory for rules.*/
-static void rule_empty(YaepRuleStorage *rules)
+static void rulestorage_clear(YaepRuleStorage *rules)
 {
     if (rules == NULL) return;
 
@@ -2568,7 +2568,7 @@ static void yaep_empty_grammar(YaepParseState *ps,YaepGrammar *grammar)
 {
     if (grammar != NULL)
     {
-        rule_empty(grammar->rulestorage_ptr);
+        rulestorage_clear(grammar->rulestorage_ptr);
         term_set_empty(grammar->term_sets_ptr);
         symb_empty(ps, grammar->symbs_ptr);
     }
