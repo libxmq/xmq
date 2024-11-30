@@ -406,7 +406,7 @@ struct YaepCoreSymbVect
 struct YaepStateSetCore
 {
     /* The following is unique number of the set core. It is defined only after forming all set.*/
-    int core_id;
+    int id;
 
     /* The state set core hash.  We save it as it is used several times. */
     unsigned int hash;
@@ -2061,7 +2061,7 @@ static int set_insert(YaepParseState *ps)
     else
     {
         OS_TOP_FINISH(ps->set_cores_os);
-        ps->new_core->core_id = ps->n_set_cores++;
+        ps->new_core->id = ps->n_set_cores++;
         ps->new_core->num_dotted_rules = ps->new_num_started_dotted_rules;
         ps->new_core->num_all_matched_lengths = ps->new_num_started_dotted_rules;
         ps->new_core->parent_dotted_rule_ids = NULL;
@@ -2305,7 +2305,7 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepStateS
 {
     YaepCoreSymbVect***core_symb_vect_ptr;
 
-    core_symb_vect_ptr = ps->core_symb_table + set_core->core_id;
+    core_symb_vect_ptr = ps->core_symb_table + set_core->id;
 
     if ((char*) core_symb_vect_ptr >=(char*) VLO_BOUND(ps->core_symb_table_vlo))
     {
@@ -2321,7 +2321,7 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepStateS
         VLO_EXPAND(ps->core_symb_table_vlo, diff);
         ps->core_symb_table
             =(YaepCoreSymbVect***) VLO_BEGIN(ps->core_symb_table_vlo);
-        core_symb_vect_ptr = ps->core_symb_table + set_core->core_id;
+        core_symb_vect_ptr = ps->core_symb_table + set_core->id;
         bound =(YaepCoreSymbVect***) VLO_BOUND(ps->core_symb_table_vlo);
 
         ptr = bound - diff / sizeof(YaepCoreSymbVect**);
@@ -2356,7 +2356,7 @@ static YaepCoreSymbVect *core_symb_vect_find(YaepParseState *ps, YaepStateSetCor
     r = *core_symb_vect_addr_get(ps, set_core, symb);
 #endif
 
-    TRACE_FA(ps, "core=%d %s -> %p", set_core->core_id, symb->repr, r);
+    TRACE_FA(ps, "core=%d %s -> %p", set_core->id, symb->repr, r);
 
     return r;
 }
@@ -5669,7 +5669,7 @@ static void print_state_set(YaepParseState *ps,
     }
     else
     {
-        num = state_set->core->core_id;
+        num = state_set->core->id;
         num_dotted_rules = state_set->core->num_dotted_rules;
         dotted_rules = state_set->core->dotted_rules;
         num_started_dotted_rules = state_set->core->num_started_dotted_rules;
