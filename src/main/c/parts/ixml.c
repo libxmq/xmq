@@ -1420,7 +1420,7 @@ bool ixml_build_yaep_grammar(YaepParseRun *ps,
     yaep_i_ = hashmap_iterate(state->ixml_terminals_map);
     yaep_state_ = state;
 
-    if (xmq_trace_enabled_)
+    if (false && xmq_trace_enabled_)
     {
         HashMapIterator *i = hashmap_iterate(state->ixml_terminals_map);
 

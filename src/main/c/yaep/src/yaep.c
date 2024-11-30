@@ -34,22 +34,45 @@
    2024 Fredrik Öhrström
    Refactored to fit ixml use case, removed global variables, restructured
    code, commented and renamed variables and structures, added ixml charset
-   matching.
+   matching. Added a lot of comments.
 
    Terminology:
 
    Input tokens: The content to be parsed stored as an array of symbols
-                 (with user supplied attributes attached).
+                 (with user supplied attributes attached that can be user fetched later).
                  The tokens can be lexer symbols or unicode characters (ixml).
+                 An offset into the input tokens array is always denoted with the suffix _i.
+                 E.g. current_input_token_i, from_i, to_i etc.
 
-   Rule: A grammar rule S = NP, VP.
+   Rule: A grammar rule: S →  NP VP
 
-   Dotted Rule: A rule put to use: NP 🞄 VP [origin] and stored in a StateSet.
+   Dotted Rule: A rule with a dot: S →  NP 🞄 VP
+                The dot symbolizes how far the rule has been matched against input.
+                The dot_pos starts at zero which means nothing has been matched.
 
-   StateSet: For each input token, we build a state set with all possible chart items.
+   (Earley Item): [from_i, to_i, S →  NP 🞄 VP]
+                  Every input token gets a state set (below) that stores Early items (aka chart entries).
+                  We do not need to store >to_i< since this item is stored in the state set which
+                  was created for the to_i input token position!
+                  Instead of storing from_i we store dotted_rule_length which is subtracted from to_i
+                  to get from_i. The dotted_rule_lengths are stored in a separate array.
+                  The from_i (or length) is not required for recognizing a valid sentence,
+                  but it is required for creating a parse tree.
+                  Because of this split, there is no need not have an Earley Item structure in this implementation.
+                  Instead we store dotted rules and a separate dotted_rule_lengths array.
+
+   StateSetCore: The part of a state set that can be shared between StateSets.
+                 This is where we store the dotted rules, the dotted_rule_lenghts,
+                 and the scanned terminal that created this core.
+                 Again, the dotted_rule_lengths are only used to build the final parse tree
+                 after at least one valid parse has been found.
+                 The StateSetCores can be reused a lot.
+
+   StateSet: For each input token, we build a state set with all possible Earley items.
              started (some match) and not-yet-started (no match yet). Theses items
              come from the scan/complete/predict algorithm.
 
+             However we store this
              A started item stores a distance to its origin_i token.
              We compress the StateSet with an immutable StateSetCore and a separate
              array of distances mapping to the dotted rules inside the state set core.

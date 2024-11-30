@@ -1,6 +1,7 @@
 # YAEP -- Yet Another Earley Parser
 
   https://www2.lingfil.uu.se/cl/sara/courses18/5LN455-2014/lectures/5LN455-F5.pdf
+  https://loup-vaillant.fr/tutorials/earley-parsing/
 
   * **YAEP** is an abbreviation of Yet Another Earley Parser.
   * This standalone library is created for convenience.
