@@ -1373,12 +1373,13 @@ static term_set_el_t *term_set_from_table(YaepParseState *ps, int num)
 /* Print terminal SET into file F. */
 static void term_set_print(YaepParseState *ps, FILE *f, term_set_el_t *set, int num_terms)
 {
+    bool first = true;
     fprintf(f, "[");
     for (int i = 0; i < num_terms; i++)
     {
         if (term_set_test(set, i, num_terms))
         {
-            if (i) fprintf(f, " ");
+            if (!first) fprintf(f, " "); else first = false;
             symbol_print(f, term_get(ps, i), false);
         }
     }
@@ -3318,9 +3319,9 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 {
     YaepStateSet *prev_set;
     YaepStateSetCore *set_core, *prev_set_core;
-    YaepDottedRule *prod, *new_prod, **prev_dotted_rules;
+    YaepDottedRule *prod, *new_dotted_rule, **prev_dotted_rules;
     YaepCoreSymbVect *prev_core_symb_vect;
-    int local_lookahead_level, dist, prod_ind, new_dist;
+    int local_lookahead_level, matched_length, prod_ind, new_matched_length;
     int i, place;
     YaepVect *transitions;
 
@@ -3336,51 +3337,51 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
         prod_ind = transitions->els[i];
         prod = set_core->dotted_rules[prod_ind];
 
-        new_prod = create_dotted_rule(ps, prod->rule, prod->dot_i + 1, prod->context);
+        new_dotted_rule = create_dotted_rule(ps, prod->rule, prod->dot_i + 1, prod->context);
 
         if (local_lookahead_level != 0
-            && !term_set_test(new_prod->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
-            && !term_set_test(new_prod->lookahead, ps->run.grammar->term_error_id, ps->run.grammar->symbs_ptr->num_terms))
+            && !term_set_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
+            && !term_set_test(new_dotted_rule->lookahead, ps->run.grammar->term_error_id, ps->run.grammar->symbs_ptr->num_terms))
         {
             continue;
         }
-        dist = 0;
+        matched_length = 0;
         if (prod_ind >= set_core->n_all_matched_lengths)
         {
         }
         else if (prod_ind < set_core->num_started_dotted_rules)
         {
-            dist = set->matched_lengths[prod_ind];
+            matched_length = set->matched_lengths[prod_ind];
         }
         else
         {
-            dist = set->matched_lengths[set_core->parent_indexes[prod_ind]];
+            matched_length = set->matched_lengths[set_core->parent_indexes[prod_ind]];
         }
-        dist++;
-        if (!dotted_rule_matched_length_test_and_set(ps, new_prod, dist))
+        matched_length++;
+        if (!dotted_rule_matched_length_test_and_set(ps, new_dotted_rule, matched_length))
         {
-            // This combo prod+dist did not already exist, lets add it.
-            set_new_add_start_prod(ps, new_prod, dist);
+            // This combo dotted_rule + matched_length did not already exist, lets add it.
+            set_new_add_start_prod(ps, new_dotted_rule, matched_length);
         }
     }
 
     for(i = 0; i < ps->new_num_started_dotted_rules; i++)
     {
-        new_prod = ps->new_dotted_rules[i];
-        if (new_prod->empty_tail_p)
+        new_dotted_rule = ps->new_dotted_rules[i];
+        if (new_dotted_rule->empty_tail_p)
 	{
             int *curr_el, *bound;
 
             /* All tail in new sitiation may derivate empty string so
                make reduce and add new dotted_rules.*/
-            new_dist = ps->new_matched_lengths[i];
-            place = ps->state_set_curr + 1 - new_dist;
+            new_matched_length = ps->new_matched_lengths[i];
+            place = ps->state_set_curr + 1 - new_matched_length;
             prev_set = ps->state_sets[place];
             prev_set_core = prev_set->core;
-            prev_core_symb_vect = core_symb_vect_find(ps, prev_set_core, new_prod->rule->lhs);
+            prev_core_symb_vect = core_symb_vect_find(ps, prev_set_core, new_dotted_rule->rule->lhs);
             if (prev_core_symb_vect == NULL)
 	    {
-                assert(new_prod->rule->lhs == ps->run.grammar->axiom);
+                assert(new_dotted_rule->rule->lhs == ps->run.grammar->axiom);
                 continue;
 	    }
             curr_el = prev_core_symb_vect->transitions.els;
@@ -3392,33 +3393,33 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 	    {
                 prod_ind = *curr_el++;
                 prod = prev_dotted_rules[prod_ind];
-                new_prod = create_dotted_rule(ps, prod->rule, prod->dot_i + 1, prod->context);
+                new_dotted_rule = create_dotted_rule(ps, prod->rule, prod->dot_i + 1, prod->context);
                 if (local_lookahead_level != 0
-                    && !term_set_test(new_prod->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
-                    && !term_set_test(new_prod->lookahead,
+                    && !term_set_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
+                    && !term_set_test(new_dotted_rule->lookahead,
                                       ps->run.grammar->term_error_id,
                                       ps->run.grammar->symbs_ptr->num_terms))
                 {
                     continue;
                 }
-                dist = 0;
+                matched_length = 0;
                 if (prod_ind >= prev_set_core->n_all_matched_lengths)
                 {
                 }
                 else if (prod_ind < prev_set_core->num_started_dotted_rules)
                 {
-                    dist = prev_set->matched_lengths[prod_ind];
+                    matched_length = prev_set->matched_lengths[prod_ind];
                 }
                 else
                 {
-                    dist = prev_set->matched_lengths[prev_set_core->parent_indexes[prod_ind]];
+                    matched_length = prev_set->matched_lengths[prev_set_core->parent_indexes[prod_ind]];
                 }
-                dist += new_dist;
+                matched_length += new_matched_length;
 
-                if (!dotted_rule_matched_length_test_and_set(ps, new_prod, dist))
+                if (!dotted_rule_matched_length_test_and_set(ps, new_dotted_rule, matched_length))
                 {
-                    // This combo prod+dist did not already exist, lets add it.
-                    set_new_add_start_prod(ps, new_prod, dist);
+                    // This combo dotted_ruled + matched_length did not already exist, lets add it.
+                    set_new_add_start_prod(ps, new_dotted_rule, matched_length);
                 }
 	    }
             while(curr_el < bound);
@@ -5608,11 +5609,11 @@ static void print_dotted_rule(YaepParseState *ps, FILE *f, YaepDottedRule *prod,
     fprintf(f, "(%3d)    ", prod->id);
     print_rule_with_dot(ps, f, prod->rule, prod->dot_i);
 
-    if (matched_length >= 0)
+    if (matched_length > 0)
     {
         fprintf(f, " matched %d", matched_length);
     }
-    if (ps->run.grammar->lookahead_level != 0 && lookahead_p)
+    if (ps->run.grammar->lookahead_level != 0 && lookahead_p && matched_length >= 0)
     {
         fprintf(f, "    ");
         term_set_print(ps, f, prod->lookahead, ps->run.grammar->symbs_ptr->num_terms);
