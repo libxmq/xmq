@@ -432,12 +432,12 @@ struct YaepStateSetCore
     /* The following member is number of started dotted_rules and not-yet-started
        (noninitial) dotted_rules whose distance is defined from a start
        dotted_rule distance.  All not-yet-started initial dotted_rules have zero
-       distances.  This distances are not stored. */
-    int n_all_distances;
+       matched_lengths.  This matched_lengths are not stored. */
+    int n_all_matched_lengths;
 
     /* The following is array containing number of start dotted_rule from
        which distance of(not_yet_started noninitial) dotted_rule with given
-       index(between n_start_dotted_rules -> n_all_distances) is taken. */
+       index(between n_start_dotted_rules -> n_all_matched_lengths) is taken. */
     int *parent_indexes;
 };
 
@@ -452,16 +452,15 @@ struct YaepStateSet
        words don't save the member value in another variable).*/
     YaepStateSetCore *core;
 
-    /* Hash of the set distances. We save it as it is used several times. */
-    unsigned int distances_hash;
+    /* Hash of the array of matched_lengths. We save it as it is used several times. */
+    unsigned int matched_lengths_hash;
 
-    /* The following is distances only for started dotted_rules.  Not-yet-started
-       dotted_rules have their distances set to 0 implicitly.  A started dotted_rule
-       in the set core and its corresponding distance have the same index.
-       You should access to distances only through this member or
-       variable `new_distances' (in other words don't save the member value
-       in another variable). */
-    int *distances;
+    /* The following is matched_lengths only for started dotted_rules.  Not-yet-started
+       dotted_rules have their matched_lengths set to 0 implicitly.  A started dotted_rule
+       in the set core and its corresponding matched_length distance have the same index.
+       You should access matched_lengths only through this variable or the variable
+       new_matched_lengths, the location of the arrays can move. */
+    int *matched_lengths;
 };
 
 /* A dotted_rule stores:
@@ -655,7 +654,7 @@ struct YaepParseState
 
    /* To optimize code we use the following variables to access to data
       of new set.  They are always defined and correspondingly
-      dotted_rules, distances, and the current number of start dotted_rules
+      dotted_rules, matched_lengths, and the current number of start dotted_rules
       of the set being formed.*/
     YaepDottedRule **new_dotted_rules;
     int *new_matched_lengths;
@@ -665,7 +664,7 @@ struct YaepParseState
        dotted_rules, unique distance vectors and their summary length, and
        number of parent indexes. */
     int n_set_cores, n_set_core_start_dotted_rules;
-    int n_set_distances, n_set_distances_len, n_parent_indexes;
+    int n_set_matched_lengths, n_set_matched_lengths_len, n_parent_indexes;
 
     /* Number unique sets and their start dotted_rules. */
     int n_sets, n_sets_start_dotted_rules;
@@ -679,13 +678,13 @@ struct YaepParseState
     /* The dotted_rules of formed sets are placed in the following os.*/
     os_t set_dotted_rules_os;
 
-    /* The indexes of the parent start dotted_rules whose distances are used
-       to get distances of some not_yet_started dotted_rules are placed in the
+    /* The indexes of the parent start dotted_rules whose matched_lengths are used
+       to get matched_lengths of some not_yet_started dotted_rules are placed in the
        following os.*/
     os_t set_parent_indexes_os;
 
-    /* The distances of formed sets are placed in the following os.*/
-    os_t set_distances_os;
+    /* The matched_lengths of formed sets are placed in the following os.*/
+    os_t set_matched_lengths_os;
 
     /* The sets themself are placed in the following os.*/
     os_t sets_os;
@@ -694,10 +693,10 @@ struct YaepParseState
     os_t triplet_core_term_lookahead_os;
 
     /* The following 3 tables contain references for sets which refers
-       for set cores or distances or both which are in the tables.*/
+       for set cores or matched_lengths or both which are in the tables.*/
     hash_table_t set_of_cores;	/* key is only start dotted_rules.*/
-    hash_table_t set_of_distanceses;	/* key is distances we have a set of distanceses.*/
-    hash_table_t set_of_tuples_core_distances;	/* key is(core, distances).*/
+    hash_table_t set_of_matched_lengthses;	/* key is matched_lengths we have a set of matched_lengthses.*/
+    hash_table_t set_of_tuples_core_matched_lengths;	/* key is(core, matched_lengths).*/
 
     /* Table for triplets (core, term, lookahead). */
     hash_table_t set_of_triplets_core_term_lookahead;	/* key is (core, term, lookeahed). */
@@ -1724,27 +1723,27 @@ static bool set_core_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     return true;
 }
 
-/* Hash of set distances. */
-static unsigned distances_hash(hash_table_entry_t s)
+/* Hash of set matched_lengths. */
+static unsigned matched_lengths_hash(hash_table_entry_t s)
 {
-    return((YaepStateSet*) s)->distances_hash;
+    return((YaepStateSet*) s)->matched_lengths_hash;
 }
 
-/* Compare all the distances stored in the two state sets. */
-static bool distances_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+/* Compare all the matched_lengths stored in the two state sets. */
+static bool matched_lengths_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepStateSet *st1 = (YaepStateSet*)s1;
     YaepStateSet *st2 = (YaepStateSet*)s2;
-    int *i = st1->distances;
-    int *j = st2->distances;
-    int n_distances = st1->core->num_started_dotted_rules;
+    int *i = st1->matched_lengths;
+    int *j = st2->matched_lengths;
+    int n_matched_lengths = st1->core->num_started_dotted_rules;
 
-    if (n_distances != st2->core->num_started_dotted_rules)
+    if (n_matched_lengths != st2->core->num_started_dotted_rules)
     {
         return false;
     }
 
-    int *bound = i + n_distances;
+    int *bound = i + n_matched_lengths;
     while (i < bound)
     {
         if (*i++ != *j++)
@@ -1755,21 +1754,21 @@ static bool distances_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     return true;
 }
 
-/* Hash of set core and distances. */
-static unsigned set_core_distances_hash(hash_table_entry_t s)
+/* Hash of set core and matched_lengths. */
+static unsigned set_core_matched_lengths_hash(hash_table_entry_t s)
 {
-    return set_core_hash(s)* hash_shift + distances_hash(s);
+    return set_core_hash(s)* hash_shift + matched_lengths_hash(s);
 }
 
-/* Equality of set cores and distances. */
-static bool set_core_distances_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+/* Equality of set cores and matched_lengths. */
+static bool set_core_matched_lengths_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepStateSetCore *set_core1 = ((YaepStateSet*)s1)->core;
     YaepStateSetCore *set_core2 = ((YaepStateSet*)s2)->core;
-    int*distances1 = ((YaepStateSet*)s1)->distances;
-    int*distances2 = ((YaepStateSet*)s2)->distances;
+    int*matched_lengths1 = ((YaepStateSet*)s1)->matched_lengths;
+    int*matched_lengths2 = ((YaepStateSet*)s2)->matched_lengths;
 
-    return set_core1 == set_core2 && distances1 == distances2;
+    return set_core1 == set_core2 && matched_lengths1 == matched_lengths2;
 }
 
 /* Hash of triple(set, term, lookahead). */
@@ -1779,7 +1778,7 @@ static unsigned core_term_lookahead_hash(hash_table_entry_t s)
     YaepSymb *term = ((YaepStateSetTermLookAhead*)s)->term;
     int lookahead = ((YaepStateSetTermLookAhead*)s)->lookahead;
 
-    return ((set_core_distances_hash(set)* hash_shift + term->u.term.term_id)* hash_shift + lookahead);
+    return ((set_core_matched_lengths_hash(set)* hash_shift + term->u.term.term_id)* hash_shift + lookahead);
 }
 
 /* Equality of tripes(set, term, lookahead).*/
@@ -1814,7 +1813,7 @@ static void clear_dotted_rule_distance_set(YaepParseState *ps)
 /* Insert pair(PROD, DIST) into the ps->dotted_rule_distance_vec_vlo.
    Each dotted_rule has a unique prod_id incrementally counted from 0 to the most recent dotted_rule added.
    This prod_id is used as in index into the vector, the vector storing vlo objects.
-   Each vlo object maintains a memory region used for an integer array of distances.
+   Each vlo object maintains a memory region used for an integer array of matched_lengths.
 
    If such pair exists return true (was false), otherwise return false. (was true). */
 static bool dotted_rule_distance_test_and_set(YaepParseState *ps, YaepDottedRule *prod, int dist)
@@ -1831,7 +1830,7 @@ static bool dotted_rule_distance_test_and_set(YaepParseState *ps, YaepDottedRule
         VLO_EXPAND(ps->dotted_rule_distance_vec_vlo,(prod_id + 1 - len)* sizeof(vlo_t));
         for(i = len; i <= prod_id; i++)
         {
-            // For each new slot in the vector, initialize a new vlo, to be used for distances.
+            // For each new slot in the vector, initialize a new vlo, to be used for matched_lengths.
             VLO_CREATE(((vlo_t*) VLO_BEGIN(ps->dotted_rule_distance_vec_vlo))[i], ps->run.grammar->alloc, 64);
         }
     }
@@ -1880,17 +1879,17 @@ static void set_init(YaepParseState *ps, int n_input_tokens)
     OS_CREATE(ps->set_cores_os, ps->run.grammar->alloc, 0);
     OS_CREATE(ps->set_dotted_rules_os, ps->run.grammar->alloc, 2048);
     OS_CREATE(ps->set_parent_indexes_os, ps->run.grammar->alloc, 2048);
-    OS_CREATE(ps->set_distances_os, ps->run.grammar->alloc, 2048);
+    OS_CREATE(ps->set_matched_lengths_os, ps->run.grammar->alloc, 2048);
     OS_CREATE(ps->sets_os, ps->run.grammar->alloc, 0);
     OS_CREATE(ps->triplet_core_term_lookahead_os, ps->run.grammar->alloc, 0);
     ps->set_of_cores = create_hash_table(ps->run.grammar->alloc, 2000, set_core_hash, set_core_eq);
-    ps->set_of_distanceses = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, distances_hash, distances_eq);
-    ps->set_of_tuples_core_distances = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
-                                set_core_distances_hash, set_core_distances_eq);
+    ps->set_of_matched_lengthses = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, matched_lengths_hash, matched_lengths_eq);
+    ps->set_of_tuples_core_matched_lengths = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
+                                set_core_matched_lengths_hash, set_core_matched_lengths_eq);
     ps->set_of_triplets_core_term_lookahead = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
                                                core_term_lookahead_hash, core_term_lookahead_eq);
     ps->n_set_cores = ps->n_set_core_start_dotted_rules= 0;
-    ps->n_set_distances = ps->n_set_distances_len = ps->n_parent_indexes = 0;
+    ps->n_set_matched_lengths = ps->n_set_matched_lengths_len = ps->n_parent_indexes = 0;
     ps->n_sets = ps->n_sets_start_dotted_rules= 0;
     ps->num_triplets_core_term_lookahead = 0;
     dotted_rule_distance_set_init(ps);
@@ -1912,8 +1911,8 @@ static void set_new_start(YaepParseState *ps)
 static void set_new_add_start_prod(YaepParseState *ps, YaepDottedRule*prod, int dist)
 {
     assert(!ps->new_set_ready_p);
-    OS_TOP_EXPAND(ps->set_distances_os, sizeof(int));
-    ps->new_matched_lengths =(int*) OS_TOP_BEGIN(ps->set_distances_os);
+    OS_TOP_EXPAND(ps->set_matched_lengths_os, sizeof(int));
+    ps->new_matched_lengths =(int*) OS_TOP_BEGIN(ps->set_matched_lengths_os);
     OS_TOP_EXPAND(ps->set_dotted_rules_os, sizeof(YaepDottedRule*));
     ps->new_dotted_rules =(YaepDottedRule**) OS_TOP_BEGIN(ps->set_dotted_rules_os);
     ps->new_dotted_rules[ps->new_num_started_dotted_rules] = prod;
@@ -1951,7 +1950,7 @@ static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepDottedRule 
     // Store prod into new dotted_rules.
     ps->new_dotted_rules[ps->new_core->num_dotted_rules++] = dotted_rule;
     // Store parent index. Meanst what...?
-    ps->new_core->parent_indexes[ps->new_core->n_all_distances++] = parent;
+    ps->new_core->parent_indexes[ps->new_core->n_all_matched_lengths++] = parent;
     ps->n_parent_indexes++;
 }
 
@@ -1976,22 +1975,22 @@ static void set_new_add_initial_prod(YaepParseState *ps, YaepDottedRule*prod)
     ps->new_core->num_dotted_rules++;
 }
 
-/* Set up hash of distances of set S.*/
-static void setup_set_distances_hash(hash_table_entry_t s)
+/* Set up hash of matched_lengths of set S.*/
+static void setup_set_matched_lengths_hash(hash_table_entry_t s)
 {
     YaepStateSet *set = ((YaepStateSet*) s);
-    int*dist_ptr = set->distances;
-    int n_distances = set->core->num_started_dotted_rules;
+    int*dist_ptr = set->matched_lengths;
+    int n_matched_lengths = set->core->num_started_dotted_rules;
     int*dist_bound;
     unsigned result;
 
-    dist_bound = dist_ptr + n_distances;
+    dist_bound = dist_ptr + n_matched_lengths;
     result = jauquet_prime_mod32;
     while(dist_ptr < dist_bound)
     {
         result = result* hash_shift +*dist_ptr++;
     }
-    set->distances_hash = result;
+    set->matched_lengths_hash = result;
 }
 
 /* Set up hash of core of set S.*/
@@ -2013,32 +2012,32 @@ static int set_insert(YaepParseState *ps)
 
     OS_TOP_EXPAND(ps->sets_os, sizeof(YaepStateSet));
     ps->new_set = (YaepStateSet*)OS_TOP_BEGIN(ps->sets_os);
-    ps->new_set->distances = ps->new_matched_lengths;
+    ps->new_set->matched_lengths = ps->new_matched_lengths;
     OS_TOP_EXPAND(ps->set_cores_os, sizeof(YaepStateSetCore));
     ps->new_set->core = ps->new_core = (YaepStateSetCore*) OS_TOP_BEGIN(ps->set_cores_os);
     ps->new_core->num_started_dotted_rules = ps->new_num_started_dotted_rules;
     ps->new_core->dotted_rules = ps->new_dotted_rules;
     ps->new_set_ready_p = true;
 #ifdef USE_SET_HASH_TABLE
-    /* Insert distances into table.*/
-    setup_set_distances_hash(ps->new_set);
-    entry = find_hash_table_entry(ps->set_of_distanceses, ps->new_set, true);
+    /* Insert matched_lengths into table.*/
+    setup_set_matched_lengths_hash(ps->new_set);
+    entry = find_hash_table_entry(ps->set_of_matched_lengthses, ps->new_set, true);
     if (*entry != NULL)
     {
-        ps->new_matched_lengths = ps->new_set->distances =((YaepStateSet*)*entry)->distances;
-        OS_TOP_NULLIFY(ps->set_distances_os);
+        ps->new_matched_lengths = ps->new_set->matched_lengths =((YaepStateSet*)*entry)->matched_lengths;
+        OS_TOP_NULLIFY(ps->set_matched_lengths_os);
     }
     else
     {
-        OS_TOP_FINISH(ps->set_distances_os);
+        OS_TOP_FINISH(ps->set_matched_lengths_os);
        *entry =(hash_table_entry_t)ps->new_set;
-        ps->n_set_distances++;
-        ps->n_set_distances_len += ps->new_num_started_dotted_rules;
+        ps->n_set_matched_lengths++;
+        ps->n_set_matched_lengths_len += ps->new_num_started_dotted_rules;
     }
 #else
-    OS_TOP_FINISH(ps->set_distances_os);
-    ps->n_set_distances++;
-    ps->n_set_distances_len += ps->new_num_started_dotted_rules;
+    OS_TOP_FINISH(ps->set_matched_lengths_os);
+    ps->n_set_matched_lengths++;
+    ps->n_set_matched_lengths_len += ps->new_num_started_dotted_rules;
 #endif
     /* Insert set core into table.*/
     setup_set_core_hash(ps->new_set);
@@ -2056,7 +2055,7 @@ static int set_insert(YaepParseState *ps)
         OS_TOP_FINISH(ps->set_cores_os);
         ps->new_core->core_id = ps->n_set_cores++;
         ps->new_core->num_dotted_rules = ps->new_num_started_dotted_rules;
-        ps->new_core->n_all_distances = ps->new_num_started_dotted_rules;
+        ps->new_core->n_all_matched_lengths = ps->new_num_started_dotted_rules;
         ps->new_core->parent_indexes = NULL;
        *entry =(hash_table_entry_t)ps->new_set;
         ps->n_set_core_start_dotted_rules+= ps->new_num_started_dotted_rules;
@@ -2064,7 +2063,7 @@ static int set_insert(YaepParseState *ps)
     }
 #ifdef USE_SET_HASH_TABLE
     /* Insert set into table.*/
-    entry = find_hash_table_entry(ps->set_of_tuples_core_distances, ps->new_set, true);
+    entry = find_hash_table_entry(ps->set_of_tuples_core_matched_lengths, ps->new_set, true);
     if (*entry == NULL)
     {
        *entry =(hash_table_entry_t)ps->new_set;
@@ -2094,14 +2093,14 @@ static void free_sets(YaepParseState *ps)
 {
     free_dotted_rule_distance_sets(ps);
     delete_hash_table(ps->set_of_triplets_core_term_lookahead);
-    delete_hash_table(ps->set_of_tuples_core_distances);
-    delete_hash_table(ps->set_of_distanceses);
+    delete_hash_table(ps->set_of_tuples_core_matched_lengths);
+    delete_hash_table(ps->set_of_matched_lengthses);
     delete_hash_table(ps->set_of_cores);
     OS_DELETE(ps->triplet_core_term_lookahead_os);
     OS_DELETE(ps->sets_os);
     OS_DELETE(ps->set_parent_indexes_os);
     OS_DELETE(ps->set_dotted_rules_os);
-    OS_DELETE(ps->set_distances_os);
+    OS_DELETE(ps->set_matched_lengths_os);
     OS_DELETE(ps->set_cores_os);
 }
 
@@ -3182,7 +3181,7 @@ static void expand_new_start_set(YaepParseState *ps)
     YaepCoreSymbVect *core_symb_vect;
     YaepRule *rule;
 
-    /* Add not yet started dotted_rules with nonzero distances. */
+    /* Add not yet started dotted_rules with nonzero matched_lengths. */
     for(int i = 0; i < ps->new_num_started_dotted_rules; i++)
     {
         add_predicted_not_yet_started_dotted_rules(ps, ps->new_dotted_rules[i], i);
@@ -3209,7 +3208,7 @@ static void expand_new_start_set(YaepParseState *ps)
                 }
 	    }
             core_symb_vect_new_add_transition_el(ps, core_symb_vect, i);
-            if (symb->empty_p && i >= ps->new_core->n_all_distances)
+            if (symb->empty_p && i >= ps->new_core->n_all_matched_lengths)
             {
                 set_new_add_initial_prod(ps, create_dotted_rule(ps, prod->rule, prod->dot_i + 1, 0));
             }
@@ -3244,7 +3243,7 @@ static void expand_new_start_set(YaepParseState *ps)
         do
 	{
             changed_p = false;
-            for(int i = ps->new_core->n_all_distances; i < ps->new_core->num_dotted_rules; i++)
+            for(int i = ps->new_core->n_all_matched_lengths; i < ps->new_core->num_dotted_rules; i++)
 	    {
                 term_set_clear(context_set, ps->run.grammar->symbs_ptr->num_terms);
                 new_prod = ps->new_dotted_rules[i];
@@ -3346,16 +3345,16 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
             continue;
         }
         dist = 0;
-        if (prod_ind >= set_core->n_all_distances)
+        if (prod_ind >= set_core->n_all_matched_lengths)
         {
         }
         else if (prod_ind < set_core->num_started_dotted_rules)
         {
-            dist = set->distances[prod_ind];
+            dist = set->matched_lengths[prod_ind];
         }
         else
         {
-            dist = set->distances[set_core->parent_indexes[prod_ind]];
+            dist = set->matched_lengths[set_core->parent_indexes[prod_ind]];
         }
         dist++;
         if (!dotted_rule_distance_test_and_set(ps, new_prod, dist))
@@ -3403,16 +3402,16 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                     continue;
                 }
                 dist = 0;
-                if (prod_ind >= prev_set_core->n_all_distances)
+                if (prod_ind >= prev_set_core->n_all_matched_lengths)
                 {
                 }
                 else if (prod_ind < prev_set_core->num_started_dotted_rules)
                 {
-                    dist = prev_set->distances[prod_ind];
+                    dist = prev_set->matched_lengths[prod_ind];
                 }
                 else
                 {
-                    dist = prev_set->distances[prev_set_core->parent_indexes[prod_ind]];
+                    dist = prev_set->matched_lengths[prev_set_core->parent_indexes[prod_ind]];
                 }
                 dist += new_dist;
 
@@ -3959,11 +3958,11 @@ static void free_error_recovery(YaepParseState *ps)
 static bool check_cached_transition_set(YaepParseState *ps, YaepStateSet*set, int place)
 {
     int i, dist;
-    int*distances = set->distances;
+    int*matched_lengths = set->matched_lengths;
 
     for(i = set->core->num_started_dotted_rules - 1; i >= 0; i--)
     {
-        if ((dist = distances[i]) <= 1)
+        if ((dist = matched_lengths[i]) <= 1)
             continue;
         /* Sets at origins of dotted_rules with distance one are supposed
            to be the same. */
@@ -4695,7 +4694,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     /* We have only one start dotted_rule: "$S : <start symb> $eof .". */
     prod =(set->core->dotted_rules != NULL ? set->core->dotted_rules[0] : NULL);
     if (prod == NULL
-        || set->distances[0] != ps->state_set_curr
+        || set->matched_lengths[0] != ps->state_set_curr
         || prod->rule->lhs != ps->run.grammar->axiom || prod->dot_i != prod->rule->rhs_len)
     {
         /* It is possible only if error recovery is switched off.
@@ -4870,14 +4869,14 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             prod = set_core->dotted_rules[prod_ind];
             if (prod_ind < set_core->num_started_dotted_rules)
             {
-                /*fprintf(stderr, "PR1 current_state_set_i %d set->distances[prod_ind] = %d prod_ind = %d\n",
-                  current_state_set_i, set->distances[prod_ind], prod_ind);*/
-                prod_origin = current_state_set_i - set->distances[prod_ind];
+                /*fprintf(stderr, "PR1 current_state_set_i %d set->matched_lengths[prod_ind] = %d prod_ind = %d\n",
+                  current_state_set_i, set->matched_lengths[prod_ind], prod_ind);*/
+                prod_origin = current_state_set_i - set->matched_lengths[prod_ind];
             }
-            else if (prod_ind < set_core->n_all_distances)
+            else if (prod_ind < set_core->n_all_matched_lengths)
             {
                 //fprintf(stderr, "PR2 \n");
-                prod_origin = current_state_set_i - set->distances[set_core->parent_indexes[prod_ind]];
+                prod_origin = current_state_set_i - set->matched_lengths[set_core->parent_indexes[prod_ind]];
             }
             else
             {
@@ -4904,15 +4903,15 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                 if (check_prod->rule != rule || check_prod->dot_i != pos)
                     continue;
                 check_prod_origin = prod_origin;
-                if (check_prod_ind < check_set_core->n_all_distances)
+                if (check_prod_ind < check_set_core->n_all_matched_lengths)
 		{
                     if (check_prod_ind < check_set_core->num_started_dotted_rules)
                         check_prod_origin
-                            = prod_origin - check_set->distances[check_prod_ind];
+                            = prod_origin - check_set->matched_lengths[check_prod_ind];
                     else
                         check_prod_origin
                             =(prod_origin
-                               - check_set->distances[check_set_core->parent_indexes
+                               - check_set->matched_lengths[check_set_core->parent_indexes
                                                   [check_prod_ind]]);
 		}
                 if (check_prod_origin == origin)
@@ -5300,7 +5299,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  ps->n_parent_indexes);
         fprintf(stderr,
                  "       #unique set dist. vects = %d, their length = %d\n",
-                 ps->n_set_distances, ps->n_set_distances_len);
+                 ps->n_set_matched_lengths, ps->n_set_matched_lengths_len);
         fprintf(stderr,
                  "       #unique sets = %d, #their start dotted_rules = %d\n",
                  ps->n_sets, ps->n_sets_start_dotted_rules);
@@ -5624,7 +5623,7 @@ static void print_dotted_rule(YaepParseState *ps, FILE *f, YaepDottedRule *prod,
 /* The following function prints SET to file F.  If NOT_YET_STARTED_P is true
    then print all dotted_rules.  The dotted_rules are printed with the
    lookahead set if LOOKAHEAD_P.  SET_DIST is used to print absolute
-   distances of not-yet-started dotted_rules. */
+   matched_lengths of not-yet-started dotted_rules. */
 static void print_state_set(YaepParseState *ps,
                             FILE* f,
                             YaepStateSet *state_set,
@@ -5633,9 +5632,9 @@ static void print_state_set(YaepParseState *ps,
                             int lookahead_p)
 {
     int i;
-    int num, num_started_dotted_rules, num_dotted_rules, n_all_distances;
+    int num, num_started_dotted_rules, num_dotted_rules, n_all_matched_lengths;
     YaepDottedRule **dotted_rules;
-    int*distances,*parent_indexes;
+    int*matched_lengths,*parent_indexes;
 
     if (state_set == NULL && !ps->new_set_ready_p)
     {
@@ -5643,9 +5642,9 @@ static void print_state_set(YaepParseState *ps,
            debugger.  In this case new_set, new_core and their members
            may be not set up yet. */
         num = -1;
-        num_started_dotted_rules = num_dotted_rules = n_all_distances = ps->new_num_started_dotted_rules;
+        num_started_dotted_rules = num_dotted_rules = n_all_matched_lengths = ps->new_num_started_dotted_rules;
         dotted_rules = ps->new_dotted_rules;
-        distances = ps->new_matched_lengths;
+        matched_lengths = ps->new_matched_lengths;
         parent_indexes = NULL;
     }
     else
@@ -5654,8 +5653,8 @@ static void print_state_set(YaepParseState *ps,
         num_dotted_rules = state_set->core->num_dotted_rules;
         dotted_rules = state_set->core->dotted_rules;
         num_started_dotted_rules = state_set->core->num_started_dotted_rules;
-        distances = state_set->distances;
-        n_all_distances = state_set->core->n_all_distances;
+        matched_lengths = state_set->matched_lengths;
+        n_all_matched_lengths = state_set->core->n_all_matched_lengths;
         parent_indexes = state_set->core->parent_indexes;
         num_started_dotted_rules = state_set->core->num_started_dotted_rules;
     }
@@ -5667,11 +5666,11 @@ static void print_state_set(YaepParseState *ps,
         fprintf(f, "    ");
 
         int dist = 0;
-        if (i < num_started_dotted_rules) dist = distances[i];
-        else if (i < n_all_distances) dist = parent_indexes[i];
+        if (i < num_started_dotted_rules) dist = matched_lengths[i];
+        else if (i < n_all_matched_lengths) dist = parent_indexes[i];
         else dist = 0;
 
-        assert(dist == (i < num_started_dotted_rules ? distances[i] : i < n_all_distances ? parent_indexes[i] : 0));
+        assert(dist == (i < num_started_dotted_rules ? matched_lengths[i] : i < n_all_matched_lengths ? parent_indexes[i] : 0));
 
         print_dotted_rule(ps, f, dotted_rules[i], lookahead_p, dist);
 
