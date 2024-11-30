@@ -2181,18 +2181,19 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
    Dotted Rule: A rule with a dot: S →  NP 🞄 VP
                 The dot symbolizes how far the rule has been matched against input.
                 The dot_pos starts at zero which means nothing has been matched.
+                A dotted rule is started if the dot_pos > 0, ie it has matched something.
 
-   (Earley Item): Every input token input[tok_i] gets a state set that stores Early items (aka chart entries).
-                  An early item: [from_i, to_i, S →  NP 🞄 VP]
-                  The item maps a token range with a partial (or fully completed) dotted rule.
-                  Since to_i == tok_i we do not need to actually store to_i, its implicit from the state set.
-                  Instead we store the match_length (== to_i - from_i).
+   Earley Item: Every input token input[tok_i] gets a state set that stores Early items (aka chart entries).
+                An early item: [from_i, to_i, S →  NP 🞄 VP]
+                The item maps a token range with a partial (or fully completed) dotted rule.
+                Since to_i == tok_i we do not need to actually store to_i, its implicit from the state set.
+                Instead we store the match_length (== to_i - from_i).
 
-                  The matched lengths are stored in a separate array and are not needed for
-                  parsing/recognition but are required when building the parse tree.
+                The matched lengths are stored in a separate array and are not needed for
+                parsing/recognition but are required when building the parse tree.
 
-                  Because of the separate array, there is no need not have an Earley Item structure
-                  in this implementation. Instead we store dotted rules and match_lengths arrays.
+                Because of the separate array, there is no need not have an Earley Item structure
+                in this implementation. Instead we store dotted rules and match_lengths arrays.
 
    StateSetCore: The part of a state set that can be shared between StateSets.
                  This is where we store the dotted rules, the dotted_rule_lenghts,
@@ -2205,14 +2206,10 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
              started (some match) and not-yet-started (no match yet). Theses items
              come from the scan/complete/predict algorithm.
 
-             However we store this
-             A started item stores a distance to its origin_i token.
-             We compress the StateSet with an immutable StateSetCore and a separate
-             array of distances mapping to the dotted rules inside the state set core.
+             A started dotted_rule stores the matched length in number of tokens as matched_length.
 
-   StateSetCore: The part of a state set that can be shared between StateSets.
-                 I.e. the dotted rules but not the distances. The distances are
-                 used to build the final parse tree after a parse has been found.
+             We compress the StateSet with an immutable StateSetCore and a separate
+             array of matched_lengths corresponding to the dotted rules inside the state set core.
 */
 
 #include <assert.h>
@@ -2536,10 +2533,8 @@ struct YaepCoreSymbVect
     YaepVect reduces;
 };
 
-/* A StateSetCore is a set in Earley's algorithm however without
-   distance information. Because there are many duplications of such
-   structures we extract the set cores and store them in one
-   exemplar. */
+/* A StateSetCore is a state set in Earley's algorithm but without matched lengths for the dotted rules.
+   The state set cores can be reused between state sets and thus save memory. */
 struct YaepStateSetCore
 {
     /* The following is unique number of the set core. It is defined only after forming all set.*/
