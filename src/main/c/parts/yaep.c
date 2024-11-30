@@ -7026,15 +7026,14 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             }
             else
             {
-                // fprintf(stderr, "PR3 \n");
                 dotted_rule_from_i = state_set_i;
             }
 
             if (ps->run.debug)
 	    {
-                fprintf(stderr, "    Trying state_set_i = %d, dotted_rule = ", state_set_i);
+                fprintf(stderr, "  Trying state_set_i=%d dotted_rule=", state_set_i);
                 print_dotted_rule(ps, stderr, dotted_rule, ps->run.debug, -1);
-                fprintf(stderr, ", dotted_rule_from_i = %d\n", dotted_rule_from_i);
+                fprintf(stderr, " dotted_rule_from_i=%d\n", dotted_rule_from_i);
 	    }
 
             check_set = ps->state_sets[dotted_rule_from_i];
@@ -7047,18 +7046,20 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                 check_dotted_rule_id = check_core_symb_vect->transitions.els[j];
                 check_dotted_rule = check_set->core->dotted_rules[check_dotted_rule_id];
                 if (check_dotted_rule->rule != rule || check_dotted_rule->dot_i != pos)
+                {
                     continue;
+                }
                 check_dotted_rule_from_i = dotted_rule_from_i;
                 if (check_dotted_rule_id < check_set_core->num_all_matched_lengths)
 		{
                     if (check_dotted_rule_id < check_set_core->num_started_dotted_rules)
-                        check_dotted_rule_from_i
-                            = dotted_rule_from_i - check_set->matched_lengths[check_dotted_rule_id];
+                    {
+                        check_dotted_rule_from_i = dotted_rule_from_i - check_set->matched_lengths[check_dotted_rule_id];
+                    }
                     else
-                        check_dotted_rule_from_i
-                            =(dotted_rule_from_i
-                               - check_set->matched_lengths[check_set_core->parent_dotted_rule_ids
-                                                  [check_dotted_rule_id]]);
+                    {
+                        check_dotted_rule_from_i = (dotted_rule_from_i - check_set->matched_lengths[check_set_core->parent_dotted_rule_ids[check_dotted_rule_id]]);
+                    }
 		}
                 if (check_dotted_rule_from_i == from_i)
 		{
@@ -7067,23 +7068,28 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 		}
 	    }
             if (!found)
+            {
                 continue;
+            }
             if (n_candidates != 0)
 	    {
                *ambiguous_p = true;
                 if (ps->run.grammar->one_parse_p)
+                {
                     break;
+                }
 	    }
             dotted_rule_rule = dotted_rule->rule;
             if (n_candidates == 0)
+            {
                 orig_state->state_set_i = dotted_rule_from_i;
+            }
             if (parent_anode != NULL && disp >= 0)
 	    {
-                /* We should generate and use the translation of the
-                   nonterminal.*/
+                /* We should generate and use the translation of the nonterminal. */
                 curr_state = orig_state;
                 anode = orig_state->anode;
-                /* We need translation of the rule.*/
+                /* We need translation of the rule. */
                 if (n_candidates != 0)
 		{
                     assert(!ps->run.grammar->one_parse_p);
@@ -7126,11 +7132,11 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                         if (ps->run.debug)
 			{
                             fprintf(stderr,
-                                     "  Adding top %ld, dotted_rule_from_i = %d, modified dotted_rule = ",
+                                     "  Adding top=%ld dotted_rule_from_i=%d modified dotted_rule=",
                                     (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                                      dotted_rule_from_i);
                             print_rule_with_dot(ps, stderr, state->rule, state->dot_i);
-                            fprintf(stderr, ", state->from_i = %d\n", state->from_i);
+                            fprintf(stderr, " state->from_i=%d\n", state->from_i);
 			}
 
                         curr_state = state;
