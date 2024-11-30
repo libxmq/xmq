@@ -3525,7 +3525,7 @@ static void free_term_sets(YaepGrammar *grammar, YaepTermStorage *term_sets)
 
 
 /* Initialize work with rules and returns pointer to rules storage. */
-static YaepRuleStorage *rule_init(YaepGrammar *grammar)
+static YaepRuleStorage *create_rules(YaepGrammar *grammar)
 {
     void *mem;
     YaepRuleStorage *result;
@@ -3642,7 +3642,7 @@ static void free_rules(YaepGrammar *grammar, YaepRuleStorage *rules)
 }
 
 /* Initialize work with tokens.*/
-static void tok_init(YaepParseState *ps)
+static void create_input_tokens(YaepParseState *ps)
 {
     VLO_CREATE(ps->input_tokens_vlo, ps->run.grammar->alloc, NUM_INITIAL_YAEP_TOKENS * sizeof(YaepInputToken));
     ps->input_tokens_len = 0;
@@ -3664,13 +3664,12 @@ static void tok_add(YaepParseState *ps, int code, void *attr)
     ps->input_tokens_len++;
 }
 
-static void free_tokens(YaepParseState *ps)
+static void free_input_tokens(YaepParseState *ps)
 {
     VLO_DELETE(ps->input_tokens_vlo);
 }
 
-/* Initialize work with productions.*/
-static void prod_init(YaepParseState *ps)
+static void create_productions(YaepParseState *ps)
 {
     ps->n_all_productions= 0;
     OS_CREATE(ps->productions_os, ps->run.grammar->alloc, 0);
@@ -4667,7 +4666,7 @@ YaepGrammar *yaepNewGrammar()
     grammar->recovery_token_matches = DEFAULT_RECOVERY_TOKEN_MATCHES;
     grammar->symbs_ptr = create_symbols(grammar);
     grammar->term_sets_ptr = create_term_sets(grammar);
-    grammar->rules_ptr = rule_init(grammar);
+    grammar->rules_ptr = create_rules(grammar);
     return grammar;
 }
 
@@ -5239,7 +5238,7 @@ static void yaep_parse_init(YaepParseState *ps, int n_input_tokens)
 {
     YaepRule*rule;
 
-    prod_init(ps);
+    create_productions(ps);
     set_init(ps, n_input_tokens);
     core_symb_vect_init(ps);
 #ifdef USE_CORE_SYMB_HASH_TABLE
@@ -7375,7 +7374,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
         if (parse_init_p)
             free_inside_parse_state(ps);
         if (tok_init_p)
-            free_tokens(ps);
+            free_input_tokens(ps);
         return code;
     }
     if (g->undefined_p)
@@ -7383,7 +7382,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
         yaep_error(ps, YAEP_UNDEFINED_OR_BAD_GRAMMAR, "undefined or bad grammar");
     }
     ps->n_goto_successes = 0;
-    tok_init(ps);
+    create_input_tokens(ps);
     tok_init_p = true;
     read_input_tokens(ps);
     yaep_parse_init(ps, ps->input_tokens_len);
@@ -7452,7 +7451,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     }
 
     free_inside_parse_state(ps);
-    free_tokens(ps);
+    free_input_tokens(ps);
     return 0;
 }
 
