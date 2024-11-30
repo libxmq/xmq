@@ -473,7 +473,7 @@ struct YaepStateSet
 struct YaepDottedRule
 {
     /* Unique dotted_rule identifier. Starts at 0 and increments for each new dotted_rule. */
-    int prod_id;
+    int id;
 
     /* The following is the rule being dotted. */
     YaepRule *rule;
@@ -718,8 +718,8 @@ struct YaepParseState
     os_t dotted_rules_os;
 
     /* The set of pairs (dotted_rule,matched_length) used for test-setting such pairs
-       is implemented using a vec[prod id] -> vec[matched_length] -> generation since prod_id
-       is unique and incrementing, we use a vector[max_prod_id] to find another vector[max_matched_length]
+       is implemented using a vec[prod id] -> vec[matched_length] -> generation since id
+       is unique and incrementing, we use a vector[max_id] to find another vector[max_matched_length]
        each matched_length entry storing a generation number. To clear the set of pairs
        we only need to increment the current generation below. Yay! No need to free, alloc, memset.*/
     vlo_t dotted_rule_matched_length_vec_vlo;
@@ -1662,7 +1662,7 @@ static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, in
     ps->n_all_dotted_rules++;
     prod->rule = rule;
     prod->dot_i = pos;
-    prod->prod_id = ps->n_all_dotted_rules;
+    prod->id = ps->n_all_dotted_rules;
     prod->context = context;
     prod->empty_tail_p = prod_set_lookahead(ps, prod);
     (*context_dotted_rules_table_ptr)[rule->rule_start_offset + pos] = prod;
@@ -1680,7 +1680,7 @@ static unsigned dotted_rules_hash(int num_dotted_rules, YaepDottedRule **dotted_
     result = jauquet_prime_mod32;
     for(i = 0; i < num_dotted_rules; i++)
     {
-        n = dotted_rules[i]->prod_id;
+        n = dotted_rules[i]->id;
         result = result* hash_shift + n;
     }
     return result;
@@ -1811,33 +1811,33 @@ static void clear_dotted_rule_matched_length_set(YaepParseState *ps)
 }
 
 /* Insert pair(PROD, DIST) into the ps->dotted_rule_matched_length_vec_vlo.
-   Each dotted_rule has a unique prod_id incrementally counted from 0 to the most recent dotted_rule added.
-   This prod_id is used as in index into the vector, the vector storing vlo objects.
+   Each dotted_rule has a unique id incrementally counted from 0 to the most recent dotted_rule added.
+   This id is used as in index into the vector, the vector storing vlo objects.
    Each vlo object maintains a memory region used for an integer array of matched_lengths.
 
    If such pair exists return true (was false), otherwise return false. (was true). */
 static bool dotted_rule_matched_length_test_and_set(YaepParseState *ps, YaepDottedRule *prod, int dist)
 {
-    int i, len, prod_id;
+    int i, len, id;
     vlo_t *dist_vlo;
 
-    prod_id = prod->prod_id;
+    id = prod->id;
 
     // Expand the vector to accommodate a new dotted_rule.
     len = VLO_LENGTH(ps->dotted_rule_matched_length_vec_vlo)/sizeof(vlo_t);
-    if (len <= prod_id)
+    if (len <= id)
     {
-        VLO_EXPAND(ps->dotted_rule_matched_length_vec_vlo,(prod_id + 1 - len)* sizeof(vlo_t));
-        for(i = len; i <= prod_id; i++)
+        VLO_EXPAND(ps->dotted_rule_matched_length_vec_vlo,(id + 1 - len)* sizeof(vlo_t));
+        for(i = len; i <= id; i++)
         {
             // For each new slot in the vector, initialize a new vlo, to be used for matched_lengths.
             VLO_CREATE(((vlo_t*) VLO_BEGIN(ps->dotted_rule_matched_length_vec_vlo))[i], ps->run.grammar->alloc, 64);
         }
     }
 
-    // Now fetch the vlo for this prod_id, which is either an existing vlo or a freshly initialized vlo.
+    // Now fetch the vlo for this id, which is either an existing vlo or a freshly initialized vlo.
     // The vlo stores an array of integersCheck if the vlo is big enough for this matched_length?
-    dist_vlo = &((vlo_t*)VLO_BEGIN(ps->dotted_rule_matched_length_vec_vlo))[prod_id];
+    dist_vlo = &((vlo_t*)VLO_BEGIN(ps->dotted_rule_matched_length_vec_vlo))[id];
     len = VLO_LENGTH(*dist_vlo) / sizeof(int);
     if (len <= dist)
     {
@@ -1855,7 +1855,7 @@ static bool dotted_rule_matched_length_test_and_set(YaepParseState *ps, YaepDott
         return true;
     }
     // The pair did not exist in the set. (Since the generation number did not match.)
-    // Insert this pair my marking the vec[prod_id][dist] with the current generation.
+    // Insert this pair my marking the vec[id][dist] with the current generation.
     *generation = ps->dotted_rule_matched_length_vec_generation;
     return false;
 }
@@ -5605,7 +5605,7 @@ static void print_rule_with_dot(YaepParseState *ps, FILE *f, YaepRule *rule, int
    dotted_rule is printed with the lookahead set if LOOKAHEAD_P.*/
 static void print_dotted_rule(YaepParseState *ps, FILE *f, YaepDottedRule *prod, bool lookahead_p, int matched_length)
 {
-    fprintf(f, "(%3d)    ", prod->prod_id);
+    fprintf(f, "(%3d)    ", prod->id);
     print_rule_with_dot(ps, f, prod->rule, prod->dot_i);
 
     if (matched_length >= 0)
