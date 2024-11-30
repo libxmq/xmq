@@ -4227,7 +4227,6 @@ static void set_new_core_stop(YaepParseState *ps)
     OS_TOP_FINISH(ps->set_parent_indexes_os);
 }
 
-
 static void free_sets(YaepParseState *ps)
 {
     free_production_distance_sets(ps);
@@ -7659,11 +7658,17 @@ void yaepFreeTree(YaepTreeNode *root,
    printed with its code if CODE_P.*/
 static void symbol_print(FILE* f, YaepSymb*symb, bool code_p)
 {
+    if (symb->u.term.code >= 32 && symb->u.term.code <= 126)
+    {
+        fprintf(f, "'%c'", symb->u.term.code);
+        return;
+    }
     fprintf(f, "%s", symb->repr);
+    /*
     if (code_p && symb->term_p)
     {
         fprintf(f, "(%d)", symb->u.term.code);
-    }
+    }*/
 }
 
 /* The following function prints RULE with its translation(if TRANS_P) to file F.*/
