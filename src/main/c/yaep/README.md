@@ -1,4 +1,7 @@
-# YAEP -- standalone Earley parser library
+# YAEP -- Yet Another Earley Parser
+
+  https://www2.lingfil.uu.se/cl/sara/courses18/5LN455-2014/lectures/5LN455-F5.pdf
+
   * **YAEP** is an abbreviation of Yet Another Earley Parser.
   * This standalone library is created for convenience.
   * The parser development is actually done as a part of the [*Dino* language
@@ -31,7 +34,7 @@
     between processing grammar and the start of parsing.
   * A grammar for YAEP can be constructed through function calls or using
     a YACC-like description syntax.
- 
+
 # Usage example:
 * The following is a small example of how to use YAEP to parse expressions.
   We have omitted the functions `read_token`, `syntax_error_func`,
@@ -88,7 +91,7 @@ static void parse (void)
        | ...
        | error # 0
        ;
-``` 
+```
   * For more details, please see the documentation in directory ``src/``,
     or the YAEP examples in files ``test*.c`` in directories ``test/C`` or ``test/C++``.
 
@@ -98,7 +101,7 @@ static void parse (void)
   * ``<srcdir>/configure --srcdir=<srcdir> --prefix=<prefix for install dirs>``
     or ``cmake -DCMAKE_BUILD_TYPE=Release`` (make sure you have CMake installed)
   * ``make``
-  * ``make test`` (optional) 
+  * ``make test`` (optional)
   * ``make install``
 
 # Speed comparison of YACC, MARPA, YAEP, and GCC parsers:
@@ -120,7 +123,7 @@ static void parse (void)
     the next identifier (as a typename or regular identifier).
 * Scanning test files for YACC, MARPA, and YAEP:
   * We prepare all tokens beforehand in order to exclude scanning time from our benchmark.
-  * For YACC, at the scanning stage we do not yet distinguish identifiers and typenames. 
+  * For YACC, at the scanning stage we do not yet distinguish identifiers and typenames.
 * Tests:
   * The first test is based on the file ``gen.c`` from parser-generator MSTA.  The file
     was concatenated 10 times and the resulting file size was 67K C lines.

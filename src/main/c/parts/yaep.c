@@ -2176,7 +2176,7 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 
    Rule: A grammar rule S = NP, VP.
 
-   Production: A rule put into production: NP 🞄 VP [origin] and stored in a StateSet.
+   Dotted Rule: A rule put to use: NP 🞄 VP [origin] and stored in a StateSet.
 
    StateSet: For each input token, we build a state set with all possible productions:
              started (some match) and not-yet-started (no match yet). Theses productions
@@ -2266,8 +2266,8 @@ static const unsigned hash_shift = 611;
 struct YaepSymb;
 typedef struct YaepSymb YaepSymb;
 
-struct YaepVocabulary;
-typedef struct YaepVocabulary YaepVocabulary;
+struct YaepSymbolStorage;
+typedef struct YaepSymbolStorage YaepSymbolStorage;
 
 struct YaepTermSet;
 typedef struct YaepTermSet YaepTermSet;
@@ -2293,8 +2293,8 @@ typedef struct YaepStateSetCore YaepStateSetCore;
 struct YaepStateSet;
 typedef struct YaepStateSet YaepStateSet;
 
-struct YaepProduction;
-typedef struct YaepProduction YaepProduction;
+struct YaepDottedRule;
+typedef struct YaepDottedRule YaepDottedRule;
 
 struct YaepInputToken;
 typedef struct YaepInputToken YaepInputToken;
@@ -2356,7 +2356,7 @@ struct YaepGrammar
     bool error_recovery_p;
 
     /* These are all the symbols used in this grammar. */
-    YaepVocabulary *symbs_ptr;
+    YaepSymbolStorage *symbs_ptr;
 
     /* All rules used in this grammar are stored here. */
     YaepRuleStorage *rulestorage_ptr;
@@ -2427,7 +2427,7 @@ struct YaepSymb
 };
 
 /* The following structure contians all information about grammar vocabulary.*/
-struct YaepVocabulary
+struct YaepSymbolStorage
 {
 
     int num_terms, num_nonterms;
@@ -2543,7 +2543,7 @@ struct YaepStateSetCore
        productions are placed.  You should access to a set production only
        through this member or variable `new_productions'(in other words don't
        save the member value in another variable).*/
-    YaepProduction **productions;
+    YaepDottedRule **productions;
 
     /* The following member is number of started productions and not-yet-started
        (noninitial) productions whose distance is defined from a start
@@ -2585,7 +2585,7 @@ struct YaepStateSet
    We do not store an index to its original set where this production belongs.
    This is stored separately and this means that we can reuse production objects to save memory,
    since ref,dot,lookup is recurring often. */
-struct YaepProduction
+struct YaepDottedRule
 {
     /* Unique production identifier. Starts at 0 and increments for each new production. */
     int prod_id;
@@ -2772,7 +2772,7 @@ struct YaepParseState
       of new set.  They are always defined and correspondingly
       productions, distances, and the current number of start productions
       of the set being formed.*/
-    YaepProduction **new_productions;
+    YaepDottedRule **new_productions;
     int *new_distances;
     int new_num_started_productions;
 
@@ -2823,7 +2823,7 @@ struct YaepParseState
     /* The following two dimensional array(the first dimension is context
        number, the second one is production number) contains references to
        all possible productions.*/
-    YaepProduction ***prod_table;
+    YaepDottedRule ***prod_table;
 
     /* The following vlo is indexed by production context number and gives
        array which is indexed by production number
@@ -2982,9 +2982,9 @@ static void print_state_set(YaepParseState *ps,
                             int set_dist,
                             int print_all_productions,
                             int lookahead_p);
-static void print_production(YaepParseState *ps, FILE *f, YaepProduction *prod, bool lookahead_p, int origin);
-static YaepVocabulary *create_symbols(YaepGrammar *g);
-static void symb_empty(YaepParseState *ps, YaepVocabulary *symbs);
+static void print_production(YaepParseState *ps, FILE *f, YaepDottedRule *prod, bool lookahead_p, int origin);
+static YaepSymbolStorage *symbolstorage_create(YaepGrammar *g);
+static void symb_empty(YaepParseState *ps, YaepSymbolStorage *symbs);
 static void symb_finish_adding_terms(YaepParseState *ps);
 static void symb_print(FILE* f, YaepSymb *symb, bool code_p);
 static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
@@ -3042,13 +3042,13 @@ static bool symb_code_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 }
 
 /* Initialize work with symbols and returns storage for the symbols.*/
-static YaepVocabulary *create_symbols(YaepGrammar *grammar)
+static YaepSymbolStorage *symbolstorage_create(YaepGrammar *grammar)
 {
     void*mem;
-    YaepVocabulary*result;
+    YaepSymbolStorage*result;
 
-    mem = yaep_malloc(grammar->alloc, sizeof(YaepVocabulary));
-    result =(YaepVocabulary*) mem;
+    mem = yaep_malloc(grammar->alloc, sizeof(YaepSymbolStorage));
+    result =(YaepSymbolStorage*) mem;
     OS_CREATE(result->symbs_os, grammar->alloc, 0);
     VLO_CREATE(result->symbs_vlo, grammar->alloc, 1024);
     VLO_CREATE(result->terms_vlo, grammar->alloc, 512);
@@ -3248,7 +3248,7 @@ static void symb_finish_adding_terms(YaepParseState *ps)
 }
 
 /* Free memory for symbols. */
-static void symb_empty(YaepParseState *ps, YaepVocabulary *symbs)
+static void symb_empty(YaepParseState *ps, YaepSymbolStorage *symbs)
 {
     if (symbs == NULL) return;
 
@@ -3269,7 +3269,7 @@ static void symb_empty(YaepParseState *ps, YaepVocabulary *symbs)
     TRACE_FA(ps, "%p\n" , symbs);
 }
 
-static void free_symbols(YaepParseState *ps, YaepVocabulary *symbs)
+static void symbolstorage_free(YaepParseState *ps, YaepSymbolStorage *symbs)
 {
     if (symbs == NULL) return;
 
@@ -3512,7 +3512,7 @@ static void term_set_empty(YaepTermSetStorage *term_sets)
     term_sets->n_term_sets = term_sets->n_term_sets_size = 0;
 }
 
-static void free_term_sets(YaepGrammar *grammar, YaepTermSetStorage *term_sets)
+static void termsetstorage_free(YaepGrammar *grammar, YaepTermSetStorage *term_sets)
 {
     if (term_sets == NULL) return;
 
@@ -3672,13 +3672,13 @@ static void create_productions(YaepParseState *ps)
     ps->n_all_productions= 0;
     OS_CREATE(ps->productions_os, ps->run.grammar->alloc, 0);
     VLO_CREATE(ps->prod_table_vlo, ps->run.grammar->alloc, 4096);
-    ps->prod_table = (YaepProduction***)VLO_BEGIN(ps->prod_table_vlo);
+    ps->prod_table = (YaepDottedRule***)VLO_BEGIN(ps->prod_table_vlo);
 }
 
 /* The following function sets up lookahead of production SIT.  The
    function returns true if the production tail may derive empty
    string.*/
-static bool prod_set_lookahead(YaepParseState *ps, YaepProduction *prod)
+static bool prod_set_lookahead(YaepParseState *ps, YaepDottedRule *prod)
 {
     YaepSymb *symb, **symb_ptr;
 
@@ -3726,39 +3726,39 @@ static bool prod_set_lookahead(YaepParseState *ps, YaepProduction *prod)
 /* The following function returns productions with given
    characteristics.  Remember that productions are stored in one
    exemplar. */
-static YaepProduction *create_production(YaepParseState *ps, YaepRule *rule, int pos, int context)
+static YaepDottedRule *create_production(YaepParseState *ps, YaepRule *rule, int pos, int context)
 {
-    YaepProduction *prod;
-    YaepProduction ***context_prod_table_ptr;
+    YaepDottedRule *prod;
+    YaepDottedRule ***context_prod_table_ptr;
 
     assert(context >= 0);
     context_prod_table_ptr = ps->prod_table + context;
 
     if ((char*) context_prod_table_ptr >= (char*) VLO_BOUND(ps->prod_table_vlo))
     {
-        YaepProduction***bound,***ptr;
+        YaepDottedRule***bound,***ptr;
         int i, diff;
 
         assert((ps->run.grammar->lookahead_level <= 1 && context == 0) || (ps->run.grammar->lookahead_level > 1 && context >= 0));
         diff = (char*) context_prod_table_ptr -(char*) VLO_BOUND(ps->prod_table_vlo);
-        diff += sizeof(YaepProduction**);
-        if (ps->run.grammar->lookahead_level > 1 && diff == sizeof(YaepProduction**))
+        diff += sizeof(YaepDottedRule**);
+        if (ps->run.grammar->lookahead_level > 1 && diff == sizeof(YaepDottedRule**))
         {
             diff *= 10;
         }
         VLO_EXPAND(ps->prod_table_vlo, diff);
-        ps->prod_table =(YaepProduction***) VLO_BEGIN(ps->prod_table_vlo);
-        bound =(YaepProduction***) VLO_BOUND(ps->prod_table_vlo);
+        ps->prod_table =(YaepDottedRule***) VLO_BEGIN(ps->prod_table_vlo);
+        bound =(YaepDottedRule***) VLO_BOUND(ps->prod_table_vlo);
         context_prod_table_ptr = ps->prod_table + context;
-        ptr = bound - diff / sizeof(YaepProduction**);
+        ptr = bound - diff / sizeof(YaepDottedRule**);
 
         while(ptr < bound)
 	{
             OS_TOP_EXPAND(ps->productions_os,
                           (ps->run.grammar->rulestorage_ptr->n_rhs_lens + ps->run.grammar->rulestorage_ptr->num_rules)
-                          *sizeof(YaepProduction*));
+                          *sizeof(YaepDottedRule*));
 
-           *ptr = (YaepProduction**)OS_TOP_BEGIN(ps->productions_os);
+           *ptr = (YaepDottedRule**)OS_TOP_BEGIN(ps->productions_os);
             OS_TOP_FINISH(ps->productions_os);
 
             for(i = 0; i < ps->run.grammar->rulestorage_ptr->n_rhs_lens + ps->run.grammar->rulestorage_ptr->num_rules; i++)
@@ -3772,8 +3772,8 @@ static YaepProduction *create_production(YaepParseState *ps, YaepRule *rule, int
     {
         return prod;
     }
-    OS_TOP_EXPAND(ps->productions_os, sizeof(YaepProduction));
-    prod =(YaepProduction*) OS_TOP_BEGIN(ps->productions_os);
+    OS_TOP_EXPAND(ps->productions_os, sizeof(YaepDottedRule));
+    prod =(YaepDottedRule*) OS_TOP_BEGIN(ps->productions_os);
     OS_TOP_FINISH(ps->productions_os);
     ps->n_all_productions++;
     prod->rule = rule;
@@ -3788,7 +3788,7 @@ static YaepProduction *create_production(YaepParseState *ps, YaepRule *rule, int
 
 
 /* Return hash of sequence of NUM_PRODUCTIONS productions in array PRODUCTIONS. */
-static unsigned productions_hash(int num_productions, YaepProduction **productions)
+static unsigned productions_hash(int num_productions, YaepDottedRule **productions)
 {
     int n, i;
     unsigned result;
@@ -3820,7 +3820,7 @@ static bool set_core_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepStateSetCore*set_core1 = ((YaepStateSet*) s1)->core;
     YaepStateSetCore*set_core2 = ((YaepStateSet*) s2)->core;
-    YaepProduction **prod_ptr1, **prod_ptr2, **prod_bound1;
+    YaepDottedRule **prod_ptr1, **prod_ptr2, **prod_bound1;
 
     if (set_core1->num_started_productions != set_core2->num_started_productions)
     {
@@ -3932,7 +3932,7 @@ static void clear_production_distance_set(YaepParseState *ps)
    Each vlo object maintains a memory region used for an integer array of distances.
 
    If such pair exists return true (was false), otherwise return false. (was true). */
-static bool production_distance_test_and_set(YaepParseState *ps, YaepProduction *prod, int dist)
+static bool production_distance_test_and_set(YaepParseState *ps, YaepDottedRule *prod, int dist)
 {
     int i, len, prod_id;
     vlo_t *dist_vlo;
@@ -4024,13 +4024,13 @@ static void set_new_start(YaepParseState *ps)
 
 /* Add start PROD with distance DIST at the end of the production array
    of the state set being formed. */
-static void set_new_add_start_prod(YaepParseState *ps, YaepProduction*prod, int dist)
+static void set_new_add_start_prod(YaepParseState *ps, YaepDottedRule*prod, int dist)
 {
     assert(!ps->new_set_ready_p);
     OS_TOP_EXPAND(ps->set_distances_os, sizeof(int));
     ps->new_distances =(int*) OS_TOP_BEGIN(ps->set_distances_os);
-    OS_TOP_EXPAND(ps->set_productions_os, sizeof(YaepProduction*));
-    ps->new_productions =(YaepProduction**) OS_TOP_BEGIN(ps->set_productions_os);
+    OS_TOP_EXPAND(ps->set_productions_os, sizeof(YaepDottedRule*));
+    ps->new_productions =(YaepDottedRule**) OS_TOP_BEGIN(ps->set_productions_os);
     ps->new_productions[ps->new_num_started_productions] = prod;
     ps->new_distances[ps->new_num_started_productions] = dist;
     ps->new_num_started_productions++;
@@ -4040,7 +4040,7 @@ static void set_new_add_start_prod(YaepParseState *ps, YaepProduction*prod, int 
    production array of the set being formed.  If this is production and
    there is already the same pair(production, the corresponding
    distance), we do not add it.*/
-static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepProduction *prod, int parent)
+static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepDottedRule *prod, int parent)
 {
     assert(ps->new_set_ready_p);
 
@@ -4055,8 +4055,8 @@ static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepProduction 
         }
     }
     // Increase the object stack storing productions, with the size of a new production.
-    OS_TOP_EXPAND(ps->set_productions_os, sizeof(YaepProduction*));
-    ps->new_productions = ps->new_core->productions = (YaepProduction**)OS_TOP_BEGIN(ps->set_productions_os);
+    OS_TOP_EXPAND(ps->set_productions_os, sizeof(YaepDottedRule*));
+    ps->new_productions = ps->new_core->productions = (YaepDottedRule**)OS_TOP_BEGIN(ps->set_productions_os);
 
     // Increase the parent index vector with another int.
     // This integer points to ...?
@@ -4073,7 +4073,7 @@ static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepProduction 
 /* Add a not-yet-started production (initial) PROD with zero distance at the end of the
    production array of the set being formed.  If this is not-yet-started
    production and there is already the same pair(production, zero distance), we do not add it.*/
-static void set_new_add_initial_prod(YaepParseState *ps, YaepProduction*prod)
+static void set_new_add_initial_prod(YaepParseState *ps, YaepDottedRule*prod)
 {
     assert(ps->new_set_ready_p);
 
@@ -4086,8 +4086,8 @@ static void set_new_add_initial_prod(YaepParseState *ps, YaepProduction*prod)
         if (ps->new_productions[i] == prod) return;
     }
     /* Remember we do not store distance for not-yet-started productions.*/
-    OS_TOP_ADD_MEMORY(ps->set_productions_os, &prod, sizeof(YaepProduction*));
-    ps->new_productions = ps->new_core->productions = (YaepProduction**)OS_TOP_BEGIN(ps->set_productions_os);
+    OS_TOP_ADD_MEMORY(ps->set_productions_os, &prod, sizeof(YaepDottedRule*));
+    ps->new_productions = ps->new_core->productions = (YaepDottedRule**)OS_TOP_BEGIN(ps->set_productions_os);
     ps->new_core->num_productions++;
 }
 
@@ -4662,7 +4662,7 @@ YaepGrammar *yaepNewGrammar()
     grammar->cost_p = false;
     grammar->error_recovery_p = true;
     grammar->recovery_token_matches = DEFAULT_RECOVERY_TOKEN_MATCHES;
-    grammar->symbs_ptr = create_symbols(grammar);
+    grammar->symbs_ptr = symbolstorage_create(grammar);
     grammar->term_sets_ptr = termsetstorage_create(grammar);
     grammar->rulestorage_ptr = rulestorage_create(grammar);
     return grammar;
@@ -5276,7 +5276,7 @@ static void read_input_tokens(YaepParseState *ps)
    given start production PROD with distance DIST by reducing symbol
    which can derivate empty string and which is placed after dot in
    given production. */
-static void add_predicted_not_yet_started_productions(YaepParseState *ps, YaepProduction *prod, int parent)
+static void add_predicted_not_yet_started_productions(YaepParseState *ps, YaepDottedRule *prod, int parent)
 {
     YaepRule *rule = prod->rule;
     int context = prod->context;
@@ -5293,7 +5293,7 @@ static void add_predicted_not_yet_started_productions(YaepParseState *ps, YaepPr
    transition on given symbol(see comment for abstract data `core_symb_vect'). */
 static void expand_new_start_set(YaepParseState *ps)
 {
-    YaepProduction *prod;
+    YaepDottedRule *prod;
     YaepSymb *symb;
     YaepCoreSymbVect *core_symb_vect;
     YaepRule *rule;
@@ -5350,7 +5350,7 @@ static void expand_new_start_set(YaepParseState *ps)
 
     if (ps->run.grammar->lookahead_level > 1)
     {
-        YaepProduction *new_prod, *shifted_prod;
+        YaepDottedRule *new_prod, *shifted_prod;
         term_set_el_t *context_set;
         int prod_ind, context, j;
         bool changed_p;
@@ -5415,7 +5415,7 @@ static void build_start_set(YaepParseState *ps)
 
     for (YaepRule *rule = ps->run.grammar->axiom->u.nonterm.rules; rule != NULL; rule = rule->lhs_next)
     {
-        YaepProduction *prod = create_production(ps, rule, 0, context);
+        YaepDottedRule *prod = create_production(ps, rule, 0, context);
         set_new_add_start_prod(ps, prod, 0);
     }
 
@@ -5435,7 +5435,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 {
     YaepStateSet *prev_set;
     YaepStateSetCore *set_core, *prev_set_core;
-    YaepProduction *prod, *new_prod, **prev_productions;
+    YaepDottedRule *prod, *new_prod, **prev_productions;
     YaepCoreSymbVect *prev_core_symb_vect;
     int local_lookahead_level, dist, prod_ind, new_dist;
     int i, place;
@@ -6788,7 +6788,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 {
     YaepStateSet *set, *check_set;
     YaepStateSetCore *set_core, *check_set_core;
-    YaepProduction *prod, *check_prod;
+    YaepDottedRule *prod, *check_prod;
     YaepRule *rule, *prod_rule;
     YaepSymb *symb;
     YaepCoreSymbVect *core_symb_vect, *check_core_symb_vect;
@@ -7466,8 +7466,8 @@ void yaepFreeGrammar(YaepParseRun *pr, YaepGrammar *g)
         allocator = g->alloc;
         free_state_sets(ps);
         rulestorage_free(g, g->rulestorage_ptr);
-        free_term_sets(g, g->term_sets_ptr);
-        free_symbols(ps, g->symbs_ptr);
+        termsetstorage_free(g, g->term_sets_ptr);
+        symbolstorage_free(ps, g->symbs_ptr);
         yaep_free(allocator, g);
         yaep_alloc_del(allocator);
     }
@@ -7714,7 +7714,7 @@ static void print_rule_with_dot(YaepParseState *ps, FILE *f, YaepRule *rule, int
 
 /* The following function prints production PROD to file F.  The
    production is printed with the lookahead set if LOOKAHEAD_P.*/
-static void print_production(YaepParseState *ps, FILE *f, YaepProduction *prod, bool lookahead_p, int distance)
+static void print_production(YaepParseState *ps, FILE *f, YaepDottedRule *prod, bool lookahead_p, int distance)
 {
     fprintf(f, "(%3d)    ", prod->prod_id);
     print_rule_with_dot(ps, f, prod->rule, prod->dot_i);
@@ -7744,7 +7744,7 @@ static void print_state_set(YaepParseState *ps,
 {
     int i;
     int num, num_started_productions, num_productions, n_all_distances;
-    YaepProduction**productions;
+    YaepDottedRule **productions;
     int*distances,*parent_indexes;
 
     if (state_set == NULL && !ps->new_set_ready_p)
