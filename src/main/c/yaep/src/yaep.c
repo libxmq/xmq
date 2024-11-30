@@ -3321,8 +3321,8 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
     YaepStateSetCore *set_core, *prev_set_core;
     YaepDottedRule *dotted_rule, *new_dotted_rule, **prev_dotted_rules;
     YaepCoreSymbVect *prev_core_symb_vect;
-    int local_lookahead_level, matched_length, prod_ind, new_matched_length;
-    int i, place;
+    int local_lookahead_level, matched_length, dotted_rule_id, new_matched_length;
+    int place;
     YaepVect *transitions;
 
     int lookahead_term_id = NEXT_TERM?NEXT_TERM->u.term.term_id:-1;
@@ -3332,10 +3332,10 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
     transitions = &core_symb_vect->transitions;
 
     clear_dotted_rule_matched_length_set(ps);
-    for(i = 0; i < transitions->len; i++)
+    for(int i = 0; i < transitions->len; i++)
     {
-        prod_ind = transitions->els[i];
-        dotted_rule = set_core->dotted_rules[prod_ind];
+        dotted_rule_id = transitions->els[i];
+        dotted_rule = set_core->dotted_rules[dotted_rule_id];
 
         new_dotted_rule = create_dotted_rule(ps, dotted_rule->rule, dotted_rule->dot_i + 1, dotted_rule->context);
 
@@ -3346,16 +3346,16 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
             continue;
         }
         matched_length = 0;
-        if (prod_ind >= set_core->n_all_matched_lengths)
+        if (dotted_rule_id >= set_core->n_all_matched_lengths)
         {
         }
-        else if (prod_ind < set_core->num_started_dotted_rules)
+        else if (dotted_rule_id < set_core->num_started_dotted_rules)
         {
-            matched_length = set->matched_lengths[prod_ind];
+            matched_length = set->matched_lengths[dotted_rule_id];
         }
         else
         {
-            matched_length = set->matched_lengths[set_core->parent_indexes[prod_ind]];
+            matched_length = set->matched_lengths[set_core->parent_indexes[dotted_rule_id]];
         }
         matched_length++;
         if (!dotted_rule_matched_length_test_and_set(ps, new_dotted_rule, matched_length))
@@ -3365,7 +3365,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
         }
     }
 
-    for(i = 0; i < ps->new_num_started_dotted_rules; i++)
+    for(int i = 0; i < ps->new_num_started_dotted_rules; i++)
     {
         new_dotted_rule = ps->new_dotted_rules[i];
         if (new_dotted_rule->empty_tail_p)
@@ -3391,8 +3391,8 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
             prev_dotted_rules= prev_set_core->dotted_rules;
             do
 	    {
-                prod_ind = *curr_el++;
-                dotted_rule = prev_dotted_rules[prod_ind];
+                dotted_rule_id = *curr_el++;
+                dotted_rule = prev_dotted_rules[dotted_rule_id];
                 new_dotted_rule = create_dotted_rule(ps, dotted_rule->rule, dotted_rule->dot_i + 1, dotted_rule->context);
                 if (local_lookahead_level != 0
                     && !term_set_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
@@ -3403,16 +3403,16 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                     continue;
                 }
                 matched_length = 0;
-                if (prod_ind >= prev_set_core->n_all_matched_lengths)
+                if (dotted_rule_id >= prev_set_core->n_all_matched_lengths)
                 {
                 }
-                else if (prod_ind < prev_set_core->num_started_dotted_rules)
+                else if (dotted_rule_id < prev_set_core->num_started_dotted_rules)
                 {
-                    matched_length = prev_set->matched_lengths[prod_ind];
+                    matched_length = prev_set->matched_lengths[dotted_rule_id];
                 }
                 else
                 {
-                    matched_length = prev_set->matched_lengths[prev_set_core->parent_indexes[prod_ind]];
+                    matched_length = prev_set->matched_lengths[prev_set_core->parent_indexes[dotted_rule_id]];
                 }
                 matched_length += new_matched_length;
 
@@ -4677,7 +4677,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     YaepSymb *symb;
     YaepCoreSymbVect *core_symb_vect, *check_core_symb_vect;
     int i, j, k, found, pos, origin, current_state_set_i, n_candidates, disp;
-    int prod_ind, check_prod_ind, prod_origin, check_prod_origin;
+    int dotted_rule_id, check_dotted_rule_id, prod_origin, check_prod_origin;
     bool new_p;
     YaepParseTreeBuildState *state, *orig_state, *curr_state;
     YaepParseTreeBuildState *table_state, *parent_anode_state;
@@ -4866,18 +4866,18 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         }
         for(i = 0; i < core_symb_vect->reduces.len; i++)
 	{
-            prod_ind = core_symb_vect->reduces.els[i];
-            prod = set_core->dotted_rules[prod_ind];
-            if (prod_ind < set_core->num_started_dotted_rules)
+            dotted_rule_id = core_symb_vect->reduces.els[i];
+            prod = set_core->dotted_rules[dotted_rule_id];
+            if (dotted_rule_id < set_core->num_started_dotted_rules)
             {
-                /*fprintf(stderr, "PR1 current_state_set_i %d set->matched_lengths[prod_ind] = %d prod_ind = %d\n",
-                  current_state_set_i, set->matched_lengths[prod_ind], prod_ind);*/
-                prod_origin = current_state_set_i - set->matched_lengths[prod_ind];
+                /*fprintf(stderr, "PR1 current_state_set_i %d set->matched_lengths[dotted_rule_id] = %d dotted_rule_id = %d\n",
+                  current_state_set_i, set->matched_lengths[dotted_rule_id], dotted_rule_id);*/
+                prod_origin = current_state_set_i - set->matched_lengths[dotted_rule_id];
             }
-            else if (prod_ind < set_core->n_all_matched_lengths)
+            else if (dotted_rule_id < set_core->n_all_matched_lengths)
             {
                 //fprintf(stderr, "PR2 \n");
-                prod_origin = current_state_set_i - set->matched_lengths[set_core->parent_indexes[prod_ind]];
+                prod_origin = current_state_set_i - set->matched_lengths[set_core->parent_indexes[dotted_rule_id]];
             }
             else
             {
@@ -4899,21 +4899,21 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             found = false;
             for(j = 0; j < check_core_symb_vect->transitions.len; j++)
 	    {
-                check_prod_ind = check_core_symb_vect->transitions.els[j];
-                check_prod = check_set->core->dotted_rules[check_prod_ind];
+                check_dotted_rule_id = check_core_symb_vect->transitions.els[j];
+                check_prod = check_set->core->dotted_rules[check_dotted_rule_id];
                 if (check_prod->rule != rule || check_prod->dot_i != pos)
                     continue;
                 check_prod_origin = prod_origin;
-                if (check_prod_ind < check_set_core->n_all_matched_lengths)
+                if (check_dotted_rule_id < check_set_core->n_all_matched_lengths)
 		{
-                    if (check_prod_ind < check_set_core->num_started_dotted_rules)
+                    if (check_dotted_rule_id < check_set_core->num_started_dotted_rules)
                         check_prod_origin
-                            = prod_origin - check_set->matched_lengths[check_prod_ind];
+                            = prod_origin - check_set->matched_lengths[check_dotted_rule_id];
                     else
                         check_prod_origin
                             =(prod_origin
                                - check_set->matched_lengths[check_set_core->parent_indexes
-                                                  [check_prod_ind]]);
+                                                  [check_dotted_rule_id]]);
 		}
                 if (check_prod_origin == origin)
 		{
