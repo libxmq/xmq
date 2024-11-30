@@ -2359,8 +2359,7 @@ struct YaepGrammar
     YaepVocabulary *symbs_ptr;
 
     /* These are all the rules used in this grammar. */
-    YaepRuleStorage *rules_ptr;
-
+    YaepRuleStorage *rulestorage_ptr;
     /* The following terminal sets used for this grammar. */
     YaepTermStorage *term_sets_ptr;
 
@@ -3525,7 +3524,7 @@ static void free_term_sets(YaepGrammar *grammar, YaepTermStorage *term_sets)
 
 
 /* Initialize work with rules and returns pointer to rules storage. */
-static YaepRuleStorage *create_rules(YaepGrammar *grammar)
+static YaepRuleStorage *rulestorage_create(YaepGrammar *grammar)
 {
     void *mem;
     YaepRuleStorage *result;
@@ -3547,9 +3546,9 @@ static YaepRule *rule_new_start(YaepParseState *ps, YaepSymb *lhs, const char *a
 
     assert(!lhs->term_p);
 
-    OS_TOP_EXPAND(ps->run.grammar->rules_ptr->rules_os, sizeof(YaepRule));
-    rule =(YaepRule*) OS_TOP_BEGIN(ps->run.grammar->rules_ptr->rules_os);
-    OS_TOP_FINISH(ps->run.grammar->rules_ptr->rules_os);
+    OS_TOP_EXPAND(ps->run.grammar->rulestorage_ptr->rules_os, sizeof(YaepRule));
+    rule =(YaepRule*) OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
+    OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
     rule->lhs = lhs;
     if (anode == NULL)
     {
@@ -3558,32 +3557,32 @@ static YaepRule *rule_new_start(YaepParseState *ps, YaepSymb *lhs, const char *a
     }
     else
     {
-        OS_TOP_ADD_STRING(ps->run.grammar->rules_ptr->rules_os, anode);
-        rule->anode =(char*) OS_TOP_BEGIN(ps->run.grammar->rules_ptr->rules_os);
-        OS_TOP_FINISH(ps->run.grammar->rules_ptr->rules_os);
+        OS_TOP_ADD_STRING(ps->run.grammar->rulestorage_ptr->rules_os, anode);
+        rule->anode =(char*) OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
+        OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
         rule->anode_cost = anode_cost;
     }
     rule->trans_len = 0;
     rule->marks = NULL;
     rule->order = NULL;
     rule->next = NULL;
-    if (ps->run.grammar->rules_ptr->current_rule != NULL)
+    if (ps->run.grammar->rulestorage_ptr->current_rule != NULL)
     {
-        ps->run.grammar->rules_ptr->current_rule->next = rule;
+        ps->run.grammar->rulestorage_ptr->current_rule->next = rule;
     }
     rule->lhs_next = lhs->u.nonterm.rules;
     lhs->u.nonterm.rules = rule;
     rule->rhs_len = 0;
     empty = NULL;
-    OS_TOP_ADD_MEMORY(ps->run.grammar->rules_ptr->rules_os, &empty, sizeof(YaepSymb*));
-    rule->rhs =(YaepSymb**) OS_TOP_BEGIN(ps->run.grammar->rules_ptr->rules_os);
-    ps->run.grammar->rules_ptr->current_rule = rule;
-    if (ps->run.grammar->rules_ptr->first_rule == NULL)
+    OS_TOP_ADD_MEMORY(ps->run.grammar->rulestorage_ptr->rules_os, &empty, sizeof(YaepSymb*));
+    rule->rhs =(YaepSymb**) OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
+    ps->run.grammar->rulestorage_ptr->current_rule = rule;
+    if (ps->run.grammar->rulestorage_ptr->first_rule == NULL)
     {
-        ps->run.grammar->rules_ptr->first_rule = rule;
+        ps->run.grammar->rulestorage_ptr->first_rule = rule;
     }
-    rule->rule_start_offset = ps->run.grammar->rules_ptr->n_rhs_lens + ps->run.grammar->rules_ptr->num_rules;
-    rule->num = ps->run.grammar->rules_ptr->num_rules++;
+    rule->rule_start_offset = ps->run.grammar->rulestorage_ptr->n_rhs_lens + ps->run.grammar->rulestorage_ptr->num_rules;
+    rule->num = ps->run.grammar->rulestorage_ptr->num_rules++;
 
     return rule;
 }
@@ -3594,11 +3593,11 @@ static void rule_new_symb_add(YaepParseState *ps, YaepSymb *symb)
     YaepSymb *empty;
 
     empty = NULL;
-    OS_TOP_ADD_MEMORY(ps->run.grammar->rules_ptr->rules_os, &empty, sizeof(YaepSymb*));
-    ps->run.grammar->rules_ptr->current_rule->rhs = (YaepSymb**)OS_TOP_BEGIN(ps->run.grammar->rules_ptr->rules_os);
-    ps->run.grammar->rules_ptr->current_rule->rhs[ps->run.grammar->rules_ptr->current_rule->rhs_len] = symb;
-    ps->run.grammar->rules_ptr->current_rule->rhs_len++;
-    ps->run.grammar->rules_ptr->n_rhs_lens++;
+    OS_TOP_ADD_MEMORY(ps->run.grammar->rulestorage_ptr->rules_os, &empty, sizeof(YaepSymb*));
+    ps->run.grammar->rulestorage_ptr->current_rule->rhs = (YaepSymb**)OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
+    ps->run.grammar->rulestorage_ptr->current_rule->rhs[ps->run.grammar->rulestorage_ptr->current_rule->rhs_len] = symb;
+    ps->run.grammar->rulestorage_ptr->current_rule->rhs_len++;
+    ps->run.grammar->rulestorage_ptr->n_rhs_lens++;
 }
 
 /* The function should be called at end of forming each rule.  It
@@ -3607,18 +3606,18 @@ static void rule_new_stop(YaepParseState *ps)
 {
     int i;
 
-    OS_TOP_FINISH(ps->run.grammar->rules_ptr->rules_os);
-    OS_TOP_EXPAND(ps->run.grammar->rules_ptr->rules_os, ps->run.grammar->rules_ptr->current_rule->rhs_len* sizeof(int));
-    ps->run.grammar->rules_ptr->current_rule->order = (int*)OS_TOP_BEGIN(ps->run.grammar->rules_ptr->rules_os);
-    OS_TOP_FINISH(ps->run.grammar->rules_ptr->rules_os);
-    for(i = 0; i < ps->run.grammar->rules_ptr->current_rule->rhs_len; i++)
+    OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
+    OS_TOP_EXPAND(ps->run.grammar->rulestorage_ptr->rules_os, ps->run.grammar->rulestorage_ptr->current_rule->rhs_len* sizeof(int));
+    ps->run.grammar->rulestorage_ptr->current_rule->order = (int*)OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
+    OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
+    for(i = 0; i < ps->run.grammar->rulestorage_ptr->current_rule->rhs_len; i++)
     {
-        ps->run.grammar->rules_ptr->current_rule->order[i] = -1;
+        ps->run.grammar->rulestorage_ptr->current_rule->order[i] = -1;
     }
 
-    OS_TOP_EXPAND(ps->run.grammar->rules_ptr->rules_os, ps->run.grammar->rules_ptr->current_rule->rhs_len* sizeof(char));
-    ps->run.grammar->rules_ptr->current_rule->marks = (char*)OS_TOP_BEGIN(ps->run.grammar->rules_ptr->rules_os);
-    OS_TOP_FINISH(ps->run.grammar->rules_ptr->rules_os);
+    OS_TOP_EXPAND(ps->run.grammar->rulestorage_ptr->rules_os, ps->run.grammar->rulestorage_ptr->current_rule->rhs_len* sizeof(char));
+    ps->run.grammar->rulestorage_ptr->current_rule->marks = (char*)OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
+    OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
 }
 
 /* The following function frees memory for rules.*/
@@ -3631,8 +3630,7 @@ static void rule_empty(YaepRuleStorage *rules)
     rules->num_rules = rules->n_rhs_lens = 0;
 }
 
-/* Finalize work with rules.*/
-static void free_rules(YaepGrammar *grammar, YaepRuleStorage *rules)
+static void rulestorage_free(YaepGrammar *grammar, YaepRuleStorage *rules)
 {
     if (rules == NULL) return;
 
@@ -3641,7 +3639,6 @@ static void free_rules(YaepGrammar *grammar, YaepRuleStorage *rules)
     rules = NULL;
 }
 
-/* Initialize work with tokens.*/
 static void create_input_tokens(YaepParseState *ps)
 {
     VLO_CREATE(ps->input_tokens_vlo, ps->run.grammar->alloc, NUM_INITIAL_YAEP_TOKENS * sizeof(YaepInputToken));
@@ -3728,7 +3725,7 @@ static bool prod_set_lookahead(YaepParseState *ps, YaepProduction *prod)
 /* The following function returns productions with given
    characteristics.  Remember that productions are stored in one
    exemplar. */
-static YaepProduction *prod_create(YaepParseState *ps, YaepRule *rule, int pos, int context)
+static YaepProduction *create_production(YaepParseState *ps, YaepRule *rule, int pos, int context)
 {
     YaepProduction *prod;
     YaepProduction ***context_prod_table_ptr;
@@ -3757,13 +3754,13 @@ static YaepProduction *prod_create(YaepParseState *ps, YaepRule *rule, int pos, 
         while(ptr < bound)
 	{
             OS_TOP_EXPAND(ps->productions_os,
-                          (ps->run.grammar->rules_ptr->n_rhs_lens + ps->run.grammar->rules_ptr->num_rules)
+                          (ps->run.grammar->rulestorage_ptr->n_rhs_lens + ps->run.grammar->rulestorage_ptr->num_rules)
                           *sizeof(YaepProduction*));
 
            *ptr = (YaepProduction**)OS_TOP_BEGIN(ps->productions_os);
             OS_TOP_FINISH(ps->productions_os);
 
-            for(i = 0; i < ps->run.grammar->rules_ptr->n_rhs_lens + ps->run.grammar->rules_ptr->num_rules; i++)
+            for(i = 0; i < ps->run.grammar->rulestorage_ptr->n_rhs_lens + ps->run.grammar->rulestorage_ptr->num_rules; i++)
             {
                 (*ptr)[i] = NULL;
             }
@@ -4666,7 +4663,7 @@ YaepGrammar *yaepNewGrammar()
     grammar->recovery_token_matches = DEFAULT_RECOVERY_TOKEN_MATCHES;
     grammar->symbs_ptr = create_symbols(grammar);
     grammar->term_sets_ptr = create_term_sets(grammar);
-    grammar->rules_ptr = create_rules(grammar);
+    grammar->rulestorage_ptr = rulestorage_create(grammar);
     return grammar;
 }
 
@@ -4702,7 +4699,7 @@ static void yaep_empty_grammar(YaepParseState *ps,YaepGrammar *grammar)
 {
     if (grammar != NULL)
     {
-        rule_empty(grammar->rules_ptr);
+        rule_empty(grammar->rulestorage_ptr);
         term_set_empty(grammar->term_sets_ptr);
         symb_empty(ps, grammar->symbs_ptr);
     }
@@ -4859,7 +4856,7 @@ static void set_loop_p(YaepParseState *ps)
     /* Initialize accoding to minimal criteria: There is a rule in which
        the nonterminal stands and all the rest symbols can derive empty
        strings.*/
-    for(rule = ps->run.grammar->rules_ptr->first_rule; rule != NULL; rule = rule->next)
+    for(rule = ps->run.grammar->rulestorage_ptr->first_rule; rule != NULL; rule = rule->next)
         for(i = 0; i < rule->rhs_len; i++)
             if (!(symb = rule->rhs[i])->term_p)
             {
@@ -5159,7 +5156,7 @@ int yaep_read_grammar(YaepParseRun *pr,
     {
         /* Print rules.*/
         fprintf(stderr, "Rules:\n");
-        for(rule = ps->run.grammar->rules_ptr->first_rule; rule != NULL; rule = rule->next)
+        for(rule = ps->run.grammar->rulestorage_ptr->first_rule; rule != NULL; rule = rule->next)
 	{
             fprintf(stderr, "  ");
             rule_print(ps, stderr, rule, true);
@@ -5250,7 +5247,7 @@ static void yaep_parse_init(YaepParseState *ps, int n_input_tokens)
             symb->cached_core_symb_vect = NULL;
     }
 #endif
-    for(rule = ps->run.grammar->rules_ptr->first_rule; rule != NULL; rule = rule->next)
+    for(rule = ps->run.grammar->rulestorage_ptr->first_rule; rule != NULL; rule = rule->next)
         rule->caller_anode = NULL;
 }
 
@@ -5285,7 +5282,7 @@ static void add_predicted_not_yet_started_productions(YaepParseState *ps, YaepPr
 
     for(int i = prod->dot_i; rule->rhs[i] && rule->rhs[i]->empty_p; i++)
     {
-        set_add_new_not_yet_started_prod(ps, prod_create(ps, rule, i + 1, context), parent);
+        set_add_new_not_yet_started_prod(ps, create_production(ps, rule, i + 1, context), parent);
     }
 }
 
@@ -5322,14 +5319,14 @@ static void expand_new_start_set(YaepParseState *ps)
                 {
                     for(rule = symb->u.nonterm.rules; rule != NULL; rule = rule->lhs_next)
                     {
-                        set_new_add_initial_prod(ps, prod_create(ps, rule, 0, 0));
+                        set_new_add_initial_prod(ps, create_production(ps, rule, 0, 0));
                     }
                 }
 	    }
             core_symb_vect_new_add_transition_el(ps, core_symb_vect, i);
             if (symb->empty_p && i >= ps->new_core->n_all_distances)
             {
-                set_new_add_initial_prod(ps, prod_create(ps, prod->rule, prod->dot_i + 1, 0));
+                set_new_add_initial_prod(ps, create_production(ps, prod->rule, prod->dot_i + 1, 0));
             }
 	}
     }
@@ -5371,7 +5368,7 @@ static void expand_new_start_set(YaepParseState *ps)
 		{
                     prod_ind = core_symb_vect->transitions.els[j];
                     prod = ps->new_productions[prod_ind];
-                    shifted_prod = prod_create(ps, prod->rule, prod->dot_i + 1,
+                    shifted_prod = create_production(ps, prod->rule, prod->dot_i + 1,
                                               prod->context);
                     term_set_or(context_set, shifted_prod->lookahead, ps->run.grammar->symbs_ptr->num_terms);
 		}
@@ -5384,7 +5381,7 @@ static void expand_new_start_set(YaepParseState *ps)
                 {
                     context = -context - 1;
                 }
-                prod = prod_create(ps, new_prod->rule, new_prod->dot_i, context);
+                prod = create_production(ps, new_prod->rule, new_prod->dot_i, context);
                 if (prod != new_prod)
 		{
                     ps->new_productions[i] = prod;
@@ -5417,7 +5414,7 @@ static void build_start_set(YaepParseState *ps)
 
     for (YaepRule *rule = ps->run.grammar->axiom->u.nonterm.rules; rule != NULL; rule = rule->lhs_next)
     {
-        YaepProduction *prod = prod_create(ps, rule, 0, context);
+        YaepProduction *prod = create_production(ps, rule, 0, context);
         set_new_add_start_prod(ps, prod, 0);
     }
 
@@ -5455,7 +5452,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
         prod_ind = transitions->els[i];
         prod = set_core->productions[prod_ind];
 
-        new_prod = prod_create(ps, prod->rule, prod->dot_i + 1, prod->context);
+        new_prod = create_production(ps, prod->rule, prod->dot_i + 1, prod->context);
 
         if (local_lookahead_level != 0
             && !term_set_test(new_prod->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
@@ -5511,7 +5508,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 	    {
                 prod_ind = *curr_el++;
                 prod = prev_productions[prod_ind];
-                new_prod = prod_create(ps, prod->rule, prod->dot_i + 1, prod->context);
+                new_prod = create_production(ps, prod->rule, prod->dot_i + 1, prod->context);
                 if (local_lookahead_level != 0
                     && !term_set_test(new_prod->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
                     && !term_set_test(new_prod->lookahead,
@@ -7404,8 +7401,8 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                 *ambiguous_p ? "AMBIGUOUS " : "",
                  ps->run.grammar->symbs_ptr->num_terms, ps->run.grammar->symbs_ptr->num_nonterms);
         fprintf(stderr, "#rules = %d, rules size = %d\n",
-                 ps->run.grammar->rules_ptr->num_rules,
-                 ps->run.grammar->rules_ptr->n_rhs_lens + ps->run.grammar->rules_ptr->num_rules);
+                 ps->run.grammar->rulestorage_ptr->num_rules,
+                 ps->run.grammar->rulestorage_ptr->n_rhs_lens + ps->run.grammar->rulestorage_ptr->num_rules);
         fprintf(stderr, "Input: #tokens = %d, #unique productions = %d\n",
                  ps->input_tokens_len, ps->n_all_productions);
         fprintf(stderr, "       #terminal sets = %d, their size = %d\n",
@@ -7467,7 +7464,7 @@ void yaepFreeGrammar(YaepParseRun *pr, YaepGrammar *g)
     {
         allocator = g->alloc;
         free_state_sets(ps);
-        free_rules(g, g->rules_ptr);
+        rulestorage_free(g, g->rulestorage_ptr);
         free_term_sets(g, g->term_sets_ptr);
         free_symbols(ps, g->symbs_ptr);
         yaep_free(allocator, g);
