@@ -2839,12 +2839,12 @@ struct YaepParseState
     /* The following two dimensional array(the first dimension is context
        number, the second one is dotted_rule number) contains references to
        all possible dotted_rules.*/
-    YaepDottedRule ***prod_table;
+    YaepDottedRule ***dotted_rules_table;
 
     /* The following vlo is indexed by dotted_rule context number and gives
        array which is indexed by dotted_rule number
       (prod->rule->rule_start_offset + prod->dot_i).*/
-    vlo_t prod_table_vlo;
+    vlo_t dotted_rules_table_vlo;
 
     /* All dotted_rules are placed in the following object.*/
     os_t dotted_rules_os;
@@ -3687,8 +3687,8 @@ static void create_dotted_rules(YaepParseState *ps)
 {
     ps->n_all_dotted_rules= 0;
     OS_CREATE(ps->dotted_rules_os, ps->run.grammar->alloc, 0);
-    VLO_CREATE(ps->prod_table_vlo, ps->run.grammar->alloc, 4096);
-    ps->prod_table = (YaepDottedRule***)VLO_BEGIN(ps->prod_table_vlo);
+    VLO_CREATE(ps->dotted_rules_table_vlo, ps->run.grammar->alloc, 4096);
+    ps->dotted_rules_table = (YaepDottedRule***)VLO_BEGIN(ps->dotted_rules_table_vlo);
 }
 
 /* The following function sets up lookahead of dotted_rule SIT.  The
@@ -3745,27 +3745,27 @@ static bool prod_set_lookahead(YaepParseState *ps, YaepDottedRule *prod)
 static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, int pos, int context)
 {
     YaepDottedRule *prod;
-    YaepDottedRule ***context_prod_table_ptr;
+    YaepDottedRule ***context_dotted_rules_table_ptr;
 
     assert(context >= 0);
-    context_prod_table_ptr = ps->prod_table + context;
+    context_dotted_rules_table_ptr = ps->dotted_rules_table + context;
 
-    if ((char*) context_prod_table_ptr >= (char*) VLO_BOUND(ps->prod_table_vlo))
+    if ((char*) context_dotted_rules_table_ptr >= (char*) VLO_BOUND(ps->dotted_rules_table_vlo))
     {
         YaepDottedRule***bound,***ptr;
         int i, diff;
 
         assert((ps->run.grammar->lookahead_level <= 1 && context == 0) || (ps->run.grammar->lookahead_level > 1 && context >= 0));
-        diff = (char*) context_prod_table_ptr -(char*) VLO_BOUND(ps->prod_table_vlo);
+        diff = (char*) context_dotted_rules_table_ptr -(char*) VLO_BOUND(ps->dotted_rules_table_vlo);
         diff += sizeof(YaepDottedRule**);
         if (ps->run.grammar->lookahead_level > 1 && diff == sizeof(YaepDottedRule**))
         {
             diff *= 10;
         }
-        VLO_EXPAND(ps->prod_table_vlo, diff);
-        ps->prod_table =(YaepDottedRule***) VLO_BEGIN(ps->prod_table_vlo);
-        bound =(YaepDottedRule***) VLO_BOUND(ps->prod_table_vlo);
-        context_prod_table_ptr = ps->prod_table + context;
+        VLO_EXPAND(ps->dotted_rules_table_vlo, diff);
+        ps->dotted_rules_table =(YaepDottedRule***) VLO_BEGIN(ps->dotted_rules_table_vlo);
+        bound =(YaepDottedRule***) VLO_BOUND(ps->dotted_rules_table_vlo);
+        context_dotted_rules_table_ptr = ps->dotted_rules_table + context;
         ptr = bound - diff / sizeof(YaepDottedRule**);
 
         while(ptr < bound)
@@ -3784,7 +3784,7 @@ static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, in
             ptr++;
 	}
     }
-    if ((prod = (*context_prod_table_ptr)[rule->rule_start_offset + pos]) != NULL)
+    if ((prod = (*context_dotted_rules_table_ptr)[rule->rule_start_offset + pos]) != NULL)
     {
         return prod;
     }
@@ -3797,7 +3797,7 @@ static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, in
     prod->prod_id = ps->n_all_dotted_rules;
     prod->context = context;
     prod->empty_tail_p = prod_set_lookahead(ps, prod);
-    (*context_prod_table_ptr)[rule->rule_start_offset + pos] = prod;
+    (*context_dotted_rules_table_ptr)[rule->rule_start_offset + pos] = prod;
 
     return prod;
 }
@@ -3821,7 +3821,7 @@ static unsigned dotted_rules_hash(int num_dotted_rules, YaepDottedRule **dotted_
 /* Finalize work with dotted_rules. */
 static void free_dotted_rules(YaepParseState *ps)
 {
-    VLO_DELETE(ps->prod_table_vlo);
+    VLO_DELETE(ps->dotted_rules_table_vlo);
     OS_DELETE(ps->dotted_rules_os);
 }
 
