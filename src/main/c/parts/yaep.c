@@ -5375,9 +5375,9 @@ static void expand_new_start_set(YaepParseState *ps)
 
     if (ps->run.grammar->lookahead_level > 1)
     {
-        YaepDottedRule *new_prod, *shifted_prod;
+        YaepDottedRule *new_dotted_rule, *shifted_dotted_rule;
         term_set_el_t *context_set;
-        int prod_ind, context, j;
+        int dotted_rule_id, context, j;
         bool changed_p;
 
         /* Now we have incorrect initial dotted_rules because their context is not correct. */
@@ -5388,15 +5388,15 @@ static void expand_new_start_set(YaepParseState *ps)
             for(int i = ps->new_core->num_all_matched_lengths; i < ps->new_core->num_dotted_rules; i++)
 	    {
                 term_set_clear(context_set, ps->run.grammar->symbs_ptr->num_terms);
-                new_prod = ps->new_dotted_rules[i];
-                core_symb_vect = core_symb_vect_find(ps, ps->new_core, new_prod->rule->lhs);
+                new_dotted_rule = ps->new_dotted_rules[i];
+                core_symb_vect = core_symb_vect_find(ps, ps->new_core, new_dotted_rule->rule->lhs);
                 for(j = 0; j < core_symb_vect->transitions.len; j++)
 		{
-                    prod_ind = core_symb_vect->transitions.els[j];
-                    prod = ps->new_dotted_rules[prod_ind];
-                    shifted_prod = create_dotted_rule(ps, prod->rule, prod->dot_i + 1,
+                    dotted_rule_id = core_symb_vect->transitions.els[j];
+                    prod = ps->new_dotted_rules[dotted_rule_id];
+                    shifted_dotted_rule = create_dotted_rule(ps, prod->rule, prod->dot_i + 1,
                                               prod->context);
-                    term_set_or(context_set, shifted_prod->lookahead, ps->run.grammar->symbs_ptr->num_terms);
+                    term_set_or(context_set, shifted_dotted_rule->lookahead, ps->run.grammar->symbs_ptr->num_terms);
 		}
                 context = term_set_insert(ps, context_set);
                 if (context >= 0)
@@ -5407,8 +5407,8 @@ static void expand_new_start_set(YaepParseState *ps)
                 {
                     context = -context - 1;
                 }
-                prod = create_dotted_rule(ps, new_prod->rule, new_prod->dot_i, context);
-                if (prod != new_prod)
+                prod = create_dotted_rule(ps, new_dotted_rule->rule, new_dotted_rule->dot_i, context);
+                if (prod != new_dotted_rule)
 		{
                     ps->new_dotted_rules[i] = prod;
                     changed_p = true;
