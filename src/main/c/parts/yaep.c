@@ -2529,10 +2529,10 @@ struct YaepCoreSymbVect
     /* The symbol.*/
     YaepSymb *symb;
 
-    /* The following vector contains indexes of dotted_rules with given symb in production after dot. */
+    /* The following vector contains indexes of dotted_rules with given symb in dotted_rule after dot. */
     YaepVect transitions;
 
-    /* The following vector contains indexes of reduce production with given symb in lhs. */
+    /* The following vector contains indexes of reduce dotted_rule with given symb in lhs. */
     YaepVect reduces;
 };
 
@@ -2559,21 +2559,21 @@ struct YaepStateSetCore
 
     /* Array of dotted_rules.  Start dotted_rules are always placed the
        first in the order of their creation(with subsequent duplicates
-       are removed), then not_yet_started noninitial(production with at least
+       are removed), then not_yet_started noninitial(dotted_rule with at least
        one symbol before the dot) dotted_rules are placed and then initial
-       dotted_rules are placed.  You should access to a set production only
+       dotted_rules are placed.  You should access to a set dotted_rule only
        through this member or variable `new_dotted_rules'(in other words don't
        save the member value in another variable).*/
     YaepDottedRule **dotted_rules;
 
     /* The following member is number of started dotted_rules and not-yet-started
        (noninitial) dotted_rules whose distance is defined from a start
-       production distance.  All not-yet-started initial dotted_rules have zero
+       dotted_rule distance.  All not-yet-started initial dotted_rules have zero
        distances.  This distances are not stored. */
     int n_all_distances;
 
-    /* The following is array containing number of start production from
-       which distance of(not_yet_started noninitial) production with given
+    /* The following is array containing number of start dotted_rule from
+       which distance of(not_yet_started noninitial) dotted_rule with given
        index(between n_start_dotted_rules -> n_all_distances) is taken. */
     int *parent_indexes;
 };
@@ -2593,7 +2593,7 @@ struct YaepStateSet
     unsigned int distances_hash;
 
     /* The following is distances only for started dotted_rules.  Not-yet-started
-       dotted_rules have their distances set to 0 implicitly.  A started production
+       dotted_rules have their distances set to 0 implicitly.  A started dotted_rule
        in the set core and its corresponding distance have the same index.
        You should access to distances only through this member or
        variable `new_distances' (in other words don't save the member value
@@ -2601,37 +2601,36 @@ struct YaepStateSet
     int *distances;
 };
 
-/* A production stores:
+/* A dotted_rule stores:
        reference to a rule,
-       current dot position,
-       lookup bitset for a quick terminal lookahead check, to see if this producion should be applied.
+       current dot position in rule,
+       lookup bitset for a quick terminal lookahead check, to see if this dotted_rule should be applied.
 
-   We do not store an index to its original set where this production belongs.
-   This is stored separately and this means that we can reuse production objects to save memory,
-   since ref,dot,lookup is recurring often. */
+   This is stored separately and this means that we can reuse dotted_rule objects to save memory,
+   since rule,dot,lookup is recurring often. */
 struct YaepDottedRule
 {
-    /* Unique production identifier. Starts at 0 and increments for each new production. */
+    /* Unique dotted_rule identifier. Starts at 0 and increments for each new dotted_rule. */
     int prod_id;
 
-    /* The following is the production rule. */
+    /* The following is the rule being dotted. */
     YaepRule *rule;
 
-    /* The following is position of dot in rhs of the production rule.
+    /* The following is position of dot in rhs of the dotted rule.
        Starts at 0 (left of all rhs terms) and ends at rhs.len (right of all rhs terms). */
     short dot_i;
 
     /* The following member is true if the tail can derive empty string. */
     bool empty_tail_p;
 
-    /* The following is number of production context which is number of
+    /* The following is number of dotted_rule context which is number of
        the corresponding terminal set in the table.  It is really used
        only for dynamic lookahead. */
     int context;
 
-    /* The following member is the production lookahead it is equal to
-       FIRST(the production tail || FOLLOW(lhs)) for statik lookaheads
-       and FIRST(the production tail || context) for dynamic ones. */
+    /* The following member is the dotted_rule lookahead it is equal to
+       FIRST(the dotted_rule tail || FOLLOW(lhs)) for statik lookaheads
+       and FIRST(the dotted_rule tail || context) for dynamic ones. */
     term_set_el_t *lookahead;
 };
 
@@ -2844,27 +2843,27 @@ struct YaepParseState
     int n_all_dotted_rules;
 
     /* The following two dimensional array(the first dimension is context
-       number, the second one is production number) contains references to
+       number, the second one is dotted_rule number) contains references to
        all possible dotted_rules.*/
     YaepDottedRule ***prod_table;
 
-    /* The following vlo is indexed by production context number and gives
-       array which is indexed by production number
+    /* The following vlo is indexed by dotted_rule context number and gives
+       array which is indexed by dotted_rule number
       (prod->rule->rule_start_offset + prod->dot_i).*/
     vlo_t prod_table_vlo;
 
     /* All dotted_rules are placed in the following object.*/
     os_t dotted_rules_os;
 
-    /* The set of pairs (production,distance) used for test-setting such pairs
+    /* The set of pairs (dotted_rule,distance) used for test-setting such pairs
        is implemented using a vec[prod id] -> vec[distance] -> generation since prod_id
        is unique and incrementing, we use a vector[max_prod_id] to find another vector[max_distance]
        each distance entry storing a generation number. To clear the set of pairs
        we only need to increment the current generation below. Yay! No need to free, alloc, memset.*/
-    vlo_t production_distance_vec_vlo;
+    vlo_t dotted_rule_distance_vec_vlo;
 
     /* The value used to check the validity of elements of check_dist structures. */
-    int production_distance_vec_generation;
+    int dotted_rule_distance_vec_generation;
 
     /* The following are number of unique(set core, symbol) pairs and
        their summary(transitive) transition and reduce vectors length,
@@ -3005,7 +3004,7 @@ static void print_state_set(YaepParseState *ps,
                             int set_dist,
                             int print_all_dotted_rules,
                             int lookahead_p);
-static void print_production(YaepParseState *ps, FILE *f, YaepDottedRule *prod, bool lookahead_p, int origin);
+static void print_dotted_rule(YaepParseState *ps, FILE *f, YaepDottedRule *prod, bool lookahead_p, int origin);
 static YaepSymbolStorage *symbolstorage_create(YaepGrammar *g);
 static void symb_empty(YaepParseState *ps, YaepSymbolStorage *symbs);
 static void symb_finish_adding_terms(YaepParseState *ps);
@@ -3625,7 +3624,7 @@ static void rule_new_symb_add(YaepParseState *ps, YaepSymb *symb)
 }
 
 /* The function should be called at end of forming each rule.  It
-   creates and initializes production cache.*/
+   creates and initializes dotted_rule cache.*/
 static void rule_new_stop(YaepParseState *ps)
 {
     int i;
@@ -3698,8 +3697,8 @@ static void create_dotted_rules(YaepParseState *ps)
     ps->prod_table = (YaepDottedRule***)VLO_BEGIN(ps->prod_table_vlo);
 }
 
-/* The following function sets up lookahead of production SIT.  The
-   function returns true if the production tail may derive empty
+/* The following function sets up lookahead of dotted_rule SIT.  The
+   function returns true if the dotted_rule tail may derive empty
    string.*/
 static bool prod_set_lookahead(YaepParseState *ps, YaepDottedRule *prod)
 {
@@ -3749,7 +3748,7 @@ static bool prod_set_lookahead(YaepParseState *ps, YaepDottedRule *prod)
 /* The following function returns dotted_rules with given
    characteristics.  Remember that dotted_rules are stored in one
    exemplar. */
-static YaepDottedRule *create_production(YaepParseState *ps, YaepRule *rule, int pos, int context)
+static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, int pos, int context)
 {
     YaepDottedRule *prod;
     YaepDottedRule ***context_prod_table_ptr;
@@ -3934,49 +3933,49 @@ static bool core_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 }
 
 /* Initiate the set of pairs(sit, dist). */
-static void production_distance_set_init(YaepParseState *ps)
+static void dotted_rule_distance_set_init(YaepParseState *ps)
 {
-    VLO_CREATE(ps->production_distance_vec_vlo, ps->run.grammar->alloc, 8192);
-    ps->production_distance_vec_generation = 0;
+    VLO_CREATE(ps->dotted_rule_distance_vec_vlo, ps->run.grammar->alloc, 8192);
+    ps->dotted_rule_distance_vec_generation = 0;
 }
 
 /* The clear the set we only need to increment the generation.
    The test for set membership compares with the active generation.
    Thus all previously stored memberships are immediatly invalidated
    through the increment below. Thus clearing the set! */
-static void clear_production_distance_set(YaepParseState *ps)
+static void clear_dotted_rule_distance_set(YaepParseState *ps)
 {
-    ps->production_distance_vec_generation++;
+    ps->dotted_rule_distance_vec_generation++;
 }
 
-/* Insert pair(PROD, DIST) into the ps->production_distance_vec_vlo.
-   Each production has a unique prod_id incrementally counted from 0 to the most recent production added.
+/* Insert pair(PROD, DIST) into the ps->dotted_rule_distance_vec_vlo.
+   Each dotted_rule has a unique prod_id incrementally counted from 0 to the most recent dotted_rule added.
    This prod_id is used as in index into the vector, the vector storing vlo objects.
    Each vlo object maintains a memory region used for an integer array of distances.
 
    If such pair exists return true (was false), otherwise return false. (was true). */
-static bool production_distance_test_and_set(YaepParseState *ps, YaepDottedRule *prod, int dist)
+static bool dotted_rule_distance_test_and_set(YaepParseState *ps, YaepDottedRule *prod, int dist)
 {
     int i, len, prod_id;
     vlo_t *dist_vlo;
 
     prod_id = prod->prod_id;
 
-    // Expand the vector to accommodate a new production.
-    len = VLO_LENGTH(ps->production_distance_vec_vlo)/sizeof(vlo_t);
+    // Expand the vector to accommodate a new dotted_rule.
+    len = VLO_LENGTH(ps->dotted_rule_distance_vec_vlo)/sizeof(vlo_t);
     if (len <= prod_id)
     {
-        VLO_EXPAND(ps->production_distance_vec_vlo,(prod_id + 1 - len)* sizeof(vlo_t));
+        VLO_EXPAND(ps->dotted_rule_distance_vec_vlo,(prod_id + 1 - len)* sizeof(vlo_t));
         for(i = len; i <= prod_id; i++)
         {
             // For each new slot in the vector, initialize a new vlo, to be used for distances.
-            VLO_CREATE(((vlo_t*) VLO_BEGIN(ps->production_distance_vec_vlo))[i], ps->run.grammar->alloc, 64);
+            VLO_CREATE(((vlo_t*) VLO_BEGIN(ps->dotted_rule_distance_vec_vlo))[i], ps->run.grammar->alloc, 64);
         }
     }
 
     // Now fetch the vlo for this prod_id, which is either an existing vlo or a freshly initialized vlo.
     // The vlo stores an array of integersCheck if the vlo is big enough for this distance?
-    dist_vlo = &((vlo_t*)VLO_BEGIN(ps->production_distance_vec_vlo))[prod_id];
+    dist_vlo = &((vlo_t*)VLO_BEGIN(ps->dotted_rule_distance_vec_vlo))[prod_id];
     len = VLO_LENGTH(*dist_vlo) / sizeof(int);
     if (len <= dist)
     {
@@ -3987,7 +3986,7 @@ static bool production_distance_test_and_set(YaepParseState *ps, YaepDottedRule 
         }
     }
     int *generation = (int*)VLO_BEGIN(*dist_vlo) + dist;
-    if (*generation == ps->production_distance_vec_generation)
+    if (*generation == ps->dotted_rule_distance_vec_generation)
     {
         // The pair was already inserted! We know this since we found the current generation in this slot.
         // Remember that we clear the set by incrementing the current generation.
@@ -3995,19 +3994,19 @@ static bool production_distance_test_and_set(YaepParseState *ps, YaepDottedRule 
     }
     // The pair did not exist in the set. (Since the generation number did not match.)
     // Insert this pair my marking the vec[prod_id][dist] with the current generation.
-    *generation = ps->production_distance_vec_generation;
+    *generation = ps->dotted_rule_distance_vec_generation;
     return false;
 }
 
-static void free_production_distance_sets(YaepParseState *ps)
+static void free_dotted_rule_distance_sets(YaepParseState *ps)
 {
-    int i, len = VLO_LENGTH(ps->production_distance_vec_vlo) / sizeof(vlo_t);
+    int i, len = VLO_LENGTH(ps->dotted_rule_distance_vec_vlo) / sizeof(vlo_t);
 
     for(i = 0; i < len; i++)
     {
-        VLO_DELETE(((vlo_t*) VLO_BEGIN(ps->production_distance_vec_vlo))[i]);
+        VLO_DELETE(((vlo_t*) VLO_BEGIN(ps->dotted_rule_distance_vec_vlo))[i]);
     }
-    VLO_DELETE(ps->production_distance_vec_vlo);
+    VLO_DELETE(ps->dotted_rule_distance_vec_vlo);
 }
 
 /* Initialize work with sets for parsing input with N_INPUT_TOKENS tokens.*/
@@ -4031,7 +4030,7 @@ static void set_init(YaepParseState *ps, int n_input_tokens)
     ps->n_set_distances = ps->n_set_distances_len = ps->n_parent_indexes = 0;
     ps->n_sets = ps->n_sets_start_dotted_rules= 0;
     ps->num_triplets_core_term_lookahead = 0;
-    production_distance_set_init(ps);
+    dotted_rule_distance_set_init(ps);
 }
 
 /* The following function starts forming of new set.*/
@@ -4045,7 +4044,7 @@ static void set_new_start(YaepParseState *ps)
     ps->new_num_started_dotted_rules = 0;
 }
 
-/* Add start PROD with distance DIST at the end of the production array
+/* Add start PROD with distance DIST at the end of the dotted_rule array
    of the state set being formed. */
 static void set_new_add_start_prod(YaepParseState *ps, YaepDottedRule*prod, int dist)
 {
@@ -4060,8 +4059,8 @@ static void set_new_add_start_prod(YaepParseState *ps, YaepDottedRule*prod, int 
 }
 
 /* Add not_yet_started, noninitial PROD with distance DIST at the end of the
-   production array of the set being formed.  If this is production and
-   there is already the same pair(production, the corresponding
+   dotted_rule array of the set being formed.  If this is dotted_rule and
+   there is already the same pair(dotted_rule, the corresponding
    distance), we do not add it.*/
 static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepDottedRule *dotted_rule, int parent)
 {
@@ -4077,7 +4076,7 @@ static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepDottedRule 
             return;
         }
     }
-    // Increase the object stack storing dotted_rules, with the size of a new production.
+    // Increase the object stack storing dotted_rules, with the size of a new dotted_rule.
     OS_TOP_EXPAND(ps->set_dotted_rules_os, sizeof(YaepDottedRule*));
     ps->new_dotted_rules = ps->new_core->dotted_rules = (YaepDottedRule**)OS_TOP_BEGIN(ps->set_dotted_rules_os);
 
@@ -4093,15 +4092,15 @@ static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepDottedRule 
     ps->n_parent_indexes++;
 }
 
-/* Add a not-yet-started production (initial) PROD with zero distance at the end of the
-   production array of the set being formed.  If this is not-yet-started
-   production and there is already the same pair(production, zero distance), we do not add it.*/
+/* Add a not-yet-started dotted_rule (initial) PROD with zero distance at the end of the
+   dotted_rule array of the set being formed.  If this is not-yet-started
+   dotted_rule and there is already the same pair(dotted_rule, zero distance), we do not add it.*/
 static void set_new_add_initial_prod(YaepParseState *ps, YaepDottedRule*prod)
 {
     assert(ps->new_set_ready_p);
 
     /* When we add not-yet-started dotted_rules we need to have pairs
-      (production, the corresponding distance) without duplicates
+      (dotted_rule, the corresponding distance) without duplicates
        because we also form core_symb_vect at that time.*/
     for (int i = ps->new_num_started_dotted_rules; i < ps->new_core->num_dotted_rules; i++)
     {
@@ -4230,7 +4229,7 @@ static void set_new_core_stop(YaepParseState *ps)
 
 static void free_sets(YaepParseState *ps)
 {
-    free_production_distance_sets(ps);
+    free_dotted_rule_distance_sets(ps);
     delete_hash_table(ps->set_of_triplets_core_term_lookahead);
     delete_hash_table(ps->set_of_tuples_core_distances);
     delete_hash_table(ps->set_of_distanceses);
@@ -5295,9 +5294,9 @@ static void read_input_tokens(YaepParseState *ps)
 }
 
 /* Add predicted (derived) not yet started dotted_rules which is formed from
-   given start production PROD with distance DIST by reducing symbol
+   given start dotted_rule PROD with distance DIST by reducing symbol
    which can derivate empty string and which is placed after dot in
-   given production. */
+   given dotted_rule. */
 static void add_predicted_not_yet_started_dotted_rules(YaepParseState *ps, YaepDottedRule *prod, int parent)
 {
     YaepRule *rule = prod->rule;
@@ -5305,7 +5304,7 @@ static void add_predicted_not_yet_started_dotted_rules(YaepParseState *ps, YaepD
 
     for(int i = prod->dot_i; rule->rhs[i] && rule->rhs[i]->empty_p; i++)
     {
-        set_add_new_not_yet_started_prod(ps, create_production(ps, rule, i + 1, context), parent);
+        set_add_new_not_yet_started_prod(ps, create_dotted_rule(ps, rule, i + 1, context), parent);
     }
 }
 
@@ -5332,7 +5331,7 @@ static void expand_new_start_set(YaepParseState *ps)
         prod = ps->new_dotted_rules[i];
         if (prod->dot_i < prod->rule->rhs_len)
 	{
-            /* There is a symbol after dot in the production. */
+            /* There is a symbol after dot in the dotted_rule. */
             symb = prod->rule->rhs[prod->dot_i];
             core_symb_vect = core_symb_vect_find(ps, ps->new_core, symb);
             if (core_symb_vect == NULL)
@@ -5342,14 +5341,14 @@ static void expand_new_start_set(YaepParseState *ps)
                 {
                     for(rule = symb->u.nonterm.rules; rule != NULL; rule = rule->lhs_next)
                     {
-                        set_new_add_initial_prod(ps, create_production(ps, rule, 0, 0));
+                        set_new_add_initial_prod(ps, create_dotted_rule(ps, rule, 0, 0));
                     }
                 }
 	    }
             core_symb_vect_new_add_transition_el(ps, core_symb_vect, i);
             if (symb->empty_p && i >= ps->new_core->n_all_distances)
             {
-                set_new_add_initial_prod(ps, create_production(ps, prod->rule, prod->dot_i + 1, 0));
+                set_new_add_initial_prod(ps, create_dotted_rule(ps, prod->rule, prod->dot_i + 1, 0));
             }
 	}
     }
@@ -5391,7 +5390,7 @@ static void expand_new_start_set(YaepParseState *ps)
 		{
                     prod_ind = core_symb_vect->transitions.els[j];
                     prod = ps->new_dotted_rules[prod_ind];
-                    shifted_prod = create_production(ps, prod->rule, prod->dot_i + 1,
+                    shifted_prod = create_dotted_rule(ps, prod->rule, prod->dot_i + 1,
                                               prod->context);
                     term_set_or(context_set, shifted_prod->lookahead, ps->run.grammar->symbs_ptr->num_terms);
 		}
@@ -5404,7 +5403,7 @@ static void expand_new_start_set(YaepParseState *ps)
                 {
                     context = -context - 1;
                 }
-                prod = create_production(ps, new_prod->rule, new_prod->dot_i, context);
+                prod = create_dotted_rule(ps, new_prod->rule, new_prod->dot_i, context);
                 if (prod != new_prod)
 		{
                     ps->new_dotted_rules[i] = prod;
@@ -5437,7 +5436,7 @@ static void build_start_set(YaepParseState *ps)
 
     for (YaepRule *rule = ps->run.grammar->axiom->u.nonterm.rules; rule != NULL; rule = rule->lhs_next)
     {
-        YaepDottedRule *prod = create_production(ps, rule, 0, context);
+        YaepDottedRule *prod = create_dotted_rule(ps, rule, 0, context);
         set_new_add_start_prod(ps, prod, 0);
     }
 
@@ -5469,13 +5468,13 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
     set_new_start(ps);
     transitions = &core_symb_vect->transitions;
 
-    clear_production_distance_set(ps);
+    clear_dotted_rule_distance_set(ps);
     for(i = 0; i < transitions->len; i++)
     {
         prod_ind = transitions->els[i];
         prod = set_core->dotted_rules[prod_ind];
 
-        new_prod = create_production(ps, prod->rule, prod->dot_i + 1, prod->context);
+        new_prod = create_dotted_rule(ps, prod->rule, prod->dot_i + 1, prod->context);
 
         if (local_lookahead_level != 0
             && !term_set_test(new_prod->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
@@ -5496,7 +5495,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
             dist = set->distances[set_core->parent_indexes[prod_ind]];
         }
         dist++;
-        if (!production_distance_test_and_set(ps, new_prod, dist))
+        if (!dotted_rule_distance_test_and_set(ps, new_prod, dist))
         {
             // This combo prod+dist did not already exist, lets add it.
             set_new_add_start_prod(ps, new_prod, dist);
@@ -5531,7 +5530,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 	    {
                 prod_ind = *curr_el++;
                 prod = prev_dotted_rules[prod_ind];
-                new_prod = create_production(ps, prod->rule, prod->dot_i + 1, prod->context);
+                new_prod = create_dotted_rule(ps, prod->rule, prod->dot_i + 1, prod->context);
                 if (local_lookahead_level != 0
                     && !term_set_test(new_prod->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terms)
                     && !term_set_test(new_prod->lookahead,
@@ -5554,7 +5553,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                 }
                 dist += new_dist;
 
-                if (!production_distance_test_and_set(ps, new_prod, dist))
+                if (!dotted_rule_distance_test_and_set(ps, new_prod, dist))
                 {
                     // This combo prod+dist did not already exist, lets add it.
                     set_new_add_start_prod(ps, new_prod, dist);
@@ -5670,7 +5669,7 @@ static void restore_original_sets(YaepParseState *ps, int last_state_set_el)
 }
 
 /* The following function looking backward in state set starting with element
-   START_STATE_SET_EL and returns state set element which refers set with production
+   START_STATE_SET_EL and returns state set element which refers set with dotted_rule
    containing `. error'.  START_STATE_SET_EL should be non negative.
    Remember that zero state set set contains `.error' because we added such
    rule if it is necessary.  The function returns number of terminals
@@ -6830,7 +6829,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     ps->n_parse_term_nodes = ps->n_parse_abstract_nodes = ps->n_parse_alt_nodes = 0;
     set = ps->state_sets[ps->state_set_curr];
     assert(ps->run.grammar->axiom != NULL);
-    /* We have only one start production: "$S : <start symb> $eof .". */
+    /* We have only one start dotted_rule: "$S : <start symb> $eof .". */
     prod =(set->core->dotted_rules != NULL ? set->core->dotted_rules[0] : NULL);
     if (prod == NULL
         || set->distances[0] != ps->state_set_curr
@@ -7026,7 +7025,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             if (ps->run.debug)
 	    {
                 fprintf(stderr, "    Trying current_state_set_i = %d, prod = ", current_state_set_i);
-                print_production(ps, stderr, prod, ps->run.debug, -1);
+                print_dotted_rule(ps, stderr, prod, ps->run.debug, -1);
                 fprintf(stderr, ", prod_origin = %d\n", prod_origin);
 	    }
 
@@ -7192,7 +7191,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                             fprintf(stderr, "  Adding top %ld, current_state_set_i = %d, prod = ",
                                     (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                                     current_state_set_i);
-                            print_production(ps, stderr, prod, ps->run.debug, -1);
+                            print_dotted_rule(ps, stderr, prod, ps->run.debug, -1);
                             fprintf(stderr, ", %d\n", prod_origin);
 			}
 
@@ -7211,7 +7210,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                             fprintf(stderr,
                                      "  Found prev. translation: current_state_set_i = %d, prod = ",
                                      current_state_set_i);
-                            print_production(ps, stderr, prod, ps->run.debug, -1);
+                            print_dotted_rule(ps, stderr, prod, ps->run.debug, -1);
                             fprintf(stderr, ", %d\n", prod_origin);
 			}
 
@@ -7246,7 +7245,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                                  "  Adding top %ld, current_state_set_i = %d, prod = ",
                                 (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                                 current_state_set_i);
-                        print_production(ps, stderr, prod, ps->run.debug, -1);
+                        print_dotted_rule(ps, stderr, prod, ps->run.debug, -1);
                         fprintf(stderr, ", %d\n", prod_origin);
 		    }
 
@@ -7740,9 +7739,9 @@ static void print_rule_with_dot(YaepParseState *ps, FILE *f, YaepRule *rule, int
     }
 }
 
-/* The following function prints production PROD to file F.  The
-   production is printed with the lookahead set if LOOKAHEAD_P.*/
-static void print_production(YaepParseState *ps, FILE *f, YaepDottedRule *prod, bool lookahead_p, int distance)
+/* The following function prints dotted_rule PROD to file F.  The
+   dotted_rule is printed with the lookahead set if LOOKAHEAD_P.*/
+static void print_dotted_rule(YaepParseState *ps, FILE *f, YaepDottedRule *prod, bool lookahead_p, int distance)
 {
     fprintf(f, "(%3d)    ", prod->prod_id);
     print_rule_with_dot(ps, f, prod->rule, prod->dot_i);
@@ -7811,7 +7810,7 @@ static void print_state_set(YaepParseState *ps,
 
         assert(dist == (i < num_started_dotted_rules ? distances[i] : i < n_all_distances ? parent_indexes[i] : 0));
 
-        print_production(ps, f, dotted_rules[i], lookahead_p, dist);
+        print_dotted_rule(ps, f, dotted_rules[i], lookahead_p, dist);
 
         if (i == num_started_dotted_rules - 1 && num_dotted_rules > num_started_dotted_rules)
         {
