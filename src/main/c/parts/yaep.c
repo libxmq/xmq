@@ -2796,8 +2796,8 @@ struct YaepParseState
       productions, distances, and the current number of start productions
       of the set being formed.*/
     YaepDottedRule **new_dotted_rules;
-    int *new_distances;
-    int new_num_started_productions;
+    int *new_matched_lengths;
+    int new_num_started_dotted_rules;
 
     /* The following are number of unique set cores and their start
        productions, unique distance vectors and their summary length, and
@@ -4041,8 +4041,8 @@ static void set_new_start(YaepParseState *ps)
     ps->new_core = NULL;
     ps->new_set_ready_p = false;
     ps->new_dotted_rules = NULL;
-    ps->new_distances = NULL;
-    ps->new_num_started_productions = 0;
+    ps->new_matched_lengths = NULL;
+    ps->new_num_started_dotted_rules = 0;
 }
 
 /* Add start PROD with distance DIST at the end of the production array
@@ -4051,12 +4051,12 @@ static void set_new_add_start_prod(YaepParseState *ps, YaepDottedRule*prod, int 
 {
     assert(!ps->new_set_ready_p);
     OS_TOP_EXPAND(ps->set_distances_os, sizeof(int));
-    ps->new_distances =(int*) OS_TOP_BEGIN(ps->set_distances_os);
+    ps->new_matched_lengths =(int*) OS_TOP_BEGIN(ps->set_distances_os);
     OS_TOP_EXPAND(ps->set_productions_os, sizeof(YaepDottedRule*));
     ps->new_dotted_rules =(YaepDottedRule**) OS_TOP_BEGIN(ps->set_productions_os);
-    ps->new_dotted_rules[ps->new_num_started_productions] = prod;
-    ps->new_distances[ps->new_num_started_productions] = dist;
-    ps->new_num_started_productions++;
+    ps->new_dotted_rules[ps->new_num_started_dotted_rules] = prod;
+    ps->new_matched_lengths[ps->new_num_started_dotted_rules] = dist;
+    ps->new_num_started_dotted_rules++;
 }
 
 /* Add not_yet_started, noninitial PROD with distance DIST at the end of the
@@ -4070,7 +4070,7 @@ static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepDottedRule 
     /* When we add not-yet-started productions we need to have pairs
        (dotted_rule + matched_len) without duplicates
        because we also form core_symb_vect at that time. */
-    for(int i = ps->new_num_started_productions; i < ps->new_core->num_productions; i++)
+    for(int i = ps->new_num_started_dotted_rules; i < ps->new_core->num_productions; i++)
     {
         if (ps->new_dotted_rules[i] == dotted_rule && ps->new_core->parent_indexes[i] == parent)
         {
@@ -4084,7 +4084,7 @@ static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepDottedRule 
     // Increase the parent index vector with another int.
     // This integer points to ...?
     OS_TOP_EXPAND(ps->set_parent_indexes_os, sizeof(int));
-    ps->new_core->parent_indexes = (int*)OS_TOP_BEGIN(ps->set_parent_indexes_os) - ps->new_num_started_productions;
+    ps->new_core->parent_indexes = (int*)OS_TOP_BEGIN(ps->set_parent_indexes_os) - ps->new_num_started_dotted_rules;
 
     // Store prod into new productions.
     ps->new_dotted_rules[ps->new_core->num_productions++] = dotted_rule;
@@ -4103,7 +4103,7 @@ static void set_new_add_initial_prod(YaepParseState *ps, YaepDottedRule*prod)
     /* When we add not-yet-started productions we need to have pairs
       (production, the corresponding distance) without duplicates
        because we also form core_symb_vect at that time.*/
-    for (int i = ps->new_num_started_productions; i < ps->new_core->num_productions; i++)
+    for (int i = ps->new_num_started_dotted_rules; i < ps->new_core->num_productions; i++)
     {
         // Check if already added.
         if (ps->new_dotted_rules[i] == prod) return;
@@ -4151,10 +4151,10 @@ static int set_insert(YaepParseState *ps)
 
     OS_TOP_EXPAND(ps->sets_os, sizeof(YaepStateSet));
     ps->new_set = (YaepStateSet*)OS_TOP_BEGIN(ps->sets_os);
-    ps->new_set->distances = ps->new_distances;
+    ps->new_set->distances = ps->new_matched_lengths;
     OS_TOP_EXPAND(ps->set_cores_os, sizeof(YaepStateSetCore));
     ps->new_set->core = ps->new_core = (YaepStateSetCore*) OS_TOP_BEGIN(ps->set_cores_os);
-    ps->new_core->num_started_productions = ps->new_num_started_productions;
+    ps->new_core->num_started_productions = ps->new_num_started_dotted_rules;
     ps->new_core->productions = ps->new_dotted_rules;
     ps->new_set_ready_p = true;
 #ifdef USE_SET_HASH_TABLE
@@ -4163,7 +4163,7 @@ static int set_insert(YaepParseState *ps)
     entry = find_hash_table_entry(ps->set_of_distanceses, ps->new_set, true);
     if (*entry != NULL)
     {
-        ps->new_distances = ps->new_set->distances =((YaepStateSet*)*entry)->distances;
+        ps->new_matched_lengths = ps->new_set->distances =((YaepStateSet*)*entry)->distances;
         OS_TOP_NULLIFY(ps->set_distances_os);
     }
     else
@@ -4171,12 +4171,12 @@ static int set_insert(YaepParseState *ps)
         OS_TOP_FINISH(ps->set_distances_os);
        *entry =(hash_table_entry_t)ps->new_set;
         ps->n_set_distances++;
-        ps->n_set_distances_len += ps->new_num_started_productions;
+        ps->n_set_distances_len += ps->new_num_started_dotted_rules;
     }
 #else
     OS_TOP_FINISH(ps->set_distances_os);
     ps->n_set_distances++;
-    ps->n_set_distances_len += ps->new_num_started_productions;
+    ps->n_set_distances_len += ps->new_num_started_dotted_rules;
 #endif
     /* Insert set core into table.*/
     setup_set_core_hash(ps->new_set);
@@ -4193,11 +4193,11 @@ static int set_insert(YaepParseState *ps)
     {
         OS_TOP_FINISH(ps->set_cores_os);
         ps->new_core->core_id = ps->n_set_cores++;
-        ps->new_core->num_productions = ps->new_num_started_productions;
-        ps->new_core->n_all_distances = ps->new_num_started_productions;
+        ps->new_core->num_productions = ps->new_num_started_dotted_rules;
+        ps->new_core->n_all_distances = ps->new_num_started_dotted_rules;
         ps->new_core->parent_indexes = NULL;
        *entry =(hash_table_entry_t)ps->new_set;
-        ps->n_set_core_start_productions+= ps->new_num_started_productions;
+        ps->n_set_core_start_productions+= ps->new_num_started_dotted_rules;
         result = true;
     }
 #ifdef USE_SET_HASH_TABLE
@@ -4207,7 +4207,7 @@ static int set_insert(YaepParseState *ps)
     {
        *entry =(hash_table_entry_t)ps->new_set;
         ps->n_sets++;
-        ps->n_sets_start_productions+= ps->new_num_started_productions;
+        ps->n_sets_start_productions+= ps->new_num_started_dotted_rules;
         OS_TOP_FINISH(ps->sets_os);
     }
     else
@@ -5321,7 +5321,7 @@ static void expand_new_start_set(YaepParseState *ps)
     YaepRule *rule;
 
     /* Add not yet started productions with nonzero distances. */
-    for(int i = 0; i < ps->new_num_started_productions; i++)
+    for(int i = 0; i < ps->new_num_started_dotted_rules; i++)
     {
         add_predicted_not_yet_started_productions(ps, ps->new_dotted_rules[i], i);
     }
@@ -5503,7 +5503,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
         }
     }
 
-    for(i = 0; i < ps->new_num_started_productions; i++)
+    for(i = 0; i < ps->new_num_started_dotted_rules; i++)
     {
         new_prod = ps->new_dotted_rules[i];
         if (new_prod->empty_tail_p)
@@ -5512,7 +5512,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 
             /* All tail in new sitiation may derivate empty string so
                make reduce and add new productions.*/
-            new_dist = ps->new_distances[i];
+            new_dist = ps->new_matched_lengths[i];
             place = ps->state_set_curr + 1 - new_dist;
             prev_set = ps->state_sets[place];
             prev_set_core = prev_set->core;
@@ -7781,9 +7781,9 @@ static void print_state_set(YaepParseState *ps,
            debugger.  In this case new_set, new_core and their members
            may be not set up yet. */
         num = -1;
-        num_started_productions = num_productions = n_all_distances = ps->new_num_started_productions;
+        num_started_productions = num_productions = n_all_distances = ps->new_num_started_dotted_rules;
         productions = ps->new_dotted_rules;
-        distances = ps->new_distances;
+        distances = ps->new_matched_lengths;
         parent_indexes = NULL;
     }
     else
