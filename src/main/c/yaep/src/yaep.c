@@ -430,13 +430,13 @@ struct YaepStateSetCore
     YaepDottedRule **dotted_rules;
 
     /* The following member is number of started dotted_rules and not-yet-started
-       (noninitial) dotted_rules whose distance is defined from a start
-       dotted_rule distance.  All not-yet-started initial dotted_rules have zero
+       (noninitial) dotted_rules whose matched_length is defined from a start
+       dotted_rule matched_length.  All not-yet-started initial dotted_rules have zero
        matched_lengths.  This matched_lengths are not stored. */
     int n_all_matched_lengths;
 
     /* The following is array containing number of start dotted_rule from
-       which distance of(not_yet_started noninitial) dotted_rule with given
+       which matched_length of(not_yet_started noninitial) dotted_rule with given
        index(between n_start_dotted_rules -> n_all_matched_lengths) is taken. */
     int *parent_indexes;
 };
@@ -457,7 +457,7 @@ struct YaepStateSet
 
     /* The following is matched_lengths only for started dotted_rules.  Not-yet-started
        dotted_rules have their matched_lengths set to 0 implicitly.  A started dotted_rule
-       in the set core and its corresponding matched_length distance have the same index.
+       in the set core and its corresponding matched_length matched_length have the same index.
        You should access matched_lengths only through this variable or the variable
        new_matched_lengths, the location of the arrays can move. */
     int *matched_lengths;
@@ -661,7 +661,7 @@ struct YaepParseState
     int new_num_started_dotted_rules;
 
     /* The following are number of unique set cores and their start
-       dotted_rules, unique distance vectors and their summary length, and
+       dotted_rules, unique matched_length vectors and their summary length, and
        number of parent indexes. */
     int n_set_cores, n_set_core_start_dotted_rules;
     int n_set_matched_lengths, n_set_matched_lengths_len, n_parent_indexes;
@@ -717,15 +717,15 @@ struct YaepParseState
     /* All dotted_rules are placed in the following object.*/
     os_t dotted_rules_os;
 
-    /* The set of pairs (dotted_rule,distance) used for test-setting such pairs
-       is implemented using a vec[prod id] -> vec[distance] -> generation since prod_id
-       is unique and incrementing, we use a vector[max_prod_id] to find another vector[max_distance]
-       each distance entry storing a generation number. To clear the set of pairs
+    /* The set of pairs (dotted_rule,matched_length) used for test-setting such pairs
+       is implemented using a vec[prod id] -> vec[matched_length] -> generation since prod_id
+       is unique and incrementing, we use a vector[max_prod_id] to find another vector[max_matched_length]
+       each matched_length entry storing a generation number. To clear the set of pairs
        we only need to increment the current generation below. Yay! No need to free, alloc, memset.*/
-    vlo_t dotted_rule_distance_vec_vlo;
+    vlo_t dotted_rule_matched_length_vec_vlo;
 
     /* The value used to check the validity of elements of check_dist structures. */
-    int dotted_rule_distance_vec_generation;
+    int dotted_rule_matched_length_vec_generation;
 
     /* The following are number of unique(set core, symbol) pairs and
        their summary(transitive) transition and reduce vectors length,
@@ -1795,28 +1795,28 @@ static bool core_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 }
 
 /* Initiate the set of pairs(sit, dist). */
-static void dotted_rule_distance_set_init(YaepParseState *ps)
+static void dotted_rule_matched_length_set_init(YaepParseState *ps)
 {
-    VLO_CREATE(ps->dotted_rule_distance_vec_vlo, ps->run.grammar->alloc, 8192);
-    ps->dotted_rule_distance_vec_generation = 0;
+    VLO_CREATE(ps->dotted_rule_matched_length_vec_vlo, ps->run.grammar->alloc, 8192);
+    ps->dotted_rule_matched_length_vec_generation = 0;
 }
 
 /* The clear the set we only need to increment the generation.
    The test for set membership compares with the active generation.
    Thus all previously stored memberships are immediatly invalidated
    through the increment below. Thus clearing the set! */
-static void clear_dotted_rule_distance_set(YaepParseState *ps)
+static void clear_dotted_rule_matched_length_set(YaepParseState *ps)
 {
-    ps->dotted_rule_distance_vec_generation++;
+    ps->dotted_rule_matched_length_vec_generation++;
 }
 
-/* Insert pair(PROD, DIST) into the ps->dotted_rule_distance_vec_vlo.
+/* Insert pair(PROD, DIST) into the ps->dotted_rule_matched_length_vec_vlo.
    Each dotted_rule has a unique prod_id incrementally counted from 0 to the most recent dotted_rule added.
    This prod_id is used as in index into the vector, the vector storing vlo objects.
    Each vlo object maintains a memory region used for an integer array of matched_lengths.
 
    If such pair exists return true (was false), otherwise return false. (was true). */
-static bool dotted_rule_distance_test_and_set(YaepParseState *ps, YaepDottedRule *prod, int dist)
+static bool dotted_rule_matched_length_test_and_set(YaepParseState *ps, YaepDottedRule *prod, int dist)
 {
     int i, len, prod_id;
     vlo_t *dist_vlo;
@@ -1824,20 +1824,20 @@ static bool dotted_rule_distance_test_and_set(YaepParseState *ps, YaepDottedRule
     prod_id = prod->prod_id;
 
     // Expand the vector to accommodate a new dotted_rule.
-    len = VLO_LENGTH(ps->dotted_rule_distance_vec_vlo)/sizeof(vlo_t);
+    len = VLO_LENGTH(ps->dotted_rule_matched_length_vec_vlo)/sizeof(vlo_t);
     if (len <= prod_id)
     {
-        VLO_EXPAND(ps->dotted_rule_distance_vec_vlo,(prod_id + 1 - len)* sizeof(vlo_t));
+        VLO_EXPAND(ps->dotted_rule_matched_length_vec_vlo,(prod_id + 1 - len)* sizeof(vlo_t));
         for(i = len; i <= prod_id; i++)
         {
             // For each new slot in the vector, initialize a new vlo, to be used for matched_lengths.
-            VLO_CREATE(((vlo_t*) VLO_BEGIN(ps->dotted_rule_distance_vec_vlo))[i], ps->run.grammar->alloc, 64);
+            VLO_CREATE(((vlo_t*) VLO_BEGIN(ps->dotted_rule_matched_length_vec_vlo))[i], ps->run.grammar->alloc, 64);
         }
     }
 
     // Now fetch the vlo for this prod_id, which is either an existing vlo or a freshly initialized vlo.
-    // The vlo stores an array of integersCheck if the vlo is big enough for this distance?
-    dist_vlo = &((vlo_t*)VLO_BEGIN(ps->dotted_rule_distance_vec_vlo))[prod_id];
+    // The vlo stores an array of integersCheck if the vlo is big enough for this matched_length?
+    dist_vlo = &((vlo_t*)VLO_BEGIN(ps->dotted_rule_matched_length_vec_vlo))[prod_id];
     len = VLO_LENGTH(*dist_vlo) / sizeof(int);
     if (len <= dist)
     {
@@ -1848,7 +1848,7 @@ static bool dotted_rule_distance_test_and_set(YaepParseState *ps, YaepDottedRule
         }
     }
     int *generation = (int*)VLO_BEGIN(*dist_vlo) + dist;
-    if (*generation == ps->dotted_rule_distance_vec_generation)
+    if (*generation == ps->dotted_rule_matched_length_vec_generation)
     {
         // The pair was already inserted! We know this since we found the current generation in this slot.
         // Remember that we clear the set by incrementing the current generation.
@@ -1856,19 +1856,19 @@ static bool dotted_rule_distance_test_and_set(YaepParseState *ps, YaepDottedRule
     }
     // The pair did not exist in the set. (Since the generation number did not match.)
     // Insert this pair my marking the vec[prod_id][dist] with the current generation.
-    *generation = ps->dotted_rule_distance_vec_generation;
+    *generation = ps->dotted_rule_matched_length_vec_generation;
     return false;
 }
 
-static void free_dotted_rule_distance_sets(YaepParseState *ps)
+static void free_dotted_rule_matched_length_sets(YaepParseState *ps)
 {
-    int i, len = VLO_LENGTH(ps->dotted_rule_distance_vec_vlo) / sizeof(vlo_t);
+    int i, len = VLO_LENGTH(ps->dotted_rule_matched_length_vec_vlo) / sizeof(vlo_t);
 
     for(i = 0; i < len; i++)
     {
-        VLO_DELETE(((vlo_t*) VLO_BEGIN(ps->dotted_rule_distance_vec_vlo))[i]);
+        VLO_DELETE(((vlo_t*) VLO_BEGIN(ps->dotted_rule_matched_length_vec_vlo))[i]);
     }
-    VLO_DELETE(ps->dotted_rule_distance_vec_vlo);
+    VLO_DELETE(ps->dotted_rule_matched_length_vec_vlo);
 }
 
 /* Initialize work with sets for parsing input with N_INPUT_TOKENS tokens.*/
@@ -1892,7 +1892,7 @@ static void set_init(YaepParseState *ps, int n_input_tokens)
     ps->n_set_matched_lengths = ps->n_set_matched_lengths_len = ps->n_parent_indexes = 0;
     ps->n_sets = ps->n_sets_start_dotted_rules= 0;
     ps->num_triplets_core_term_lookahead = 0;
-    dotted_rule_distance_set_init(ps);
+    dotted_rule_matched_length_set_init(ps);
 }
 
 /* The following function starts forming of new set.*/
@@ -1906,7 +1906,7 @@ static void set_new_start(YaepParseState *ps)
     ps->new_num_started_dotted_rules = 0;
 }
 
-/* Add start PROD with distance DIST at the end of the dotted_rule array
+/* Add start PROD with matched_length DIST at the end of the dotted_rule array
    of the state set being formed. */
 static void set_new_add_start_prod(YaepParseState *ps, YaepDottedRule*prod, int dist)
 {
@@ -1920,10 +1920,10 @@ static void set_new_add_start_prod(YaepParseState *ps, YaepDottedRule*prod, int 
     ps->new_num_started_dotted_rules++;
 }
 
-/* Add not_yet_started, noninitial PROD with distance DIST at the end of the
+/* Add not_yet_started, noninitial PROD with matched_length DIST at the end of the
    dotted_rule array of the set being formed.  If this is dotted_rule and
    there is already the same pair(dotted_rule, the corresponding
-   distance), we do not add it.*/
+   matched_length), we do not add it.*/
 static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepDottedRule *dotted_rule, int parent)
 {
     assert(ps->new_set_ready_p);
@@ -1954,22 +1954,22 @@ static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepDottedRule 
     ps->n_parent_indexes++;
 }
 
-/* Add a not-yet-started dotted_rule (initial) PROD with zero distance at the end of the
+/* Add a not-yet-started dotted_rule (initial) PROD with zero matched_length at the end of the
    dotted_rule array of the set being formed.  If this is not-yet-started
-   dotted_rule and there is already the same pair(dotted_rule, zero distance), we do not add it.*/
+   dotted_rule and there is already the same pair(dotted_rule, zero matched_length), we do not add it.*/
 static void set_new_add_initial_prod(YaepParseState *ps, YaepDottedRule*prod)
 {
     assert(ps->new_set_ready_p);
 
     /* When we add not-yet-started dotted_rules we need to have pairs
-      (dotted_rule, the corresponding distance) without duplicates
+      (dotted_rule, the corresponding matched_length) without duplicates
        because we also form core_symb_vect at that time.*/
     for (int i = ps->new_num_started_dotted_rules; i < ps->new_core->num_dotted_rules; i++)
     {
         // Check if already added.
         if (ps->new_dotted_rules[i] == prod) return;
     }
-    /* Remember we do not store distance for not-yet-started dotted_rules.*/
+    /* Remember we do not store matched_length for not-yet-started dotted_rules.*/
     OS_TOP_ADD_MEMORY(ps->set_dotted_rules_os, &prod, sizeof(YaepDottedRule*));
     ps->new_dotted_rules = ps->new_core->dotted_rules = (YaepDottedRule**)OS_TOP_BEGIN(ps->set_dotted_rules_os);
     ps->new_core->num_dotted_rules++;
@@ -2091,7 +2091,7 @@ static void set_new_core_stop(YaepParseState *ps)
 
 static void free_sets(YaepParseState *ps)
 {
-    free_dotted_rule_distance_sets(ps);
+    free_dotted_rule_matched_length_sets(ps);
     delete_hash_table(ps->set_of_triplets_core_term_lookahead);
     delete_hash_table(ps->set_of_tuples_core_matched_lengths);
     delete_hash_table(ps->set_of_matched_lengthses);
@@ -3156,7 +3156,7 @@ static void read_input_tokens(YaepParseState *ps)
 }
 
 /* Add predicted (derived) not yet started dotted_rules which is formed from
-   given start dotted_rule PROD with distance DIST by reducing symbol
+   given start dotted_rule PROD with matched_length DIST by reducing symbol
    which can derivate empty string and which is placed after dot in
    given dotted_rule. */
 static void add_predicted_not_yet_started_dotted_rules(YaepParseState *ps, YaepDottedRule *prod, int parent)
@@ -3330,7 +3330,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
     set_new_start(ps);
     transitions = &core_symb_vect->transitions;
 
-    clear_dotted_rule_distance_set(ps);
+    clear_dotted_rule_matched_length_set(ps);
     for(i = 0; i < transitions->len; i++)
     {
         prod_ind = transitions->els[i];
@@ -3357,7 +3357,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
             dist = set->matched_lengths[set_core->parent_indexes[prod_ind]];
         }
         dist++;
-        if (!dotted_rule_distance_test_and_set(ps, new_prod, dist))
+        if (!dotted_rule_matched_length_test_and_set(ps, new_prod, dist))
         {
             // This combo prod+dist did not already exist, lets add it.
             set_new_add_start_prod(ps, new_prod, dist);
@@ -3415,7 +3415,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                 }
                 dist += new_dist;
 
-                if (!dotted_rule_distance_test_and_set(ps, new_prod, dist))
+                if (!dotted_rule_matched_length_test_and_set(ps, new_prod, dist))
                 {
                     // This combo prod+dist did not already exist, lets add it.
                     set_new_add_start_prod(ps, new_prod, dist);
@@ -3964,7 +3964,7 @@ static bool check_cached_transition_set(YaepParseState *ps, YaepStateSet*set, in
     {
         if ((dist = matched_lengths[i]) <= 1)
             continue;
-        /* Sets at origins of dotted_rules with distance one are supposed
+        /* Sets at origins of dotted_rules with matched_length one are supposed
            to be the same. */
         if (ps->state_sets[ps->state_set_curr + 1 - dist] != ps->state_sets[place + 1 - dist])
             return false;
@@ -5603,21 +5603,21 @@ static void print_rule_with_dot(YaepParseState *ps, FILE *f, YaepRule *rule, int
 
 /* The following function prints dotted_rule PROD to file F.  The
    dotted_rule is printed with the lookahead set if LOOKAHEAD_P.*/
-static void print_dotted_rule(YaepParseState *ps, FILE *f, YaepDottedRule *prod, bool lookahead_p, int distance)
+static void print_dotted_rule(YaepParseState *ps, FILE *f, YaepDottedRule *prod, bool lookahead_p, int matched_length)
 {
     fprintf(f, "(%3d)    ", prod->prod_id);
     print_rule_with_dot(ps, f, prod->rule, prod->dot_i);
 
-    if (distance >= 0)
+    if (matched_length >= 0)
     {
-        fprintf(f, ", distance %d", distance);
+        fprintf(f, " matched %d", matched_length);
     }
     if (ps->run.grammar->lookahead_level != 0 && lookahead_p)
     {
         fprintf(f, "    ");
         term_set_print(ps, f, prod->lookahead, ps->run.grammar->symbs_ptr->num_terms);
     }
-    if (distance != -1) fprintf(f, "\n");
+    if (matched_length != -1) fprintf(f, "\n");
 }
 
 /* The following function prints SET to file F.  If NOT_YET_STARTED_P is true
