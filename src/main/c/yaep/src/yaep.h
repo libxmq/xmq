@@ -55,8 +55,8 @@ typedef struct YaepAbstractNode YaepAbstractNode;
 struct YaepNilNode;
 typedef struct YaepNilNode YaepNilNode;
 
-struct YaepTermNode;
-typedef struct YaepTermNode YaepTermNode;
+struct YaepTerminalNode;
+typedef struct YaepTerminalNode YaepTerminalNode;
 
 struct YaepTreeNode;
 typedef struct YaepTreeNode YaepTreeNode;
@@ -153,7 +153,7 @@ struct YaepErrorNode
 };
 
 /* The following structure describes terminal node. */
-struct YaepTermNode
+struct YaepTerminalNode
 {
     /* The terminal code. */
     int code;
@@ -209,7 +209,7 @@ struct YaepTreeNode
   {
     YaepNilNode nil;
     YaepErrorNode error;
-    YaepTermNode term;
+    YaepTerminalNode terminal;
     YaepAbstractNode anode;
     YaepAltNode alt;
     _YaepAnodeName _anode_name; /* Internal use only */
@@ -376,7 +376,7 @@ extern void yaepFreeGrammar(YaepParseRun *ps, YaepGrammar *g);
    to free the term attributes. The term node itself must not be freed. */
 extern void yaepFreeTree(YaepTreeNode *root,
                          void (*parse_free)(void*),
-                         void (*termcb)(YaepTermNode *term));
+                         void (*termcb)(YaepTerminalNode *termial));
 
 #define YAEP_MODULE
 

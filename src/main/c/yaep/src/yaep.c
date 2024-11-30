@@ -279,7 +279,7 @@ struct YaepSymbol
                starts with 100 and ends with 129,then the term_ids goes from 0 to 29.
                The term_ids are used for picking the bit in the bit arrays.*/
             int term_id;
-        } term;
+        } terminal;
         struct
         {
             /* The following refers for all rules with the nonterminal
@@ -293,10 +293,10 @@ struct YaepSymbol
             bool loop_p;
             /* The following members are FIRST and FOLLOW sets of the nonterminal. */
             term_set_el_t *first, *follow;
-        } nonterm;
+        } nonterminal;
     } u;
     /* The following member is true if it is nonterminal. */
-    bool term_p;
+    bool terminal_p;
     /* The following member value(if defined) is true if the symbol is
        accessible(derivated) from the axiom. */
     bool access_p;
@@ -911,9 +911,9 @@ static unsigned symb_code_hash(hash_table_entry_t s)
 {
     YaepSymbol *sym = (YaepSymbol*)s;
 
-    assert(sym->term_p);
+    assert(sym->terminal_p);
 
-    return sym->u.term.code;
+    return sym->u.terminal.code;
 }
 
 /* Equality of terminal codes.*/
@@ -922,9 +922,9 @@ static bool symb_code_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     YaepSymbol *sym1 = (YaepSymbol*)s1;
     YaepSymbol *sym2 = (YaepSymbol*)s2;
 
-    assert(sym1->term_p && sym2->term_p);
+    assert(sym1->terminal_p && sym2->terminal_p);
 
-    return sym1->u.term.code == sym2->u.term.code;
+    return sym1->u.terminal.code == sym2->u.terminal.code;
 }
 
 /* Initialize work with symbols and returns storage for the symbols.*/
@@ -980,8 +980,8 @@ static YaepSymbol *symb_find_by_code(YaepParseState *ps, int code)
         }
     }
 
-    symb.term_p = true;
-    symb.u.term.code = code;
+    symb.terminal_p = true;
+    symb.u.terminal.code = code;
     YaepSymbol*r =(YaepSymbol*)*find_hash_table_entry(ps->run.grammar->symbs_ptr->map_code_to_symb, &symb, false);
 
     TRACE_FA(ps, "hash %d -> %p", code, r);
@@ -998,11 +998,11 @@ static YaepSymbol *symb_add_term(YaepParseState *ps, const char*name, int code)
     hash_table_entry_t *repr_entry, *code_entry;
 
     symb.repr = name;
-    symb.term_p = true;
+    symb.terminal_p = true;
     // Assign the next available id.
     symb.id = ps->run.grammar->symbs_ptr->num_nonterms + ps->run.grammar->symbs_ptr->num_terms;
-    symb.u.term.code = code;
-    symb.u.term.term_id = ps->run.grammar->symbs_ptr->num_terms++;
+    symb.u.terminal.code = code;
+    symb.u.terminal.term_id = ps->run.grammar->symbs_ptr->num_terms++;
     symb.empty_p = false;
     repr_entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_repr_to_symb, &symb, true);
     assert(*repr_entry == NULL);
@@ -1033,12 +1033,12 @@ static YaepSymbol *symb_add_nonterm(YaepParseState *ps, const char *name)
     hash_table_entry_t*entry;
 
     symb.repr = name;
-    symb.term_p = false;
+    symb.terminal_p = false;
     // Assign the next available id.
     symb.id = ps->run.grammar->symbs_ptr->num_nonterms + ps->run.grammar->symbs_ptr->num_terms;
-    symb.u.nonterm.rules = NULL;
-    symb.u.nonterm.loop_p = false;
-    symb.u.nonterm.nonterm_id = ps->run.grammar->symbs_ptr->num_nonterms++;
+    symb.u.nonterminal.rules = NULL;
+    symb.u.nonterminal.loop_p = false;
+    symb.u.nonterminal.nonterm_id = ps->run.grammar->symbs_ptr->num_nonterms++;
     entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_repr_to_symb, &symb, true);
     assert(*entry == NULL);
     OS_TOP_ADD_STRING(ps->run.grammar->symbs_ptr->symbs_os, name);
@@ -1080,7 +1080,7 @@ static YaepSymbol *term_get(YaepParseState *ps, int n)
         return NULL;
     }
     YaepSymbol*symb =((YaepSymbol**) VLO_BEGIN(ps->run.grammar->symbs_ptr->terms_vlo))[n];
-    assert(symb->term_p && symb->u.term.term_id == n);
+    assert(symb->terminal_p && symb->u.terminal.term_id == n);
 
     TRACE_FA(ps, "%d -> %s", n, symb->repr);
 
@@ -1095,7 +1095,7 @@ static YaepSymbol *nonterm_get(YaepParseState *ps, int n)
         return NULL;
     }
     YaepSymbol*symb =((YaepSymbol**) VLO_BEGIN(ps->run.grammar->symbs_ptr->nonterms_vlo))[n];
-    assert(!symb->term_p && symb->u.nonterm.nonterm_id == n);
+    assert(!symb->terminal_p && symb->u.nonterminal.nonterm_id == n);
 
     TRACE_FA(ps, "%d -> %s", n, symb->repr);
 
@@ -1110,8 +1110,8 @@ static void symb_finish_adding_terms(YaepParseState *ps)
 
     for (min_code = max_code = i = 0;(symb = term_get(ps, i)) != NULL; i++)
     {
-        if (i == 0 || min_code > symb->u.term.code) min_code = symb->u.term.code;
-        if (i == 0 || max_code < symb->u.term.code) max_code = symb->u.term.code;
+        if (i == 0 || min_code > symb->u.terminal.code) min_code = symb->u.terminal.code;
+        if (i == 0 || max_code < symb->u.terminal.code) max_code = symb->u.terminal.code;
     }
     assert(i != 0);
     assert((max_code - min_code) < MAX_SYMB_CODE_TRANS_VECT_SIZE);
@@ -1127,7 +1127,7 @@ static void symb_finish_adding_terms(YaepParseState *ps)
 
     for(i = 0;(symb = term_get(ps, i)) != NULL; i++)
     {
-        ps->run.grammar->symbs_ptr->symb_code_trans_vect[symb->u.term.code - min_code] = symb;
+        ps->run.grammar->symbs_ptr->symb_code_trans_vect[symb->u.terminal.code - min_code] = symb;
     }
 
     TRACE_FA(ps, "num_codes=%zu size=%zu", num_codes, vec_size);
@@ -1432,7 +1432,7 @@ static YaepRule *rule_new_start(YaepParseState *ps, YaepSymbol *lhs, const char 
     YaepRule *rule;
     YaepSymbol *empty;
 
-    assert(!lhs->term_p);
+    assert(!lhs->terminal_p);
 
     OS_TOP_EXPAND(ps->run.grammar->rulestorage_ptr->rules_os, sizeof(YaepRule));
     rule =(YaepRule*) OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
@@ -1458,8 +1458,8 @@ static YaepRule *rule_new_start(YaepParseState *ps, YaepSymbol *lhs, const char 
     {
         ps->run.grammar->rulestorage_ptr->current_rule->next = rule;
     }
-    rule->lhs_next = lhs->u.nonterm.rules;
-    lhs->u.nonterm.rules = rule;
+    rule->lhs_next = lhs->u.nonterminal.rules;
+    lhs->u.nonterminal.rules = rule;
     rule->rhs_len = 0;
     empty = NULL;
     OS_TOP_ADD_MEMORY(ps->run.grammar->rulestorage_ptr->rules_os, &empty, sizeof(YaepSymbol*));
@@ -1583,13 +1583,13 @@ static bool dotted_rule_set_lookahead(YaepParseState *ps, YaepDottedRule *dotted
     {
         if (ps->run.grammar->lookahead_level != 0)
 	{
-            if (symb->term_p)
+            if (symb->terminal_p)
             {
-                term_set_up(dotted_rule->lookahead, symb->u.term.term_id, ps->run.grammar->symbs_ptr->num_terms);
+                term_set_up(dotted_rule->lookahead, symb->u.terminal.term_id, ps->run.grammar->symbs_ptr->num_terms);
             }
             else
             {
-                term_set_or(dotted_rule->lookahead, symb->u.nonterm.first, ps->run.grammar->symbs_ptr->num_terms);
+                term_set_or(dotted_rule->lookahead, symb->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terms);
             }
 	}
         if (!symb->empty_p) break;
@@ -1599,7 +1599,7 @@ static bool dotted_rule_set_lookahead(YaepParseState *ps, YaepDottedRule *dotted
     {
         if (ps->run.grammar->lookahead_level == 1)
         {
-            term_set_or(dotted_rule->lookahead, dotted_rule->rule->lhs->u.nonterm.follow, ps->run.grammar->symbs_ptr->num_terms);
+            term_set_or(dotted_rule->lookahead, dotted_rule->rule->lhs->u.nonterminal.follow, ps->run.grammar->symbs_ptr->num_terms);
         }
         else if (ps->run.grammar->lookahead_level != 0)
         {
@@ -1781,7 +1781,7 @@ static unsigned core_term_lookahead_hash(hash_table_entry_t s)
     YaepSymbol *term = ((YaepStateSetTermLookAhead*)s)->term;
     int lookahead = ((YaepStateSetTermLookAhead*)s)->lookahead;
 
-    return ((set_core_matched_lengths_hash(set)* hash_shift + term->u.term.term_id)* hash_shift + lookahead);
+    return ((set_core_matched_lengths_hash(set)* hash_shift + term->u.terminal.term_id)* hash_shift + lookahead);
 }
 
 /* Equality of tripes(set, term, lookahead).*/
@@ -2626,16 +2626,16 @@ static void create_first_follow_sets(YaepParseState *ps)
 
     for (i = 0; (symb = nonterm_get(ps, i)) != NULL; i++)
     {
-        symb->u.nonterm.first = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terms);
-        term_set_clear(symb->u.nonterm.first, ps->run.grammar->symbs_ptr->num_terms);
-        symb->u.nonterm.follow = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terms);
-        term_set_clear(symb->u.nonterm.follow, ps->run.grammar->symbs_ptr->num_terms);
+        symb->u.nonterminal.first = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terms);
+        term_set_clear(symb->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terms);
+        symb->u.nonterminal.follow = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terms);
+        term_set_clear(symb->u.nonterminal.follow, ps->run.grammar->symbs_ptr->num_terms);
     }
     do
     {
         changed_p = false;
         for(i = 0;(symb = nonterm_get(ps, i)) != NULL; i++)
-            for(rule = symb->u.nonterm.rules;
+            for(rule = symb->u.nonterminal.rules;
                  rule != NULL; rule = rule->lhs_next)
             {
                 first_continue_p = true;
@@ -2644,38 +2644,38 @@ static void create_first_follow_sets(YaepParseState *ps)
                 for(j = 0; j < rhs_len; j++)
                 {
                     rhs_symb = rhs[j];
-                    if (rhs_symb->term_p)
+                    if (rhs_symb->terminal_p)
                     {
                         if (first_continue_p)
-                            changed_p |= term_set_up(symb->u.nonterm.first,
-                                                     rhs_symb->u.term.term_id,
+                            changed_p |= term_set_up(symb->u.nonterminal.first,
+                                                     rhs_symb->u.terminal.term_id,
                                                      ps->run.grammar->symbs_ptr->num_terms);
                     }
                     else
                     {
                         if (first_continue_p)
-                            changed_p |= term_set_or(symb->u.nonterm.first,
-                                                     rhs_symb->u.nonterm.first,
+                            changed_p |= term_set_or(symb->u.nonterminal.first,
+                                                     rhs_symb->u.nonterminal.first,
                                                      ps->run.grammar->symbs_ptr->num_terms);
                         for(k = j + 1; k < rhs_len; k++)
                         {
                             next_rhs_symb = rhs[k];
-                            if (next_rhs_symb->term_p)
+                            if (next_rhs_symb->terminal_p)
                                 changed_p
-                                    |= term_set_up(rhs_symb->u.nonterm.follow,
-                                                   next_rhs_symb->u.term.term_id,
+                                    |= term_set_up(rhs_symb->u.nonterminal.follow,
+                                                   next_rhs_symb->u.terminal.term_id,
                                                    ps->run.grammar->symbs_ptr->num_terms);
                             else
                                 changed_p
-                                    |= term_set_or(rhs_symb->u.nonterm.follow,
-                                                   next_rhs_symb->u.nonterm.first,
+                                    |= term_set_or(rhs_symb->u.nonterminal.follow,
+                                                   next_rhs_symb->u.nonterminal.first,
                                                    ps->run.grammar->symbs_ptr->num_terms);
                             if (!next_rhs_symb->empty_p)
                                 break;
                         }
                         if (k == rhs_len)
-                            changed_p |= term_set_or(rhs_symb->u.nonterm.follow,
-                                                     symb->u.nonterm.follow,
+                            changed_p |= term_set_or(rhs_symb->u.nonterminal.follow,
+                                                     symb->u.nonterminal.follow,
                                                      ps->run.grammar->symbs_ptr->num_terms);
                     }
                     if (!rhs_symb->empty_p)
@@ -2699,7 +2699,7 @@ static void set_empty_access_derives(YaepParseState *ps)
     for(i = 0;(symb = symb_get(ps, i)) != NULL; i++)
     {
         symb->empty_p = false;
-        symb->derivation_p = (symb->term_p ? true : false);
+        symb->derivation_p = (symb->terminal_p ? true : false);
         symb->access_p = false;
     }
     ps->run.grammar->axiom->access_p = 1;
@@ -2707,7 +2707,7 @@ static void set_empty_access_derives(YaepParseState *ps)
     {
         empty_changed_p = derivation_changed_p = accessibility_change_p = false;
         for(i = 0;(symb = nonterm_get(ps, i)) != NULL; i++)
-            for(rule = symb->u.nonterm.rules;
+            for(rule = symb->u.nonterminal.rules;
                  rule != NULL; rule = rule->lhs_next)
             {
                 empty_p = derivation_p = 1;
@@ -2750,7 +2750,7 @@ static void set_loop_p(YaepParseState *ps)
        strings.*/
     for(rule = ps->run.grammar->rulestorage_ptr->first_rule; rule != NULL; rule = rule->next)
         for(i = 0; i < rule->rhs_len; i++)
-            if (!(symb = rule->rhs[i])->term_p)
+            if (!(symb = rule->rhs[i])->terminal_p)
             {
                 for(j = 0; j < rule->rhs_len; j++)
                     if (i == j)
@@ -2758,7 +2758,7 @@ static void set_loop_p(YaepParseState *ps)
                     else if (!rule->rhs[j]->empty_p)
                         break;
                 if (j >= rule->rhs_len)
-                    symb->u.nonterm.loop_p = true;
+                    symb->u.nonterminal.loop_p = true;
             }
     /* Major cycle: Check looped nonterminal that there is a rule with
        the nonterminal in lhs with a looped nonterminal in rhs and all
@@ -2767,13 +2767,13 @@ static void set_loop_p(YaepParseState *ps)
     {
         changed_p = false;
         for(i = 0;(lhs = nonterm_get(ps, i)) != NULL; i++)
-            if (lhs->u.nonterm.loop_p)
+            if (lhs->u.nonterminal.loop_p)
             {
                 loop_p = false;
-                for(rule = lhs->u.nonterm.rules;
+                for(rule = lhs->u.nonterminal.rules;
                      rule != NULL; rule = rule->lhs_next)
                     for(j = 0; j < rule->rhs_len; j++)
-                        if (!(symb = rule->rhs[j])->term_p && symb->u.nonterm.loop_p)
+                        if (!(symb = rule->rhs[j])->terminal_p && symb->u.nonterminal.loop_p)
                         {
                             for(k = 0; k < rule->rhs_len; k++)
                                 if (j == k)
@@ -2785,7 +2785,7 @@ static void set_loop_p(YaepParseState *ps)
                         }
                 if (!loop_p)
                     changed_p = true;
-                lhs->u.nonterm.loop_p = loop_p;
+                lhs->u.nonterminal.loop_p = loop_p;
             }
     }
     while(changed_p);
@@ -2826,7 +2826,7 @@ static void check_grammar(YaepParseState *ps, int strict_p)
     }
     for(i = 0;(symb = nonterm_get(ps, i)) != NULL; i++)
     {
-        if (symb->u.nonterm.loop_p)
+        if (symb->u.nonterminal.loop_p)
         {
             yaep_error(ps, YAEP_LOOP_NONTERM,
                  "nonterm `%s' can derive only itself(grammar with loops)",
@@ -2909,7 +2909,7 @@ int yaep_read_grammar(YaepParseRun *pr,
     if (symb_find_by_code(ps, TERM_ERROR_CODE) != NULL) abort();
 
     ps->run.grammar->term_error = symb_add_term(ps, TERM_ERROR_NAME, TERM_ERROR_CODE);
-    ps->run.grammar->term_error_id = ps->run.grammar->term_error->u.term.term_id;
+    ps->run.grammar->term_error_id = ps->run.grammar->term_error->u.terminal.term_id;
     ps->run.grammar->axiom = ps->run.grammar->end_marker = NULL;
 
     for (;;)
@@ -2922,7 +2922,7 @@ int yaep_read_grammar(YaepParseRun *pr,
         {
             symb = symb_add_nonterm(ps, lhs);
         }
-        else if (symb->term_p)
+        else if (symb->terminal_p)
         {
             yaep_error(ps, YAEP_TERM_IN_RULE_LHS,
                         "term `%s' in the left hand side of rule", lhs);
@@ -3025,7 +3025,7 @@ int yaep_read_grammar(YaepParseRun *pr,
     assert(start != NULL);
 
     /* Adding axiom : error $eof if it is neccessary.*/
-    for(rule = start->u.nonterm.rules; rule != NULL; rule = rule->lhs_next)
+    for(rule = start->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
     {
         if (rule->rhs[0] == ps->run.grammar->term_error) break;
     }
@@ -3064,9 +3064,9 @@ int yaep_read_grammar(YaepParseRun *pr,
             if (ps->run.debug)
 	    {
                 fprintf(stderr, "  First: ");
-                term_set_print(ps, stderr, symb->u.nonterm.first, ps->run.grammar->symbs_ptr->num_terms);
+                term_set_print(ps, stderr, symb->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terms);
                 fprintf(stderr, "\n  Follow: ");
-                term_set_print(ps, stderr, symb->u.nonterm.follow, ps->run.grammar->symbs_ptr->num_terms);
+                term_set_print(ps, stderr, symb->u.nonterminal.follow, ps->run.grammar->symbs_ptr->num_terms);
                 fprintf(stderr, "\n\n");
 	    }
 	}
@@ -3211,9 +3211,9 @@ static void expand_new_start_set(YaepParseState *ps)
             if (core_symb_vect == NULL)
 	    {
                 core_symb_vect = core_symb_vect_new(ps, ps->new_core, symb);
-                if (!symb->term_p)
+                if (!symb->terminal_p)
                 {
-                    for(rule = symb->u.nonterm.rules; rule != NULL; rule = rule->lhs_next)
+                    for(rule = symb->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
                     {
                         set_new_add_initial_dotted_rule(ps, create_dotted_rule(ps, rule, 0, 0));
                     }
@@ -3308,7 +3308,7 @@ static void build_start_set(YaepParseState *ps)
         assert(context == 0);
     }
 
-    for (YaepRule *rule = ps->run.grammar->axiom->u.nonterm.rules; rule != NULL; rule = rule->lhs_next)
+    for (YaepRule *rule = ps->run.grammar->axiom->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
     {
         YaepDottedRule *dotted_rule = create_dotted_rule(ps, rule, 0, context);
         set_new_add_start_dotted_rule(ps, dotted_rule, 0);
@@ -3336,7 +3336,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
     int place;
     YaepVect *transitions;
 
-    int lookahead_term_id = NEXT_TERM?NEXT_TERM->u.term.term_id:-1;
+    int lookahead_term_id = NEXT_TERM?NEXT_TERM->u.terminal.term_id:-1;
     local_lookahead_level = (lookahead_term_id < 0 ? 0 : ps->run.grammar->lookahead_level);
     set_core = set->core;
     set_new_start(ps);
@@ -4037,7 +4037,7 @@ static YaepStateSetTermLookAhead *lookup_cached_set(YaepParseState *ps,
     new_core_term_lookahead = (YaepStateSetTermLookAhead*) OS_TOP_BEGIN(ps->triplet_core_term_lookahead_os);
     new_core_term_lookahead->set = set;
     new_core_term_lookahead->term = THE_TERM;
-    new_core_term_lookahead->lookahead = NEXT_TERM?NEXT_TERM->u.term.term_id:-1;
+    new_core_term_lookahead->lookahead = NEXT_TERM?NEXT_TERM->u.terminal.term_id:-1;
 
     for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
     {
@@ -4083,7 +4083,7 @@ static void save_cached_set(YaepParseState *ps, YaepStateSetTermLookAhead *entry
     int i = entry->curr;
     entry->result[i] = ps->new_set;
     entry->place[i] = ps->state_set_curr;
-    entry->lookahead = NEXT_TERM ? NEXT_TERM->u.term.term_id : -1;
+    entry->lookahead = NEXT_TERM ? NEXT_TERM->u.terminal.term_id : -1;
     entry->curr = (i + 1) % MAX_CACHED_GOTO_RESULTS;
 }
 
@@ -4325,8 +4325,8 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
         break;
     case YAEP_TERM:
         if (ps->run.debug)
-            fprintf(f, "TERMINAL: code=%d, repr=%s, mark=%d %c\n", node->val.term.code,
-                    symb_find_by_code(ps, node->val.term.code)->repr, node->val.term.mark, node->val.term.mark>32?node->val.term.mark:' ');
+            fprintf(f, "TERMINAL: code=%d, repr=%s, mark=%d %c\n", node->val.terminal.code,
+                    symb_find_by_code(ps, node->val.terminal.code)->repr, node->val.terminal.mark, node->val.terminal.mark>32?node->val.terminal.mark:' ');
         break;
     case YAEP_ANODE:
         if (ps->run.debug)
@@ -4352,7 +4352,7 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
                     break;
 		case YAEP_TERM:
                     fprintf(f, "%s",
-                            symb_find_by_code(ps, child->val.term.code)->repr);
+                            symb_find_by_code(ps, child->val.terminal.code)->repr);
                     break;
 		case YAEP_ANODE:
                     fprintf(f, "%s", child->val.anode.name);
@@ -4394,7 +4394,7 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
                 break;
 	    case YAEP_TERM:
                 fprintf(f, "%s",
-                        symb_find_by_code(ps, node->val.alt.node->val.term.code)->
+                        symb_find_by_code(ps, node->val.alt.node->val.terminal.code)->
                          repr);
                 break;
 	    case YAEP_ANODE:
@@ -4821,7 +4821,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             continue;
 	}
         assert(pos >= 0);
-        if ((symb = rule->rhs[pos])->term_p)
+        if ((symb = rule->rhs[pos])->terminal_p)
 	{
             /* Terminal before dot:*/
             state_set_i--;		/* l*/
@@ -4845,14 +4845,14 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                     node =((YaepTreeNode*)
                            (*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
                     node->type = YAEP_TERM;
-                    node->val.term.code = symb->u.term.code;
+                    node->val.terminal.code = symb->u.terminal.code;
                     // IXML
                     if (rule->marks && rule->marks[pos])
                     {
                         // Copy the mark from the rhs position on to the terminal.
-                        node->val.term.mark = rule->marks[pos];
+                        node->val.terminal.mark = rule->marks[pos];
                     }
-                    node->val.term.attr = ps->input[state_set_i].attr;
+                    node->val.terminal.attr = ps->input[state_set_i].attr;
                     if (!ps->run.grammar->one_parse_p)
                         term_node_array[state_set_i] = node;
 		}
@@ -5534,16 +5534,16 @@ void yaepFreeTree(YaepTreeNode *root,
    printed with its code if CODE_P.*/
 static void symbol_print(FILE* f, YaepSymbol*symb, bool code_p)
 {
-    if (symb->u.term.code >= 32 && symb->u.term.code <= 126)
+    if (symb->u.terminal.code >= 32 && symb->u.terminal.code <= 126)
     {
-        fprintf(f, "'%c'", symb->u.term.code);
+        fprintf(f, "'%c'", symb->u.terminal.code);
         return;
     }
     fprintf(f, "%s", symb->repr);
     /*
-    if (code_p && symb->term_p)
+    if (code_p && symb->terminal_p)
     {
-        fprintf(f, "(%d)", symb->u.term.code);
+        fprintf(f, "(%d)", symb->u.terminal.code);
     }*/
 }
 

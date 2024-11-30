@@ -4426,7 +4426,7 @@ void collect_text(YaepTreeNode *n, MemBuffer *mb)
     else
     if (n->type == YAEP_TERM)
     {
-        YaepTermNode *at = &n->val.term;
+        YaepTerminalNode *at = &n->val.terminal;
         if (at->mark != '-')
         {
             UTF8Char utf8;
@@ -4517,7 +4517,7 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
     else
     if (n->type == YAEP_TERM)
     {
-        YaepTermNode *at = &n->val.term;
+        YaepTerminalNode *at = &n->val.terminal;
         if (at->mark != '-')
         {
             UTF8Char utf8;
