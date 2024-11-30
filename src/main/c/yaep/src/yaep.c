@@ -260,7 +260,7 @@ struct YaepGrammar
 struct YaepSymbol
 {
     /* A unique number 0,1,2... (num_terminals + num_non_terminals -1) */
-    int symb_id;
+    int id;
     /* The following is external representation of the symbol.  It
        should be allocated by parse_alloc because the string will be
        referred from parse tree. */
@@ -1000,7 +1000,7 @@ static YaepSymbol *symb_add_term(YaepParseState *ps, const char*name, int code)
     symb.repr = name;
     symb.term_p = true;
     // Assign the next available id.
-    symb.symb_id = ps->run.grammar->symbs_ptr->num_nonterms + ps->run.grammar->symbs_ptr->num_terms;
+    symb.id = ps->run.grammar->symbs_ptr->num_nonterms + ps->run.grammar->symbs_ptr->num_terms;
     symb.u.term.code = code;
     symb.u.term.term_id = ps->run.grammar->symbs_ptr->num_terms++;
     symb.empty_p = false;
@@ -1035,7 +1035,7 @@ static YaepSymbol *symb_add_nonterm(YaepParseState *ps, const char *name)
     symb.repr = name;
     symb.term_p = false;
     // Assign the next available id.
-    symb.symb_id = ps->run.grammar->symbs_ptr->num_nonterms + ps->run.grammar->symbs_ptr->num_terms;
+    symb.id = ps->run.grammar->symbs_ptr->num_nonterms + ps->run.grammar->symbs_ptr->num_terms;
     symb.u.nonterm.rules = NULL;
     symb.u.nonterm.loop_p = false;
     symb.u.nonterm.nonterm_id = ps->run.grammar->symbs_ptr->num_nonterms++;
@@ -1065,7 +1065,7 @@ static YaepSymbol *symb_get(YaepParseState *ps, int id)
     }
     YaepSymbol **vect = VLO_BEGIN(ps->run.grammar->symbs_ptr->symbs_vlo);
     YaepSymbol *symb = vect[id];
-    assert(symb->symb_id == id);
+    assert(symb->id == id);
 
     TRACE_FA(ps, "%d -> %s", id, symb->repr);
 
@@ -2337,7 +2337,7 @@ static YaepCoreSymbVect **core_symb_vect_addr_get(YaepParseState *ps, YaepStateS
             ptr++;
         }
     }
-    return &(*core_symb_vect_ptr)[symb->symb_id];
+    return &(*core_symb_vect_ptr)[symb->id];
 }
 #endif
 
