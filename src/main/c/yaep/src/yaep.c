@@ -46,20 +46,17 @@
 
    Dotted Rule: A rule put to use: NP 🞄 VP [origin] and stored in a StateSet.
 
-   StateSet: For each input token, we build a state set with all possible productions:
-             started (some match) and not-yet-started (no match yet). Theses productions
+   StateSet: For each input token, we build a state set with all possible chart items.
+             started (some match) and not-yet-started (no match yet). Theses items
              come from the scan/complete/predict algorithm.
-             Since each token has a state set: current_state_set_i == current_input_token_i
 
-             A started production stores a distance to its origin_i token.
-             We compress the StateSet with an immutable StateSetCore combined with a
-             set of distances.
+             A started item stores a distance to its origin_i token.
+             We compress the StateSet with an immutable StateSetCore and a separate
+             array of distances mapping to the dotted rules inside the state set core.
 
    StateSetCore: The part of a state set that can be shared between StateSets.
-                 I.e. everything except the distances.
-                 The distances are used to build the final parse tree after a parse has
-                 been found.
-
+                 I.e. the dotted rules but not the distances. The distances are
+                 used to build the final parse tree after a parse has been found.
 */
 
 #include <assert.h>
@@ -425,7 +422,10 @@ struct YaepStateSetCore
     int *parent_indexes;
 };
 
-/* The following describes a state set in Earley's algorithm. */
+/* A YaepStateSet (aka parse list) stores chart entries (aka items) [from, to, S →  VP 🞄 NP ]
+   Scanning an input token triggers the creation of a state set. If we have n input tokens,
+   then we have n+2  state sets (we add the final eof token and a final state after eof
+   has been scanned.) */
 struct YaepStateSet
 {
     /* The following is set core of the set.  You should access to set
