@@ -2272,8 +2272,8 @@ typedef struct YaepVocabulary YaepVocabulary;
 struct YaepTermSet;
 typedef struct YaepTermSet YaepTermSet;
 
-struct YaepTermStorage;
-typedef struct YaepTermStorage YaepTermStorage;
+struct YaepTermSetStorage;
+typedef struct YaepTermSetStorage YaepTermSetStorage;
 
 struct YaepRule;
 typedef struct YaepRule YaepRule;
@@ -2358,10 +2358,11 @@ struct YaepGrammar
     /* These are all the symbols used in this grammar. */
     YaepVocabulary *symbs_ptr;
 
-    /* These are all the rules used in this grammar. */
+    /* All rules used in this grammar are stored here. */
     YaepRuleStorage *rulestorage_ptr;
+
     /* The following terminal sets used for this grammar. */
-    YaepTermStorage *term_sets_ptr;
+    YaepTermSetStorage *term_sets_ptr;
 
     /* Allocator. */
     YaepAllocator *alloc;
@@ -2467,7 +2468,7 @@ struct YaepTermSet
 };
 
 /* The following container for the abstract data.*/
-struct YaepTermStorage
+struct YaepTermSetStorage
 {
     /* All terminal sets are stored in the following os. */
     os_t term_set_os;
@@ -3329,13 +3330,13 @@ static bool term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 }
 
 /* Initialize work with terminal sets and returns storage for terminal sets.*/
-static YaepTermStorage *create_term_sets(YaepGrammar *grammar)
+static YaepTermSetStorage *termsetstorage_create(YaepGrammar *grammar)
 {
     void *mem;
-    YaepTermStorage *result;
+    YaepTermSetStorage *result;
 
-    mem = yaep_malloc(grammar->alloc, sizeof(YaepTermStorage));
-    result =(YaepTermStorage*) mem;
+    mem = yaep_malloc(grammar->alloc, sizeof(YaepTermSetStorage));
+    result =(YaepTermSetStorage*) mem;
     OS_CREATE(result->term_set_os, grammar->alloc, 0);
     result->map_term_set_to_id = create_hash_table(grammar->alloc, 1000, term_set_hash, term_set_eq);
     VLO_CREATE(result->term_set_vlo, grammar->alloc, 4096);
@@ -3501,7 +3502,7 @@ static void term_set_print(YaepParseState *ps, FILE *f, term_set_el_t *set, int 
 }
 
 /* Free memory for terminal sets. */
-static void term_set_empty(YaepTermStorage *term_sets)
+static void term_set_empty(YaepTermSetStorage *term_sets)
 {
     if (term_sets == NULL) return;
 
@@ -3511,7 +3512,7 @@ static void term_set_empty(YaepTermStorage *term_sets)
     term_sets->n_term_sets = term_sets->n_term_sets_size = 0;
 }
 
-static void free_term_sets(YaepGrammar *grammar, YaepTermStorage *term_sets)
+static void free_term_sets(YaepGrammar *grammar, YaepTermSetStorage *term_sets)
 {
     if (term_sets == NULL) return;
 
@@ -4662,7 +4663,7 @@ YaepGrammar *yaepNewGrammar()
     grammar->error_recovery_p = true;
     grammar->recovery_token_matches = DEFAULT_RECOVERY_TOKEN_MATCHES;
     grammar->symbs_ptr = create_symbols(grammar);
-    grammar->term_sets_ptr = create_term_sets(grammar);
+    grammar->term_sets_ptr = termsetstorage_create(grammar);
     grammar->rulestorage_ptr = rulestorage_create(grammar);
     return grammar;
 }
