@@ -42,7 +42,7 @@
                  (with user supplied attributes attached that can be user fetched later).
                  The tokens can be lexer symbols or unicode characters (ixml).
                  An offset into the input tokens array is always denoted with the suffix _i.
-                 E.g. current_input_token_i, from_i, to_i etc.
+                 E.g. tok_i (current input token being scanned), from_i, to_i etc.
 
    Rule: A grammar rule: S →  NP VP
 
@@ -50,16 +50,17 @@
                 The dot symbolizes how far the rule has been matched against input.
                 The dot_pos starts at zero which means nothing has been matched.
 
-   (Earley Item): [from_i, to_i, S →  NP 🞄 VP]
-                  Every input token gets a state set (below) that stores Early items (aka chart entries).
-                  We do not need to store >to_i< since this item is stored in the state set which
-                  was created for the to_i input token position!
-                  Instead of storing from_i we store dotted_rule_length which is subtracted from to_i
-                  to get from_i. The dotted_rule_lengths are stored in a separate array.
-                  The from_i (or length) is not required for recognizing a valid sentence,
-                  but it is required for creating a parse tree.
-                  Because of this split, there is no need not have an Earley Item structure in this implementation.
-                  Instead we store dotted rules and a separate dotted_rule_lengths array.
+   (Earley Item): Every input token input[tok_i] gets a state set that stores Early items (aka chart entries).
+                  An early item: [from_i, to_i, S →  NP 🞄 VP]
+                  The item maps a token range with a partial (or fully completed) dotted rule.
+                  Since to_i == tok_i we do not need to actually store to_i, its implicit from the state set.
+                  Instead we store the match_length (== to_i - from_i).
+
+                  The matched lengths are stored in a separate array and are not needed for
+                  parsing/recognition but are required when building the parse tree.
+
+                  Because of the separate array, there is no need not have an Earley Item structure
+                  in this implementation. Instead we store dotted rules and match_lengths arrays.
 
    StateSetCore: The part of a state set that can be shared between StateSets.
                  This is where we store the dotted rules, the dotted_rule_lenghts,
@@ -662,7 +663,7 @@ struct YaepParseState
       of new set.  They are always defined and correspondingly
       productions, distances, and the current number of start productions
       of the set being formed.*/
-    YaepDottedRule **new_productions;
+    YaepDottedRule **new_dotted_rules;
     int *new_distances;
     int new_num_started_productions;
 
@@ -1907,7 +1908,7 @@ static void set_new_start(YaepParseState *ps)
     ps->new_set = NULL;
     ps->new_core = NULL;
     ps->new_set_ready_p = false;
-    ps->new_productions = NULL;
+    ps->new_dotted_rules = NULL;
     ps->new_distances = NULL;
     ps->new_num_started_productions = 0;
 }
@@ -1920,8 +1921,8 @@ static void set_new_add_start_prod(YaepParseState *ps, YaepDottedRule*prod, int 
     OS_TOP_EXPAND(ps->set_distances_os, sizeof(int));
     ps->new_distances =(int*) OS_TOP_BEGIN(ps->set_distances_os);
     OS_TOP_EXPAND(ps->set_productions_os, sizeof(YaepDottedRule*));
-    ps->new_productions =(YaepDottedRule**) OS_TOP_BEGIN(ps->set_productions_os);
-    ps->new_productions[ps->new_num_started_productions] = prod;
+    ps->new_dotted_rules =(YaepDottedRule**) OS_TOP_BEGIN(ps->set_productions_os);
+    ps->new_dotted_rules[ps->new_num_started_productions] = prod;
     ps->new_distances[ps->new_num_started_productions] = dist;
     ps->new_num_started_productions++;
 }
@@ -1930,23 +1931,23 @@ static void set_new_add_start_prod(YaepParseState *ps, YaepDottedRule*prod, int 
    production array of the set being formed.  If this is production and
    there is already the same pair(production, the corresponding
    distance), we do not add it.*/
-static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepDottedRule *prod, int parent)
+static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepDottedRule *dotted_rule, int parent)
 {
     assert(ps->new_set_ready_p);
 
     /* When we add not-yet-started productions we need to have pairs
-       (production, the corresponding distance) without duplicates
-       because we also forms core_symb_vect at that time. */
+       (dotted_rule + matched_len) without duplicates
+       because we also form core_symb_vect at that time. */
     for(int i = ps->new_num_started_productions; i < ps->new_core->num_productions; i++)
     {
-        if (ps->new_productions[i] == prod && ps->new_core->parent_indexes[i] == parent)
+        if (ps->new_dotted_rules[i] == dotted_rule && ps->new_core->parent_indexes[i] == parent)
         {
             return;
         }
     }
     // Increase the object stack storing productions, with the size of a new production.
     OS_TOP_EXPAND(ps->set_productions_os, sizeof(YaepDottedRule*));
-    ps->new_productions = ps->new_core->productions = (YaepDottedRule**)OS_TOP_BEGIN(ps->set_productions_os);
+    ps->new_dotted_rules = ps->new_core->productions = (YaepDottedRule**)OS_TOP_BEGIN(ps->set_productions_os);
 
     // Increase the parent index vector with another int.
     // This integer points to ...?
@@ -1954,7 +1955,7 @@ static void set_add_new_not_yet_started_prod(YaepParseState *ps, YaepDottedRule 
     ps->new_core->parent_indexes = (int*)OS_TOP_BEGIN(ps->set_parent_indexes_os) - ps->new_num_started_productions;
 
     // Store prod into new productions.
-    ps->new_productions[ps->new_core->num_productions++] = prod;
+    ps->new_dotted_rules[ps->new_core->num_productions++] = dotted_rule;
     // Store parent index. Meanst what...?
     ps->new_core->parent_indexes[ps->new_core->n_all_distances++] = parent;
     ps->n_parent_indexes++;
@@ -1973,11 +1974,11 @@ static void set_new_add_initial_prod(YaepParseState *ps, YaepDottedRule*prod)
     for (int i = ps->new_num_started_productions; i < ps->new_core->num_productions; i++)
     {
         // Check if already added.
-        if (ps->new_productions[i] == prod) return;
+        if (ps->new_dotted_rules[i] == prod) return;
     }
     /* Remember we do not store distance for not-yet-started productions.*/
     OS_TOP_ADD_MEMORY(ps->set_productions_os, &prod, sizeof(YaepDottedRule*));
-    ps->new_productions = ps->new_core->productions = (YaepDottedRule**)OS_TOP_BEGIN(ps->set_productions_os);
+    ps->new_dotted_rules = ps->new_core->productions = (YaepDottedRule**)OS_TOP_BEGIN(ps->set_productions_os);
     ps->new_core->num_productions++;
 }
 
@@ -2022,7 +2023,7 @@ static int set_insert(YaepParseState *ps)
     OS_TOP_EXPAND(ps->set_cores_os, sizeof(YaepStateSetCore));
     ps->new_set->core = ps->new_core = (YaepStateSetCore*) OS_TOP_BEGIN(ps->set_cores_os);
     ps->new_core->num_started_productions = ps->new_num_started_productions;
-    ps->new_core->productions = ps->new_productions;
+    ps->new_core->productions = ps->new_dotted_rules;
     ps->new_set_ready_p = true;
 #ifdef USE_SET_HASH_TABLE
     /* Insert distances into table.*/
@@ -2052,7 +2053,7 @@ static int set_insert(YaepParseState *ps)
     {
         OS_TOP_NULLIFY(ps->set_cores_os);
         ps->new_set->core = ps->new_core = ((YaepStateSet*)*entry)->core;
-        ps->new_productions = ps->new_core->productions;
+        ps->new_dotted_rules = ps->new_core->productions;
         OS_TOP_NULLIFY(ps->set_productions_os);
         result = false;
     }
@@ -3190,13 +3191,13 @@ static void expand_new_start_set(YaepParseState *ps)
     /* Add not yet started productions with nonzero distances. */
     for(int i = 0; i < ps->new_num_started_productions; i++)
     {
-        add_predicted_not_yet_started_productions(ps, ps->new_productions[i], i);
+        add_predicted_not_yet_started_productions(ps, ps->new_dotted_rules[i], i);
     }
 
     /* Add not yet started productions and form transitions vectors. */
     for(int i = 0; i < ps->new_core->num_productions; i++)
     {
-        prod = ps->new_productions[i];
+        prod = ps->new_dotted_rules[i];
         if (prod->dot_i < prod->rule->rhs_len)
 	{
             /* There is a symbol after dot in the production. */
@@ -3224,7 +3225,7 @@ static void expand_new_start_set(YaepParseState *ps)
     /* Now forming reduce vectors. */
     for(int i = 0; i < ps->new_core->num_productions; i++)
     {
-        prod = ps->new_productions[i];
+        prod = ps->new_dotted_rules[i];
         if (prod->dot_i == prod->rule->rhs_len)
 	{
             symb = prod->rule->lhs;
@@ -3252,12 +3253,12 @@ static void expand_new_start_set(YaepParseState *ps)
             for(int i = ps->new_core->n_all_distances; i < ps->new_core->num_productions; i++)
 	    {
                 term_set_clear(context_set, ps->run.grammar->symbs_ptr->num_terms);
-                new_prod = ps->new_productions[i];
+                new_prod = ps->new_dotted_rules[i];
                 core_symb_vect = core_symb_vect_find(ps, ps->new_core, new_prod->rule->lhs);
                 for(j = 0; j < core_symb_vect->transitions.len; j++)
 		{
                     prod_ind = core_symb_vect->transitions.els[j];
-                    prod = ps->new_productions[prod_ind];
+                    prod = ps->new_dotted_rules[prod_ind];
                     shifted_prod = create_production(ps, prod->rule, prod->dot_i + 1,
                                               prod->context);
                     term_set_or(context_set, shifted_prod->lookahead, ps->run.grammar->symbs_ptr->num_terms);
@@ -3274,7 +3275,7 @@ static void expand_new_start_set(YaepParseState *ps)
                 prod = create_production(ps, new_prod->rule, new_prod->dot_i, context);
                 if (prod != new_prod)
 		{
-                    ps->new_productions[i] = prod;
+                    ps->new_dotted_rules[i] = prod;
                     changed_p = true;
 		}
 	    }
@@ -3372,7 +3373,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 
     for(i = 0; i < ps->new_num_started_productions; i++)
     {
-        new_prod = ps->new_productions[i];
+        new_prod = ps->new_dotted_rules[i];
         if (new_prod->empty_tail_p)
 	{
             int *curr_el, *bound;
@@ -5649,7 +5650,7 @@ static void print_state_set(YaepParseState *ps,
            may be not set up yet. */
         num = -1;
         num_started_productions = num_productions = n_all_distances = ps->new_num_started_productions;
-        productions = ps->new_productions;
+        productions = ps->new_dotted_rules;
         distances = ps->new_distances;
         parent_indexes = NULL;
     }
