@@ -4124,7 +4124,7 @@ static void set_new_start(YaepParseState *ps)
 
 /* Add start DOTTED_RULE with matched_length DIST at the end of the dotted_rule array
    of the state set being formed. */
-static void set_new_add_start_dotted_rule(YaepParseState *ps, YaepDottedRule*dotted_rule, int dist)
+static void set_new_add_start_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length)
 {
     assert(!ps->new_set_ready_p);
     OS_TOP_EXPAND(ps->set_matched_lengths_os, sizeof(int));
@@ -4132,8 +4132,11 @@ static void set_new_add_start_dotted_rule(YaepParseState *ps, YaepDottedRule*dot
     OS_TOP_EXPAND(ps->set_dotted_rules_os, sizeof(YaepDottedRule*));
     ps->new_dotted_rules =(YaepDottedRule**) OS_TOP_BEGIN(ps->set_dotted_rules_os);
     ps->new_dotted_rules[ps->new_num_started_dotted_rules] = dotted_rule;
-    ps->new_matched_lengths[ps->new_num_started_dotted_rules] = dist;
+    ps->new_matched_lengths[ps->new_num_started_dotted_rules] = matched_length;
     ps->new_num_started_dotted_rules++;
+
+    fprintf(stderr,"Added started dotted rule id=%d\n",
+            dotted_rule->id);
 }
 
 /* Add not_yet_started, noninitial DOTTED_RULE with matched_length DIST at the end of the
@@ -4173,6 +4176,10 @@ static void set_add_new_not_yet_started_dotted_rule(YaepParseState *ps,
     // Store parent index. Meanst what...?
     ps->new_core->parent_dotted_rule_ids[ps->new_core->num_all_matched_lengths++] = parent_dotted_rule_id;
     ps->num_parent_dotted_rule_ids++;
+
+    fprintf(stderr,"Added not yet started dotted rule id=%d\n",
+            dotted_rule->id);
+
 }
 
 /* Add a not-yet-started dotted_rule (initial) DOTTED_RULE with zero matched_length at the end of the
@@ -4649,7 +4656,7 @@ static void core_symb_ids_new_add_prediction_id(YaepParseState *ps,
     fprintf(stderr, "Add prediction core=%d symb=%s to id=%d\n",
             core_symb_ids->core->id,
             buf,
-            id);
+            id+1);
     vect_add_id(ps, &core_symb_ids->predictions, id);
 }
 
@@ -4658,6 +4665,31 @@ static void core_symb_ids_new_add_completion_id(YaepParseState *ps,
                                                  YaepCoreSymbVect *core_symb_ids,
                                                  int id)
 {
+    char buf[64];
+    if (core_symb_ids->symb->terminal_p)
+    {
+        int code = core_symb_ids->symb->u.terminal.code;
+        if (code < 32 || code > 126)
+        {
+            strcpy(buf, core_symb_ids->symb->repr);
+        }
+        else
+        {
+            buf[0] = '\'';
+            buf[1] = core_symb_ids->symb->u.terminal.code;
+            buf[2] = '\'';
+            buf[3] = 0;
+        }
+    }
+    else
+    {
+        strcpy(buf, core_symb_ids->symb->repr);
+    }
+    fprintf(stderr, "Add completion core=%d symb=%s to id=%d\n",
+            core_symb_ids->core->id,
+            buf,
+            id+1);
+
     vect_add_id(ps, &core_symb_ids->completions, id);
 }
 
