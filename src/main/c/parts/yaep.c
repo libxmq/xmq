@@ -2798,8 +2798,9 @@ struct YaepParseState
     /* The following are number of unique set cores and their start
        dotted_rules, unique matched_length vectors and their summary length, and
        number of parent indexes. */
-    int n_set_cores, n_set_core_start_dotted_rules;
-    int n_set_matched_lengths, n_set_matched_lengths_len, n_parent_dotted_rule_ids;
+    int num_set_cores, num_set_core_start_dotted_rules;
+    int num_set_matched_lengths, num_set_matched_lengths_len;
+    int n_parent_dotted_rule_ids;
 
     /* Number unique sets and their start dotted_rules. */
     int n_sets, n_sets_start_dotted_rules;
@@ -4024,8 +4025,8 @@ static void set_init(YaepParseState *ps, int n_input)
                                 set_core_matched_lengths_hash, set_core_matched_lengths_eq);
     ps->set_of_triplets_core_term_lookahead = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
                                                core_term_lookahead_hash, core_term_lookahead_eq);
-    ps->n_set_cores = ps->n_set_core_start_dotted_rules= 0;
-    ps->n_set_matched_lengths = ps->n_set_matched_lengths_len = ps->n_parent_dotted_rule_ids = 0;
+    ps->num_set_cores = ps->num_set_core_start_dotted_rules= 0;
+    ps->num_set_matched_lengths = ps->num_set_matched_lengths_len = ps->n_parent_dotted_rule_ids = 0;
     ps->n_sets = ps->n_sets_start_dotted_rules= 0;
     ps->num_triplets_core_term_lookahead = 0;
     dotted_rule_matched_length_set_init(ps);
@@ -4172,13 +4173,13 @@ static int set_insert(YaepParseState *ps)
     {
         OS_TOP_FINISH(ps->set_matched_lengths_os);
        *entry =(hash_table_entry_t)ps->new_set;
-        ps->n_set_matched_lengths++;
-        ps->n_set_matched_lengths_len += ps->new_num_started_dotted_rules;
+        ps->num_set_matched_lengths++;
+        ps->num_set_matched_lengths_len += ps->new_num_started_dotted_rules;
     }
 #else
     OS_TOP_FINISH(ps->set_matched_lengths_os);
-    ps->n_set_matched_lengths++;
-    ps->n_set_matched_lengths_len += ps->new_num_started_dotted_rules;
+    ps->num_set_matched_lengths++;
+    ps->num_set_matched_lengths_len += ps->new_num_started_dotted_rules;
 #endif
     /* Insert set core into table.*/
     setup_set_core_hash(ps->new_set);
@@ -4194,12 +4195,12 @@ static int set_insert(YaepParseState *ps)
     else
     {
         OS_TOP_FINISH(ps->set_cores_os);
-        ps->new_core->id = ps->n_set_cores++;
+        ps->new_core->id = ps->num_set_cores++;
         ps->new_core->num_dotted_rules = ps->new_num_started_dotted_rules;
         ps->new_core->num_all_matched_lengths = ps->new_num_started_dotted_rules;
         ps->new_core->parent_dotted_rule_ids = NULL;
        *entry =(hash_table_entry_t)ps->new_set;
-        ps->n_set_core_start_dotted_rules+= ps->new_num_started_dotted_rules;
+        ps->num_set_core_start_dotted_rules+= ps->new_num_started_dotted_rules;
         result = true;
     }
 #ifdef USE_SET_HASH_TABLE
@@ -6304,7 +6305,7 @@ static unsigned parse_state_hash(hash_table_entry_t s)
 {
     YaepParseTreeBuildState*state =((YaepParseTreeBuildState*) s);
 
-    /* The table contains only states with dot at the end of rule.*/
+    /* The table contains only states with dot at the end of rule. */
     assert(state->dot_j == state->rule->rhs_len);
     return(((jauquet_prime_mod32* hash_shift +
              (unsigned)(size_t) state->rule)* hash_shift +
@@ -7451,13 +7452,13 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  ps->run.grammar->term_sets_ptr->n_term_sets, ps->run.grammar->term_sets_ptr->n_term_sets_size);
         fprintf(stderr,
                  "       #unique set cores = %d, #their start dotted_rules = %d\n",
-                 ps->n_set_cores, ps->n_set_core_start_dotted_rules);
+                 ps->num_set_cores, ps->num_set_core_start_dotted_rules);
         fprintf(stderr,
                  "       #parent indexes for some non start dotted_rules = %d\n",
                  ps->n_parent_dotted_rule_ids);
         fprintf(stderr,
                  "       #unique set dist. vects = %d, their length = %d\n",
-                 ps->n_set_matched_lengths, ps->n_set_matched_lengths_len);
+                 ps->num_set_matched_lengths, ps->num_set_matched_lengths_len);
         fprintf(stderr,
                  "       #unique sets = %d, #their start dotted_rules = %d\n",
                  ps->n_sets, ps->n_sets_start_dotted_rules);
