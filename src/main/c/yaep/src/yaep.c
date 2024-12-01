@@ -629,6 +629,27 @@ struct YaepTreeNodeVisit
     YaepTreeNode*node;
 };
 
+/* The following strucrture describes an error recovery state(an
+   error recovery alternative.*/
+struct recovery_state
+{
+    /* The following three members define start state set used to given error
+       recovery state(alternative).*/
+    /* The following members define what part of original(at the error
+       recovery start) state set will be head of error recovery state.  The
+       head will be all states from original state set with indexes in range
+       [0, last_original_state_set_el].*/
+    int last_original_state_set_el;
+    /* The following two members define tail of state set for this error recovery state.*/
+    int state_set_tail_length;
+    YaepStateSet **state_set_tail;
+    /* The following member is index of start token for given error recovery state.*/
+    int start_tok;
+    /* The following member value is number of tokens already ignored in
+       order to achieved given error recovery state.*/
+    int backward_move_cost;
+};
+
 struct YaepParseState
 {
     YaepParseRun run;
@@ -3512,26 +3533,6 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
    tokens ignored by error recovery.  The error recovery is successful
    when we match at least RECOVERY_TOKEN_MATCHES tokens.*/
 
-/* The following strucrture describes an error recovery state(an
-   error recovery alternative.*/
-struct recovery_state
-{
-    /* The following three members define start state set used to given error
-       recovery state(alternative).*/
-    /* The following members define what part of original(at the error
-       recovery start) state set will be head of error recovery state.  The
-       head will be all states from original state set with indexes in range
-       [0, last_original_state_set_el].*/
-    int last_original_state_set_el;
-    /* The following two members define tail of state set for this error recovery state.*/
-    int state_set_tail_length;
-    YaepStateSet **state_set_tail;
-    /* The following member is index of start token for given error recovery state.*/
-    int start_tok;
-    /* The following member value is number of tokens already ignored in
-       order to achieved given error recovery state.*/
-    int backward_move_cost;
-};
 /* The following function may be called if you know that state set has
    original sets upto LAST element(including it).  Such call can
    decrease number of restored sets.*/
