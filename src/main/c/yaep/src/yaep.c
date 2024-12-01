@@ -882,6 +882,9 @@ typedef struct YaepParseState YaepParseState;
 
 // Declarations ///////////////////////////////////////////////////
 
+static void error_recovery(YaepParseState *ps, int *start, int *stop);
+static void error_recovery_init(YaepParseState *ps);
+static void free_error_recovery(YaepParseState *ps);
 static void read_input(YaepParseState *ps);
 static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
 static void print_rule_with_dot(YaepParseState *ps, FILE *f, YaepRule *rule, int pos);
@@ -3737,297 +3740,6 @@ static struct recovery_state pop_recovery_state(YaepParseState *ps)
     return*state;
 }
 
-/* The following function is major function of syntax error recovery.
-   It searches for minimal cost error recovery.  The function returns
-   in the parameter number of start token which is ignored and number
-   of the first token which is not ignored.  If the number of ignored
-   tokens is zero,*START will be equal to*STOP and number of token
-   on which the error occurred.*/
-static void error_recovery(YaepParseState *ps, int *start, int *stop)
-{
-    YaepStateSet*set;
-    YaepCoreSymbVect*core_symb_vect;
-    struct recovery_state best_state, state;
-    int best_cost, cost, num_matched_input;
-    int back_to_frontier_move_cost, backward_move_cost;
-
-
-    if (ps->run.verbose)
-        fprintf(stderr, "\n++Error recovery start\n");
-
-   *stop =*start = -1;
-    OS_CREATE(ps->recovery_state_tail_sets, ps->run.grammar->alloc, 0);
-    VLO_NULLIFY(ps->original_state_set_tail_stack);
-    VLO_NULLIFY(ps->recovery_state_stack);
-    ps->recovery_start_set_k = ps->state_set_k;
-    ps->recovery_start_tok_i = ps->tok_i;
-    /* Initialize error recovery state stack.*/
-    ps->state_set_k
-        = ps->back_state_set_frontier = find_error_state_set_set(ps, ps->state_set_k, &backward_move_cost);
-    back_to_frontier_move_cost = backward_move_cost;
-    save_original_sets(ps);
-    push_recovery_state(ps, ps->back_state_set_frontier, backward_move_cost);
-    best_cost = 2* ps->input_len;
-    while(VLO_LENGTH(ps->recovery_state_stack) > 0)
-    {
-        state = pop_recovery_state(ps);
-        cost = state.backward_move_cost;
-        assert(cost >= 0);
-        /* Advance back frontier.*/
-        if (ps->back_state_set_frontier > 0)
-	{
-            int saved_state_set_k = ps->state_set_k;
-            int saved_tok_i = ps->tok_i;
-
-            /* Advance back frontier.*/
-            ps->state_set_k = find_error_state_set_set(ps, ps->back_state_set_frontier - 1,
-                                         &backward_move_cost);
-
-            if (ps->run.debug)
-                fprintf(stderr, "++++Advance back frontier: old=%d, new=%d\n",
-                         ps->back_state_set_frontier, ps->state_set_k);
-
-            if (best_cost >= back_to_frontier_move_cost + backward_move_cost)
-	    {
-                ps->back_state_set_frontier = ps->state_set_k;
-                ps->tok_i = ps->recovery_start_tok_i;
-                save_original_sets(ps);
-                back_to_frontier_move_cost += backward_move_cost;
-                push_recovery_state(ps, ps->back_state_set_frontier,
-                                    back_to_frontier_move_cost);
-                set_original_set_bound(ps, state.last_original_state_set_el);
-                ps->tok_i = saved_tok_i;
-	    }
-            ps->state_set_k = saved_state_set_k;
-	}
-        /* Advance head frontier.*/
-        if (best_cost >= cost + 1)
-	{
-            ps->tok_i++;
-            if (ps->tok_i < ps->input_len)
-	    {
-
-                if (ps->run.debug)
-		{
-                    fprintf(stderr,
-                             "++++Advance head frontier(one pos): tok=%d, ",
-                             ps->tok_i);
-                    symbol_print(stderr, ps->input[ps->tok_i].symb, true);
-                    fprintf(stderr, "\n");
-
-		}
-                push_recovery_state(ps, state.last_original_state_set_el, cost + 1);
-	    }
-            ps->tok_i--;
-	}
-        set = ps->state_sets[ps->state_set_k];
-
-        if (ps->run.debug)
-	{
-            fprintf(stderr, "++++Trying set=%d, tok=%d, ", ps->state_set_k, ps->tok_i);
-            symbol_print(stderr, ps->input[ps->tok_i].symb, true);
-            fprintf(stderr, "\n");
-	}
-
-        /* Shift error:*/
-        core_symb_vect = core_symb_vect_find(ps, set->core, ps->run.grammar->term_error);
-        assert(core_symb_vect != NULL);
-
-        if (ps->run.debug)
-            fprintf(stderr, "++++Making error shift in set=%d\n", ps->state_set_k);
-
-        complete_and_predict_new_state_set(ps, set, core_symb_vect, NULL);
-        ps->state_sets[++ps->state_set_k] = ps->new_set;
-
-        if (ps->run.debug)
-	{
-            fprintf(stderr, "++Trying new set=%d\n", ps->state_set_k);
-            print_state_set(ps, stderr, ps->new_set, ps->state_set_k, ps->run.debug, ps->run.debug);
-            fprintf(stderr, "\n");
-	}
-
-        /* Search the first right token.*/
-        while(ps->tok_i < ps->input_len)
-	{
-            core_symb_vect = core_symb_vect_find(ps, ps->new_core, ps->input[ps->tok_i].symb);
-            if (core_symb_vect != NULL)
-                break;
-
-            if (ps->run.debug)
-	    {
-                fprintf(stderr, "++++++Skipping=%d ", ps->tok_i);
-                symbol_print(stderr, ps->input[ps->tok_i].symb, true);
-                fprintf(stderr, "\n");
-	    }
-
-            cost++;
-            ps->tok_i++;
-            if (cost >= best_cost)
-            {
-                /* This state is worse.  Reject it.*/
-                break;
-            }
-	}
-        if (cost >= best_cost)
-	{
-
-            if (ps->run.debug)
-            {
-                fprintf(stderr, "++++Too many ignored tokens %d(already worse recovery)\n", cost);
-            }
-
-            /* This state is worse.  Reject it.*/
-            continue;
-	}
-        if (ps->tok_i >= ps->input_len)
-	{
-
-            if (ps->run.debug)
-            {
-                fprintf(stderr, "++++We achieved EOF without matching -- reject this state\n");
-            }
-
-            /* Go to the next recovery state.  To guarantee that state set does
-               not grows to much we don't push secondary error recovery
-               states without matching in primary error recovery state.
-               So we can say that state set length at most twice length of
-               tokens array.*/
-            continue;
-	}
-
-        /* Shift the found token.*/
-        YaepSymbol *NEXT_TERM = NULL;
-        if (ps->tok_i + 1 < ps->input_len)
-        {
-            NEXT_TERM = ps->input[ps->tok_i + 1].symb;
-        }
-        complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERM);
-        ps->state_sets[++ps->state_set_k] = ps->new_set;
-
-        if (ps->run.debug)
-	{
-            fprintf(stderr, "++++++++Building new set=%d\n", ps->state_set_k);
-            if (ps->run.debug)
-            {
-                print_state_set(ps, stderr, ps->new_set, ps->state_set_k, ps->run.debug, ps->run.debug);
-            }
-	}
-
-        num_matched_input = 0;
-        for(;;)
-	{
-
-            if (ps->run.debug)
-	    {
-                fprintf(stderr, "++++++Matching=%d ", ps->tok_i);
-                symbol_print(stderr, ps->input[ps->tok_i].symb, true);
-                fprintf(stderr, "\n");
-	    }
-
-            num_matched_input++;
-            if (num_matched_input >= ps->run.grammar->recovery_token_matches)
-            {
-                break;
-            }
-            ps->tok_i++;
-            if (ps->tok_i >= ps->input_len)
-            {
-                break;
-            }
-            /* Push secondary recovery state(with error in set).*/
-            if (core_symb_vect_find(ps, ps->new_core, ps->run.grammar->term_error) != NULL)
-	    {
-                if (ps->run.debug)
-		{
-                    fprintf(stderr, "++++Found secondary state: original set=%d, tok=%d, ",
-                            state.last_original_state_set_el, ps->tok_i);
-                    symbol_print(stderr, ps->input[ps->tok_i].symb, true);
-                    fprintf(stderr, "\n");
-		}
-
-                push_recovery_state(ps, state.last_original_state_set_el, cost);
-	    }
-            core_symb_vect = core_symb_vect_find(ps, ps->new_core, ps->input[ps->tok_i].symb);
-            if (core_symb_vect == NULL)
-            {
-                break;
-            }
-            YaepSymbol *NEXT_TERM = NULL;
-            if (ps->tok_i + 1 < ps->input_len)
-            {
-                NEXT_TERM = ps->input[ps->tok_i + 1].symb;
-            }
-            complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERM);
-            ps->state_sets[++ps->state_set_k] = ps->new_set;
-	}
-        if (num_matched_input >= ps->run.grammar->recovery_token_matches || ps->tok_i >= ps->input_len)
-	{
-            /* We found an error recovery.  Compare costs.*/
-            if (best_cost > cost)
-	    {
-
-                if (ps->run.debug)
-                {
-                    fprintf(stderr, "++++Ignore %d tokens(the best recovery now): Save it:\n", cost);
-                }
-                best_cost = cost;
-                if (ps->tok_i == ps->input_len)
-                {
-                    ps->tok_i--;
-                }
-                best_state = new_recovery_state(ps, state.last_original_state_set_el,
-                                                 /* It may be any constant here
-                                                    because it is not used.*/
-                                                 0);
-               *start = ps->recovery_start_tok_i - state.backward_move_cost;
-               *stop = *start + cost;
-	    }
-            else if (ps->run.debug)
-            {
-                fprintf(stderr, "++++Ignore %d tokens(worse recovery)\n", cost);
-            }
-	}
-
-        else if (cost < best_cost && ps->run.debug)
-            fprintf(stderr, "++++No %d matched tokens  -- reject this state\n",
-                     ps->run.grammar->recovery_token_matches);
-
-    }
-
-    if (ps->run.debug)
-        fprintf(stderr, "\n++Finishing error recovery: Restore best state\n");
-
-    set_recovery_state(ps, &best_state);
-
-    if (ps->run.debug)
-    {
-        fprintf(stderr, "\n++Error recovery end: curr token %d=", ps->tok_i);
-        symbol_print(stderr, ps->input[ps->tok_i].symb, true);
-        fprintf(stderr, ", Current set=%d:\n", ps->state_set_k);
-        if (ps->run.debug)
-        {
-            print_state_set(ps, stderr, ps->state_sets[ps->state_set_k],
-                            ps->state_set_k, ps->run.debug, ps->run.debug);
-        }
-    }
-
-    OS_DELETE(ps->recovery_state_tail_sets);
-}
-
-/* Initialize work with error recovery.*/
-static void error_recovery_init(YaepParseState *ps)
-{
-    VLO_CREATE(ps->original_state_set_tail_stack, ps->run.grammar->alloc, 4096);
-    VLO_CREATE(ps->recovery_state_stack, ps->run.grammar->alloc, 4096);
-}
-
-/* Finalize work with error recovery.*/
-static void free_error_recovery(YaepParseState *ps)
-{
-    VLO_DELETE(ps->recovery_state_stack);
-    VLO_DELETE(ps->original_state_set_tail_stack);
-}
-
 /* Return true if goto set SET from parsing list PLACE can be used as
    the next set.  The criterium is that all origin sets of start
    dotted_rules are the same as from PLACE. */
@@ -5786,4 +5498,295 @@ static int default_read_token(YaepParseRun *ps, void **attr)
     ps->buffer_i += len;
 
     return uc;
+}
+
+/* The following function is major function of syntax error recovery.
+   It searches for minimal cost error recovery.  The function returns
+   in the parameter number of start token which is ignored and number
+   of the first token which is not ignored.  If the number of ignored
+   tokens is zero,*START will be equal to*STOP and number of token
+   on which the error occurred.*/
+static void error_recovery(YaepParseState *ps, int *start, int *stop)
+{
+    YaepStateSet*set;
+    YaepCoreSymbVect*core_symb_vect;
+    struct recovery_state best_state, state;
+    int best_cost, cost, num_matched_input;
+    int back_to_frontier_move_cost, backward_move_cost;
+
+
+    if (ps->run.verbose)
+        fprintf(stderr, "\n++Error recovery start\n");
+
+   *stop =*start = -1;
+    OS_CREATE(ps->recovery_state_tail_sets, ps->run.grammar->alloc, 0);
+    VLO_NULLIFY(ps->original_state_set_tail_stack);
+    VLO_NULLIFY(ps->recovery_state_stack);
+    ps->recovery_start_set_k = ps->state_set_k;
+    ps->recovery_start_tok_i = ps->tok_i;
+    /* Initialize error recovery state stack.*/
+    ps->state_set_k
+        = ps->back_state_set_frontier = find_error_state_set_set(ps, ps->state_set_k, &backward_move_cost);
+    back_to_frontier_move_cost = backward_move_cost;
+    save_original_sets(ps);
+    push_recovery_state(ps, ps->back_state_set_frontier, backward_move_cost);
+    best_cost = 2* ps->input_len;
+    while(VLO_LENGTH(ps->recovery_state_stack) > 0)
+    {
+        state = pop_recovery_state(ps);
+        cost = state.backward_move_cost;
+        assert(cost >= 0);
+        /* Advance back frontier.*/
+        if (ps->back_state_set_frontier > 0)
+	{
+            int saved_state_set_k = ps->state_set_k;
+            int saved_tok_i = ps->tok_i;
+
+            /* Advance back frontier.*/
+            ps->state_set_k = find_error_state_set_set(ps, ps->back_state_set_frontier - 1,
+                                         &backward_move_cost);
+
+            if (ps->run.debug)
+                fprintf(stderr, "++++Advance back frontier: old=%d, new=%d\n",
+                         ps->back_state_set_frontier, ps->state_set_k);
+
+            if (best_cost >= back_to_frontier_move_cost + backward_move_cost)
+	    {
+                ps->back_state_set_frontier = ps->state_set_k;
+                ps->tok_i = ps->recovery_start_tok_i;
+                save_original_sets(ps);
+                back_to_frontier_move_cost += backward_move_cost;
+                push_recovery_state(ps, ps->back_state_set_frontier,
+                                    back_to_frontier_move_cost);
+                set_original_set_bound(ps, state.last_original_state_set_el);
+                ps->tok_i = saved_tok_i;
+	    }
+            ps->state_set_k = saved_state_set_k;
+	}
+        /* Advance head frontier.*/
+        if (best_cost >= cost + 1)
+	{
+            ps->tok_i++;
+            if (ps->tok_i < ps->input_len)
+	    {
+
+                if (ps->run.debug)
+		{
+                    fprintf(stderr,
+                             "++++Advance head frontier(one pos): tok=%d, ",
+                             ps->tok_i);
+                    symbol_print(stderr, ps->input[ps->tok_i].symb, true);
+                    fprintf(stderr, "\n");
+
+		}
+                push_recovery_state(ps, state.last_original_state_set_el, cost + 1);
+	    }
+            ps->tok_i--;
+	}
+        set = ps->state_sets[ps->state_set_k];
+
+        if (ps->run.debug)
+	{
+            fprintf(stderr, "++++Trying set=%d, tok=%d, ", ps->state_set_k, ps->tok_i);
+            symbol_print(stderr, ps->input[ps->tok_i].symb, true);
+            fprintf(stderr, "\n");
+	}
+
+        /* Shift error:*/
+        core_symb_vect = core_symb_vect_find(ps, set->core, ps->run.grammar->term_error);
+        assert(core_symb_vect != NULL);
+
+        if (ps->run.debug)
+            fprintf(stderr, "++++Making error shift in set=%d\n", ps->state_set_k);
+
+        complete_and_predict_new_state_set(ps, set, core_symb_vect, NULL);
+        ps->state_sets[++ps->state_set_k] = ps->new_set;
+
+        if (ps->run.debug)
+	{
+            fprintf(stderr, "++Trying new set=%d\n", ps->state_set_k);
+            print_state_set(ps, stderr, ps->new_set, ps->state_set_k, ps->run.debug, ps->run.debug);
+            fprintf(stderr, "\n");
+	}
+
+        /* Search the first right token.*/
+        while(ps->tok_i < ps->input_len)
+	{
+            core_symb_vect = core_symb_vect_find(ps, ps->new_core, ps->input[ps->tok_i].symb);
+            if (core_symb_vect != NULL)
+                break;
+
+            if (ps->run.debug)
+	    {
+                fprintf(stderr, "++++++Skipping=%d ", ps->tok_i);
+                symbol_print(stderr, ps->input[ps->tok_i].symb, true);
+                fprintf(stderr, "\n");
+	    }
+
+            cost++;
+            ps->tok_i++;
+            if (cost >= best_cost)
+            {
+                /* This state is worse.  Reject it.*/
+                break;
+            }
+	}
+        if (cost >= best_cost)
+	{
+
+            if (ps->run.debug)
+            {
+                fprintf(stderr, "++++Too many ignored tokens %d(already worse recovery)\n", cost);
+            }
+
+            /* This state is worse.  Reject it.*/
+            continue;
+	}
+        if (ps->tok_i >= ps->input_len)
+	{
+
+            if (ps->run.debug)
+            {
+                fprintf(stderr, "++++We achieved EOF without matching -- reject this state\n");
+            }
+
+            /* Go to the next recovery state.  To guarantee that state set does
+               not grows to much we don't push secondary error recovery
+               states without matching in primary error recovery state.
+               So we can say that state set length at most twice length of
+               tokens array.*/
+            continue;
+	}
+
+        /* Shift the found token.*/
+        YaepSymbol *NEXT_TERM = NULL;
+        if (ps->tok_i + 1 < ps->input_len)
+        {
+            NEXT_TERM = ps->input[ps->tok_i + 1].symb;
+        }
+        complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERM);
+        ps->state_sets[++ps->state_set_k] = ps->new_set;
+
+        if (ps->run.debug)
+	{
+            fprintf(stderr, "++++++++Building new set=%d\n", ps->state_set_k);
+            if (ps->run.debug)
+            {
+                print_state_set(ps, stderr, ps->new_set, ps->state_set_k, ps->run.debug, ps->run.debug);
+            }
+	}
+
+        num_matched_input = 0;
+        for(;;)
+	{
+
+            if (ps->run.debug)
+	    {
+                fprintf(stderr, "++++++Matching=%d ", ps->tok_i);
+                symbol_print(stderr, ps->input[ps->tok_i].symb, true);
+                fprintf(stderr, "\n");
+	    }
+
+            num_matched_input++;
+            if (num_matched_input >= ps->run.grammar->recovery_token_matches)
+            {
+                break;
+            }
+            ps->tok_i++;
+            if (ps->tok_i >= ps->input_len)
+            {
+                break;
+            }
+            /* Push secondary recovery state(with error in set).*/
+            if (core_symb_vect_find(ps, ps->new_core, ps->run.grammar->term_error) != NULL)
+	    {
+                if (ps->run.debug)
+		{
+                    fprintf(stderr, "++++Found secondary state: original set=%d, tok=%d, ",
+                            state.last_original_state_set_el, ps->tok_i);
+                    symbol_print(stderr, ps->input[ps->tok_i].symb, true);
+                    fprintf(stderr, "\n");
+		}
+
+                push_recovery_state(ps, state.last_original_state_set_el, cost);
+	    }
+            core_symb_vect = core_symb_vect_find(ps, ps->new_core, ps->input[ps->tok_i].symb);
+            if (core_symb_vect == NULL)
+            {
+                break;
+            }
+            YaepSymbol *NEXT_TERM = NULL;
+            if (ps->tok_i + 1 < ps->input_len)
+            {
+                NEXT_TERM = ps->input[ps->tok_i + 1].symb;
+            }
+            complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERM);
+            ps->state_sets[++ps->state_set_k] = ps->new_set;
+	}
+        if (num_matched_input >= ps->run.grammar->recovery_token_matches || ps->tok_i >= ps->input_len)
+	{
+            /* We found an error recovery.  Compare costs.*/
+            if (best_cost > cost)
+	    {
+
+                if (ps->run.debug)
+                {
+                    fprintf(stderr, "++++Ignore %d tokens(the best recovery now): Save it:\n", cost);
+                }
+                best_cost = cost;
+                if (ps->tok_i == ps->input_len)
+                {
+                    ps->tok_i--;
+                }
+                best_state = new_recovery_state(ps, state.last_original_state_set_el,
+                                                 /* It may be any constant here
+                                                    because it is not used.*/
+                                                 0);
+               *start = ps->recovery_start_tok_i - state.backward_move_cost;
+               *stop = *start + cost;
+	    }
+            else if (ps->run.debug)
+            {
+                fprintf(stderr, "++++Ignore %d tokens(worse recovery)\n", cost);
+            }
+	}
+
+        else if (cost < best_cost && ps->run.debug)
+            fprintf(stderr, "++++No %d matched tokens  -- reject this state\n",
+                     ps->run.grammar->recovery_token_matches);
+
+    }
+
+    if (ps->run.debug)
+        fprintf(stderr, "\n++Finishing error recovery: Restore best state\n");
+
+    set_recovery_state(ps, &best_state);
+
+    if (ps->run.debug)
+    {
+        fprintf(stderr, "\n++Error recovery end: curr token %d=", ps->tok_i);
+        symbol_print(stderr, ps->input[ps->tok_i].symb, true);
+        fprintf(stderr, ", Current set=%d:\n", ps->state_set_k);
+        if (ps->run.debug)
+        {
+            print_state_set(ps, stderr, ps->state_sets[ps->state_set_k],
+                            ps->state_set_k, ps->run.debug, ps->run.debug);
+        }
+    }
+
+    OS_DELETE(ps->recovery_state_tail_sets);
+}
+
+/* Initialize work with error recovery.*/
+static void error_recovery_init(YaepParseState *ps)
+{
+    VLO_CREATE(ps->original_state_set_tail_stack, ps->run.grammar->alloc, 4096);
+    VLO_CREATE(ps->recovery_state_stack, ps->run.grammar->alloc, 4096);
+}
+
+/* Finalize work with error recovery.*/
+static void free_error_recovery(YaepParseState *ps)
+{
+    VLO_DELETE(ps->recovery_state_stack);
+    VLO_DELETE(ps->original_state_set_tail_stack);
 }
