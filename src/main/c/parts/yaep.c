@@ -3134,13 +3134,13 @@ static YaepSymbol *symb_find_by_code(YaepParseState *ps, int code)
     {
         if ((code < ps->run.grammar->symbs_ptr->symb_code_trans_vect_start) ||(code >= ps->run.grammar->symbs_ptr->symb_code_trans_vect_end))
         {
-            TRACE_FA(ps, "vec %d -> NULL", code);
+            TRACE_FA(ps, "vec '%c' -> NULL", code);
             return NULL;
         }
         else
         {
-            YaepSymbol*r = ps->run.grammar->symbs_ptr->symb_code_trans_vect[code - ps->run.grammar->symbs_ptr->symb_code_trans_vect_start];
-            TRACE_FA(ps, "vec %d -> %p", code, r);
+            YaepSymbol *r = ps->run.grammar->symbs_ptr->symb_code_trans_vect[code - ps->run.grammar->symbs_ptr->symb_code_trans_vect_start];
+            TRACE_FA(ps, "vec '%c' -> %p", code, r);
             return r;
         }
     }
@@ -3149,7 +3149,7 @@ static YaepSymbol *symb_find_by_code(YaepParseState *ps, int code)
     symb.u.terminal.code = code;
     YaepSymbol*r =(YaepSymbol*)*find_hash_table_entry(ps->run.grammar->symbs_ptr->map_code_to_symb, &symb, false);
 
-    TRACE_FA(ps, "hash %d -> %p", code, r);
+    TRACE_FA(ps, "hash '%c' -> %p", code, r);
 
     return r;
 }
