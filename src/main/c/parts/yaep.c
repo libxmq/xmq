@@ -5390,13 +5390,15 @@ static void expand_new_start_set(YaepParseState *ps)
     for(int i = 0; i < ps->new_core->num_dotted_rules; i++)
     {
         dotted_rule = ps->new_dotted_rules[i];
+        // Check if there is a symbol after the dot? */
         if (dotted_rule->dot_j < dotted_rule->rule->rhs_len)
 	{
-            /* There is a symbol after dot in the dotted_rule. */
+            // Yes.
             symb = dotted_rule->rule->rhs[dotted_rule->dot_j];
             core_symb_vect = core_symb_vect_find(ps, ps->new_core, symb);
             if (core_symb_vect == NULL)
 	    {
+                // No vector found for this core+symb combo.
                 core_symb_vect = core_symb_vect_new(ps, ps->new_core, symb);
                 if (!symb->terminal_p)
                 {
@@ -5406,7 +5408,12 @@ static void expand_new_start_set(YaepParseState *ps)
                     }
                 }
 	    }
+            // Add a prediction to the core+symb lookup that points to this dotted rule.
+            // I.e. when we reach a certain symbol within this core, the we just find
+            // a vector using the core+symb lookup. This vector stores all predicted dotted_rules
+            // that should be added for furtherparsing.
             core_symb_vect_new_add_prediction_id(ps, core_symb_vect, i);
+
             if (symb->empty_p && i >= ps->new_core->num_all_matched_lengths)
             {
                 set_new_add_initial_dotted_rule(ps, create_dotted_rule(ps, dotted_rule->rule,
