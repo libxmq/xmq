@@ -2433,7 +2433,7 @@ struct YaepSymbol
             terminal_bitset_t *first, *follow;
         } nonterminal;
     } u;
-    /* The following member is true if it is nonterminal. */
+    /* If true, the use terminal in union. */
     bool terminal_p;
     /* The following member value(if defined) is true if the symbol is
        accessible(derivated) from the axiom. */
@@ -2524,7 +2524,7 @@ struct YaepVect
 struct YaepCoreSymbVect
 {
     /* The set core.*/
-    YaepStateSetCore *set_core;
+    YaepStateSetCore *core;
 
     /* The symbol.*/
     YaepSymbol *symb;
@@ -4332,7 +4332,7 @@ static void pl_init(YaepParseState *ps)
 }
 
 /* The following function creates Earley's parser list.*/
-static void pl_create(YaepParseState *ps)
+static void allocate_state_sets(YaepParseState *ps)
 {
     /* Because of error recovery we may have sets 2 times more than tokens.*/
     void *mem = yaep_malloc(ps->run.grammar->alloc, sizeof(YaepStateSet*)*(ps->input_len + 1)* 2);
@@ -4405,7 +4405,7 @@ static unsigned core_symb_ids_hash(hash_table_entry_t t)
     YaepCoreSymbVect*core_symb_ids =(YaepCoreSymbVect*) t;
 
     return((jauquet_prime_mod32* hash_shift
-            +(size_t)/* was unsigned */core_symb_ids->set_core)* hash_shift
+            +(size_t)/* was unsigned */core_symb_ids->core)* hash_shift
            +(size_t)/* was unsigned */core_symb_ids->symb);
 }
 
@@ -4415,7 +4415,7 @@ static bool core_symb_ids_eq(hash_table_entry_t t1, hash_table_entry_t t2)
     YaepCoreSymbVect*core_symb_ids1 =(YaepCoreSymbVect*) t1;
     YaepCoreSymbVect*core_symb_ids2 =(YaepCoreSymbVect*) t2;
 
-    return(core_symb_ids1->set_core == core_symb_ids2->set_core
+    return(core_symb_ids1->core == core_symb_ids2->core
             && core_symb_ids1->symb == core_symb_ids2->symb);
 }
 #endif
@@ -4498,7 +4498,7 @@ static YaepCoreSymbVect **core_symb_ids_addr_get(YaepParseState *ps, YaepCoreSym
     YaepCoreSymbVect**result;
 
     if (triple->symb->cached_core_symb_ids != NULL
-        && triple->symb->cached_core_symb_ids->set_core == triple->set_core)
+        && triple->symb->cached_core_symb_ids->core == triple->core)
     {
         return &triple->symb->cached_core_symb_ids;
     }
@@ -4555,28 +4555,28 @@ static YaepCoreSymbVect **core_symb_ids_addr_get(YaepParseState *ps, YaepStateSe
 #endif
 
 /* The following function returns the triple(if any) for given SET_CORE and SYMB. */
-static YaepCoreSymbVect *core_symb_ids_find(YaepParseState *ps, YaepStateSetCore *set_core, YaepSymbol *symb)
+static YaepCoreSymbVect *core_symb_ids_find(YaepParseState *ps, YaepStateSetCore *core, YaepSymbol *symb)
 {
     YaepCoreSymbVect *r;
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
     YaepCoreSymbVect core_symb_ids;
 
-    core_symb_ids.set_core = set_core;
+    core_symb_ids.core = core;
     core_symb_ids.symb = symb;
     r = *core_symb_ids_addr_get(ps, &core_symb_ids, false);
 #else
-    r = *core_symb_ids_addr_get(ps, set_core, symb);
+    r = *core_symb_ids_addr_get(ps, core, symb);
 #endif
 
-    TRACE_FA(ps, "core=%d %s -> %p", set_core->id, symb->repr, r);
+    TRACE_FA(ps, "core=%d %s -> %p", core->id, symb->repr, r);
 
     return r;
 }
 
 /* Add given triple(SET_CORE, TERM, ...) to the table and return
    pointer to it.*/
-static YaepCoreSymbVect *core_symb_ids_new(YaepParseState *ps, YaepStateSetCore*set_core, YaepSymbol*symb)
+static YaepCoreSymbVect *core_symb_ids_new(YaepParseState *ps, YaepStateSetCore*core, YaepSymbol*symb)
 {
     YaepCoreSymbVect*triple;
     YaepCoreSymbVect**addr;
@@ -4585,14 +4585,14 @@ static YaepCoreSymbVect *core_symb_ids_new(YaepParseState *ps, YaepStateSetCore*
     /* Create table element.*/
     OS_TOP_EXPAND(ps->core_symb_ids_os, sizeof(YaepCoreSymbVect));
     triple =((YaepCoreSymbVect*) OS_TOP_BEGIN(ps->core_symb_ids_os));
-    triple->set_core = set_core;
+    triple->core = core;
     triple->symb = symb;
     OS_TOP_FINISH(ps->core_symb_ids_os);
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
     addr = core_symb_ids_addr_get(ps, triple, true);
 #else
-    addr = core_symb_ids_addr_get(ps, set_core, symb);
+    addr = core_symb_ids_addr_get(ps, core, symb);
 #endif
     assert(*addr == NULL);
    *addr = triple;
@@ -4623,9 +4623,33 @@ static void vect_add_id(YaepParseState *ps, YaepVect *vec, int id)
 
 /* Add index EL to the transition vector of CORE_SYMB_IDS being formed.*/
 static void core_symb_ids_new_add_prediction_id(YaepParseState *ps,
-                                                 YaepCoreSymbVect *core_symb_ids,
-                                                 int id)
+                                                YaepCoreSymbVect *core_symb_ids,
+                                                int id)
 {
+    char buf[64];
+    if (core_symb_ids->symb->terminal_p)
+    {
+        int code = core_symb_ids->symb->u.terminal.code;
+        if (code < 32 || code > 126)
+        {
+            strcpy(buf, core_symb_ids->symb->repr);
+        }
+        else
+        {
+            buf[0] = '\'';
+            buf[1] = core_symb_ids->symb->u.terminal.code;
+            buf[2] = '\'';
+            buf[3] = 0;
+        }
+    }
+    else
+    {
+        strcpy(buf, core_symb_ids->symb->repr);
+    }
+    fprintf(stderr, "Add prediction core=%d symb=%s to id=%d\n",
+            core_symb_ids->core->id,
+            buf,
+            id);
     vect_add_id(ps, &core_symb_ids->predictions, id);
 }
 
@@ -5998,7 +6022,6 @@ static void save_cached_set(YaepParseState *ps, YaepStateSetTermLookAhead *entry
     entry->curr = (i + 1) % MAX_CACHED_GOTO_RESULTS;
 }
 
-/* The following function is major function forming parsing list in Earley's algorithm.*/
 static void perform_parse(YaepParseState *ps)
 {
     error_recovery_init(ps);
@@ -6028,7 +6051,7 @@ static void perform_parse(YaepParseState *ps)
 	{
             fprintf(stderr, "\nScan input[%d]= ", ps->tok_i);
             symbol_print(stderr, THE_TERMINAL, true);
-            fprintf(stderr, " state_set_k=%d\n", ps->state_set_k);
+            fprintf(stderr, " state_set_k=%d\n\n", ps->state_set_k);
 	}
 
         YaepStateSet *set = ps->state_sets[ps->state_set_k];
@@ -7199,11 +7222,14 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     read_input(ps);
     yaep_parse_init(ps, ps->input_len);
     parse_init_p = true;
-    pl_create(ps);
+    allocate_state_sets(ps);
     table_collisions = get_all_collisions();
     table_searches = get_all_searches();
 
+    // Perform a parse.
     perform_parse(ps);
+
+    // Reconstruct a parse tree from the state sets.
     *root = build_parse_tree(ps, ambiguous_p);
 
     table_collisions = get_all_collisions() - table_collisions;
