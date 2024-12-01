@@ -2245,7 +2245,7 @@ bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out
 /* Terminals are stored a in term set using bits in a bit array.
    The array consists of long ints, typedefed as term_set_el_t.
    A long int is 8 bytes, ie 64 bits. */
-typedef long int term_set_el_t;
+typedef long int terminal_bitset_t;
 
 /* Calculate the number of required term set elements from the number of bits we want to store. */
 #define CALC_NUM_ELEMENTS(num_bits) ((num_bits+63)/64)
@@ -2425,7 +2425,7 @@ struct YaepSymbol
                nonterminal.*/
             bool loop_p;
             /* The following members are FIRST and FOLLOW sets of the nonterminal. */
-            term_set_el_t *first, *follow;
+            terminal_bitset_t *first, *follow;
         } nonterminal;
     } u;
     /* The following member is true if it is nonterminal. */
@@ -2479,11 +2479,11 @@ struct YaepTerminalSet
     // Set identity.
     int id;
 
-    // Number of long ints (term_set_el_t) used to store the bit array.
+    // Number of long ints (terminal_bitset_t) used to store the bit array.
     int num_elements;
 
     // The bit array itself.
-    term_set_el_t *set;
+    terminal_bitset_t *set;
 };
 
 /* The following container for the abstract data.*/
@@ -2598,7 +2598,7 @@ struct YaepStateSet
 
 /* A dotted_rule stores:
        reference to a rule,
-       current dot position in rule,
+       current dot position in the rule,
        lookup bitset for a quick terminal lookahead check, to see if this dotted_rule should be applied.
 
    This is stored separately and this means that we can reuse dotted_rule objects to save memory,
@@ -2626,7 +2626,7 @@ struct YaepDottedRule
     /* The following member is the dotted_rule lookahead it is equal to
        FIRST(the dotted_rule tail || FOLLOW(lhs)) for statik lookaheads
        and FIRST(the dotted_rule tail || context) for dynamic ones. */
-    term_set_el_t *lookahead;
+    terminal_bitset_t *lookahead;
 };
 
 struct YaepInputToken
@@ -3317,9 +3317,9 @@ static void symbolstorage_free(YaepParseState *ps, YaepSymbolStorage *symbs)
 static unsigned term_set_hash(hash_table_entry_t s)
 {
     YaepTerminalSet *ts = (YaepTerminalSet*)s;
-    term_set_el_t *set = ts->set;
+    terminal_bitset_t *set = ts->set;
     int num_elements = ts->num_elements;
-    term_set_el_t *bound = set + num_elements;
+    terminal_bitset_t *bound = set + num_elements;
     unsigned result = jauquet_prime_mod32;
 
     while (set < bound)
@@ -3334,13 +3334,13 @@ static bool term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepTerminalSet *ts1 = (YaepTerminalSet*)s1;
     YaepTerminalSet *ts2 = (YaepTerminalSet*)s2;
-    term_set_el_t *i = ts1->set;
-    term_set_el_t *j = ts2->set;
+    terminal_bitset_t *i = ts1->set;
+    terminal_bitset_t *j = ts2->set;
 
     assert(ts1->num_elements == ts2->num_elements);
 
     int num_elements = ts1->num_elements;
-    term_set_el_t *i_bound = i + num_elements;
+    terminal_bitset_t *i_bound = i + num_elements;
 
     while (i < i_bound)
     {
@@ -3369,18 +3369,18 @@ static YaepTerminalSetStorage *termsetstorage_create(YaepGrammar *grammar)
 }
 
 /* Return new terminal SET.  Its value is undefined. */
-static term_set_el_t *term_set_create(YaepParseState *ps, int num_terminals)
+static terminal_bitset_t *term_set_create(YaepParseState *ps, int num_terminals)
 {
     int size;
-    term_set_el_t*result;
+    terminal_bitset_t*result;
 
-    assert(sizeof(term_set_el_t) <= 8);
+    assert(sizeof(terminal_bitset_t) <= 8);
     size = 8;
     /* Make it 64 bit multiple to have the same statistics for 64 bit
        machines. num_terminals = global variable ps->run.grammar->symbs_ptr->n_terms*/
     size =((num_terminals + CHAR_BIT* 8 - 1) /(CHAR_BIT* 8))* 8;
     OS_TOP_EXPAND(ps->run.grammar->term_sets_ptr->term_set_os, size);
-    result =(term_set_el_t*) OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->term_set_os);
+    result =(terminal_bitset_t*) OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->term_set_os);
     OS_TOP_FINISH(ps->run.grammar->term_sets_ptr->term_set_os);
     ps->run.grammar->term_sets_ptr->n_term_sets++;
     ps->run.grammar->term_sets_ptr->n_term_sets_size += size;
@@ -3389,25 +3389,25 @@ static term_set_el_t *term_set_create(YaepParseState *ps, int num_terminals)
 }
 
 /* Make terminal SET empty.*/
-static void term_set_clear(term_set_el_t* set, int num_terminals)
+static void term_set_clear(terminal_bitset_t* set, int num_terminals)
 {
-    term_set_el_t*bound;
+    terminal_bitset_t*bound;
     int size;
 
-    size = ((num_terminals + CHAR_BIT* sizeof(term_set_el_t) - 1)
-            /(CHAR_BIT* sizeof(term_set_el_t)));
+    size = ((num_terminals + CHAR_BIT* sizeof(terminal_bitset_t) - 1)
+            /(CHAR_BIT* sizeof(terminal_bitset_t)));
     bound = set + size;
     while(set < bound)
        *set++ = 0;
 }
 
 /* Copy SRC into DEST. */
-static void term_set_copy(term_set_el_t *dest, term_set_el_t *src, int num_terminals)
+static void term_set_copy(terminal_bitset_t *dest, terminal_bitset_t *src, int num_terminals)
 {
-    term_set_el_t *bound;
+    terminal_bitset_t *bound;
     int size;
 
-    size = ((num_terminals + CHAR_BIT* sizeof(term_set_el_t) - 1) / (CHAR_BIT* sizeof(term_set_el_t)));
+    size = ((num_terminals + CHAR_BIT* sizeof(terminal_bitset_t) - 1) / (CHAR_BIT* sizeof(terminal_bitset_t)));
     bound = dest + size;
 
     while (dest < bound)
@@ -3417,13 +3417,13 @@ static void term_set_copy(term_set_el_t *dest, term_set_el_t *src, int num_termi
 }
 
 /* Add all terminals from set OP with to SET.  Return true if SET has been changed.*/
-static bool term_set_or(term_set_el_t *set, term_set_el_t *op, int num_terminals)
+static bool term_set_or(terminal_bitset_t *set, terminal_bitset_t *op, int num_terminals)
 {
-    term_set_el_t *bound;
+    terminal_bitset_t *bound;
     int size;
     bool changed_p;
 
-    size = ((num_terminals + CHAR_BIT* sizeof(term_set_el_t) - 1) / (CHAR_BIT* sizeof(term_set_el_t)));
+    size = ((num_terminals + CHAR_BIT* sizeof(terminal_bitset_t) - 1) / (CHAR_BIT* sizeof(terminal_bitset_t)));
     bound = set + size;
     changed_p = false;
     while (set < bound)
@@ -3438,16 +3438,16 @@ static bool term_set_or(term_set_el_t *set, term_set_el_t *op, int num_terminals
 }
 
 /* Add terminal with number NUM to SET.  Return true if SET has been changed.*/
-static bool term_set_up(term_set_el_t *set, int num, int num_terminals)
+static bool term_set_up(terminal_bitset_t *set, int num, int num_terminals)
 {
     int ind;
-    term_set_el_t bit;
+    terminal_bitset_t bit;
     bool changed_p;
 
     assert(num < num_terminals);
 
-    ind = num / (CHAR_BIT* sizeof(term_set_el_t));
-    bit = ((term_set_el_t) 1) << (num %(CHAR_BIT* sizeof(term_set_el_t)));
+    ind = num / (CHAR_BIT* sizeof(terminal_bitset_t));
+    bit = ((terminal_bitset_t) 1) << (num %(CHAR_BIT* sizeof(terminal_bitset_t)));
     changed_p = (set[ind] & bit ? false : true);
     set[ind] |= bit;
 
@@ -3455,15 +3455,15 @@ static bool term_set_up(term_set_el_t *set, int num, int num_terminals)
 }
 
 /* Return true if terminal with number NUM is in SET. */
-static int term_set_test(term_set_el_t *set, int num, int num_terminals)
+static int term_set_test(terminal_bitset_t *set, int num, int num_terminals)
 {
     int ind;
-    term_set_el_t bit;
+    terminal_bitset_t bit;
 
     assert(num >= 0 && num < num_terminals);
 
-    ind = num /(CHAR_BIT* sizeof(term_set_el_t));
-    bit = ((term_set_el_t) 1) << (num %(CHAR_BIT* sizeof(term_set_el_t)));
+    ind = num /(CHAR_BIT* sizeof(terminal_bitset_t));
+    bit = ((terminal_bitset_t) 1) << (num %(CHAR_BIT* sizeof(terminal_bitset_t)));
 
     return (set[ind] & bit) != 0;
 }
@@ -3472,7 +3472,7 @@ static int term_set_test(term_set_el_t *set, int num, int num_terminals)
    returns its number.  If the set is already in table it returns -its
    number - 1(which is always negative).  Don't set after
    insertion!!! */
-static int term_set_insert(YaepParseState *ps, term_set_el_t *set)
+static int term_set_insert(YaepParseState *ps, terminal_bitset_t *set)
 {
     hash_table_entry_t *entry;
     YaepTerminalSet term_set,*term_set_ptr;
@@ -3501,7 +3501,7 @@ static int term_set_insert(YaepParseState *ps, term_set_el_t *set)
 }
 
 /* The following function returns set which is in the table with number NUM. */
-static term_set_el_t *term_set_from_table(YaepParseState *ps, int num)
+static terminal_bitset_t *term_set_from_table(YaepParseState *ps, int num)
 {
     assert(num >= 0);
     assert((long unsigned int)num < VLO_LENGTH(ps->run.grammar->term_sets_ptr->term_set_vlo) / sizeof(YaepTerminalSet*));
@@ -3510,7 +3510,7 @@ static term_set_el_t *term_set_from_table(YaepParseState *ps, int num)
 }
 
 /* Print terminal SET into file F. */
-static void term_set_print(YaepParseState *ps, FILE *f, term_set_el_t *set, int num_terminals)
+static void term_set_print(YaepParseState *ps, FILE *f, terminal_bitset_t *set, int num_terminals)
 {
     bool first = true;
     fprintf(f, "[");
@@ -5383,7 +5383,7 @@ static void expand_new_start_set(YaepParseState *ps)
     if (ps->run.grammar->lookahead_level > 1)
     {
         YaepDottedRule *new_dotted_rule, *shifted_dotted_rule;
-        term_set_el_t *context_set;
+        terminal_bitset_t *context_set;
         int dotted_rule_id, context, j;
         bool changed_p;
 
@@ -5439,7 +5439,7 @@ static void build_start_set(YaepParseState *ps)
 
     if (ps->run.grammar->lookahead_level > 1)
     {
-        term_set_el_t *empty_context_set = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terminals);
+        terminal_bitset_t *empty_context_set = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terminals);
         term_set_clear(empty_context_set, ps->run.grammar->symbs_ptr->num_terminals);
         context = term_set_insert(ps, empty_context_set);
 
