@@ -3045,7 +3045,6 @@ jmp_buf error_longjump_buff;
 
 // Implementations ////////////////////////////////////////////////////////////////////
 
-/* Hash of symbol representation. */
 static unsigned symb_repr_hash(hash_table_entry_t s)
 {
     YaepSymbol *sym = (YaepSymbol*)s;
@@ -3059,7 +3058,6 @@ static unsigned symb_repr_hash(hash_table_entry_t s)
      return result;
 }
 
-/* Equality of symbol representations. */
 static bool symb_repr_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepSymbol *sym1 = (YaepSymbol*)s1;
@@ -3068,7 +3066,6 @@ static bool symb_repr_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     return !strcmp(sym1->repr, sym2->repr);
 }
 
-/* Hash of terminal code. */
 static unsigned symb_code_hash(hash_table_entry_t s)
 {
     YaepSymbol *sym = (YaepSymbol*)s;
@@ -3078,7 +3075,6 @@ static unsigned symb_code_hash(hash_table_entry_t s)
     return sym->u.terminal.code;
 }
 
-/* Equality of terminal codes.*/
 static bool symb_code_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepSymbol *sym1 = (YaepSymbol*)s1;
@@ -3089,7 +3085,6 @@ static bool symb_code_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     return sym1->u.terminal.code == sym2->u.terminal.code;
 }
 
-/* Initialize work with symbols and returns storage for the symbols.*/
 static YaepSymbolStorage *symbolstorage_create(YaepGrammar *grammar)
 {
     void*mem;
@@ -3337,8 +3332,6 @@ static void symbolstorage_free(YaepParseState *ps, YaepSymbolStorage *symbs)
     TRACE_FA(ps, "%p\n" , symbs);
 }
 
-
-/* Hash of table terminal set.*/
 static unsigned terminal_bitset_hash(hash_table_entry_t s)
 {
     YaepTerminalSet *ts = (YaepTerminalSet*)s;
@@ -4427,7 +4420,7 @@ static bool core_symb_ids_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 }
 #endif
 
-static unsigned vect_els_hash(YaepVect*v)
+static unsigned vect_ids_hash(YaepVect*v)
 {
     unsigned result = jauquet_prime_mod32;
 
@@ -4438,7 +4431,7 @@ static unsigned vect_els_hash(YaepVect*v)
     return result;
 }
 
-static bool vect_els_eq(YaepVect *v1, YaepVect *v2)
+static bool vect_ids_eq(YaepVect *v1, YaepVect *v2)
 {
     if (v1->len != v2->len) return false;
 
@@ -4449,25 +4442,25 @@ static bool vect_els_eq(YaepVect *v1, YaepVect *v2)
     return true;
 }
 
-static unsigned transition_els_hash(hash_table_entry_t t)
+static unsigned prediction_ids_hash(hash_table_entry_t t)
 {
-    return vect_els_hash(&((YaepCoreSymbVect*)t)->predictions);
+    return vect_ids_hash(&((YaepCoreSymbVect*)t)->predictions);
 }
 
-static bool transition_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
+static bool prediction_ids_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 {
-    return vect_els_eq(&((YaepCoreSymbVect*)t1)->predictions,
+    return vect_ids_eq(&((YaepCoreSymbVect*)t1)->predictions,
                        &((YaepCoreSymbVect*)t2)->predictions);
 }
 
-static unsigned reduce_els_hash(hash_table_entry_t t)
+static unsigned completion_ids_hash(hash_table_entry_t t)
 {
-    return vect_els_hash(&((YaepCoreSymbVect*)t)->completions);
+    return vect_ids_hash(&((YaepCoreSymbVect*)t)->completions);
 }
 
-static bool reduce_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
+static bool completion_ids_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 {
-    return vect_els_eq(&((YaepCoreSymbVect*) t1)->completions,
+    return vect_ids_eq(&((YaepCoreSymbVect*) t1)->completions,
                        &((YaepCoreSymbVect*) t2)->completions);
 }
 
@@ -4487,8 +4480,8 @@ static void core_symb_ids_init(YaepParseState *ps)
     OS_CREATE(ps->core_symb_tab_rows, ps->run.grammar->alloc, 8192);
 #endif
 
-    ps->map_transition_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000, transition_els_hash, transition_els_eq);
-    ps->map_reduce_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000, reduce_els_hash, reduce_els_eq);
+    ps->map_transition_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000, prediction_ids_hash, prediction_ids_eq);
+    ps->map_reduce_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000, completion_ids_hash, completion_ids_eq);
 
     ps->n_core_symb_pairs = ps->n_core_symb_ids_len = 0;
     ps->n_transition_vects = ps->n_transition_vect_len = 0;
@@ -6127,7 +6120,6 @@ static void perform_parse(YaepParseState *ps)
     }
 }
 
-/* Hash of parse state.*/
 static unsigned parse_state_hash(hash_table_entry_t s)
 {
     YaepParseTreeBuildState*state =((YaepParseTreeBuildState*) s);
@@ -6139,7 +6131,6 @@ static unsigned parse_state_hash(hash_table_entry_t s)
              state->from_i)* hash_shift + state->state_set_k);
 }
 
-/* Equality of parse states.*/
 static bool parse_state_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepParseTreeBuildState*state1 =((YaepParseTreeBuildState*) s1);
