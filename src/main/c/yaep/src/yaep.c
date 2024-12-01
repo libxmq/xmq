@@ -1110,7 +1110,7 @@ static YaepSymbol *symb_get(YaepParseState *ps, int id)
     YaepSymbol *symb = vect[id];
     assert(symb->id == id);
 
-    TRACE_FA(ps, "%d -> %s", id, symb->repr);
+    TRACE_FA(ps, "%d -> %s", id, symb->hr);
 
     return symb;
 }
