@@ -66,6 +66,10 @@ char *xmq_unquote_as_c(const char *start, const char *stop, bool remove_quotes);
 char *potentially_add_leading_ending_space(const char *start, const char *stop);
 bool find_line_col(const char *start, const char *stop, size_t at, int *line, int *col);
 
+// Return an array of unicode code points for a given category name.
+// Ie. Ll=Letters lowercase, Lu=Letters uppercase etc.
+unsigned short *unicode_category(const char *name);
+
 #define TEXT_MODULE
 
 #endif // TEXT_H

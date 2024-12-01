@@ -3354,7 +3354,6 @@ static bool terminal_bitset_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     return true;
 }
 
-/* Initialize work with terminal sets and returns storage for terminal sets.*/
 static YaepTerminalSetStorage *termsetstorage_create(YaepGrammar *grammar)
 {
     void *mem;
@@ -3370,27 +3369,24 @@ static YaepTerminalSetStorage *termsetstorage_create(YaepGrammar *grammar)
     return result;
 }
 
-/* Return new terminal SET.  Its value is undefined. */
 static terminal_bitset_t *terminal_bitset_create(YaepParseState *ps, int num_terminals)
 {
-    int size;
-    terminal_bitset_t*result;
+    int size_bytes;
+    terminal_bitset_t *result;
 
     assert(sizeof(terminal_bitset_t) <= 8);
-    size = 8;
-    /* Make it 64 bit multiple to have the same statistics for 64 bit
-       machines. num_terminals = global variable ps->run.grammar->symbs_ptr->n_terms*/
-    size =((num_terminals + CHAR_BIT* 8 - 1) /(CHAR_BIT* 8))* 8;
-    OS_TOP_EXPAND(ps->run.grammar->term_sets_ptr->terminal_bitset_os, size);
+
+    size_bytes = sizeof(terminal_bitset_t) * CALC_NUM_ELEMENTS(num_terminals);
+
+    OS_TOP_EXPAND(ps->run.grammar->term_sets_ptr->terminal_bitset_os, size_bytes);
     result =(terminal_bitset_t*) OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->terminal_bitset_os);
     OS_TOP_FINISH(ps->run.grammar->term_sets_ptr->terminal_bitset_os);
     ps->run.grammar->term_sets_ptr->n_term_sets++;
-    ps->run.grammar->term_sets_ptr->n_term_sets_size += size;
+    ps->run.grammar->term_sets_ptr->n_term_sets_size += size_bytes;
 
     return result;
 }
 
-/* Make terminal SET empty.*/
 static void terminal_bitset_clear(terminal_bitset_t* set, int num_terminals)
 {
     terminal_bitset_t*bound;
@@ -3399,7 +3395,22 @@ static void terminal_bitset_clear(terminal_bitset_t* set, int num_terminals)
     size = CALC_NUM_ELEMENTS(num_terminals);
     bound = set + size;
     while(set < bound)
+    {
        *set++ = 0;
+    }
+}
+
+static void terminal_bitset_fill(terminal_bitset_t* set, int num_terminals)
+{
+    terminal_bitset_t*bound;
+    int size;
+
+    size = CALC_NUM_ELEMENTS(num_terminals);
+    bound = set + size;
+    while(set < bound)
+    {
+        *set++ = (terminal_bitset_t)-1;
+    }
 }
 
 /* Copy SRC into DEST. */
@@ -3457,18 +3468,39 @@ static bool terminal_bitset_up(terminal_bitset_t *set, int num, int num_terminal
     return changed_p;
 }
 
+/* Remove terminal with number NUM from SET.  Return true if SET has been changed.*/
+static bool terminal_bitset_down(terminal_bitset_t *set, int num, int num_terminals)
+{
+    const int bits_in_word = CHAR_BIT*sizeof(terminal_bitset_t);
+
+    int word_offset;
+    terminal_bitset_t bit_in_word;
+    bool changed_p;
+
+    assert(num < num_terminals);
+
+    word_offset = num / bits_in_word;
+    bit_in_word = ((terminal_bitset_t)1) << (num % bits_in_word);
+    changed_p = (set[word_offset] & bit_in_word ? true : false);
+    set[word_offset] &= ~bit_in_word;
+
+    return changed_p;
+}
+
 /* Return true if terminal with number NUM is in SET. */
 static int terminal_bitset_test(terminal_bitset_t *set, int num, int num_terminals)
 {
-    int ind;
-    terminal_bitset_t bit;
+    const int bits_in_word = CHAR_BIT*sizeof(terminal_bitset_t);
 
-    assert(num >= 0 && num < num_terminals);
+    int word_offset;
+    terminal_bitset_t bit_in_word;
 
-    ind = num /(CHAR_BIT* sizeof(terminal_bitset_t));
-    bit = ((terminal_bitset_t) 1) << (num %(CHAR_BIT* sizeof(terminal_bitset_t)));
+    assert(num < num_terminals);
 
-    return (set[ind] & bit) != 0;
+    word_offset = num / bits_in_word;
+    bit_in_word = ((terminal_bitset_t)1) << (num % bits_in_word);
+
+    return (set[word_offset] & bit_in_word) != 0;
 }
 
 /* The following function inserts terminal SET into the table and
@@ -3516,6 +3548,24 @@ static terminal_bitset_t *terminal_bitset_from_table(YaepParseState *ps, int num
 static void terminal_bitset_print(YaepParseState *ps, FILE *f, terminal_bitset_t *set, int num_terminals)
 {
     bool first = true;
+    int num_set = 0;
+    for (int i = 0; i < num_terminals; i++) num_set += terminal_bitset_test(set, i, num_terminals);
+
+    if (num_set > num_terminals/2)
+    {
+        // Print the negation
+        fprintf(f, "~[");
+        for (int i = 0; i < num_terminals; i++)
+        {
+            if (!terminal_bitset_test(set, i, num_terminals))
+            {
+                if (!first) fprintf(f, " "); else first = false;
+                symbol_print(f, term_get(ps, i), false);
+            }
+        }
+        fprintf(f, "]");
+    }
+
     fprintf(f, "[");
     for (int i = 0; i < num_terminals; i++)
     {
