@@ -5546,7 +5546,7 @@ static void build_start_set(YaepParseState *ps)
 static void complete_and_predict_new_state_set(YaepParseState *ps,
                                                YaepStateSet *set,
                                                YaepCoreSymbVect *core_symb_vect,
-                                               YaepSymbol *NEXT_TERM)
+                                               YaepSymbol *NEXT_TERMINAL)
 {
     YaepStateSet *prev_set;
     YaepStateSetCore *set_core, *prev_set_core;
@@ -5556,7 +5556,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
     int place;
     YaepVect *predictions;
 
-    int lookahead_term_id = NEXT_TERM?NEXT_TERM->u.terminal.term_id:-1;
+    int lookahead_term_id = NEXT_TERMINAL?NEXT_TERMINAL->u.terminal.term_id:-1;
     local_lookahead_level = (lookahead_term_id < 0 ? 0 : ps->run.grammar->lookahead_level);
     set_core = set->core;
     set_new_start(ps);
@@ -5935,8 +5935,8 @@ static int try_to_recover(YaepParseState *ps)
 }
 
 static YaepStateSetTermLookAhead *lookup_cached_set(YaepParseState *ps,
-                                                    YaepSymbol *THE_TERM,
-                                                    YaepSymbol *NEXT_TERM,
+                                                    YaepSymbol *THE_TERMINAL,
+                                                    YaepSymbol *NEXT_TERMINAL,
                                                     YaepStateSet *set)
 {
     int i;
@@ -5947,8 +5947,8 @@ static YaepStateSetTermLookAhead *lookup_cached_set(YaepParseState *ps,
 
     new_core_term_lookahead = (YaepStateSetTermLookAhead*) OS_TOP_BEGIN(ps->triplet_core_term_lookahead_os);
     new_core_term_lookahead->set = set;
-    new_core_term_lookahead->term = THE_TERM;
-    new_core_term_lookahead->lookahead = NEXT_TERM?NEXT_TERM->u.terminal.term_id:-1;
+    new_core_term_lookahead->term = THE_TERMINAL;
+    new_core_term_lookahead->lookahead = NEXT_TERMINAL?NEXT_TERMINAL->u.terminal.term_id:-1;
 
     for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
     {
@@ -5989,12 +5989,12 @@ static YaepStateSetTermLookAhead *lookup_cached_set(YaepParseState *ps,
 }
 
 /* Save(set, term, lookahead) -> new_set in the table. */
-static void save_cached_set(YaepParseState *ps, YaepStateSetTermLookAhead *entry, YaepSymbol *NEXT_TERM)
+static void save_cached_set(YaepParseState *ps, YaepStateSetTermLookAhead *entry, YaepSymbol *NEXT_TERMINAL)
 {
     int i = entry->curr;
     entry->result[i] = ps->new_set;
     entry->place[i] = ps->state_set_k;
-    entry->lookahead = NEXT_TERM ? NEXT_TERM->u.terminal.term_id : -1;
+    entry->lookahead = NEXT_TERMINAL ? NEXT_TERMINAL->u.terminal.term_id : -1;
     entry->curr = (i + 1) % MAX_CACHED_GOTO_RESULTS;
 }
 
@@ -6016,18 +6016,18 @@ static void perform_parse(YaepParseState *ps)
     for(; ps->tok_i < ps->input_len; ps->tok_i++)
     {
         assert(ps->state_set_k == ps->tok_i);
-        YaepSymbol *THE_TERM = ps->input[ps->tok_i].symb;
-        YaepSymbol *NEXT_TERM = NULL;
+        YaepSymbol *THE_TERMINAL = ps->input[ps->tok_i].symb;
+        YaepSymbol *NEXT_TERMINAL = NULL;
 
         if (ps->run.grammar->lookahead_level != 0 && ps->tok_i < ps->input_len-1)
         {
-            NEXT_TERM = ps->input[ps->tok_i + 1].symb;
+            NEXT_TERMINAL = ps->input[ps->tok_i + 1].symb;
         }
 
         if (ps->run.debug)
 	{
             fprintf(stderr, "\nScan input[%d]= ", ps->tok_i);
-            symbol_print(stderr, THE_TERM, true);
+            symbol_print(stderr, THE_TERMINAL, true);
             fprintf(stderr, " state_set_k=%d\n", ps->state_set_k);
 	}
 
@@ -6035,12 +6035,12 @@ static void perform_parse(YaepParseState *ps)
         ps->new_set = NULL;
 
 #ifdef USE_SET_HASH_TABLE
-        YaepStateSetTermLookAhead *entry = lookup_cached_set(ps, THE_TERM, NEXT_TERM, set);
+        YaepStateSetTermLookAhead *entry = lookup_cached_set(ps, THE_TERMINAL, NEXT_TERMINAL, set);
 #endif
 
         if (ps->new_set == NULL)
 	{
-            YaepCoreSymbVect *core_symb_vect = core_symb_vect_find(ps, set->core, THE_TERM);
+            YaepCoreSymbVect *core_symb_vect = core_symb_vect_find(ps, set->core, THE_TERMINAL);
 
             if (core_symb_vect == NULL)
 	    {
@@ -6049,10 +6049,10 @@ static void perform_parse(YaepParseState *ps)
                 else if (c == 2) break;
 	    }
 
-            complete_and_predict_new_state_set(ps, set, core_symb_vect, NEXT_TERM);
+            complete_and_predict_new_state_set(ps, set, core_symb_vect, NEXT_TERMINAL);
 
 #ifdef USE_SET_HASH_TABLE
-            save_cached_set(ps, entry, NEXT_TERM);
+            save_cached_set(ps, entry, NEXT_TERMINAL);
 #endif
 	}
 
@@ -7794,12 +7794,12 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 	}
 
         /* Shift the found token.*/
-        YaepSymbol *NEXT_TERM = NULL;
+        YaepSymbol *NEXT_TERMINAL = NULL;
         if (ps->tok_i + 1 < ps->input_len)
         {
-            NEXT_TERM = ps->input[ps->tok_i + 1].symb;
+            NEXT_TERMINAL = ps->input[ps->tok_i + 1].symb;
         }
-        complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERM);
+        complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERMINAL);
         ps->state_sets[++ps->state_set_k] = ps->new_set;
 
         if (ps->run.debug)
@@ -7850,12 +7850,12 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             {
                 break;
             }
-            YaepSymbol *NEXT_TERM = NULL;
+            YaepSymbol *NEXT_TERMINAL = NULL;
             if (ps->tok_i + 1 < ps->input_len)
             {
-                NEXT_TERM = ps->input[ps->tok_i + 1].symb;
+                NEXT_TERMINAL = ps->input[ps->tok_i + 1].symb;
             }
-            complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERM);
+            complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERMINAL);
             ps->state_sets[++ps->state_set_k] = ps->new_set;
 	}
         if (num_matched_input >= ps->run.grammar->recovery_token_matches || ps->tok_i >= ps->input_len)
