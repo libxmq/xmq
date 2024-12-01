@@ -2329,6 +2329,9 @@ typedef struct YaepParseTreeBuildState YaepParseTreeBuildState;
 struct YaepTreeNodeVisit;
 typedef struct YaepTreeNodeVisit YaepTreeNodeVisit;
 
+struct YaepRecoveryState;
+typedef struct YaepRecoveryState YaepRecoveryState;
+
 // Structure definitions ////////////////////////////////////////////////////
 
 struct YaepGrammar
@@ -2763,7 +2766,7 @@ struct YaepTreeNodeVisit
 
 /* The following strucrture describes an error recovery state(an
    error recovery alternative.*/
-struct recovery_state
+struct YaepRecoveryState
 {
     /* The following three members define start state set used to given error
        recovery state(alternative).*/
@@ -5765,9 +5768,9 @@ static int find_error_state_set_set(YaepParseState *ps, int start_state_set_set,
 /* The following function creates and returns new error recovery state
    with charcteristics(LAST_ORIGINAL_STATE_SET_EL, BACKWARD_MOVE_COST,
    state_set_k, tok_i).*/
-static struct recovery_state new_recovery_state(YaepParseState *ps, int last_original_state_set_el, int backward_move_cost)
+static YaepRecoveryState new_recovery_state(YaepParseState *ps, int last_original_state_set_el, int backward_move_cost)
 {
-    struct recovery_state state;
+    YaepRecoveryState state;
     int i;
 
     assert(backward_move_cost >= 0);
@@ -5807,7 +5810,7 @@ static struct recovery_state new_recovery_state(YaepParseState *ps, int last_ori
    it on the states stack top. */
 static void push_recovery_state(YaepParseState *ps, int last_original_state_set_el, int backward_move_cost)
 {
-    struct recovery_state state;
+    YaepRecoveryState state;
 
     state = new_recovery_state(ps, last_original_state_set_el, backward_move_cost);
 
@@ -5824,7 +5827,7 @@ static void push_recovery_state(YaepParseState *ps, int last_original_state_set_
 
 /* The following function sets up parser state(pl, state_set_k, ps->tok_i)
    according to error recovery STATE. */
-static void set_recovery_state(YaepParseState *ps, struct recovery_state*state)
+static void set_recovery_state(YaepParseState *ps, YaepRecoveryState*state)
 {
     int i;
 
@@ -5858,12 +5861,12 @@ static void set_recovery_state(YaepParseState *ps, struct recovery_state*state)
 /* The following function pops the top error recovery state from
    states stack.  The current parser state will be setup according to
    the state. */
-static struct recovery_state pop_recovery_state(YaepParseState *ps)
+static YaepRecoveryState pop_recovery_state(YaepParseState *ps)
 {
-    struct recovery_state *state;
+    YaepRecoveryState *state;
 
-    state = &((struct recovery_state*) VLO_BOUND(ps->recovery_state_stack))[-1];
-    VLO_SHORTEN(ps->recovery_state_stack, sizeof(struct recovery_state));
+    state = &((YaepRecoveryState*) VLO_BOUND(ps->recovery_state_stack))[-1];
+    VLO_SHORTEN(ps->recovery_state_stack, sizeof(YaepRecoveryState));
 
     if (ps->run.debug)
         fprintf(stderr, "++++Pop error recovery state\n");
@@ -7642,7 +7645,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 {
     YaepStateSet*set;
     YaepCoreSymbVect*core_symb_vect;
-    struct recovery_state best_state, state;
+    YaepRecoveryState best_state, state;
     int best_cost, cost, num_matched_input;
     int back_to_frontier_move_cost, backward_move_cost;
 
