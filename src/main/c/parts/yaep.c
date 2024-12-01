@@ -2243,7 +2243,7 @@ bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out
 #endif
 
 /* Terminals are stored a in term set using bits in a bit array.
-   The array consists of long ints, typedefed as term_set_el_t.
+   The array consists of long ints, typedefed as terminal_bitset_el_t.
    A long int is 8 bytes, ie 64 bits. */
 typedef long int terminal_bitset_t;
 
@@ -2490,16 +2490,16 @@ struct YaepTerminalSet
 struct YaepTerminalSetStorage
 {
     /* All terminal sets are stored in the following os. */
-    os_t term_set_os;
+    os_t terminal_bitset_os;
 
     /* Their values are number of terminal sets and their overall size.*/
     int n_term_sets, n_term_sets_size;
 
     /* The YaepTerminalSet objects are stored in this vlo. */
-    vlo_t term_set_vlo;
+    vlo_t terminal_bitset_vlo;
 
     /* Hashmap from key set (a bit array) to the YaepTerminalSet object from which we use the id. */
-    hash_table_t map_term_set_to_id;
+    hash_table_t map_terminal_bitset_to_id;
 };
 
 /* This page contains table for fast search for vector of indexes of
@@ -3314,7 +3314,7 @@ static void symbolstorage_free(YaepParseState *ps, YaepSymbolStorage *symbs)
 
 
 /* Hash of table terminal set.*/
-static unsigned term_set_hash(hash_table_entry_t s)
+static unsigned terminal_bitset_hash(hash_table_entry_t s)
 {
     YaepTerminalSet *ts = (YaepTerminalSet*)s;
     terminal_bitset_t *set = ts->set;
@@ -3330,7 +3330,7 @@ static unsigned term_set_hash(hash_table_entry_t s)
 }
 
 /* Equality of terminal sets. */
-static bool term_set_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool terminal_bitset_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepTerminalSet *ts1 = (YaepTerminalSet*)s1;
     YaepTerminalSet *ts2 = (YaepTerminalSet*)s2;
@@ -3360,16 +3360,16 @@ static YaepTerminalSetStorage *termsetstorage_create(YaepGrammar *grammar)
 
     mem = yaep_malloc(grammar->alloc, sizeof(YaepTerminalSetStorage));
     result =(YaepTerminalSetStorage*) mem;
-    OS_CREATE(result->term_set_os, grammar->alloc, 0);
-    result->map_term_set_to_id = create_hash_table(grammar->alloc, 1000, term_set_hash, term_set_eq);
-    VLO_CREATE(result->term_set_vlo, grammar->alloc, 4096);
+    OS_CREATE(result->terminal_bitset_os, grammar->alloc, 0);
+    result->map_terminal_bitset_to_id = create_hash_table(grammar->alloc, 1000, terminal_bitset_hash, terminal_bitset_eq);
+    VLO_CREATE(result->terminal_bitset_vlo, grammar->alloc, 4096);
     result->n_term_sets = result->n_term_sets_size = 0;
 
     return result;
 }
 
 /* Return new terminal SET.  Its value is undefined. */
-static terminal_bitset_t *term_set_create(YaepParseState *ps, int num_terminals)
+static terminal_bitset_t *terminal_bitset_create(YaepParseState *ps, int num_terminals)
 {
     int size;
     terminal_bitset_t*result;
@@ -3379,9 +3379,9 @@ static terminal_bitset_t *term_set_create(YaepParseState *ps, int num_terminals)
     /* Make it 64 bit multiple to have the same statistics for 64 bit
        machines. num_terminals = global variable ps->run.grammar->symbs_ptr->n_terms*/
     size =((num_terminals + CHAR_BIT* 8 - 1) /(CHAR_BIT* 8))* 8;
-    OS_TOP_EXPAND(ps->run.grammar->term_sets_ptr->term_set_os, size);
-    result =(terminal_bitset_t*) OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->term_set_os);
-    OS_TOP_FINISH(ps->run.grammar->term_sets_ptr->term_set_os);
+    OS_TOP_EXPAND(ps->run.grammar->term_sets_ptr->terminal_bitset_os, size);
+    result =(terminal_bitset_t*) OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->terminal_bitset_os);
+    OS_TOP_FINISH(ps->run.grammar->term_sets_ptr->terminal_bitset_os);
     ps->run.grammar->term_sets_ptr->n_term_sets++;
     ps->run.grammar->term_sets_ptr->n_term_sets_size += size;
 
@@ -3389,7 +3389,7 @@ static terminal_bitset_t *term_set_create(YaepParseState *ps, int num_terminals)
 }
 
 /* Make terminal SET empty.*/
-static void term_set_clear(terminal_bitset_t* set, int num_terminals)
+static void terminal_bitset_clear(terminal_bitset_t* set, int num_terminals)
 {
     terminal_bitset_t*bound;
     int size;
@@ -3402,7 +3402,7 @@ static void term_set_clear(terminal_bitset_t* set, int num_terminals)
 }
 
 /* Copy SRC into DEST. */
-static void term_set_copy(terminal_bitset_t *dest, terminal_bitset_t *src, int num_terminals)
+static void terminal_bitset_copy(terminal_bitset_t *dest, terminal_bitset_t *src, int num_terminals)
 {
     terminal_bitset_t *bound;
     int size;
@@ -3417,7 +3417,7 @@ static void term_set_copy(terminal_bitset_t *dest, terminal_bitset_t *src, int n
 }
 
 /* Add all terminals from set OP with to SET.  Return true if SET has been changed.*/
-static bool term_set_or(terminal_bitset_t *set, terminal_bitset_t *op, int num_terminals)
+static bool terminal_bitset_or(terminal_bitset_t *set, terminal_bitset_t *op, int num_terminals)
 {
     terminal_bitset_t *bound;
     int size;
@@ -3438,7 +3438,7 @@ static bool term_set_or(terminal_bitset_t *set, terminal_bitset_t *op, int num_t
 }
 
 /* Add terminal with number NUM to SET.  Return true if SET has been changed.*/
-static bool term_set_up(terminal_bitset_t *set, int num, int num_terminals)
+static bool terminal_bitset_up(terminal_bitset_t *set, int num, int num_terminals)
 {
     int ind;
     terminal_bitset_t bit;
@@ -3455,7 +3455,7 @@ static bool term_set_up(terminal_bitset_t *set, int num, int num_terminals)
 }
 
 /* Return true if terminal with number NUM is in SET. */
-static int term_set_test(terminal_bitset_t *set, int num, int num_terminals)
+static int terminal_bitset_test(terminal_bitset_t *set, int num, int num_terminals)
 {
     int ind;
     terminal_bitset_t bit;
@@ -3472,13 +3472,13 @@ static int term_set_test(terminal_bitset_t *set, int num, int num_terminals)
    returns its number.  If the set is already in table it returns -its
    number - 1(which is always negative).  Don't set after
    insertion!!! */
-static int term_set_insert(YaepParseState *ps, terminal_bitset_t *set)
+static int terminal_bitset_insert(YaepParseState *ps, terminal_bitset_t *set)
 {
     hash_table_entry_t *entry;
-    YaepTerminalSet term_set,*term_set_ptr;
+    YaepTerminalSet term_set,*terminal_bitset_ptr;
 
     term_set.set = set;
-    entry = find_hash_table_entry(ps->run.grammar->term_sets_ptr->map_term_set_to_id, &term_set, true);
+    entry = find_hash_table_entry(ps->run.grammar->term_sets_ptr->map_terminal_bitset_to_id, &term_set, true);
 
     if (*entry != NULL)
     {
@@ -3486,37 +3486,37 @@ static int term_set_insert(YaepParseState *ps, terminal_bitset_t *set)
     }
     else
     {
-        OS_TOP_EXPAND(ps->run.grammar->term_sets_ptr->term_set_os, sizeof(YaepTerminalSet));
-        term_set_ptr = (YaepTerminalSet*)OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->term_set_os);
-        OS_TOP_FINISH(ps->run.grammar->term_sets_ptr->term_set_os);
-       *entry =(hash_table_entry_t) term_set_ptr;
-        term_set_ptr->set = set;
-        term_set_ptr->id = (VLO_LENGTH(ps->run.grammar->term_sets_ptr->term_set_vlo) / sizeof(YaepTerminalSet*));
-        term_set_ptr->num_elements = CALC_NUM_ELEMENTS(ps->run.grammar->symbs_ptr->num_terminals);
+        OS_TOP_EXPAND(ps->run.grammar->term_sets_ptr->terminal_bitset_os, sizeof(YaepTerminalSet));
+        terminal_bitset_ptr = (YaepTerminalSet*)OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->terminal_bitset_os);
+        OS_TOP_FINISH(ps->run.grammar->term_sets_ptr->terminal_bitset_os);
+       *entry =(hash_table_entry_t) terminal_bitset_ptr;
+        terminal_bitset_ptr->set = set;
+        terminal_bitset_ptr->id = (VLO_LENGTH(ps->run.grammar->term_sets_ptr->terminal_bitset_vlo) / sizeof(YaepTerminalSet*));
+        terminal_bitset_ptr->num_elements = CALC_NUM_ELEMENTS(ps->run.grammar->symbs_ptr->num_terminals);
 
-        VLO_ADD_MEMORY(ps->run.grammar->term_sets_ptr->term_set_vlo, &term_set_ptr, sizeof(YaepTerminalSet*));
+        VLO_ADD_MEMORY(ps->run.grammar->term_sets_ptr->terminal_bitset_vlo, &terminal_bitset_ptr, sizeof(YaepTerminalSet*));
 
         return((YaepTerminalSet*)*entry)->id;
     }
 }
 
 /* The following function returns set which is in the table with number NUM. */
-static terminal_bitset_t *term_set_from_table(YaepParseState *ps, int num)
+static terminal_bitset_t *terminal_bitset_from_table(YaepParseState *ps, int num)
 {
     assert(num >= 0);
-    assert((long unsigned int)num < VLO_LENGTH(ps->run.grammar->term_sets_ptr->term_set_vlo) / sizeof(YaepTerminalSet*));
+    assert((long unsigned int)num < VLO_LENGTH(ps->run.grammar->term_sets_ptr->terminal_bitset_vlo) / sizeof(YaepTerminalSet*));
 
-    return ((YaepTerminalSet**)VLO_BEGIN(ps->run.grammar->term_sets_ptr->term_set_vlo))[num]->set;
+    return ((YaepTerminalSet**)VLO_BEGIN(ps->run.grammar->term_sets_ptr->terminal_bitset_vlo))[num]->set;
 }
 
 /* Print terminal SET into file F. */
-static void term_set_print(YaepParseState *ps, FILE *f, terminal_bitset_t *set, int num_terminals)
+static void terminal_bitset_print(YaepParseState *ps, FILE *f, terminal_bitset_t *set, int num_terminals)
 {
     bool first = true;
     fprintf(f, "[");
     for (int i = 0; i < num_terminals; i++)
     {
-        if (term_set_test(set, i, num_terminals))
+        if (terminal_bitset_test(set, i, num_terminals))
         {
             if (!first) fprintf(f, " "); else first = false;
             symbol_print(f, term_get(ps, i), false);
@@ -3526,13 +3526,13 @@ static void term_set_print(YaepParseState *ps, FILE *f, terminal_bitset_t *set, 
 }
 
 /* Free memory for terminal sets. */
-static void term_set_empty(YaepTerminalSetStorage *term_sets)
+static void terminal_bitset_empty(YaepTerminalSetStorage *term_sets)
 {
     if (term_sets == NULL) return;
 
-    VLO_NULLIFY(term_sets->term_set_vlo);
-    empty_hash_table(term_sets->map_term_set_to_id);
-    OS_EMPTY(term_sets->term_set_os);
+    VLO_NULLIFY(term_sets->terminal_bitset_vlo);
+    empty_hash_table(term_sets->map_terminal_bitset_to_id);
+    OS_EMPTY(term_sets->terminal_bitset_os);
     term_sets->n_term_sets = term_sets->n_term_sets_size = 0;
 }
 
@@ -3540,9 +3540,9 @@ static void termsetstorage_free(YaepGrammar *grammar, YaepTerminalSetStorage *te
 {
     if (term_sets == NULL) return;
 
-    VLO_DELETE(term_sets->term_set_vlo);
-    delete_hash_table(term_sets->map_term_set_to_id);
-    OS_DELETE(term_sets->term_set_os);
+    VLO_DELETE(term_sets->terminal_bitset_vlo);
+    delete_hash_table(term_sets->map_terminal_bitset_to_id);
+    OS_DELETE(term_sets->terminal_bitset_os);
     yaep_free(grammar->alloc, term_sets);
     term_sets = NULL;
 }
@@ -3712,8 +3712,8 @@ static bool dotted_rule_set_lookahead(YaepParseState *ps, YaepDottedRule *dotted
     }
     else
     {
-        dotted_rule->lookahead = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terminals);
-        term_set_clear(dotted_rule->lookahead, ps->run.grammar->symbs_ptr->num_terminals);
+        dotted_rule->lookahead = terminal_bitset_create(ps, ps->run.grammar->symbs_ptr->num_terminals);
+        terminal_bitset_clear(dotted_rule->lookahead, ps->run.grammar->symbs_ptr->num_terminals);
     }
     symb_ptr = &dotted_rule->rule->rhs[dotted_rule->dot_j];
     while ((symb =*symb_ptr) != NULL)
@@ -3722,11 +3722,11 @@ static bool dotted_rule_set_lookahead(YaepParseState *ps, YaepDottedRule *dotted
 	{
             if (symb->terminal_p)
             {
-                term_set_up(dotted_rule->lookahead, symb->u.terminal.term_id, ps->run.grammar->symbs_ptr->num_terminals);
+                terminal_bitset_up(dotted_rule->lookahead, symb->u.terminal.term_id, ps->run.grammar->symbs_ptr->num_terminals);
             }
             else
             {
-                term_set_or(dotted_rule->lookahead, symb->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terminals);
+                terminal_bitset_or(dotted_rule->lookahead, symb->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terminals);
             }
 	}
         if (!symb->empty_p) break;
@@ -3736,11 +3736,11 @@ static bool dotted_rule_set_lookahead(YaepParseState *ps, YaepDottedRule *dotted
     {
         if (ps->run.grammar->lookahead_level == 1)
         {
-            term_set_or(dotted_rule->lookahead, dotted_rule->rule->lhs->u.nonterminal.follow, ps->run.grammar->symbs_ptr->num_terminals);
+            terminal_bitset_or(dotted_rule->lookahead, dotted_rule->rule->lhs->u.nonterminal.follow, ps->run.grammar->symbs_ptr->num_terminals);
         }
         else if (ps->run.grammar->lookahead_level != 0)
         {
-            term_set_or(dotted_rule->lookahead, term_set_from_table(ps, dotted_rule->context), ps->run.grammar->symbs_ptr->num_terminals);
+            terminal_bitset_or(dotted_rule->lookahead, terminal_bitset_from_table(ps, dotted_rule->context), ps->run.grammar->symbs_ptr->num_terminals);
         }
         return true;
     }
@@ -4729,7 +4729,7 @@ static void yaep_empty_grammar(YaepParseState *ps,YaepGrammar *grammar)
     if (grammar != NULL)
     {
         rulestorage_clear(grammar->rulestorage_ptr);
-        term_set_empty(grammar->term_sets_ptr);
+        terminal_bitset_empty(grammar->term_sets_ptr);
         symb_empty(ps, grammar->symbs_ptr);
     }
 }
@@ -4762,10 +4762,10 @@ static void create_first_follow_sets(YaepParseState *ps)
 
     for (i = 0; (symb = nonterm_get(ps, i)) != NULL; i++)
     {
-        symb->u.nonterminal.first = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terminals);
-        term_set_clear(symb->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terminals);
-        symb->u.nonterminal.follow = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terminals);
-        term_set_clear(symb->u.nonterminal.follow, ps->run.grammar->symbs_ptr->num_terminals);
+        symb->u.nonterminal.first = terminal_bitset_create(ps, ps->run.grammar->symbs_ptr->num_terminals);
+        terminal_bitset_clear(symb->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terminals);
+        symb->u.nonterminal.follow = terminal_bitset_create(ps, ps->run.grammar->symbs_ptr->num_terminals);
+        terminal_bitset_clear(symb->u.nonterminal.follow, ps->run.grammar->symbs_ptr->num_terminals);
     }
     do
     {
@@ -4783,14 +4783,14 @@ static void create_first_follow_sets(YaepParseState *ps)
                     if (rhs_symb->terminal_p)
                     {
                         if (first_continue_p)
-                            changed_p |= term_set_up(symb->u.nonterminal.first,
+                            changed_p |= terminal_bitset_up(symb->u.nonterminal.first,
                                                      rhs_symb->u.terminal.term_id,
                                                      ps->run.grammar->symbs_ptr->num_terminals);
                     }
                     else
                     {
                         if (first_continue_p)
-                            changed_p |= term_set_or(symb->u.nonterminal.first,
+                            changed_p |= terminal_bitset_or(symb->u.nonterminal.first,
                                                      rhs_symb->u.nonterminal.first,
                                                      ps->run.grammar->symbs_ptr->num_terminals);
                         for(k = j + 1; k < rhs_len; k++)
@@ -4798,19 +4798,19 @@ static void create_first_follow_sets(YaepParseState *ps)
                             next_rhs_symb = rhs[k];
                             if (next_rhs_symb->terminal_p)
                                 changed_p
-                                    |= term_set_up(rhs_symb->u.nonterminal.follow,
+                                    |= terminal_bitset_up(rhs_symb->u.nonterminal.follow,
                                                    next_rhs_symb->u.terminal.term_id,
                                                    ps->run.grammar->symbs_ptr->num_terminals);
                             else
                                 changed_p
-                                    |= term_set_or(rhs_symb->u.nonterminal.follow,
+                                    |= terminal_bitset_or(rhs_symb->u.nonterminal.follow,
                                                    next_rhs_symb->u.nonterminal.first,
                                                    ps->run.grammar->symbs_ptr->num_terminals);
                             if (!next_rhs_symb->empty_p)
                                 break;
                         }
                         if (k == rhs_len)
-                            changed_p |= term_set_or(rhs_symb->u.nonterminal.follow,
+                            changed_p |= terminal_bitset_or(rhs_symb->u.nonterminal.follow,
                                                      symb->u.nonterminal.follow,
                                                      ps->run.grammar->symbs_ptr->num_terminals);
                     }
@@ -5200,9 +5200,9 @@ int yaep_read_grammar(YaepParseRun *pr,
             if (ps->run.debug)
 	    {
                 fprintf(stderr, "  First: ");
-                term_set_print(ps, stderr, symb->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terminals);
+                terminal_bitset_print(ps, stderr, symb->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terminals);
                 fprintf(stderr, "\n  Follow: ");
-                term_set_print(ps, stderr, symb->u.nonterminal.follow, ps->run.grammar->symbs_ptr->num_terminals);
+                terminal_bitset_print(ps, stderr, symb->u.nonterminal.follow, ps->run.grammar->symbs_ptr->num_terminals);
                 fprintf(stderr, "\n\n");
 	    }
 	}
@@ -5388,13 +5388,13 @@ static void expand_new_start_set(YaepParseState *ps)
         bool changed_p;
 
         /* Now we have incorrect initial dotted_rules because their context is not correct. */
-        context_set = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terminals);
+        context_set = terminal_bitset_create(ps, ps->run.grammar->symbs_ptr->num_terminals);
         do
 	{
             changed_p = false;
             for(int i = ps->new_core->num_all_matched_lengths; i < ps->new_core->num_dotted_rules; i++)
 	    {
-                term_set_clear(context_set, ps->run.grammar->symbs_ptr->num_terminals);
+                terminal_bitset_clear(context_set, ps->run.grammar->symbs_ptr->num_terminals);
                 new_dotted_rule = ps->new_dotted_rules[i];
                 core_symb_vect = core_symb_vect_find(ps, ps->new_core, new_dotted_rule->rule->lhs);
                 for(j = 0; j < core_symb_vect->transitions.len; j++)
@@ -5404,12 +5404,12 @@ static void expand_new_start_set(YaepParseState *ps)
                     shifted_dotted_rule = create_dotted_rule(ps, dotted_rule->rule,
                                                              dotted_rule->dot_j+1,
                                                              dotted_rule->context);
-                    term_set_or(context_set, shifted_dotted_rule->lookahead, ps->run.grammar->symbs_ptr->num_terminals);
+                    terminal_bitset_or(context_set, shifted_dotted_rule->lookahead, ps->run.grammar->symbs_ptr->num_terminals);
 		}
-                context = term_set_insert(ps, context_set);
+                context = terminal_bitset_insert(ps, context_set);
                 if (context >= 0)
                 {
-                    context_set = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terminals);
+                    context_set = terminal_bitset_create(ps, ps->run.grammar->symbs_ptr->num_terminals);
                 }
                 else
                 {
@@ -5439,9 +5439,9 @@ static void build_start_set(YaepParseState *ps)
 
     if (ps->run.grammar->lookahead_level > 1)
     {
-        terminal_bitset_t *empty_context_set = term_set_create(ps, ps->run.grammar->symbs_ptr->num_terminals);
-        term_set_clear(empty_context_set, ps->run.grammar->symbs_ptr->num_terminals);
-        context = term_set_insert(ps, empty_context_set);
+        terminal_bitset_t *empty_context_set = terminal_bitset_create(ps, ps->run.grammar->symbs_ptr->num_terminals);
+        terminal_bitset_clear(empty_context_set, ps->run.grammar->symbs_ptr->num_terminals);
+        context = terminal_bitset_insert(ps, empty_context_set);
 
         /* Empty context in the table has always number zero.*/
         assert(context == 0);
@@ -5491,8 +5491,8 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                                              dotted_rule->dot_j+1, dotted_rule->context);
 
         if (local_lookahead_level != 0
-            && !term_set_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terminals)
-            && !term_set_test(new_dotted_rule->lookahead, ps->run.grammar->term_error_id, ps->run.grammar->symbs_ptr->num_terminals))
+            && !terminal_bitset_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terminals)
+            && !terminal_bitset_test(new_dotted_rule->lookahead, ps->run.grammar->term_error_id, ps->run.grammar->symbs_ptr->num_terminals))
         {
             continue;
         }
@@ -5547,8 +5547,8 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                 new_dotted_rule = create_dotted_rule(ps, dotted_rule->rule,
                                                      dotted_rule->dot_j+1, dotted_rule->context);
                 if (local_lookahead_level != 0
-                    && !term_set_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terminals)
-                    && !term_set_test(new_dotted_rule->lookahead,
+                    && !terminal_bitset_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terminals)
+                    && !terminal_bitset_test(new_dotted_rule->lookahead,
                                       ps->run.grammar->term_error_id,
                                       ps->run.grammar->symbs_ptr->num_terminals))
                 {
@@ -7776,7 +7776,7 @@ static void print_dotted_rule(YaepParseState *ps, FILE *f, YaepDottedRule *dotte
     if (ps->run.grammar->lookahead_level != 0 && lookahead_p && matched_length >= 0)
     {
         fprintf(f, "    ");
-        term_set_print(ps, f, dotted_rule->lookahead, ps->run.grammar->symbs_ptr->num_terminals);
+        terminal_bitset_print(ps, f, dotted_rule->lookahead, ps->run.grammar->symbs_ptr->num_terminals);
     }
     if (matched_length != -1) fprintf(f, "\n");
 }
