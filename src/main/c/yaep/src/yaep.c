@@ -26,7 +26,7 @@
 */
 
 /* 1997-2018 Vladimir Makarov
-   This file implements parsing any context free grammar with minimal
+   This file implements parsing of any context free grammar with minimal
    error recovery and syntax directed translation.  The parser is based
    on Earley's algorithm from 1968. The implementation is sufficiently
    fast to be used in serious language processors.
@@ -134,12 +134,12 @@ typedef long int term_set_el_t;
 /* The default number of tokens sucessfully matched to stop error recovery alternative(state). */
 #define DEFAULT_RECOVERY_TOKEN_MATCHES 3
 
-/* Define this if you want to reuse already calculated state sets.
-   It considerably speed up the parser. */
-//define USE_SET_HASH_TABLE
+/* Define this if you want to reuse already calculated state sets
+   when the matches lengths are identical. This considerably speeds up the parser. */
+#define USE_SET_HASH_TABLE
 
 /* This does not seem to be enabled by default? */
-//define USE_CORE_SYMB_HASH_TABLE
+#define USE_CORE_SYMB_HASH_TABLE
 
 /* Maximal goto sets saved for triple(set, terminal, lookahead). */
 #define MAX_CACHED_GOTO_RESULTS 3
@@ -668,9 +668,9 @@ struct YaepParseState
        number of parent indexes. */
     int num_set_cores, num_set_core_start_dotted_rules;
     int num_set_matched_lengths, num_set_matched_lengths_len;
-    int n_parent_dotted_rule_ids;
+    int num_parent_dotted_rule_ids;
 
-    /* Number unique sets and their start dotted_rules. */
+    /* Number of state sets and their started dotted_rules. */
     int n_sets, n_sets_start_dotted_rules;
 
     /* Number unique triples(core, term, lookahead). */
@@ -1741,14 +1741,14 @@ static bool matched_lengths_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     YaepStateSet *st2 = (YaepStateSet*)s2;
     int *i = st1->matched_lengths;
     int *j = st2->matched_lengths;
-    int n_matched_lengths = st1->core->num_started_dotted_rules;
+    int num_matched_lengths = st1->core->num_started_dotted_rules;
 
-    if (n_matched_lengths != st2->core->num_started_dotted_rules)
+    if (num_matched_lengths != st2->core->num_started_dotted_rules)
     {
         return false;
     }
 
-    int *bound = i + n_matched_lengths;
+    int *bound = i + num_matched_lengths;
     while (i < bound)
     {
         if (*i++ != *j++)
@@ -1894,7 +1894,7 @@ static void set_init(YaepParseState *ps, int n_input)
     ps->set_of_triplets_core_term_lookahead = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
                                                core_term_lookahead_hash, core_term_lookahead_eq);
     ps->num_set_cores = ps->num_set_core_start_dotted_rules= 0;
-    ps->num_set_matched_lengths = ps->num_set_matched_lengths_len = ps->n_parent_dotted_rule_ids = 0;
+    ps->num_set_matched_lengths = ps->num_set_matched_lengths_len = ps->num_parent_dotted_rule_ids = 0;
     ps->n_sets = ps->n_sets_start_dotted_rules= 0;
     ps->num_triplets_core_term_lookahead = 0;
     dotted_rule_matched_length_set_init(ps);
@@ -1961,7 +1961,7 @@ static void set_add_new_not_yet_started_dotted_rule(YaepParseState *ps,
     ps->new_dotted_rules[ps->new_core->num_dotted_rules++] = dotted_rule;
     // Store parent index. Meanst what...?
     ps->new_core->parent_dotted_rule_ids[ps->new_core->num_all_matched_lengths++] = parent_dotted_rule_id;
-    ps->n_parent_dotted_rule_ids++;
+    ps->num_parent_dotted_rule_ids++;
 }
 
 /* Add a not-yet-started dotted_rule (initial) DOTTED_RULE with zero matched_length at the end of the
@@ -1990,11 +1990,11 @@ static void setup_set_matched_lengths_hash(hash_table_entry_t s)
 {
     YaepStateSet *set = ((YaepStateSet*) s);
     int*dist_ptr = set->matched_lengths;
-    int n_matched_lengths = set->core->num_started_dotted_rules;
+    int num_matched_lengths = set->core->num_started_dotted_rules;
     int*dist_bound;
     unsigned result;
 
-    dist_bound = dist_ptr + n_matched_lengths;
+    dist_bound = dist_ptr + num_matched_lengths;
     result = jauquet_prime_mod32;
     while(dist_ptr < dist_bound)
     {
@@ -2014,7 +2014,7 @@ static void setup_set_core_hash(hash_table_entry_t s)
 /* The new set should contain only start dotted_rules.  Sort dotted_rules,
    remove duplicates and insert set into the set table.  If the
    function returns true then set contains new set core(there was no
-   such core in the table).*/
+   such core in the table). */
 static int set_insert(YaepParseState *ps)
 {
     hash_table_entry_t*entry;
@@ -2029,7 +2029,7 @@ static int set_insert(YaepParseState *ps)
     ps->new_core->dotted_rules = ps->new_dotted_rules;
     ps->new_set_ready_p = true;
 #ifdef USE_SET_HASH_TABLE
-    /* Insert matched_lengths into table.*/
+    /* Insert matched_lengths into table. */
     setup_set_matched_lengths_hash(ps->new_set);
     entry = find_hash_table_entry(ps->set_of_matched_lengthses, ps->new_set, true);
     if (*entry != NULL)
@@ -2599,8 +2599,7 @@ static void yaep_empty_grammar(YaepParseState *ps,YaepGrammar *grammar)
     }
 }
 
-/* The function returns the last occurred error code for given
-   grammar.*/
+/* The function returns the last occurred error code for given grammar. */
 int
 yaep_error_code(YaepGrammar*g)
 {
@@ -3691,7 +3690,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
     YaepStateSet*set;
     YaepCoreSymbVect*core_symb_vect;
     struct recovery_state best_state, state;
-    int best_cost, cost, n_matched_input;
+    int best_cost, cost, num_matched_input;
     int back_to_frontier_move_cost, backward_move_cost;
 
 
@@ -3856,7 +3855,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             }
 	}
 
-        n_matched_input = 0;
+        num_matched_input = 0;
         for(;;)
 	{
 
@@ -3867,8 +3866,8 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
                 fprintf(stderr, "\n");
 	    }
 
-            n_matched_input++;
-            if (n_matched_input >= ps->run.grammar->recovery_token_matches)
+            num_matched_input++;
+            if (num_matched_input >= ps->run.grammar->recovery_token_matches)
             {
                 break;
             }
@@ -3903,7 +3902,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             complete_and_predict_new_state_set(ps, ps->new_set, core_symb_vect, NEXT_TERM);
             ps->state_sets[++ps->state_set_curr] = ps->new_set;
 	}
-        if (n_matched_input >= ps->run.grammar->recovery_token_matches || ps->tok_i >= ps->input_len)
+        if (num_matched_input >= ps->run.grammar->recovery_token_matches || ps->tok_i >= ps->input_len)
 	{
             /* We found an error recovery.  Compare costs.*/
             if (best_cost > cost)
@@ -5323,7 +5322,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  ps->num_set_cores, ps->num_set_core_start_dotted_rules);
         fprintf(stderr,
                  "       #parent indexes for some non start dotted_rules = %d\n",
-                 ps->n_parent_dotted_rule_ids);
+                 ps->num_parent_dotted_rule_ids);
         fprintf(stderr,
                  "       #unique set dist. vects = %d, their length = %d\n",
                  ps->num_set_matched_lengths, ps->num_set_matched_lengths_len);
