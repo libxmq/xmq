@@ -2411,6 +2411,7 @@ struct YaepSymbol
        should be allocated by parse_alloc because the string will be
        referred from parse tree. */
     const char *repr;
+    char hr[7];    // #1ffff or ' ' or #78
     union
     {
         struct
@@ -3156,12 +3157,20 @@ static YaepSymbol *symb_find_by_code(YaepParseState *ps, int code)
 /* The function creates new terminal symbol and returns reference for
    it.  The symbol should be not in the tables.  The function should
    create own copy of name for the new symbol. */
-static YaepSymbol *symb_add_term(YaepParseState *ps, const char*name, int code)
+static YaepSymbol *symb_add_terminal(YaepParseState *ps, const char*name, int code)
 {
     YaepSymbol symb, *result;
     hash_table_entry_t *repr_entry, *code_entry;
 
     symb.repr = name;
+    if (code >= 32 && code <= 126)
+    {
+        snprintf(symb.hr, 6, "'%c'", code);
+    }
+    else
+    {
+        strncpy(symb.hr, name, 6);
+    }
     symb.terminal_p = true;
     // Assign the next available id.
     symb.id = ps->run.grammar->symbs_ptr->num_nonterminals + ps->run.grammar->symbs_ptr->num_terminals;
@@ -3197,6 +3206,8 @@ static YaepSymbol *symb_add_nonterm(YaepParseState *ps, const char *name)
     hash_table_entry_t*entry;
 
     symb.repr = name;
+    strncpy(symb.hr, name, 6);
+
     symb.terminal_p = false;
     // Assign the next available id.
     symb.id = ps->run.grammar->symbs_ptr->num_nonterminals + ps->run.grammar->symbs_ptr->num_terminals;
@@ -4575,7 +4586,7 @@ static YaepCoreSymbVect *core_symb_ids_find(YaepParseState *ps, YaepStateSetCore
     r = *core_symb_ids_addr_get(ps, core, symb);
 #endif
 
-    TRACE_FA(ps, "core=%d %s -> %p", core->id, symb->repr, r);
+    TRACE_FA(ps, "core=%d %s -> %p", core->id, symb->hr, r);
 
     return r;
 }
@@ -4632,32 +4643,12 @@ static void core_symb_ids_add_predict(YaepParseState *ps,
                                       YaepCoreSymbVect *core_symb_ids,
                                       int id)
 {
-    char buf[64];
-    if (core_symb_ids->symb->terminal_p)
-    {
-        int code = core_symb_ids->symb->u.terminal.code;
-        if (code < 32 || code > 126)
-        {
-            strcpy(buf, core_symb_ids->symb->repr);
-        }
-        else
-        {
-            buf[0] = '\'';
-            buf[1] = core_symb_ids->symb->u.terminal.code;
-            buf[2] = '\'';
-            buf[3] = 0;
-        }
-    }
-    else
-    {
-        strcpy(buf, core_symb_ids->symb->repr);
-    }
     vect_add_id(ps, &core_symb_ids->predictions, id);
 
-    TRACE_FA(ps, "core=%d symb=%s --> id=%d",
-            core_symb_ids->core->id,
-            buf,
-            id+1);
+    TRACE_FA(ps, "core=%d %s --> id=%d",
+             core_symb_ids->core->id,
+             core_symb_ids->symb->hr,
+             id+1);
 }
 
 /* Add index id to the reduce vector of CORE_SYMB_IDS being formed.*/
@@ -5163,7 +5154,7 @@ int yaep_read_grammar(YaepParseRun *pr,
             yaep_error(ps, YAEP_REPEATED_TERM_CODE,
                         "repeated code %d in term `%s'", code, name);
         }
-        symb_add_term(ps, name, code);
+        symb_add_terminal(ps, name, code);
     }
 
     /* Adding error symbol.*/
@@ -5174,7 +5165,7 @@ int yaep_read_grammar(YaepParseRun *pr,
 
     if (symb_find_by_code(ps, TERM_ERROR_CODE) != NULL) abort();
 
-    ps->run.grammar->term_error = symb_add_term(ps, TERM_ERROR_NAME, TERM_ERROR_CODE);
+    ps->run.grammar->term_error = symb_add_terminal(ps, TERM_ERROR_NAME, TERM_ERROR_CODE);
     ps->run.grammar->term_error_id = ps->run.grammar->term_error->u.terminal.term_id;
     ps->run.grammar->axiom = ps->run.grammar->end_marker = NULL;
 
@@ -5220,7 +5211,7 @@ int yaep_read_grammar(YaepParseRun *pr,
                 yaep_error(ps, YAEP_FIXED_NAME_USAGE, "do not use fixed name `%s'", END_MARKER_NAME);
             }
             if (symb_find_by_code(ps, END_MARKER_CODE) != NULL) abort();
-            ps->run.grammar->end_marker = symb_add_term(ps, END_MARKER_NAME, END_MARKER_CODE);
+            ps->run.grammar->end_marker = symb_add_terminal(ps, END_MARKER_NAME, END_MARKER_CODE);
 
             /* Add rules for start*/
             rule = rule_new_start(ps, ps->run.grammar->axiom, NULL, 0);
@@ -7515,9 +7506,9 @@ void yaepFreeTree(YaepTreeNode *root,
    printed with its code if CODE_P.*/
 static void symbol_print(FILE* f, YaepSymbol*symb, bool code_p)
 {
-    if (symb->terminal_p && symb->u.terminal.code >= 32 && symb->u.terminal.code <= 126)
+    if (symb->terminal_p)
     {
-        fprintf(f, "'%c'", symb->u.terminal.code);
+        fprintf(f, "%s", symb->hr);
         return;
     }
     fprintf(f, "%s", symb->repr);
