@@ -402,7 +402,7 @@ struct YaepCoreSymbVect
     YaepVect predictions;
 
     /* The following vector contains id of reduce dotted_rule with given symb in lhs. */
-    YaepVect reduces;
+    YaepVect completions;
 };
 
 /* A StateSetCore is a state set in Earley's algorithm but without matched lengths for the dotted rules.
@@ -735,8 +735,8 @@ struct YaepParseState
     int dotted_rule_matched_length_vec_generation;
 
     /* The following are number of unique(set core, symbol) pairs and
-       their summary(transitive) transition and reduce vectors length,
-       unique(transitive) transition vectors and their summary length,
+       their summary(transitive) prediction and reduce vectors length,
+       unique(transitive) prediction vectors and their summary length,
        and unique reduce vectors and their summary length. */
     int n_core_symb_pairs, n_core_symb_vect_len;
     int n_transition_vects, n_transition_vect_len;
@@ -772,7 +772,7 @@ struct YaepParseState
 #endif
 
     /* The following tables contains references for core_symb_vect which
-       (through(transitive) predictions and reduces correspondingly)
+       (through(transitive) predictions and completions correspondingly)
        refers for elements which are in the tables.  Sequence elements are
        stored in one exemplar to save memory.*/
     hash_table_t map_transition_to_coresymbvect;	/* key is elements.*/
@@ -2301,13 +2301,13 @@ static bool transition_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 
 static unsigned reduce_els_hash(hash_table_entry_t t)
 {
-    return vect_els_hash(&((YaepCoreSymbVect*)t)->reduces);
+    return vect_els_hash(&((YaepCoreSymbVect*)t)->completions);
 }
 
 static bool reduce_els_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 {
-    return vect_els_eq(&((YaepCoreSymbVect*) t1)->reduces,
-                       &((YaepCoreSymbVect*) t2)->reduces);
+    return vect_els_eq(&((YaepCoreSymbVect*) t1)->completions,
+                       &((YaepCoreSymbVect*) t2)->completions);
 }
 
 /* Initialize work with the triples(set core, symbol, vector).*/
@@ -2448,10 +2448,10 @@ static YaepCoreSymbVect *core_symb_vect_new(YaepParseState *ps, YaepStateSetCore
     triple->predictions.len = 0;
     triple->predictions.els =(int*) VLO_BEGIN(*vlo_ptr);
 
-    triple->reduces.intern = vlo_array_expand(ps);
-    vlo_ptr = vlo_array_el(ps, triple->reduces.intern);
-    triple->reduces.len = 0;
-    triple->reduces.els =(int*) VLO_BEGIN(*vlo_ptr);
+    triple->completions.intern = vlo_array_expand(ps);
+    vlo_ptr = vlo_array_el(ps, triple->completions.intern);
+    triple->completions.len = 0;
+    triple->completions.els =(int*) VLO_BEGIN(*vlo_ptr);
     VLO_ADD_MEMORY(ps->new_core_symb_vect_vlo, &triple,
                     sizeof(YaepCoreSymbVect*));
     ps->n_core_symb_pairs++;
@@ -2476,11 +2476,11 @@ static void core_symb_vect_new_add_prediction_id(YaepParseState *ps,
 }
 
 /* Add index id to the reduce vector of CORE_SYMB_VECT being formed.*/
-static void core_symb_vect_new_add_reduce_id(YaepParseState *ps,
-                                             YaepCoreSymbVect *core_symb_vect,
-                                             int id)
+static void core_symb_vect_new_add_completion_id(YaepParseState *ps,
+                                                 YaepCoreSymbVect *core_symb_vect,
+                                                 int id)
 {
-    vect_add_id(ps, &core_symb_vect->reduces, id);
+    vect_add_id(ps, &core_symb_vect->completions, id);
 }
 
 /* Insert vector VEC from CORE_SYMB_VECT into table TAB.  Update
@@ -2503,7 +2503,7 @@ static void process_core_symb_vect_el(YaepParseState *ps,
             vec->els
                 =(&core_symb_vect->predictions == vec
                    ?((YaepCoreSymbVect*)*entry)->predictions.els
-                   :((YaepCoreSymbVect*)*entry)->reduces.els);
+                   :((YaepCoreSymbVect*)*entry)->completions.els);
         else
 	{
            *entry =(hash_table_entry_t) core_symb_vect;
@@ -2529,7 +2529,7 @@ static void core_symb_vect_new_all_stop(YaepParseState *ps)
         process_core_symb_vect_el(ps, *triple_ptr, &(*triple_ptr)->predictions,
                                   &ps->map_transition_to_coresymbvect, &ps->n_transition_vects,
                                   &ps->n_transition_vect_len);
-        process_core_symb_vect_el(ps, *triple_ptr, &(*triple_ptr)->reduces,
+        process_core_symb_vect_el(ps, *triple_ptr, &(*triple_ptr)->completions,
                                   &ps->map_reduce_to_coresymbvect, &ps->n_reduce_vects,
                                   &ps->n_reduce_vect_len);
     }
@@ -3258,7 +3258,7 @@ static void expand_new_start_set(YaepParseState *ps)
     for(int i = 0; i < ps->new_core->num_dotted_rules; i++)
     {
         dotted_rule = ps->new_dotted_rules[i];
-        // Check if there is a symbol after the dot? */
+        // Check that there is a symbol after the dot! */
         if (dotted_rule->dot_j < dotted_rule->rule->rhs_len)
 	{
             // Yes.
@@ -3290,10 +3290,11 @@ static void expand_new_start_set(YaepParseState *ps)
 	}
     }
 
-    /* Now forming reduce vectors. */
+    /* Now forming completion vectors. */
     for(int i = 0; i < ps->new_core->num_dotted_rules; i++)
     {
         dotted_rule = ps->new_dotted_rules[i];
+        // Check that there is NO symbol after the dot! */
         if (dotted_rule->dot_j == dotted_rule->rule->rhs_len)
 	{
             symb = dotted_rule->rule->lhs;
@@ -3302,7 +3303,7 @@ static void expand_new_start_set(YaepParseState *ps)
             {
                 core_symb_vect = core_symb_vect_new(ps, ps->new_core, symb);
             }
-            core_symb_vect_new_add_reduce_id(ps, core_symb_vect, i);
+            core_symb_vect_new_add_completion_id(ps, core_symb_vect, i);
 	}
     }
 
@@ -4936,16 +4937,16 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         set = ps->state_sets[state_set_k];
         set_core = set->core;
         core_symb_vect = core_symb_vect_find(ps, set_core, symb);
-        assert(core_symb_vect->reduces.len != 0);
+        assert(core_symb_vect->completions.len != 0);
         n_candidates = 0;
         orig_state = state;
         if (!ps->run.grammar->one_parse_p)
         {
             VLO_NULLIFY(orig_states);
         }
-        for(i = 0; i < core_symb_vect->reduces.len; i++)
+        for(i = 0; i < core_symb_vect->completions.len; i++)
 	{
-            dotted_rule_id = core_symb_vect->reduces.els[i];
+            dotted_rule_id = core_symb_vect->completions.els[i];
             dotted_rule = set_core->dotted_rules[dotted_rule_id];
             if (dotted_rule_id < set_core->num_started_dotted_rules)
             {
@@ -5212,7 +5213,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 		}
 	    }			/* if (parent_anode != NULL && disp >= 0)*/
             n_candidates++;
-	}			/* For all reduces of the nonterminal.*/
+	}			/* For all completions of the nonterminal.*/
         /* We should have a parse.*/
         assert(n_candidates != 0 && (!ps->run.grammar->one_parse_p || n_candidates == 1));
     } /* For all parser states.*/
