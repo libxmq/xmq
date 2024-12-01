@@ -2248,7 +2248,9 @@ bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out
 typedef long int terminal_bitset_t;
 
 /* Calculate the number of required term set elements from the number of bits we want to store. */
-#define CALC_NUM_ELEMENTS(num_bits) ((num_bits+63)/64)
+#define CALC_NUM_ELEMENTS(num_bits) ((num_bits+CHAR_BIT*sizeof(terminal_bitset_t)-1)/(CHAR_BIT*sizeof(terminal_bitset_t)))
+// This calculation translates for example into ((num_bits+63)/64)
+// We round up to have enough long ints to store num_bits.
 
 #ifndef YAEP_MAX_ERROR_MESSAGE_LENGTH
 #define YAEP_MAX_ERROR_MESSAGE_LENGTH 200
@@ -3394,8 +3396,7 @@ static void terminal_bitset_clear(terminal_bitset_t* set, int num_terminals)
     terminal_bitset_t*bound;
     int size;
 
-    size = ((num_terminals + CHAR_BIT* sizeof(terminal_bitset_t) - 1)
-            /(CHAR_BIT* sizeof(terminal_bitset_t)));
+    size = CALC_NUM_ELEMENTS(num_terminals);
     bound = set + size;
     while(set < bound)
        *set++ = 0;
@@ -3407,7 +3408,7 @@ static void terminal_bitset_copy(terminal_bitset_t *dest, terminal_bitset_t *src
     terminal_bitset_t *bound;
     int size;
 
-    size = ((num_terminals + CHAR_BIT* sizeof(terminal_bitset_t) - 1) / (CHAR_BIT* sizeof(terminal_bitset_t)));
+    size = CALC_NUM_ELEMENTS(num_terminals);
     bound = dest + size;
 
     while (dest < bound)
@@ -3423,7 +3424,7 @@ static bool terminal_bitset_or(terminal_bitset_t *set, terminal_bitset_t *op, in
     int size;
     bool changed_p;
 
-    size = ((num_terminals + CHAR_BIT* sizeof(terminal_bitset_t) - 1) / (CHAR_BIT* sizeof(terminal_bitset_t)));
+    size = CALC_NUM_ELEMENTS(num_terminals);
     bound = set + size;
     changed_p = false;
     while (set < bound)
@@ -3440,16 +3441,18 @@ static bool terminal_bitset_or(terminal_bitset_t *set, terminal_bitset_t *op, in
 /* Add terminal with number NUM to SET.  Return true if SET has been changed.*/
 static bool terminal_bitset_up(terminal_bitset_t *set, int num, int num_terminals)
 {
-    int ind;
-    terminal_bitset_t bit;
+    const int bits_in_word = CHAR_BIT*sizeof(terminal_bitset_t);
+
+    int word_offset;
+    terminal_bitset_t bit_in_word;
     bool changed_p;
 
     assert(num < num_terminals);
 
-    ind = num / (CHAR_BIT* sizeof(terminal_bitset_t));
-    bit = ((terminal_bitset_t) 1) << (num %(CHAR_BIT* sizeof(terminal_bitset_t)));
-    changed_p = (set[ind] & bit ? false : true);
-    set[ind] |= bit;
+    word_offset = num / bits_in_word;
+    bit_in_word = ((terminal_bitset_t)1) << (num % bits_in_word);
+    changed_p = (set[word_offset] & bit_in_word ? false : true);
+    set[word_offset] |= bit_in_word;
 
     return changed_p;
 }
