@@ -194,14 +194,29 @@ typedef struct XMQOutputSettings XMQOutputSettings;
 
 enum IXMLTermType
 {
-    IXML_TERMINAL, IXML_NON_TERMINAL
+    IXML_TERMINAL, IXML_NON_TERMINAL, IXML_CHARSET
 };
 typedef enum IXMLTermType IXMLTermType;
+
+
+struct IXMLCharset
+{
+    // A charset range [ 'a' - 'z' ]
+    // Negative means that this part is not used.
+    int start, stop;
+    // A charset category [ Lc ] for lower case character or [Zs] for whitespace,
+    // stored as two characters and the null terminatr.
+    char category[3];
+    // Negate the check, exclude the specified characters.
+    bool exclude;
+};
+typedef struct IXMLCharset IXMLCharset;
 
 struct IXMLTerminal
 {
     char *name;
     int code;
+    IXMLCharset charset;
 };
 typedef struct IXMLTerminal IXMLTerminal;
 

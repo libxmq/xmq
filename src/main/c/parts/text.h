@@ -68,7 +68,8 @@ bool find_line_col(const char *start, const char *stop, size_t at, int *line, in
 
 // Return an array of unicode code points for a given category name.
 // Ie. Ll=Letters lowercase, Lu=Letters uppercase etc.
-unsigned short *unicode_category(const char *name);
+bool unicode_category(const char *name, int **out_cat, size_t *out_cat_len);
+bool category_find(int code, int *cat, size_t cat_len);
 
 #define TEXT_MODULE
 
