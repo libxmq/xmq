@@ -1,0 +1,13 @@
+START
+S = A, s, A.
+A = 'a'.
+-s = -[ Zs ].
+INPUT
+a a
+OUTPUT
+S {
+    A = a
+    A = a
+}
+END
+ARGS=

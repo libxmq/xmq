@@ -2216,19 +2216,19 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 #include <assert.h>
 
 #define TRACE_F(ps) { \
-        if (ps->run.trace) fprintf(stderr, "TRACE %s\n", __func__); \
+        if (false && ps->run.trace) fprintf(stderr, "TRACE %s\n", __func__); \
     }
 
 #define TRACEE_F(ps) { \
-        if (ps->run.trace) fprintf(stderr, "TRACE %-30s", __func__); \
+        if (false && ps->run.trace) fprintf(stderr, "TRACE %-30s", __func__); \
     }
 
 #define TRACE_FA(ps, cformat, ...) { \
-    if (ps->run.trace) fprintf(stderr, "TRACE %-30s" cformat "\n", __func__, __VA_ARGS__); \
+    if (false && ps->run.trace) fprintf(stderr, "TRACE %-30s" cformat "\n", __func__, __VA_ARGS__); \
 }
 
 #define TRACEE_FA(ps, cformat, ...) { \
-    if (ps->run.trace) fprintf(stderr, "TRACE %-30s" cformat, __func__, __VA_ARGS__); \
+    if (false && ps->run.trace) fprintf(stderr, "TRACE %-30s" cformat, __func__, __VA_ARGS__); \
 }
 
 #include <stdio.h>
