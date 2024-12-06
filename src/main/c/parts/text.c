@@ -663,6 +663,9 @@ int unicode_Lu_[] = {0x0041,0x0042,0x0043,0x0044,0x0045,0x0046,0x0047,0x0048,0x0
 
 size_t unicode_Lu_len_ = sizeof(unicode_Lu_)/sizeof(unicode_Lu_[0]);
 
+int unicode_Lt_[] = {0x01C5,0x01C8,0x01CB,0x01F2,0x1F88,0x1F89,0x1F8A,0x1F8B,0x1F8C,0x1F8D,0x1F8E,0x1F8F,0x1F98,0x1F99,0x1F9A,0x1F9B,0x1F9C,0x1F9D,0x1F9E,0x1F9F,0x1FA8,0x1FA9,0x1FAA,0x1FAB,0x1FAC,0x1FAD,0x1FAE,0x1FAF,0x1FBC,0x1FCC,0x1FFC};
+size_t unicode_Lt_len_ = sizeof(unicode_Lt_)/sizeof(unicode_Lt_[0]);
+
 unsigned short int unicode_none_[] = {0};
 
 bool unicode_category(const char *name, int **out, size_t *out_len)
@@ -682,6 +685,11 @@ bool unicode_category(const char *name, int **out, size_t *out_len)
     if (!strcmp(name, "Lu")) {
         *out = unicode_Lu_;
         *out_len = unicode_Lu_len_;
+        return true;
+    }
+    if (!strcmp(name, "Lt")) {
+        *out = unicode_Lt_;
+        *out_len = unicode_Lt_len_;
         return true;
     }
 

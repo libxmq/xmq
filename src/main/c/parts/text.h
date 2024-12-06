@@ -73,7 +73,7 @@ bool category_find(int code, int *cat, size_t cat_len);
 
 #define NUM_UNICODE_CATEOGIRES 38
 #define UNICODE_CATEGORIES \
-    X(Lu,Uppercase_Letter,an uppercase letter)        \
+    X(Lu,Uppercase_Letter,an uppercase letter) \
     X(Ll,Lowercase_Letter, a lowercase letter) \
     X(Lt,Titlecase_Letter,a digraph encoded as a single character, with first part uppercase) \
     X(LC,Cased_Letter,Lu | Ll | Lt) \
