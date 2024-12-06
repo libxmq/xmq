@@ -1599,6 +1599,22 @@ void add_yaep_tmp_term_terminal(XMQParseState *state, char *name, int code, char
     vector_push_back(state->ixml_tmp_terminals, t);
 }
 
+void add_single_char_rule(XMQParseState *state, IXMLNonTerminal *nt, int uc);
+void add_single_char_rule(XMQParseState *state, IXMLNonTerminal *nt, int uc)
+{
+    IXMLRule *rule = new_ixml_rule();
+    rule->rule_name->name = strdup(nt->name);
+    rule->mark = nt->default_mark;
+    vector_push_back(state->ixml_rules, rule);
+    char buffer[16];
+    snprintf(buffer, 15, "#%x", uc);
+    allocate_yaep_tmp_terminals(state);
+    add_yaep_tmp_term_terminal(state, strdup(buffer), uc, nt->default_mark);
+    state->ixml_rule = rule; // FIXME this is a bit ugly.
+    add_yaep_tmp_terminals_to_rule(state, rule);
+    free_yaep_tmp_terminals(state);
+}
+
 void scan_content_fixup_charsets(XMQParseState *state, const char *start, const char *stop)
 {
     const char *i = start;
@@ -1643,24 +1659,31 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
             {
                 if (!p->category[0])
                 {
+                    // Add all from to.
                     for (int c = p->from; c <= p->to; ++c)
                     {
-                        if (c >= 0 && c <= 0x10ffff)
+                        if (c >= 0 && c <= 0x10ffff &&  used[c])
                         {
-                            if (used[c])
-                            {
-                                IXMLRule *rule = new_ixml_rule();
-                                rule->rule_name->name = strdup(nt->name);
-                                rule->mark = nt->default_mark;
-                                vector_push_back(state->ixml_rules, rule);
-                                char buffer[16];
-                                snprintf(buffer, 15, "#%x", c);
-                                allocate_yaep_tmp_terminals(state);
-                                add_yaep_tmp_term_terminal(state, strdup(buffer), c, nt->default_mark);
-                                state->ixml_rule = rule; // FIXME
-                                add_yaep_tmp_terminals_to_rule(state, rule);
-                                free_yaep_tmp_terminals(state);
-                            }
+                            add_single_char_rule(state, nt, c);
+                        }
+                    }
+                }
+                else
+                {
+                    int *cat = NULL;
+                    size_t cat_len = 0;
+                    bool ok = unicode_category(p->category, &cat, &cat_len);
+                    if (!ok)
+                    {
+                        fprintf(stderr, "Invalid unicode category: %s\n", p->category);
+                        exit(1);
+                    }
+                    for (size_t i = 0; i < cat_len; ++i)
+                    {
+                        int c = cat[i];
+                        if (c >= 0 && c <= 0x10ffff &&  used[c])
+                        {
+                            add_single_char_rule(state, nt, c);
                         }
                     }
                 }

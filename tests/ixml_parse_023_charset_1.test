@@ -1,0 +1,9 @@
+START
+S = A, A, A.
+-A = ['a'].
+INPUT
+aaa
+OUTPUT
+S = aaa
+END
+ARGS=
