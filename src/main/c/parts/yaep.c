@@ -3658,6 +3658,7 @@ static YaepRule *rule_new_start(YaepParseState *ps, YaepSymbol *lhs, const char 
     rule =(YaepRule*) OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
     OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
     rule->lhs = lhs;
+    rule->mark = 0;
     if (anode == NULL)
     {
         rule->anode = NULL;
@@ -3726,6 +3727,7 @@ static void rule_new_stop(YaepParseState *ps)
 
     OS_TOP_EXPAND(ps->run.grammar->rulestorage_ptr->rules_os, ps->run.grammar->rulestorage_ptr->current_rule->rhs_len* sizeof(char));
     ps->run.grammar->rulestorage_ptr->current_rule->marks = (char*)OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
+    memset(ps->run.grammar->rulestorage_ptr->current_rule->marks, 0, ps->run.grammar->rulestorage_ptr->current_rule->rhs_len* sizeof(char));
     OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
 }
 

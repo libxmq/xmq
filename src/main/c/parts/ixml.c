@@ -783,7 +783,7 @@ void parse_ixml_factor(XMQParseState *state)
 
         parse_ixml_terminal(state);
 
-        if (has_ixml_tmp_terminals(state)) // Test needed while developing parser.
+        if (has_ixml_tmp_terminals(state))
         {
             if (has_more_than_one_ixml_tmp_terminals(state))
             {
@@ -1694,7 +1694,7 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
 
     for (size_t i = 0; i < state->ixml_non_terminals->size; ++i)
     {
-        IXMLNonTerminal *nt = vector_element_at(state->ixml_non_terminals, i);
+        IXMLNonTerminal *nt = (IXMLNonTerminal*)vector_element_at(state->ixml_non_terminals, i);
         char tmark = 0;
         if ((nt->name[0] == '[' && nt->name[1] == '-') ||
             (nt->name[1] == '[' && nt->name[2] == '-'))
@@ -2081,7 +2081,9 @@ void make_last_term_repeat_infix(XMQParseState *state)
     add_yaep_term_to_rule(state, state->ixml_mark, term->t, term->nt);
 
     free(term);
+    free(infix);
     term = NULL;
+    infix = NULL;
 
     state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
 }
