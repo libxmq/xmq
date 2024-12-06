@@ -2101,7 +2101,7 @@ void make_last_term_repeat_zero(XMQParseState *state)
 
 void make_last_term_repeat_zero_infix(XMQParseState *state)
 {
-    make_last_term_repeat(state);
+    make_last_term_repeat_infix(state);
     make_last_term_optional(state);
 }
 
