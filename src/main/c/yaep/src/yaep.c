@@ -1159,7 +1159,7 @@ static void symb_finish_adding_terms(YaepParseState *ps)
     ps->run.grammar->symbs_ptr->symb_code_trans_vect_end = max_code + 1;
 
     size_t num_codes = max_code - min_code + 1;
-    size_t vec_size = sizeof(YaepSymbol*)* num_codes;
+    size_t vec_size = num_codes * sizeof(YaepSymbol*);
     mem = yaep_malloc(ps->run.grammar->alloc, vec_size);
 
     ps->run.grammar->symbs_ptr->symb_code_trans_vect =(YaepSymbol**)mem;

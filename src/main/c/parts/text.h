@@ -71,6 +71,48 @@ bool find_line_col(const char *start, const char *stop, size_t at, int *line, in
 bool unicode_category(const char *name, int **out_cat, size_t *out_cat_len);
 bool category_find(int code, int *cat, size_t cat_len);
 
+#define NUM_UNICODE_CATEOGIRES 38
+#define UNICODE_CATEGORIES \
+    X(Lu,Uppercase_Letter,an uppercase letter)        \
+    X(Ll,Lowercase_Letter, a lowercase letter) \
+    X(Lt,Titlecase_Letter,a digraph encoded as a single character, with first part uppercase) \
+    X(LC,Cased_Letter,Lu | Ll | Lt) \
+    X(Lm,Modifier_Letter,a modifier letter) \
+    X(Lo,Other_Letter,other letters, including syllables and ideographs) \
+    X(L,Letter,Lu | Ll | Lt | Lm | Lo) \
+    X(Mn,Nonspacing_Mark,a nonspacing combining mark (zero advance width)) \
+    X(Mc,Spacing_Mark,a spacing combining mark (positive advance width)) \
+    X(Me,Enclosing_Mark,an enclosing combining mark) \
+    X(M,Mark,Mn | Mc | Me) \
+    X(Nd,Decimal_Number,a decimal digit) \
+    X(Nl,Letter_Number,a letterlike numeric character) \
+    X(No,Other_Number,a numeric character of other type) \
+    X(N,Number,Nd | Nl | No) \
+    X(Pc,Connector_Punctuation,a connecting punctuation mark, like a tie) \
+    X(Pd,Dash_Punctuation,a dash or hyphen punctuation mark) \
+    X(Ps,Open_Punctuation,an opening punctuation mark (of a pair)) \
+    X(Pe,Close_Punctuation,a closing punctuation mark (of a pair)) \
+    X(Pi,Initial_Punctuation,an initial quotation mark) \
+    X(Pf,Final_Punctuation,a final quotation mark) \
+    X(Po,Other_Punctuation,a punctuation mark of other type) \
+    X(P,Punctuation,Pc | Pd | Ps | Pe | Pi | Pf | Po) \
+    X(Sm,Math_Symbol,a symbol of mathematical use) \
+    X(Sc,Currency_Symbol,a currency sign) \
+    X(Sk,Modifier_Symbol,a non-letterlike modifier symbol) \
+    X(So,Other_Symbol,a symbol of other type) \
+    X(S,Symbol,Sm | Sc | Sk | So) \
+    X(Zs,Space_Separator,a space character (of various non-zero widths)) \
+    X(Zl,Line_Separator,U+2028 LINE SEPARATOR only) \
+    X(Zp,Paragraph_Separator,U+2029 PARAGRAPH SEPARATOR only) \
+    X(Z,Separator,Zs | Zl | Zp) \
+    X(Cc,Control,a C0 or C1 control code) \
+    X(Cf,Format,a format control character) \
+    X(Cs,Surrogate,a surrogate code point) \
+    X(Co,Private_Use,a private-use character) \
+    X(Cn,Unassigned,a reserved unassigned code point or a noncharacter) \
+    X(C,Other,Cc | Cf | Cs | Co | Cn) \
+
+
 #define TEXT_MODULE
 
 #endif // TEXT_H

@@ -171,6 +171,9 @@ void do_ixml_option(XMQParseState *state);
 IXMLRule *new_ixml_rule();
 void free_ixml_rule(IXMLRule *r);
 IXMLTerminal *new_ixml_terminal();
+IXMLCharset *new_ixml_charset(bool exclude);
+void new_ixml_charset_part(IXMLCharset *cs, int from, int to, const char *category);
+void free_ixml_charset(IXMLCharset *cs);
 void free_ixml_terminal(IXMLTerminal *t);
 IXMLNonTerminal *new_ixml_nonterminal();
 IXMLNonTerminal *copy_ixml_nonterminal(IXMLNonTerminal *nt);
@@ -178,6 +181,8 @@ void free_ixml_nonterminal(IXMLNonTerminal *t);
 void free_ixml_term(IXMLTerm *t);
 
 char *generate_rule_name(XMQParseState *state);
+char *generate_charset_rule_name(XMQParseState *state);
+char *generate_charset_terminal_name(IXMLCharset *cs);
 void make_last_term_optional(XMQParseState *state);
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -599,8 +604,12 @@ void parse_ixml_charset(XMQParseState *state)
         parse_ixml_whitespace(state);
     }
 
+    char category[3];
+    category[0] = 0;
+    bool exclude = false;
     if (*(state->i) == '~')
     {
+        exclude = true;
         EAT(negate, 1);
         parse_ixml_whitespace(state);
     }
@@ -610,6 +619,8 @@ void parse_ixml_charset(XMQParseState *state)
     EAT(left_bracket, 1);
     parse_ixml_whitespace(state);
 
+    state->ixml_charset = new_ixml_charset(exclude);
+
     for (;;)
     {
         if (is_ixml_eob(state))
@@ -618,25 +629,52 @@ void parse_ixml_charset(XMQParseState *state)
             state->error_info = "charset is not closed";
             longjmp(state->error_handler, 1);
         }
-
         else if (is_ixml_range_start(state))
         {
             parse_ixml_range(state);
+            new_ixml_charset_part(state->ixml_charset,
+                                  state->ixml_charset_from,
+                                  state->ixml_charset_to,
+                                  "");
         }
         else if (is_ixml_encoded_start(state))
         {
             parse_ixml_encoded(state);
+            new_ixml_charset_part(state->ixml_charset,
+                                  state->ixml_charset_from,
+                                  state->ixml_charset_from,
+                                  "");
         }
         else if (is_ixml_code_start(state))
         {
-            int num = is_ixml_code_start(state);
-            EAT(unicode_class, num);
+            // Category can be Lc or just L.
+            int n = is_ixml_code_start(state);
+            category[0] = *state->i;
+            category[1] = 0;
+            if (n > 1) category[1] = *(state->i+1);
+            category[2] = 0;
+            EAT(unicode_category, n);
+            parse_ixml_whitespace(state);
+            new_ixml_charset_part(state->ixml_charset,
+                                  0,
+                                  0,
+                                  category);
         }
         else if (is_ixml_string_start(state))
         {
             int *content = NULL;
             parse_ixml_string(state, &content);
+            int *i = content;
+            while (*i)
+            {
+                new_ixml_charset_part(state->ixml_charset,
+                                      *i,
+                                      *i,
+                                      "");
+                i++;
+            }
             free(content);
+            parse_ixml_whitespace(state);
         }
 
         char c = *(state->i);
@@ -654,6 +692,13 @@ void parse_ixml_charset(XMQParseState *state)
 
     EAT(right_bracket, 1);
     IXML_DONE(charset, state);
+
+    IXMLNonTerminal *nt = new_ixml_nonterminal();
+    nt->name = generate_charset_terminal_name(state->ixml_charset);
+    add_yaep_nonterminal(state, nt);
+    add_yaep_term_to_rule(state, '-', NULL, nt);
+
+    //add_yaep_tmp_term_charset(state, state->ixml_charset);
 }
 
 void parse_ixml_comment(XMQParseState *state)
@@ -710,6 +755,8 @@ void parse_ixml_encoded(XMQParseState *state)
 
     int value;
     parse_ixml_hex(state, &value);
+    state->ixml_encoded = value;
+
     parse_ixml_whitespace(state);
 
     char buffer[16];
@@ -1013,11 +1060,13 @@ void parse_ixml_range(XMQParseState *state)
     {
         int *content;
         parse_ixml_string(state, &content);
+        state->ixml_charset_from = content[0];
         free(content);
     }
     else
     {
         parse_ixml_encoded(state);
+        state->ixml_charset_from = state->ixml_encoded;
     }
     parse_ixml_whitespace(state);
 
@@ -1031,11 +1080,13 @@ void parse_ixml_range(XMQParseState *state)
     {
         int *content;
         parse_ixml_string(state, &content);
+        state->ixml_charset_to = content[0];
         free(content);
     }
     else if (is_ixml_encoded_start(state))
     {
         parse_ixml_encoded(state);
+        state->ixml_charset_to = state->ixml_encoded;
     }
     else
     {
@@ -1420,7 +1471,7 @@ bool ixml_build_yaep_grammar(YaepParseRun *ps,
     yaep_i_ = hashmap_iterate(state->ixml_terminals_map);
     yaep_state_ = state;
 
-    if (false && xmq_trace_enabled_)
+    if (xmq_verbose_enabled_)
     {
         HashMapIterator *i = hashmap_iterate(state->ixml_terminals_map);
 
@@ -1700,28 +1751,101 @@ void free_ixml_nonterminal(IXMLNonTerminal *nt)
 
 void free_ixml_term(IXMLTerm *t)
 {
-    /*
-    if (t->t)
-    {
-        free_ixml_terminal(t->t);
-        t->t = NULL;
-    }
-    if (t->nt)
-    {
-        free_ixml_nonterminal(t->nt);
-        t->nt = NULL;
-        }*/
     t->t = NULL;
     t->nt = NULL;
     free(t);
 }
 
+IXMLCharset *new_ixml_charset(bool exclude)
+{
+    IXMLCharset *cs = (IXMLCharset*)calloc(1, sizeof(IXMLCharset));
+    cs->exclude = exclude;
+    return cs;
+}
+
+void new_ixml_charset_part(IXMLCharset *cs, int from, int to, const char *category)
+{
+    IXMLCharsetPart *csp = (IXMLCharsetPart*)calloc(1, sizeof(IXMLCharsetPart));
+    csp->from = from;
+    csp->to = to;
+    strncpy(csp->category, category, 2);
+    if (cs->last == NULL)
+    {
+        cs->first = cs->last = csp;
+    }
+    else
+    {
+        cs->last->next = csp;
+        cs->last = csp;
+    }
+}
+
+void free_ixml_charset(IXMLCharset *cs)
+{
+    IXMLCharsetPart *i = cs->first;
+    while (i)
+    {
+        IXMLCharsetPart *next = i->next;
+        i->next = NULL;
+        free(i);
+        i = next;
+    }
+    cs->first = NULL;
+    cs->last = NULL;
+    free(cs);
+}
+
 char *generate_rule_name(XMQParseState *state)
 {
     char buf[16];
-    snprintf(buf, 15, "/%d", state->num_generated_rules);
+    snprintf(buf, 15, "/R%d", state->num_generated_rules);
     state->num_generated_rules++;
     return strdup(buf);
+}
+
+char *generate_charset_rule_name(XMQParseState *state)
+{
+    char buf[16];
+    snprintf(buf, 15, "/CS%d", state->num_generated_rules);
+    state->num_generated_rules++;
+    return strdup(buf);
+}
+
+char *generate_charset_terminal_name(IXMLCharset *cs)
+{
+    char *buf = (char*)malloc(1024);
+    buf[0] = 0;
+
+    if (cs->exclude) strcat(buf, "~");
+    strcat(buf, "[");
+
+    IXMLCharsetPart *i = cs->first;
+    bool first = true;
+
+    while (i)
+    {
+        if (!first) { strcat(buf, ";"); } else { first = false; }
+        if (i->category[0]) strcat(buf, i->category);
+        else
+        {
+            if (i->from != i->to)
+            {
+                char s[16];
+                snprintf(s, 16, "#%x-#%x", i->from, i->to);
+                strcat(buf, s);
+            }
+            else
+            {
+                char s[16];
+                snprintf(s, 16, "#%x", i->from);
+                strcat(buf, s);
+            }
+        }
+        i = i->next;
+    }
+
+    strcat(buf, "]");
+    return buf;
 }
 
 void make_last_term_optional(XMQParseState *state)

@@ -198,17 +198,26 @@ enum IXMLTermType
 };
 typedef enum IXMLTermType IXMLTermType;
 
-
-struct IXMLCharset
+struct IXMLCharsetPart;
+typedef struct IXMLCharsetPart IXMLCharsetPart;
+struct IXMLCharsetPart
 {
+    IXMLCharsetPart *next;
     // A charset range [ 'a' - 'z' ]
-    // Negative means that this part is not used.
-    int start, stop;
+    // A single char is [ 'a' - 'a' ] used for each element in a string set definition, eg 'abc'
+    int from, to;
     // A charset category [ Lc ] for lower case character or [Zs] for whitespace,
     // stored as two characters and the null terminatr.
     char category[3];
+};
+
+struct IXMLCharset
+{
     // Negate the check, exclude the specified characters.
     bool exclude;
+    // Charset contents.
+    IXMLCharsetPart *first;
+    IXMLCharsetPart *last;
 };
 typedef struct IXMLCharset IXMLCharset;
 
@@ -216,7 +225,7 @@ struct IXMLTerminal
 {
     char *name;
     int code;
-    IXMLCharset charset;
+    IXMLCharset *charset;
 };
 typedef struct IXMLTerminal IXMLTerminal;
 
@@ -336,6 +345,15 @@ struct XMQParseState
     Vector *ixml_rhs_tmp_marks;
     // The most recently parsed mark.
     char ixml_mark;
+    // The most recently parsed encoded value #41
+    int ixml_encoded;
+    // Any charset we are currently building.
+    IXMLCharset *ixml_charset;
+    // Parsing ranges of charsets.
+    int ixml_charset_from;
+    int ixml_charset_to;
+    // When parsing the grammar, collect all charset categories that we use.
+    HashMap *ixml_found_categories;
 
     // When debugging parsing of ixml, track indentation of depth here.
     int depth;
