@@ -50,6 +50,18 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
 void free_ixml_rule(IXMLRule *r);
 void free_ixml_terminal(IXMLTerminal *t);
 void free_ixml_nonterminal(IXMLNonTerminal *nt);
+const char *ixml_to_yaep_read_terminal(YaepParseRun *pr,
+                                       YaepGrammar *g,
+                                       int *code);
+const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
+                                   YaepGrammar *g,
+                                   const char ***rhs,
+                                   const char **abs_node,
+                                   int *cost,
+                                   int **transl,
+                                   char *mark,
+                                   char **marks);
+
 
 #define IXML_MODULE
 

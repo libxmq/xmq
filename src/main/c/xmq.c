@@ -4579,6 +4579,21 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     if (!doc || !start || !ixml_grammar) return false;
     if (!stop) stop = start+strlen(start);
 
+    XMQParseState *state = xmq_get_yaep_parse_state(ixml_grammar);
+    state->yaep_i_ = hashmap_iterate(state->ixml_terminals_map);
+    int rc = yaep_read_grammar(xmq_get_yaep_parse_run(ixml_grammar),
+                               xmq_get_yaep_grammar(ixml_grammar),
+                               0, ixml_to_yaep_read_terminal, ixml_to_yaep_read_rule);
+    hashmap_free_iterator(state->yaep_i_);
+
+    if (rc != 0)
+    {
+        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+        state->error_info = "internal error, yaep did not accept generated yaep grammar";
+        printf("xmq: could not parse input using ixml grammar: %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
+        longjmp(state->error_handler, 1);
+    }
+
     yaep_set_one_parse_flag(xmq_get_yaep_grammar(ixml_grammar),
                             (flags & XMQ_FLAG_IXML_ALL_PARSES)?0:1);
 
@@ -4594,7 +4609,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     run->syntax_error = handle_yaep_syntax_error;
 
     // Parse source content using the yaep grammar, previously generated from the ixml source.
-    int rc = yaepParse(run, grammar);
+    rc = yaepParse(run, grammar);
 
     if (rc)
     {

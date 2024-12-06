@@ -1471,9 +1471,6 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
 
     if (state->parse && state->parse->done) state->parse->done(state);
 
-    // Now build vectors suitable for yaep.
-    state->yaep_i_ = hashmap_iterate(state->ixml_terminals_map);
-
     if (xmq_verbose_enabled_)
     {
         HashMapIterator *i = hashmap_iterate(state->ixml_terminals_map);
@@ -1507,19 +1504,6 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
             }
         }
     }
-
-    int rc = yaep_read_grammar(pr, g, 0, ixml_to_yaep_read_terminal, ixml_to_yaep_read_rule);
-
-    hashmap_free_iterator(state->yaep_i_);
-
-    if (rc != 0)
-    {
-        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
-        state->error_info = "internal error, yaep did not accept generated yaep grammar";
-        printf("xmq: could not parse input using ixml grammar: %s\n", yaep_error_message(g));
-        longjmp(state->error_handler, 1);
-    }
-
 
     return true;
 }
