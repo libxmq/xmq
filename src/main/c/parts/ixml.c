@@ -1719,8 +1719,9 @@ void free_ixml_terminal(IXMLTerminal *t)
 
 IXMLNonTerminal *new_ixml_nonterminal()
 {
-    IXMLNonTerminal *t = (IXMLNonTerminal*)calloc(1, sizeof(IXMLNonTerminal));
-    return t;
+    IXMLNonTerminal *nt = (IXMLNonTerminal*)calloc(1, sizeof(IXMLNonTerminal));
+    nt->default_mark = ' ';
+    return nt;
 }
 
 IXMLNonTerminal *copy_ixml_nonterminal(IXMLNonTerminal *nt)
@@ -1735,6 +1736,8 @@ void free_ixml_nonterminal(IXMLNonTerminal *nt)
 {
     if (nt->name) free(nt->name);
     nt->name = NULL;
+    if (nt->charset) free_ixml_charset(nt->charset);
+    nt->charset = NULL;
     free(nt);
 }
 

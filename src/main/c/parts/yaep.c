@@ -3671,6 +3671,7 @@ static YaepRule *rule_new_start(YaepParseState *ps, YaepSymbol *lhs, const char 
         rule->anode_cost = anode_cost;
     }
     rule->trans_len = 0;
+    rule->mark = 0;
     rule->marks = NULL;
     rule->order = NULL;
     rule->next = NULL;
@@ -7524,8 +7525,16 @@ static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, bool trans_p
 {
     int i, j;
 
-    assert(rule->mark >= 0 && rule->mark < 128);
-    fprintf(f, "%c", rule->mark?rule->mark:' ');
+    if (rule->mark != 0
+        && rule->mark != '-'
+        && rule->mark != '@'
+        && rule->mark != '^')
+    {
+        fprintf(f, "(yaep) internal error bad rule: ");
+        symbol_print(f, rule->lhs, false);
+        fprintf(f, "\n");
+        assert(false);
+    }
     symbol_print(f, rule->lhs, false);
     fprintf(f, " :");
     for(i = 0; i < rule->rhs_len; i++)
