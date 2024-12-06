@@ -249,7 +249,6 @@ typedef struct IXMLTerminal IXMLTerminal;
 
 struct IXMLNonTerminal
 {
-    char default_mark; // If the rule is declared as: -rr: A, B; then rr will by default not be printed.
     char *name;
     char *alias;
     IXMLCharset *charset; // If the rule embodies a charset.

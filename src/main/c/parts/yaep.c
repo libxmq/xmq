@@ -7539,6 +7539,12 @@ static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, bool trans_p
         fprintf(f, "\n");
         assert(false);
     }
+
+    char m = rule->mark;
+    if (m >= 32 && m < 127)
+    {
+        fprintf(f, "%c", m);
+    }
     symbol_print(f, rule->lhs, false);
     fprintf(f, " → ");
     for(i = 0; i < rule->rhs_len; i++)
