@@ -5110,8 +5110,8 @@ static void check_grammar(YaepParseState *ps, int strict_p)
 int yaep_read_grammar(YaepParseRun *pr,
                       YaepGrammar *g,
                       int strict_p,
-                      const char*(*read_terminal)(int*code),
-                      const char*(*read_rule)(const char***rhs,
+                      const char*(*read_terminal)(YaepParseRun*pr,YaepGrammar*g,int*code),
+                      const char*(*read_rule)(YaepParseRun*pr,YaepGrammar*g,const char***rhs,
                                               const char**abs_node,
                                               int*anode_cost, int**transl, char*mark, char**marks))
 {
@@ -5136,7 +5136,7 @@ int yaep_read_grammar(YaepParseRun *pr,
     {
         yaep_empty_grammar(ps, ps->run.grammar);
     }
-    while((name =(*read_terminal)(&code)) != NULL)
+    while((name =(*read_terminal)(pr, pr->grammar, &code)) != NULL)
     {
         if (code < 0)
         {
@@ -5171,7 +5171,7 @@ int yaep_read_grammar(YaepParseRun *pr,
 
     for (;;)
     {
-        lhs = (*read_rule)(&rhs, &anode, &anode_cost, &transl, &mark, &marks);
+        lhs = (*read_rule)(pr, pr->grammar, &rhs, &anode, &anode_cost, &transl, &mark, &marks);
         if (lhs == NULL) break;
 
         symb = symb_find_by_repr(ps, lhs);

@@ -273,19 +273,17 @@ const char *yaep_error_message(YaepGrammar *g);
 int yaep_read_grammar(YaepParseRun *ps,
                              YaepGrammar *g,
                              int strict_p,
-                             const char *(*read_terminal) (int *code),
-                             const char *(*read_rule) (const char ***rhs,
+                             const char *(*read_terminal) (YaepParseRun *pr,
+                                                           YaepGrammar *g,
+                                                           int *code),
+                             const char *(*read_rule) (YaepParseRun *pr,
+                                                       YaepGrammar *g,
+                                                       const char ***rhs,
                                                        const char **abs_node,
                                                        int *anode_cost,
                                                        int **transl,
                                                        char *mark,
                                                        char **marks));
-
-/* The following function is analogous to the previous one but it
-   parses grammar description. */
-int yaep_parse_grammar(YaepGrammar *g,
-                              int strict_p,
-                              const char *description);
 
 /* The following functions set up different parameters which affect
    parser work.  The functions return the previous parameter value.

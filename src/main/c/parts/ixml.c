@@ -697,8 +697,6 @@ void parse_ixml_charset(XMQParseState *state)
     nt->name = generate_charset_terminal_name(state->ixml_charset);
     add_yaep_nonterminal(state, nt);
     add_yaep_term_to_rule(state, '-', NULL, nt);
-
-    //add_yaep_tmp_term_charset(state, state->ixml_charset);
 }
 
 void parse_ixml_comment(XMQParseState *state)
@@ -1328,20 +1326,18 @@ void parse_ixml_whitespace(XMQParseState *state)
     IXML_DONE(ws, state);
 }
 
-static __thread XMQParseState *yaep_state_ = NULL;
-static __thread char **yaep_tmp_rhs_ = NULL;
-static __thread char *yaep_tmp_marks_ = NULL;
-static __thread int *yaep_tmp_transl_ = NULL;
-static __thread HashMapIterator *yaep_i_ = NULL;
-static __thread size_t yaep_j_ = 0;
+const char *ixml_to_yaep_read_terminal(YaepParseRun *pr,
+                                       YaepGrammar *g,
+                                       int *code);
 
-const char *ixml_to_yaep_read_terminal(int *code);
-
-const char *ixml_to_yaep_read_terminal(int *code)
+const char *ixml_to_yaep_read_terminal(YaepParseRun *pr,
+                                       YaepGrammar *g,
+                                       int *code)
 {
+    XMQParseState *state = (XMQParseState*)pr->user_data;
     const char *key;
     void *val;
-    bool ok = hashmap_next_key_value(yaep_i_, &key, &val);
+    bool ok = hashmap_next_key_value(state->yaep_i_, &key, &val);
 
     if (ok)
     {
@@ -1353,43 +1349,48 @@ const char *ixml_to_yaep_read_terminal(int *code)
     return NULL;
 }
 
-const char *ixml_to_yaep_read_rule(const char ***rhs,
+const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
+                                   YaepGrammar *g,
+                                   const char ***rhs,
                                    const char **abs_node,
                                    int *cost,
                                    int **transl,
                                    char *mark,
                                    char **marks);
 
-const char *ixml_to_yaep_read_rule(const char ***rhs,
+const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
+                                   YaepGrammar *g,
+                                   const char ***rhs,
                                    const char **abs_node,
                                    int *cost,
                                    int **transl,
                                    char *mark,
                                    char **marks)
 {
-    if (yaep_j_ >= yaep_state_->ixml_rules->size) return NULL;
-    IXMLRule *rule = (IXMLRule*)vector_element_at(yaep_state_->ixml_rules, yaep_j_);
+    XMQParseState *state = (XMQParseState*)pr->user_data;
+    if (state->yaep_j_ >= state->ixml_rules->size) return NULL;
+    IXMLRule *rule = (IXMLRule*)vector_element_at(state->ixml_rules, state->yaep_j_);
 
     size_t num_rhs = rule->rhs_terms->size;
 
     // Add rhs rules as translations.
-    if (yaep_tmp_rhs_) free(yaep_tmp_rhs_);
-    yaep_tmp_rhs_ = (char**)calloc(num_rhs+1, sizeof(char*));
-    if (yaep_tmp_marks_) free(yaep_tmp_marks_);
-    yaep_tmp_marks_ = (char*)calloc(num_rhs+1, sizeof(char));
-    memset(yaep_tmp_marks_, 0, num_rhs+1);
+    if (state->yaep_tmp_rhs_) free(state->yaep_tmp_rhs_);
+    state->yaep_tmp_rhs_ = (char**)calloc(num_rhs+1, sizeof(char*));
+    if (state->yaep_tmp_marks_) free(state->yaep_tmp_marks_);
+    state->yaep_tmp_marks_ = (char*)calloc(num_rhs+1, sizeof(char));
+    memset(state->yaep_tmp_marks_, 0, num_rhs+1);
 
     for (size_t i = 0; i < num_rhs; ++i)
     {
         IXMLTerm *term = (IXMLTerm*)vector_element_at(rule->rhs_terms, i);
-        yaep_tmp_marks_[i] = term->mark;
+        state->yaep_tmp_marks_[i] = term->mark;
         if (term->type == IXML_TERMINAL)
         {
-            yaep_tmp_rhs_[i] = term->t->name;
+            state->yaep_tmp_rhs_[i] = term->t->name;
         }
         else if (term->type == IXML_NON_TERMINAL)
         {
-            yaep_tmp_rhs_[i] = term->nt->name;
+            state->yaep_tmp_rhs_[i] = term->nt->name;
         }
         else
         {
@@ -1401,29 +1402,31 @@ const char *ixml_to_yaep_read_rule(const char ***rhs,
     *abs_node = rule->rule_name->name;
     if (rule->rule_name->alias) *abs_node = rule->rule_name->alias;
 
-    if (yaep_tmp_transl_) free(yaep_tmp_transl_);
-    yaep_tmp_transl_ = (int*)calloc(num_rhs+1, sizeof(char*));
+    if (state->yaep_tmp_transl_) free(state->yaep_tmp_transl_);
+    state->yaep_tmp_transl_ = (int*)calloc(num_rhs+1, sizeof(char*));
     for (size_t i = 0; i < num_rhs; ++i)
     {
-        yaep_tmp_transl_[i] = (int)i;
+        state->yaep_tmp_transl_[i] = (int)i;
     }
-    yaep_tmp_transl_[num_rhs] = -1;
+    state->yaep_tmp_transl_[num_rhs] = -1;
 
-    yaep_tmp_rhs_[num_rhs] = NULL;
-    *rhs = (const char **)yaep_tmp_rhs_;
-    *marks = yaep_tmp_marks_;
-    *transl = yaep_tmp_transl_;
+    state->yaep_tmp_rhs_[num_rhs] = NULL;
+    *rhs = (const char **)state->yaep_tmp_rhs_;
+    *marks = state->yaep_tmp_marks_;
+    *transl = state->yaep_tmp_transl_;
     *cost = 1;
     *mark = rule->rule_name->default_mark;
-    yaep_j_++;
+    state->yaep_j_++;
     return rule->rule_name->name;
 }
 
-bool ixml_build_yaep_grammar(YaepParseRun *ps,
+bool ixml_build_yaep_grammar(YaepParseRun *pr,
                              YaepGrammar *g,
                              XMQParseState *state,
-                             const char *start,
-                             const char *stop)
+                             const char *grammar_start,
+                             const char *grammar_stop,
+                             const char *content_start,
+                             const char *content_stop)
 {
     if (state->magic_cookie != MAGIC_COOKIE)
     {
@@ -1432,15 +1435,16 @@ bool ixml_build_yaep_grammar(YaepParseRun *ps,
         exit(1);
     }
 
-    ps->grammar = g;
+    pr->user_data = state;
+    pr->grammar = g;
     state->ixml_rules = vector_create();
     state->ixml_terminals_map = hashmap_create(256);
     state->ixml_non_terminals = vector_create();
     state->ixml_rule_stack = stack_create();
 
-    state->buffer_start = start;
-    state->buffer_stop = stop;
-    state->i = start;
+    state->buffer_start = grammar_start;
+    state->buffer_stop = grammar_stop;
+    state->i = grammar_start;
     state->line = 1;
     state->col = 1;
     state->error_nr = XMQ_ERROR_NONE;
@@ -1461,15 +1465,14 @@ bool ixml_build_yaep_grammar(YaepParseRun *ps,
     else
     {
         XMQParseError error_nr = state->error_nr;
-        generate_state_error_message(state, error_nr, start, stop);
+        generate_state_error_message(state, error_nr, grammar_start, grammar_stop);
         return false;
     }
 
     if (state->parse && state->parse->done) state->parse->done(state);
 
     // Now build vectors suitable for yaep.
-    yaep_i_ = hashmap_iterate(state->ixml_terminals_map);
-    yaep_state_ = state;
+    state->yaep_i_ = hashmap_iterate(state->ixml_terminals_map);
 
     if (xmq_verbose_enabled_)
     {
@@ -1505,9 +1508,9 @@ bool ixml_build_yaep_grammar(YaepParseRun *ps,
         }
     }
 
-    int rc = yaep_read_grammar(ps, g, 0, ixml_to_yaep_read_terminal, ixml_to_yaep_read_rule);
+    int rc = yaep_read_grammar(pr, g, 0, ixml_to_yaep_read_terminal, ixml_to_yaep_read_rule);
 
-    hashmap_free_iterator(yaep_i_);
+    hashmap_free_iterator(state->yaep_i_);
 
     if (rc != 0)
     {
@@ -1517,8 +1520,8 @@ bool ixml_build_yaep_grammar(YaepParseRun *ps,
         longjmp(state->error_handler, 1);
     }
 
-    if (yaep_tmp_rhs_) free(yaep_tmp_rhs_);
-    if (yaep_tmp_transl_) free(yaep_tmp_transl_);
+    if (state->yaep_tmp_rhs_) free(state->yaep_tmp_rhs_);
+    if (state->yaep_tmp_transl_) free(state->yaep_tmp_transl_);
 
     vector_free_and_values(state->ixml_rules, (FreeFuncPtr)free_ixml_rule);
     state->ixml_rules = NULL;

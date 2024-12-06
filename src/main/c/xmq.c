@@ -4337,7 +4337,9 @@ bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
                             (YaepGrammar*)ixml_grammar->yaep_grammar_,
                             state,
                             start,
-                            stop);
+                            stop,
+                            NULL,
+                            NULL);
 
     if (xmqStateErrno(state))
     {

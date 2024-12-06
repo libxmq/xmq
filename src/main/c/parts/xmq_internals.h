@@ -60,6 +60,9 @@ typedef struct Vector Vector;
 struct HashMap;
 typedef struct HashMap HashMap;
 
+struct HashMapIterator;
+typedef struct HashMapIterator HashMapIterator;
+
 struct MemBuffer;
 typedef struct MemBuffer MemBuffer;
 
@@ -354,6 +357,13 @@ struct XMQParseState
     int ixml_charset_to;
     // When parsing the grammar, collect all charset categories that we use.
     HashMap *ixml_found_categories;
+
+    // These are used when travergins the IXML parse tree and generating the yaep grammar build calls.
+    char **yaep_tmp_rhs_;
+    char *yaep_tmp_marks_;
+    int *yaep_tmp_transl_;
+    HashMapIterator *yaep_i_;
+    size_t yaep_j_;
 
     // When debugging parsing of ixml, track indentation of depth here.
     int depth;
