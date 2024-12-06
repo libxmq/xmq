@@ -1,0 +1,8 @@
+START
+S = 'b', -[Zs]*, 'b'.
+INPUT
+bb
+OUTPUT
+S = bb
+END
+ARGS=

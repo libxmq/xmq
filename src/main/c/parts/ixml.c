@@ -184,6 +184,7 @@ char *generate_rule_name(XMQParseState *state);
 char *generate_charset_terminal_name(IXMLCharset *cs, char mark);
 void make_last_term_optional(XMQParseState *state);
 void make_last_term_repeat(XMQParseState *state);
+void make_last_term_repeat_zero(XMQParseState *state);
 
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -1288,7 +1289,8 @@ void parse_ixml_term(XMQParseState *state)
         else
         {
             // We have value+
-            make_last_term_repeat(state);
+            if (c == '+') make_last_term_repeat(state);
+            else  make_last_term_repeat_zero(state);
         }
         parse_ixml_whitespace(state);
     }
@@ -1971,6 +1973,49 @@ void make_last_term_repeat(XMQParseState *state)
 
     // 'a'
     add_yaep_term_to_rule(state, state->ixml_mark, term->t, term->nt);
+
+    // Build second alternative rule: /17 = /17, 'a'.
+    state->ixml_rule = new_ixml_rule();
+    vector_push_back(state->ixml_rules, state->ixml_rule);
+
+    free_ixml_nonterminal(state->ixml_rule->rule_name);
+    state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
+
+    // /17, 'a'
+    add_yaep_term_to_rule(state, '-', NULL, nt);
+    add_yaep_term_to_rule(state, state->ixml_mark, term->t, term->nt);
+
+    free(term);
+    term = NULL;
+
+    state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
+}
+
+void make_last_term_repeat_zero(XMQParseState *state)
+{
+    // Compose an anonymous rule.
+    // 'a'+ is replaced with the nonterminal /17 (for example)
+    // Then /17 can be either 'a' or the /17, 'a'
+    // /17 = .
+    // /17 = /17 | "a".
+
+    // Pop the last term.
+    IXMLTerm *term = (IXMLTerm*)vector_pop_back(state->ixml_rule->rhs_terms);
+
+    IXMLNonTerminal *nt = new_ixml_nonterminal();
+    nt->name = generate_rule_name(state);
+
+    add_yaep_nonterminal(state, nt);
+    add_yaep_term_to_rule(state, '-', NULL, nt);
+
+    stack_push(state->ixml_rule_stack, state->ixml_rule);
+
+    // Build first alternative rule: /17 = .
+    state->ixml_rule = new_ixml_rule();
+    vector_push_back(state->ixml_rules, state->ixml_rule);
+
+    free_ixml_nonterminal(state->ixml_rule->rule_name);
+    state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
 
     // Build second alternative rule: /17 = /17, 'a'.
     state->ixml_rule = new_ixml_rule();
