@@ -840,7 +840,7 @@ void parse_ixml_group(XMQParseState *state)
 
         state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
     }
-    else
+    else if (*(state->i) != ')')
     {
         state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
         state->error_info = "expected alts in group";
