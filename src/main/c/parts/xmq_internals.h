@@ -66,6 +66,15 @@ typedef struct HashMapIterator HashMapIterator;
 struct MemBuffer;
 typedef struct MemBuffer MemBuffer;
 
+struct YaepParseRun;
+typedef struct YaepParseRun YaepParseRun;
+
+struct YaepGrammar;
+typedef struct YaepGrammar YaepGrammar;
+
+struct XMQParseState;
+typedef struct XMQParseState XMQParseState;
+
 // DECLARATIONS /////////////////////////////////////////////////
 
 #define LIST_OF_XMQ_TOKENS  \
@@ -118,8 +127,15 @@ struct XMQDoc
     XMQNode root_; // The root node.
     XMQContentType original_content_type_; // Remember if this document was created from xmq/xml etc.
     size_t original_size_; // Remember the original source size of the document it was loaded from.
-    void *yaep_parse_run_; // The currently executing parse variables.
-    void *yaep_grammar_; // The yaep grammar to be used by the run.
+
+    // For now these references are here. I am not quite sure where to put them in the future.
+    // The IXML grammar can be parsed, but not actually turned into a yaep grammar until
+    // we have seen the content to be parsed, since we want to shrink the charset membership tests to a minimum.
+    // I.e. if the content only contains a:s and b:s (eg 'abbabbabaaab') then the charset test
+    // ['a'-'z'] shrinks down to ['a';'b']
+    YaepParseRun *yaep_parse_run_; // The currently executing parse variables.
+    YaepGrammar *yaep_grammar_; // The yaep grammar to be used by the run.
+    XMQParseState *yaep_parse_state_; // The parse state used to parse the ixml grammar.
 };
 
 #ifdef __cplusplus
@@ -669,6 +685,7 @@ void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
 void xmq_set_yaep_grammar(XMQDoc *doc, YaepGrammar *g);
 YaepGrammar *xmq_get_yaep_grammar(XMQDoc *doc);
 YaepParseRun *xmq_get_yaep_parse_run(XMQDoc *doc);
+XMQParseState *xmq_get_yaep_parse_state(XMQDoc *doc);
 
 void set_node_namespace(XMQParseState *state, xmlNodePtr node, const char *node_name);
 

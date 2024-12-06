@@ -32,6 +32,13 @@ struct YaepParseRun;
 typedef struct YaepParseRun YaepParseRun;
 struct yaep_tree_node;
 
+struct IXMLRule;
+typedef struct IXMLRule IXMLRule;
+struct IXMLTerminal;
+typedef struct IXMLTerminal IXMLTerminal;
+struct IXMLNonTerminal;
+typedef struct IXMLNonTerminal IXMLNonTerminal;
+
 bool ixml_build_yaep_grammar(YaepParseRun *pr,
                              YaepGrammar *g,
                              XMQParseState *state,
@@ -39,6 +46,10 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
                              const char *grammar_stop,
                              const char *content_start, // Needed to minimize charset rule sizes.
                              const char *content_stop);
+
+void free_ixml_rule(IXMLRule *r);
+void free_ixml_terminal(IXMLTerminal *t);
+void free_ixml_nonterminal(IXMLNonTerminal *nt);
 
 #define IXML_MODULE
 

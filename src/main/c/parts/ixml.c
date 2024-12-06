@@ -1520,20 +1520,6 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
         longjmp(state->error_handler, 1);
     }
 
-    if (state->yaep_tmp_rhs_) free(state->yaep_tmp_rhs_);
-    if (state->yaep_tmp_transl_) free(state->yaep_tmp_transl_);
-
-    vector_free_and_values(state->ixml_rules, (FreeFuncPtr)free_ixml_rule);
-    state->ixml_rules = NULL;
-
-    hashmap_free_and_values(state->ixml_terminals_map, (FreeFuncPtr)free_ixml_terminal);
-    state->ixml_terminals_map = NULL;
-
-    vector_free_and_values(state->ixml_non_terminals, (FreeFuncPtr)free_ixml_nonterminal);
-    state->ixml_non_terminals = NULL;
-
-    stack_free(state->ixml_rule_stack);
-    state->ixml_rule_stack = NULL;
 
     return true;
 }

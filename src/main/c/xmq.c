@@ -1736,6 +1736,26 @@ void xmqFreeParseState(XMQParseState *state)
     state->element_stack = NULL;
     // Settings are not freed here.
     state->output_settings = NULL;
+
+    if (state->yaep_tmp_rhs_) free(state->yaep_tmp_rhs_);
+    state->yaep_tmp_rhs_ = NULL;
+    if (state->yaep_tmp_transl_) free(state->yaep_tmp_transl_);
+    state->yaep_tmp_transl_ = NULL;
+    if (state->yaep_tmp_marks_) free(state->yaep_tmp_marks_);
+    state->yaep_tmp_marks_ = NULL;
+
+    if (state->ixml_rules) vector_free_and_values(state->ixml_rules, (FreeFuncPtr)free_ixml_rule);
+    state->ixml_rules = NULL;
+
+    if (state->ixml_terminals_map) hashmap_free_and_values(state->ixml_terminals_map, (FreeFuncPtr)free_ixml_terminal);
+    state->ixml_terminals_map = NULL;
+
+    if (state->ixml_non_terminals) vector_free_and_values(state->ixml_non_terminals, (FreeFuncPtr)free_ixml_nonterminal);
+    state->ixml_non_terminals = NULL;
+
+    if (state->ixml_rule_stack) stack_free(state->ixml_rule_stack);
+    state->ixml_rule_stack = NULL;
+
     free(state);
 }
 
@@ -1762,10 +1782,12 @@ void xmqFreeDoc(XMQDoc *doq)
     }
     if (doq->yaep_grammar_)
     {
-        yaepFreeGrammar ((YaepParseRun*)doq->yaep_parse_run_, (YaepGrammar*)doq->yaep_grammar_);
-        yaepFreeParseRun ((YaepParseRun*)doq->yaep_parse_run_);
+        yaepFreeGrammar (doq->yaep_parse_run_, doq->yaep_grammar_);
+        yaepFreeParseRun (doq->yaep_parse_run_);
+        xmqFreeParseState(doq->yaep_parse_state_);
         doq->yaep_grammar_ = NULL;
         doq->yaep_parse_run_ = NULL;
+        doq->yaep_parse_state_ = NULL;
     }
 
     debug("xmq=", "freeing xmq doc");
@@ -4327,6 +4349,7 @@ bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
     YaepParseRun *run = yaepNewParseRun(grammar);
     ixml_grammar->yaep_grammar_ = grammar;
     ixml_grammar->yaep_parse_run_ = run;
+    ixml_grammar->yaep_parse_state_ = state;
     if (xmqVerbose()) run->verbose = true;
     if (xmqDebugging()) run->debug = run->verbose = true;
     if (xmqTracing()) run->trace = run->debug = run->verbose = true;
@@ -4348,7 +4371,7 @@ bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
         ixml_grammar->error_ = build_error_message("%s\n", xmqStateErrorMsg(state));
     }
 
-    xmqFreeParseState(state);
+    // Do not free the state, it must be kept alive with the doc
     xmqFreeParseCallbacks(parse);
     xmqFreeOutputSettings(os);
 
@@ -4362,12 +4385,17 @@ void xmq_set_yaep_grammar(XMQDoc *doc, YaepGrammar *g)
 
 YaepGrammar *xmq_get_yaep_grammar(XMQDoc *doc)
 {
-    return (YaepGrammar *)doc->yaep_grammar_;
+    return doc->yaep_grammar_;
 }
 
 YaepParseRun *xmq_get_yaep_parse_run(XMQDoc *doc)
 {
-    return (YaepParseRun*)doc->yaep_parse_run_;
+    return doc->yaep_parse_run_;
+}
+
+XMQParseState *xmq_get_yaep_parse_state(XMQDoc *doc)
+{
+    return doc->yaep_parse_state_;
 }
 
 void handle_yaep_syntax_error(YaepParseRun *pr,
