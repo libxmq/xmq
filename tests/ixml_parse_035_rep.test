@@ -1,0 +1,8 @@
+START
+A: 'x', 'a'**'b'.
+INPUT
+x
+OUTPUT
+A = x
+END
+ARGS=

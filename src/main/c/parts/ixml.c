@@ -154,6 +154,7 @@ void skip_whitespace(const char **i);
 void allocate_yaep_tmp_terminals(XMQParseState *state);
 void free_yaep_tmp_terminals(XMQParseState *state);
 bool has_ixml_tmp_terminals(XMQParseState *state);
+bool has_more_than_one_ixml_tmp_terminals(XMQParseState *state);
 void add_yaep_term_to_rule(XMQParseState *state, char mark, IXMLTerminal *t, IXMLNonTerminal *nt);
 void add_yaep_terminal(XMQParseState *state, IXMLTerminal *terminal);
 void add_yaep_nonterminal(XMQParseState *state, IXMLNonTerminal *nonterminal);
@@ -784,7 +785,31 @@ void parse_ixml_factor(XMQParseState *state)
 
         if (has_ixml_tmp_terminals(state)) // Test needed while developing parser.
         {
-            add_yaep_tmp_terminals_to_rule(state, state->ixml_rule);
+            if (has_more_than_one_ixml_tmp_terminals(state))
+            {
+                // Create a group.
+                IXMLNonTerminal *nt = new_ixml_nonterminal();
+                nt->name = generate_rule_name(state);
+                add_yaep_nonterminal(state, nt);
+                add_yaep_term_to_rule(state, '-', NULL, nt);
+                stack_push(state->ixml_rule_stack, state->ixml_rule);
+                state->ixml_rule = new_ixml_rule();
+                state->ixml_rule->mark = '-';
+                vector_push_back(state->ixml_rules, state->ixml_rule);
+
+                free_ixml_nonterminal(state->ixml_rule->rule_name);
+                state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
+
+                // Add the terminals to the inner group/rule.
+                add_yaep_tmp_terminals_to_rule(state, state->ixml_rule);
+
+                // Pop back out.
+                state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
+            }
+            else
+            {
+                add_yaep_tmp_terminals_to_rule(state, state->ixml_rule);
+            }
         }
 
         free_yaep_tmp_terminals(state);
@@ -1763,6 +1788,13 @@ bool has_ixml_tmp_terminals(XMQParseState *state)
     assert(state->ixml_tmp_terminals);
 
     return state->ixml_tmp_terminals->size > 0;
+}
+
+bool has_more_than_one_ixml_tmp_terminals(XMQParseState *state)
+{
+    assert(state->ixml_tmp_terminals);
+
+    return state->ixml_tmp_terminals->size > 1;
 }
 
 IXMLRule *new_ixml_rule()

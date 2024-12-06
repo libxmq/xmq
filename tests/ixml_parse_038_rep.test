@@ -1,0 +1,8 @@
+START
+A: 'alfa'+.
+INPUT
+alfa
+OUTPUT
+A = alfa
+END
+ARGS=
