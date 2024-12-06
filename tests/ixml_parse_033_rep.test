@@ -1,0 +1,8 @@
+START
+A: 'x', ('a'+)?.
+INPUT
+xaaa
+OUTPUT
+A = xaaa
+END
+ARGS=

@@ -185,6 +185,8 @@ char *generate_charset_terminal_name(IXMLCharset *cs, char mark);
 void make_last_term_optional(XMQParseState *state);
 void make_last_term_repeat(XMQParseState *state);
 void make_last_term_repeat_zero(XMQParseState *state);
+void make_last_term_repeat_infix(XMQParseState *state);
+void make_last_term_repeat_zero_infix(XMQParseState *state);
 
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -829,6 +831,7 @@ void parse_ixml_group(XMQParseState *state)
 
         stack_push(state->ixml_rule_stack, state->ixml_rule);
         state->ixml_rule = new_ixml_rule();
+        state->ixml_rule->mark = '-';
         vector_push_back(state->ixml_rules, state->ixml_rule);
 
         free_ixml_nonterminal(state->ixml_rule->rule_name);
@@ -1285,10 +1288,15 @@ void parse_ixml_term(XMQParseState *state)
 
             // infix separator
             parse_ixml_factor(state);
+
+            // We have value++infix value**infix
+            if (c == '+') make_last_term_repeat_infix(state);
+            else  make_last_term_repeat_zero_infix(state);
+
         }
         else
         {
-            // We have value+
+            // We have value+ or value*
             if (c == '+') make_last_term_repeat(state);
             else  make_last_term_repeat_zero(state);
         }
@@ -1858,7 +1866,7 @@ void free_ixml_charset(IXMLCharset *cs)
 char *generate_rule_name(XMQParseState *state)
 {
     char buf[16];
-    snprintf(buf, 15, "/R%d", state->num_generated_rules);
+    snprintf(buf, 15, "|%d", state->num_generated_rules);
     state->num_generated_rules++;
     return strdup(buf);
 }
@@ -1924,6 +1932,7 @@ void make_last_term_optional(XMQParseState *state)
     stack_push(state->ixml_rule_stack, state->ixml_rule);
 
     state->ixml_rule = new_ixml_rule();
+    state->ixml_rule->mark = '-';
     vector_push_back(state->ixml_rules, state->ixml_rule);
 
     free_ixml_nonterminal(state->ixml_rule->rule_name);
@@ -1935,6 +1944,8 @@ void make_last_term_optional(XMQParseState *state)
     term = NULL;
 
     state->ixml_rule = new_ixml_rule();
+    state->ixml_rule->mark = '-';
+
     vector_push_back(state->ixml_rules, state->ixml_rule);
 
     free_ixml_nonterminal(state->ixml_rule->rule_name);
@@ -1951,7 +1962,7 @@ void make_last_term_repeat(XMQParseState *state)
     // 'a'+ is replaced with the nonterminal /17 (for example)
     // Then /17 can be either 'a' or the /17, 'a'
     // /17 = "a".
-    // /17 = /17 | "a".
+    // /17 = /17, "a".
 
     // Pop the last term.
     IXMLTerm *term = (IXMLTerm*)vector_pop_back(state->ixml_rule->rhs_terms);
@@ -1966,6 +1977,7 @@ void make_last_term_repeat(XMQParseState *state)
 
     // Build first alternative rule: /17 = 'a'.
     state->ixml_rule = new_ixml_rule();
+    state->ixml_rule->mark = '-';
     vector_push_back(state->ixml_rules, state->ixml_rule);
 
     free_ixml_nonterminal(state->ixml_rule->rule_name);
@@ -1976,6 +1988,7 @@ void make_last_term_repeat(XMQParseState *state)
 
     // Build second alternative rule: /17 = /17, 'a'.
     state->ixml_rule = new_ixml_rule();
+    state->ixml_rule->mark = '-';
     vector_push_back(state->ixml_rules, state->ixml_rule);
 
     free_ixml_nonterminal(state->ixml_rule->rule_name);
@@ -1983,6 +1996,56 @@ void make_last_term_repeat(XMQParseState *state)
 
     // /17, 'a'
     add_yaep_term_to_rule(state, '-', NULL, nt);
+    add_yaep_term_to_rule(state, state->ixml_mark, term->t, term->nt);
+
+    free(term);
+    term = NULL;
+
+    state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
+}
+
+void make_last_term_repeat_infix(XMQParseState *state)
+{
+    // Compose an anonymous rule.
+    // 'a'++'b' is replaced with the nonterminal /17 (for example)
+    // Then /17 can be either 'a' or the /17, 'a'
+    // /17 = "a".
+    // /17 = /17, "b", "a".
+
+    // Pop the last two terms.
+    IXMLTerm *infix = (IXMLTerm*)vector_pop_back(state->ixml_rule->rhs_terms);
+    IXMLTerm *term = (IXMLTerm*)vector_pop_back(state->ixml_rule->rhs_terms);
+
+    IXMLNonTerminal *nt = new_ixml_nonterminal();
+    nt->name = generate_rule_name(state);
+
+    add_yaep_nonterminal(state, nt);
+    add_yaep_term_to_rule(state, '-', NULL, nt);
+
+    stack_push(state->ixml_rule_stack, state->ixml_rule);
+
+    // Build first alternative rule: /17 = 'a'.
+    state->ixml_rule = new_ixml_rule();
+    state->ixml_rule->mark = '-';
+    vector_push_back(state->ixml_rules, state->ixml_rule);
+
+    free_ixml_nonterminal(state->ixml_rule->rule_name);
+    state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
+
+    // 'a'
+    add_yaep_term_to_rule(state, state->ixml_mark, term->t, term->nt);
+
+    // Build second alternative rule: /17 = /17, 'b', 'a'.
+    state->ixml_rule = new_ixml_rule();
+    state->ixml_rule->mark = '-';
+    vector_push_back(state->ixml_rules, state->ixml_rule);
+
+    free_ixml_nonterminal(state->ixml_rule->rule_name);
+    state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
+
+    // /17, 'b', 'a'
+    add_yaep_term_to_rule(state, '-', NULL, nt);
+    add_yaep_term_to_rule(state, state->ixml_mark, infix->t, infix->nt);
     add_yaep_term_to_rule(state, state->ixml_mark, term->t, term->nt);
 
     free(term);
@@ -2012,6 +2075,7 @@ void make_last_term_repeat_zero(XMQParseState *state)
 
     // Build first alternative rule: /17 = .
     state->ixml_rule = new_ixml_rule();
+    state->ixml_rule->mark = '-';
     vector_push_back(state->ixml_rules, state->ixml_rule);
 
     free_ixml_nonterminal(state->ixml_rule->rule_name);
@@ -2019,6 +2083,7 @@ void make_last_term_repeat_zero(XMQParseState *state)
 
     // Build second alternative rule: /17 = /17, 'a'.
     state->ixml_rule = new_ixml_rule();
+    state->ixml_rule->mark = '-';
     vector_push_back(state->ixml_rules, state->ixml_rule);
 
     free_ixml_nonterminal(state->ixml_rule->rule_name);
@@ -2032,6 +2097,12 @@ void make_last_term_repeat_zero(XMQParseState *state)
     term = NULL;
 
     state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
+}
+
+void make_last_term_repeat_zero_infix(XMQParseState *state)
+{
+    make_last_term_repeat(state);
+    make_last_term_optional(state);
 }
 
 void ixml_print_grammar(XMQParseState *state)

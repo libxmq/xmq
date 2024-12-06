@@ -1,0 +1,8 @@
+START
+A:'a'++'b'.
+INPUT
+abababa
+OUTPUT
+A = abababa
+END
+ARGS=

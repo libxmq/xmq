@@ -5429,9 +5429,9 @@ static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, bool trans_p
         }
         symbol_print(f, rule->rhs[i], false);
     }
-    if (trans_p)
+    if (false && trans_p)
     {
-        fprintf(f, " ---- ");
+        fprintf(f, "      | ");
         if (rule->anode != NULL)
         {
             fprintf(f, "%s(", rule->anode);
