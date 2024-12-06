@@ -62,6 +62,9 @@ const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
                                    char *mark,
                                    char **marks);
 
+void scan_content_fixup_charsets(XMQParseState *state, const char *start, const char *stop);
+
+void ixml_print_grammar(XMQParseState *state);
 
 #define IXML_MODULE
 

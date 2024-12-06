@@ -5394,6 +5394,7 @@ static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, bool trans_p
     int i, j;
 
     if (rule->mark != 0
+        && rule->mark != ' '
         && rule->mark != '-'
         && rule->mark != '@'
         && rule->mark != '^')

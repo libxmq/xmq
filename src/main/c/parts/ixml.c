@@ -1372,51 +1372,56 @@ const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
     if (state->yaep_j_ >= state->ixml_rules->size) return NULL;
     IXMLRule *rule = (IXMLRule*)vector_element_at(state->ixml_rules, state->yaep_j_);
 
-    size_t num_rhs = rule->rhs_terms->size;
-
-    // Add rhs rules as translations.
-    if (state->yaep_tmp_rhs_) free(state->yaep_tmp_rhs_);
-    state->yaep_tmp_rhs_ = (char**)calloc(num_rhs+1, sizeof(char*));
-    if (state->yaep_tmp_marks_) free(state->yaep_tmp_marks_);
-    state->yaep_tmp_marks_ = (char*)calloc(num_rhs+1, sizeof(char));
-    memset(state->yaep_tmp_marks_, 0, num_rhs+1);
-
-    for (size_t i = 0; i < num_rhs; ++i)
+    // Check that the rule has not been removed when expainding charsets.
+    if (true) //FIXMErule->mark != 'X')
     {
-        IXMLTerm *term = (IXMLTerm*)vector_element_at(rule->rhs_terms, i);
-        state->yaep_tmp_marks_[i] = term->mark;
-        if (term->type == IXML_TERMINAL)
+        // This is a valid rule.
+        size_t num_rhs = rule->rhs_terms->size;
+
+        // Add rhs rules as translations.
+        if (state->yaep_tmp_rhs_) free(state->yaep_tmp_rhs_);
+        state->yaep_tmp_rhs_ = (char**)calloc(num_rhs+1, sizeof(char*));
+        if (state->yaep_tmp_marks_) free(state->yaep_tmp_marks_);
+        state->yaep_tmp_marks_ = (char*)calloc(num_rhs+1, sizeof(char));
+        memset(state->yaep_tmp_marks_, 0, num_rhs+1);
+
+        for (size_t i = 0; i < num_rhs; ++i)
         {
-            state->yaep_tmp_rhs_[i] = term->t->name;
+            IXMLTerm *term = (IXMLTerm*)vector_element_at(rule->rhs_terms, i);
+            state->yaep_tmp_marks_[i] = term->mark;
+            if (term->type == IXML_TERMINAL)
+            {
+                state->yaep_tmp_rhs_[i] = term->t->name;
+            }
+            else if (term->type == IXML_NON_TERMINAL)
+            {
+                state->yaep_tmp_rhs_[i] = term->nt->name;
+            }
+            else
+            {
+                fprintf(stderr, "Internal error %d as term type does not exist!\n", term->type);
+                assert(false);
+            }
         }
-        else if (term->type == IXML_NON_TERMINAL)
+
+        *abs_node = rule->rule_name->name;
+        if (rule->rule_name->alias) *abs_node = rule->rule_name->alias;
+
+        if (state->yaep_tmp_transl_) free(state->yaep_tmp_transl_);
+        state->yaep_tmp_transl_ = (int*)calloc(num_rhs+1, sizeof(char*));
+        for (size_t i = 0; i < num_rhs; ++i)
         {
-            state->yaep_tmp_rhs_[i] = term->nt->name;
+            state->yaep_tmp_transl_[i] = (int)i;
         }
-        else
-        {
-            fprintf(stderr, "Internal error %d as term type does not exist!\n", term->type);
-            assert(false);
-        }
+        state->yaep_tmp_transl_[num_rhs] = -1;
+
+        state->yaep_tmp_rhs_[num_rhs] = NULL;
+        *rhs = (const char **)state->yaep_tmp_rhs_;
+        *marks = state->yaep_tmp_marks_;
+        *transl = state->yaep_tmp_transl_;
+        *cost = 1;
+        *mark = rule->rule_name->default_mark;
     }
-
-    *abs_node = rule->rule_name->name;
-    if (rule->rule_name->alias) *abs_node = rule->rule_name->alias;
-
-    if (state->yaep_tmp_transl_) free(state->yaep_tmp_transl_);
-    state->yaep_tmp_transl_ = (int*)calloc(num_rhs+1, sizeof(char*));
-    for (size_t i = 0; i < num_rhs; ++i)
-    {
-        state->yaep_tmp_transl_[i] = (int)i;
-    }
-    state->yaep_tmp_transl_[num_rhs] = -1;
-
-    state->yaep_tmp_rhs_[num_rhs] = NULL;
-    *rhs = (const char **)state->yaep_tmp_rhs_;
-    *marks = state->yaep_tmp_marks_;
-    *transl = state->yaep_tmp_transl_;
-    *cost = 1;
-    *mark = rule->rule_name->default_mark;
     state->yaep_j_++;
     return rule->rule_name->name;
 }
@@ -1471,40 +1476,6 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
     }
 
     if (state->parse && state->parse->done) state->parse->done(state);
-
-    if (xmq_verbose_enabled_)
-    {
-        HashMapIterator *i = hashmap_iterate(state->ixml_terminals_map);
-
-        const char *name;
-        void *val;
-        while (hashmap_next_key_value(i, &name, &val))
-        {
-            IXMLTerminal *t = (IXMLTerminal*)val;
-            printf("TERMINAL %s %d\n", t->name, t->code);
-        }
-
-        hashmap_free_iterator(i);
-
-        for (size_t i = 0; i < state->ixml_rules->size; ++i)
-        {
-            IXMLRule *r = (IXMLRule*)vector_element_at(state->ixml_rules, i);
-            printf("RULE %c%s\n", r->rule_name->default_mark?r->rule_name->default_mark:' ', r->rule_name->name);
-
-            for (size_t j = 0; j < r->rhs_terms->size; ++j)
-            {
-                IXMLTerm *term = (IXMLTerm*)vector_element_at(r->rhs_terms, j);
-                if (term->type == IXML_TERMINAL)
-                {
-                    printf("   T %c%s %d\n", term->mark?term->mark:' ', term->t->name, term->t->code);
-                }
-                else
-                {
-                    printf("   R %c%s \n", term->mark?term->mark:' ', term->nt->name);
-                }
-            }
-        }
-    }
 
     return true;
 }
@@ -1626,6 +1597,81 @@ void add_yaep_tmp_term_terminal(XMQParseState *state, char *name, int code, char
     t->name = name;
     t->code = code;
     vector_push_back(state->ixml_tmp_terminals, t);
+}
+
+void scan_content_fixup_charsets(XMQParseState *state, const char *start, const char *stop)
+{
+    const char *i = start;
+    // We allocate a byte for every possible unicode. Yes, a bit excessive, 1 megabyte. Can be fixed though.
+    // 17*65536 = 0x11000 = 1 MB
+    char *used = (char*)malloc(0x11000);
+    memset(used, 0, 0x11000);
+
+    while (i < stop)
+    {
+        int uc = 0;
+        size_t len = 0;
+        bool ok = decode_utf8(i, stop, &uc, &len);
+        if (!ok)
+        {
+            fprintf(stderr, "xmq: broken utf8\n");
+            exit(1);
+        }
+        i += len;
+
+        used[uc] = 1;
+        char buf[16];
+        snprintf(buf,16, "#%x", uc);
+        IXMLTerminal *t = (IXMLTerminal*)hashmap_get(state->ixml_terminals_map, buf);
+        if (t == NULL)
+        {
+            t = new_ixml_terminal();
+            t->name = strdup(buf);
+            t->code = uc;
+            add_yaep_terminal(state, t);
+        }
+    }
+
+
+    for (size_t i = 0; i < state->ixml_non_terminals->size; ++i)
+    {
+        IXMLNonTerminal *nt = vector_element_at(state->ixml_non_terminals, i);
+        if (nt->charset)
+        {
+            IXMLCharsetPart *p = nt->charset->first;
+            while (p)
+            {
+                if (!p->category[0])
+                {
+                    for (int c = p->from; c <= p->to; ++c)
+                    {
+                        if (c >= 0 && c <= 0x10ffff)
+                        {
+                            if (used[c])
+                            {
+                                IXMLRule *rule = new_ixml_rule();
+                                rule->rule_name->name = strdup(nt->name);
+                                rule->mark = nt->default_mark;
+                                vector_push_back(state->ixml_rules, rule);
+                                char buffer[16];
+                                snprintf(buffer, 15, "#%x", c);
+                                allocate_yaep_tmp_terminals(state);
+                                add_yaep_tmp_term_terminal(state, strdup(buffer), c, nt->default_mark);
+                                state->ixml_rule = rule; // FIXME
+                                add_yaep_tmp_terminals_to_rule(state, rule);
+                                free_yaep_tmp_terminals(state);
+                            }
+                        }
+                    }
+                }
+                p = p->next;
+            }
+            // Mark the rule to not be sent to yaep, since it is empty.
+            //nt->default_mark = 'X';
+        }
+    }
+
+    free(used);
 }
 
 void add_yaep_tmp_terminals_to_rule(XMQParseState *state, IXMLRule *rule)
@@ -1864,6 +1910,43 @@ void make_last_term_optional(XMQParseState *state)
     // No terms in this rule alternative!
 
     state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
+}
+
+void ixml_print_grammar(XMQParseState *state)
+{
+    if (xmq_verbose_enabled_)
+    {
+        HashMapIterator *i = hashmap_iterate(state->ixml_terminals_map);
+
+        const char *name;
+        void *val;
+        while (hashmap_next_key_value(i, &name, &val))
+        {
+            IXMLTerminal *t = (IXMLTerminal*)val;
+            printf("TERMINAL %s %d\n", t->name, t->code);
+        }
+
+        hashmap_free_iterator(i);
+
+        for (size_t i = 0; i < state->ixml_rules->size; ++i)
+        {
+            IXMLRule *r = (IXMLRule*)vector_element_at(state->ixml_rules, i);
+            printf("RULE %c%s\n", r->rule_name->default_mark?r->rule_name->default_mark:' ', r->rule_name->name);
+
+            for (size_t j = 0; j < r->rhs_terms->size; ++j)
+            {
+                IXMLTerm *term = (IXMLTerm*)vector_element_at(r->rhs_terms, j);
+                if (term->type == IXML_TERMINAL)
+                {
+                    printf("   T %c%s %d\n", term->mark?term->mark:' ', term->t->name, term->t->code);
+                }
+                else
+                {
+                    printf("   R %c%s \n", term->mark?term->mark:' ', term->nt->name);
+                }
+            }
+        }
+    }
 }
 
 #else

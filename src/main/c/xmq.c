@@ -4580,6 +4580,13 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     if (!stop) stop = start+strlen(start);
 
     XMQParseState *state = xmq_get_yaep_parse_state(ixml_grammar);
+
+    // Now add all character terminals in the content (not yead added ) to the grammar.
+    // And rewrite charsets into rules with multiple choice shrunk the the actual usage of characters in the input.
+    scan_content_fixup_charsets(state, start, stop);
+
+    ixml_print_grammar(state);
+
     state->yaep_i_ = hashmap_iterate(state->ixml_terminals_map);
     int rc = yaep_read_grammar(xmq_get_yaep_parse_run(ixml_grammar),
                                xmq_get_yaep_grammar(ixml_grammar),
