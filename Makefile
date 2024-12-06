@@ -223,6 +223,11 @@ build/gtkdoc: build/gtkdocentities.ent
 	(cd build/gtkdoc/html; gtkdoc-mkhtml libxmq ../libxmq-docs.xml)
 	(cd build/gtkdoc; gtkdoc-fixxref --module=libxmq --module-dir=html --html-dir=html)
 
+import_category:
+	@if [ "$(CATEGORY)" = "" ]; then echo "Specify CATEGORY=Ll"; exit 1; fi
+	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
+	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
+
 .PHONY: all release debug asan test test_release test_debug clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc
 
 pom.xml: pom.xmq
