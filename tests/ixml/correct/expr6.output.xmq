@@ -1,0 +1,21 @@
+expression {
+    sum {
+        exp {
+            id = a
+            '^'
+            number = 2
+        }
+        '+'
+        prod {
+            id = b
+            '×'
+            number = 3
+        }
+        '+'
+        exp {
+            id = c
+            '^'
+            number = 2
+        }
+    }
+}
