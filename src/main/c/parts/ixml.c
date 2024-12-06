@@ -695,6 +695,7 @@ void parse_ixml_charset(XMQParseState *state)
 
     IXMLNonTerminal *nt = new_ixml_nonterminal();
     nt->name = generate_charset_terminal_name(state->ixml_charset);
+    nt->charset = state->ixml_charset;
     add_yaep_nonterminal(state, nt);
     add_yaep_term_to_rule(state, '-', NULL, nt);
 }
