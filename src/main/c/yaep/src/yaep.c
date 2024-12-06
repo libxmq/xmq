@@ -5433,21 +5433,29 @@ static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, bool trans_p
     {
         fprintf(f, " ---- ");
         if (rule->anode != NULL)
+        {
             fprintf(f, "%s(", rule->anode);
+        }
         for(i = 0; i < rule->trans_len; i++)
 	{
             for(j = 0; j < rule->rhs_len; j++)
+            {
                 if (rule->order[j] == i)
                 {
                     fprintf(f, " %d:", j);
                     symbol_print(f, rule->rhs[j], false);
                     break;
                 }
+            }
             if (j >= rule->rhs_len)
+            {
                 fprintf(f, " nil");
+            }
 	}
         if (rule->anode != NULL)
+        {
             fprintf(f, " )");
+        }
     }
     fprintf(f, "\n");
 }
