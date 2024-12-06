@@ -1595,6 +1595,7 @@ static void rule_new_stop(YaepParseState *ps)
 
     OS_TOP_EXPAND(ps->run.grammar->rulestorage_ptr->rules_os, ps->run.grammar->rulestorage_ptr->current_rule->rhs_len* sizeof(char));
     ps->run.grammar->rulestorage_ptr->current_rule->marks = (char*)OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
+    memset(ps->run.grammar->rulestorage_ptr->current_rule->marks, 0, ps->run.grammar->rulestorage_ptr->current_rule->rhs_len* sizeof(char));
     OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
 }
 
@@ -3076,7 +3077,6 @@ int yaep_read_grammar(YaepParseRun *pr,
             }
             ps->run.grammar->axiom = symb_add_nonterm(ps, AXIOM_NAME);
             ps->run.grammar->end_marker = symb_find_by_repr(ps, END_MARKER_NAME);
-            ps->run.grammar->end_marker->mark = 0;
             if (ps->run.grammar->end_marker != NULL)
             {
                 yaep_error(ps, YAEP_FIXED_NAME_USAGE, "do not use fixed name `%s'", END_MARKER_NAME);
