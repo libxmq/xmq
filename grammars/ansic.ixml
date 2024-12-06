@@ -462,4 +462,4 @@ _BOOL = 'bool', ws.
 _COMPLEX = 'complex', ws.
 _IMAGINARY = 'imaginary', ws.
 
--ws = ' ' | '  ' | '   ' | .
+-ws = ' '+ | .

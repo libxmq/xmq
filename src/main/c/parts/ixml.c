@@ -1994,7 +1994,7 @@ void make_last_term_repeat(XMQParseState *state)
 
 void ixml_print_grammar(XMQParseState *state)
 {
-    if (xmq_verbose_enabled_)
+    if (xmq_trace_enabled_)
     {
         HashMapIterator *i = hashmap_iterate(state->ixml_terminals_map);
 

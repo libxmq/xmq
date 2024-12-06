@@ -5305,7 +5305,7 @@ int yaep_read_grammar(YaepParseRun *pr,
     if (ps->run.verbose)
     {
         /* Print rules.*/
-        fprintf(stderr, "Rules:\n");
+        fprintf(stderr, "(ixml) yaep grammar:\n");
         for(rule = ps->run.grammar->rulestorage_ptr->first_rule; rule != NULL; rule = rule->next)
 	{
             fprintf(stderr, "  ");
@@ -5313,21 +5313,24 @@ int yaep_read_grammar(YaepParseRun *pr,
 	}
         fprintf(stderr, "\n");
         /* Print symbol sets.*/
-        for(i = 0;(symb = nonterm_get(ps, i)) != NULL; i++)
-	{
-            fprintf(stderr, "Nonterm %s:  Empty=%s , Access=%s, Derive=%s\n",
-                     symb->repr,(symb->empty_p ? "Yes" : "No"),
-                    (symb->access_p ? "Yes" : "No"),
-                    (symb->derivation_p ? "Yes" : "No"));
-            if (ps->run.debug)
-	    {
-                fprintf(stderr, "  First: ");
-                terminal_bitset_print(ps, stderr, symb->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terminals);
-                fprintf(stderr, "\n  Follow: ");
-                terminal_bitset_print(ps, stderr, symb->u.nonterminal.follow, ps->run.grammar->symbs_ptr->num_terminals);
-                fprintf(stderr, "\n\n");
-	    }
-	}
+        if (ps->run.debug)
+        {
+            for(i = 0;(symb = nonterm_get(ps, i)) != NULL; i++)
+            {
+                fprintf(stderr, "Nonterm %s:  Empty=%s , Access=%s, Derive=%s\n",
+                        symb->repr,(symb->empty_p ? "Yes" : "No"),
+                        (symb->access_p ? "Yes" : "No"),
+                        (symb->derivation_p ? "Yes" : "No"));
+                if (ps->run.debug)
+                {
+                    fprintf(stderr, "  First: ");
+                    terminal_bitset_print(ps, stderr, symb->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terminals);
+                    fprintf(stderr, "\n  Follow: ");
+                    terminal_bitset_print(ps, stderr, symb->u.nonterminal.follow, ps->run.grammar->symbs_ptr->num_terminals);
+                    fprintf(stderr, "\n\n");
+                }
+            }
+        }
     }
 
     ps->run.grammar->undefined_p = false;
@@ -7266,7 +7269,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     table_searches = get_all_searches() - table_searches;
 
 
-    if (ps->run.verbose)
+    if (ps->run.debug)
     {
         fprintf(stderr, "%sGrammar: #terms = %d, #nonterms = %d, ",
                 *ambiguous_p ? "AMBIGUOUS " : "",
@@ -7537,7 +7540,7 @@ static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, bool trans_p
         assert(false);
     }
     symbol_print(f, rule->lhs, false);
-    fprintf(f, " :");
+    fprintf(f, " → ");
     for(i = 0; i < rule->rhs_len; i++)
     {
         char m = rule->marks[i];
