@@ -1,0 +1,179 @@
+json {
+    element {
+        object {
+            '{'
+            member(string = menu)
+            {
+                ':'
+                element {
+                    object {
+                        '{'
+                        member(string = id)
+                        {
+                            ':'
+                            element {
+                                string = file
+                            }
+                        }
+                        ','
+                        member(string = value)
+                        {
+                            ':'
+                            element {
+                                string = File
+                            }
+                        }
+                        ','
+                        member(string = popup)
+                        {
+                            ':'
+                            element {
+                                object {
+                                    '{'
+                                    member(string = menuitem)
+                                    {
+                                        ':'
+                                        element {
+                                            array {
+                                                '['
+                                                elements {
+                                                    element {
+                                                        object {
+                                                            '{'
+                                                            member(string = value)
+                                                            {
+                                                                ':'
+                                                                element {
+                                                                    string = New
+                                                                }
+                                                            }
+                                                            ','
+                                                            member(string = onclick)
+                                                            {
+                                                                ':'
+                                                                element {
+                                                                    string = 'CreateNewDoc()'
+                                                                }
+                                                            }
+                                                            '}'
+                                                        }
+                                                    }
+                                                    ','
+                                                    element {
+                                                        object {
+                                                            '{'
+                                                            member(string = value)
+                                                            {
+                                                                ':'
+                                                                element {
+                                                                    string = Open
+                                                                }
+                                                            }
+                                                            ','
+                                                            member(string = onclick)
+                                                            {
+                                                                ':'
+                                                                element {
+                                                                    string = 'OpenDoc()'
+                                                                }
+                                                            }
+                                                            '}'
+                                                        }
+                                                    }
+                                                    ','
+                                                    element {
+                                                        object {
+                                                            '{'
+                                                            member(string = value)
+                                                            {
+                                                                ':'
+                                                                element {
+                                                                    string = Close
+                                                                }
+                                                            }
+                                                            ','
+                                                            member(string = onclick)
+                                                            {
+                                                                ':'
+                                                                element {
+                                                                    string = 'CloseDoc()'
+                                                                }
+                                                            }
+                                                            '}'
+                                                        }
+                                                    }
+                                                }
+                                                ']'
+                                            }
+                                        }
+                                    }
+                                    '}'
+                                }
+                            }
+                        }
+                        '}'
+                    }
+                }
+            }
+            ','
+            member(string = number)
+            {
+                ':'
+                element {
+                    number {
+                        int {
+                            '-'
+                            digit = 0
+                        }
+                        frac {
+                            '.'
+                            digit = 0
+                        }
+                        exp {
+                            'e'
+                            sign  = +
+                            digit = 0
+                            digit = 0
+                        }
+                    }
+                }
+            }
+            ','
+            member(string = string)
+            {
+                ':'
+                element {
+                    string {
+                        '\'
+                        escape {
+                            'u'
+                            hex = f
+                            hex = f
+                            hex = f
+                            hex = f
+                        }
+                    }
+                }
+            }
+            ','
+            member(string = bool)
+            {
+                ':'
+                element = true
+            }
+            ','
+            member(string = also)
+            {
+                ':'
+                element = false
+            }
+            ','
+            member(string = no)
+            {
+                ':'
+                element = null
+            }
+            '}'
+        }
+    }
+}

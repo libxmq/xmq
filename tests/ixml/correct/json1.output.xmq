@@ -1,0 +1,17 @@
+json {
+    object {
+        '{'
+        pair(string = name)
+        {
+            ': '
+            string = pi
+        }
+        ', '
+        pair(string = value)
+        {
+            ': '
+            number = 3.145926
+        }
+        '}'
+    }
+}
