@@ -4659,33 +4659,7 @@ static void core_symb_ids_add_complete(YaepParseState *ps,
                                        YaepCoreSymbVect *core_symb_ids,
                                        int id)
 {
-    char buf[64];
-    if (core_symb_ids->symb->terminal_p)
-    {
-        int code = core_symb_ids->symb->u.terminal.code;
-        if (code < 32 || code > 126)
-        {
-            strcpy(buf, core_symb_ids->symb->repr);
-        }
-        else
-        {
-            buf[0] = '\'';
-            buf[1] = core_symb_ids->symb->u.terminal.code;
-            buf[2] = '\'';
-            buf[3] = 0;
-        }
-    }
-    else
-    {
-        strcpy(buf, core_symb_ids->symb->repr);
-    }
-
     vect_add_id(ps, &core_symb_ids->completions, id);
-
-    TRACE_FA(ps, "core=%d symb=%s --> id=%d",
-            core_symb_ids->core->id,
-            buf,
-            id+1);
 }
 
 /* Insert vector VEC from CORE_SYMB_IDS into table TAB.  Update
