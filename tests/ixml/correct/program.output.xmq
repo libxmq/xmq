@@ -1,0 +1,34 @@
+program {
+    block {
+        '{'
+        statement {
+            assignment {
+                variable {
+                    identifier = a
+                }
+                '='
+                expression {
+                    number = 0
+                }
+            }
+        }
+        ';'
+        statement {
+            call {
+                identifier = f
+                '('
+                parameter {
+                    identifier = a
+                }
+                ', '
+                parameter {
+                    number = 0
+                }
+                ')'
+            }
+        }
+        ';'
+        statement
+        '}'
+    }
+}
