@@ -634,6 +634,8 @@ CFLAGS_asan
 CFLAGS_debug
 CFLAGS_release
 CLANG
+LIBYAEP_LIBS
+LIBYAEP_CFLAGS
 LIBXSLT_LIBS
 LIBXSLT_CFLAGS
 LIBXML2_LIBS
@@ -718,6 +720,7 @@ enable_static_xmq
 with_zlib
 with_libxml2
 with_libxslt
+with_libyaep
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1365,6 +1368,9 @@ Optional Packages:
   --with-libxslt          specify prefix directory for the libxslt package
                           (expecting the libraries under PATH and the headers
                           under PATH)
+  --with-libyaep          specify prefix directory for the yaep package
+                          (expecting the libraries .a under PATH/src and the
+                          header yaep.h under PATH/src)
 
 Some influential environment variables:
   CC          C compiler command
@@ -4235,6 +4241,22 @@ fi
 
 
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libyaep" >&5
+printf %s "checking for libyaep... " >&6; }
+
+# Check whether --with-libyaep was given.
+if test ${with_libyaep+y}
+then :
+  withval=$with_libyaep;
+fi
+
+
+LIBYAEP_CFLAGS=""
+LIBYAEP_LIBS="3rdparty/yaep/src/libyaep.a"
+
+
+
+
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -4285,13 +4307,13 @@ printf "%s\n" "checking type of compiler: using g++" >&6; }
     GCC_EXTRA_CFLAGS=""
 fi
 
-CXXFLAGS="-DPLATFORM_${PLATFORM} ${CXXFLAGS_EXTRAS} -D${MNEMONIC} -Wall -Wparentheses -Wmissing-declarations -Wimplicit -Wno-error=deprecated-declarations -fmessage-length=0 -std=c++11 $GCC_EXTRA_CXXFLAGS -Wno-unused-function -Wreturn-type"
+CXXFLAGS="-DPLATFORM_${PLATFORM} ${CXXFLAGS_EXTRAS} -D${MNEMONIC} -Wall -Wno-attributes -Wparentheses -Wmissing-declarations -Wimplicit -Wno-error=deprecated-declarations -fmessage-length=0 -std=c++11 $GCC_EXTRA_CXXFLAGS -Wno-unused-function -Wreturn-type"
 
 CXXFLAGS_release="-Os"
 CXXFLAGS_debug="-O0 -g"
 CXXFLAGS_asan="-O0 -g ${ASAN_CFLAGS}"
 
-CFLAGS="-DPLATFORM_${PLATFORM} ${CFLAGS_EXTRAS} -D${MNEMONIC} $GCC_EXTRA_CFLAGS -Wall -Wparentheses -Wmissing-declarations -Wimplicit -Wno-error=deprecated-declarations -fmessage-length=0 -Wno-unused-function -Wreturn-type"
+CFLAGS="-DPLATFORM_${PLATFORM} ${CFLAGS_EXTRAS} -D${MNEMONIC} $GCC_EXTRA_CFLAGS -Wall -Wno-attributes -Wparentheses -Wmissing-declarations -Wimplicit -Wno-error=deprecated-declarations -fmessage-length=0 -Wno-unused-function -Wreturn-type"
 
 CFLAGS_release="-Os"
 CFLAGS_debug="-O0 -g"

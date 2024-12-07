@@ -504,13 +504,13 @@ void print_white_spaces(XMQPrintState *ps, int num)
     XMQTheme *c = os->theme;
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
-    if (c->whitespace.pre) write(writer_state, c->whitespace.pre, NULL);
+    if (c && c->whitespace.pre) write(writer_state, c->whitespace.pre, NULL);
     for (int i=0; i<num; ++i)
     {
         write(writer_state, os->indentation_space, NULL);
     }
     ps->current_indent += num;
-    if (c->whitespace.post) write(writer_state, c->whitespace.post, NULL);
+    if (c && c->whitespace.post) write(writer_state, c->whitespace.post, NULL);
 }
 
 void print_all_whitespace(XMQPrintState *ps, const char *start, const char *stop, Level level)
@@ -562,7 +562,7 @@ void print_quoted_spaces(XMQPrintState *ps, XMQColor color, int num)
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
 
-    if (c->quote.pre) write(writer_state, c->quote.pre, NULL);
+    if (c && c->quote.pre) write(writer_state, c->quote.pre, NULL);
     write(writer_state, "'", NULL);
     for (int i=0; i<num; ++i)
     {
@@ -571,7 +571,7 @@ void print_quoted_spaces(XMQPrintState *ps, XMQColor color, int num)
     ps->current_indent += num;
     ps->last_char = '\'';
     write(writer_state, "'", NULL);
-    if (c->quote.post) write(writer_state, c->quote.post, NULL);
+    if (c && c->quote.post) write(writer_state, c->quote.post, NULL);
 }
 
 void print_quotes(XMQPrintState *ps, size_t num, XMQColor color)

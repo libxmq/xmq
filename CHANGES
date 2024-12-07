@@ -1,3 +1,14 @@
+
+XMQ now supports invisible XML. https://invisiblexml.org/
+
+Try:
+
+xmq --ixml=grammar.ixml input_file
+
+or for quicker testing, the input can be provided as an argument:
+
+xmq --ixml=grammar.ixml -i 'text to parse'
+
 2024-11-26: Version 2.18.0
 
 Release artifacts for Posix platformas are now tar.gz archives with a single executable binary.

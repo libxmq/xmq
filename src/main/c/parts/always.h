@@ -27,15 +27,29 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<stdbool.h>
 #include<stdlib.h>
 
+struct XMQLineConfig
+{
+    bool human_readable_;
+};
+typedef struct XMQLineConfig XMQLineConfig;
+
+extern bool xmq_trace_enabled_;
 extern bool xmq_debug_enabled_;
 extern bool xmq_verbose_enabled_;
+extern struct XMQLineConfig xmq_log_line_config_;
 
+void error__(const char* fmt, ...);
+void warning__(const char* fmt, ...);
 void verbose__(const char* fmt, ...);
 void debug__(const char* fmt, ...);
+void trace__(const char* fmt, ...);
 void check_malloc(void *a);
 
+#define error(...) error__(__VA_ARGS__)
+#define warning(...) warning__(__VA_ARGS__)
 #define verbose(...) if (xmq_verbose_enabled_) { verbose__(__VA_ARGS__); }
 #define debug(...) if (xmq_debug_enabled_) {debug__(__VA_ARGS__); }
+#define trace(...) if (xmq_trace_enabled_) {trace__(__VA_ARGS__); }
 
 #define PRINT_ERROR(...) fprintf(stderr, __VA_ARGS__)
 #define PRINT_WARNING(...) fprintf(stderr, __VA_ARGS__)
@@ -43,6 +57,9 @@ void check_malloc(void *a);
 #ifdef PLATFORM_WINAPI
 char *strndup(const char *s, size_t l);
 #endif
+
+// A common free function ptr to be used when freeing collections.
+typedef void(*FreeFuncPtr)(void*);
 
 #define ALWAYS_MODULE
 

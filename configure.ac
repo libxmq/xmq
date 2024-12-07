@@ -274,6 +274,17 @@ fi
 AC_SUBST(LIBXSLT_CFLAGS)
 AC_SUBST(LIBXSLT_LIBS)
 
+AC_MSG_CHECKING([for libyaep])
+AC_ARG_WITH(libyaep, [AS_HELP_STRING([--with-libyaep],
+      [specify prefix directory for the yaep package
+      (expecting the libraries .a under PATH/src and the header yaep.h under PATH/src)])])
+
+LIBYAEP_CFLAGS=""
+LIBYAEP_LIBS="3rdparty/yaep/src/libyaep.a"
+
+AC_SUBST(LIBYAEP_CFLAGS)
+AC_SUBST(LIBYAEP_LIBS)
+
 AC_LANG_PUSH([C])
 AC_COMPILE_IFELSE(
 [AC_LANG_PROGRAM([], [[
@@ -297,13 +308,13 @@ else
     GCC_EXTRA_CFLAGS=""
 fi
 
-CXXFLAGS="-DPLATFORM_${PLATFORM} ${CXXFLAGS_EXTRAS} -D${MNEMONIC} -Wall -Wparentheses -Wmissing-declarations -Wimplicit -Wno-error=deprecated-declarations -fmessage-length=0 -std=c++11 $GCC_EXTRA_CXXFLAGS -Wno-unused-function -Wreturn-type"
+CXXFLAGS="-DPLATFORM_${PLATFORM} ${CXXFLAGS_EXTRAS} -D${MNEMONIC} -Wall -Wno-attributes -Wparentheses -Wmissing-declarations -Wimplicit -Wno-error=deprecated-declarations -fmessage-length=0 -std=c++11 $GCC_EXTRA_CXXFLAGS -Wno-unused-function -Wreturn-type"
 
 CXXFLAGS_release="-Os"
 CXXFLAGS_debug="-O0 -g"
 CXXFLAGS_asan="-O0 -g ${ASAN_CFLAGS}"
 
-CFLAGS="-DPLATFORM_${PLATFORM} ${CFLAGS_EXTRAS} -D${MNEMONIC} $GCC_EXTRA_CFLAGS -Wall -Wparentheses -Wmissing-declarations -Wimplicit -Wno-error=deprecated-declarations -fmessage-length=0 -Wno-unused-function -Wreturn-type"
+CFLAGS="-DPLATFORM_${PLATFORM} ${CFLAGS_EXTRAS} -D${MNEMONIC} $GCC_EXTRA_CFLAGS -Wall -Wno-attributes -Wparentheses -Wmissing-declarations -Wimplicit -Wno-error=deprecated-declarations -fmessage-length=0 -Wno-unused-function -Wreturn-type"
 
 CFLAGS_release="-Os"
 CFLAGS_debug="-O0 -g"

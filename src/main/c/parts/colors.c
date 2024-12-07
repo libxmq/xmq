@@ -41,6 +41,14 @@ bool hex_to_number(char c, char cc, int *v);
 void getThemeStrings(XMQOutputSettings *os, XMQColor color, const char **pre, const char **post)
 {
     XMQTheme *theme = os->theme;
+
+    if (!theme)
+    {
+        *pre = NULL;
+        *post = NULL;
+        return;
+    }
+
     switch(color)
     {
 
@@ -57,8 +65,8 @@ LIST_OF_XMQ_TOKENS
         return;
     }
     assert(false);
-    *pre = "";
-    *post = "";
+    *pre = NULL;
+    *post = NULL;
 }
 
 // Set background color: echo -ne "\033]11;#53186f\007"

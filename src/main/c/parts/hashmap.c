@@ -92,7 +92,7 @@ HashMap* hashmap_create(size_t max_size)
     return new_table;
 }
 
-void hashmap_free_and_values(HashMap *map)
+void hashmap_free_and_values(HashMap *map, FreeFuncPtr freefunc)
 {
     for (int i=0; i < map->max_size_; ++i)
     {
@@ -102,7 +102,7 @@ void hashmap_free_and_values(HashMap *map)
         {
             if (node->key_) free((char*)node->key_);
             node->key_ = NULL;
-            if (node->val_) free(node->val_);
+            if (node->val_) freefunc(node->val_);
             node->val_ = NULL;
             HashMapNode *next = node->next_;
             free(node);
@@ -184,6 +184,8 @@ void hashmap_free(HashMap* table)
         while (slot != NULL)
         {
             HashMapNode* tmp = slot;
+            if (tmp->key_) free((char*)tmp->key_);
+            tmp->key_ = NULL;
             slot = slot ->next_;
             free(tmp);
         }

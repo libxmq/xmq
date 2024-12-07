@@ -2,7 +2,7 @@
 # libxmq - Copyright 2023 Fredrik Öhrström (spdx: MIT)
 
 # Replace #include "parts/..." with the actual content of the included files, c and h files.
-# This is used to genereate the dist/xmq.c file which is a self-contained single source
+# This is used to generate the dist/xmq.c file which is a self-contained single source
 # file suitable for copy/pasting into your own project.
 
 if [ -z "$1" ] || [ -z "$2" ]
@@ -55,15 +55,18 @@ do_part colors
 do_part core
 do_part default_themes
 do_part hashmap
+do_part ixml
 do_part json
 do_part membuffer
 do_part stack
 do_part text
 do_part utf8
 do_part entities
+do_part vector
 do_part xml
 do_part xmq_internals
 do_part xmq_parser
 do_part xmq_printer
+do_part yaep
 
 do_version

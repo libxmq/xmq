@@ -39,13 +39,13 @@ struct Stack
 };
 typedef struct Stack Stack;
 
-Stack *new_stack();
-void free_stack(Stack *stack);
-void push_stack(Stack *s, void *);
+Stack *stack_create();
+void stack_free(Stack *stack);
+void stack_push(Stack *s, void *);
 // Pop the top element.
-void *pop_stack(Stack *s);
+void *stack_pop(Stack *s);
 // Pull the bottom element.
-void *rock_stack(Stack *s);
+void *stack_rock(Stack *s);
 
 #define STACK_MODULE
 

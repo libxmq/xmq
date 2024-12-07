@@ -35,6 +35,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 extern "C" _hideLBfromEditor
 #endif
 
+#include<stdarg.h>
 #include<stdbool.h>
 #include<stdlib.h>
 #include<stdint.h>
@@ -87,6 +88,7 @@ typedef struct XMQParseCallbacks XMQParseCallbacks;
     @XMQ_CONTENT_XML: xml detected
     @XMQ_CONTENT_HTML: html detected
     @XMQ_CONTENT_JSON: json detected
+    @XMQ_CONTENT_IXML: ixml selected
     @XMQ_CONTENT_TEXT: valid utf8 text input/output is selected
     @XMQ_CONTENT_CLINES: xpath="c-escaped string"
 
@@ -101,8 +103,9 @@ typedef enum
     XMQ_CONTENT_XML = 4,
     XMQ_CONTENT_HTML = 5,
     XMQ_CONTENT_JSON = 6,
-    XMQ_CONTENT_TEXT = 7,
-    XMQ_CONTENT_CLINES = 8
+    XMQ_CONTENT_IXML = 7,
+    XMQ_CONTENT_TEXT = 8,
+    XMQ_CONTENT_CLINES = 9
 } XMQContentType;
 
 /**
@@ -118,12 +121,12 @@ typedef enum
 */
 typedef enum
 {
-   XMQ_RENDER_PLAIN,
-   XMQ_RENDER_TERMINAL,
-   XMQ_RENDER_HTML,
-   XMQ_RENDER_HTMQ,
-   XMQ_RENDER_TEX,
-   XMQ_RENDER_RAW
+   XMQ_RENDER_PLAIN = 0,
+   XMQ_RENDER_TERMINAL = 1,
+   XMQ_RENDER_HTML = 2,
+   XMQ_RENDER_HTMQ = 3,
+   XMQ_RENDER_TEX = 4,
+   XMQ_RENDER_RAW = 5
 } XMQRenderFormat;
 
 /**
@@ -132,6 +135,8 @@ typedef enum
     @XMQ_FLAG_TRIM_HEURISTIC: Remove leading/ending whitespace, but try to keep significant, remove incidental indentation.
     @XMQ_FLAG_TRIM_EXACT: Trim exactly according to XML rules. Depends on your XSD,space:preserve and more and is COMPLICATED!
     @XMQ_FLAG_NOMERGE: Do not merge text and character entities.
+    @XMQ_FLAG_IXML_ALL_PARSES: When ixml parse is ambiguous generate all parses.
+    @XMQ_FLAG_IXML_TRY_TO_RECOVER: When ixml parse fails, try to recover.
 
     If a 0 is provided as the flags to the parse functions, then it will parse using the these default settings:
     When loading xml/html:
@@ -154,6 +159,8 @@ typedef enum
     XMQ_FLAG_TRIM_HEURISTIC = 2,
     XMQ_FLAG_TRIM_EXACT = 4,
     XMQ_FLAG_NOMERGE = 8,
+    XMQ_FLAG_IXML_ALL_PARSES = 16,
+    XMQ_FLAG_IXML_TRY_TO_RECOVER = 32,
 } XMQFlagBits;
 
 /**
@@ -322,7 +329,8 @@ typedef enum
     XMQ_ERROR_PARSING_XML = 28,
     XMQ_ERROR_PARSING_HTML = 29,
     XMQ_ERROR_VALUE_CANNOT_START_WITH = 30,
-    XMQ_WARNING_QUOTES_NEEDED = 100
+    XMQ_ERROR_IXML_SYNTAX_ERROR = 50,
+    XMQ_WARNING_QUOTES_NEEDED = 1000
 } XMQParseError;
 
 /**
@@ -369,6 +377,8 @@ typedef enum
     XMQ_CORE_IPV4_ADDRESS,
     XMQ_CORE_IPV6_ADDRESS
 } XMQCoreType;
+
+typedef struct XMQLineConfig XMQLineConfig;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////// FUNCTIONS  /////////////////////////////////////////////////////////////////
@@ -478,6 +488,24 @@ int xmqStateErrno(XMQParseState *state);
 const char *xmqStateErrorMsg(XMQParseState *state);
 
 /**
+   xmqSetPrintAllParsesIXML:
+   @state: the parse state.
+   @all_parses: if true then generate all possible trees.
+
+   If the parse is ambiguous generate all possible trees.
+*/
+void xmqSetPrintAllParsesIXML(XMQParseState *state, bool all_parses);
+
+/**
+   xmqSetTryToRecoverIXML:
+   @state: the parse state.
+   @try_recover: if true then try to recover a failed parse.
+
+   If the parse fails then try to recover.
+*/
+void xmqSetTryToRecoverIXML(XMQParseState *state, bool try_recover);
+
+/**
     xmqNewDoc:
 
     Create an empty document object.
@@ -493,6 +521,15 @@ XMQDoc *xmqNewDoc();
     The source name is often the file name, but can be "-" for stdin or anything you like.
 */
 void xmqSetDocSourceName(XMQDoc *doq, const char *source_name);
+
+/**
+    xmqGetDocSourceName:
+    @doq: Document which source file name should be gotten.
+
+    Returns the source name used to make error message more readable when parsing fails.
+    The source name is often the file name, but can be "-" for stdin or anything you like.
+*/
+const char *xmqGetDocSourceName(XMQDoc *doq);
 
 /**
     xmqGetOriginalContentType:
@@ -583,6 +620,7 @@ void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines);
 void xmqSetEscapeNon7bit(XMQOutputSettings *os, bool escape_non_7bit);
 void xmqSetEscapeTabs(XMQOutputSettings *os, bool escape_tabs);
 void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format);
+void xmqSetOmitDecl(XMQOutputSettings *os, bool omit_decl);
 void xmqSetRenderFormat(XMQOutputSettings *os, XMQRenderFormat render_to);
 void xmqSetRenderTheme(XMQOutputSettings *os, const char *theme_name);
 void xmqSetRenderRaw(XMQOutputSettings *os, bool render_raw);
@@ -602,11 +640,18 @@ void xmqSetupPrintFileDescriptor(XMQOutputSettings *ps, int fd);
 /** Setup the printer to print to a dynamically memory buffer. */
 void xmqSetupPrintMemory(XMQOutputSettings *ps, char **start, char **stop);
 
+/** Setup where to store any potential skip. This is not an ideal solution. Fix? */
+void xmqSetupPrintSkip(XMQOutputSettings *ps, size_t *skip);
+
 /** Pretty print the document according to the settings. */
 void xmqPrint(XMQDoc *doc, XMQOutputSettings *settings);
 
 /** Trim xml whitespace. */
 void xmqTrimWhitespace(XMQDoc *doc, int flags);
+
+/** Create a compact single line quote safely storing the content.
+    Output can for example be: 123, John, 'John Doe', '''There's a light!''', (&#10;'a line'&10;) */
+char *xmqCompactQuote(const char *content);
 
 /** A parsing error will be described here! */
 const char *xmqDocError(XMQDoc *doc);
@@ -747,11 +792,40 @@ void xmqSetVerbose(bool e);
 void xmqSetDebug(bool e);
 
 /**
+    xmqSetTrace:
+
+    Enable/Disable tracing.
+*/
+void xmqSetTrace(bool e);
+
+/**
    xmqDebugging:
 
    Return whether debugging is enabled or not.
 */
 bool xmqDebugging();
+
+/**
+   xmqTracing:
+
+   Return whether tracing is enabled or not.
+*/
+bool xmqTracing();
+
+/**
+    xmqSetLogHumanReadable:
+
+    Enable/Disable verbose/debug/tracing output as human readable.
+    The default is in xmq format.
+*/
+void xmqSetLogHumanReadable(bool e);
+
+/**
+   xmqLogXMQ:
+
+   Return whether logging in pure xmq is enabled or not.
+*/
+bool xmqLoggingXMQ();
 
 /**
     xmqParseBufferWithType:
@@ -774,6 +848,27 @@ bool xmqParseFileWithType(XMQDoc *doc,
                           const char *file,
                           const char *implicit_root,
                           XMQContentType ct,
+                          int flags);
+
+/**
+    xmqParseBufferWithIXML:
+
+    Parse buffer using the supplied IXML grammar.
+*/
+bool xmqParseBufferWithIXML(XMQDoc *doc,
+                            const char *start,
+                            const char *stop,
+                            XMQDoc *ixml_grammar,
+                            int flags);
+
+/**
+    xmqParseFileWithIXML:
+
+    Load a file and parse it using the supplied IXML grammar. If file is NULL read from stdin.
+*/
+bool xmqParseFileWithIXML(XMQDoc *doc,
+                          const char *file,
+                          XMQDoc *ixml_grammar,
                           int flags);
 
 /**
@@ -826,6 +921,51 @@ void xmqOverrideColor(XMQOutputSettings *settings,
                       const char *post,
                       const char *ns);
 
+
+/**
+    xmqNewLineConfig:
+
+    Allocate a default XMQLineConfig.
+*/
+XMQLineConfig *xmqNewLineConfig();
+
+/**
+    xmqFreeLineConfig:
+
+    Free the XMQLineConfig structure.
+*/
+void xmqFreeLineConfig(XMQLineConfig *lc);
+
+/**
+    xmqSetLineHumanReadable(XMQLineConfig *lc, bool enable);
+
+    If enable is true then generate a more human readable log line.
+*/
+void xmqSetLineHumanReadable(XMQLineConfig *lc, bool enable);
+
+/**
+   xmqLineDoc:
+
+   Generate from the doc a compact single line xmq string containing no newlines at all, for logging.
+*/
+char *xmqLineDoc(XMQLineConfig *lc, XMQDoc *doc);
+
+/**
+   xmqLinePrintf:
+
+   Generate a compact single line xmq string containing no newlines at all, for logging.
+   The content is constructed from printf formatted strings:
+   xmqLinePrintf(&lc,
+                 "car{",
+                 "model=", "%s", modelstring,
+                 "id=", "%d", idnumber,
+                 "description=", "desc: %s", multilinedescription,
+                 "}");
+   Generates:
+   car{model=Volvo id=123 description=('desc: lines of'&#10;'next line')}
+*/
+char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...);
+char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap);
 
 #ifdef __cplusplus
 _hideRBfromEditor

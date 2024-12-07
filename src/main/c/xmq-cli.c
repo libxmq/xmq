@@ -25,7 +25,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/hashmap.h"
 #include"parts/membuffer.h"
 #include"parts/text.h"
+#include"parts/ixml.h"
 #include"parts/xml.h"
+#include"parts/yaep.h"
 
 #include<assert.h>
 #include<ctype.h>
@@ -43,6 +45,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifdef PLATFORM_WINAPI
 #include<windows.h>
 #include<conio.h>
+char *strndup(const char *s, size_t l);
 #else
 #include<signal.h>
 #include<sys/ioctl.h>
@@ -89,7 +92,7 @@ typedef enum
     XMQ_CLI_CMD_TO_CLINES,
     XMQ_CLI_CMD_NO_OUTPUT,
     XMQ_CLI_CMD_PRINT,
-    XMQ_CLI_CMD_SAVE,
+    XMQ_CLI_CMD_SAVE_TO,
     XMQ_CLI_CMD_PAGER,
     XMQ_CLI_CMD_BROWSER,
     XMQ_CLI_CMD_RENDER_TERMINAL,
@@ -148,6 +151,7 @@ struct XMQCliCommand
     XMQCliCmd cmd;
     bool silent;
     const char *in;
+    bool in_is_content; // If set to true, then in is the actual content to be parsed.
     bool no_input; // If set to true, then no initial file is read nor any stdin is read.
     const char *out;
     const char *alias;
@@ -164,6 +168,16 @@ struct XMQCliCommand
     XMQDoc *xsd_doq; // The xmq document loaded to generate the xsd.
     xmlSchemaPtr xsd; // The xsd to validate agains.
     const char *save_file; // Save output to this file name.
+    xmlDocPtr   ixml_doc;  // A DOM containing the ixml grammar.
+    const char *ixml_ixml; // IXML grammar source to be used.
+    const char *ixml_filename; // Where the ixml grammar was read from.
+    bool ixml_all_parses; // Print all possible parses when parse is ambiguous.
+    bool ixml_try_to_recover; // Try to recover when parsing with an ixml grammar.
+    bool build_xml_of_ixml; // Generate xml directly from ixml.
+    // xmq --ixml=grammar.ixml --xml-of-ixml # This will print the grammar as xmq.
+    // xmq --ixml=ixml.ixml grammar.ixml # This will print the same grammar as xmq,
+    // but uses the ixml early parser instead of the hand coded parser.
+    bool log_xmq; // Output verbose,debug,trace as human readable lines instead of xmq.
     xmlDocPtr   node_doc;
     xmlNodePtr  node_content; // Tree content to replace something.
     XMQContentType in_format;
@@ -190,9 +204,12 @@ struct XMQCliCommand
     bool print_help;
     const char *help_command;
     bool print_version;
+    bool print_license;
     bool debug;
     bool verbose;
+    bool trace;
     int  add_indent;
+    bool omit_decl; // If true, then do not print <?xml ..?>
     bool compact;
     bool escape_newlines;
     bool escape_non_7bit;
@@ -215,6 +232,7 @@ struct XMQCliEnvironment
     const char *use_id;
     char *out_start; // Points to generated output: xml/xmq/htmq/html/json/text
     char *out_stop; // Points to byte after output, or NULL which means start is NULL terminated.
+    size_t out_skip; // Skip some leading part of the generated output. Used to skip the <?xml ..?>
 };
 
 typedef enum {
@@ -293,6 +311,7 @@ bool cmd_quote_unquote(XMQCliCommand *command);
 const char *content_type_to_string(XMQContentType ct);
 const char *tokenize_type_to_string(XMQCliTokenizeType type);
 void debug_(const char* fmt, ...);
+void trace_(const char* fmt, ...);
 void delete_all_entities(XMQDoc *doq, xmlNode *node, const char *entity);
 void delete_entities(XMQDoc *doq, const char *entity);
 bool delete_entity(XMQCliCommand *command);
@@ -307,6 +326,8 @@ void find_next_page(const char **line_offset, const char **in_line_offset, const
 void find_prev_page(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width, int height);
 void find_next_line(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width);
 void find_prev_line(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width);
+bool has_log_xmq(int argc, const char **argv);
+bool has_trace(int argc, const char **argv);
 bool has_debug(int argc, const char **argv);
 bool has_verbose(int argc, const char **argv);
 bool handle_global_option(const char *arg, XMQCliCommand *command);
@@ -318,6 +339,7 @@ void open_browser(const char *file);
 bool perform_command(XMQCliCommand *c);
 void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command);
 void print_version_and_exit();
+void print_license_and_exit();
 int get_char();
 void put_char(int c);
 void console_write(const char *start, const char *stop);
@@ -331,26 +353,50 @@ bool query_xterm_bgcolor();
 XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode);
 void restoreStdinTerminal();
 bool cmd_tokenize(XMQCliCommand *command);
+void error_(const char* fmt, ...);
 void verbose_(const char* fmt, ...);
-void write_print(void *buffer, const char *content);
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command);
 xmlDocPtr xmqDocDefaultLoaderFunc(const xmlChar * URI, xmlDictPtr dict, int options,
                                   void *ctxt /* ATTRIBUTE_UNUSED */,
                                   xsltLoadType type /* ATTRIBUTE_UNUSED*/);
 
+char *load_file_into_buffer(const char *file);
+bool check_file_exists(const char *file);
+
+// TODO REMOVE...
+void xmq_set_yaep_grammar(XMQDoc *doc, YaepGrammar *g);
+YaepGrammar *xmq_get_yaep_grammar(XMQDoc *doc);
+
 /////////////////////////////////////////////////////////////////////////////////////
 
 const char *error_to_print_on_exit = NULL;
+
+XMQLineConfig xmq_log_line_config__;
+
+bool log_xmq__ = false;
+
+void error_(const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, ap);
+    fprintf(stderr, "%s\n", line);
+    free(line);
+    va_end(ap);
+}
 
 bool verbose_enabled__ = false;
 
 void verbose_(const char* fmt, ...)
 {
-    if (verbose_enabled__) {
-        va_list args;
-        va_start(args, fmt);
-        vfprintf(stderr, fmt, args);
-        va_end(args);
+    if (verbose_enabled__)
+    {
+        va_list ap;
+        va_start(ap, fmt);
+        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, ap);
+        fprintf(stderr, "%s\n", line);
+        free(line);
+        va_end(ap);
     }
 }
 
@@ -358,53 +404,74 @@ bool debug_enabled__ = false;
 
 void debug_(const char* fmt, ...)
 {
-    if (debug_enabled__) {
+    if (debug_enabled__)
+    {
         va_list args;
         va_start(args, fmt);
-        vfprintf(stderr, fmt, args);
+        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
+        fprintf(stderr, "%s\n", line);
+        free(line);
         va_end(args);
     }
 }
 
+bool trace_enabled__ = false;
+
+void trace_(const char* fmt, ...)
+{
+    if (trace_enabled__)
+    {
+        va_list args;
+        va_start(args, fmt);
+        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
+        fprintf(stderr, "%s\n", line);
+        free(line);
+        va_end(args);
+    }
+}
+
+bool logxmq_enabled__ = false;
+
 XMQCliCmd cmd_from(const char *s)
 {
     if (!s) return XMQ_CLI_CMD_NONE;
-    if (!strcmp(s, "help")) return XMQ_CLI_CMD_HELP;
-    if (!strcmp(s, "load")) return XMQ_CLI_CMD_LOAD;
-    if (!strcmp(s, "to-xmq")) return XMQ_CLI_CMD_TO_XMQ;
-    if (!strcmp(s, "to-xml")) return XMQ_CLI_CMD_TO_XML;
-    if (!strcmp(s, "to-htmq")) return XMQ_CLI_CMD_TO_HTMQ;
-    if (!strcmp(s, "to-html")) return XMQ_CLI_CMD_TO_HTML;
-    if (!strcmp(s, "to-json")) return XMQ_CLI_CMD_TO_JSON;
-    if (!strcmp(s, "to-text")) return XMQ_CLI_CMD_TO_TEXT;
-    if (!strcmp(s, "to-clines")) return XMQ_CLI_CMD_TO_CLINES;
-    if (!strcmp(s, "no-output")) return XMQ_CLI_CMD_NO_OUTPUT;
-    if (!strcmp(s, "print")) return XMQ_CLI_CMD_PRINT;
-    if (!strcmp(s, "save")) return XMQ_CLI_CMD_SAVE;
-    if (!strcmp(s, "page")) return XMQ_CLI_CMD_PAGER;
-    if (!strcmp(s, "pa")) return XMQ_CLI_CMD_PAGER;
-    if (!strcmp(s, "browse")) return XMQ_CLI_CMD_BROWSER;
-    if (!strcmp(s, "br")) return XMQ_CLI_CMD_BROWSER;
-    if (!strcmp(s, "render-terminal")) return XMQ_CLI_CMD_RENDER_TERMINAL;
-    if (!strcmp(s, "render-html")) return XMQ_CLI_CMD_RENDER_HTML;
-    if (!strcmp(s, "render-tex")) return XMQ_CLI_CMD_RENDER_TEX;
-    if (!strcmp(s, "render-raw")) return XMQ_CLI_CMD_RENDER_RAW;
-    if (!strcmp(s, "tokenize")) return XMQ_CLI_CMD_TOKENIZE;
-    if (!strcmp(s, "delete")) return XMQ_CLI_CMD_DELETE;
-    if (!strcmp(s, "delete-entity")) return XMQ_CLI_CMD_DELETE_ENTITY;
-    if (!strcmp(s, "replace")) return XMQ_CLI_CMD_REPLACE;
-    if (!strcmp(s, "replace-entity")) return XMQ_CLI_CMD_REPLACE_ENTITY;
-    if (!strcmp(s, "substitute-entity")) return XMQ_CLI_CMD_SUBSTITUTE_ENTITY;
-    if (!strcmp(s, "substitute-char-entities")) return XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES;
-    if (!strcmp(s, "transform")) return XMQ_CLI_CMD_TRANSFORM;
-    if (!strcmp(s, "validate")) return XMQ_CLI_CMD_VALIDATE;
-    if (!strcmp(s, "select")) return XMQ_CLI_CMD_SELECT;
-    if (!strcmp(s, "for-each")) return XMQ_CLI_CMD_FOR_EACH;
     if (!strcmp(s, "add")) return XMQ_CLI_CMD_ADD;
     if (!strcmp(s, "add-root")) return XMQ_CLI_CMD_ADD_ROOT;
+    if (!strcmp(s, "br")) return XMQ_CLI_CMD_BROWSER;
+    if (!strcmp(s, "browse")) return XMQ_CLI_CMD_BROWSER;
+    if (!strcmp(s, "delete")) return XMQ_CLI_CMD_DELETE;
+    if (!strcmp(s, "delete-entity")) return XMQ_CLI_CMD_DELETE_ENTITY;
+    if (!strcmp(s, "for-each")) return XMQ_CLI_CMD_FOR_EACH;
+    if (!strcmp(s, "help")) return XMQ_CLI_CMD_HELP;
+    if (!strcmp(s, "load")) return XMQ_CLI_CMD_LOAD;
+    if (!strcmp(s, "no-output")) return XMQ_CLI_CMD_NO_OUTPUT;
+    if (!strcmp(s, "pa")) return XMQ_CLI_CMD_PAGER;
+    if (!strcmp(s, "page")) return XMQ_CLI_CMD_PAGER;
+    if (!strcmp(s, "print")) return XMQ_CLI_CMD_PRINT;
+    if (!strcmp(s, "render-html")) return XMQ_CLI_CMD_RENDER_HTML;
+    if (!strcmp(s, "render-raw")) return XMQ_CLI_CMD_RENDER_RAW;
+    if (!strcmp(s, "render-terminal")) return XMQ_CLI_CMD_RENDER_TERMINAL;
+    if (!strcmp(s, "render-tex")) return XMQ_CLI_CMD_RENDER_TEX;
+    if (!strcmp(s, "replace")) return XMQ_CLI_CMD_REPLACE;
+    if (!strcmp(s, "replace-entity")) return XMQ_CLI_CMD_REPLACE_ENTITY;
+    if (!strcmp(s, "save-to")) return XMQ_CLI_CMD_SAVE_TO;
+    if (!strcmp(s, "select")) return XMQ_CLI_CMD_SELECT;
     if (!strcmp(s, "statistics")) return XMQ_CLI_CMD_STATISTICS;
+    if (!strcmp(s, "substitute-char-entities")) return XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES;
+    if (!strcmp(s, "substitute-entity")) return XMQ_CLI_CMD_SUBSTITUTE_ENTITY;
+    if (!strcmp(s, "to-html")) return XMQ_CLI_CMD_TO_HTML;
+    if (!strcmp(s, "to-htmq")) return XMQ_CLI_CMD_TO_HTMQ;
+    if (!strcmp(s, "to-json")) return XMQ_CLI_CMD_TO_JSON;
+    if (!strcmp(s, "to-text")) return XMQ_CLI_CMD_TO_TEXT;
+    if (!strcmp(s, "to-xml")) return XMQ_CLI_CMD_TO_XML;
+    if (!strcmp(s, "to-xmq")) return XMQ_CLI_CMD_TO_XMQ;
+    if (!strcmp(s, "to-clines")) return XMQ_CLI_CMD_TO_CLINES;
+    if (!strcmp(s, "tokenize")) return XMQ_CLI_CMD_TOKENIZE;
+    if (!strcmp(s, "transform")) return XMQ_CLI_CMD_TRANSFORM;
+    if (!strcmp(s, "validate")) return XMQ_CLI_CMD_VALIDATE;
     if (!strcmp(s, "quote-c")) return XMQ_CLI_CMD_QUOTE_C;
     if (!strcmp(s, "unquote-c")) return XMQ_CLI_CMD_UNQUOTE_C;
+
     return XMQ_CLI_CMD_NONE;
 }
 
@@ -424,7 +491,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TO_CLINES: return "to-clines";
     case XMQ_CLI_CMD_NO_OUTPUT: return "no-output";
     case XMQ_CLI_CMD_PRINT: return "print";
-    case XMQ_CLI_CMD_SAVE: return "save";
+    case XMQ_CLI_CMD_SAVE_TO: return "save-to";
     case XMQ_CLI_CMD_PAGER: return "pager";
     case XMQ_CLI_CMD_BROWSER: return "browser";
     case XMQ_CLI_CMD_RENDER_TERMINAL: return "render-terminal";
@@ -469,7 +536,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
 
     case XMQ_CLI_CMD_NO_OUTPUT:
     case XMQ_CLI_CMD_PRINT:
-    case XMQ_CLI_CMD_SAVE:
+    case XMQ_CLI_CMD_SAVE_TO:
     case XMQ_CLI_CMD_PAGER:
     case XMQ_CLI_CMD_BROWSER:
         return XMQ_CLI_CMD_GROUP_OUTPUT;
@@ -533,6 +600,7 @@ const char *content_type_to_string(XMQContentType ct)
     case XMQ_CONTENT_XML: return "xml";
     case XMQ_CONTENT_HTML: return "html";
     case XMQ_CONTENT_JSON: return "json";
+    case XMQ_CONTENT_IXML: return "ixml";
     case XMQ_CONTENT_TEXT: return "text";
     case XMQ_CONTENT_CLINES: return "clines";
     }
@@ -585,7 +653,7 @@ void free_cli_command(XMQCliCommand *cmd)
 {
     if (cmd->xslt_params)
     {
-        hashmap_free_and_values(cmd->xslt_params);
+        hashmap_free_and_values(cmd->xslt_params, free);
         cmd->xslt_params = NULL;
     }
     free(cmd);
@@ -676,7 +744,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
 
     XMQCliCmdGroup group = cmd_group(command->cmd);
 
-    if (command->cmd == XMQ_CLI_CMD_SAVE)
+    if (command->cmd == XMQ_CLI_CMD_SAVE_TO)
     {
         if (command->save_file == NULL)
         {
@@ -698,6 +766,16 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         {
             command->add_indent = 0;
             command->compact = true;
+            return true;
+        }
+    }
+
+    if (command->cmd == XMQ_CLI_CMD_TO_XML)
+    {
+        if (!strcmp(arg, "-o") ||
+            !strcmp(arg, "--omit-decl"))
+        {
+            command->omit_decl = true;
             return true;
         }
     }
@@ -940,11 +1018,11 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         if (!strncmp(arg, "--with-text-file=", 17))
         {
             const char *file = arg+17;
-            verbose_("(xmq) reading text file %s\n", file);
+            verbose_("xmq=", "reading text file %s", file);
             FILE *f = fopen(file, "rb");
             if (!f)
             {
-                fprintf(stderr, "xmq: %s: No such file or directory\n", file);
+                error_("xmq.err=", "%s: No such file or directory", file);
                 return false;
             }
             fseek(f, 0L, SEEK_END);
@@ -1041,7 +1119,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
                 return false;
             }
 
-            verbose_("(xmq) loaded xslt %s\n", arg);
+            verbose_("xmq=", "loaded xslt %s", arg);
 
             xmlDocPtr xslt = (xmlDocPtr)xmqGetImplementationDoc(doq);
             if (xmqGetOriginalContentType(doq) == XMQ_CONTENT_XMQ ||
@@ -1098,7 +1176,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             command->xsd_name = arg;
             command->xsd_doq = doq;
 
-            verbose_("(xmq) loaded xsd %zu bytes from %s\n", xmqGetOriginalSize(doq), arg);
+            verbose_("xmq=", "loaded xsd %zu bytes from %s", xmqGetOriginalSize(doq), arg);
 
             xmlDocPtr xsd = (xmlDocPtr)xmqGetImplementationDoc(doq);
 
@@ -1242,7 +1320,7 @@ bool query_xterm_bgcolor()
     }
     else
     {
-        verbose_("(xmq) bad response from terminal, assuming dark background.\n");
+        verbose_("xmq=", "bad response from terminal, assuming dark background.");
         is_dark = true;
     }
 
@@ -1260,7 +1338,7 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
 {
     const char *term = getenv("TERM");
     if (!term) term = "NULL";
-    debug_("[xmq] detected terminal %s\n", term);
+    verbose_("xmq=", "detected terminal %s", term);
 
     char *xmq_mode = getenv("XMQ_THEME");
     if (xmq_mode != NULL)
@@ -1269,26 +1347,26 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
         {
             *use_color = false;
             *bg_dark_mode = false;
-            verbose_("(xmq) XMQ_THEME set to mono\n");
+            verbose_("xmq=", "XMQ_THEME set to mono");
             return XMQ_RENDER_MONO;
         }
         if (!strcmp(xmq_mode, "lightbg"))
         {
             *use_color = true;
             *bg_dark_mode = false;
-            verbose_("(xmq) XMQ_THEME set to lightbg\n");
+            verbose_("xmq=", "XMQ_THEME set to lightbg");
             return XMQ_RENDER_COLOR_LIGHTBG;
         }
         if (!strcmp(xmq_mode, "darkbg"))
         {
             *use_color = true;
             *bg_dark_mode = true;
-            verbose_("(xmq) XMQ_THEME set to darkbg\n");
+            verbose_("xmq=", "XMQ_THEME set to darkbg");
             return XMQ_RENDER_COLOR_DARKBG;
         }
         *use_color = false;
         *bg_dark_mode = false;
-        verbose_("(xmq) XMQ_THEME content is bad, using mono\n");
+        verbose_("xmq=", "XMQ_THEME content is bad, using mono");
         return XMQ_RENDER_MONO;
     }
 
@@ -1297,14 +1375,14 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
         // The Linux vt console is by default black. So dark-mode.
         *use_color = true;
         *bg_dark_mode = true;
-        verbose_("(xmq) assuming vt console has dark bg\n");
+        verbose_("xmq=", "assuming vt console has dark bg");
         return XMQ_RENDER_COLOR_DARKBG;
     }
 
 #ifdef PLATFORM_WINAPI
     *use_color = true;
     *bg_dark_mode = true;
-    verbose_("(xmq) assuming console has dark background\n");
+    verbose_("xmq=", "assuming console has dark background");
     return XMQ_RENDER_COLOR_DARKBG;
 #else
 
@@ -1315,7 +1393,7 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
         {
             *use_color = true;
             *bg_dark_mode = true;
-            verbose_("(xmq) cannot query xterm assuming console has dark background\n");
+            verbose_("xmq=", "cannot query xterm assuming console has dark background");
             return XMQ_RENDER_COLOR_DARKBG;
         }
 
@@ -1326,12 +1404,12 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
         {
             *use_color = true;
             *bg_dark_mode = true;
-            verbose_("(xmq) terminal responds with dark background\n");
+            verbose_("xmq=", "terminal responds with dark background");
             return XMQ_RENDER_COLOR_DARKBG;
         }
         *use_color = true;
         *bg_dark_mode = false;
-        verbose_("(xmq) terminal responds with light background\n");
+        verbose_("xmq=", "terminal responds with light background");
         return XMQ_RENDER_COLOR_LIGHTBG;
     }
 
@@ -1350,24 +1428,24 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
 	{
 	    *use_color = true;
             *bg_dark_mode = true;
-            verbose_("(xmq) COLORFGBG means dark \"%s\"\n", colorfgbg);
+            verbose_("xmq=", "COLORFGBG means dark \"%s\"", colorfgbg);
             return XMQ_RENDER_COLOR_DARKBG;
 	}
 	*use_color = true;
         *bg_dark_mode = false;
-        verbose_("(xmq) COLORFGBG means light \"%s\"\n", colorfgbg);
+        verbose_("xmq=", "COLORFGBG means light \"%s\"", colorfgbg);
         return XMQ_RENDER_COLOR_LIGHTBG;
     }
 
     *use_color = true;
     *bg_dark_mode = true;
-    verbose_("(xmq) unknown terminal \"%s\" defaults to colors and dark background\n", term);
+    verbose_("xmq=", "unknown terminal \"%s\" defaults to colors and dark background", term);
     return XMQ_RENDER_COLOR_DARKBG;
 }
 
 bool handle_global_option(const char *arg, XMQCliCommand *command)
 {
-    debug_("[xmq] option %s\n", arg);
+    debug_("xmq=", "option %s", arg);
     if (!strcmp(arg, "--help") ||
         !strcmp(arg, "-h"))
     {
@@ -1377,6 +1455,24 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     if (!strcmp(arg, "-z"))
     {
         command->no_input = true;
+        return true;
+    }
+    if (!strcmp(arg, "-i"))
+    {
+        command->in_is_content = true;
+        return true;
+    }
+    if (!strcmp(arg, "--xml-of-ixml"))
+    {
+        command->build_xml_of_ixml = true;
+        return true;
+    }
+    if (!strcmp(arg, "--trace"))
+    {
+        command->trace = true;
+        trace_enabled__ = true;
+        debug_enabled__ = true;
+        verbose_enabled__ = true;
         return true;
     }
     if (!strcmp(arg, "--debug"))
@@ -1390,6 +1486,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     {
         command->verbose = true;
         verbose_enabled__ = true;
+        return true;
+    }
+    if (!strcmp(arg, "--license"))
+    {
+        command->print_license = true;
         return true;
     }
     if (!strcmp(arg, "--version"))
@@ -1424,6 +1525,26 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->in_format=XMQ_CONTENT_XML;
         return true;
     }
+    if (!strcmp(arg, "--ixml"))
+    {
+        command->in_format=XMQ_CONTENT_IXML;
+        return true;
+    }
+    if (!strcmp(arg, "--ixml-all-parses"))
+    {
+        command->ixml_all_parses=true;
+        return true;
+    }
+    if (!strcmp(arg, "--ixml-try-to-recover"))
+    {
+        command->ixml_try_to_recover=true;
+        return true;
+    }
+    if (!strcmp(arg, "--log-xmq") || !strcmp(arg, "-lx"))
+    {
+        log_xmq__ = true;
+        return true;
+    }
     if (!strcmp(arg, "--html"))
     {
         command->in_format=XMQ_CONTENT_HTML;
@@ -1449,7 +1570,7 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->lines = true;
         return true;
     }
-    if (!strcmp(arg, "--nomerge"))
+    if (!strcmp(arg, "--no-merge"))
     {
         command->flags |= XMQ_FLAG_NOMERGE;
         return true;
@@ -1477,6 +1598,37 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         }
         return true;
     }
+    if (!strncmp(arg, "--ixml=", 7))
+    {
+        const char *file = arg+7;
+
+        if (command->ixml_doc != NULL || command->ixml_ixml != NULL)
+        {
+            printf("You have already specified an ixml grammar!\n");
+            exit(1);
+        }
+
+        size_t len = strlen(file);
+        if (len < 6 ||
+            (strcmp(file+len-5, ".ixml") &&
+             strcmp(file+len-4, ".xml") &&
+             strcmp(file+len-4, ".xmq")))
+        {
+            printf("For ixml you can specify: g.ixml g.xml g.xmq\n");
+            exit(1);
+        }
+        if (!strcmp(file+len-5, ".ixml"))
+        {
+            verbose_("xmq=", "reading ixml file %s", file);
+            command->ixml_filename = strdup(file);
+            command->ixml_ixml = load_file_into_buffer(file);
+            if (command->ixml_ixml == NULL) exit(1);
+
+            return true;
+        }
+
+        return false;
+    }
 
     return false;
 }
@@ -1500,8 +1652,9 @@ bool cmd_help(XMQCliCommand *cmd)
     printf("Usage: xmq [options] <file> ( <command> [options] )*\n"
            "\n"
            "  --debug    Output debug information on stderr.\n"
-           "  --help -h  Display this help and exit.\n"
-           "  --lines    Assume each line is a separate document.\n"
+           "  --help     Display this help and exit.\n"
+           "  --license  Print license.\n"
+           "  --lines    Assume each input line is a separate document.\n"
            "  --nomerge  When loading xmq do not merge text quotes and character entities.\n"
            "  --root=<name>\n"
            "             Create a root node <name> unless the file starts with a node with this <name> already.\n"
@@ -1511,9 +1664,11 @@ bool cmd_help(XMQCliCommand *cmd)
            "             Not yet implemented: exact will trim exactly to the significant whitespace according to xml/html rules.\n"
            "  --verbose  Output extra information on stderr.\n"
            "  --version  Output version information and exit.\n"
-           "  --xmq|--htmq|--xml|--html|--json|--clines\n"
+           "  --xmq|--htmq|--xml|--html|--ixml|--json|--clines\n"
            "             The input format is auto detected for xmq/xml/json but you can force the input format here.\n"
+           "  --ixml=grammar.ixml Parse the content using the supplied grammar file.\n"
            "  -z         Do not read from stdin nor from a file. Start with an empty dom.\n"
+           "  -i \"a=2\" Do not read from a file, use the next argument as the content to parse.\n"
            "\n"
            "To get help on the commands below: xmq help <command>\n\n"
            "COMMANDS\n"
@@ -1555,11 +1710,43 @@ void print_version_and_exit()
     exit(0);
 }
 
+void print_license_and_exit()
+{
+    puts(
+"  LibXMQ\n"
+"  Copyright (c) 2019-2024 Fredrik Öhrström <oehrstroem@gmail.com>\n"
+"\n"
+"  YAEP (Yet Another Earley Parser)\n"
+"  Copyright(c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>\n"
+"  Copyright(c) 2024 Fredrik Öhrström <oehrstroem@gmail.com>\n"
+"\n"
+"  Permission is hereby granted, free of charge, to any person obtaining a copy\n"
+"  of this software and associated documentation files (the \"Software\"), to deal\n"
+"  in the Software without restriction, including without limitation the rights\n"
+"  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n"
+"  copies of the Software, and to permit persons to whom the Software is\n"
+"  furnished to do so, subject to the following conditions:\n"
+"\n"
+"  The above copyright notice and this permission notice shall be included in all\n"
+"  copies or substantial portions of the Software.\n"
+"\n"
+"  THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n"
+"  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n"
+"  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n"
+"  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n"
+"  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n"
+"  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n"
+"  SOFTWARE.");
+
+    exit(0);
+}
+
 bool cmd_tokenize(XMQCliCommand *command)
 {
-    verbose_("(xmq) cmd-tokenize %s\n", tokenize_type_to_string(command->tok_type));
+    verbose_("xmq=", "cmd-tokenize %s", tokenize_type_to_string(command->tok_type));
     XMQOutputSettings *output_settings = xmqNewOutputSettings();
     xmqSetupPrintMemory(output_settings, &command->env->out_start, &command->env->out_stop);
+    xmqSetupPrintSkip(output_settings, &command->env->out_skip);
 
     XMQParseCallbacks *callbacks = xmqNewParseCallbacks();
 
@@ -1600,7 +1787,14 @@ bool cmd_tokenize(XMQCliCommand *command)
     }
 
     XMQParseState *state = xmqNewParseState(callbacks, output_settings);
-    xmqTokenizeFile(state, command->in);
+    if (command->in_is_content)
+    {
+        xmqTokenizeBuffer(state, command->in, NULL);
+    }
+    else
+    {
+        xmqTokenizeFile(state, command->in);
+    }
 
     int err = 0;
     if (xmqStateErrno(state))
@@ -1614,11 +1808,6 @@ bool cmd_tokenize(XMQCliCommand *command)
     xmqFreeOutputSettings(output_settings);
 
     return err == 0;
-}
-
-void write_print(void *buffer, const char *content)
-{
-    printf("%s", content);
 }
 
 bool cmd_load(XMQCliCommand *command)
@@ -1641,27 +1830,99 @@ bool cmd_load(XMQCliCommand *command)
         command->in = NULL;
     }
 
-    verbose_("(xmq) cmd-load %s\n", command->in);
+    verbose_("xmq=", "cmd-load %s", command->in);
 
     command->env->load = command;
-    bool ok = xmqParseFileWithType(command->env->doc,
-                                   command->in,
-                                   command->implicit_root,
-                                   command->in_format,
-                                   command->flags);
-    if (!ok)
+
+    if (command->ixml_ixml != NULL)
     {
-        const char *error = xmqDocError(command->env->doc);
-        if (error) {
-            fprintf(stderr, error, command->in);
+        XMQDoc *ixml_grammar = xmqNewDoc();
+        xmqSetDocSourceName(ixml_grammar, command->ixml_filename);
+
+        bool ok = xmqParseBufferWithType(ixml_grammar, command->ixml_ixml, NULL, NULL, XMQ_CONTENT_IXML, 0);
+
+        if (!ok)
+        {
+            fprintf(stderr, "%s\n", xmqDocError(ixml_grammar));
+            exit(1);
         }
-        xmqFreeDoc(command->env->doc);
-        command->env->doc = NULL;
-        return false;
+
+        int flags = 0;
+        if (command->ixml_all_parses) flags |= XMQ_FLAG_IXML_ALL_PARSES;
+        if (command->ixml_try_to_recover) flags |= XMQ_FLAG_IXML_TRY_TO_RECOVER;
+
+        if (command->in)
+        {
+            if (command->in_is_content)
+            {
+                ok = xmqParseBufferWithIXML(command->env->doc, command->in, NULL, ixml_grammar, flags);
+                if (!ok)
+                {
+                    printf("xmq: could not parse: %s\n", command->in);
+                    exit(1);
+                }
+            }
+            else
+            {
+                ok = check_file_exists(command->in);
+                if (!ok)
+                {
+                    printf("xmq: could not read file %s\n", command->in);
+                    exit(1);
+                }
+                ok = xmqParseFileWithIXML(command->env->doc, command->in, ixml_grammar, flags);
+                if (!ok)
+                {
+                    exit(1);
+                }
+            }
+        }
+
+        xmqFreeDoc(ixml_grammar);
+
+        const char *from = "stdin";
+        if (command->in) from = command->in;
+        free((char*)command->ixml_filename);
+        command->ixml_filename = NULL;
+        free((char*)command->ixml_ixml);
+        command->ixml_ixml = NULL;
+        verbose_("xmq=", "cmd-load-ixml %zu bytes from %s", xmqGetOriginalSize(command->env->doc), from);
     }
-    const char *from = "stdin";
-    if (command->in) from = command->in;
-    verbose_("(xmq) cmd-load %zu bytes from %s\n", xmqGetOriginalSize(command->env->doc), from);
+    else
+    {
+        bool ok = false;
+        if (command->in_is_content)
+        {
+            ok = xmqParseBufferWithType(command->env->doc,
+                                        command->in,
+                                        NULL,
+                                        command->implicit_root,
+                                        command->in_format,
+                                        command->flags);
+        }
+        else
+        {
+            ok = xmqParseFileWithType(command->env->doc,
+                                      command->in,
+                                      command->implicit_root,
+                                      command->in_format,
+                                      command->flags);
+        }
+
+        if (!ok)
+        {
+            const char *error = xmqDocError(command->env->doc);
+            if (error) {
+                fprintf(stderr, error, command->in);
+            }
+            xmqFreeDoc(command->env->doc);
+            command->env->doc = NULL;
+            return false;
+        }
+        const char *from = "stdin";
+        if (command->in) from = command->in;
+        verbose_("xmq=", "cmd-load %zu bytes from %s", xmqGetOriginalSize(command->env->doc), from);
+    }
 
     return true;
 }
@@ -1670,7 +1931,7 @@ void cmd_unload(XMQCliCommand *command)
 {
     if (command && command->env && command->env->doc)
     {
-        verbose_("(xmq) cmd-unload document\n");
+        verbose_("xmq=", "cmd-unload document");
         xmqFreeDoc(command->env->doc);
         command->env->doc = NULL;
     }
@@ -1692,6 +1953,7 @@ bool cmd_to(XMQCliCommand *command)
     xmqSetRenderOnlyStyle(settings, command->only_style);
     xmqRenderHtmlSettings(settings, command->use_id, command->use_class);
     xmqSetRenderTheme(settings, command->render_theme);
+    xmqSetOmitDecl(settings, command->omit_decl);
     xmqSetupDefaultColors(settings);
 
     if (command->has_overrides)
@@ -1704,11 +1966,12 @@ bool cmd_to(XMQCliCommand *command)
                             command->explicit_nl);
     }
 
-    verbose_("(xmq) cmd-to %s render %s\n",
+    verbose_("xmq=", "cmd-to %s render %s",
              content_type_to_string(command->out_format),
              render_format_to_string(command->render_to));
 
     xmqSetupPrintMemory(settings, &command->env->out_start, &command->env->out_stop);
+    xmqSetupPrintSkip(settings, &command->env->out_skip);
     xmqPrint(command->env->doc, settings);
 
     xmqFreeOutputSettings(settings);
@@ -1730,41 +1993,41 @@ bool cmd_output(XMQCliCommand *command)
     }
     if (command->cmd == XMQ_CLI_CMD_PRINT)
     {
-        verbose_("(xmq) cmd-print output\n");
-        console_write(command->env->out_start, command->env->out_stop);
+        verbose_("xmq=", "cmd-print output");
+        console_write(command->env->out_start + command->env->out_skip, command->env->out_stop);
         free(command->env->out_start);
         return true;
     }
     if (command->cmd == XMQ_CLI_CMD_PAGER)
     {
-        verbose_("(xmq) cmd-pager output\n");
-        page(command->env->out_start, command->env->out_stop);
+        verbose_("xmq=", "cmd-pager output");
+        page(command->env->out_start + command->env->out_skip, command->env->out_stop);
         free(command->env->out_start);
         return true;
     }
     if (command->cmd == XMQ_CLI_CMD_BROWSER)
     {
-        verbose_("(xmq) cmd-browser output\n");
+        verbose_("xmq=", "cmd-browser output");
         browse(command);
         free(command->env->out_start);
         return true;
     }
-    if (command->cmd == XMQ_CLI_CMD_SAVE)
+    if (command->cmd == XMQ_CLI_CMD_SAVE_TO)
     {
         if (!command->save_file)
         {
             fprintf(stderr, "xmq: save command missing file name\n");
             return false;
         }
-        verbose_("(xmq) cmd-save output to %s\n", command->save_file);
-        size_t len = command->env->out_stop -  command->env->out_start;
+        verbose_("xmq=", "cmd-save output to %s", command->save_file);
+        size_t len = command->env->out_stop -  command->env->out_start - command->env->out_skip;
         FILE *f = fopen(command->save_file, "wb");
         if (!f)
         {
             fprintf(stderr, "xmq: %s: Cannot open file for writing\n", command->save_file);
             return false;
         }
-        size_t wrote = fwrite(command->env->out_start, 1, len, f);
+        size_t wrote = fwrite(command->env->out_start + command->env->out_skip, 1, len, f);
         if (wrote != len)
         {
             fprintf(stderr, "xmq: Failed to write all bytes to %s wrote %zu but expected %zu\n",
@@ -1782,7 +2045,7 @@ bool cmd_output(XMQCliCommand *command)
 bool cmd_transform(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    verbose_("(xmq) transforming\n");
+    verbose_("xmq=", "transforming");
 
     xsltSetLoaderFunc(xmqDocDefaultLoaderFunc);
 
@@ -1793,7 +2056,7 @@ bool cmd_transform(XMQCliCommand *command)
     if (command->xslt_params)
     {
         size_t n = hashmap_size(command->xslt_params);
-        params = calloc(2*n+1, sizeof(char*));
+        params = (const char**)calloc(2*n+1, sizeof(char*));
 
         i = hashmap_iterate(command->xslt_params);
         const char *key;
@@ -1802,12 +2065,12 @@ bool cmd_transform(XMQCliCommand *command)
         {
             params[j++] = key;
             params[j++] = (const char*)val;
-            verbose_("(xmq) param %s %s\n", key, val);
+            verbose_("xmq=", "param %s %s", key, val);
         }
         params[j++] = NULL;
     }
 
-    verbose_("(xmq) applying stylesheet\n");
+    verbose_("xmq=", "applying stylesheet");
     xmlDocPtr new_doc = xsltApplyStylesheet(command->xslt, doc, params);
 
     if (params)
@@ -1885,7 +2148,7 @@ bool cmd_quote_unquote(XMQCliCommand *command)
 bool cmd_validate(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    verbose_("(xmq) validating\n");
+    verbose_("xmq=", "validating");
 
     xmlSchemaValidCtxtPtr validation_ctxt = xmlSchemaNewValidCtxt(command->xsd);
 
@@ -1931,13 +2194,13 @@ bool cmd_delete(XMQCliCommand *command)
 {
     if (command->xpath)
     {
-        verbose_("(xmq) cmd-delete xpath %s\n", command->xpath);
+        verbose_("xmq=", "cmd-delete xpath %s", command->xpath);
         return delete_xpath(command);
     }
 
     if (command->entity)
     {
-        verbose_("(xmq) cmd-delete entity %s\n", command->entity);
+        verbose_("xmq=", "cmd-delete entity %s", command->entity);
         return delete_entity(command);
     }
 
@@ -1947,7 +2210,7 @@ bool cmd_delete(XMQCliCommand *command)
 bool cmd_select(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    verbose_("(xmq) selecting\n");
+    verbose_("xmq=", "selecting");
 
     xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
     assert(ctx);
@@ -1996,7 +2259,7 @@ bool cmd_select(XMQCliCommand *command)
 bool cmd_for_each(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    verbose_("(xmq) for each\n");
+    verbose_("xmq=", "for each");
 
     xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
     assert(ctx);
@@ -2038,7 +2301,7 @@ bool cmd_for_each(XMQCliCommand *command)
 bool cmd_add(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    verbose_("(xmq) adding xmq >%s<\n", command->add_xmq);
+    verbose_("xmq=", "adding xmq >%s<", command->add_xmq);
 
     XMQDoc *doq = xmqNewDoc();
     const char *start = command->add_xmq;
@@ -2077,7 +2340,7 @@ bool cmd_add(XMQCliCommand *command)
 bool cmd_add_root(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    verbose_("(xmq) adding root\n");
+    verbose_("xmq=", "adding root");
 
     xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
 
@@ -2208,7 +2471,7 @@ void add_key_value(xmlDoc *doc, xmlNode *root, const char *key, size_t value)
 bool cmd_statistics(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    verbose_("(xmq) calculating statistics\n");
+    verbose_("xmq=", "calculating statistics");
     Stats stats;
     memset(&stats, 0, sizeof(stats));
 
@@ -2283,7 +2546,7 @@ void delete_entities(XMQDoc *doq, const char *entity)
 
 bool delete_entity(XMQCliCommand *command)
 {
-    verbose_("(xmq) deleting entity %s\n", command->entity);
+    verbose_("xmq=", "deleting entity %s", command->entity);
 
     delete_entities(command->env->doc, command->entity);
 
@@ -2301,7 +2564,7 @@ bool delete_xpath(XMQCliCommand *command)
 
     if (objects == NULL)
     {
-        verbose_("(xmq) no nodes deleted\n");
+        verbose_("xmq=", "no nodes deleted");
         xmlXPathFreeContext(ctx);
         return true;
     }
@@ -2414,12 +2677,12 @@ bool cmd_replace(XMQCliCommand *command)
 
     if (command->xpath)
     {
-        verbose_("(xmq) replacing xpath %s\n", command->xpath);
+        verbose_("xmq=", "replacing xpath %s", command->xpath);
     }
 
     if (command->entity)
     {
-        verbose_("(xmq) replacing entity %s\n", command->entity);
+        verbose_("xmq=", "replacing entity %s", command->entity);
 
         replace_entities(doc, command->entity, command->content, command->node_content);
     }
@@ -2484,13 +2747,13 @@ bool cmd_substitute(XMQCliCommand *command)
 
     if (command->cmd == XMQ_CLI_CMD_SUBSTITUTE_ENTITY)
     {
-        verbose_("(xmq) substituting entity %s\n", command->entity);
+        verbose_("xmq=", "substituting entity %s", command->entity);
 
         substitute_entity(doc, root, command->entity, false);
     }
     if (command->cmd == XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES)
     {
-        verbose_("(xmq) substituting all char entities\n");
+        verbose_("xmq=", "substituting all char entities");
 
         substitute_entity(doc, root, NULL, true);
     }
@@ -2534,7 +2797,7 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
         c->out_format = XMQ_CONTENT_UNKNOWN;
         c->render_to = XMQ_RENDER_TERMINAL;
         return;
-    case XMQ_CLI_CMD_SAVE:
+    case XMQ_CLI_CMD_SAVE_TO:
         c->out_format = XMQ_CONTENT_UNKNOWN;
         c->render_to = XMQ_RENDER_PLAIN;
         return;
@@ -2963,7 +3226,7 @@ void browse(XMQCliCommand *c)
     // since such a link could trick you into overwriting something else.
     int fd = open(tmpfile, O_CREAT | O_TRUNC | O_NOFOLLOW | O_RDWR, 0666);
 #endif
-    size_t len = c->env->out_stop - c->env->out_start;
+    size_t len = c->env->out_stop - c->env->out_start - c->env->out_skip;
     size_t wrote = write(fd, c->env->out_start, len);
     close(fd);
 
@@ -3156,15 +3419,15 @@ void invoke_shell(xmlNode *n, const char *shell_command)
         if (pid == -1) {
             perror("(shell) could not fork!\n");
         }
-        debug_("(shell) waiting for child %d to complete.\n", pid);
+        debug_("shell=", "waiting for child %d to complete.", pid);
         // Wait for the child to finish!
         waitpid(pid, &status, 0);
         if (WIFEXITED(status)) {
             // Child exited properly.
             int rc = WEXITSTATUS(status);
-            debug_("(shell) %s: return code %d\n", "/bin/sh", rc);
+            debug_("shell=", "%s: return code %d\n", "/bin/sh", rc);
             if (rc != 0) {
-                verbose_("(shell) %s exited with non-zero return code: %d\n", "/bin/sh", rc);
+                verbose_("shell=", "%s exited with non-zero return code: %d\n", "/bin/sh", rc);
             }
         }
         free(argv);
@@ -3330,7 +3593,7 @@ bool perform_command(XMQCliCommand *c)
     case XMQ_CLI_CMD_RENDER_RAW:
         return cmd_to(c);
     case XMQ_CLI_CMD_PRINT:
-    case XMQ_CLI_CMD_SAVE:
+    case XMQ_CLI_CMD_SAVE_TO:
     case XMQ_CLI_CMD_PAGER:
     case XMQ_CLI_CMD_BROWSER:
         return cmd_output(c);
@@ -3424,7 +3687,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
 
         while (command->cmd != XMQ_CLI_CMD_NONE)
         {
-            verbose_("(xmq) found command %s\n", cmd_name(command->cmd));
+            verbose_("xmq=", "found command %s", cmd_name(command->cmd));
 
             // Now handle any command options and args.
             for (; argv[i]; ++i)
@@ -3503,11 +3766,11 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
         {
             command->next = to;
             command = to;
-            verbose_("(xmq) added to-xmq command\n");
+            verbose_("xmq=", "added to-xmq command");
         }
         else
         {
-            verbose_("(xmq) inserted to-xmq command before output\n");
+            verbose_("xmq=", "inserted to-xmq command before output");
             // We have a print but no to-xmq, lets insert
             // the to-xmq before the print.
             XMQCliCommand *prev = load_command;
@@ -3532,7 +3795,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
         command->next = allocate_cli_command(command->env);
         command->next->cmd = XMQ_CLI_CMD_PRINT;
         prepare_command(command->next, load_command);
-        verbose_("(xmq) added print command\n");
+        verbose_("xmq=", "added print command");
     }
 
     return true;
@@ -3541,38 +3804,37 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
 #ifdef PLATFORM_WINAPI
 void enableAnsiColorsWindowsConsole()
 {
-    debug_("[xmq] enable ansi colors terminal\n");
-
-    debug_("[xmq] GetStdHandle\n");
+    debug_("xmq=", "enable ansi colors terminal");
+    debug_("xmq=", "GetStdHandle");
 
     HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hStdOut == INVALID_HANDLE_VALUE) return; // Fail
 
-    debug_("[xmq] GetConsoleMode\n");
+    debug_("xmq=", "GetConsoleMode");
     DWORD mode;
     if (!GetConsoleMode(hStdOut, &mode)) return; // Fail
 
     DWORD enabled = (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) ? true : false;
 
-    debug_("[xmq] enabled %x\n", enabled);
+    debug_("xmq=", "enabled %x", enabled);
 
     if (enabled) return; // Already enabled colors.
 
     mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 
-    debug_("[xmq] SetConsoleMode %x\n", mode);
+    debug_("xmq=", "SetConsoleMode %x", mode);
 
     SetConsoleMode(hStdOut, mode);
 
-    debug_("[xmq] SetConsoleOutputCP\n");
+    debug_("xmq=", "SetConsoleOutputCP");
     SetConsoleOutputCP(CP_UTF8);
 
-    debug_("[xmq] Ansi done\n");
+    debug_("xmq=", "Ansi done");
 }
 
 void enableRawStdinTerminal()
 {
-    debug_("[xmq] enable raw stdin terminal\n");
+    debug_("xmq=", "enable raw stdin terminal");
 
     HANDLE handle = GetStdHandle(STD_INPUT_HANDLE);
     if (handle == INVALID_HANDLE_VALUE) return; // Fail
@@ -3583,11 +3845,11 @@ void enableRawStdinTerminal()
     mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
     mode &= ~(ENABLE_LINE_INPUT|ENABLE_ECHO_INPUT);
 
-    debug_("[xmq] SetConsoleMode %x\n", mode);
+    debug_("xmq=", "SetConsoleMode %x", mode);
 
     SetConsoleMode(handle, mode);
 
-    debug_("[xmq] raw stdin done\n");
+    debug_("xmq=", "raw stdin done");
 }
 
 void restoreStdinTerminal()
@@ -3644,6 +3906,24 @@ bool has_debug(int argc, const char **argv)
     return false;
 }
 
+bool has_trace(int argc, const char **argv)
+{
+    for (const char **i = argv; *i; ++i)
+    {
+        if (!strcmp(*i, "--trace")) return true;
+    }
+    return false;
+}
+
+bool has_log_xmq(int argc, const char **argv)
+{
+    for (const char **i = argv; *i; ++i)
+    {
+        if (!strcmp(*i, "--log-xmq") || !strcmp(*i, "-lx")) return true;
+    }
+    return false;
+}
+
 xmlDocPtr
 xmqDocDefaultLoaderFunc(const xmlChar * URI,
                         xmlDictPtr dict,
@@ -3653,7 +3933,7 @@ xmqDocDefaultLoaderFunc(const xmlChar * URI,
 {
     XMQDoc *doq = xmqNewDoc();
 
-    verbose_("(xmq) xsl-document-load %s\n", URI);
+    verbose_("xmq=", "xsl-document-load %s", URI);
 
     bool ok = xmqParseFileWithType(doq,
                                    (const char*)URI,
@@ -3670,7 +3950,7 @@ xmqDocDefaultLoaderFunc(const xmlChar * URI,
         return NULL;
     }
 
-    verbose_("(xmq) xsl-document-load %zu bytes from %s\n", xmqGetOriginalSize(doq), URI);
+    verbose_("xmq=", "xsl-document-load %zu bytes from %s", xmqGetOriginalSize(doq), URI);
 
     return xmqGetImplementationDoc(doq);
 
@@ -3725,6 +4005,12 @@ int main(int argc, const char **argv)
 
     verbose_enabled__ = has_verbose(argc, argv);
     debug_enabled__ = has_debug(argc, argv);
+    trace_enabled__ = has_trace(argc, argv);
+    log_xmq__ = has_log_xmq(argc, argv);
+    xmqSetTrace(trace_enabled__);
+    xmqSetDebug(debug_enabled__ || trace_enabled__);
+    xmqSetVerbose(verbose_enabled__ || debug_enabled__ || trace_enabled__);
+    xmqSetLogHumanReadable(!log_xmq__);
 
     XMQCliEnvironment env;
     memset(&env, 0, sizeof(env));
@@ -3741,7 +4027,7 @@ int main(int argc, const char **argv)
     else
     {
         env.use_color = false;
-        verbose_("(xmq) using mono since output is not a tty\n");
+        verbose_("xmq=", "using mono since output is not a tty");
     }
     XMQCliCommand *load_command = allocate_cli_command(&env);
     load_command->cmd = XMQ_CLI_CMD_LOAD;
@@ -3749,16 +4035,20 @@ int main(int argc, const char **argv)
 
     bool ok = xmq_parse_cmd_line(argc, argv, load_command);
     if (!ok) {
-        verbose_("(xmq) parse cmd line failed\n");
+        verbose_("xmq=", "parse cmd line failed");
         return 1;
     }
 
-    debug_enabled__ = load_command->debug;
-    verbose_enabled__ = load_command->verbose || debug_enabled__;
+    trace_enabled__ = load_command->trace;
+    debug_enabled__ = load_command->debug || load_command->trace;
+    verbose_enabled__ = load_command->verbose || load_command->debug || load_command->trace;
+    xmqSetTrace(trace_enabled__);
     xmqSetDebug(debug_enabled__);
     xmqSetVerbose(verbose_enabled__);
+    xmqSetLogHumanReadable(!log_xmq__);
 
     if (load_command->print_version) print_version_and_exit();
+    if (load_command->print_license) print_license_and_exit();
     if (load_command->print_help) cmd_help(NULL);
     if (load_command->next && load_command->next->cmd == XMQ_CLI_CMD_HELP)
     {
@@ -3770,7 +4060,7 @@ int main(int argc, const char **argv)
     // Execute commands.
     while (c)
     {
-        debug_("[xmq] performing %s\n", cmd_name(c->cmd));
+        debug_("xmq=", "performing %s", cmd_name(c->cmd));
         bool ok = perform_command(c);
         if (!ok)
         {
@@ -3795,4 +4085,31 @@ int main(int argc, const char **argv)
     if (error_to_print_on_exit) fprintf(stderr, "%s", error_to_print_on_exit);
 
     return rc;
+}
+
+char *load_file_into_buffer(const char *file)
+{
+    FILE *f = fopen(file, "rb");
+    if (!f)
+    {
+        fprintf(stderr, "xmq: %s: No such file or directory\n", file);
+        return NULL;
+    }
+    fseek(f, 0L, SEEK_END);
+    size_t sz = ftell(f);
+    fseek(f, 0L, SEEK_SET);
+    char *buf = (char*)malloc(sz+1);
+    size_t n = fread(buf, 1, sz, f);
+    buf[sz] = 0;
+    if (n != sz) printf("ARRRRRGGGG\n");
+    fclose(f);
+    return buf;
+}
+
+bool check_file_exists(const char *file)
+{
+    FILE *f = fopen(file, "rb");
+    if (!f) return false;
+    fclose(f);
+    return true;
 }

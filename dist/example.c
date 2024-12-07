@@ -32,8 +32,41 @@ int main(int argc, char **argv)
     expect_double(weight, 999.123);
 
     xmqFreeDoc(doc);
+    XMQLineConfig *lc = xmqNewLineConfig();
+    char *line = xmqLinePrintf(lc,
+                               "car{",
+                               "nw=", "%d", num_wheels,
+                               "model=", "%s %d", "car go ", 3,
+                               "decription=", "%s", "howdy\ndowdy",
+                               "more=", "'''%s'''", "===",
+                               "key=", "",
+                               "}");
+    const char *expect = "car{nw=36 model='car go  3'decription=('howdy'&#10;'dowdy')more=(&#39;&#39;&#39;'==='&#39;&#39;&#39;)key=''}";
+    if (strcmp(line, expect))
+    {
+        printf("Expected >%s<\n but got >%s<\n", expect, line);
+    }
 
-    return ok ? 0 : 1;
+    free(line);
+
+    line = xmqLinePrintf(lc, "work=", "pi is %f", 3.141590);
+
+    expect = "work='pi is 3.141590'";
+    if (strcmp(line, expect))
+    {
+        printf("Expected >%s<\n but got >%s<\n", expect, line);
+    }
+
+    xmqSetLineHumanReadable(lc, true);
+    line = xmqLinePrintf(lc, "work=", "pi is %f", 3.141590);
+
+    expect = "(work) pi is 3.141590";
+    if (strcmp(line, expect))
+    {
+        printf("Expected >%s<\n but got >%s<\n", expect, line);
+    }
+
+    return 0;
 }
 
 void expect(const char *s, const char *e)

@@ -143,19 +143,19 @@ testa: test_asan
 
 test_release:
 	@echo "Running release tests"
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/release/testinternals ]; then echo "Run make first. $$x/release/testinternals not found."; exit 1; fi ; $$x/release/testinternals $(SILENCER) ; done
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/release/parts/testinternals ]; then echo "Run make first. $$x/release/parts/testinternals not found."; exit 1; fi ; $$x/release/parts/testinternals $(SILENCER) ; ./tests/test.sh $$x/release $$x/release/test_output $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/testinternals ]; then echo "Run make first. $${x}release/testinternals not found."; exit 1; fi ; $${x}release/testinternals $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/parts/testinternals ]; then echo "Run make first. $${x}release/parts/testinternals not found."; exit 1; fi ; $${x}release/parts/testinternals $(SILENCER) ; ./tests/test.sh $${x}release $${x}release/test_output $(FILTER) $(SILENCER) ; done
 
 test_debug:
 	@echo "Running debug tests"
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/debug/testinternals ]; then echo "Run make first. $$x/debug/testinternals not found."; exit 1; fi ; $$x/debug/testinternals $(SILENCER) ; done
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/debug/parts/testinternals ]; then echo "Run make first. $$x/debug/parts/testinternals not found."; exit 1; fi ; $$x/release/debug/testinternals $(SILENCER) ; ./tests/test.sh $$x/debug $$x/debug/test_output $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/testinternals ]; then echo "Run make first. $${x}debug/testinternals not found."; exit 1; fi ; $${x}debug/testinternals $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/parts/testinternals ]; then echo "Run make first. $${x}debug/parts/testinternals not found."; exit 1; fi ; $${x}release/debug/testinternals $(SILENCER) ; ./tests/test.sh $${x}debug $${x}debug/test_output $(FILTER) $(SILENCER) ; done
 
 test_asan:
 	@echo "Running asan tests"
-	@if [ "$$(cat /proc/sys/kernel/randomize_va_space)" != "0" ]; then echo "Please disable address randomization for libasan to work!"; exit 1; fi
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/asan/testinternals ]; then echo "Run make first. $$x/asan/testinternals not found."; exit 1; fi ; $$x/asan/testinternals $(SILENCER) ; done
-	@for x in $(BUILDDIRS); do if [ ! -f $$x/asan/parts/testinternals ]; then echo "Run make first. $$x/asan/parts/testinternals not found."; exit 1; fi ; $$x/release/asan/testinternals $(SILENCER) ; ./tests/test.sh $$x/asan $$x/asan/test_output $(SILENCER) ; done
+	@if [ "$$(cat /proc/sys/kernel/randomize_va_space)" != "0" ]; then echo "Please disable address randomization for libasan to work! make disable_address_randomization"; exit 1; fi
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/testinternals ]; then echo "Run make first. $${x}asan/testinternals not found."; exit 1; fi ; $${x}asan/testinternals $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/parts/testinternals ]; then echo "Run make first. $${x}asan/parts/testinternals not found."; exit 1; fi ; $${x}release/asan/testinternals $(SILENCER) ; ./tests/test.sh $${x}asan $${x}asan/test_output $(FILTER) $(SILENCER) ; done
 
 disable_address_randomization:
 	@echo "Now running: echo 0 | sudo tee /proc/sys/kernel/randomize_va_space"
@@ -167,7 +167,7 @@ enable_address_randomization:
 
 clean:
 	@echo "Removing release, debug, asan, gtkdoc build dirs."
-	@for x in $(BUILDDIRS); do echo; rm -rf $$x/release $$x/debug $$x/asan $$x/generated_autocomplete.h; done
+	@for x in $(BUILDDIRS); do echo; rm -rf $${x}release $${x}debug $${x}asan $${x}generated_autocomplete.h; done
 	@rm -rf build/gtkdoc
 	@rm -rf xmq_browsing*
 
@@ -178,17 +178,11 @@ clean-all:
 DESTDIR?=/usr/local
 install:
 	install -Dm 755 -s build/x86_64-pc-linux-gnu/release/xmq $(DESTDIR)/bin/xmq
-	install -Dm 755 scripts/xmq-less $(DESTDIR)/bin/xmq-less
-	install -Dm 755 scripts/xmq-diff $(DESTDIR)/bin/xmq-diff
-	install -Dm 755 scripts/xmq-meld $(DESTDIR)/bin/xmq-meld
 	install -Dm 644 doc/xmq.1 $(DESTDIR)/man/man1/xmq.1
 	install -Dm 644 scripts/autocompletion_for_xmq.sh /etc/bash_completion.d/xmq
 
 uninstall:
 	rm -f $(DESTDIR)/bin/xmq
-	rm -f $(DESTDIR)/bin/xmq-less
-	rm -f $(DESTDIR)/bin/xmq-diff
-	rm -f $(DESTDIR)/bin/xmq-meld
 	rm -f $(DESTDIR)/man/man1/xmq.1
 	rm -f /etc/bash_completion.d/xmq
 
@@ -228,6 +222,11 @@ build/gtkdoc: build/gtkdocentities.ent
 	cp build/gtkdocentities.ent build/gtkdoc/xml
 	(cd build/gtkdoc/html; gtkdoc-mkhtml libxmq ../libxmq-docs.xml)
 	(cd build/gtkdoc; gtkdoc-fixxref --module=libxmq --module-dir=html --html-dir=html)
+
+import_category:
+	@if [ "$(CATEGORY)" = "" ]; then echo "Specify CATEGORY=Ll"; exit 1; fi
+	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
+	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
 
 .PHONY: all release debug asan test test_release test_debug clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc
 

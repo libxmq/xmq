@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2023 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2023-2024 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -54,11 +54,26 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct Stack;
 typedef struct Stack Stack;
 
+struct Vector;
+typedef struct Vector Vector;
+
 struct HashMap;
 typedef struct HashMap HashMap;
 
+struct HashMapIterator;
+typedef struct HashMapIterator HashMapIterator;
+
 struct MemBuffer;
 typedef struct MemBuffer MemBuffer;
+
+struct YaepParseRun;
+typedef struct YaepParseRun YaepParseRun;
+
+struct YaepGrammar;
+typedef struct YaepGrammar YaepGrammar;
+
+struct XMQParseState;
+typedef struct XMQParseState XMQParseState;
 
 // DECLARATIONS /////////////////////////////////////////////////
 
@@ -112,6 +127,15 @@ struct XMQDoc
     XMQNode root_; // The root node.
     XMQContentType original_content_type_; // Remember if this document was created from xmq/xml etc.
     size_t original_size_; // Remember the original source size of the document it was loaded from.
+
+    // For now these references are here. I am not quite sure where to put them in the future.
+    // The IXML grammar can be parsed, but not actually turned into a yaep grammar until
+    // we have seen the content to be parsed, since we want to shrink the charset membership tests to a minimum.
+    // I.e. if the content only contains a:s and b:s (eg 'abbabbabaaab') then the charset test
+    // ['a'-'z'] shrinks down to ['a';'b']
+    YaepParseRun *yaep_parse_run_; // The currently executing parse variables.
+    YaepGrammar *yaep_grammar_; // The yaep grammar to be used by the run.
+    XMQParseState *yaep_parse_state_; // The parse state used to parse the ixml grammar.
 };
 
 #ifdef __cplusplus
@@ -148,6 +172,7 @@ struct XMQOutputSettings
 {
     int  add_indent;
     bool compact;
+    bool omit_decl;
     bool use_color;
     bool bg_dark_mode;
     bool escape_newlines;
@@ -167,6 +192,7 @@ struct XMQOutputSettings
     MemBuffer *output_buffer;
     char **output_buffer_start;
     char **output_buffer_stop;
+    size_t *output_skip;
 
     const char *indentation_space; // If NULL use " " can be replaced with any other string.
     const char *explicit_space; // If NULL use " " can be replaced with any other string.
@@ -185,6 +211,67 @@ struct XMQOutputSettings
 };
 typedef struct XMQOutputSettings XMQOutputSettings;
 
+enum IXMLTermType
+{
+    IXML_TERMINAL, IXML_NON_TERMINAL, IXML_CHARSET
+};
+typedef enum IXMLTermType IXMLTermType;
+
+struct IXMLCharsetPart;
+typedef struct IXMLCharsetPart IXMLCharsetPart;
+struct IXMLCharsetPart
+{
+    IXMLCharsetPart *next;
+    // A charset range [ 'a' - 'z' ]
+    // A single char is [ 'a' - 'a' ] used for each element in a string set definition, eg 'abc'
+    int from, to;
+    // A charset category [ Lc ] for lower case character or [Zs] for whitespace,
+    // stored as two characters and the null terminatr.
+    char category[3];
+};
+
+struct IXMLCharset
+{
+    // Negate the check, exclude the specified characters.
+    bool exclude;
+    // Charset contents.
+    IXMLCharsetPart *first;
+    IXMLCharsetPart *last;
+};
+typedef struct IXMLCharset IXMLCharset;
+
+struct IXMLTerminal
+{
+    char *name;
+    int code;
+};
+typedef struct IXMLTerminal IXMLTerminal;
+
+struct IXMLNonTerminal
+{
+    char *name;
+    char *alias;
+    IXMLCharset *charset; // If the rule embodies a charset.
+};
+typedef struct IXMLNonTerminal IXMLNonTerminal;
+
+struct IXMLTerm // A term is an element in the rhs vector in the rule.
+{
+    IXMLTermType type;
+    char mark; // Exclude a term in a rule's rhs: rr: -A, B;  then only the contents of A will be printed.
+    IXMLTerminal *t;
+    IXMLNonTerminal *nt;
+};
+typedef struct IXMLTerm IXMLTerm;
+
+struct IXMLRule
+{
+    IXMLNonTerminal *rule_name;
+    char mark;
+    Vector *rhs_terms;
+};
+typedef struct IXMLRule IXMLRule;
+
 struct XMQParseState
 {
     char *source_name; // Only used for generating any error messages.
@@ -194,8 +281,9 @@ struct XMQParseState
     const char *i; // Current parsing position.
     size_t line; // Current line.
     size_t col; // Current col.
-    XMQParseError error_nr;
-    char *generated_error_msg;
+    XMQParseError error_nr; // A standard parse error enum that maps to text.
+    const char *error_info; // Additional info printed with the error nr.
+    char *generated_error_msg; // Additional error information.
     MemBuffer *generating_error_msg;
     jmp_buf error_handler;
 
@@ -213,6 +301,8 @@ struct XMQParseState
     bool parsing_pi; // True when parsing a processing instruction, pi.
     bool merge_text; // Merge text nodes and character entities.
     bool no_trim_quotes; // No trimming if quotes, used when reading json strings.
+    bool ixml_all_parses; // If IXML parse is ambiguous then print all parses.
+    bool ixml_try_to_recover; // If IXML parse fails, try to recover.
     const char *pi_name; // Name of the pi node just started.
     XMQOutputSettings *output_settings; // Used when coloring existing text using the tokenizer.
     int magic_cookie; // Used to check that the state has been properly initialized.
@@ -243,6 +333,57 @@ struct XMQParseState
     const char *last_suspicios_quote_end;
     size_t last_suspicios_quote_end_line;
     size_t last_suspicios_quote_end_col;
+
+    ///////// The following variables are used when parsing ixml. //////////////////////////////////
+    // Collect all unique terminals in this map from the name. #78 and 'x' is the same terminal with code 120.
+    // The name is a #hex version of unicode codepoint.
+    HashMap *ixml_terminals_map;
+    // References to non-terminals, ie rules (includes mark -^@).
+    Vector *ixml_non_terminals;
+    // Store all rules here. The rule has a rule_name which is a non-terminal ref to itself.
+    Vector *ixml_rules;
+    // Rule stack is pushed by groups (..), ?, *, **, + and ++.
+    Stack  *ixml_rule_stack;
+    // Generated rule counter. Starts at 0 and increments after each generated
+    // anonymous rule, ie (..), ? etc. The rules will have the names /0 /1 /2 etc.
+    int num_generated_rules;
+    // The ixml_rule is the current rule that we are building.
+    IXMLRule *ixml_rule;
+    // The ixml_nonterminal is the current rule reference.
+    IXMLNonTerminal *ixml_nonterminal;
+    // The ixml_tmp_terminals is the current collection of terminals, ie characters.
+    // A single ixml #78 or 'x' or "x" adds a single terminal to this vector.
+    // The string 'xy' adds two terminals to this vector, etc.
+    // These terminals are then added to the rule's rhs.
+    Vector *ixml_tmp_terminals;
+    // The ixml_tmp_terms is the current collection of terms (terminal or non-terminals),
+    // These terms are then added to the rule's rhs.
+//    Vector *ixml_rhs_tmp_terms;
+    // These are the marks @-^ for the terminals.
+    Vector *ixml_rhs_tmp_marks;
+    // The most recently parsed mark.
+    char ixml_mark;
+    // The most recently parsed encoded value #41
+    int ixml_encoded;
+    // Any charset we are currently building.
+    IXMLCharset *ixml_charset;
+    // Parsing ranges of charsets.
+    int ixml_charset_from;
+    int ixml_charset_to;
+    // When parsing the grammar, collect all charset categories that we use.
+    HashMap *ixml_found_categories;
+
+    // These are used when travergins the IXML parse tree and generating the yaep grammar build calls.
+    char **yaep_tmp_rhs_;
+    char *yaep_tmp_marks_;
+    int *yaep_tmp_transl_;
+    HashMapIterator *yaep_i_;
+    size_t yaep_j_;
+
+    // When debugging parsing of ixml, track indentation of depth here.
+    int depth;
+    // Generate xml as well.
+    bool build_xml_of_ixml;
 };
 
 /**
@@ -346,8 +487,6 @@ size_t count_necessary_slashes(const char *start, const char *stop);
 
 void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col);
 
-static const char *build_error_message(const char *fmt, ...);
-
 Level enter_compound_level(Level l);
 XMQColor level_to_quote_color(Level l);
 XMQColor level_to_entity_color(Level l);
@@ -443,6 +582,8 @@ void trim_text_node(xmlNode *node, int flags);
 
 // Output buffer functions ////////////////////////////////////////////////////////
 
+const char *build_error_message(const char *fmt, ...);
+
 void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
 
 bool need_separation_before_attribute_key(XMQPrintState *ps);
@@ -496,6 +637,14 @@ size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...);
 size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop);
 void print_quote(XMQPrintState *ps, XMQColor c, const char *start, const char *stop);
 
+struct YaepGrammar;
+typedef struct YaepGrammar YaepGrammar;
+struct YaepParseRun;
+typedef struct YaepParseRun YaepParseRun;
+struct yaep_tree_node;
+
+bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar, const char *start, const char *stop, int flags);
+
 typedef void (*XMQContentCallback)(XMQParseState *state,
                                    size_t start_line,
                                    size_t start_col,
@@ -532,6 +681,10 @@ struct XMQPrintCallbacks
 bool debug_enabled();
 
 void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
+void xmq_set_yaep_grammar(XMQDoc *doc, YaepGrammar *g);
+YaepGrammar *xmq_get_yaep_grammar(XMQDoc *doc);
+YaepParseRun *xmq_get_yaep_parse_run(XMQDoc *doc);
+XMQParseState *xmq_get_yaep_parse_state(XMQDoc *doc);
 
 void set_node_namespace(XMQParseState *state, xmlNodePtr node, const char *node_name);
 

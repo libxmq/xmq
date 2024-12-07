@@ -85,6 +85,7 @@ const char *content_type_to_string(XMQContentType t)
     case XMQ_CONTENT_HTMQ: return "htmq";
     case XMQ_CONTENT_HTML: return "html";
     case XMQ_CONTENT_JSON: return "json";
+    case XMQ_CONTENT_IXML: return "ixml";
     case XMQ_CONTENT_TEXT: return "text";
     case XMQ_CONTENT_CLINES: return "clines";
     }

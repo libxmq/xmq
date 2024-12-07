@@ -130,7 +130,20 @@ void membuffer_append_char(MemBuffer *mb, char c)
         mb->max_ = max;
     }
     memcpy(mb->buffer_+mb->used_, &c, 1);
-    mb->used_ ++;
+    mb->used_++;
+}
+
+void membuffer_append_int(MemBuffer *mb, int i)
+{
+    size_t add = sizeof(i);
+    size_t max = pick_buffer_new_size(mb->max_, mb->used_, add);
+    if (max > mb->max_)
+    {
+        mb->buffer_ = (char*)realloc(mb->buffer_, max);
+        mb->max_ = max;
+    }
+    memcpy(mb->buffer_+mb->used_, &i, sizeof(i));
+    mb->used_ += add;
 }
 
 void membuffer_append_null(MemBuffer *mb)
@@ -176,6 +189,12 @@ void membuffer_append_pointer(MemBuffer *mb, void *ptr)
 size_t membuffer_used(MemBuffer *mb)
 {
     return mb->used_;
+}
+
+char membuffer_back(MemBuffer *mb)
+{
+    if (mb->used_ == 0) return 0;
+    return mb->buffer_[mb->used_-1];
 }
 
 #endif // MEMBUFFER_MODULE

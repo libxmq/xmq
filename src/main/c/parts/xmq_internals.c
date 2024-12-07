@@ -118,11 +118,12 @@ void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, 
     char error_msg[2048];
     memset(error_msg, 0, sizeof(error_msg));
     snprintf(error_msg, 2048,
-             "%s:%zu:%zu: %s: %s%s%s",
+             "%s:%zu:%zu: %s: %s%s%s%s",
              state->source_name,
              line, col,
              e_or_w,
              error,
+             state->error_info ? state->error_info : "",
              char_error,
              line_error
         );
@@ -237,6 +238,7 @@ void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const ch
 
 void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col)
 {
+    if (c == 0) c = *(*i);
     if ((c & 0xc0) != 0x80) // Just ignore UTF8 parts since they do not change the line or col.
     {
         (*col)++;
@@ -373,6 +375,7 @@ const char *xmqParseErrorToString(XMQParseError e)
     case XMQ_ERROR_PARSING_XML: return "error parsing xml";
     case XMQ_ERROR_PARSING_HTML: return "error parsing html";
     case XMQ_ERROR_VALUE_CANNOT_START_WITH: return "value cannot start with = /* or //";
+    case XMQ_ERROR_IXML_SYNTAX_ERROR: return "syntax ";
     case XMQ_WARNING_QUOTES_NEEDED: return "perhaps you need more quotes to quote this quote";
     }
     assert(false);

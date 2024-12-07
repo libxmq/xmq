@@ -3,6 +3,7 @@
 #include"core.h"
 #include"hashmap.h"
 #include"stack.h"
+#include"text.h"
 #include"quicksort_strings.h"
 
 #include<assert.h>
@@ -13,6 +14,7 @@
     X(test_hashmap) \
     X(test_quicksort) \
     X(test_stack) \
+    X(test_binary_search) \
     X(test_colors) \
 
 #define X(name) void name();
@@ -74,17 +76,62 @@ void test_quicksort()
     }
 }
 
+void test_binary_search()
+{
+    int empty[] = {};
+    int a[] = { 1 };
+    int b[] = { 1, 2 };
+
+    bool found = category_find(1, empty, 0);
+    if (found) { all_ok_ = false; printf("ERROR: expected not found in [].\n"); }
+    found = category_find(1, a, 1);
+    if (!found) { all_ok_ = false; printf("ERROR: expected found 1 in [1].\n"); }
+    found = category_find(2, a, 1);
+    if (found) { all_ok_ = false; printf("ERROR: expected not 2 in [1].\n"); }
+    found = category_find(1, b, 2);
+    if (!found) { all_ok_ = false; printf("ERROR: expected 1 in [1, 2].\n"); }
+    found = category_find(2, b, 2);
+    if (!found) { all_ok_ = false; printf("ERROR: expected 2 in [1, 2].\n"); }
+    found = category_find(7, b, 2);
+    if (found) { all_ok_ = false; printf("ERROR: expected not 7 in [1, 2].\n"); }
+    found = category_find(0, b, 2);
+    if (found) { all_ok_ = false; printf("ERROR: expected not 0 in [1, 2].\n"); }
+
+    int c[] = { 1, 2, 7, 10, 11, 12, 55, 99 };
+    found = category_find(2, c, sizeof(c)/sizeof(int));
+    if (!found) { all_ok_ = false; printf("ERROR: expected 2 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
+    found = category_find(99, c, sizeof(c)/sizeof(int));
+    if (!found) { all_ok_ = false; printf("ERROR: expected 99 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
+    found = category_find(55, c, sizeof(c)/sizeof(int));
+    if (!found) { all_ok_ = false; printf("ERROR: expected 55 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
+    found = category_find(1, c, sizeof(c)/sizeof(int));
+    if (!found) { all_ok_ = false; printf("ERROR: expected 1 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
+    found = category_find(7, c, sizeof(c)/sizeof(int));
+    if (!found) { all_ok_ = false; printf("ERROR: expected 7 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
+    found = category_find(10, c, sizeof(c)/sizeof(int));
+    if (!found) { all_ok_ = false; printf("ERROR: expected 10 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
+    found = category_find(11, c, sizeof(c)/sizeof(int));
+    if (!found) { all_ok_ = false; printf("ERROR: expected 11 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
+    found = category_find(12, c, sizeof(c)/sizeof(int));
+    if (!found) { all_ok_ = false; printf("ERROR: expected 12 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
+    found = category_find(11, c, sizeof(c)/sizeof(int));
+    if (!found) { all_ok_ = false; printf("ERROR: expected 11 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
+
+    found = category_find(13, c, sizeof(c)/sizeof(int));
+    if (found) { all_ok_ = false; printf("ERROR: expected not 13 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
+}
+
 void test_stack()
 {
-    Stack *stack = new_stack();
-    push_stack(stack, (void*)42);
+    Stack *stack = stack_create();
+    stack_push(stack, (void*)42);
     assert(stack->size == 1);
-    int64_t v = (int64_t)pop_stack(stack);
+    int64_t v = (int64_t)stack_pop(stack);
     if (v != 42) {
         printf("BAD STACK\n");
         all_ok_ = false;
     }
-    free_stack(stack);
+    stack_free(stack);
 }
 
 void test_colors()
@@ -111,6 +158,7 @@ void test_colors()
 
     printf("TEX %s\n", buf);
 }
+
 
 /*
 bool TEST_MEM_BUFFER()

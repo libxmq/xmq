@@ -34,12 +34,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/entities.h"
 #include"parts/utf8.h"
 #include"parts/hashmap.h"
+#include"parts/ixml.h"
 #include"parts/membuffer.h"
 #include"parts/stack.h"
 #include"parts/text.h"
+#include"parts/vector.h"
 #include"parts/xml.h"
 #include"parts/xmq_parser.h"
 #include"parts/xmq_printer.h"
+#include"parts/yaep.h"
 
 // XMQ STRUCTURES ////////////////////////////////////////////////
 
@@ -48,6 +51,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // FUNCTIONALITY /////////////////////////////////////////////////
 
 #include"parts/json.h"
+#include"parts/ixml.h"
 
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -98,12 +102,22 @@ const char *find_next_line_end(XMQPrintState *ps, const char *start, const char 
 const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop);
 void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared);
 void fixup_comments(XMQDoc *doq, xmlNode *node, int depth);
+void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, int depth, int index);
+void handle_yaep_syntax_error(YaepParseRun *pr,
+                              int err_tok_num,
+                              void *err_tok_attr,
+                              int start_ignored_tok_num,
+                              void *start_ignored_tok_attr,
+                              int start_recovered_tok_num,
+                              void *start_recovered_tok_attr);
+
 bool has_leading_ending_quote(const char *start, const char *stop);
 bool is_safe_char(const char *i, const char *stop);
 size_t line_length(const char *start, const char *stop, int *numq, int *lq, int *eq);
 bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **out_buffer);
 bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer);
 bool need_separation_before_entity(XMQPrintState *ps);
+const char *node_yaep_type_to_string(YaepTreeNodeType t);
 size_t num_utf8_bytes(char c);
 void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num);
 void reset_ansi(XMQParseState *state);
@@ -134,7 +148,6 @@ void xmq_print_text(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_clines(XMQDoc *doq, XMQOutputSettings *output_settings);
 char *xmq_quote_with_entity_newlines(const char *start, const char *stop, XMQQuoteSettings *settings);
 char *xmq_quote_default(int indent, const char *start, const char *stop, XMQQuoteSettings *settings);
-bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root);
 const char *xml_element_type_to_string(xmlElementType type);
 const char *indent_depth(int i);
 void free_indent_depths();
@@ -177,7 +190,7 @@ void xmqSetupDefaultColors(XMQOutputSettings *os)
         }
     }
 
-    verbose("(xmq) use theme %s\n", os->render_theme);
+    verbose("xmq=", "use theme %s", os->render_theme);
     installDefaultThemeColors(theme);
 
     os->indentation_space = theme->indentation_space; // " ";
@@ -309,6 +322,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_m
     theme->apar_right.pre   = NOCOLOR;
     theme->ns_colon.pre = NOCOLOR;
 
+    theme->document.post = NOCOLOR;
 }
 
 void setup_html_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode, bool use_color, bool render_raw)
@@ -739,6 +753,11 @@ void xmqSetOutputFormat(XMQOutputSettings *os, XMQContentType output_format)
     os->output_format = output_format;
 }
 
+void xmqSetOmitDecl(XMQOutputSettings *os, bool omit_decl)
+{
+    os->omit_decl = omit_decl;
+}
+
 void xmqSetRenderFormat(XMQOutputSettings *os, XMQRenderFormat render_to)
 {
     os->render_to = render_to;
@@ -847,10 +866,15 @@ void xmqSetupPrintMemory(XMQOutputSettings *os, char **start, char **stop)
     os->error.write = (XMQWrite)(void*)membuffer_append_region;
 }
 
+void xmqSetupPrintSkip(XMQOutputSettings *os, size_t *skip)
+{
+    os->output_skip = skip;
+}
+
 XMQParseCallbacks *xmqNewParseCallbacks()
 {
     XMQParseCallbacks *callbacks = (XMQParseCallbacks*)malloc(sizeof(XMQParseCallbacks));
-    memset(callbacks, 0, sizeof(sizeof(XMQParseCallbacks)));
+    memset(callbacks, 0, sizeof(XMQParseCallbacks));
     return callbacks;
 }
 
@@ -879,7 +903,7 @@ XMQParseState *xmqNewParseState(XMQParseCallbacks *callbacks, XMQOutputSettings 
     state->parse = callbacks;
     state->output_settings = output_settings;
     state->magic_cookie = MAGIC_COOKIE;
-    state->element_stack = new_stack();
+    state->element_stack = stack_create();
 
     return state;
 }
@@ -892,6 +916,8 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
         assert(0);
         exit(1);
     }
+
+    if (!stop) stop = start + strlen(start);
 
     XMQContentType detected_ct = xmqDetectContentType(start, stop);
     if (detected_ct != XMQ_CONTENT_XMQ)
@@ -1036,7 +1062,7 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                     *(i+3) == 'm' &&
                     *(i+4) == 'l')
                 {
-                    debug("[XMQ] content detected as xml since <?xml found\n");
+                    debug("xmq=", "content detected as xml since <?xml found");
                     return XMQ_CONTENT_XML;
                 }
 
@@ -1057,7 +1083,7 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                     // No closing comment, return as xml.
                     if (i >= stop)
                     {
-                        debug("[XMQ] content detected as xml since comment start found\n");
+                        debug("xmq=", "content detected as xml since comment start found");
                         return XMQ_CONTENT_XML;
                     }
                     // Pick up after the comment.
@@ -1068,7 +1094,7 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                 const char *is_html = find_word_ignore_case(i+1, stop, "html");
                 if (is_html)
                 {
-                    debug("[XMQ] content detected as html since html found\n");
+                    debug("xmq=", "content detected as html since html found");
                     return XMQ_CONTENT_HTML;
                 }
 
@@ -1080,18 +1106,18 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                     is_html = find_word_ignore_case(is_doctype+1, stop, "html");
                     if (is_html)
                     {
-                        debug("[XMQ] content detected as html since doctype html found\n");
+                        debug("xmq=", "content detected as html since doctype html found");
                         return XMQ_CONTENT_HTML;
                     }
                 }
                 // Otherwise we assume it is xml. If you are working with html content inside
                 // the html, then use --html
-                debug("[XMQ] content assumed to be xml\n");
+                debug("xmq=", "content assumed to be xml");
                 return XMQ_CONTENT_XML; // Or HTML...
             }
             if (c == '{' || c == '"' || c == '[' || (c >= '0' && c <= '9')) // "
             {
-                debug("[XMQ] content detected as json\n");
+                debug("xmq=", "content detected as json");
                 return XMQ_CONTENT_JSON;
             }
             // Strictly speaking true,false and null are valid xmq files. But we assume
@@ -1111,19 +1137,19 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                             !strncmp(i, "false", 5) ||
                             !strncmp(i, "null", 4))
                         {
-                            debug("[XMQ] content detected as json since true/false/null found\n");
+                            debug("xmq=", "content detected as json since true/false/null found");
                             return XMQ_CONTENT_JSON;
                         }
                     }
                 }
             }
-            debug("[XMQ] content assumed to be xmq\n");
+            debug("xmq=", "content assumed to be xmq");
             return XMQ_CONTENT_XMQ;
         }
         i++;
     }
 
-    debug("[XMQ] empty content assumed to be xmq\n");
+    debug("xmq=", "empty content assumed to be xmq");
     return XMQ_CONTENT_XMQ;
 }
 
@@ -1182,6 +1208,16 @@ bool xmqDebugging()
     return xmq_debug_enabled_;
 }
 
+void xmqSetTrace(bool e)
+{
+    xmq_trace_enabled_ = e;
+}
+
+bool xmqTracing()
+{
+    return xmq_trace_enabled_;
+}
+
 void xmqSetVerbose(bool e)
 {
     xmq_verbose_enabled_ = e;
@@ -1191,7 +1227,12 @@ bool xmqVerbose() {
     return xmq_verbose_enabled_;
 }
 
-static const char *build_error_message(const char* fmt, ...)
+void xmqSetLogHumanReadable(bool e)
+{
+    xmq_log_line_config_.human_readable_ = e;
+}
+
+const char *build_error_message(const char* fmt, ...)
 {
     char *buf = (char*)malloc(4096);
     va_list args;
@@ -1653,6 +1694,11 @@ void xmqSetDocSourceName(XMQDoc *doq, const char *source_name)
     }
 }
 
+const char *xmqGetDocSourceName(XMQDoc *doq)
+{
+    return doq->source_name_;
+}
+
 XMQContentType xmqGetOriginalContentType(XMQDoc *doq)
 {
     return doq->original_content_type_;
@@ -1676,6 +1722,7 @@ void xmqFreeParseCallbacks(XMQParseCallbacks *cb)
 void xmqFreeParseState(XMQParseState *state)
 {
     if (!state) return;
+
     free(state->source_name);
     state->source_name = NULL;
     free(state->generated_error_msg);
@@ -1685,9 +1732,30 @@ void xmqFreeParseState(XMQParseState *state)
         free_membuffer_and_free_content(state->generating_error_msg);
         state->generating_error_msg = NULL;
     }
-    free_stack(state->element_stack);
-//    free(state->settings);
+    stack_free(state->element_stack);
+    state->element_stack = NULL;
+    // Settings are not freed here.
     state->output_settings = NULL;
+
+    if (state->yaep_tmp_rhs_) free(state->yaep_tmp_rhs_);
+    state->yaep_tmp_rhs_ = NULL;
+    if (state->yaep_tmp_transl_) free(state->yaep_tmp_transl_);
+    state->yaep_tmp_transl_ = NULL;
+    if (state->yaep_tmp_marks_) free(state->yaep_tmp_marks_);
+    state->yaep_tmp_marks_ = NULL;
+
+    if (state->ixml_rules) vector_free_and_values(state->ixml_rules, (FreeFuncPtr)free_ixml_rule);
+    state->ixml_rules = NULL;
+
+    if (state->ixml_terminals_map) hashmap_free_and_values(state->ixml_terminals_map, (FreeFuncPtr)free_ixml_terminal);
+    state->ixml_terminals_map = NULL;
+
+    if (state->ixml_non_terminals) vector_free_and_values(state->ixml_non_terminals, (FreeFuncPtr)free_ixml_nonterminal);
+    state->ixml_non_terminals = NULL;
+
+    if (state->ixml_rule_stack) stack_free(state->ixml_rule_stack);
+    state->ixml_rule_stack = NULL;
+
     free(state);
 }
 
@@ -1696,23 +1764,33 @@ void xmqFreeDoc(XMQDoc *doq)
     if (!doq) return;
     if (doq->source_name_)
     {
-        debug("[XMQ] freeing source name\n");
+        debug("xmq=", "freeing source name");
         free((void*)doq->source_name_);
         doq->source_name_ = NULL;
     }
     if (doq->error_)
     {
-        debug("[XMQ] freeing error message\n");
+        debug("xmq=", "freeing error message");
         free((void*)doq->error_);
         doq->error_ = NULL;
     }
     if (doq->docptr_.xml)
     {
-        debug("[XMQ] freeing xml doc\n");
+        debug("xmq=", "freeing xml doc");
         xmlFreeDoc(doq->docptr_.xml);
         doq->docptr_.xml = NULL;
     }
-    debug("[XMQ] freeing xmq doc\n");
+    if (doq->yaep_grammar_)
+    {
+        yaepFreeGrammar (doq->yaep_parse_run_, doq->yaep_grammar_);
+        yaepFreeParseRun (doq->yaep_parse_run_);
+        xmqFreeParseState(doq->yaep_parse_state_);
+        doq->yaep_grammar_ = NULL;
+        doq->yaep_parse_run_ = NULL;
+        doq->yaep_parse_state_ = NULL;
+    }
+
+    debug("xmq=", "freeing xmq doc");
     free(doq);
 }
 
@@ -1763,7 +1841,7 @@ bool xmqParseBuffer(XMQDoc *doq, const char *start, const char *stop, const char
 
     state->implicit_root = implicit_root;
 
-    push_stack(state->element_stack, doq->docptr_.xml);
+    stack_push(state->element_stack, doq->docptr_.xml);
     // Now state->element_stack->top->data points to doq->docptr_;
     state->element_last = NULL; // Will be set when the first node is created.
     // The doc root will be set when the first element node is created.
@@ -1824,12 +1902,12 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root, int 
         // We need to read smaller blocks because of a bug in Windows C-library..... blech.
         if (n + block_size > fsize) block_size = fsize - n;
         size_t r = fread(buffer+n, 1, block_size, f);
-        debug("[XMQ] read %zu bytes total %zu\n", r, n);
+        debug("xmq=", "read %zu bytes total %zu", r, n);
         if (!r) break;
         n += r;
     } while (n < fsize);
 
-    debug("[XMQ] read total %zu bytes\n", n);
+    debug("xmq=", "read total %zu bytes", n);
 
     if (n != fsize)
     {
@@ -2202,7 +2280,7 @@ void do_ns_declaration(XMQParseState *state,
         ns = xmlNewNs(element,
                       NULL,
                       NULL);
-        debug("[XMQ] create default namespace in element %s\n", element->name);
+        debug("xmq=", "create default namespace in element %s", element->name);
         if (!ns)
         {
             // Oups, this element already has a default namespace.
@@ -2221,7 +2299,7 @@ void do_ns_declaration(XMQParseState *state,
         }
         if (element->ns == NULL)
         {
-            debug("[XMQ] set default namespace in element %s prefix=%s href=%s\n", element->name, ns->prefix, ns->href);
+            debug("xmq=", "set default namespace in element %s prefix=%s href=%s", element->name, ns->prefix, ns->href);
             xmlSetNs(element, ns);
         }
         state->default_namespace = ns;
@@ -2320,12 +2398,12 @@ void update_namespace_href(XMQParseState *state,
 
     char *href = strndup(start, stop-start);
     ns->href = (const xmlChar*)href;
-    debug("[XMQ] update namespace prefix=%s with href=%s\n", ns->prefix, href);
+    debug("xmq=", "update namespace prefix=%s with href=%s", ns->prefix, href);
 
     if (start[0] == 0 && ns == state->default_namespace)
     {
         xmlNodePtr element = (xmlNode*)state->element_stack->top->data;
-        debug("[XMQ] remove default namespace in element %s\n", element->name);
+        debug("xmq=", "remove default namespace in element %s", element->name);
         xmlSetNs(element, NULL);
         state->default_namespace = NULL;
         return;
@@ -2435,7 +2513,7 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
                 state->element_last = root;
                 xmlDocSetRootElement(state->doq->docptr_.xml, root);
                 state->doq->root_.node = root;
-                push_stack(state->element_stack, state->element_last);
+                stack_push(state->element_stack, state->element_last);
             }
         }
         xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
@@ -2454,9 +2532,9 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
                 ns = xmlNewNs(new_node,
                               NULL,
                               (const xmlChar *)state->element_namespace);
-                debug("[XMQ] created namespace prefix=%s in element %s\n", state->element_namespace, name);
+                debug("xmq=", "created namespace prefix=%s in element %s", state->element_namespace, name);
             }
-            debug("[XMQ] setting namespace prefix=%s for element %s\n", state->element_namespace, name);
+            debug("xmq=", "setting namespace prefix=%s for element %s", state->element_namespace, name);
             xmlSetNs(new_node, ns);
             free(state->element_namespace);
             state->element_namespace = NULL;
@@ -2466,7 +2544,7 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
             // We have a default namespace.
             xmlNsPtr ns = (xmlNsPtr)state->default_namespace;
             assert(ns->prefix == NULL);
-            debug("[XMQ] set default namespace with href=%s for element %s\n", ns->href, name);
+            debug("xmq=", "set default namespace with href=%s for element %s", ns->href, name);
             xmlSetNs(new_node, ns);
         }
 
@@ -2532,7 +2610,7 @@ void do_brace_left(XMQParseState *state,
                    const char *stop,
                    const char *suffix)
 {
-    push_stack(state->element_stack, state->element_last);
+    stack_push(state->element_stack, state->element_last);
 }
 
 void do_brace_right(XMQParseState *state,
@@ -2542,7 +2620,7 @@ void do_brace_right(XMQParseState *state,
                     const char *stop,
                     const char *suffix)
 {
-    state->element_last = pop_stack(state->element_stack);
+    state->element_last = stack_pop(state->element_stack);
 }
 
 void do_apar_left(XMQParseState *state,
@@ -2552,7 +2630,7 @@ void do_apar_left(XMQParseState *state,
                  const char *stop,
                  const char *suffix)
 {
-    push_stack(state->element_stack, state->element_last);
+    stack_push(state->element_stack, state->element_last);
 }
 
 void do_apar_right(XMQParseState *state,
@@ -2562,7 +2640,7 @@ void do_apar_right(XMQParseState *state,
                   const char *stop,
                   const char *suffix)
 {
-    state->element_last = pop_stack(state->element_stack);
+    state->element_last = stack_pop(state->element_stack);
 }
 
 void do_cpar_left(XMQParseState *state,
@@ -2572,7 +2650,7 @@ void do_cpar_left(XMQParseState *state,
                   const char *stop,
                   const char *suffix)
 {
-    push_stack(state->element_stack, state->element_last);
+    stack_push(state->element_stack, state->element_last);
 }
 
 void do_cpar_right(XMQParseState *state,
@@ -2582,7 +2660,7 @@ void do_cpar_right(XMQParseState *state,
                    const char *stop,
                    const char *suffix)
 {
-    state->element_last = pop_stack(state->element_stack);
+    state->element_last = stack_pop(state->element_stack);
 }
 
 void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks)
@@ -2606,7 +2684,6 @@ void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSet
     qs->compact = os->compact;
 }
 
-
 void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings)
 {
     xmq_fixup_html_before_writeout(doq);
@@ -2622,7 +2699,7 @@ void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings)
                     (char*)buffer,
                     size);
 
-    debug("[XMQ] xmq_print_xml wrote %zu bytes\n", size);
+    debug("xmq=", "xmq_print_xml wrote %zu bytes", size);
 }
 
 void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
@@ -2635,7 +2712,7 @@ void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
         const xmlChar *buffer = xmlBufferContent((xmlBuffer *)out->buffer);
         MemBuffer *membuf = output_settings->output_buffer;
         membuffer_append(membuf, (char*)buffer);
-        debug("[XMQ] xmq_print_html wrote %zu bytes\n", membuf->used_);
+        debug("xmq=", "xmq_print_html wrote %zu bytes", membuf->used_);
         xmlOutputBufferClose(out);
     }
     /*
@@ -2663,8 +2740,8 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
     void *last = doq->docptr_.xml->last;
 
     XMQPrintState ps = {};
-    ps.pre_nodes = new_stack();
-    ps.post_nodes = new_stack();
+    ps.pre_nodes = stack_create();
+    ps.post_nodes = stack_create();
     XMQWrite write = os->content.write;
     void *writer_state = os->content.writer_state;
     ps.doq = doq;
@@ -2678,8 +2755,8 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
     json_print_object_nodes(&ps, NULL, (xmlNode*)first, (xmlNode*)last);
     write(writer_state, "\n", NULL);
 
-    free_stack(ps.pre_nodes);
-    free_stack(ps.post_nodes);
+    stack_free(ps.pre_nodes);
+    stack_free(ps.post_nodes);
 }
 
 void text_print_node(XMQPrintState *ps, xmlNode *node)
@@ -2913,6 +2990,15 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
         char *buffer = free_membuffer_but_return_trimmed_content(output_settings->output_buffer);
         *output_settings->output_buffer_start = buffer;
         *output_settings->output_buffer_stop = buffer+size;
+        if (output_settings->output_skip)
+        {
+            *output_settings->output_skip = 0;
+            if (output_settings->output_format == XMQ_CONTENT_XML && output_settings->omit_decl)
+            {
+                // Skip <?xml version="1.0" encoding="utf-8"?>\n
+                *output_settings->output_skip = 39;
+            }
+        }
     }
 }
 
@@ -2957,7 +3043,7 @@ void trim_text_node(xmlNode *node, int flags)
 
 void trim_node(xmlNode *node, int flags)
 {
-    debug("[XMQ] trim %s\n", xml_element_type_to_string(node->type));
+    debug("xmq=", "trim %s", xml_element_type_to_string(node->type));
 
     if (is_content_node(node))
     {
@@ -3003,7 +3089,7 @@ xmlNode *merge_surrounding_text_nodes(xmlNode *node)
     // Not a hex entity.
     if (val[0] != '#' || val[1] != 'x') return node->next;
 
-    debug("[XMQ] merge hex %s chars %s\n", val, xml_element_type_to_string(node->type));
+    debug("xmq=", "merge hex %s chars %s", val, xml_element_type_to_string(node->type));
 
     UTF8Char uni;
     int uc = strtol(val+2, NULL, 16);
@@ -3019,7 +3105,7 @@ xmlNode *merge_surrounding_text_nodes(xmlNode *node)
         xmlNodeAddContentLen(prev, (xmlChar*)buf, len);
         xmlUnlinkNode(node);
         xmlFreeNode(node);
-        debug("[XMQ] merge left\n");
+        debug("xmq=", "merge left");
     }
     if (next && next->type == XML_TEXT_NODE)
     {
@@ -3028,7 +3114,7 @@ xmlNode *merge_surrounding_text_nodes(xmlNode *node)
         xmlUnlinkNode(next);
         xmlFreeNode(next);
         next = n;
-        debug("[XMQ] merge right\n");
+        debug("xmq=", "merge right");
     }
 
     return next;
@@ -3294,7 +3380,7 @@ const char *xml_element_type_to_string(xmlElementType type)
 
 void fixup_comments(XMQDoc *doq, xmlNode *node, int depth)
 {
-    debug("[XMQ] fixup comments %s|%s %s\n", indent_depth(depth), node->name, xml_element_type_to_string(node->type));
+    debug("xmq=", "fixup comments %s|%s %s", indent_depth(depth), node->name, xml_element_type_to_string(node->type));
     if (node->type == XML_COMMENT_NODE)
     {
         // An xml comment containing dle escapes for example: -␐-␐- is replaceed with ---.
@@ -3306,7 +3392,7 @@ void fixup_comments(XMQDoc *doq, xmlNode *node, int depth)
             {
                 char *from = xmq_quote_as_c((const char*)node->content, NULL, false);
                 char *to = xmq_quote_as_c(content_needed_escaping, NULL, false);
-                debug("[XMQ] fix comment \"%s\" to \"%s\"\n", from, to);
+                debug("xmq=", "fix comment \"%s\" to \"%s\"", from, to);
             }
 
             xmlNodePtr new_node = xmlNewComment((const xmlChar*)content_needed_escaping);
@@ -3334,7 +3420,7 @@ void xmq_fixup_comments_after_readin(XMQDoc *doq)
     xmlNodePtr i = doq->docptr_.xml->children;
     if (!doq || !i) return;
 
-    debug("[XMQ] fixup comments after readin\n");
+    debug("xmq=", "fixup comments after readin");
 
     while (i)
     {
@@ -3362,6 +3448,16 @@ void xmqSetStateSourceName(XMQParseState *state, const char *source_name)
         state->source_name = (char*)malloc(l+1);
         strcpy(state->source_name, source_name);
     }
+}
+
+void xmqSetPrintAllParsesIXML(XMQParseState *state, bool all_parses)
+{
+    state->ixml_all_parses = all_parses;
+}
+
+void xmqSetTryToRecoverIXML(XMQParseState *state, bool try_recover)
+{
+    state->ixml_try_to_recover = try_recover;
 }
 
 size_t calculate_buffer_size(const char *start, const char *stop, int indent, const char *pre_line, const char *post_line)
@@ -3960,18 +4056,23 @@ bool xmqParseBufferWithType(XMQDoc *doq,
 {
     bool ok = true;
 
+    if (!stop) stop = start+strlen(start);
+
     // Unicode files might lead with a byte ordering mark.
     start = skip_any_potential_bom(start, stop);
     if (!start) return false;
 
-    XMQContentType detected_ct = xmqDetectContentType(start, stop);
+    XMQContentType detected_ct = XMQ_CONTENT_UNKNOWN;
+    if (ct != XMQ_CONTENT_IXML) detected_ct = xmqDetectContentType(start, stop);
+    else ct = XMQ_CONTENT_IXML;
+
     if (ct == XMQ_CONTENT_DETECT)
     {
         ct = detected_ct;
     }
     else
     {
-        if (ct != detected_ct && ct != XMQ_CONTENT_TEXT)
+        if (ct != detected_ct && ct != XMQ_CONTENT_TEXT && ct != XMQ_CONTENT_IXML)
         {
             if (detected_ct == XMQ_CONTENT_XML && ct == XMQ_CONTENT_HTML)
             {
@@ -4004,6 +4105,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     case XMQ_CONTENT_XML: ok = xmq_parse_buffer_xml(doq, start, stop, flags); break;
     case XMQ_CONTENT_HTML: ok = xmq_parse_buffer_html(doq, start, stop, flags); break;
     case XMQ_CONTENT_JSON: ok = xmq_parse_buffer_json(doq, start, stop, implicit_root); break;
+    case XMQ_CONTENT_IXML: ok = xmq_parse_buffer_ixml(doq, start, stop, flags); break;
     case XMQ_CONTENT_TEXT: ok = xmq_parse_buffer_text(doq, start, stop, implicit_root); break;
     case XMQ_CONTENT_CLINES: ok = xmq_parse_buffer_clines(doq, start, stop); break;
     default: break;
@@ -4084,7 +4186,7 @@ bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **ou
     size_t fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    debug("[XMQ] file size %zu\n", fsize);
+    debug("xmq=", "file size %zu", fsize);
 
     buffer = (char*)malloc(fsize + 1);
     if (!buffer)
@@ -4100,12 +4202,12 @@ bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **ou
     do {
         if (n + block_size > fsize) block_size = fsize - n;
         size_t r = fread(buffer+n, 1, block_size, f);
-        debug("[XMQ] read %zu bytes total %zu\n", r, n);
+        debug("xmq=", "read %zu bytes total %zu", r, n);
         if (!r) break;
         n += r;
     } while (n < fsize);
 
-    debug("[XMQ] read total %zu bytes fsize %zu bytes\n", n, fsize);
+    debug("xmq=", "read total %zu bytes fsize %zu bytes", n, fsize);
 
     if (n != fsize) {
         rc = false;
@@ -4202,7 +4304,7 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
 
     state->implicit_root = implicit_root;
 
-    push_stack(state->element_stack, doq->docptr_.xml);
+    stack_push(state->element_stack, doq->docptr_.xml);
     // Now state->element_stack->top->data points to doq->docptr_;
     state->element_last = NULL; // Will be set when the first node is created.
     // The doc root will be set when the first element node is created.
@@ -4224,7 +4326,619 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
     return rc;
 }
 
+bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
+                           const char *start,
+                           const char *stop,
+                           int flags)
+{
+    assert(ixml_grammar->yaep_grammar_ == NULL);
 
+    bool rc = true;
+    if (!stop) stop = start+strlen(start);
+
+    XMQOutputSettings *os = xmqNewOutputSettings();
+    XMQParseCallbacks *parse = xmqNewParseCallbacks();
+    parse->magic_cookie = MAGIC_COOKIE;
+
+    XMQParseState *state = xmqNewParseState(parse, os);
+    xmqSetStateSourceName(state, xmqGetDocSourceName(ixml_grammar));
+
+    state->doq = ixml_grammar;
+    state->build_xml_of_ixml = false;
+    YaepGrammar *grammar = yaepNewGrammar();
+    YaepParseRun *run = yaepNewParseRun(grammar);
+    ixml_grammar->yaep_grammar_ = grammar;
+    ixml_grammar->yaep_parse_run_ = run;
+    ixml_grammar->yaep_parse_state_ = state;
+    if (xmqVerbose()) run->verbose = true;
+    if (xmqDebugging()) run->debug = run->verbose = true;
+    if (xmqTracing()) run->trace = run->debug = run->verbose = true;
+
+    // Lets parse the ixml source to construct a yaep grammar.
+    // This yaep grammar is cached in ixml_grammar->yaep_grammar_.
+    ixml_build_yaep_grammar((YaepParseRun*)ixml_grammar->yaep_parse_run_,
+                            (YaepGrammar*)ixml_grammar->yaep_grammar_,
+                            state,
+                            start,
+                            stop,
+                            NULL,
+                            NULL);
+
+    if (xmqStateErrno(state))
+    {
+        rc = false;
+        ixml_grammar->errno_ = xmqStateErrno(state);
+        ixml_grammar->error_ = build_error_message("%s\n", xmqStateErrorMsg(state));
+    }
+
+    // Do not free the state, it must be kept alive with the doc
+    xmqFreeParseCallbacks(parse);
+    xmqFreeOutputSettings(os);
+
+    return rc;
+}
+
+void xmq_set_yaep_grammar(XMQDoc *doc, YaepGrammar *g)
+{
+    doc->yaep_grammar_ = g;
+}
+
+YaepGrammar *xmq_get_yaep_grammar(XMQDoc *doc)
+{
+    return doc->yaep_grammar_;
+}
+
+YaepParseRun *xmq_get_yaep_parse_run(XMQDoc *doc)
+{
+    return doc->yaep_parse_run_;
+}
+
+XMQParseState *xmq_get_yaep_parse_state(XMQDoc *doc)
+{
+    return doc->yaep_parse_state_;
+}
+
+void handle_yaep_syntax_error(YaepParseRun *pr,
+                              int err_tok_num,
+                              void *err_tok_attr,
+                              int start_ignored_tok_num,
+                              void *start_ignored_tok_attr,
+                              int start_recovered_tok_num,
+                              void *start_recovered_tok_attr)
+{
+    int line = 0, col = 0;
+    find_line_col(pr->buffer_start, pr->buffer_stop, err_tok_num, &line, &col);
+
+    // source.foo:2:26: syntax error
+    printf("ixml:%d:%d: syntax error\n", line, col);
+    int start = err_tok_num - 20;
+    if (start < 0) start = 0;
+    int stop = err_tok_num + 20;
+
+    for (int i = start; i < stop && pr->buffer_start[i] != 0; ++i)
+    {
+        printf("%c", pr->buffer_start[i]);
+    }
+    printf("\n");
+    for (int i = start; i < err_tok_num; ++i) printf (" ");
+    printf("^\n");
+}
+
+const char *node_yaep_type_to_string(YaepTreeNodeType t)
+{
+    switch (t)
+    {
+    case YAEP_NIL: return "NIL";
+    case YAEP_ERROR: return "ERROR";
+    case YAEP_TERM: return "TERM";
+    case YAEP_ANODE: return "ANODE";
+    case YAEP_ALT: return "ALT";
+    default:
+        return "?";
+    }
+    return "?";
+}
+
+void collect_text(YaepTreeNode *n, MemBuffer *mb);
+
+void collect_text(YaepTreeNode *n, MemBuffer *mb)
+{
+    if (n == NULL) return;
+    if (n->type == YAEP_ANODE)
+    {
+        YaepAbstractNode *an = &n->val.anode;
+        for (int i=0; an->children[i] != NULL; ++i)
+        {
+            YaepTreeNode *nn = an->children[i];
+            collect_text(nn, mb);
+        }
+    }
+    else
+    if (n->type == YAEP_TERM)
+    {
+        YaepTerminalNode *at = &n->val.terminal;
+        if (at->mark != '-')
+        {
+            UTF8Char utf8;
+            size_t len = encode_utf8(at->code, &utf8);
+            utf8.bytes[len] = 0;
+            membuffer_append(mb, utf8.bytes);
+        }
+    }
+    else
+    {
+        assert(false);
+    }
+}
+
+void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, int depth, int index)
+{
+    if (n == NULL) return;
+    if (n->type == YAEP_ANODE)
+    {
+        YaepAbstractNode *an = &n->val.anode;
+
+        if (an != NULL && an->name != NULL && an->name[0] != '/' && an->mark != '-')
+        {
+            if (an->mark == '@')
+            {
+                // This should become an attribute.
+                MemBuffer *mb = new_membuffer();
+                collect_text(n, mb);
+                membuffer_append_null(mb);
+                xmlNewProp(node, (xmlChar*)an->name, (xmlChar*)mb->buffer_);
+                free_membuffer_and_free_content(mb);
+            }
+            else
+            {
+                // Normal node that should be generated.
+                xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)an->name, NULL);
+
+                if (node == NULL)
+                {
+                    xmlDocSetRootElement(doc, new_node);
+                }
+                else
+                {
+                    xmlAddChild(node, new_node);
+                }
+
+                for (int i=0; an->children[i] != NULL; ++i)
+                {
+                    YaepTreeNode *nn = an->children[i];
+                    generate_dom_from_yaep_node(doc, new_node, nn, depth+1, i);
+                }
+            }
+        }
+        else
+        {
+            // Skip anonymous node whose name starts with / and deleted nodes with mark=-
+            for (int i=0; an->children[i] != NULL; ++i)
+            {
+                YaepTreeNode *nn = an->children[i];
+                generate_dom_from_yaep_node(doc, node, nn, depth+1, i);
+            }
+        }
+    }
+    else if (n->type == YAEP_ALT)
+    {
+        xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)"AMBIGUOUS", NULL);
+        if (node == NULL)
+        {
+            xmlDocSetRootElement(doc, new_node);
+        }
+        else
+        {
+            xmlAddChild(node, new_node);
+        }
+
+        YaepTreeNode *alt = n;
+
+        generate_dom_from_yaep_node(doc, new_node, alt->val.alt.node, depth+1, 0);
+
+        alt = alt->val.alt.next;
+
+        while (alt && alt->type == YAEP_ALT)
+        {
+            generate_dom_from_yaep_node(doc, new_node, alt->val.alt.node, depth+1, 0);
+            alt = alt->val.alt.next;
+        }
+    }
+    else
+    if (n->type == YAEP_TERM)
+    {
+        YaepTerminalNode *at = &n->val.terminal;
+        if (at->mark != '-')
+        {
+            UTF8Char utf8;
+            size_t len = encode_utf8(at->code, &utf8);
+            utf8.bytes[len] = 0;
+
+            xmlNodePtr new_node = xmlNewDocText(doc, (xmlChar*)utf8.bytes);
+
+            if (node == NULL)
+            {
+                xmlDocSetRootElement(doc, new_node);
+            }
+            else
+            {
+                xmlAddChild(node, new_node);
+            }
+        }
+    }
+    else
+    {
+        for (int i=0; i<depth; ++i) printf("    ");
+        printf("[%d] ", index);
+        printf("WOOT %s\n", node_yaep_type_to_string(n->type));
+    }
+}
+
+bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XMQDoc *ixml_grammar, int flags)
+{
+    if (!doc || !start || !ixml_grammar) return false;
+    if (!stop) stop = start+strlen(start);
+
+    XMQParseState *state = xmq_get_yaep_parse_state(ixml_grammar);
+
+    // Now add all character terminals in the content (not yead added ) to the grammar.
+    // And rewrite charsets into rules with multiple choice shrunk the the actual usage of characters in the input.
+    scan_content_fixup_charsets(state, start, stop);
+
+    ixml_print_grammar(state);
+
+    state->yaep_i_ = hashmap_iterate(state->ixml_terminals_map);
+    int rc = yaep_read_grammar(xmq_get_yaep_parse_run(ixml_grammar),
+                               xmq_get_yaep_grammar(ixml_grammar),
+                               0, ixml_to_yaep_read_terminal, ixml_to_yaep_read_rule);
+    hashmap_free_iterator(state->yaep_i_);
+
+    if (rc != 0)
+    {
+        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+        state->error_info = "internal error, yaep did not accept generated yaep grammar";
+        printf("xmq: could not parse input using ixml grammar: %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
+        longjmp(state->error_handler, 1);
+    }
+
+    yaep_set_one_parse_flag(xmq_get_yaep_grammar(ixml_grammar),
+                            (flags & XMQ_FLAG_IXML_ALL_PARSES)?0:1);
+
+    yaep_set_error_recovery_flag(xmq_get_yaep_grammar(ixml_grammar),
+                                 (flags & XMQ_FLAG_IXML_TRY_TO_RECOVER)?1:0);
+
+    YaepParseRun *run = xmq_get_yaep_parse_run(ixml_grammar);
+    run->buffer_start = start;
+    run->buffer_stop = stop;
+    run->buffer_i = start;
+
+    YaepGrammar *grammar = xmq_get_yaep_grammar(ixml_grammar);
+    run->syntax_error = handle_yaep_syntax_error;
+
+    // Parse source content using the yaep grammar, previously generated from the ixml source.
+    rc = yaepParse(run, grammar);
+
+    if (rc)
+    {
+        printf("xmq: could not parse input using ixml grammar: %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
+        return false;
+    }
+
+    if (run->ambiguous_p && !(flags & XMQ_FLAG_IXML_ALL_PARSES))
+    {
+        fprintf(stderr, "ixml: Warning! The input can be parsed in multiple ways, ie it is ambiguous!\n");
+    }
+
+    generate_dom_from_yaep_node(doc->docptr_.xml, NULL, run->root, 0, 0);
+
+    if (run->root) yaepFreeTree(run->root, NULL, NULL);
+
+    return true;
+}
+
+bool xmqParseFileWithIXML(XMQDoc *doc, const char *file_name, XMQDoc *ixml_grammar, int flags)
+{
+    const char *buffer;
+    size_t buffer_len = 0;
+    bool ok = load_file(doc, file_name, &buffer_len, &buffer);
+
+    if (!ok) return false;
+
+    ok = xmqParseBufferWithIXML(doc, buffer, buffer+buffer_len, ixml_grammar, flags);
+
+    free((char*)buffer);
+
+    return ok;
+}
+
+char *xmqCompactQuote(const char *content)
+{
+    MemBuffer *mb = new_membuffer();
+
+    XMQOutputSettings os;
+    memset(&os, 0, sizeof(os));
+    os.compact = true;
+    os.escape_newlines = true;
+    os.output_buffer = mb;
+    os.content.writer_state = os.output_buffer;
+    os.content.write = (XMQWrite)(void*)membuffer_append_region;
+    os.error.writer_state = os.output_buffer;
+    os.error.write = (XMQWrite)(void*)membuffer_append_region;
+    os.explicit_space = " ";
+    os.explicit_tab = "\t";
+
+    XMQPrintState ps;
+    memset(&ps, 0, sizeof(ps));
+    ps.output_settings = &os;
+
+    xmlNode node;
+    memset(&node, 0, sizeof(node));
+    node.content = (xmlChar*)content;
+    print_value(&ps , &node, LEVEL_ATTR_VALUE);
+
+    membuffer_append_null(mb);
+
+    return free_membuffer_but_return_trimmed_content(mb);
+}
+
+
+XMQLineConfig *xmqNewLineConfig()
+{
+    XMQLineConfig *lc = (XMQLineConfig*)malloc(sizeof(XMQLineConfig));
+    memset(lc, 0, sizeof(XMQLineConfig));
+    return lc;
+}
+
+void xmqFreeLineConfig(XMQLineConfig *lc)
+{
+    free(lc);
+}
+
+void xmqSetLineHumanReadable(XMQLineConfig *lc, bool enabled)
+{
+    lc->human_readable_ = enabled;
+}
+
+char *xmqLineDoc(XMQLineConfig *lc, XMQDoc *doc)
+{
+    return strdup("{howdy}");
+}
+
+char *buf_vsnprintf(const char *format, va_list ap);
+char *buf_vsnprintf(const char *format, va_list ap)
+{
+    size_t buf_size = 1024;
+    char *buf = (char*)malloc(buf_size);
+
+    for (;;)
+    {
+        size_t n = vsnprintf(buf, buf_size, format, ap);
+        if (n < buf_size) break;
+        buf_size *= 2;
+        free(buf);
+        // Why not realloc? Well, we are goint to redo the printf anyway overwriting
+        // the buffer again. So why allow realloc to spend time copying the content before
+        // it is overwritten?
+        buf = (char*)malloc(buf_size);
+    }
+    return buf;
+}
+
+char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list ap);
+char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list ap)
+{
+    // Lets check that last character. We can have:
+    // 1) A complete xmq object.
+    //    debug("xmq{", "alfa=", "%d", 42, "}");
+    //    logs as: (xmq) alfa=42
+    // 2) A single string.
+    //    debug("xmq=", "size=%zu name=%s", the_size, the_name);
+    //    logs as: (xmq) size=42 name=info
+    // 3) Forgot to indicate { or =.
+    //    debug("Fix me!");
+    //    logs as: (log) Fix me!
+
+    char c = element_name[strlen(element_name)-1];
+
+    if (c != '{')
+    {
+        MemBuffer *mb = new_membuffer();
+        const char *format;
+        if ( c != '=')
+        {
+            // User forgot to indicate either { or =.
+            format = element_name;
+            membuffer_append(mb, "(log) ");
+        }
+        else
+        {
+            format = va_arg(ap, const char *);
+            membuffer_append(mb, "(");
+            membuffer_append_region(mb, element_name, element_name+strlen(element_name)-1);
+            membuffer_append(mb, ") ");
+        }
+        char *buf = buf_vsnprintf(format, ap);
+        membuffer_append(mb, buf);
+        free(buf);
+        membuffer_append_null(mb);
+        return free_membuffer_but_return_trimmed_content(mb);
+    }
+
+    MemBuffer *mb = new_membuffer();
+    membuffer_append(mb, "(");
+    membuffer_append(mb, element_name);
+    membuffer_append(mb, ") ");
+
+    char *buf = (char*)malloc(1024);
+    size_t buf_size = 1024;
+    memset(buf, 0, buf_size);
+
+    bool first = true;
+
+    for (;;)
+    {
+        const char *key = va_arg(ap, const char*);
+        if (!key) break;
+        if (*key == '}') break;
+
+        size_t kl = strlen(key);
+
+        if (!first)
+        {
+            membuffer_append(mb, " ");
+            first = false;
+        }
+
+        if (key[kl-1] != '=')
+        {
+            warning("xmq.warn=", "Warning erroneous api usage! Line printf key \"%s\" does not end with = sign!", key);
+            break;
+        }
+
+        membuffer_append_region(mb, key, key+kl-1);
+        membuffer_append(mb, ":");
+
+        const char *format = va_arg(ap, const char *);
+        for (;;)
+        {
+            size_t n = vsnprintf(buf, buf_size, format, ap);
+
+            if (n < buf_size)
+            {
+                // The generated output fitted in the allocated buffer.
+                break;
+            }
+
+            buf_size *= 2;
+            free(buf);
+            buf = (char*)malloc(buf_size);
+            memset(buf, 0, buf_size);
+        }
+        membuffer_append(mb, buf);
+    }
+
+    free(buf);
+    membuffer_append_null(mb);
+
+    return free_membuffer_but_return_trimmed_content(mb);
+}
+
+char *xmq_line_vprintf_xmq(XMQLineConfig *lc, const char *element_name, va_list ap);
+char *xmq_line_vprintf_xmq(XMQLineConfig *lc, const char *element_name, va_list ap)
+{
+    // Lets check that last character. We can have:
+    // 1) A complete xmq object.
+    //    debug("xmq.cli{", "alfa=", "%d", 42, "}");
+    //    logs as: xmq.cli{alfa=42}
+    // 2) A single string.
+    //    debug("xmq.cli=", "size=%zu name=%s", the_size, the_name);
+    //    logs as: xmq.cli='size=42 name=info'
+    // 3) Forgot to indicate { or =.
+    //    debug("Fix me!");
+    //    logs as: log='Fix me!'
+
+    char c = element_name[strlen(element_name)-1];
+
+    if (c != '{')
+    {
+        MemBuffer *mb = new_membuffer();
+        const char *format;
+        if ( c != '=')
+        {
+            // User forgot to indicate either { or =.
+            format = element_name;
+            membuffer_append(mb, "log=");
+        }
+        else
+        {
+            format = va_arg(ap, const char *);
+            membuffer_append(mb, element_name);
+        }
+        char *buf = buf_vsnprintf(format, ap);
+        char *q = xmqCompactQuote(buf);
+        free(buf);
+        membuffer_append(mb, q);
+        membuffer_append_null(mb);
+        return free_membuffer_but_return_trimmed_content(mb);
+    }
+
+    MemBuffer *mb = new_membuffer();
+    membuffer_append(mb, element_name);
+
+    char *buf = (char*)malloc(1024);
+    size_t buf_size = 1024;
+    memset(buf, 0, buf_size);
+
+    for (;;)
+    {
+        const char *key = va_arg(ap, const char*);
+        if (!key) break;
+        if (*key == '}') break;
+
+        size_t kl = strlen(key);
+        char last = membuffer_back(mb);
+        if (last != '\'' && last != '(' && last != ')'  && last != '{' && last != '}')
+        {
+            membuffer_append(mb, " ");
+        }
+
+        if (key[kl-1] != '=')
+        {
+            warning("xmq.warn=", "Warning erroneous api usage! Line printf key \"%s\" does not end with = sign!", key);
+            break;
+        }
+
+        // The key has an = sign at the end. E.g. size=
+        membuffer_append(mb, key);
+        const char *format = va_arg(ap, const char *);
+        for (;;)
+        {
+            size_t n = vsnprintf(buf, buf_size, format, ap);
+
+            if (n < buf_size)
+            {
+                // The generated output fitted in the allocated buffer.
+                break;
+            }
+
+            buf_size *= 2;
+            free(buf);
+            buf = (char*)malloc(buf_size);
+            memset(buf, 0, buf_size);
+        }
+
+        char *quote = xmqCompactQuote(buf);
+        membuffer_append(mb, quote);
+        free(quote);
+    }
+
+    free(buf);
+    membuffer_append(mb, "}");
+    membuffer_append_null(mb);
+
+    return free_membuffer_but_return_trimmed_content(mb);
+}
+
+char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap)
+{
+    if (lc->human_readable_)
+    {
+        return xmq_line_vprintf_hr(lc, element_name, ap);
+    }
+    return xmq_line_vprintf_xmq(lc, element_name, ap);
+}
+
+char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
+{
+    va_list ap;
+    va_start(ap, element_name);
+
+    char *v = xmqLineVPrintf(lc, element_name, ap);
+
+    va_end(ap);
+
+    return v;
+}
 
 #include"parts/always.c"
 #include"parts/colors.c"
@@ -4234,10 +4948,13 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
 #include"parts/hashmap.c"
 #include"parts/stack.c"
 #include"parts/membuffer.c"
+#include"parts/ixml.c"
 #include"parts/json.c"
 #include"parts/text.c"
 #include"parts/utf8.c"
+#include"parts/vector.c"
 #include"parts/xml.c"
 #include"parts/xmq_internals.c"
 #include"parts/xmq_parser.c"
 #include"parts/xmq_printer.c"
+#include"parts/yaep.c"

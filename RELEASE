@@ -1,2 +1,11 @@
-Release artifacts for Posix platformas are now tar.gz archives with a single executable binary.
+
+XMQ now supports invisible XML. https://invisiblexml.org/
+
+Try:
+
+xmq --ixml=grammar.ixml input_file
+
+or for quicker testing, the input can be provided as an argument:
+
+xmq --ixml=grammar.ixml -i 'text to parse'
 
