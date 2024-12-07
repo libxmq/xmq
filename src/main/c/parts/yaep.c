@@ -5310,8 +5310,11 @@ int yaep_read_grammar(YaepParseRun *pr,
         fprintf(stderr, "(ixml) yaep grammar:\n");
         for(rule = ps->run.grammar->rulestorage_ptr->first_rule; rule != NULL; rule = rule->next)
 	{
-            fprintf(stderr, "  ");
-            rule_print(ps, stderr, rule, true);
+            if (rule->lhs->repr[0] != '$' && !ps->run.debug)
+            {
+                fprintf(stderr, "  ");
+                rule_print(ps, stderr, rule, true);
+            }
 	}
         fprintf(stderr, "\n");
         /* Print symbol sets.*/
