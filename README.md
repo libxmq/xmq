@@ -84,9 +84,9 @@ url   = https://foo/bar?x=123
 msg   = 'Welcome to the app!'
 ```
 
-# Invisible XML can be used to convert any input into XML.
+# Use IXML to convert any input into XML/JSON/XMQ!
 
-You write a grammar for dates and store this into dates.ixml
+Write an ixml grammar for dates and store this into dates.ixml
 ```
 date: day, -" ", month, -" ", year.
 day: digit;
@@ -97,7 +97,7 @@ month: "January"; "February"; "March"; "April"; "May"; "June";
 year: digit, digit, digit, digit
 ```
 
-Then you run `xmq --ixml=dates.ixml -i '22 November 2024`
+Then you run `xmq --ixml=dates.ixml -i '22 November 2024'`
 and you will get the output:
 ```
 date {
@@ -107,7 +107,7 @@ date {
 }
 ```
 
-or if you prefer json: xmq --ixml=dates.ixml -i '22 November 2024 to-json | jq .`
+or if you prefer json: xmq --ixml=dates.ixml -i '22 November 2024' to-json | jq .`
 ```
 {
   "_": "date",
@@ -117,7 +117,7 @@ or if you prefer json: xmq --ixml=dates.ixml -i '22 November 2024 to-json | jq .
 }
 ```
 
-or if XML: xmq --ixml=dates.ixml -i '22 November 2024 to-xml` (manually pretty printed)
+or if XML: xmq --ixml=dates.ixml -i '22 November 2024' to-xml` (manually pretty printed)
 ```
 <date>
     <day>22</day>
