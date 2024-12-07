@@ -1708,14 +1708,14 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
                 tmark = '-';
             }
 
-            IXMLCharsetPart *p = nt->charset->first;
-            while (p)
+            if (include)
             {
-                if (!p->category[0])
+                // Including...
+                for (IXMLCharsetPart *p = nt->charset->first; p; p = p->next)
                 {
-                    // Not a category, test a range.
-                    if (include)
+                    if (!p->category[0])
                     {
+                        // Not a category, test a range.
                         // All characters within the range that have been used
                         // should be tested for.
                         for (int c = p->from; c <= p->to; ++c)
@@ -1728,29 +1728,14 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
                     }
                     else
                     {
-                        // All characters used, that are not in the range
-                        // should be tested for.
-                        for (int c = 0; c <= 0x10ffff; ++c)
+                        int *cat = NULL;
+                        size_t cat_len = 0;
+                        bool ok = unicode_category(p->category, &cat, &cat_len);
+                        if (!ok)
                         {
-                            if (used[c] && (c < p->from || c > p->to))
-                            {
-                                add_single_char_rule(state, nt, c, '-', tmark);
-                            }
+                            fprintf(stderr, "Invalid unicode category: %s\n", p->category);
+                            exit(1);
                         }
-                    }
-                }
-                else
-                {
-                    int *cat = NULL;
-                    size_t cat_len = 0;
-                    bool ok = unicode_category(p->category, &cat, &cat_len);
-                    if (!ok)
-                    {
-                        fprintf(stderr, "Invalid unicode category: %s\n", p->category);
-                        exit(1);
-                    }
-                    if (include)
-                    {
                         // All characters in the category that have been used
                         // should be tested for.
                         for (size_t i = 0; i < cat_len; ++i)
@@ -1762,26 +1747,57 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
                             }
                         }
                     }
-                    else
+                }
+            }
+            else
+            {
+                // Excluding....
+                // Scan all actually used characters in the input content.
+                for (int c = 0; c <= 0x10ffff; ++c)
+                {
+                    if (!used[c]) continue;
+                    bool should_add = true;
+                    for (IXMLCharsetPart *p = nt->charset->first; p; p = p->next)
                     {
-                        // All characters used, that are not in the category
-                        // should be tested for.
-                        for (int c = 0; c <= 0x10ffff; ++c)
+                        if (p->category[0])
                         {
-                            if (used[c])
+                            int *cat = NULL;
+                            size_t cat_len = 0;
+                            bool ok = unicode_category(p->category, &cat, &cat_len);
+                            if (!ok)
                             {
-                                if (!category_find(c, cat, cat_len))
-                                {
-                                    add_single_char_rule(state, nt, c, '-', tmark);
-                                }
+                                fprintf(stderr, "Invalid unicode category: %s\n", p->category);
+                                exit(1);
+                            }
+                            // Is the used character in the category set?
+                            if (category_find(c, cat, cat_len))
+                            {
+                                // Yes it is.
+                                // Do not add the used character! We do not want to match against
+                                // it since it is excluded.
+                                should_add = false;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            // Is the used character in the range?
+                            if (c >= p->from && c <= p->to)
+                            {
+                                // Yes it is.
+                                // Do not add the used character! We do not want to match against
+                                // it since it is excluded.
+                                should_add= false;
+                                break;
                             }
                         }
                     }
+                    if (should_add)
+                    {
+                        add_single_char_rule(state, nt, c, '-', tmark);
+                    }
                 }
-                p = p->next;
             }
-            // Mark the rule to not be sent to yaep, since it is empty.
-            //nt->default_mark = 'X';
         }
     }
 

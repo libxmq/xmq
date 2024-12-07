@@ -1,0 +1,24 @@
+START
+stringus = "{", string++",", "}".
+string  = '"', char+, '"'.
+char    = ~['"'; "\"].
+INPUT
+{"n","n"}
+OUTPUT
+stringus {
+    '{'
+    string {
+        '"'
+        char = n
+        '"'
+    }
+    ','
+    string {
+        '"'
+        char = n
+        '"'
+    }
+    '}'
+}
+END
+ARGS=
