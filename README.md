@@ -218,27 +218,32 @@ make
 
 ## How to install the gnulinux binary executable
 
-Download the xmq-gnulinux.gz file.
+Download the xmq-gnu-linux-release.tar.gz file.
 ```
 cd Downloads
-mv xmq-gnulinux xmq
-chmod a+x xmq
+tar xzf xmq-gnu-linux-release.tar.gz
 mkdir -p ~/bin
 mv xmq ~/bin
 ```
 Restart your shell and xmq should be in your path.
 
-## How to install the macosx binary executable
+## How to install the macos binary executable
 
-Download the xmq-macosx.gz file.
+Download the xmq-macos-release.tar.gz file.
 ```
 cd Downloads
-mv xmq-macosx xmq
-chmod a+x xmq
+tar xzf xmq-macos-release.tar.gz
 xattr -d com.apple.quarantine xmq
 mkdir -p ~/bin
 mv xmq ~/bin
 ```
 Restart your shell and xmq should be in your path.
+
+## How to install the windows binary executable
+
+Download the xmq-windows-release.msi and install it.
+
+You will find the xmq.exe and its supporting dlls here: `C:\Program Files (x86)\libxmq\xmq`
+Add this dir to your PATH: `PATH=%PATH%;"C:\Program Files (x86)\libxmq\xmq"`
 
 ## Help

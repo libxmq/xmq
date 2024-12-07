@@ -1,11 +1,17 @@
 
-You can read clines input with --clines.
-You can add content using a path,
-e.g. quickest way to build a web page:
+XMQ now supports invisible XML. https://invisiblexml.org/
 
-xmq -z add "!doctype=html" add /html/body/h1=Welcome to-html > index.html
+Try:
 
-The command save is now called save-to.
+xmq --ixml=grammar.ixml input_file
+
+or for quicker testing, the input can be provided as an argument:
+
+xmq --ixml=grammar.ixml -i 'text to parse'
+
+2024-11-26: Version 2.18.0
+
+Release artifacts for Posix platformas are now tar.gz archives with a single executable binary.
 
 2024-11-24: Version 2.17.0
 
