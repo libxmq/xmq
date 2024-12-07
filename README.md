@@ -1,4 +1,4 @@
-# XMQ/HTMQ | Convert xml/html to a human readable/editable format and back.
+# XMQ/HTMQ | Convert xml/html to a human readable/editable format and back. Also parse any content using an Invisible XML grammar (IXML).
 
 Homepage [https://libxmq.org](https://libxmq.org)
 
@@ -83,6 +83,50 @@ count = 123
 url   = https://foo/bar?x=123
 msg   = 'Welcome to the app!'
 ```
+
+# Invisible XML can be used to convert any input into XML.
+
+You write a grammar for dates and store this into dates.ixml
+```
+date: day, -" ", month, -" ", year.
+day: digit;
+     digit, digit.
+-digit: "0"; "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8"; "9".
+month: "January"; "February"; "March"; "April"; "May"; "June";
+       "July"; "August"; "September"; "October"; "November"; "December".
+year: digit, digit, digit, digit
+```
+
+Then you run `xmq --ixml=dates.ixml -i '22 November 2024`
+and you will get the output:
+```
+date {
+    day   = 22
+    month = November
+    year  = 2024
+}
+```
+
+or if you prefer json: xmq --ixml=dates.ixml -i '22 November 2024 to-json | jq .`
+```
+{
+  "_": "date",
+  "day": 22,
+  "month": "November",
+  "year": 2024
+}
+```
+
+or if XML: xmq --ixml=dates.ixml -i '22 November 2024 to-xml` (manually pretty printed)
+```
+<date>
+    <day>22</day>
+    <month>November</month>
+    <year>2024</year>
+</date>
+```
+
+Check out [https://invisiblexml.org/](https://invisiblexml.org/) for more information.
 
 # The xmq cli command
 
