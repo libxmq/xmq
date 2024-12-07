@@ -1,0 +1,9 @@
+START
+json: "{", S, "}".
+-S: -[#30;" _"]*.
+INPUT
+{  __     }
+OUTPUT
+json = '{}'
+END
+ARGS=

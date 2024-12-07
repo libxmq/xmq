@@ -123,7 +123,7 @@ void parse_ixml_alt(XMQParseState *state);
 void parse_ixml_alts(XMQParseState *state);
 void parse_ixml_charset(XMQParseState *state);
 void parse_ixml_comment(XMQParseState *state);
-void parse_ixml_encoded(XMQParseState *state);
+void parse_ixml_encoded(XMQParseState *state, bool add_terminal);
 void parse_ixml_factor(XMQParseState *state);
 void parse_ixml_group(XMQParseState *state);
 void parse_ixml_hex(XMQParseState *state, int *value);
@@ -644,10 +644,10 @@ void parse_ixml_charset(XMQParseState *state)
         }
         else if (is_ixml_encoded_start(state))
         {
-            parse_ixml_encoded(state);
+            parse_ixml_encoded(state, false);
             new_ixml_charset_part(state->ixml_charset,
-                                  state->ixml_charset_from,
-                                  state->ixml_charset_from,
+                                  state->ixml_encoded,
+                                  state->ixml_encoded,
                                   "");
         }
         else if (is_ixml_code_start(state))
@@ -732,7 +732,7 @@ void parse_ixml_comment(XMQParseState *state)
     IXML_DONE(comment, state);
 }
 
-void parse_ixml_encoded(XMQParseState *state)
+void parse_ixml_encoded(XMQParseState *state, bool add_terminal)
 {
     IXML_STEP(encoded, state);
     ASSERT(is_ixml_encoded_start(state));
@@ -764,10 +764,13 @@ void parse_ixml_encoded(XMQParseState *state)
 
     parse_ixml_whitespace(state);
 
-    char buffer[16];
-    snprintf(buffer, 15, "#%x", value);
+    if (add_terminal)
+    {
+        char buffer[16];
+        snprintf(buffer, 15, "#%x", value);
 
-    add_yaep_tmp_term_terminal(state, strdup(buffer), value);
+        add_yaep_tmp_term_terminal(state, strdup(buffer), value);
+    }
 
     IXML_DONE(encoded, state);
 }
@@ -921,7 +924,7 @@ void parse_ixml_insertion(XMQParseState *state)
     }
     else if (is_ixml_encoded_start(state))
     {
-        parse_ixml_encoded(state);
+        parse_ixml_encoded(state, true);
     }
     else
     {
@@ -946,7 +949,7 @@ void parse_ixml_literal(XMQParseState *state)
     }
     else
     {
-        parse_ixml_encoded(state);
+        parse_ixml_encoded(state, true);
     }
 
     IXML_DONE(literal, state);
@@ -1095,7 +1098,7 @@ void parse_ixml_range(XMQParseState *state)
     }
     else
     {
-        parse_ixml_encoded(state);
+        parse_ixml_encoded(state, false);
         state->ixml_charset_from = state->ixml_encoded;
     }
     parse_ixml_whitespace(state);
@@ -1115,7 +1118,7 @@ void parse_ixml_range(XMQParseState *state)
     }
     else if (is_ixml_encoded_start(state))
     {
-        parse_ixml_encoded(state);
+        parse_ixml_encoded(state, false);
         state->ixml_charset_to = state->ixml_encoded;
     }
     else
