@@ -1,0 +1,12 @@
+START
+dutta : X, Y.
+X    : 'xx'.
+Y    : #79.
+INPUT
+xxy
+OUTPUT
+dutta {
+    X = xx
+    Y = y
+}
+END

@@ -1,0 +1,19 @@
+START
+S = X , Y.
+X = 'a', 'b' | 'a'.
+Y = 'b', 'c' | 'c'.
+INPUT
+abc
+OUTPUT
+AMBIGUOUS {
+    S {
+        X = ab
+        Y = c
+    }
+    S {
+        X = a
+        Y = bc
+    }
+}
+END
+ARGS=--ixml-all-parses

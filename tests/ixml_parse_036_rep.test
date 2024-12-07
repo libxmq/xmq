@@ -1,0 +1,8 @@
+START
+A: 'x', 'a'**'b'.
+INPUT
+xabababa
+OUTPUT
+A = xabababa
+END
+ARGS=

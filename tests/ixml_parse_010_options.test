@@ -1,0 +1,14 @@
+START
+simple : '1' , A? , B? , '2'.
+A: 'a' | 'A'.
+B: 'b' | 'B'.
+INPUT
+1ab2
+OUTPUT
+simple {
+    '1'
+    A = a
+    B = b
+    '2'
+}
+END

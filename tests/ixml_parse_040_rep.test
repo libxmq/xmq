@@ -1,0 +1,14 @@
+START
+sentence = word++s, s?.
+word = [Ll]+.
+-s = -[' ';#a].
+INPUT
+hej hopp
+
+OUTPUT
+sentence {
+    word = hej
+    word = hopp
+}
+END
+ARGS=

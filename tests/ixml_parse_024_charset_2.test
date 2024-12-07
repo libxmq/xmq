@@ -1,0 +1,9 @@
+START
+S = A, A, A.
+-A = ['a'-'z'].
+INPUT
+abc
+OUTPUT
+S = abc
+END
+ARGS=

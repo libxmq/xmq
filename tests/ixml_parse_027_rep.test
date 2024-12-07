@@ -1,0 +1,13 @@
+START
+S = r, r.
+r = 'a'.
+-r = 'b'.
+INPUT
+ab
+OUTPUT
+S {
+    r = a
+    'b'
+}
+END
+ARGS=

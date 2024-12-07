@@ -1,0 +1,11 @@
+START
+simple : A | B.
+A: 'a' | 'A'.
+B: 'b' | 'B'.
+INPUT
+B
+OUTPUT
+simple {
+    B = B
+}
+END

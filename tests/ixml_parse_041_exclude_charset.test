@@ -1,0 +1,8 @@
+START
+numero = ~[Ll]+.
+INPUT
+12345567789
+OUTPUT
+numero = 12345567789
+END
+ARGS=

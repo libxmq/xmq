@@ -1,0 +1,8 @@
+START
+simple : -A, -'2'.
+A: 'a' | 'b'.
+INPUT
+a2
+OUTPUT
+simple = a
+END

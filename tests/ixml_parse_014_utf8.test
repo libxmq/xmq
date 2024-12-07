@@ -1,0 +1,17 @@
+START
+simple : A, '2'.
+A: ( A, '+', 'ä' | 'ä').
+INPUT
+ä+ä+ä2
+OUTPUT
+simple {
+    A {
+        A {
+            A = ä
+            '+ä'
+        }
+        '+ä'
+    }
+    '2'
+}
+END

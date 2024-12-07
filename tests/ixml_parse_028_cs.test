@@ -1,0 +1,9 @@
+START
+S = r+.
+-r = [ "a"-"z"; "0"-"9" ].
+INPUT
+aaz90a0d9
+OUTPUT
+S = aaz90a0d9
+END
+ARGS=

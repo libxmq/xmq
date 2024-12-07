@@ -1,0 +1,7 @@
+expr(plus = +)
+{
+    open  = '('
+    left  = a
+    right = b
+    close = ')'
+}

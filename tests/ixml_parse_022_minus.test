@@ -1,0 +1,14 @@
+START
+s = | -s, ws, string.
+string=-'"', content, -'"'.
+-content= | content, -lc.
+-ws= | ws, -' '.
+lc=' ' | 'a' | 'b' | 'c'.
+INPUT
+"a b c"
+OUTPUT
+s {
+    string = 'a b c'
+}
+END
+ARGS=

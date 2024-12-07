@@ -1,0 +1,19 @@
+expression {
+    prod {
+        number = 234
+        '×'
+        bracketed {
+            '('
+            sum {
+                name = bbbb
+                '+'
+                name = cccc
+                '+'
+                name = dddd
+            }
+            ')'
+        }
+        '×'
+        number = 12
+    }
+}

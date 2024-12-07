@@ -1,0 +1,8 @@
+START
+S = 't'+, ' '+, 't'+.
+INPUT
+ttttt  t
+OUTPUT
+S = 'ttttt  t'
+END
+ARGS=

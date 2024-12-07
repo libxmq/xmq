@@ -1,0 +1,8 @@
+START
+S = [Ll], -[Lu].
+INPUT
+cC
+OUTPUT
+S = c
+END
+ARGS=

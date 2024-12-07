@@ -1,0 +1,8 @@
+START
+stringus = '"', ~['"']+, '"'.
+INPUT
+"abczaadbcbbcbc123_"
+OUTPUT
+stringus = '"abczaadbcbbcbc123_"'
+END
+ARGS=
