@@ -1,0 +1,8 @@
+START
+stringus = '"', ~[Ll]+, '"', -[#a; Zs]*.
+INPUT
+"😀"
+OUTPUT
+stringus = '"😀"'
+END
+ARGS=
