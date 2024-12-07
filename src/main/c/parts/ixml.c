@@ -1667,8 +1667,8 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
     const char *i = start;
     // We allocate a byte for every possible unicode. Yes, a bit excessive, 1 megabyte. Can be fixed though.
     // 17*65536 = 0x11000 = 1 MB
-    char *used = (char*)malloc(0x11000);
-    memset(used, 0, 0x11000);
+    char *used = (char*)malloc(0x110000);
+    memset(used, 0, 0x110000);
 
     while (i < stop)
     {
@@ -1698,25 +1698,44 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
     for (size_t i = 0; i < state->ixml_non_terminals->size; ++i)
     {
         IXMLNonTerminal *nt = (IXMLNonTerminal*)vector_element_at(state->ixml_non_terminals, i);
-        char tmark = 0;
-        if ((nt->name[0] == '[' && nt->name[1] == '-') ||
-            (nt->name[1] == '[' && nt->name[2] == '-'))
-        {
-            tmark = '-';
-        }
         if (nt->charset)
         {
+            bool include = nt->name[0] != '~';
+            char tmark = 0;
+            if ((nt->name[0] == '[' && nt->name[1] == '-') ||
+                (nt->name[1] == '[' && nt->name[2] == '-'))
+            {
+                tmark = '-';
+            }
+
             IXMLCharsetPart *p = nt->charset->first;
             while (p)
             {
                 if (!p->category[0])
                 {
-                    // Add all from to.
-                    for (int c = p->from; c <= p->to; ++c)
+                    // Not a category, test a range.
+                    if (include)
                     {
-                        if (c >= 0 && c <= 0x10ffff &&  used[c])
+                        // All characters within the range that have been used
+                        // should be tested for.
+                        for (int c = p->from; c <= p->to; ++c)
                         {
-                            add_single_char_rule(state, nt, c, '-', tmark);
+                            if (c >= 0 && c <= 0x10ffff && used[c])
+                            {
+                                add_single_char_rule(state, nt, c, '-', tmark);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // All characters used, that are not in the range
+                        // should be tested for.
+                        for (int c = 0; c <= 0x10ffff; ++c)
+                        {
+                            if (used[c] && (c < p->from || c > p->to))
+                            {
+                                add_single_char_rule(state, nt, c, '-', tmark);
+                            }
                         }
                     }
                 }
@@ -1730,12 +1749,32 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
                         fprintf(stderr, "Invalid unicode category: %s\n", p->category);
                         exit(1);
                     }
-                    for (size_t i = 0; i < cat_len; ++i)
+                    if (include)
                     {
-                        int c = cat[i];
-                        if (c >= 0 && c <= 0x10ffff &&  used[c])
+                        // All characters in the category that have been used
+                        // should be tested for.
+                        for (size_t i = 0; i < cat_len; ++i)
                         {
-                            add_single_char_rule(state, nt, c, '-', tmark);
+                            int c = cat[i];
+                            if (c >= 0 && c <= 0x10ffff && used[c])
+                            {
+                                add_single_char_rule(state, nt, c, '-', tmark);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // All characters used, that are not in the category
+                        // should be tested for.
+                        for (int c = 0; c <= 0x10ffff; ++c)
+                        {
+                            if (used[c])
+                            {
+                                if (!category_find(c, cat, cat_len))
+                                {
+                                    add_single_char_rule(state, nt, c, '-', tmark);
+                                }
+                            }
                         }
                     }
                 }
