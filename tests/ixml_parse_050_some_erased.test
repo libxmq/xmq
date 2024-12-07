@@ -1,0 +1,8 @@
+START
+alfa: '0'++-','.
+INPUT
+0,0,0,0
+OUTPUT
+alfa = 0000
+END
+ARGS=
