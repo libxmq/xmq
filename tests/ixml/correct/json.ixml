@@ -20,7 +20,7 @@ escape: ['"\/bfnrt'];
 hex: digit; ["A"-"F"; "a"-"f"].
 number: int, frac, exp.
 int: "-"?, digit;
-     "-"?, onenine, digit*.
+     "-"?, onenine, digit+.
 digit: ["0"-"9"].
 onenine: ["1"-"9"].
 frac: (".", digit+)?.
