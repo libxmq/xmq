@@ -4124,7 +4124,9 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
     assert(node != NULL);
     trans_visit_node = visit_node(ps, node);
     if (trans_visit_node->num >= 0)
+    {
         return;
+    }
     trans_visit_node->num = -trans_visit_node->num - 1;
     if (ps->run.debug) fprintf(f, "%7d: ", trans_visit_node->num);
     switch(node->type)
@@ -4147,7 +4149,10 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
 	{
             fprintf(f, "ABSTRACT: %c%s(", node->val.anode.mark?node->val.anode.mark:' ', node->val.anode.name);
             for(i = 0;(child = node->val.anode.children[i]) != NULL; i++)
+            {
                 fprintf(f, " %d", canon_node_id(visit_node(ps, child)->num));
+            }
+            fprintf(f, ")\n");
 	}
         else
 	{
@@ -4180,8 +4185,10 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
                 fprintf(f, "\";\n");
 	    }
 	}
-        for(i = 0;(child = node->val.anode.children[i]) != NULL; i++)
+        for (i = 0;(child = node->val.anode.children[i]) != NULL; i++)
+        {
             print_yaep_node(ps, f, child);
+        }
         break;
     case YAEP_ALT:
         if (ps->run.debug)
@@ -4222,13 +4229,17 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
 	    }
             fprintf(f, "\";\n");
             if (node->val.alt.next != NULL)
+            {
                 fprintf(f, "  \"%d: ALT\" -> \"%d: ALT\";\n",
                         trans_visit_node->num,
                         canon_node_id(visit_node(ps, node->val.alt.next)->num));
+            }
 	}
         print_yaep_node(ps, f, node->val.alt.node);
         if (node->val.alt.next != NULL)
+        {
             print_yaep_node(ps, f, node->val.alt.next);
+        }
         break;
     default:
         assert(false);
@@ -4238,9 +4249,10 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)
 /* The following function prints parse tree with ROOT.*/
 static void print_parse(YaepParseState *ps, FILE* f, YaepTreeNode*root)
 {
-    ps->map_node_to_visit =
-        create_hash_table(ps->run.grammar->alloc, ps->input_len* 2, trans_visit_node_hash,
-                           trans_visit_node_eq);
+    ps->map_node_to_visit = create_hash_table(ps->run.grammar->alloc,
+                                              ps->input_len* 2,
+                                              trans_visit_node_hash,
+                                              trans_visit_node_eq);
 
     ps->num_nodes_visits = 0;
     OS_CREATE(ps->node_visits_os, ps->run.grammar->alloc, 0);

@@ -4478,22 +4478,13 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
     {
         YaepAbstractNode *an = &n->val.anode;
 
-        if (an != NULL && an->name != NULL && an->name[0] != '/' && an->mark != '-')
+        if (an != NULL && an->name != NULL)
         {
-            if (an->mark == '@')
+            if (an->name[0] == '|' && an->name[1] == '+')
             {
-                // This should become an attribute.
-                MemBuffer *mb = new_membuffer();
-                collect_text(n, mb);
-                membuffer_append_null(mb);
-                xmlNewProp(node, (xmlChar*)an->name, (xmlChar*)mb->buffer_);
-                free_membuffer_and_free_content(mb);
-            }
-            else
-            {
-                // Normal node that should be generated.
-                xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)an->name, NULL);
-
+                // The content to be inserted has been encoded in the rule name.
+                // A hack yes. Does it work? Yes!
+                xmlNodePtr new_node = xmlNewDocText(doc, (xmlChar*)an->name+2);
                 if (node == NULL)
                 {
                     xmlDocSetRootElement(doc, new_node);
@@ -4502,21 +4493,47 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
                 {
                     xmlAddChild(node, new_node);
                 }
+            }
+            else if (an->mark != '-')
+            {
+                if (an->mark == '@')
+                {
+                    // This should become an attribute.
+                    MemBuffer *mb = new_membuffer();
+                    collect_text(n, mb);
+                    membuffer_append_null(mb);
+                    xmlNewProp(node, (xmlChar*)an->name, (xmlChar*)mb->buffer_);
+                    free_membuffer_and_free_content(mb);
+                }
+                else
+                {
+                    // Normal node that should be generated.
+                    xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)an->name, NULL);
 
+                    if (node == NULL)
+                    {
+                        xmlDocSetRootElement(doc, new_node);
+                    }
+                    else
+                    {
+                        xmlAddChild(node, new_node);
+                    }
+
+                    for (int i=0; an->children[i] != NULL; ++i)
+                    {
+                        YaepTreeNode *nn = an->children[i];
+                        generate_dom_from_yaep_node(doc, new_node, nn, depth+1, i);
+                    }
+                }
+            }
+            else
+            {
+                // Skip anonymous node whose name starts with / and deleted nodes with mark=-
                 for (int i=0; an->children[i] != NULL; ++i)
                 {
                     YaepTreeNode *nn = an->children[i];
-                    generate_dom_from_yaep_node(doc, new_node, nn, depth+1, i);
+                    generate_dom_from_yaep_node(doc, node, nn, depth+1, i);
                 }
-            }
-        }
-        else
-        {
-            // Skip anonymous node whose name starts with / and deleted nodes with mark=-
-            for (int i=0; an->children[i] != NULL; ++i)
-            {
-                YaepTreeNode *nn = an->children[i];
-                generate_dom_from_yaep_node(doc, node, nn, depth+1, i);
             }
         }
     }

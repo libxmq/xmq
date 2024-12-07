@@ -81,6 +81,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 #define ASSERT(x) {}
 #endif
 
+void add_insertion_rule(XMQParseState *state, const char *content);
+void add_single_char_rule(XMQParseState *state, IXMLNonTerminal *nt, int uc, char mark, char tmark);
+
 bool is_ixml_eob(XMQParseState *state);
 bool is_ixml_alias_start(XMQParseState *state);
 bool is_ixml_alt_start(XMQParseState *state);
@@ -920,11 +923,29 @@ void parse_ixml_insertion(XMQParseState *state)
     {
         int *content = NULL;
         parse_ixml_string(state, &content);
+        size_t len;
+        for (len = 0; content[len]; ++len);
+        // If all require 4 bytes of utf8, then this is the max length.
+        char *buf = malloc(len*4 + 1);
+        size_t offset = 0;
+        for (size_t i = 0; i < len; ++i)
+        {
+            UTF8Char c;
+            size_t l = encode_utf8(content[i], &c);
+            strncpy(buf+offset, c.bytes, l);
+            offset += l;
+        }
+        buf[offset] = 0;
+        add_insertion_rule(state, buf);
+        free(buf);
         free(content);
     }
     else if (is_ixml_encoded_start(state))
     {
         parse_ixml_encoded(state, true);
+        UTF8Char c;
+        encode_utf8(state->ixml_encoded, &c);
+        add_insertion_rule(state, c.bytes);
     }
     else
     {
@@ -1645,7 +1666,6 @@ void add_yaep_tmp_term_terminal(XMQParseState *state, char *name, int code)
     vector_push_back(state->ixml_tmp_terminals, t);
 }
 
-void add_single_char_rule(XMQParseState *state, IXMLNonTerminal *nt, int uc, char mark, char tmark);
 void add_single_char_rule(XMQParseState *state, IXMLNonTerminal *nt, int uc, char mark, char tmark)
 {
     IXMLRule *rule = new_ixml_rule();
@@ -1660,6 +1680,23 @@ void add_single_char_rule(XMQParseState *state, IXMLNonTerminal *nt, int uc, cha
     state->ixml_rule = rule; // FIXME this is a bit ugly.
     add_yaep_tmp_terminals_to_rule(state, rule);
     free_yaep_tmp_terminals(state);
+}
+
+void add_insertion_rule(XMQParseState *state, const char *content)
+{
+    IXMLRule *rule = new_ixml_rule();
+    // Generate a name like |+.......
+    char *name = malloc(strlen(content)+3);
+    name[0] = '|';
+    name[1] = '+';
+    strcpy(name+2, content);
+    rule->rule_name->name = name;
+    rule->mark = ' ';
+    vector_push_back(state->ixml_rules, rule);
+
+    IXMLNonTerminal *nt = copy_ixml_nonterminal(rule->rule_name);
+    add_yaep_nonterminal(state, nt);
+    add_yaep_term_to_rule(state, 0, NULL, nt);
 }
 
 void scan_content_fixup_charsets(XMQParseState *state, const char *start, const char *stop)

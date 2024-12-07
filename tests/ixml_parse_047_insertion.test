@@ -1,0 +1,9 @@
+START
+alfa: A, +"xy", A.
+-A: 'a'.
+INPUT
+aa
+OUTPUT
+alfa = axya
+END
+ARGS=
