@@ -1,0 +1,12 @@
+START
+alfa: A, -'abc', A.
+A: 'x'.
+INPUT
+xabcx
+OUTPUT
+alfa {
+    A = x
+    A = x
+}
+END
+ARGS=

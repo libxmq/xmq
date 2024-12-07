@@ -163,7 +163,7 @@ void add_yaep_terminal(XMQParseState *state, IXMLTerminal *terminal);
 void add_yaep_nonterminal(XMQParseState *state, IXMLNonTerminal *nonterminal);
 void add_yaep_tmp_term_terminal(XMQParseState *state, char *name, int code);
 // Store all state->ixml_tmp_terminals on the rule rhs.
-void add_yaep_tmp_terminals_to_rule(XMQParseState *state, IXMLRule *rule);
+void add_yaep_tmp_terminals_to_rule(XMQParseState *state, IXMLRule *rule, char mark);
 
 void do_ixml(XMQParseState *state);
 void do_ixml_comment(XMQParseState *state, const char *start, const char *stop);
@@ -807,14 +807,14 @@ void parse_ixml_factor(XMQParseState *state)
                 state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
 
                 // Add the terminals to the inner group/rule.
-                add_yaep_tmp_terminals_to_rule(state, state->ixml_rule);
+                add_yaep_tmp_terminals_to_rule(state, state->ixml_rule, state->ixml_mark);
 
                 // Pop back out.
                 state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
             }
             else
             {
-                add_yaep_tmp_terminals_to_rule(state, state->ixml_rule);
+                add_yaep_tmp_terminals_to_rule(state, state->ixml_rule, state->ixml_mark);
             }
         }
 
@@ -1676,9 +1676,8 @@ void add_single_char_rule(XMQParseState *state, IXMLNonTerminal *nt, int uc, cha
     snprintf(buffer, 15, "#%x", uc);
     allocate_yaep_tmp_terminals(state);
     add_yaep_tmp_term_terminal(state, strdup(buffer), uc);
-    state->ixml_mark = tmark;
     state->ixml_rule = rule; // FIXME this is a bit ugly.
-    add_yaep_tmp_terminals_to_rule(state, rule);
+    add_yaep_tmp_terminals_to_rule(state, rule, tmark);
     free_yaep_tmp_terminals(state);
 }
 
@@ -1841,7 +1840,7 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
     free(used);
 }
 
-void add_yaep_tmp_terminals_to_rule(XMQParseState *state, IXMLRule *rule)
+void add_yaep_tmp_terminals_to_rule(XMQParseState *state, IXMLRule *rule, char mark)
 {
     for (size_t i = 0; i < state->ixml_tmp_terminals->size; ++i)
     {
@@ -1859,7 +1858,7 @@ void add_yaep_tmp_terminals_to_rule(XMQParseState *state, IXMLRule *rule)
             // pointer the already stored termina to the rule.
             free_ixml_terminal(te);
         }
-        add_yaep_term_to_rule(state, state->ixml_mark, t, NULL);
+        add_yaep_term_to_rule(state, mark, t, NULL);
         state->ixml_mark = 0;
         state->ixml_tmp_terminals->elements[i] = NULL;
     }
