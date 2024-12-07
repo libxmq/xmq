@@ -1,0 +1,15 @@
+address {
+    person {
+        given = Steven
+        ' '
+        surname = Pemberton
+    }
+    street {
+        no = 21
+        ' '
+        streetname = 'Sandridge Road'
+    }
+    city     = 'St Albans '
+    postcode = 'AL1 4BY'
+    country  = 'United Kingdom'
+}

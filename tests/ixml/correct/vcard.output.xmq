@@ -1,0 +1,57 @@
+card(name    = VCARD
+     endname = VCARD)
+{
+    property(name = VERSION)
+    {
+        parameters
+        attribute(value = 3.0)
+    }
+    property(name = N)
+    {
+        parameters
+        attribute(value = Lastname)
+        attribute(value = Surname)
+    }
+    property(name = FN)
+    {
+        parameters
+        attribute(value = Displayname)
+    }
+    property(name = ORG)
+    {
+        parameters
+        attribute(value = EVenX)
+    }
+    property(name = URL)
+    {
+        parameters
+        attribute(value = http://www.evenx.com/)
+    }
+    property(name = EMAIL)
+    {
+        parameters
+        attribute(value = info@evenx.com)
+    }
+    property(name = TEL)
+    {
+        parameters {
+            parameter(name   = TYPE
+                      pvalue = voice,work,pref)
+        }
+        attribute(value = '+49 1234 56788')
+    }
+    property(name = ADR)
+    {
+        parameters {
+            parameter(name   = TYPE
+                      pvalue = intl,work,postal,parcel)
+        }
+        attribute(value)
+        attribute(value)
+        attribute(value = 'Wallstr. 1')
+        attribute(value = Berlin)
+        attribute(value)
+        attribute(value = 12345)
+        attribute(value = Germany)
+    }
+}

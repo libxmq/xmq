@@ -1,0 +1,23 @@
+xml {
+    element(name  = test
+            close = test)
+    {
+        attribute(name  = lang
+                  value = en)
+        attribute(name  = class
+                  value = test)
+        content {
+            &#10;
+            '  '
+            'This '
+            element(name  = em
+                    close = em)
+            {
+                content = is
+            }
+            ' a test.
+
+            '
+        }
+    }
+}
