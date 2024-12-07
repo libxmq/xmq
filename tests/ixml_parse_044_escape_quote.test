@@ -1,0 +1,9 @@
+START
+stringus = -'"', character+, -'"'.
+-character = ~['"'] | -'\' '"'.
+INPUT
+"abc\"abc"
+OUTPUT
+stringus = 'abc"abc'
+END
+ARGS=
