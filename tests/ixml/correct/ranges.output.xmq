@@ -1,0 +1,9 @@
+test {
+    other = ''' !"#$%&'()*+,-./'''
+    digit = 0123456789
+    other = :;<=>?@
+    cap   = ABCDEFGHIJKLMNOPQRSTUVWXYZ
+    other = [\]^_`
+    lc    = abcdefghijklmnopqrstuvwxyz
+    other = '{|}~'
+}

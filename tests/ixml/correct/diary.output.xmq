@@ -1,0 +1,32 @@
+diary {
+    entry {
+        date {
+            day = 24
+            ' '
+            month = December
+            ' '
+            year = 2021
+        }
+        para = 'Panic shopping! Panic packing! Will we make it before midnight?'
+    }
+    entry {
+        date {
+            day = 25
+            ' '
+            month = December
+            ' '
+            year = 2021
+        }
+        para = 'Food! Presents!'
+    }
+    entry {
+        date {
+            day = 26
+            ' '
+            month = December
+            ' '
+            year = 2021
+        }
+        para = Groan.
+    }
+}

@@ -246,7 +246,10 @@ int is_ixml_code_start(XMQParseState *state)
     char b = *(state->i+1);
     bool capital = (a >= 'A' && a <= 'Z');
     if (!capital) return 0;
-    bool letter = (b >= 'a' && b <= 'z');
+    // Most unicode category classes (codes) are two characters Nd, Zs, Lu etc.
+    // Some aggregated classes are a single uppercase L,N
+    // A single silly is LC.
+    bool letter = ((b >= 'a' && b <= 'z') || b == 'C');
     if (!letter) return 1;
     return 2;
 }
