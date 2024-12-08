@@ -1,0 +1,5 @@
+{ Lines with tab separated values. }
+lines = line+.
+line  = col++-#9, nl.
+col   = ~[ #9; #a; #d ]+.
+-nl   = -#d?, -#a.
