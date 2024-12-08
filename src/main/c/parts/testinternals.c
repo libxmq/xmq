@@ -82,42 +82,42 @@ void test_binary_search()
     int a[] = { 1 };
     int b[] = { 1, 2 };
 
-    bool found = category_find(1, empty, 0);
+    bool found = category_has_code(1, empty, 0);
     if (found) { all_ok_ = false; printf("ERROR: expected not found in [].\n"); }
-    found = category_find(1, a, 1);
+    found = category_has_code(1, a, 1);
     if (!found) { all_ok_ = false; printf("ERROR: expected found 1 in [1].\n"); }
-    found = category_find(2, a, 1);
+    found = category_has_code(2, a, 1);
     if (found) { all_ok_ = false; printf("ERROR: expected not 2 in [1].\n"); }
-    found = category_find(1, b, 2);
+    found = category_has_code(1, b, 2);
     if (!found) { all_ok_ = false; printf("ERROR: expected 1 in [1, 2].\n"); }
-    found = category_find(2, b, 2);
+    found = category_has_code(2, b, 2);
     if (!found) { all_ok_ = false; printf("ERROR: expected 2 in [1, 2].\n"); }
-    found = category_find(7, b, 2);
+    found = category_has_code(7, b, 2);
     if (found) { all_ok_ = false; printf("ERROR: expected not 7 in [1, 2].\n"); }
-    found = category_find(0, b, 2);
+    found = category_has_code(0, b, 2);
     if (found) { all_ok_ = false; printf("ERROR: expected not 0 in [1, 2].\n"); }
 
     int c[] = { 1, 2, 7, 10, 11, 12, 55, 99 };
-    found = category_find(2, c, sizeof(c)/sizeof(int));
+    found = category_has_code(2, c, sizeof(c)/sizeof(int));
     if (!found) { all_ok_ = false; printf("ERROR: expected 2 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_find(99, c, sizeof(c)/sizeof(int));
+    found = category_has_code(99, c, sizeof(c)/sizeof(int));
     if (!found) { all_ok_ = false; printf("ERROR: expected 99 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_find(55, c, sizeof(c)/sizeof(int));
+    found = category_has_code(55, c, sizeof(c)/sizeof(int));
     if (!found) { all_ok_ = false; printf("ERROR: expected 55 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_find(1, c, sizeof(c)/sizeof(int));
+    found = category_has_code(1, c, sizeof(c)/sizeof(int));
     if (!found) { all_ok_ = false; printf("ERROR: expected 1 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_find(7, c, sizeof(c)/sizeof(int));
+    found = category_has_code(7, c, sizeof(c)/sizeof(int));
     if (!found) { all_ok_ = false; printf("ERROR: expected 7 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_find(10, c, sizeof(c)/sizeof(int));
+    found = category_has_code(10, c, sizeof(c)/sizeof(int));
     if (!found) { all_ok_ = false; printf("ERROR: expected 10 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_find(11, c, sizeof(c)/sizeof(int));
+    found = category_has_code(11, c, sizeof(c)/sizeof(int));
     if (!found) { all_ok_ = false; printf("ERROR: expected 11 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_find(12, c, sizeof(c)/sizeof(int));
+    found = category_has_code(12, c, sizeof(c)/sizeof(int));
     if (!found) { all_ok_ = false; printf("ERROR: expected 12 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_find(11, c, sizeof(c)/sizeof(int));
+    found = category_has_code(11, c, sizeof(c)/sizeof(int));
     if (!found) { all_ok_ = false; printf("ERROR: expected 11 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
 
-    found = category_find(13, c, sizeof(c)/sizeof(int));
+    found = category_has_code(13, c, sizeof(c)/sizeof(int));
     if (found) { all_ok_ = false; printf("ERROR: expected not 13 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
 }
 

@@ -1,0 +1,8 @@
+START
+word: [L]+.
+INPUT
+albert
+OUTPUT
+word = albert
+END
+ARGS=

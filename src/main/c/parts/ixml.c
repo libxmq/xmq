@@ -662,6 +662,13 @@ void parse_ixml_charset(XMQParseState *state)
             if (n > 1) category[1] = *(state->i+1);
             category[2] = 0;
             EAT(unicode_category, n);
+            const char **check = unicode_lookup_category_parts(category);
+            if (!check)
+            {
+                state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+                state->error_info = "unknown unicode category";
+                longjmp(state->error_handler, 1);
+            }
             parse_ixml_whitespace(state);
             new_ixml_charset_part(state->ixml_charset,
                                   0,
@@ -1728,6 +1735,9 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
         IXMLTerminal *t = (IXMLTerminal*)hashmap_get(state->ixml_terminals_map, buf);
         if (t == NULL)
         {
+            // Add terminal not in the grammar, but found inside the input content to be parsed.
+            // This gives us better error messages from yaep. Instead of "No such token" we
+            // get syntax error at line:col.
             t = new_ixml_terminal();
             t->name = strdup(buf);
             t->code = uc;
@@ -1768,22 +1778,26 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
                     }
                     else
                     {
-                        int *cat = NULL;
-                        size_t cat_len = 0;
-                        bool ok = unicode_category(p->category, &cat, &cat_len);
-                        if (!ok)
+                        const char **cat_part = unicode_lookup_category_parts(p->category);
+                        for (; *cat_part; ++cat_part)
                         {
-                            fprintf(stderr, "Invalid unicode category: %s\n", p->category);
-                            exit(1);
-                        }
-                        // All characters in the category that have been used
-                        // should be tested for.
-                        for (size_t i = 0; i < cat_len; ++i)
-                        {
-                            int c = cat[i];
-                            if (c >= 0 && c <= 0x10ffff && used[c])
+                            int *cat = NULL;
+                            size_t cat_len = 0;
+                            bool ok = unicode_get_category_part(*cat_part, &cat, &cat_len);
+                            if (!ok)
                             {
-                                add_single_char_rule(state, nt, c, '-', tmark);
+                                fprintf(stderr, "Invalid unicode category: %s\n", *cat_part);
+                                exit(1);
+                            }
+                            // All characters in the category that have been used
+                            // should be tested for.
+                            for (size_t i = 0; i < cat_len; ++i)
+                            {
+                                int c = cat[i];
+                                if (c >= 0 && c <= 0x10ffff && used[c])
+                                {
+                                    add_single_char_rule(state, nt, c, '-', tmark);
+                                }
                             }
                         }
                     }
@@ -1801,22 +1815,26 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
                     {
                         if (p->category[0])
                         {
-                            int *cat = NULL;
-                            size_t cat_len = 0;
-                            bool ok = unicode_category(p->category, &cat, &cat_len);
-                            if (!ok)
+                            const char **cat_part = unicode_lookup_category_parts(p->category);
+                            for (; *cat_part; ++cat_part)
                             {
-                                fprintf(stderr, "Invalid unicode category: %s\n", p->category);
-                                exit(1);
-                            }
-                            // Is the used character in the category set?
-                            if (category_find(c, cat, cat_len))
-                            {
-                                // Yes it is.
-                                // Do not add the used character! We do not want to match against
-                                // it since it is excluded.
-                                should_add = false;
-                                break;
+                                int *cat = NULL;
+                                size_t cat_len = 0;
+                                bool ok = unicode_get_category_part(*cat_part, &cat, &cat_len);
+                                if (!ok)
+                                {
+                                    fprintf(stderr, "Invalid unicode category: %s\n", *cat_part);
+                                    exit(1);
+                                }
+                                // Is the used character in the category set?
+                                if (category_has_code(c, cat, cat_len))
+                                {
+                                    // Yes it is.
+                                    // Do not add the used character! We do not want to match against
+                                    // it since it is excluded.
+                                    should_add = false;
+                                    break;
+                                }
                             }
                         }
                         else
