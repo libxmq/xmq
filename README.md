@@ -1,4 +1,4 @@
-# XMQ/HTMQ | Convert xml/html to a human readable/editable format and back. Also parse any content using an Invisible XML grammar (IXML).
+# XMQ | A tool and language to work with xml/html/json and parse any other format using ixml.
 
 Homepage [https://libxmq.org](https://libxmq.org)
 
@@ -16,47 +16,7 @@ Binaries latest release [https://github.com/libxmq/xmq/releases/latest](https://
 | MacOSX | [![Build MacOSX Status](https://github.com/libxmq/xmq/workflows/Build%20MacOSX/badge.svg)](https://github.com/libxmq/xmq/actions)|
 | Windows | [![Build Windows Status](https://github.com/libxmq/xmq/workflows/Build%20Windows/badge.svg)](https://github.com/libxmq/xmq/actions)|
 
-# Rationale
-
-Xml can be human readable/editable if it is used for markup of longer
-human language texts, ie books, articles and other documents etc. In
-these cases the xml-tags represent a minor part of the whole xml-file.
-
-However xml is often used for configuration files, such as the
-pom.xml. In such config files the xml-tags represent a major part of
-the whole xml-file. This makes the config files hard to read and edit
-directly by hand. Today, the tags are a major part of html files as
-well, which is one reason why html files are hard to read and edit.
-
-The other reason why xml/html are hard to edit by hand is because they
-have a complicated approach to dealing with significant
-whitespace. The truth is that you cannot always pretty print the
-xml/html code as you would like since it might introduce significant
-white space. In fact proper pretty printing even requires a full
-understanding of the DTD/XSD/CSS! This is indeed a daunting task just
-for pretty printing inside an editor!
-
-The xmq format solves the first problem primarily by using braces to
-open and close tags and the second problem by forcing significant
-whitespace to be quoted. The xmq format also uses a shortcut where
-not all values need to be quoted and this also improves readability.
-
-This means that it is always possible to pretty print the xmq without
-having to worry if you introduce visible changes to your web document!
-This is very helpful when deciphering complicated html documents.
-
-```
-car {
-    speed = 50km/h
-    color = red
-    brand = 'Le roy'
-}
-```
-
-Opposite pretty printing, any xmq/htmq document (including multiple
-line comments) can also be printed in a compact form on a single line.
-
-`car{speed=50km/h color=red brand='Le roy'}`
+## XMQ another way to work with XML/HTML/JSON
 
 The xmq format can exactly represent the content of the xml/html file
 and can therefore be converted back to xml/html after any editing has
@@ -82,6 +42,65 @@ speed = 50km/h
 count = 123
 url   = https://foo/bar?x=123
 msg   = 'Welcome to the app!'
+```
+
+# The xmq cli command
+
+The xmq tool has several useful commands, for example:
+
+```shell
+# Render pom.xml as xmq in color on terminal.
+xmq pom.xml
+cat rss.xml | xmq
+xmq rest.json
+xmq work.xmq
+
+# Parse any input with a suitable csv.ixml grammar. Output xmq/xml/json etc.
+xmq --ixml=csv.ixml input.txt
+
+# Use the built in pager (pa) to scroll up and down.
+xmq pom.xml pa
+cat rss.xml | xmq pa
+curl -s 'https://dummyjson.com/todos?limit=10' | xmq pa
+
+# Browse (br) the content as a web page
+xmq pom.xml br
+xmq rest.json br
+
+# View a large index.html but delete script and style tags.
+xmq index.html delete //script delete //style pa
+
+# The same but render to browse_tmp_dn.html and browse it.
+xmq index.html delete //script delete //style br
+
+# Replace entities with strings you can also --with-text-file=abc
+# which inserts the content safely quoted, or as DOM --with-file=abc.xml
+# where the file has be parseable.
+xmq template.htmq replace-entity DATE 2024-01-11 replace-entity NAME 'Hercules' render-html --theme=lightbg > page.html
+
+# Apply an xslq transform to some json to generate a html page.
+xmq todos.json transform todos.xslq to-html > list.html
+
+# Apply an xslq transform to generate plain text.
+xmq todos.json transform todosframed.xslq to-text > list.txt
+
+# Convert xml to json.
+xmq pom.xml to-json | jq .
+
+# Convert to xml.
+xmq rest.json to-xml
+
+# Print xmq compact form on a single line.
+xmq pom.xml to-xmq --compact
+
+# Print DOM as clines (eg. /html/body="Hello")
+xmq pom.xml to-clines
+
+# Render content for tex typesetting.
+xmq input.xmq render-tex > input_as_tex.tex ; xelatex input_as_tex.tex
+
+# Compose a new DOM from xmq snippets and write the xml
+xmq -z add weight=2.5ton add speed=123km/h add-root car to-xml
 ```
 
 # Use IXML to convert any input into XML/JSON/XMQ!
@@ -127,59 +146,6 @@ or if XML: xmq --ixml=dates.ixml -i '22 November 2024' to-xml` (manually pretty 
 ```
 
 Check out [https://invisiblexml.org/](https://invisiblexml.org/) for more information.
-
-# The xmq cli command
-
-The xmq tool has several useful commands, for example:
-
-```shell
-# Render pom.xml as xmq in color on terminal.
-xmq pom.xml
-cat index.html | xmq
-xmq < rss.xml
-
-# Use the built in pager to scroll up and down.
-xmq pom.xml page
-xmq pom.xml pa
-cat rss.xml | xmq pa
-xmq pa < index.html
-curl -s 'https://dummyjson.com/todos?limit=10' | xmq pa
-
-# Write xmq_browsing_pom.xml.html and open this file with the default browser.
-xmq pom.xml browse
-xmq pom.xml br
-xmq br < index.html
-
-# View a json file as xmq in a pager or browser
-xmq request.json pager
-curl -s 'https://dummyjson.com/todos?limit=10' | xmq br
-
-# View a large index.html but delete script and style tags.
-xmq index.html delete //script delete //style pager
-
-# The same but render to browse_tmp_dn.html and browse it.
-xmq index.html delete //script delete //style br
-
-# Replace entities with strings you can also --with-text-file=abc
-# which inserts the content safely quoted, or as DOM --with-file=abc.xml
-# where the file has be parseable.
-xmq template.htmq replace-entity DATE 2024-01-11 replace-entity NAME 'Hercules' render-html --theme=lightbg > page.html
-
-# Apply an xslq transform to some json to generate a html page.
-xmq todos.json transform todos.xslq to-html > list.html
-
-# Apply an xslq transform to generate plain text.
-xmq todos.json transform todosframed.xslq to-text > list.txt
-
-# Convert xml to json.
-xmq pom.xml to-json | jq .
-
-# Render content for tex typesetting.
-xmq input.xmq render-tex > input_as_tex.tex ; xelatex input_as_tex.tex
-
-# Compose a new DOM from xmq snippets and write the xml
-xmq -z add weight=2.5ton add speed=123km/h add-root car to-xml
-```
 
 # Using xmq.h and xmq.c in your program
 

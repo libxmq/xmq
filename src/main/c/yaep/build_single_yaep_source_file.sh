@@ -1,4 +1,5 @@
 #!/bin/sh
+# libxmq - Copyright (C) 2024 Fredrik Öhrström (spdx: MIT)
 
 cat <<EOF > yaep_full_source.c
 /****************** YAEP parser single source file headers **********************/

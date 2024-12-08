@@ -13,25 +13,23 @@ xmq \- Command-line xmq/htmq/xml/html/json processor
 
 .SH EXAMPLES
 
-xmq pom.xmq         \fB# pretty print as xmq and colorize\fP
+xmq pom.xml          \fB# pretty print as xmq and colorize\fP
 .br
-xmq < pom.xml
+cat data.json | xmq  \fB# read from stdin\fP
 .br
-cat data.json | xmq
+xmq index.html pa    \fB# use pager in terminal\fP
 .br
-xmq index.html
+xmq big.json br      \fB# view web page in default browser\fP
 .br
-xmq big.xml pa      \fB# use pager in terminal\fP
+xmq --ixml=tsv.ixml input.txt           \fB# parse input using an ixml grammar\fP
 .br
-xmq big.json br     \fB# view in default browser\fP
+xmq pom.xmq to-xml > pom.xml            \fB# convert to xml and save into pom.xml file\fP
 .br
-xmq pom.xmq to-xml > pom.xml         \fB# convert to xml and save into pom.xml file\fP
-.br
-xmq data.xml to-json save data.json  \fB# save using xmq command instead\fP
+xmq data.xml to-json save-to data.json  \fB# save using xmq command instead\fP
 .br
 xmq index.html delete //script delete //style pa  \fB# delete script/style nodes then use pager\fP
 .br
-curl https://jsonandstuff/products | xmq - transform make_web_list.xslq to-html save products.html
+curl https://jsonandstuff/products | xmq - transform make_web_list.xslq to-html > products.html
 .br
 xmq input.json delete //work replace-entity VALUE $SPEED to-json | curl -H "Content-Type: application/json" -X POST --data-binary @- http://somewhere
 
@@ -42,12 +40,19 @@ convert between them.  It can also pretty print, compact, colorize,
 tokenize, apply xslt transforms and other commands to modify the
 content.
 
+The xmq tool can also extract data from any data source for which an
+ixml (Invisible XML) grammar has been written.
+
 If no commands are provided then xmq executes the command \fIrender-terminal\fP or \fIto-xmq\fP
 followed by \fIprint\fP depending on whether stdout is a tty or a file/pipe.
 
 Xmq will read from stdin if a single minus \fB-\fP is provided as <file> or if neither <file> nor <command> is provided.
 
 .SH OPTIONS
+
+.TP
+.BR \--ixml=grammar.ixml
+You can parse the input using the supplied invisible xml grammar.
 
 .TP
 .BR \--root=<name>
@@ -71,10 +76,6 @@ Output the xmq version and exit with zero.
 .TP
 .BR \--xmq|--htmq|--xml|--html|--json
 The input format is normally auto detected but you can force the input format here.
-
-.TP
-.BR \--ixml=grammar.ixml
-You can parse the input using the supplied invisible xml grammar.
 
 .TP
 .BR \-i "a=2"
@@ -110,8 +111,10 @@ Write the content as xmq/htmq. If stdout is a tty, then this command behaves as 
 \fB--escape-non-7bit\fP Escape all non-7bit chars using entities like \fI&#160;\fP.
 
 .TP
-\fIto-xml\fP/\fIto-html\FP/\fIto-json\fP
-Write the content as xml/html/json.
+\fIto-xml\fP/\fIto-html\FP/\fIto-json\fP/\fIto-clines\FP
+Write the content as xml/html/json/clines. Clines prints the DOM as
+separate lines leading with the path to the element followed by
+the content of the element as a quoted c/json string, eg. /html/body="Welcome!"
 
 .TP
 \fIpage/pa\fP
