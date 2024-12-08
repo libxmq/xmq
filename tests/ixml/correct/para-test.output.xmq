@@ -1,0 +1,20 @@
+doc {
+    section {
+        para {
+            line = 'AB December 2021'
+            line = 'Para entry.'
+        }
+    }
+    section {
+        para {
+            line = 'Here is annother section'
+            line = See.
+        }
+    }
+    section {
+        para {
+            line = 'And another.'
+            line = 'The end.'
+        }
+    }
+}

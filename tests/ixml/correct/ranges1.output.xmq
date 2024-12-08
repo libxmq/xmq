@@ -1,0 +1,9 @@
+chars {
+    punctuation = '''!"#$%&'()*+,-./'''
+    digit       = 0123456789
+    punctuation = :;<=>?@
+    upper       = ABCDEFGHIJKLMNOPQRSTUVWXYZ
+    punctuation = [\]^_`
+    lower       = abcdefghijklmnopqrstuvwxyz
+    punctuation = '{|}~'
+}

@@ -1,0 +1,4 @@
+data {
+    range1 = 5
+    range2 = &#9;
+}
