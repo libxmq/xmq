@@ -112,7 +112,7 @@ day    = digit | digit, digit.
 -digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'.
 month  = 'January' | 'February' | 'March' | 'April' | 'May' | 'June' |
          'July' | 'August' | 'September' | 'October' | 'November' | 'December'.
-year   = digit, digit, digit, digit
+year   = digit, digit, digit, digit.
 ```
 
 Then you run `xmq --ixml=dates.ixml -i '22 November 2024'`
@@ -125,7 +125,7 @@ date {
 }
 ```
 
-or if you prefer json: xmq --ixml=dates.ixml -i '22 November 2024' to-json | jq .`
+or if you prefer JSON: xmq --ixml=dates.ixml -i '22 November 2024' to-json | jq .`
 ```
 {
   "_": "date",
@@ -135,7 +135,7 @@ or if you prefer json: xmq --ixml=dates.ixml -i '22 November 2024' to-json | jq 
 }
 ```
 
-or if XML: xmq --ixml=dates.ixml -i '22 November 2024' to-xml` (manually pretty printed)
+or if you prefer XML: xmq --ixml=dates.ixml -i '22 November 2024' to-xml` (manually pretty printed)
 ```
 <date>
     <day>22</day>
@@ -155,6 +155,11 @@ col   = ~[ #9; #a; #d ]+.
 -nl   = -#d?, -#a.
 ```
 
+Given the tabbed input file:
+```
+2024-01-01<TAB>red<TAB>8<NL>
+```
+
 Generates xmq such as:
 ```
 lines {
@@ -166,10 +171,10 @@ lines {
 }
 ```
 
-That can be converted to xml or json. But if you have known columns, you can create
+That can be converted to xml or json. But if you know the column names, you can create
 a more tailored grammar:
 ```
-cars = car+.
+cars  = car+.
 car   = date, -#9, color, -#9, count, nl.
 date  = ~[#9;#a;#d]+.
 color = ~[#9;#a;#d]+.
