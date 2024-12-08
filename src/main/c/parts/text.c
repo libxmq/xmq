@@ -657,18 +657,18 @@ bool find_line_col(const char *start, const char *stop, size_t at, int *out_line
     X(Lu,Uppercase_Letter,"Lu",an uppercase letter) \
     X(Ll,Lowercase_Letter,"Ll",a lowercase letter)  \
     X(Lt,Titlecase_Letter,"Lt",a digraph encoded as a single character with first part uppercase) \
-    X(LC,Cased_Letter,"Lu"COMMA"Ll"COMMA"Lt",cased letters Lu Ll Lt) \
+    X(LC,Cased_Letter,"Lu" COMMA "Ll" COMMA "Lt",cased letters Lu Ll Lt) \
     X(Lm,Modifier_Letter,"Lm",a modifier letter) \
     X(Lo,Other_Letter,"Lo",other letters including syllables and ideographs) \
-    X(L,Letter,"Lu"COMMA"Ll"COMMA"Lt"COMMA"Lm"COMMA"Lo",letters Lu Ll Lt Lm Lo) \
+    X(L,Letter,"Lu" COMMA "Ll" COMMA "Lt" COMMA "Lm" COMMA "Lo",letters Lu Ll Lt Lm Lo) \
     X(Mn,Nonspacing_Mark,"Mn",a nonspacing combining mark (zero advance width)) \
     X(Mc,Spacing_Mark,"Mc",a spacing combining mark (positive advance width)) \
     X(Me,Enclosing_Mark,"Me",an enclosing combining mark) \
-    X(M,Mark,"Mn"COMMA"Mc"COMMA"Me",marks Mn | Mc | Me) \
+    X(M,Mark,"Mn" COMMA "Mc" COMMA "Me",marks Mn | Mc | Me) \
     X(Nd,Decimal_Number,"Nd",a decimal digit) \
     X(Nl,Letter_Number,"Nl",a letterlike numeric character) \
     X(No,Other_Number,"No",a numeric character of other type) \
-    X(N,Number,"Nd"COMMA"Nl"COMMA"No",numbers Nd | Nl | No) \
+    X(N,Number,"Nd" COMMA "Nl" COMMA "No",numbers Nd | Nl | No) \
     X(Pc,Connector_Punctuation,"Pc",a connecting punctuation mark like a tie) \
     X(Pd,Dash_Punctuation,"Pd",a dash or hyphen punctuation mark) \
     X(Ps,Open_Punctuation,"Ps",an opening punctuation mark (of a pair)) \
@@ -676,22 +676,22 @@ bool find_line_col(const char *start, const char *stop, size_t at, int *out_line
     X(Pi,Initial_Punctuation,"Pi",an initial quotation mark) \
     X(Pf,Final_Punctuation,"Pf",a final quotation mark) \
     X(Po,Other_Punctuation,"Po",a punctuation mark of other type) \
-    X(P,Punctuation,"Pc"COMMA"Pd"COMMA"Ps"COMMA"Pe"COMMA"Pi"COMMA"Pf"COMMA"Po",punctuations Pc | Pd | Ps | Pe | Pi | Pf | Po) \
+    X(P,Punctuation,"Pc" COMMA "Pd" COMMA "Ps" COMMA "Pe" COMMA "Pi" COMMA "Pf" COMMA "Po",punctuations Pc | Pd | Ps | Pe | Pi | Pf | Po) \
     X(Sm,Math_Symbol,"Sm",a symbol of mathematical use) \
     X(Sc,Currency_Symbol,"Sc",a currency sign) \
     X(Sk,Modifier_Symbol,"Sk",a non-letterlike modifier symbol) \
     X(So,Other_Symbol,"So",a symbol of other type) \
-    X(S,Symbol,"Sm"COMMA"Sc"COMMA"Sk"COMMA"So",symbols Sm | Sc | Sk | So) \
+    X(S,Symbol,"Sm" COMMA "Sc" COMMA "Sk" COMMA "So",symbols Sm | Sc | Sk | So) \
     X(Zs,Space_Separator,"Zs",a space character (of various non-zero widths)) \
     X(Zl,Line_Separator,"Zl",U+2028 LINE SEPARATOR only) \
     X(Zp,Paragraph_Separator,"Zp",U+2029 PARAGRAPH SEPARATOR only) \
-    X(Z,Separator,"Zs"COMMA"Zl"COMMA"Zp",separators Zs | Zl | Zp) \
+    X(Z,Separator,"Zs" COMMA "Zl" COMMA "Zp",separators Zs | Zl | Zp) \
     X(Cc,Control,"Cc",a C0 or C1 control code) \
     X(Cf,Format,"Cf",a format control character) \
     X(Cs,Surrogate,"Cs",a surrogate code point) \
     X(Co,Private_Use,"Co",a private-use character) \
     X(Cn,Unassigned,"Cn",a reserved unassigned code point or a noncharacter) \
-    X(C,Other,"Cc"COMMA"Cf"COMMA"Cs"COMMA"Co"COMMA"Cn",others Cc | Cf | Cs | Co | Cn) \
+    X(C,Other,"Cc" COMMA "Cf" COMMA "Cs" COMMA "Co" COMMA "Cn",others Cc | Cf | Cs | Co | Cn) \
 
 
 const char *unicode_categories_[] = {

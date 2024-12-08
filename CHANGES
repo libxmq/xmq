@@ -1,3 +1,6 @@
+The IXML parser can now parse the ixml grammar itself.
+Added grammars/core/tsv.ixml to parse tab separated value files.
+
 2024-12-07: Release 3.0.0
 
 XMQ now supports invisible XML (IXML). Read https://invisiblexml.org/
