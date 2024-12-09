@@ -7537,6 +7537,7 @@ static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, bool trans_p
         fprintf(f, "%c", m);
     }
     symbol_print(f, rule->lhs, false);
+    if (strcmp(rule->lhs->repr, rule->anode)) fprintf(stderr, "(%s)", rule->anode);
     fprintf(f, " → ");
     for(i = 0; i < rule->rhs_len; i++)
     {
