@@ -1,0 +1,9 @@
+START
+key: ['a']+.
+value: ['a']+.
+INPUT
+a
+OUTPUT
+key = a
+END
+ARGS=--ixml-all-parses

@@ -160,6 +160,7 @@ bool has_ixml_tmp_terminals(XMQParseState *state);
 bool has_more_than_one_ixml_tmp_terminals(XMQParseState *state);
 void add_yaep_term_to_rule(XMQParseState *state, char mark, IXMLTerminal *t, IXMLNonTerminal *nt);
 void add_yaep_terminal(XMQParseState *state, IXMLTerminal *terminal);
+IXMLNonTerminal *lookup_yaep_nonterminal_already(XMQParseState *state, const char *name);
 void add_yaep_nonterminal(XMQParseState *state, IXMLNonTerminal *nonterminal);
 void add_yaep_tmp_term_terminal(XMQParseState *state, char *name, int code);
 // Store all state->ixml_tmp_terminals on the rule rhs.
@@ -185,7 +186,7 @@ void free_ixml_nonterminal(IXMLNonTerminal *t);
 void free_ixml_term(IXMLTerm *t);
 
 char *generate_rule_name(XMQParseState *state);
-char *generate_charset_terminal_name(IXMLCharset *cs, char mark);
+char *generate_charset_rule_name(IXMLCharset *cs, char mark);
 void make_last_term_optional(XMQParseState *state);
 void make_last_term_repeat(XMQParseState *state, char factor_mark);
 void make_last_term_repeat_zero(XMQParseState *state, char factor_mark);
@@ -711,10 +712,21 @@ void parse_ixml_charset(XMQParseState *state)
     EAT(right_bracket, 1);
     IXML_DONE(charset, state);
 
-    IXMLNonTerminal *nt = new_ixml_nonterminal();
-    nt->name = generate_charset_terminal_name(state->ixml_charset, tmark);
-    nt->charset = state->ixml_charset;
-    add_yaep_nonterminal(state, nt);
+    char *cs_name = generate_charset_rule_name(state->ixml_charset, tmark);
+    IXMLNonTerminal *nt = lookup_yaep_nonterminal_already(state, cs_name);
+    if (!nt)
+    {
+        nt = new_ixml_nonterminal();
+        nt->name = cs_name;
+        nt->charset = state->ixml_charset;
+        add_yaep_nonterminal(state, nt);
+    }
+    else
+    {
+        free_ixml_charset(state->ixml_charset);
+        state->ixml_charset = NULL;
+        free(cs_name);
+    }
     add_yaep_term_to_rule(state, tmark, NULL, nt);
 }
 
@@ -1666,6 +1678,16 @@ void add_yaep_terminal(XMQParseState *state, IXMLTerminal *terminal)
     hashmap_put(state->ixml_terminals_map, terminal->name, terminal);
 }
 
+IXMLNonTerminal *lookup_yaep_nonterminal_already(XMQParseState *state, const char *name)
+{
+    // FIXME. Replace this with a set or map for faster lookup if needed.
+    for (size_t i = 0; i < state->ixml_non_terminals->size; ++i)
+    {
+        IXMLNonTerminal *nt = (IXMLNonTerminal*)vector_element_at(state->ixml_non_terminals, i);
+        if (!strcmp(name, nt->name)) return nt;
+    }
+    return NULL;
+}
 
 void add_yaep_nonterminal(XMQParseState *state, IXMLNonTerminal *nt)
 {
@@ -2021,7 +2043,7 @@ char *generate_rule_name(XMQParseState *state)
     return strdup(buf);
 }
 
-char *generate_charset_terminal_name(IXMLCharset *cs, char mark)
+char *generate_charset_rule_name(IXMLCharset *cs, char mark)
 {
     char *buf = (char*)malloc(1024);
     buf[0] = 0;
