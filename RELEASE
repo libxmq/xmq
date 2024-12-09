@@ -1,6 +1,5 @@
-The IXML parser can now parse the ixml grammar itself.
-Added grammars/core/tsv.ixml to parse tab separated value files.
 
-Use it like for example like this:
-xmq --ixml=grammars/core/tsv.ixml tabbed_input.txt to-xml > values.xml
+
+Steven Pemberton noticed that xmq wrongly reported some IXML grammars
+as ambiguous even though they weren't. This is now fixed. Thanks Steven!
 

@@ -1,3 +1,8 @@
+2024-12-08: Release 3.1.1
+
+Steven Pemberton noticed that xmq wrongly reported some IXML grammars
+as ambiguous even though they weren't. This is now fixed. Thanks Steven!
+
 2024-12-08: Release 3.1.0
 
 The IXML parser can now parse the ixml grammar itself.
