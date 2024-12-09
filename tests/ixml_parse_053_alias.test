@@ -1,0 +1,13 @@
+START
+howdy: ma , mb.
+ma>m:'a'.
+mb>m:'b'.
+INPUT
+ab
+OUTPUT
+howdy {
+    m = a
+    m = b
+}
+END
+ARGS=
