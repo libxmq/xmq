@@ -1,6 +1,6 @@
 START
 stringus = -'"', character+, -'"'.
--character = ~['"'] | -'\' '"'.
+-character = ~['"'] | -'\', '"'.
 INPUT
 "abc\"abc"
 OUTPUT

@@ -4578,7 +4578,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     error_node->type = YAEP_ERROR;
     error_node->val.error.used = 0;
 
-    fprintf(stderr, "(ixml) ----- building parse tree ------\n");
+    if (ps->run.debug) fprintf(stderr, "(ixml) ----- building parse tree ------\n");
 
     while(VLO_LENGTH(stack) != 0)
     {
@@ -4968,7 +4968,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     } /* For all parser states.*/
     VLO_DELETE(stack);
 
-    fprintf(stderr, "(ixml) ----- done parse tree ------\n");
+    if (ps->run.debug) fprintf(stderr, "(ixml) ----- done parse tree ------\n");
 
     if (!ps->run.grammar->one_parse_p)
     {
@@ -4990,7 +4990,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         print_parse(ps, stderr, result);
         fprintf(stderr, "\n");
     }
-    if (true)
+    if (false)
     {
         // Graphviz
         fprintf(stderr, "digraph CFG {\n");
