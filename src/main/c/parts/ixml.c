@@ -1981,6 +1981,8 @@ void free_ixml_nonterminal(IXMLNonTerminal *nt)
 {
     if (nt->name) free(nt->name);
     nt->name = NULL;
+    if (nt->alias) free(nt->alias);
+    nt->alias = NULL;
     if (nt->charset) free_ixml_charset(nt->charset);
     nt->charset = NULL;
     free(nt);
