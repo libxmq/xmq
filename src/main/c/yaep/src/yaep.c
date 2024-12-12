@@ -315,10 +315,9 @@ struct YaepSymbol
     /* The following member value(if defined) is true if the symbol is
        accessible(derivated) from the axiom. */
     bool access_p;
-    /* The following member is true if it is a termainal or it is a
-       nonterminal which derivates a terminal string. */
+    /* The following member is true if it is a termainal/nonterminal which derives a terminal string. */
     bool derivation_p;
-    /* The following is true if it is nonterminal which may derivate empty string. */
+    /* The following is true if it is a nonterminal which may derive the empty string. */
     bool empty_p;
 #ifdef USE_CORE_SYMB_HASH_TABLE
     /* The following is used as cache for subsequent search for
@@ -1761,12 +1760,6 @@ static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, in
     dotted_rule->empty_tail_p = dotted_rule_set_lookahead(ps, dotted_rule);
     (*context_dotted_rules_table_ptr)[rule->rule_start_offset + dot_j] = dotted_rule;
 
-    if (ps->run.trace)
-    {
-        TRACEE_F(ps);
-        print_dotted_rule(ps, stderr, "", "\n", dotted_rule, ps->run.debug, -1);
-    }
-
     return dotted_rule;
 }
 
@@ -3149,12 +3142,11 @@ int yaep_read_grammar(YaepParseRun *pr,
     if (ps->run.verbose)
     {
         /* Print rules.*/
-        fprintf(stderr, "(ixml) yaep grammar:\n");
+        fprintf(stderr, "(ixml) ----- grammar\n");
         for(rule = ps->run.grammar->rulestorage_ptr->first_rule; rule != NULL; rule = rule->next)
 	{
-            if (rule->lhs->repr[0] != '$' && !ps->run.debug)
+            if (rule->lhs->repr[0] != '$')
             {
-                fprintf(stderr, "  ");
                 rule_print(ps, stderr, rule, true);
             }
 	}
@@ -3162,20 +3154,19 @@ int yaep_read_grammar(YaepParseRun *pr,
         /* Print symbol sets.*/
         if (ps->run.debug)
         {
+            fprintf(stderr, "(ixml) lookahead\n");
+
             for(i = 0;(symb = nonterm_get(ps, i)) != NULL; i++)
             {
-                fprintf(stderr, "Nonterm %s:  Empty=%s , Access=%s, Derive=%s\n",
-                        symb->repr,(symb->empty_p ? "Yes" : "No"),
-                        (symb->access_p ? "Yes" : "No"),
-                        (symb->derivation_p ? "Yes" : "No"));
-                if (ps->run.debug)
-                {
-                    fprintf(stderr, "  First: ");
-                    terminal_bitset_print(ps, stderr, symb->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terminals);
-                    fprintf(stderr, "\n  Follow: ");
-                    terminal_bitset_print(ps, stderr, symb->u.nonterminal.follow, ps->run.grammar->symbs_ptr->num_terminals);
-                    fprintf(stderr, "\n\n");
-                }
+                fprintf(stderr, "lh %s%s%s%s\n",
+                        symb->repr,(symb->empty_p ? " CAN_BECOME_EMPTY" : ""),
+                        (symb->access_p ? "" : " OUPS_NOT_REACHABLE"),
+                        (symb->derivation_p ? "" : " OUPS_NO_TEXT"));
+                fprintf(stderr, "  1st: ");
+                terminal_bitset_print(ps, stderr, symb->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terminals);
+                fprintf(stderr, "\n  2nd: ");
+                terminal_bitset_print(ps, stderr, symb->u.nonterminal.follow, ps->run.grammar->symbs_ptr->num_terminals);
+                fprintf(stderr, "\n\n");
             }
         }
     }
@@ -3911,7 +3902,7 @@ static void perform_parse(YaepParseState *ps)
 
     if (ps->run.debug)
     {
-        fprintf(stderr, "\n\n------ Parsing start ---------------\n\n");
+        fprintf(stderr, "(ixml) ----- begin parse -----\n");
         print_state_set(ps, stderr, ps->new_set, 0, ps->run.debug, ps->run.debug);
     }
 
@@ -3931,7 +3922,7 @@ static void perform_parse(YaepParseState *ps)
 
         if (ps->run.debug)
 	{
-            fprintf(stderr, "\nScan input[%d]= ", ps->tok_i);
+            fprintf(stderr, "\n(ixml) scan input[%d]= ", ps->tok_i);
             symbol_print(stderr, THE_TERMINAL, true);
             fprintf(stderr, " state_set_k=%d\n\n", ps->state_set_k);
 	}
@@ -3973,7 +3964,7 @@ static void perform_parse(YaepParseState *ps)
 
     if (ps->run.debug)
     {
-        fprintf(stderr, "\n\n----- Parsing done -----------------\n\n\n");
+        fprintf(stderr, "(ixml) ----- end parse -----\n");
     }
 }
 
@@ -4586,11 +4577,14 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     error_node =((YaepTreeNode*)(*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
     error_node->type = YAEP_ERROR;
     error_node->val.error.used = 0;
+
+    fprintf(stderr, "(ixml) ----- building parse tree ------\n");
+
     while(VLO_LENGTH(stack) != 0)
     {
         if (ps->run.debug && state->dot_j == state->rule->rhs_len)
 	{
-            fprintf(stderr, "\n\nProcessing top=%ld state_set_k=%d dotted_rule=",
+            fprintf(stderr, "processing top=%ld state_set_k=%d dotted_rule=",
                     (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                      state->state_set_k);
             print_rule_with_dot(ps, stderr, state->rule, state->dot_j);
@@ -4612,7 +4606,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
             if (ps->run.debug && state->dot_j == state->rule->rhs_len)
 	    {
-                fprintf(stderr, "Popping top=%ld state_set_k=%d dotted_rule=",
+                fprintf(stderr, "    * popping top=%ld state_set_k=%d dotted_rule=",
                         (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                         state->state_set_k);
 
@@ -4725,7 +4719,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
             if (ps->run.debug)
 	    {
-                fprintf(stderr, "  Trying state_set_k=%d dotted_rule=", state_set_k);
+                fprintf(stderr, "    * trying state_set_k=%d dotted_rule=", state_set_k);
                 print_dotted_rule(ps, stderr, "", "", dotted_rule, ps->run.debug, -1);
                 fprintf(stderr, " dotted_rule_from_i=%d\n", dotted_rule_from_i);
 	    }
@@ -4825,8 +4819,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
                         if (ps->run.debug)
 			{
-                            fprintf(stderr,
-                                     "  Adding top=%ld dotted_rule_from_i=%d modified dotted_rule=",
+                            fprintf(stderr, "    * adding top=%ld dotted_rule_from_i=%d modified dotted_rule=",
                                     (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                                      dotted_rule_from_i);
                             print_rule_with_dot(ps, stderr, state->rule, state->dot_j);
@@ -4896,7 +4889,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
                         if (ps->run.debug)
 			{
-                            fprintf(stderr, "  Adding top %ld, state_set_k = %d, dotted_rule = ",
+                            fprintf(stderr, "    * adding top %ld, state_set_k = %d, dotted_rule = ",
                                     (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                                     state_set_k);
                             print_dotted_rule(ps, stderr, "", "", dotted_rule, ps->run.debug, -1);
@@ -4915,8 +4908,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
                         if (ps->run.debug)
 			{
-                            fprintf(stderr,
-                                     "  Found prev. translation: state_set_k = %d, dotted_rule = ",
+                            fprintf(stderr, "    * found prev. translation: state_set_k = %d, dotted_rule = ",
                                      state_set_k);
                             print_dotted_rule(ps, stderr, "", "", dotted_rule, ps->run.debug, -1);
                             fprintf(stderr, ", %d\n", dotted_rule_from_i);
@@ -4949,8 +4941,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
                     if (ps->run.debug)
 		    {
-                        fprintf(stderr,
-                                 "  Adding top %ld, state_set_k = %d, dotted_rule = ",
+                        fprintf(stderr, "    * adding top %ld, state_set_k = %d, dotted_rule = ",
                                 (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                                 state_set_k);
                         print_dotted_rule(ps, stderr, "", "", dotted_rule, ps->run.debug, -1);
@@ -4976,6 +4967,9 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         assert(n_candidates != 0 && (!ps->run.grammar->one_parse_p || n_candidates == 1));
     } /* For all parser states.*/
     VLO_DELETE(stack);
+
+    fprintf(stderr, "(ixml) ----- done parse tree ------\n");
+
     if (!ps->run.grammar->one_parse_p)
     {
         VLO_DELETE(orig_states);
@@ -4990,13 +4984,13 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
            their children.*/
         result = find_minimal_translation(ps, result);
 
-    if (ps->run.debug)
+    if (ps->run.trace)
     {
-        fprintf(stderr, "Translation:\n");
+        fprintf(stderr, "(ixml) yaep parse tree:\n");
         print_parse(ps, stderr, result);
         fprintf(stderr, "\n");
     }
-    else if (ps->run.debug)
+    if (true)
     {
         // Graphviz
         fprintf(stderr, "digraph CFG {\n");
@@ -5099,9 +5093,13 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     {
         free_state_sets(ps);
         if (parse_init_p)
+        {
             free_inside_parse_state(ps);
+        }
         if (tok_init_p)
+        {
             free_input(ps);
+        }
         return code;
     }
     if (g->undefined_p)
@@ -5127,48 +5125,37 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     table_collisions = get_all_collisions() - table_collisions;
     table_searches = get_all_searches() - table_searches;
 
-
     if (ps->run.debug)
     {
-        fprintf(stderr, "%sGrammar: #terms = %d, #nonterms = %d, ",
+        fprintf(stderr, "(ixml) %sparse statistics\n       #terminals = %d, #nonterms = %d\n",
                 *ambiguous_p ? "AMBIGUOUS " : "",
                  ps->run.grammar->symbs_ptr->num_terminals, ps->run.grammar->symbs_ptr->num_nonterminals);
-        fprintf(stderr, "#rules = %d, rules size = %d\n",
+        fprintf(stderr, "       #rules = %d, rules size = %d\n",
                  ps->run.grammar->rulestorage_ptr->num_rules,
                  ps->run.grammar->rulestorage_ptr->n_rhs_lens + ps->run.grammar->rulestorage_ptr->num_rules);
-        fprintf(stderr, "Input: #tokens = %d, #unique dotted_rules = %d\n",
+        fprintf(stderr, "       #tokens = %d, #unique dotted_rules = %d\n",
                  ps->input_len, ps->num_all_dotted_rules);
         fprintf(stderr, "       #terminal sets = %d, their size = %d\n",
                  ps->run.grammar->term_sets_ptr->n_term_sets, ps->run.grammar->term_sets_ptr->n_term_sets_size);
-        fprintf(stderr,
-                 "       #unique set cores = %d, #their start dotted_rules = %d\n",
+        fprintf(stderr, "       #unique set cores = %d, #their start dotted_rules = %d\n",
                  ps->num_set_cores, ps->num_set_core_start_dotted_rules);
-        fprintf(stderr,
-                 "       #parent indexes for some non start dotted_rules = %d\n",
+        fprintf(stderr, "       #parent indexes for some non start dotted_rules = %d\n",
                  ps->num_parent_dotted_rule_ids);
-        fprintf(stderr,
-                 "       #unique set dist. vects = %d, their length = %d\n",
+        fprintf(stderr, "       #unique set dist. vects = %d, their length = %d\n",
                  ps->num_set_matched_lengths, ps->num_set_matched_lengths_len);
-        fprintf(stderr,
-                 "       #unique sets = %d, #their start dotted_rules = %d\n",
+        fprintf(stderr, "       #unique sets = %d, #their start dotted_rules = %d\n",
                  ps->n_sets, ps->n_sets_start_dotted_rules);
-        fprintf(stderr,
-                 "       #unique triples(set, term, lookahead) = %d, goto successes=%d\n",
+        fprintf(stderr, "       #unique triples(set, term, lookahead) = %d, goto successes=%d\n",
                 ps->num_triplets_core_term_lookahead, ps->n_goto_successes);
-        fprintf(stderr,
-                 "       #pairs(set core, symb) = %d, their trans+reduce vects length = %d\n",
+        fprintf(stderr, "       #pairs(set core, symb) = %d, their trans+reduce vects length = %d\n",
                  ps->n_core_symb_pairs, ps->n_core_symb_ids_len);
-        fprintf(stderr,
-                 "       #unique transition vectors = %d, their length = %d\n",
+        fprintf(stderr, "       #unique transition vectors = %d, their length = %d\n",
                 ps->n_transition_vects, ps->n_transition_vect_len);
-        fprintf(stderr,
-                 "       #unique reduce vectors = %d, their length = %d\n",
+        fprintf(stderr, "       #unique reduce vectors = %d, their length = %d\n",
                  ps->n_reduce_vects, ps->n_reduce_vect_len);
-        fprintf(stderr,
-                 "       #term nodes = %d, #abstract nodes = %d\n",
+        fprintf(stderr, "       #term nodes = %d, #abstract nodes = %d\n",
                  ps->n_parse_term_nodes, ps->n_parse_abstract_nodes);
-        fprintf(stderr,
-                 "       #alternative nodes = %d, #all nodes = %d\n",
+        fprintf(stderr, "       #alternative nodes = %d, #all nodes = %d\n",
                  ps->n_parse_alt_nodes,
                  ps->n_parse_term_nodes + ps->n_parse_abstract_nodes
                  + ps->n_parse_alt_nodes);
@@ -5481,7 +5468,7 @@ static void print_dotted_rule(YaepParseState *ps, FILE *f,
                               YaepDottedRule *dotted_rule, bool lookahead_p, int matched_length)
 {
     if (prefix) fprintf(f, "%s", prefix);
-    fprintf(f, "(%3d)    ", dotted_rule->id);
+    fprintf(f, "(%d)    ", dotted_rule->id);
     print_rule_with_dot(ps, f, dotted_rule->rule, dotted_rule->dot_j);
 
     if (matched_length > 0)

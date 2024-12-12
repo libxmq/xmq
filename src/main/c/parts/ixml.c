@@ -2282,7 +2282,7 @@ void make_last_term_repeat_zero_infix(XMQParseState *state, char factor_mark, ch
 
 void ixml_print_grammar(XMQParseState *state)
 {
-    if (xmq_trace_enabled_)
+    if (false && xmq_trace_enabled_)
     {
         HashMapIterator *i = hashmap_iterate(state->ixml_terminals_map);
 
