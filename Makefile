@@ -176,7 +176,7 @@ clean-all:
 
 DESTDIR?=/usr/local
 install:
-	install -Dm 755 -s build/x86_64-pc-linux-gnu/release/xmq $(DESTDIR)/bin/xmq
+	install -Dm 755 -s build/default/release/xmq $(DESTDIR)/bin/xmq
 	install -Dm 644 doc/xmq.1 $(DESTDIR)/man/man1/xmq.1
 	install -Dm 644 scripts/autocompletion_for_xmq.sh /etc/bash_completion.d/xmq
 
