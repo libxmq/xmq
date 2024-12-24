@@ -88,7 +88,6 @@ ifeq (,$(BUILDDIRS))
     endif
 endif
 
-VERBOSE?=@
 SILENT?=nosilent
 
 ifeq ($(SILENT),nosilent)
@@ -173,7 +172,7 @@ clean:
 
 clean-all:
 	@echo "Removing build directory containing configuration and artifacts."
-	$(VERBOSE)rm -rf build
+	@rm -rf build
 
 DESTDIR?=/usr/local
 install:

@@ -17,7 +17,8 @@
 # Expecting a spec.mk to be included already!
 
 # To build with a lot of build output, type:
-# make VERBOSE=
+# make VERBOSE=1
+# or make V=1
 
 # Expects release or debug as a target
 # make release
@@ -46,7 +47,16 @@ endif
 $(shell mkdir -p $(OUTPUT_ROOT)/$(TYPE)/parts $(SRC_ROOT)/dist)
 
 VERSION=$(shell cat $(SRC_ROOT)/build/VERSION)
-VERBOSE?=@
+VERBOSE?=0
+V?=0
+AT:=@
+
+ifeq ($(VERBOSE),1)
+    AT:=
+endif
+ifeq ($(V),1)
+    AT:=
+endif
 
 CFLAGS += -DVERSION='"$(VERSION)"'
 
@@ -104,18 +114,18 @@ $(OUTPUT_ROOT)/$(TYPE)/fileinfo.o: $(OUTPUT_ROOT)/generated_filetypes.h
 
 $(OUTPUT_ROOT)/$(TYPE)/%.o: $(SRC_ROOT)/src/main/c/%.c $(PARTS_SOURCES) $(OUTPUT_ROOT)/update_yaep
 	@echo Compiling $(TYPE) $(CONF_MNEMONIC) $$(basename $<)
-	$(VERBOSE)$(CC) -fpic -g $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c -o $@
-	$(VERBOSE)$(CC) -E $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c > $@.source
+	$(AT)$(CC) -fpic -g $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c -o $@
+	$(AT)$(CC) -E $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c > $@.source
 
 $(OUTPUT_ROOT)/$(TYPE)/parts/%.o: $(SRC_ROOT)/src/main/c/parts/%.c
 	@echo Compiling part $(TYPE) $(CONF_MNEMONIC) $$(basename $<)
-	$(VERBOSE)$(CC) -fpic -g $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c -o $@
-	$(VERBOSE)$(CC) -E $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c > $@.source
+	$(AT)$(CC) -fpic -g $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c -o $@
+	$(AT)$(CC) -E $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c > $@.source
 
 ifneq ($(PLATFORM),WINAPI)
 $(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(POSIX_OBJS)
 	@echo Linking libxmq.so
-	$(VERBOSE)$(CC) -shared -g -o $(OUTPUT_ROOT)/$(TYPE)/libxmq.so $(OUTPUT_ROOT)/$(TYPE)/xmq.o $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSBEGIN_$(TYPE)) $(DEBUG_LDFLAGS) $(LDFLAGSEND_$(TYPE))
+	$(AT)$(CC) -shared -g -o $(OUTPUT_ROOT)/$(TYPE)/libxmq.so $(OUTPUT_ROOT)/$(TYPE)/xmq.o $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSBEGIN_$(TYPE)) $(DEBUG_LDFLAGS) $(LDFLAGSEND_$(TYPE))
 else
 $(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(WINAPI_OBJS) $(PARTS_SOURCES)
 	touch $@
@@ -123,64 +133,64 @@ endif
 
 $(OUTPUT_ROOT)/$(TYPE)/libxmq.a: $(POSIX_OBJS)
 	@echo Archiving libxmq.a
-	$(VERBOSE)ar rcs $@ $^
+	$(AT)ar rcs $@ $^
 
 ifeq ($(ENABLE_STATIC_XMQ),no)
 $(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(EXTRA_LIBS)
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
-	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS) \
+	$(AT)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
-	$(VERBOSE)cp $@ $@.g
-	$(VERBOSE)$(STRIP_COMMAND) $@$(SUFFIX)
+	$(AT)cp $@ $@.g
+	$(AT)$(STRIP_COMMAND) $@$(SUFFIX)
 ifeq ($(PLATFORM),WINAPI)
-	$(VERBOSE)mkdir -p build/windows_installer
-	$(VERBOSE)cp $(OUTPUT_ROOT)/$(TYPE)/xmq.exe $(OUTPUT_ROOT)/$(TYPE)/*.dll build/windows_installer
-	$(VERBOSE)cp scripts/xmq.nsis build/windows_installer
-	$(VERBOSE)(cd build/windows_installer; makensis xmq.nsis)
+	$(AT)mkdir -p build/windows_installer
+	$(AT)cp $(OUTPUT_ROOT)/$(TYPE)/xmq.exe $(OUTPUT_ROOT)/$(TYPE)/*.dll build/windows_installer
+	$(AT)cp scripts/xmq.nsis build/windows_installer
+	$(AT)(cd build/windows_installer; makensis xmq.nsis)
 endif
 else
 $(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(PARTS_SOURCES) $(EXTRA_LIBS)
 	@echo Linking static $(TYPE) $(CONF_MNEMONIC) $@
-	$(VERBOSE)$(CC) -static -o $@ $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS) \
+	$(AT)$(CC) -static -o $@ $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 ifeq ($(PLATFORM),WINAPI)
-	$(VERBOSE)mkdir -p $(OUTPUT_ROOT)/windows_installer
-	$(VERBOSE)cp $(OUTPUT_ROOT)/$(TYPE)/xmq.exe $(OUTPUT_ROOT)/$(TYPE)/*.dll $(OUTPUT_ROOT)/windows_installer
-	$(VERBOSE)cp $(SRC_ROOT)/scripts/windows-installer-wixl.wxs $(OUTPUT_ROOT)/windows_installer/xmq-windows-$(TYPE).wxs
-	$(VERBOSE)(cd $(OUTPUT_ROOT)/windows_installer; wixl -v xmq-windows-$(TYPE).wxs)
+	$(AT)mkdir -p $(OUTPUT_ROOT)/windows_installer
+	$(AT)cp $(OUTPUT_ROOT)/$(TYPE)/xmq.exe $(OUTPUT_ROOT)/$(TYPE)/*.dll $(OUTPUT_ROOT)/windows_installer
+	$(AT)cp $(SRC_ROOT)/scripts/windows-installer-wixl.wxs $(OUTPUT_ROOT)/windows_installer/xmq-windows-$(TYPE).wxs
+	$(AT)(cd $(OUTPUT_ROOT)/windows_installer; wixl -v xmq-windows-$(TYPE).wxs)
 endif
 endif
 
 $(OUTPUT_ROOT)/$(TYPE)/testinternals: $(TESTINTERNALS_OBJS)
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
-	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(TESTINTERNALS_OBJS) \
+	$(AT)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(TESTINTERNALS_OBJS) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
-	$(VERBOSE)$(STRIP_COMMAND) $@$(SUFFIX)
+	$(AT)$(STRIP_COMMAND) $@$(SUFFIX)
 
 $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals: $($(PLATFORM)_PARTS_OBJS)
 	@echo Linking parts $(TYPE) $(CONF_MNEMONIC) $@
-	$(VERBOSE)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $($(PLATFORM)_PARTS_OBJS) \
+	$(AT)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $($(PLATFORM)_PARTS_OBJS) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
-	$(VERBOSE)$(STRIP_COMMAND) $@$(SUFFIX)
+	$(AT)$(STRIP_COMMAND) $@$(SUFFIX)
 
 $(OUTPUT_ROOT)/$(TYPE)/libgcc_s_seh-1.dll:
-	$(VERBOSE)cp "$$(find /usr/lib/gcc -name libgcc_s_seh-1.dll | grep -m 1 win32)" $@
+	$(AT)cp "$$(find /usr/lib/gcc -name libgcc_s_seh-1.dll | grep -m 1 win32)" $@
 	@echo "Installed $@"
 
 $(OUTPUT_ROOT)/$(TYPE)/libstdc++-6.dll:
-	$(VERBOSE)cp "$$(find /usr/lib/gcc -name libstdc++-6.dll | grep -m 1 win32)" $@
+	$(AT)cp "$$(find /usr/lib/gcc -name libstdc++-6.dll | grep -m 1 win32)" $@
 	@echo "Installed $@"
 
 $(OUTPUT_ROOT)/$(TYPE)/libwinpthread-1.dll:
-	$(VERBOSE)cp "$$(find /usr -name libwinpthread-1.dll | grep -m 1 x86_64)" $@
+	$(AT)cp "$$(find /usr -name libwinpthread-1.dll | grep -m 1 x86_64)" $@
 	@echo "Installed $@"
 
 $(OUTPUT_ROOT)/$(TYPE)/libxml2-2.dll:
-	$(VERBOSE)cp "$$(find $(SRC_ROOT)/3rdparty/libxml2-winapi -name libxml2-2.dll | grep -m 1 libxml2-2.dll)" $@
+	$(AT)cp "$$(find $(SRC_ROOT)/3rdparty/libxml2-winapi -name libxml2-2.dll | grep -m 1 libxml2-2.dll)" $@
 	@echo "Installed $@"
 
 $(OUTPUT_ROOT)/$(TYPE)/libxslt-1.dll:
-	$(VERBOSE)cp "$$(find $(SRC_ROOT)/3rdparty/libxslt-winapi -name libxslt-1.dll | grep -m 1 libxslt-1.dll)" $@
+	$(AT)cp "$$(find $(SRC_ROOT)/3rdparty/libxslt-winapi -name libxslt-1.dll | grep -m 1 libxslt-1.dll)" $@
 	@echo "Installed $@"
 
 BINARIES:=$(OUTPUT_ROOT)/$(TYPE)/libxmq.a \
@@ -194,8 +204,8 @@ $(SRC_ROOT)/dist/xmq.h: $(SRC_ROOT)/src/main/c/xmq.h
 	@echo "Copied dist/xmq.h"
 
 $(SRC_ROOT)/dist/xmq.c: $(SRC_ROOT)/src/main/c/xmq.c $(PARTS_SOURCES) $(SRC_ROOT)/VERSION $(OUTPUT_ROOT)/update_yaep
-	$(VERBOSE)$(SRC_ROOT)/scripts/build_xmq_from_parts.sh $(OUTPUT_ROOT) $<
-	$(VERBOSE)cp $(OUTPUT_ROOT)/xmq-in-progress $(SRC_ROOT)/dist/xmq.c
+	$(AT)$(SRC_ROOT)/scripts/build_xmq_from_parts.sh $(OUTPUT_ROOT) $<
+	$(AT)cp $(OUTPUT_ROOT)/xmq-in-progress $(SRC_ROOT)/dist/xmq.c
 	@echo "Generated dist/xmq.c"
 
 $(OUTPUT_ROOT)/update_yaep: $(SRC_ROOT)/src/main/c/yaep/src/yaep.c $(SRC_ROOT)/src/main/c/yaep/src/yaep.h
