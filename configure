@@ -657,6 +657,7 @@ CPPFLAGS
 LDFLAGS
 CFLAGS
 CC
+PREFIX
 BUILD_ROOT
 OUTPUT_ROOT
 SRC_ROOT
@@ -2485,6 +2486,12 @@ ln -s "$OUTPUT_ROOT" "$SRC_ROOT/build/default"
 
 
 
+
+if test "x$prefix" = "xNONE"; then
+    PREFIX="$ac_default_prefix"
+else
+    PREFIX="$prefix"
+fi
 
 
 

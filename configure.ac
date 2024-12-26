@@ -108,6 +108,12 @@ AC_SUBST(CONF_NAME)
 AC_SUBST(SRC_ROOT)
 AC_SUBST(OUTPUT_ROOT)
 AC_SUBST(BUILD_ROOT)
+AC_SUBST(PREFIX)
+if test "x$prefix" = "xNONE"; then
+    PREFIX="$ac_default_prefix"
+else
+    PREFIX="$prefix"
+fi
 
 AC_HEADER_STAT
 

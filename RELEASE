@@ -1,5 +1,0 @@
-
-
-Steven Pemberton noticed that xmq wrongly reported some IXML grammars
-as ambiguous even though they weren't. This is now fixed. Thanks Steven!
-

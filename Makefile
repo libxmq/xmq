@@ -26,9 +26,8 @@ HAS_GIT=$(shell git rev-parse --is-inside-work-tree >/dev/null 2>&1 ; echo $$?)
 
 ifneq ($(HAS_GIT), 0)
 # We have no git used manually set version number.
-VERSION:=1.0.0
+VERSION:=$(shell cat dist/VERSION)
 COMMIT_HASH:=
-DEBVERSION:=1.0.0
 else
 # We have git, extract information from it.
     SUPRE=
@@ -50,17 +49,14 @@ else
     ifeq ($(COMMIT),$(TAG_COMMIT))
         # Exactly on the tagged commit. The version is the tag!
         VERSION:=$(TAG)
-        DEBVERSION:=$(TAG)
     else
         VERSION:=$(TAG)++
-        DEBVERSION:=$(TAG)++
     endif
 
     ifneq ($(strip $(CHANGES)),)
         # There are changes, signify that with a +changes
         VERSION:=$(VERSION) with uncommitted changes
         COMMIT_HASH:=$(COMMIT_HASH) but with uncommitted changes
-        DEBVERSION:=$(DEBVERSION)l
     endif
 
 endif
@@ -129,6 +125,7 @@ lcov:
 	@for x in $(BUILDDIRS); do echo; echo Bulding $$(basename $$x) ; $(MAKE) --no-print-directory -C $$x debug lcov ; done
 
 dist:
+	@echo "$(VERSION)" | cut -f 1 -d '-' > dist/VERSION
 	@cat CHANGES | sed '/20..-..-..:/q'  | head -n -1 | sed '$d' > RELEASE
 	@rm -f dist/xmq.c dist/xmq.h
 	@$(MAKE) --no-print-directory -C $(FIRSTDIR) release $(shell pwd)/dist/xmq.c $(shell pwd)/dist/xmq.h
@@ -176,14 +173,10 @@ clean-all:
 
 DESTDIR?=/usr/local
 install:
-	install -Dm 755 -s build/default/release/xmq $(DESTDIR)/bin/xmq
-	install -Dm 644 doc/xmq.1 $(DESTDIR)/man/man1/xmq.1
-	install -Dm 644 scripts/autocompletion_for_xmq.sh /etc/bash_completion.d/xmq
+	@./install.sh build/default/release $(DESTDIR)
 
 uninstall:
-	rm -f $(DESTDIR)/bin/xmq
-	rm -f $(DESTDIR)/man/man1/xmq.1
-	rm -f /etc/bash_completion.d/xmq
+	@./uninstall.sh $(DESTDIR)
 
 linux64:
 
