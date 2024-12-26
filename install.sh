@@ -30,8 +30,9 @@ fi
 install -Dm 755 -s "${FROM}/xmq" "${DESTDIR}/bin/xmq"
 install -Dm 644 -s "${FROM}/libxmq.a" "${DESTDIR}/lib/libxmq.a"
 install -Dm 644 -s "${FROM}/libxmq.so" "${DESTDIR}/lib/libxmq.so"
+mkdir -p "${DESTDIR}/include"
 cp "src/main/c/xmq.h" "${DESTDIR}/include/xmq.h"
-chmod 644 "src/main/c/xmq.h"
+chmod 644 "${DESTDIR}/include/xmq.h"
 install -Dm 644 "doc/xmq.1" "${DESTDIR}/man/man1/xmq.1"
 install -Dm 644 "scripts/autocompletion_for_xmq.sh" "${DESTDIR}/share/bash-completion/completions/xmq"
 

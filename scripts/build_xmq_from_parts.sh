@@ -14,29 +14,29 @@ fi
 ROOT=$1
 XMQ=$2
 # The dist/VERSION is used to inject into the xmq.c source code.
-VERSION="\"$(cat $3)\""
-XMQ_H=$(dirname $XMQ)/xmq.h
-PARTS=$(dirname $XMQ)/parts
+VERSION="\"$(cat "$3")\""
+XMQ_H=$(dirname "$XMQ")/xmq.h
+PARTS=$(dirname "$XMQ")/parts
 
 echo "VERSION=${VERSION}"
 
-mkdir -p ${ROOT}
-cp $XMQ ${ROOT}/xmq-in-progress
-cp $XMQ_H ${ROOT}
+mkdir -p "${ROOT}"
+cp "$XMQ" "${ROOT}/xmq-in-progress"
+cp "$XMQ_H" "${ROOT}"
 
-SED=sed
+SED="sed"
 if ! sed -doesnotexist 2>&1 | grep -q GNU
 then
-    SED=gsed
+    SED="gsed"
 fi
 
 do_part() {
     PART="$1"
     PART_UC=$(echo "$1" | tr a-z A-Z)
 
-    echo "// PARTS ${PART_UC} ////////////////////////////////////////" > ${ROOT}/parts_${PART}_h
-    $SED -n "/define ${PART_UC}_H/,/endif \/\/ ${PART_UC}_H/p" ${PARTS}/${PART}.h | $SED '1d; $d' >> ${ROOT}/parts_${PART}_h
-    $SED -e "/${PART}\.h\"/ {" -e "r ${ROOT}/parts_${PART}_h" -e 'd }' ${ROOT}/xmq-in-progress > ${ROOT}/tmp
+    echo "// PARTS ${PART_UC} ////////////////////////////////////////" > "${ROOT}/parts_${PART}_h"
+    $SED -n "/define ${PART_UC}_H/,/endif \/\/ ${PART_UC}_H/p" "${PARTS}/${PART}.h" | $SED '1d; $d' >> "${ROOT}/parts_${PART}_h"
+    $SED -e "/${PART}\.h\"/ {" -e "r ${ROOT}/parts_${PART}_h" -e 'd }' "${ROOT}/xmq-in-progress" > "${ROOT}/tmp"
 
     echo "// PARTS ${PART_UC}_C ////////////////////////////////////////" > ${ROOT}/parts_${PART}_c
     echo >> ${ROOT}/parts_${PART}_c
