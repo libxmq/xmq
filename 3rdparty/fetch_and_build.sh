@@ -12,6 +12,14 @@ fi
 
 DIR=$(pwd)
 
+patch_configure() {
+    if ! grep -q AC_CONFIG_AUX_DIR $1/configure.ac
+    then
+        sed -i '/AC_INIT/a AC_CONFIG_AUX_DIR([.])' $1/configure.ac
+        echo "PATCHING $1"
+    fi
+}
+
 if [ "$1" = "x86_64-pc-linux-gnu" ]
 then
     if [ ! -d zlib-1.3-posix ]; then
@@ -36,6 +44,7 @@ then
         echo Fetching libxml2 posix
         echo
         git clone https://github.com/GNOME/libxml2.git libxml2-posix
+        patch_configure libxml2-posix
     fi
 
     # ./.libs/libxml2.a
@@ -55,6 +64,7 @@ then
         echo Fetching libxslt posix
         echo
         git clone https://github.com/GNOME/libxslt.git libxslt-posix
+        patch_configure libxslt-posix
     fi
 
     cd libxslt-posix
@@ -96,6 +106,7 @@ then
         echo Fetching libxml2 posix aarch64
         echo
         git clone https://github.com/GNOME/libxml2.git libxml2-posix
+        patch_configure libxml2-posix
         mv libxml2-posix libxml2-posix-aarch64
     fi
 
@@ -116,6 +127,7 @@ then
         echo Fetching libxslt posix aarch64
         echo
         git clone https://github.com/GNOME/libxslt.git libxslt-posix
+        patch_configure libxslt-posix
         mv libxslt-posix libxslt-posix-aarch64
     fi
 
@@ -158,6 +170,7 @@ then
         echo Fetching libxml2 posix armv7l
         echo
         git clone https://github.com/GNOME/libxml2.git libxml2-posix
+        patch_configure libxml2-posix
         mv libxml2-posix libxml2-posix-armv7l
     fi
 
@@ -178,6 +191,7 @@ then
         echo Fetching libxslt posix armv7l
         echo
         git clone https://github.com/GNOME/libxslt.git libxslt-posix
+        patch_configure libxslt-posix
         mv libxslt-posix libxslt-posix-armv7l
     fi
 
@@ -219,6 +233,7 @@ then
         echo Fetching libxml2 winapi
         echo
         git clone https://github.com/GNOME/libxml2.git libxml2-winapi
+        patch_configure libxml2-winapi
     fi
 
     cd libxml2-winapi
@@ -237,6 +252,7 @@ then
         echo Fetching libxslt winapi
         echo
         git clone https://github.com/GNOME/libxslt.git libxslt-winapi
+        patch_configure libxslt-winapi
     fi
 
     cd libxslt-winapi
