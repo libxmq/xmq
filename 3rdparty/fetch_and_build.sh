@@ -228,13 +228,6 @@ then
         echo
 
         ./autogen.sh --host=x86_64-w64-mingw32 --with-iconv=no --with-zlib=no --with-lzma=no --with-python=no --with-http=no
-        if [ "$?" != 0 ]
-        then
-            # Run autogen again since ltmain.sh was not found?
-            echo "Strange error? Lets try again."
-            ./autogen.sh --host=x86_64-w64-mingw32 --with-iconv=no --with-zlib=no --with-lzma=no --with-python=no --with-http=no
-        fi
-
         make
     fi
     cd ..
@@ -253,13 +246,6 @@ then
         echo
 
         ./autogen.sh --host=x86_64-w64-mingw32  --with-libxml-src=${DIR}/libxml2-winapi --with-python=no
-        if [ "$?" != 0 ]
-        then
-            # Run autogen again since ltmain.sh was not found?
-            echo "Strange error? Lets try again."
-            ./autogen.sh --host=x86_64-w64-mingw32  --with-libxml-src=${DIR}/libxml2-winapi --with-python=no
-        fi
-
         make
     fi
     cd ..
