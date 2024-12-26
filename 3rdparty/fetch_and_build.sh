@@ -227,6 +227,7 @@ then
         echo Building libxml2 winapi
         echo
 
+        libtoolize
         ./autogen.sh --host=x86_64-w64-mingw32 --with-iconv=no --with-zlib=no --with-lzma=no --with-python=no --with-http=no
         make
     fi
@@ -245,6 +246,7 @@ then
         echo Building libxslt winapi
         echo
 
+        libtoolize
         ./autogen.sh --host=x86_64-w64-mingw32  --with-libxml-src=${DIR}/libxml2-winapi --with-python=no
         make
     fi
