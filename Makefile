@@ -125,7 +125,7 @@ lcov:
 	@for x in $(BUILDDIRS); do echo; echo Bulding $$(basename $$x) ; $(MAKE) --no-print-directory -C $$x debug lcov ; done
 
 dist:
-	@echo "$(VERSION)" | cut -f 1 -d '-' > dist/VERSION
+	@echo "$(VERSION)" | sed 's/-.*/-modified/' > dist/VERSION
 	@cat CHANGES | sed '/20..-..-..:/q'  | head -n -1 | sed '$d' > RELEASE
 	@rm -f dist/xmq.c dist/xmq.h
 	@$(MAKE) --no-print-directory -C $(FIRSTDIR) release $(shell pwd)/dist/xmq.c $(shell pwd)/dist/xmq.h
@@ -190,7 +190,7 @@ PACKAGE_NAME:=libxmq_name
 PACKAGE_STRING:=libxmq_string
 PACKAGE_TARNAME:=libxmq_tar
 PACKAGE_URL:=https://libxmq.org/releases/libxmq.tgz
-PACKAGE_VERSION:=0.9
+PACKAGE_VERSION:=$(shell cat dist/VERSION)
 
 build/gtkdocentities.ent:
 	@echo '<!ENTITY package "$(PACKAGE)">' > $@

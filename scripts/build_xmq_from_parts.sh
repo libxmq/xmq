@@ -7,18 +7,18 @@
 
 if [ -z "$1" ] || [ -z "$2" ]
 then
-    echo "Usage: build_xmq_from_parts output_dir xmq.c"
+    echo "Usage: build_xmq_from_parts output_dir .../xmq.c .../dist/VERSION"
     exit 0
 fi
 
-# Assume this script is run from the source root where VERSION is stored.
-VERSION="\"$(cat ../../VERSION)\""
-echo "VERSION=${VERSION}"
-
 ROOT=$1
 XMQ=$2
+# The dist/VERSION is used to inject into the xmq.c source code.
+VERSION="\"$(cat $3)\""
 XMQ_H=$(dirname $XMQ)/xmq.h
 PARTS=$(dirname $XMQ)/parts
+
+echo "VERSION=${VERSION}"
 
 mkdir -p ${ROOT}
 cp $XMQ ${ROOT}/xmq-in-progress
