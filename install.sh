@@ -28,7 +28,7 @@ fi
 #. "${FROM}/../spec.inc"
 
 install -Dm 755 -s "${FROM}/xmq" "${DESTDIR}/bin/xmq"
-install -Dm 644 -s "${FROM}/libxmq.a" "${DESTDIR}/lib/libxmq.a"
+install -Dm 644 "${FROM}/libxmq.a" "${DESTDIR}/lib/libxmq.a"
 install -Dm 644 -s "${FROM}/libxmq.so" "${DESTDIR}/lib/libxmq.so"
 mkdir -p "${DESTDIR}/include"
 cp "src/main/c/xmq.h" "${DESTDIR}/include/xmq.h"
