@@ -1370,6 +1370,12 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
     const char *es = has_ending_nl_space(start, stop, &only_ending_newlines);
     if (es != NULL && only_ending_newlines == 0) return true;
 
+    if (has_all_quotes(start, stop))
+    {
+        // We will always pretty print a string of quotes as: &apos;&apos;&apos;
+        return true;
+    }
+
     if (compact)
     {
         // In compact form newlines must be escaped: &#10;

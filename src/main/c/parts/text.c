@@ -122,6 +122,7 @@ bool has_must_escape_chars(const char *start, const char *stop)
 
 bool has_all_quotes(const char *start, const char *stop)
 {
+    if (start == stop) return false;
     for (const char *i = start; i < stop; ++i)
     {
         if (*i != '\'') return false;

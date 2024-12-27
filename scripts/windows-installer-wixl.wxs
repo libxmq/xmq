@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Product Name="XMQ" Id="565b7254-a1c8-11ee-a3f3-1b33920ca1e4" UpgradeCode="5c213872-a1c8-11ee-b6b1-27827215348f" Language="1033" Codepage="1252" Version="1.0.0" Manufacturer="https://libxmq.org">
     <Package Id="*" Keywords="Installer" Description="XMQ Installer" Comments="XMQ is a tool and a language." Manufacturer="https://libxmq.org" InstallerVersion="100" Languages="1033" Compressed="yes" SummaryCodepage="1252"/>
