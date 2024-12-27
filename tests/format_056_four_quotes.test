@@ -1,0 +1,16 @@
+START
+<s><quote>sdf</quote><quote>EMPTY</quote><quote>xx''x</quote><quote>x'x''x'''x</quote></s>
+COMPACT
+s{quote=sdf quote=EMPTY quote='''xx''x'''quote=''''x'x''x'''x''''}
+XMQ
+s {
+    quote = sdf
+    quote = EMPTY
+    quote = '''xx''x'''
+    quote = ''''
+            x'x''x'''x
+            ''''
+}
+END
+ARGS
+CMDS

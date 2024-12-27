@@ -22,7 +22,6 @@ const char *toHtmlEntity(int uc);
     count_necessary_quotes:
     @start: Points to first byte of memory buffer to scan for quotes.
     @stop:  Points to byte after memory buffer.
-    @forbid_nl: Compact mode.
     @add_nls: Returns whether we need leading and ending newlines.
     @add_compound: Compounds ( ) is necessary.
 
@@ -34,7 +33,7 @@ const char *toHtmlEntity(int uc);
     Set add_compound to true if content starts or ends with spaces/newlines or if forbid_nl==true and
     content starts/ends with quotes.
 */
-size_t count_necessary_quotes(const char *start, const char *stop, bool compact, bool *add_nls, bool *add_compound)
+size_t count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound)
 {
     size_t max = 0;
     size_t curr = 0;
@@ -53,20 +52,12 @@ size_t count_necessary_quotes(const char *start, const char *stop, bool compact,
         // If leading or ending quote, then add newlines both at the beginning and at the end.
         // Strictly speaking, if only a leading quote, then only newline at beginning is needed.
         // However to reduce visual confusion, we add newlines at beginning and end.
-        if (!compact)
-        {
-            // We quote this using:
-            // '''
-            // 'howdy'
-            // '''
-            *add_nls = true;
-        }
-        else
-        {
-            // We quote this using:
-            // ( &#39; 'howdy' &#39; )
-            *add_compound = true;
-        }
+
+        // We might quote this using:
+        // '''
+        // 'howdy'
+        // '''
+        *add_nls = true;
     }
 
     size_t only_prepended_newlines = 0;
@@ -1019,10 +1010,11 @@ void print_safe_leaf_quote(XMQPrintState *ps,
                            const char *start,
                            const char *stop)
 {
+    bool compact = ps->output_settings->compact;
     bool force = true;
     bool add_nls = false;
     bool add_compound = false;
-    int numq = count_necessary_quotes(start, stop, false, &add_nls, &add_compound);
+    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound);
     size_t indent = ps->current_indent;
 
     if (numq > 0)
@@ -1048,7 +1040,7 @@ void print_safe_leaf_quote(XMQPrintState *ps,
             {
                 // We have a nonzero indentation and number of quotes is 1 or 3.
                 // Then the actual source indentation will be +1 or +3.
-                if (numq < 4)
+                if (numq < 4 || compact)
                 {
                     // e.g. quote at 4 will have source at 5.
                     // |    'alfa beta
@@ -1060,7 +1052,7 @@ void print_safe_leaf_quote(XMQPrintState *ps,
                 }
                 else
                 {
-                    // More than 3 quotes, then we add newlines.
+                    // More than 3 quotes and not compact, then we add newlines.
                     // e.g. quote at 4 will have source at 4.
                     // |    ''''
                     // |    alfa beta '''
@@ -1289,7 +1281,7 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
             bool add_nls = false;
             bool add_compound = false;
             bool compact = ps->output_settings->compact;
-            count_necessary_quotes(from, to, false, &add_nls, &add_compound);
+            count_necessary_quotes(from, to, &add_nls, &add_compound);
             if (!add_compound && (!add_nls || !compact))
             {
                 check_space_before_quote(ps, level);

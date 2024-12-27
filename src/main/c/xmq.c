@@ -3668,7 +3668,7 @@ char *xmq_quote_default(int indent,
 {
     bool add_nls = false;
     bool add_compound = false;
-    int numq = count_necessary_quotes(start, stop, false, &add_nls, &add_compound);
+    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound);
 
     if (numq > 0)
     {
