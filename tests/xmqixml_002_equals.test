@@ -1,0 +1,12 @@
+START
+ alfa {   '123' }
+IXML
+xmq {
+    element_with_children(name = alfa)
+    {
+        children {
+            quote = 123
+        }
+    }
+}
+END
