@@ -30,6 +30,12 @@ mkdir -p "$OUTPUT"
 
 tests/test_grammars.sh "$PROG" "$OUTPUT" || (echo "Testing aborted" ; exit 1)
 
+for i in tests/xmqixml_[0-9][0-9][0-9]_*.test
+do
+    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+    tests/test_xmqixml_format.sh "$PROG" "$OUTPUT" "$i" || (echo "Testing aborted" ; exit 1)
+done
+
 for i in tests/ixml_grammar_[0-9][0-9][0-9]_*.test
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
