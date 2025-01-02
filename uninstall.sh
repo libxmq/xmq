@@ -22,7 +22,8 @@ rm -f "${DESTDIR}/bin/xmq"
 rm -f "${DESTDIR}/lib/libxmq.a"
 rm -f "${DESTDIR}/lib/libxmq.so"
 rm -f "${DESTDIR}/include/xmq.h"
-rm -f "${DESTDIR}/man/man1/xmq.1"
+rm -f "${DESTDIR}/share/man/man1/xmq.1"
+
 rm -f "${DESTDIR}/share/bash-completion/completions/xmq"
 
 echo
