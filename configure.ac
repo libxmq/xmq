@@ -203,15 +203,15 @@ AC_ARG_WITH(libxml2, [AS_HELP_STRING([--with-libxml2],
       (expecting the libraries under PATH and the headers under PATH)])])
 
 if test "x${with_libxml2}" = "x"; then
-    LIBXML2_CFLAGS="-I /usr/include/libxml2"
-    LIBXML2_LIBS="-lxml2"
-    AC_MSG_RESULT([using -lxml2 and /usr/include/libxml2])
-    AC_CHECK_LIB(xml2, xmlSAXParseDoc, [], [
-        echo "Error! You need to have libxml2 available. Try: sudo apt install libxml2-dev"
-        exit -1
-        ])
+    if ! pkg-config libxml-2.0 ; then
+        AC_MSG_ERROR([not found using pkg-config. Try: sudo apt install libxml2-dev])
+        exit 0
+    fi
+    LIBXML2_CFLAGS="$($PKG_CONFIG libxml-2.0 --cflags)"
+    LIBXML2_LIBS="$($PKG_CONFIG libxml-2.0 --libs)"
+    AC_MSG_RESULT([found using pkg-config])
     if test "x$ENABLE_STATIC_XMQ" = xyes; then
-        AC_MSG_ERROR([You specified --enable-static-xmq  so you must use --with-libxml2=... to find a static libxml2.a])
+        AC_MSG_ERROR([You specified --enable-static-xmq so you must use --with-libxml2=... to find a static libxml2.a])
     fi
 else
     with_libxml2=$(realpath ${with_libxml2})
@@ -244,15 +244,15 @@ AC_ARG_WITH(libxslt, [AS_HELP_STRING([--with-libxslt],
       (expecting the libraries under PATH and the headers under PATH)])])
 
 if test "x${with_libxslt}" = "x"; then
-    LIBXSLT_CFLAGS="-I /usr/include/libxslt"
-    LIBXSLT_LIBS="-lxslt"
-    AC_MSG_RESULT([using -lxslt and /usr/include/libxslt])
-    AC_CHECK_LIB(xslt, xsltLibxmlVersion, [], [
-        echo "Error! You need to have libxslt available. Try: sudo apt install libxslt1-dev"
-        exit -1
-        ])
+    if ! pkg-config libxslt ; then
+        AC_MSG_ERROR([not found using pkg-config. Try: sudo apt install libxslt1-dev])
+        exit 0
+    fi
+    LIBXSLT_CFLAGS="$($PKG_CONFIG libxslt --cflags)"
+    LIBXSLT_LIBS="$($PKG_CONFIG libxslt --libs)"
+    AC_MSG_RESULT([found using pkg-config])
     if test "x$ENABLE_STATIC_XMQ" = xyes; then
-        AC_MSG_ERROR([You specified --enable-static-xmq  so you must use --with-libxslt=... to find a static libxslt.a])
+        AC_MSG_ERROR([You specified --enable-static-xmq so you must use --with-libxslt=... to find a static libxslt.a])
     fi
 else
     with_libxslt=$(realpath ${with_libxslt})
