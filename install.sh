@@ -17,8 +17,13 @@ if [ ! -f "$FROM/../spec.inc" ]; then
     exit 1
 fi
 
+if [ -z "$DESTDIR" ]; then
+    . "$FROM/../spec.inc"
+    DESTDIR="$PREFIX"
+fi
+
 if [ ! -d "$DESTDIR" ]; then
-    echo "Oups, please supply a valid dest_dir directory."
+    echo "Oups, please supply a valid dest_dir directory. The directory \"$DESTDIR\" does not exist."
     exit 1
 fi
 
@@ -50,4 +55,4 @@ install -m 644 "doc/xmq.1" "${DESTDIR}/share/man/man1/xmq.1"
 install -m 644 "scripts/autocompletion_for_xmq.sh" "${DESTDIR}/share/bash-completion/completions/xmq"
 
 echo
-echo "xmq and libxmq sucessfully installed."
+echo "Installed xmq and libxmq into: $DESTDIR"

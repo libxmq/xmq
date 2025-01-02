@@ -171,12 +171,11 @@ clean-all:
 	@echo "Removing build directory containing configuration and artifacts."
 	@rm -rf build
 
-DESTDIR?=/usr/local
 install:
-	@./install.sh build/default/release $(DESTDIR)
+	@./install.sh build/default/release "$(DESTDIR)"
 
 uninstall:
-	@./uninstall.sh $(DESTDIR)
+	@./uninstall.sh "$(DESTDIR)"
 
 linux64:
 
