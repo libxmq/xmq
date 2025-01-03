@@ -124,9 +124,27 @@ lcov:
 	@echo Generating code coverage $(words $(BUILDDIRS)) host\(s\).
 	@for x in $(BUILDDIRS); do echo; echo Bulding $$(basename $$x) ; $(MAKE) --no-print-directory -C $$x debug lcov ; done
 
+# Bump major number
+release_major:
+	@./scripts/release.sh major
+
+# Bump minor number
+release_minor:
+	@./scripts/release.sh minor
+
+# Bump patch number
+release_patch:
+	@./scripts/release.sh patch
+
+# Bump release candidate number, ie a bug in the previous RC was found!
+release_rc:
+	@./scripts/release.sh rc
+
+deploy:
+	@./scripts/deploy.sh
+
 dist:
 	@echo "$(VERSION)" | sed 's/-.*/-modified/' > dist/VERSION
-	@cat CHANGES | sed '/20..-..-..:/q'  | head -n -1 | sed '$d' > RELEASE
 	@rm -f dist/xmq.c dist/xmq.h
 	@$(MAKE) --no-print-directory -C $(FIRSTDIR) release $(shell pwd)/dist/xmq.c $(shell pwd)/dist/xmq.h
 	@(cd dist; make example; make examplecc)
