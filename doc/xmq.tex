@@ -103,7 +103,7 @@
 {\flushleft
 {\textsc{\Large XMQ/HTMQ --- see XML/HTML in a new light}}
 
-by Fredrik Öhrström 2024-06-07 \hfill \texttt{https://libxmq.org}
+by Fredrik Öhrström 2025-01-03 \hfill \texttt{https://libxmq.org}
 }
 
 {\flushleft{\large\textsc{\color{Red}{Rationale}}}} XMQ offers a visual
@@ -445,9 +445,9 @@ because this would introduce unwanted whitespace in the output.
 \verb|r7. All spaces before a newline are removed.| \\
 \verb|r8. Incidental indentation (some spaces after a newline) is removed.|\\
 \verb|r9. The indent to be removed is the minimum source code indentation|\\
-\verb|    for text within the block where empty lines are ignored.|\\
-\verb|r10. The first line is prefixed with spaces if the following lines|\\
-\verb|     have lesser source code indentation.|
+\verb|    for text within the block where the first and empty lines are ignored.|\\
+\verb|r10. The first line is instead assumed to have exactly the calculated incidental indentation.|\\
+
 
 \vspace{-1mm}
 \verb|     TEXT:namekey is (only for syntax highlighting) either a name or a key.| \\

@@ -1,0 +1,25 @@
+INPUT
+alfa {
+    beta = 'one
+               ett
+            one'
+    gamma = 'two
+               två
+             two'
+}
+FIRST
+{"_":"alfa","beta":"one\n   ett\none","gamma":"two\n  två\ntwo"}
+SECOND
+alfa {
+    beta  = 'one
+                ett
+             one'
+    gamma = 'two
+               två
+             two'
+}
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-xmq
