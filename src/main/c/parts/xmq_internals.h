@@ -520,6 +520,7 @@ void eat_xmq_text_value(XMQParseState *state);
 bool peek_xmq_next_is_equal(XMQParseState *state);
 size_t count_xmq_quotes(const char *i, const char *stop);
 void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop);
+size_t calculate_incidental_indent(const char *start, const char *stop);
 char *xmq_trim_quote(size_t indent, char space, const char *start, const char *stop);
 char *escape_xml_comment(const char *comment);
 char *unescape_xml_comment(const char *comment);

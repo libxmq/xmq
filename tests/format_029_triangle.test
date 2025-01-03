@@ -1,3 +1,6 @@
+# The source indentation of the first line cannot be determined by design.
+# We want to support lexers that do not track indentation.
+# So it is placed in the same level as the incidental indentation.
 START
 a {
     b {
@@ -10,11 +13,11 @@ a {
     }
 }
 COMPACT
-a{b{d=('     row'&#10;'    row'&#10;'   row'&#10;'  row'&#10;' row'&#10;'row')}}
+a{b{d=('row'&#10;'    row'&#10;'   row'&#10;'  row'&#10;' row'&#10;'row')}}
 XMQ
 a {
     b {
-        d = '     row
+        d = 'row
                  row
                 row
                row

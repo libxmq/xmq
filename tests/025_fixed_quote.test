@@ -1,0 +1,15 @@
+# What should we do with the first line?
+# It is assumed to have the same base indentation as the found incidental indentation.
+# Most lexers (and ixml) cannot track the column number when grabbing tokens
+# so we cannot use the actual source code indentation here. We can only
+# know the second (and further lines indentation.
+# So here we assume that x is equially indented as z.
+START
+   'x
+   y
+  z'
+DEBUG
+[whitespace "   " 1:1][quote "'x\n   y\n  z'" 1:4][whitespace "\n" 3:5]
+CONTENT
+{quote "x\n y\nz"}
+END

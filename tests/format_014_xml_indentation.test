@@ -20,10 +20,10 @@ laboris nisi ut aliquip ex ea commodo consequat.</para>
     laboris nisi ut aliquip ex ea commodo consequat.
     </para>
 	<para>TYPE 5: Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-	sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-	Ut enim ad minim veniam, quis nostrud exercitation ullamco
-	laboris nisi ut aliquip ex ea commodo consequat.
-	</para>
+sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco
+laboris nisi ut aliquip ex ea commodo consequat.
+</para>
 </article>
 COMPACT
 article{para=('TYPE 1: Lorem ipsum dolor sit amet, consectetur adipiscing elit,'&#10;'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'&#10;'Ut enim ad minim veniam, quis nostrud exercitation ullamco'&#10;'laboris nisi ut aliquip ex ea commodo consequat.')para=('TYPE 2: Lorem ipsum dolor sit amet, consectetur adipiscing elit,'&#10;'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'&#10;'Ut enim ad minim veniam, quis nostrud exercitation ullamco'&#10;'laboris nisi ut aliquip ex ea commodo consequat.')para=('TYPE 3: Lorem ipsum dolor sit amet, consectetur adipiscing elit,'&#10;'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'&#10;'Ut enim ad minim veniam, quis nostrud exercitation ullamco'&#10;'laboris nisi ut aliquip ex ea commodo consequat.')para=('TYPE 4: Lorem ipsum dolor sit amet, consectetur adipiscing elit,'&#10;'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'&#10;'Ut enim ad minim veniam, quis nostrud exercitation ullamco'&#10;'laboris nisi ut aliquip ex ea commodo consequat.')para=('TYPE 5: Lorem ipsum dolor sit amet, consectetur adipiscing elit,'&#10;'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'&#10;'Ut enim ad minim veniam, quis nostrud exercitation ullamco'&#10;'laboris nisi ut aliquip ex ea commodo consequat.')}

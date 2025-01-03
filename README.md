@@ -18,17 +18,12 @@ Binaries latest release [https://github.com/libxmq/xmq/releases/latest](https://
 
 ## XMQ another way to work with XML/HTML/JSON
 
-The xmq format can exactly represent the content of the xml/html file
-and can therefore be converted back to xml/html after any editing has
-been done. It might not however generate exactly the same xml/html
-file, byte per byte, because xmq uses its own set of choices for
-pretty printing, quotes and escaping.
+The xmq format can exactly represent the content of the xml/html/json file
+and can therefore be converted back to xml/html/json after any editing has
+been done.
 
 For html you can use the suffix htmq to indicate that you have written
-html using the xmq format. Xmq cannot represent broken html and will
-give up on broken html since the tags must always balance or be
-self-closing. Use a tool like tidy to make sure the html is fully
-compliant before converting to xmq.
+html using the xmq format.
 
 Xmq can of course also be used as a configuration language directly
 for your application! You can just copy&paste dist/xmq.h and
@@ -73,6 +68,9 @@ xmq index.html delete //script delete //style pa
 # The same but render to browse_tmp_dn.html and browse it.
 xmq index.html delete //script delete //style br
 
+# List all hyperlinks in a web page.
+xmq index.html select //a
+
 # Replace entities with strings you can also --with-text-file=abc
 # which inserts the content safely quoted, or as DOM --with-file=abc.xml
 # where the file has be parseable.
@@ -81,7 +79,7 @@ xmq template.htmq replace-entity DATE 2024-01-11 replace-entity NAME 'Hercules' 
 # Apply an xslq transform to some json to generate a html page.
 xmq todos.json transform todos.xslq to-html > list.html
 
-# Apply an xslq transform to generate plain text.
+# Apply an xslq transform to generate plain text, ie keep only the text nodes.
 xmq todos.json transform todosframed.xslq to-text > list.txt
 
 # Convert xml to json.

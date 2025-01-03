@@ -1,9 +1,0 @@
-START
-   'x
-   y
-  z'
-DEBUG
-[whitespace "   " 1:1][quote "'x\n   y\n  z'" 1:4][whitespace "\n" 3:5]
-CONTENT
-{quote "  x\n y\nz"}
-END

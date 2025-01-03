@@ -1350,52 +1350,43 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     return foo;
 }
 
+size_t calculate_incidental_indent(const char *start, const char *stop)
+{
+    size_t indent = (size_t)-1; // Maximum indentation possible.
+    const char *i = start;
+
+    // Find first newline.
+    while (i < stop && *i != 10) i++;
+
+    // No newlines?
+    if (i >= stop) return (size_t)-1; // No incidental indentation.
+
+    for (;;)
+    {
+        // We have reached a newline character.
+        assert(*i == '\n');
+        i++;
+
+        const char *line_start = i;
+        // Look for content.
+        while (i < stop && *i == ' ') i++;
+        if (i >= stop) break;
+        if (*i != 10 && *i != 13)
+        {
+            // We reached real content.
+            size_t ind = i-line_start;
+            if (ind < indent) indent = ind;
+        }
+        // Look for end of line.
+        while (i < stop && *i != 10) i++;
+        if (i >= stop) break;
+    }
+
+    return indent;
+}
+
 char *xmq_trim_quote(size_t indent, char space, const char *start, const char *stop)
 {
-    // Special case, find the next indent and use as original indent.
-    if (indent == 0 && space == 0)
-    {
-        size_t i;
-        const char *after;
-        const char *eol;
-        // Skip first line.
-        bool found_nl = find_line(start, stop, &i, &after, &eol);
-        if (found_nl && eol != stop)
-        {
-            // Now grab the indent from the second line.
-            find_line(eol, stop, &indent, &after, &eol);
-        }
-    }
-    // If the first line is all spaces and a newline, then
-    // the first_indent should be ignored.
-    bool ignore_first_indent = false;
-
-    // For each found line, the found indent is the number of spaces before the first non space.
-    size_t found_indent;
-
-    // For each found line, this is where the line ends after trimming line ending whitespace.
-    const char *after_last_non_space;
-
-    // This is where the newline char was found.
-    const char *eol;
-
-    // Did the found line end with a newline or NULL.
-    bool has_nl = false;
-
-    // Lets examine the first line!
-    has_nl = find_line(start, stop, &found_indent, &after_last_non_space, &eol);
-
-    // We override the found indent (counting from start)
-    // with the actual source indent from the beginning of the line.
-    found_indent = indent;
-
-    if (!has_nl)
-    {
-        // No newline was found, then do not trim! Return as is.
-        char *buf = strndup(start, stop-start);
-        return buf;
-    }
-
     size_t append_newlines = 0;
 
     // Check if the final line is all spaces.
@@ -1410,6 +1401,7 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
             stop--;
         }
     }
+    // If there is one or more ending newlines, then one is dropped, but keep the rest.
     if (append_newlines > 0) append_newlines--;
 
     if (stop == start)
@@ -1422,13 +1414,40 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
         return buf;
     }
 
+    size_t incidental = calculate_incidental_indent(start, stop);
+
+    if (incidental == (size_t)-1)
+    {
+        // No newline was found, then do not trim, but re-add ending newlines.
+        char *buf = (char*)malloc(stop-start+append_newlines+1);
+        memcpy(buf, start, stop-start);
+        size_t i = stop-start;
+        for (int j = 0; j < append_newlines; ++j) buf[i++] = '\n';
+        buf[i++] = 0;
+        return buf;
+    }
+
     size_t prepend_newlines = 0;
+
+    // For each found line, this is where the line ends after trimming line ending whitespace.
+    const char *after_last_non_space;
+
+    // This is where the newline char was found.
+    const char *eol;
+
+    size_t found_indent = 0;
+
+    bool first_line = true;
+
+    // Now find the first line.
+    find_line(start, stop, &found_indent, &after_last_non_space, &eol);
 
     // Check if the first line is all spaces.
     if (has_leading_space_nl(start, stop, NULL))
     {
-        // The first line is all spaces, trim leading spaces and newlines!
-        ignore_first_indent = true;
+        // There is no first line (there was leading space/newline) thus we
+        // start removing incidental indentation immediately below.
+        first_line = false;
         // Skip the already scanned first line.
         start = eol;
         const char *i = start;
@@ -1440,89 +1459,46 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
                 start = i+1; // Restart find lines from here.
                 prepend_newlines++;
             }
-            else if (c != ' ' && c != '\t' && c != '\r') break;
+            else if (c != '\r') break;
             i++;
         }
-    }
-    size_t incidental = (size_t)-1;
-
-    if (!ignore_first_indent)
-    {
-        incidental = indent;
-    }
-
-    // Now scan remaining lines at the first line.
-    const char *i = start;
-    bool first_line = true;
-    while (i < stop)
-    {
-        has_nl = find_line(i, stop, &found_indent, &after_last_non_space, &eol);
-
-        if (after_last_non_space != i)
-        {
-            // There are non-space chars.
-            if (found_indent < incidental)  // Their indent is lesser than the so far found.
-            {
-                // Yep, remember it.
-                if (!first_line || ignore_first_indent)
-                {
-                    incidental = found_indent;
-                }
-            }
-            first_line = false;
-        }
-        i = eol; // Start at next line, or end at stop.
-    }
-
-    size_t prepend_spaces = 0;
-
-    if (!ignore_first_indent &&
-        indent >= incidental)
-    {
-        // The first indent is relevant and it is bigger than the incidental.
-        // We need to prepend the output line with spaces that are not in the source!
-        // But, only if there is more than one line with actual non spaces!
-        prepend_spaces = indent - incidental;
     }
 
     // Allocate max size of output buffer, it usually becomes smaller
     // when incidental indentation and trailing whitespace is removed.
-    size_t n = stop-start+prepend_spaces+prepend_newlines+append_newlines+1;
+    size_t n = stop-start+prepend_newlines+append_newlines+1;
     char *output = (char*)malloc(n);
     char *o = output;
-
-    // Insert any necessary prepended spaces due to source indentation of the line.
-    if (space != 0)
-    {
-        while (prepend_spaces) { *o++ = space; prepend_spaces--; }
-    }
 
     // Insert any necessary prepended newlines.
     while (prepend_newlines) { *o++ = '\n'; prepend_newlines--; }
 
-    // Start scanning the lines from the beginning again.
+    // Start scanning the lines from beginning.
     // Now use the found incidental to copy the right parts.
-    i = start;
+    const char *i = start;
 
-    first_line = true;
     while (i < stop)
     {
         bool has_nl = find_line(i, stop, &found_indent, &after_last_non_space, &eol);
 
-        if (!first_line || ignore_first_indent)
+        if (first_line)
         {
-            // For all lines except the first. And for the first line if ignore_first_indent is true.
-            // Skip the incidental indentation.
-            size_t n = incidental;
-            while (n > 0)
+            first_line = false;
+        }
+        else
+        {
+            // Skip the incidental indentation, if there is indentation to be skipped.
+            // Since empty lines do not count.
+            if (*i == ' ')
             {
-                char c = *i;
-                i++;
-                if (c == ' ') n--;
-                else if (c == '\t')
+                size_t n = incidental;
+                assert(found_indent >= incidental);
+                while (n > 0)
                 {
-                    if (n >= 8) n -= 8;
-                    else break; // safety check.
+                    char c = *i;
+                    assert(c == ' ');
+                    i++;
+                    n--;
                 }
             }
         }
@@ -1539,8 +1515,8 @@ char *xmq_trim_quote(size_t indent, char space, const char *start, const char *s
             while (i < eol) { *o++ = *i++; }
         }
         i = eol;
-        first_line = false;
     }
+
     // Insert any necessary appended newlines.
     while (append_newlines) { *o++ = '\n'; append_newlines--; }
     *o++ = 0;
@@ -3002,10 +2978,15 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
     }
 }
 
+// Use an internal bit for signaling comment trimming.
+#define TRIM_COMMENT 65536
+// Use an internal bit for signaling treating tabs as part of incidental indentation.
+#define TRIM_TABS    65536*2
+
 void trim_text_node(xmlNode *node, int flags)
 {
     // If node has whitespace preserve set, then do not trim.
-    // if (xmlNodeGetSpacePreserve (node)) return;
+    //if (xmlNodeGetSpacePreserve (node)) return;
 
     const char *content = xml_element_content(node);
     // We remove any all whitespace node.
@@ -3026,8 +3007,13 @@ void trim_text_node(xmlNode *node, int flags)
     // is the same as the second line indent! This is necessary to gracefully handle all the possible xml indentations.
     const char *start = content;
     const char *stop = start+strlen(start);
-    while (start < stop && *start == ' ') start++;
-    while (stop > start && *(stop-1) == ' ') stop--;
+
+    if (flags & TRIM_COMMENT)
+    {
+        // For comments we always remove leading and ending spaces.
+        while (start < stop && *start == ' ') start++;
+        while (stop > start && *(stop-1) == ' ') stop--;
+    }
 
     char *trimmed = xmq_un_quote(0, 0, start, stop, false);
     if (trimmed[0] == 0)
@@ -3053,7 +3039,7 @@ void trim_node(xmlNode *node, int flags)
 
     if (is_comment_node(node))
     {
-        trim_text_node(node, flags);
+        trim_text_node(node, flags | TRIM_COMMENT);
         return;
     }
 

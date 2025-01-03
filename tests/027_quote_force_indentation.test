@@ -1,9 +1,11 @@
 START
-'    xxx
-     yyy
-     zzz'
+'
+    xxx
+  yyy
+zzz
+'
 DEBUG
-[quote "'    xxx\n     yyy\n     zzz'" 1:1][whitespace "\n" 3:10]
+[quote "'\n    xxx\n  yyy\nzzz\n'" 1:1][whitespace "\n" 5:2]
 CONTENT
-{quote "    xxx\n    yyy\n    zzz"}
+{quote "    xxx\n  yyy\nzzz"}
 END
