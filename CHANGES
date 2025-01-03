@@ -1,4 +1,4 @@
-Version 3.2.0-RC1 2025-01-03
+2025-01-03: Version 3.2.0
 
 You can now print all href attributes in a web page:
 
@@ -8,9 +8,6 @@ You can now compose a new web page with all the svg images found
 and view this page in your default browser:
 
 xmq index.html select //svg add-root body add-root html to-html br
-
-You can of course do the same with img tags for pages that
-have src references beginning with https:.
 
 2025-01-02: Version 3.1.3
 2025-01-02: Version 3.1.2
