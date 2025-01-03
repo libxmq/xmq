@@ -2235,13 +2235,20 @@ bool cmd_select(XMQCliCommand *command)
         assert(nodes->nodeTab[i]);
         xmlNode *n = nodes->nodeTab[i];
 
-        while (n && !is_element_node(n) && !is_content_node(n))
+        if (is_attribute_node(n))
         {
-            // We found an attribute move to parent.
-            n = n->parent;
+            xmlAttr *a = (xmlAttr*)n;
+            // we found an attribute node, eg href="...", rewrite this into
+            // <href>...</href> which prints nicely as href=... in xmq.
+            xmlNodePtr new_node = xmlNewDocNode(new_doc, NULL, (xmlChar*)a->name, NULL);
+            xmlAddChildList(new_node, xmlDocCopyNodeList(new_doc, a->children));
+            xml_add_root_child(new_doc, new_node);
         }
-        xmlNodePtr new_node = xmlCopyNode(n, 1);
-        xml_add_root_child(new_doc, new_node);
+        else
+        {
+            xmlNodePtr new_node = xmlCopyNode(n, 1);
+            xml_add_root_child(new_doc, new_node);
+        }
 
         xmlUnlinkNode(n);
         xmlFreeNode(n);

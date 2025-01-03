@@ -1,0 +1,7 @@
+START
+<html>
+    <body>
+        <a href="https://somewhere.coo">Goggogogo</a>
+    <body>
+</html>
+SELECT //a/text() 'Goggogogo'

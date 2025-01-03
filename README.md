@@ -71,6 +71,13 @@ xmq index.html delete //script delete //style br
 # List all hyperlinks in a web page.
 xmq index.html select //a
 
+# Compose a new web page with all the images from the source html.
+# And immediately view it using your default browser.
+xmq page.html select //img add-root body add-root html to-html br
+
+# List all href attributes in a web page.
+xmq page.html select //a/@href
+
 # Replace entities with strings you can also --with-text-file=abc
 # which inserts the content safely quoted, or as DOM --with-file=abc.xml
 # where the file has be parseable.

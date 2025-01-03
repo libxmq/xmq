@@ -1,0 +1,7 @@
+START
+<html>
+    <body>
+        <a href="https://somewhere.coo">Go there!</a>
+    <body>
+</html>
+SELECT //a/@href href=https://somewhere.coo
