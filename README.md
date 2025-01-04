@@ -8,6 +8,8 @@ Grammar [https://libxmq.org/xmq.pdf](https://libxmq.org/xmq.pdf)
 
 Binaries latest release [https://github.com/libxmq/xmq/releases/latest](https://github.com/libxmq/xmq/releases/latest)
 
+You can also install with `brew install xmq`
+
 [<img src="https://libxmq.org/resources/xmq_example.jpg">](https://libxmq.org/resources/xmq_example.jpg)
 
 | System       | Status        |
