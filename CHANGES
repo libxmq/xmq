@@ -1,3 +1,9 @@
+2025-01-05: Version 3.2.1
+
+Fix bug in Windows version where redirect into file using > did not work.
+Solution is to use WriteFile when writing to redirected stdout and
+WriteConsole when writing to console.
+
 2025-01-03: Version 3.2.0
 
 You can now print all href attributes in a web page:
