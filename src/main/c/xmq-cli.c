@@ -3093,9 +3093,17 @@ void console_write(const char *start, const char *stop)
 #ifndef PLATFORM_WINAPI
     printf("%.*s", (int)(stop-start), start);
 #else
-	HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
+    HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD wrote = 0;
-	WriteConsole(out, start, stop-start, &wrote, NULL);
+
+    if (isatty(1))
+    {
+        WriteConsole(out, start, stop-start, &wrote, NULL);
+    }
+    else
+    {
+        WriteFile(out, start, stop-start, &wrote, NULL);
+    }
 #endif
 }
 
@@ -4025,6 +4033,7 @@ int main(int argc, const char **argv)
     // See if we can find from the env variables or the terminal if it is dark mode or not.
     terminal_render_theme(&env.use_color, &env.bg_dark_mode);
 
+    // But override coloring if not tty.
     if (isatty(1))
     {
 #ifdef PLATFORM_WINAPI
