@@ -12,8 +12,10 @@ entity = "&", -name, ";".
             | quote, s, quotestart
             | quote, s?, (entitystart | commentstart | namestart).
 
--commentstart = comment_ml, nodestart
-              | comment_sl, nodestart.
+-commentstart = comment_ml
+              | comment_ml, s?, nodestart
+              | comment_sl
+              | comment_sl, s?, nodestart.
 
 comment_ml = "/*", ~["*"]*, "*/".
 comment_sl = "//", ~[#a]*, -#a.
