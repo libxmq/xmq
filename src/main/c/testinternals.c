@@ -130,8 +130,7 @@ void test_xmq()
 
 void test_trim_quote(int start_col, const char *in, const char *expected)
 {
-    size_t indent = start_col-1;
-    char *out = xmq_un_quote(indent, ' ', in, in+strlen(in), true);
+    char *out = xmq_un_quote(in, in+strlen(in), true);
     if (strcmp(out, expected))
     {
         all_ok_ = false;
@@ -153,7 +152,7 @@ void test_trim_quote(int start_col, const char *in, const char *expected)
 
 void test_trim_quote_special(const char *in, const char *expected)
 {
-    char *out = xmq_un_quote(0, 0, in, in+strlen(in), true);
+    char *out = xmq_un_quote(in, in+strlen(in), true);
     if (strcmp(out, expected))
     {
         all_ok_ = false;
@@ -174,8 +173,7 @@ void test_trim_quote_special(const char *in, const char *expected)
 
 void test_trim_comment(int start_col, const char *in, const char *expected)
 {
-    size_t indent = start_col-1;
-    char *out = xmq_un_comment(indent, ' ', in, in+strlen(in));
+    char *out = xmq_un_comment(in, in+strlen(in));
     if (strcmp(out, expected))
     {
         all_ok_ = false;
@@ -313,7 +311,7 @@ void test_quote(int indent, bool compact, char *in, char *expected)
         // "test = " or "test="
         size_t skip = 7;
         if (compact) skip = 5;
-        char *trimmed = xmq_un_quote(indent+skip, ' ', out+skip, out+size, true);
+        char *trimmed = xmq_un_quote(out+skip, out+size, true);
 
         if (strcmp(trimmed, in))
         {

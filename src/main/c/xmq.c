@@ -1261,7 +1261,7 @@ const char *build_error_message(const char* fmt, ...)
     As a special case, if both indent is 0 and space is 0, then the indent of the
     first line is picked from the second line.
 */
-char *xmq_un_quote(size_t indent, char space, const char *start, const char *stop, bool remove_qs)
+char *xmq_un_quote(const char *start, const char *stop, bool remove_qs)
 {
     if (!stop) stop = start+strlen(start);
 
@@ -1272,11 +1272,10 @@ char *xmq_un_quote(size_t indent, char space, const char *start, const char *sto
         while (*(start+j) == '\'' && *(stop-j-1) == '\'' && (start+j) < (stop-j)) j++;
     }
 
-    indent += j;
     start = start+j;
     stop = stop-j;
 
-    return xmq_trim_quote(indent, space, start, stop);
+    return xmq_trim_quote(start, stop);
 }
 
 /**
@@ -1289,7 +1288,7 @@ char *xmq_un_quote(size_t indent, char space, const char *start, const char *sto
     The indent is 0 if the / first on the line.
     The indent is 1 if there is a single space before the starting / etc.
 */
-char *xmq_un_comment(size_t indent, char space, const char *start, const char *stop)
+char *xmq_un_comment(const char *start, const char *stop)
 {
     assert(start < stop);
 
@@ -1299,7 +1298,7 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     if (i == stop)
     {
         // Single line all slashes. Drop the two first slashes which are the single line comment.
-        return xmq_trim_quote(indent, space, start+2, stop);
+        return xmq_trim_quote(start+2, stop);
     }
 
     if (*i != '*')
@@ -1312,7 +1311,7 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
         // Remove trailing spaces.
         while (i < stop && *(stop-1) == ' ') stop--;
         assert(i <= stop);
-        return xmq_trim_quote(indent, space, i, stop);
+        return xmq_trim_quote(i, stop);
     }
 
     // There is an asterisk after the slashes. A standard /* */ comment
@@ -1320,13 +1319,11 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     size_t j = 0;
     while (*(start+j) == '/' && *(stop-j-1) == '/' && (start+j) < (stop-j)) j++;
 
-    indent += j;
     start = start+j;
     stop = stop-j;
 
     // Check that the star is there.
     assert(*start == '*' && *(stop-1) == '*');
-    indent++;
     start++;
     stop--;
 
@@ -1335,7 +1332,6 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     if (*start == ' ')
     {
         start++;
-        indent++;
     }
     if (*(stop-1) == ' ')
     {
@@ -1346,7 +1342,7 @@ char *xmq_un_comment(size_t indent, char space, const char *start, const char *s
     }
 
     assert(start <= stop);
-    char *foo = xmq_trim_quote(indent, space, start, stop);
+    char *foo = xmq_trim_quote(start, stop);
     return foo;
 }
 
@@ -1385,7 +1381,7 @@ size_t calculate_incidental_indent(const char *start, const char *stop)
     return indent;
 }
 
-char *xmq_trim_quote(size_t indent, char space, const char *start, const char *stop)
+char *xmq_trim_quote(const char *start, const char *stop)
 {
     size_t append_newlines = 0;
 
@@ -1588,8 +1584,7 @@ void debug_content_quote(XMQParseState *state,
                          const char *stop,
                          const char *suffix)
 {
-    size_t indent = start_col-1;
-    char *trimmed = xmq_un_quote(indent, ' ', start, stop, true);
+    char *trimmed = xmq_un_quote(start, stop, true);
     char *tmp = xmq_quote_as_c(trimmed, trimmed+strlen(trimmed), false);
     WRITE_ARGS("{quote \"", NULL);
     WRITE_ARGS(tmp, NULL);
@@ -1605,8 +1600,7 @@ void debug_content_comment(XMQParseState *state,
                            const char *stop,
                            const char *suffix)
 {
-    size_t indent = start_col-1;
-    char *trimmed = xmq_un_comment(indent, ' ', start, stop);
+    char *trimmed = xmq_un_comment(start, stop);
     char *tmp = xmq_quote_as_c(trimmed, trimmed+strlen(trimmed), false);
     WRITE_ARGS("{comment \"", NULL);
     WRITE_ARGS(tmp, NULL);
@@ -1933,8 +1927,7 @@ xmlNodePtr create_quote(XMQParseState *state,
                        const char *suffix,
                        xmlNodePtr parent)
 {
-    size_t indent = col - 1;
-    char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_quote(indent, ' ', start, stop, true);
+    char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_quote(start, stop, true);
     xmlNodePtr n = xmlNewDocText(state->doq->docptr_.xml, (const xmlChar *)trimmed);
     if (state->merge_text)
     {
@@ -2035,8 +2028,7 @@ void do_comment(XMQParseState*state,
                 const char *suffix)
 {
     xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
-    size_t indent = col-1;
-    char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_comment(indent, ' ', start, stop);
+    char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_comment(start, stop);
     xmlNodePtr n = xmlNewDocComment(state->doq->docptr_.xml, (const xmlChar *)trimmed);
 
     if (state->add_pre_node_before)
@@ -2073,8 +2065,7 @@ void do_comment_continuation(XMQParseState*state,
     while (i > start && *i == '/') { n++; i--; }
     // Since we know that we are invoked pointing into a buffer with /// before start, we
     // can safely do start-n.
-    size_t indent = col-1;
-    char *trimmed = xmq_un_comment(indent, ' ', start-n, stop);
+    char *trimmed = xmq_un_comment(start-n, stop);
     size_t l = strlen(trimmed);
     char *tmp = (char*)malloc(l+2);
     tmp[0] = '\n';
@@ -2133,7 +2124,7 @@ void do_element_value_quote(XMQParseState *state,
                             const char *stop,
                             const char *suffix)
 {
-    char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_quote(col-1, ' ', start, stop, true);
+    char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_quote(start, stop, true);
     if (state->parsing_pi)
     {
         char *content = potentially_add_leading_ending_space(trimmed, trimmed+strlen(trimmed));
@@ -2415,7 +2406,7 @@ void do_attr_value_quote(XMQParseState*state,
 {
     if (state->declaring_xmlns)
     {
-        char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_quote(col-1, ' ', start, stop, true);
+        char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_quote(start, stop, true);
         update_namespace_href(state, (xmlNsPtr)state->declaring_xmlns_namespace, trimmed, NULL);
         state->declaring_xmlns = false;
         state->declaring_xmlns_namespace = NULL;
@@ -3015,7 +3006,7 @@ void trim_text_node(xmlNode *node, int flags)
         while (stop > start && *(stop-1) == ' ') stop--;
     }
 
-    char *trimmed = xmq_un_quote(0, 0, start, stop, false);
+    char *trimmed = xmq_un_quote(start, stop, false);
     if (trimmed[0] == 0)
     {
         xmlUnlinkNode(node);
