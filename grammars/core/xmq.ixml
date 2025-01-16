@@ -97,7 +97,7 @@ compound = -'(', s?, (cqstart | cestart), s?, -')'.
          | entity, s, cestart
          | entity, s?, cqstart.
 
-quote = q1 | q2 | q3 | q4.
+quote = q1 | q2 | q3 | q4 | q5 | q6.
 -q1 = -"'", ~["'"]+, -"'".
 -q2 = -"''".
 -q3 = -"'''",  nq++qq2, -"'''".
