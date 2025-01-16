@@ -30,6 +30,7 @@ translation_unit = ws, (external_declaration | translation_unit, external_declar
 IDENTIFIER = ['A'-'Z';'a'-'z';'_'], ['A'-'Z';'a'-'z';'0'-'9';'_']*, ws.
 CONSTANT = ['0'-'9']+, ws.
 STRING_LITERAL = '"', ~['"';#a;#d]*, '"', ws.
+CHAR_LITERAL = "'", ~["'";#a;#d]+, "'", ws.
 
 LEFT_PAR = '(', ws.
 RIGHT_PAR = ')', ws.
@@ -55,6 +56,7 @@ primary_expression
 	: IDENTIFIER
 	| CONSTANT
 	| STRING_LITERAL
+        | CHAR_LITERAL
 	| LEFT_PAR, expression, RIGHT_PAR
 	.
 
@@ -119,8 +121,8 @@ shift_expression
 
 relational_expression
 	: -shift_expression
-	| relational_expression, LE_OP, shift_expression
-	| relational_expression, GE_OP, shift_expression
+	| relational_expression, (L_OP | LE_OP), shift_expression
+	| relational_expression, (G_OP | GE_OP), shift_expression
 	.
 
 equality_expression
@@ -275,8 +277,8 @@ struct_declarator
 	.
 
 enum_specifier
-	: ENUM, LEFT_BRACE, enumerator_list, RIGHT_BRACE
-	| ENUM, IDENTIFIER, LEFT_BRACE, enumerator_list, RIGHT_BRACE
+	: ENUM, LEFT_BRACE, enumerator_list, COMMA?, RIGHT_BRACE
+	| ENUM, IDENTIFIER, LEFT_BRACE, enumerator_list, COMMA?, RIGHT_BRACE
 	| ENUM, IDENTIFIER
 	.
 
@@ -506,8 +508,10 @@ DEC_OP	 = '--', ws.
 PTR_OP	 = '&', ws.
 AND_OP	 = '&&', ws.
 OR_OP	 = '||', ws.
-LE_OP	 = '<', ws.
-GE_OP    = '>', ws.
+L_OP	 = '<', ws.
+G_OP     = '>', ws.
+LE_OP	 = '<=', ws.
+GE_OP    = '>=', ws.
 EQ_OP	 = '==', ws.
 NE_OP	 = '!=', ws.
 ELLIPSIS = '...', ws.
