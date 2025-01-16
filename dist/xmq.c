@@ -546,7 +546,8 @@ typedef struct IXMLTerm IXMLTerm;
 struct IXMLRule
 {
     IXMLNonTerminal *rule_name;
-    char mark;
+    char mark; // ^@-+
+    int cost;  // 0, 1, 2 or more. I higher cost is avoided when ambiguity arises.
     Vector *rhs_terms;
 };
 typedef struct IXMLRule IXMLRule;
@@ -640,6 +641,8 @@ struct XMQParseState
 //    Vector *ixml_rhs_tmp_terms;
     // These are the marks @-^ for the terminals.
     Vector *ixml_rhs_tmp_marks;
+    // Has the cost marker "=-" been used for a rule in this ixml grammar?
+    bool ixml_costs_enabled;
     // The most recently parsed mark.
     char ixml_mark;
     // The most recently parsed encoded value #41
@@ -1927,7 +1930,8 @@ typedef struct IXMLTerm IXMLTerm;
 struct IXMLRule
 {
     IXMLNonTerminal *rule_name;
-    char mark;
+    char mark; // ^@-+
+    int cost;  // 0, 1, 2 or more. I higher cost is avoided when ambiguity arises.
     Vector *rhs_terms;
 };
 typedef struct IXMLRule IXMLRule;
@@ -2021,6 +2025,8 @@ struct XMQParseState
 //    Vector *ixml_rhs_tmp_terms;
     // These are the marks @-^ for the terminals.
     Vector *ixml_rhs_tmp_marks;
+    // Has the cost marker "=-" been used for a rule in this ixml grammar?
+    bool ixml_costs_enabled;
     // The most recently parsed mark.
     char ixml_mark;
     // The most recently parsed encoded value #41
@@ -4282,7 +4288,7 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root, int 
 
 const char *xmqVersion()
 {
-    return "3.2.1";
+    return "3.2.1-modified";
 }
 
 void do_whitespace(XMQParseState *state,
@@ -6979,6 +6985,17 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     yaep_set_error_recovery_flag(xmq_get_yaep_grammar(ixml_grammar),
                                  (flags & XMQ_FLAG_IXML_TRY_TO_RECOVER)?1:0);
 
+    if (state->ixml_costs_enabled)
+    {
+        verbose("xmq=", "ixml rule costs are used to resolve ambigiuity");
+        // We have found =-in the grammar, ie that a rule has a certain cost. We assume this
+        // means that there can be ambiguous results.
+        // Keep parsing, finding all parses....
+        yaep_set_one_parse_flag(xmq_get_yaep_grammar(ixml_grammar), 0);
+        // Enable cost calculations...
+        yaep_set_cost_flag(xmq_get_yaep_grammar(ixml_grammar), true);
+    }
+
     YaepParseRun *run = xmq_get_yaep_parse_run(ixml_grammar);
     run->buffer_start = start;
     run->buffer_stop = stop;
@@ -9011,6 +9028,10 @@ void parse_ixml_alts(XMQParseState *state)
         char mark = state->ixml_rule->mark;
         state->ixml_rule = new_ixml_rule();
         state->ixml_rule->rule_name->name = strdup(name->name);
+        if (name->alias)
+        {
+            state->ixml_rule->rule_name->alias = strdup(name->alias);
+        }
         state->ixml_rule->mark = mark;
         vector_push_back(state->ixml_rules, state->ixml_rule);
     }
@@ -9649,6 +9670,12 @@ void parse_ixml_rule(XMQParseState *state)
         longjmp(state->error_handler, 1);
     }
     EAT(rule_equal, 1);
+    while (*(state->i) == '<')
+    {
+        state->ixml_rule->cost++;
+        state->i++;
+        state->ixml_costs_enabled = true;
+    }
 
     parse_ixml_whitespace(state);
 
@@ -9880,56 +9907,56 @@ const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
     if (state->yaep_j_ >= state->ixml_rules->size) return NULL;
     IXMLRule *rule = (IXMLRule*)vector_element_at(state->ixml_rules, state->yaep_j_);
 
-    // Check that the rule has not been removed when expainding charsets.
-    if (true) //FIXMErule->mark != 'X')
+    // This is a valid rule.
+    size_t num_rhs = rule->rhs_terms->size;
+
+    // Add rhs rules as translations.
+    if (state->yaep_tmp_rhs_) free(state->yaep_tmp_rhs_);
+    state->yaep_tmp_rhs_ = (char**)calloc(num_rhs+1, sizeof(char*));
+    if (state->yaep_tmp_marks_) free(state->yaep_tmp_marks_);
+    state->yaep_tmp_marks_ = (char*)calloc(num_rhs+1, sizeof(char));
+    memset(state->yaep_tmp_marks_, 0, num_rhs+1);
+
+    for (size_t i = 0; i < num_rhs; ++i)
     {
-        // This is a valid rule.
-        size_t num_rhs = rule->rhs_terms->size;
-
-        // Add rhs rules as translations.
-        if (state->yaep_tmp_rhs_) free(state->yaep_tmp_rhs_);
-        state->yaep_tmp_rhs_ = (char**)calloc(num_rhs+1, sizeof(char*));
-        if (state->yaep_tmp_marks_) free(state->yaep_tmp_marks_);
-        state->yaep_tmp_marks_ = (char*)calloc(num_rhs+1, sizeof(char));
-        memset(state->yaep_tmp_marks_, 0, num_rhs+1);
-
-        for (size_t i = 0; i < num_rhs; ++i)
+        IXMLTerm *term = (IXMLTerm*)vector_element_at(rule->rhs_terms, i);
+        state->yaep_tmp_marks_[i] = term->mark;
+        if (term->type == IXML_TERMINAL)
         {
-            IXMLTerm *term = (IXMLTerm*)vector_element_at(rule->rhs_terms, i);
-            state->yaep_tmp_marks_[i] = term->mark;
-            if (term->type == IXML_TERMINAL)
-            {
-                state->yaep_tmp_rhs_[i] = term->t->name;
-            }
-            else if (term->type == IXML_NON_TERMINAL)
-            {
-                state->yaep_tmp_rhs_[i] = term->nt->name;
-            }
-            else
-            {
-                fprintf(stderr, "Internal error %d as term type does not exist!\n", term->type);
-                assert(false);
-            }
+            state->yaep_tmp_rhs_[i] = term->t->name;
         }
-
-        *abs_node = rule->rule_name->name;
-        if (rule->rule_name->alias) *abs_node = rule->rule_name->alias;
-
-        if (state->yaep_tmp_transl_) free(state->yaep_tmp_transl_);
-        state->yaep_tmp_transl_ = (int*)calloc(num_rhs+1, sizeof(char*));
-        for (size_t i = 0; i < num_rhs; ++i)
+        else if (term->type == IXML_NON_TERMINAL)
         {
-            state->yaep_tmp_transl_[i] = (int)i;
+            state->yaep_tmp_rhs_[i] = term->nt->name;
         }
-        state->yaep_tmp_transl_[num_rhs] = -1;
-
-        state->yaep_tmp_rhs_[num_rhs] = NULL;
-        *rhs = (const char **)state->yaep_tmp_rhs_;
-        *marks = state->yaep_tmp_marks_;
-        *transl = state->yaep_tmp_transl_;
-        *cost = 1;
-        *mark = rule->mark;
+        else
+        {
+            fprintf(stderr, "Internal error %d as term type does not exist!\n", term->type);
+            assert(false);
+        }
     }
+
+    *abs_node = rule->rule_name->name;
+    if (rule->rule_name->alias)
+    {
+        *abs_node = rule->rule_name->alias;
+    }
+
+    if (state->yaep_tmp_transl_) free(state->yaep_tmp_transl_);
+    state->yaep_tmp_transl_ = (int*)calloc(num_rhs+1, sizeof(char*));
+    for (size_t i = 0; i < num_rhs; ++i)
+    {
+        state->yaep_tmp_transl_[i] = (int)i;
+    }
+    state->yaep_tmp_transl_[num_rhs] = -1;
+
+    state->yaep_tmp_rhs_[num_rhs] = NULL;
+    *rhs = (const char **)state->yaep_tmp_rhs_;
+    *marks = state->yaep_tmp_marks_;
+    *transl = state->yaep_tmp_transl_;
+    *cost = rule->cost;
+    *mark = rule->mark;
+
     state->yaep_j_++;
     return rule->rule_name->name;
 }
@@ -10121,6 +10148,7 @@ void add_single_char_rule(XMQParseState *state, IXMLNonTerminal *nt, int uc, cha
 {
     IXMLRule *rule = new_ixml_rule();
     rule->rule_name->name = strdup(nt->name);
+    // No need to copy alias here since this rule is used for single characters for charsets.
     rule->mark = mark;
     vector_push_back(state->ixml_rules, rule);
     char buffer[16];
@@ -21744,7 +21772,7 @@ YaepGrammar *yaepNewGrammar()
     grammar->lookahead_level = 1;
     grammar->one_parse_p = true;
     grammar->cost_p = false;
-    grammar->error_recovery_p = true;
+    grammar->error_recovery_p = false;
     grammar->recovery_token_matches = DEFAULT_RECOVERY_TOKEN_MATCHES;
     grammar->symbs_ptr = symbolstorage_create(grammar);
     grammar->term_sets_ptr = termsetstorage_create(grammar);
@@ -23460,10 +23488,14 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
             {
                 VLO_ADD_MEMORY(ps->tnodes_vlo, &node, sizeof(node));
             }
-            for(i = 0;(child = node->val.anode.children[i]) != NULL; i++)
+            for (i = 0; (child = node->val.anode.children[i]) != NULL; i++)
 	    {
                 node->val.anode.children[i] = prune_to_minimal(ps, child, cost);
-                node->val.anode.cost +=*cost;
+                if (node->val.anode.children[i] != child)
+                {
+                    // fprintf(stderr, "PRUNEDDDDDDD\n");
+                }
+                node->val.anode.cost += *cost;
 	    }
            *cost = node->val.anode.cost;
             node->val.anode.cost = -node->val.anode.cost - 1;	/* flag of visit*/
@@ -23478,9 +23510,10 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
             }
             next_alt = alt->val.alt.next;
             alt->val.alt.node = prune_to_minimal(ps, alt->val.alt.node, cost);
-            if (alt == node || min_cost >*cost)
+            if (alt == node || min_cost > *cost)
 	    {
-                min_cost =*cost;
+                fprintf(stderr, "FOUND smaller cost %d %s\n", *cost, alt->val.alt.node->val.anode.name);
+                min_cost = *cost;
                 alt->val.alt.next = NULL;
                 result = alt;
 	    }
@@ -23530,7 +23563,8 @@ next:
         {
             traverse_pruned_translation(ps, child);
         }
-        assert(node->val.anode.cost < 0);
+        // FIXME Is this assert needed? What is its purpose?
+        // assert(node->val.anode.cost < 0);
         node->val.anode.cost = -node->val.anode.cost - 1;
         break;
     case YAEP_ALT:
@@ -23561,7 +23595,9 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
         VLO_CREATE(ps->tnodes_vlo, ps->run.grammar->alloc, ps->input_len* 4* sizeof(void*));
     }
     root = prune_to_minimal(ps, root, &cost);
+
     traverse_pruned_translation(ps, root);
+
     if (ps->run.parse_free != NULL)
     {
         for(node_ptr = (YaepTreeNode**)VLO_BEGIN(ps->tnodes_vlo);
@@ -23575,9 +23611,9 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
                                              (*node_ptr)->val.anode.name,
                                              true) == NULL)
                 {
-                    (*ps->run.parse_free)((void*)(*node_ptr)->val.anode.name);
+                    // (*ps->run.parse_free)((void*)(*node_ptr)->val.anode.name);
                 }
-                (*ps->run.parse_free)(*node_ptr);
+                //(*ps->run.parse_free)(*node_ptr);
             }
         }
         VLO_DELETE(ps->tnodes_vlo);
@@ -24075,12 +24111,13 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     free_parse_state(ps);
     ps->run.grammar->one_parse_p = saved_one_parse_p;
     if (ps->run.grammar->cost_p && *ambiguous_p)
+    {
         /* We can not build minimal tree during building parsing list
            because we have not the translation yet.  We can not make it
            during parsing because the abstract nodes are created before
            their children.*/
         result = find_minimal_translation(ps, result);
-
+    }
     if (ps->run.trace)
     {
         fprintf(stderr, "(ixml) yaep parse tree:\n");

@@ -1,5 +1,10 @@
-2025-01-05: Version 3.2.1
+2025-01-16: Version 3.2.2
 
-Fix bug in Windows version where redirect into file using > did not work.
-Solution is to use WriteFile when writing to redirected stdout and
-WriteConsole when writing to console.
+Fix bug in IXML grammar where rule alias was lost for alternatives.
+
+Explanation, given the rule:
+myrule>myalias = 'alfa' | 'beta'.
+
+If matched against 'alfa' then the produced rule was named myalias.
+If matched against 'beta' then the produced rule was named myrule.
+After bug-fix the produced rule is always myalias.
