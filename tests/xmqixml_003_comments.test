@@ -1,0 +1,36 @@
+START
+/* Howdy */
+// Howdy
+/* Howdy */* There */* again */
+/** Howdy /* inner comment */ there **/
+top
+/****
+
+
+
+****/
+IXML
+xmq {
+    comment_ml {
+        line = ' Howdy '
+    }
+    comment_sl = '// Howdy'
+    comment_ml {
+        line = ' Howdy '
+        line = ' There '
+        line = ' again '
+    }
+    comment_ml {
+        line = ' Howdy /* inner comment */ there '
+    }
+    element_empty(name = top)
+    comment_ml {
+        line = '
+
+
+
+
+               '
+    }
+}
+END

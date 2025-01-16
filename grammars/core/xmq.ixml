@@ -33,10 +33,10 @@ comment_ml = c1 | c2 | c3 | c4.
 cl1>line = ~["*"], (~["*"] | "*", ~["/"])*.
 cl2>line = ~["*"], (~["*"] | "*", ~["*"] | "**", ~["/"])*.
 cl3>line = ~["*"], (~["*"] | "*", ~["*"] | "**", ~["*"] | "***", ~["/"])*.
-cl4>line = ~["*"], (~["*"] | "*", ~["*"] | "**", ~["*"] | "***", ~["/"] | "****", ~["/"])*.
+cl4>line = ~["*"], (~["*"] | "*", ~["*"] | "**", ~["*"] | "***", ~["*"] | "****", ~["/"])*.
 
 -namestart = element_empty
-           | element_empty, s, namestart
+           | element_empty, s, nodestart
            | element_empty, s?, (entitystart | quotestart)
            | element_empty, s?, -'{', s?, -'}'
            | element_empty, s?, -'(', s?, -')'
