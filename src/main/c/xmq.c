@@ -4610,6 +4610,17 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     yaep_set_error_recovery_flag(xmq_get_yaep_grammar(ixml_grammar),
                                  (flags & XMQ_FLAG_IXML_TRY_TO_RECOVER)?1:0);
 
+    if (state->ixml_costs_enabled)
+    {
+        verbose("xmq=", "ixml rule costs are used to resolve ambigiuity");
+        // We have found =-in the grammar, ie that a rule has a certain cost. We assume this
+        // means that there can be ambiguous results.
+        // Keep parsing, finding all parses....
+        yaep_set_one_parse_flag(xmq_get_yaep_grammar(ixml_grammar), 0);
+        // Enable cost calculations...
+        yaep_set_cost_flag(xmq_get_yaep_grammar(ixml_grammar), true);
+    }
+
     YaepParseRun *run = xmq_get_yaep_parse_run(ixml_grammar);
     run->buffer_start = start;
     run->buffer_stop = stop;

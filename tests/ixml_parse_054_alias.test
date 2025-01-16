@@ -1,0 +1,10 @@
+START
+tmonth>gurka :
+      "November", +"11";
+      "December", +"12".
+INPUT
+December
+OUTPUT
+gurka = December12
+END
+ARGS=

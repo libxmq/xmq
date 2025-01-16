@@ -2647,7 +2647,7 @@ YaepGrammar *yaepNewGrammar()
     grammar->lookahead_level = 1;
     grammar->one_parse_p = true;
     grammar->cost_p = false;
-    grammar->error_recovery_p = true;
+    grammar->error_recovery_p = false;
     grammar->recovery_token_matches = DEFAULT_RECOVERY_TOKEN_MATCHES;
     grammar->symbs_ptr = symbolstorage_create(grammar);
     grammar->term_sets_ptr = termsetstorage_create(grammar);
@@ -4363,10 +4363,14 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
             {
                 VLO_ADD_MEMORY(ps->tnodes_vlo, &node, sizeof(node));
             }
-            for(i = 0;(child = node->val.anode.children[i]) != NULL; i++)
+            for (i = 0; (child = node->val.anode.children[i]) != NULL; i++)
 	    {
                 node->val.anode.children[i] = prune_to_minimal(ps, child, cost);
-                node->val.anode.cost +=*cost;
+                if (node->val.anode.children[i] != child)
+                {
+                    // fprintf(stderr, "PRUNEDDDDDDD\n");
+                }
+                node->val.anode.cost += *cost;
 	    }
            *cost = node->val.anode.cost;
             node->val.anode.cost = -node->val.anode.cost - 1;	/* flag of visit*/
@@ -4381,9 +4385,10 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
             }
             next_alt = alt->val.alt.next;
             alt->val.alt.node = prune_to_minimal(ps, alt->val.alt.node, cost);
-            if (alt == node || min_cost >*cost)
+            if (alt == node || min_cost > *cost)
 	    {
-                min_cost =*cost;
+                fprintf(stderr, "FOUND smaller cost %d %s\n", *cost, alt->val.alt.node->val.anode.name);
+                min_cost = *cost;
                 alt->val.alt.next = NULL;
                 result = alt;
 	    }
@@ -4433,7 +4438,8 @@ next:
         {
             traverse_pruned_translation(ps, child);
         }
-        assert(node->val.anode.cost < 0);
+        // FIXME Is this assert needed? What is its purpose?
+        // assert(node->val.anode.cost < 0);
         node->val.anode.cost = -node->val.anode.cost - 1;
         break;
     case YAEP_ALT:
@@ -4464,7 +4470,9 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
         VLO_CREATE(ps->tnodes_vlo, ps->run.grammar->alloc, ps->input_len* 4* sizeof(void*));
     }
     root = prune_to_minimal(ps, root, &cost);
+
     traverse_pruned_translation(ps, root);
+
     if (ps->run.parse_free != NULL)
     {
         for(node_ptr = (YaepTreeNode**)VLO_BEGIN(ps->tnodes_vlo);
@@ -4478,9 +4486,9 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
                                              (*node_ptr)->val.anode.name,
                                              true) == NULL)
                 {
-                    (*ps->run.parse_free)((void*)(*node_ptr)->val.anode.name);
+                    // (*ps->run.parse_free)((void*)(*node_ptr)->val.anode.name);
                 }
-                (*ps->run.parse_free)(*node_ptr);
+                //(*ps->run.parse_free)(*node_ptr);
             }
         }
         VLO_DELETE(ps->tnodes_vlo);
@@ -4978,12 +4986,13 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     free_parse_state(ps);
     ps->run.grammar->one_parse_p = saved_one_parse_p;
     if (ps->run.grammar->cost_p && *ambiguous_p)
+    {
         /* We can not build minimal tree during building parsing list
            because we have not the translation yet.  We can not make it
            during parsing because the abstract nodes are created before
            their children.*/
         result = find_minimal_translation(ps, result);
-
+    }
     if (ps->run.trace)
     {
         fprintf(stderr, "(ixml) yaep parse tree:\n");

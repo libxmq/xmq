@@ -267,7 +267,8 @@ typedef struct IXMLTerm IXMLTerm;
 struct IXMLRule
 {
     IXMLNonTerminal *rule_name;
-    char mark;
+    char mark; // ^@-+
+    int cost;  // 0, 1, 2 or more. I higher cost is avoided when ambiguity arises.
     Vector *rhs_terms;
 };
 typedef struct IXMLRule IXMLRule;
@@ -361,6 +362,8 @@ struct XMQParseState
 //    Vector *ixml_rhs_tmp_terms;
     // These are the marks @-^ for the terminals.
     Vector *ixml_rhs_tmp_marks;
+    // Has the cost marker "=-" been used for a rule in this ixml grammar?
+    bool ixml_costs_enabled;
     // The most recently parsed mark.
     char ixml_mark;
     // The most recently parsed encoded value #41

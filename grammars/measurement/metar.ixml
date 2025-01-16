@@ -1,0 +1,52 @@
+{
+    Copyright (c) 2025 Fredrik Öhrström libxmq (spdx: MIT)
+
+    A METAR grammar for parsing METAR weather reports.
+
+    Example report:
+    METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN="
+}
+METAR = -'METAR ', airport_code, -' ', part**-' ', -'='.
+part =
+     | time_of_observation
+     | wind_direction
+     | wind_variation
+     | prevailing_visibility
+     | runway_visual_range
+     | snow.
+
+airport_code = [Lu]+.
+
+time_of_observation = month, time, time_zone.
+month = ["0"-"9"], ["0"-"9"].
+time = hour, minute.
+hour = ["0"-"9"], ["0"-"9"].
+minute = ["0"-"9"], ["0"-"9"].
+time_zone = 'Z'.
+
+wind_direction = degrees, speed.
+degrees = ["0"-"9"], ["0"-"9"], ["0"-"9"].
+speed = value, unit.
+value = ["0"-"9"], ["0"-"9"].
+unit = 'MPS' | 'KT'.
+
+wind_variation = from_degrees, -'V', to_degrees.
+from_degrees = -degrees.
+to_degrees = -degrees.
+
+prevailing_visibility = meters.
+meters = ["0"-"9"], ["0"-"9"], ["0"-"9"], ["0"-"9"].
+
+runway_visual_range = -'R', runway, -'/P', range, status.
+runway = ["0"-"9"], ["0"-"9"].
+range = ["0"-"9"], ["0"-"9"], ["0"-"9"], ["0"-"9"].
+-status = nochange | up | down.
+nochange>status = -'N', +"nochange".
+up>status = -'U', +"rising".
+down>status = -'D', +"falling".
+
+snow = snow_status, -'SN'.
+-snow_status = light_snow | heavy_snow | normal_snow.
+light_snow>status = -'-', +"light".
+heavy_snow>status = -'+', +"heavy".
+normal_snow>status = +"normal".

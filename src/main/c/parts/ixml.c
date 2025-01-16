@@ -593,6 +593,10 @@ void parse_ixml_alts(XMQParseState *state)
         char mark = state->ixml_rule->mark;
         state->ixml_rule = new_ixml_rule();
         state->ixml_rule->rule_name->name = strdup(name->name);
+        if (name->alias)
+        {
+            state->ixml_rule->rule_name->alias = strdup(name->alias);
+        }
         state->ixml_rule->mark = mark;
         vector_push_back(state->ixml_rules, state->ixml_rule);
     }
@@ -1231,6 +1235,12 @@ void parse_ixml_rule(XMQParseState *state)
         longjmp(state->error_handler, 1);
     }
     EAT(rule_equal, 1);
+    while (*(state->i) == '<')
+    {
+        state->ixml_rule->cost++;
+        state->i++;
+        state->ixml_costs_enabled = true;
+    }
 
     parse_ixml_whitespace(state);
 
@@ -1462,56 +1472,56 @@ const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
     if (state->yaep_j_ >= state->ixml_rules->size) return NULL;
     IXMLRule *rule = (IXMLRule*)vector_element_at(state->ixml_rules, state->yaep_j_);
 
-    // Check that the rule has not been removed when expainding charsets.
-    if (true) //FIXMErule->mark != 'X')
+    // This is a valid rule.
+    size_t num_rhs = rule->rhs_terms->size;
+
+    // Add rhs rules as translations.
+    if (state->yaep_tmp_rhs_) free(state->yaep_tmp_rhs_);
+    state->yaep_tmp_rhs_ = (char**)calloc(num_rhs+1, sizeof(char*));
+    if (state->yaep_tmp_marks_) free(state->yaep_tmp_marks_);
+    state->yaep_tmp_marks_ = (char*)calloc(num_rhs+1, sizeof(char));
+    memset(state->yaep_tmp_marks_, 0, num_rhs+1);
+
+    for (size_t i = 0; i < num_rhs; ++i)
     {
-        // This is a valid rule.
-        size_t num_rhs = rule->rhs_terms->size;
-
-        // Add rhs rules as translations.
-        if (state->yaep_tmp_rhs_) free(state->yaep_tmp_rhs_);
-        state->yaep_tmp_rhs_ = (char**)calloc(num_rhs+1, sizeof(char*));
-        if (state->yaep_tmp_marks_) free(state->yaep_tmp_marks_);
-        state->yaep_tmp_marks_ = (char*)calloc(num_rhs+1, sizeof(char));
-        memset(state->yaep_tmp_marks_, 0, num_rhs+1);
-
-        for (size_t i = 0; i < num_rhs; ++i)
+        IXMLTerm *term = (IXMLTerm*)vector_element_at(rule->rhs_terms, i);
+        state->yaep_tmp_marks_[i] = term->mark;
+        if (term->type == IXML_TERMINAL)
         {
-            IXMLTerm *term = (IXMLTerm*)vector_element_at(rule->rhs_terms, i);
-            state->yaep_tmp_marks_[i] = term->mark;
-            if (term->type == IXML_TERMINAL)
-            {
-                state->yaep_tmp_rhs_[i] = term->t->name;
-            }
-            else if (term->type == IXML_NON_TERMINAL)
-            {
-                state->yaep_tmp_rhs_[i] = term->nt->name;
-            }
-            else
-            {
-                fprintf(stderr, "Internal error %d as term type does not exist!\n", term->type);
-                assert(false);
-            }
+            state->yaep_tmp_rhs_[i] = term->t->name;
         }
-
-        *abs_node = rule->rule_name->name;
-        if (rule->rule_name->alias) *abs_node = rule->rule_name->alias;
-
-        if (state->yaep_tmp_transl_) free(state->yaep_tmp_transl_);
-        state->yaep_tmp_transl_ = (int*)calloc(num_rhs+1, sizeof(char*));
-        for (size_t i = 0; i < num_rhs; ++i)
+        else if (term->type == IXML_NON_TERMINAL)
         {
-            state->yaep_tmp_transl_[i] = (int)i;
+            state->yaep_tmp_rhs_[i] = term->nt->name;
         }
-        state->yaep_tmp_transl_[num_rhs] = -1;
-
-        state->yaep_tmp_rhs_[num_rhs] = NULL;
-        *rhs = (const char **)state->yaep_tmp_rhs_;
-        *marks = state->yaep_tmp_marks_;
-        *transl = state->yaep_tmp_transl_;
-        *cost = 1;
-        *mark = rule->mark;
+        else
+        {
+            fprintf(stderr, "Internal error %d as term type does not exist!\n", term->type);
+            assert(false);
+        }
     }
+
+    *abs_node = rule->rule_name->name;
+    if (rule->rule_name->alias)
+    {
+        *abs_node = rule->rule_name->alias;
+    }
+
+    if (state->yaep_tmp_transl_) free(state->yaep_tmp_transl_);
+    state->yaep_tmp_transl_ = (int*)calloc(num_rhs+1, sizeof(char*));
+    for (size_t i = 0; i < num_rhs; ++i)
+    {
+        state->yaep_tmp_transl_[i] = (int)i;
+    }
+    state->yaep_tmp_transl_[num_rhs] = -1;
+
+    state->yaep_tmp_rhs_[num_rhs] = NULL;
+    *rhs = (const char **)state->yaep_tmp_rhs_;
+    *marks = state->yaep_tmp_marks_;
+    *transl = state->yaep_tmp_transl_;
+    *cost = rule->cost;
+    *mark = rule->mark;
+
     state->yaep_j_++;
     return rule->rule_name->name;
 }
@@ -1703,6 +1713,7 @@ void add_single_char_rule(XMQParseState *state, IXMLNonTerminal *nt, int uc, cha
 {
     IXMLRule *rule = new_ixml_rule();
     rule->rule_name->name = strdup(nt->name);
+    // No need to copy alias here since this rule is used for single characters for charsets.
     rule->mark = mark;
     vector_push_back(state->ixml_rules, rule);
     char buffer[16];
