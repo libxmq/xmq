@@ -1,4 +1,4 @@
-name: Release Ubuntu/MacosX/Windows
+name: Edge Ubuntu/MacosX/Windows
 
 permissions:
   contents: write
@@ -27,8 +27,7 @@ jobs:
       - id: UPLOAD_TO_EDGE
         run: gh release upload edge build/xmq-gnu-linux-release.tar.gz
 
-  job_release_macosx:
-    needs: [job_create_release]
+  job_edge_macosx:
     runs-on: macOS-latest
     steps:
       - id: CHECKOUT_SOURCE
@@ -44,8 +43,7 @@ jobs:
       - id: UPLOAD_TO_EDGE
         run: gh release upload edge build/xmq-macos-release.tar.gz
 
-  job_release_windows:
-    needs: [job_create_release]
+  job_edge_windows:
     runs-on: ubuntu-latest
     steps:
       - id: CHECKOUT_SOURCE
