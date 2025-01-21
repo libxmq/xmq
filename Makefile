@@ -253,3 +253,7 @@ WEBXMQ:=build/default/release/xmq
 .PHONY: build/web/index.html
 build/web/index.html:
 	@./scripts/build_web.sh
+
+push_edge:
+	git tag -f edge
+	git push -f --tags
