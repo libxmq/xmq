@@ -26,7 +26,8 @@ jobs:
         run: tar czf build/xmq-gnu-linux-release.tar.gz -C build/default/release xmq
       - id: UPLOAD_TO_EDGE
         run: gh release upload edge build/xmq-gnu-linux-release.tar.gz
-        env: GITHUB_TOKEN: ${{ github.TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ github.TOKEN }}
 
   job_release_macosx:
     needs: [job_create_release]
@@ -44,7 +45,8 @@ jobs:
         run: tar czf build/xmq-macos-release.tar.gz -C build/default/release xmq
       - id: UPLOAD_TO_EDGE
         run: gh release upload edge build/xmq-macos-release.tar.gz
-        env: GITHUB_TOKEN: ${{ github.TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ github.TOKEN }}
 
   job_release_windows:
     needs: [job_create_release]
@@ -62,4 +64,5 @@ jobs:
         run: make release
       - id: UPLOAD_TO_EDGE
         run: gh release upload edge ./build/default/windows_installer/xmq-windows-release.msi
-        env: GITHUB_TOKEN: ${{ github.TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ github.TOKEN }}
