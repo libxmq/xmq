@@ -19,3 +19,7 @@ jobs:
       run: eatmydata make release asan
     - id: TEST
       run: eatmydata make test
+    - id: UPLOAD
+      run: |
+          tar czf build/xmq-gnu-linux-release.tar.gz -C build/default/release xmq
+          gh release upload edge build/xmq-gnu-linux-release.tar.gz

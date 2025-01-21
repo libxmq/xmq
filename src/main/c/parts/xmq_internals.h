@@ -269,6 +269,7 @@ struct IXMLRule
     IXMLNonTerminal *rule_name;
     char mark; // ^@-+
     int cost;  // 0, 1, 2 or more. I higher cost is avoided when ambiguity arises.
+    bool expected_ambiguity; // Set to true means we want the multiple parses.
     Vector *rhs_terms;
 };
 typedef struct IXMLRule IXMLRule;
@@ -362,8 +363,10 @@ struct XMQParseState
 //    Vector *ixml_rhs_tmp_terms;
     // These are the marks @-^ for the terminals.
     Vector *ixml_rhs_tmp_marks;
-    // Has the cost marker "=-" been used for a rule in this ixml grammar?
+    // Has the cost marker "=<" or ":<" or "=<<<" etc been used for a rule in this ixml grammar?
     bool ixml_costs_enabled;
+    // Has a rule been marked with "*" which means we want all parses!
+    bool ixml_controlled_ambiguity_enabled;
     // The most recently parsed mark.
     char ixml_mark;
     // The most recently parsed encoded value #41
@@ -524,7 +527,7 @@ bool peek_xmq_next_is_equal(XMQParseState *state);
 size_t count_xmq_quotes(const char *i, const char *stop);
 void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop);
 size_t calculate_incidental_indent(const char *start, const char *stop);
-char *xmq_trim_quote(const char *start, const char *stop);
+char *xmq_trim_quote(const char *start, const char *stop, bool is_xmq, bool is_comment);
 char *escape_xml_comment(const char *comment);
 char *unescape_xml_comment(const char *comment);
 void xmq_fixup_html_before_writeout(XMQDoc *doq);
@@ -535,7 +538,7 @@ char *xmq_comment(int indent,
                  const char *stop,
                  XMQQuoteSettings *settings);
 char *xmq_un_comment(const char *start, const char *stop);
-char *xmq_un_quote(const char *start, const char *stop, bool remove_qs);
+char *xmq_un_quote(const char *start, const char *stop, bool remove_qs, bool is_xmq);
 
 // XMQ syntax parser functions ///////////////////////////////////////////////////////////
 

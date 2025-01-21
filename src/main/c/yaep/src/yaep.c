@@ -5387,7 +5387,8 @@ static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, bool trans_p
         && rule->mark != ' '
         && rule->mark != '-'
         && rule->mark != '@'
-        && rule->mark != '^')
+        && rule->mark != '^'
+        && rule->mark != '*')
     {
         fprintf(f, "(yaep) internal error bad rule: ");
         symbol_print(f, rule->lhs, false);

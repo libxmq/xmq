@@ -58,6 +58,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 void add_nl(XMQParseState *state);
 XMQProceed catch_single_content(XMQDoc *doc, XMQNode *node, void *user_data);
 size_t calculate_buffer_size(const char *start, const char *stop, int indent, const char *pre_line, const char *post_line);
+bool check_leading_space_nl(const char *start, const char *stop);
 void copy_and_insert(MemBuffer *mb, const char *start, const char *stop, int num_prefix_spaces, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
 char *copy_lines(int num_prefix_spaces, const char *start, const char *stop, int num_quotes, bool add_nls, bool add_compound, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
 void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSettings *os);
@@ -102,7 +103,7 @@ const char *find_next_line_end(XMQPrintState *ps, const char *start, const char 
 const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop);
 void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared);
 void fixup_comments(XMQDoc *doq, xmlNode *node, int depth);
-void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, int depth, int index);
+void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index);
 void handle_yaep_syntax_error(YaepParseRun *pr,
                               int err_tok_num,
                               void *err_tok_attr,
@@ -1261,7 +1262,7 @@ const char *build_error_message(const char* fmt, ...)
     As a special case, if both indent is 0 and space is 0, then the indent of the
     first line is picked from the second line.
 */
-char *xmq_un_quote(const char *start, const char *stop, bool remove_qs)
+char *xmq_un_quote(const char *start, const char *stop, bool remove_qs, bool is_xmq)
 {
     if (!stop) stop = start+strlen(start);
 
@@ -1275,7 +1276,7 @@ char *xmq_un_quote(const char *start, const char *stop, bool remove_qs)
     start = start+j;
     stop = stop-j;
 
-    return xmq_trim_quote(start, stop);
+    return xmq_trim_quote(start, stop, is_xmq, false);
 }
 
 /**
@@ -1298,7 +1299,7 @@ char *xmq_un_comment(const char *start, const char *stop)
     if (i == stop)
     {
         // Single line all slashes. Drop the two first slashes which are the single line comment.
-        return xmq_trim_quote(start+2, stop);
+        return xmq_trim_quote(start+2, stop, true, true);
     }
 
     if (*i != '*')
@@ -1311,7 +1312,7 @@ char *xmq_un_comment(const char *start, const char *stop)
         // Remove trailing spaces.
         while (i < stop && *(stop-1) == ' ') stop--;
         assert(i <= stop);
-        return xmq_trim_quote(i, stop);
+        return xmq_trim_quote(i, stop, true, true);
     }
 
     // There is an asterisk after the slashes. A standard /* */ comment
@@ -1342,8 +1343,19 @@ char *xmq_un_comment(const char *start, const char *stop)
     }
 
     assert(start <= stop);
-    char *foo = xmq_trim_quote(start, stop);
+    char *foo = xmq_trim_quote(start, stop, true, true);
     return foo;
+}
+
+bool check_leading_space_nl(const char *start, const char *stop)
+{
+    while (start < stop && *start == ' ') start++;
+    // All spaces, not space_nl.
+    if (start == stop) return false;
+    // Spaces and now nl, then it is space_nl!
+    if (*start == '\n') return true;
+    // Anything else, then it is not space_nl.
+    return false;
 }
 
 size_t calculate_incidental_indent(const char *start, const char *stop)
@@ -1375,17 +1387,20 @@ size_t calculate_incidental_indent(const char *start, const char *stop)
         }
         // Look for end of line.
         while (i < stop && *i != 10) i++;
-        if (i >= stop) break;
+        if (i >= stop)
+        {
+            break;
+        }
     }
 
     return indent;
 }
 
-char *xmq_trim_quote(const char *start, const char *stop)
+char *xmq_trim_quote(const char *start, const char *stop, bool is_xmq, bool is_comment)
 {
     size_t append_newlines = 0;
+    size_t last_line_spaces = (size_t)-1;
 
-    // Check if the final line is all spaces.
     if (has_ending_nl_space(start, stop, NULL))
     {
         // So it is, now trim from the end.
@@ -1393,6 +1408,11 @@ char *xmq_trim_quote(const char *start, const char *stop)
         {
             char c = *(stop-1);
             if (c == '\n') append_newlines++;
+            if (c == ' ' && append_newlines == 0)
+            {
+                if (last_line_spaces == (size_t)-1) last_line_spaces = 0;
+                last_line_spaces++;
+            }
             if (c != ' ' && c != '\t' && c != '\n' && c != '\r') break;
             stop--;
         }
@@ -1410,7 +1430,42 @@ char *xmq_trim_quote(const char *start, const char *stop)
         return buf;
     }
 
+    // Set to false if quote starts with 'content\n...
+    // Set to true if quote starts with '    \n....
+    bool leads_space_nl = check_leading_space_nl(start, stop);
+    // The leading space nl is used to determine the last lines incidental effect.
+    // If we have foo = 'quote
+    //                     again
+    //                   again
+    //                  '
+    // Since the quotes are aligned, then we assume that the incidental is the last line+1
+    // But if we have foo = '
+    //                      quote
+    //                        again
+    //                      again
+    //                      '
+    // Then we assume that the incidental is the last line + 0.
+    // This makes more sense when using 3 or more quotes, ie.
+    //                foo = ''''
+    //                      quote
+    //                        again
+    //                      again
+    //                      ''''
+    // and            foo = ''''quote
+    //                            again
+    //                          again
+    //                      ''''
+
     size_t incidental = calculate_incidental_indent(start, stop);
+    if (is_xmq && last_line_spaces < incidental)
+    {
+        incidental = last_line_spaces;
+        if (!leads_space_nl)
+        {
+            incidental++;
+            if (is_comment) incidental += 2;
+        }
+    }
 
     if (incidental == (size_t)-1)
     {
@@ -1584,7 +1639,7 @@ void debug_content_quote(XMQParseState *state,
                          const char *stop,
                          const char *suffix)
 {
-    char *trimmed = xmq_un_quote(start, stop, true);
+    char *trimmed = xmq_un_quote(start, stop, true, true);
     char *tmp = xmq_quote_as_c(trimmed, trimmed+strlen(trimmed), false);
     WRITE_ARGS("{quote \"", NULL);
     WRITE_ARGS(tmp, NULL);
@@ -1927,7 +1982,7 @@ xmlNodePtr create_quote(XMQParseState *state,
                        const char *suffix,
                        xmlNodePtr parent)
 {
-    char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_quote(start, stop, true);
+    char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_quote(start, stop, true, true);
     xmlNodePtr n = xmlNewDocText(state->doq->docptr_.xml, (const xmlChar *)trimmed);
     if (state->merge_text)
     {
@@ -2124,7 +2179,7 @@ void do_element_value_quote(XMQParseState *state,
                             const char *stop,
                             const char *suffix)
 {
-    char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_quote(start, stop, true);
+    char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_quote(start, stop, true, true);
     if (state->parsing_pi)
     {
         char *content = potentially_add_leading_ending_space(trimmed, trimmed+strlen(trimmed));
@@ -2406,7 +2461,7 @@ void do_attr_value_quote(XMQParseState*state,
 {
     if (state->declaring_xmlns)
     {
-        char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_quote(start, stop, true);
+        char *trimmed = (state->no_trim_quotes)?strndup(start, stop-start):xmq_un_quote(start, stop, true, true);
         update_namespace_href(state, (xmlNsPtr)state->declaring_xmlns_namespace, trimmed, NULL);
         state->declaring_xmlns = false;
         state->declaring_xmlns_namespace = NULL;
@@ -3006,7 +3061,7 @@ void trim_text_node(xmlNode *node, int flags)
         while (stop > start && *(stop-1) == ' ') stop--;
     }
 
-    char *trimmed = xmq_un_quote(start, stop, false);
+    char *trimmed = xmq_un_quote(start, stop, false, false);
     if (trimmed[0] == 0)
     {
         xmlUnlinkNode(node);
@@ -4448,7 +4503,7 @@ void collect_text(YaepTreeNode *n, MemBuffer *mb)
     }
 }
 
-void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, int depth, int index)
+void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index)
 {
     if (n == NULL) return;
     if (n->type == YAEP_ANODE)
@@ -4461,7 +4516,16 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
             {
                 // The content to be inserted has been encoded in the rule name.
                 // A hack yes. Does it work? Yes!
-                xmlNodePtr new_node = xmlNewDocText(doc, (xmlChar*)an->name+2);
+                xmlNodePtr new_node = NULL;
+
+                if(an->name[2] == '/' && an->name[3] == '/')
+                {
+                    new_node = xmlNewDocComment(doc, (xmlChar*)an->name+4);
+                }
+                else
+                {
+                    new_node = xmlNewDocText(doc, (xmlChar*)an->name+2);
+                }
                 if (node == NULL)
                 {
                     xmlDocSetRootElement(doc, new_node);
@@ -4499,7 +4563,7 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
                     for (int i=0; an->children[i] != NULL; ++i)
                     {
                         YaepTreeNode *nn = an->children[i];
-                        generate_dom_from_yaep_node(doc, new_node, nn, depth+1, i);
+                        generate_dom_from_yaep_node(doc, new_node, nn, n, depth+1, i);
                     }
                 }
             }
@@ -4509,32 +4573,45 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
                 for (int i=0; an->children[i] != NULL; ++i)
                 {
                     YaepTreeNode *nn = an->children[i];
-                    generate_dom_from_yaep_node(doc, node, nn, depth+1, i);
+                    generate_dom_from_yaep_node(doc, node, nn, n, depth+1, i);
                 }
             }
         }
     }
     else if (n->type == YAEP_ALT)
     {
-        xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)"AMBIGUOUS", NULL);
+        xmlNodePtr new_node = NULL;
         if (node == NULL)
         {
+            new_node = xmlNewDocNode(doc, NULL, (xmlChar*)"AMBIGUOUS", NULL);
             xmlDocSetRootElement(doc, new_node);
         }
         else
         {
-            xmlAddChild(node, new_node);
+            YaepAbstractNode *an = NULL;
+
+            if (parent) an = &parent->val.anode;
+
+            if (!an || an->mark != '*')
+            {
+                new_node = xmlNewDocNode(doc, NULL, (xmlChar*)"AMBIGUOUS", NULL);
+                xmlAddChild(node, new_node);
+            }
+            else
+            {
+                new_node = node;
+            }
         }
 
         YaepTreeNode *alt = n;
 
-        generate_dom_from_yaep_node(doc, new_node, alt->val.alt.node, depth+1, 0);
+        generate_dom_from_yaep_node(doc, new_node, alt->val.alt.node, n, depth+1, 0);
 
         alt = alt->val.alt.next;
 
         while (alt && alt->type == YAEP_ALT)
         {
-            generate_dom_from_yaep_node(doc, new_node, alt->val.alt.node, depth+1, 0);
+            generate_dom_from_yaep_node(doc, new_node, alt->val.alt.node, n, depth+1, 0);
             alt = alt->val.alt.next;
         }
     }
@@ -4612,6 +4689,14 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
         yaep_set_cost_flag(xmq_get_yaep_grammar(ixml_grammar), true);
     }
 
+    if (state->ixml_controlled_ambiguity_enabled)
+    {
+        verbose("xmq=", "ixml controlled ambiguity enabled");
+        // We have found *rule = ... the grammar, ie that a rule expects ambiguity.
+        // Keep parsing, finding all parses....
+        yaep_set_one_parse_flag(xmq_get_yaep_grammar(ixml_grammar), 0);
+    }
+
     YaepParseRun *run = xmq_get_yaep_parse_run(ixml_grammar);
     run->buffer_start = start;
     run->buffer_stop = stop;
@@ -4634,7 +4719,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
         fprintf(stderr, "ixml: Warning! The input can be parsed in multiple ways, ie it is ambiguous!\n");
     }
 
-    generate_dom_from_yaep_node(doc->docptr_.xml, NULL, run->root, 0, 0);
+    generate_dom_from_yaep_node(doc->docptr_.xml, NULL, run->root, NULL, 0, 0);
 
     if (run->root) yaepFreeTree(run->root, NULL, NULL);
 

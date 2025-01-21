@@ -51,8 +51,7 @@ void test_content(const char *content, XMQContentType expected_ct);
 void test_mem_buffer();
 void test_sl(const char *s, size_t expected_b_len, size_t expected_u_len);
 void test_trim_comment(int start_col, const char *in, const char *expected);
-void test_trim_quote(int start_col, const char *in, const char *expected);
-void test_trim_quote_special(const char *in, const char *expected);
+void test_trim_quote(const char *in, const char *expected);
 void test_quote(int indent, bool compact, char *in, char *expected);
 
 #define TESTS \
@@ -128,9 +127,9 @@ void test_xmq()
     */
 }
 
-void test_trim_quote(int start_col, const char *in, const char *expected)
+void test_trim_quote(const char *in, const char *expected)
 {
-    char *out = xmq_un_quote(in, in+strlen(in), true);
+    char *out = xmq_un_quote(in, in+strlen(in), true, true);
     if (strcmp(out, expected))
     {
         all_ok_ = false;
@@ -150,26 +149,6 @@ void test_trim_quote(int start_col, const char *in, const char *expected)
     free(out);
 }
 
-void test_trim_quote_special(const char *in, const char *expected)
-{
-    char *out = xmq_un_quote(in, in+strlen(in), true);
-    if (strcmp(out, expected))
-    {
-        all_ok_ = false;
-        char *inb = xmq_quote_as_c(in, in+strlen(in), false);
-        char *exb = xmq_quote_as_c(expected, expected+strlen(expected), false);
-        char *gob = xmq_quote_as_c(out, out+strlen(out), false);
-
-        printf("Trimming \"%s\"\n", inb);
-        printf("expected \"%s\"\n", exb);
-        printf("but got  \"%s\"\n", gob);
-
-        free(inb);
-        free(exb);
-        free(gob);
-    }
-    free(out);
-}
 
 void test_trim_comment(int start_col, const char *in, const char *expected)
 {
@@ -195,44 +174,51 @@ void test_trim_comment(int start_col, const char *in, const char *expected)
 void test_trimming_quotes()
 {
     // No newlines means no trimming.
-    test_trim_quote(17, " ", " ");
-    test_trim_quote(17, "  ", "  ");
-    test_trim_quote(17, "  x  ", "  x  ");
-    test_trim_quote(17, "  x", "  x");
-    test_trim_quote(4711, "x", "x");
+    test_trim_quote(" ", " ");
+    test_trim_quote("  ", "  ");
+    test_trim_quote("  x  ", "  x  ");
+    test_trim_quote("  x", "  x");
+    test_trim_quote("x", "x");
 
     // A single newline is removed.
-    test_trim_quote(17, "\n", "");
+    test_trim_quote("\n", "");
     // A lot spaces are removed and one less newline.
-    test_trim_quote(17, "  \n \n    \n\n ", "\n\n\n");
-    test_trim_quote(17, "   \n", "");
-    test_trim_quote(4711, "   \n   ", "");
+    test_trim_quote("  \n \n    \n\n ", "\n\n\n");
+    test_trim_quote("   \n", "");
+    test_trim_quote("   \n   ", "");
 
     // First line leading spaces are kept if there is some non-space on the first line.
-    test_trim_quote(17, " x\n ", " x");
-    test_trim_quote(4711, " x\n ", " x");
+    test_trim_quote(" x\n ", " x");
+    test_trim_quote(" x\n ", " x");
 
     // Incidental is removed.
-    test_trim_quote(17, "\n x\n ", "x");
-    test_trim_quote(17, "x\n          ", "x");
+    test_trim_quote("\n x\n ", "x");
+    test_trim_quote("x\n          ", "x");
 
     // Remove incidental indentation. Source code indentation is colum 2 (= 1 space before)
     // which corresponds to abc and def being aligned.
-    test_trim_quote(2, "abc\n def", "abc\ndef");
+    test_trim_quote("abc\n def", "abc\ndef");
 
     // Yes, the abc has one extra indentation.
-    test_trim_quote(2, " abc\n def", " abc\ndef");
+    test_trim_quote(" abc\n def", " abc\ndef");
     // Incidental is 1 because of first line and second line.
-    test_trim_quote(1, "\n QhowdyQ\n ", "QhowdyQ");
+    test_trim_quote("\n QhowdyQ\n ", "QhowdyQ");
     // Incidental is 0 because of second line.
-    test_trim_quote(0, "\nQhowdyQ\n ", "QhowdyQ");
+    test_trim_quote("\nQhowdyQ\n ", "QhowdyQ");
 
     // Remove incidetal. Indentation number irrelevant since first line is empty.
-    test_trim_quote(17, "\n    x\n  y\n    z\n", "  x\ny\n  z");
+    test_trim_quote("\n    x\n  y\n    z\n", "  x\ny\n  z");
 
-    // No known indentation, use the second lines indentation and assume first and
-    // second has the same indentation. Used as part of the heuristic when converting from xml.
-    test_trim_quote_special("HOWDY\n    HOWDY\n    HOWDY", "HOWDY\nHOWDY\nHOWDY");
+    // Assume first line has the found incidental indentation.
+    test_trim_quote("HOWDY\n    HOWDY\n    HOWDY", "HOWDY\nHOWDY\nHOWDY");
+
+    // Remove incidental. Indentation number irrelevant since first line is empty.
+    test_trim_quote("\n    x\n  y\n    z\n", "  x\ny\n  z");
+
+    // Last line influences incidental indentation, even if it is all spaces.
+    test_trim_quote("\n    x\n  ", "  x");
+    test_trim_quote("\n    x\n\n  ", "  x\n");
+
 }
 
 void test_trimming_comments()
@@ -311,7 +297,7 @@ void test_quote(int indent, bool compact, char *in, char *expected)
         // "test = " or "test="
         size_t skip = 7;
         if (compact) skip = 5;
-        char *trimmed = xmq_un_quote(out+skip, out+size, true);
+        char *trimmed = xmq_un_quote(out+skip, out+size, true, true);
 
         if (strcmp(trimmed, in))
         {

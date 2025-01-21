@@ -3,19 +3,29 @@
 
     A METAR grammar for parsing METAR weather reports.
 
-    Example report:
+    Example reports:
     METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN="
+    METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91=
 }
-METAR = -'METAR ', airport_code, -' ', part**-' ', -'='.
-part =
-     | time_of_observation
-     | wind_direction
-     | wind_variation
-     | prevailing_visibility
-     | runway_visual_range
-     | snow.
 
-airport_code = [Lu]+.
+weather_report = (type, -' ')?, icao_airport_code, -' ', part**-' ', -'='?, -[Zs;#a;#d]*.
+
+type = 'METAR' | 'SPECI'.
+
+-part =
+     | time_of_observation
+     | observation_type
+     | wind
+     | visibility
+     | runway_visual_range
+     | weather
+     | clouds
+     | temperature
+     | air_pressure
+     | trend
+     | cavok.
+
+icao_airport_code = [Lu]+.
 
 time_of_observation = month, time, time_zone.
 month = ["0"-"9"], ["0"-"9"].
@@ -24,18 +34,25 @@ hour = ["0"-"9"], ["0"-"9"].
 minute = ["0"-"9"], ["0"-"9"].
 time_zone = 'Z'.
 
-wind_direction = degrees, speed.
+observation_type = 'AUTO', +"MATIC" | 'COR', +"RECTED".
+
+wind = wind_direction | wind_variation.
+
+wind_direction = (degrees | variable), speed.
 degrees = ["0"-"9"], ["0"-"9"], ["0"-"9"].
-speed = value, unit.
+variable = 'VRB'.
+speed = value, gusty?, unit.
 value = ["0"-"9"], ["0"-"9"].
 unit = 'MPS' | 'KT'.
+gusty = -'G', ["0"-"9"], ["0"-"9"].
 
 wind_variation = from_degrees, -'V', to_degrees.
 from_degrees = -degrees.
 to_degrees = -degrees.
 
-prevailing_visibility = meters.
+visibility = meters | miles.
 meters = ["0"-"9"], ["0"-"9"], ["0"-"9"], ["0"-"9"].
+miles = ["0"-"9"]+, ('/', ["0"-"9"]+)?, -'SM'.
 
 runway_visual_range = -'R', runway, -'/P', range, status.
 runway = ["0"-"9"], ["0"-"9"].
@@ -45,8 +62,100 @@ nochange>status = -'N', +"nochange".
 up>status = -'U', +"rising".
 down>status = -'D', +"falling".
 
-snow = snow_status, -'SN'.
--snow_status = light_snow | heavy_snow | normal_snow.
-light_snow>status = -'-', +"light".
-heavy_snow>status = -'+', +"heavy".
-normal_snow>status = +"normal".
+{ Precipitation }
+weather = observation++-' '.
+
+observation = intensity?, characteristic?, type.
+
+intensity = -'-', +"light".
+intensity = -'+', +"heavy".
+intensity = -'VC', +"in the vicinity".
+
+characteristic = char_bc | char_sh.
+char_bc = code_bc, info_bc.
+code_bc = 'BC'.
+info_bc = +"patches of".
+
+-char_sh = code_sh, info_sh.
+-code_sh = -'SH'.
+-info_sh = +"showers".
+
+{BC 	patches of
+DR 	low drifting
+MI 	shallow
+PR 	partial
+BL 	blowing
+FZ 	freezing
+SH 	showers
+TS 	thunderstorms}
+
+-type = type_br | type_ds | type_du | type_dz | type_fc | type_fg | type_ra.
+
+-type_ra = code_ra, info_ra.
+code_ra>code = 'RA'.
+info_ra>info = +"rain".
+
+-type_br = code_br, info_br.
+code_br>code = 'BR'.
+info_br>info = +"mist".
+
+-type_ds = code_ds, info_ds.
+code_ds>code = 'DS'.
+info_ds>info = +"dust storm".
+
+-type_du = code_du, info_du.
+code_du>code = 'DU'.
+info_du>info = +"widespread dust".
+
+-type_dz = code_dz, info_dz.
+code_dz>code = 'DZ'.
+info_dz>info = +"drizzle".
+
+-type_fc = code_fc, info_fc.
+code_fc>code = 'FC'.
+info_fc>info = +"funnel cloud".
+
+-type_fg = code_fg, info_fg.
+code_fg>code = 'FG'.
+info_fg>info = +"fog".
+
+{
+FU 	smoke
+GR 	hail
+GS 	small hail
+HZ 	haze
+IC 	ice crystals
+PE 	ice pellets
+PO 	sand whirls
+PY 	spray
+SA 	sand
+SG 	snow grains
+SN 	snow
+SQ 	squalls
+SS 	sand storm
+UP 	unknown precipitation
+VA 	volcanic ash
+}
+
+clouds = cloud_observation++-' '.
+
+cloud_observation>observation = cloud_cover, cloud_base?, cloud_type?.
+
+cloud_cover = 'SKC' | 'NCD' | 'CLR' | 'NSC' | 'FEW' | 'SCT' | 'BKN' | 'OVC'.
+cloud_base = ['0'-'9'], ['0'-'9'], ['0'-'9'].
+cloud_type = '///' | 'CB' | 'TCU'.
+
+temperature = air_c, -'/', dewpoint_c.
+air_c = (-'M', +"-")?, ['0'-'9'], ['0'-'9'].
+dewpoint_c = (-'M', +"-")?, ['0'-'9'], ['0'-'9'].
+
+air_pressure = pressure_hpa | pressure_hg.
+
+pressure_hpa = -'Q', ['0'-'9'], ['0'-'9'], ['0'-'9'], ['0'-'9'].
+pressure_hg = -'A', ['0'-'9'], ['0'-'9'], ['0'-'9'], ['0'-'9'].
+
+trend = 'NOSIG' | view_becoming.
+
+view_becoming = -'BECMG ', meters.
+
+cavok = 'CAVOK'.

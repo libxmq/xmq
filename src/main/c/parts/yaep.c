@@ -6519,6 +6519,7 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
             alt->val.alt.node = prune_to_minimal(ps, alt->val.alt.node, cost);
             if (alt == node || min_cost > *cost)
 	    {
+                fprintf(stderr, "FOUND smaller cost %d %s\n", *cost, alt->val.alt.node->val.anode.name);
                 min_cost = *cost;
                 alt->val.alt.next = NULL;
                 result = alt;
@@ -7518,7 +7519,8 @@ static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, bool trans_p
         && rule->mark != ' '
         && rule->mark != '-'
         && rule->mark != '@'
-        && rule->mark != '^')
+        && rule->mark != '^'
+        && rule->mark != '*')
     {
         fprintf(f, "(yaep) internal error bad rule: ");
         symbol_print(f, rule->lhs, false);
