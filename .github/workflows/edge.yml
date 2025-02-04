@@ -26,6 +26,8 @@ jobs:
         run: tar czf build/xmq-gnu-linux-release.tar.gz -C build/default/release xmq
       - id: DELETE_OLD_ASSET
         run: gh release delete-asset edge xmq-gnu-linux-release.tar.gz
+        env:
+          GH_TOKEN: ${{ github.token }}
       - id: UPLOAD_TO_EDGE
         run: gh release upload edge build/xmq-gnu-linux-release.tar.gz
         env:
@@ -46,6 +48,8 @@ jobs:
         run: tar czf build/xmq-macos-release.tar.gz -C build/default/release xmq
       - id: DELETE_OLD_ASSET
         run: gh release delete-asset edge xmq-macos-release.tar.gz
+        env:
+          GH_TOKEN: ${{ github.token }}
       - id: UPLOAD_TO_EDGE
         run: gh release upload edge build/xmq-macos-release.tar.gz
         env:
@@ -66,6 +70,8 @@ jobs:
         run: make release
       - id: DELETE_OLD_ASSET
         run: gh release delete-asset edge xmq-windows-release.msi
+        env:
+          GH_TOKEN: ${{ github.token }}
       - id: UPLOAD_TO_EDGE
         run: gh release upload edge ./build/default/windows_installer/xmq-windows-release.msi
         env:
