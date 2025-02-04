@@ -23,8 +23,7 @@ mkdir -p $OUTPUT
 
 sed -n '/^START$/,/^END$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.ixml
 
-
-if $PROG --ixml=$OUTPUT/${TEST_NAME}.ixml > $OUTPUT/${TEST_NAME}.output 2>&1
+if $PROG --ixml=$OUTPUT/${TEST_NAME}.ixml -z > $OUTPUT/${TEST_NAME}.output 2>&1
 then
     echo "OK: test ${TEST_NAME}"
 else

@@ -695,6 +695,9 @@ XMQParseState *xmq_get_yaep_parse_state(XMQDoc *doc);
 
 void set_node_namespace(XMQParseState *state, xmlNodePtr node, const char *node_name);
 
+bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **out_buffer);
+bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer);
+
 // Multicolor terminals like gnome-term etc.
 
 #define NOCOLOR      "\033[0m"

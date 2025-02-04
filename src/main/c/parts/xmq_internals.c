@@ -614,5 +614,115 @@ bool is_safe_value_char(const char *i, const char *stop)
              c == '\r');
 }
 
+bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer)
+{
+    bool rc = true;
+    int blocksize = 1024;
+    char block[blocksize];
+
+    MemBuffer *mb = new_membuffer();
+
+    int fd = 0;
+    while (true) {
+        ssize_t n = read(fd, block, sizeof(block));
+        if (n == 0) {
+            break;
+        }
+        if (n == -1) {
+            if (errno == EINTR) {
+                continue;
+            }
+            PRINT_ERROR("Could not read stdin errno=%d\n", errno);
+            close(fd);
+
+            return false;
+        }
+        membuffer_append_region(mb, block, block + n);
+    }
+    close(fd);
+
+    membuffer_append_null(mb);
+
+    *out_fsize = mb->used_-1;
+    *out_buffer = free_membuffer_but_return_trimmed_content(mb);
+
+    return rc;
+}
+
+bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **out_buffer)
+{
+    if (file == NULL || (file[0] == '-' && file[1] == 0))
+    {
+        return load_stdin(doq, out_fsize, out_buffer);
+    }
+
+    bool rc = false;
+    char *buffer = NULL;
+    size_t block_size = 0;
+    size_t n = 0;
+
+    FILE *f = fopen(file, "rb");
+    if (!f) {
+        doq->errno_ = XMQ_ERROR_CANNOT_READ_FILE;
+        doq->error_ = build_error_message("xmq: %s: No such file or directory\n", file);
+        return false;
+    }
+
+    fseek(f, 0, SEEK_END);
+    size_t fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    debug("xmq=", "file size %zu", fsize);
+
+    buffer = (char*)malloc(fsize + 1);
+    if (!buffer)
+    {
+        doq->errno_ = XMQ_ERROR_OOM;
+        doq->error_ = build_error_message("xmq: %s: File too big, out of memory\n", file);
+        goto exit;
+    }
+
+    block_size = fsize;
+    if (block_size > 10000) block_size = 10000;
+    n = 0;
+    do {
+        if (n + block_size > fsize) block_size = fsize - n;
+        size_t r = fread(buffer+n, 1, block_size, f);
+        debug("xmq=", "read %zu bytes total %zu", r, n);
+        if (!r) break;
+        n += r;
+    } while (n < fsize);
+
+    debug("xmq=", "read total %zu bytes fsize %zu bytes", n, fsize);
+
+    if (n != fsize) {
+        rc = false;
+        doq->errno_ = XMQ_ERROR_CANNOT_READ_FILE;
+        doq->error_ = build_error_message("xmq: %s: Cannot read file\n", file);
+        goto exit;
+    }
+    fclose(f);
+    buffer[fsize] = 0;
+    rc = true;
+
+exit:
+
+    *out_fsize = fsize;
+    *out_buffer = buffer;
+    return rc;
+}
+
+const char *build_error_message(const char* fmt, ...)
+{
+    char *buf = (char*)malloc(4096);
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, 4096, fmt, args);
+    va_end(args);
+    buf[4095] = 0;
+    buf = (char*)realloc(buf, strlen(buf)+1);
+    return buf;
+}
+
 
 #endif // XMQ_INTERNALS_MODULE

@@ -1,0 +1,16 @@
+START
+v{speed=123 car=volvo}
+v{speed=33 car=saab}
+v{speed=1 car=ford}
+COMPACT
+IGNORE
+XMQ
+<?xml version="1.0" encoding="utf-8"?>
+<v><speed>123</speed><car>volvo</car></v>
+<?xml version="1.0" encoding="utf-8"?>
+<v><speed>33</speed><car>saab</car></v>
+<?xml version="1.0" encoding="utf-8"?>
+<v><speed>1</speed><car>ford</car></v>
+END
+ARGS --lines
+CMDS to-xml

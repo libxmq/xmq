@@ -65,6 +65,7 @@ char *xmq_quote_as_c(const char *start, const char *stop, bool add_quotes);
 char *xmq_unquote_as_c(const char *start, const char *stop, bool remove_quotes);
 char *potentially_add_leading_ending_space(const char *start, const char *stop);
 bool find_line_col(const char *start, const char *stop, size_t at, int *line, int *col);
+const char *find_eol_or_stop(const char *start, const char *stop);
 
 // Fetch a pointer to a NULL ended array of char pointers to category parts for the given name.
 // For input "Lu" this function returns the array { "Lu", 0 }

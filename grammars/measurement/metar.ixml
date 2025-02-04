@@ -8,9 +8,9 @@
     METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91=
 }
 
-weather_report = (type, -' ')?, icao_airport_code, -' ', part**-' ', -'='?, -[Zs;#a;#d]*.
+weather_report = (report_type, -' ')?, icao_airport_code, -' ', part**-' ', -'='?, -[Zs;#a;#d]*.
 
-type = 'METAR' | 'SPECI'.
+report_type = 'METAR' | 'SPECI'.
 
 -part =
      | time_of_observation
@@ -23,7 +23,8 @@ type = 'METAR' | 'SPECI'.
      | temperature
      | air_pressure
      | trend
-     | cavok.
+     | cavok
+     | remark.
 
 icao_airport_code = [Lu]+.
 
@@ -65,16 +66,25 @@ down>status = -'D', +"falling".
 { Precipitation }
 weather = observation++-' '.
 
-observation = intensity?, characteristic?, type.
+observation = intensity?, characteristic*, weather_type*.
 
 intensity = -'-', +"light".
 intensity = -'+', +"heavy".
 intensity = -'VC', +"in the vicinity".
 
-characteristic = char_bc | char_sh.
+characteristic = char_bc | char_bl | char_sh | char_up.
+
 char_bc = code_bc, info_bc.
 code_bc = 'BC'.
 info_bc = +"patches of".
+
+char_bl = code_bl, info_bl.
+code_bl = 'BL'.
+info_bl = +"blowing".
+
+char_up = code_up, info_up.
+code_up = 'UP'.
+info_up = +"unknown precipitation".
 
 -char_sh = code_sh, info_sh.
 -code_sh = -'SH'.
@@ -84,12 +94,11 @@ info_bc = +"patches of".
 DR 	low drifting
 MI 	shallow
 PR 	partial
-BL 	blowing
 FZ 	freezing
 SH 	showers
 TS 	thunderstorms}
 
--type = type_br | type_ds | type_du | type_dz | type_fc | type_fg | type_ra.
+-weather_type = type_br | type_ds | type_du | type_dz | type_fc | type_fg | type_fz | type_ra | type_va.
 
 -type_ra = code_ra, info_ra.
 code_ra>code = 'RA'.
@@ -118,6 +127,14 @@ info_fc>info = +"funnel cloud".
 -type_fg = code_fg, info_fg.
 code_fg>code = 'FG'.
 info_fg>info = +"fog".
+
+-type_fz = code_fz, info_fz.
+code_fz>code = 'FZ'.
+info_fz>info = +"freezing".
+
+-type_va = code_va, info_va.
+code_va>code = 'VA'.
+info_va>info = +"volcanic ash".
 
 {
 FU 	smoke
@@ -159,3 +176,7 @@ trend = 'NOSIG' | view_becoming.
 view_becoming = -'BECMG ', meters.
 
 cavok = 'CAVOK'.
+
+*remarks = 'RMK', ~["="]*.
+
+{-remark = rmk_a02 | 'A02' SLP130  }

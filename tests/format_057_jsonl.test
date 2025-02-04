@@ -1,0 +1,13 @@
+START
+{"speed":123,"car":"volvo"}
+{"speed":33,"car":"saab"}
+{"speed":1,"car":"ford"}
+COMPACT
+IGNORE
+XMQ
+_{speed=123 car=volvo}
+_{speed=33 car=saab}
+_{speed=1 car=ford}
+END
+ARGS --lines
+CMDS to-xmq --compact

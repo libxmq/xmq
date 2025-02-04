@@ -1,0 +1,52 @@
+{4E4401062020202205077A4B0040852F2F0FE566B99390000087C0B24B732679FF75350010FCFB00004155594265086A0043B4017301DFF600006AE70000BFD5000051BC0000A0F56C2602FFFF1B1B}
+
+telegram = len, c, dll-mfct, dll-id, dll-version, dll-type, tpl-ci, tpl-acc, tpl-sts, tpl-cfg, '2F2F0F', intro, parts, outro, ws.
+
+-ws = -[Zs;#a;#d]*.
+
+len = byte.
+*c = c_hi, c_lo.
+
+c_hi>set = bit_2, +'PRM'.
+c_lo>set = bit_2, +'SND-NR'.
+
+dll-mfct = byte, byte.
+dll-id = byte, byte, byte, byte.
+dll-version = byte.
+dll-type = byte.
+
+tpl-ci = byte.
+tpl-acc = byte.
+tpl-sts = byte.
+tpl-cfg = byte, byte.
+
+-byte = hex, hex.
+-hex = ['0'-'9';'A'-'F'].
+
+intro = byte, byte, byte, byte, byte, byte, byte.
+outro = byte, byte, byte, byte.
+parts = part*.
+-part =  total_consumption
+        | data_a
+        | data_b
+        | data_c
+        | data_d
+        | data_e
+        | data_f.
+
+total_consumption = -'10', byte, byte, byte, byte.
+data_a = -'87', byte, byte, byte, byte, byte, byte, byte, byte, byte, byte.
+data_b = -'41', byte, byte.
+data_c = -'42', byte, byte, byte, byte.
+data_d = -'43', byte, byte.
+data_e = -'73', byte, byte, byte, byte, byte, byte, byte, byte, byte, byte, byte, byte, byte, byte, byte, byte, byte.
+data_f = -'A0', byte, byte, byte, byte.
+
+{ 0001 0011 0101 0111 1001 1011 1101 1111 }
+-bit_0 = -['13579BDF'].
+{ 0010 0011 0110 0111 1010 1011 1110 1111 }
+-bit_1 = -['2367ABEF'].
+{ 0100 0101 0110 0111 1100 1101 1110 1111 }
+-bit_2 = -['4567ABCF'].
+{ 1000 1001 1010 1011 1100 1101 1110 1111 }
+-bit_3 = -['89ABCDEF'].

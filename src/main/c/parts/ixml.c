@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2024 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2024-2025 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -156,6 +156,8 @@ void skip_whitespace(const char **i);
 
 void allocate_yaep_tmp_terminals(XMQParseState *state);
 void free_yaep_tmp_terminals(XMQParseState *state);
+void free_yaep_tmp_terminals_and_content(XMQParseState *state);
+
 bool has_ixml_tmp_terminals(XMQParseState *state);
 bool has_more_than_one_ixml_tmp_terminals(XMQParseState *state);
 void add_yaep_term_to_rule(XMQParseState *state, char mark, IXMLTerminal *t, IXMLNonTerminal *nt);
@@ -971,7 +973,7 @@ void parse_ixml_insertion(XMQParseState *state)
         UTF8Char c;
         encode_utf8(state->ixml_encoded, &c);
         add_insertion_rule(state, c.bytes);
-        free_yaep_tmp_terminals(state);
+        free_yaep_tmp_terminals_and_content(state);
     }
     else
     {
@@ -1753,7 +1755,7 @@ void add_insertion_rule(XMQParseState *state, const char *content)
 void scan_content_fixup_charsets(XMQParseState *state, const char *start, const char *stop)
 {
     const char *i = start;
-    // We allocate a byte for every possible unicode. Yes, a bit excessive, 1 megabyte. Can be fixed though.
+    // We allocate a byte for every possible unicode.
     // 17*65536 = 0x11000 = 1 MB
     char *used = (char*)malloc(0x110000);
     memset(used, 0, 0x110000);
@@ -1936,6 +1938,13 @@ void free_yaep_tmp_terminals(XMQParseState *state)
 {
     // Only free the vector, the content is copied to another array.
     vector_free(state->ixml_tmp_terminals);
+    state->ixml_tmp_terminals = NULL;
+}
+
+void free_yaep_tmp_terminals_and_content(XMQParseState *state)
+{
+    // Free the tmp terminals themselves.
+    vector_free_and_values(state->ixml_tmp_terminals, (FreeFuncPtr)free_ixml_terminal);
     state->ixml_tmp_terminals = NULL;
 }
 

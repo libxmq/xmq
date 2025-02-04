@@ -899,4 +899,16 @@ bool category_has_code(int code, int *cat, size_t cat_len)
     }
 }
 
+const char *find_eol_or_stop(const char *start, const char *stop)
+{
+    const char *i = start;
+
+    while (i < stop)
+    {
+        if (*i == '\n') return i;
+        i++;
+    }
+    return stop;
+}
+
 #endif // TEXT_MODULE

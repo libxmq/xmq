@@ -27,6 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/text.h"
 #include"parts/ixml.h"
 #include"parts/xml.h"
+#include"parts/xmq_internals.h"
 #include"parts/yaep.h"
 
 #include<assert.h>
@@ -171,6 +172,7 @@ struct XMQCliCommand
     xmlDocPtr   ixml_doc;  // A DOM containing the ixml grammar.
     const char *ixml_ixml; // IXML grammar source to be used.
     const char *ixml_filename; // Where the ixml grammar was read from.
+    XMQDoc *ixml_grammar; // The prepared ixml grammar to be reused.
     bool ixml_all_parses; // Print all possible parses when parse is ambiguous.
     bool ixml_try_to_recover; // Try to recover when parsing with an ixml grammar.
     bool build_xml_of_ixml; // Generate xml directly from ixml.
@@ -215,7 +217,17 @@ struct XMQCliCommand
     bool escape_non_7bit;
     bool escape_tabs;
     const char *implicit_root;
+
+    // If true then chip away one line at a time from the content.
     bool lines;
+    // The content to be parsed one line at a time.
+    const char *input_content_start;
+    // The byte after the last input content byte.
+    const char *input_content_stop;
+    // Current line start.
+    const char *input_current_line_start;
+    // Current line stop, points to byte after #a (newline).
+    const char *input_current_line_stop;
 
     // Command tok
     XMQCliTokenizeType tok_type; // Do not pretty print, just debug/colorize tokens.
@@ -306,7 +318,7 @@ bool cmd_to(XMQCliCommand *command);
 bool cmd_output(XMQCliCommand *command);
 bool cmd_transform(XMQCliCommand *command);
 bool cmd_validate(XMQCliCommand *command);
-void cmd_unload(XMQCliCommand *command);
+bool cmd_unload(XMQCliCommand *command);
 bool cmd_quote_unquote(XMQCliCommand *command);
 const char *content_type_to_string(XMQContentType ct);
 const char *tokenize_type_to_string(XMQCliTokenizeType type);
@@ -1830,84 +1842,99 @@ bool cmd_load(XMQCliCommand *command)
         command->in = NULL;
     }
 
-    verbose_("xmq=", "cmd-load %s", command->in);
+    const char *from = "stdin";
+
+    if (command->in_is_content)
+    {
+        from = "-i argument";
+        command->input_current_line_start = command->in;
+        command->input_current_line_stop = command->in+strlen(command->in);
+        xmqSetOriginalSize(command->env->doc, command->input_current_line_stop-command->input_current_line_start);
+        verbose_("xmq=", "cmd-load from -i argument");
+    }
+    else
+    {
+        if (command->in) from = command->in;
+        if (command->input_content_start == NULL)
+        {
+            XMQDoc *tmp = xmqNewDoc();
+            size_t len = 0;
+            verbose_("xmq=", "cmd-load from %s", from);
+            bool ok = load_file(tmp, command->in, &len, &command->input_content_start);
+            command->input_content_stop = command->input_content_start+len;
+
+            if (!ok)
+            {
+                printf("%s\n", tmp->error_);
+                exit(1);
+            }
+            xmqFreeDoc(tmp);
+            if (command->lines)
+            {
+                command->input_current_line_start = command->input_content_start;
+                command->input_current_line_stop = find_eol_or_stop(command->input_current_line_start,
+                                                                    command->input_content_stop);
+            }
+            else
+            {
+                command->input_current_line_start = command->input_content_start;
+                command->input_current_line_stop = command->input_content_stop;
+            }
+        }
+        else
+        {
+            command->input_current_line_start = command->input_current_line_stop+1;
+            command->input_current_line_stop = find_eol_or_stop(command->input_current_line_start,
+                                                                command->input_content_stop);
+            if (command->input_current_line_start >= command->input_content_stop)
+            {
+                return false;
+            }
+        }
+    }
 
     command->env->load = command;
 
     if (command->ixml_ixml != NULL)
     {
-        XMQDoc *ixml_grammar = xmqNewDoc();
-        xmqSetDocSourceName(ixml_grammar, command->ixml_filename);
-
-        bool ok = xmqParseBufferWithType(ixml_grammar, command->ixml_ixml, NULL, NULL, XMQ_CONTENT_IXML, 0);
-
-        if (!ok)
+        if (command->ixml_grammar == NULL)
         {
-            fprintf(stderr, "%s\n", xmqDocError(ixml_grammar));
-            exit(1);
+            command->ixml_grammar = xmqNewDoc();
+            xmqSetDocSourceName(command->ixml_grammar, command->ixml_filename);
+
+            bool ok = xmqParseBufferWithType(command->ixml_grammar, command->ixml_ixml, NULL, NULL, XMQ_CONTENT_IXML, 0);
+
+            if (!ok)
+            {
+                fprintf(stderr, "%s\n", xmqDocError(command->ixml_grammar));
+                exit(1);
+            }
         }
 
         int flags = 0;
         if (command->ixml_all_parses) flags |= XMQ_FLAG_IXML_ALL_PARSES;
         if (command->ixml_try_to_recover) flags |= XMQ_FLAG_IXML_TRY_TO_RECOVER;
 
-        if (command->in)
+        bool ok = xmqParseBufferWithIXML(command->env->doc,
+                                         command->input_current_line_start,
+                                         command->input_current_line_stop,
+                                         command->ixml_grammar,
+                                         flags);
+
+        if (!ok)
         {
-            if (command->in_is_content)
-            {
-                ok = xmqParseBufferWithIXML(command->env->doc, command->in, NULL, ixml_grammar, flags);
-                if (!ok)
-                {
-                    printf("xmq: could not parse: %s\n", command->in);
-                    exit(1);
-                }
-            }
-            else
-            {
-                ok = check_file_exists(command->in);
-                if (!ok)
-                {
-                    printf("xmq: could not read file %s\n", command->in);
-                    exit(1);
-                }
-                ok = xmqParseFileWithIXML(command->env->doc, command->in, ixml_grammar, flags);
-                if (!ok)
-                {
-                    exit(1);
-                }
-            }
+            exit(1);
         }
-
-        xmqFreeDoc(ixml_grammar);
-
-        const char *from = "stdin";
-        if (command->in) from = command->in;
-        free((char*)command->ixml_filename);
-        command->ixml_filename = NULL;
-        free((char*)command->ixml_ixml);
-        command->ixml_ixml = NULL;
         verbose_("xmq=", "cmd-load-ixml %zu bytes from %s", xmqGetOriginalSize(command->env->doc), from);
     }
     else
     {
-        bool ok = false;
-        if (command->in_is_content)
-        {
-            ok = xmqParseBufferWithType(command->env->doc,
-                                        command->in,
-                                        NULL,
-                                        command->implicit_root,
-                                        command->in_format,
-                                        command->flags);
-        }
-        else
-        {
-            ok = xmqParseFileWithType(command->env->doc,
-                                      command->in,
-                                      command->implicit_root,
-                                      command->in_format,
-                                      command->flags);
-        }
+        bool ok = xmqParseBufferWithType(command->env->doc,
+                                         command->input_current_line_start,
+                                         command->input_current_line_stop,
+                                         command->implicit_root,
+                                         command->in_format,
+                                         command->flags);
 
         if (!ok)
         {
@@ -1919,22 +1946,44 @@ bool cmd_load(XMQCliCommand *command)
             command->env->doc = NULL;
             return false;
         }
-        const char *from = "stdin";
-        if (command->in) from = command->in;
         verbose_("xmq=", "cmd-load %zu bytes from %s", xmqGetOriginalSize(command->env->doc), from);
     }
 
     return true;
 }
 
-void cmd_unload(XMQCliCommand *command)
+bool cmd_unload(XMQCliCommand *command)
 {
     if (command && command->env && command->env->doc)
     {
         verbose_("xmq=", "cmd-unload document");
         xmqFreeDoc(command->env->doc);
         command->env->doc = NULL;
+
+        if (command->input_current_line_start >= command->input_content_stop)
+        {
+            // Handled all input.
+            if (command->ixml_grammar)
+            {
+                xmqFreeDoc(command->ixml_grammar);
+                command->ixml_grammar = NULL;
+            }
+
+            if (command->input_content_start) free((char*)command->input_content_start);
+            command->input_content_start = NULL;
+            command->input_content_stop = NULL;
+            command->input_current_line_start = NULL;
+            command->input_current_line_stop = NULL;
+
+            free((char*)command->ixml_filename);
+            command->ixml_filename = NULL;
+            free((char*)command->ixml_ixml);
+            command->ixml_ixml = NULL;
+            return false;
+        }
+        return true;
     }
+    return false;
 }
 
 bool cmd_to(XMQCliCommand *command)
@@ -4071,26 +4120,33 @@ int main(int argc, const char **argv)
         return cmd_help(load_command->next);
     }
 
-    XMQCliCommand *c = load_command;
+    bool more_content = true;
 
-    // Execute commands.
-    while (c)
+    while (more_content)
     {
-        debug_("xmq=", "performing %s", cmd_name(c->cmd));
-        bool ok = perform_command(c);
-        if (!ok)
+        // The load command will either load the whole file at once
+        // or chip away at it for each line.
+        XMQCliCommand *c = load_command;
+
+        // Execute commands.
+        while (c)
         {
-            rc = 1;
-            break;
+            debug_("xmq=", "performing %s", cmd_name(c->cmd));
+            bool ok = perform_command(c);
+            if (!ok)
+            {
+                rc = 1;
+                break;
+            }
+            c = c->next;
         }
-        c = c->next;
+        // Free document.
+        more_content = cmd_unload(load_command);
     }
 
-    // Free document.
-    cmd_unload(load_command);
 
     // Free commands.
-    c = load_command;
+    XMQCliCommand *c = load_command;
     while (c)
     {
         XMQCliCommand *tmp = c;
