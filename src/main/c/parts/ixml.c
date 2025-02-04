@@ -966,10 +966,12 @@ void parse_ixml_insertion(XMQParseState *state)
     }
     else if (is_ixml_encoded_start(state))
     {
+        allocate_yaep_tmp_terminals(state);
         parse_ixml_encoded(state, true);
         UTF8Char c;
         encode_utf8(state->ixml_encoded, &c);
         add_insertion_rule(state, c.bytes);
+        free_yaep_tmp_terminals(state);
     }
     else
     {

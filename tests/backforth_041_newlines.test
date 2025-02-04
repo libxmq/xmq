@@ -1,0 +1,15 @@
+INPUT
+root {
+alfa = 'a
+
+        a'
+}
+FIRST
+{"_":"root","alfa":"a\n\na"}
+SECOND
+root{alfa=('a'&#10;&#10;'a')}
+END
+ARGS_FIRST
+CMDS_FIRST to-json
+ARGS_SECOND
+CMDS_SECOND to-xmq --compact

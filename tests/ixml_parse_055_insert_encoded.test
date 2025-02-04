@@ -1,0 +1,11 @@
+START
+alfa: A, +#a, +#a, A.
+-A: 'a'.
+INPUT
+aa
+OUTPUT
+alfa = 'a
+
+        a'
+END
+ARGS=
