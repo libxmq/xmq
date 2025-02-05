@@ -42,7 +42,7 @@ wind = wind_direction | wind_variation.
 wind_direction = (degrees | variable), speed.
 degrees = ["0"-"9"], ["0"-"9"], ["0"-"9"].
 variable = 'VRB'.
-speed = value, gusty?, unit.
+speed = value, gusty?, unit?.
 value = ["0"-"9"], ["0"-"9"].
 unit = 'MPS' | 'KT'.
 gusty = -'G', ["0"-"9"], ["0"-"9"].
@@ -51,14 +51,14 @@ wind_variation = from_degrees, -'V', to_degrees.
 from_degrees = -degrees.
 to_degrees = -degrees.
 
-visibility = meters | miles.
+visibility = (meters | miles), '+'?.
 meters = ["0"-"9"], ["0"-"9"], ["0"-"9"], ["0"-"9"].
 miles = ["0"-"9"]+, ('/', ["0"-"9"]+)?, -'SM'.
 
-runway_visual_range = -'R', runway, -'/P', range, status.
+runway_visual_range = -'R', runway, -'/P', range, visual_status.
 runway = ["0"-"9"], ["0"-"9"].
 range = ["0"-"9"], ["0"-"9"], ["0"-"9"], ["0"-"9"].
--status = nochange | up | down.
+-visual_status = nochange | up | down.
 nochange>status = -'N', +"nochange".
 up>status = -'U', +"rising".
 down>status = -'D', +"falling".
@@ -66,75 +66,81 @@ down>status = -'D', +"falling".
 { Precipitation }
 weather = observation++-' '.
 
-observation = intensity?, characteristic*, weather_type*.
+observation = intensity?, characteristic*, weather_type.
 
-intensity = -'-', +"light".
-intensity = -'+', +"heavy".
-intensity = -'VC', +"in the vicinity".
+intensity = -'-', +"light" | -'+', +"heavy" | -'VC', +"in the vicinity".
 
-characteristic = char_bc | char_bl | char_sh | char_up.
+-characteristic = char_bc | char_bl | char_dr | char_fz | char_mi | char_pa | char_sh | char_ts | char_up.
 
-char_bc = code_bc, info_bc.
-code_bc = 'BC'.
-info_bc = +"patches of".
+-char_bc = code_bc, info_bc.
+code_bc>chrct = 'BC'.
+info_bc>chrct-info = +"patches of".
 
-char_bl = code_bl, info_bl.
-code_bl = 'BL'.
-info_bl = +"blowing".
+-char_bl = code_bl, info_bl.
+code_bl>chrct = 'BL'.
+info_bl>chrct-info = +"blowing".
 
-char_up = code_up, info_up.
-code_up = 'UP'.
-info_up = +"unknown precipitation".
+-char_dr = code_dr, info_dr.
+code_dr>chrct = 'DR'.
+info_dr>chrct-info = +"low drifting".
+
+-char_fz = code_fz, info_fz.
+code_fz>chrct = 'FZ'.
+info_fz>chrct-info = +"freezing".
+
+-char_mi = code_mi, info_mi.
+code_mi>chrct = 'MI'.
+info_mi>chrct-info = +"shallow".
+
+-char_pa = code_pa, info_pa.
+code_pa>chrct = 'PA'.
+info_pa>chrct-info = +"partial".
 
 -char_sh = code_sh, info_sh.
--code_sh = -'SH'.
--info_sh = +"showers".
+code_sh>chrct = 'SH'.
+info_sh>chrct-info = +"showers".
 
-{BC 	patches of
-DR 	low drifting
-MI 	shallow
-PR 	partial
-FZ 	freezing
-SH 	showers
-TS 	thunderstorms}
+-char_ts = code_ts, info_ts.
+code_ts>chrct = 'TS'.
+info_ts>chrct-info = +"thunderstorms".
 
--weather_type = type_br | type_ds | type_du | type_dz | type_fc | type_fg | type_fz | type_ra | type_va.
+-char_up = code_up, info_up.
+code_up>chrct = 'UP'.
+info_up>chrct-info = +"unknown precipitation".
+
+-weather_type = type_br | type_ds | type_du | type_dz | type_fc | type_fg | type_ra | type_va.
 
 -type_ra = code_ra, info_ra.
-code_ra>code = 'RA'.
-info_ra>info = +"rain".
+code_ra>type = 'RA'.
+info_ra>type-info = +"rain".
 
 -type_br = code_br, info_br.
-code_br>code = 'BR'.
-info_br>info = +"mist".
+code_br>type = 'BR'.
+info_br>type-info = +"mist".
 
 -type_ds = code_ds, info_ds.
-code_ds>code = 'DS'.
-info_ds>info = +"dust storm".
+code_ds>type = 'DS'.
+info_ds>type-info = +"dust storm".
 
 -type_du = code_du, info_du.
-code_du>code = 'DU'.
-info_du>info = +"widespread dust".
+code_du>type = 'DU'.
+info_du>type-info = +"widespread dust".
 
 -type_dz = code_dz, info_dz.
-code_dz>code = 'DZ'.
-info_dz>info = +"drizzle".
+code_dz>type = 'DZ'.
+info_dz>type-info = +"drizzle".
 
 -type_fc = code_fc, info_fc.
-code_fc>code = 'FC'.
-info_fc>info = +"funnel cloud".
+code_fc>type = 'FC'.
+info_fc>type-info = +"funnel cloud".
 
 -type_fg = code_fg, info_fg.
-code_fg>code = 'FG'.
-info_fg>info = +"fog".
-
--type_fz = code_fz, info_fz.
-code_fz>code = 'FZ'.
-info_fz>info = +"freezing".
+code_fg>type = 'FG'.
+info_fg>type-info = +"fog".
 
 -type_va = code_va, info_va.
-code_va>code = 'VA'.
-info_va>info = +"volcanic ash".
+code_va>type = 'VA'.
+info_va>type-info = +"volcanic ash".
 
 {
 FU 	smoke
@@ -177,6 +183,6 @@ view_becoming = -'BECMG ', meters.
 
 cavok = 'CAVOK'.
 
-remarks = 'RMK', ~["="]*.
+remark = -'RMK ', ~["="]*.
 
 {-remark = rmk_a02 | 'A02' SLP130  }
