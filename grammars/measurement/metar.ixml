@@ -177,6 +177,6 @@ view_becoming = -'BECMG ', meters.
 
 cavok = 'CAVOK'.
 
-*remarks = 'RMK', ~["="]*.
+remarks = 'RMK', ~["="]*.
 
 {-remark = rmk_a02 | 'A02' SLP130  }
