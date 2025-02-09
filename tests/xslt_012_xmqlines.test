@@ -1,0 +1,29 @@
+XML
+student{name=Gilbert session=2013 score=24 completed=true}
+student{name=Alexa session=2013 score=29 completed=true}
+student{name=May session=2012B score=14 completed=false}
+student{name=Deloise session=2012A score=19 completed=true}
+XSLT
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:template(match = /)
+    {
+        xsl:variable(name   = name
+                     select = /student/name)
+        xsl:variable(name   = score
+                     select = /student/score)
+        grade {
+            xsl:value-of(select = $name)
+            '='
+            xsl:value-of(select = $score)
+        }
+    }
+}
+EXPECTED
+grade = Gilbert=24
+grade = Alexa=29
+grade = May=14
+grade = Deloise=19
+END
+ARGS --lines

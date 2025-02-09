@@ -668,6 +668,16 @@ void free_cli_command(XMQCliCommand *cmd)
         hashmap_free_and_values(cmd->xslt_params, free);
         cmd->xslt_params = NULL;
     }
+    if (cmd->xslt)
+    {
+        xsltFreeStylesheet(cmd->xslt);
+        // The xslt free has freed the internal implementation doc as well.
+        // Mark it as null to prevent double free.
+        xmqSetImplementationDoc(cmd->xslt_doq, NULL);
+        xmqFreeDoc(cmd->xslt_doq);
+        cmd->xslt = NULL;
+    }
+
     free(cmd);
 }
 
@@ -2129,13 +2139,6 @@ bool cmd_transform(XMQCliCommand *command)
     }
     xmlFreeDoc(doc);
     xmqSetImplementationDoc(command->env->doc, new_doc);
-
-    xsltFreeStylesheet(command->xslt);
-    // The xslt free has freed the internal implementation doc as well.
-    // Mark it as null to prevent double free.
-    xmqSetImplementationDoc(command->xslt_doq, NULL);
-    xmqFreeDoc(command->xslt_doq);
-    command->xslt = NULL;
 
     return true;
 }

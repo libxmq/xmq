@@ -1,0 +1,29 @@
+XML
+<fixture start_time="1738166400000" event_id="23" timestamp="1737369994942"/>
+<fixture start_time="1738065600000" event_id="7777" timestamp="1737369994951"/>
+<fixture start_time="1738164600000" event_id="1234" timestamp="1737369994960"/>
+XSLT
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:template(match = /)
+    {
+        xsl:variable(name   = start
+                     select = /fixture/@start_time)
+        xsl:variable(name   = stamp
+                     select = /fixture/@timestamp)
+        xsl:variable(name   = diff
+                     select = '$start - $stamp')
+        diff {
+            xsl:value-of(select = $diff)
+            ','
+            xsl:value-of(select = /fixture/@event_id)
+        }
+    }
+}
+EXPECTED
+diff = 796405058,23
+diff = 695605049,7777
+diff = 794605040,1234
+END
+ARGS --lines
