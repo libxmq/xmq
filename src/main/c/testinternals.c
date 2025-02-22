@@ -655,7 +655,7 @@ void test_ixml_case(const char *ixml, const char *input, const char *expected)
         printf("ERROR: ixml parsing failed.\n"
                "ixml:   %s\n"
                "input:  %s\n"
-               "expext: %s\n"
+               "expect: %s\n"
                "got:    %s\n",
                ixml, input, expected, line);
     }
@@ -668,6 +668,7 @@ void test_ixml_case(const char *ixml, const char *input, const char *expected)
 void test_yaep()
 {
     test_ixml_case("words = ~[]*.", "alfa beta gamma", "words='alfa beta gamma'\n");
+    test_ixml_case("a=n++-','.n=[N]+.", "123,9,455,123", "a{n=123 n=9 n=455 n=123}\n");
 }
 
 int main(int argc, char **argv)
