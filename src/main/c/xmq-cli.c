@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2023-2024 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2023-2025 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -170,7 +170,7 @@ struct XMQCliCommand
     xmlSchemaPtr xsd; // The xsd to validate agains.
     const char *save_file; // Save output to this file name.
     xmlDocPtr   ixml_doc;  // A DOM containing the ixml grammar.
-    const char *ixml_ixml; // IXML grammar source to be used.
+    const char *ixml_source; // IXML grammar source to be used.
     const char *ixml_filename; // Where the ixml grammar was read from.
     XMQDoc *ixml_grammar; // The prepared ixml grammar to be reused.
     bool ixml_all_parses; // Print all possible parses when parse is ambiguous.
@@ -1624,7 +1624,7 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     {
         const char *file = arg+7;
 
-        if (command->ixml_doc != NULL || command->ixml_ixml != NULL)
+        if (command->ixml_doc != NULL || command->ixml_source != NULL)
         {
             printf("You have already specified an ixml grammar!\n");
             exit(1);
@@ -1643,8 +1643,8 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         {
             verbose_("xmq=", "reading ixml file %s", file);
             command->ixml_filename = strdup(file);
-            command->ixml_ixml = load_file_into_buffer(file);
-            if (command->ixml_ixml == NULL) exit(1);
+            command->ixml_source = load_file_into_buffer(file);
+            if (command->ixml_source == NULL) exit(1);
 
             return true;
         }
@@ -1890,6 +1890,7 @@ bool cmd_load(XMQCliCommand *command)
                 command->input_current_line_start = command->input_content_start;
                 command->input_current_line_stop = command->input_content_stop;
             }
+            xmqSetOriginalSize(command->env->doc, command->input_current_line_stop-command->input_current_line_start);
         }
         else
         {
@@ -1900,19 +1901,21 @@ bool cmd_load(XMQCliCommand *command)
             {
                 return false;
             }
+            xmqSetOriginalSize(command->env->doc, command->input_current_line_stop-command->input_current_line_start);
         }
     }
 
     command->env->load = command;
 
-    if (command->ixml_ixml != NULL)
+    if (command->ixml_source != NULL)
     {
         if (command->ixml_grammar == NULL)
         {
             command->ixml_grammar = xmqNewDoc();
             xmqSetDocSourceName(command->ixml_grammar, command->ixml_filename);
 
-            bool ok = xmqParseBufferWithType(command->ixml_grammar, command->ixml_ixml, NULL, NULL, XMQ_CONTENT_IXML, 0);
+            bool ok = xmqParseBufferWithType(command->ixml_grammar, command->ixml_source, NULL, NULL, XMQ_CONTENT_IXML, 0);
+            verbose_("xmq=", "parse ixml grammar %zu bytes from %s", strlen(command->ixml_source), command->ixml_filename);
 
             if (!ok)
             {
@@ -1987,8 +1990,8 @@ bool cmd_unload(XMQCliCommand *command)
 
             free((char*)command->ixml_filename);
             command->ixml_filename = NULL;
-            free((char*)command->ixml_ixml);
-            command->ixml_ixml = NULL;
+            free((char*)command->ixml_source);
+            command->ixml_source = NULL;
             return false;
         }
         return true;

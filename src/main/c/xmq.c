@@ -2999,6 +2999,7 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
         output_settings->output_buffer_start &&
         output_settings->output_buffer_stop)
     {
+        membuffer_append_null(output_settings->output_buffer);
         size_t size = membuffer_used(output_settings->output_buffer);
         char *buffer = free_membuffer_but_return_trimmed_content(output_settings->output_buffer);
         *output_settings->output_buffer_start = buffer;
@@ -4550,8 +4551,8 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
     XMQParseState *state = xmq_get_yaep_parse_state(ixml_grammar);
 
-    // Now add all character terminals in the content (not yead added ) to the grammar.
-    // And rewrite charsets into rules with multiple choice shrunk the the actual usage of characters in the input.
+    // Now add all character terminals in the content (not yet added) to the grammar.
+    // And rewrite charsets into rules with multiple choice shrunk to the actual usage of characters in the input.
     scan_content_fixup_charsets(state, start, stop);
 
     ixml_print_grammar(state);
@@ -4559,7 +4560,9 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     state->yaep_i_ = hashmap_iterate(state->ixml_terminals_map);
     int rc = yaep_read_grammar(xmq_get_yaep_parse_run(ixml_grammar),
                                xmq_get_yaep_grammar(ixml_grammar),
-                               0, ixml_to_yaep_read_terminal, ixml_to_yaep_read_rule);
+                               0,
+                               ixml_to_yaep_read_terminal,
+                               ixml_to_yaep_read_rule);
     hashmap_free_iterator(state->yaep_i_);
 
     if (rc != 0)
@@ -4689,7 +4692,20 @@ void xmqSetLineHumanReadable(XMQLineConfig *lc, bool enabled)
 
 char *xmqLineDoc(XMQLineConfig *lc, XMQDoc *doc)
 {
-    return strdup("{howdy}");
+    XMQOutputSettings *settings = xmqNewOutputSettings();
+    xmqSetCompact(settings, true);
+    xmqSetEscapeNewlines(settings, true);
+    xmqSetUseColor(settings, false);
+    xmqSetOutputFormat(settings, XMQ_CONTENT_XMQ);
+    xmqSetRenderFormat(settings, XMQ_RENDER_PLAIN);
+
+    char *start, *stop;
+    xmqSetupPrintMemory(settings, &start, &stop);
+    xmqPrint(doc, settings);
+
+    xmqFreeOutputSettings(settings);
+
+    return start;
 }
 
 char *buf_vsnprintf(const char *format, va_list ap);

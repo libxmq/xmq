@@ -159,7 +159,6 @@ void test_colors()
     printf("TEX %s\n", buf);
 }
 
-
 /*
 bool TEST_MEM_BUFFER()
 {

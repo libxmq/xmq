@@ -1137,7 +1137,6 @@ void parse_ixml_prolog(XMQParseState *state)
     IXML_DONE(prolog, state);
 }
 
-
 void parse_ixml_range(XMQParseState *state)
 {
     IXML_STEP(range, state);

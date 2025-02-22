@@ -66,6 +66,7 @@ void test_quote(int indent, bool compact, char *in, char *expected);
     X(test_whitespaces) \
     X(test_strlen) \
     X(test_escaping) \
+    X(test_yaep) \
 
 #define X(name) void name();
     TESTS
@@ -618,13 +619,56 @@ void test_strlen()
     test_sl("åäö", 6, 3);
 }
 
-
-
-
 void test_escaping()
 {
 }
 
+void test_ixml_case(const char *ixml, const char *input, const char *expected);
+
+void test_ixml_case(const char *ixml, const char *input, const char *expected)
+{
+    bool ok = false;
+
+    XMQDoc *grammar = xmqNewDoc();
+    ok = xmqParseBufferWithType(grammar, ixml, NULL, NULL, XMQ_CONTENT_IXML, 0);
+    if (!ok)
+    {
+        printf("Could not parse ixml!\n");
+        all_ok_ = false;
+        return;
+    }
+
+    XMQDoc *dom = xmqNewDoc();
+    ok = xmqParseBufferWithIXML(dom, input, NULL, grammar, 0);
+    if (!ok)
+    {
+        printf("Could not parse content with ixml grammar!\n");
+        all_ok_ = false;
+        return;
+    }
+
+    XMQLineConfig *lc = xmqNewLineConfig();
+    char *line = xmqLineDoc(lc, dom);
+
+    if (strcmp(line, expected))
+    {
+        printf("ERROR: ixml parsing failed.\n"
+               "ixml:   %s\n"
+               "input:  %s\n"
+               "expext: %s\n"
+               "got:    %s\n",
+               ixml, input, expected, line);
+    }
+    free(line);
+    xmqFreeLineConfig(lc);
+    xmqFreeDoc(dom);
+    xmqFreeDoc(grammar);
+}
+
+void test_yaep()
+{
+    test_ixml_case("words = ~[]*.", "alfa beta gamma", "words='alfa beta gamma'\n");
+}
 
 int main(int argc, char **argv)
 {

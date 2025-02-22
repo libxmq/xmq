@@ -17,9 +17,9 @@ xmq pom.xml          \fB# pretty print as xmq and colorize\fP
 .br
 cat data.json | xmq  \fB# read from stdin\fP
 .br
-xmq index.html pa    \fB# use pager in terminal\fP
+xmq index.html pa    \fB# pretty print and use pager in terminal\fP
 .br
-xmq big.json br      \fB# view web page in default browser\fP
+xmq big.json br      \fB# view json in default browser\fP
 .br
 xmq --ixml=tsv.ixml input.txt           \fB# parse input using an ixml grammar\fP
 .br
@@ -27,11 +27,18 @@ xmq pom.xmq to-xml > pom.xml            \fB# convert to xml and save into pom.xm
 .br
 xmq data.xml to-json save-to data.json  \fB# save using xmq command instead\fP
 .br
-xmq index.html delete //script delete //style pa  \fB# delete script/style nodes then use pager\fP
+\fB# Delete script/style nodes from html then display xmq using pager\fP
+.br
+xmq index.html delete //script delete //style pa
+.br
+\fB# Transform json using xsl transform to generate a new html page.\fP
 .br
 curl https://jsonandstuff/products | xmq - transform make_web_list.xslq to-html > products.html
 .br
-xmq input.json delete //work replace-entity VALUE $SPEED to-json | curl -H "Content-Type: application/json" -X POST --data-binary @- http://somewhere
+\fB# Prepare json from xmq by replacing entities with shell variable content the post as REST body.\fP
+.br
+xmq input.xmq replace-entity VALUE $SPEED to-json
+    | curl -H "Content-Type: application/json" -X POST --data-binary @- http://somewhere
 
 .SH DESCRIPTION
 
@@ -78,7 +85,7 @@ Output the xmq version and exit with zero.
 The input format is normally auto detected but you can force the input format here.
 
 .TP
-.BR \-i "a=2"
+.BR \-i\ a=2
 Use the next argument as the content to parse.
 
 .TP
