@@ -1,3 +1,9 @@
+2025-03-02: Version 3.3.1
+
+Now --lines works. Each input line is treated as a separate document.
+Use this to parse jsonl files. It also works for xmll, xmql.
+You can also parse each input line with an ixml grammar.
+
 2025-01-16: Version 3.2.2
 
 Fix bug in IXML grammar where rule alias was lost for alternatives.
