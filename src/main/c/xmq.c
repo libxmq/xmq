@@ -1772,6 +1772,11 @@ void xmqFreeParseState(XMQParseState *state)
     if (state->ixml_rule_stack) stack_free(state->ixml_rule_stack);
     state->ixml_rule_stack = NULL;
 
+    if (state->used_unicodes)
+    {
+        free(state->used_unicodes);
+        state->used_unicodes = NULL;
+    }
     free(state);
 }
 
@@ -4558,6 +4563,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     ixml_print_grammar(state);
 
     state->yaep_i_ = hashmap_iterate(state->ixml_terminals_map);
+    state->yaep_j_ = 0;
     int rc = yaep_read_grammar(xmq_get_yaep_parse_run(ixml_grammar),
                                xmq_get_yaep_grammar(ixml_grammar),
                                0,

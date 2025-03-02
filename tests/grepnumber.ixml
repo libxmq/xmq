@@ -1,0 +1,2 @@
+-number = -~[N]*, [N]+, ending.
+-ending = | -~[N], -~[]*.

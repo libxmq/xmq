@@ -1,0 +1,13 @@
+START
+127.0.0.1 - - [02/Nov/2023:17:06:17 +0000] "GET /libxmq/favicon.ico HTTP/1.1" 200 198 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36" "127.0.0.1"
+10.11.12.13 - - [02/Nov/2023:17:16:31 +0000] "GET /index.html HTTP/1.1" 200 370 "-" "Mozilla/5.0 (Windows; U; Windows NT 5.2; en-US) AppleWebKit/532.9 (KHTML, like Gecko) Chrome/5.0.310.0 Safari/532.9" "10.11.12.13"
+10.22.33.44 - - [02/Nov/2023:17:32:09 +0000] "GET /index.html HTTP/1.1" 200 370 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.64 Safari/537.36" "10.22.33.44"
+COMPACT
+IGNORE
+XMQ
+'127'
+'10'
+'10'
+END
+ARGS --lines --ixml=tests/grepnumber.ixml
+CMDS to-xmq

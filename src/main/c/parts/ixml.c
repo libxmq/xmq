@@ -1759,6 +1759,14 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
     char *used = (char*)malloc(0x110000);
     memset(used, 0, 0x110000);
 
+    if (state->used_unicodes == NULL)
+    {
+        state->used_unicodes = (char*)malloc(0x110000);
+        memset(state->used_unicodes, 0, 0x110000);
+    }
+
+    char *already_used = state->used_unicodes;
+
     while (i < stop)
     {
         int uc = 0;
@@ -1771,19 +1779,23 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
         }
         i += len;
 
-        used[uc] = 1;
-        char buf[16];
-        snprintf(buf,16, "#%x", uc);
-        IXMLTerminal *t = (IXMLTerminal*)hashmap_get(state->ixml_terminals_map, buf);
-        if (t == NULL)
+        if (!already_used[uc])
         {
-            // Add terminal not in the grammar, but found inside the input content to be parsed.
-            // This gives us better error messages from yaep. Instead of "No such token" we
-            // get syntax error at line:col.
-            t = new_ixml_terminal();
-            t->name = strdup(buf);
-            t->code = uc;
-            add_yaep_terminal(state, t);
+            already_used[uc] = 1;
+            used[uc] = 1;
+            char buf[16];
+            snprintf(buf,16, "#%x", uc);
+            IXMLTerminal *t = (IXMLTerminal*)hashmap_get(state->ixml_terminals_map, buf);
+            if (t == NULL)
+            {
+                // Add terminal not in the grammar, but found inside the input content to be parsed.
+                // This gives us better error messages from yaep. Instead of "No such token" we
+                // get syntax error at line:col.
+                t = new_ixml_terminal();
+                t->name = strdup(buf);
+                t->code = uc;
+                add_yaep_terminal(state, t);
+            }
         }
     }
 

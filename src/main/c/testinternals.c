@@ -1,4 +1,4 @@
-/* libxmq - Copyright 2023-2024 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright 2023-2025 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -67,6 +67,7 @@ void test_quote(int indent, bool compact, char *in, char *expected);
     X(test_strlen) \
     X(test_escaping) \
     X(test_yaep) \
+    X(test_yaep_reuse_grammar) \
 
 #define X(name) void name();
     TESTS
@@ -670,6 +671,59 @@ void test_yaep()
     test_ixml_case("words = ~[]*.", "alfa beta gamma", "words='alfa beta gamma'\n");
     test_ixml_case("a=n++-','.n=[N]+.", "123,9,455,123", "a{n=123 n=9 n=455 n=123}\n");
 }
+
+void test_ixml_grammar(XMQDoc *grammar, const char *ixml, const char *input, const char *expected);
+
+void test_ixml_grammar(XMQDoc *grammar, const char *ixml, const char *input, const char *expected)
+{
+    bool ok = false;
+
+    XMQDoc *dom = xmqNewDoc();
+    ok = xmqParseBufferWithIXML(dom, input, NULL, grammar, 0);
+    if (!ok)
+    {
+        printf("Could not parse content with ixml grammar!\n");
+        all_ok_ = false;
+        return;
+    }
+
+    XMQLineConfig *lc = xmqNewLineConfig();
+    char *line = xmqLineDoc(lc, dom);
+
+    if (strcmp(line, expected))
+    {
+        printf("ERROR: ixml parsing failed.\n"
+               "ixml:   %s\n"
+               "input:  %s\n"
+               "expect: %s\n"
+               "got:    %s\n",
+               ixml, input, expected, line);
+    }
+    free(line);
+    xmqFreeLineConfig(lc);
+    xmqFreeDoc(dom);
+}
+
+void test_yaep_reuse_grammar()
+{
+    bool ok = false;
+
+    XMQDoc *grammar = xmqNewDoc();
+    const char *ixml = "words = ~[]*.";
+    ok = xmqParseBufferWithType(grammar, ixml, NULL, NULL, XMQ_CONTENT_IXML, 0);
+    if (!ok)
+    {
+        printf("Could not parse ixml!\n");
+        all_ok_ = false;
+        return;
+    }
+
+    test_ixml_grammar(grammar, ixml, "abc", "words=abc\n");
+    test_ixml_grammar(grammar, ixml, "xyz", "words=xyz\n");
+
+    xmqFreeDoc(grammar);
+}
+
 
 int main(int argc, char **argv)
 {

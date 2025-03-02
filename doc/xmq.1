@@ -37,7 +37,7 @@ curl https://jsonandstuff/products | xmq - transform make_web_list.xslq to-html 
 .br
 \fB# Prepare json from xmq by replacing entities with shell variable content the post as REST body.\fP
 .br
-xmq input.xmq replace-entity VALUE $SPEED to-json
+xmq input.xmq replace-entity VALUE "$SPEED" to-json
     | curl -H "Content-Type: application/json" -X POST --data-binary @- http://somewhere
 
 .SH DESCRIPTION
@@ -60,6 +60,10 @@ Xmq will read from stdin if a single minus \fB-\fP is provided as <file> or if n
 .TP
 .BR \--ixml=grammar.ixml
 You can parse the input using the supplied invisible xml grammar.
+
+.TP
+.BR \--lines
+Each input line will be treated as its own input document; use this to read jsonl, xmll or xmql; and perform a transform on each line.
 
 .TP
 .BR \--root=<name>

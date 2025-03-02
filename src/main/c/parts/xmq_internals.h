@@ -379,7 +379,7 @@ struct XMQParseState
     // When parsing the grammar, collect all charset categories that we use.
     HashMap *ixml_found_categories;
 
-    // These are used when travergins the IXML parse tree and generating the yaep grammar build calls.
+    // These are used when traversing the IXML parse tree and building the yaep grammar.
     char **yaep_tmp_rhs_;
     char *yaep_tmp_marks_;
     int *yaep_tmp_transl_;
@@ -390,6 +390,10 @@ struct XMQParseState
     int depth;
     // Generate xml as well.
     bool build_xml_of_ixml;
+
+    // When fixing ixml and using --lines the already added unicode chars
+    // are stored here between lines.
+    char *used_unicodes;
 };
 
 /**

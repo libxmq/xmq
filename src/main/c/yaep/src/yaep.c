@@ -2226,6 +2226,7 @@ static void free_state_sets(YaepParseState *ps)
     if (ps->state_sets != NULL)
     {
         yaep_free(ps->run.grammar->alloc, ps->state_sets);
+        ps->state_sets = NULL;
     }
 }
 
@@ -5176,6 +5177,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
                  table_collisions, table_searches);
     }
 
+    free_state_sets(ps);
     free_inside_parse_state(ps);
     free_input(ps);
     return 0;
