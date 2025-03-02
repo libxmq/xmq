@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2023-2024 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2023-2025 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -544,6 +544,13 @@ XMQContentType xmqGetOriginalContentType(XMQDoc *doq);
     If available, return the size of the original content, ie the loaded file size.
 */
 size_t xmqGetOriginalSize(XMQDoc *doq);
+
+/**
+    xmqSetOriginalSize:
+
+    Override the original size of the document.
+*/
+void xmqSetOriginalSize(XMQDoc *doq, size_t size);
 
 /**
     xmqGetRootNode:
