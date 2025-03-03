@@ -1,3 +1,5 @@
+2025-03-03: Version 3.3.2-RC1
+
 Fix bug due to --lines which caused xmq to return failure (1)
 even when parse was successful.
 

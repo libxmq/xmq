@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2022 Fredrik Öhrström (gpl-3.0-or-later)
+# Copyright (C) 2022-2025 Fredrik Öhrström (gpl-3.0-or-later)
 
 # Grab all text up to the "Version x.y.z-RC1 <date>" line
 # There should be no text.
@@ -68,22 +68,15 @@ while true; do
     esac
 done
 
-# Update the ha-addon version number. This will trigger rebuilds at ha installs with auto-update.
-CMD="s/\"version\": \"[\.0-9]*\"/\"version\": \"${NEW_VERSION}\"/"
-sed -i "$CMD" ha-addon/config.json
-echo "Updated version number in ha-addon/config.json to $NEW_VERSION"
-
 # Update the CHANGES file
 CMD="1i $NEW_MESSAGE"
 sed -i "$CMD" CHANGES
 echo "Updated version string in CHANGES"
 
-CMD="s/wmbusmeters version:.*/wmbusmeters version: $NEW_VERSION/g"
-sed -i "$CMD" README.md
-echo "Updated version string in README"
+make dist VERSION=$NEW_VERSION
 
 git commit -am "$NEW_MESSAGE"
 
 git tag "$NEW_VERSION"
 
-echo "Now do: git push --followtags"
+echo "Now do: git push ; git push --tags"

@@ -79,9 +79,10 @@ done
 # Insert release candidate line in CHANGES.
 CMD="1i $MESSAGE\n"
 sed -i "$CMD" CHANGES
+make dist VERSION=$RC_VERSION
 
 git commit -am "$MESSAGE"
 
 git tag "$RC_VERSION"
 
-echo "Now do: git push --followtags"
+echo "Now do: git push ; git push --tags"
