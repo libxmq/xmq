@@ -312,7 +312,7 @@ bool cmd_replace(XMQCliCommand *command);
 bool cmd_substitute(XMQCliCommand *command);
 XMQCliCmd cmd_from(const char *s);
 XMQCliCmdGroup cmd_group(XMQCliCmd cmd);
-bool cmd_load(XMQCliCommand *command);
+bool cmd_load(XMQCliCommand *command, bool *no_more_data);
 const char *cmd_name(XMQCliCmd cmd);
 bool cmd_to(XMQCliCommand *command);
 bool cmd_output(XMQCliCommand *command);
@@ -348,7 +348,7 @@ void invoke_shell(xmlNode *n, const char *cmd);
 void page(const char *start, const char *stop);
 void browse(XMQCliCommand *c);
 void open_browser(const char *file);
-bool perform_command(XMQCliCommand *c);
+bool perform_command(XMQCliCommand *c, bool *no_more_data);
 void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command);
 void print_version_and_exit();
 void print_license_and_exit();
@@ -1029,7 +1029,8 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             {
                 cmd.in_format = XMQ_CONTENT_HTML;
             }
-            bool ok = cmd_load(&cmd);
+            bool ignore_no_more_data = false;
+            bool ok = cmd_load(&cmd, &ignore_no_more_data);
             if (!ok) return false;
             xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(cmd.env->doc);
             command->node_doc = doc;
@@ -1832,7 +1833,7 @@ bool cmd_tokenize(XMQCliCommand *command)
     return err == 0;
 }
 
-bool cmd_load(XMQCliCommand *command)
+bool cmd_load(XMQCliCommand *command, bool *no_more_data)
 {
     if (!command) return false;
 
@@ -1899,6 +1900,7 @@ bool cmd_load(XMQCliCommand *command)
                                                                 command->input_content_stop);
             if (command->input_current_line_start >= command->input_content_stop)
             {
+                *no_more_data = true;
                 return false;
             }
             xmqSetOriginalSize(command->env->doc, command->input_current_line_stop-command->input_current_line_start);
@@ -3639,8 +3641,9 @@ void page(const char *start, const char *stop)
     printf("\033[0m");
 }
 
-bool perform_command(XMQCliCommand *c)
+bool perform_command(XMQCliCommand *c, bool *no_more_data)
 {
+    *no_more_data = false;
     if (c->cmd == XMQ_CLI_CMD_NONE) return true;
 
     switch (c->cmd) {
@@ -3649,7 +3652,7 @@ bool perform_command(XMQCliCommand *c)
     case XMQ_CLI_CMD_NO_OUTPUT:
         return true;
     case XMQ_CLI_CMD_LOAD:
-        return cmd_load(c);
+        return cmd_load(c, no_more_data);
     case XMQ_CLI_CMD_TO_XMQ:
     case XMQ_CLI_CMD_TO_XML:
     case XMQ_CLI_CMD_TO_HTMQ:
@@ -4127,6 +4130,7 @@ int main(int argc, const char **argv)
     }
 
     bool more_content = true;
+    bool no_more_data = false;
 
     while (more_content)
     {
@@ -4138,10 +4142,12 @@ int main(int argc, const char **argv)
         while (c)
         {
             debug_("xmq=", "performing %s", cmd_name(c->cmd));
-            bool ok = perform_command(c);
+            bool ok = perform_command(c, &no_more_data);
             if (!ok)
             {
-                rc = 1;
+                // cmd_load returns false and sets no_more_data when we are out of lines.
+                // This is not an error. Only set rc to 1 if a real failure.
+                if (!no_more_data) rc = 1;
                 break;
             }
             c = c->next;
