@@ -4354,7 +4354,7 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root, int 
 
 const char *xmqVersion()
 {
-    return "3.3.2-modified";
+    return "3.3.2-RC2";
 }
 
 void do_whitespace(XMQParseState *state,
