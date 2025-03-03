@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright (C) 2022-2025 Fredrik Öhrström (gpl-3.0-or-later)
 
-# Grab all text up to the "Version x.y.z-RC1 <date>" line
+# Grab all text up to the "<date>: Version x.y.z-RC*" line
 # There should be no text.
 CHANGES=$(sed '/: Version /q' CHANGES | grep -v ": Version" | sed '/./,$!d' | \
           tac | sed -e '/./,$!d' | tac | sed -e '/./,$!d' > /tmp/release_changes)
@@ -12,10 +12,10 @@ then
     exit 0
 fi
 
+THIS_VERSION=$(sed '/: Version /q' CHANGES  | grep -o 'Version [0-9]\+\.[0-9]\+\.[0-9]\+')
+
 # Grab all text between the Version RC and the previous VERSION.
-sed -n '/: Version.*-RC[0-9] /,/: Version .*\.[0-9]\+:/{p;/: Version .*\.[0-9]\+ /q}' CHANGES \
-              | grep -v ": Version " | sed '/./,$!d' \
-              | tac | sed -e '/./,$!d' | tac | sed -e '/./,$!d' > /tmp/release_changes
+sed -n '/: Version [0-9]\.[0-9]\.[0-9]$/q;p' CHANGES | grep -v ": Version "> /tmp/release_changes
 
 if [ ! -s /tmp/release_changes ]
 then
@@ -26,9 +26,10 @@ fi
 cp /tmp/release_changes RELEASE
 
 # Grab the line from CHANGES which says: Version 1.2.3-RC1 2022-12-22
-OLD_MESSAGE=$(grep -m 1 ": Version" CHANGES)
+OLD_MESSAGE=$(grep -m 1 ": Version" CHANGES | cut -f 2 -d :)
+
 # Now extract the major, minor and patch.
-PARTS=$(grep -m 1 ": Version" CHANGES | grep -o "Version.+" | sed 's/: Version \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1 \2 \3/')
+PARTS=$(echo "$OLD_MESSAGE" | sed 's/ Version \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1 \2 \3/')
 
 MAJOR=$(echo "$PARTS" | cut -f 1 -d ' ')
 MINOR=$(echo "$PARTS" | cut -f 2 -d ' ')
@@ -42,16 +43,7 @@ then
     exit 0
 fi
 
-NEW_MESSAGE="Version $NEW_VERSION $(date +'%Y-%m-%d')"
-
-PREV_GIT_MESSAGE=$(git log -1 --pretty=%B)
-
-if [ "$PREV_GIT_MESSAGE" != "$OLD_MESSAGE" ]
-then
-    echo "Oups! Something is wrong in the git log."
-    echo "Expected last commit to say \"$OLD_MESSAGE\" but it doesn't, it says: \"$PREV_GIT_MESSAGE\""
-    exit 0
-fi
+NEW_MESSAGE="$(date +'%Y-%m-%d'): Version $NEW_VERSION"
 
 echo
 echo "Deploying >>$NEW_MESSAGE<< with changelog:"
@@ -71,7 +63,7 @@ done
 # Update the CHANGES file
 CMD="1i $NEW_MESSAGE"
 sed -i "$CMD" CHANGES
-echo "Updated version string in CHANGES"
+echo "Added version string in CHANGES"
 
 make dist VERSION=$NEW_VERSION
 

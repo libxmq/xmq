@@ -1,5 +1,7 @@
-2025-03-02: Version 3.3.1
 
-Now --lines works. Each input line is treated as a separate document.
-Use this to parse jsonl files. It also works for xmll, xmql.
-You can also parse each input line with an ixml grammar.
+Fix release script.
+
+
+Fix bug due to --lines which caused xmq to return failure (1)
+even when parse was successful.
+
