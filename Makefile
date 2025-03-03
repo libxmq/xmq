@@ -61,7 +61,7 @@ else
 
 endif
 
-ifeq (RC,$(findstring $(VERSION),RC))
+ifeq (RC,$(findstring RC,$(VERSION)))
     # RC found we are making a relase.
     DIST_VERSION:=$(VERSION)
 else
