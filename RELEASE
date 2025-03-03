@@ -2,6 +2,9 @@
 Fix release script.
 
 
+Fix release script.
+
+
 Fix bug due to --lines which caused xmq to return failure (1)
 even when parse was successful.
 
