@@ -61,7 +61,14 @@ else
 
 endif
 
-$(info Building $(VERSION))
+ifeq (RC,$(findstring $(VERSION),RC))
+    # RC found we are making a relase.
+    DIST_VERSION:=$(VERSION)
+else
+    DIST_VERSION:=$(shell echo "$(VERSION)" | sed 's/-.*/-modified/')
+endif
+
+$(info Building $(VERSION) (dist version $(DIST_VERSION)))
 
 $(shell echo "$(VERSION)" > build/VERSION)
 
@@ -144,7 +151,7 @@ deploy:
 	@./scripts/deploy.sh
 
 dist:
-	@echo "$(VERSION)" | sed 's/-.*/-modified/' > dist/VERSION
+	@echo "$(DIST_VERSION)" > dist/VERSION
 	@rm -f dist/xmq.c dist/xmq.h
 	@$(MAKE) --no-print-directory -C $(FIRSTDIR) release $(shell pwd)/dist/xmq.c $(shell pwd)/dist/xmq.h
 	@(cd dist; make example; make examplecc)
