@@ -182,6 +182,10 @@ struct XMQCliCommand
     bool log_xmq; // Output verbose,debug,trace as human readable lines instead of xmq.
     xmlDocPtr   node_doc;
     xmlNodePtr  node_content; // Tree content to replace something.
+    const char *in_format_name; // A dynamically named format based on an ixml+xslt combo.
+    // Such an format can be: xmq -f core:csv-comma input.csv to-json
+    // or                     xmq --format=core:csv-comma input.csv to-json
+    // or                     xmq -f measurement:metar input.metar transform view:metar
     XMQContentType in_format;
     XMQContentType out_format;
     XMQRenderFormat render_to;

@@ -34,7 +34,7 @@
    2024 Fredrik Öhrström
    Refactored to fit ixml use case, removed global variables, restructured
    code, commented and renamed variables and structures, added ixml charset
-   matching. Added a lot of comments.
+   matching. Added comments.
 
    Terminology:
 
@@ -4337,7 +4337,7 @@ static bool reserv_mem_eq(hash_table_entry_t m1, hash_table_entry_t m2)
    The function returns minimal translation corresponding to NODE.
    The function also collects references to memory which can be
    freed. Remeber that the translation is DAG, altenatives form lists
-  (alt node may not refer for another alternative).*/
+   (alt node may not refer for another alternative). */
 static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, int *cost)
 {
     YaepTreeNode*child,*alt,*next_alt,*result = NULL;
@@ -4369,7 +4369,7 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
                 node->val.anode.children[i] = prune_to_minimal(ps, child, cost);
                 if (node->val.anode.children[i] != child)
                 {
-                    // fprintf(stderr, "PRUNEDDDDDDD\n");
+                    //fprintf(stderr, "PRUNEDDDDDDD\n");
                 }
                 node->val.anode.cost += *cost;
 	    }
@@ -4388,7 +4388,10 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
             alt->val.alt.node = prune_to_minimal(ps, alt->val.alt.node, cost);
             if (alt == node || min_cost > *cost)
 	    {
-                fprintf(stderr, "FOUND smaller cost %d %s\n", *cost, alt->val.alt.node->val.anode.name);
+                if (ps->run.debug)
+                {
+                    fprintf(stderr, "FOUND smaller cost %d %s\n", *cost, alt->val.alt.node->val.anode.name);
+                }
                 min_cost = *cost;
                 alt->val.alt.next = NULL;
                 result = alt;
@@ -4650,7 +4653,8 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             continue;
 	}
         assert(pos >= 0);
-        if ((symb = rule->rhs[pos])->terminal_p)
+        symb = rule->rhs[pos];
+        if (symb->terminal_p)
 	{
             /* Terminal before dot:*/
             state_set_k--;		/* l*/
@@ -5406,7 +5410,13 @@ static void rule_print(YaepParseState *ps, FILE *f, YaepRule *rule, bool trans_p
     symbol_print(f, rule->lhs, false);
     if (strcmp(rule->lhs->repr, rule->anode)) fprintf(stderr, "(%s)", rule->anode);
     fprintf(f, " → ");
-    for(i = 0; i < rule->rhs_len; i++)
+    int cost = rule->anode_cost;
+    while (cost > 0)
+    {
+        fprintf(f, "<");
+        cost--;
+    }
+    for (i = 0; i < rule->rhs_len; i++)
     {
         char m = rule->marks[i];
         if (m >= 32 && m < 127)
