@@ -26,13 +26,14 @@ Except for the first rule, where we need to accept leading white space. }
 translation_unit = ws, (external_declaration | translation_unit, external_declaration).
 
 ws = -[Zs;#a;#d;#9]*.
+s = -[Zs;#a;#d;#9]+.
 
 IDENTIFIER = ['A'-'Z';'a'-'z';'_'], ['A'-'Z';'a'-'z';'0'-'9';'_']*, ws.
-CONSTANT = ( ['0'-'9']+ | '0x', ['0'-'9';'a'-'f';'A'-'F']+ ), ws.
+CONSTANT = ( ['0'-'9']+, ('.', ['0'-'9']+)? | '0x', ['0'-'9';'a'-'f';'A'-'F']+ ), ws.
 CHAR_LITERAL = "'", cl, "'", ws.
 -cl = ~["'\"; #0-#19]
        | "\", clescape.
-clescape = ["'\/bfnrt"]
+clescape = ["'\/abfnrtv";'"']
          | "u", hex, hex, hex, hex
          | digit, (digit, digit)?.
 
@@ -63,16 +64,19 @@ MINUS = '-', ws.
 PERCENT = '%', ws.
 NEGATION = '~', ws.
 AMPERSAND = '&', ws.
+PIPE = '|', ws.
 EXCLAMATION = '!', ws.
 HAT = '^', ws.
 
 primary_expression
 	= IDENTIFIER
 	| CONSTANT
-	| STRING_LITERAL++ws
+	| STRING_LITERAL++ws, ws
         | CHAR_LITERAL
 	| LEFT_PAR, expression, RIGHT_PAR
-        | '__extension__', ws, attrpar
+        | '__extension__', ws, attrpar, ws
+        | '__builtin_va_arg', ws, attrpar, ws
+        | '__builtin_offsetof', ws, attrpar, ws
 	.
 
 postfix_expression
@@ -81,7 +85,7 @@ postfix_expression
 	| postfix_expression, LEFT_PAR, RIGHT_PAR
 	| postfix_expression, LEFT_PAR, argument_expression_list, RIGHT_PAR
 	| postfix_expression, '.', IDENTIFIER
-	| postfix_expression, '->', IDENTIFIER
+	| postfix_expression, ARROW, IDENTIFIER
 	| postfix_expression, PTR_OP, IDENTIFIER
 	| postfix_expression, INC_OP
 	| postfix_expression, DEC_OP
@@ -147,9 +151,14 @@ equality_expression
 	| equality_expression, NE_OP, relational_expression
 	.
 
-and_expression
+or_expression
 	= equality_expression
-	| and_expression, AMPERSAND, equality_expression
+	| or_expression, PIPE, equality_expression
+	.
+
+and_expression
+	= or_expression
+	| and_expression, AMPERSAND, or_expression
 	.
 
 exclusive_or_expression
@@ -157,14 +166,9 @@ exclusive_or_expression
 	| exclusive_or_expression, HAT, and_expression
 	.
 
-inclusive_or_expression
-	= exclusive_or_expression
-	| inclusive_or_expression, '|', exclusive_or_expression
-	.
-
 logical_and_expression
-	= inclusive_or_expression
-	| logical_and_expression, AND_OP, inclusive_or_expression
+	= exclusive_or_expression
+	| logical_and_expression, AND_OP, exclusive_or_expression
 	.
 
 logical_or_expression
@@ -174,7 +178,7 @@ logical_or_expression
 
 conditional_expression
 	= logical_or_expression
-	| logical_or_expression, QMARK, expression, COLON, conditional_expression
+	| logical_or_expression, QMARK, expression, ws, COLON, conditional_expression
 	.
 
 assignment_expression
@@ -395,13 +399,14 @@ direct_abstract_declarator
 
 initializer
 	= assignment_expression
-	| LEFT_BRACE, initializer_list, RIGHT_BRACE
-	| LEFT_BRACE, initializer_list, COMMA, RIGHT_BRACE
+	| LEFT_BRACE, RIGHT_BRACE
+	| LEFT_BRACE, initializer_list, ws, RIGHT_BRACE
+	| LEFT_BRACE, initializer_list, ws, COMMA, RIGHT_BRACE
 	.
 
 initializer_list
 	= initializer
-	| initializer_list, COMMA, initializer
+	| initializer_list, ws, COMMA, initializer
 	.
 
 statement
@@ -467,10 +472,10 @@ external_declaration
 	.
 
 function_definition
-	= declaration_specifiers, declarator, declaration_list, compound_statement
-	| declaration_specifiers, declarator, compound_statement
-	| declarator, declaration_list, compound_statement
-	| declarator, compound_statement
+	= declaration_specifiers, declarator, declaration_list, compound_statement, SEMICOLON?
+	| declaration_specifiers, declarator, compound_statement, SEMICOLON?
+	| declarator, declaration_list, compound_statement, SEMICOLON?
+	| declarator, compound_statement, SEMICOLON?
 	.
 
 SIGNED = 'signed', ws.
@@ -529,6 +534,7 @@ LE_OP	 = '<=', ws.
 GE_OP    = '>=', ws.
 EQ_OP	 = '==', ws.
 NE_OP	 = '!=', ws.
+ARROW    = '->', ws.
 ELLIPSIS = '...', ws.
 RESTRICT = 'restrict', ws.
 _BOOL = 'bool', ws.
