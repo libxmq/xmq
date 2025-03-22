@@ -2,7 +2,7 @@
   YAEP(Yet Another Earley Parser)
 
   Copyright(c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
-  Copyright(c) 2024 Fredrik Öhrström <oehrstroem@gmail.com>
+  Copyright(c) 2024-2025 Fredrik Öhrström <oehrstroem@gmail.com>
 
   Permission is hereby granted, free of charge, to any person obtaining a
   copy of this software and associated documentation files(the
@@ -3440,7 +3440,7 @@ static void build_start_set(YaepParseState *ps)
 
 /* The following function predicts a new state set by shifting dotted_rules
    of SET given in CORE_SYMB_IDS with given lookahead terminal number.
-   If the number is negative, we ignore lookahead at all.*/
+   If the number is negative, we ignore lookahead at all. */
 static void complete_and_predict_new_state_set(YaepParseState *ps,
                                                YaepStateSet *set,
                                                YaepCoreSymbVect *core_symb_ids,
@@ -3461,7 +3461,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
     predictions = &core_symb_ids->predictions;
 
     clear_dotted_rule_matched_length_set(ps);
-    for(int i = 0; i < predictions->len; i++)
+    for (int i = 0; i < predictions->len; i++)
     {
         dotted_rule_id = predictions->ids[i];
         dotted_rule = set_core->dotted_rules[dotted_rule_id];
@@ -3473,6 +3473,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
             && !terminal_bitset_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terminals)
             && !terminal_bitset_test(new_dotted_rule->lookahead, ps->run.grammar->term_error_id, ps->run.grammar->symbs_ptr->num_terminals))
         {
+            // Lookahead predicted no-match. Stop here.
             continue;
         }
         matched_length = 0;
@@ -3495,7 +3496,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
         }
     }
 
-    for(int i = 0; i < ps->new_num_started_dotted_rules; i++)
+    for (int i = 0; i < ps->new_num_started_dotted_rules; i++)
     {
         new_dotted_rule = ps->new_dotted_rules[i];
         if (new_dotted_rule->empty_tail_p)
@@ -3519,7 +3520,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 
             assert(curr_el != NULL);
             prev_dotted_rules= prev_set_core->dotted_rules;
-            do
+            while (curr_el < bound)
 	    {
                 dotted_rule_id = *curr_el++;
                 dotted_rule = prev_dotted_rules[dotted_rule_id];
@@ -3553,7 +3554,6 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                     set_add_dotted_rule(ps, new_dotted_rule, matched_length);
                 }
 	    }
-            while(curr_el < bound);
 	}
     }
 
@@ -4252,7 +4252,6 @@ static void print_parse(YaepParseState *ps, FILE* f, YaepTreeNode*root)
     OS_DELETE(ps->node_visits_os);
     delete_hash_table(ps->map_node_to_visit);
 }
-
 
 /* The following function places translation NODE into *PLACE and
    creates alternative nodes if it is necessary. */
@@ -4993,9 +4992,9 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     if (ps->run.grammar->cost_p && *ambiguous_p)
     {
         /* We can not build minimal tree during building parsing list
-           because we have not the translation yet.  We can not make it
+           because we have not the translation yet. We can not make it
            during parsing because the abstract nodes are created before
-           their children.*/
+           their children. */
         result = find_minimal_translation(ps, result);
     }
     if (ps->run.trace)
@@ -5066,8 +5065,8 @@ static void parse_free_default(void *mem)
    to output(it works only if we compiled without defined macro
    NO_YAEP_DEBUG_PRINT).  The function returns the error code(which
    will be also in error_code).  The function sets up
-  *AMBIGUOUS_P if we found that the grammer is ambigous(it works even
-   we asked only one parse tree without alternatives). */
+   *AMBIGUOUS_P if we found that the grammer is ambigous.
+   (It works even we asked only one parse tree without alternatives.) */
 int yaepParse(YaepParseRun *pr, YaepGrammar *g)
 {
     YaepParseState *ps = (YaepParseState*)pr;
@@ -5096,8 +5095,8 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     }
 
     assert(ps->run.grammar != NULL);
-   *root = NULL;
-   *ambiguous_p = false;
+    *root = NULL;
+    *ambiguous_p = false;
     pl_init(ps);
     tok_init_p = parse_init_p = false;
 
