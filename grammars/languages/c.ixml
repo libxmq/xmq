@@ -33,18 +33,18 @@ CONSTANT = ( ['0'-'9']+, ('.', ['0'-'9']+)? | '0x', ['0'-'9';'a'-'f';'A'-'F']+ )
 CHAR_LITERAL = "'", cl, "'", ws.
 -cl = ~["'\"; #0-#19]
        | "\", clescape.
-clescape = ["'\/abfnrtv";'"']
+-clescape = ["'\/abfnrtv";'"']
          | "u", hex, hex, hex, hex
          | digit, (digit, digit)?.
 
 STRING_LITERAL = -'"', character*, -'"'.
 -character = ~['"\'; #0-#19]
            | "\", escape.
-digit = ['0'-'9'].
-escape = ['"\/bfnrt']
+-digit = ['0'-'9'].
+-escape = ['"\/bfnrt']
          | "u", hex, hex, hex, hex
          | digit, (digit, digit)?.
-hex = digit | ["A"-"F"; "a"-"f"].
+-hex = digit | ["A"-"F"; "a"-"f"].
 
 -LEFT_PAR = -'(', ws.
 -RIGHT_PAR = -')', ws.

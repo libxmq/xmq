@@ -3912,7 +3912,6 @@ static void perform_parse(YaepParseState *ps)
 
     for(; ps->tok_i < ps->input_len; ps->tok_i++)
     {
-        if (ps->tok_i % 100 == 0) { fprintf(stderr, "\33[2K\r%d / %d", ps->tok_i, ps->input_len); }
         assert(ps->state_set_k == ps->tok_i);
         YaepSymbol *THE_TERMINAL = ps->input[ps->tok_i].symb;
         YaepSymbol *NEXT_TERMINAL = NULL;
@@ -4594,8 +4593,6 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
     while(VLO_LENGTH(stack) != 0)
     {
-        fprintf(stderr, "%ld\n", VLO_LENGTH(stack));
-
         if (ps->run.debug && state->dot_j == state->rule->rhs_len)
 	{
             fprintf(stderr, "processing top=%ld state_set_k=%d dotted_rule=",
@@ -5133,13 +5130,13 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     table_searches = get_all_searches();
 
     // Perform a parse.
+    if (ps->run.verbose) { fprintf(stderr, "(ixml) performing parse\n"); }
     perform_parse(ps);
 
-    fprintf(stderr, "Building parse tree...\n");
     // Reconstruct a parse tree from the state sets.
+    if (ps->run.verbose) { fprintf(stderr, "(ixml) build parse tree\n"); }
     *root = build_parse_tree(ps, ambiguous_p);
 
-    fprintf(stderr, "Done parse tree.\n");
     table_collisions = get_all_collisions() - table_collisions;
     table_searches = get_all_searches() - table_searches;
 
@@ -5188,6 +5185,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     free_state_sets(ps);
     free_inside_parse_state(ps);
     free_input(ps);
+    if (ps->run.verbose) { fprintf(stderr, "(ixml) done parse\n"); }
     return 0;
 }
 
