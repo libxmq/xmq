@@ -6727,7 +6727,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     {
         if (ps->run.debug && state->dot_j == state->rule->rhs_len)
 	{
-            fprintf(stderr, "processing top=%ld state_set_k=%d dotted_rule=",
+            fprintf(stderr, "processing top=%zu state_set_k=%d dotted_rule=",
                     (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                      state->state_set_k);
             print_rule_with_dot(ps, stderr, state->rule, state->dot_j);
@@ -6749,7 +6749,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
             if (ps->run.debug && state->dot_j == state->rule->rhs_len)
 	    {
-                fprintf(stderr, "    * popping top=%ld state_set_k=%d dotted_rule=",
+                fprintf(stderr, "    * popping top=%zu state_set_k=%d dotted_rule=",
                         (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                         state->state_set_k);
 
@@ -6963,7 +6963,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
                         if (ps->run.debug)
 			{
-                            fprintf(stderr, "    * adding top=%ld dotted_rule_from_i=%d modified dotted_rule=",
+                            fprintf(stderr, "    * adding top=%zu dotted_rule_from_i=%d modified dotted_rule=",
                                     (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                                      dotted_rule_from_i);
                             print_rule_with_dot(ps, stderr, state->rule, state->dot_j);
@@ -7033,7 +7033,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
                         if (ps->run.debug)
 			{
-                            fprintf(stderr, "    * adding top %ld, state_set_k = %d, dotted_rule = ",
+                            fprintf(stderr, "    * adding top %zu, state_set_k = %d, dotted_rule = ",
                                     (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                                     state_set_k);
                             print_dotted_rule(ps, stderr, "", "", dotted_rule, ps->run.debug, -1);
@@ -7085,7 +7085,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
                     if (ps->run.debug)
 		    {
-                        fprintf(stderr, "    * adding top %ld, state_set_k = %d, dotted_rule = ",
+                        fprintf(stderr, "    * adding top %zu, state_set_k = %d, dotted_rule = ",
                                 (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                                 state_set_k);
                         print_dotted_rule(ps, stderr, "", "", dotted_rule, ps->run.debug, -1);
