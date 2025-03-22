@@ -25,8 +25,8 @@ Except for the first rule, where we need to accept leading white space. }
 
 translation_unit = ws, (external_declaration | translation_unit, external_declaration).
 
-ws = -[Zs;#a;#d;#9]*.
-s = -[Zs;#a;#d;#9]+.
+-ws = -[Zs;#a;#d;#9]*.
+-s = -[Zs;#a;#d;#9]+.
 
 IDENTIFIER = ['A'-'Z';'a'-'z';'_'], ['A'-'Z';'a'-'z';'0'-'9';'_']*, ws.
 CONSTANT = ( ['0'-'9']+, ('.', ['0'-'9']+)? | '0x', ['0'-'9';'a'-'f';'A'-'F']+ ), ws.
@@ -46,17 +46,17 @@ escape = ['"\/bfnrt']
          | digit, (digit, digit)?.
 hex = digit | ["A"-"F"; "a"-"f"].
 
-LEFT_PAR = '(', ws.
-RIGHT_PAR = ')', ws.
-LEFT_BRACKET = '[', ws.
-RIGHT_BRACKET = ']', ws.
-LEFT_BRACE = '{', ws.
-RIGHT_BRACE = '}', ws.
+-LEFT_PAR = -'(', ws.
+-RIGHT_PAR = -')', ws.
+-LEFT_BRACKET = -'[', ws.
+-RIGHT_BRACKET = -']', ws.
+-LEFT_BRACE = -'{', ws.
+-RIGHT_BRACE = -'}', ws.
 EQUAL_SIGN = '=', ws.
-COMMA = ',', ws.
-SEMICOLON = ';', ws.
-COLON = ':', ws.
-QMARK = '?', ws.
+-COMMA = -',', ws.
+-SEMICOLON = -';', ws.
+-COLON = ':', ws.
+-QMARK = '?', ws.
 ASTERISK = '*', ws.
 SLASH = '/', ws.
 PLUS = '+', ws.
@@ -80,7 +80,7 @@ primary_expression
 	.
 
 postfix_expression
-	= primary_expression
+	= -primary_expression
 	| postfix_expression, LEFT_BRACKET, expression, RIGHT_BRACKET
 	| postfix_expression, LEFT_PAR, RIGHT_PAR
 	| postfix_expression, LEFT_PAR, argument_expression_list, RIGHT_PAR
@@ -92,12 +92,12 @@ postfix_expression
 	.
 
 argument_expression_list
-	= assignment_expression
+	= -assignment_expression
 	| argument_expression_list, COMMA, assignment_expression
 	.
 
 unary_expression
-	= postfix_expression
+	= -postfix_expression
 	| INC_OP, unary_expression
 	| DEC_OP, unary_expression
 	| unary_operator, cast_expression
@@ -115,74 +115,74 @@ unary_operator
 	.
 
 cast_expression
-	= unary_expression
+	= -unary_expression
 	| LEFT_PAR, type_name, RIGHT_PAR, ws, cast_expression
 	| LEFT_PAR, '__typeof', ws, LEFT_PAR, IDENTIFIER, RIGHT_PAR, RIGHT_PAR, ws, cast_expression
 	.
 
 multiplicative_expression
-	= cast_expression
+	= -cast_expression
 	| multiplicative_expression, ASTERISK, cast_expression
 	| multiplicative_expression, SLASH, cast_expression
 	| multiplicative_expression, PERCENT, cast_expression
 	.
 
 additive_expression
-	= multiplicative_expression
+	= -multiplicative_expression
 	| additive_expression, PLUS, multiplicative_expression
 	| additive_expression, MINUS, multiplicative_expression
 	.
 
 shift_expression
-	= additive_expression
+	= -additive_expression
 	| shift_expression, LEFT_OP, additive_expression
 	| shift_expression, RIGHT_OP, additive_expression
 	.
 
 relational_expression
-	= shift_expression
+	= -shift_expression
 	| relational_expression, (L_OP | LE_OP), shift_expression
 	| relational_expression, (G_OP | GE_OP), shift_expression
 	.
 
 equality_expression
-	= relational_expression
+	= -relational_expression
 	| equality_expression, EQ_OP, relational_expression
 	| equality_expression, NE_OP, relational_expression
 	.
 
 or_expression
-	= equality_expression
+	= -equality_expression
 	| or_expression, PIPE, equality_expression
 	.
 
 and_expression
-	= or_expression
+	= -or_expression
 	| and_expression, AMPERSAND, or_expression
 	.
 
 exclusive_or_expression
-	= and_expression
+	= -and_expression
 	| exclusive_or_expression, HAT, and_expression
 	.
 
 logical_and_expression
-	= exclusive_or_expression
+	= -exclusive_or_expression
 	| logical_and_expression, AND_OP, exclusive_or_expression
 	.
 
 logical_or_expression
-	= logical_and_expression
+	= -logical_and_expression
 	| logical_or_expression, OR_OP, logical_and_expression
 	.
 
 conditional_expression
-	= logical_or_expression
+	= -logical_or_expression
 	| logical_or_expression, QMARK, expression, ws, COLON, conditional_expression
 	.
 
 assignment_expression
-	= conditional_expression
+	= -conditional_expression
 	| unary_expression, assignment_operator, assignment_expression
 	.
 
@@ -201,7 +201,7 @@ assignment_operator
 	.
 
 expression
-	= assignment_expression
+	= -assignment_expression
 	| expression, COMMA, assignment_expression
 	.
 
@@ -241,7 +241,7 @@ storage_class_specifier
 	| REGISTER
 	.
 
-type_specifier =*
+type_specifier =
           VOID
 	| CHAR
 	| SHORT
@@ -427,11 +427,12 @@ labeled_statement
 compound_statement
 	= LEFT_BRACE, RIGHT_BRACE
 	| LEFT_BRACE, statement_list, RIGHT_BRACE
-{|LEFT_BRACE, declaration_list, RIGHT_BRACE | LEFT_BRACE, declaration_list, statement_list, RIGHT_BRACE}
 	.
 
-{ Old style C did not allow declarations between statements. We do now. }
-{declaration_list= declaration	| declaration_list, declaration	. }
+declaration_list
+        = declaration
+        | declaration_list, declaration
+	.
 
 statement_list
 	= statement
