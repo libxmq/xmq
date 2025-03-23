@@ -256,7 +256,7 @@ type_specifier =
         | type_identifier
 	.
 
-type_identifier = IDENTIFIER.
+type_identifier =< IDENTIFIER.
 
 struct_or_union_specifier
 	= struct_or_union, IDENTIFIER, LEFT_BRACE, struct_declaration_list, RIGHT_BRACE
