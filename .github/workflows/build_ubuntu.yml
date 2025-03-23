@@ -11,6 +11,8 @@ jobs:
     steps:
     - id: CHECKOUT_SOURCE
       uses: actions/checkout@v3
+    - id: APT_UPDATE
+      run: sudo apt update
     - id: INSTALL_ADDITIONAL_BUILD_DEPENDENCIES
       run: sudo apt install -y eatmydata libtidy-dev libxml2-dev libxslt1-dev
     - id: CONFIGURE
