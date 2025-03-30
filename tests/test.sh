@@ -28,6 +28,12 @@ fi
 rm -rf "$OUTPUT"
 mkdir -p "$OUTPUT"
 
+for i in tests/ixml_not_[0-9][0-9][0-9]_*.test
+do
+    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+    tests/test_ixml_not.sh "$PROG" "$OUTPUT" "$i" || (echo "Testing aborted" ; exit 1)
+done
+
 tests/test_grammars.sh "$PROG" "$OUTPUT" || (echo "Testing aborted" ; exit 1)
 
 for i in tests/xmqixml_[0-9][0-9][0-9]_*.test

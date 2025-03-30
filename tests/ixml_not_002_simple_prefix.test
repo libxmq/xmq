@@ -1,0 +1,7 @@
+START
+book = !"chapter", [L]+.
+INPUT
+chopperchopper
+OUTPUT
+book = chopperchopper
+END

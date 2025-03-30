@@ -1,0 +1,9 @@
+START
+book = !"chapter", [L]+.
+INPUT
+chapter chopper
+OUTPUT
+ixml:1:1: syntax error
+chapter chopper
+^
+END
