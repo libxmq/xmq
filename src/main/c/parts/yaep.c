@@ -5481,7 +5481,7 @@ static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
 
 
     // Charset lookahead.
-    fprintf(stderr, "CHARSET LOOKAHEAD >%s<\n", symb->repr+2);
+    DEBUGIT("CHARSET LOOKAHEAD >%s<\n", symb->repr+2);
     YaepSymbol *ys = symb_find_by_repr(ps, symb->repr+2);
     if (!ys)
     {
@@ -5489,11 +5489,11 @@ static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
         // Easy, no possible lookahead match.
         return false;
     }
-    fprintf(stderr, "FOUND %p with first lookahead ", ys);
-    terminal_bitset_print(ps, stderr, ys->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terminals);
+    DEBUGIT("FOUND %p with first lookahead ", ys);
+    // DEBUGIT terminal_bitset_print(ps, stderr, ys->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terminals);
     YaepSymbol *next = ps->input[p].symb;
     bool match = terminal_bitset_test(ys->u.nonterminal.first, next->u.terminal.term_id, ps->run.grammar->symbs_ptr->num_terminals);
-    fprintf(stderr, " check term_id %d (%c) and got match=%d\n", next->u.terminal.term_id, next->u.terminal.code, match);
+    DEBUGIT(" check term_id %d (%c) and got match=%d\n", next->u.terminal.term_id, next->u.terminal.code, match);
     return match;
 }
 
