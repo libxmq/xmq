@@ -2820,7 +2820,7 @@ struct YaepParseState
    /* To optimize code we use the following variables to access to data
       of new set.  They are always defined and correspondingly
       dotted_rules, matched_lengths, and the current number of start dotted_rules
-      of the set being formed.*/
+      of the set being formed. */
     YaepDottedRule **new_dotted_rules;
     int *new_matched_lengths;
     int new_num_started_dotted_rules;
@@ -2943,57 +2943,55 @@ struct YaepParseState
     int state_set_k;
 
     /* The following is number of created terminal, abstract, and
-       alternative nodes.*/
+       alternative nodes. */
     int n_parse_term_nodes, n_parse_abstract_nodes, n_parse_alt_nodes;
 
-    /* All tail sets of error recovery are saved in the following os.*/
+    /* All tail sets of error recovery are saved in the following os. */
     os_t recovery_state_tail_sets;
 
     /* The following variable values is state_set_k and tok_i at error
-       recovery start(when the original syntax error has been fixed).*/
+       recovery start(when the original syntax error has been fixed). */
     int recovery_start_set_k, recovery_start_tok_i;
 
     /* The following variable value means that all error sets in pl with
        indexes [back_state_set_frontier, recovery_start_set_k] are being processed or
-       have been processed.*/
+       have been processed. */
     int back_state_set_frontier;
 
     /* The following variable stores original state set tail in reversed order.
        This object only grows.  The last object sets may be used to
        restore original state set in order to try another error recovery state
-       (alternative).*/
+       (alternative). */
     vlo_t original_state_set_tail_stack;
 
     /* The following variable value is last state set element which is original
-       set(set before the error_recovery start).*/
+       set(set before the error_recovery start). */
     int original_last_state_set_el;
 
-    /// GURKA
-
     /* This page contains code for work with array of vlos.  It is used
-       only to implement abstract data `core_symb_ids'.*/
+       only to implement abstract data `core_symb_ids'. */
 
-    /* All vlos being formed are placed in the following object.*/
+    /* All vlos being formed are placed in the following object. */
     vlo_t vlo_array;
 
-    /* The following is current number of elements in vlo_array.*/
+    /* The following is current number of elements in vlo_array. */
     int vlo_array_len;
 
-    /* The following table is used to find allocated memory which should not be freed.*/
+    /* The following table is used to find allocated memory which should not be freed. */
     hash_table_t set_of_reserved_memory; // (key is memory pointer)
 
     /* The following vlo will contain references to memory which should be
-       freed.  The same reference can be represented more on time.*/
+       freed.  The same reference can be represented more on time. */
     vlo_t tnodes_vlo;
 
-    /* The key of the following table is node itself.*/
+    /* The key of the following table is node itself. */
     hash_table_t map_node_to_visit;
 
     /* All translation visit nodes are placed in the following stack.  All
        the nodes are in the table.*/
     os_t node_visits_os;
 
-    /* The following value is number of translation visit nodes.*/
+    /* The following value is number of translation visit nodes. */
     int num_nodes_visits;
 
     /* How many times we reuse Earley's sets without their recalculation. */
@@ -3001,19 +2999,19 @@ struct YaepParseState
 
     /* The following vlo is error recovery states stack.  The stack
        contains error recovery state which should be investigated to find
-       the best error recovery.*/
+       the best error recovery. */
     vlo_t recovery_state_stack;
 
-    /* The following os contains all allocated parser states.*/
+    /* The following os contains all allocated parser states. */
     os_t parse_state_os;
 
     /* The following variable refers to head of chain of already allocated
-       and then freed parser states.*/
+       and then freed parser states. */
     YaepParseTreeBuildState *free_parse_state;
 
     /* The following table is used to make translation for ambiguous
        grammar more compact.  It is used only when we want all
-       translations.*/
+       translations. */
     hash_table_t map_rule_orig_statesetind_to_internalstate;	/* Key is rule, origin, state_set_k.*/
 };
 typedef struct YaepParseState YaepParseState;
@@ -3044,6 +3042,8 @@ static void symb_finish_adding_terms(YaepParseState *ps);
 static void symbol_print(FILE* f, YaepSymbol *symb, bool code_p);
 static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 static int default_read_token(YaepParseRun *ps, void **attr);
+static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb);
+static bool blocked_by_lookahead(YaepParseState *ps, YaepSymbol *symb);
 
 // Global variables /////////////////////////////////////////////////////
 
@@ -5410,7 +5410,82 @@ static void add_predicted_not_yet_started_dotted_rules(YaepParseState *ps,
     {
         YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, context);
         set_add_nys_dotted_rule(ps, new_dotted_rule, dotted_rule_parent_id);
+        //fprintf(stderr, "CREDO1 [%d] (%d) %s\n", ps->tok_i, new_dotted_rule->id, new_dotted_rule->rule->lhs->repr);
     }
+}
+
+static bool blocked_by_lookahead(YaepParseState *ps, YaepSymbol *symb)
+{
+    // Some empty rules encode a purpose in their names.
+    // We have +"howdy" which becomes a rule |+howdy for insertions and
+    // we have !"chapter" which becaomes a rule |!Schapter for not lookups if strings.
+    // and ![L] which becomes |!CL for charsets
+    // and ![Ls;'_-'] which becomes |![Ls;'_-']
+    // and !#41 which becomes |!SA
+
+    if (symb->repr[0]!= '|' || symb->repr[1] != '!') return false;
+
+    // The rule is a NOT lookup rule that can potentially block the completion of this empty rule.
+    return has_lookahead(ps, symb);
+}
+
+static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb)
+{
+    assert(symb->repr[0]== '|');
+    assert(symb->repr[1]== '!');
+    assert(symb->repr[2]== 'S' || symb->repr[2]== '[');
+
+    // End of buffer immediately returns no lookahead match.
+    if (ps->tok_i >= ps->input_len) return false;
+
+    fprintf(stderr, "NEXT[%d]=%s\n", ps->tok_i, ps->input[ps->tok_i].symb->hr);
+
+    char type = symb->repr[2];
+    if (type == 'S')
+    {
+        // Start scanning utf8 characters after the S: |!S...
+        const char *u = symb->repr+3;
+        const char *stop = symb->repr+strlen(symb->repr);
+        for (int i = ps->tok_i; i < ps->input_len && u < stop; ++i)
+        {
+            YaepSymbol *next = ps->input[i].symb;
+            int unc = 0;
+            size_t len = 0;
+            bool ok = decode_utf8(u, stop, &unc, &len);
+            if (!ok)
+            {
+                fprintf(stderr, "Illegal utf8 encoding in not lookahead >%s<\n", symb->repr);
+                exit(1);
+            }
+            if (next->u.terminal.code != unc)
+            {
+                // There is a mismatch between the lookahead and the actual content.
+                // We can stop early and report failed lookahead.
+                return false;
+            }
+            // Jump to the next character in the lookahead string.
+            u += len;
+        }
+        // All characters matched the lookahead!
+        return true;
+    }
+
+
+    // Charset lookahead.
+    fprintf(stderr, "CHARSET LOOKAHEAD >%s<\n", symb->repr+2);
+    YaepSymbol *ys = symb_find_by_repr(ps, symb->repr+2);
+    if (!ys)
+    {
+        // No charset exists, because no input characters matched this charset.
+        // Easy, no possible lookahead match.
+        return false;
+    }
+    fprintf(stderr, "FOUND %p with first lookahead ", ys);
+    terminal_bitset_print(ps, stderr, ys->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terminals);
+    YaepSymbol *next = ps->input[ps->tok_i].symb;
+    bool match = terminal_bitset_test(ys->u.nonterminal.first, next->u.terminal.term_id, ps->run.grammar->symbs_ptr->num_terminals);
+    fprintf(stderr, " check term_id %d (%c) and got match=%d\n", next->u.terminal.term_id, next->u.terminal.code, match);
+    return match;
 }
 
 /* The following function adds the rest(predicted not-yet-started) dotted_rules to the
@@ -5434,6 +5509,7 @@ static void expand_new_start_set(YaepParseState *ps)
     for(int i = 0; i < ps->new_core->num_dotted_rules; i++)
     {
         dotted_rule = ps->new_dotted_rules[i];
+
         // Check that there is a symbol after the dot! */
         if (dotted_rule->dot_j < dotted_rule->rule->rhs_len)
 	{
@@ -5448,9 +5524,13 @@ static void expand_new_start_set(YaepParseState *ps)
                 {
                     for(rule = symb->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
                     {
-                        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, 0);
-                        set_add_initial_dotted_rule(ps, new_dotted_rule);
-                        TRACE_FA(ps, "1 dotted rule %d", new_dotted_rule->id);
+                        if (true || !blocked_by_lookahead(ps, rule->lhs))
+                        {
+                            YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, 0);
+                            set_add_initial_dotted_rule(ps, new_dotted_rule);
+                            //fprintf(stderr, "CREDO2 [%d] (%d) %s\n", ps->tok_i, new_dotted_rule->id, new_dotted_rule->rule->lhs->repr);
+                        }
+                        else { /*fprintf(stderr, "BLOCKED CREDO2\n"); */ }
                     }
                 }
 	    }
@@ -5462,9 +5542,13 @@ static void expand_new_start_set(YaepParseState *ps)
 
             if (symb->empty_p && i >= ps->new_core->num_all_matched_lengths)
             {
-                YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, dotted_rule->rule, dotted_rule->dot_j+1, 0);
-                set_add_initial_dotted_rule(ps, new_dotted_rule);
-                TRACE_FA(ps, "2 dotted rule %d", new_dotted_rule->id);
+                if (!blocked_by_lookahead(ps, symb))
+                {
+                    YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, dotted_rule->rule, dotted_rule->dot_j+1, 0);
+                    set_add_initial_dotted_rule(ps, new_dotted_rule);
+                    //fprintf(stderr, "CREDO3 [%d] (%d) %s\n", ps->tok_i, new_dotted_rule->id, new_dotted_rule->rule->lhs->repr);
+                }
+                /*else fprintf(stderr, "BLOCKED CREDO3\n");*/
             }
 	}
     }
@@ -5507,12 +5591,16 @@ static void expand_new_start_set(YaepParseState *ps)
 		{
                     dotted_rule_id = core_symb_ids->predictions.ids[j];
                     dotted_rule = ps->new_dotted_rules[dotted_rule_id];
-                    shifted_dotted_rule = create_dotted_rule(ps,
-                                                             dotted_rule->rule,
-                                                             dotted_rule->dot_j+1,
-                                                             dotted_rule->context);
-                    terminal_bitset_or(context_set, shifted_dotted_rule->lookahead, ps->run.grammar->symbs_ptr->num_terminals);
-                    TRACE_FA(ps, "shifted dotted rule %d", shifted_dotted_rule->id);
+                    if (true || !blocked_by_lookahead(ps, dotted_rule->rule->lhs))
+                    {
+                        shifted_dotted_rule = create_dotted_rule(ps,
+                                                                 dotted_rule->rule,
+                                                                 dotted_rule->dot_j+1,
+                                                                 dotted_rule->context);
+                        terminal_bitset_or(context_set, shifted_dotted_rule->lookahead, ps->run.grammar->symbs_ptr->num_terminals);
+                        //fprintf(stderr, "CREDO4 [%d] (%d) %s\n", ps->tok_i, new_dotted_rule->id, new_dotted_rule->rule->lhs->repr);
+                    }
+                    /*else fprintf(stderr, "BLOCKED CREDO4\n");*/
 		}
                 context = terminal_bitset_insert(ps, context_set);
                 if (context >= 0)
@@ -5523,16 +5611,21 @@ static void expand_new_start_set(YaepParseState *ps)
                 {
                     context = -context - 1;
                 }
-                dotted_rule = create_dotted_rule(ps,
-                                                 new_dotted_rule->rule,
-                                                 new_dotted_rule->dot_j,
-                                                 context);
-                TRACE_FA(ps, "added %d", new_dotted_rule->id);
-                if (dotted_rule != new_dotted_rule)
-		{
-                    ps->new_dotted_rules[i] = dotted_rule;
-                    changed_p = true;
-		}
+                if (true || !blocked_by_lookahead(ps, new_dotted_rule->rule->lhs))
+                {
+                    dotted_rule = create_dotted_rule(ps,
+                                                     new_dotted_rule->rule,
+                                                     new_dotted_rule->dot_j,
+                                                     context);
+                    //fprintf(stderr, "CREDO5 [%d] (%d) %s\n", ps->tok_i, dotted_rule->id, dotted_rule->rule->lhs->repr);
+
+                    if (dotted_rule != new_dotted_rule)
+                    {
+                        ps->new_dotted_rules[i] = dotted_rule;
+                        changed_p = true;
+                    }
+                }
+                //else fprintf(stderr, "BLOCKED CREDO5\n");
 	    }
 	}
         while(changed_p);
@@ -5560,8 +5653,13 @@ static void build_start_set(YaepParseState *ps)
 
     for (YaepRule *rule = ps->run.grammar->axiom->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
     {
-        YaepDottedRule *dotted_rule = create_dotted_rule(ps, rule, 0, context);
-        set_add_dotted_rule(ps, dotted_rule, 0);
+        if (true || !blocked_by_lookahead(ps, rule->lhs))
+        {
+            YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, context);
+            set_add_dotted_rule(ps, new_dotted_rule, 0);
+            //fprintf(stderr, "CREDO6 [%d] (%d) %s\n", ps->tok_i, new_dotted_rule->id, new_dotted_rule->rule->lhs->repr);
+        }
+//        else fprintf(stderr, "BLOCKED CREDO6\n");
     }
 
     if (!set_insert(ps)) assert(false);
@@ -5598,8 +5696,15 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
         dotted_rule_id = predictions->ids[i];
         dotted_rule = set_core->dotted_rules[dotted_rule_id];
 
+        if (false && blocked_by_lookahead(ps, dotted_rule->rule->lhs))
+        {
+            fprintf(stderr, "Blocked by CREDO7\n");
+            continue;
+        }
+
         new_dotted_rule = create_dotted_rule(ps, dotted_rule->rule,
                                              dotted_rule->dot_j+1, dotted_rule->context);
+        //fprintf(stderr, "CREDO7 [%d] (%d) %s\n", ps->tok_i, new_dotted_rule->id, new_dotted_rule->rule->lhs->repr);
 
         if (local_lookahead_level != 0
             && !terminal_bitset_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terminals)
@@ -5657,7 +5762,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                 dotted_rule_id = *curr_el++;
                 dotted_rule = prev_dotted_rules[dotted_rule_id];
                 new_dotted_rule = create_dotted_rule(ps, dotted_rule->rule, dotted_rule->dot_j+1, dotted_rule->context);
-
+                //fprintf(stderr, "CREDO8 [%d] (%d) %s\n", ps->tok_i, new_dotted_rule->id, new_dotted_rule->rule->lhs->repr);
                 if (local_lookahead_level != 0
                     && !terminal_bitset_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terminals)
                     && !terminal_bitset_test(new_dotted_rule->lookahead,
@@ -5744,7 +5849,7 @@ static void save_original_sets(YaepParseState *ps)
 }
 
 /* If it is necessary, the following function restores original pl
-   part with states in range [0, last_state_set_el].*/
+   part with states in range [0, last_state_set_el]. */
 static void restore_original_sets(YaepParseState *ps, int last_state_set_el)
 {
     assert(last_state_set_el <= ps->recovery_start_set_k
@@ -5797,7 +5902,7 @@ static int find_error_state_set_set(YaepParseState *ps, int start_state_set_set,
 
 /* The following function creates and returns new error recovery state
    with charcteristics(LAST_ORIGINAL_STATE_SET_EL, BACKWARD_MOVE_COST,
-   state_set_k, tok_i).*/
+   state_set_k, tok_i). */
 static YaepRecoveryState new_recovery_state(YaepParseState *ps, int last_original_state_set_el, int backward_move_cost)
 {
     YaepRecoveryState state;

@@ -4416,7 +4416,11 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
 
         if (an != NULL && an->name != NULL)
         {
-            if (an->name[0] == '|' && an->name[1] == '+')
+            if (an->name[0] == '|' && an->name[1] == '!')
+            {
+                // The content is a not lookahead node. Discard it.
+            }
+            else if (an->name[0] == '|' && an->name[1] == '+')
             {
                 // The content to be inserted has been encoded in the rule name.
                 // A hack yes. Does it work? Yes!
