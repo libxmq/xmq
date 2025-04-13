@@ -28,12 +28,13 @@ const char *toHtmlEntity(int uc);
     Scan the content to determine how it must be quoted, or if the content can
     remain as text without quotes. Return 0, nl_begin=nl_end=false for safe text.
     Return 1,3 or more for unsafe text with at most a single quote '.
+    Return -1 if content only contains ' apostrophes and no newlines. Print using json string "..."
     If forbid_nl is true, then we are generating xmq on a single line.
     Set add_nls to true if content starts or end with a quote and forbid_nl==false.
     Set add_compound to true if content starts or ends with spaces/newlines or if forbid_nl==true and
     content starts/ends with quotes.
 */
-size_t count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound)
+int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound)
 {
     size_t max = 0;
     size_t curr = 0;
@@ -43,7 +44,7 @@ size_t count_necessary_quotes(const char *start, const char *stop, bool *add_nls
 
     if (unsafe_value_start(*start, start+1 < stop ? *(start+1):0))
     {
-        // Content starts with = & // or /* so it must be quoted.
+        // Content starts with = & // /* or < so it must be quoted.
         all_safe = false;
     }
 
@@ -74,6 +75,8 @@ size_t count_necessary_quotes(const char *start, const char *stop, bool *add_nls
         *add_compound = true;
     }
 
+    bool found_double_quote = false;
+    bool found_newline = false;
     for (const char *i = start; i < stop; ++i)
     {
         char c = *i;
@@ -86,6 +89,8 @@ size_t count_necessary_quotes(const char *start, const char *stop, bool *add_nls
         {
             curr = 0;
             all_safe &= is_safe_value_char(i, stop);
+            if (c == '"') found_double_quote = true;
+            if (c == '\n') found_newline = true;
         }
     }
     // We found 3 quotes, thus we need 4 quotes to quote them.
@@ -95,6 +100,9 @@ size_t count_necessary_quotes(const char *start, const char *stop, bool *add_nls
     // Content contains two sequential '' quotes, must bump nof required quotes to 3.
     // Since two quotes means the empty string.
     if (max == 2) max = 3;
+
+    if (max > 1 && found_double_quote == false && found_newline == false) return -1;
+
     return max;
 }
 
@@ -565,7 +573,28 @@ void print_quoted_spaces(XMQPrintState *ps, XMQColor color, int num)
     if (c && c->quote.post) write(writer_state, c->quote.post, NULL);
 }
 
-void print_quotes(XMQPrintState *ps, size_t num, XMQColor color)
+void print_quotes(XMQPrintState *ps, int num, XMQColor color)
+{
+    assert(num > 0);
+    XMQOutputSettings *os = ps->output_settings;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
+
+    const char *pre = NULL;
+    const char *post = NULL;
+    getThemeStrings(os, color, &pre, &post);
+
+    if (pre) write(writer_state, pre, NULL);
+    for (int i=0; i<num; ++i)
+    {
+        write(writer_state, "'", NULL);
+    }
+    ps->current_indent += num;
+    ps->last_char = '\'';
+    if (post) write(writer_state, post, NULL);
+}
+
+void print_double_quote(XMQPrintState *ps, XMQColor color)
 {
     XMQOutputSettings *os = ps->output_settings;
     XMQWrite write = os->content.write;
@@ -576,12 +605,9 @@ void print_quotes(XMQPrintState *ps, size_t num, XMQColor color)
     getThemeStrings(os, color, &pre, &post);
 
     if (pre) write(writer_state, pre, NULL);
-    for (size_t i=0; i<num; ++i)
-    {
-        write(writer_state, "'", NULL);
-    }
-    ps->current_indent += num;
-    ps->last_char = '\'';
+    write(writer_state, "\"", NULL);
+    ps->current_indent += 1;
+    ps->last_char = '"';
     if (post) write(writer_state, post, NULL);
 }
 
@@ -692,7 +718,7 @@ bool need_separation_before_attribute_key(XMQPrintState *ps)
     // if previous value was text, then a space is necessary, ie.
     // xyz key=
     char c = ps->last_char;
-    return c != 0 && c != '\'' && c != '(' && c != ')' && c != ';';
+    return c != 0 && c != '\'' && c != '"' && c != '(' && c != ')' && c != ';';
 }
 
 bool need_separation_before_entity(XMQPrintState *ps)
@@ -706,7 +732,7 @@ bool need_separation_before_entity(XMQPrintState *ps)
     // Otherwise a space is needed:
     // xyz &nbsp;
     char c = ps->last_char;
-    return c != 0 && c != '=' && c != '\'' && c != '{' && c != '}' && c != ';' && c != '(' && c != ')';
+    return c != 0 && c != '=' && c != '\'' && c != '"' && c != '{' && c != '}' && c != ';' && c != '(' && c != ')';
 }
 
 bool need_separation_before_element_name(XMQPrintState *ps)
@@ -721,17 +747,18 @@ bool need_separation_before_element_name(XMQPrintState *ps)
     // Otherwise a space is needed:
     // xyz key=
     char c = ps->last_char;
-    return c != 0 && c != '\'' && c != '{' && c != '}' && c != ';' && c != ')' && c != '/';
+    return c != 0 && c != '\'' && c != '"' && c != '{' && c != '}' && c != ';' && c != ')' && c != '/';
 }
 
 bool need_separation_before_quote(XMQPrintState *ps)
 {
     // If the previous node was quoted, then a space is necessary, ie
     // 'a b c' 'next quote'
+    // for simplicity we also separate "a b c" this could be improved.
     // otherwise last char is the end of a text value, and no space is necessary, ie
     // key=value'next quote'
     char c = ps->last_char;
-    return c == '\'';
+    return c == '\'' || c == '"';
 }
 
 bool need_separation_before_comment(XMQPrintState *ps)
@@ -745,7 +772,7 @@ bool need_separation_before_comment(XMQPrintState *ps)
     // if previous value was } or )) then no space is is needed.
     // }/*comment*/   ((...))/*comment*/
     char c = ps->last_char;
-    return c != 0 && c != '\'' && c != '{' && c != ')' && c != '}' && c != ';';
+    return c != 0 && c != '\'' && c != '"' && c != '{' && c != ')' && c != '}' && c != ';';
 }
 
 void check_space_before_attribute(XMQPrintState *ps)
@@ -1017,6 +1044,25 @@ void print_safe_leaf_quote(XMQPrintState *ps,
     int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound);
     size_t indent = ps->current_indent;
 
+    if (numq == -1 && !ps->output_settings->allow_json_quotes)
+    {
+        numq = 3;
+    }
+
+    if (numq == -1 || (numq > 0 && ps->output_settings->always_json_quotes))
+    {
+        // This quote can be best represented using a "..." instead of '''....'''.
+        char *quoted_value = xmq_quote_as_c(start, stop, false);
+        print_double_quote(ps, c);
+        print_quote_lines_and_color_uwhitespace(ps,
+                                                c,
+                                                quoted_value,
+                                                quoted_value+strlen(quoted_value));
+        print_double_quote(ps, c);
+        free(quoted_value);
+        return;
+    }
+
     if (numq > 0)
     {
         // If nl_begin is true and we have quotes, then we have to forced newline already due to quotes at
@@ -1063,6 +1109,7 @@ void print_safe_leaf_quote(XMQPrintState *ps,
             }
         }
     }
+
     if (numq == 0 && force) numq = 1;
 
     size_t old_line_indent = 0;

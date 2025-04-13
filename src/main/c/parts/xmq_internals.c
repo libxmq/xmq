@@ -596,7 +596,7 @@ size_t find_namespace_max_u_width(size_t max, xmlNs *ns)
 /** Check if a value can start with these two characters. */
 bool unsafe_value_start(char c, char cc)
 {
-    return c == '=' || c == '&' || (c == '/' && (cc == '/' || cc == '*'));
+    return c == '=' || c == '&' || (c == '/' && (cc == '/' || cc == '*' || c == '<'));
 }
 
 bool is_safe_value_char(const char *i, const char *stop)

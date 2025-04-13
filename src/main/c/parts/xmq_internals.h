@@ -158,6 +158,8 @@ typedef enum Level Level;
     @escape_newlines: Replace newlines with &#10; this is implied if compact is set.
     @escape_non_7bit: Replace all chars above 126 with char entities, ie &#10;
     @escape_tabs: Replace tabs with &#9;
+    @allow_json_quotes: Allow quoting with "..." for content with no newlines but single quotes.
+    @always_json_quotes: Always quote using "..." when quoting is needed.
     @output_format: Print xmq/xml/html/json
     @render_to: Render to terminal, html, tex.
     @render_raw: If true do not write surrounding html and css colors, likewise for tex.
@@ -178,6 +180,8 @@ struct XMQOutputSettings
     bool escape_newlines;
     bool escape_non_7bit;
     bool escape_tabs;
+    bool allow_json_quotes;
+    bool always_json_quotes;
 
     XMQContentType output_format;
     XMQRenderFormat render_to;
@@ -447,7 +451,8 @@ struct XMQQuoteSettings
 {
     bool force; // Always add single quotes. More quotes if necessary.
     bool compact; // Generate compact quote on a single line. Using &#10; and no superfluous whitespace.
-    bool value_after_key; // If enties are introduced by the quoting, then use compound (( )) around the content.
+    bool allow_json_quotes; // Permit "..." json quoting.
+    bool value_after_key; // If enties are introduced by the quoting, then use compound ( ) around the content.
 
     const char *indentation_space;  // Use this as the indentation character. If NULL default to " ".
     const char *explicit_space;  // Use this as the explicit space character inside quotes. If NULL default to " ".
@@ -483,13 +488,14 @@ bool is_xmq_doctype_start(const char *start, const char *stop);
 bool is_xmq_pi_start(const char *start, const char *stop);
 bool is_xmq_entity_start(char c);
 bool is_xmq_quote_start(char c);
+bool is_xmq_json_quote_start(char c);
 bool is_xmq_text_value(const char *i, const char *stop);
 bool is_xmq_text_value_char(const char *i, const char *stop);
 bool unsafe_value_start(char c, char cc);
 bool is_safe_value_char(const char *i, const char *stop);
 
 size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
-size_t count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound);
+int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound);
 size_t count_necessary_slashes(const char *start, const char *stop);
 
 
@@ -558,6 +564,7 @@ void parse_xmq_doctype(XMQParseState *state);
 void parse_xmq_pi(XMQParseState *state);
 void parse_xmq_entity(XMQParseState *state, Level level);
 void parse_xmq_quote(XMQParseState *state, Level level);
+void parse_xmq_json_quote(XMQParseState *state, Level level);
 void parse_xmq_text_any(XMQParseState *state);
 void parse_xmq_text_name(XMQParseState *state);
 void parse_xmq_text_value(XMQParseState *state, Level level);
@@ -622,7 +629,8 @@ void print_comment_lines(XMQPrintState *ps, const char *start, const char *stop,
 void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *postfix);
 void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps, XMQColor c, const char *start, const char *stop);
 void print_quoted_spaces(XMQPrintState *ps, XMQColor c, int n);
-void print_quotes(XMQPrintState *ps, size_t num, XMQColor c);
+void print_quotes(XMQPrintState *ps, int num, XMQColor c);
+void print_double_quote(XMQPrintState *ps, XMQColor c);
 void print_slashes(XMQPrintState *ps, const char *pre, const char *post, size_t n);
 void print_white_spaces(XMQPrintState *ps, int n);
 void print_all_whitespace(XMQPrintState *ps, const char *start, const char *stop, Level level);

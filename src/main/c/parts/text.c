@@ -258,6 +258,7 @@ size_t encode_utf8(int uc, UTF8Char *utf8)
     utf8->bytes[1] = 0;
     utf8->bytes[2] = 0;
     utf8->bytes[3] = 0;
+    utf8->bytes[4] = 0;
 
     if (uc <= 0x7f)
     {

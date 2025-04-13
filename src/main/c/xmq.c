@@ -688,6 +688,7 @@ XMQOutputSettings *xmqNewOutputSettings()
     os->explicit_cr = theme->explicit_cr = "\r";
     os->add_indent = 4;
     os->use_color = false;
+    os->allow_json_quotes = true;
 
     return os;
 }
@@ -2700,6 +2701,7 @@ void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSet
     qs->prefix_line = os->prefix_line;
     qs->postfix_line = os->prefix_line;
     qs->compact = os->compact;
+    qs->allow_json_quotes = os->allow_json_quotes;
 }
 
 void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings)

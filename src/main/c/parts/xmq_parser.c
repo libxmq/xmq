@@ -20,6 +20,7 @@ void eat_xmq_text_name(XMQParseState *state, const char **content_start, const c
                        const char **namespace_start, const char **namespace_stop);
 bool possibly_lost_content_after_equals(XMQParseState *state);
 bool possibly_need_more_quotes(XMQParseState *state);
+void eat_json_quote(XMQParseState *state, char **content_start, char **content_stop);
 
 size_t count_xmq_quotes(const char *i, const char *stop)
 {
@@ -360,6 +361,11 @@ bool is_xmq_quote_start(char c)
     return c == '\'';
 }
 
+bool is_xmq_json_quote_start(char c)
+{
+    return c == '"';
+}
+
 bool is_xmq_entity_start(char c)
 {
     return c == '&';
@@ -470,6 +476,7 @@ void parse_xmq(XMQParseState *state)
 
         if (is_xmq_token_whitespace(c)) parse_xmq_whitespace(state);
         else if (is_xmq_quote_start(c)) parse_xmq_quote(state, LEVEL_XMQ);
+        else if (is_xmq_json_quote_start(c)) parse_xmq_json_quote(state, LEVEL_XMQ);
         else if (is_xmq_entity_start(c)) parse_xmq_entity(state, LEVEL_XMQ);
         else if (is_xmq_comment_start(c, cc)) parse_xmq_comment(state, cc);
         else if (is_xmq_element_start(c)) parse_xmq_element(state);
@@ -524,6 +531,39 @@ void parse_xmq_quote(XMQParseState *state, Level level)
     default:
         assert(false);
     }
+}
+
+void parse_xmq_json_quote(XMQParseState *state, Level level)
+{
+    size_t start_line = state->line;
+    size_t start_col = state->col;
+    char *start;
+    char *stop;
+
+    eat_json_quote(state, &start, &stop);
+
+    switch(level)
+    {
+    case LEVEL_XMQ:
+       DO_CALLBACK(quote, state, start_line, start_col, start, stop, stop);
+       break;
+    case LEVEL_ELEMENT_VALUE:
+        DO_CALLBACK(element_value_quote, state, start_line, start_col, start, stop, stop);
+        break;
+    case LEVEL_ELEMENT_VALUE_COMPOUND:
+        DO_CALLBACK(element_value_compound_quote, state, start_line, start_col, start, stop, stop);
+        break;
+    case LEVEL_ATTR_VALUE:
+        DO_CALLBACK(attr_value_quote, state, start_line, start_col, start, stop, stop);
+        break;
+    case LEVEL_ATTR_VALUE_COMPOUND:
+        DO_CALLBACK(attr_value_compound_quote, state, start_line, start_col, start, stop, stop);
+        break;
+    default:
+        assert(false);
+    }
+
+    free(start);
 }
 
 void parse_xmq_entity(XMQParseState *state, Level level)
@@ -627,6 +667,10 @@ void parse_xmq_value(XMQParseState *state, Level level)
     if (is_xmq_quote_start(c))
     {
         parse_xmq_quote(state, level);
+    }
+    else if (is_xmq_json_quote_start(c))
+    {
+        parse_xmq_json_quote(state, level);
     }
     else if (is_xmq_entity_start(c))
     {

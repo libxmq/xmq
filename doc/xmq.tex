@@ -322,7 +322,7 @@ because this would introduce unwanted whitespace in the output.
 \texttt{Input must be valid UTF8 (0x9 | 0xa | 0xd | [20-d7ff] | [e000-fffd] | [10000-10ffff]) \\
   CRLF pairs (0xd 0xa) and standalone CR (0xd) are treated as LF (0xa) when parsing.}
 
-\shifttext{-20mm}{\raisebox{-10cm}{\smash{\rotatebox{90}{\rule{50mm}{0.5pt}\ \texttt{LEXER}\ \rule{40mm}{.5pt}}}}}
+\shifttext{-20mm}{\raisebox{-11.5cm}{\smash{\rotatebox{90}{\rule{55mm}{0.5pt}\ \texttt{LEXER}\ \rule{40mm}{.5pt}}}}}
 \hbox{
   \raisebox{-4pt}{\hspace{-1.3em}\texttt{WS:}}
   \begin{minipage}{5cm}
@@ -339,13 +339,15 @@ because this would introduce unwanted whitespace in the output.
   \end{minipage}
 }
 
-\raisebox{32pt}{\texttt{QUOTE:}}
+\raisebox{56pt}{\texttt{QUOTE:}}
 \begin{minipage}{15cm}
 \begin{rail}
   "''"
   |"'" "UTF8 with no '" "'"
   | "'''" "UTF8 max 2 consec '" "'''"
   | "'"[$\times$ n] "UTF8 max n-1 consec '" "'"[$\times$ n]
+  |'"' 'UTF8 with json escapes' '"'
+  |'<' 'UTF8 balanced XML/HTML' '>'
 \end{rail}
 \end{minipage}
 
@@ -367,7 +369,7 @@ because this would introduce unwanted whitespace in the output.
 \raisebox{-4pt}{\texttt{TEXT:}}
 \begin{minipage}{15cm}
 \begin{rail}
-"UTF8 excluding all-spaces and ' '\!\!' ( ) \{ \} must not start with = \& // /*"
+"UTF8 excluding all-spaces and ' '\!\!' ( ) \{ \} must not start with = \& // /* <"
 \end{rail}
 \end{minipage}
 

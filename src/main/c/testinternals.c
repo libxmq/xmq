@@ -252,6 +252,7 @@ void test_quote(int indent, bool compact, char *in, char *expected)
         os->compact = true;
         os->escape_newlines = true;
     }
+    os->allow_json_quotes = false;
     xmqSetupPrintMemory(os, NULL, NULL);
 
     XMQPrintState ps;
