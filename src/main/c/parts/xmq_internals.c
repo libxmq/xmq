@@ -596,22 +596,24 @@ size_t find_namespace_max_u_width(size_t max, xmlNs *ns)
 /** Check if a value can start with these two characters. */
 bool unsafe_value_start(char c, char cc)
 {
-    return c == '=' || c == '&' || (c == '/' && (cc == '/' || cc == '*' || c == '<'));
+    return c == '&' || c == '=' || (c == '/' && (cc == '/' || cc == '*'));
 }
 
 bool is_safe_value_char(const char *i, const char *stop)
 {
     char c = *i;
-    return !(count_whitespace(i, stop) > 0 ||
-             c == '\n' ||
-             c == '(' ||
-             c == ')' ||
-             c == '\'' ||
-             c == '\"' ||
-             c == '{' ||
-             c == '}' ||
-             c == '\t' ||
-             c == '\r');
+    bool is_ws = count_whitespace(i, stop) > 0 ||
+        c == '\n' ||
+        c == '\t' ||
+        c == '\r' ||
+        c == '(' ||
+        c == ')' ||
+        c == '{' ||
+        c == '}' ||
+        c == '\'' ||
+        c == '"'
+        ;
+    return !is_ws;
 }
 
 bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer)

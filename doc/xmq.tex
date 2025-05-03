@@ -322,7 +322,7 @@ because this would introduce unwanted whitespace in the output.
 \texttt{Input must be valid UTF8 (0x9 | 0xa | 0xd | [20-d7ff] | [e000-fffd] | [10000-10ffff]) \\
   CRLF pairs (0xd 0xa) and standalone CR (0xd) are treated as LF (0xa) when parsing.}
 
-\shifttext{-20mm}{\raisebox{-11.5cm}{\smash{\rotatebox{90}{\rule{55mm}{0.5pt}\ \texttt{LEXER}\ \rule{40mm}{.5pt}}}}}
+\shifttext{-20mm}{\raisebox{-10.5cm}{\smash{\rotatebox{90}{\rule{55mm}{0.5pt}\ \texttt{LEXER}\ \rule{40mm}{.5pt}}}}}
 \hbox{
   \raisebox{-4pt}{\hspace{-1.3em}\texttt{WS:}}
   \begin{minipage}{5cm}
@@ -339,7 +339,7 @@ because this would introduce unwanted whitespace in the output.
   \end{minipage}
 }
 
-\raisebox{56pt}{\texttt{QUOTE:}}
+\raisebox{44pt}{\texttt{QUOTE:}}
 \begin{minipage}{15cm}
 \begin{rail}
   "''"
@@ -347,7 +347,6 @@ because this would introduce unwanted whitespace in the output.
   | "'''" "UTF8 max 2 consec '" "'''"
   | "'"[$\times$ n] "UTF8 max n-1 consec '" "'"[$\times$ n]
   |'"' 'UTF8 with json escapes' '"'
-  |'<' 'UTF8 balanced XML/HTML' '>'
 \end{rail}
 \end{minipage}
 
@@ -375,56 +374,61 @@ because this would introduce unwanted whitespace in the output.
 
 \shifttext{-20mm}{\raisebox{-10.2cm}{\smash{\rotatebox{90}{\rule{43mm}{0.5pt}\ \texttt{PARSER}\ \rule{43mm}{.5pt}}}}}
 
-\vspace{-10pt}
+\hbox{
 \begin{minipage}{6cm}
   \raisebox{9pt}{\texttt{xmq:}}
-  \begin{minipage}{5cm}
+  \begin{minipage}{6cm}
     \begin{rail}
       "node"+
     \end{rail}
   \end{minipage}
 \end{minipage}
+
 \raisebox{8pt}{\texttt{attr:}}
-\begin{minipage}{15cm}
+\begin{minipage}{5cm}
   \begin{rail}
     "TEXT:key" ( | '=' VALUE )
   \end{rail}
 \end{minipage}
+}
 
+\hbox{
 \vspace{-8pt}
-\begin{minipage}{7cm}
-  \raisebox{21pt}{\texttt{node:}}
-  \begin{minipage}{6cm}
+\begin{minipage}{8cm}
+  \raisebox{44pt}{\texttt{node:}}
+  \begin{minipage}{8cm}
     \begin{rail}
-      "COMMENT" | "qe" | "element"
+      "COMMENT" | "qe" | "element" | '<' 'xml/html' '>' | '\{' 'json' '\}'
     \end{rail}
   \end{minipage}
-
-  \begin{minipage}{7cm}
-    \raisebox{8pt}{\texttt{qe:}}
-    \begin{minipage}{6cm}
-      \begin{rail}
-        "QUOTE" | "ENTITY"
-      \end{rail}
-    \end{minipage}
-  \end{minipage}
-\end{minipage}
-\begin{minipage}{7cm}
-  \begin{minipage}{7cm}
-    \raisebox{44pt}{\texttt{value:}}
-    \begin{minipage}{6cm}
-      \begin{rail}
-        "TEXT" | "qe" | '(' ')' | '(' ( "qe"+) ')'
-      \end{rail}
-    \end{minipage}
-  \end{minipage}
 \end{minipage}
 
+\begin{minipage}{6cm}
+  \raisebox{44pt}{\texttt{value:}}
+  \begin{minipage}{6cm}
+    \begin{rail}
+      "TEXT" | "qe" | '(' ')' | '(' ( "qe"+) ')'
+    \end{rail}
+  \end{minipage}
+\end{minipage}
+}
+
+\vspace{5pt}
 \raisebox{44pt}{\texttt{element:}}
 \begin{minipage}{15cm}
   \begin{rail}
     "TEXT:namekey" ( | '(' ')' | '(' ( "attr"+) ')' ) ( | '=' VALUE | LBRACE RBRACE | LBRACE ( "node" + ) RBRACE)
   \end{rail}
+\end{minipage}
+
+\vspace{-68pt}
+\begin{minipage}{7cm}
+  \raisebox{8pt}{\texttt{qe:}}
+  \begin{minipage}{6cm}
+    \begin{rail}
+      "QUOTE" | "ENTITY"
+    \end{rail}
+  \end{minipage}
 \end{minipage}
 
 \pagebreak
