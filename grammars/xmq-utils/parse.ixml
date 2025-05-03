@@ -1,0 +1,23 @@
+{
+(ixml.pa) scan input[0]= '1' state_set_k=0
+(ixml.pa) (core 0)
+(ixml.pa) s (11)  T →  '1' compl[0-0]    ['*' '+' $eof]
+}
+parse = line++-#a, -#a?.
+-line = scan|core|pred|step.
+scan = -'(ixml.pa) input[',index,-"]=",char,-" state_set_k=",k.
+char = -"'",~[#a],-"'" | 'eof' | '#',[N;L]+.
+token = -"=", ~[#a]*.
+-core = -'(ixml.pa) (core', -~[#a]+.
+-pred = -'(ixml.pa) p ', -~[#a]+.
+step  = -'(ixml.pa) s (', id, -')', s, name, s, -'→', s, body, where, -~[#a]*.
+index = [N]+.
+id = [N]+.
+k = [N]+.
+name = [L;N;'|[]_#-$;']+.
+-s = -' '+.
+body = ~[' '], ~[#a]+.
+-where = type, -'[', from, -'-', to, -']'.
+type = "complete"|"partial"|"none".
+from = [N]+.
+to = [N]+.

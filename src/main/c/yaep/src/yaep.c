@@ -226,7 +226,7 @@ struct YaepGrammar
        corresponding to the last occurred error code.*/
     char error_message[YAEP_MAX_ERROR_MESSAGE_LENGTH + 1];
 
-    /* The grammar axiom is named $S. */
+    /* The grammar axiom is named $. */
     YaepSymbol *axiom;
 
     /* The end marker denotes EOF in the input token sequence. */
@@ -281,7 +281,7 @@ struct YaepSymbol
        should be allocated by parse_alloc because the string will be
        referred from parse tree. */
     const char *repr;
-    char hr[7];    // #1ffff or ' ' or #78
+    char hr[7];    // #1ffff or ' ' or #78 or #0 (for eof)
     union
     {
         struct
@@ -2935,8 +2935,8 @@ static void check_grammar(YaepParseState *ps, int strict_p)
 
 /* The following are names of additional symbols.  Don't use them in
    grammars.*/
-#define AXIOM_NAME "$S"
-#define END_MARKER_NAME "$eof"
+#define AXIOM_NAME "$"
+#define END_MARKER_NAME "#0"
 #define TERM_ERROR_NAME "error"
 
 /* It should be negative.*/
@@ -4044,7 +4044,7 @@ static void perform_parse(YaepParseState *ps)
 
         if (ps->run.debug)
 	{
-            fprintf(stderr, "(ixml.pa) scan input[%d]= ", ps->tok_i);
+            fprintf(stderr, "(ixml.pa) input[%d]=", ps->tok_i);
             symbol_print(stderr, THE_TERMINAL, true);
             fprintf(stderr, " state_set_k=%d\n", ps->state_set_k);
 	}
@@ -4649,7 +4649,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     ps->n_parse_term_nodes = ps->n_parse_abstract_nodes = ps->n_parse_alt_nodes = 0;
     set = ps->state_sets[ps->state_set_k];
     assert(ps->run.grammar->axiom != NULL);
-    /* We have only one start dotted_rule: "$S : <start symb> $eof .". */
+    /* We have only one start dotted_rule: "$ : <start symb> eof .". */
     dotted_rule =(set->core->dotted_rules != NULL ? set->core->dotted_rules[0] : NULL);
     if (dotted_rule == NULL
         || set->matched_lengths[0] != ps->state_set_k
@@ -5589,7 +5589,7 @@ static void print_rule_with_dot(YaepParseState *ps, FILE *f, YaepRule *rule, int
     fprintf(f, " → ");
     for(i = 0; i < rule->rhs_len; i++)
     {
-        fprintf(f, i == pos ? " 🞄 " : " ");
+        fprintf(f, i == pos ? " · " : " ");
         symbol_print(f, rule->rhs[i], false);
     }
 /*    if (rule->rhs_len == pos)
@@ -5616,11 +5616,11 @@ static void print_dotted_rule(YaepParseState *ps, FILE *f,
     {
         if (dotted_rule->rule->rhs_len == dotted_rule->dot_j)
         {
-            fprintf(f, " compl[%d-%d]", 1+ps->tok_i-matched_length, ps->tok_i);
+            fprintf(f, " complete[%d-%d]", 1+ps->tok_i-matched_length, ps->tok_i);
         }
         else
         {
-            fprintf(f, " parti[%d-%d]", 1+ps->tok_i-matched_length, ps->tok_i);
+            fprintf(f, " partial[%d-%d]", 1+ps->tok_i-matched_length, ps->tok_i);
         }
     }
     if (ps->run.grammar->lookahead_level != 0 && lookahead_p && matched_length >= 0)

@@ -1,0 +1,114 @@
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:variable(name   = num_cols
+                 select = 'count(/parse/scan)-1')
+    xsl:template(match = /)
+    {
+        html {
+            head {
+                style = 'body {}
+                         * { font-family: monospace, Consolar, DejaVu Sans Mono, Lucida Console, Courier, "Courier New"; }
+                         table { border-collapse: collapse; }
+                         h1   {color: blue;}
+                         p    {color: red;}
+                         table, th, td { border: 1px solid; text-align: center; }
+                         td, th { min-width: 2em; min-height: 1em; white-space: nowrap; }
+                         .rule { padding-right: 1em; padding-left: 1em; }
+                         .top { background-color: cyan; font-weight: bold; position: sticky; top: 0px;}
+                         .step { background-color: lightgreen; }
+                         .dot { background-color: orange; }'
+            }
+            body {
+                table {
+                    tr {
+                        xsl:for-each(select = parse/scan)
+                        {
+                            xsl:choose {
+                                xsl:when(test = "char = '#0'")
+                                xsl:otherwise {
+                                    th(class = top)
+                                    {
+                                        xsl:value-of(select = char)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    xsl:apply-templates(match = parse/step)
+                }
+            }
+        }
+    }
+    xsl:template(match = scan)
+    xsl:template(match = 'step[(position() <=2) or (position() >= last()-1)]')
+    xsl:template(match = 'step[(position() > 2) and (position() < last()-1)]')
+    {
+        xsl:variable(name   = from
+                     select = from)
+        xsl:variable(name   = to
+                     select = to)
+        xsl:variable(name   = pre
+                     select = 'number($from)-1')
+        xsl:variable(name   = mid
+                     select = 'number($to)-number($from)+1')
+        xsl:variable(name   = post
+                     select = 'number($num_cols)-number($to)-2')
+
+        tr {
+            xsl:call-template(name = gencols)
+            {
+                xsl:with-param(name = i) = 0
+                xsl:with-param(name = count) {
+                    xsl:value-of(select = '$pre')
+                }
+            }
+            td(colspan = '{$mid}')
+            {
+                xsl:attribute(name="class") {
+                    xsl:choose {
+                        xsl:when(test = "type = 'complete'") = step
+                        xsl:otherwise = dot
+                    }
+                }
+                xsl:apply-templates(select = name)
+            }
+            xsl:call-template(name = gencols)
+            {
+                xsl:with-param(name = i) = 0
+                xsl:with-param(name = count) {
+                    xsl:value-of(select = '$post')
+                }
+            }
+            td(class = rule) {
+                xsl:apply-templates(select = name)
+                ' → '
+                xsl:apply-templates(select = body)
+            }
+        }
+    }
+    // The gencols macro repeats empty td columns exactly count times.
+    xsl:template(name = gencols)
+    {
+        xsl:param(name = i)
+        xsl:param(name = count)
+        xsl:if(test = '$i <= $count')
+        {
+            td
+        }
+        xsl:if(test = '$i <= $count')
+        {
+            xsl:call-template(name = gencols)
+            {
+                xsl:with-param(name = i)
+                {
+                    xsl:value-of(select = '$i + 1')
+                }
+                xsl:with-param(name = count)
+                {
+                    xsl:value-of(select = $count)
+                }
+            }
+        }
+    }
+}
