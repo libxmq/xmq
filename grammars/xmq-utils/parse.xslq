@@ -3,6 +3,10 @@ xsl:stylesheet(version   = 1.0
 {
     xsl:output(method         = html
                doctype-system = about:legacy-compat)
+
+    xsl:key(name  = "trakey"
+            match = "parse/tra"
+            use   = id)
     xsl:template(match = /)
     {
         html {
@@ -14,9 +18,11 @@ xsl:stylesheet(version   = 1.0
                          p    {color: red;}
                          table, th, td { border: 1px solid; text-align: center; }
                          td, th { min-width: 2em; min-height: 1em; white-space: nowrap; }
-                         .rule { background-color: cyan; padding-right: 1em; padding-left: 1em; position: sticky; right: 0px; }
+                         .rule { background-color: cyan; padding-right: 1em; padding-left: 1em; position: sticky; right: 0px;
+                                 max-width: 20vw; white-space: wrap; }
                          .top { background-color: cyan; font-weight: bold; position: sticky; top: 0px;}
-                         .step { background-color: lightgreen; }
+                         .step { background-image: linear-gradient(45deg, #3bc420 41.67%, #e33030 41.67%, #e33030 50%, #3bc420 50%, #3bc420 91.67%, #e33030 91.67%, #e33030 100%); background-size: 16.97px 16.97px; }
+                         .step[used="true"] { color: black; background: solid; background: lightgreen; }
                          .pred { background-color: lightyellow; }
                          .dot { background-color: orange; }
                          .eof { background-color: lightgrey; min-width: 1ch; width: 1ch; }
@@ -56,8 +62,11 @@ xsl:stylesheet(version   = 1.0
     xsl:template(match = block)
     // sl:template(match = 'step[(position() <=2) or (position() >= last()-1)]')
     // [(position() > 2) and (position() < last()-1)]
+    xsl:template(match = tra)
     xsl:template(match = step)
     {
+        xsl:variable(name   = id
+                     select = id)
         xsl:variable(name   = from
                      select = from)
         xsl:variable(name   = to
@@ -106,6 +115,9 @@ xsl:stylesheet(version   = 1.0
                         xsl:when(test = "type = 'prediction'") = pred
                         xsl:otherwise = dot
                     }
+                }
+                xsl:attribute(name="used") {
+                    xsl:for-each(select = "key('trakey',$id)") = true
                 }
                 xsl:apply-templates(select = name)
             }

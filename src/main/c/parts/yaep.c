@@ -6180,7 +6180,7 @@ static void perform_parse(YaepParseState *ps)
     error_recovery_init(ps);
     build_start_set(ps);
 
-    if (ps->run.verbose) fprintf(stderr, "(ixml.pr) parsing\n");
+    //if (ps->run.verbose) fprintf(stderr, "(ixml.pa) parsing\n");
 
     if (ps->run.debug)
     {
@@ -6894,6 +6894,14 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
     if (ps->run.verbose) fprintf(stderr, "(ixml.tr) building tree\n");
 
+    fprintf(stderr, "(ixml.tr) adding (%d,%d) [%d-%d]    ",
+            state->state_set_k,
+            state->dotted_rule->id,
+            state->from_i,
+            state->state_set_k);
+    print_rule(ps, stderr, state->rule);
+    fprintf(stderr, "\n");
+
     while (VLO_LENGTH(stack) != 0)
     {
         if (ps->run.debug && state->dot_j == state->rule->rhs_len)
@@ -7016,6 +7024,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             }
             continue;
 	}
+
         /* Nonterminal before dot: */
         set = ps->state_sets[state_set_k];
         set_core = set->core;
@@ -7034,7 +7043,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             dotted_rule = set_core->dotted_rules[dotted_rule_id];
             if (dotted_rule_id < set_core->num_started_dotted_rules)
             {
-                // The state set i is the tok_i for which the state set was created.
+                // The state_set_k is the tok_i for which the state set was created.
                 // Ie, it is the to_i inside the Earley item.
                 // Now subtract the matched length from this to_i to get the from_i
                 // which is the origin.
@@ -7042,6 +7051,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             }
             else if (dotted_rule_id < set_core->num_all_matched_lengths)
             {
+                // Parent??
                 dotted_rule_from_i = state_set_k - set->matched_lengths[set_core->parent_dotted_rule_ids[dotted_rule_id]];
             }
             else
@@ -7098,7 +7108,9 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             }
             if (n_candidates != 0)
 	    {
-               *ambiguous_p = true;
+                // Oups, n_candidates is > 0 already, this means that a previous completion matched.
+                // We have more than one parse.
+                *ambiguous_p = true;
                 if (ps->run.grammar->one_parse_p)
                 {
                     break;
@@ -7325,6 +7337,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                     empty_node->val.nil.used = 1;
 		}
 	    }			/* if (parent_anode != NULL && rhs_offset >= 0)*/
+            // Continue with next completion.
             n_candidates++;
 	}			/* For all completions of the nonterminal.*/
         /* We should have a parse.*/

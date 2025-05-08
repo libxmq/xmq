@@ -4,16 +4,29 @@
 (ixml.pa) s (11)  T →  '1' compl[0-0]    ['*' '+' $eof]
 }
 parse = line++-#a, -#a?.
--line = scan|core|step|block.
-scan = -'(ixml.pa) input[',index,-"]=",char,-" state_set_k=",k.
-char = -"'",~[#a],-"'" | 'ω' | '#',[N;L]+.
-token = -"=", ~[#a]*.
--core = -'(ixml.pa) (core', -~[#a]+.
+-line = gr|lh|pa|trb|trp|trt|tra|trpp|st|scan|core|step|block.
+
+gr = -'(ixml.gr) ', -~[#a]+.
+lh = -'(ixml.lh) ', -~[#a]+.
+-st = -'(ixml.st) ', -~[#a]+.
+pa    = -'(ixml.pa) parsing', -~[#a]+.
+scan  = -'(ixml.pa) input[',index,-"]=",char.
+-core = -'(ixml.pa) state', -~[#a]+.
 step  = -'(ixml.pa) (', id, -')', s, name, s, -'→', s, body?, dot?, where, cost?, -' ', -~[#a]*.
 block = -'(ixml.pa) block ', ~[#a]*.
+
+-trb = -'(ixml.tr) building ', -~[#a]+.
+-trp = -'(ixml.tr) processing ', -~[#a]+.
+-trt = -'(ixml.tr) trying ', -~[#a]+.
+tra = -'(ixml.tr) adding (',id,-')', -~[#a]+.
+-trpp = -'(ixml.tr) popping ', -~[#a]+.
+
+char = -"'",~[#a],-"'" | 'ω' | '#',[N;L]+.
+token = -"=", ~[#a]*.
+
+
 index = [N]+.
-id = [N]+.
-k = [N]+.
+id = [N;',']+.
 name = [L;N;'|[]_#-$;+!~']+.
 -s = -' '+.
 body = ~[' ·'], ~[#a;'·']+.
