@@ -6917,17 +6917,13 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         rhs_offset = rule->order[pos_j];
         state_set_k = state->state_set_k;
         from_i = state->from_i;
+
         if (pos_j < 0)
 	{
             /* We've processed all rhs of the rule.*/
-
-            if (ps->run.debug && state->dot_j == state->rule->rhs_len)
+            if (ps->run.debug)
 	    {
-                fprintf(stderr, "(ixml.tr) popping (%d,%d) [%d-%d]    ",
-                        state->state_set_k,
-                        state->dotted_rule->id,
-                        state->from_i,
-                        state->state_set_k);
+                fprintf(stderr, "(ixml.tr) popping    ");
                 print_rule(ps, stderr, state->rule);
                 fprintf(stderr, "\n");
 	    }
@@ -6972,15 +6968,16 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             //assert(ps->input[state_set_k].symb == symb);
             if (parent_anode != NULL && rhs_offset >= 0)
 	    {
-                /* We should generate and use the translation of the
-                   terminal.  Add reference to the current node.*/
+                /* We should generate and use the translation of the terminal.  Add reference to the current node.*/
                 if (symb == ps->run.grammar->term_error)
 		{
+                    // Oups error node.
                     node = error_node;
                     error_node->val.error.used = 1;
 		}
                 else if (!ps->run.grammar->one_parse_p && (node = term_node_array[state_set_k]) != NULL)
                 {
+                    // Reuse existing terminal node.
                 }
                 else
 		{
@@ -8035,8 +8032,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
     ps->recovery_start_set_k = ps->state_set_k;
     ps->recovery_start_tok_i = ps->tok_i;
     /* Initialize error recovery state stack.*/
-    ps->state_set_k
-        = ps->back_state_set_frontier = find_error_state_set_set(ps, ps->state_set_k, &backward_move_cost);
+    ps->state_set_k = ps->back_state_set_frontier = find_error_state_set_set(ps, ps->state_set_k, &backward_move_cost);
     back_to_frontier_move_cost = backward_move_cost;
     save_original_sets(ps);
     push_recovery_state(ps, ps->back_state_set_frontier, backward_move_cost);
