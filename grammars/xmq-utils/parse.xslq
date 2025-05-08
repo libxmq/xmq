@@ -1,8 +1,8 @@
 xsl:stylesheet(version   = 1.0
                xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
 {
-    xsl:variable(name   = num_cols
-                 select = 'count(/parse/scan)-1')
+    xsl:output(method         = html
+               doctype-system = about:legacy-compat)
     xsl:template(match = /)
     {
         html {
@@ -14,25 +14,37 @@ xsl:stylesheet(version   = 1.0
                          p    {color: red;}
                          table, th, td { border: 1px solid; text-align: center; }
                          td, th { min-width: 2em; min-height: 1em; white-space: nowrap; }
-                         .rule { padding-right: 1em; padding-left: 1em; }
+                         .rule { background-color: cyan; padding-right: 1em; padding-left: 1em; position: sticky; right: 0px; }
                          .top { background-color: cyan; font-weight: bold; position: sticky; top: 0px;}
                          .step { background-color: lightgreen; }
-                         .dot { background-color: orange; }'
+                         .pred { background-color: lightyellow; }
+                         .dot { background-color: orange; }
+                         .eof { background-color: lightgrey; min-width: 1ch; width: 1ch; }
+                         .predotted { color: black; background-color: orange;}
+                         .dotted { color: darkorange;}
+                         .completed { color: black; background-color: lightgreen; }
+                         .predicted { color: black; background-color: lightyellow; }'
             }
             body {
                 table {
                     tr {
                         xsl:for-each(select = parse/scan)
                         {
-                            xsl:choose {
-                                xsl:when(test = "char = '#0'")
-                                xsl:otherwise {
-                                    th(class = top)
-                                    {
-                                        xsl:value-of(select = char)
+                            xsl:variable(name   = content
+                                         select = char)
+                            th
+                            {
+                                xsl:attribute(name="class") {
+                                    xsl:choose {
+                                        xsl:when(test = "$content = 'ω'") = 'top eof'
+                                        xsl:otherwise = top
                                     }
                                 }
+                                xsl:value-of(select = char)
                             }
+                        }
+                        th(class = rule)
+                        {
                         }
                     }
                     xsl:apply-templates(match = parse/step)
@@ -41,24 +53,47 @@ xsl:stylesheet(version   = 1.0
         }
     }
     xsl:template(match = scan)
-    xsl:template(match = 'step[(position() <=2) or (position() >= last()-1)]')
-    xsl:template(match = 'step[(position() > 2) and (position() < last()-1)]')
+    xsl:template(match = block)
+    // sl:template(match = 'step[(position() <=2) or (position() >= last()-1)]')
+    // [(position() > 2) and (position() < last()-1)]
+    xsl:template(match = step)
     {
         xsl:variable(name   = from
                      select = from)
         xsl:variable(name   = to
                      select = to)
+        xsl:variable(name   = total
+                     select = total)
         xsl:variable(name   = pre
-                     select = 'number($from)-1')
+                     select = 'number($from)')
         xsl:variable(name   = mid
-                     select = 'number($to)-number($from)+1')
+                     select = 'number($to)-number($from)')
         xsl:variable(name   = post
-                     select = 'number($num_cols)-number($to)-2')
+                     select = 'number($total)-number($to)-1')
+        xsl:variable(name = final)
+        {
+            xsl:choose {
+                xsl:when(test= "$total = $to")
+                {
+                    '0'
+                }
+                xsl:otherwise = '1'
+            }
+         }
 
         tr {
+/*            td {
+                't=' xsl:value-of(select = '$total') ' '
+                'fr =' xsl:value-of(select = '$from') ' '
+                'to =' xsl:value-of(select = '$to') ' '
+                'p=' xsl:value-of(select = '$pre') ' '
+                'm=' xsl:value-of(select = '$mid') ' '
+                'ps=' xsl:value-of(select = '$post') ' '
+                'fi=' xsl:value-of(select = '$final') ' '
+            }*/
             xsl:call-template(name = gencols)
             {
-                xsl:with-param(name = i) = 0
+                xsl:with-param(name = class) = ''
                 xsl:with-param(name = count) {
                     xsl:value-of(select = '$pre')
                 }
@@ -68,6 +103,7 @@ xsl:stylesheet(version   = 1.0
                 xsl:attribute(name="class") {
                     xsl:choose {
                         xsl:when(test = "type = 'complete'") = step
+                        xsl:when(test = "type = 'prediction'") = pred
                         xsl:otherwise = dot
                     }
                 }
@@ -75,38 +111,51 @@ xsl:stylesheet(version   = 1.0
             }
             xsl:call-template(name = gencols)
             {
-                xsl:with-param(name = i) = 0
+                xsl:with-param(name = class) = ''
                 xsl:with-param(name = count) {
                     xsl:value-of(select = '$post')
                 }
             }
+            xsl:call-template(name = gencols)
+            {
+                xsl:with-param(name = class) = 'eof'
+                xsl:with-param(name = count) {
+                    xsl:value-of(select = '$final')
+                }
+            }
             td(class = rule) {
                 xsl:apply-templates(select = name)
+                xsl:apply-templates(select = cost)
                 ' → '
-                xsl:apply-templates(select = body)
+                span(class = completed) {
+                    xsl:apply-templates(select = body)
+                }
+                span(class = dotted) {
+                    xsl:apply-templates(select = dot)
+                }
             }
         }
     }
     // The gencols macro repeats empty td columns exactly count times.
     xsl:template(name = gencols)
     {
-        xsl:param(name = i)
+        xsl:param(name = class)
         xsl:param(name = count)
-        xsl:if(test = '$i <= $count')
+        xsl:if(test = '$count > 0')
         {
-            td
+            td(class = '{$class}')
         }
-        xsl:if(test = '$i <= $count')
+        xsl:if(test = '$count > 0')
         {
             xsl:call-template(name = gencols)
             {
                 xsl:with-param(name = i)
                 {
-                    xsl:value-of(select = '$i + 1')
+                    xsl:value-of(select = '$class')
                 }
                 xsl:with-param(name = count)
                 {
-                    xsl:value-of(select = $count)
+                    xsl:value-of(select = '$count - 1')
                 }
             }
         }

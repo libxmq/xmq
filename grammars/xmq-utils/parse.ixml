@@ -4,20 +4,23 @@
 (ixml.pa) s (11)  T →  '1' compl[0-0]    ['*' '+' $eof]
 }
 parse = line++-#a, -#a?.
--line = scan|core|pred|step.
+-line = scan|core|step|block.
 scan = -'(ixml.pa) input[',index,-"]=",char,-" state_set_k=",k.
-char = -"'",~[#a],-"'" | 'eof' | '#',[N;L]+.
+char = -"'",~[#a],-"'" | 'ω' | '#',[N;L]+.
 token = -"=", ~[#a]*.
 -core = -'(ixml.pa) (core', -~[#a]+.
--pred = -'(ixml.pa) p ', -~[#a]+.
-step  = -'(ixml.pa) s (', id, -')', s, name, s, -'→', s, body, where, -~[#a]*.
+step  = -'(ixml.pa) (', id, -')', s, name, s, -'→', s, body?, dot?, where, cost?, -' ', -~[#a]*.
+block = -'(ixml.pa) block ', ~[#a]*.
 index = [N]+.
 id = [N]+.
 k = [N]+.
-name = [L;N;'|[]_#-$;']+.
+name = [L;N;'|[]_#-$;+!~']+.
 -s = -' '+.
-body = ~[' '], ~[#a]+.
--where = type, -'[', from, -'-', to, -']'.
-type = "complete"|"partial"|"none".
+body = ~[' ·'], ~[#a;'·']+.
+dot = '·', ~[#a]+.
+-where = type, -'[', from, -'-', to, -'/', total, -']'.
+cost = '<'+.
+type = "complete"|"partial"|"prediction".
 from = [N]+.
 to = [N]+.
+total = [N]+.
