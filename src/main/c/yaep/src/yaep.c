@@ -606,6 +606,9 @@ struct YaepParseTreeBuildState
     /* The rule which we are processing. */
     YaepRule *rule;
 
+    /* The source dotted rule id. */
+    YaepDottedRule *dotted_rule;
+
     /* Current position in rule->rhs[]. */
     int dot_j;
 
@@ -4654,11 +4657,19 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     int dotted_rule_id, check_dotted_rule_id;
     int dotted_rule_from_i, check_dotted_rule_from_i;
     bool new_p;
+
+    // The result pointer points to the final parse tree.
+    YaepTreeNode *result;
+
+    YaepParseTreeBuildState root_state;
+    YaepTreeNode root_anode;
+
     YaepParseTreeBuildState *state, *orig_state, *curr_state;
     YaepParseTreeBuildState *table_state, *parent_anode_state;
-    YaepParseTreeBuildState root_state;
-    YaepTreeNode *result, *empty_node, *node, *error_node;
-    YaepTreeNode *parent_anode, *anode, root_anode;
+
+    YaepTreeNode *empty_node, *node, *error_node;
+    YaepTreeNode *parent_anode, *anode;
+
     int parent_disp;
     bool saved_one_parse_p;
     YaepTreeNode **term_node_array = NULL;
@@ -4705,18 +4716,25 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     }
 
     VLO_CREATE(stack, ps->run.grammar->alloc, 10000);
-    VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
 
+    // The result tree starts empty.
+    result = NULL;
+    // The root abstract node points to the result tree pointer.
+    root_anode.val.anode.children = &result;
+    // The root state pointsto the root abstract node.
+    root_state.anode = &root_anode;
+
+    // Push a new state on the stack
     state = parse_state_alloc(ps);
+    VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
     ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
 
     rule = state->rule = dotted_rule->rule;
+    state->dotted_rule = dotted_rule;
     state->dot_j = dotted_rule->dot_j;
     state->from_i = 0;
     state->state_set_k = ps->state_set_k;
-    result = NULL;
-    root_state.anode = &root_anode;
-    root_anode.val.anode.children = &result;
+
     state->parent_anode_state = &root_state;
     state->parent_disp = 0;
     state->anode = NULL;
@@ -4759,7 +4777,8 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
             if (ps->run.debug && state->dot_j == state->rule->rhs_len)
 	    {
-                fprintf(stderr, "(ixml.tr)    * popping     top=%zu     state_set_k=%d     state->from_i=%d    ",
+                fprintf(stderr, "(ixml.tr)    * (%d) popping     top=%zu     state_set_k=%d     state->from_i=%d    ",
+                        state->dotted_rule->id,
                         (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
                         state->state_set_k,
                         state->from_i);
@@ -4770,7 +4789,9 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             parse_state_free(ps, state);
             VLO_SHORTEN(stack, sizeof(YaepParseTreeBuildState*));
             if (VLO_LENGTH(stack) != 0)
+            {
                 state =((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1];
+            }
             if (parent_anode != NULL && rule->trans_len == 0 && anode == NULL)
 	    {
                 /* We do dotted_ruleuce nothing but we should. So write empty node.*/
@@ -4873,7 +4894,10 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
             if (ps->run.debug)
 	    {
-                fprintf(stderr, "(ixml.tr)    * try    state_set_k=%d    dotted_rule_from_i=%d    ", state_set_k, dotted_rule_from_i);
+                fprintf(stderr, "(ixml.tr)    * (%d,%d) try state_set_k=%d    ",
+                        state->dotted_rule->id,
+                        dotted_rule_from_i,
+                        state_set_k);
                 print_rule(ps, stderr, dotted_rule->rule);
                 fprintf(stderr, "\n");
             }
@@ -4958,10 +4982,13 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                         /* [A -> x., n] & [A -> y., m] where n != m.*/
                         /* It is different from the previous ones so add
                            it to process.*/
+
+                        // Push a new state on the stack
                         state = parse_state_alloc(ps);
                         VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
-                       ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
-                       *state =*orig_state;
+                        ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
+
+                        *state = *orig_state;
                         state->state_set_k = dotted_rule_from_i;
                         if (anode != NULL)
                             state->anode
@@ -4973,9 +5000,10 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
                         if (ps->run.debug)
 			{
-                            fprintf(stderr, "(ixml.tr)    * add1 top=%zu dotted_rule_from_i=%d modified dotted_rule=",
-                                    (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
-                                     dotted_rule_from_i);
+                            fprintf(stderr, "(ixml.tr)    * (%d,%d) add1 top=%zu modified dotted_rule=",
+                                    state->dotted_rule->id,
+                                    dotted_rule_from_i,
+                                    (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1);
                             print_rule_with_dot(ps, stderr, state->rule, state->dot_j);
                             fprintf(stderr, " state->from_i=%d\n", state->from_i);
 			}
@@ -4989,6 +5017,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                     /* This rule creates abstract node. */
                     state = parse_state_alloc(ps);
                     state->rule = dotted_rule_rule;
+                    state->dotted_rule = dotted_rule;
                     state->dot_j = dotted_rule->dot_j;
                     state->from_i = dotted_rule_from_i;
                     state->state_set_k = state_set_k;
@@ -5006,7 +5035,9 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                                                                       *(dotted_rule_rule->trans_len + 1)));
                         state->anode = node;
                         if (table_state != NULL)
+                        {
                             table_state->anode = node;
+                        }
                         node->type = YAEP_ANODE;
                         if (dotted_rule_rule->caller_anode == NULL)
 			{
@@ -5028,8 +5059,11 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                         {
                             node->val.anode.children[k] = NULL;
                         }
+
+                        // Push state on the stack
                         VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
                         ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
+
                         if (anode == NULL)
 			{
                             state->parent_anode_state = curr_state->parent_anode_state;
@@ -5043,10 +5077,11 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
                         if (ps->run.debug)
 			{
-                            fprintf(stderr, "(ixml.tr)    * add2   top=%zu   state_set_k=%d   dotted_rule_from_i=%d    ",
+                            fprintf(stderr, "(ixml.tr)    * (%d,%d) add2   top=%zu   state_set_k=%d   ",
+                                    state->dotted_rule->id,
+                                    dotted_rule_from_i,
                                     (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1,
-                                    state_set_k,
-                                    dotted_rule_from_i);
+                                    state_set_k);
                             print_rule(ps, stderr, dotted_rule->rule);
                             fprintf(stderr, "\n");
 			}
@@ -5056,7 +5091,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                         /* We allready have the translation.*/
                         assert(!ps->run.grammar->one_parse_p);
                         parse_state_free(ps, state);
-                        state =((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1];
+                        state = ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1];
                         node = table_state->anode;
                         assert(node != NULL);
 
@@ -5079,10 +5114,14 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 		{
                     /* We should generate and use the translation of the
                        nonterminal.  Add state to get a translation.*/
+
+                    // Push a new state on the stack
                     state = parse_state_alloc(ps);
                     VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
-                   ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
+                    ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
+
                     state->rule = dotted_rule_rule;
+                    state->dotted_rule = dotted_rule;
                     state->dot_j = dotted_rule->dot_j;
                     state->from_i = dotted_rule_from_i;
                     state->state_set_k = state_set_k;
