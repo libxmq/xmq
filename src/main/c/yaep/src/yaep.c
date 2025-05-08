@@ -4762,14 +4762,16 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
     if (ps->run.verbose) fprintf(stderr, "(ixml.tr) building tree\n");
 
-    fprintf(stderr, "(ixml.tr) adding (%d,%d) [%d-%d]    ",
-            state->state_set_k,
-            state->dotted_rule->id,
-            state->from_i,
-            state->state_set_k);
-    print_rule(ps, stderr, state->rule);
-    fprintf(stderr, "\n");
-
+    if (ps->run.debug)
+    {
+        fprintf(stderr, "(ixml.tr) adding (%d,%d) [%d-%d]    ",
+                state->state_set_k,
+                state->dotted_rule->id,
+                state->from_i,
+                state->state_set_k);
+        print_rule(ps, stderr, state->rule);
+        fprintf(stderr, "\n");
+    }
     while (VLO_LENGTH(stack) != 0)
     {
         if (ps->run.debug && state->dot_j == state->rule->rhs_len)
