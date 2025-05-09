@@ -3054,6 +3054,7 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 static int default_read_token(YaepParseRun *ps, void **attr);
 static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n);
 static bool blocked_by_lookahead(YaepParseState *ps, YaepSymbol *symb, int n);
+static void log_block(YaepParseState *ps, YaepDottedRule *dotted_rule, const char *info, int add);
 
 // Global variables /////////////////////////////////////////////////////
 
@@ -5420,15 +5421,7 @@ static void add_predicted_not_yet_started_dotted_rules(YaepParseState *ps,
     {
         if (blocked_by_lookahead(ps, rule->rhs[j], 1))
         {
-            if (ps->run.debug)
-            {
-                fprintf(stderr, "(ixml.pa) blocked (%d,%d) [%d]    ",
-                        ps->state_set_k,
-                        dotted_rule->id,
-                        ps->tok_i);
-                print_rule(ps, stderr, rule);
-                fprintf(stderr, "\n");
-            }
+            if (ps->run.debug) log_block(ps, dotted_rule, "1", 1);
             break;
         }
         YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, context);
@@ -5436,6 +5429,18 @@ static void add_predicted_not_yet_started_dotted_rules(YaepParseState *ps,
         //DEBUGIT("CREDO1 [%d] (%d) @%d %s\n", ps->tok_i, new_dotted_rule->id, new_dotted_rule->dot_j, new_dotted_rule->rule->lhs->repr);
     }
 }
+
+static void log_block(YaepParseState *ps, YaepDottedRule *dotted_rule, const char *info, int add)
+{
+    fprintf(stderr, "(ixml.pa) blocked%s (%d,%d) [%d]    ",
+            info,
+            ps->state_set_k+add,
+            dotted_rule->id,
+            ps->tok_i);
+    print_rule(ps, stderr, dotted_rule->rule);
+    fprintf(stderr, "\n");
+}
+
 
 static bool blocked_by_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
 {
@@ -5554,14 +5559,14 @@ static void expand_new_start_set(YaepParseState *ps)
                 {
                     for(rule = symb->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
                     {
-                        if (true || !blocked_by_lookahead(ps, rule->lhs, 1))
+                        if (!blocked_by_lookahead(ps, rule->lhs, 1))
                         {
                             YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, 0);
                             set_add_initial_dotted_rule(ps, new_dotted_rule);
-                            //DEBUGIT("CREDO2 [%d] (%d) @%d %s\n", ps->tok_i, new_dotted_rule->id, new_dotted_rule->dot_j, new_dotted_rule->rule->lhs->repr);
                         }
-                        else {
-                            DEBUGIT("(ixml.pa) block 2 %s\n", dotted_rule->rule->lhs->repr);
+                        else
+                        {
+                            if (ps->run.debug) log_block(ps, dotted_rule, "2", 1);
                         }
                     }
                 }
@@ -5578,11 +5583,10 @@ static void expand_new_start_set(YaepParseState *ps)
                 {
                     YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, dotted_rule->rule, dotted_rule->dot_j+1, 0);
                     set_add_initial_dotted_rule(ps, new_dotted_rule);
-                    //DEBUGIT("CREDO3 [%d] (%d) @%d %s\n", ps->tok_i, new_dotted_rule->id, new_dotted_rule->dot_j, new_dotted_rule->rule->lhs->repr);
                 }
                 else
                 {
-                    DEBUGIT("(ixml.pa) block 3 %s\n", dotted_rule->rule->lhs->repr);
+                    if (ps->run.debug) log_block(ps, dotted_rule, "3", 100);
                 }
             }
 	}
@@ -5633,11 +5637,10 @@ static void expand_new_start_set(YaepParseState *ps)
                                                                  dotted_rule->dot_j+1,
                                                                  dotted_rule->context);
                         terminal_bitset_or(context_set, shifted_dotted_rule->lookahead, ps->run.grammar->symbs_ptr->num_terminals);
-                        //DEBUGIT("CREDO4 [%d] (%d) @%d %s\n", ps->tok_i, new_dotted_rule->id, new_dotted_rule->dot_j, new_dotted_rule->rule->lhs->repr);
                     }
                     else
                     {
-                        DEBUGIT("(ixml.pa) block 4 %s\n", dotted_rule->rule->lhs->repr);
+                        if (ps->run.debug) log_block(ps, dotted_rule, "4", 100);
                     }
 		}
                 context = terminal_bitset_insert(ps, context_set);
@@ -5655,7 +5658,6 @@ static void expand_new_start_set(YaepParseState *ps)
                                                      new_dotted_rule->rule,
                                                      new_dotted_rule->dot_j,
                                                      context);
-                    //DEBUGIT("CREDO5 [%d] (%d) @%d %s\n", ps->tok_i, dotted_rule->id, dotted_rule->dot_j, dotted_rule->rule->lhs->repr);
 
                     if (dotted_rule != new_dotted_rule)
                     {
@@ -5665,7 +5667,7 @@ static void expand_new_start_set(YaepParseState *ps)
                 }
                 else
                 {
-                    DEBUGIT("(ixml.pa) block 5%s\n", "");
+                    if (ps->run.debug) log_block(ps, new_dotted_rule, "5", 100);
                 }
 	    }
 	}
@@ -5694,16 +5696,8 @@ static void build_start_set(YaepParseState *ps)
 
     for (YaepRule *rule = ps->run.grammar->axiom->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
     {
-        if (true || !blocked_by_lookahead(ps, rule->lhs, 0))
-        {
-            YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, context);
-            set_add_dotted_rule(ps, new_dotted_rule, 0);
-            //DEBUGIT("CREDO6 [%d] (%d) @%d %s\n", ps->tok_i, new_dotted_rule->id, new_dotted_rule->dot_j, new_dotted_rule->rule->lhs->repr);
-        }
-        else
-        {
-            DEBUGIT("(ixml.pa) block 6%s\n", "");
-        }
+        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, context);
+        set_add_dotted_rule(ps, new_dotted_rule, 0);
     }
 
     if (!set_insert(ps)) assert(false);

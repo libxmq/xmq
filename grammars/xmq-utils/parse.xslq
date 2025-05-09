@@ -7,6 +7,9 @@ xsl:stylesheet(version   = 1.0
     xsl:key(name  = "trakey"
             match = "parse/tra"
             use   = id)
+    xsl:key(name  = "blokey"
+            match = "parse/block"
+            use   = id)
     xsl:template(match = /)
     {
         html {
@@ -23,11 +26,13 @@ xsl:stylesheet(version   = 1.0
                          .top { background-color: cyan; font-weight: bold; position: sticky; top: 0px;}
                          .step { background-image: linear-gradient(45deg, #3bc420 41.67%, #e33030 41.67%, #e33030 50%, #3bc420 50%, #3bc420 91.67%, #e33030 91.67%, #e33030 100%); background-size: 16.97px 16.97px; }
                          .step[used="true"] { color: black; background: solid; background: lightgreen; }
+                         .dot[blocked="true"] { color: white; background: solid; background: red; }
                          .pred { background-color: lightyellow; }
                          .dot { background-color: orange; }
                          .eof { background-color: lightgrey; min-width: 1ch; width: 1ch; }
                          .predotted { color: black; background-color: orange;}
                          .dotted { color: darkorange;}
+                         .dotted[blocked="true"] { color: white; background: red; }
                          .completed { color: black; background-color: lightgreen; }
                          .predicted { color: black; background-color: lightyellow; }'
             }
@@ -117,7 +122,14 @@ xsl:stylesheet(version   = 1.0
                     }
                 }
                 xsl:attribute(name="used") {
-                    xsl:for-each(select = "key('trakey',$id)") = true
+                    xsl:for-each(select = "key('trakey',$id)") {
+                        xsl:if(test = "position()=1") = true
+                    }
+                }
+                xsl:attribute(name="blocked") {
+                    xsl:for-each(select = "key('blokey',$id)") {
+                        xsl:if(test = "position()=1") = true
+                    }
                 }
                 xsl:apply-templates(select = name)
             }
@@ -143,6 +155,11 @@ xsl:stylesheet(version   = 1.0
                     xsl:apply-templates(select = body)
                 }
                 span(class = dotted) {
+                    xsl:attribute(name="blocked") {
+                        xsl:for-each(select = "key('blokey',$id)") {
+                            xsl:if(test = "position()=1") = true
+                        }
+                    }
                     xsl:apply-templates(select = dot)
                 }
             }

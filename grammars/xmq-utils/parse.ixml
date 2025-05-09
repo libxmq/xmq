@@ -6,14 +6,15 @@
 parse = line++-#a, -#a?.
 -line = gr|lh|pa|trb|trp|trt|tra|trpp|st|scan|core|step|block.
 
-gr = -'(ixml.gr) ', -~[#a]+.
-lh = -'(ixml.lh) ', -~[#a]+.
+-gr = -'(ixml.gr) ', -~[#a]+.
+-lh = -'(ixml.lh) ', -~[#a]+.
 -st = -'(ixml.st) ', -~[#a]+.
-pa    = -'(ixml.pa) parsing', -~[#a]+.
+-pa    = -'(ixml.pa) parsing', -~[#a]+.
 scan  = -'(ixml.pa) input[',index,-"]=",char.
 -core = -'(ixml.pa) state', -~[#a]+.
 step  = -'(ixml.pa) (', id, -')', s, name, s, -'→', s, body?, dot?, where, cost?, -' ', -~[#a]*.
-block = -'(ixml.pa) block ', ~[#a]*.
+block = -'(ixml.pa) blocked', btype, -' (', id, -')', -~[#a]*.
+btype = [N]+.
 
 -trb = -'(ixml.tr) building ', -~[#a]+.
 -trp = -'(ixml.tr) processing ', -~[#a]+.
