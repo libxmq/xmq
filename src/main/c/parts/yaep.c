@@ -2445,7 +2445,7 @@ struct YaepSymbol
         } nonterminal;
     } u;
     /* If true, the use terminal in union. */
-    bool terminal_p;
+    bool is_terminal;
     /* The following member value(if defined) is true if the symbol is
        accessible(derivated) from the axiom. */
     bool access_p;
@@ -3087,7 +3087,7 @@ static unsigned symb_code_hash(hash_table_entry_t s)
 {
     YaepSymbol *sym = (YaepSymbol*)s;
 
-    assert(sym->terminal_p);
+    assert(sym->is_terminal);
 
     return sym->u.terminal.code;
 }
@@ -3097,7 +3097,7 @@ static bool symb_code_eq(hash_table_entry_t s1, hash_table_entry_t s2)
     YaepSymbol *sym1 = (YaepSymbol*)s1;
     YaepSymbol *sym2 = (YaepSymbol*)s2;
 
-    assert(sym1->terminal_p && sym2->terminal_p);
+    assert(sym1->is_terminal && sym2->is_terminal);
 
     return sym1->u.terminal.code == sym2->u.terminal.code;
 }
@@ -3154,7 +3154,7 @@ static YaepSymbol *symb_find_by_code(YaepParseState *ps, int code)
         }
     }
 
-    symb.terminal_p = true;
+    symb.is_terminal = true;
     symb.u.terminal.code = code;
     YaepSymbol*r =(YaepSymbol*)*find_hash_table_entry(ps->run.grammar->symbs_ptr->map_code_to_symb, &symb, false);
 
@@ -3180,7 +3180,7 @@ static YaepSymbol *symb_add_terminal(YaepParseState *ps, const char*name, int co
     {
         strncpy(symb.hr, name, 6);
     }
-    symb.terminal_p = true;
+    symb.is_terminal = true;
     // Assign the next available id.
     symb.id = ps->run.grammar->symbs_ptr->num_nonterminals + ps->run.grammar->symbs_ptr->num_terminals;
     symb.u.terminal.code = code;
@@ -3217,7 +3217,7 @@ static YaepSymbol *symb_add_nonterm(YaepParseState *ps, const char *name)
     symb.repr = name;
     strncpy(symb.hr, name, 6);
 
-    symb.terminal_p = false;
+    symb.is_terminal = false;
     // Assign the next available id.
     symb.id = ps->run.grammar->symbs_ptr->num_nonterminals + ps->run.grammar->symbs_ptr->num_terminals;
     symb.u.nonterminal.rules = NULL;
@@ -3264,7 +3264,7 @@ static YaepSymbol *term_get(YaepParseState *ps, int n)
         return NULL;
     }
     YaepSymbol*symb =((YaepSymbol**) VLO_BEGIN(ps->run.grammar->symbs_ptr->terminals_vlo))[n];
-    assert(symb->terminal_p && symb->u.terminal.term_id == n);
+    assert(symb->is_terminal && symb->u.terminal.term_id == n);
 
     return symb;
 }
@@ -3277,7 +3277,7 @@ static YaepSymbol *nonterm_get(YaepParseState *ps, int n)
         return NULL;
     }
     YaepSymbol*symb =((YaepSymbol**) VLO_BEGIN(ps->run.grammar->symbs_ptr->nonterminals_vlo))[n];
-    assert(!symb->terminal_p && symb->u.nonterminal.nonterm_id == n);
+    assert(!symb->is_terminal && symb->u.nonterminal.nonterm_id == n);
 
     return symb;
 }
@@ -3660,7 +3660,7 @@ static YaepRule *rule_new_start(YaepParseState *ps, YaepSymbol *lhs, const char 
     YaepRule *rule;
     YaepSymbol *empty;
 
-    assert(!lhs->terminal_p);
+    assert(!lhs->is_terminal);
 
     OS_TOP_EXPAND(ps->run.grammar->rulestorage_ptr->rules_os, sizeof(YaepRule));
     rule =(YaepRule*) OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
@@ -3814,7 +3814,7 @@ static bool dotted_rule_set_lookahead(YaepParseState *ps, YaepDottedRule *dotted
     {
         if (ps->run.grammar->lookahead_level != 0)
 	{
-            if (symb->terminal_p)
+            if (symb->is_terminal)
             {
                 terminal_bitset_up(dotted_rule->lookahead, symb->u.terminal.term_id, ps->run.grammar->symbs_ptr->num_terminals);
             }
@@ -4885,7 +4885,7 @@ static void create_first_follow_sets(YaepParseState *ps)
                 for(j = 0; j < rhs_len; j++)
                 {
                     rhs_symb = rhs[j];
-                    if (rhs_symb->terminal_p)
+                    if (rhs_symb->is_terminal)
                     {
                         if (first_continue_p)
                             changed_p |= terminal_bitset_up(symb->u.nonterminal.first,
@@ -4901,7 +4901,7 @@ static void create_first_follow_sets(YaepParseState *ps)
                         for(k = j + 1; k < rhs_len; k++)
                         {
                             next_rhs_symb = rhs[k];
-                            if (next_rhs_symb->terminal_p)
+                            if (next_rhs_symb->is_terminal)
                                 changed_p
                                     |= terminal_bitset_up(rhs_symb->u.nonterminal.follow,
                                                    next_rhs_symb->u.terminal.term_id,
@@ -4940,7 +4940,7 @@ static void set_empty_access_derives(YaepParseState *ps)
     for(i = 0;(symb = symb_get(ps, i)) != NULL; i++)
     {
         symb->empty_p = false;
-        symb->derivation_p = (symb->terminal_p ? true : false);
+        symb->derivation_p = (symb->is_terminal ? true : false);
         symb->access_p = false;
     }
     ps->run.grammar->axiom->access_p = 1;
@@ -4991,7 +4991,7 @@ static void set_loop_p(YaepParseState *ps)
        strings.*/
     for(rule = ps->run.grammar->rulestorage_ptr->first_rule; rule != NULL; rule = rule->next)
         for(i = 0; i < rule->rhs_len; i++)
-            if (!(symb = rule->rhs[i])->terminal_p)
+            if (!(symb = rule->rhs[i])->is_terminal)
             {
                 for(j = 0; j < rule->rhs_len; j++)
                     if (i == j)
@@ -5014,7 +5014,7 @@ static void set_loop_p(YaepParseState *ps)
                 for(rule = lhs->u.nonterminal.rules;
                      rule != NULL; rule = rule->lhs_next)
                     for(j = 0; j < rule->rhs_len; j++)
-                        if (!(symb = rule->rhs[j])->terminal_p && symb->u.nonterminal.loop_p)
+                        if (!(symb = rule->rhs[j])->is_terminal && symb->u.nonterminal.loop_p)
                         {
                             for(k = 0; k < rule->rhs_len; k++)
                                 if (j == k)
@@ -5163,7 +5163,7 @@ int yaep_read_grammar(YaepParseRun *pr,
         {
             symb = symb_add_nonterm(ps, lhs);
         }
-        else if (symb->terminal_p)
+        else if (symb->is_terminal)
         {
             yaep_error(ps, YAEP_TERM_IN_RULE_LHS,
                         "term `%s' in the left hand side of rule", lhs);
@@ -5420,7 +5420,15 @@ static void add_predicted_not_yet_started_dotted_rules(YaepParseState *ps,
     {
         if (blocked_by_lookahead(ps, rule->rhs[j], 1))
         {
-            DEBUGIT("(ixml.pa) block 1 %d %s\n", j, dotted_rule->rule->lhs->repr);
+            if (ps->run.debug)
+            {
+                fprintf(stderr, "(ixml.pa) blocked (%d,%d) [%d]    ",
+                        ps->state_set_k,
+                        dotted_rule->id,
+                        ps->tok_i);
+                print_rule(ps, stderr, rule);
+                fprintf(stderr, "\n");
+            }
             break;
         }
         YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, context);
@@ -5434,6 +5442,7 @@ static bool blocked_by_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
     // Some empty rules encode a purpose in their names.
     // We have +"howdy" which becomes a rule |+howdy for insertions and
     // we have !"chapter" which becaomes a rule |!Schapter for not lookups if strings.
+    // we have !!"chapter" which becomes a rule |?Schapter for required lookups if strings.
     // and ![L] which becomes |!CL for charsets
     // and ![Ls;'_-'] which becomes |![Ls;'_-']
     // and !#41 which becomes |!SA
@@ -5541,7 +5550,7 @@ static void expand_new_start_set(YaepParseState *ps)
 	    {
                 // No vector found for this core+symb combo.
                 core_symb_ids = core_symb_ids_new(ps, ps->new_core, symb);
-                if (!symb->terminal_p)
+                if (!symb->is_terminal)
                 {
                     for(rule = symb->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
                     {
@@ -6970,7 +6979,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
         assert(pos_j >= 0);
         symb = rule->rhs[pos_j];
-        if (symb->terminal_p)
+        if (symb->is_terminal)
 	{
             /* Terminal before dot:*/
             state_set_k--;		/* l*/
@@ -7736,14 +7745,14 @@ void yaepFreeTree(YaepTreeNode *root,
    printed with its code if CODE_P.*/
 static void symbol_print(FILE* f, YaepSymbol*symb, bool code_p)
 {
-    if (symb->terminal_p)
+    if (symb->is_terminal)
     {
         fprintf(f, "%s", symb->hr);
         return;
     }
     fprintf(f, "%s", symb->repr);
     /*
-    if (code_p && symb->terminal_p)
+    if (code_p && symb->is_terminal)
     {
         fprintf(f, "(%d)", symb->u.terminal.code);
     }*/
