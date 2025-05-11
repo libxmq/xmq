@@ -57,12 +57,15 @@ void verbose__(const char* fmt, ...)
 {
     if (xmq_verbose_enabled_)
     {
-        va_list args;
-        va_start(args, fmt);
-        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
-        fprintf(stderr, "%s\n", line);
-        free(line);
-        va_end(args);
+        if (!xmq_log_filter_ || !strncmp(fmt, xmq_log_filter_, strlen(xmq_log_filter_)))
+        {
+            va_list args;
+            va_start(args, fmt);
+            char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
+            fprintf(stderr, "%s\n", line);
+            free(line);
+            va_end(args);
+        }
     }
 }
 
@@ -74,26 +77,34 @@ void debug__(const char* fmt, ...)
 
     if (xmq_debug_enabled_)
     {
-        va_list args;
-        va_start(args, fmt);
-        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
-        fprintf(stderr, "%s\n", line);
-        free(line);
-        va_end(args);
+        if (!xmq_log_filter_ || !strncmp(fmt, xmq_log_filter_, strlen(xmq_log_filter_)))
+        {
+            va_list args;
+            va_start(args, fmt);
+            char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
+            fprintf(stderr, "%s\n", line);
+            free(line);
+            va_end(args);
+        }
     }
 }
 
 bool xmq_trace_enabled_ = false;
+const char *xmq_log_filter_ = NULL;
 
 void trace__(const char* fmt, ...)
 {
-    if (xmq_trace_enabled_) {
-        va_list args;
-        va_start(args, fmt);
-        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
-        fprintf(stderr, "%s\n", line);
-        free(line);
-        va_end(args);
+    if (xmq_trace_enabled_)
+    {
+        if (!xmq_log_filter_ || !strncmp(fmt, xmq_log_filter_, strlen(xmq_log_filter_)))
+        {
+            va_list args;
+            va_start(args, fmt);
+            char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
+            fprintf(stderr, "%s\n", line);
+            free(line);
+            va_end(args);
+        }
     }
 }
 

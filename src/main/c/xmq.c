@@ -1232,6 +1232,11 @@ void xmqSetLogHumanReadable(bool e)
     xmq_log_line_config_.human_readable_ = e;
 }
 
+void xmqLogFilter(const char *log_filter)
+{
+    xmq_log_filter_ = log_filter;
+}
+
 /**
     xmq_un_quote:
     @indent: The number of chars before the quote starts on the first line.

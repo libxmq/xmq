@@ -199,6 +199,12 @@ clean-all:
 	@echo "Removing build directory containing configuration and artifacts."
 	@rm -rf build
 
+install_user:
+	@./install.sh build/default/release "$(HOME)/.local"
+
+uninstall_user:
+	@./uninstall.sh "$(HOME)/.local"
+
 install:
 	@./install.sh build/default/release "$(DESTDIR)"
 

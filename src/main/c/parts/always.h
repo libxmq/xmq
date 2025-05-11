@@ -36,6 +36,7 @@ typedef struct XMQLineConfig XMQLineConfig;
 extern bool xmq_trace_enabled_;
 extern bool xmq_debug_enabled_;
 extern bool xmq_verbose_enabled_;
+extern const char *xmq_log_filter_;
 extern struct XMQLineConfig xmq_log_line_config_;
 
 void error__(const char* fmt, ...);

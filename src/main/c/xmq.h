@@ -806,6 +806,13 @@ void xmqSetDebug(bool e);
 void xmqSetTrace(bool e);
 
 /**
+    xmqLogFilter
+
+    Enable/Disable debug/trace logging for certain prefixes.
+*/
+void xmqLogFilter(const char *log_filter);
+
+/**
    xmqDebugging:
 
    Return whether debugging is enabled or not.

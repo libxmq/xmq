@@ -407,12 +407,15 @@ void verbose_(const char* fmt, ...)
 {
     if (verbose_enabled__)
     {
-        va_list ap;
-        va_start(ap, fmt);
-        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, ap);
-        fprintf(stderr, "%s\n", line);
-        free(line);
-        va_end(ap);
+        if (!xmq_log_filter_ || !strncmp(fmt, xmq_log_filter_, strlen(xmq_log_filter_)))
+        {
+            va_list ap;
+            va_start(ap, fmt);
+            char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, ap);
+            fprintf(stderr, "%s\n", line);
+            free(line);
+            va_end(ap);
+        }
     }
 }
 
@@ -422,12 +425,15 @@ void debug_(const char* fmt, ...)
 {
     if (debug_enabled__)
     {
-        va_list args;
-        va_start(args, fmt);
-        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
-        fprintf(stderr, "%s\n", line);
-        free(line);
-        va_end(args);
+        if (!xmq_log_filter_ || !strncmp(fmt, xmq_log_filter_, strlen(xmq_log_filter_)))
+        {
+            va_list args;
+            va_start(args, fmt);
+            char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
+            fprintf(stderr, "%s\n", line);
+            free(line);
+            va_end(args);
+        }
     }
 }
 
@@ -437,12 +443,15 @@ void trace_(const char* fmt, ...)
 {
     if (trace_enabled__)
     {
-        va_list args;
-        va_start(args, fmt);
-        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
-        fprintf(stderr, "%s\n", line);
-        free(line);
-        va_end(args);
+        if (!xmq_log_filter_ || !strncmp(fmt, xmq_log_filter_, strlen(xmq_log_filter_)))
+        {
+            va_list args;
+            va_start(args, fmt);
+            char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
+            fprintf(stderr, "%s\n", line);
+            free(line);
+            va_end(args);
+        }
     }
 }
 
@@ -1502,6 +1511,15 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         verbose_enabled__ = true;
         return true;
     }
+    if (!strncmp(arg, "--trace=", 8))
+    {
+        command->trace = true;
+        xmqLogFilter(arg+8);
+        trace_enabled__ = true;
+        debug_enabled__ = true;
+        verbose_enabled__ = true;
+        return true;
+    }
     if (!strcmp(arg, "--debug"))
     {
         command->debug = true;
@@ -1509,9 +1527,24 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         verbose_enabled__ = true;
         return true;
     }
+    if (!strncmp(arg, "--debug=", 8))
+    {
+        command->debug = true;
+        xmqLogFilter(arg+8);
+        debug_enabled__ = true;
+        verbose_enabled__ = true;
+        return true;
+    }
     if (!strcmp(arg, "--verbose"))
     {
         command->verbose = true;
+        verbose_enabled__ = true;
+        return true;
+    }
+    if (!strncmp(arg, "--verbose=", 9))
+    {
+        command->verbose = true;
+        xmqLogFilter(arg+10);
         verbose_enabled__ = true;
         return true;
     }
@@ -3720,6 +3753,40 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
 
     // Handle all global options....
     for (i = 1; argv[i]; ++i)
+    {
+        const char *arg = argv[i];
+
+        // Stop handling options when arg does not start with - or is exactly "-"
+        if (arg[0] != '-' || !strcmp(arg, "-")) break;
+
+        bool ok = handle_global_option(arg, load_command);
+        if (ok) continue;
+
+        printf("xmq: unrecognized global option: '%s'\nTry 'xmq --help' for more information\n", arg);
+        return false;
+    }
+
+    if (argv[i])
+    {
+        char *dot = strrchr(argv[i], '.');
+        if (dot && !strcmp(dot, ".ixml"))
+        {
+            // A single foo.ixml file is interpreted as --ixml=foo.ixml
+            if (load_command->ixml_doc != NULL || load_command->ixml_source != NULL)
+            {
+                printf("You have already specified an ixml grammar!\n");
+                exit(1);
+            }
+            verbose_("xmq=", "reading ixml file %s", argv[i]);
+            load_command->ixml_filename = strdup(argv[i]);
+            load_command->ixml_source = load_file_into_buffer(argv[i]);
+            if (load_command->ixml_source == NULL) exit(1);
+            i++;
+        }
+    }
+
+    // Handle more global options....
+    for (; argv[i]; ++i)
     {
         const char *arg = argv[i];
 

@@ -36,6 +36,8 @@
 #include<limits.h>
 #include<stdbool.h>
 #include<stdlib.h>
+#include "parts/always.h"
+#include "parts/membuffer.h"
 
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
