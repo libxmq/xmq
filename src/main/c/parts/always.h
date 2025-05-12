@@ -26,12 +26,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include<stdbool.h>
 #include<stdlib.h>
+#include<stdarg.h>
 
 struct XMQLineConfig
 {
     bool human_readable_;
 };
 typedef struct XMQLineConfig XMQLineConfig;
+
+struct MemBuffer;
+typedef struct MemBuffer MemBuffer;
 
 extern bool xmq_trace_enabled_;
 extern bool xmq_debug_enabled_;
@@ -44,13 +48,19 @@ void warning__(const char* fmt, ...);
 void verbose__(const char* fmt, ...);
 void debug__(const char* fmt, ...);
 void trace__(const char* fmt, ...);
+void debug_mb__(const char* module, MemBuffer *mb);
+void trace_mb__(const char* fmt, MemBuffer *mb);
 void check_malloc(void *a);
+
+char *buf_vsnprintf(const char *format, va_list ap);
 
 #define error(...) error__(__VA_ARGS__)
 #define warning(...) warning__(__VA_ARGS__)
 #define verbose(...) if (xmq_verbose_enabled_) { verbose__(__VA_ARGS__); }
 #define debug(...) if (xmq_debug_enabled_) {debug__(__VA_ARGS__); }
+#define debug_mb(module, mb) if (xmq_debug_enabled_) {debug_mb__(module, mb); }
 #define trace(...) if (xmq_trace_enabled_) {trace__(__VA_ARGS__); }
+#define trace_mb(module, mb) if (xmq_trace_enabled_) {trace_mb__(module, mb); }
 
 #define PRINT_ERROR(...) fprintf(stderr, __VA_ARGS__)
 #define PRINT_WARNING(...) fprintf(stderr, __VA_ARGS__)

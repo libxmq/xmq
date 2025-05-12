@@ -3769,14 +3769,10 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
     if (argv[i])
     {
         char *dot = strrchr(argv[i], '.');
-        if (dot && !strcmp(dot, ".ixml"))
+        if (dot && !strcmp(dot, ".ixml") && !load_command->ixml_source)
         {
             // A single foo.ixml file is interpreted as --ixml=foo.ixml
-            if (load_command->ixml_doc != NULL || load_command->ixml_source != NULL)
-            {
-                printf("You have already specified an ixml grammar!\n");
-                exit(1);
-            }
+            // But not if an ixml file has already been found, or --ixml=file has been used.
             verbose_("xmq=", "reading ixml file %s", argv[i]);
             load_command->ixml_filename = strdup(argv[i]);
             load_command->ixml_source = load_file_into_buffer(argv[i]);

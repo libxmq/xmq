@@ -4725,26 +4725,6 @@ char *xmqLineDoc(XMQLineConfig *lc, XMQDoc *doc)
     return start;
 }
 
-char *buf_vsnprintf(const char *format, va_list ap);
-char *buf_vsnprintf(const char *format, va_list ap)
-{
-    size_t buf_size = 1024;
-    char *buf = (char*)malloc(buf_size);
-
-    for (;;)
-    {
-        size_t n = vsnprintf(buf, buf_size, format, ap);
-        if (n < buf_size) break;
-        buf_size *= 2;
-        free(buf);
-        // Why not realloc? Well, we are goint to redo the printf anyway overwriting
-        // the buffer again. So why allow realloc to spend time copying the content before
-        // it is overwritten?
-        buf = (char*)malloc(buf_size);
-    }
-    return buf;
-}
-
 char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list ap);
 char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list ap)
 {
@@ -4761,6 +4741,9 @@ char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list a
 
     char c = element_name[strlen(element_name)-1];
 
+    char module[256];
+    snprintf(module, 256, "(%.*s) ", (int)strlen(element_name)-1, element_name);
+
     if (c != '{')
     {
         MemBuffer *mb = new_membuffer();
@@ -4774,21 +4757,16 @@ char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list a
         else
         {
             format = va_arg(ap, const char *);
-            membuffer_append(mb, "(");
-            membuffer_append_region(mb, element_name, element_name+strlen(element_name)-1);
-            membuffer_append(mb, ") ");
         }
         char *buf = buf_vsnprintf(format, ap);
         membuffer_append(mb, buf);
         free(buf);
+        membuffer_prefix_lines(mb, module);
         membuffer_append_null(mb);
         return free_membuffer_but_return_trimmed_content(mb);
     }
 
     MemBuffer *mb = new_membuffer();
-    membuffer_append(mb, "(");
-    membuffer_append(mb, element_name);
-    membuffer_append(mb, ") ");
 
     char *buf = (char*)malloc(1024);
     size_t buf_size = 1024;
@@ -4839,6 +4817,8 @@ char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list a
     }
 
     free(buf);
+
+    membuffer_prefix_lines(mb, module);
     membuffer_append_null(mb);
 
     return free_membuffer_but_return_trimmed_content(mb);

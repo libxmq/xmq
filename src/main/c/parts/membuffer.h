@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2023 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2023-2025 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -23,6 +23,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 #define MEMBUFFER_H
 
 #include<stdlib.h>
+#include<stdarg.h>
 
 /**
     MemBuffer:
@@ -52,9 +53,13 @@ void membuffer_append_char(MemBuffer *mb, char c);
 void membuffer_append_int(MemBuffer *mb, int i);
 void membuffer_append_entity(MemBuffer *mb, char c);
 void membuffer_append_null(MemBuffer *mb);
+void membuffer_append_nl(MemBuffer *mb);
 void membuffer_drop_last_null(MemBuffer *mb);
 void membuffer_append_pointer(MemBuffer *mb, void *ptr);
+void membuffer_logf(MemBuffer *mb, const char* fmt, ...);
+void membuffer_printf(MemBuffer *mb, const char* fmt, ...);
 char membuffer_back(MemBuffer *mb);
+void membuffer_prefix_lines(MemBuffer *mb, const char *prefix);
 
 #define MEMBUFFER_MODULE
 
