@@ -339,16 +339,24 @@ because this would introduce unwanted whitespace in the output.
   \end{minipage}
 }
 
-\raisebox{44pt}{\texttt{QUOTE:}}
-\begin{minipage}{15cm}
+\raisebox{32pt}{\texttt{QUOTE:}}
+\hbox{\begin{minipage}{10cm}
 \begin{rail}
   "''"
   |"'" "UTF8 with no '" "'"
   | "'''" "UTF8 max 2 consec '" "'''"
   | "'"[$\times$ n] "UTF8 max n-1 consec '" "'"[$\times$ n]
-  |'"' 'UTF8 with json escapes' '"'
 \end{rail}
 \end{minipage}
+\begin{minipage}{6cm}
+  Symmetrically with double quotes:
+  \texttt{""}
+
+  \texttt{"That's one small step for man."}
+
+  \texttt{"""invoke("msg",'arg')"""}
+\end{minipage}
+}
 
 \raisebox{-4pt}{\texttt{ENTITY:}}
 \begin{minipage}{15cm}
@@ -371,6 +379,8 @@ because this would introduce unwanted whitespace in the output.
 "UTF8 excluding all-spaces and ' '\!\!' ( ) \{ \} must not start with = \& // /* <"
 \end{rail}
 \end{minipage}
+
+\vspace{1cm}
 
 \shifttext{-20mm}{\raisebox{-10.2cm}{\smash{\rotatebox{90}{\rule{43mm}{0.5pt}\ \texttt{PARSER}\ \rule{43mm}{.5pt}}}}}
 

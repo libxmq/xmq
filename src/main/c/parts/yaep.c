@@ -5426,7 +5426,6 @@ static void add_predicted_not_yet_started_dotted_rules(YaepParseState *ps,
     {
         if (blocked_by_lookahead(ps, rule->rhs[j], 1, "1"))
         {
-            if (ps->run.debug) log_block(ps, dotted_rule, "1", 1);
             break;
         }
         YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, context);
@@ -5436,6 +5435,7 @@ static void add_predicted_not_yet_started_dotted_rules(YaepParseState *ps,
 
 static void log_block(YaepParseState *ps, YaepDottedRule *dotted_rule, const char *info, int add)
 {
+    /*
     MemBuffer *mb = new_membuffer();
 
     char buf[256];
@@ -5451,6 +5451,7 @@ static void log_block(YaepParseState *ps, YaepDottedRule *dotted_rule, const cha
     membuffer_append_char(mb, '\n');
     debug_mb("ixml.pa=", mb);
     free_membuffer_and_free_content(mb);
+    */
 }
 
 
@@ -5468,9 +5469,9 @@ static bool blocked_by_lookahead(YaepParseState *ps, YaepSymbol *symb, int n, co
 
     MemBuffer *mb = new_membuffer();
     membuffer_printf(mb, "not?(%s) %s ", info, symb->repr);
-    int p = ps->tok_i+1;
+    int p = ps->tok_i+0;
     membuffer_printf(mb, "[%d]=", p);
-    for (int i=p; i < ps->input_len; ++i)
+    for (int i=0; i < ps->input_len; ++i)
     {
         membuffer_printf(mb, "%s ", ps->input[i].symb->hr);
     }
@@ -5585,14 +5586,10 @@ static void expand_new_start_set(YaepParseState *ps)
                 {
                     for(rule = symb->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
                     {
-                        if (!blocked_by_lookahead(ps, rule->lhs, 1, "2"))
+                        if (!blocked_by_lookahead(ps, rule->lhs, 0, "2"))
                         {
                             YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, 0);
                             set_add_initial_dotted_rule(ps, new_dotted_rule);
-                        }
-                        else
-                        {
-                            if (ps->run.debug) log_block(ps, dotted_rule, "2", 1);
                         }
                     }
                 }
@@ -5612,10 +5609,6 @@ static void expand_new_start_set(YaepParseState *ps)
                                                                          dotted_rule->dot_j+1,
                                                                          0);
                     set_add_initial_dotted_rule(ps, new_dotted_rule);
-                }
-                else
-                {
-                    if (ps->run.debug) log_block(ps, dotted_rule, "3", 100);
                 }
             }
 	}
@@ -5637,10 +5630,6 @@ static void expand_new_start_set(YaepParseState *ps)
                     core_symb_ids = core_symb_ids_new(ps, ps->new_core, symb);
                 }
                 core_symb_ids_add_complete(ps, core_symb_ids, i);
-            }
-            else
-            {
-                if (ps->run.debug) log_block(ps, dotted_rule, "9", 100);
             }
 	}
     }
@@ -5674,10 +5663,6 @@ static void expand_new_start_set(YaepParseState *ps)
                                                                  dotted_rule->context);
                         terminal_bitset_or(context_set, shifted_dotted_rule->lookahead, ps->run.grammar->symbs_ptr->num_terminals);
                     }
-                    else
-                    {
-                        if (ps->run.debug) log_block(ps, dotted_rule, "4", 100);
-                    }
 		}
                 context = terminal_bitset_insert(ps, context_set);
                 if (context >= 0)
@@ -5700,10 +5685,6 @@ static void expand_new_start_set(YaepParseState *ps)
                         ps->new_dotted_rules[i] = dotted_rule;
                         changed_p = true;
                     }
-                }
-                else
-                {
-                    if (ps->run.debug) log_block(ps, new_dotted_rule, "5", 100);
                 }
 	    }
 	}
@@ -5772,7 +5753,6 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 
         if (blocked_by_lookahead(ps, dotted_rule->rule->lhs, 0, "8"))
         {
-            log_block(ps, dotted_rule, "8", 0);
             continue;
         }
 
