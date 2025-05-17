@@ -1,0 +1,12 @@
+START
+formula = first, second.
+first = ~[], !'a'.
+second = 'a' | 'b'.
+INPUT
+ab
+OUTPUT
+formula {
+    first  = a
+    second = b
+}
+END

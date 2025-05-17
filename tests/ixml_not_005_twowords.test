@@ -1,0 +1,11 @@
+START
+sent = word, word.
+word = [L]+, ![L], ~[].
+INPUT
+alfa1beta1
+OUTPUT
+sent {
+    word = alfa1
+    word = beta1
+}
+END

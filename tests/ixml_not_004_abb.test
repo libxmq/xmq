@@ -1,0 +1,7 @@
+START
+hello = '_', ![L], ~[], ~[].
+INPUT
+_1a
+OUTPUT
+hello = _1a
+END

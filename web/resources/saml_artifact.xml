@@ -1,0 +1,12 @@
+<samlp:ArtifactResolve
+  xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
+  xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+  ID="_cce4ee769ed970b501d680f697989d14"
+  Version="2.0"
+  IssueInstant="2004-12-05T09:21:58Z">
+  <saml:Issuer>https://idp.example.org/SAML2</saml:Issuer>
+    <!-- an ArtifactResolve message SHOULD be signed -->
+    <ds:Signature
+      xmlns:ds="http://www.w3.org/2000/09/xmldsig#">...</ds:Signature>
+  <samlp:Artifact>AAQAAMh48/1oXIM+sDo7Dh2qMp1HM4IF5DaRNmDj6RdUmllwn9jJHyEgIi8=</samlp:Artifact>
+</samlp:ArtifactResolve>

@@ -1,0 +1,48 @@
+<message from='romeo@montague.lit' to='juliet@capulet.com' id='msg_1'>
+  <body>Shall we meet?</body>
+  <html xmlns='http://jabber.org/protocol/xhtml-im'>
+    <body xmlns='http://www.w3.org/1999/xhtml'>
+      <p style='font-weight:bold'>Shall we meet?</p>
+    </body>
+  </html>
+  <feature xmlns='http://jabber.org/protocol/feature-neg'>
+    <x xmlns='jabber:x:data' type='form'>
+      <field var='FORM_TYPE' type='hidden'>
+        <value>romantic_meetings</value>
+      </field>
+      <field type='list-single' var='places-to-meet'>
+         <option><value>Secret Grotto</value></option>
+         <option><value>Verona Park</value></option>
+      </field>
+      <field type='list-single' var='times-to-meet'>
+         <option><value>22:00</value></option>
+         <option><value>22:30</value></option>
+         <option><value>23:00</value></option>
+      </field>
+    </x>
+  </feature>
+  <headers xmlns='http://jabber.org/protocol/shim'>
+    <header name='Urgency'>high</header>
+  </headers>
+  <amp xmlns='http://jabber.org/protocol/amp' per-hop='true'>
+    <rule condition='expire-at'
+          action='drop'
+          value='2007-08-01T23:30:00Z'/>
+  </amp>
+  <geoloc xmlns='http://jabber.org/protocol/geoloc' xml:lang='en'>
+    <country>Italy</country>
+    <lat>45.44</lat>
+    <locality>Venice</locality>
+    <lon>12.33</lon>
+  </geoloc>
+  <mood xmlns='http://jabber.org/protocol/mood'>
+    <flirtatious/>
+  </mood>
+  <data xmlns='http://jabber.org/protocol/ibb' sid='ft_session_2' seq='84'>
+    qANQR1DBwU4DX7jmYZnncmUQB/9KuKBddzQH+tZ1ZywKK0yHKnq57kWq+RFtQdCJ
+    WpdWpR0uQsuJe7+vh3NWn59/gTc5MDlX8dS9p0ovStmNcyLhxVgmqS8ZKhsblVeu
+    IpQ0JgavABqibJolc3BKrVtVV1igKiX/N7Pi8RtY1K18toaMDhdEfhBRzO/XB0+P
+    AQhYlRjNacGcslkhXqNjK5Va4tuOAPy2n1Q8UUrHbUd0g+xJ9Bm0G0LZXyvCWyKH
+    kuNEHFQiLuCY6Iv0myq6iX6tjuHehZlFSh80b5BVV9tNLwNR5Eqz1klxMhoghJOA
+  </data>
+</message>

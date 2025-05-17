@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pde:PriorityDocumentIndex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pde="http://www.wipo.int/standards/XMLSchema/PriorityDocumentExchange" xmlns:com="http://www.wipo.int/standards/XMLSchema/ST96/Common" com:languageCode="en" xsi:schemaLocation="http://www.wipo.int/standards/XMLSchema/PriorityDocumentExchange PriorityDocumentIndex_V1_0.xsd">
+	<pde:IPTypeCategory>Patent</pde:IPTypeCategory>
+	<com:IPOfficeCode>US</com:IPOfficeCode>
+	<com:ApplicationNumber>
+		<com:ApplicationNumberText>17822338</com:ApplicationNumberText>
+	</com:ApplicationNumber>
+	<pde:ApplicationFilingDate>2017-03-31</pde:ApplicationFilingDate>
+	<pde:CertifiedPriorityDocumentBag>
+		<pde:CertifiedPriorityDocument>
+			<com:DocumentName>Certified Priority Document</com:DocumentName>
+			<com:FileName>US_17822338_20170331_20220624_PriorityDocument_000497.pdf</com:FileName>
+			<com:DocumentLocationURI>/</com:DocumentLocationURI>
+			<com:DocumentFormatCategory>PDF</com:DocumentFormatCategory>
+			<pde:PriorityDocumentComponentCategory>Certified priority document</pde:PriorityDocumentComponentCategory>
+			<com:DocumentDate>2022-06-24</com:DocumentDate>
+			<com:PageTotalQuantity>6</com:PageTotalQuantity>
+		</pde:CertifiedPriorityDocument>
+		<pde:OtherCertifiedDocumentBag>
+			<pde:CertifiedPriorityDocument>
+				<com:DocumentName>Sequence Listing</com:DocumentName>
+				<com:FileName>US_17822338_20170331_SequenceListing_ST26.xml</com:FileName>
+				<com:DocumentLocationURI>OtherCoreArtifacts/</com:DocumentLocationURI>
+				<com:DocumentFormatCategory>XML</com:DocumentFormatCategory>
+				<pde:PriorityDocumentComponentCategory>Sequence listing</pde:PriorityDocumentComponentCategory>
+				<com:DocumentDate>2017-03-31</com:DocumentDate>
+			</pde:CertifiedPriorityDocument>
+		</pde:OtherCertifiedDocumentBag>
+	</pde:CertifiedPriorityDocumentBag>
+	<pde:SupplementaryDocumentBag>
+		<pde:SupplementaryPriorityDocument>
+			<com:DocumentName>ApplicationBody</com:DocumentName>
+			<com:FileName>US_17822338_20170331_ApplicationBody.xml</com:FileName>
+			<com:DocumentLocationURI>SupplementaryArtifacts/XML/</com:DocumentLocationURI>
+			<com:DocumentFormatCategory>XML</com:DocumentFormatCategory>
+			<pde:PriorityDocumentComponentCategory>Application body</pde:PriorityDocumentComponentCategory>
+		</pde:SupplementaryPriorityDocument>
+		<pde:SupplementaryPriorityDocument>
+			<com:DocumentName>Abstract</com:DocumentName>
+			<com:FileName>US_17822338_20170331_Abstract.xml</com:FileName>
+			<com:DocumentLocationURI>SupplementaryArtifacts/XML/</com:DocumentLocationURI>
+			<com:DocumentFormatCategory>XML</com:DocumentFormatCategory>
+			<pde:PriorityDocumentComponentCategory>Abstract</pde:PriorityDocumentComponentCategory>
+		</pde:SupplementaryPriorityDocument>
+		<pde:SupplementaryPriorityDocument>
+			<com:DocumentName>Description</com:DocumentName>
+			<com:FileName>US_17822338_20170331_Description.xml</com:FileName>
+			<com:DocumentLocationURI>SupplementaryArtifacts/XML/</com:DocumentLocationURI>
+			<com:DocumentFormatCategory>XML</com:DocumentFormatCategory>
+			<pde:PriorityDocumentComponentCategory>Description</pde:PriorityDocumentComponentCategory>
+		</pde:SupplementaryPriorityDocument>
+		<pde:SupplementaryPriorityDocument>
+			<com:DocumentName>Drawings</com:DocumentName>
+			<com:FileNameBag>
+				<com:FileName>US_17822338_20170331_00001.tif</com:FileName>
+				<com:FileName>US_17822338_20170331_00002.tif</com:FileName>
+			</com:FileNameBag>
+			<com:DocumentLocationURI>SupplementaryArtifacts/XML/</com:DocumentLocationURI>
+			<com:DocumentFormatCategory>TIFF</com:DocumentFormatCategory>
+			<pde:PriorityDocumentComponentCategory>Drawing</pde:PriorityDocumentComponentCategory>
+		</pde:SupplementaryPriorityDocument>
+		<pde:SupplementaryPriorityDocument>
+			<com:DocumentName>Claims</com:DocumentName>
+			<com:FileName>US_17822338_20170331_Claims.xml</com:FileName>
+			<com:DocumentLocationURI>SupplementaryArtifacts/XML/</com:DocumentLocationURI>
+			<com:DocumentFormatCategory>XML</com:DocumentFormatCategory>
+			<pde:PriorityDocumentComponentCategory>Claims</pde:PriorityDocumentComponentCategory>
+		</pde:SupplementaryPriorityDocument>
+		<pde:SupplementaryPriorityDocument>
+			<com:DocumentName>Bibliographic Data</com:DocumentName>
+			<com:FileName>US_17822338_20170331_BibliographicData.xml</com:FileName>
+			<com:DocumentLocationURI>SupplementaryArtifacts/XML/</com:DocumentLocationURI>
+			<com:DocumentFormatCategory>XML</com:DocumentFormatCategory>
+			<pde:PriorityDocumentComponentCategory>Bibliographic data</pde:PriorityDocumentComponentCategory>
+		</pde:SupplementaryPriorityDocument>
+		<pde:SupplementaryPriorityDocument>
+			<com:DocumentName>Classification Data</com:DocumentName>
+			<com:FileName>US_17822338_20170331_ClassificationData.xml</com:FileName>
+			<com:DocumentLocationURI>SupplementaryArtifacts/XML/</com:DocumentLocationURI>
+			<com:DocumentFormatCategory>XML</com:DocumentFormatCategory>
+			<pde:PriorityDocumentComponentCategory>Classification data</pde:PriorityDocumentComponentCategory>
+		</pde:SupplementaryPriorityDocument>
+		<pde:SupplementaryPriorityDocument>
+			<com:DocumentName>Drawings</com:DocumentName>
+			<com:FileName>US_17822338_20170331_Drawings.pdf</com:FileName>
+			<com:DocumentLocationURI>SupplementaryArtifacts/Images/</com:DocumentLocationURI>
+			<com:DocumentFormatCategory>PDF</com:DocumentFormatCategory>
+			<pde:PriorityDocumentComponentCategory>Drawing</pde:PriorityDocumentComponentCategory>
+		</pde:SupplementaryPriorityDocument>
+		<pde:SupplementaryPriorityDocument>
+			<com:DocumentName>Claims</com:DocumentName>
+			<com:FileName>US_17822338_20170331_Claims.docx</com:FileName>
+			<com:DocumentLocationURI>SupplementaryArtifacts/DOCX/</com:DocumentLocationURI>
+			<com:DocumentFormatCategory>MS Word</com:DocumentFormatCategory>
+			<pde:PriorityDocumentComponentCategory>Claims</pde:PriorityDocumentComponentCategory>
+		</pde:SupplementaryPriorityDocument>
+		<pde:SupplementaryPriorityDocument>
+			<com:DocumentName>Description</com:DocumentName>
+			<com:FileName>US_17822338_20170331_Description.docx</com:FileName>
+			<com:DocumentLocationURI>SupplementaryArtifacts/DOCX/</com:DocumentLocationURI>
+			<com:DocumentFormatCategory>MS Word</com:DocumentFormatCategory>
+			<pde:PriorityDocumentComponentCategory>Description</pde:PriorityDocumentComponentCategory>
+		</pde:SupplementaryPriorityDocument>
+	</pde:SupplementaryDocumentBag>
+</pde:PriorityDocumentIndex>

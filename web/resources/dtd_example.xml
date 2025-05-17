@@ -1,0 +1,4 @@
+<!DOCTYPE goo [<!ENTITY copy "&#169;">
+               <!ENTITY alfa "ALFA&copy;">
+               <!ENTITY banana "<x>BaNaNa</x>"> ]>
+<goo>XMQ&lt;&alfa;&gt;minions say:&banana;</goo>

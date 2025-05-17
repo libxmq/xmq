@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:pde="http://www.wipo.int/standards/XMLSchema/PriorityDocumentExchange" xmlns:com="http://www.wipo.int/standards/XMLSchema/ST96/Common" targetNamespace="http://www.wipo.int/standards/XMLSchema/PriorityDocumentExchange" elementFormDefault="qualified" attributeFormDefault="qualified" version="V1_0">
+	<xsd:import namespace="http://www.wipo.int/standards/XMLSchema/ST96/Common" schemaLocation="ST96_Common_V7_1.xsd"/>
+	<xsd:element name="PriorityDocumentIndex" type="pde:PriorityDocumentIndexType">
+		<xsd:annotation>
+			<xsd:documentation>Index file for priority document exchange</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="PriorityDocumentIndexType">
+		<xsd:sequence>
+			<xsd:element ref="pde:IPTypeCategory"/>
+			<xsd:element ref="com:IPOfficeCode"/>
+			<xsd:element ref="com:ApplicationNumber"/>
+			<xsd:element ref="pde:ApplicationFilingDate"/>
+			<xsd:element ref="pde:CertifiedPriorityDocumentBag"/>
+			<xsd:element ref="pde:SupplementaryDocumentBag" minOccurs="0"/>
+		</xsd:sequence>
+		<xsd:attribute ref="com:id"/>
+		<xsd:attribute ref="com:languageCode" use="required"/>
+		<xsd:attribute ref="com:creationDate"/>
+	</xsd:complexType>
+	<xsd:complexType name="CertifiedPriorityDocumentBagType">
+		<xsd:sequence>
+			<xsd:element ref="pde:CertifiedPriorityDocument"/>
+			<xsd:element ref="pde:OtherCertifiedDocumentBag" minOccurs="0"/>
+		</xsd:sequence>
+		<xsd:attribute ref="com:id"/>
+	</xsd:complexType>
+	<xsd:element name="CertifiedPriorityDocumentBag" type="pde:CertifiedPriorityDocumentBagType">
+		<xsd:annotation>
+			<xsd:documentation>A collection of certified artifacts</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="OtherCertifiedDocumentBag" type="pde:OtherCertifiedDocumentBagType">
+		<xsd:annotation>
+			<xsd:documentation>A collection of other Certified artifacts</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="OtherCertifiedDocumentBagType">
+		<xsd:sequence>
+			<xsd:element ref="pde:CertifiedPriorityDocument" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute ref="com:id"/>
+	</xsd:complexType>
+	<xsd:complexType name="SupplementaryDocumentBagType">
+		<xsd:sequence>
+			<xsd:element ref="pde:SupplementaryPriorityDocument" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute ref="com:id"/>
+	</xsd:complexType>
+	<xsd:element name="SupplementaryDocumentBag" type="pde:SupplementaryDocumentBagType">
+		<xsd:annotation>
+			<xsd:documentation>A collection of supplementary artifacts</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="OtherCertifiedDocument" type="pde:CertifiedPriorityDocumentType">
+		<xsd:annotation>
+			<xsd:documentation>Other certified document other than the certified priority document in PDF</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="SupplementaryPriorityDocument" type="pde:SupplementaryPriorityDocumentType">
+		<xsd:annotation>
+			<xsd:documentation>Supplementary artifact of priority document</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="CertifiedPriorityDocument" type="pde:CertifiedPriorityDocumentType">
+		<xsd:annotation>
+			<xsd:documentation>Certified priority document in PDF format</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:complexType name="CertifiedPriorityDocumentType">
+		<xsd:sequence>
+			<xsd:element ref="com:DocumentName"/>
+			<xsd:element ref="com:FileName"/>
+			<xsd:element ref="com:DocumentLocationURI"/>
+			<xsd:element ref="com:DocumentFormatCategory" minOccurs="0"/>
+			<xsd:element ref="pde:PriorityDocumentComponentCategory" minOccurs="0"/>
+			<xsd:element ref="com:DocumentDate" minOccurs="0"/>
+			<xsd:element ref="com:DocumentVersion" minOccurs="0"/>
+			<xsd:element ref="com:DocumentSizeQuantity" minOccurs="0"/>
+			<xsd:element ref="com:PageTotalQuantity" minOccurs="0"/>
+			<xsd:element ref="com:CommentText" minOccurs="0"/>
+		</xsd:sequence>
+		<xsd:attribute ref="com:id"/>
+		<xsd:attribute ref="com:sequenceNumber"/>
+		<xsd:attribute ref="com:languageCode"/>
+	</xsd:complexType>
+	<xsd:complexType name="SupplementaryPriorityDocumentType">
+		<xsd:sequence>
+			<xsd:element ref="com:DocumentName"/>
+			<xsd:choice>
+				<xsd:element ref="com:FileName"/>
+				<xsd:element ref="com:FileNameBag"/>
+			</xsd:choice>
+			<xsd:element ref="com:DocumentLocationURI"/>
+			<xsd:element ref="com:DocumentFormatCategory" minOccurs="0"/>
+			<xsd:element ref="pde:PriorityDocumentComponentCategory" minOccurs="0"/>
+			<xsd:element ref="com:DocumentDate" minOccurs="0"/>
+			<xsd:element ref="com:DocumentVersion" minOccurs="0"/>
+			<xsd:element ref="com:DocumentSizeQuantity" minOccurs="0"/>
+			<xsd:element ref="com:PageTotalQuantity" minOccurs="0"/>
+			<xsd:element ref="com:CommentText" minOccurs="0"/>
+		</xsd:sequence>
+		<xsd:attribute ref="com:id"/>
+		<xsd:attribute ref="com:sequenceNumber"/>
+		<xsd:attribute ref="com:languageCode"/>
+	</xsd:complexType>
+	<xsd:element name="IPTypeCategory" type="pde:IPTypeCategoryType">
+		<xsd:annotation>
+			<xsd:documentation>Describes the filing type of application i.e. Patent, Trademark and Industrial Design</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:simpleType name="IPTypeCategoryType">
+		<xsd:restriction base="xsd:token">
+			<xsd:enumeration value="Patent">
+				<xsd:annotation>
+					<xsd:documentation>Patent includes such industrial property rights as patents for inventions, plant patents, design patents, inventor's certificates, utility certificates, utility models, patents of addition, inventor's certificates of addition and utility certificates of addition.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+			<xsd:enumeration value="Trademark">
+				<xsd:annotation>
+					<xsd:documentation>Trademarks means a sign or combination of signs which distinguishes the goods or services of one undertaking from those of other undertakings.  Signs may consist of one or more distinctive words, letters, numbers, drawings or pictures, symbols, colours, sounds, the form or other special presentation of containers or packages for a product (provided it is not solely dictated by their function) or other aspects depending on the jurisdiction. </xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+			<xsd:enumeration value="Industrial Design">
+				<xsd:annotation>
+					<xsd:documentation>Industrial design means the visual aspect of an object, including its two-dimensional and three-dimensional features of shape and surface of objects, and thus covers both concepts of designs and models where a distinction is made between the former and the latter; the term industrial designs does not include design patents.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="PriorityDocumentComponentCategory" type="xsd:token">
+		<xsd:annotation>
+			<xsd:documentation>A category which identifies the component of a priority document, such as the application body of a patent application or the sound file of a trademark application</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="ApplicationFilingDate" type="com:DateType">
+		<xsd:annotation>
+			<xsd:documentation>The filing date of the application</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+</xsd:schema>

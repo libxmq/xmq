@@ -1,0 +1,7 @@
+START
+last_not_dot = ~[]+, !'.', ~[].
+INPUT
+aa
+OUTPUT
+last_not_dot = aa
+END

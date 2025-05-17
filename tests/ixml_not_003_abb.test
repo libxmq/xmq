@@ -1,0 +1,9 @@
+START
+hello = '_', ![L], ~[], ~[].
+INPUT
+_aa
+OUTPUT
+ixml:1:2: syntax error
+_aa
+ ^
+END
