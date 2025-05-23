@@ -1,0 +1,10 @@
+START
+s = vp, ~[].
+vp = [L], !'a'.
+INPUT
+aa
+OUTPUT
+ixml:1:2: syntax error
+aa
+ ^
+END

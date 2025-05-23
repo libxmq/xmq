@@ -1,0 +1,11 @@
+START
+s = vp, ~[].
+vp = [L], !'a'.
+INPUT
+ax
+OUTPUT
+s {
+    vp = a
+    'x'
+}
+END

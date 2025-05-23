@@ -1,0 +1,19 @@
+START
+book = word++'.'.
+word = alfa | beta.
+alfa = !'b', ~['.']+.
+beta = 'b', ~['.']*.
+INPUT
+a.b
+OUTPUT
+ixml: Warning! The input can be parsed in multiple ways, ie it is ambiguous!
+book {
+    word {
+        alfa = a
+    }
+    '.'
+    word {
+        beta = b
+    }
+}
+END
