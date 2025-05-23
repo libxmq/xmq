@@ -4586,7 +4586,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     {
         state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
         state->error_info = "internal error, yaep did not accept generated yaep grammar";
-        printf("xmq: could not parse input using ixml grammar: %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
+        printf("xmq: internal error generating yaep grammar from ixml grammar %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
         longjmp(state->error_handler, 1);
     }
 
@@ -4628,7 +4628,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
     if (rc)
     {
-        printf("xmq: could not parse input using ixml grammar: %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
+        // Syntax error has already been printed.
         return false;
     }
 

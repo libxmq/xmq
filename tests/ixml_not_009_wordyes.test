@@ -3,9 +3,10 @@ formula = first, second.
 first = ~[], !'a'.
 second = 'a' | 'b'.
 INPUT
-aa
+ab
 OUTPUT
-ixml:1:2: syntax error
-aa
- ^
+formula {
+    first  = a
+    second = b
+}
 END
