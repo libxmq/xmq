@@ -4,8 +4,11 @@
 (ixml.pa) s (11)  T →  '1' compl[0-0]    ['*' '+' $eof]
 }
 parse = line++-#a, -#a?.
--line = ix|not|gr|ru|lh|pa|trb|trp|trt|tra|trpp|st|scan|core|step|block.
+-line = xmq|xmqd|xmqa|ix|not|gr|ru|lh|pa|trb|trp|trt|tra|trpp|st|scan|core|step|block.
 
+-xmq = -'xmq: ', -~[#a]+.
+-xmqd = -'xmqd: ', -~[#a]+.
+-xmqa = -'xmqa: ', -~[#a]+.
 -ix = -'(ixml) ', -~[#a]+.
 -not = -'(ixml.pa) not', -~[#a]+.
 -gr = -'(ixml.gr) ', -~[#a]+.

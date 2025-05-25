@@ -1726,7 +1726,7 @@ static bool dotted_rule_set_lookahead(YaepParseState *ps, YaepDottedRule *dotted
 /* The following function returns dotted_rules with given
    characteristics.  Remember that dotted_rules are stored in one
    exemplar. */
-static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, int dot_j, int context)
+static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, int dot_j, int context, const char *info)
 {
     YaepDottedRule *dotted_rule;
     YaepDottedRule ***context_dotted_rules_table_ptr;
@@ -1784,9 +1784,9 @@ static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, in
     dotted_rule->empty_tail_p = dotted_rule_set_lookahead(ps, dotted_rule);
     (*context_dotted_rules_table_ptr)[rule->rule_start_offset + dot_j] = dotted_rule;
 
-    /*fprintf(stderr, "(ixml) created dotted rule %s %d %s\n", dotted_rule->rule->lhs->hr, dot_j,
-      dotted_rule->empty_tail_p?"EMPTY_TAIL":"");*/
+    debug("ixml.pa=", "@%d create dotted rule[%s] '%s' dot_j=%d %s", ps->tok_i, info, dotted_rule->rule->lhs->hr, dot_j, dotted_rule->empty_tail_p?"EMPTY_TAIL":"");
     breakpoint();
+
     return dotted_rule;
 }
 
@@ -3310,11 +3310,11 @@ static void add_predicted_not_yet_started_dotted_rules(YaepParseState *ps,
 
     for(int j = dotted_rule->dot_j; rule->rhs[j] && rule->rhs[j]->empty_p; ++j)
     {
-        if (blocked_by_lookahead(ps, rule->rhs[j], 1, "1"))
+        if (blocked_by_lookahead(ps, rule->rhs[j], 1, "apnysdr"))
         {
             break;
         }
-        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, context);
+        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, context, "apnysdr");
         MemBuffer *mb = new_membuffer();
         print_dotted_rule(mb, ps, j+1, new_dotted_rule, false, 0);
         free_membuffer_and_free_content(mb);
@@ -3363,24 +3363,26 @@ static bool blocked_by_lookahead(YaepParseState *ps, YaepSymbol *symb, int n, co
     if (!is_not_rule(symb)) return false;
 
     MemBuffer *mb = new_membuffer();
-    membuffer_printf(mb, "not?(%s) %s ", info, symb->repr);
-    int p = ps->tok_i+0;
-    membuffer_printf(mb, "[%d]=", p);
-    for (int i=0; i < ps->input_len; ++i)
+    membuffer_printf(mb, "@%d test not[%s] '%s' ", ps->tok_i, info, symb->repr);
+    int tok_i = ps->tok_i+n;
+    membuffer_printf(mb, "input[%d=%d+%d]", tok_i, ps->tok_i, n);
+    membuffer_printf(mb, "{");
+    for (int i = tok_i; i < ps->input_len; ++i)
     {
         membuffer_printf(mb, "%s ", ps->input[i].symb->hr);
     }
+    membuffer_printf(mb, "}");
     // The rule is a NOT lookup rule that can potentially block the completion of this empty rule.
     bool rc = false;
     if (has_lookahead(ps, symb, n))
     {
         rc = true;
-        membuffer_printf(mb, " BLOCKED!!!!!");
+        membuffer_printf(mb, " BLOCKED");
     }
     else
     {
         rc = false;
-        membuffer_printf(mb, "noblock its fine.");
+        membuffer_printf(mb, " not blocked");
     }
 
     debug_mb("ixml.pa=", mb);
@@ -3490,9 +3492,9 @@ static void expand_new_start_set(YaepParseState *ps)
                 {
                     for(rule = symb->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
                     {
-                        if (!blocked_by_lookahead(ps, rule->lhs, 1, "2"))
+                        if (!blocked_by_lookahead(ps, rule->lhs, 1, "enss1"))
                         {
-                            YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, 0);
+                            YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, 0, "enss1");
                             set_add_initial_dotted_rule(ps, new_dotted_rule);
                         }
                     }
@@ -3506,12 +3508,13 @@ static void expand_new_start_set(YaepParseState *ps)
 
             if (symb->empty_p && i >= ps->new_core->num_all_matched_lengths)
             {
-                if (!blocked_by_lookahead(ps, symb, 0, "3"))
+                if (!blocked_by_lookahead(ps, symb, 0, "enss2"))
                 {
                     YaepDottedRule *new_dotted_rule = create_dotted_rule(ps,
                                                                          dotted_rule->rule,
                                                                          dotted_rule->dot_j+1,
-                                                                         0);
+                                                                         0,
+                                                                         "enss2");
                     set_add_initial_dotted_rule(ps, new_dotted_rule);
                 }
             }
@@ -3526,7 +3529,7 @@ static void expand_new_start_set(YaepParseState *ps)
         if (dotted_rule->dot_j == dotted_rule->rule->rhs_len)
 	{
             symb = dotted_rule->rule->lhs;
-            if (!blocked_by_lookahead(ps, dotted_rule->rule->lhs, 1, "9"))
+            if (!blocked_by_lookahead(ps, dotted_rule->rule->lhs, 1, "enss2.5"))
             {
                 core_symb_ids = core_symb_ids_find(ps, ps->new_core, symb);
                 if (core_symb_ids == NULL)
@@ -3559,12 +3562,13 @@ static void expand_new_start_set(YaepParseState *ps)
 		{
                     dotted_rule_id = core_symb_ids->predictions.ids[j];
                     dotted_rule = ps->new_dotted_rules[dotted_rule_id];
-                    if (!blocked_by_lookahead(ps, dotted_rule->rule->lhs, 0, "4"))
+                    if (!blocked_by_lookahead(ps, dotted_rule->rule->lhs, 0, "enss3"))
                     {
                         shifted_dotted_rule = create_dotted_rule(ps,
                                                                  dotted_rule->rule,
                                                                  dotted_rule->dot_j+1,
-                                                                 dotted_rule->context);
+                                                                 dotted_rule->context,
+                                                                 "enss3");
                         terminal_bitset_or(context_set, shifted_dotted_rule->lookahead, ps->run.grammar->symbs_ptr->num_terminals);
                     }
 		}
@@ -3577,12 +3581,13 @@ static void expand_new_start_set(YaepParseState *ps)
                 {
                     context = -context - 1;
                 }
-                if (!blocked_by_lookahead(ps, new_dotted_rule->rule->lhs, 0, "5"))
+                if (!blocked_by_lookahead(ps, new_dotted_rule->rule->lhs, 0, "enss4"))
                 {
                     dotted_rule = create_dotted_rule(ps,
                                                      new_dotted_rule->rule,
                                                      new_dotted_rule->dot_j,
-                                                     context);
+                                                     context,
+                                                     "enss4");
 
                     if (dotted_rule != new_dotted_rule)
                     {
@@ -3617,7 +3622,7 @@ static void build_start_set(YaepParseState *ps)
 
     for (YaepRule *rule = ps->run.grammar->axiom->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
     {
-        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, context);
+        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, context, "bss");
         set_add_dotted_rule(ps, new_dotted_rule, 0);
     }
 
@@ -3655,7 +3660,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
         dotted_rule_id = predictions->ids[i];
         dotted_rule = set_core->dotted_rules[dotted_rule_id];
 
-        if (blocked_by_lookahead(ps, dotted_rule->rule->lhs, 0, "8"))
+        if (blocked_by_lookahead(ps, dotted_rule->rule->lhs, 0, "capnss1"))
         {
             continue;
         }
@@ -3663,7 +3668,8 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
         new_dotted_rule = create_dotted_rule(ps,
                                              dotted_rule->rule,
                                              dotted_rule->dot_j+1,
-                                             dotted_rule->context);
+                                             dotted_rule->context,
+                                             "capnss1");
 
         if (local_lookahead_level != 0
             && !terminal_bitset_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terminals)
@@ -3697,7 +3703,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
     {
         new_dotted_rule = ps->new_dotted_rules[i];
         if (new_dotted_rule->empty_tail_p &&
-            !blocked_by_lookahead(ps, new_dotted_rule->rule->rhs[new_dotted_rule->dot_j], 1, "FOO"))
+            !blocked_by_lookahead(ps, new_dotted_rule->rule->rhs[new_dotted_rule->dot_j], 1, "capnss2"))
 	{
             int *curr_el, *bound;
 
@@ -3725,7 +3731,8 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                 new_dotted_rule = create_dotted_rule(ps,
                                                      dotted_rule->rule,
                                                      dotted_rule->dot_j+1,
-                                                     dotted_rule->context);
+                                                     dotted_rule->context,
+                                                     "capnss2");
 
                 if (local_lookahead_level != 0
                     && !terminal_bitset_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terminals)
