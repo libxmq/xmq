@@ -4,7 +4,7 @@
 (ixml.pa) s (11)  T →  '1' compl[0-0]    ['*' '+' $eof]
 }
 parse = line++-#a, -#a?.
--line = xmq|xmqd|xmqa|ix|not|gr|ru|lh|pa|trb|trp|trt|tra|trpp|st|scan|core|step|block.
+-line = xmq|xmqd|xmqa|ix|not|gr|ru|lh|pa|trb|trp|trt|tra|trpp|st|scan|core|step|block|at.
 
 -xmq = -'xmq: ', -~[#a]+.
 -xmqd = -'xmqd: ', -~[#a]+.
@@ -20,6 +20,7 @@ scan  = -'(ixml.pa) input[',index,-"]=",char.
 -core = -'(ixml.pa) state', -~[#a]+.
 step  = -'(ixml.pa) (', id, -')', s, name, s, -'→', s, body?, dot?, where, cost?, -' ', -~[#a]*.
 block = -'(ixml.pa) blocked', btype, -' (', id, -')', -~[#a]*.
+at    = -'(ixml.pa) @', -~[#a]*.
 btype = [N]+.
 
 -trb = -'(ixml.tr) building ', -~[#a]+.

@@ -3457,7 +3457,7 @@ static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
 }
 
 /* The following function adds the rest(predicted not-yet-started) dotted_rules to the
-   new set and and forms triples(set core, symbol, indexes) for
+   new set and and forms triples(set_core, symbol, indexes) for
    further fast search of start dotted_rules from given core by
    transition on given symbol(see comment for abstract data `core_symb_ids'). */
 static void expand_new_start_set(YaepParseState *ps)
@@ -3506,6 +3506,7 @@ static void expand_new_start_set(YaepParseState *ps)
             // that should be added for further parsing.
             core_symb_ids_add_predict(ps, core_symb_ids, i);
 
+            //
             if (symb->empty_p && i >= ps->new_core->num_all_matched_lengths)
             {
                 if (!blocked_by_lookahead(ps, symb, 0, "enss2"))
@@ -3514,7 +3515,7 @@ static void expand_new_start_set(YaepParseState *ps)
                                                                          dotted_rule->rule,
                                                                          dotted_rule->dot_j+1,
                                                                          0,
-                                                                         "enss2");
+                                                                         "add_to_predict_set");
                     set_add_initial_dotted_rule(ps, new_dotted_rule);
                 }
             }
