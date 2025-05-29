@@ -1392,13 +1392,14 @@ static bool terminal_bitset_or(YaepParseState *ps, terminal_bitset_t *set, termi
 }
 
 /* Add terminal with number NUM to SET.  Return true if SET has been changed.*/
-static bool terminal_bitset_up(terminal_bitset_t *set, int num, int num_terminals)
+static bool terminal_bitset_up(YaepParseState *ps, terminal_bitset_t *set, int num)
 {
     const int bits_in_word = CHAR_BIT*sizeof(terminal_bitset_t);
 
     int word_offset;
     terminal_bitset_t bit_in_word;
     bool changed_p;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
 
     assert(num < num_terminals);
 
@@ -1724,7 +1725,7 @@ static bool dotted_rule_calculate_lookahead(YaepParseState *ps, YaepDottedRule *
 	{
             if (symb->is_terminal)
             {
-                terminal_bitset_up(dotted_rule->lookahead, symb->u.terminal.term_id, ps->run.grammar->symbs_ptr->num_terminals);
+                terminal_bitset_up(ps, dotted_rule->lookahead, symb->u.terminal.term_id);
             }
             else
             {
@@ -2846,9 +2847,10 @@ static void create_first_follow_sets(YaepParseState *ps)
                     if (rhs_symb->is_terminal)
                     {
                         if (first_continue_p)
-                            changed_p |= terminal_bitset_up(symb->u.nonterminal.first,
-                                                     rhs_symb->u.terminal.term_id,
-                                                     ps->run.grammar->symbs_ptr->num_terminals);
+                        {
+                            changed_p |= terminal_bitset_up(ps, symb->u.nonterminal.first,
+                                                            rhs_symb->u.terminal.term_id);
+                        }
                     }
                     else
                     {
@@ -2864,9 +2866,8 @@ static void create_first_follow_sets(YaepParseState *ps)
                             if (next_rhs_symb->is_terminal)
                             {
                                 changed_p
-                                    |= terminal_bitset_up(rhs_symb->u.nonterminal.follow,
-                                                   next_rhs_symb->u.terminal.term_id,
-                                                   ps->run.grammar->symbs_ptr->num_terminals);
+                                    |= terminal_bitset_up(ps, rhs_symb->u.nonterminal.follow,
+                                                   next_rhs_symb->u.terminal.term_id);
                             }
                             else
                             {
