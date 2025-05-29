@@ -24,7 +24,12 @@ mkdir -p $OUTPUT
 ARGS=$(grep ^ARGS $TEST_FILE | cut -b 6- | tr -d '\n')
 
 sed -n '/^START$/,/^INPUT$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.ixml
-sed -n '/^INPUT$/,/^OUTPUT$/p' $TEST_FILE | tail -n +2 | sed '$d' | tr -d '\n' > $OUTPUT/${TEST_NAME}.input
+sed -n '/^INPUT$/,/^OUTPUT$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.input
+if [ "1" = "$(wc -l $OUTPUT/${TEST_NAME}.input | cut -f 1 -d ' ')" ]
+then
+    cat $OUTPUT/${TEST_NAME}.input | tr -d '\n' > $OUTPUT/tempo
+    mv $OUTPUT/tempo $OUTPUT/${TEST_NAME}.input
+fi
 sed -n '/^OUTPUT$/,/^END$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.expected
 
 $PROG --ixml=$OUTPUT/${TEST_NAME}.ixml $ARGS $OUTPUT/${TEST_NAME}.input > $OUTPUT/${TEST_NAME}.output 2>&1 || true
