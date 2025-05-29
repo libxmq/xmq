@@ -945,7 +945,6 @@ static int default_read_token(YaepParseRun *ps, void **attr);
 static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n);
 static bool is_not_rule(YaepSymbol *symb);
 static bool blocked_by_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule, YaepSymbol *symb, int n, const char *info);
-static void log_block(YaepParseState *ps, YaepDottedRule *dotted_rule, const char *info, int add);
 static void fetch_state_vars(YaepParseState *ps, YaepStateSet *state_set, StateVars *vars);
 static int find_matched_length(YaepParseState *ps, YaepStateSet *state_set, StateVars *vars, int dotted_rule_id);
 
@@ -2536,8 +2535,7 @@ static YaepCoreSymbVect *core_symb_ids_find(YaepParseState *ps, YaepStateSetCore
     return r;
 }
 
-/* Add given triple(SET_CORE, TERM, ...) to the table and return
-   pointer to it.*/
+/* Add given triple(SET_CORE, TERM, ...) to the table and return a pointer to it.*/
 static YaepCoreSymbVect *core_symb_ids_new(YaepParseState *ps, YaepStateSetCore*core, YaepSymbol*symb)
 {
     YaepCoreSymbVect*triple;
@@ -3371,27 +3369,6 @@ static void complete_empty_rules(YaepParseState *ps,
     }
 }
 
-static void log_block(YaepParseState *ps, YaepDottedRule *dotted_rule, const char *info, int add)
-{
-    /*
-    MemBuffer *mb = new_membuffer();
-
-    char buf[256];
-    size_t n = snprintf(buf, 256, "blocked%s (%d,%d) [%d]    ",
-                        info,
-                        ps->state_set_k+add,
-                        dotted_rule->id,
-                        ps->tok_i);
-    assert(n < 255);
-    buf[255] = 0;
-    membuffer_append(mb, buf);
-    print_rule(mb, ps, dotted_rule->rule);
-    membuffer_append_char(mb, '\n');
-    debug_mb("ixml.pa=", mb);
-    free_membuffer_and_free_content(mb);
-    */
-}
-
 static bool is_not_rule(YaepSymbol *symb)
 {
    if (symb->repr[0]!= '|' || symb->repr[1] != '!') return false;
@@ -3426,7 +3403,7 @@ static bool blocked_by_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule
         int tok_i = ps->tok_i+n;
         membuffer_printf(mb, "%s (%d,-) %s →  ε not[%d-%d/%d] ",
                          info, 1+ps->state_set_k,
-                         symb->repr, tok_i-n, tok_i, ps->input_len);
+                         symb->repr, ps->tok_i, ps->tok_i+1, ps->input_len);
         membuffer_printf(mb, "{");
         if (is_blocked)
         {
@@ -3543,7 +3520,7 @@ static void expand_new_start_set(YaepParseState *ps)
     {
         dotted_rule = ps->new_dotted_rules[dotted_rule_id];
 
-        // Check that there is a symbol after the dot! */
+        // Check that there is a symbol after the dot!
         if (dotted_rule->dot_j < dotted_rule->rule->rhs_len)
 	{
             // Yes.
@@ -3552,6 +3529,7 @@ static void expand_new_start_set(YaepParseState *ps)
             if (core_symb_ids == NULL)
 	    {
                 // No vector found for this core+symb combo.
+                // Add a new vector.
                 core_symb_ids = core_symb_ids_new(ps, ps->new_core, symb);
                 if (!symb->is_terminal)
                 {
@@ -3600,15 +3578,12 @@ static void expand_new_start_set(YaepParseState *ps)
         // Yes, all rhs elements have been completed/scanned.
         symb = dotted_rule->rule->lhs;
 
-        if (!blocked_by_lookahead(ps, dotted_rule, dotted_rule->rule->lhs, 1, "complete2"))
+        core_symb_ids = core_symb_ids_find(ps, ps->new_core, symb);
+        if (core_symb_ids == NULL)
         {
-            core_symb_ids = core_symb_ids_find(ps, ps->new_core, symb);
-            if (core_symb_ids == NULL)
-            {
-                core_symb_ids = core_symb_ids_new(ps, ps->new_core, symb);
-            }
-            core_symb_ids_add_complete(ps, core_symb_ids, dotted_rule_id);
+            core_symb_ids = core_symb_ids_new(ps, ps->new_core, symb);
         }
+        core_symb_ids_add_complete(ps, core_symb_ids, dotted_rule_id);
     }
 
     if (ps->run.grammar->lookahead_level > 1)
