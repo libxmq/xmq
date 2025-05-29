@@ -1412,13 +1412,14 @@ static bool terminal_bitset_up(YaepParseState *ps, terminal_bitset_t *set, int n
 }
 
 /* Remove terminal with number NUM from SET.  Return true if SET has been changed.*/
-static bool terminal_bitset_down(terminal_bitset_t *set, int num, int num_terminals)
+static bool terminal_bitset_down(YaepParseState *ps, terminal_bitset_t *set, int num)
 {
     const int bits_in_word = CHAR_BIT*sizeof(terminal_bitset_t);
 
     int word_offset;
     terminal_bitset_t bit_in_word;
     bool changed_p;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
 
     assert(num < num_terminals);
 
@@ -1431,12 +1432,13 @@ static bool terminal_bitset_down(terminal_bitset_t *set, int num, int num_termin
 }
 
 /* Return true if terminal with number NUM is in SET. */
-static int terminal_bitset_test(terminal_bitset_t *set, int num, int num_terminals)
+static int terminal_bitset_test(YaepParseState *ps, terminal_bitset_t *set, int num)
 {
     const int bits_in_word = CHAR_BIT*sizeof(terminal_bitset_t);
 
     int word_offset;
     terminal_bitset_t bit_in_word;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
 
     assert(num < num_terminals);
 
@@ -1492,7 +1494,7 @@ static void terminal_bitset_print(MemBuffer *mb, YaepParseState *ps, terminal_bi
 {
     bool first = true;
     int num_set = 0;
-    for (int i = 0; i < num_terminals; i++) num_set += terminal_bitset_test(set, i, num_terminals);
+    for (int i = 0; i < num_terminals; i++) num_set += terminal_bitset_test(ps, set, i);
 
     if (num_set > num_terminals/2)
     {
@@ -1500,7 +1502,7 @@ static void terminal_bitset_print(MemBuffer *mb, YaepParseState *ps, terminal_bi
         membuffer_append(mb, "~[");
         for (int i = 0; i < num_terminals; i++)
         {
-            if (!terminal_bitset_test(set, i, num_terminals))
+            if (!terminal_bitset_test(ps, set, i))
             {
                 if (!first) membuffer_append(mb, " "); else first = false;
                 symbol_print(mb, term_get(ps, i), false);
@@ -1512,7 +1514,7 @@ static void terminal_bitset_print(MemBuffer *mb, YaepParseState *ps, terminal_bi
     membuffer_append_char(mb, '[');
     for (int i = 0; i < num_terminals; i++)
     {
-        if (terminal_bitset_test(set, i, num_terminals))
+        if (terminal_bitset_test(ps, set, i))
         {
             if (!first) membuffer_append(mb, " "); else first = false;
             symbol_print(mb, term_get(ps, i), false);
@@ -3536,7 +3538,7 @@ static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
         return false;
     }
     YaepSymbol *next = ps->input[p].symb;
-    bool match = terminal_bitset_test(ys->u.nonterminal.first, next->u.terminal.term_id, ps->run.grammar->symbs_ptr->num_terminals);
+    bool match = terminal_bitset_test(ps, ys->u.nonterminal.first, next->u.terminal.term_id);
 
     return match;
 }
@@ -3756,8 +3758,8 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                                              "scan");
 
         if (local_lookahead_level != 0
-            && !terminal_bitset_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terminals)
-            && !terminal_bitset_test(new_dotted_rule->lookahead, ps->run.grammar->term_error_id, ps->run.grammar->symbs_ptr->num_terminals))
+            && !terminal_bitset_test(ps, new_dotted_rule->lookahead, lookahead_term_id)
+            && !terminal_bitset_test(ps, new_dotted_rule->lookahead, ps->run.grammar->term_error_id))
         {
             // Lookahead predicted no-match. Stop here.
             MemBuffer *mb = new_membuffer();
@@ -3828,10 +3830,9 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                                                      "complete");
 
                 if (local_lookahead_level != 0
-                    && !terminal_bitset_test(new_dotted_rule->lookahead, lookahead_term_id, ps->run.grammar->symbs_ptr->num_terminals)
-                    && !terminal_bitset_test(new_dotted_rule->lookahead,
-                                             ps->run.grammar->term_error_id,
-                                             ps->run.grammar->symbs_ptr->num_terminals))
+                    && !terminal_bitset_test(ps, new_dotted_rule->lookahead, lookahead_term_id)
+                    && !terminal_bitset_test(ps, new_dotted_rule->lookahead,
+                                             ps->run.grammar->term_error_id))
                 {
                     continue;
                 }
