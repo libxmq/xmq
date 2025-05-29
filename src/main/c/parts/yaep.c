@@ -3622,10 +3622,11 @@ static terminal_bitset_t *terminal_bitset_from_table(YaepParseState *ps, int num
 }
 
 /* Print terminal SET into file F. */
-static void terminal_bitset_print(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t *set, int num_terminals)
+static void terminal_bitset_print(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t *set)
 {
     bool first = true;
     int num_set = 0;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
     for (int i = 0; i < num_terminals; i++) num_set += terminal_bitset_test(ps, set, i);
 
     if (num_set > num_terminals/2)
@@ -5417,9 +5418,9 @@ int yaep_read_grammar(YaepParseRun *pr,
                                  (symb->access_p ? "" : " OUPS_NOT_REACHABLE"),
                                  (symb->derivation_p ? "" : " OUPS_NO_TEXT"));
                 membuffer_append(mb, "  1st: ");
-                terminal_bitset_print(mb, ps, symb->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terminals);
+                terminal_bitset_print(mb, ps, symb->u.nonterminal.first);
                 membuffer_append(mb, "\n  2nd: ");
-                terminal_bitset_print(mb, ps, symb->u.nonterminal.follow, ps->run.grammar->symbs_ptr->num_terminals);
+                terminal_bitset_print(mb, ps, symb->u.nonterminal.follow);
                 debug_mb("ixml.rules=", mb);
                 free_membuffer_and_free_content(mb);
             }
@@ -5896,7 +5897,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
             // Lookahead predicted no-match. Stop here.
             MemBuffer *mb = new_membuffer();
             membuffer_printf(mb, "lookahead says stop %d ", lookahead_term_id);
-            terminal_bitset_print(mb, ps, new_dotted_rule->lookahead, ps->run.grammar->symbs_ptr->num_terminals);
+            terminal_bitset_print(mb, ps, new_dotted_rule->lookahead);
             membuffer_append(mb, "\n");
             debug_mb("ixml.st=", mb);
             continue;
@@ -8126,7 +8127,7 @@ static void print_dotted_rule(MemBuffer *mb,
     if (ps->run.grammar->lookahead_level != 0 && lookahead_p && matched_length >= 0)
     {
         membuffer_append(mb, "    ");
-        terminal_bitset_print(mb, ps, dotted_rule->lookahead, ps->run.grammar->symbs_ptr->num_terminals);
+        terminal_bitset_print(mb, ps, dotted_rule->lookahead);
     }
 }
 
