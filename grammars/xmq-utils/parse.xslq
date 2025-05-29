@@ -28,7 +28,7 @@ xsl:stylesheet(version   = 1.0
                          .step[used="true"] { color: black; background: solid; background: lightgreen; }
                          .dot[blocked="true"] { color: red; background: solid; background: orange; }
                          .pred { background-color: lightyellow; }
-                         .notlookahead { color: white; background-color: purple; }
+                         .notlookahead { text-color: white; background-color: purple; }
                          .dot { background-color: orange; }
                          .eof { background-color: lightgrey; min-width: 1ch; width: 1ch; }
                          .predotted { color: black; background-color: orange;}
@@ -134,7 +134,12 @@ xsl:stylesheet(version   = 1.0
                         xsl:if(test = "position()=1") = true
                     }
                 }
-                xsl:apply-templates(select = name)
+                xsl:choose {
+                    xsl:when(test = "type = 'not'") = ' '
+                    xsl:otherwise {
+                        xsl:apply-templates(select = name)
+                    }
+                }
             }
             xsl:call-template(name = gencols)
             {
