@@ -3065,11 +3065,12 @@ static void print_state_set(MemBuffer *mb,
                             YaepParseState *ps,
                             YaepStateSet*set,
                             int from_i,
-                            int print_all_dotted_rules,
-                            int lookahead_p);
-static void print_dotted_rule(MemBuffer *mb, YaepParseState *ps, int from_i, YaepDottedRule *dotted_rule, bool lookahead_p, int matched_length);
+                            int print_all_dotted_rules);
+static void print_dotted_rule(MemBuffer *mb, YaepParseState *ps, int from_i, YaepDottedRule *dotted_rule, int matched_length);
 static YaepSymbolStorage *symbolstorage_create(YaepGrammar *g);
 static void symb_empty(YaepParseState *ps, YaepSymbolStorage *symbs);
+static YaepSymbol *symb_find_by_term_id(YaepParseState *ps, int term_id);
+static YaepSymbol *symb_find_by_code(YaepParseState *ps, int code);
 static void symb_finish_adding_terms(YaepParseState *ps);
 static void symbol_print(MemBuffer *mb, YaepSymbol *symb, bool code_p);
 static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
@@ -3090,6 +3091,29 @@ jmp_buf error_longjump_buff;
 
 static void breakpoint()
 {
+}
+
+static void dbg_print_coresymbvects(YaepParseState *ps, YaepCoreSymbVect *v)
+{
+    MemBuffer *mb = new_membuffer();
+    membuffer_printf(mb, "coresymbvect %s\n", v->symb->hr);
+
+    membuffer_printf(mb, "predictions: ");
+    for (int i = 0; i < v->predictions.len; ++i)
+    {
+        YaepSymbol *symb = symb_find_by_code(ps, v->predictions.ids[i]);
+        membuffer_printf(mb, " %s", symb->hr);
+    }
+    membuffer_printf(mb, "\ncompletions: ");
+    for (int i = 0; i < v->completions.len; ++i)
+    {
+        YaepSymbol *symb = symb_find_by_code(ps, v->completions.ids[i]);
+        membuffer_printf(mb, " %s", symb->hr);
+    }
+    membuffer_printf(mb, "\n");
+    membuffer_append_null(mb);
+    puts(mb->buffer_);
+    free_membuffer_and_free_content(mb);
 }
 
 static unsigned symb_repr_hash(hash_table_entry_t s)
@@ -3191,6 +3215,11 @@ static YaepSymbol *symb_find_by_code(YaepParseState *ps, int code)
     TRACE_FA(ps, "hash '%c' -> %p", code, r);
 
     return r;
+}
+
+static YaepSymbol *symb_find_by_term_id(YaepParseState *ps, int term_id)
+{
+    return symb_find_by_code(ps, term_id+ps->run.grammar->symbs_ptr->symb_code_trans_vect_start);
 }
 
 /* The function creates new terminal symbol and returns reference for
@@ -3340,7 +3369,7 @@ static void symb_finish_adding_terms(YaepParseState *ps)
         ps->run.grammar->symbs_ptr->symb_code_trans_vect[symb->u.terminal.code - min_code] = symb;
     }
 
-    TRACE_FA(ps, "num_codes=%zu size=%zu", num_codes, vec_size);
+    debug("ixml.stats=", "num_codes=%zu offset=%d size=%zu", num_codes, ps->run.grammar->symbs_ptr->symb_code_trans_vect_start, vec_size);
 }
 
 /* Free memory for symbols. */
@@ -3953,6 +3982,7 @@ static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, in
     dotted_rule->info = info;
     (*context_dotted_rules_table_ptr)[rule->rule_start_offset + dot_j] = dotted_rule;
 
+    /*
     MemBuffer *mb = new_membuffer();
     membuffer_printf(mb, "crea @%d %s ", ps->tok_i, info);
 
@@ -3960,10 +3990,11 @@ static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, in
     int k = 1+ps->state_set_k;
     if (k < 0) k = 0;
 
-    print_dotted_rule(mb, ps, k, dotted_rule, false, 0);
+    print_dotted_rule(mb, ps, k, dotted_rule, 0);
     debug_mb("ixml.pa=", mb);
     free_membuffer_and_free_content(mb);
-
+    */
+    assert(dotted_rule->lookahead);
     return dotted_rule;
 }
 
@@ -4223,7 +4254,7 @@ static void debug_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int matc
     int k = 1+ps->state_set_k;
     if (k < 0) k = 0;
 
-    print_dotted_rule(mb, ps, k, dotted_rule, false, matched_length);
+    print_dotted_rule(mb, ps, k, dotted_rule, matched_length);
     debug_mb("ixml.pa=", mb);
     free_membuffer_and_free_content(mb);
 }
@@ -5899,7 +5930,6 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
         dotted_rule = set_core->dotted_rules[dotted_rule_id];
 
         //fprintf(stderr, "(ixml.st) CREA %s\n", dotted_rule->rule->lhs->hr);
-        breakpoint();
         new_dotted_rule = create_dotted_rule(ps,
                                              dotted_rule->rule,
                                              dotted_rule->dot_j+1,
@@ -5911,11 +5941,17 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
             && !terminal_bitset_test(ps, new_dotted_rule->lookahead, ps->run.grammar->term_error_id))
         {
             // Lookahead predicted no-match. Stop here.
-            MemBuffer *mb = new_membuffer();
-            membuffer_printf(mb, "lookahead says stop %d ", lookahead_term_id);
-            terminal_bitset_print(mb, ps, new_dotted_rule->lookahead);
-            membuffer_append(mb, "\n");
-            debug_mb("ixml.st=", mb);
+            if (ps->run.trace)
+            {
+                MemBuffer *mb = new_membuffer();
+                YaepSymbol *symb = symb_find_by_term_id(ps, lookahead_term_id);
+                const char *hr = symb->hr;
+                if (!symb) hr = "?";
+                membuffer_printf(mb, "lookahead (%d) %s blocked by ", lookahead_term_id, hr);
+                print_dotted_rule(mb, ps, ps->tok_i-1, new_dotted_rule, 0);
+                membuffer_append(mb, "\n");
+                debug_mb("ixml.st=", mb);
+            }
             continue;
         }
         matched_length = 0;
@@ -7478,7 +7514,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                             MemBuffer *mb = new_membuffer();
                             membuffer_printf(mb, "* found prev. translation: state_set_k = %d, dotted_rule = ",
                                              state_set_k);
-                            print_dotted_rule(mb, ps, -1, dotted_rule, ps->run.debug, -1);
+                            print_dotted_rule(mb, ps, -1, dotted_rule, -1);
                             membuffer_printf(mb, ", %d\n", dotted_rule_from_i);
                             debug_mb("ixml.tr=", mb);
                             free_membuffer_and_free_content(mb);
@@ -8076,7 +8112,6 @@ static void print_dotted_rule(MemBuffer *mb,
                               YaepParseState *ps,
                               int from_i,
                               YaepDottedRule *dotted_rule,
-                              bool lookahead_p,
                               int matched_length)
 {
     char buf[256];
@@ -8142,7 +8177,7 @@ static void print_dotted_rule(MemBuffer *mb,
         }
         membuffer_append(mb, "}");
     }
-    if (ps->run.grammar->lookahead_level != 0 && lookahead_p && matched_length >= 0)
+    if (ps->run.grammar->lookahead_level != 0 && matched_length >= 0)
     {
         membuffer_append(mb, "    ");
         terminal_bitset_print(mb, ps, dotted_rule->lookahead);
@@ -8211,8 +8246,7 @@ static void print_state_set(MemBuffer *mb,
                             YaepParseState *ps,
                             YaepStateSet *state_set,
                             int from_i,
-                            int print_all_dotted_rules,
-                            int lookahead_p)
+                            int print_all_dotted_rules)
 {
     StateVars vars;
     fetch_state_vars(ps, state_set, &vars);
@@ -8224,7 +8258,7 @@ static void print_state_set(MemBuffer *mb,
     {
         int matched_length = find_matched_length(ps, state_set, &vars, dotted_rule_id);
         membuffer_append(mb, "\n");
-        print_dotted_rule(mb, ps, from_i, vars.dotted_rules[dotted_rule_id], lookahead_p, matched_length);
+        print_dotted_rule(mb, ps, from_i, vars.dotted_rules[dotted_rule_id], matched_length);
     }
 }
 

@@ -1,11 +1,12 @@
 parse = line++-#a, -#a?.
--line = xmq|xmqd|xmqa|ix|not|gr|ru|lh|pa|trb|trp|trt|tra|trpp|st|scan|core|crea|step|testnot|block|ignore|ignorec.
+-line = stats|xmq|xmqd|xmqa|ix|not|gr|ru|lh|pa|trb|trp|trt|tra|trpp|st|scan|core|crea|step|testnot|block|ignore|ignorec.
 
 -xmq = -'xmq: ', -~[#a]+.
 -xmqd = -'xmqd: ', -~[#a]+.
 -xmqa = -'xmqa: ', -~[#a]+.
 -ix = -'(ixml) ', -~[#a]+.
 -not = -'(ixml.pa) not', -~[#a]+.
+-stats = -'(ixml.stats)', -~[#a]+.
 -gr = -'(ixml.gr) ', -~[#a]+.
 -ru = -'(ixml.rules) ', -~[#a]+.
 -lh = -'(ixml.lh) ', -~[#a]+.
