@@ -1706,6 +1706,7 @@ static void create_dotted_rules(YaepParseState *ps)
 static bool dotted_rule_calculate_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule)
 {
     YaepSymbol *symb, **symb_ptr;
+    bool found_not = false;
 
     if (ps->run.grammar->lookahead_level == 0)
     {
@@ -1723,7 +1724,7 @@ static bool dotted_rule_calculate_lookahead(YaepParseState *ps, YaepDottedRule *
     symb_ptr = &dotted_rule->rule->rhs[dotted_rule->dot_j];
     while ((symb = *symb_ptr) != NULL)
     {
-//        fprintf(stderr, "(ixml.st) prutt %s\n", symb->hr);
+        //fprintf(stderr, "(ixml.st) prutt %s\n", symb->hr);
         if (ps->run.grammar->lookahead_level != 0)
 	{
             if (symb->is_terminal)
@@ -1737,6 +1738,7 @@ static bool dotted_rule_calculate_lookahead(YaepParseState *ps, YaepDottedRule *
 	}
         // Stop collecting lookahead if non-empty rule and its not a not-rule.
         if (!symb->empty_p && !is_not_rule(symb)) break;
+        if (is_not_rule(symb)) found_not = true;
         symb_ptr++;
     }
 
@@ -1751,6 +1753,7 @@ static bool dotted_rule_calculate_lookahead(YaepParseState *ps, YaepDottedRule *
         {
             terminal_bitset_or(ps, dotted_rule->lookahead, terminal_bitset_from_table(ps, dotted_rule->context));
         }
+        if (found_not) return false;
         return true;
     }
     return false;
@@ -1818,9 +1821,8 @@ static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, in
     dotted_rule->info = info;
     (*context_dotted_rules_table_ptr)[rule->rule_start_offset + dot_j] = dotted_rule;
 
-    /*
     MemBuffer *mb = new_membuffer();
-    membuffer_printf(mb, "create @%d %s ", ps->tok_i, info);
+    membuffer_printf(mb, "crea @%d %s ", ps->tok_i, info);
 
     // We add one to the state_set_k because the index is updated at the end of the parse loop.
     int k = 1+ps->state_set_k;
@@ -1829,7 +1831,7 @@ static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, in
     print_dotted_rule(mb, ps, k, dotted_rule, false, 0);
     debug_mb("ixml.pa=", mb);
     free_membuffer_and_free_content(mb);
-    */
+
     return dotted_rule;
 }
 
@@ -2878,8 +2880,10 @@ static void create_first_follow_sets(YaepParseState *ps)
                                     |= terminal_bitset_or(ps, rhs_symb->u.nonterminal.follow,
                                                    next_rhs_symb->u.nonterminal.first);
                             }
-                            if (!next_rhs_symb->empty_p)
+                            if (!next_rhs_symb->empty_p && !is_not_rule(next_rhs_symb))
+                            {
                                 break;
+                            }
                         }
                         if (k == rhs_len)
                         {
@@ -2887,7 +2891,7 @@ static void create_first_follow_sets(YaepParseState *ps)
                                                      symb->u.nonterminal.follow);
                         }
                     }
-                    if (!rhs_symb->empty_p)
+                    if (!rhs_symb->empty_p && !is_not_rule(rhs_symb))
                         first_continue_p = false;
                 }
             }
@@ -2900,7 +2904,6 @@ static void create_first_follow_sets(YaepParseState *ps)
    derivation_p for all grammar symbols.*/
 static void set_empty_access_derives(YaepParseState *ps)
 {
-    bool derivation_p;
     bool empty_changed_p, derivation_changed_p, accessibility_change_p;
 
     for (int i = 0; ; i++)
@@ -2923,8 +2926,13 @@ static void set_empty_access_derives(YaepParseState *ps)
 
             for (YaepRule *rule = symb->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
             {
-                bool empty_p = derivation_p = 1;
-                if (is_not_rule(rule->lhs)) empty_p = 0;
+                bool empty_p = true;
+                bool derivation_p = true;
+
+                if (is_not_rule(rule->lhs))
+                {
+                    empty_p = 0;
+                }
 
                 for (int j = 0; j < rule->rhs_len; j++)
                 {
@@ -2935,7 +2943,10 @@ static void set_empty_access_derives(YaepParseState *ps)
                         rhs_symb->access_p = 1;
                     }
                     // A not rule forbids emptiness since it must always be checked against the input.
-                    if (is_not_rule(rhs_symb)) empty_p = 0;
+                    if (is_not_rule(rhs_symb))
+                    {
+                        empty_p = 0;
+                    }
                     empty_p &= rhs_symb->empty_p;
                     derivation_p &= rhs_symb->derivation_p;
                 }
@@ -3392,7 +3403,8 @@ static void read_input(YaepParseState *ps)
    given dotted_rule. */
 static void complete_empty_rules(YaepParseState *ps,
                                  YaepDottedRule *dotted_rule,
-                                 int dotted_rule_parent_id)
+                                 int dotted_rule_parent_id,
+                                 bool only_nots)
 {
     YaepRule *rule = dotted_rule->rule;
     int context = dotted_rule->context;
@@ -3402,8 +3414,11 @@ static void complete_empty_rules(YaepParseState *ps,
         if (!rule->rhs[j]) break;
         if (rule->rhs[j]->empty_p)
         {
-            YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, context, "complete_empty");
-            set_add_predicted_nys_dotted_rule(ps, new_dotted_rule, dotted_rule_parent_id);
+            if (!only_nots)
+            {
+                YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, context, "complete_empty");
+                set_add_predicted_nys_dotted_rule(ps, new_dotted_rule, dotted_rule_parent_id);
+            }
         }
         else if (is_not_rule(rule->rhs[j]))
         {
@@ -3562,7 +3577,7 @@ static void expand_new_start_set(YaepParseState *ps)
     */
     for (int id = 0; id < ps->new_num_started_dotted_rules; id++)
     {
-        complete_empty_rules(ps, ps->new_dotted_rules[id], id);
+        complete_empty_rules(ps, ps->new_dotted_rules[id], id, false);
     }
 
     /* Add not yet started dotted_rules and form predictions vectors. */
@@ -3609,13 +3624,12 @@ static void expand_new_start_set(YaepParseState *ps)
 	}
     }
 
-    /*
-    for (int dotted_rule_id = 0;
+    for (int dotted_rule_id = ps->new_num_started_dotted_rules;
          dotted_rule_id < ps->new_core->num_dotted_rules;
          dotted_rule_id++)
     {
-        complete_empty_rules(ps, ps->new_dotted_rules[dotted_rule_id], dotted_rule_id);
-        }*/
+        complete_empty_rules(ps, ps->new_dotted_rules[dotted_rule_id], dotted_rule_id, true);
+    }
 
     for (int dotted_rule_id = 0;
          dotted_rule_id < ps->new_core->num_dotted_rules;
@@ -3752,6 +3766,8 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
         dotted_rule_id = predictions->ids[i];
         dotted_rule = set_core->dotted_rules[dotted_rule_id];
 
+        //fprintf(stderr, "(ixml.st) CREA %s\n", dotted_rule->rule->lhs->hr);
+        breakpoint();
         new_dotted_rule = create_dotted_rule(ps,
                                              dotted_rule->rule,
                                              dotted_rule->dot_j+1,
@@ -4208,13 +4224,13 @@ static void perform_parse(YaepParseState *ps)
     error_recovery_init(ps);
     build_start_set(ps);
 
-    if (ps->run.debug)
+/*    if (ps->run.trace)
     {
         MemBuffer *mb = new_membuffer();
         print_state_set(mb, ps, ps->new_set, 0, ps->run.debug, ps->run.debug);
         debug_mb("ixml.pa=", mb);
         free_membuffer_and_free_content(mb);
-    }
+        }*/
 
     ps->tok_i = 0;
     ps->state_set_k = 0;
@@ -4241,6 +4257,7 @@ static void perform_parse(YaepParseState *ps)
             debug_mb("ixml.pa=", mb);
             free_membuffer_and_free_content(mb);
 	}
+        breakpoint();
         assert(ps->tok_i == ps->state_set_k);
 
         YaepStateSet *set = ps->state_sets[ps->state_set_k];
@@ -4272,13 +4289,14 @@ static void perform_parse(YaepParseState *ps)
         ps->state_set_k++;
         ps->state_sets[ps->state_set_k] = ps->new_set;
 
-        if (ps->run.debug)
+        /*
+        if (ps->run.trace)
 	{
             MemBuffer *mb = new_membuffer();
             print_state_set(mb, ps, ps->new_set, ps->state_set_k, ps->run.debug, ps->run.debug);
             debug_mb("ixml.pa=", mb);
             free_membuffer_and_free_content(mb);
-        }
+            }*/
     }
     free_error_recovery(ps);
 }

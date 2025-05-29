@@ -1,5 +1,5 @@
 parse = line++-#a, -#a?.
--line = xmq|xmqd|xmqa|ix|not|gr|ru|lh|pa|trb|trp|trt|tra|trpp|st|scan|core|creat|step|testnot|block|ignore|ignorec.
+-line = xmq|xmqd|xmqa|ix|not|gr|ru|lh|pa|trb|trp|trt|tra|trpp|st|scan|core|crea|step|testnot|block|ignore|ignorec.
 
 -xmq = -'xmq: ', -~[#a]+.
 -xmqd = -'xmqd: ', -~[#a]+.
@@ -13,7 +13,7 @@ parse = line++-#a, -#a?.
 -pa    = -'(ixml.pa) parsing', -~[#a]+.
 scan  = -'(ixml.pa) input[',index,-"]=",char.
 -core = -'(ixml.pa) state', -~[#a]+.
--creat = -'(ixml.pa) create', -~[#a]+.
+-crea = -'(ixml.pa) crea ', -~[#a]+.
 step  = -'(ixml.pa) step @',toki,-' ', iinfo, ' (', id, -')', s, name, s, -'→', s, body?, dot?, where, cost?, -' ', info, -~[#a]*.
 -ignorec  = -'(ixml.pa) @',-[N]+,-' created ', -~[#a]*.
 -testnot  = -'(ixml.pa) @',-[N]+,-' test ', -~[#a]*.
