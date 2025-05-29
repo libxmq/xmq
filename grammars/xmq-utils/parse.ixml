@@ -1,10 +1,5 @@
-{
-(ixml.pa) scan input[0]= '1' state_set_k=0
-(ixml.pa) (core 0)
-(ixml.pa) s (11)  T →  '1' compl[0-0]    ['*' '+' $eof]
-}
 parse = line++-#a, -#a?.
--line = xmq|xmqd|xmqa|ix|not|gr|ru|lh|pa|trb|trp|trt|tra|trpp|st|scan|core|step|block|at.
+-line = xmq|xmqd|xmqa|ix|not|gr|ru|lh|pa|trb|trp|trt|tra|trpp|st|scan|core|step|testnot|block|ignore|ignorec.
 
 -xmq = -'xmq: ', -~[#a]+.
 -xmqd = -'xmqd: ', -~[#a]+.
@@ -18,10 +13,15 @@ parse = line++-#a, -#a?.
 -pa    = -'(ixml.pa) parsing', -~[#a]+.
 scan  = -'(ixml.pa) input[',index,-"]=",char.
 -core = -'(ixml.pa) state', -~[#a]+.
-step  = -'(ixml.pa) (', id, -')', s, name, s, -'→', s, body?, dot?, where, cost?, -' ', -~[#a]*.
+step  = -'(ixml.pa) step @',toki,-' ', iinfo, ' (', id, -')', s, name, s, -'→', s, body?, dot?, where, cost?, -' ', info, -~[#a]*.
+-ignorec  = -'(ixml.pa) @',-[N]+,-' created ', -~[#a]*.
+-testnot  = -'(ixml.pa) @',-[N]+,-' test ', -~[#a]*.
+-ignore = -'(ixml.pa) (', -~[#a]*.
 block = -'(ixml.pa) blocked', btype, -' (', id, -')', -~[#a]*.
-at    = -'(ixml.pa) @', -~[#a]*.
+toki  = [N]+.
 btype = [N]+.
+info = -'{', ~['}']+, -'}'.
+iinfo = [Ll;N;'_.']+.
 
 -trb = -'(ixml.tr) building ', -~[#a]+.
 -trp = -'(ixml.tr) processing ', -~[#a]+.
@@ -32,16 +32,15 @@ tra = -'(ixml.tr) adding (',id,-')', -~[#a]+.
 char = -"'",~[#a],-"'" | 'ω' | '#',[N;L]+.
 token = -"=", ~[#a]*.
 
-
 index = [N]+.
-id = [N;',']+.
+id = [N;',-']+.
 name = [L;N;'|[]_#-$;+!~']+.
 -s = -' '+.
 body = ~[' ·'], ~[#a;'·']+.
 dot = '·', ~[#a]+.
 -where = type, -'[', from, -'-', to, -'/', total, -']'.
 cost = '<'+.
-type = "complete"|"partial"|"prediction".
+type = "complete"|"partial"|"prediction"|"not".
 from = [N]+.
 to = [N]+.
 total = [N]+.

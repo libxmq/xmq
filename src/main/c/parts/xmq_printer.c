@@ -75,8 +75,8 @@ int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, b
         *add_compound = true;
     }
 
-    bool found_double_quote = false;
-    bool found_newline = false;
+    //bool found_double_quote = false;
+    //bool found_newline = false;
     for (const char *i = start; i < stop; ++i)
     {
         char c = *i;
@@ -89,8 +89,8 @@ int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, b
         {
             curr = 0;
             all_safe &= is_safe_value_char(i, stop);
-            if (c == '"') found_double_quote = true;
-            if (c == '\n') found_newline = true;
+            //if (c == '"') found_double_quote = true;
+            //if (c == '\n') found_newline = true;
         }
     }
     // We found 3 quotes, thus we need 4 quotes to quote them.
@@ -101,7 +101,7 @@ int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, b
     // Since two quotes means the empty string.
     if (max == 2) max = 3;
 
-    if (max > 1 && found_double_quote == false && found_newline == false) return -1;
+    //if (max > 1 && found_double_quote == false && found_newline == false) return -1;
 
     return max;
 }
@@ -1044,12 +1044,12 @@ void print_safe_leaf_quote(XMQPrintState *ps,
     int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound);
     size_t indent = ps->current_indent;
 
-    if (numq == -1 && !ps->output_settings->allow_json_quotes)
+/*    if (numq == -1) // && !ps->output_settings->allow_json_quotes)
     {
         numq = 3;
     }
-
-    if (numq == -1 || (numq > 0 && ps->output_settings->always_json_quotes))
+*/
+/*    if (numq == -1 || (numq > 0 && ps->output_settings->always_json_quotes))
     {
         // This quote can be best represented using a "..." instead of '''....'''.
         char *quoted_value = xmq_quote_as_c(start, stop, false);
@@ -1061,7 +1061,7 @@ void print_safe_leaf_quote(XMQPrintState *ps,
         print_double_quote(ps, c);
         free(quoted_value);
         return;
-    }
+        }*/
 
     if (numq > 0)
     {

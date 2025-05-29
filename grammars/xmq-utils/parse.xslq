@@ -28,10 +28,12 @@ xsl:stylesheet(version   = 1.0
                          .step[used="true"] { color: black; background: solid; background: lightgreen; }
                          .dot[blocked="true"] { color: red; background: solid; background: orange; }
                          .pred { background-color: lightyellow; }
+                         .notlookahead { color: white; background-color: purple; }
                          .dot { background-color: orange; }
                          .eof { background-color: lightgrey; min-width: 1ch; width: 1ch; }
                          .predotted { color: black; background-color: orange;}
                          .dotted { color: darkorange;}
+                         .info { text-align: left; background: lightyellow; font-size: 0.5em; }
                          .dotted[blocked="true"] { color: white; background: red; }
                          .completed { color: black; background-color: lightgreen; }
                          .predicted { color: black; background-color: lightyellow; }'
@@ -118,6 +120,7 @@ xsl:stylesheet(version   = 1.0
                     xsl:choose {
                         xsl:when(test = "type = 'complete'") = step
                         xsl:when(test = "type = 'prediction'") = pred
+                        xsl:when(test = "type = 'not'") = notlookahead
                         xsl:otherwise = dot
                     }
                 }
@@ -166,6 +169,14 @@ xsl:stylesheet(version   = 1.0
                         xsl:value-of(select = btype)
                     }
                 }
+            }
+            td(class = info) {
+               '('
+               xsl:value-of(select = id)
+               ') '
+               xsl:value-of(select = info)
+               ':'
+               xsl:value-of(select = iinfo)
             }
         }
     }
