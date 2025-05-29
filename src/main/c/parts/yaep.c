@@ -3471,10 +3471,11 @@ static void terminal_bitset_clear(YaepParseState *ps, terminal_bitset_t* set)
     }
 }
 
-static void terminal_bitset_fill(terminal_bitset_t* set, int num_terminals)
+static void terminal_bitset_fill(YaepParseState *ps, terminal_bitset_t* set)
 {
     terminal_bitset_t*bound;
     int size;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
 
     size = CALC_NUM_ELEMENTS(num_terminals);
     bound = set + size;
@@ -3485,10 +3486,11 @@ static void terminal_bitset_fill(terminal_bitset_t* set, int num_terminals)
 }
 
 /* Copy SRC into DEST. */
-static void terminal_bitset_copy(terminal_bitset_t *dest, terminal_bitset_t *src, int num_terminals)
+static void terminal_bitset_copy(YaepParseState *ps, terminal_bitset_t *dest, terminal_bitset_t *src)
 {
     terminal_bitset_t *bound;
     int size;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
 
     size = CALC_NUM_ELEMENTS(num_terminals);
     bound = dest + size;
@@ -3500,11 +3502,12 @@ static void terminal_bitset_copy(terminal_bitset_t *dest, terminal_bitset_t *src
 }
 
 /* Add all terminals from set OP with to SET.  Return true if SET has been changed.*/
-static bool terminal_bitset_or(terminal_bitset_t *set, terminal_bitset_t *op, int num_terminals)
+static bool terminal_bitset_or(YaepParseState *ps, terminal_bitset_t *set, terminal_bitset_t *op)
 {
     terminal_bitset_t *bound;
     int size;
     bool changed_p;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
 
     size = CALC_NUM_ELEMENTS(num_terminals);
     bound = set + size;
@@ -3857,7 +3860,7 @@ static bool dotted_rule_calculate_lookahead(YaepParseState *ps, YaepDottedRule *
             }
             else
             {
-                terminal_bitset_or(dotted_rule->lookahead, symb->u.nonterminal.first, ps->run.grammar->symbs_ptr->num_terminals);
+                terminal_bitset_or(ps, dotted_rule->lookahead, symb->u.nonterminal.first);
             }
 	}
         // Stop collecting lookahead if non-empty rule and its not a not-rule.
@@ -3870,11 +3873,11 @@ static bool dotted_rule_calculate_lookahead(YaepParseState *ps, YaepDottedRule *
         // We reached the end of the tail and all were potentially empty.
         if (ps->run.grammar->lookahead_level == 1)
         {
-            terminal_bitset_or(dotted_rule->lookahead, dotted_rule->rule->lhs->u.nonterminal.follow, ps->run.grammar->symbs_ptr->num_terminals);
+            terminal_bitset_or(ps, dotted_rule->lookahead, dotted_rule->rule->lhs->u.nonterminal.follow);
         }
         else if (ps->run.grammar->lookahead_level != 0)
         {
-            terminal_bitset_or(dotted_rule->lookahead, terminal_bitset_from_table(ps, dotted_rule->context), ps->run.grammar->symbs_ptr->num_terminals);
+            terminal_bitset_or(ps, dotted_rule->lookahead, terminal_bitset_from_table(ps, dotted_rule->context));
         }
         return true;
     }
@@ -4982,29 +4985,35 @@ static void create_first_follow_sets(YaepParseState *ps)
                     else
                     {
                         if (first_continue_p)
-                            changed_p |= terminal_bitset_or(symb->u.nonterminal.first,
-                                                            rhs_symb->u.nonterminal.first,
-                                                            ps->run.grammar->symbs_ptr->num_terminals);
+                        {
+                            changed_p |= terminal_bitset_or(ps,
+                                                            symb->u.nonterminal.first,
+                                                            rhs_symb->u.nonterminal.first);
+                        }
                         for(k = j + 1; k < rhs_len; k++)
                         {
                             next_rhs_symb = rhs[k];
                             if (next_rhs_symb->is_terminal)
+                            {
                                 changed_p
                                     |= terminal_bitset_up(rhs_symb->u.nonterminal.follow,
                                                    next_rhs_symb->u.terminal.term_id,
                                                    ps->run.grammar->symbs_ptr->num_terminals);
+                            }
                             else
+                            {
                                 changed_p
-                                    |= terminal_bitset_or(rhs_symb->u.nonterminal.follow,
-                                                   next_rhs_symb->u.nonterminal.first,
-                                                   ps->run.grammar->symbs_ptr->num_terminals);
+                                    |= terminal_bitset_or(ps, rhs_symb->u.nonterminal.follow,
+                                                   next_rhs_symb->u.nonterminal.first);
+                            }
                             if (!next_rhs_symb->empty_p)
                                 break;
                         }
                         if (k == rhs_len)
-                            changed_p |= terminal_bitset_or(rhs_symb->u.nonterminal.follow,
-                                                     symb->u.nonterminal.follow,
-                                                     ps->run.grammar->symbs_ptr->num_terminals);
+                        {
+                            changed_p |= terminal_bitset_or(ps, rhs_symb->u.nonterminal.follow,
+                                                     symb->u.nonterminal.follow);
+                        }
                     }
                     if (!rhs_symb->empty_p)
                         first_continue_p = false;
@@ -5784,7 +5793,7 @@ static void expand_new_start_set(YaepParseState *ps)
                                                              dotted_rule->dot_j+1,
                                                              dotted_rule->context,
                                                              "enss3");
-                    terminal_bitset_or(context_set, shifted_dotted_rule->lookahead, ps->run.grammar->symbs_ptr->num_terminals);
+                    terminal_bitset_or(ps, context_set, shifted_dotted_rule->lookahead);
 		}
                 context = terminal_bitset_insert(ps, context_set);
                 if (context >= 0)
