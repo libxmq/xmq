@@ -321,6 +321,8 @@ struct YaepSymbol
     bool derivation_p;
     /* The following is true if it is a nonterminal which may derive the empty string. */
     bool empty_p;
+    /* If the rule is a not lookahead. */
+    bool is_not_lookahead_p;
 #ifdef USE_CORE_SYMB_HASH_TABLE
     /* The following is used as cache for subsequent search for
        core_symb_ids with given symb. */
@@ -1112,6 +1114,7 @@ static YaepSymbol *symb_add_terminal(YaepParseState *ps, const char*name, int co
     symb.u.terminal.code = code;
     symb.u.terminal.term_id = ps->run.grammar->symbs_ptr->num_terminals++;
     symb.empty_p = false;
+    symb.is_not_lookahead_p = false;
     repr_entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_repr_to_symb, &symb, true);
     assert(*repr_entry == NULL);
     code_entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_code_to_symb, &symb, true);
@@ -1144,6 +1147,7 @@ static YaepSymbol *symb_add_nonterm(YaepParseState *ps, const char *name)
     strncpy(symb.hr, name, 6);
 
     symb.is_terminal = false;
+    symb.is_not_lookahead_p = false;
     // Assign the next available id.
     symb.id = ps->run.grammar->symbs_ptr->num_nonterminals + ps->run.grammar->symbs_ptr->num_terminals;
     symb.u.nonterminal.rules = NULL;
@@ -1161,8 +1165,10 @@ static YaepSymbol *symb_add_nonterm(YaepParseState *ps, const char *name)
     VLO_ADD_MEMORY(ps->run.grammar->symbs_ptr->symbs_vlo, &result, sizeof(YaepSymbol*));
     VLO_ADD_MEMORY(ps->run.grammar->symbs_ptr->nonterminals_vlo, &result, sizeof(YaepSymbol*));
 
-    TRACE_FA(ps, "%s -> %p", name, result);
-
+    if (is_not_rule(result))
+    {
+        result->is_not_lookahead_p = true;
+    }
     return result;
 }
 
@@ -3238,9 +3244,7 @@ int yaep_read_grammar(YaepParseRun *pr,
         // IXML
         rule->mark = mark;
         memcpy(rule->marks, marks, rhs_len);
-/*        printf("MARKS %s >", lhs);
-        for (int i=0; i<rhs_len; ++i) printf("%c", rule->marks[i]);
-        printf("<\n");*/
+
         if (transl != NULL)
 	{
             for(i = 0;(el = transl[i]) >= 0; i++)
@@ -3320,15 +3324,17 @@ int yaep_read_grammar(YaepParseRun *pr,
             for(i = 0;(symb = nonterm_get(ps, i)) != NULL; i++)
             {
                 MemBuffer *mb = new_membuffer();
-                membuffer_printf(mb, "%s%s%s%s\n",
-                                 symb->repr,(symb->empty_p ? " CAN_BECOME_EMPTY" : ""),
+                membuffer_printf(mb, "%s%s%s%s%s\n",
+                                 symb->repr,
+                                 (symb->empty_p ? " CAN_BECOME_EMPTY" : ""),
+                                 (symb->is_not_lookahead_p ? " NOT_LOOKAHEAD" : ""),
                                  (symb->access_p ? "" : " OUPS_NOT_REACHABLE"),
                                  (symb->derivation_p ? "" : " OUPS_NO_TEXT"));
                 membuffer_append(mb, "  1st: ");
                 terminal_bitset_print(mb, ps, symb->u.nonterminal.first);
                 membuffer_append(mb, "\n  2nd: ");
                 terminal_bitset_print(mb, ps, symb->u.nonterminal.follow);
-                debug_mb("ixml.rules=", mb);
+                debug_mb("ixml.nt=", mb);
                 free_membuffer_and_free_content(mb);
             }
         }
@@ -6042,14 +6048,18 @@ static void print_dotted_rule(MemBuffer *mb,
     }
     if (dotted_rule->info)
     {
-        membuffer_printf(mb, "{%s ", dotted_rule->info);
+        membuffer_printf(mb, "{%s", dotted_rule->info);
+
+        if (dotted_rule->rule->lhs->empty_p || dotted_rule->empty_tail_p)
+        {
+            membuffer_append(mb, " ");
+        }
         if (dotted_rule->empty_tail_p)
         {
             membuffer_append(mb, "T");
         }
         if (dotted_rule->rule->lhs->empty_p)
         {
-
             membuffer_append(mb, "E");
         }
         membuffer_append(mb, "}");
