@@ -2163,10 +2163,10 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
    on Earley's algorithm from 1968. The implementation is sufficiently
    fast to be used in serious language processors.
 
-   2024 Fredrik Öhrström
-   Refactored to fit ixml use case, removed global variables, restructured
+   2024-2025 Fredrik Öhrström
+   Heavily refactored to fit ixml use case, removed global variables, restructured
    code, commented and renamed variables and structures, added ixml charset
-   matching. Added comments.
+   matching.
 
    Terminology:
 
@@ -2824,7 +2824,7 @@ struct YaepParseState
     /* The following says that variables new_set and new_core are defined
        including their members. Before new set is ready, then the access to
        data of the set being formed is only possible through the new_dotted_rules,
-       new_matched_lenghts, new_num_dotted_rules variables. */
+       new_matched_lenghts and new_num_dotted_rules variables. */
     int new_set_ready_p;
 
     /* The following variable is set being created.
@@ -2853,8 +2853,8 @@ struct YaepParseState
     int num_set_matched_lengths, num_set_matched_lengths_len;
     int num_parent_dotted_rule_ids;
 
-    /* Number of state sets and their started dotted_rules. */
-    int n_sets, n_sets_start_dotted_rules;
+    /* Number of state sets and their number of dotted_rules. */
+    int num_sets_total, num_dotted_rules_total;
 
     /* Number unique triples(core, term, lookahead). */
     int num_triplets_core_term_lookahead;
@@ -3078,6 +3078,8 @@ static void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
 static void read_input(YaepParseState *ps);
 static void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p);
 static void set_add_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length);
+static bool set_new_finish(YaepParseState *ps);
+static void set_new_start(YaepParseState *ps);
 static void symb_empty(YaepParseState *ps, YaepSymbolStorage *symbs);
 static YaepSymbol *symb_find_by_code(YaepParseState *ps, int code);
 static YaepSymbol *symb_find_by_term_id(YaepParseState *ps, int term_id);
@@ -4259,20 +4261,9 @@ static void set_init(YaepParseState *ps, int n_input)
                                                core_term_lookahead_hash, core_term_lookahead_eq);
     ps->num_set_cores = ps->num_set_core_start_dotted_rules= 0;
     ps->num_set_matched_lengths = ps->num_set_matched_lengths_len = ps->num_parent_dotted_rule_ids = 0;
-    ps->n_sets = ps->n_sets_start_dotted_rules= 0;
+    ps->num_sets_total = ps->num_dotted_rules_total= 0;
     ps->num_triplets_core_term_lookahead = 0;
     dotted_rule_matched_length_set_init(ps);
-}
-
-/* The following function starts forming of new set. */
-static void set_new_start(YaepParseState *ps)
-{
-    ps->new_set = NULL;
-    ps->new_core = NULL;
-    ps->new_set_ready_p = false;
-    ps->new_dotted_rules = NULL;
-    ps->new_matched_lengths = NULL;
-    ps->new_num_dotted_rules = 0;
 }
 
 static void debug_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, const char *info, bool lookahead)
@@ -4302,6 +4293,8 @@ static void debug_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int matc
 
 static void append_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule)
 {
+    assert(!ps->new_core);
+
     OS_TOP_EXPAND(ps->set_dotted_rules_os, sizeof(YaepDottedRule*));
     ps->new_dotted_rules = (YaepDottedRule**) OS_TOP_BEGIN(ps->set_dotted_rules_os);
     ps->new_dotted_rules[ps->new_num_dotted_rules] = dotted_rule;
@@ -4309,6 +4302,8 @@ static void append_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule)
 
 static void append_matched_length(YaepParseState *ps, int matched_length)
 {
+    assert(!ps->new_core);
+
     OS_TOP_EXPAND(ps->set_matched_lengths_os, sizeof(int));
     ps->new_matched_lengths = (int*)OS_TOP_BEGIN(ps->set_matched_lengths_os);
     ps->new_matched_lengths[ps->new_num_dotted_rules] = matched_length;
@@ -4329,6 +4324,7 @@ static void set_add_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule,
 static void set_add_predicted_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule, int parent_dotted_rule_id)
 {
     assert(ps->new_set_ready_p);
+    assert(ps->new_core);
 
     /* When we add predicted dotted_rules we need to have pairs
        (dotted_rule + parent_dotted_rule_id) without duplicates
@@ -4412,37 +4408,49 @@ static void setup_set_core_hash(hash_table_entry_t s)
     set_core->hash = dotted_rules_hash(set_core->num_started_dotted_rules, set_core->dotted_rules);
 }
 
-/* The new set should contain only start dotted_rules.  Sort dotted_rules,
-   remove duplicates and insert set into the set table.  If the
-   function returns true then set contains new set core(there was no
-   such core in the table). */
-static int set_insert(YaepParseState *ps)
+static void set_new_start(YaepParseState *ps)
 {
-    hash_table_entry_t*entry;
-    int result;
+    ps->new_set = NULL;
+    ps->new_core = NULL;
+    ps->new_set_ready_p = false;
+    ps->new_dotted_rules = NULL;
+    ps->new_matched_lengths = NULL;
+    ps->new_num_dotted_rules = 0;
+}
+
+/* The new set should contain only start dotted_rules.
+   Sort dotted_rules, remove duplicates and insert set into the set table.
+   Returns true if a new core was allocated. False if an old core was reused. */
+static bool set_new_finish(YaepParseState *ps)
+{
+    hash_table_entry_t *entry;
+    bool added;
+
+    assert(!ps->new_set_ready_p);
 
     OS_TOP_EXPAND(ps->sets_os, sizeof(YaepStateSet));
     ps->new_set = (YaepStateSet*)OS_TOP_BEGIN(ps->sets_os);
     ps->new_set->matched_lengths = ps->new_matched_lengths;
-    ps->new_set->id = ps->n_sets;
+    ps->new_set->id = ps->num_sets_total;
+
     OS_TOP_EXPAND(ps->set_cores_os, sizeof(YaepStateSetCore));
     ps->new_set->core = ps->new_core = (YaepStateSetCore*) OS_TOP_BEGIN(ps->set_cores_os);
     ps->new_core->num_started_dotted_rules = ps->new_num_dotted_rules;
     ps->new_core->dotted_rules = ps->new_dotted_rules;
-    ps->new_set_ready_p = true;
+
 #ifdef USE_SET_HASH_TABLE
     /* Insert matched_lengths into table. */
     setup_set_matched_lengths_hash(ps->new_set);
     entry = find_hash_table_entry(ps->set_of_matched_lengthses, ps->new_set, true);
     if (*entry != NULL)
     {
-        ps->new_matched_lengths = ps->new_set->matched_lengths =((YaepStateSet*)*entry)->matched_lengths;
+        ps->new_matched_lengths = ps->new_set->matched_lengths = ((YaepStateSet*)*entry)->matched_lengths;
         OS_TOP_NULLIFY(ps->set_matched_lengths_os);
     }
     else
     {
         OS_TOP_FINISH(ps->set_matched_lengths_os);
-       *entry =(hash_table_entry_t)ps->new_set;
+        *entry = (hash_table_entry_t)ps->new_set;
         ps->num_set_matched_lengths++;
         ps->num_set_matched_lengths_len += ps->new_num_dotted_rules;
     }
@@ -4451,16 +4459,20 @@ static int set_insert(YaepParseState *ps)
     ps->num_set_matched_lengths++;
     ps->num_set_matched_lengths_len += ps->new_num_dotted_rules;
 #endif
+
     /* Insert set core into table.*/
     setup_set_core_hash(ps->new_set);
     entry = find_hash_table_entry(ps->set_of_cores, ps->new_set, true);
     if (*entry != NULL)
     {
+        // The core already existed, drop the core allocation.
+        // Point to the old core instead.
         OS_TOP_NULLIFY(ps->set_cores_os);
         ps->new_set->core = ps->new_core = ((YaepStateSet*)*entry)->core;
         ps->new_dotted_rules = ps->new_core->dotted_rules;
+
         OS_TOP_NULLIFY(ps->set_dotted_rules_os);
-        result = false;
+        added = false;
     }
     else
     {
@@ -4471,7 +4483,7 @@ static int set_insert(YaepParseState *ps)
         ps->new_core->parent_dotted_rule_ids = NULL;
        *entry =(hash_table_entry_t)ps->new_set;
         ps->num_set_core_start_dotted_rules+= ps->new_num_dotted_rules;
-        result = true;
+        added = true;
     }
 #ifdef USE_SET_HASH_TABLE
     /* Insert set into table.*/
@@ -4479,8 +4491,8 @@ static int set_insert(YaepParseState *ps)
     if (*entry == NULL)
     {
        *entry =(hash_table_entry_t)ps->new_set;
-        ps->n_sets++;
-        ps->n_sets_start_dotted_rules+= ps->new_num_dotted_rules;
+        ps->num_sets_total++;
+        ps->num_dotted_rules_total += ps->new_num_dotted_rules;
         OS_TOP_FINISH(ps->sets_os);
     }
     else
@@ -4491,7 +4503,10 @@ static int set_insert(YaepParseState *ps)
 #else
     OS_TOP_FINISH(ps->sets_os);
 #endif
-    return result;
+
+    ps->new_set_ready_p = true;
+
+    return added;
 }
 
 /* The following function finishes work with set being formed.*/
@@ -5981,7 +5996,6 @@ static void expand_new_start_set(YaepParseState *ps)
     debug("ixml.pa.c=", "expand5");
 }
 
-/* The following function forms the 1st set. */
 static void build_start_set(YaepParseState *ps)
 {
     int context = 0;
@@ -5994,7 +6008,7 @@ static void build_start_set(YaepParseState *ps)
         terminal_bitset_clear(ps, empty_context_set);
         context = terminal_bitset_insert(ps, empty_context_set);
 
-        /* Empty context in the table has always number zero.*/
+        /* Empty context in the table has always number zero. */
         assert(context == 0);
     }
 
@@ -6004,7 +6018,7 @@ static void build_start_set(YaepParseState *ps)
         set_add_dotted_rule(ps, new_dotted_rule, 0);
     }
 
-    if (!set_insert(ps)) assert(false);
+    if (!set_new_finish(ps)) assert(false);
 
     expand_new_start_set(ps);
     ps->state_sets[0] = ps->new_set;
@@ -6029,7 +6043,9 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
     int lookahead_term_id = NEXT_TERMINAL?NEXT_TERMINAL->u.terminal.term_id:-1;
     local_lookahead_level = (lookahead_term_id < 0 ? 0 : ps->run.grammar->lookahead_level);
     set_core = set->core;
+
     set_new_start(ps);
+
     predictions = &core_symb_ids->predictions;
 
     clear_dotted_rule_matched_length_set(ps);
@@ -6153,7 +6169,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 	}
     }
 
-    if (set_insert(ps))
+    if (set_new_finish(ps))
     {
         expand_new_start_set(ps);
         ps->new_core->term = core_symb_ids->symb;
@@ -7891,7 +7907,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
         membuffer_printf(mb, "#unique set dist. vects = %d, their length = %d\n",
                  ps->num_set_matched_lengths, ps->num_set_matched_lengths_len);
         membuffer_printf(mb, "#unique sets = %d, #their start dotted_rules = %d\n",
-                 ps->n_sets, ps->n_sets_start_dotted_rules);
+                 ps->num_sets_total, ps->num_dotted_rules_total);
         membuffer_printf(mb, "#unique triples(set, term, lookahead) = %d, goto successes=%d\n",
                 ps->num_triplets_core_term_lookahead, ps->n_goto_successes);
         membuffer_printf(mb, "#pairs(set core, symb) = %d, their trans+reduce vects length = %d\n",
