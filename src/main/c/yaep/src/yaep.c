@@ -2159,7 +2159,7 @@ static void debug_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int matc
     free_membuffer_and_free_content(mb);
 }
 
-static void append_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule)
+static void append_dotted_rule_no_core_yet(YaepParseState *ps, YaepDottedRule *dotted_rule)
 {
     assert(!ps->new_core);
 
@@ -2168,7 +2168,16 @@ static void append_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule)
     ps->new_dotted_rules[ps->new_num_dotted_rules] = dotted_rule;
 }
 
-static void append_matched_length(YaepParseState *ps, int matched_length)
+static void append_dotted_rule_to_core(YaepParseState *ps, YaepDottedRule *dotted_rule)
+{
+    assert(ps->new_core);
+
+    OS_TOP_ADD_MEMORY(ps->set_dotted_rules_os, &dotted_rule, sizeof(YaepDottedRule*));
+    ps->new_dotted_rules = ps->new_core->dotted_rules = (YaepDottedRule**)OS_TOP_BEGIN(ps->set_dotted_rules_os);
+    ps->new_core->num_dotted_rules++;
+}
+
+static void append_matched_length_no_core_yet(YaepParseState *ps, int matched_length)
 {
     assert(!ps->new_core);
 
@@ -2180,9 +2189,11 @@ static void append_matched_length(YaepParseState *ps, int matched_length)
 static void set_add_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length)
 {
     assert(!ps->new_set_ready_p);
+    assert(!ps->new_set);
+    assert(!ps->new_core);
 
-    append_dotted_rule(ps, dotted_rule);
-    append_matched_length(ps, matched_length);
+    append_dotted_rule_no_core_yet(ps, dotted_rule);
+    append_matched_length_no_core_yet(ps, matched_length);
 
     ps->new_num_dotted_rules++;
 
@@ -2192,6 +2203,7 @@ static void set_add_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule,
 static void set_add_predicted_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule, int parent_dotted_rule_id)
 {
     assert(ps->new_set_ready_p);
+    assert(ps->new_set);
     assert(ps->new_core);
 
     /* When we add predicted dotted_rules we need to have pairs
@@ -2233,6 +2245,8 @@ static void set_add_predicted_dotted_rule(YaepParseState *ps, YaepDottedRule *do
 static void set_add_initial_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule)
 {
     assert(ps->new_set_ready_p);
+    assert(ps->new_set);
+    assert(ps->new_core);
 
     /* When we add not-yet-started dotted_rules we need to have pairs
       (dotted_rule, the corresponding matched_length) without duplicates
@@ -2243,9 +2257,7 @@ static void set_add_initial_dotted_rule(YaepParseState *ps, YaepDottedRule *dott
         if (ps->new_dotted_rules[i] == dotted_rule) return;
     }
     /* Remember we do not store matched_length for not-yet-started dotted_rules.*/
-    OS_TOP_ADD_MEMORY(ps->set_dotted_rules_os, &dotted_rule, sizeof(YaepDottedRule*));
-    ps->new_dotted_rules = ps->new_core->dotted_rules = (YaepDottedRule**)OS_TOP_BEGIN(ps->set_dotted_rules_os);
-    ps->new_core->num_dotted_rules++;
+    append_dotted_rule_to_core(ps, dotted_rule);
 
     debug_step(ps, dotted_rule, 0, "addi", false);
 }
