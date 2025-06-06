@@ -947,6 +947,7 @@ static void read_input(YaepParseState *ps);
 static void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p);
 static void set_add_dotted_rule_with_matched_length(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length);
 static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule *dotted_rule);
+static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *dotted_rule, int parent_dotted_rule_id);
 static bool set_new_finish(YaepParseState *ps);
 static void set_new_start(YaepParseState *ps);
 static void symb_empty(YaepParseState *ps, YaepSymbolStorage *symbs);
@@ -2128,7 +2129,7 @@ static void debug_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int matc
     if (blocked)
     {
         MemBuffer *mb = new_membuffer();
-        membuffer_printf(mb, "step @%d ", ps->tok_i);
+        membuffer_printf(mb, "step @%d %s", ps->tok_i, why);
         debug_mb("ixml.pa=", mb);
         free_membuffer_and_free_content(mb);
         return;
@@ -2190,7 +2191,7 @@ static void append_matched_length_no_core_yet(YaepParseState *ps, int matched_le
   non-start non-initial = new dotted rule with parent pointer.
      core yes, set yes
      duplicates are ignored
-     set_add_dotted_rule
+     set_add_dotted_rule_with_parent
 
  */
 
@@ -2244,7 +2245,7 @@ static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule 
    distance), we do not add it.
    set_add_new_nonstart_sit (struct sit *sit, int parent)
 */
-static void set_add_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule, int parent_dotted_rule_id)
+static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *dotted_rule, int parent_dotted_rule_id)
 {
     assert(ps->new_set_ready_p);
     assert(ps->new_set);
@@ -2280,7 +2281,7 @@ static void set_add_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule,
     ps->new_core->parent_dotted_rule_ids[ps->new_core->num_all_matched_lengths++] = parent_dotted_rule_id;
     ps->num_parent_dotted_rule_ids++;
 
-    debug_step(ps, dotted_rule, 0, -1, "set_add_dotted_rule", false);
+    debug_step(ps, dotted_rule, 0, -1, "set_add_dotted_rule_with_parent", false);
 }
 
 /* Set up hash of matched_lengths of set S. */
@@ -3541,7 +3542,7 @@ static void complete_empty_nonterminals_in_rule(YaepParseState *ps,
             if (!only_nots)
             {
                 YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, context, "complete_empty");
-                set_add_dotted_rule(ps, new_dotted_rule, dotted_rule_parent_id);
+                set_add_dotted_rule_with_parent(ps, new_dotted_rule, dotted_rule_parent_id);
             }
         }
         else if (is_not_rule(rule->rhs[j]))
@@ -3549,7 +3550,7 @@ static void complete_empty_nonterminals_in_rule(YaepParseState *ps,
             if (blocked_by_lookahead(ps, dotted_rule, rule->rhs[j], 1, "lookahead")) break;
 
             YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, context, "complete_lookahead_ok");
-            set_add_dotted_rule(ps, new_dotted_rule, dotted_rule_parent_id);
+            set_add_dotted_rule_with_parent(ps, new_dotted_rule, dotted_rule_parent_id);
         }
         else
         {
@@ -3590,17 +3591,17 @@ static bool blocked_by_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule
     {
         MemBuffer *mb = new_membuffer();
         int tok_i = ps->tok_i+n;
-        membuffer_printf(mb, "%s (%d,-) %s →  ε not[%d-%d/%d] ",
-                         info, 1+ps->state_set_k,
+        membuffer_printf(mb, "(s%d,-) %s →  ε not[%d-%d/%d] ",
+                         1+ps->state_set_k,
                          symb->repr, ps->tok_i, ps->tok_i+1, ps->input_len);
-        membuffer_printf(mb, "{");
+        membuffer_printf(mb, "{%s", info);
         if (is_blocked)
         {
-            membuffer_printf(mb, "blocked: ");
+            membuffer_printf(mb, " blocked: ");
         }
         else
         {
-            membuffer_printf(mb, "ok ");
+            membuffer_printf(mb, " ok ");
         }
         int to = mmin(ps->input_len, tok_i+strlen(symb->repr));
         for (int i = tok_i; i < to; ++i)
@@ -3610,14 +3611,8 @@ static bool blocked_by_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule
         membuffer_printf(mb, "}");
         membuffer_append_null(mb);
 
-        if (is_blocked)
-        {
-            debug_step(ps, dotted_rule, 0, -1, mb->buffer_, true);
-        }
-        else
-        {
-            debug_step(ps, dotted_rule, 0, -1, mb->buffer_, true);
-        }
+        debug_step(ps, dotted_rule, 0, -1, mb->buffer_, true);
+
         free_membuffer_and_free_content(mb);
     }
 

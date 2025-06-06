@@ -158,20 +158,25 @@ xsl:stylesheet(version   = 1.0
             td(class = rule) {
                 xsl:apply-templates(select = name)
                 xsl:apply-templates(select = cost)
-                ' → '
-                span(class = completed) {
-                    xsl:apply-templates(select = body)
-                }
-                span(class = dotted) {
-                    xsl:attribute(name="blocked") {
-                        xsl:for-each(select = "key('blokey',$id)") {
-                            xsl:if(test = "position()=1") = true
+                xsl:choose {
+                    xsl:when(test = "type = 'not'") = ''
+                    xsl:otherwise {
+                        ' → '
+                        span(class = completed) {
+                            xsl:apply-templates(select = body)
                         }
-                    }
-                    xsl:apply-templates(select = dot)
-                    xsl:for-each(select = "key('blokey',$id)") {
-                        '*'
-                        xsl:value-of(select = btype)
+                        span(class = dotted) {
+                            xsl:attribute(name="blocked") {
+                                xsl:for-each(select = "key('blokey',$id)") {
+                                    xsl:if(test = "position()=1") = true
+                                }
+                            }
+                        }
+                        xsl:apply-templates(select = dot)
+                        xsl:for-each(select = "key('blokey',$id)") {
+                            '*'
+                            xsl:value-of(select = btype)
+                        }
                     }
                 }
             }
