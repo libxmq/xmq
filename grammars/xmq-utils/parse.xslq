@@ -50,6 +50,7 @@ xsl:stylesheet(version   = 1.0
                                 xsl:attribute(name="class") {
                                     xsl:choose {
                                         xsl:when(test = "$content = 'ω'") = 'top eof'
+                                        xsl:when(test = "$content = 'Ω'") = 'top eof'
                                         xsl:otherwise = top
                                     }
                                 }

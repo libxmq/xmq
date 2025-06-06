@@ -4413,7 +4413,7 @@ static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *
     ps->new_core->parent_dotted_rule_ids[ps->new_core->num_all_matched_lengths++] = parent_dotted_rule_id;
     ps->num_parent_dotted_rule_ids++;
 
-    debug_step(ps, dotted_rule, 0, -1, "set_add_dotted_rule_with_parent", false);
+    debug_step(ps, dotted_rule, 0, parent_dotted_rule_id, "set_add_dotted_rule_with_parent", false);
 }
 
 /* Set up hash of matched_lengths of set S. */
@@ -5651,6 +5651,7 @@ static void read_input(YaepParseState *ps)
     {
         tok_add(ps, code, attr);
     }
+
     tok_add(ps, END_MARKER_CODE, NULL);
 }
 
@@ -5659,9 +5660,9 @@ static void read_input(YaepParseState *ps)
    which can derivate empty string and which is placed after dot in
    given dotted_rule. */
 static void complete_empty_nonterminals_in_rule(YaepParseState *ps,
-                                             YaepDottedRule *dotted_rule,
-                                             int dotted_rule_parent_id,
-                                             bool only_nots)
+                                                YaepDottedRule *dotted_rule,
+                                                int dotted_rule_parent_id,
+                                                bool only_nots)
 {
     YaepRule *rule = dotted_rule->rule;
     int context = dotted_rule->context;
@@ -5679,7 +5680,7 @@ static void complete_empty_nonterminals_in_rule(YaepParseState *ps,
         }
         else if (is_not_rule(rule->rhs[j]))
         {
-            if (blocked_by_lookahead(ps, dotted_rule, rule->rhs[j], 1, "lookahead")) break;
+            if (blocked_by_lookahead(ps, dotted_rule, rule->rhs[j], 1-only_nots, "lookahead")) break;
 
             YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, context, "complete_lookahead_ok");
             set_add_dotted_rule_with_parent(ps, new_dotted_rule, dotted_rule_parent_id);
@@ -7161,6 +7162,8 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
     // The result pointer points to the final parse tree.
     YaepTreeNode *result;
+    YaepTreeNode *result2;
+    YaepTreeNode *result3;
 
     YaepParseTreeBuildState root_state;
     YaepTreeNode root_anode;
@@ -7221,6 +7224,8 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
     // The result tree starts empty.
     result = NULL;
+    result2 = NULL;
+    result3 = NULL;
     // The root abstract node points to the result tree pointer.
     root_anode.val.anode.children = &result;
     // The root state pointsto the root abstract node.
@@ -7414,6 +7419,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 	{
             dotted_rule_id = core_symb_ids->completions.ids[i];
             dotted_rule = set_core->dotted_rules[dotted_rule_id];
+
             if (dotted_rule_id < set_core->num_started_dotted_rules)
             {
                 // The state_set_k is the tok_i for which the state set was created.
@@ -7603,12 +7609,12 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                         node = ((YaepTreeNode*)(*ps->run.parse_alloc)(sizeof(YaepTreeNode)
                                                                       + sizeof(YaepTreeNode*)
                                                                       *(dotted_rule_rule->trans_len + 1)));
+                        node->type = YAEP_ANODE;
                         state->anode = node;
                         if (table_state != NULL)
                         {
                             table_state->anode = node;
                         }
-                        node->type = YAEP_ANODE;
                         if (dotted_rule_rule->caller_anode == NULL)
 			{
                             dotted_rule_rule->caller_anode = ((char*)(*ps->run.parse_alloc)(strlen(dotted_rule_rule->anode) + 1));
@@ -7758,12 +7764,12 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
            their children. */
         result = find_minimal_translation(ps, result);
     }
-/*    if (ps->run.trace)
+    if (ps->run.trace)
     {
-        fprintf(stderr, "(ixml) yaep parse tree:\n");
+        fprintf(stderr, "(ixml) yaep parse tree: %p %p %p\n", result, result2, result3);
         print_parse(ps, stderr, result);
         fprintf(stderr, "\n");
-        }*/
+    }
     if (false)
     {
         // Graphviz
@@ -8317,27 +8323,25 @@ static void print_dotted_rule(MemBuffer *mb,
     {
         membuffer_append(mb, " ");
     }
-    /*if (dotted_rule->info || parent_id)
-      {*/
+
     membuffer_printf(mb, "{%s:%s", dotted_rule->info, why);
+    if (dotted_rule->rule->lhs->empty_p || dotted_rule->empty_tail_p)
+    {
+        membuffer_append(mb, " ");
+    }
+    if (dotted_rule->empty_tail_p)
+    {
+        membuffer_append(mb, " empty_tail");
+    }
+    if (dotted_rule->rule->lhs->empty_p)
+    {
+        membuffer_append(mb, " empty_rule");
+    }
 
-        if (dotted_rule->rule->lhs->empty_p || dotted_rule->empty_tail_p)
-        {
-            membuffer_append(mb, " ");
-        }
-        if (dotted_rule->empty_tail_p)
-        {
-            membuffer_append(mb, " empty_tail");
-        }
-        if (dotted_rule->rule->lhs->empty_p)
-        {
-            membuffer_append(mb, " empty_rule");
-        }
+    if (parent_id >= 0) membuffer_printf(mb, " parent=d%d", parent_id);
+    membuffer_printf(mb, " ml=%d", matched_length);
+    membuffer_append(mb, "}");
 
-        if (parent_id >= 0) membuffer_printf(mb, " parent=d%d", parent_id);
-        membuffer_printf(mb, " ml=%d", matched_length);
-        membuffer_append(mb, "}");
-//    }
     if (ps->run.grammar->lookahead_level != 0 && matched_length >= 0)
     {
         membuffer_append(mb, "    ");

@@ -36,7 +36,7 @@ info = -'{', ~['}']+, -'}'.
 tra = -'(ixml.tr) adding (',id,-')', -~[#a]+.
 -trpp = -'(ixml.tr) popping ', -~[#a]+.
 
-char = -"'",~[#a],-"'" | 'ω' | '#',[N;L]+.
+char = -"'",~[#a],-"'" | 'ω' | 'Ω' | '#',[N;L]+.
 token = -"=", ~[#a]*.
 
 index = [N]+.

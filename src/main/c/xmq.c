@@ -4417,6 +4417,7 @@ void collect_text(YaepTreeNode *n, MemBuffer *mb)
 void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index)
 {
     if (n == NULL) return;
+    if (n->type == YAEP_TERM && n->val.terminal.code == -1) return;
     if (n->type == YAEP_ANODE)
     {
         YaepAbstractNode *an = &n->val.anode;
