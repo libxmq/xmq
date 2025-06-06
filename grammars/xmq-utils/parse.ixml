@@ -1,5 +1,5 @@
 parse = line++-#a, -#a?.
--line = comment|state|pac|trc|stats|xmq|xmqd|xmqa|ix|not|gr|ru|lh|pa|trb|trp|trt|chk|str|tra|trpp|st|scan|core|crea|step|testnot|block|ignore|ignorec.
+-line = comment|state|pac|trc|stats|xmq|xmqd|xmqa|ix|not|gr|ru|lh|pa|trb|trp|trt|chk|str|tra|trpp|st|scan|core|crea|step|testnot|block|ignore|ignorec|.
 
 -comment = -'(ixml.c)', -~[#a]+.
 -xmq = -'xmq: ', -~[#a]+.
@@ -19,7 +19,7 @@ scan  = -'(ixml.pa) input[',index,-"]=",char, -~[#a]+.
 -state = -'(ixml.pa.st) ', -~[#a]+.
 -pac = -'(ixml.pa.c) ', -~[#a]+.
 -trc = -'(ixml.tr.c) ', -~[#a]+.
-step  = -'(ixml.pa) step @',toki,-' ', iinfo, -' (', id, -')', s, name, s, -'→', s, body?, dot?, where, cost?, -' ', info, -~[#a]*.
+step  = -'(ixml.pa) step @',toki, -' (', id, -')', s, name, s, -'→', s, body?, dot?, where, cost?, -' ', info, -~[#a]*.
 -ignorec  = -'(ixml.pa) @',-[N]+,-' created ', -~[#a]*.
 -testnot  = -'(ixml.pa) @',-[N]+,-' test ', -~[#a]*.
 -ignore = -'(ixml.pa) (', -~[#a]*.
@@ -27,7 +27,6 @@ block = -'(ixml.pa) blocked', btype, -' (', id, -')', -~[#a]*.
 toki  = [N]+.
 btype = [N]+.
 info = -'{', ~['}']+, -'}'.
-iinfo = [Ll;N;'_.']+.
 
 -trb = -'(ixml.tr) building ', -~[#a]+.
 -trp = -'(ixml.tr) processing ', -~[#a]+.

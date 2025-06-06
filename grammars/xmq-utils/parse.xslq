@@ -180,8 +180,6 @@ xsl:stylesheet(version   = 1.0
                xsl:value-of(select = id)
                ') '
                xsl:value-of(select = info)
-               ':'
-               xsl:value-of(select = iinfo)
             }
         }
     }
