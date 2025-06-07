@@ -5680,10 +5680,15 @@ static void complete_empty_nonterminals_in_rule(YaepParseState *ps,
         }
         else if (is_not_rule(rule->rhs[j]))
         {
-            if (blocked_by_lookahead(ps, dotted_rule, rule->rhs[j], 1-only_nots, "lookahead")) break;
-
-            YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, context, "complete_lookahead_ok");
-            set_add_dotted_rule_with_parent(ps, new_dotted_rule, dotted_rule_parent_id);
+            if (blocked_by_lookahead(ps, dotted_rule, rule->rhs[j], 1-only_nots, "lookahead"))
+            {
+                break;
+            }
+            else
+            {
+                YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, context, "complete_lookahead_ok_pre");
+                set_add_dotted_rule_with_parent(ps, new_dotted_rule, dotted_rule_parent_id);
+            }
         }
         else
         {
@@ -5834,8 +5839,11 @@ static void expand_new_start_set(YaepParseState *ps)
     }
 
     debug("ixml.pa.c=", "expand2");
-    for (int dotted_rule_id = 0; dotted_rule_id < ps->new_core->num_dotted_rules; dotted_rule_id++)
+    for (int dotted_rule_id = 0;
+         dotted_rule_id < ps->new_core->num_dotted_rules;
+         dotted_rule_id++)
     {
+        trace("ixml.pa.c=", "num_dotted_rules=%d\n", ps->new_core->num_dotted_rules);
         dotted_rule = ps->new_dotted_rules[dotted_rule_id];
 
         // Check that there is a symbol after the dot!
@@ -5852,7 +5860,7 @@ static void expand_new_start_set(YaepParseState *ps)
 
                 if (!symb->is_terminal)
                 {
-                    for(rule = symb->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
+                    for (rule = symb->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
                     {
                         YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, 0, "predict");
                         set_add_dotted_rule_no_match_yet(ps, new_dotted_rule);
@@ -5866,20 +5874,37 @@ static void expand_new_start_set(YaepParseState *ps)
             core_symb_ids_add_predict(ps, core_symb_ids, dotted_rule_id);
 
             // The non-terminal can be empty and this is a not-yet added dotted_rule.
-            if (symb->empty_p && dotted_rule_id >= ps->new_core->num_all_matched_lengths)
+            if ((symb->empty_p || is_not_rule(symb))&& dotted_rule_id >= ps->new_core->num_all_matched_lengths)
             {
-                YaepDottedRule *new_dotted_rule = create_dotted_rule(ps,
-                                                                     dotted_rule->rule,
-                                                                     dotted_rule->dot_j+1,
-                                                                     0,
-                                                                     "complete_empty_rule");
-                set_add_dotted_rule_no_match_yet(ps, new_dotted_rule);
+                if (is_not_rule(dotted_rule->rule->rhs[dotted_rule->dot_j]))
+                {
+                    if (!blocked_by_lookahead(ps, dotted_rule, dotted_rule->rule->rhs[dotted_rule->dot_j], 0, "lookahead"))
+                    {
+                        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps,
+                                                                             dotted_rule->rule,
+                                                                             dotted_rule->dot_j+1,
+                                                                             0,
+                                                                             "complete_lookahead_ok");
+                        set_add_dotted_rule_no_match_yet(ps, new_dotted_rule);
+                    }
+                }
+                else
+                {
+                    YaepDottedRule *new_dotted_rule = create_dotted_rule(ps,
+                                                                         dotted_rule->rule,
+                                                                         dotted_rule->dot_j+1,
+                                                                         0,
+                                                                         "complete_empty_rule");
+                    // Add new rule to be handled in next loop iteration.
+                    set_add_dotted_rule_no_match_yet(ps, new_dotted_rule);
+                }
             }
 	}
     }
 
-    debug("ixml.pa.c=", "expand3");
+    //debug("ixml.pa.c=", "expand3");
 
+    /*
     for (int dotted_rule_id = ps->new_num_leading_dotted_rules;
          dotted_rule_id < ps->new_core->num_dotted_rules;
          dotted_rule_id++)
@@ -5887,8 +5912,8 @@ static void expand_new_start_set(YaepParseState *ps)
         dotted_rule = ps->new_dotted_rules[dotted_rule_id];
         complete_empty_nonterminals_in_rule(ps, dotted_rule, dotted_rule_id, true);
     }
-
-    debug("ixml.pa.c=", "expand3.5");
+    */
+    //debug("ixml.pa.c=", "expand3.5");
 
     /*
     for (int dotted_rule_id = 0;

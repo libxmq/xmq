@@ -1,9 +1,9 @@
 START
 book = !"chapter", [L]+.
 INPUT
-chapter chopper
+chapterchopper
 OUTPUT
 ixml:1:1: syntax error
-chapter chopper
+chapterchopper
 ^
 END
