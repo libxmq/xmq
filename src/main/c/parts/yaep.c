@@ -4341,7 +4341,7 @@ static void set_add_leading_dotted_rule_with_matched_length(YaepParseState *ps, 
 
     ps->new_num_leading_dotted_rules++;
 
-    debug_step(ps, dotted_rule, matched_length, -1, "add_dotted_rule_with_matched_length", false);
+    debug_step(ps, dotted_rule, matched_length, -1, "add_leading_dotted_rule_with_matched_length", false);
 }
 
 /* Add non-start (initial) SIT with zero distance at the end of the
@@ -5819,7 +5819,7 @@ static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
    new set and and forms triples(set_core, symbol, indexes) for
    further fast search of start dotted_rules from given core by
    transition on given symbol(see comment for abstract data `core_symb_ids'). */
-static void expand_new_start_set(YaepParseState *ps)
+static void expand_new_set(YaepParseState *ps)
 {
     YaepDottedRule *dotted_rule;
     YaepSymbol *symb;
@@ -6007,7 +6007,7 @@ static void build_start_set(YaepParseState *ps)
 
     if (!set_new_finish(ps)) assert(false);
 
-    expand_new_start_set(ps);
+    expand_new_set(ps);
     ps->state_sets[0] = ps->new_set;
 }
 
@@ -6039,7 +6039,7 @@ static void lookahead_log_block(YaepParseState *ps, int lookahead_term_id, YaepD
 /* The following function predicts a new state set by shifting dotted_rules
    of SET given in CORE_SYMB_IDS with given lookahead terminal number.
    If the number is negative, we ignore lookahead at all. */
-static void complete_and_predict_new_state_set(YaepParseState *ps,
+static void complete_and_predict_new_set(YaepParseState *ps,
                                                YaepStateSet *set,
                                                YaepCoreSymbToPredComps *core_symb_ids,
                                                YaepSymbol *NEXT_TERMINAL)
@@ -6142,7 +6142,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 
     if (set_new_finish(ps))
     {
-        expand_new_start_set(ps);
+        expand_new_set(ps);
         ps->new_core->term = core_symb_ids->symb;
     }
 }
@@ -6549,7 +6549,7 @@ static void perform_parse(YaepParseState *ps)
             breakpoint();
 
             // Do the actual predict/complete cycle.
-            complete_and_predict_new_state_set(ps, set, core_symb_ids, NEXT_TERMINAL);
+            complete_and_predict_new_set(ps, set, core_symb_ids, NEXT_TERMINAL);
 
 #ifdef USE_SET_HASH_TABLE
             save_cached_set(ps, entry, NEXT_TERMINAL);
@@ -8489,7 +8489,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         if (ps->run.debug)
             fprintf(stderr, "++++Making error shift in set=%d\n", ps->state_set_k);
 
-        complete_and_predict_new_state_set(ps, set, core_symb_ids, NULL);
+        complete_and_predict_new_set(ps, set, core_symb_ids, NULL);
         ps->state_sets[++ps->state_set_k] = ps->new_set;
 
         if (ps->run.debug)
@@ -8554,7 +8554,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         {
             NEXT_TERMINAL = ps->input[ps->tok_i + 1].symb;
         }
-        complete_and_predict_new_state_set(ps, ps->new_set, core_symb_ids, NEXT_TERMINAL);
+        complete_and_predict_new_set(ps, ps->new_set, core_symb_ids, NEXT_TERMINAL);
         ps->state_sets[++ps->state_set_k] = ps->new_set;
 
         if (ps->run.debug)
@@ -8610,7 +8610,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             {
                 NEXT_TERMINAL = ps->input[ps->tok_i + 1].symb;
             }
-            complete_and_predict_new_state_set(ps, ps->new_set, core_symb_ids, NEXT_TERMINAL);
+            complete_and_predict_new_set(ps, ps->new_set, core_symb_ids, NEXT_TERMINAL);
             ps->state_sets[++ps->state_set_k] = ps->new_set;
 	}
         if (num_matched_input >= ps->run.grammar->recovery_token_matches || ps->tok_i >= ps->input_len)
