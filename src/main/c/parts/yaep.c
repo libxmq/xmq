@@ -6040,9 +6040,9 @@ static void lookahead_log_block(YaepParseState *ps, int lookahead_term_id, YaepD
    of SET given in CORE_SYMB_IDS with given lookahead terminal number.
    If the number is negative, we ignore lookahead at all. */
 static void complete_and_predict_new_set(YaepParseState *ps,
-                                               YaepStateSet *set,
-                                               YaepCoreSymbToPredComps *core_symb_ids,
-                                               YaepSymbol *NEXT_TERMINAL)
+                                         YaepStateSet *set,
+                                         YaepCoreSymbToPredComps *core_symb_ids,
+                                         YaepSymbol *NEXT_TERMINAL)
 {
     int lookahead_term_id = NEXT_TERMINAL ? NEXT_TERMINAL->u.terminal.term_id : -1;
     int local_lookahead_level = (lookahead_term_id < 0 ? 0 : ps->run.grammar->lookahead_level);
@@ -6478,18 +6478,34 @@ static void save_cached_set(YaepParseState *ps, YaepStateSetTermLookAhead *entry
     entry->curr = (i + 1) % MAX_CACHED_GOTO_RESULTS;
 }
 
+static void trace_state_set(YaepParseState *ps)
+{
+    MemBuffer *mb = new_membuffer();
+    print_state_set(mb, ps, ps->new_set, 0);
+    trace_mb("ixml.pa.st=", mb);
+    free_membuffer_and_free_content(mb);
+}
+
+static void debug_scan(YaepParseState *ps,
+                       YaepSymbol *THE_TERMINAL,
+                       YaepSymbol *NEXT_TERMINAL,
+                       YaepStateSet *set,
+                       YaepCoreSymbToPredComps *core_symb_ids)
+{
+    MemBuffer *mb = new_membuffer();
+    membuffer_printf(mb, "input[%d]=", ps->tok_i);
+    symbol_print(mb, THE_TERMINAL, true);
+    membuffer_printf(mb, " s%d core%d -> csl%d", set->id, set->core->id, core_symb_ids->id);
+    debug_mb("ixml.pa=", mb);
+    free_membuffer_and_free_content(mb);
+}
+
 static void perform_parse(YaepParseState *ps)
 {
     error_recovery_init(ps);
     build_start_set(ps);
 
-    if (ps->run.trace)
-    {
-        MemBuffer *mb = new_membuffer();
-        print_state_set(mb, ps, ps->new_set, 0);
-        debug_mb("ixml.pa.st=", mb);
-        free_membuffer_and_free_content(mb);
-    }
+    if (ps->run.trace) trace_state_set(ps);
 
     ps->tok_i = 0;
     ps->state_set_k = 0;
@@ -6537,16 +6553,7 @@ static void perform_parse(YaepParseState *ps)
                 }
 	    }
 
-            if (ps->run.debug)
-            {
-                MemBuffer *mb = new_membuffer();
-                membuffer_printf(mb, "input[%d]=", ps->tok_i);
-                symbol_print(mb, THE_TERMINAL, true);
-                membuffer_printf(mb, " s%d core%d -> csl%d", set->id, set->core->id, core_symb_ids->id);
-                debug_mb("ixml.pa=", mb);
-                free_membuffer_and_free_content(mb);
-            }
-            breakpoint();
+            if (ps->run.debug) debug_scan(ps, THE_TERMINAL, NEXT_TERMINAL, set, core_symb_ids);
 
             // Do the actual predict/complete cycle.
             complete_and_predict_new_set(ps, set, core_symb_ids, NEXT_TERMINAL);
@@ -6559,13 +6566,7 @@ static void perform_parse(YaepParseState *ps)
         ps->state_set_k++;
         ps->state_sets[ps->state_set_k] = ps->new_set;
 
-        if (ps->run.trace)
-	{
-            MemBuffer *mb = new_membuffer();
-            print_state_set(mb, ps, ps->new_set, ps->state_set_k);
-            debug_mb("ixml.pa.st=", mb);
-            free_membuffer_and_free_content(mb);
-        }
+        if (ps->run.trace) trace_state_set(ps);
     }
     free_error_recovery(ps);
 }
