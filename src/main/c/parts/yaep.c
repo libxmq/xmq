@@ -4441,7 +4441,7 @@ static void setup_set_core_hash(hash_table_entry_t s)
     set_core->hash = dotted_rules_hash(set_core->num_started_dotted_rules, set_core->dotted_rules);
 }
 
-static void set_new_start(YaepParseState *ps)
+static void collect_leading_data(YaepParseState *ps)
 {
     ps->new_set = NULL;
     ps->new_core = NULL;
@@ -4454,19 +4454,21 @@ static void set_new_start(YaepParseState *ps)
 /* The new set should contain only start dotted_rules.
    Sort dotted_rules, remove duplicates and insert set into the set table.
    Returns true if a new core was allocated. False if an old core was reused. */
-static bool set_new_finish(YaepParseState *ps)
+static bool convert_leading_data_into_new_set(YaepParseState *ps)
 {
     hash_table_entry_t *entry;
-    bool added;
+    bool core_added;
 
     assert(!ps->new_set_ready_p);
 
-    OS_TOP_EXPAND(ps->sets_os, sizeof(YaepStateSet));
+    // Allocate new Set object.
+    OS_TOP_EXPAND(ps->sets_os, sizeof(YaepStateSet)); // This allocation can be permanent (finished) or released (nullify).
     ps->new_set = (YaepStateSet*)OS_TOP_BEGIN(ps->sets_os);
     ps->new_set->matched_lengths = ps->new_matched_lengths;
     ps->new_set->id = ps->num_sets_total;
 
-    OS_TOP_EXPAND(ps->set_cores_os, sizeof(YaepStateSetCore));
+    // Allocate new Set Core object.
+    OS_TOP_EXPAND(ps->set_cores_os, sizeof(YaepStateSetCore)); // This allocation can be permanent (finished) or released (nullify).
     ps->new_set->core = ps->new_core = (YaepStateSetCore*) OS_TOP_BEGIN(ps->set_cores_os);
     ps->new_core->num_started_dotted_rules = ps->new_num_leading_dotted_rules;
     ps->new_core->dotted_rules = ps->new_dotted_rules;
@@ -4493,37 +4495,39 @@ static bool set_new_finish(YaepParseState *ps)
     ps->num_set_matched_lengths_len += ps->new_num_leading_dotted_rules;
 #endif
 
-    /* Insert set core into table.*/
+    /* Insert set core into table. */
     setup_set_core_hash(ps->new_set);
+
     entry = find_hash_table_entry(ps->set_of_cores, ps->new_set, true);
     if (*entry != NULL)
     {
         // The core already existed, drop the core allocation.
         // Point to the old core instead.
-        OS_TOP_NULLIFY(ps->set_cores_os);
+        OS_TOP_NULLIFY(ps->set_cores_os); // Release the allocated memory.
         ps->new_set->core = ps->new_core = ((YaepStateSet*)*entry)->core;
         ps->new_dotted_rules = ps->new_core->dotted_rules;
 
-        OS_TOP_NULLIFY(ps->set_dotted_rules_os);
-        added = false;
+        OS_TOP_NULLIFY(ps->set_dotted_rules_os); // Release the allocated memory.
+        core_added = false;
     }
     else
     {
-        OS_TOP_FINISH(ps->set_cores_os);
+        OS_TOP_FINISH(ps->set_cores_os); // Keep the allocated memory.
         ps->new_core->id = ps->num_set_cores++;
         ps->new_core->num_dotted_rules = ps->new_num_leading_dotted_rules;
         ps->new_core->num_all_matched_lengths = ps->new_num_leading_dotted_rules;
         ps->new_core->parent_dotted_rule_ids = NULL;
-       *entry =(hash_table_entry_t)ps->new_set;
+        *entry =(hash_table_entry_t)ps->new_set;
         ps->num_set_core_start_dotted_rules+= ps->new_num_leading_dotted_rules;
-        added = true;
+        core_added = true;
     }
 #ifdef USE_SET_HASH_TABLE
+
     /* Insert set into table.*/
     entry = find_hash_table_entry(ps->set_of_tuples_core_matched_lengths, ps->new_set, true);
     if (*entry == NULL)
     {
-       *entry =(hash_table_entry_t)ps->new_set;
+        *entry =(hash_table_entry_t)ps->new_set;
         ps->num_sets_total++;
         ps->num_dotted_rules_total += ps->new_num_leading_dotted_rules;
         OS_TOP_FINISH(ps->sets_os);
@@ -4539,7 +4543,7 @@ static bool set_new_finish(YaepParseState *ps)
 
     ps->new_set_ready_p = true;
 
-    return added;
+    return core_added;
 }
 
 /* The following function finishes work with set being formed.*/
@@ -5987,7 +5991,7 @@ static void build_start_set(YaepParseState *ps)
 {
     int dyn_lookahead_context = 0;
 
-    set_new_start(ps);
+    collect_leading_data(ps);
 
     if (ps->run.grammar->lookahead_level > 1)
     {
@@ -6005,7 +6009,9 @@ static void build_start_set(YaepParseState *ps)
         set_add_leading_dotted_rule_with_matched_length(ps, new_dotted_rule, 0);
     }
 
-    if (!set_new_finish(ps)) assert(false);
+    bool core_allocated = convert_leading_data_into_new_set(ps);
+
+    assert(core_allocated);
 
     expand_new_set(ps);
     ps->state_sets[0] = ps->new_set;
@@ -6047,7 +6053,7 @@ static void complete_and_predict_new_set(YaepParseState *ps,
     int lookahead_term_id = NEXT_TERMINAL ? NEXT_TERMINAL->u.terminal.term_id : -1;
     int local_lookahead_level = (lookahead_term_id < 0 ? 0 : ps->run.grammar->lookahead_level);
 
-    set_new_start(ps);
+    collect_leading_data(ps);
 
     YaepVect *predictions = &core_symb_ids->predictions;
 
@@ -6140,7 +6146,9 @@ static void complete_and_predict_new_set(YaepParseState *ps,
 	}
     }
 
-    if (set_new_finish(ps))
+    bool core_allocated = convert_leading_data_into_new_set(ps);
+
+    if (core_allocated)
     {
         expand_new_set(ps);
         ps->new_core->term = core_symb_ids->symb;
@@ -6536,6 +6544,9 @@ static void perform_parse(YaepParseState *ps)
 
         if (ps->new_set == NULL)
 	{
+            // No cached state set existed. Lets build a new set, first we use the set->core + THE_TERMINAL
+            // to lookup a cached coresymb->prediction+completion vectors. I.e. prepared dotted rules
+            // for predictions and actual completions.
             YaepCoreSymbToPredComps *core_symb_ids = core_symb_ids_find(ps, set->core, THE_TERMINAL);
 
             if (core_symb_ids == NULL)
@@ -6548,7 +6559,7 @@ static void perform_parse(YaepParseState *ps)
                 }
                 else if (c == 2)
                 {
-                    trace("ixml.pa.c=", "no core_symb_ids found, giving up");
+                    trace("ixml.pa.c=", "no core_symb_ids found, giving up, ie parse failed");
                     break;
                 }
 	    }
