@@ -114,7 +114,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
         {
             increment(c, 1, &i, &line, &col);
             c = *i;
-            if (c == '"' || c == '\\' || c == 'b' || c == 'f' || c == 'n' || c == 'r' || c == 't')
+            if (c == '"' || c == '\\' || c == 'b' || c == 'f' || c == 'n' || c == 'r' || c == 't' || c == '/')
             {
                 increment(c, 1, &i, &line, &col);
                 switch(c)
@@ -124,6 +124,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
                 case 'n': c = 10; break;
                 case 'r': c = 13; break;
                 case 't': c = 9; break;
+                case '/': c = '/'; break; // Silly, but actually used sometimes in json....
                 }
                 membuffer_append_char(buf, c);
                 continue;
