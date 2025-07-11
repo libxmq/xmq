@@ -184,6 +184,7 @@ $(OUTPUT_ROOT)/$(TYPE)/libwinpthread-1.dll:
 	@echo "Installed $@"
 
 $(OUTPUT_ROOT)/$(TYPE)/libxml2-2.dll:
+	find $(SRC_ROOT)/3rdparty -name "*.dll"
 	$(AT)cp "$$(find $(SRC_ROOT)/3rdparty/libxml2-winapi -name libxml2-2.dll | grep -m 1 libxml2-2.dll)" $@
 	@echo "Installed $@"
 
