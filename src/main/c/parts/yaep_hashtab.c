@@ -1,7 +1,8 @@
 /*
    YAEP (Yet Another Earley Parser)
 
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
+   Copyright (c) 1997-2018 Vladimir Makarov <vmakarov@gcc.gnu.org>
+   Copyright (c) 2025      Fredrik Öhrström <oehrstroem@gmail.com>
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the
