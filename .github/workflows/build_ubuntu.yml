@@ -4,6 +4,7 @@ on:
     branches:
       - master
       - AddNotOperator
+
   pull_request:
 
 jobs:
