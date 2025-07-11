@@ -43,6 +43,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/xml.h"
 #include"parts/xmq_parser.h"
 #include"parts/xmq_printer.h"
+#include"parts/yaep_allocate.h"
+#include"parts/yaep_hashtab.h"
+#include"parts/yaep_objstack.h"
+#include"parts/yaep_vlobject.h"
 #include"parts/yaep.h"
 
 // XMQ STRUCTURES ////////////////////////////////////////////////
@@ -4952,6 +4956,10 @@ char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
 #include"parts/xmq_internals.c"
 #include"parts/xmq_parser.c"
 #include"parts/xmq_printer.c"
+#include"parts/yaep_allocate.c"
+#include"parts/yaep_hashtab.c"
+#include"parts/yaep_objstack.c"
+#include"parts/yaep_vlobject.c"
 #include"parts/yaep.c"
 
 #endif

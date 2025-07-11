@@ -1,7 +1,8 @@
 /*
    YAEP (Yet Another Earley Parser)
 
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
+   Copyright (c) 1997-2018 Vladimir Makarov <vmakarov@gcc.gnu.org>
+   Copyright (c) 2025      Fredrik Öhrström <oehrstroem@gmail.com>
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the
@@ -35,20 +36,21 @@
 
 */
 
-#ifndef __HASH_TABLE__
-#define __HASH_TABLE__
+#ifndef YAEP_HASHTAB_H
+#define YAEP_HASHTAB_H
+
+#ifndef BUILDING_DIST_XMQ
 
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include"allocate.h"
+#include"yaep_allocate.h"
+
+#endif
 
 /* The hash table element is represented by the following type. */
 
 typedef const void *hash_table_entry_t;
-
-
-#ifndef __cplusplus
 
 
 /* Hash tables are of the following type.  The structure
@@ -152,117 +154,6 @@ extern int hash_table_collision_percentage (hash_table_t htab);
 
 extern int all_hash_table_collision_percentage (void);
 
-#else /* #ifndef __cplusplus */
+#define YAEP_HASHTAB_MODULE
 
-
-
-/* Hash tables are of the following class. */
-
-class hash_table
-{
-  /* Current size (in entries) of the hash table */
-  size_t _size;
-  /* Current number of elements including also deleted elements */
-  size_t number_of_elements;
-  /* Current number of deleted elements in the table */
-  size_t number_of_deleted_elements;
-  /* The following member is used for debugging. Its value is number
-     of all calls of `find_hash_table_entry' for the hash table. */
-  int searches;
-  /* The following member is used for debugging.  Its value is number
-     of collisions fixed for time of work with the hash table. */
-  int collisions;
-  /* Pointer to function for evaluation of hash value (any unsigned value).
-     This function has one parameter of type hash_table_entry_t. */
-  unsigned (*hash_function) (hash_table_entry_t el_ptr);
-  /* Pointer to function for test on equality of hash table elements (two
-     parameter of type hash_table_entry_t. */
-  bool (*eq_function) (hash_table_entry_t el1_ptr,
-                      hash_table_entry_t el2_ptr);
-  /* Table itself */
-  hash_table_entry_t *entries;
-  /* Allocator */
-  YaepAllocator * alloc;
-
-  /* The following variable is used for debugging. Its value is number
-     of all calls of `find_hash_table_entry' for all hash tables. */
-
-  static int all_searches;
-
-  /* The following variable is used for debugging. Its value is number
-     of collisions fixed for time of work with all hash tables. */
-
-  static int all_collisions;
-
-public:
-
-  /* Constructor. */
-  hash_table( YaepAllocator * allocator, size_t size, unsigned int ( *hash_function )( hash_table_entry_t el_ptr ), bool ( *eq_function )( hash_table_entry_t el1_ptr, hash_table_entry_t el2_ptr ) );
-  /* Destructor. */
-  ~hash_table (void);
-
-  void empty (void);
-
-  hash_table_entry_t *find_entry (hash_table_entry_t element, int reserve);
-
-  void remove_element_from_entry (hash_table_entry_t element);
-
-  /* The following function returns current size of given hash
-     table. */
-
-  inline size_t size (void)
-    {
-      return _size;
-    }
-
-  /* The following function returns current number of elements in
-     given hash table. */
-
-  inline size_t elements_number (void)
-    {
-      return number_of_elements - number_of_deleted_elements;
-    }
-
-  /* The following function returns number of searches during all work
-     with given hash table. */
-
-  inline int get_searches (void)
-    {
-      return this->searches;
-    }
-
-  /* The following function returns number of occurred collisions
-     during all work with given hash table. */
-
-  inline int get_collisions (void)
-    {
-      return this->collisions;
-    }
-
-  /* The following function returns number of searches
-     during all work with all hash tables. */
-
-  static inline int get_all_searches (void)
-    {
-      return all_searches;
-    }
-
-  /* The following function returns number of occurred collisions
-     during all work with all hash tables. */
-
-  static inline int get_all_collisions (void)
-    {
-      return all_collisions;
-    }
-private:
-
-  void expand_hash_table (void);
-
-};
-
-typedef class hash_table *hash_table_t;
-
-
-#endif /* #ifndef __cplusplus */
-
-#endif /* #ifndef __HASH_TABLE__ */
+#endif

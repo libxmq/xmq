@@ -24,7 +24,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef IXML_H
 #define IXML_H
 
+#ifndef BUILDING_DIST_XMQ
+
 #include"xmq.h"
+
+#endif
 
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;

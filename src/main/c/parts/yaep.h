@@ -1,8 +1,8 @@
 /*
    YAEP (Yet Another Earley Parser)
 
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
-   Copyright (c) 2024 Fredrik Öhrström <oehrstroem@gmail.com>
+   Copyright (c) 1997-2018 Vladimir Makarov <vmakarov@gcc.gnu.org>
+   Copyright (c) 2024-2025 Fredrik Öhrström <oehrstroem@gmail.com>
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the
@@ -224,26 +224,26 @@ struct YaepTreeNode
 };
 
 /* The following function creates an empty grammar. */
-YaepGrammar *yaepNewGrammar();
+extern YaepGrammar *yaepNewGrammar();
 
 /* The following function creates a parse run that uses the specified grammar.
    Each concurrent parse using the shared grammar needs a run to store the
    parse progress/state. */
-YaepParseRun *yaepNewParseRun(YaepGrammar *g);
+extern YaepParseRun *yaepNewParseRun(YaepGrammar *g);
 
 /* Set a pointer to a user structure that is available when callbacks are invoked,
    such as read_token when parsing. */
-void yaepSetUserData(YaepGrammar *g, void *data);
+extern void yaepSetUserData(YaepGrammar *g, void *data);
 
 /* Get the user data pointer from the grammar. */
-void *yaepGetUserData(YaepGrammar *g);
+extern void *yaepGetUserData(YaepGrammar *g);
 
 /* The function returns the last occurred error code for given grammar. */
-int yaep_error_code(YaepGrammar *g);
+extern int yaep_error_code(YaepGrammar *g);
 
 /* The function returns message are always contains error message
    corresponding to the last occurred error code. */
-const char *yaep_error_message(YaepGrammar *g);
+extern const char *yaep_error_message(YaepGrammar *g);
 
 /* The following function reads terminals/rules into grammar G and
    checks it depending on STRICT_P.  It returns zero if it is all ok.
@@ -277,7 +277,7 @@ const char *yaep_error_message(YaepGrammar *g);
    translation of the symbol in RHS given by the single array element.
    The cost of the abstract node if given is passed through
    ANODE_COST. */
-int yaep_read_grammar(YaepParseRun *ps,
+extern int yaep_read_grammar(YaepParseRun *ps,
                              YaepGrammar *g,
                              int strict_p,
                              const char *(*read_terminal) (YaepParseRun *pr,
@@ -316,11 +316,11 @@ int yaep_read_grammar(YaepParseRun *ps,
 
    o recovery_match means how much subsequent tokens should be
      successfully shifted to finish error recovery.  The default value is 3. */
-int yaep_set_lookahead_level(YaepGrammar *grammar, int level);
-bool yaep_set_one_parse_flag(YaepGrammar *grammar, bool flag);
-bool yaep_set_cost_flag(YaepGrammar *grammar, bool flag);
-bool yaep_set_error_recovery_flag(YaepGrammar *grammar, bool flag);
-int yaep_set_recovery_match(YaepGrammar *grammar, int n_toks);
+extern int yaep_set_lookahead_level(YaepGrammar *grammar, int level);
+extern bool yaep_set_one_parse_flag(YaepGrammar *grammar, bool flag);
+extern bool yaep_set_cost_flag(YaepGrammar *grammar, bool flag);
+extern bool yaep_set_error_recovery_flag(YaepGrammar *grammar, bool flag);
+extern int yaep_set_recovery_match(YaepGrammar *grammar, int n_toks);
 
 /* The following function parses input according read grammar.  The
    function returns the error code (which will be also in
@@ -359,13 +359,13 @@ int yaep_set_recovery_match(YaepGrammar *grammar, int n_toks);
    free memory allocated by PARSE_ALLOC. If PARSE_ALLOC is not NULL
    but PARSE_FREE is, the memory is not freed. In this case, the
    returned parse tree should also not be freed with yaep_free_tree(). */
-int yaepParse(YaepParseRun *ps, YaepGrammar *g);
+extern int yaepParse(YaepParseRun *ps, YaepGrammar *g);
 
 /* The following function frees memory allocated for the parse state. */
-void yaepFreeParseRun(YaepParseRun *ps);
+extern void yaepFreeParseRun(YaepParseRun *ps);
 
 /* The following function frees memory allocated for the grammar. */
-void yaepFreeGrammar(YaepParseRun *ps, YaepGrammar *g);
+extern void yaepFreeGrammar(YaepParseRun *ps, YaepGrammar *g);
 
 /* The following function frees memory allocated for the parse tree.
    It must not be called until after yaep_free_grammar() has been called.
@@ -379,7 +379,7 @@ void yaepFreeGrammar(YaepParseRun *ps, YaepGrammar *g);
    exactly once for each term node in the parse tree.
    The TERMCB callback can be used by the caller
    to free the term attributes. The term node itself must not be freed. */
-void yaepFreeTree(YaepTreeNode *root,
+extern void yaepFreeTree(YaepTreeNode *root,
                          void (*parse_free)(void*),
                          void (*termcb)(YaepTerminalNode *termial));
 

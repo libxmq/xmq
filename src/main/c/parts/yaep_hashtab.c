@@ -49,10 +49,16 @@
 
 */
 
-#include "allocate.h"
-#include "hashtab.h"
+#ifndef BUILDING_DIST_XMQ
 
 #include <assert.h>
+
+#include "yaep_allocate.h"
+#include "yaep_hashtab.h"
+
+#endif
+
+#ifdef YAEP_HASHTAB_MODULE
 
 /* This macro defines reserved value for empty table entry. */
 
@@ -276,3 +282,5 @@ hash_table_elements_number (hash_table_t htab)
   assert (htab != NULL);
   return htab->number_of_elements - htab->number_of_deleted_elements;
 }
+
+#endif

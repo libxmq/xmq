@@ -1,7 +1,8 @@
 /*
    YAEP (Yet Another Earley Parser)
 
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
+   Copyright (c) 1997-2018 Vladimir Makarov <vmakarov@gcc.gnu.org>
+   Copyright (c) 2025      Fredrik Öhrström <oehrstroem@gmail.com>
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the
@@ -50,16 +51,18 @@
        `-DVLO_DEFAULT_LENGTH=...'.  */
 
 
-#ifndef __VLO__
-#define __VLO__
+#ifndef YAEP_VLOBJECT_H
+#define YAEP_VLOBJECT_H
 
+#ifndef BUILDING_DIST_XMQ
+
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "allocate.h"
+#include "yaep_allocate.h"
 
-#include <assert.h>
-
+#endif
 
 /* Default initial size of memory is allocated for VLO when the object
    is created (with zero initial size).  This macro can be redefined
@@ -69,10 +72,6 @@
 #ifndef VLO_DEFAULT_LENGTH
 #define VLO_DEFAULT_LENGTH 512
 #endif
-
-
-#ifndef __cplusplus
-
 
 /* This type describes a descriptor of variable length object.  All
    work with variable length object is executed by following macros
@@ -289,175 +288,6 @@ extern void _VLO_tailor_function (vlo_t *vlo);
 extern void _VLO_add_string_function (vlo_t *vlo, const char *str);
 extern void _VLO_expand_memory (vlo_t *vlo, size_t additional_length);
 
-#else /* #ifndef __cplusplus */
+#define YAEP_VLOBJECT_MODULE
 
-
-/* This type describes a descriptor of variable length object.  It
-   should remember that work with the object through several
-   descriptors is not safe. */
-
-class vlo
-{
-  /* Pointer to memory currently used for storing the VLO. */
-  char *vlo_start;
-  /* Pointer to first byte after the last VLO byte. */
-  char *vlo_stop;
-  /* Pointer to first byte after the memory currently allocated for storing
-     the VLO. */
-  char *vlo_segment_stop;
-  /* Pointer to allocator. */
-  YaepAllocator *vlo_alloc;
-public:
-
-  /* This function is used for creation of VLO with initial zero
-     length.  If initial length of memory needed for the VLO is equal
-     to 0 the initial allocated memory length is equal to
-     VLO_DEFAULT_LENGTH. */
-
-  explicit vlo (YaepAllocator * allocator, size_t initial_length = VLO_DEFAULT_LENGTH):vlo_alloc (allocator)
-  {
-    initial_length = (initial_length != 0
-		      ? initial_length : VLO_DEFAULT_LENGTH);
-    vlo_start = (char *) yaep_malloc (vlo_alloc, initial_length);
-    vlo_segment_stop = vlo_start + initial_length;
-    vlo_stop = vlo_start;
-  }
-
-
-  /* This function is used for freeing memory allocated for VLO.  Any
-     work (except for creation) with given VLO is not possible after
-     evaluation of this function. */
-
-  inline ~ vlo (void)
-  {
-#ifndef NDEBUG
-    assert (vlo_start != NULL);
-    yaep_free (vlo_alloc, vlo_start);
-    vlo_start = NULL;
-#else
-    yaep_free (vlo_alloc, vlo_start);
-#endif /* #ifndef NDEBUG */
-  }
-
-  /* This function makes that length of VLO will be equal to zero (but
-     memory for VLO is not freed and not reallocated). */
-
-  inline void nullify (void)
-  {
-    assert (vlo_start != NULL);
-    vlo_stop = vlo_start;
-  }
-
-
-  /* The following function makes that length of memory allocated for
-     VLO becames equal to VLO length. */
-
-  void tailor (void);
-
-
-  /* This function returns current length of VLO. */
-
-  inline size_t length (void)
-  {
-    assert (vlo_start != NULL);
-    return vlo_stop - vlo_start;
-  }
-
-
-  /* This function returns pointer (of type `void *') to the first byte
-     of the VLO.  Remember also that the VLO may change own place
-     after any addition. */
-
-  inline void *begin (void)
-  {
-    assert (vlo_start != NULL);
-    return (void *) vlo_start;
-  }
-
-  /* This function returns pointer (of type `void *') to the last byte
-     of VLO.  Remember also that the VLO may change own place after
-     any addition. */
-
-  inline void *end (void)
-  {
-    assert (vlo_start != NULL);
-    return (void *) (vlo_stop - 1);
-  }
-
-  /* This function returns pointer (of type `void *') to the next byte
-     of the last byte of VLO.  Remember also that the VLO may change
-     own place after any addition. */
-
-  inline void *bound (void)
-  {
-    assert (vlo_start != NULL);
-    return (void *) vlo_stop;
-  }
-
-  /* This function removes N bytes from the end of VLO.  VLO is nullified
-     if its length is less than N. */
-
-  inline void shorten (size_t n)
-  {
-    assert (vlo_start != NULL);
-    if (length () < n)
-      vlo_stop = vlo_start;
-    else
-      vlo_stop -= n;
-  }
-
-
-  /* This function increases length of VLO.  The values of bytes added
-     to the end of VLO will be not defined. */
-
-  void expand (size_t length)
-  {
-    assert (vlo_start != NULL);
-    if (vlo_stop + length > vlo_segment_stop)
-      _VLO_expand_memory (length);
-    vlo_stop += length;
-  }
-
-
-  /* This function adds a byte to the end of VLO. */
-
-  inline void add_byte (int b)
-  {
-    assert (vlo_start != NULL);
-    if (vlo_stop >= vlo_segment_stop)
-      _VLO_expand_memory (1);
-    *vlo_stop++ = b;
-  }
-
-
-  /* This function adds memory bytes to the end of VLO. */
-
-  inline void add_memory (const void *str, size_t length)
-  {
-    assert (vlo_start != NULL);
-    if (vlo_stop + length > vlo_segment_stop)
-      _VLO_expand_memory (length);
-    memcpy (vlo_stop, str, length);
-    vlo_stop += length;
-  }
-
-
-  /* This function adds C string (with end marker '\0') to the end of
-     VLO.  Before the addition the function deletes last character of
-     the VLO.  The last character is suggested to be C string end
-     marker '\0'. */
-
-  void add_string (const char *str);
-
-private:
-
-  /* The following functions is used only by the class functions. */
-
-  void _VLO_expand_memory (size_t additional_length);
-};
-
-typedef vlo vlo_t;
-
-#endif /* #ifndef __cplusplus */
-
-#endif /* #ifndef __VLO__ */
+#endif

@@ -34,15 +34,15 @@ do_part() {
     PART="$1"
     PART_UC=$(echo "$1" | tr a-z A-Z)
 
-    echo "// PARTS ${PART_UC} ////////////////////////////////////////" > "${ROOT}/parts_${PART}_h"
+    echo "// PART H ${PART_UC} ////////////////////////////////////////" > "${ROOT}/parts_${PART}_h"
     $SED -n "/define ${PART_UC}_H/,/endif \/\/ ${PART_UC}_H/p" "${PARTS}/${PART}.h" | $SED '1d; $d' >> "${ROOT}/parts_${PART}_h"
-    $SED -e "/${PART}\.h\"/ {" -e "r ${ROOT}/parts_${PART}_h" -e 'd }' "${ROOT}/xmq-in-progress" > "${ROOT}/tmp"
+    $SED -e "/\/${PART}\.h\"/ {" -e "r ${ROOT}/parts_${PART}_h" -e 'd }' "${ROOT}/xmq-in-progress" > "${ROOT}/tmp"
 
-    echo "// PARTS ${PART_UC}_C ////////////////////////////////////////" > ${ROOT}/parts_${PART}_c
+    echo "// PART C ${PART_UC}_C ////////////////////////////////////////" > ${ROOT}/parts_${PART}_c
     echo >> ${ROOT}/parts_${PART}_c
     $SED -n "/ifdef ${PART_UC}_MODULE/,/endif \/\/ ${PART_UC}_MODULE/p" ${PARTS}/${PART}.c >> ${ROOT}/parts_${PART}_c
     echo >> ${ROOT}/parts_${PART}_c
-    $SED -e "/${PART}\.c/ {" -e "r ${ROOT}/parts_${PART}_c" -e 'd }' ${ROOT}/tmp > ${ROOT}/xmq-in-progress
+    $SED -e "/\/${PART}\.c/ {" -e "r ${ROOT}/parts_${PART}_c" -e 'd }' ${ROOT}/tmp > ${ROOT}/xmq-in-progress
 }
 
 do_version() {
@@ -73,6 +73,11 @@ do_part xml
 do_part xmq_internals
 do_part xmq_parser
 do_part xmq_printer
+do_part yaep_allocate
+do_part yaep_hashtab
+do_part yaep_objstack
+do_part yaep_vlobject
 do_part yaep
+
 
 do_version

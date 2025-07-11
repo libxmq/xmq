@@ -28,7 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 // PART HEADERS //////////////////////////////////////////////////
 
-// PARTS ALWAYS ////////////////////////////////////////
+// PART H ALWAYS ////////////////////////////////////////
 
 #include<stdbool.h>
 #include<stdlib.h>
@@ -80,7 +80,7 @@ typedef void(*FreeFuncPtr)(void*);
 
 #define ALWAYS_MODULE
 
-// PARTS COLORS ////////////////////////////////////////
+// PART H COLORS ////////////////////////////////////////
 
 #ifndef BUILDING_DIST_XMQ
 #include "xmq.h"
@@ -271,7 +271,7 @@ bool generate_tex_color(char *buf, size_t buf_size, XMQColorDef *def, const char
 
 #define COLORS_MODULE
 
-// PARTS CORE ////////////////////////////////////////
+// PART H CORE ////////////////////////////////////////
 
 #include<stdbool.h>
 #include<stdint.h>
@@ -284,7 +284,7 @@ bool coreParseI32(const char *s, int32_t *out);
 bool coreParseI64(const char *s, int64_t *out);
 //bool coreParseI128(const char *s, __int128 *out);
 
-// PARTS DEFAULT_THEMES ////////////////////////////////////////
+// PART H DEFAULT_THEMES ////////////////////////////////////////
 
 #ifndef BUILDING_DIST_XMQ
 #include "xmq.h"
@@ -298,7 +298,7 @@ const char *ansiWin(int i);
 
 #define DEFAULT_THEMES_MODULE
 
-// PARTS ENTITIES ////////////////////////////////////////
+// PART H ENTITIES ////////////////////////////////////////
 
 /**
     toHtmlEntity:
@@ -308,705 +308,12 @@ const char *toHtmlEntity(int uc);
 
 #define ENTITIES_MODULE
 
-// PARTS UTF8 ////////////////////////////////////////
+// PART H UTF8 ////////////////////////////////////////
 
 #ifndef BUILDING_DIST_XMQ
 #include"xmq.h"
 #include"colors.h"
-// PARTS XMQ_INTERNALS ////////////////////////////////////////
-
-#include<assert.h>
-#include<ctype.h>
-#include<errno.h>
-#include<math.h>
-#include<setjmp.h>
-#include<stdarg.h>
-#include<stdbool.h>
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-#include<unistd.h>
-
-#include"xmq.h"
-#include<libxml/tree.h>
-#include<libxml/parser.h>
-#include<libxml/HTMLparser.h>
-#include<libxml/HTMLtree.h>
-#include<libxml/xmlreader.h>
-#include<libxml/xpath.h>
-#include<libxml/xpathInternals.h>
-
-#ifndef BUILDING_DIST_XMQ
-#include"colors.h"
-#endif
-
-// STACK /////////////////////
-
-struct Stack;
-typedef struct Stack Stack;
-
-struct Vector;
-typedef struct Vector Vector;
-
-struct HashMap;
-typedef struct HashMap HashMap;
-
-struct HashMapIterator;
-typedef struct HashMapIterator HashMapIterator;
-
-struct MemBuffer;
-typedef struct MemBuffer MemBuffer;
-
-struct YaepParseRun;
-typedef struct YaepParseRun YaepParseRun;
-
-struct YaepGrammar;
-typedef struct YaepGrammar YaepGrammar;
-
-struct XMQParseState;
-typedef struct XMQParseState XMQParseState;
-
-// DECLARATIONS /////////////////////////////////////////////////
-
-#define LIST_OF_XMQ_TOKENS  \
-    X(whitespace)           \
-    X(equals)               \
-    X(brace_left)           \
-    X(brace_right)          \
-    X(apar_left)            \
-    X(apar_right)           \
-    X(cpar_left)            \
-    X(cpar_right)           \
-    X(quote)                \
-    X(entity)               \
-    X(comment)              \
-    X(comment_continuation) \
-    X(element_ns)           \
-    X(element_name)         \
-    X(element_key)          \
-    X(element_value_text)   \
-    X(element_value_quote)  \
-    X(element_value_entity) \
-    X(element_value_compound_quote)  \
-    X(element_value_compound_entity) \
-    X(attr_ns)             \
-    X(attr_key)            \
-    X(attr_value_text)     \
-    X(attr_value_quote)    \
-    X(attr_value_entity)   \
-    X(attr_value_compound_quote)    \
-    X(attr_value_compound_entity)   \
-    X(ns_declaration) \
-    X(ns_colon)  \
-
-#define MAGIC_COOKIE 7287528
-
-struct XMQNode
-{
-    xmlNodePtr node;
-};
-
-struct XMQDoc
-{
-    union {
-        xmlDocPtr xml;
-        htmlDocPtr html;
-    } docptr_; // Is both xmlDocPtr and htmlDocPtr.
-    const char *source_name_; // File name or url from which the documented was fetched.
-    int errno_; // A parse error is assigned a number.
-    const char *error_; // And the error is explained here.
-    XMQNode root_; // The root node.
-    XMQContentType original_content_type_; // Remember if this document was created from xmq/xml etc.
-    size_t original_size_; // Remember the original source size of the document it was loaded from.
-
-    // For now these references are here. I am not quite sure where to put them in the future.
-    // The IXML grammar can be parsed, but not actually turned into a yaep grammar until
-    // we have seen the content to be parsed, since we want to shrink the charset membership tests to a minimum.
-    // I.e. if the content only contains a:s and b:s (eg 'abbabbabaaab') then the charset test
-    // ['a'-'z'] shrinks down to ['a';'b']
-    YaepParseRun *yaep_parse_run_; // The currently executing parse variables.
-    YaepGrammar *yaep_grammar_; // The yaep grammar to be used by the run.
-    XMQParseState *yaep_parse_state_; // The parse state used to parse the ixml grammar.
-};
-
-#ifdef __cplusplus
-enum Level : short {
-#else
-enum Level {
-#endif
-    LEVEL_XMQ = 0,
-    LEVEL_ELEMENT_VALUE = 1,
-    LEVEL_ELEMENT_VALUE_COMPOUND = 2,
-    LEVEL_ATTR_VALUE = 3,
-    LEVEL_ATTR_VALUE_COMPOUND = 4
-};
-typedef enum Level Level;
-
-/**
-    XMQOutputSettings:
-    @add_indent: Default is 4. Indentation starts at 0 which means no spaces prepended.
-    @compact: Print on a single line limiting whitespace to a minimum.
-    @escape_newlines: Replace newlines with &#10; this is implied if compact is set.
-    @escape_non_7bit: Replace all chars above 126 with char entities, ie &#10;
-    @escape_tabs: Replace tabs with &#9;
-    @allow_json_quotes: Allow quoting with "..." for content with no newlines but single quotes.
-    @always_json_quotes: Always quote using "..." when quoting is needed.
-    @output_format: Print xmq/xml/html/json
-    @render_to: Render to terminal, html, tex.
-    @render_raw: If true do not write surrounding html and css colors, likewise for tex.
-    @only_style: Print only style sheet header.
-    @write_content: Write content to buffer.
-    @buffer_content: Supplied as buffer above.
-    @write_error: Write error to buffer.
-    @buffer_error: Supplied as buffer above.
-    @colorings: Map from namespace (default is the empty string) to  prefixes/postfixes to colorize the output for ANSI/HTML/TEX.
-*/
-struct XMQOutputSettings
-{
-    int  add_indent;
-    bool compact;
-    bool omit_decl;
-    bool use_color;
-    bool bg_dark_mode;
-    bool escape_newlines;
-    bool escape_non_7bit;
-    bool escape_tabs;
-    bool allow_json_quotes;
-    bool always_json_quotes;
-
-    XMQContentType output_format;
-    XMQRenderFormat render_to;
-    bool render_raw;
-    bool only_style;
-    const char *render_theme;
-
-    XMQWriter content;
-    XMQWriter error;
-
-    // If printing to memory:
-    MemBuffer *output_buffer;
-    char **output_buffer_start;
-    char **output_buffer_stop;
-    size_t *output_skip;
-
-    const char *indentation_space; // If NULL use " " can be replaced with any other string.
-    const char *explicit_space; // If NULL use " " can be replaced with any other string.
-    const char *explicit_tab; // If NULL use "\t" can be replaced with any other string.
-    const char *explicit_cr; // If NULL use "\t" can be replaced with any other string.
-    const char *explicit_nl; // If NULL use "\n" can be replaced with any other string.
-    const char *prefix_line; // If non-NULL print this as the leader before each line.
-    const char *postfix_line; // If non-NULL print this as the ending after each line.
-
-    const char *use_id; // If non-NULL inser this id in the pre tag.
-    const char *use_class; // If non-NULL insert this class in the pre tag.
-
-    XMQTheme *theme; // The theme used to print.
-    void *free_me;
-    void *free_and_me;
-};
-typedef struct XMQOutputSettings XMQOutputSettings;
-
-enum IXMLTermType
-{
-    IXML_TERMINAL, IXML_NON_TERMINAL, IXML_CHARSET
-};
-typedef enum IXMLTermType IXMLTermType;
-
-struct IXMLCharsetPart;
-typedef struct IXMLCharsetPart IXMLCharsetPart;
-struct IXMLCharsetPart
-{
-    IXMLCharsetPart *next;
-    // A charset range [ 'a' - 'z' ]
-    // A single char is [ 'a' - 'a' ] used for each element in a string set definition, eg 'abc'
-    int from, to;
-    // A charset category [ Lc ] for lower case character or [Zs] for whitespace,
-    // stored as two characters and the null terminatr.
-    char category[3];
-};
-
-struct IXMLCharset
-{
-    // Negate the check, exclude the specified characters.
-    bool exclude;
-    // Charset contents.
-    IXMLCharsetPart *first;
-    IXMLCharsetPart *last;
-};
-typedef struct IXMLCharset IXMLCharset;
-
-struct IXMLTerminal
-{
-    char *name;
-    int code;
-};
-typedef struct IXMLTerminal IXMLTerminal;
-
-struct IXMLNonTerminal
-{
-    char *name;
-    char *alias;
-    IXMLCharset *charset; // If the rule embodies a charset.
-};
-typedef struct IXMLNonTerminal IXMLNonTerminal;
-
-struct IXMLTerm // A term is an element in the rhs vector in the rule.
-{
-    IXMLTermType type;
-    char mark; // Exclude a term in a rule's rhs: rr: -A, B;  then only the contents of A will be printed.
-    IXMLTerminal *t;
-    IXMLNonTerminal *nt;
-};
-typedef struct IXMLTerm IXMLTerm;
-
-struct IXMLRule
-{
-    IXMLNonTerminal *rule_name;
-    char mark; // ^@-+
-    int cost;  // 0, 1, 2 or more. I higher cost is avoided when ambiguity arises.
-    bool expected_ambiguity; // Set to true means we want the multiple parses.
-    Vector *rhs_terms;
-};
-typedef struct IXMLRule IXMLRule;
-
-struct XMQParseState
-{
-    char *source_name; // Only used for generating any error messages.
-    void *out;
-    const char *buffer_start; // Points to first byte in buffer.
-    const char *buffer_stop;   // Points to byte >after< last byte in buffer.
-    const char *i; // Current parsing position.
-    size_t line; // Current line.
-    size_t col; // Current col.
-    XMQParseError error_nr; // A standard parse error enum that maps to text.
-    const char *error_info; // Additional info printed with the error nr.
-    char *generated_error_msg; // Additional error information.
-    MemBuffer *generating_error_msg;
-    jmp_buf error_handler;
-
-    bool simulated; // When true, this is generated from JSON parser to simulate an xmq element name.
-    XMQParseCallbacks *parse;
-    XMQDoc *doq;
-    const char *implicit_root; // Assume that this is the first element name
-    Stack *element_stack; // Top is last created node
-    void *element_last; // Last added sibling to stack top node.
-    bool parsing_doctype; // True when parsing a doctype.
-    void *add_pre_node_before; // Used when retrofitting pre-root comments and doctype found in json.
-    bool root_found; // Used to decide if _// should be printed before or after root.
-    void *add_post_node_after; // Used when retrofitting post-root comments found in json.
-    bool doctype_found; // True after a doctype has been parsed.
-    bool parsing_pi; // True when parsing a processing instruction, pi.
-    bool merge_text; // Merge text nodes and character entities.
-    bool no_trim_quotes; // No trimming if quotes, used when reading json strings.
-    bool ixml_all_parses; // If IXML parse is ambiguous then print all parses.
-    bool ixml_try_to_recover; // If IXML parse fails, try to recover.
-    const char *pi_name; // Name of the pi node just started.
-    XMQOutputSettings *output_settings; // Used when coloring existing text using the tokenizer.
-    int magic_cookie; // Used to check that the state has been properly initialized.
-
-    char *element_namespace; // The element namespace is found before the element name. Remember the namespace name here.
-    char *attribute_namespace; // The attribute namespace is found before the attribute key. Remember the namespace name here.
-    bool declaring_xmlns; // Set to true when the xmlns declaration is found, the next attr value will be a href
-    void *declaring_xmlns_namespace; // The namespace to be updated with attribute value, eg. xmlns=uri or xmlns:prefix=uri
-
-    void *default_namespace; // If xmlns=http... has been set, then a pointer to the namespace object is stored here.
-
-    // These are used for better error reporting.
-    const char *last_body_start;
-    size_t last_body_start_line;
-    size_t last_body_start_col;
-    const char *last_attr_start;
-    size_t last_attr_start_line;
-    size_t last_attr_start_col;
-    const char *last_quote_start;
-    size_t last_quote_start_line;
-    size_t last_quote_start_col;
-    const char *last_compound_start;
-    size_t last_compound_start_line;
-    size_t last_compound_start_col;
-    const char *last_equals_start;
-    size_t last_equals_start_line;
-    size_t last_equals_start_col;
-    const char *last_suspicios_quote_end;
-    size_t last_suspicios_quote_end_line;
-    size_t last_suspicios_quote_end_col;
-
-    ///////// The following variables are used when parsing ixml. //////////////////////////////////
-    // Collect all unique terminals in this map from the name. #78 and 'x' is the same terminal with code 120.
-    // The name is a #hex version of unicode codepoint.
-    HashMap *ixml_terminals_map;
-    // References to non-terminals, ie rules (includes mark -^@).
-    Vector *ixml_non_terminals;
-    // Store all rules here. The rule has a rule_name which is a non-terminal ref to itself.
-    Vector *ixml_rules;
-    // Rule stack is pushed by groups (..), ?, *, **, + and ++.
-    Stack  *ixml_rule_stack;
-    // Generated rule counter. Starts at 0 and increments after each generated
-    // anonymous rule, ie (..), ? etc. The rules will have the names /0 /1 /2 etc.
-    int num_generated_rules;
-    // The ixml_rule is the current rule that we are building.
-    IXMLRule *ixml_rule;
-    // The ixml_nonterminal is the current rule reference.
-    IXMLNonTerminal *ixml_nonterminal;
-    // The ixml_tmp_terminals is the current collection of terminals, ie characters.
-    // A single ixml #78 or 'x' or "x" adds a single terminal to this vector.
-    // The string 'xy' adds two terminals to this vector, etc.
-    // These terminals are then added to the rule's rhs.
-    Vector *ixml_tmp_terminals;
-    // The ixml_tmp_terms is the current collection of terms (terminal or non-terminals),
-    // These terms are then added to the rule's rhs.
-//    Vector *ixml_rhs_tmp_terms;
-    // These are the marks @-^ for the terminals.
-    Vector *ixml_rhs_tmp_marks;
-    // Has the cost marker "=<" or ":<" or "=<<<" etc been used for a rule in this ixml grammar?
-    bool ixml_costs_enabled;
-    // Has a rule been marked with "*" which means we want all parses!
-    bool ixml_controlled_ambiguity_enabled;
-    // The most recently parsed mark.
-    char ixml_mark;
-    // The most recently parsed encoded value #41
-    int ixml_encoded;
-    // Any charset we are currently building.
-    IXMLCharset *ixml_charset;
-    // Parsing ranges of charsets.
-    int ixml_charset_from;
-    int ixml_charset_to;
-    // When parsing the grammar, collect all charset categories that we use.
-    HashMap *ixml_found_categories;
-
-    // These are used when traversing the IXML parse tree and building the yaep grammar.
-    char **yaep_tmp_rhs_;
-    char *yaep_tmp_marks_;
-    int *yaep_tmp_transl_;
-    HashMapIterator *yaep_i_;
-    size_t yaep_j_;
-
-    // When debugging parsing of ixml, track indentation of depth here.
-    int depth;
-    // Generate xml as well.
-    bool build_xml_of_ixml;
-
-    // When fixing ixml and using --lines the already added unicode chars
-    // are stored here between lines.
-    char *used_unicodes;
-};
-
-/**
-   XMQPrintState:
-   @current_indent: The current_indent stores how far we have printed on the current line.
-                    0 means nothing has been printed yet.
-   @line_indent:  The line_indent stores the current indentation level from which print
-                  starts for each new line. The line_indent is 0 when we start printing the xmq.
-   @last_char: the last_char remembers the most recent printed character. or 0 if no char has been printed yet.
-   @color_pre: The active color prefix.
-   @prev_color_pre: The previous color prefix, used for restoring utf8 text after coloring unicode whitespace.
-   @restart_line: after nl_and_indent print this to restart coloring of line.
-   @ns: the last namespace reference.
-   @output_settings: the output settings.
-   @doc: The xmq document that is being printed.
-*/
-struct XMQPrintState
-{
-    size_t current_indent;
-    size_t line_indent;
-    int last_char;
-    const char *replay_active_color_pre;
-    const char *restart_line;
-    const char *last_namespace;
-    Stack *pre_nodes; // Used to remember leading comments/doctype when printing json.
-    size_t pre_post_num_comments_total; // Number of comments outside of the root element.
-    size_t pre_post_num_comments_used; // Active number of comment outside of the root element.
-    Stack *post_nodes; // Used to remember ending comments when printing json.
-    XMQOutputSettings *output_settings;
-    XMQDoc *doq;
-};
-typedef struct XMQPrintState XMQPrintState;
-
-/**
-    XMQQuoteSettings:
-    @force:           Always add single quotes. More quotes if necessary.
-    @compact:         Generate compact quote on a single line. Using &#10; and no superfluous whitespace.
-    @value_after_key: If enties are introduced by the quoting, then use compound ( ) around the content.
-
-    @indentation_space: Use this as the indentation character. If NULL default to " ".
-    @explicit_space: Use this as the explicit space/indentation character. If NULL default to " ".
-    @newline:     Use this as the newline character. If NULL default to "\n".
-    @prefix_line: Prepend each line with this. If NULL default to empty string.
-    @postfix_line Suffix each line whith this. If NULL default to empty string.
-    @prefix_entity: Prepend each entity with this. If NULL default to empty string.
-    @postfix_entity: Suffix each entity whith this. If NULL default to empty string.
-    @prefix_doublep: Prepend each ( ) with this. If NULL default to empty string.
-    @postfix_doublep: Suffix each ( ) whith this. If NULL default to empty string.
-*/
-struct XMQQuoteSettings
-{
-    bool force; // Always add single quotes. More quotes if necessary.
-    bool compact; // Generate compact quote on a single line. Using &#10; and no superfluous whitespace.
-    bool allow_json_quotes; // Permit "..." json quoting.
-    bool value_after_key; // If enties are introduced by the quoting, then use compound ( ) around the content.
-
-    const char *indentation_space;  // Use this as the indentation character. If NULL default to " ".
-    const char *explicit_space;  // Use this as the explicit space character inside quotes. If NULL default to " ".
-    const char *explicit_nl;      // Use this as the newline character. If NULL default to "\n".
-    const char *explicit_tab;      // Use this as the tab character. If NULL default to "\t".
-    const char *explicit_cr;      // Use this as the cr character. If NULL default to "\r".
-    const char *prefix_line;  // Prepend each line with this. If NULL default to empty string.
-    const char *postfix_line; // Append each line whith this, before any newline.
-    const char *prefix_entity;  // Prepend each entity with this. If NULL default to empty string.
-    const char *postfix_entity; // Append each entity whith this. If NULL default to empty string.
-    const char *prefix_doublep;  // Prepend each ( ) with this. If NULL default to empty string.
-    const char *postfix_doublep; // Append each ( ) whith this. If NULL default to empty string.
-};
-typedef struct XMQQuoteSettings XMQQuoteSettings;
-
-void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, const char *start, const char *stop);
-
-// Text functions ////////////////
-
-bool is_all_xml_whitespace(const char *start);
-bool is_lowercase_hex(char c);
-bool is_unicode_whitespace(const char *start, const char *stop);
-size_t count_whitespace(const char *i, const char *stop);
-
-// XMQ parser utility functions //////////////////////////////////
-
-bool is_xml_whitespace(char c); // 0x9 0xa 0xd 0x20
-bool is_xmq_token_whitespace(char c); // 0xa 0xd 0x20
-bool is_xmq_attribute_key_start(char c);
-bool is_xmq_comment_start(char c, char cc);
-bool is_xmq_compound_start(char c);
-bool is_xmq_doctype_start(const char *start, const char *stop);
-bool is_xmq_pi_start(const char *start, const char *stop);
-bool is_xmq_entity_start(char c);
-bool is_xmq_quote_start(char c);
-bool is_xmq_json_quote_start(char c);
-bool is_xmq_text_value(const char *i, const char *stop);
-bool is_xmq_text_value_char(const char *i, const char *stop);
-bool unsafe_value_start(char c, char cc);
-bool is_safe_value_char(const char *i, const char *stop);
-
-size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
-int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound);
-size_t count_necessary_slashes(const char *start, const char *stop);
-
-
-// Common parser functions ///////////////////////////////////////
-
-void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col);
-
-Level enter_compound_level(Level l);
-XMQColor level_to_quote_color(Level l);
-XMQColor level_to_entity_color(Level l);
-void attr_strlen_name_prefix(xmlAttr *attr, const char **name, const char **prefix, size_t *total_u_len);
-void element_strlen_name_prefix(xmlNode *attr, const char **name, const char **prefix, size_t *total_u_len);
-void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len);
-size_t find_attr_key_max_u_width(xmlAttr *a);
-size_t find_namespace_max_u_width(size_t max, xmlNs *ns);
-size_t find_element_key_max_width(xmlNodePtr node, xmlNodePtr *restart_find_at_node);
-bool is_hex(char c);
-unsigned char hex_value(char c);
-const char *find_word_ignore_case(const char *start, const char *stop, const char *word);
-
-XMQParseState *xmqAllocateParseState(XMQParseCallbacks *callbacks);
-void xmqFreeParseState(XMQParseState *state);
-bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop);
-bool xmqTokenizeFile(XMQParseState *state, const char *file);
-
-void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
-void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
-void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
-
-// XMQ tokenizer functions ///////////////////////////////////////////////////////////
-
-void eat_xml_whitespace(XMQParseState *state, const char **start, const char **stop);
-void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop);
-void eat_xmq_entity(XMQParseState *state);
-void eat_xmq_comment_to_eol(XMQParseState *state, const char **content_start, const char **content_stop);
-void eat_xmq_comment_to_close(XMQParseState *state, const char **content_start, const char **content_stop, size_t n, bool *found_asterisk);
-void eat_xmq_text_value(XMQParseState *state);
-bool peek_xmq_next_is_equal(XMQParseState *state);
-size_t count_xmq_quotes(const char *i, const char *stop);
-void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop);
-size_t calculate_incidental_indent(const char *start, const char *stop);
-char *xmq_trim_quote(const char *start, const char *stop, bool is_xmq, bool is_comment);
-char *escape_xml_comment(const char *comment);
-char *unescape_xml_comment(const char *comment);
-void xmq_fixup_html_before_writeout(XMQDoc *doq);
-void xmq_fixup_comments_after_readin(XMQDoc *doq);
-
-char *xmq_comment(int indent,
-                 const char *start,
-                 const char *stop,
-                 XMQQuoteSettings *settings);
-char *xmq_un_comment(const char *start, const char *stop);
-char *xmq_un_quote(const char *start, const char *stop, bool remove_qs, bool is_xmq);
-
-// XMQ syntax parser functions ///////////////////////////////////////////////////////////
-
-void parse_xmq(XMQParseState *state);
-void parse_xmq_attribute(XMQParseState *state);
-void parse_xmq_attributes(XMQParseState *state);
-void parse_xmq_comment(XMQParseState *state, char cc);
-void parse_xmq_compound(XMQParseState *state, Level level);
-void parse_xmq_compound_children(XMQParseState *state, Level level);
-void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi);
-void parse_xmq_element(XMQParseState *state);
-void parse_xmq_doctype(XMQParseState *state);
-void parse_xmq_pi(XMQParseState *state);
-void parse_xmq_entity(XMQParseState *state, Level level);
-void parse_xmq_quote(XMQParseState *state, Level level);
-void parse_xmq_json_quote(XMQParseState *state, Level level);
-void parse_xmq_text_any(XMQParseState *state);
-void parse_xmq_text_name(XMQParseState *state);
-void parse_xmq_text_value(XMQParseState *state, Level level);
-void parse_xmq_value(XMQParseState *state, Level level);
-void parse_xmq_whitespace(XMQParseState *state);
-
-// XML/HTML dom functions ///////////////////////////////////////////////////////////////
-
-xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop);
-char *xml_collapse_text(xmlNode *node);
-xmlNode *xml_first_child(xmlNode *node);
-xmlNode *xml_last_child(xmlNode *node);
-xmlNode *xml_prev_sibling(xmlNode *node);
-xmlNode *xml_next_sibling(xmlNode *node);
-xmlAttr *xml_first_attribute(xmlNode *node);
-xmlNs *xml_first_namespace_def(xmlNode *node);
-xmlNs *xml_next_namespace_def(xmlNs *ns);
-xmlAttr *xml_next_attribute(xmlAttr *attr);
-const char*xml_element_name(xmlNode *node);
-const char*xml_element_content(xmlNode *node);
-const char *xml_element_ns_prefix(const xmlNode *node);
-const char*xml_attr_key(xmlAttr *attr);
-const char*xml_namespace_href(xmlNs *ns);
-bool is_entity_node(const xmlNode *node);
-bool is_content_node(const xmlNode *node);
-bool is_doctype_node(const xmlNode *node);
-bool is_comment_node(const xmlNode *node);
-bool is_pi_node(const xmlNode *node);
-bool is_leaf_node(xmlNode *node);
-bool is_key_value_node(xmlNode *node);
-void trim_node(xmlNode *node, int flags);
-void trim_text_node(xmlNode *node, int flags);
-
-// Output buffer functions ////////////////////////////////////////////////////////
-
-const char *build_error_message(const char *fmt, ...);
-
-void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
-
-bool need_separation_before_attribute_key(XMQPrintState *ps);
-bool need_separation_before_element_name(XMQPrintState *ps);
-bool need_separation_before_quote(XMQPrintState *ps);
-bool need_separation_before_comment(XMQPrintState *ps);
-
-void check_space_before_attribute(XMQPrintState *ps);
-void check_space_before_comment(XMQPrintState *ps);
-void check_space_before_entity_node(XMQPrintState *ps);
-void check_space_before_key(XMQPrintState *ps);
-void check_space_before_opening_brace(XMQPrintState *ps);
-void check_space_before_closing_brace(XMQPrintState *ps);
-void check_space_before_quote(XMQPrintState *ps, Level level);
-
-bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *stop);
-
-// Printing the DOM as xmq/htmq ///////////////////////////////////////////////////
-
-size_t print_char_entity(XMQPrintState *ps, XMQColor c, const char *start, const char *stop);
-void print_color_post(XMQPrintState *ps, XMQColor c);
-void print_color_pre(XMQPrintState *ps, XMQColor c);
-void print_comment_line(XMQPrintState *ps, const char *start, const char *stop, bool compact);
-void print_comment_lines(XMQPrintState *ps, const char *start, const char *stop, bool compact);
-void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *postfix);
-void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps, XMQColor c, const char *start, const char *stop);
-void print_quoted_spaces(XMQPrintState *ps, XMQColor c, int n);
-void print_quotes(XMQPrintState *ps, int num, XMQColor c);
-void print_double_quote(XMQPrintState *ps, XMQColor c);
-void print_slashes(XMQPrintState *ps, const char *pre, const char *post, size_t n);
-void print_white_spaces(XMQPrintState *ps, int n);
-void print_all_whitespace(XMQPrintState *ps, const char *start, const char *stop, Level level);
-
-void print_nodes(XMQPrintState *ps, xmlNode *from, xmlNode *to, size_t align);
-void print_node(XMQPrintState *ps, xmlNode *node, size_t align);
-void print_entity_node(XMQPrintState *ps, xmlNode *node);
-void print_content_node(XMQPrintState *ps, xmlNode *node);
-void print_comment_node(XMQPrintState *ps, xmlNode *node);
-void print_doctype(XMQPrintState *ps, xmlNode *node);
-void print_key_node(XMQPrintState *ps, xmlNode *node, size_t align);
-void print_leaf_node(XMQPrintState *ps, xmlNode *node);
-void print_element_with_children(XMQPrintState *ps, xmlNode *node, size_t align);
-size_t print_element_name_and_attributes(XMQPrintState *ps, xmlNode *node);
-void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align);
-void print_attributes(XMQPrintState *ps, xmlNodePtr node);
-void print_value(XMQPrintState *ps, xmlNode *node, Level level);
-void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level);
-void print_value_internal(XMQPrintState *ps, xmlNode *node, Level level);
-const char *needs_escape(XMQRenderFormat f, const char *start, const char *stop);
-size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *stop);
-size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...);
-size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop);
-void print_quote(XMQPrintState *ps, XMQColor c, const char *start, const char *stop);
-
-struct YaepGrammar;
-typedef struct YaepGrammar YaepGrammar;
-struct YaepParseRun;
-typedef struct YaepParseRun YaepParseRun;
-struct yaep_tree_node;
-
-bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar, const char *start, const char *stop, int flags);
-
-typedef void (*XMQContentCallback)(XMQParseState *state,
-                                   size_t start_line,
-                                   size_t start_col,
-                                   const char *start,
-                                   const char *stop,
-                                   const char *suffix);
-
-struct XMQParseCallbacks
-{
-#define X(TYPE) \
-    XMQContentCallback handle_##TYPE;
-LIST_OF_XMQ_TOKENS
-#undef X
-
-    void (*init)(XMQParseState*);
-    void (*done)(XMQParseState*);
-
-    int magic_cookie;
-};
-
-struct XMQPrintCallbacks
-{
-    void (*writeIndent)(int n);
-    void (*writeElementName)(char *start, char *stop);
-    void (*writeElementContent)(char *start, char *stop);
-};
-
-#define DO_CALLBACK(TYPE, state, start_line, start_col, start, stop, suffix) \
-    { if (state->parse->handle_##TYPE != NULL) state->parse->handle_##TYPE(state,start_line,start_col,start,stop,suffix); }
-
-#define DO_CALLBACK_SIM(TYPE, state, start_line, start_col, start, stop, suffix) \
-    { if (state->parse->handle_##TYPE != NULL) { state->simulated=true; state->parse->handle_##TYPE(state,start_line,start_col,start,stop,suffix); state->simulated=false; } }
-
-bool debug_enabled();
-
-void xmq_setup_parse_callbacks(XMQParseCallbacks *callbacks);
-void xmq_set_yaep_grammar(XMQDoc *doc, YaepGrammar *g);
-YaepGrammar *xmq_get_yaep_grammar(XMQDoc *doc);
-YaepParseRun *xmq_get_yaep_parse_run(XMQDoc *doc);
-XMQParseState *xmq_get_yaep_parse_state(XMQDoc *doc);
-
-void set_node_namespace(XMQParseState *state, xmlNodePtr node, const char *node_name);
-
-bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **out_buffer);
-bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer);
-
-// Multicolor terminals like gnome-term etc.
-
-#define NOCOLOR      "\033[0m"
-
-#define XMQ_INTERNALS_MODULE
-
+#include"xmq_internals.h"
 #endif
 
 struct XMQPrintState;
@@ -1021,7 +328,7 @@ size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...);
 
 #define UTF8_MODULE
 
-// PARTS HASHMAP ////////////////////////////////////////
+// PART H HASHMAP ////////////////////////////////////////
 
 struct HashMap;
 typedef struct HashMap HashMap;
@@ -1047,9 +354,13 @@ void hashmap_free_iterator(HashMapIterator *i);
 
 #define HASHMAP_MODULE
 
-// PARTS IXML ////////////////////////////////////////
+// PART H IXML ////////////////////////////////////////
+
+#ifndef BUILDING_DIST_XMQ
 
 #include"xmq.h"
+
+#endif
 
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
@@ -1093,7 +404,7 @@ void ixml_print_grammar(XMQParseState *state);
 
 #define IXML_MODULE
 
-// PARTS MEMBUFFER ////////////////////////////////////////
+// PART H MEMBUFFER ////////////////////////////////////////
 
 #include<stdlib.h>
 #include<stdarg.h>
@@ -1136,7 +447,7 @@ void membuffer_prefix_lines(MemBuffer *mb, const char *prefix);
 
 #define MEMBUFFER_MODULE
 
-// PARTS STACK ////////////////////////////////////////
+// PART H STACK ////////////////////////////////////////
 
 #include<stdlib.h>
 
@@ -1165,7 +476,7 @@ void *stack_rock(Stack *s);
 
 #define STACK_MODULE
 
-// PARTS TEXT ////////////////////////////////////////
+// PART H TEXT ////////////////////////////////////////
 
 #include<stdbool.h>
 #include<stdlib.h>
@@ -1223,7 +534,7 @@ bool category_has_code(int code, int *cat, size_t cat_len);
 
 #define TEXT_MODULE
 
-// PARTS VECTOR ////////////////////////////////////////
+// PART H VECTOR ////////////////////////////////////////
 
 struct Vector
 {
@@ -1242,7 +553,7 @@ void *vector_element_at(Vector *v, size_t i);
 
 #define VECTOR_MODULE
 
-// PARTS XML ////////////////////////////////////////
+// PART H XML ////////////////////////////////////////
 
 #include<stdbool.h>
 #include<libxml/tree.h>
@@ -1282,7 +593,7 @@ void xml_add_root_child(xmlDoc *doc, xmlNode *node);
 
 #define XML_MODULE
 
-// PARTS XMQ_PARSER ////////////////////////////////////////
+// PART H XMQ_PARSER ////////////////////////////////////////
 
 struct XMQParseState;
 typedef struct XMQParseState XMQParseState;
@@ -1291,7 +602,7 @@ void parse_xmq(XMQParseState *state);
 
 #define XMQ_PARSER_MODULE
 
-// PARTS XMQ_PRINTER ////////////////////////////////////////
+// PART H XMQ_PRINTER ////////////////////////////////////////
 
 struct XMQPrintState;
 typedef struct XMQPrintState XMQPrintState;
@@ -1371,7 +682,883 @@ void print_value(XMQPrintState *ps, xmlNode *node, Level level);
 
 #define XMQ_PRINTER_MODULE
 
-// PARTS YAEP ////////////////////////////////////////
+// PART H YAEP_ALLOCATE ////////////////////////////////////////
+
+#include<stddef.h>
+
+/**
+ * Type for functions behaving like standard malloc().
+ *
+ * @sa #Yaep_calloc()
+ * @sa #Yaep_realloc()
+ * @sa #Yaep_free()
+ */
+typedef void *(*Yaep_malloc) (size_t);
+
+/**
+ * Type for functions behaving like standard calloc().
+ *
+ * @sa #Yaep_malloc()
+ * @sa #Yaep_realloc()
+ * @sa #Yaep_free()
+ */
+typedef void *(*Yaep_calloc) (size_t, size_t);
+
+/**
+ * Type for functions behaving like standard realloc().
+ *
+ * @sa #Yaep_malloc()
+ * @sa #Yaep_calloc()
+ * @sa #Yaep_free()
+ */
+typedef void *(*Yaep_realloc) (void *, size_t);
+
+/**
+ * Type for functions behaving like standard free().
+ *
+ * @sa #Yaep_malloc()
+ * @sa #Yaep_calloc()
+ * @sa #Yaep_realloc()
+ */
+typedef void (*Yaep_free) (void *ptr);
+
+/**
+ * Callback type for allocation errors.
+ *
+ * It is not necessary for callbacks of this type
+ * to return to the caller.
+ *
+ * @param userptr Pointer provided earlier by the caller.
+ *
+ * @sa #yaep_alloc_geterrfunc()
+ * @sa #yaep_alloc_seterr()
+ */
+typedef void (*Yaep_alloc_error) (void *userptr);
+
+/**
+ * YAEP allocator type.
+ *
+ * @sa #yaep_alloc_new()
+ */
+typedef struct YaepAllocator YaepAllocator;
+
+/**
+ * Default error handling function.
+ *
+ * This function writes an error message to @ stderr
+ * and exits the program.
+ *
+ * @param ignored Ignored parameter.
+ *
+ * @sa #yaep_alloc_seterr()
+ */
+void yaep_alloc_defaulterrfunc (void *ignored);
+
+/**
+ * Creates a new allocator.
+ *
+ * The new allocator uses #yaep_alloc_defaulterrfunc()
+ * and a null user pointer.
+ *
+ * @param mallocf Pointer to function which behaves like @c malloc().
+ * 	If this is a null pointer, @c malloc() is used instead.
+ * @param callocf Pointer to function which behaves like @c calloc().
+ * 	If this is a null pointer, a function which behaves like @c calloc()
+ * 	and is compatible with the provided @c mallocf is used instead.
+ * @param reallocf Pointer to function which behaves analogously to
+ * 	@c realloc() with respect to @c mallocf and @c callocf.
+ * 	If this is a null pointer, and @c malloc() and @c calloc() are used
+ * 	for @c mallocf and @c callocf, respectively,
+ * 	then @c realloc() is used instead.
+ * 	Everything else is an error.
+ * @param freef Pointer to function which can free memory returned by
+ * 	@c mallocf, @c callocf, and @c reallocf.
+ * 	If this is a null pointer, and @c malloc(), @c calloc(), and
+ * 	@c realloc() are used for @c mallocf, @c callocf, and @c reallocf,
+ * 	respectively, then @c free() is used instead.
+ * 	Everything else is an error.
+ *
+ * @return On success, a pointer to the new allocator is returned.\n
+ * 	On error, a null pointer is returned.
+ *
+ * @sa #yaep_alloc_del()
+ * @sa #yaep_alloc_seterr()
+ * @sa #yaep_alloc_defaulterrfunc()
+ */
+YaepAllocator *yaep_alloc_new (Yaep_malloc mallocf, Yaep_calloc callocf,
+			       Yaep_realloc reallocf, Yaep_free freef);
+
+/**
+ * Destroys an allocator.
+ *
+ * @param allocator Pointer to allocator.
+ *
+ * @sa #yaep_alloc_new()
+ */
+void yaep_alloc_del (YaepAllocator * allocator);
+
+/**
+ * Allocates memory.
+ *
+ * @param allocator Pointer to allocator.
+ * @param size Number of bytes to allocate.
+ *
+ * @return On success, a pointer to the allocated memory is returned.
+ * 	If @c size was zero, this may be a null pointer.\n
+ * 	On error, the allocator's error function is called.
+ * 	If that function returns, a null pointer is returned.
+ *
+ * @sa #yaep_free()
+ * @sa #yaep_realloc()
+ * @sa #yaep_calloc()
+ * @sa #yaep_alloc_seterr()
+ */
+void *yaep_malloc (YaepAllocator * allocator, size_t size);
+
+/**
+ * Allocates zero-initialised memory.
+ *
+ * @param allocator Pointer to allocator.
+ * @param nmemb Number of elements to allocate.
+ * @param size Element size in bytes.
+ *
+ * @return On success, a pointer to <code>nmemb * size</code> bytes
+ * 	of newly allocated, zero-initialised  memory is returned.
+ * 	If <code>nmemb * size</code> was zero, this may be a null pointer.\n
+ * 	On error, the allocator's error function is called.
+ * 	If that function returns, a null pointer is returned.
+ *
+ * @sa #yaep_free()
+ * @sa #yaep_realloc()
+ * @sa #yaep_malloc()
+ * @sa #yaep_alloc_seterr()
+ */
+void *yaep_calloc (YaepAllocator * allocator, size_t nmemb, size_t size);
+
+/**
+ * Resizes memory.
+ *
+ * @param allocator Pointer to allocator previously used to
+ * 	allocate @c ptr.
+ * @param ptr Pointer to memory previously returned by
+ * 	#yaep_malloc(), #yaep_calloc(), or #yaep_realloc().
+ * 	If this is a null pointer, this function behaves like #yaep_malloc().
+ * @param size New memory size in bytes.
+ *
+ * @return On success, a pointer to @c size bytes of allocated memory
+ * 	is returned, the contents of which is equal to the contents of
+ * 	@c ptr immediately before the call, up to the smaller size of
+ * 	both blocks.\n
+ * 	On error, the allocator's error function is called.
+ * 	If that function returns, a null pointer is returned.
+ *
+ * @sa #yaep_free()
+ * @sa #yaep_malloc()
+ * @sa #yaep_calloc()
+ * @sa #yaep_alloc_seterr()
+ */
+void *yaep_realloc (YaepAllocator * allocator, void *ptr, size_t size);
+
+/**
+ * Frees previously allocated memory.
+ *
+ * @param allocator Pointer to allocator previously used to
+ * 	allocate @c ptr.
+ * @param ptr Pointer to memory to be freed.
+ * 	If this is a null pointer, no operation is performed.
+ *
+ * @sa #yaep_malloc()
+ * @sa #yaep_calloc()
+ * @sa #yaep_realloc()
+ */
+void yaep_free (YaepAllocator * allocator, void *ptr);
+
+/**
+ * Obtains the current error function of an allocator.
+ *
+ * @param allocator Pointer to allocator.
+ *
+ * @return On success, a pointer to the error function of the
+ * 	specified allocator is returned.
+ * 	If no error function has ever been set for this allocator,
+ * 	this is #yaep_alloc_defaulterrfunc().\n
+ * 	On error, a null pointer is returned.
+ *
+ * @sa #yaep_alloc_getuserptr()
+ * @sa #yaep_alloc_seterr()
+ * @sa #yaep_alloc_defaulterrfunc()
+ */
+Yaep_alloc_error yaep_alloc_geterrfunc (YaepAllocator * allocator);
+
+/**
+ * Obtains the current user-provided pointer.
+ *
+ * @param allocator Pointer to allocator.
+ *
+ * @return On success, the user-provided pointer of the
+ * 	specified allocator is returned.
+ * 	If no pointer has ever been set for this allocator,
+ * 	a pointer to the allocator itself is returned.\n
+ * 	On error, a null pointer is returned.
+ *
+ * @sa #yaep_alloc_seterr()
+ */
+void *yaep_alloc_getuserptr (YaepAllocator * allocator);
+
+/**
+ * Sets the error function and user-provided pointer of an allocator.
+ *
+ * The error function is called by the allocator with the user-provided
+ * pointer as argument whenever an allocation error occurs.
+ *
+ * @param allocator Pointer to allocator.
+ * @param errfunc Pointer to error function.
+ * 	If this is a null pointer, #yaep_alloc_defaulterrfunc() will be used.
+ * @param userptr User-provided pointer.
+ * 	The allocator will never attempt to dereference this pointer.
+ *
+ * @sa #yaep_alloc_geterrfunc()
+ * @sa #yaep_alloc_getuserptr()
+ */
+void yaep_alloc_seterr (YaepAllocator * allocator, Yaep_alloc_error errfunc,
+			void *userptr);
+
+#define YAEP_ALLOCATE_MODULE
+
+// PART H YAEP_HASHTAB ////////////////////////////////////////
+
+#ifndef BUILDING_DIST_XMQ
+
+#include <stdbool.h>
+#include <stdlib.h>
+
+#include"yaep_allocate.h"
+
+#endif
+
+/* The hash table element is represented by the following type. */
+
+typedef const void *hash_table_entry_t;
+
+
+/* Hash tables are of the following type.  The structure
+   (implementation) of this type is not needed for using the hash
+   tables.  All work with hash table should be executed only through
+   functions mentioned below. */
+
+typedef struct
+{
+  /* Current size (in entries) of the hash table */
+  size_t size;
+  /* Current number of elements including also deleted elements */
+  size_t number_of_elements;
+  /* Current number of deleted elements in the table */
+  size_t number_of_deleted_elements;
+  /* The following member is used for debugging. Its value is number
+     of all calls of `find_hash_table_entry' for the hash table. */
+  int searches;
+  /* The following member is used for debugging.  Its value is number
+     of collisions fixed for time of work with the hash table. */
+  int collisions;
+  /* Pointer to function for evaluation of hash value (any unsigned value).
+     This function has one parameter of type hash_table_entry_t. */
+  unsigned (*hash_function) (hash_table_entry_t el_ptr);
+  /* Pointer to function for test on equality of hash table elements (two
+     parameter of type hash_table_entry_t. */
+  bool (*eq_function) (hash_table_entry_t el1_ptr,
+                       hash_table_entry_t el2_ptr);
+  /* Table itself */
+  hash_table_entry_t *entries;
+  /* Allocator */
+  YaepAllocator * alloc;
+} *hash_table_t;
+
+
+/* The following variable is used for debugging. Its value is number
+   of all calls of `find_hash_table_entry' for all hash tables. */
+
+//extern int all_searches;
+
+/* The following variable is used for debugging. Its value is number
+   of collisions fixed for time of work with all hash tables. */
+
+//extern int all_collisions;
+
+/* The prototypes of the package functions. */
+
+extern hash_table_t create_hash_table(YaepAllocator * allocator,
+                                      size_t size,
+                                      unsigned int ( *hash_function )( hash_table_entry_t el_ptr ),
+                                      bool (*eq_function)(hash_table_entry_t el1_ptr,hash_table_entry_t el2_ptr));
+
+extern void empty_hash_table (hash_table_t htab);
+
+extern void delete_hash_table (hash_table_t htab);
+
+extern hash_table_entry_t *find_hash_table_entry(hash_table_t htab,
+                                                 hash_table_entry_t element,
+                                                 bool reserve);
+
+extern void remove_element_from_hash_table_entry (hash_table_t htab,
+                                                  hash_table_entry_t element);
+
+extern size_t hash_table_size (hash_table_t htab);
+
+extern size_t hash_table_elements_number (hash_table_t htab);
+
+/* The following function returns number of searches during all work
+   with given hash table. */
+static inline int
+get_searches (hash_table_t htab)
+{
+  return htab->searches;
+}
+
+/* The following function returns number of occurred collisions during
+   all work with given hash table. */
+static inline int
+get_collisions (hash_table_t htab)
+{
+  return htab->collisions;
+}
+
+/* The following function returns number of searches during all work
+   with all hash tables. */
+static inline int
+get_all_searches (void)
+{
+    return 0; // all_searches; TODO FREDRIK
+}
+
+/* The following function returns number of occurred collisions
+   during all work with all hash tables. */
+static inline int
+get_all_collisions (void)
+{
+    return 0; // all_collisions; // TODO FREDRIK
+}
+
+extern int hash_table_collision_percentage (hash_table_t htab);
+
+extern int all_hash_table_collision_percentage (void);
+
+#define YAEP_HASHTAB_MODULE
+
+// PART H YAEP_OBJSTACK ////////////////////////////////////////
+
+#ifndef BUILDING_DIST_XMQ
+
+#include <assert.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stddef.h>
+
+#include "yaep_allocate.h"
+
+#endif
+
+/* This auxiliary structure is used to evaluation of maximum
+   alignment for objects. */
+
+struct _os_auxiliary_struct
+{
+  char _os_character;
+  double _os_double;
+};
+
+/* This macro is auxiliary.  Its value is maximum alignment for objects. */
+
+#ifdef VMS
+/* It is necessarry for VMS C compiler. */
+#define _OS_ALIGNMENT  4
+#else
+#define _OS_ALIGNMENT offsetof (struct _os_auxiliary_struct, _os_double)
+#if 0
+#define _OS_ALIGNMENT\
+  ((char *) &((struct _os_auxiliary_struct *) 64)->_os_double - (char *) 64)
+#else
+#endif
+#endif
+
+/* This macro is auxiliary.  Its value is aligned address nearest to `a'. */
+
+#define _OS_ALIGNED_ADDRESS(a)\
+  ((void *) ((size_t) ((char *) (a) + (_OS_ALIGNMENT - 1))\
+             & (~(size_t) (_OS_ALIGNMENT - 1))))
+
+/* This macro value is default size of memory segments which will be
+   allocated for OS when the stack is created (with zero initial
+   segment size).  This is also minimal size of all segments.
+   Original value of the macros is equal to 512.  This macro can be
+   redefined in C compiler command line or with the aid of directive
+   `#undef' before any using the package macros.  */
+
+#ifndef OS_DEFAULT_SEGMENT_LENGTH
+#define OS_DEFAULT_SEGMENT_LENGTH 512
+#endif
+
+/* This internal structure describes segment of an object stack. */
+
+struct _os_segment
+{
+  struct _os_segment *os_previous_segment;
+  char os_segment_contest[_OS_ALIGNMENT];
+};
+
+/* This type describes a descriptor of stack of objects.  All work
+   with stack of objects is executed by following macros through the
+   descriptors.  Structure (implementation) of this type is not needed
+   for using stack of objects.  But it should remember that work with
+   the stack through several descriptors is not safe. */
+
+typedef struct
+{
+  /* The real length of the first memory segment. */
+  size_t initial_segment_length;
+  struct _os_segment *os_current_segment;
+
+  /* Pointer to memory currently used for storing the top object. */
+  char *os_top_object_start;
+
+  /* Pointer to first byte after the last byte of the top object. */
+  char *os_top_object_stop;
+
+  /* Pointer to first byte after the memory allocated for storing
+     the OS segment and the top object. */
+  char *os_segment_stop;
+
+  /* Pointer to allocator. */
+  YaepAllocator *os_alloc;
+} os_t;
+
+
+/* This macro creates OS which contains the single zero length object.
+   If initial length of OS segment is equal to zero the allocated
+   memory segments length is equal to `OS_DEFAULT_SEGMENT_LENGTH'.
+   But in any case the segment length is always not less than maximum
+   alignment.  OS must be created before any using other macros of the
+   package for work with given OS.  The macro has no side effects. */
+
+#define OS_CREATE( os, allocator, initial_segment_length ) \
+  do { \
+    os_t * _temp_os = &( os ); \
+    _temp_os->os_alloc = allocator; \
+    _OS_create_function( _temp_os, initial_segment_length ); \
+  } while( 0 )
+
+/* This macro is used for freeing memory allocated for OS.  Any work
+   (except for creation) with given OS is not possible after
+   evaluation of this macros.  The macro has no side effects. */
+
+#define OS_DELETE(os) _OS_delete_function (& (os))
+
+/* This macro is used for freeing memory allocated for OS except for
+   the first segment.  The macro has no side effects. */
+
+#define OS_EMPTY(os) _OS_empty_function (& (os))
+
+/* This macro makes that length of variable length object on the top
+   of OS will be equal to zero.  The macro has no side effects. */
+
+#define OS_TOP_NULLIFY(os)\
+  do\
+  {\
+    os_t *_temp_os = &(os);\
+    assert (_temp_os->os_top_object_start != NULL);\
+    _temp_os->os_top_object_stop = _temp_os->os_top_object_start;\
+  }\
+  while (0)
+
+/* The macro creates new variable length object with initial zero
+   length on the top of OS .  The work (analogous to one with variable
+   length object) with object which was on the top of OS are finished,
+   i.e. the object will never more change address.  The macro has not
+   side effects. */
+
+#define OS_TOP_FINISH(os)\
+  do\
+  {\
+    os_t *_temp_os = &(os);\
+    assert (_temp_os->os_top_object_start != NULL);\
+    _temp_os->os_top_object_start\
+        = (char *) _OS_ALIGNED_ADDRESS (_temp_os->os_top_object_stop);    \
+    _temp_os->os_top_object_stop = _temp_os->os_top_object_start;\
+  }\
+  while (0)
+
+/* This macro returns current length of variable length object on the
+   top of OS.  The macro has side effects! */
+
+#ifndef NDEBUG
+#define OS_TOP_LENGTH(os)\
+  ((os).os_top_object_start != NULL\
+   ? (os).os_top_object_stop - (os).os_top_object_start\
+   : (abort (), 0))
+#else
+#define OS_TOP_LENGTH(os)  ((os).os_top_object_stop - (os).os_top_object_start)
+#endif
+
+/* This macro returns pointer to the first byte of variable length
+   object on the top of OS.  The macro has side effects!  Remember also
+   that the top object may change own place after any addition. */
+
+#ifndef NDEBUG
+#define OS_TOP_BEGIN(os)\
+  ((os).os_top_object_start != NULL ? (void *) (os).os_top_object_start\
+                                    : (abort (), (void *) 0))
+#else
+#define OS_TOP_BEGIN(os) ((void *) (os).os_top_object_start)
+#endif
+
+/* This macro returns pointer (of type `void *') to the last byte of
+   variable length object on the top OS.  The macro has side effects!
+   Remember also that the top object may change own place after any
+   addition. */
+
+#ifndef NDEBUG
+#define OS_TOP_END(os)\
+  ((os).os_top_object_start != NULL ? (void *) ((os).os_top_object_stop - 1)\
+                                    : (abort (), (void *) 0))
+#else
+#define OS_TOP_END(os) ((void *) ((os).os_top_object_stop - 1))
+#endif
+
+/* This macro returns pointer (of type `void *') to the next byte of
+   the last byte of variable length object on the top OS.  The macro
+   has side effects!  Remember also that the top object may change own
+   place after any addition. */
+
+#ifndef NDEBUG
+#define OS_TOP_BOUND(os)\
+  ((os).os_top_object_start != NULL ? (void *) (os).os_top_object_stop\
+                                    : (abort (), (void *) 0))
+#else
+#define OS_TOP_BOUND(os) ((void *) (os).os_top_object_stop)
+#endif
+
+/* This macro removes N bytes from the end of variable length object
+   on the top of OS.  The top variable length object is nullified if
+   its length is less than N.  The macro has no side effects. */
+
+#define OS_TOP_SHORTEN(os, n)\
+  do\
+  {\
+    os_t *_temp_os = &(os);\
+    size_t _temp_n = (n);\
+    assert (_temp_os->os_top_object_start != NULL);\
+    if ((size_t) OS_TOP_LENGTH (*_temp_os) < _temp_n)\
+      _temp_os->os_top_object_stop = _temp_os->os_top_object_start;\
+    else\
+      _temp_os->os_top_object_stop -= _temp_n;\
+  }\
+  while (0)
+
+/* This macro increases length of variable length object on the top of
+   OS on given number of bytes.  The values of bytes added to the end
+   of variable length object on the top of OS will be not defined.
+   The macro has no side effects. */
+
+#define OS_TOP_EXPAND(os, length)\
+  do\
+  {\
+    os_t *_temp_os = &(os);\
+    size_t _temp_length = (length);\
+    assert (_temp_os->os_top_object_start != NULL);\
+    if (_temp_os->os_top_object_stop + _temp_length > _temp_os->os_segment_stop)\
+      _OS_expand_memory (_temp_os, _temp_length);\
+    _temp_os->os_top_object_stop += _temp_length;\
+  }\
+  while (0)
+
+/* This macro adds byte to the end of variable length object on the
+   top of OS.  The macro has no side effects. */
+
+#define OS_TOP_ADD_BYTE(os, b)\
+  do\
+  {\
+    os_t *_temp_os = &(os);\
+    assert (_temp_os->os_top_object_start != NULL);\
+    if (_temp_os->os_top_object_stop >= _temp_os->os_segment_stop)\
+      _OS_expand_memory (_temp_os, 1);\
+    *_temp_os->os_top_object_stop++ = (b);\
+  }\
+  while (0)
+
+/* This macro adds memory bytes to the end of variable length object
+   on the top of OS.  The macro has no side effects. */
+
+#define OS_TOP_ADD_MEMORY(os, str, length)\
+  do\
+  {\
+    os_t *_temp_os = &(os);\
+    size_t _temp_length = (length);\
+    assert (_temp_os->os_top_object_start != NULL);\
+    if (_temp_os->os_top_object_stop + _temp_length > _temp_os->os_segment_stop)\
+      _OS_expand_memory (_temp_os, _temp_length);\
+    memcpy( _temp_os->os_top_object_stop, ( str ), _temp_length ); \
+    _temp_os->os_top_object_stop += _temp_length;\
+  }\
+  while (0)
+
+/* This macro adds C string (with end marker '\0') to the end of
+   variable length object on the top of OS.  Before the addition the
+   macro delete last character of the object.  The last character is
+   suggested to be C string end marker '\0'.  The macro has no side
+   effects. */
+
+#define OS_TOP_ADD_STRING(os, str) _OS_add_string_function(&(os), (str))
+
+/* The following functions are to be used only by the package macros.
+   Remember that they are internal functions - all work with OS is
+   executed through the macros. */
+
+extern void _OS_create_function (os_t *os, size_t initial_segment_length);
+extern void _OS_delete_function (os_t *os);
+extern void _OS_empty_function (os_t *os);
+extern void _OS_add_string_function (os_t *os, const char *str);
+extern void _OS_expand_memory (os_t *os, size_t additional_length);
+
+#define YAEP_OBJSTACK_MODULE
+
+// PART H YAEP_VLOBJECT ////////////////////////////////////////
+
+#ifndef BUILDING_DIST_XMQ
+
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "yaep_allocate.h"
+
+#endif
+
+/* Default initial size of memory is allocated for VLO when the object
+   is created (with zero initial size).  This macro can be redefined
+   in C compiler command line or with the aid of directive `#undef'
+   before any using the package macros. */
+
+#ifndef VLO_DEFAULT_LENGTH
+#define VLO_DEFAULT_LENGTH 512
+#endif
+
+/* This type describes a descriptor of variable length object.  All
+   work with variable length object is executed by following macros
+   through the descriptors.  Structure (implementation) of this type
+   is not needed for using variable length object.  But it should
+   remember that work with the object through several descriptors is
+   not safe. */
+
+typedef struct
+{
+  /* Pointer to memory currently used for storing the VLO. */
+  char *vlo_start;
+  /* Pointer to first byte after the last VLO byte. */
+  char *vlo_stop;
+  /* Pointer to first byte after the memory currently allocated for storing
+     the VLO. */
+  char *vlo_segment_stop;
+  /* Pointer to allocator. */
+  YaepAllocator *vlo_alloc;
+} vlo_t;
+
+
+/* This macro is used for creation of VLO with initial zero length.
+   If initial length of memory needed for the VLO is equal to 0 the
+   initial allocated memory length is equal to VLO_DEFAULT_LENGTH.
+   VLO must be created before any using other macros of the package
+   for work with given VLO.  The macro has not side effects. */
+
+#define VLO_CREATE(vlo, allocator, initial_length)\
+  do\
+  {\
+    vlo_t *_temp_vlo = &(vlo);\
+    size_t temp_initial_length = (initial_length);\
+    YaepAllocator * _temp_alloc = ( allocator ); \
+    temp_initial_length = (temp_initial_length != 0 ? temp_initial_length\
+                                                    : VLO_DEFAULT_LENGTH);\
+    _temp_vlo->vlo_start = (char*)yaep_malloc( _temp_alloc, temp_initial_length ); \
+    _temp_vlo->vlo_segment_stop = _temp_vlo->vlo_start + temp_initial_length;\
+    _temp_vlo->vlo_stop = _temp_vlo->vlo_start;\
+    _temp_vlo->vlo_alloc = _temp_alloc; \
+  }\
+  while (0)
+
+
+/* This macro is used for freeing memory allocated for VLO.  Any work
+   (except for creation) with given VLO is not possible after
+   evaluation of this macro.  The macro has not side effects. */
+
+#ifndef NDEBUG
+#define VLO_DELETE(vlo)\
+  do\
+  {\
+    vlo_t *_temp_vlo = &(vlo);\
+    assert (_temp_vlo->vlo_start != NULL);\
+    yaep_free( _temp_vlo->vlo_alloc,_temp_vlo->vlo_start );\
+    _temp_vlo->vlo_start = NULL;\
+  }\
+  while (0)
+#else
+#define VLO_DELETE(vlo) \
+  do { \
+    vlo_t * _temp_vlo = &( vlo ); \
+    yaep_free( _temp_vlo->vlo_alloc, _temp_vlo->vlo_start ); \
+  } while( 0 )
+#endif /* #ifndef NDEBUG */
+
+/* This macro makes that length of VLO will be equal to zero (but
+   memory for VLO is not freed and not reallocated).  The macro has
+   not side effects. */
+
+#define VLO_NULLIFY(vlo)\
+  do\
+  {\
+    vlo_t *_temp_vlo = &(vlo);\
+    assert (_temp_vlo->vlo_start != NULL);\
+    _temp_vlo->vlo_stop = _temp_vlo->vlo_start;\
+  }\
+  while (0)
+
+
+/* The following macro makes that length of memory allocated for VLO
+   becames equal to VLO length.  The macro has not side effects. */
+
+#define VLO_TAILOR(vlo) _VLO_tailor_function(&(vlo))
+
+
+/* This macro returns current length of VLO.  The macro has side
+   effects! */
+
+#ifndef NDEBUG
+#define VLO_LENGTH(vlo) ((vlo).vlo_start != NULL\
+                         ? (vlo).vlo_stop - (vlo).vlo_start\
+                         : (abort (), 0))
+#else
+#define VLO_LENGTH(vlo) ((vlo).vlo_stop - (vlo).vlo_start)
+#endif /* #ifndef NDEBUG */
+
+
+/* This macro returns pointer (of type `void *') to the first byte of
+   the VLO.  The macro has side effects!  Remember also that the VLO
+   may change own place after any addition. */
+
+#ifndef NDEBUG
+#define VLO_BEGIN(vlo) ((vlo).vlo_start != NULL\
+                        ? (void *) (vlo).vlo_start\
+                        : (abort (), (void *) 0))
+#else
+#define VLO_BEGIN(vlo) ((void *) (vlo).vlo_start)
+#endif /* #ifndef NDEBUG */
+
+/* This macro returns pointer (of type `void *') to the last byte of
+   VLO.  The macro has side effects!  Remember also that the VLO may
+   change own place after any addition. */
+
+#ifndef NDEBUG
+#define VLO_END(vlo) ((vlo).vlo_start != NULL\
+                      ? (void *) ((vlo).vlo_stop - 1)\
+                      : (abort (), (void *) 0))
+#else
+#define VLO_END(vlo) ((void *) ((vlo).vlo_stop - 1))
+#endif /* #ifndef NDEBUG */
+
+/* This macro returns pointer (of type `void *') to the next byte of
+   the last byte of VLO.  The macro has side effects!  Remember also
+   that the VLO may change own place after any addition. */
+
+#ifndef NDEBUG
+#define VLO_BOUND(vlo) ((vlo).vlo_start != NULL\
+                        ? (void *) (vlo).vlo_stop\
+                        : (abort (), (void *) 0))
+#else
+#define VLO_BOUND(vlo) ((void *) (vlo).vlo_stop)
+#endif /* #ifndef NDEBUG */
+
+/* This macro removes N bytes from the end of VLO.  VLO is nullified
+   if its length is less than N.  The macro has not side effects. */
+
+#define VLO_SHORTEN(vlo, n)\
+  do\
+  {\
+    vlo_t *_temp_vlo = &(vlo);\
+    size_t _temp_n = (n);\
+    assert (_temp_vlo->vlo_start != NULL);\
+    if ((size_t) VLO_LENGTH (*_temp_vlo) < _temp_n)\
+      _temp_vlo->vlo_stop = _temp_vlo->vlo_start;\
+    else\
+      _temp_vlo->vlo_stop -= _temp_n;\
+  }\
+  while (0)
+
+
+/* This macro increases length of VLO.  The values of bytes added to
+   the end of VLO will be not defined.  The macro has not side
+   effects. */
+
+#define VLO_EXPAND(vlo, length)\
+  do\
+  {\
+    vlo_t *_temp_vlo = &(vlo);\
+    size_t _temp_length = (length);\
+    assert (_temp_vlo->vlo_start != NULL);\
+    if (_temp_vlo->vlo_stop + _temp_length > _temp_vlo->vlo_segment_stop)\
+      _VLO_expand_memory (_temp_vlo, _temp_length);\
+    _temp_vlo->vlo_stop += _temp_length;\
+  }\
+  while (0)
+
+
+/* This macro adds a byte to the end of VLO.  The macro has not side
+   effects. */
+
+#define VLO_ADD_BYTE(vlo, b)\
+  do\
+  {\
+    vlo_t *_temp_vlo = &(vlo);\
+    assert (_temp_vlo->vlo_start != NULL);\
+    if (_temp_vlo->vlo_stop >= _temp_vlo->vlo_segment_stop)\
+      _VLO_expand_memory (_temp_vlo, 1);\
+    *_temp_vlo->vlo_stop++ = (b);\
+  }\
+  while (0)
+
+
+/* This macro adds memory bytes to the end of VLO.  The macro has not
+   side effects. */
+
+#define VLO_ADD_MEMORY(vlo, str, length)\
+  do\
+  {\
+    vlo_t *_temp_vlo = &(vlo);\
+    size_t _temp_length = (length);\
+    assert (_temp_vlo->vlo_start != NULL);\
+    if (_temp_vlo->vlo_stop + _temp_length > _temp_vlo->vlo_segment_stop)\
+      _VLO_expand_memory (_temp_vlo, _temp_length);\
+    memcpy( _temp_vlo->vlo_stop, ( str ), _temp_length ); \
+    _temp_vlo->vlo_stop += _temp_length;\
+  }\
+  while (0)
+
+
+/* This macro adds C string (with end marker '\0') to the end of VLO.
+   Before the addition the macro delete last character of the VLO.
+   The last character is suggested to be C string end marker '\0'.
+   The macro has not side effects. */
+
+#define VLO_ADD_STRING(vlo, str) _VLO_add_string_function(&(vlo), (str))
+
+
+/* The following functions are to be used only by the package macros.
+   Remember that they are internal functions - all work with VLO is
+   executed through the macros. */
+
+extern void _VLO_tailor_function (vlo_t *vlo);
+extern void _VLO_add_string_function (vlo_t *vlo, const char *str);
+extern void _VLO_expand_memory (vlo_t *vlo, size_t additional_length);
+
+#define YAEP_VLOBJECT_MODULE
+
+// PART H YAEP ////////////////////////////////////////
 
 #include<assert.h>
 #include<limits.h>
@@ -1565,26 +1752,26 @@ struct YaepTreeNode
 };
 
 /* The following function creates an empty grammar. */
-YaepGrammar *yaepNewGrammar();
+extern YaepGrammar *yaepNewGrammar();
 
 /* The following function creates a parse run that uses the specified grammar.
    Each concurrent parse using the shared grammar needs a run to store the
    parse progress/state. */
-YaepParseRun *yaepNewParseRun(YaepGrammar *g);
+extern YaepParseRun *yaepNewParseRun(YaepGrammar *g);
 
 /* Set a pointer to a user structure that is available when callbacks are invoked,
    such as read_token when parsing. */
-void yaepSetUserData(YaepGrammar *g, void *data);
+extern void yaepSetUserData(YaepGrammar *g, void *data);
 
 /* Get the user data pointer from the grammar. */
-void *yaepGetUserData(YaepGrammar *g);
+extern void *yaepGetUserData(YaepGrammar *g);
 
 /* The function returns the last occurred error code for given grammar. */
-int yaep_error_code(YaepGrammar *g);
+extern int yaep_error_code(YaepGrammar *g);
 
 /* The function returns message are always contains error message
    corresponding to the last occurred error code. */
-const char *yaep_error_message(YaepGrammar *g);
+extern const char *yaep_error_message(YaepGrammar *g);
 
 /* The following function reads terminals/rules into grammar G and
    checks it depending on STRICT_P.  It returns zero if it is all ok.
@@ -1618,7 +1805,7 @@ const char *yaep_error_message(YaepGrammar *g);
    translation of the symbol in RHS given by the single array element.
    The cost of the abstract node if given is passed through
    ANODE_COST. */
-int yaep_read_grammar(YaepParseRun *ps,
+extern int yaep_read_grammar(YaepParseRun *ps,
                              YaepGrammar *g,
                              int strict_p,
                              const char *(*read_terminal) (YaepParseRun *pr,
@@ -1657,11 +1844,11 @@ int yaep_read_grammar(YaepParseRun *ps,
 
    o recovery_match means how much subsequent tokens should be
      successfully shifted to finish error recovery.  The default value is 3. */
-int yaep_set_lookahead_level(YaepGrammar *grammar, int level);
-bool yaep_set_one_parse_flag(YaepGrammar *grammar, bool flag);
-bool yaep_set_cost_flag(YaepGrammar *grammar, bool flag);
-bool yaep_set_error_recovery_flag(YaepGrammar *grammar, bool flag);
-int yaep_set_recovery_match(YaepGrammar *grammar, int n_toks);
+extern int yaep_set_lookahead_level(YaepGrammar *grammar, int level);
+extern bool yaep_set_one_parse_flag(YaepGrammar *grammar, bool flag);
+extern bool yaep_set_cost_flag(YaepGrammar *grammar, bool flag);
+extern bool yaep_set_error_recovery_flag(YaepGrammar *grammar, bool flag);
+extern int yaep_set_recovery_match(YaepGrammar *grammar, int n_toks);
 
 /* The following function parses input according read grammar.  The
    function returns the error code (which will be also in
@@ -1700,13 +1887,13 @@ int yaep_set_recovery_match(YaepGrammar *grammar, int n_toks);
    free memory allocated by PARSE_ALLOC. If PARSE_ALLOC is not NULL
    but PARSE_FREE is, the memory is not freed. In this case, the
    returned parse tree should also not be freed with yaep_free_tree(). */
-int yaepParse(YaepParseRun *ps, YaepGrammar *g);
+extern int yaepParse(YaepParseRun *ps, YaepGrammar *g);
 
 /* The following function frees memory allocated for the parse state. */
-void yaepFreeParseRun(YaepParseRun *ps);
+extern void yaepFreeParseRun(YaepParseRun *ps);
 
 /* The following function frees memory allocated for the grammar. */
-void yaepFreeGrammar(YaepParseRun *ps, YaepGrammar *g);
+extern void yaepFreeGrammar(YaepParseRun *ps, YaepGrammar *g);
 
 /* The following function frees memory allocated for the parse tree.
    It must not be called until after yaep_free_grammar() has been called.
@@ -1720,7 +1907,7 @@ void yaepFreeGrammar(YaepParseRun *ps, YaepGrammar *g);
    exactly once for each term node in the parse tree.
    The TERMCB callback can be used by the caller
    to free the term attributes. The term node itself must not be freed. */
-void yaepFreeTree(YaepTreeNode *root,
+extern void yaepFreeTree(YaepTreeNode *root,
                          void (*parse_free)(void*),
                          void (*termcb)(YaepTerminalNode *termial));
 
@@ -1729,7 +1916,7 @@ void yaepFreeTree(YaepTreeNode *root,
 
 // XMQ STRUCTURES ////////////////////////////////////////////////
 
-// PARTS XMQ_INTERNALS ////////////////////////////////////////
+// PART H XMQ_INTERNALS ////////////////////////////////////////
 
 #include<assert.h>
 #include<ctype.h>
@@ -2426,7 +2613,7 @@ bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer);
 
 // FUNCTIONALITY /////////////////////////////////////////////////
 
-// PARTS JSON ////////////////////////////////////////
+// PART H JSON ////////////////////////////////////////
 
 #include"xmq.h"
 #include<libxml/tree.h>
@@ -2443,9 +2630,13 @@ bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const cha
 
 #define JSON_MODULE
 
-// PARTS IXML ////////////////////////////////////////
+// PART H IXML ////////////////////////////////////////
+
+#ifndef BUILDING_DIST_XMQ
 
 #include"xmq.h"
+
+#endif
 
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
@@ -2536,8 +2727,6 @@ void do_ns_colon(XMQParseState *state, size_t line, size_t col, const char *star
 void do_quote(XMQParseState *state, size_t l, size_t col, const char *start, const char *stop, const char *suffix);
 void do_whitespace(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
 bool find_line(const char *start, const char *stop, size_t *indent, const char **after_last_non_space, const char **eol);
-const char *find_next_line_end(XMQPrintState *ps, const char *start, const char *stop);
-const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop);
 void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared);
 void fixup_comments(XMQDoc *doq, xmlNode *node, int depth);
 void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index);
@@ -2549,13 +2738,8 @@ void handle_yaep_syntax_error(YaepParseRun *pr,
                               int start_recovered_tok_num,
                               void *start_recovered_tok_attr);
 
-bool has_leading_ending_quote(const char *start, const char *stop);
-bool is_safe_char(const char *i, const char *stop);
 size_t line_length(const char *start, const char *stop, int *numq, int *lq, int *eq);
-bool need_separation_before_entity(XMQPrintState *ps);
 const char *node_yaep_type_to_string(YaepTreeNodeType t);
-size_t num_utf8_bytes(char c);
-void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num);
 void reset_ansi(XMQParseState *state);
 void reset_ansi_nl(XMQParseState *state);
 const char *skip_any_potential_bom(const char *start, const char *stop);
@@ -2587,9 +2771,6 @@ char *xmq_quote_default(int indent, const char *start, const char *stop, XMQQuot
 const char *xml_element_type_to_string(xmlElementType type);
 const char *indent_depth(int i);
 void free_indent_depths();
-
-xmlNode *merge_surrounding_text_nodes(xmlNode *node);
-xmlNode *merge_hex_chars_node(xmlNode *node);
 
 // Declare tokenize_whitespace tokenize_name functions etc...
 #define X(TYPE) void tokenize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start, const char *stop, const char *suffix);
@@ -6399,8 +6580,8 @@ bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, int 
 
     int parse_options = XML_PARSE_NOCDATA | XML_PARSE_NONET;
     bool should_trim = false;
-    if (flags & XMQ_FLAG_TRIM_HEURISTIC ||
-        flags & XMQ_FLAG_TRIM_EXACT) should_trim = true;
+    if ((flags & XMQ_FLAG_TRIM_HEURISTIC) ||
+        (flags & XMQ_FLAG_TRIM_EXACT)) should_trim = true;
     if (flags & XMQ_FLAG_TRIM_NONE) should_trim = false;
 
     if (should_trim) parse_options |= XML_PARSE_NOBLANKS;
@@ -6437,8 +6618,8 @@ bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, int
     int parse_options = HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET;
 
     bool should_trim = false;
-    if (flags & XMQ_FLAG_TRIM_HEURISTIC ||
-        flags & XMQ_FLAG_TRIM_EXACT) should_trim = true;
+    if ((flags & XMQ_FLAG_TRIM_HEURISTIC) ||
+        (flags & XMQ_FLAG_TRIM_EXACT)) should_trim = true;
     if (flags & XMQ_FLAG_TRIM_NONE) should_trim = false;
 
     if (should_trim) parse_options |= HTML_PARSE_NOBLANKS;
@@ -6590,8 +6771,8 @@ exit:
     {
         bool should_trim = false;
 
-        if (flags & XMQ_FLAG_TRIM_HEURISTIC ||
-            flags & XMQ_FLAG_TRIM_EXACT) should_trim = true;
+        if ((flags & XMQ_FLAG_TRIM_HEURISTIC) ||
+            (flags & XMQ_FLAG_TRIM_EXACT)) should_trim = true;
 
         if (!(flags & XMQ_FLAG_TRIM_NONE) &&
             (ct == XMQ_CONTENT_XML ||
@@ -7381,7 +7562,7 @@ char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
 
 #ifdef BUILDING_DIST_XMQ
 
-// PARTS ALWAYS_C ////////////////////////////////////////
+// PART C ALWAYS_C ////////////////////////////////////////
 
 #ifdef ALWAYS_MODULE
 
@@ -7548,7 +7729,7 @@ char *strndup(const char *s, size_t l)
 
 #endif // ALWAYS_MODULE
 
-// PARTS COLORS_C ////////////////////////////////////////
+// PART C COLORS_C ////////////////////////////////////////
 
 #ifdef COLORS_MODULE
 
@@ -7790,7 +7971,7 @@ void setColorDef(XMQColorDef *cd, int r, int g, int b, bool bold, bool underline
 
 #endif // COLORS_MODULE
 
-// PARTS CORE_C ////////////////////////////////////////
+// PART C CORE_C ////////////////////////////////////////
 
 #ifdef CORE_MODULE
 
@@ -7843,7 +8024,7 @@ bool coreParseI64(const char *s, int64_t *out)
 
 #endif // CORE_MODULE
 
-// PARTS DEFAULT_THEMES_C ////////////////////////////////////////
+// PART C DEFAULT_THEMES_C ////////////////////////////////////////
 
 #ifdef DEFAULT_THEMES_MODULE
 
@@ -7927,7 +8108,7 @@ void installDefaultThemeColors(XMQTheme *theme)
 
 #endif // DEFAULT_THEMES_MODULE
 
-// PARTS ENTITIES_C ////////////////////////////////////////
+// PART C ENTITIES_C ////////////////////////////////////////
 
 #ifdef ENTITIES_MODULE
 
@@ -8094,7 +8275,7 @@ HTML_MISC
 
 #endif // ENTITIES_MODULE
 
-// PARTS HASHMAP_C ////////////////////////////////////////
+// PART C HASHMAP_C ////////////////////////////////////////
 
 #ifdef HASHMAP_MODULE
 
@@ -8312,7 +8493,7 @@ void hashmap_free_iterator(HashMapIterator *i)
 
 #endif // HASHMAP_MODULE
 
-// PARTS STACK_C ////////////////////////////////////////
+// PART C STACK_C ////////////////////////////////////////
 
 #ifdef STACK_MODULE
 
@@ -8408,7 +8589,7 @@ void *stack_rock(Stack *stack)
 
 #endif // STACK_MODULE
 
-// PARTS MEMBUFFER_C ////////////////////////////////////////
+// PART C MEMBUFFER_C ////////////////////////////////////////
 
 #ifdef MEMBUFFER_MODULE
 
@@ -8640,7 +8821,7 @@ void membuffer_prefix_lines(MemBuffer *mb, const char *prefix)
 
 #endif // MEMBUFFER_MODULE
 
-// PARTS IXML_C ////////////////////////////////////////
+// PART C IXML_C ////////////////////////////////////////
 
 #ifdef IXML_MODULE
 
@@ -11071,7 +11252,7 @@ void ixml_print_grammar(XMQParseState *state)
 
 #endif // IXML_MODULE
 
-// PARTS JSON_C ////////////////////////////////////////
+// PART C JSON_C ////////////////////////////////////////
 
 #ifdef JSON_MODULE
 
@@ -12769,7 +12950,7 @@ void json_print_array_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from
 
 #endif // JSON_MODULE
 
-// PARTS TEXT_C ////////////////////////////////////////
+// PART C TEXT_C ////////////////////////////////////////
 
 #ifdef TEXT_MODULE
 
@@ -13675,7 +13856,7 @@ const char *find_eol_or_stop(const char *start, const char *stop)
 
 #endif // TEXT_MODULE
 
-// PARTS UTF8_C ////////////////////////////////////////
+// PART C UTF8_C ////////////////////////////////////////
 
 #ifdef UTF8_MODULE
 
@@ -13842,7 +14023,7 @@ size_t print_utf8(XMQPrintState *ps, XMQColor color, size_t num_pairs, ...)
 
 #endif // UTF8_MODULE
 
-// PARTS VECTOR_C ////////////////////////////////////////
+// PART C VECTOR_C ////////////////////////////////////////
 
 #ifdef VECTOR_MODULE
 
@@ -13920,7 +14101,7 @@ void *vector_element_at(Vector *v, size_t i)
 
 #endif // VECTOR_MODULE
 
-// PARTS XML_C ////////////////////////////////////////
+// PART C XML_C ////////////////////////////////////////
 
 #ifdef XML_MODULE
 
@@ -14217,7 +14398,7 @@ void xml_add_root_child(xmlDoc *doc, xmlNode *node)
 
 #endif // XML_MODULE
 
-// PARTS XMQ_INTERNALS_C ////////////////////////////////////////
+// PART C XMQ_INTERNALS_C ////////////////////////////////////////
 
 #ifdef XMQ_INTERNALS_MODULE
 
@@ -14939,7 +15120,7 @@ const char *build_error_message(const char* fmt, ...)
 
 #endif // XMQ_INTERNALS_MODULE
 
-// PARTS XMQ_PARSER_C ////////////////////////////////////////
+// PART C XMQ_PARSER_C ////////////////////////////////////////
 
 #ifdef XMQ_PARSER_MODULE
 
@@ -16045,7 +16226,7 @@ void parse_xmq_whitespace(XMQParseState *state)
 
 #endif // XMQ_PARSER_MODULE
 
-// PARTS XMQ_PRINTER_C ////////////////////////////////////////
+// PART C XMQ_PRINTER_C ////////////////////////////////////////
 
 #ifdef XMQ_PRINTER_MODULE
 
@@ -17522,1387 +17703,9 @@ void print_value(XMQPrintState *ps, xmlNode *node, Level level)
 
 #endif // XMQ_PRINTER_MODULE
 
-// PARTS YAEP_C ////////////////////////////////////////
+// PART C YAEP_ALLOCATE_C ////////////////////////////////////////
 
-#ifdef YAEP_MODULE
-/*
-   YAEP (Yet Another Earley Parser)
-
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
-
-   Permission is hereby granted, free of charge, to any person obtaining a
-   copy of this software and associated documentation files (the
-   "Software"), to deal in the Software without restriction, including
-   without limitation the rights to use, copy, modify, merge, publish,
-   distribute, sublicense, and/or sell copies of the Software, and to
-   permit persons to whom the Software is furnished to do so, subject to
-   the following conditions:
-
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-*/
-
-/**
- * @file allocate.h
- *
- * Memory allocation with error handling.
- */
-
-#ifndef YAEP_ALLOCATE_H_
-#define YAEP_ALLOCATE_H_
-
-#ifdef NOT_DEFINED
-"C"
-{
-#endif
-
-#include<stddef.h>
-
-/**
- * Type for functions behaving like standard malloc().
- *
- * @sa #Yaep_calloc()
- * @sa #Yaep_realloc()
- * @sa #Yaep_free()
- */
-typedef void *(*Yaep_malloc) (size_t);
-
-/**
- * Type for functions behaving like standard calloc().
- *
- * @sa #Yaep_malloc()
- * @sa #Yaep_realloc()
- * @sa #Yaep_free()
- */
-typedef void *(*Yaep_calloc) (size_t, size_t);
-
-/**
- * Type for functions behaving like standard realloc().
- *
- * @sa #Yaep_malloc()
- * @sa #Yaep_calloc()
- * @sa #Yaep_free()
- */
-typedef void *(*Yaep_realloc) (void *, size_t);
-
-/**
- * Type for functions behaving like standard free().
- *
- * @sa #Yaep_malloc()
- * @sa #Yaep_calloc()
- * @sa #Yaep_realloc()
- */
-typedef void (*Yaep_free) (void *ptr);
-
-/**
- * Callback type for allocation errors.
- *
- * It is not necessary for callbacks of this type
- * to return to the caller.
- *
- * @param userptr Pointer provided earlier by the caller.
- *
- * @sa #yaep_alloc_geterrfunc()
- * @sa #yaep_alloc_seterr()
- */
-typedef void (*Yaep_alloc_error) (void *userptr);
-
-/**
- * YAEP allocator type.
- *
- * @sa #yaep_alloc_new()
- */
-typedef struct YaepAllocator YaepAllocator;
-
-/**
- * Default error handling function.
- *
- * This function writes an error message to @ stderr
- * and exits the program.
- *
- * @param ignored Ignored parameter.
- *
- * @sa #yaep_alloc_seterr()
- */
-void yaep_alloc_defaulterrfunc (void *ignored);
-
-/**
- * Creates a new allocator.
- *
- * The new allocator uses #yaep_alloc_defaulterrfunc()
- * and a null user pointer.
- *
- * @param mallocf Pointer to function which behaves like @c malloc().
- * 	If this is a null pointer, @c malloc() is used instead.
- * @param callocf Pointer to function which behaves like @c calloc().
- * 	If this is a null pointer, a function which behaves like @c calloc()
- * 	and is compatible with the provided @c mallocf is used instead.
- * @param reallocf Pointer to function which behaves analogously to
- * 	@c realloc() with respect to @c mallocf and @c callocf.
- * 	If this is a null pointer, and @c malloc() and @c calloc() are used
- * 	for @c mallocf and @c callocf, respectively,
- * 	then @c realloc() is used instead.
- * 	Everything else is an error.
- * @param freef Pointer to function which can free memory returned by
- * 	@c mallocf, @c callocf, and @c reallocf.
- * 	If this is a null pointer, and @c malloc(), @c calloc(), and
- * 	@c realloc() are used for @c mallocf, @c callocf, and @c reallocf,
- * 	respectively, then @c free() is used instead.
- * 	Everything else is an error.
- *
- * @return On success, a pointer to the new allocator is returned.\n
- * 	On error, a null pointer is returned.
- *
- * @sa #yaep_alloc_del()
- * @sa #yaep_alloc_seterr()
- * @sa #yaep_alloc_defaulterrfunc()
- */
-YaepAllocator *yaep_alloc_new (Yaep_malloc mallocf, Yaep_calloc callocf,
-			       Yaep_realloc reallocf, Yaep_free freef);
-
-/**
- * Destroys an allocator.
- *
- * @param allocator Pointer to allocator.
- *
- * @sa #yaep_alloc_new()
- */
-void yaep_alloc_del (YaepAllocator * allocator);
-
-/**
- * Allocates memory.
- *
- * @param allocator Pointer to allocator.
- * @param size Number of bytes to allocate.
- *
- * @return On success, a pointer to the allocated memory is returned.
- * 	If @c size was zero, this may be a null pointer.\n
- * 	On error, the allocator's error function is called.
- * 	If that function returns, a null pointer is returned.
- *
- * @sa #yaep_free()
- * @sa #yaep_realloc()
- * @sa #yaep_calloc()
- * @sa #yaep_alloc_seterr()
- */
-void *yaep_malloc (YaepAllocator * allocator, size_t size);
-
-/**
- * Allocates zero-initialised memory.
- *
- * @param allocator Pointer to allocator.
- * @param nmemb Number of elements to allocate.
- * @param size Element size in bytes.
- *
- * @return On success, a pointer to <code>nmemb * size</code> bytes
- * 	of newly allocated, zero-initialised  memory is returned.
- * 	If <code>nmemb * size</code> was zero, this may be a null pointer.\n
- * 	On error, the allocator's error function is called.
- * 	If that function returns, a null pointer is returned.
- *
- * @sa #yaep_free()
- * @sa #yaep_realloc()
- * @sa #yaep_malloc()
- * @sa #yaep_alloc_seterr()
- */
-void *yaep_calloc (YaepAllocator * allocator, size_t nmemb, size_t size);
-
-/**
- * Resizes memory.
- *
- * @param allocator Pointer to allocator previously used to
- * 	allocate @c ptr.
- * @param ptr Pointer to memory previously returned by
- * 	#yaep_malloc(), #yaep_calloc(), or #yaep_realloc().
- * 	If this is a null pointer, this function behaves like #yaep_malloc().
- * @param size New memory size in bytes.
- *
- * @return On success, a pointer to @c size bytes of allocated memory
- * 	is returned, the contents of which is equal to the contents of
- * 	@c ptr immediately before the call, up to the smaller size of
- * 	both blocks.\n
- * 	On error, the allocator's error function is called.
- * 	If that function returns, a null pointer is returned.
- *
- * @sa #yaep_free()
- * @sa #yaep_malloc()
- * @sa #yaep_calloc()
- * @sa #yaep_alloc_seterr()
- */
-void *yaep_realloc (YaepAllocator * allocator, void *ptr, size_t size);
-
-/**
- * Frees previously allocated memory.
- *
- * @param allocator Pointer to allocator previously used to
- * 	allocate @c ptr.
- * @param ptr Pointer to memory to be freed.
- * 	If this is a null pointer, no operation is performed.
- *
- * @sa #yaep_malloc()
- * @sa #yaep_calloc()
- * @sa #yaep_realloc()
- */
-void yaep_free (YaepAllocator * allocator, void *ptr);
-
-/**
- * Obtains the current error function of an allocator.
- *
- * @param allocator Pointer to allocator.
- *
- * @return On success, a pointer to the error function of the
- * 	specified allocator is returned.
- * 	If no error function has ever been set for this allocator,
- * 	this is #yaep_alloc_defaulterrfunc().\n
- * 	On error, a null pointer is returned.
- *
- * @sa #yaep_alloc_getuserptr()
- * @sa #yaep_alloc_seterr()
- * @sa #yaep_alloc_defaulterrfunc()
- */
-Yaep_alloc_error yaep_alloc_geterrfunc (YaepAllocator * allocator);
-
-/**
- * Obtains the current user-provided pointer.
- *
- * @param allocator Pointer to allocator.
- *
- * @return On success, the user-provided pointer of the
- * 	specified allocator is returned.
- * 	If no pointer has ever been set for this allocator,
- * 	a pointer to the allocator itself is returned.\n
- * 	On error, a null pointer is returned.
- *
- * @sa #yaep_alloc_seterr()
- */
-void *yaep_alloc_getuserptr (YaepAllocator * allocator);
-
-/**
- * Sets the error function and user-provided pointer of an allocator.
- *
- * The error function is called by the allocator with the user-provided
- * pointer as argument whenever an allocation error occurs.
- *
- * @param allocator Pointer to allocator.
- * @param errfunc Pointer to error function.
- * 	If this is a null pointer, #yaep_alloc_defaulterrfunc() will be used.
- * @param userptr User-provided pointer.
- * 	The allocator will never attempt to dereference this pointer.
- *
- * @sa #yaep_alloc_geterrfunc()
- * @sa #yaep_alloc_getuserptr()
- */
-void yaep_alloc_seterr (YaepAllocator * allocator, Yaep_alloc_error errfunc,
-			void *userptr);
-
-#ifdef NOT_DEFINED
-}
-#endif
-
-#endif
-/*
-   YAEP (Yet Another Earley Parser)
-
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
-
-   Permission is hereby granted, free of charge, to any person obtaining a
-   copy of this software and associated documentation files (the
-   "Software"), to deal in the Software without restriction, including
-   without limitation the rights to use, copy, modify, merge, publish,
-   distribute, sublicense, and/or sell copies of the Software, and to
-   permit persons to whom the Software is furnished to do so, subject to
-   the following conditions:
-
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-*/
-
-/* FILE NAME:   hashtab.h
-
-   TITLE:       Include file of package for work with variable length
-                hash tables
-
-   DESCRIPTION: This header file contains type definitions and ANSI C
-       prototype definitions of the package functions and definition of
-       external variable of the package and C++ class `hash table'.
-
-*/
-
-#ifndef __HASH_TABLE__
-#define __HASH_TABLE__
-
-#include <stdbool.h>
-#include <stdlib.h>
-
-//include"allocate.h"
-
-/* The hash table element is represented by the following type. */
-
-typedef const void *hash_table_entry_t;
-
-
-#ifndef NOT_DEFINED
-
-
-/* Hash tables are of the following type.  The structure
-   (implementation) of this type is not needed for using the hash
-   tables.  All work with hash table should be executed only through
-   functions mentioned below. */
-
-typedef struct
-{
-  /* Current size (in entries) of the hash table */
-  size_t size;
-  /* Current number of elements including also deleted elements */
-  size_t number_of_elements;
-  /* Current number of deleted elements in the table */
-  size_t number_of_deleted_elements;
-  /* The following member is used for debugging. Its value is number
-     of all calls of `find_hash_table_entry' for the hash table. */
-  int searches;
-  /* The following member is used for debugging.  Its value is number
-     of collisions fixed for time of work with the hash table. */
-  int collisions;
-  /* Pointer to function for evaluation of hash value (any unsigned value).
-     This function has one parameter of type hash_table_entry_t. */
-  unsigned (*hash_function) (hash_table_entry_t el_ptr);
-  /* Pointer to function for test on equality of hash table elements (two
-     parameter of type hash_table_entry_t. */
-  bool (*eq_function) (hash_table_entry_t el1_ptr,
-                       hash_table_entry_t el2_ptr);
-  /* Table itself */
-  hash_table_entry_t *entries;
-  /* Allocator */
-  YaepAllocator * alloc;
-} *hash_table_t;
-
-
-/* The following variable is used for debugging. Its value is number
-   of all calls of `find_hash_table_entry' for all hash tables. */
-
-//extern int all_searches;
-
-/* The following variable is used for debugging. Its value is number
-   of collisions fixed for time of work with all hash tables. */
-
-//extern int all_collisions;
-
-/* The prototypes of the package functions. */
-
-hash_table_t create_hash_table(YaepAllocator * allocator,
-                                      size_t size,
-                                      unsigned int ( *hash_function )( hash_table_entry_t el_ptr ),
-                                      bool (*eq_function)(hash_table_entry_t el1_ptr,hash_table_entry_t el2_ptr));
-
-void empty_hash_table (hash_table_t htab);
-
-void delete_hash_table (hash_table_t htab);
-
-hash_table_entry_t *find_hash_table_entry(hash_table_t htab,
-                                                 hash_table_entry_t element,
-                                                 bool reserve);
-
-void remove_element_from_hash_table_entry (hash_table_t htab,
-                                                  hash_table_entry_t element);
-
-size_t hash_table_size (hash_table_t htab);
-
-size_t hash_table_elements_number (hash_table_t htab);
-
-/* The following function returns number of searches during all work
-   with given hash table. */
-static inline int
-get_searches (hash_table_t htab)
-{
-  return htab->searches;
-}
-
-/* The following function returns number of occurred collisions during
-   all work with given hash table. */
-static inline int
-get_collisions (hash_table_t htab)
-{
-  return htab->collisions;
-}
-
-/* The following function returns number of searches during all work
-   with all hash tables. */
-static inline int
-get_all_searches (void)
-{
-    return 0; // all_searches; TODO FREDRIK
-}
-
-/* The following function returns number of occurred collisions
-   during all work with all hash tables. */
-static inline int
-get_all_collisions (void)
-{
-    return 0; // all_collisions; // TODO FREDRIK
-}
-
-int hash_table_collision_percentage (hash_table_t htab);
-
-int all_hash_table_collision_percentage (void);
-
-#else /* #ifndef NOT_DEFINED */
-
-
-
-/* Hash tables are of the following class. */
-
-class hash_table
-{
-  /* Current size (in entries) of the hash table */
-  size_t _size;
-  /* Current number of elements including also deleted elements */
-  size_t number_of_elements;
-  /* Current number of deleted elements in the table */
-  size_t number_of_deleted_elements;
-  /* The following member is used for debugging. Its value is number
-     of all calls of `find_hash_table_entry' for the hash table. */
-  int searches;
-  /* The following member is used for debugging.  Its value is number
-     of collisions fixed for time of work with the hash table. */
-  int collisions;
-  /* Pointer to function for evaluation of hash value (any unsigned value).
-     This function has one parameter of type hash_table_entry_t. */
-  unsigned (*hash_function) (hash_table_entry_t el_ptr);
-  /* Pointer to function for test on equality of hash table elements (two
-     parameter of type hash_table_entry_t. */
-  bool (*eq_function) (hash_table_entry_t el1_ptr,
-                      hash_table_entry_t el2_ptr);
-  /* Table itself */
-  hash_table_entry_t *entries;
-  /* Allocator */
-  YaepAllocator * alloc;
-
-  /* The following variable is used for debugging. Its value is number
-     of all calls of `find_hash_table_entry' for all hash tables. */
-
-  static int all_searches;
-
-  /* The following variable is used for debugging. Its value is number
-     of collisions fixed for time of work with all hash tables. */
-
-  static int all_collisions;
-
-public:
-
-  /* Constructor. */
-  hash_table( YaepAllocator * allocator, size_t size, unsigned int ( *hash_function )( hash_table_entry_t el_ptr ), bool ( *eq_function )( hash_table_entry_t el1_ptr, hash_table_entry_t el2_ptr ) );
-  /* Destructor. */
-  ~hash_table (void);
-
-  void empty (void);
-
-  hash_table_entry_t *find_entry (hash_table_entry_t element, int reserve);
-
-  void remove_element_from_entry (hash_table_entry_t element);
-
-  /* The following function returns current size of given hash
-     table. */
-
-  inline size_t size (void)
-    {
-      return _size;
-    }
-
-  /* The following function returns current number of elements in
-     given hash table. */
-
-  inline size_t elements_number (void)
-    {
-      return number_of_elements - number_of_deleted_elements;
-    }
-
-  /* The following function returns number of searches during all work
-     with given hash table. */
-
-  inline int get_searches (void)
-    {
-      return this->searches;
-    }
-
-  /* The following function returns number of occurred collisions
-     during all work with given hash table. */
-
-  inline int get_collisions (void)
-    {
-      return this->collisions;
-    }
-
-  /* The following function returns number of searches
-     during all work with all hash tables. */
-
-  static inline int get_all_searches (void)
-    {
-      return all_searches;
-    }
-
-  /* The following function returns number of occurred collisions
-     during all work with all hash tables. */
-
-  static inline int get_all_collisions (void)
-    {
-      return all_collisions;
-    }
-private:
-
-  void expand_hash_table (void);
-
-};
-
-typedef class hash_table *hash_table_t;
-
-
-#endif /* #ifndef NOT_DEFINED */
-
-#endif /* #ifndef __HASH_TABLE__ */
-/*
-   YAEP (Yet Another Earley Parser)
-
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
-
-   Permission is hereby granted, free of charge, to any person obtaining a
-   copy of this software and associated documentation files (the
-   "Software"), to deal in the Software without restriction, including
-   without limitation the rights to use, copy, modify, merge, publish,
-   distribute, sublicense, and/or sell copies of the Software, and to
-   permit persons to whom the Software is furnished to do so, subject to
-   the following conditions:
-
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-*/
-
-/* FILE NAME:   objstack.h
-
-   TITLE:       Include file of package for work with stacks of
-                objects (OS)
-
-   DESCRIPTION: The package `objstack' implements efficient work
-       with stacks of objects (OS).  Work with the object on the stack
-       top is analogous to one with a variable length object.  One
-       motivation for the package is the problem of growing char
-       strings in symbol tables.  Memory for OS is allocated by
-       segments.  A segment may contain more one objects.  The most
-       recently allocated segment contains object on the top of OS.
-       If there is not sufficient free memory for the top object than
-       new segment is created and the top object is transferred into
-       the new segment, i.e. there is not any memory reallocation.
-       Therefore the top object may change its address.  But other
-       objects never change address.
-
-   SPECIAL CONSIDERATION:
-         Defining macro `NDEBUG' (e.g. by option `-D' in C/C++
-       compiler command line) before the package macros usage disables
-       to fix some internal errors and errors of usage of the package.
-         A file using the package can be compiled with option
-       `-DOS_DEFAULT_SEGMENT_LENGTH=...'.
-         C: Because arguments of all macros which return a result
-       (`OS_TOP_LENGTH', `OS_TOP_BEGIN', and `OS_TOP_END') may be
-       evaluated many times no side-effects should be in the
-       arguments.
-
-*/
-
-
-#ifndef __OS__
-#define __OS__
-
-#include <string.h>
-#include <stdlib.h>
-#include <stddef.h>
-
-//include "allocate.h"
-
-#include <assert.h>
-
-/* This auxiliary structure is used to evaluation of maximum
-   alignment for objects. */
-
-struct _os_auxiliary_struct
-{
-  char _os_character;
-  double _os_double;
-};
-
-/* This macro is auxiliary.  Its value is maximum alignment for objects. */
-
-#ifdef VMS
-/* It is necessarry for VMS C compiler. */
-#define _OS_ALIGNMENT  4
-#else
-#define _OS_ALIGNMENT offsetof (struct _os_auxiliary_struct, _os_double)
-#if 0
-#define _OS_ALIGNMENT\
-  ((char *) &((struct _os_auxiliary_struct *) 64)->_os_double - (char *) 64)
-#else
-#endif
-#endif
-
-/* This macro is auxiliary.  Its value is aligned address nearest to `a'. */
-
-#define _OS_ALIGNED_ADDRESS(a)\
-  ((void *) ((size_t) ((char *) (a) + (_OS_ALIGNMENT - 1))\
-             & (~(size_t) (_OS_ALIGNMENT - 1))))
-
-/* This macro value is default size of memory segments which will be
-   allocated for OS when the stack is created (with zero initial
-   segment size).  This is also minimal size of all segments.
-   Original value of the macros is equal to 512.  This macro can be
-   redefined in C compiler command line or with the aid of directive
-   `#undef' before any using the package macros.  */
-
-#ifndef OS_DEFAULT_SEGMENT_LENGTH
-#define OS_DEFAULT_SEGMENT_LENGTH 512
-#endif
-
-/* This internal structure describes segment of an object stack. */
-
-struct _os_segment
-{
-  struct _os_segment *os_previous_segment;
-  char os_segment_contest[_OS_ALIGNMENT];
-};
-
-/* This type describes a descriptor of stack of objects.  All work
-   with stack of objects is executed by following macros through the
-   descriptors.  Structure (implementation) of this type is not needed
-   for using stack of objects.  But it should remember that work with
-   the stack through several descriptors is not safe. */
-
-typedef struct
-{
-  /* The real length of the first memory segment. */
-  size_t initial_segment_length;
-  struct _os_segment *os_current_segment;
-
-  /* Pointer to memory currently used for storing the top object. */
-  char *os_top_object_start;
-
-  /* Pointer to first byte after the last byte of the top object. */
-  char *os_top_object_stop;
-
-  /* Pointer to first byte after the memory allocated for storing
-     the OS segment and the top object. */
-  char *os_segment_stop;
-
-  /* Pointer to allocator. */
-  YaepAllocator *os_alloc;
-} os_t;
-
-
-/* This macro creates OS which contains the single zero length object.
-   If initial length of OS segment is equal to zero the allocated
-   memory segments length is equal to `OS_DEFAULT_SEGMENT_LENGTH'.
-   But in any case the segment length is always not less than maximum
-   alignment.  OS must be created before any using other macros of the
-   package for work with given OS.  The macro has no side effects. */
-
-#define OS_CREATE( os, allocator, initial_segment_length ) \
-  do { \
-    os_t * _temp_os = &( os ); \
-    _temp_os->os_alloc = allocator; \
-    _OS_create_function( _temp_os, initial_segment_length ); \
-  } while( 0 )
-
-/* This macro is used for freeing memory allocated for OS.  Any work
-   (except for creation) with given OS is not possible after
-   evaluation of this macros.  The macro has no side effects. */
-
-#define OS_DELETE(os) _OS_delete_function (& (os))
-
-/* This macro is used for freeing memory allocated for OS except for
-   the first segment.  The macro has no side effects. */
-
-#define OS_EMPTY(os) _OS_empty_function (& (os))
-
-/* This macro makes that length of variable length object on the top
-   of OS will be equal to zero.  The macro has no side effects. */
-
-#define OS_TOP_NULLIFY(os)\
-  do\
-  {\
-    os_t *_temp_os = &(os);\
-    assert (_temp_os->os_top_object_start != NULL);\
-    _temp_os->os_top_object_stop = _temp_os->os_top_object_start;\
-  }\
-  while (0)
-
-/* The macro creates new variable length object with initial zero
-   length on the top of OS .  The work (analogous to one with variable
-   length object) with object which was on the top of OS are finished,
-   i.e. the object will never more change address.  The macro has not
-   side effects. */
-
-#define OS_TOP_FINISH(os)\
-  do\
-  {\
-    os_t *_temp_os = &(os);\
-    assert (_temp_os->os_top_object_start != NULL);\
-    _temp_os->os_top_object_start\
-        = (char *) _OS_ALIGNED_ADDRESS (_temp_os->os_top_object_stop);    \
-    _temp_os->os_top_object_stop = _temp_os->os_top_object_start;\
-  }\
-  while (0)
-
-/* This macro returns current length of variable length object on the
-   top of OS.  The macro has side effects! */
-
-#ifndef NDEBUG
-#define OS_TOP_LENGTH(os)\
-  ((os).os_top_object_start != NULL\
-   ? (os).os_top_object_stop - (os).os_top_object_start\
-   : (abort (), 0))
-#else
-#define OS_TOP_LENGTH(os)  ((os).os_top_object_stop - (os).os_top_object_start)
-#endif
-
-/* This macro returns pointer to the first byte of variable length
-   object on the top of OS.  The macro has side effects!  Remember also
-   that the top object may change own place after any addition. */
-
-#ifndef NDEBUG
-#define OS_TOP_BEGIN(os)\
-  ((os).os_top_object_start != NULL ? (void *) (os).os_top_object_start\
-                                    : (abort (), (void *) 0))
-#else
-#define OS_TOP_BEGIN(os) ((void *) (os).os_top_object_start)
-#endif
-
-/* This macro returns pointer (of type `void *') to the last byte of
-   variable length object on the top OS.  The macro has side effects!
-   Remember also that the top object may change own place after any
-   addition. */
-
-#ifndef NDEBUG
-#define OS_TOP_END(os)\
-  ((os).os_top_object_start != NULL ? (void *) ((os).os_top_object_stop - 1)\
-                                    : (abort (), (void *) 0))
-#else
-#define OS_TOP_END(os) ((void *) ((os).os_top_object_stop - 1))
-#endif
-
-/* This macro returns pointer (of type `void *') to the next byte of
-   the last byte of variable length object on the top OS.  The macro
-   has side effects!  Remember also that the top object may change own
-   place after any addition. */
-
-#ifndef NDEBUG
-#define OS_TOP_BOUND(os)\
-  ((os).os_top_object_start != NULL ? (void *) (os).os_top_object_stop\
-                                    : (abort (), (void *) 0))
-#else
-#define OS_TOP_BOUND(os) ((void *) (os).os_top_object_stop)
-#endif
-
-/* This macro removes N bytes from the end of variable length object
-   on the top of OS.  The top variable length object is nullified if
-   its length is less than N.  The macro has no side effects. */
-
-#define OS_TOP_SHORTEN(os, n)\
-  do\
-  {\
-    os_t *_temp_os = &(os);\
-    size_t _temp_n = (n);\
-    assert (_temp_os->os_top_object_start != NULL);\
-    if ((size_t) OS_TOP_LENGTH (*_temp_os) < _temp_n)\
-      _temp_os->os_top_object_stop = _temp_os->os_top_object_start;\
-    else\
-      _temp_os->os_top_object_stop -= _temp_n;\
-  }\
-  while (0)
-
-/* This macro increases length of variable length object on the top of
-   OS on given number of bytes.  The values of bytes added to the end
-   of variable length object on the top of OS will be not defined.
-   The macro has no side effects. */
-
-#define OS_TOP_EXPAND(os, length)\
-  do\
-  {\
-    os_t *_temp_os = &(os);\
-    size_t _temp_length = (length);\
-    assert (_temp_os->os_top_object_start != NULL);\
-    if (_temp_os->os_top_object_stop + _temp_length > _temp_os->os_segment_stop)\
-      _OS_expand_memory (_temp_os, _temp_length);\
-    _temp_os->os_top_object_stop += _temp_length;\
-  }\
-  while (0)
-
-/* This macro adds byte to the end of variable length object on the
-   top of OS.  The macro has no side effects. */
-
-#define OS_TOP_ADD_BYTE(os, b)\
-  do\
-  {\
-    os_t *_temp_os = &(os);\
-    assert (_temp_os->os_top_object_start != NULL);\
-    if (_temp_os->os_top_object_stop >= _temp_os->os_segment_stop)\
-      _OS_expand_memory (_temp_os, 1);\
-    *_temp_os->os_top_object_stop++ = (b);\
-  }\
-  while (0)
-
-/* This macro adds memory bytes to the end of variable length object
-   on the top of OS.  The macro has no side effects. */
-
-#define OS_TOP_ADD_MEMORY(os, str, length)\
-  do\
-  {\
-    os_t *_temp_os = &(os);\
-    size_t _temp_length = (length);\
-    assert (_temp_os->os_top_object_start != NULL);\
-    if (_temp_os->os_top_object_stop + _temp_length > _temp_os->os_segment_stop)\
-      _OS_expand_memory (_temp_os, _temp_length);\
-    memcpy( _temp_os->os_top_object_stop, ( str ), _temp_length ); \
-    _temp_os->os_top_object_stop += _temp_length;\
-  }\
-  while (0)
-
-/* This macro adds C string (with end marker '\0') to the end of
-   variable length object on the top of OS.  Before the addition the
-   macro delete last character of the object.  The last character is
-   suggested to be C string end marker '\0'.  The macro has no side
-   effects. */
-
-#define OS_TOP_ADD_STRING(os, str) _OS_add_string_function(&(os), (str))
-
-/* The following functions are to be used only by the package macros.
-   Remember that they are internal functions - all work with OS is
-   executed through the macros. */
-
-void _OS_create_function (os_t *os, size_t initial_segment_length);
-void _OS_delete_function (os_t *os);
-void _OS_empty_function (os_t *os);
-void _OS_add_string_function (os_t *os, const char *str);
-void _OS_expand_memory (os_t *os, size_t additional_length);
-
-#endif /* #ifndef __OS__ */
-/*
-   YAEP (Yet Another Earley Parser)
-
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
-
-   Permission is hereby granted, free of charge, to any person obtaining a
-   copy of this software and associated documentation files (the
-   "Software"), to deal in the Software without restriction, including
-   without limitation the rights to use, copy, modify, merge, publish,
-   distribute, sublicense, and/or sell copies of the Software, and to
-   permit persons to whom the Software is furnished to do so, subject to
-   the following conditions:
-
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-*/
-
-/* FILE NAME:   vlobject.h
-
-   TITLE:       Include file of package for work with variable length
-                objects (VLO)
-
-   DESCRIPTION: This header file contains macros and C++ class for
-       work with variable length objects (VLO).  Any number of bytes
-       my be added to and removed from the end of VLO.  If it is
-       needed the memory allocated for storing variable length object
-       may be expanded possibly with changing the object place.  But
-       between any additions of the bytes (tailoring) the object place
-       is not changed.  To decrease number of changes of the object
-       place the memory being allocated for the object is longer than
-       the current object length.
-
-   SPECIAL CONSIDERATION:
-         Defining macro `NDEBUG' (e.g. by option `-D' in C/C++
-       compiler command line) before the package macros usage disables
-       to fix some internal errors and errors of usage of the package.
-         C: Because arguments of all macros which return a result
-       (`VLO_LENGTH', `VLO_BEGIN', and `VLO_END') may be evaluated
-       many times no side-effects should be in the arguments.  A file
-       using the package can be compiled with option
-       `-DVLO_DEFAULT_LENGTH=...'.  */
-
-
-#ifndef __VLO__
-#define __VLO__
-
-#include <stdlib.h>
-#include <string.h>
-
-//include "allocate.h"
-
-#include <assert.h>
-
-
-/* Default initial size of memory is allocated for VLO when the object
-   is created (with zero initial size).  This macro can be redefined
-   in C compiler command line or with the aid of directive `#undef'
-   before any using the package macros. */
-
-#ifndef VLO_DEFAULT_LENGTH
-#define VLO_DEFAULT_LENGTH 512
-#endif
-
-
-#ifndef NOT_DEFINED
-
-
-/* This type describes a descriptor of variable length object.  All
-   work with variable length object is executed by following macros
-   through the descriptors.  Structure (implementation) of this type
-   is not needed for using variable length object.  But it should
-   remember that work with the object through several descriptors is
-   not safe. */
-
-typedef struct
-{
-  /* Pointer to memory currently used for storing the VLO. */
-  char *vlo_start;
-  /* Pointer to first byte after the last VLO byte. */
-  char *vlo_stop;
-  /* Pointer to first byte after the memory currently allocated for storing
-     the VLO. */
-  char *vlo_segment_stop;
-  /* Pointer to allocator. */
-  YaepAllocator *vlo_alloc;
-} vlo_t;
-
-
-/* This macro is used for creation of VLO with initial zero length.
-   If initial length of memory needed for the VLO is equal to 0 the
-   initial allocated memory length is equal to VLO_DEFAULT_LENGTH.
-   VLO must be created before any using other macros of the package
-   for work with given VLO.  The macro has not side effects. */
-
-#define VLO_CREATE(vlo, allocator, initial_length)\
-  do\
-  {\
-    vlo_t *_temp_vlo = &(vlo);\
-    size_t temp_initial_length = (initial_length);\
-    YaepAllocator * _temp_alloc = ( allocator ); \
-    temp_initial_length = (temp_initial_length != 0 ? temp_initial_length\
-                                                    : VLO_DEFAULT_LENGTH);\
-    _temp_vlo->vlo_start = (char*)yaep_malloc( _temp_alloc, temp_initial_length ); \
-    _temp_vlo->vlo_segment_stop = _temp_vlo->vlo_start + temp_initial_length;\
-    _temp_vlo->vlo_stop = _temp_vlo->vlo_start;\
-    _temp_vlo->vlo_alloc = _temp_alloc; \
-  }\
-  while (0)
-
-
-/* This macro is used for freeing memory allocated for VLO.  Any work
-   (except for creation) with given VLO is not possible after
-   evaluation of this macro.  The macro has not side effects. */
-
-#ifndef NDEBUG
-#define VLO_DELETE(vlo)\
-  do\
-  {\
-    vlo_t *_temp_vlo = &(vlo);\
-    assert (_temp_vlo->vlo_start != NULL);\
-    yaep_free( _temp_vlo->vlo_alloc,_temp_vlo->vlo_start );\
-    _temp_vlo->vlo_start = NULL;\
-  }\
-  while (0)
-#else
-#define VLO_DELETE(vlo) \
-  do { \
-    vlo_t * _temp_vlo = &( vlo ); \
-    yaep_free( _temp_vlo->vlo_alloc, _temp_vlo->vlo_start ); \
-  } while( 0 )
-#endif /* #ifndef NDEBUG */
-
-/* This macro makes that length of VLO will be equal to zero (but
-   memory for VLO is not freed and not reallocated).  The macro has
-   not side effects. */
-
-#define VLO_NULLIFY(vlo)\
-  do\
-  {\
-    vlo_t *_temp_vlo = &(vlo);\
-    assert (_temp_vlo->vlo_start != NULL);\
-    _temp_vlo->vlo_stop = _temp_vlo->vlo_start;\
-  }\
-  while (0)
-
-
-/* The following macro makes that length of memory allocated for VLO
-   becames equal to VLO length.  The macro has not side effects. */
-
-#define VLO_TAILOR(vlo) _VLO_tailor_function(&(vlo))
-
-
-/* This macro returns current length of VLO.  The macro has side
-   effects! */
-
-#ifndef NDEBUG
-#define VLO_LENGTH(vlo) ((vlo).vlo_start != NULL\
-                         ? (vlo).vlo_stop - (vlo).vlo_start\
-                         : (abort (), 0))
-#else
-#define VLO_LENGTH(vlo) ((vlo).vlo_stop - (vlo).vlo_start)
-#endif /* #ifndef NDEBUG */
-
-
-/* This macro returns pointer (of type `void *') to the first byte of
-   the VLO.  The macro has side effects!  Remember also that the VLO
-   may change own place after any addition. */
-
-#ifndef NDEBUG
-#define VLO_BEGIN(vlo) ((vlo).vlo_start != NULL\
-                        ? (void *) (vlo).vlo_start\
-                        : (abort (), (void *) 0))
-#else
-#define VLO_BEGIN(vlo) ((void *) (vlo).vlo_start)
-#endif /* #ifndef NDEBUG */
-
-/* This macro returns pointer (of type `void *') to the last byte of
-   VLO.  The macro has side effects!  Remember also that the VLO may
-   change own place after any addition. */
-
-#ifndef NDEBUG
-#define VLO_END(vlo) ((vlo).vlo_start != NULL\
-                      ? (void *) ((vlo).vlo_stop - 1)\
-                      : (abort (), (void *) 0))
-#else
-#define VLO_END(vlo) ((void *) ((vlo).vlo_stop - 1))
-#endif /* #ifndef NDEBUG */
-
-/* This macro returns pointer (of type `void *') to the next byte of
-   the last byte of VLO.  The macro has side effects!  Remember also
-   that the VLO may change own place after any addition. */
-
-#ifndef NDEBUG
-#define VLO_BOUND(vlo) ((vlo).vlo_start != NULL\
-                        ? (void *) (vlo).vlo_stop\
-                        : (abort (), (void *) 0))
-#else
-#define VLO_BOUND(vlo) ((void *) (vlo).vlo_stop)
-#endif /* #ifndef NDEBUG */
-
-/* This macro removes N bytes from the end of VLO.  VLO is nullified
-   if its length is less than N.  The macro has not side effects. */
-
-#define VLO_SHORTEN(vlo, n)\
-  do\
-  {\
-    vlo_t *_temp_vlo = &(vlo);\
-    size_t _temp_n = (n);\
-    assert (_temp_vlo->vlo_start != NULL);\
-    if ((size_t) VLO_LENGTH (*_temp_vlo) < _temp_n)\
-      _temp_vlo->vlo_stop = _temp_vlo->vlo_start;\
-    else\
-      _temp_vlo->vlo_stop -= _temp_n;\
-  }\
-  while (0)
-
-
-/* This macro increases length of VLO.  The values of bytes added to
-   the end of VLO will be not defined.  The macro has not side
-   effects. */
-
-#define VLO_EXPAND(vlo, length)\
-  do\
-  {\
-    vlo_t *_temp_vlo = &(vlo);\
-    size_t _temp_length = (length);\
-    assert (_temp_vlo->vlo_start != NULL);\
-    if (_temp_vlo->vlo_stop + _temp_length > _temp_vlo->vlo_segment_stop)\
-      _VLO_expand_memory (_temp_vlo, _temp_length);\
-    _temp_vlo->vlo_stop += _temp_length;\
-  }\
-  while (0)
-
-
-/* This macro adds a byte to the end of VLO.  The macro has not side
-   effects. */
-
-#define VLO_ADD_BYTE(vlo, b)\
-  do\
-  {\
-    vlo_t *_temp_vlo = &(vlo);\
-    assert (_temp_vlo->vlo_start != NULL);\
-    if (_temp_vlo->vlo_stop >= _temp_vlo->vlo_segment_stop)\
-      _VLO_expand_memory (_temp_vlo, 1);\
-    *_temp_vlo->vlo_stop++ = (b);\
-  }\
-  while (0)
-
-
-/* This macro adds memory bytes to the end of VLO.  The macro has not
-   side effects. */
-
-#define VLO_ADD_MEMORY(vlo, str, length)\
-  do\
-  {\
-    vlo_t *_temp_vlo = &(vlo);\
-    size_t _temp_length = (length);\
-    assert (_temp_vlo->vlo_start != NULL);\
-    if (_temp_vlo->vlo_stop + _temp_length > _temp_vlo->vlo_segment_stop)\
-      _VLO_expand_memory (_temp_vlo, _temp_length);\
-    memcpy( _temp_vlo->vlo_stop, ( str ), _temp_length ); \
-    _temp_vlo->vlo_stop += _temp_length;\
-  }\
-  while (0)
-
-
-/* This macro adds C string (with end marker '\0') to the end of VLO.
-   Before the addition the macro delete last character of the VLO.
-   The last character is suggested to be C string end marker '\0'.
-   The macro has not side effects. */
-
-#define VLO_ADD_STRING(vlo, str) _VLO_add_string_function(&(vlo), (str))
-
-
-/* The following functions are to be used only by the package macros.
-   Remember that they are internal functions - all work with VLO is
-   executed through the macros. */
-
-void _VLO_tailor_function (vlo_t *vlo);
-void _VLO_add_string_function (vlo_t *vlo, const char *str);
-void _VLO_expand_memory (vlo_t *vlo, size_t additional_length);
-
-#else /* #ifndef NOT_DEFINED */
-
-
-/* This type describes a descriptor of variable length object.  It
-   should remember that work with the object through several
-   descriptors is not safe. */
-
-class vlo
-{
-  /* Pointer to memory currently used for storing the VLO. */
-  char *vlo_start;
-  /* Pointer to first byte after the last VLO byte. */
-  char *vlo_stop;
-  /* Pointer to first byte after the memory currently allocated for storing
-     the VLO. */
-  char *vlo_segment_stop;
-  /* Pointer to allocator. */
-  YaepAllocator *vlo_alloc;
-public:
-
-  /* This function is used for creation of VLO with initial zero
-     length.  If initial length of memory needed for the VLO is equal
-     to 0 the initial allocated memory length is equal to
-     VLO_DEFAULT_LENGTH. */
-
-  explicit vlo (YaepAllocator * allocator, size_t initial_length = VLO_DEFAULT_LENGTH):vlo_alloc (allocator)
-  {
-    initial_length = (initial_length != 0
-		      ? initial_length : VLO_DEFAULT_LENGTH);
-    vlo_start = (char *) yaep_malloc (vlo_alloc, initial_length);
-    vlo_segment_stop = vlo_start + initial_length;
-    vlo_stop = vlo_start;
-  }
-
-
-  /* This function is used for freeing memory allocated for VLO.  Any
-     work (except for creation) with given VLO is not possible after
-     evaluation of this function. */
-
-  inline ~ vlo (void)
-  {
-#ifndef NDEBUG
-    assert (vlo_start != NULL);
-    yaep_free (vlo_alloc, vlo_start);
-    vlo_start = NULL;
-#else
-    yaep_free (vlo_alloc, vlo_start);
-#endif /* #ifndef NDEBUG */
-  }
-
-  /* This function makes that length of VLO will be equal to zero (but
-     memory for VLO is not freed and not reallocated). */
-
-  inline void nullify (void)
-  {
-    assert (vlo_start != NULL);
-    vlo_stop = vlo_start;
-  }
-
-
-  /* The following function makes that length of memory allocated for
-     VLO becames equal to VLO length. */
-
-  void tailor (void);
-
-
-  /* This function returns current length of VLO. */
-
-  inline size_t length (void)
-  {
-    assert (vlo_start != NULL);
-    return vlo_stop - vlo_start;
-  }
-
-
-  /* This function returns pointer (of type `void *') to the first byte
-     of the VLO.  Remember also that the VLO may change own place
-     after any addition. */
-
-  inline void *begin (void)
-  {
-    assert (vlo_start != NULL);
-    return (void *) vlo_start;
-  }
-
-  /* This function returns pointer (of type `void *') to the last byte
-     of VLO.  Remember also that the VLO may change own place after
-     any addition. */
-
-  inline void *end (void)
-  {
-    assert (vlo_start != NULL);
-    return (void *) (vlo_stop - 1);
-  }
-
-  /* This function returns pointer (of type `void *') to the next byte
-     of the last byte of VLO.  Remember also that the VLO may change
-     own place after any addition. */
-
-  inline void *bound (void)
-  {
-    assert (vlo_start != NULL);
-    return (void *) vlo_stop;
-  }
-
-  /* This function removes N bytes from the end of VLO.  VLO is nullified
-     if its length is less than N. */
-
-  inline void shorten (size_t n)
-  {
-    assert (vlo_start != NULL);
-    if (length () < n)
-      vlo_stop = vlo_start;
-    else
-      vlo_stop -= n;
-  }
-
-
-  /* This function increases length of VLO.  The values of bytes added
-     to the end of VLO will be not defined. */
-
-  void expand (size_t length)
-  {
-    assert (vlo_start != NULL);
-    if (vlo_stop + length > vlo_segment_stop)
-      _VLO_expand_memory (length);
-    vlo_stop += length;
-  }
-
-
-  /* This function adds a byte to the end of VLO. */
-
-  inline void add_byte (int b)
-  {
-    assert (vlo_start != NULL);
-    if (vlo_stop >= vlo_segment_stop)
-      _VLO_expand_memory (1);
-    *vlo_stop++ = b;
-  }
-
-
-  /* This function adds memory bytes to the end of VLO. */
-
-  inline void add_memory (const void *str, size_t length)
-  {
-    assert (vlo_start != NULL);
-    if (vlo_stop + length > vlo_segment_stop)
-      _VLO_expand_memory (length);
-    memcpy (vlo_stop, str, length);
-    vlo_stop += length;
-  }
-
-
-  /* This function adds C string (with end marker '\0') to the end of
-     VLO.  Before the addition the function deletes last character of
-     the VLO.  The last character is suggested to be C string end
-     marker '\0'. */
-
-  void add_string (const char *str);
-
-private:
-
-  /* The following functions is used only by the class functions. */
-
-  void _VLO_expand_memory (size_t additional_length);
-};
-
-typedef vlo vlo_t;
-
-#endif /* #ifndef NOT_DEFINED */
-
-#endif /* #ifndef __VLO__ */
-/****************** YAEP parser single source file code **********************/
-/*
-   YAEP (Yet Another Earley Parser)
-
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
-
-   Permission is hereby granted, free of charge, to any person obtaining a
-   copy of this software and associated documentation files (the
-   "Software"), to deal in the Software without restriction, including
-   without limitation the rights to use, copy, modify, merge, publish,
-   distribute, sublicense, and/or sell copies of the Software, and to
-   permit persons to whom the Software is furnished to do so, subject to
-   the following conditions:
-
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-*/
-
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-
-//include"allocate.h"
+#ifdef YAEP_ALLOCATE_MODULE
 
 struct YaepAllocator
 {
@@ -19077,61 +17880,12 @@ yaep_alloc_seterr (YaepAllocator * allocator, Yaep_alloc_error errfunc,
       allocator->userptr = userptr;
     }
 }
-/*
-   YAEP (Yet Another Earley Parser)
 
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
+#endif // YAEP_ALLOCATE_MODULE
 
-   Permission is hereby granted, free of charge, to any person obtaining a
-   copy of this software and associated documentation files (the
-   "Software"), to deal in the Software without restriction, including
-   without limitation the rights to use, copy, modify, merge, publish,
-   distribute, sublicense, and/or sell copies of the Software, and to
-   permit persons to whom the Software is furnished to do so, subject to
-   the following conditions:
+// PART C YAEP_HASHTAB_C ////////////////////////////////////////
 
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-*/
-
-/* FILE NAME:   hashtab.c
-
-   TITLE:       Package for work with hash tables
-
-   DESCRIPTION: This package implements features analogous to ones of
-       public domain functions `hsearch', `hcreate' and `hdestroy'.
-       The goal of the package creation is to implement additional
-       needed features.  The abstract data permits to work
-       simultaneously with several expandable hash tables.  Besides
-       insertion and search of elements the elements from the hash
-       tables can be also removed.  The table element can be only a
-       pointer.  The size of hash tables is not fixed.  The hash table
-       will be expanded when its occupancy will became big.  The
-       abstract data implementation is based on generalized Algorithm
-       D from Knuth's book "The art of computer programming".  Hash
-       table is expanded by creation of new hash table and
-       transferring elements from the old table to the new table.
-
-   SPECIAL CONSIDERATION:
-         Defining macro `NDEBUG' (e.g. by option `-D' in C compiler
-       command line) during the file compilation disables to fix
-       some internal errors and errors of usage of the package.
-
-*/
-
-//include "allocate.h"
-//include "hashtab.h"
-
-#include <assert.h>
+#ifdef YAEP_HASHTAB_MODULE
 
 /* This macro defines reserved value for empty table entry. */
 
@@ -19355,55 +18109,12 @@ hash_table_elements_number (hash_table_t htab)
   assert (htab != NULL);
   return htab->number_of_elements - htab->number_of_deleted_elements;
 }
-/*
-   YAEP (Yet Another Earley Parser)
 
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
+#endif
 
-   Permission is hereby granted, free of charge, to any person obtaining a
-   copy of this software and associated documentation files (the
-   "Software"), to deal in the Software without restriction, including
-   without limitation the rights to use, copy, modify, merge, publish,
-   distribute, sublicense, and/or sell copies of the Software, and to
-   permit persons to whom the Software is furnished to do so, subject to
-   the following conditions:
+// PART C YAEP_OBJSTACK_C ////////////////////////////////////////
 
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-*/
-
-/* FILE NAME:   objstack.c
-
-   TITLE:       Package for work with stacks of objects (OS)
-
-   DESCRIPTION:
-       This file implements internal functions of the package.
-
-   SPECIAL CONSIDERATION:
-       The following functions are to be used only by the package
-       macros.  Remember that they are internal functions - all work
-       with OS is executed through the macros.
-         Defining macro `NDEBUG' (e.g. by option `-D' in C compiler
-       command line) during the file compilation disables to fix
-       some internal errors and errors of usage of the package.
-
-*/
-
-#include <string.h>
-//include "allocate.h"
-
-//include "objstack.h"
-
-#include <assert.h>
+#ifdef YAEP_OBJSTACK_MODULE
 
 /* The function implements macro `OS_CREATE' (creation of stack of
    object).  OS must be created before any using other macros of the
@@ -19531,55 +18242,12 @@ _OS_expand_memory (os_t * os, size_t additional_length)
   os->os_top_object_stop = os->os_top_object_start + os_top_object_length;
   os->os_segment_stop = os->os_top_object_start + segment_length;
 }
-/*
-   YAEP (Yet Another Earley Parser)
 
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
+#endif
 
-   Permission is hereby granted, free of charge, to any person obtaining a
-   copy of this software and associated documentation files (the
-   "Software"), to deal in the Software without restriction, including
-   without limitation the rights to use, copy, modify, merge, publish,
-   distribute, sublicense, and/or sell copies of the Software, and to
-   permit persons to whom the Software is furnished to do so, subject to
-   the following conditions:
+// PART C YAEP_VLOBJECT_C ////////////////////////////////////////
 
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-*/
-
-/* FILE NAME:   vlobject.c
-
-   TITLE:       Package for work with variable length objects (VLO)
-
-   DESCRIPTION:
-       This file implements internal functions of the package.
-
-   SPECIAL CONSIDERATION:
-       The following functions are to be used only by the package
-       macros.  Remember that they are internal functions - all work
-       with VLO is executed through the macros.
-         Defining macro `NDEBUG' (e.g. by option `-D' in C compiler
-       command line) during the file compilation disables to fix
-       some internal errors and errors of usage of the package.
-
-*/
-
-#include <string.h>
-
-//include "allocate.h"
-//include "vlobject.h"
-
-#include <assert.h>
+#ifdef YAEP_VLOBJECT_MODULE
 
 /* The function implements macro `VLO_TAILOR'.  Length of memory
    allocated for VLO becames equal to VLO length (but memory for zero
@@ -19648,127 +18316,12 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
     }
   vlo->vlo_segment_stop = vlo->vlo_start + vlo_length;
 }
-/*
-  YAEP(Yet Another Earley Parser)
 
-  Copyright(c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
-  Copyright(c) 2024-2025 Fredrik Öhrström <oehrstroem@gmail.com>
-
-  Permission is hereby granted, free of charge, to any person obtaining a
-  copy of this software and associated documentation files(the
-  "Software"), to deal in the Software without restriction, including
-  without limitation the rights to use, copy, modify, merge, publish,
-  distribute, sublicense, and/or sell copies of the Software, and to
-  permit persons to whom the Software is furnished to do so, subject to
-  the following conditions:
-
-  The above copyright notice and this permission notice shall be included
-  in all copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-*/
-
-/* 1997-2018 Vladimir Makarov
-   This file implements parsing of any context free grammar with minimal
-   error recovery and syntax directed translation.  The parser is based
-   on Earley's algorithm from 1968. The implementation is sufficiently
-   fast to be used in serious language processors.
-
-   2024-2025 Fredrik Öhrström
-   Heavily refactored to fit ixml use case, removed global variables, restructured
-   code, commented and renamed variables and structures, added ixml charset
-   matching.
-
-   Terminology:
-
-   Input tokens: The content to be parsed stored as an array of symbols
-                 (with user supplied attributes attached that can be user fetched later).
-                 The tokens can be lexer symbols or unicode characters (ixml).
-                 An offset into the input tokens array is always denoted with the suffix _i.
-                 E.g. input[tok_i] (current input token being scanned), from_i, to_i, state_set_i etc.
-                 An offset inside the rhs of a rule is denoted with the suffix _j.
-
-   Rule: A grammar rule: S →  NP VP
-
-   Dotted Rule: A rule with a dot: S →  NP 🞄 VP
-                The dot symbolizes how far the rule has been matched against input.
-                The dot_j starts at zero which means nothing has been matched.
-                A dotted rule is started if the dot_j > 0, ie it has matched something.
-
-   Earley Item: Every input token input[tok_i] gets a state set that stores Early items (aka chart entries).
-                An early item: [from_i, to_i, S →  NP 🞄 VP]
-                The item maps a token range with a partial (or fully completed) dotted rule.
-                Since to_i == tok_i we do not need to actually store to_i, its implicit from the state set.
-                Instead we store the match_length (== to_i - from_i).
-
-                The matched lengths are stored in a separate array and are not needed for
-                parsing/recognition but are required when building the parse tree.
-
-                Because of the separate array, there is no need not have an Earley Item structure
-                in this implementation. Instead we store dotted rules and match_lengths arrays.
-
-   StateSetCore: The part of a state set that can be shared between StateSets.
-                 This is where we store the dotted rules, the dotted_rule_lenghts,
-                 and the scanned terminal that created this core.
-                 Again, the dotted_rule_lengths are only used to build the final parse tree
-                 after at least one valid parse has been found.
-                 The StateSetCores can be reused a lot.
-
-   StateSet: For each input token, we build a state set with all possible Earley items.
-             started (some match) and not-yet-started (no match yet). Theses items
-             come from the scan/complete/predict algorithm.
-
-             A started dotted_rule stores the matched length in number of tokens as matched_length.
-
-             We compress the StateSet with an immutable StateSetCore and a separate
-             array of matched_lengths corresponding to the dotted rules inside the state set core.
-*/
-
-#include <assert.h>
-
-#define ENABLE_TRACE false
-#define TRACE_F(ps) { \
-        if (ENABLE_TRACE && ps->run.trace) fprintf(stderr, "TRACE %s\n", __func__); \
-    }
-
-#define TRACEE_F(ps) { \
-        if (ENABLE_TRACE && ps->run.trace) fprintf(stderr, "TRACE %-30s", __func__); \
-    }
-
-#define TRACE_FA(ps, cformat, ...) { \
-    if (ENABLE_TRACE && ps->run.trace) fprintf(stderr, "TRACE %-30s" cformat "\n", __func__, __VA_ARGS__); \
-}
-
-#define TRACEE_FA(ps, cformat, ...) { \
-    if (ENABLE_TRACE && ps->run.trace) fprintf(stderr, "TRACE %-30s" cformat, __func__, __VA_ARGS__); \
-}
-
-#include <stdio.h>
-#include <stdarg.h>
-#include <setjmp.h>
-#include <stdlib.h>
-#include <string.h>
-
-//include "allocate.h"
-//include "hashtab.h"
-//include "vlobject.h"
-//include "objstack.h"
-//include "yaep.h"
-//include "xmq.h"
-//include "always.h"
-//include "text.h"
-//include "membuffer.h"
-
-#ifndef BUILDING_DIST_XMQ
-bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
 #endif
+
+// PART C YAEP_C ////////////////////////////////////////
+
+#ifdef YAEP_MODULE
 
 /* Terminals are stored a in term set using bits in a bit array.
    The array consists of long ints, typedefed as terminal_bitset_el_t.
@@ -20582,6 +19135,7 @@ static void dbg_print_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rul
 // Declarations ///////////////////////////////////////////////////
 
 static bool blocked_by_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule, YaepSymbol *symb, int n, const char *info);
+void check_predictions(YaepParseState *ps, YaepStateSet *set, YaepVect *predictions, int lookahead_term_id, int local_lookahead_level);
 static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n);
 static bool is_not_rule(YaepSymbol *symb);
 static int default_read_token(YaepParseRun *ps, void **attr);
@@ -20619,10 +19173,12 @@ jmp_buf error_longjump_buff;
 
 // Implementations ////////////////////////////////////////////////////////////////////
 
-static void breakpoint()
+__attribute__((unused))
+static void dbg_breakpoint()
 {
 }
 
+__attribute__((unused))
 static void dbg_print_core(YaepParseState *ps, YaepStateSetCore *c)
 {
     MemBuffer *mb = new_membuffer();
@@ -20630,6 +19186,7 @@ static void dbg_print_core(YaepParseState *ps, YaepStateSetCore *c)
     free_membuffer_and_free_content(mb);
 }
 
+__attribute__((unused))
 static void dbg_print_coresymbvects(YaepParseState *ps, YaepCoreSymbToPredComps *v)
 {
     MemBuffer *mb = new_membuffer();
@@ -20638,6 +19195,7 @@ static void dbg_print_coresymbvects(YaepParseState *ps, YaepCoreSymbToPredComps 
 }
 
 
+__attribute__((unused))
 static void dbg_print_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule)
 {
     MemBuffer *mb = new_membuffer();
@@ -23178,7 +21736,6 @@ int yaep_set_recovery_match(YaepGrammar *grammar, int n_input)
     return old;
 }
 
-/* The function initializes all internal data for parser for N_INPUT tokens. */
 static void yaep_parse_init(YaepParseState *ps, int n_input)
 {
     YaepRule*rule;
@@ -23192,11 +21749,15 @@ static void yaep_parse_init(YaepParseState *ps, int n_input)
         YaepSymbol*symb;
 
         for(i = 0;(symb = symb_get(ps, i)) != NULL; i++)
+        {
             symb->cached_core_symb_ids = NULL;
+        }
     }
 #endif
     for(rule = ps->run.grammar->rulestorage_ptr->first_rule; rule != NULL; rule = rule->next)
+    {
         rule->caller_anode = NULL;
+    }
 }
 
 static void free_inside_parse_state(YaepParseState *ps)
@@ -23429,7 +21990,7 @@ static void expand_new_set(YaepParseState *ps)
                 trace("ixml.pa.c=", "found csl core symb ids core=%d symb=%s\n", ps->new_core->id, symb->hr);
             }
             else
-	    {
+            {
                 trace("ixml.pa.c=",  "adding csl core symb ids core=%d symb=%s\n", ps->new_core->id, symb->hr);
                 // No vector found for this core+symb combo.
                 // Add a new vector.
@@ -23625,6 +22186,59 @@ static void trace_lookahead_predicts_no_match(YaepParseState *ps, int lookahead_
     debug_mb("ixml.pa.c=", mb);
 }
 
+void check_predictions(YaepParseState *ps,
+                       YaepStateSet *set,
+                       YaepVect *predictions,
+                       int lookahead_term_id,
+                       int local_lookahead_level)
+{
+	for (int i = 0; i < predictions->len; i++)
+	{
+		int dotted_rule_id = predictions->ids[i];
+		trace("ixml.pa.c=", "csl pfoof drid=%d", dotted_rule_id);
+		YaepDottedRule *dotted_rule = set->core->dotted_rules[dotted_rule_id];
+		YaepDottedRule *new_dotted_rule = create_dotted_rule(ps,
+				dotted_rule->rule, dotted_rule->dot_j + 1,
+				dotted_rule->dyn_lookahead_context, "scan");
+		/*if (NEXT_TERMINAL) fprintf(stderr, "NEXT %s\n", NEXT_TERMINAL->hr);
+		 else fprintf(stderr, "NEXT null\n");*/
+		if (local_lookahead_level != 0
+				&& !terminal_bitset_test(ps, new_dotted_rule->lookahead,
+						lookahead_term_id)
+				&& !terminal_bitset_test(ps, new_dotted_rule->lookahead,
+						ps->run.grammar->term_error_id)) {
+			// Lookahead predicted no-match. Stop here.
+			if (ps->run.trace)
+				trace_lookahead_predicts_no_match(ps, lookahead_term_id,
+						new_dotted_rule, "complete_predict1");
+
+			trace("ixml.pa.c=", "csl stop");
+			continue;
+		}
+		int matched_length = lookup_matched_length(ps, set, dotted_rule_id);
+		matched_length++;
+		trace("ixml.pa.c=", "csl next");
+		// This combo dotted_rule + matched_length did not already exist, lets add it.
+		// But first test if there is a not lookahead that blocks....
+		YaepSymbol *sym = new_dotted_rule->rule->rhs[new_dotted_rule->dot_j];
+		if (sym)
+			debug("ixml.pa.c=", "PRU1 %s", sym->hr);
+		if (!blocked_by_lookahead(ps, new_dotted_rule,
+				new_dotted_rule->rule->rhs[new_dotted_rule->dot_j], 1,
+				"lookahead4")) {
+			if (!dotted_rule_matched_length_test_and_set(ps, new_dotted_rule,
+					matched_length)) {
+				debug("ixml.pa.c=", "PRUTT1");
+				set_add_dotted_rule_with_matched_length(ps, new_dotted_rule,
+						matched_length);
+			} else {
+				debug("ixml.pa.c=", "s%d already existed", set->id);
+			}
+		}
+		trace("ixml.pa.c=", "csl stooooop");
+	}
+}
+
 /* The following function predicts a new state set by shifting dotted_rules
    of SET given in CORE_SYMB_IDS with given lookahead terminal number.
    If the number is negative, we ignore lookahead at all. */
@@ -23646,55 +22260,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 
     clear_dotted_rule_matched_length_set(ps);
 
-    for (int i = 0; i < predictions->len; i++)
-    {
-        int dotted_rule_id = predictions->ids[i];
-        trace("ixml.pa.c=", "csl pfoof drid=%d", dotted_rule_id);
-
-        YaepDottedRule *dotted_rule = set->core->dotted_rules[dotted_rule_id];
-
-        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps,
-                                                             dotted_rule->rule,
-                                                             dotted_rule->dot_j+1,
-                                                             dotted_rule->dyn_lookahead_context,
-                                                             "scan");
-        /*if (NEXT_TERMINAL) fprintf(stderr, "NEXT %s\n", NEXT_TERMINAL->hr);
-          else fprintf(stderr, "NEXT null\n");*/
-
-        if (local_lookahead_level != 0
-            && !terminal_bitset_test(ps, new_dotted_rule->lookahead, lookahead_term_id)
-            && !terminal_bitset_test(ps, new_dotted_rule->lookahead, ps->run.grammar->term_error_id))
-        {
-            // Lookahead predicted no-match. Stop here.
-            if (ps->run.trace) trace_lookahead_predicts_no_match(ps, lookahead_term_id, new_dotted_rule, "complete_predict1");
-            trace("ixml.pa.c=", "csl stop");
-            continue;
-        }
-        int matched_length = lookup_matched_length(ps, set, dotted_rule_id);
-        matched_length++;
-        trace("ixml.pa.c=", "csl next");
-        // This combo dotted_rule + matched_length did not already exist, lets add it.
-        // But first test if there is a not lookahead that blocks....
-        YaepSymbol *sym = new_dotted_rule->rule->rhs[new_dotted_rule->dot_j];
-        if (sym) debug("ixml.pa.c=", "PRU1 %s", sym->hr);
-        if (!blocked_by_lookahead(ps,
-                                  new_dotted_rule,
-                                  new_dotted_rule->rule->rhs[new_dotted_rule->dot_j],
-                                  1,
-                                  "lookahead4"))
-        {
-            if (!dotted_rule_matched_length_test_and_set(ps, new_dotted_rule, matched_length))
-            {
-                debug("ixml.pa.c=", "PRUTT1");
-                set_add_dotted_rule_with_matched_length(ps, new_dotted_rule, matched_length);
-            }
-            else
-            {
-                debug("ixml.pa.c=", "s%d already existed", set->id);
-            }
-        }
-        trace("ixml.pa.c=", "csl stooooop");
-    }
+	check_predictions(ps, set, predictions, lookahead_term_id, local_lookahead_level);
 
     for (int i = 0; i < ps->new_num_leading_dotted_rules; i++)
     {
@@ -26322,7 +24888,7 @@ static void free_error_recovery(YaepParseState *ps)
     VLO_DELETE(ps->recovery_state_stack);
     VLO_DELETE(ps->original_state_set_tail_stack);
 }
-/****************** YAEP parser single source file end **********************/
+
 #endif // YAEP_MODULE
 
 

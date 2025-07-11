@@ -1,7 +1,8 @@
 /*
    YAEP (Yet Another Earley Parser)
 
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
+   Copyright (c) 1997-2018 Vladimir Makarov <vmakarov@gcc.gnu.org>
+   Copyright (c) 2025      Fredrik Öhrström <oehrstroem@gmail.com>
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the
@@ -41,12 +42,17 @@
 
 */
 
-#include <string.h>
-
-#include "allocate.h"
-#include "vlobject.h"
+#ifndef BUILDING_DIST_XMQ
 
 #include <assert.h>
+#include <string.h>
+
+#include "yaep_allocate.h"
+#include "yaep_vlobject.h"
+
+#endif
+
+#ifdef YAEP_VLOBJECT_MODULE
 
 /* The function implements macro `VLO_TAILOR'.  Length of memory
    allocated for VLO becames equal to VLO length (but memory for zero
@@ -115,3 +121,5 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
     }
   vlo->vlo_segment_stop = vlo->vlo_start + vlo_length;
 }
+
+#endif

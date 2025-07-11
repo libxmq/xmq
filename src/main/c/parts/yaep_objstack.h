@@ -1,7 +1,8 @@
 /*
    YAEP (Yet Another Earley Parser)
 
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
+   Copyright (c) 1997-2018 Vladimir Makarov <vmakarov@gcc.gnu.org>
+   Copyright (c) 2025      Fredrik Öhrström <oehrstroem@gmail.com>
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the
@@ -56,16 +57,19 @@
 */
 
 
-#ifndef __OS__
-#define __OS__
+#ifndef YAEP_OBJSTACK_H
+#define YAEP_OBJSTACK_H
 
+#ifndef BUILDING_DIST_XMQ
+
+#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
 
-#include "allocate.h"
+#include "yaep_allocate.h"
 
-#include <assert.h>
+#endif
 
 /* This auxiliary structure is used to evaluation of maximum
    alignment for objects. */
@@ -328,4 +332,6 @@ extern void _OS_empty_function (os_t *os);
 extern void _OS_add_string_function (os_t *os, const char *str);
 extern void _OS_expand_memory (os_t *os, size_t additional_length);
 
-#endif /* #ifndef __OS__ */
+#define YAEP_OBJSTACK_MODULE
+
+#endif

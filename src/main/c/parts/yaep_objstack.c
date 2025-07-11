@@ -1,7 +1,8 @@
 /*
    YAEP (Yet Another Earley Parser)
 
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
+   Copyright (c) 1997-2018 Vladimir Makarov <vmakarov@gcc.gnu.org>
+   Copyright (c) 2025      Fredrik Öhrström <oehrstroem@gmail.com>
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the
@@ -41,12 +42,17 @@
 
 */
 
-#include <string.h>
-#include "allocate.h"
-
-#include "objstack.h"
+#ifndef BUILDING_DIST_XMQ
 
 #include <assert.h>
+#include <string.h>
+
+#include "yaep_allocate.h"
+#include "yaep_objstack.h"
+
+#endif
+
+#ifdef YAEP_OBJSTACK_MODULE
 
 /* The function implements macro `OS_CREATE' (creation of stack of
    object).  OS must be created before any using other macros of the
@@ -174,3 +180,5 @@ _OS_expand_memory (os_t * os, size_t additional_length)
   os->os_top_object_stop = os->os_top_object_start + os_top_object_length;
   os->os_segment_stop = os->os_top_object_start + segment_length;
 }
+
+#endif

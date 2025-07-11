@@ -1,7 +1,8 @@
 /*
    YAEP (Yet Another Earley Parser)
 
-   Copyright (c) 1997-2018  Vladimir Makarov <vmakarov@gcc.gnu.org>
+   Copyright (c) 1997-2018 Vladimir Makarov <vmakarov@gcc.gnu.org>
+   Copyright (c) 2025      Fredrik Öhrström <oehrstroem@gmail.com>
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the
@@ -30,13 +31,8 @@
  * Memory allocation with error handling.
  */
 
-#ifndef YAEP_ALLOCATE_H_
-#define YAEP_ALLOCATE_H_
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+#ifndef YAEP_ALLOCATE_H
+#define YAEP_ALLOCATE_H
 
 #include<stddef.h>
 
@@ -277,8 +273,6 @@ void *yaep_alloc_getuserptr (YaepAllocator * allocator);
 void yaep_alloc_seterr (YaepAllocator * allocator, Yaep_alloc_error errfunc,
 			void *userptr);
 
-#ifdef __cplusplus
-}
-#endif
+#define YAEP_ALLOCATE_MODULE
 
 #endif
