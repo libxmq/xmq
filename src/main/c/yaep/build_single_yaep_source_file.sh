@@ -14,9 +14,9 @@ cat <<EOF > yaep_full_source.c
 #ifdef YAEP_MODULE
 EOF
 
-cat src/allocate.h src/hashtab.h src/objstack.h src/vlobject.h >> yaep_full_source.c
+cat src/yaep_allocate.h src/yaep_hashtab.h src/yaep_objstack.h src/yaep_vlobject.h >> yaep_full_source.c
 echo "/****************** YAEP parser single source file code **********************/" >> yaep_full_source.c
-cat src/allocate.c src/hashtab.c src/objstack.c src/vlobject.c src/yaep.c  >> yaep_full_source.c
+cat src/yaep_allocate.c src/yaep_hashtab.c src/yaep_objstack.c src/yaep_vlobject.c src/yaep.c  >> yaep_full_source.c
 echo "/****************** YAEP parser single source file end **********************/" >> yaep_full_source.c
 
 cat <<EOF >> yaep_full_source.c

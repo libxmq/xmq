@@ -915,6 +915,7 @@ static void dbg_print_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rul
 // Declarations ///////////////////////////////////////////////////
 
 static bool blocked_by_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule, YaepSymbol *symb, int n, const char *info);
+void check_predictions(YaepParseState *ps, YaepStateSet *set, YaepVect *predictions, int lookahead_term_id, int local_lookahead_level);
 static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n);
 static bool is_not_rule(YaepSymbol *symb);
 static int default_read_token(YaepParseRun *ps, void **attr);
@@ -3968,8 +3969,8 @@ static void trace_lookahead_predicts_no_match(YaepParseState *ps, int lookahead_
 void check_predictions(YaepParseState *ps,
                        YaepStateSet *set,
                        YaepVect *predictions,
-					   int lookahead_term_id,
-					   int local_lookahead_level)
+                       int lookahead_term_id,
+                       int local_lookahead_level)
 {
 	for (int i = 0; i < predictions->len; i++)
 	{
