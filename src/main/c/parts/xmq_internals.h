@@ -528,13 +528,6 @@ void parse_xmq_whitespace(XMQParseState *state);
 
 xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop);
 char *xml_collapse_text(xmlNode *node);
-bool is_entity_node(const xmlNode *node);
-bool is_content_node(const xmlNode *node);
-bool is_doctype_node(const xmlNode *node);
-bool is_comment_node(const xmlNode *node);
-bool is_pi_node(const xmlNode *node);
-bool is_leaf_node(xmlNode *node);
-bool is_key_value_node(xmlNode *node);
 void trim_node(xmlNode *node, int flags);
 void trim_text_node(xmlNode *node, int flags);
 

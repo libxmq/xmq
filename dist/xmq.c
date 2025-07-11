@@ -2383,9 +2383,6 @@ XMQColor level_to_entity_color(Level l);
 void attr_strlen_name_prefix(xmlAttr *attr, const char **name, const char **prefix, size_t *total_u_len);
 void element_strlen_name_prefix(xmlNode *attr, const char **name, const char **prefix, size_t *total_u_len);
 void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len);
-size_t find_attr_key_max_u_width(xmlAttr *a);
-size_t find_namespace_max_u_width(size_t max, xmlNs *ns);
-size_t find_element_key_max_width(xmlNodePtr node, xmlNodePtr *restart_find_at_node);
 const char *find_word_ignore_case(const char *start, const char *stop, const char *word);
 
 void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
@@ -2435,26 +2432,6 @@ void parse_xmq_whitespace(XMQParseState *state);
 
 xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop);
 char *xml_collapse_text(xmlNode *node);
-xmlNode *xml_first_child(xmlNode *node);
-xmlNode *xml_last_child(xmlNode *node);
-xmlNode *xml_prev_sibling(xmlNode *node);
-xmlNode *xml_next_sibling(xmlNode *node);
-xmlAttr *xml_first_attribute(xmlNode *node);
-xmlNs *xml_first_namespace_def(xmlNode *node);
-xmlNs *xml_next_namespace_def(xmlNs *ns);
-xmlAttr *xml_next_attribute(xmlAttr *attr);
-const char*xml_element_name(xmlNode *node);
-const char*xml_element_content(xmlNode *node);
-const char *xml_element_ns_prefix(const xmlNode *node);
-const char*xml_attr_key(xmlAttr *attr);
-const char*xml_namespace_href(xmlNs *ns);
-bool is_entity_node(const xmlNode *node);
-bool is_content_node(const xmlNode *node);
-bool is_doctype_node(const xmlNode *node);
-bool is_comment_node(const xmlNode *node);
-bool is_pi_node(const xmlNode *node);
-bool is_leaf_node(xmlNode *node);
-bool is_key_value_node(xmlNode *node);
 void trim_node(xmlNode *node, int flags);
 void trim_text_node(xmlNode *node, int flags);
 
@@ -14813,73 +14790,6 @@ XMQColor level_to_entity_color(Level level)
     return COLOR_none;
 }
 
-/**
-  Scan the attribute names and find the max unicode character width.
-*/
-size_t find_attr_key_max_u_width(xmlAttr *a)
-{
-    size_t max = 0;
-    while (a)
-    {
-        const char *name;
-        const char *prefix;
-        size_t total_u_len;
-        attr_strlen_name_prefix(a, &name, &prefix, &total_u_len);
-
-        if (total_u_len > max) max = total_u_len;
-        a = xml_next_attribute(a);
-    }
-    return max;
-}
-
-/**
-  Scan nodes until there is a node which is not suitable for using the = sign.
-  I.e. it has multiple children or no children. This node unsuitable node is stored in
-  restart_find_at_node or NULL if all nodes were suitable.
-*/
-size_t find_element_key_max_width(xmlNodePtr element, xmlNodePtr *restart_find_at_node)
-{
-    size_t max = 0;
-    xmlNodePtr i = element;
-    while (i)
-    {
-        if (!is_key_value_node(i) || xml_first_attribute(i))
-        {
-            if (i == element) *restart_find_at_node = xml_next_sibling(i);
-            else *restart_find_at_node = i;
-            return max;
-        }
-        const char *name;
-        const char *prefix;
-        size_t total_u_len;
-        element_strlen_name_prefix(i, &name, &prefix, &total_u_len);
-
-        if (total_u_len > max) max = total_u_len;
-        i = xml_next_sibling(i);
-    }
-    *restart_find_at_node = NULL;
-    return max;
-}
-
-/**
-  Scan the namespace links and find the max unicode character width.
-*/
-size_t find_namespace_max_u_width(size_t max, xmlNs *ns)
-{
-    while (ns)
-    {
-        const char *prefix;
-        size_t total_u_len;
-        namespace_strlen_prefix(ns, &prefix, &total_u_len);
-
-        // Print only new/overriding namespaces.
-        if (total_u_len > max) max = total_u_len;
-        ns = ns->next;
-    }
-
-    return max;
-}
-
 bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer)
 {
     bool rc = true;
@@ -16208,6 +16118,9 @@ void parse_xmq_whitespace(XMQParseState *state)
 
 #ifdef XMQ_PRINTER_MODULE
 
+size_t find_attr_key_max_u_width(xmlAttr *a);
+size_t find_namespace_max_u_width(size_t max, xmlNs *ns);
+size_t find_element_key_max_width(xmlNodePtr node, xmlNodePtr *restart_find_at_node);
 bool xml_has_non_empty_namespace_defs(xmlNode *node);
 bool xml_non_empty_namespace(xmlNs *ns);
 const char *toHtmlEntity(int uc);
@@ -16341,6 +16254,73 @@ size_t count_necessary_slashes(const char *start, const char *stop)
         }
     }
     return max+1;
+}
+
+/**
+  Scan the attribute names and find the max unicode character width.
+*/
+size_t find_attr_key_max_u_width(xmlAttr *a)
+{
+    size_t max = 0;
+    while (a)
+    {
+        const char *name;
+        const char *prefix;
+        size_t total_u_len;
+        attr_strlen_name_prefix(a, &name, &prefix, &total_u_len);
+
+        if (total_u_len > max) max = total_u_len;
+        a = xml_next_attribute(a);
+    }
+    return max;
+}
+
+/**
+  Scan nodes until there is a node which is not suitable for using the = sign.
+  I.e. it has multiple children or no children. This node unsuitable node is stored in
+  restart_find_at_node or NULL if all nodes were suitable.
+*/
+size_t find_element_key_max_width(xmlNodePtr element, xmlNodePtr *restart_find_at_node)
+{
+    size_t max = 0;
+    xmlNodePtr i = element;
+    while (i)
+    {
+        if (!is_key_value_node(i) || xml_first_attribute(i))
+        {
+            if (i == element) *restart_find_at_node = xml_next_sibling(i);
+            else *restart_find_at_node = i;
+            return max;
+        }
+        const char *name;
+        const char *prefix;
+        size_t total_u_len;
+        element_strlen_name_prefix(i, &name, &prefix, &total_u_len);
+
+        if (total_u_len > max) max = total_u_len;
+        i = xml_next_sibling(i);
+    }
+    *restart_find_at_node = NULL;
+    return max;
+}
+
+/**
+  Scan the namespace links and find the max unicode character width.
+*/
+size_t find_namespace_max_u_width(size_t max, xmlNs *ns)
+{
+    while (ns)
+    {
+        const char *prefix;
+        size_t total_u_len;
+        namespace_strlen_prefix(ns, &prefix, &total_u_len);
+
+        // Print only new/overriding namespaces.
+        if (total_u_len > max) max = total_u_len;
+        ns = ns->next;
+    }
+
+    return max;
 }
 
 void print_nodes(XMQPrintState *ps, xmlNode *from, xmlNode *to, size_t align)
