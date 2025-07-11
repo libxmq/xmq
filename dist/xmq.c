@@ -596,6 +596,7 @@ bool is_leaf_node(xmlNode *node);
 bool has_attributes(xmlNodePtr node);
 int decode_entity_ref(const char *name);
 void xml_add_root_child(xmlDoc *doc, xmlNode *node);
+char *xml_collapse_text(xmlNode *node);
 
 #define XML_MODULE
 
@@ -2433,7 +2434,6 @@ void parse_xmq_whitespace(XMQParseState *state);
 // XML/HTML dom functions ///////////////////////////////////////////////////////////////
 
 xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop);
-char *xml_collapse_text(xmlNode *node);
 void trim_node(xmlNode *node, int flags);
 void trim_text_node(xmlNode *node, int flags);
 
@@ -2444,7 +2444,6 @@ const char *needs_escape(XMQRenderFormat f, const char *start, const char *stop)
 const char *build_error_message(const char *fmt, ...);
 
 void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
-
 
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
@@ -11170,8 +11169,6 @@ void json_print_comment_node(XMQPrintState *ps, xmlNodePtr node, bool prefix_ul,
 void json_print_doctype_node(XMQPrintState *ps, xmlNodePtr node);
 void json_print_entity_node(XMQPrintState *ps, xmlNodePtr node);
 void json_print_standalone_quote(XMQPrintState *ps, xmlNode *container, xmlNodePtr node, size_t total, size_t used);
-void json_print_object_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
-void json_print_array_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
 void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 void json_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, Level level, bool force_string);
 void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
@@ -11185,8 +11182,6 @@ bool json_is_keyword(const char *start);
 void json_print_leaf_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 
 void trim_index_suffix(const char *key_start, const char **stop);
-
-bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const char *stop);
 
 char equals[] = "=";
 char underline[] = "_";
@@ -16027,8 +16022,6 @@ void parse_xmq_whitespace(XMQParseState *state)
 size_t find_attr_key_max_u_width(xmlAttr *a);
 size_t find_namespace_max_u_width(size_t max, xmlNs *ns);
 size_t find_element_key_max_width(xmlNodePtr node, xmlNodePtr *restart_find_at_node);
-bool xml_has_non_empty_namespace_defs(xmlNode *node);
-bool xml_non_empty_namespace(xmlNs *ns);
 const char *toHtmlEntity(int uc);
 
 /**
