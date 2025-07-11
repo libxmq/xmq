@@ -538,18 +538,6 @@ const char *build_error_message(const char *fmt, ...);
 
 void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
 
-bool need_separation_before_attribute_key(XMQPrintState *ps);
-bool need_separation_before_element_name(XMQPrintState *ps);
-bool need_separation_before_quote(XMQPrintState *ps);
-bool need_separation_before_comment(XMQPrintState *ps);
-
-void check_space_before_attribute(XMQPrintState *ps);
-void check_space_before_comment(XMQPrintState *ps);
-void check_space_before_entity_node(XMQPrintState *ps);
-void check_space_before_key(XMQPrintState *ps);
-void check_space_before_opening_brace(XMQPrintState *ps);
-void check_space_before_closing_brace(XMQPrintState *ps);
-void check_space_before_quote(XMQPrintState *ps, Level level);
 
 bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *stop);
 
