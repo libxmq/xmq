@@ -17,8 +17,6 @@ linksources:
 	rm -rf src
 	mkdir -p src/parts
 	for i in ../../src/main/c/parts/* ; do (cd src/parts; ln -s ../../$$i) ; done
-	rm -f src/parts/yaep.c src/parts/yaep.h
-	for i in ../../src/main/c/yaep/src/* ; do (cd src/parts; ln -s ../../$$i) ; done
 	cd src; ln -s ../../../src/main/c/xmq.c
 	cd src; ln -s ../../../src/main/c/xmq-cli.c
 	cd src; ln -s ../../../src/main/c/xmq.h
