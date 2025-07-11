@@ -3,6 +3,7 @@
 
 #include"utf8.h"
 #include"text.h"
+#include"xmq_printer.h"
 
 #endif
 

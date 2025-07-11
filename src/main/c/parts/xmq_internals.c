@@ -132,41 +132,6 @@ void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, 
     membuffer_append_null(state->generating_error_msg);
 }
 
-void print_color_pre(XMQPrintState *ps, XMQColor color)
-{
-    XMQOutputSettings *os = ps->output_settings;
-    const char *pre = NULL;
-    const char *post = NULL;
-    getThemeStrings(os, color, &pre, &post);
-
-    if (pre)
-    {
-        XMQWrite write = os->content.write;
-        void *writer_state = os->content.writer_state;
-        write(writer_state, pre, NULL);
-    }
-}
-
-void print_color_post(XMQPrintState *ps, XMQColor color)
-{
-    XMQOutputSettings *os = ps->output_settings;
-    const char *pre = NULL;
-    const char *post = NULL;
-    getThemeStrings(os, color, &pre, &post);
-
-    XMQWrite write = os->content.write;
-    void *writer_state = os->content.writer_state;
-
-    if (post)
-    {
-        write(writer_state, post, NULL);
-    }
-    else
-    {
-        write(writer_state, ps->replay_active_color_pre, NULL);
-    }
-}
-
 const char *xmqParseErrorToString(XMQParseError e)
 {
     switch (e)

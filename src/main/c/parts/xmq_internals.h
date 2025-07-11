@@ -553,12 +553,6 @@ void check_space_before_quote(XMQPrintState *ps, Level level);
 
 bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *stop);
 
-// Printing the DOM as xmq/htmq ///////////////////////////////////////////////////
-
-void print_color_post(XMQPrintState *ps, XMQColor c);
-void print_color_pre(XMQPrintState *ps, XMQColor c);
-
-
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
 struct YaepParseRun;

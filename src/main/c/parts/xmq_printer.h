@@ -40,6 +40,8 @@ size_t count_necessary_slashes(const char *start, const char *stop);
 void print_nodes(XMQPrintState *ps, xmlNode *from, xmlNode *to, size_t align);
 void print_content_node(XMQPrintState *ps, xmlNode *node);
 void print_entity_node(XMQPrintState *ps, xmlNode *node);
+void print_color_post(XMQPrintState *ps, XMQColor c);
+void print_color_pre(XMQPrintState *ps, XMQColor c);
 void print_comment_line(XMQPrintState *ps, const char *start, const char *stop, bool compact);
 void print_comment_lines(XMQPrintState *ps, const char *start, const char *stop, bool compact);
 void print_comment_node(XMQPrintState *ps, xmlNode *node);
