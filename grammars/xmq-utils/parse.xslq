@@ -21,7 +21,7 @@ xsl:stylesheet(version   = 1.0
                          p    {color: red;}
                          table, th, td { border: 1px solid; text-align: center; }
                          td, th { min-width: 2em; min-height: 1em; white-space: nowrap; }
-                         .rule { background-color: cyan; padding-right: 1em; padding-left: 1em; position: sticky; right: 0px;
+                         .rule { text-align: left; background-color: cyan; padding-right: 1em; padding-left: 1em; position: sticky; right: 0px;
                                  max-width: 20vw; white-space: wrap; }
                          .top { background-color: cyan; font-weight: bold; position: sticky; top: 0px;}
                          .step { background-image: linear-gradient(45deg, #3bc420 41.67%, #e33030 41.67%, #e33030 50%, #3bc420 50%, #3bc420 91.67%, #e33030 91.67%, #e33030 100%); background-size: 16.97px 16.97px; }

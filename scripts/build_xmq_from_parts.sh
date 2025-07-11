@@ -50,6 +50,12 @@ do_version() {
     mv ${ROOT}/tmp ${ROOT}/xmq-in-progress
 }
 
+do_building_dist_xmq() {
+    $SED "s|//#define BUILDING_DIST_XMQ|#define BUILDING_DIST_XMQ|" ${ROOT}/xmq-in-progress > ${ROOT}/tmp
+    mv ${ROOT}/tmp ${ROOT}/xmq-in-progress
+}
+
+do_building_dist_xmq
 do_part always
 do_part colors
 do_part core

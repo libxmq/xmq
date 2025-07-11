@@ -1,8 +1,8 @@
-#ifndef BUILDING_XMQ
+#ifndef BUILDING_DIST_XMQ
 
 #include"always.h"
 #include"text.h"
-#include"parts/xmq_internals.h"
+#include"xmq_internals.h"
 #include"xml.h"
 #include"xmq_printer.h"
 
@@ -177,9 +177,13 @@ void print_entity_node(XMQPrintState *ps, xmlNode *node)
 {
     check_space_before_entity_node(ps);
 
-    print_utf8(ps, COLOR_entity, 1, "&", NULL);
-    print_utf8(ps, COLOR_entity, 1, (const char*)node->name, NULL);
-    print_utf8(ps, COLOR_entity, 1, ";", NULL);
+    XMQColor c = COLOR_entity;
+
+    if (*(const char*)node->name == '_') c = COLOR_quote;
+
+    print_utf8(ps, c, 1, "&", NULL);
+    print_utf8(ps, c, 1, (const char*)node->name, NULL);
+    print_utf8(ps, c, 1, ";", NULL);
 }
 
 void print_comment_line(XMQPrintState *ps, const char *start, const char *stop, bool compact)

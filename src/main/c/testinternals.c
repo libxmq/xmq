@@ -46,7 +46,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 // DEFINITIONS ///////////////////////////////////
 
-const char *content_type_to_string(XMQContentType t);
+const char *test_content_type_to_string(XMQContentType t);
 void test_content(const char *content, XMQContentType expected_ct);
 void test_mem_buffer();
 void test_sl(const char *s, size_t expected_b_len, size_t expected_u_len);
@@ -75,7 +75,7 @@ void test_quote(int indent, bool compact, char *in, char *expected);
 
 bool all_ok_ = true;
 
-const char *content_type_to_string(XMQContentType t)
+const char *test_content_type_to_string(XMQContentType t)
 {
     switch (t)
     {
@@ -529,8 +529,8 @@ void test_content(const char *content, XMQContentType expected_ct)
     if (ct != expected_ct)
     {
         printf("ERROR: Expected %s but got %s for \"%s\"\n",
-               content_type_to_string(expected_ct),
-               content_type_to_string(ct),
+               test_content_type_to_string(expected_ct),
+               test_content_type_to_string(ct),
                content);
         all_ok_ = false;
     }

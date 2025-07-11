@@ -45,7 +45,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<libxml/xpath.h>
 #include<libxml/xpathInternals.h>
 
-#ifndef BUILDING_XMQ
+#ifndef BUILDING_DIST_XMQ
 #include"colors.h"
 #endif
 

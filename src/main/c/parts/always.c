@@ -1,5 +1,5 @@
 
-#ifndef BUILDING_XMQ
+#ifndef BUILDING_DIST_XMQ
 
 #include"always.h"
 #include"membuffer.h"
@@ -10,10 +10,6 @@
 #include<stdarg.h>
 
 char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap);
-char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap)
-{
-    return strdup("?");
-}
 
 #endif
 

@@ -1,5 +1,5 @@
 
-#ifndef BUILDING_XMQ
+#ifndef BUILDING_DIST_XMQ
 
 #include"xml.h"
 #include"text.h"

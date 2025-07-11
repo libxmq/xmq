@@ -19,13 +19,13 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
-#ifndef BUILDING_XMQ
+#ifndef BUILDING_DIST_XMQ
 
 #include"always.h"
 #include"hashmap.h"
 #include"ixml.h"
 #include"membuffer.h"
-#include"parts/xmq_internals.h"
+#include"xmq_internals.h"
 #include"stack.h"
 #include"text.h"
 #include"vector.h"

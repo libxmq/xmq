@@ -1,10 +1,10 @@
-#ifndef BUILDING_XMQ
+#ifndef BUILDING_DIST_XMQ
 
-#include"parts/always.h"
-#include"parts/colors.h"
-#include"parts/text.h"
-#include"parts/xmq_internals.h"
-#include"parts/membuffer.h"
+#include"always.h"
+#include"colors.h"
+#include"text.h"
+#include"xmq_internals.h"
+#include"membuffer.h"
 
 #endif
 
@@ -725,6 +725,5 @@ const char *build_error_message(const char* fmt, ...)
     buf = (char*)realloc(buf, strlen(buf)+1);
     return buf;
 }
-
 
 #endif // XMQ_INTERNALS_MODULE

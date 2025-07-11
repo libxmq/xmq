@@ -23,7 +23,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include"xmq.h"
 
-#define BUILDING_XMQ
+// If we are concatening a single source file dist/xmq.dc then add the define BUILDING_DIST_XMQ
+//#define BUILDING_DIST_XMQ
 
 // PART HEADERS //////////////////////////////////////////////////
 
@@ -4942,6 +4943,8 @@ char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
     return v;
 }
 
+#ifdef BUILDING_DIST_XMQ
+
 #include"parts/always.c"
 #include"parts/colors.c"
 #include"parts/core.c"
@@ -4960,3 +4963,5 @@ char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
 #include"parts/xmq_parser.c"
 #include"parts/xmq_printer.c"
 #include"parts/yaep.c"
+
+#endif

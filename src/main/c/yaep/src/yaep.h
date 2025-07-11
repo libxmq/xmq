@@ -36,8 +36,11 @@
 #include<limits.h>
 #include<stdbool.h>
 #include<stdlib.h>
-#include "parts/always.h"
-#include "parts/membuffer.h"
+
+#ifndef BUILDING_DIST_XMQ
+#include "always.h"
+#include "membuffer.h"
+#endif
 
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;

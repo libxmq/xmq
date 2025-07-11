@@ -38,6 +38,7 @@
 #ifndef __HASH_TABLE__
 #define __HASH_TABLE__
 
+#include <stdbool.h>
 #include <stdlib.h>
 
 #include"allocate.h"

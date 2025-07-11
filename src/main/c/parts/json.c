@@ -1,12 +1,13 @@
 
-#ifndef BUILDING_XMQ
+#include"json.h"
+
+#ifndef BUILDING_DIST_XMQ
 
 #include"always.h"
 #include"colors.h"
 #include"hashmap.h"
-#include"json.h"
 #include"membuffer.h"
-#include"parts/xmq_internals.h"
+#include"xmq_internals.h"
 #include"stack.h"
 #include"text.h"
 #include"xml.h"

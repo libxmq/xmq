@@ -1,3 +1,4 @@
+
 /* libxmq - Copyright (C) 2023-2025 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining

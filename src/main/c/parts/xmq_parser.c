@@ -1,9 +1,9 @@
 
-#ifndef BUILDING_XMQ
+#ifndef BUILDING_DIST_XMQ
 
 #include"always.h"
 #include"text.h"
-#include"parts/xmq_internals.h"
+#include"xmq_internals.h"
 #include"xmq_parser.h"
 
 #include<assert.h>
