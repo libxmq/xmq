@@ -9,9 +9,13 @@ FILTER=$3
 SPEC=$(dirname $1)/spec.inc
 if [ ! -f "$SPEC" ]
 then
-    echo "Cannot find spec.inc file: $SPEC"
-    echo "Please run configure."
-    exit 1
+    SPEC=$1/spec.inc
+    if [ ! -f "$SPEC" ]
+    then
+        echo "Cannot find spec.inc file: $SPEC"
+        echo "Please run configure."
+        exit 1
+    fi
 fi
 
 . $SPEC
@@ -19,9 +23,12 @@ fi
 PROG=$1/xmq
 LIB=$1/libxmq.so
 
+echo PROG=$PROG
+echo OUTPUT=$OUTPUT
+
 if [ -z "$OUTPUT" ] || [ -z "$PROG" ]
 then
-    echo "Usage: test.sh build test_output"
+    echo "Usage: PRUTT test.sh build test_output"
     exit 1
 fi
 
