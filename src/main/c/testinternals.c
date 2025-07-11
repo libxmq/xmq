@@ -554,8 +554,6 @@ void test_detect_content()
     test_content(" \"foo\" ", XMQ_CONTENT_JSON);
 }
 
-size_t count_necessary_slashes(const char *start, const char *stop);
-
 void test_slashes()
 {
     const char *howdy = "xxxxALFA*/xxxx";
@@ -565,8 +563,6 @@ void test_slashes()
         all_ok_ = false;
     }
 }
-
-size_t count_whitespace(const char *i, const char *stop);
 
 void test_whitespaces()
 {
@@ -588,8 +584,6 @@ void test_mem_buffer()
     }
     */
 }
-
-void str_b_u_len(const char *start, const char *stop, size_t *b_len, size_t *u_len);
 
 void test_sl(const char *s, size_t expected_b_len, size_t expected_u_len)
 {

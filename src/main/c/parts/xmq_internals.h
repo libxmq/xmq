@@ -539,8 +539,6 @@ const char *build_error_message(const char *fmt, ...);
 void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
 
 
-bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *stop);
-
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
 struct YaepParseRun;

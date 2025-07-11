@@ -180,15 +180,10 @@ void do_ixml_nonterminal(XMQParseState *state, const char *name_start, char *nam
 void do_ixml_option(XMQParseState *state);
 
 IXMLRule *new_ixml_rule();
-void free_ixml_rule(IXMLRule *r);
-IXMLTerminal *new_ixml_terminal();
 IXMLCharset *new_ixml_charset(bool exclude);
 void new_ixml_charset_part(IXMLCharset *cs, int from, int to, const char *category);
 void free_ixml_charset(IXMLCharset *cs);
-void free_ixml_terminal(IXMLTerminal *t);
-IXMLNonTerminal *new_ixml_nonterminal();
 IXMLNonTerminal *copy_ixml_nonterminal(IXMLNonTerminal *nt);
-void free_ixml_nonterminal(IXMLNonTerminal *t);
 void free_ixml_term(IXMLTerm *t);
 
 char *generate_rule_name(XMQParseState *state);
@@ -1509,9 +1504,6 @@ void parse_ixml_whitespace(XMQParseState *state)
     IXML_DONE(ws, state);
 }
 
-const char *ixml_to_yaep_read_terminal(YaepParseRun *pr,
-                                       YaepGrammar *g,
-                                       int *code);
 
 const char *ixml_to_yaep_read_terminal(YaepParseRun *pr,
                                        YaepGrammar *g,
@@ -1531,15 +1523,6 @@ const char *ixml_to_yaep_read_terminal(YaepParseRun *pr,
 
     return NULL;
 }
-
-const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
-                                   YaepGrammar *g,
-                                   const char ***rhs,
-                                   const char **abs_node,
-                                   int *cost,
-                                   int **transl,
-                                   char *mark,
-                                   char **marks);
 
 const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
                                    YaepGrammar *g,

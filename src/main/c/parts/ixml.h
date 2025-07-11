@@ -51,6 +51,8 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
                              const char *content_start, // Needed to minimize charset rule sizes.
                              const char *content_stop);
 
+IXMLTerminal *new_ixml_terminal();
+IXMLNonTerminal *new_ixml_nonterminal();
 void free_ixml_rule(IXMLRule *r);
 void free_ixml_terminal(IXMLTerminal *t);
 void free_ixml_nonterminal(IXMLNonTerminal *nt);
