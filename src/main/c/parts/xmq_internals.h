@@ -470,29 +470,6 @@ typedef struct XMQQuoteSettings XMQQuoteSettings;
 
 void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, const char *start, const char *stop);
 
-// Text functions ////////////////
-
-bool is_all_xml_whitespace(const char *start);
-bool is_lowercase_hex(char c);
-bool is_unicode_whitespace(const char *start, const char *stop);
-size_t count_whitespace(const char *i, const char *stop);
-
-// XMQ parser utility functions //////////////////////////////////
-
-bool is_xml_whitespace(char c); // 0x9 0xa 0xd 0x20
-bool is_xmq_token_whitespace(char c); // 0xa 0xd 0x20
-bool is_xmq_attribute_key_start(char c);
-bool is_xmq_comment_start(char c, char cc);
-bool is_xmq_compound_start(char c);
-bool is_xmq_doctype_start(const char *start, const char *stop);
-bool is_xmq_pi_start(const char *start, const char *stop);
-bool is_xmq_entity_start(char c);
-bool is_xmq_quote_start(char c);
-bool is_xmq_json_quote_start(char c);
-bool is_xmq_text_value(const char *i, const char *stop);
-bool is_xmq_text_value_char(const char *i, const char *stop);
-bool unsafe_value_start(char c, char cc);
-bool is_safe_value_char(const char *i, const char *stop);
 
 size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
 int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound);
