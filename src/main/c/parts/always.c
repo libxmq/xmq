@@ -15,8 +15,6 @@ char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap);
 
 #ifdef ALWAYS_MODULE
 
-char *xmqLogElementVA(int flags, const char *element_name, va_list ap);
-
 void check_malloc(void *a)
 {
     if (!a)
