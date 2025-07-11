@@ -380,10 +380,6 @@ xmlDocPtr xmqDocDefaultLoaderFunc(const xmlChar * URI, xmlDictPtr dict, int opti
 char *load_file_into_buffer(const char *file);
 bool check_file_exists(const char *file);
 
-// TODO REMOVE...
-void xmq_set_yaep_grammar(XMQDoc *doc, YaepGrammar *g);
-YaepGrammar *xmq_get_yaep_grammar(XMQDoc *doc);
-
 /////////////////////////////////////////////////////////////////////////////////////
 
 const char *error_to_print_on_exit = NULL;

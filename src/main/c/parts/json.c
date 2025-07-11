@@ -55,8 +55,6 @@ void json_print_comment_node(XMQPrintState *ps, xmlNodePtr node, bool prefix_ul,
 void json_print_doctype_node(XMQPrintState *ps, xmlNodePtr node);
 void json_print_entity_node(XMQPrintState *ps, xmlNodePtr node);
 void json_print_standalone_quote(XMQPrintState *ps, xmlNode *container, xmlNodePtr node, size_t total, size_t used);
-void json_print_object_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
-void json_print_array_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
 void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 void json_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, Level level, bool force_string);
 void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
@@ -70,8 +68,6 @@ bool json_is_keyword(const char *start);
 void json_print_leaf_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 
 void trim_index_suffix(const char *key_start, const char **stop);
-
-bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const char *stop);
 
 char equals[] = "=";
 char underline[] = "_";
