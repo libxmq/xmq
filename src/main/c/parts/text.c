@@ -964,4 +964,30 @@ const char *find_eol_or_stop(const char *start, const char *stop)
     return stop;
 }
 
+bool is_hex(char c)
+{
+    return
+        (c >= '0' && c <= '9') ||
+        (c >= 'a' && c <= 'f') ||
+        (c >= 'A' && c <= 'F');
+}
+
+unsigned char hex_value(char c)
+{
+    if (c >= '0' && c <= '9') return c-'0';
+    if (c >= 'a' && c <= 'f') return 10+c-'a';
+    if (c >= 'A' && c <= 'F') return 10+c-'A';
+    assert(false);
+    return 0;
+}
+
+bool is_unicode_whitespace(const char *start, const char *stop)
+{
+    size_t n = count_whitespace(start, stop);
+
+    // Single char whitespace is ' ' '\t' '\n' '\r'
+    // First unicode whitespace is 160 nbsp require two or more chars.
+    return n > 1;
+}
+
 #endif // TEXT_MODULE
