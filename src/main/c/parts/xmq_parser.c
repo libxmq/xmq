@@ -15,43 +15,43 @@
 #ifdef XMQ_PARSER_MODULE
 
 size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
-void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop);
-void eat_xmq_entity(XMQParseState *state);
-void eat_xmq_comment_to_eol(XMQParseState *state, const char **content_start, const char **content_stop);
+void eat_json_quote(XMQParseState *state, char **content_start, char **content_stop);
 void eat_xmq_comment_to_close(XMQParseState *state, const char **content_start, const char **content_stop, size_t n, bool *found_asterisk);
-void eat_xmq_text_value(XMQParseState *state);
-bool peek_xmq_next_is_equal(XMQParseState *state);
+void eat_xmq_comment_to_eol(XMQParseState *state, const char **content_start, const char **content_stop);
 void eat_xmq_doctype(XMQParseState *state, const char **text_start, const char **text_stop);
+void eat_xmq_entity(XMQParseState *state);
 void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text_stop);
 void eat_xmq_text_name(XMQParseState *state, const char **content_start, const char **content_stop, const char **namespace_start, const char **namespace_stop);
-bool possibly_lost_content_after_equals(XMQParseState *state);
-bool possibly_need_more_quotes(XMQParseState *state);
-void eat_json_quote(XMQParseState *state, char **content_start, char **content_stop);
-bool is_xmq_quote_start(char c);
-bool is_xmq_json_quote_start(char c);
-bool is_xmq_entity_start(char c);
+void eat_xmq_text_value(XMQParseState *state);
+void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop);
 bool is_xmq_attribute_key_start(char c);
-bool is_xmq_compound_start(char c);
 bool is_xmq_comment_start(char c, char cc);
-bool is_xmq_pi_start(const char *start, const char *stop);
+bool is_xmq_compound_start(char c);
 bool is_xmq_doctype_start(const char *start, const char *stop);
+bool is_xmq_entity_start(char c);
+bool is_xmq_json_quote_start(char c);
+bool is_xmq_pi_start(const char *start, const char *stop);
+bool is_xmq_quote_start(char c);
 void parse_xmq_attribute(XMQParseState *state);
 void parse_xmq_attributes(XMQParseState *state);
 void parse_xmq_comment(XMQParseState *state, char cc);
 void parse_xmq_compound(XMQParseState *state, Level level);
 void parse_xmq_compound_children(XMQParseState *state, Level level);
-void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi);
-void parse_xmq_element(XMQParseState *state);
 void parse_xmq_doctype(XMQParseState *state);
-void parse_xmq_pi(XMQParseState *state);
+void parse_xmq_element(XMQParseState *state);
+void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi);
 void parse_xmq_entity(XMQParseState *state, Level level);
-void parse_xmq_quote(XMQParseState *state, Level level);
 void parse_xmq_json_quote(XMQParseState *state, Level level);
+void parse_xmq_pi(XMQParseState *state);
+void parse_xmq_quote(XMQParseState *state, Level level);
 void parse_xmq_text_any(XMQParseState *state);
 void parse_xmq_text_name(XMQParseState *state);
 void parse_xmq_text_value(XMQParseState *state, Level level);
 void parse_xmq_value(XMQParseState *state, Level level);
 void parse_xmq_whitespace(XMQParseState *state);
+bool peek_xmq_next_is_equal(XMQParseState *state);
+bool possibly_lost_content_after_equals(XMQParseState *state);
+bool possibly_need_more_quotes(XMQParseState *state);
 
 size_t count_xmq_quotes(const char *i, const char *stop)
 {

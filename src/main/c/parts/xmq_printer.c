@@ -20,6 +20,8 @@ size_t find_attr_key_max_u_width(xmlAttr *a);
 size_t find_namespace_max_u_width(size_t max, xmlNs *ns);
 size_t find_element_key_max_width(xmlNodePtr node, xmlNodePtr *restart_find_at_node);
 const char *toHtmlEntity(int uc);
+void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
+
 
 /**
     count_necessary_quotes:
@@ -1589,6 +1591,106 @@ void print_value(XMQPrintState *ps, xmlNode *node, Level level)
     }
 
     ps->line_indent = old_line_indent;
+}
+
+void node_strlen_name_prefix(xmlNode *node,
+                        const char **name, size_t *name_len,
+                        const char **prefix, size_t *prefix_len,
+                        size_t *total_len)
+{
+    *name_len = strlen((const char*)node->name);
+    *name = (const char*)node->name;
+
+    if (node->ns && node->ns->prefix)
+    {
+        *prefix = (const char*)node->ns->prefix;
+        *prefix_len = strlen((const char*)node->ns->prefix);
+        *total_len = *name_len + *prefix_len +1;
+    }
+    else
+    {
+        *prefix = NULL;
+        *prefix_len = 0;
+        *total_len = *name_len;
+    }
+    assert(*name != NULL);
+}
+
+void attr_strlen_name_prefix(xmlAttr *attr, const char **name, const char **prefix, size_t *total_u_len)
+{
+    *name = (const char*)attr->name;
+    size_t name_b_len;
+    size_t name_u_len;
+    size_t prefix_b_len;
+    size_t prefix_u_len;
+    str_b_u_len(*name, NULL, &name_b_len, &name_u_len);
+
+    if (attr->ns && attr->ns->prefix)
+    {
+        *prefix = (const char*)attr->ns->prefix;
+        str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
+        *total_u_len = name_u_len + prefix_u_len + 1;
+    }
+    else
+    {
+        *prefix = NULL;
+        prefix_b_len = 0;
+        prefix_u_len = 0;
+        *total_u_len = name_u_len;
+    }
+    assert(*name != NULL);
+}
+
+void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len)
+{
+    size_t prefix_b_len;
+    size_t prefix_u_len;
+
+    if (ns->prefix)
+    {
+        *prefix = (const char*)ns->prefix;
+        str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
+        *total_u_len = /* xmlns */ 5  + prefix_u_len + 1;
+    }
+    else
+    {
+        *prefix = NULL;
+        prefix_b_len = 0;
+        prefix_u_len = 0;
+        *total_u_len = /* xmlns */ 5;
+    }
+}
+
+void element_strlen_name_prefix(xmlNode *element, const char **name, const char **prefix, size_t *total_u_len)
+{
+    *name = (const char*)element->name;
+    if (!*name)
+    {
+        *name = "";
+        *prefix = "";
+        *total_u_len = 0;
+        return;
+    }
+    size_t name_b_len;
+    size_t name_u_len;
+    size_t prefix_b_len;
+    size_t prefix_u_len;
+    str_b_u_len(*name, NULL, &name_b_len, &name_u_len);
+
+    if (element->ns && element->ns->prefix)
+    {
+        *prefix = (const char*)element->ns->prefix;
+        str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
+        *total_u_len = name_u_len + prefix_u_len + 1;
+    }
+    else
+    {
+        *prefix = NULL;
+        prefix_b_len = 0;
+        prefix_u_len = 0;
+        *total_u_len = name_u_len;
+    }
+    assert(*name != NULL);
 }
 
 #endif // XMQ_PRINTER_MODULE

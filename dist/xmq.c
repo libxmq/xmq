@@ -565,38 +565,38 @@ void *vector_element_at(Vector *v, size_t i);
 #include<stdbool.h>
 #include<libxml/tree.h>
 
+int decode_entity_ref(const char *name);
 void free_xml(xmlNode * node);
-xmlNode *xml_first_child(xmlNode *node);
-xmlNode *xml_last_child(xmlNode *node);
-xmlNode *xml_next_sibling(xmlNode *node);
-xmlNode *xml_prev_sibling(xmlNode *node);
-xmlAttr *xml_first_attribute(xmlNode *node);
-xmlAttr *xml_next_attribute(xmlAttr *attr);
-xmlAttr *xml_get_attribute(xmlNode *node, const char *name);
-xmlNs *xml_first_namespace_def(xmlNode *node);
-xmlNs *xml_next_namespace_def(xmlNs *ns);
-bool xml_non_empty_namespace(xmlNs *ns);
-bool xml_has_non_empty_namespace_defs(xmlNode *node);
-const char*xml_element_name(xmlNode *node);
-const char*xml_element_content(xmlNode *node);
-const char *xml_element_ns_prefix(const xmlNode *node);
-const char *xml_attr_key(xmlAttr *attr);
-const char* xml_namespace_href(xmlNs *ns);
-bool is_entity_node(const xmlNode *node);
-bool is_content_node(const xmlNode *node);
+bool has_attributes(xmlNodePtr node);
+bool is_attribute_node(const xmlNode *node);
 bool is_comment_node(const xmlNode *node);
-bool is_pi_node(const xmlNode *node);
+bool is_content_node(const xmlNode *node);
 bool is_doctype_node(const xmlNode *node);
 bool is_element_node(const xmlNode *node);
-bool is_text_node(const xmlNode *node);
-bool is_attribute_node(const xmlNode *node);
+bool is_entity_node(const xmlNode *node);
 bool is_key_value_node(xmlNodePtr node);
-bool is_single_empty_text_node(xmlNodePtr node);
 bool is_leaf_node(xmlNode *node);
-bool has_attributes(xmlNodePtr node);
-int decode_entity_ref(const char *name);
+bool is_pi_node(const xmlNode *node);
+bool is_single_empty_text_node(xmlNodePtr node);
+bool is_text_node(const xmlNode *node);
 void xml_add_root_child(xmlDoc *doc, xmlNode *node);
+const char *xml_attr_key(xmlAttr *attr);
 char *xml_collapse_text(xmlNode *node);
+const char *xml_element_content(xmlNode *node);
+const char *xml_element_name(xmlNode *node);
+const char *xml_element_ns_prefix(const xmlNode *node);
+xmlAttr *xml_first_attribute(xmlNode *node);
+xmlNode *xml_first_child(xmlNode *node);
+xmlNs *xml_first_namespace_def(xmlNode *node);
+xmlAttr *xml_get_attribute(xmlNode *node, const char *name);
+bool xml_has_non_empty_namespace_defs(xmlNode *node);
+xmlNode *xml_last_child(xmlNode *node);
+const char *xml_namespace_href(xmlNs *ns);
+xmlAttr *xml_next_attribute(xmlAttr *attr);
+xmlNs *xml_next_namespace_def(xmlNs *ns);
+xmlNode *xml_next_sibling(xmlNode *node);
+bool xml_non_empty_namespace(xmlNs *ns);
+xmlNode *xml_prev_sibling(xmlNode *node);
 
 #define XML_MODULE
 
@@ -2411,26 +2411,6 @@ char *xmq_comment(int indent,
 char *xmq_un_comment(const char *start, const char *stop);
 char *xmq_un_quote(const char *start, const char *stop, bool remove_qs, bool is_xmq);
 
-// XMQ syntax parser functions ///////////////////////////////////////////////////////////
-
-void parse_xmq_attribute(XMQParseState *state);
-void parse_xmq_attributes(XMQParseState *state);
-void parse_xmq_comment(XMQParseState *state, char cc);
-void parse_xmq_compound(XMQParseState *state, Level level);
-void parse_xmq_compound_children(XMQParseState *state, Level level);
-void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi);
-void parse_xmq_element(XMQParseState *state);
-void parse_xmq_doctype(XMQParseState *state);
-void parse_xmq_pi(XMQParseState *state);
-void parse_xmq_entity(XMQParseState *state, Level level);
-void parse_xmq_quote(XMQParseState *state, Level level);
-void parse_xmq_json_quote(XMQParseState *state, Level level);
-void parse_xmq_text_any(XMQParseState *state);
-void parse_xmq_text_name(XMQParseState *state);
-void parse_xmq_text_value(XMQParseState *state, Level level);
-void parse_xmq_value(XMQParseState *state, Level level);
-void parse_xmq_whitespace(XMQParseState *state);
-
 // XML/HTML dom functions ///////////////////////////////////////////////////////////////
 
 xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop);
@@ -3423,7 +3403,7 @@ XMQParseState *xmqNewParseState(XMQParseCallbacks *callbacks, XMQOutputSettings 
     return state;
 }
 
-bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop)
+bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stopp)
 {
     if (state->magic_cookie != MAGIC_COOKIE)
     {
@@ -3432,9 +3412,14 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
         exit(1);
     }
 
-    if (!stop) stop = start + strlen(start);
+    state->buffer_start = start;
+    state->buffer_stop =  stopp?stopp:start + strlen(start);
+    state->i = start;
+    state->line = 1;
+    state->col = 1;
+    state->error_nr = XMQ_ERROR_NONE;
 
-    XMQContentType detected_ct = xmqDetectContentType(start, stop);
+    XMQContentType detected_ct = xmqDetectContentType(state->buffer_start, state->buffer_stop);
     if (detected_ct != XMQ_CONTENT_XMQ)
     {
         state->generated_error_msg = strdup("xmq: you can only tokenize the xmq format");
@@ -3442,12 +3427,6 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
         return false;
     }
 
-    state->buffer_start = start;
-    state->buffer_stop = stop;
-    state->i = start;
-    state->line = 1;
-    state->col = 1;
-    state->error_nr = XMQ_ERROR_NONE;
 
     if (state->parse->init) state->parse->init(state);
 
@@ -3475,9 +3454,9 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
         if (error_nr == XMQ_ERROR_INVALID_CHAR && state->last_suspicios_quote_end)
         {
             // Add warning about suspicious quote before the error.
-            generate_state_error_message(state, XMQ_WARNING_QUOTES_NEEDED, start, stop);
+            generate_state_error_message(state, XMQ_WARNING_QUOTES_NEEDED, state->buffer_start, state->buffer_stop);
         }
-        generate_state_error_message(state, error_nr, start, stop);
+        generate_state_error_message(state, error_nr, state->buffer_start, state->buffer_stop);
 
         return false;
     }
@@ -3980,7 +3959,7 @@ char *xmq_trim_quote(const char *start, const char *stop, bool is_xmq, bool is_c
         char *buf = (char*)malloc(stop-start+append_newlines+1);
         memcpy(buf, start, stop-start);
         size_t i = stop-start;
-        for (int j = 0; j < append_newlines; ++j) buf[i++] = '\n';
+        for (size_t j = 0; j < append_newlines; ++j) buf[i++] = '\n';
         buf[i++] = 0;
         return buf;
     }
@@ -7462,8 +7441,6 @@ char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
 // PART C ALWAYS_C ////////////////////////////////////////
 
 #ifdef ALWAYS_MODULE
-
-char *xmqLogElementVA(int flags, const char *element_name, va_list ap);
 
 void check_malloc(void *a)
 {
@@ -14816,12 +14793,10 @@ void eat_xmq_text_value(XMQParseState *state);
 bool peek_xmq_next_is_equal(XMQParseState *state);
 void eat_xmq_doctype(XMQParseState *state, const char **text_start, const char **text_stop);
 void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text_stop);
-void eat_xmq_text_name(XMQParseState *state, const char **content_start, const char **content_stop,
-                       const char **namespace_start, const char **namespace_stop);
+void eat_xmq_text_name(XMQParseState *state, const char **content_start, const char **content_stop, const char **namespace_start, const char **namespace_stop);
 bool possibly_lost_content_after_equals(XMQParseState *state);
 bool possibly_need_more_quotes(XMQParseState *state);
 void eat_json_quote(XMQParseState *state, char **content_start, char **content_stop);
-
 bool is_xmq_quote_start(char c);
 bool is_xmq_json_quote_start(char c);
 bool is_xmq_entity_start(char c);
@@ -14830,6 +14805,23 @@ bool is_xmq_compound_start(char c);
 bool is_xmq_comment_start(char c, char cc);
 bool is_xmq_pi_start(const char *start, const char *stop);
 bool is_xmq_doctype_start(const char *start, const char *stop);
+void parse_xmq_attribute(XMQParseState *state);
+void parse_xmq_attributes(XMQParseState *state);
+void parse_xmq_comment(XMQParseState *state, char cc);
+void parse_xmq_compound(XMQParseState *state, Level level);
+void parse_xmq_compound_children(XMQParseState *state, Level level);
+void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi);
+void parse_xmq_element(XMQParseState *state);
+void parse_xmq_doctype(XMQParseState *state);
+void parse_xmq_pi(XMQParseState *state);
+void parse_xmq_entity(XMQParseState *state, Level level);
+void parse_xmq_quote(XMQParseState *state, Level level);
+void parse_xmq_json_quote(XMQParseState *state, Level level);
+void parse_xmq_text_any(XMQParseState *state);
+void parse_xmq_text_name(XMQParseState *state);
+void parse_xmq_text_value(XMQParseState *state, Level level);
+void parse_xmq_value(XMQParseState *state, Level level);
+void parse_xmq_whitespace(XMQParseState *state);
 
 size_t count_xmq_quotes(const char *i, const char *stop)
 {
@@ -21361,7 +21353,7 @@ int yaep_read_grammar(YaepParseRun *pr,
                                               int*anode_cost, int**transl, char*mark, char**marks))
 {
     const char*name,*lhs,**rhs,*anode;
-    YaepSymbol*symb,*start;
+    YaepSymbol*symb, *start;
     YaepRule*rule;
     int anode_cost;
     int*transl;

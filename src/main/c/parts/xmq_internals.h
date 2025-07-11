@@ -472,7 +472,6 @@ void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, 
 
 // Common parser functions ///////////////////////////////////////
 
-
 Level enter_compound_level(Level l);
 XMQColor level_to_quote_color(Level l);
 XMQColor level_to_entity_color(Level l);
@@ -514,8 +513,6 @@ void trim_text_node(xmlNode *node, int flags);
 const char *needs_escape(XMQRenderFormat f, const char *start, const char *stop);
 
 const char *build_error_message(const char *fmt, ...);
-
-void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
 
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
