@@ -99,8 +99,6 @@
 #include "text.h"
 #include "membuffer.h"
 
-bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
-
 #endif
 
 #ifdef YAEP_MODULE
