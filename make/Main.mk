@@ -77,8 +77,9 @@ WINAPI_LIBS := \
 $(OUTPUT_ROOT)/$(TYPE)/libgcc_s_seh-1.dll \
 $(OUTPUT_ROOT)/$(TYPE)/libstdc++-6.dll \
 $(OUTPUT_ROOT)/$(TYPE)/libwinpthread-1.dll \
-$(OUTPUT_ROOT)/$(TYPE)/libxml2-2.dll \
-$(OUTPUT_ROOT)/$(TYPE)/libxslt-1.dll
+$(OUTPUT_ROOT)/$(TYPE)/$(LIBXML2_LIBNAME) \
+$(OUTPUT_ROOT)/$(TYPE)/libxslt-1.dll \
+$(OUTPUT_ROOT)/$(TYPE)/bcrypt.dll
 WINAPI_SUFFIX:=.exe
 
 POSIX_SOURCES:=$(filter-out %winapi.c,$(SOURCES))
@@ -183,13 +184,16 @@ $(OUTPUT_ROOT)/$(TYPE)/libwinpthread-1.dll:
 	$(AT)cp "$$(find /usr -name libwinpthread-1.dll | grep -m 1 x86_64)" $@
 	@echo "Installed $@"
 
-$(OUTPUT_ROOT)/$(TYPE)/libxml2-2.dll:
-# This dll changes name libxml2-2.dll to libxml2-16.dll a version nr perhaps?
-	$(AT)cp "$$(find $(SRC_ROOT)/3rdparty/libxml2-winapi -name libxml2-*.dll | grep -m 1 '/libxml2-[0-9]*\.dll')" $@
+$(OUTPUT_ROOT)/$(TYPE)/$(LIBXML2_LIBNAME):
+	$(AT)cp "$$(find $(SRC_ROOT)/3rdparty/libxml2-winapi -name $(LIBXML2_LIBNAME) | grep -m 1 '/$(LIBXML2_LIBNAME)')" $@
 	@echo "Installed $@"
 
 $(OUTPUT_ROOT)/$(TYPE)/libxslt-1.dll:
 	$(AT)cp "$$(find $(SRC_ROOT)/3rdparty/libxslt-winapi -name libxslt-1.dll | grep -m 1 libxslt-1.dll)" $@
+	@echo "Installed $@"
+
+$(OUTPUT_ROOT)/$(TYPE)/bcrypt.dll:
+	$(AT)cp "$(BCRYPT_DLL)" $@
 	@echo "Installed $@"
 
 BINARIES:=$(OUTPUT_ROOT)/$(TYPE)/libxmq.a \

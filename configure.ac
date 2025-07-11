@@ -220,7 +220,7 @@ else
     if test -z "$IDIR"; then
         AC_MSG_ERROR([Could not find libxml/tree.h below ${with_libxml2}])
     fi
-    LIBNAME="libxml2-2.dll"
+    LIBNAME="libxml2-*.dll"
     LIBF=$(find ${with_libxml2} -name "${LIBNAME}")
     LIBXML2_LIBS="-Wl,-Bstatic ${LIBF}"
 
@@ -232,11 +232,13 @@ else
     if test -z "$LIBF"; then
         AC_MSG_ERROR([Could not find ${LIBNAME} below ${with_libxml2}])
     fi
-    AC_MSG_RESULT([using ${with_libxml2}])
+    LIBXML2_LIBNAME=$(basename ${LIBF})
+    AC_MSG_RESULT([using ${with_libxml2} ${LIBXML2_LIBNAME}])
 fi
 
 AC_SUBST(LIBXML2_CFLAGS)
 AC_SUBST(LIBXML2_LIBS)
+AC_SUBST(LIBXML2_LIBNAME)
 
 AC_MSG_CHECKING([for libxslt])
 AC_ARG_WITH(libxslt, [AS_HELP_STRING([--with-libxslt],
@@ -280,16 +282,31 @@ fi
 AC_SUBST(LIBXSLT_CFLAGS)
 AC_SUBST(LIBXSLT_LIBS)
 
-AC_MSG_CHECKING([for libyaep])
-AC_ARG_WITH(libyaep, [AS_HELP_STRING([--with-libyaep],
-      [specify prefix directory for the yaep package
-      (expecting the libraries .a under PATH/src and the header yaep.h under PATH/src)])])
+BCRYPT_DLL=""
 
-LIBYAEP_CFLAGS=""
-LIBYAEP_LIBS="3rdparty/yaep/src/libyaep.a"
+if test "${host_vendor}" = "w64"; then
+    AC_MSG_CHECKING([for bcrypt.dll])
+    AC_ARG_WITH(bcrypt, [AS_HELP_STRING([--with-bcrypt], [specify location of bcrypt.dll])])
 
-AC_SUBST(LIBYAEP_CFLAGS)
-AC_SUBST(LIBYAEP_LIBS)
+    if test "x${with_bcrypt}" = "x"; then
+        # There is a bcrypt.dll in wine /usr/lib/x86_64-linux-gnu/wine/bcrypt.dll
+        # Search for it and we link against it.
+        # We do not package it, since it is available on Windows.
+        BCRYPT_DLL=$(find /usr/lib -name bcrypt.dll | grep $(uname -i))
+        if ! test -f "$BCRYPT_DLL"; then
+            AC_MSG_ERROR([Could not find bcrypt.dll below /usr/lib])
+        fi
+        AC_MSG_RESULT([found ${BCRYPT_DLL}])
+    else
+        BCRYPT_DLL=$(realpath ${with_bcrypt})
+        if ! test -f "$BCRYPT_DLL"; then
+            AC_MSG_ERROR([The specified bcrypt.dll does not exist. ${with_bcrypt}])
+        fi
+        AC_MSG_RESULT([using ${with_bcrypt}])
+    fi
+fi
+
+AC_SUBST(BCRYPT_DLL)
 
 AC_LANG_PUSH([C])
 AC_COMPILE_IFELSE(
