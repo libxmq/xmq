@@ -100,6 +100,8 @@ void do_ns_colon(XMQParseState *state, size_t line, size_t col, const char *star
 void do_quote(XMQParseState *state, size_t l, size_t col, const char *start, const char *stop, const char *suffix);
 void do_whitespace(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
 bool find_line(const char *start, const char *stop, size_t *indent, const char **after_last_non_space, const char **eol);
+const char *find_next_line_end(XMQPrintState *ps, const char *start, const char *stop);
+const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop);
 void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared);
 void fixup_comments(XMQDoc *doq, xmlNode *node, int depth);
 void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index);
@@ -111,8 +113,12 @@ void handle_yaep_syntax_error(YaepParseRun *pr,
                               int start_recovered_tok_num,
                               void *start_recovered_tok_attr);
 
+bool has_leading_ending_quote(const char *start, const char *stop);
+bool is_safe_char(const char *i, const char *stop);
 size_t line_length(const char *start, const char *stop, int *numq, int *lq, int *eq);
+bool need_separation_before_entity(XMQPrintState *ps);
 const char *node_yaep_type_to_string(YaepTreeNodeType t);
+void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num);
 void reset_ansi(XMQParseState *state);
 void reset_ansi_nl(XMQParseState *state);
 const char *skip_any_potential_bom(const char *start, const char *stop);
@@ -4144,8 +4150,8 @@ exit:
     {
         bool should_trim = false;
 
-        if ((flags & XMQ_FLAG_TRIM_HEURISTIC) ||
-            (flags & XMQ_FLAG_TRIM_EXACT)) should_trim = true;
+        if (flags & XMQ_FLAG_TRIM_HEURISTIC ||
+            flags & XMQ_FLAG_TRIM_EXACT) should_trim = true;
 
         if (!(flags & XMQ_FLAG_TRIM_NONE) &&
             (ct == XMQ_CONTENT_XML ||
