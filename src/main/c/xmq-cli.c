@@ -1333,7 +1333,7 @@ bool query_xterm_bgcolor()
     {
         char c = 0;
         // Reading from stdout!
-        size_t n = read(STDOUT_FILENO, &c, sizeof(char));
+        ssize_t n = read(STDOUT_FILENO, &c, sizeof(char));
         if (n == -1)
         {
             fprintf(stderr, "xmq: error reading from stdout\n");
@@ -3162,7 +3162,7 @@ int get_char()
 {
 #ifndef PLATFORM_WINAPI
     unsigned char c;
-    size_t n = read(STDOUT_FILENO, &c, sizeof(char));
+    ssize_t n = read(STDOUT_FILENO, &c, sizeof(char));
     if (n == -1) return -1;
     return c;
 #else

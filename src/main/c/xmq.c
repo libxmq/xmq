@@ -903,7 +903,7 @@ XMQParseState *xmqNewParseState(XMQParseCallbacks *callbacks, XMQOutputSettings 
     return state;
 }
 
-bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop)
+bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stopp)
 {
     if (state->magic_cookie != MAGIC_COOKIE)
     {
@@ -912,9 +912,14 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
         exit(1);
     }
 
-    if (!stop) stop = start + strlen(start);
+    state->buffer_start = start;
+    state->buffer_stop =  stopp?stopp:start + strlen(start);
+    state->i = start;
+    state->line = 1;
+    state->col = 1;
+    state->error_nr = XMQ_ERROR_NONE;
 
-    XMQContentType detected_ct = xmqDetectContentType(start, stop);
+    XMQContentType detected_ct = xmqDetectContentType(state->buffer_start, state->buffer_stop);
     if (detected_ct != XMQ_CONTENT_XMQ)
     {
         state->generated_error_msg = strdup("xmq: you can only tokenize the xmq format");
@@ -922,12 +927,6 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
         return false;
     }
 
-    state->buffer_start = start;
-    state->buffer_stop = stop;
-    state->i = start;
-    state->line = 1;
-    state->col = 1;
-    state->error_nr = XMQ_ERROR_NONE;
 
     if (state->parse->init) state->parse->init(state);
 
@@ -955,9 +954,9 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
         if (error_nr == XMQ_ERROR_INVALID_CHAR && state->last_suspicios_quote_end)
         {
             // Add warning about suspicious quote before the error.
-            generate_state_error_message(state, XMQ_WARNING_QUOTES_NEEDED, start, stop);
+            generate_state_error_message(state, XMQ_WARNING_QUOTES_NEEDED, state->buffer_start, state->buffer_stop);
         }
-        generate_state_error_message(state, error_nr, start, stop);
+        generate_state_error_message(state, error_nr, state->buffer_start, state->buffer_stop);
 
         return false;
     }
@@ -1460,7 +1459,7 @@ char *xmq_trim_quote(const char *start, const char *stop, bool is_xmq, bool is_c
         char *buf = (char*)malloc(stop-start+append_newlines+1);
         memcpy(buf, start, stop-start);
         size_t i = stop-start;
-        for (int j = 0; j < append_newlines; ++j) buf[i++] = '\n';
+        for (size_t j = 0; j < append_newlines; ++j) buf[i++] = '\n';
         buf[i++] = 0;
         return buf;
     }

@@ -3248,7 +3248,7 @@ int yaep_read_grammar(YaepParseRun *pr,
                                               int*anode_cost, int**transl, char*mark, char**marks))
 {
     const char*name,*lhs,**rhs,*anode;
-    YaepSymbol*symb,*start;
+    YaepSymbol*symb, *start;
     YaepRule*rule;
     int anode_cost;
     int*transl;
