@@ -1,6 +1,6 @@
 # YAEP -- Yet Another Earley Parser
 
-  This is a fork of https://github.com/vnmakarov/yaep
+  XMQ includes a fork of https://github.com/vnmakarov/yaep to parse ixml.
 
   * **YAEP** is an abbreviation of Yet Another Earley Parser.
   * This standalone library is created for convenience.
