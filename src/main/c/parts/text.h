@@ -56,6 +56,7 @@ bool is_all_xml_whitespace(const char *s);
 bool is_xmq_element_name(const char *start, const char *stop, const char **colon);
 bool is_xmq_element_start(char c);
 bool is_xmq_text_name(char c);
+bool is_unicode_whitespace(const char *start, const char *stop);
 size_t num_utf8_bytes(char c);
 size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc);
 void str_b_u_len(const char *start, const char *stop, size_t *b_len, size_t *u_len);
