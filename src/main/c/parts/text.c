@@ -12,6 +12,58 @@
 
 #ifdef TEXT_MODULE
 
+size_t count_whitespace(const char *i, const char *stop)
+{
+    unsigned char c = *i;
+    if (c == ' ' || c == '\n' || c == '\t' || c == '\r')
+    {
+        return 1;
+    }
+
+    if (i+1 >= stop) return 0;
+
+    // If not a unbreakable space U+00A0 (utf8 0xc2a0)
+    // or the other unicode whitespaces (utf8 starts with 0xe2)
+    // then we have not whitespaces here.
+    if (c != 0xc2 && c != 0xe2) return 0;
+
+    unsigned char cc = *(i+1);
+
+    if (c == 0xC2 && cc == 0xA0)
+    {
+        // Unbreakable space. 0xA0
+        return 2;
+    }
+    if (c == 0xE2 && cc == 0x80)
+    {
+        if (i+2 >= stop) return 0;
+
+        unsigned char ccc = *(i+2);
+
+        if (ccc == 0x80)
+        {
+            // EN quad. &#8192; U+2000 utf8 E2 80 80
+            return 3;
+        }
+        if (ccc == 0x81)
+        {
+            // EM quad. &#8193; U+2001 utf8 E2 80 81
+            return 3;
+        }
+        if (ccc == 0x82)
+        {
+            // EN space. &#8194; U+2002 utf8 E2 80 82
+            return 3;
+        }
+        if (ccc == 0x83)
+        {
+            // EM space. &#8195; U+2003 utf8 E2 80 83
+            return 3;
+        }
+    }
+    return 0;
+}
+
 const char *has_leading_space_nl(const char *start, const char *stop, size_t *only_newlines)
 {
     const char *i = start;

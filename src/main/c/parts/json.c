@@ -10,6 +10,7 @@
 #include"xmq_internals.h"
 #include"stack.h"
 #include"text.h"
+#include"utf8.h"
 #include"xml.h"
 
 #include<assert.h>

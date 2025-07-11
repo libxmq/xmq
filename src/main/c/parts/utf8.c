@@ -2,7 +2,7 @@
 #ifndef BUILDING_DIST_XMQ
 
 #include"utf8.h"
-#include"xmq_internals.h"
+#include"text.h"
 
 #endif
 

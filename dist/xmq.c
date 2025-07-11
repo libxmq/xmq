@@ -494,6 +494,7 @@ typedef struct
     char bytes[MAX_NUM_UTF8_BYTES];
 } UTF8Char;
 
+size_t count_whitespace(const char *i, const char *stop);
 bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
 size_t encode_utf8(int uc, UTF8Char *utf8);
 const char *has_ending_nl_space(const char *start, const char *stop, size_t *only_newlines);
@@ -503,6 +504,7 @@ bool has_newlines(const char *start, const char *stop);
 bool has_must_escape_chars(const char *start, const char *stop);
 bool has_all_quotes(const char *start, const char *stop);
 bool has_all_whitespace(const char *start, const char *stop, bool *all_space, bool *only_newlines);
+void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col);
 bool is_lowercase_hex(char c);
 bool is_xmq_token_whitespace(char c);
 bool is_xml_whitespace(char c);
@@ -600,6 +602,10 @@ struct XMQParseState;
 typedef struct XMQParseState XMQParseState;
 
 void parse_xmq(XMQParseState *state);
+
+bool is_xmq_text_value(const char *start, const char *stop);
+bool unsafe_value_start(char c, char cc);
+bool is_safe_value_char(const char *i, const char *stop);
 
 #define XMQ_PARSER_MODULE
 
@@ -2365,15 +2371,8 @@ typedef struct XMQQuoteSettings XMQQuoteSettings;
 
 void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, const char *start, const char *stop);
 
-
-size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
-int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound);
-size_t count_necessary_slashes(const char *start, const char *stop);
-
-
 // Common parser functions ///////////////////////////////////////
 
-void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col);
 
 Level enter_compound_level(Level l);
 XMQColor level_to_quote_color(Level l);
@@ -2387,11 +2386,6 @@ size_t find_element_key_max_width(xmlNodePtr node, xmlNodePtr *restart_find_at_n
 bool is_hex(char c);
 unsigned char hex_value(char c);
 const char *find_word_ignore_case(const char *start, const char *stop, const char *word);
-
-XMQParseState *xmqAllocateParseState(XMQParseCallbacks *callbacks);
-void xmqFreeParseState(XMQParseState *state);
-bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop);
-bool xmqTokenizeFile(XMQParseState *state, const char *file);
 
 void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
 void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
@@ -2523,9 +2517,6 @@ void print_value(XMQPrintState *ps, xmlNode *node, Level level);
 void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level);
 void print_value_internal(XMQPrintState *ps, xmlNode *node, Level level);
 const char *needs_escape(XMQRenderFormat f, const char *start, const char *stop);
-size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *stop);
-size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...);
-size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop);
 void print_quote(XMQPrintState *ps, XMQColor c, const char *start, const char *stop);
 
 struct YaepGrammar;
@@ -12932,6 +12923,58 @@ void json_print_array_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from
 
 #ifdef TEXT_MODULE
 
+size_t count_whitespace(const char *i, const char *stop)
+{
+    unsigned char c = *i;
+    if (c == ' ' || c == '\n' || c == '\t' || c == '\r')
+    {
+        return 1;
+    }
+
+    if (i+1 >= stop) return 0;
+
+    // If not a unbreakable space U+00A0 (utf8 0xc2a0)
+    // or the other unicode whitespaces (utf8 starts with 0xe2)
+    // then we have not whitespaces here.
+    if (c != 0xc2 && c != 0xe2) return 0;
+
+    unsigned char cc = *(i+1);
+
+    if (c == 0xC2 && cc == 0xA0)
+    {
+        // Unbreakable space. 0xA0
+        return 2;
+    }
+    if (c == 0xE2 && cc == 0x80)
+    {
+        if (i+2 >= stop) return 0;
+
+        unsigned char ccc = *(i+2);
+
+        if (ccc == 0x80)
+        {
+            // EN quad. &#8192; U+2000 utf8 E2 80 80
+            return 3;
+        }
+        if (ccc == 0x81)
+        {
+            // EM quad. &#8193; U+2001 utf8 E2 80 81
+            return 3;
+        }
+        if (ccc == 0x82)
+        {
+            // EN space. &#8194; U+2002 utf8 E2 80 82
+            return 3;
+        }
+        if (ccc == 0x83)
+        {
+            // EM space. &#8195; U+2003 utf8 E2 80 83
+            return 3;
+        }
+    }
+    return 0;
+}
+
 const char *has_leading_space_nl(const char *start, const char *stop, size_t *only_newlines)
 {
     const char *i = start;
@@ -14502,58 +14545,6 @@ void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, 
     membuffer_append_null(state->generating_error_msg);
 }
 
-size_t count_whitespace(const char *i, const char *stop)
-{
-    unsigned char c = *i;
-    if (c == ' ' || c == '\n' || c == '\t' || c == '\r')
-    {
-        return 1;
-    }
-
-    if (i+1 >= stop) return 0;
-
-    // If not a unbreakable space U+00A0 (utf8 0xc2a0)
-    // or the other unicode whitespaces (utf8 starts with 0xe2)
-    // then we have not whitespaces here.
-    if (c != 0xc2 && c != 0xe2) return 0;
-
-    unsigned char cc = *(i+1);
-
-    if (c == 0xC2 && cc == 0xA0)
-    {
-        // Unbreakable space. 0xA0
-        return 2;
-    }
-    if (c == 0xE2 && cc == 0x80)
-    {
-        if (i+2 >= stop) return 0;
-
-        unsigned char ccc = *(i+2);
-
-        if (ccc == 0x80)
-        {
-            // EN quad. &#8192; U+2000 utf8 E2 80 80
-            return 3;
-        }
-        if (ccc == 0x81)
-        {
-            // EM quad. &#8193; U+2001 utf8 E2 80 81
-            return 3;
-        }
-        if (ccc == 0x82)
-        {
-            // EN space. &#8194; U+2002 utf8 E2 80 82
-            return 3;
-        }
-        if (ccc == 0x83)
-        {
-            // EM space. &#8195; U+2003 utf8 E2 80 83
-            return 3;
-        }
-    }
-    return 0;
-}
-
 void eat_xml_whitespace(XMQParseState *state, const char **start, const char **stop)
 {
     const char *i = state->i;
@@ -14963,29 +14954,6 @@ size_t find_namespace_max_u_width(size_t max, xmlNs *ns)
     return max;
 }
 
-/** Check if a value can start with these two characters. */
-bool unsafe_value_start(char c, char cc)
-{
-    return c == '&' || c == '=' || (c == '/' && (cc == '/' || cc == '*'));
-}
-
-bool is_safe_value_char(const char *i, const char *stop)
-{
-    char c = *i;
-    bool is_ws = count_whitespace(i, stop) > 0 ||
-        c == '\n' ||
-        c == '\t' ||
-        c == '\r' ||
-        c == '(' ||
-        c == ')' ||
-        c == '{' ||
-        c == '}' ||
-        c == '\'' ||
-        c == '"'
-        ;
-    return !is_ws;
-}
-
 bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer)
 {
     bool rc = true;
@@ -15102,6 +15070,7 @@ const char *build_error_message(const char* fmt, ...)
 
 #ifdef XMQ_PARSER_MODULE
 
+size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
 void eat_xmq_doctype(XMQParseState *state, const char **text_start, const char **text_stop);
 void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text_stop);
 void eat_xmq_text_name(XMQParseState *state, const char **content_start, const char **content_stop,
@@ -15109,6 +15078,15 @@ void eat_xmq_text_name(XMQParseState *state, const char **content_start, const c
 bool possibly_lost_content_after_equals(XMQParseState *state);
 bool possibly_need_more_quotes(XMQParseState *state);
 void eat_json_quote(XMQParseState *state, char **content_start, char **content_stop);
+
+bool is_xmq_quote_start(char c);
+bool is_xmq_json_quote_start(char c);
+bool is_xmq_entity_start(char c);
+bool is_xmq_attribute_key_start(char c);
+bool is_xmq_compound_start(char c);
+bool is_xmq_comment_start(char c, char cc);
+bool is_xmq_pi_start(const char *start, const char *stop);
+bool is_xmq_doctype_start(const char *start, const char *stop);
 
 size_t count_xmq_quotes(const char *i, const char *stop)
 {
@@ -15519,6 +15497,29 @@ size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk)
     return i-start;
 }
 
+/** Check if a value can start with these two characters. */
+bool unsafe_value_start(char c, char cc)
+{
+    return c == '&' || c == '=' || (c == '/' && (cc == '/' || cc == '*'));
+}
+
+bool is_safe_value_char(const char *i, const char *stop)
+{
+    char c = *i;
+    bool is_ws = count_whitespace(i, stop) > 0 ||
+        c == '\n' ||
+        c == '\t' ||
+        c == '\r' ||
+        c == '(' ||
+        c == ')' ||
+        c == '{' ||
+        c == '}' ||
+        c == '\'' ||
+        c == '"'
+        ;
+    return !is_ws;
+}
+
 bool is_xmq_text_value(const char *start, const char *stop)
 {
     char c = *start;
@@ -15535,7 +15536,6 @@ bool is_xmq_text_value(const char *start, const char *stop)
     }
     return true;
 }
-
 
 bool peek_xmq_next_is_equal(XMQParseState *state)
 {

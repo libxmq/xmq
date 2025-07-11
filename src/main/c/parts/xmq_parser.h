@@ -29,6 +29,10 @@ typedef struct XMQParseState XMQParseState;
 
 void parse_xmq(XMQParseState *state);
 
+bool is_xmq_text_value(const char *start, const char *stop);
+bool unsafe_value_start(char c, char cc);
+bool is_safe_value_char(const char *i, const char *stop);
+
 #define XMQ_PARSER_MODULE
 
 #endif // XMQ_PARSER_H

@@ -2,8 +2,10 @@
 
 #include"always.h"
 #include"text.h"
+#include"utf8.h"
 #include"xmq_internals.h"
 #include"xml.h"
+#include"xmq_parser.h"
 #include"xmq_printer.h"
 
 #include<assert.h>

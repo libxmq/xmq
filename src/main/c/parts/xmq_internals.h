@@ -470,15 +470,8 @@ typedef struct XMQQuoteSettings XMQQuoteSettings;
 
 void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, const char *start, const char *stop);
 
-
-size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
-int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound);
-size_t count_necessary_slashes(const char *start, const char *stop);
-
-
 // Common parser functions ///////////////////////////////////////
 
-void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col);
 
 Level enter_compound_level(Level l);
 XMQColor level_to_quote_color(Level l);
@@ -492,11 +485,6 @@ size_t find_element_key_max_width(xmlNodePtr node, xmlNodePtr *restart_find_at_n
 bool is_hex(char c);
 unsigned char hex_value(char c);
 const char *find_word_ignore_case(const char *start, const char *stop, const char *word);
-
-XMQParseState *xmqAllocateParseState(XMQParseCallbacks *callbacks);
-void xmqFreeParseState(XMQParseState *state);
-bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop);
-bool xmqTokenizeFile(XMQParseState *state, const char *file);
 
 void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
 void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
@@ -628,9 +616,6 @@ void print_value(XMQPrintState *ps, xmlNode *node, Level level);
 void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level);
 void print_value_internal(XMQPrintState *ps, xmlNode *node, Level level);
 const char *needs_escape(XMQRenderFormat f, const char *start, const char *stop);
-size_t print_utf8_internal(XMQPrintState *ps, const char *start, const char *stop);
-size_t print_utf8(XMQPrintState *ps, XMQColor c, size_t num_pairs, ...);
-size_t print_utf8_char(XMQPrintState *ps, const char *start, const char *stop);
 void print_quote(XMQPrintState *ps, XMQColor c, const char *start, const char *stop);
 
 struct YaepGrammar;

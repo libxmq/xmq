@@ -14,6 +14,7 @@
 
 #ifdef XMQ_PARSER_MODULE
 
+size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
 void eat_xmq_doctype(XMQParseState *state, const char **text_start, const char **text_stop);
 void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text_stop);
 void eat_xmq_text_name(XMQParseState *state, const char **content_start, const char **content_stop,
@@ -21,6 +22,15 @@ void eat_xmq_text_name(XMQParseState *state, const char **content_start, const c
 bool possibly_lost_content_after_equals(XMQParseState *state);
 bool possibly_need_more_quotes(XMQParseState *state);
 void eat_json_quote(XMQParseState *state, char **content_start, char **content_stop);
+
+bool is_xmq_quote_start(char c);
+bool is_xmq_json_quote_start(char c);
+bool is_xmq_entity_start(char c);
+bool is_xmq_attribute_key_start(char c);
+bool is_xmq_compound_start(char c);
+bool is_xmq_comment_start(char c, char cc);
+bool is_xmq_pi_start(const char *start, const char *stop);
+bool is_xmq_doctype_start(const char *start, const char *stop);
 
 size_t count_xmq_quotes(const char *i, const char *stop)
 {
@@ -431,6 +441,29 @@ size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk)
     return i-start;
 }
 
+/** Check if a value can start with these two characters. */
+bool unsafe_value_start(char c, char cc)
+{
+    return c == '&' || c == '=' || (c == '/' && (cc == '/' || cc == '*'));
+}
+
+bool is_safe_value_char(const char *i, const char *stop)
+{
+    char c = *i;
+    bool is_ws = count_whitespace(i, stop) > 0 ||
+        c == '\n' ||
+        c == '\t' ||
+        c == '\r' ||
+        c == '(' ||
+        c == ')' ||
+        c == '{' ||
+        c == '}' ||
+        c == '\'' ||
+        c == '"'
+        ;
+    return !is_ws;
+}
+
 bool is_xmq_text_value(const char *start, const char *stop)
 {
     char c = *start;
@@ -447,7 +480,6 @@ bool is_xmq_text_value(const char *start, const char *stop)
     }
     return true;
 }
-
 
 bool peek_xmq_next_is_equal(XMQParseState *state)
 {
