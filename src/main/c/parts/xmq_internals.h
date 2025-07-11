@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2023-2024 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2023-2025 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -502,26 +502,6 @@ char *xmq_comment(int indent,
                  XMQQuoteSettings *settings);
 char *xmq_un_comment(const char *start, const char *stop);
 char *xmq_un_quote(const char *start, const char *stop, bool remove_qs, bool is_xmq);
-
-// XMQ syntax parser functions ///////////////////////////////////////////////////////////
-
-void parse_xmq_attribute(XMQParseState *state);
-void parse_xmq_attributes(XMQParseState *state);
-void parse_xmq_comment(XMQParseState *state, char cc);
-void parse_xmq_compound(XMQParseState *state, Level level);
-void parse_xmq_compound_children(XMQParseState *state, Level level);
-void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi);
-void parse_xmq_element(XMQParseState *state);
-void parse_xmq_doctype(XMQParseState *state);
-void parse_xmq_pi(XMQParseState *state);
-void parse_xmq_entity(XMQParseState *state, Level level);
-void parse_xmq_quote(XMQParseState *state, Level level);
-void parse_xmq_json_quote(XMQParseState *state, Level level);
-void parse_xmq_text_any(XMQParseState *state);
-void parse_xmq_text_name(XMQParseState *state);
-void parse_xmq_text_value(XMQParseState *state, Level level);
-void parse_xmq_value(XMQParseState *state, Level level);
-void parse_xmq_whitespace(XMQParseState *state);
 
 // XML/HTML dom functions ///////////////////////////////////////////////////////////////
 
