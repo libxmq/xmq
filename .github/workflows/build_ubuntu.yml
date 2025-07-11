@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - AddNotOperator
   pull_request:
 
 jobs:
