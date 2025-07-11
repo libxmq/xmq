@@ -512,6 +512,8 @@ bool is_all_xml_whitespace(const char *s);
 bool is_xmq_element_name(const char *start, const char *stop, const char **colon);
 bool is_xmq_element_start(char c);
 bool is_xmq_text_name(char c);
+bool is_hex(char c);
+unsigned char hex_value(char c);
 bool is_unicode_whitespace(const char *start, const char *stop);
 size_t num_utf8_bytes(char c);
 size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc);
@@ -603,6 +605,7 @@ typedef struct XMQParseState XMQParseState;
 
 void parse_xmq(XMQParseState *state);
 
+void eat_xml_whitespace(XMQParseState *state, const char **start, const char **stop);
 bool is_xmq_text_value(const char *start, const char *stop);
 bool unsafe_value_start(char c, char cc);
 bool is_safe_value_char(const char *i, const char *stop);
@@ -2383,8 +2386,6 @@ void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len
 size_t find_attr_key_max_u_width(xmlAttr *a);
 size_t find_namespace_max_u_width(size_t max, xmlNs *ns);
 size_t find_element_key_max_width(xmlNodePtr node, xmlNodePtr *restart_find_at_node);
-bool is_hex(char c);
-unsigned char hex_value(char c);
 const char *find_word_ignore_case(const char *start, const char *stop, const char *word);
 
 void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
@@ -2393,13 +2394,6 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool
 
 // XMQ tokenizer functions ///////////////////////////////////////////////////////////
 
-void eat_xml_whitespace(XMQParseState *state, const char **start, const char **stop);
-void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop);
-void eat_xmq_entity(XMQParseState *state);
-void eat_xmq_comment_to_eol(XMQParseState *state, const char **content_start, const char **content_stop);
-void eat_xmq_comment_to_close(XMQParseState *state, const char **content_start, const char **content_stop, size_t n, bool *found_asterisk);
-void eat_xmq_text_value(XMQParseState *state);
-bool peek_xmq_next_is_equal(XMQParseState *state);
 size_t count_xmq_quotes(const char *i, const char *stop);
 void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop);
 size_t calculate_incidental_indent(const char *start, const char *stop);
@@ -13875,6 +13869,32 @@ const char *find_eol_or_stop(const char *start, const char *stop)
     return stop;
 }
 
+bool is_hex(char c)
+{
+    return
+        (c >= '0' && c <= '9') ||
+        (c >= 'a' && c <= 'f') ||
+        (c >= 'A' && c <= 'F');
+}
+
+unsigned char hex_value(char c)
+{
+    if (c >= '0' && c <= '9') return c-'0';
+    if (c >= 'a' && c <= 'f') return 10+c-'a';
+    if (c >= 'A' && c <= 'F') return 10+c-'A';
+    assert(false);
+    return 0;
+}
+
+bool is_unicode_whitespace(const char *start, const char *stop)
+{
+    size_t n = count_whitespace(start, stop);
+
+    // Single char whitespace is ' ' '\t' '\n' '\r'
+    // First unicode whitespace is 160 nbsp require two or more chars.
+    return n > 1;
+}
+
 #endif // TEXT_MODULE
 
 // PART C UTF8_C ////////////////////////////////////////
@@ -14545,100 +14565,6 @@ void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, 
     membuffer_append_null(state->generating_error_msg);
 }
 
-void eat_xml_whitespace(XMQParseState *state, const char **start, const char **stop)
-{
-    const char *i = state->i;
-    const char *buffer_stop = state->buffer_stop;
-    size_t line = state->line;
-    size_t col = state->col;
-    if (start) *start = i;
-
-    size_t nw = count_whitespace(i, buffer_stop);
-    if (!nw) return;
-
-    while (i < buffer_stop)
-    {
-        size_t nw = count_whitespace(i, buffer_stop);
-        if (!nw) break;
-        // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
-        increment(*i, nw, &i, &line, &col);
-    }
-
-    if (stop) *stop = i;
-    state->i = i;
-    state->line = line;
-    state->col = col;
-}
-
-void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop)
-{
-    const char *i = state->i;
-    const char *buffer_stop = state->buffer_stop;
-    size_t line = state->line;
-    size_t col = state->col;
-    if (start) *start = i;
-
-    size_t nw = count_whitespace(i, buffer_stop);
-    if (!nw) return;
-
-    while (i < buffer_stop)
-    {
-        size_t nw = count_whitespace(i, buffer_stop);
-        if (!nw) break;
-        // Tabs are not permitted as xmq token whitespace.
-        if (nw == 1 && *i == '\t') break;
-        // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
-        increment(*i, nw, &i, &line, &col);
-    }
-
-    if (stop) *stop = i;
-    state->i = i;
-    state->line = line;
-    state->col = col;
-}
-
-void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col)
-{
-    if (c == 0) c = *(*i);
-    if ((c & 0xc0) != 0x80) // Just ignore UTF8 parts since they do not change the line or col.
-    {
-        (*col)++;
-        if (c == '\n')
-        {
-            (*line)++;
-            (*col) = 1;
-        }
-    }
-    assert(num_bytes > 0);
-    (*i)+=num_bytes;
-}
-
-bool is_hex(char c)
-{
-    return
-        (c >= '0' && c <= '9') ||
-        (c >= 'a' && c <= 'f') ||
-        (c >= 'A' && c <= 'F');
-}
-
-unsigned char hex_value(char c)
-{
-    if (c >= '0' && c <= '9') return c-'0';
-    if (c >= 'a' && c <= 'f') return 10+c-'a';
-    if (c >= 'A' && c <= 'F') return 10+c-'A';
-    assert(false);
-    return 0;
-}
-
-bool is_unicode_whitespace(const char *start, const char *stop)
-{
-    size_t n = count_whitespace(start, stop);
-
-    // Single char whitespace is ' ' '\t' '\n' '\r'
-    // First unicode whitespace is 160 nbsp require two or more chars.
-    return n > 1;
-}
-
 const char *needs_escape(XMQRenderFormat f, const char *start, const char *stop)
 {
     if (f == XMQ_RENDER_HTML)
@@ -15071,6 +14997,12 @@ const char *build_error_message(const char* fmt, ...)
 #ifdef XMQ_PARSER_MODULE
 
 size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
+void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop);
+void eat_xmq_entity(XMQParseState *state);
+void eat_xmq_comment_to_eol(XMQParseState *state, const char **content_start, const char **content_stop);
+void eat_xmq_comment_to_close(XMQParseState *state, const char **content_start, const char **content_stop, size_t n, bool *found_asterisk);
+void eat_xmq_text_value(XMQParseState *state);
+bool peek_xmq_next_is_equal(XMQParseState *state);
 void eat_xmq_doctype(XMQParseState *state, const char **text_start, const char **text_stop);
 void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text_stop);
 void eat_xmq_text_name(XMQParseState *state, const char **content_start, const char **content_stop,
@@ -15181,6 +15113,74 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
         state->last_suspicios_quote_end_line = state->line;
         state->last_suspicios_quote_end_col = state->col-1;
     }
+}
+
+void eat_xml_whitespace(XMQParseState *state, const char **start, const char **stop)
+{
+    const char *i = state->i;
+    const char *buffer_stop = state->buffer_stop;
+    size_t line = state->line;
+    size_t col = state->col;
+    if (start) *start = i;
+
+    size_t nw = count_whitespace(i, buffer_stop);
+    if (!nw) return;
+
+    while (i < buffer_stop)
+    {
+        size_t nw = count_whitespace(i, buffer_stop);
+        if (!nw) break;
+        // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
+        increment(*i, nw, &i, &line, &col);
+    }
+
+    if (stop) *stop = i;
+    state->i = i;
+    state->line = line;
+    state->col = col;
+}
+
+void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop)
+{
+    const char *i = state->i;
+    const char *buffer_stop = state->buffer_stop;
+    size_t line = state->line;
+    size_t col = state->col;
+    if (start) *start = i;
+
+    size_t nw = count_whitespace(i, buffer_stop);
+    if (!nw) return;
+
+    while (i < buffer_stop)
+    {
+        size_t nw = count_whitespace(i, buffer_stop);
+        if (!nw) break;
+        // Tabs are not permitted as xmq token whitespace.
+        if (nw == 1 && *i == '\t') break;
+        // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
+        increment(*i, nw, &i, &line, &col);
+    }
+
+    if (stop) *stop = i;
+    state->i = i;
+    state->line = line;
+    state->col = col;
+}
+
+void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col)
+{
+    if (c == 0) c = *(*i);
+    if ((c & 0xc0) != 0x80) // Just ignore UTF8 parts since they do not change the line or col.
+    {
+        (*col)++;
+        if (c == '\n')
+        {
+            (*line)++;
+            (*col) = 1;
+        }
+    }
+    assert(num_bytes > 0);
+    (*i)+=num_bytes;
 }
 
 void eat_xmq_entity(XMQParseState *state)

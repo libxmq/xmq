@@ -8,6 +8,7 @@
 #include"hashmap.h"
 #include"membuffer.h"
 #include"xmq_internals.h"
+#include"xmq_parser.h"
 #include"stack.h"
 #include"text.h"
 #include"utf8.h"

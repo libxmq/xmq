@@ -29,6 +29,7 @@ typedef struct XMQParseState XMQParseState;
 
 void parse_xmq(XMQParseState *state);
 
+void eat_xml_whitespace(XMQParseState *state, const char **start, const char **stop);
 bool is_xmq_text_value(const char *start, const char *stop);
 bool unsafe_value_start(char c, char cc);
 bool is_safe_value_char(const char *i, const char *stop);

@@ -15,6 +15,12 @@
 #ifdef XMQ_PARSER_MODULE
 
 size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
+void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop);
+void eat_xmq_entity(XMQParseState *state);
+void eat_xmq_comment_to_eol(XMQParseState *state, const char **content_start, const char **content_stop);
+void eat_xmq_comment_to_close(XMQParseState *state, const char **content_start, const char **content_stop, size_t n, bool *found_asterisk);
+void eat_xmq_text_value(XMQParseState *state);
+bool peek_xmq_next_is_equal(XMQParseState *state);
 void eat_xmq_doctype(XMQParseState *state, const char **text_start, const char **text_stop);
 void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text_stop);
 void eat_xmq_text_name(XMQParseState *state, const char **content_start, const char **content_stop,
@@ -125,6 +131,74 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
         state->last_suspicios_quote_end_line = state->line;
         state->last_suspicios_quote_end_col = state->col-1;
     }
+}
+
+void eat_xml_whitespace(XMQParseState *state, const char **start, const char **stop)
+{
+    const char *i = state->i;
+    const char *buffer_stop = state->buffer_stop;
+    size_t line = state->line;
+    size_t col = state->col;
+    if (start) *start = i;
+
+    size_t nw = count_whitespace(i, buffer_stop);
+    if (!nw) return;
+
+    while (i < buffer_stop)
+    {
+        size_t nw = count_whitespace(i, buffer_stop);
+        if (!nw) break;
+        // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
+        increment(*i, nw, &i, &line, &col);
+    }
+
+    if (stop) *stop = i;
+    state->i = i;
+    state->line = line;
+    state->col = col;
+}
+
+void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop)
+{
+    const char *i = state->i;
+    const char *buffer_stop = state->buffer_stop;
+    size_t line = state->line;
+    size_t col = state->col;
+    if (start) *start = i;
+
+    size_t nw = count_whitespace(i, buffer_stop);
+    if (!nw) return;
+
+    while (i < buffer_stop)
+    {
+        size_t nw = count_whitespace(i, buffer_stop);
+        if (!nw) break;
+        // Tabs are not permitted as xmq token whitespace.
+        if (nw == 1 && *i == '\t') break;
+        // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
+        increment(*i, nw, &i, &line, &col);
+    }
+
+    if (stop) *stop = i;
+    state->i = i;
+    state->line = line;
+    state->col = col;
+}
+
+void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col)
+{
+    if (c == 0) c = *(*i);
+    if ((c & 0xc0) != 0x80) // Just ignore UTF8 parts since they do not change the line or col.
+    {
+        (*col)++;
+        if (c == '\n')
+        {
+            (*line)++;
+            (*col) = 1;
+        }
+    }
+    assert(num_bytes > 0);
+    (*i)+=num_bytes;
 }
 
 void eat_xmq_entity(XMQParseState *state)

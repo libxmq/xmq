@@ -490,13 +490,6 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool
 
 // XMQ tokenizer functions ///////////////////////////////////////////////////////////
 
-void eat_xml_whitespace(XMQParseState *state, const char **start, const char **stop);
-void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop);
-void eat_xmq_entity(XMQParseState *state);
-void eat_xmq_comment_to_eol(XMQParseState *state, const char **content_start, const char **content_stop);
-void eat_xmq_comment_to_close(XMQParseState *state, const char **content_start, const char **content_stop, size_t n, bool *found_asterisk);
-void eat_xmq_text_value(XMQParseState *state);
-bool peek_xmq_next_is_equal(XMQParseState *state);
 size_t count_xmq_quotes(const char *i, const char *stop);
 void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop);
 size_t calculate_incidental_indent(const char *start, const char *stop);
