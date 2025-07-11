@@ -132,33 +132,6 @@ void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, 
     membuffer_append_null(state->generating_error_msg);
 }
 
-const char *needs_escape(XMQRenderFormat f, const char *start, const char *stop)
-{
-    if (f == XMQ_RENDER_HTML)
-    {
-        char c = *start;
-        if (c == '&') return "&amp;";
-        if (c == '<') return "&lt;";
-        if (c == '>') return "&gt;";
-        return NULL;
-    }
-    else if (f == XMQ_RENDER_TEX)
-    {
-        char c = *start;
-        if (c == '\\') return "\\backslash;";
-        if (c == '&') return "\\&";
-        if (c == '#') return "\\#";
-        if (c == '{') return "\\{";
-        if (c == '}') return "\\}";
-        if (c == '_') return "\\_";
-        if (c == '\'') return "{'}";
-
-        return NULL;
-    }
-
-    return NULL;
-}
-
 void print_color_pre(XMQPrintState *ps, XMQColor color)
 {
     XMQOutputSettings *os = ps->output_settings;
@@ -234,6 +207,33 @@ const char *xmqParseErrorToString(XMQParseError e)
     }
     assert(false);
     return "unknown error";
+}
+
+const char *needs_escape(XMQRenderFormat f, const char *start, const char *stop)
+{
+    if (f == XMQ_RENDER_HTML)
+    {
+        char c = *start;
+        if (c == '&') return "&amp;";
+        if (c == '<') return "&lt;";
+        if (c == '>') return "&gt;";
+        return NULL;
+    }
+    else if (f == XMQ_RENDER_TEX)
+    {
+        char c = *start;
+        if (c == '\\') return "\\backslash;";
+        if (c == '&') return "\\&";
+        if (c == '#') return "\\#";
+        if (c == '{') return "\\{";
+        if (c == '}') return "\\}";
+        if (c == '_') return "\\_";
+        if (c == '\'') return "{'}";
+
+        return NULL;
+    }
+
+    return NULL;
 }
 
 void node_strlen_name_prefix(xmlNode *node,

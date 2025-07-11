@@ -505,7 +505,6 @@ char *xmq_un_quote(const char *start, const char *stop, bool remove_qs, bool is_
 
 // XMQ syntax parser functions ///////////////////////////////////////////////////////////
 
-void parse_xmq(XMQParseState *state);
 void parse_xmq_attribute(XMQParseState *state);
 void parse_xmq_attributes(XMQParseState *state);
 void parse_xmq_comment(XMQParseState *state, char cc);
@@ -533,6 +532,8 @@ void trim_text_node(xmlNode *node, int flags);
 
 // Output buffer functions ////////////////////////////////////////////////////////
 
+const char *needs_escape(XMQRenderFormat f, const char *start, const char *stop);
+
 const char *build_error_message(const char *fmt, ...);
 
 void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
@@ -554,37 +555,9 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
 
 // Printing the DOM as xmq/htmq ///////////////////////////////////////////////////
 
-size_t print_char_entity(XMQPrintState *ps, XMQColor c, const char *start, const char *stop);
 void print_color_post(XMQPrintState *ps, XMQColor c);
 void print_color_pre(XMQPrintState *ps, XMQColor c);
-void print_comment_line(XMQPrintState *ps, const char *start, const char *stop, bool compact);
-void print_comment_lines(XMQPrintState *ps, const char *start, const char *stop, bool compact);
-void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *postfix);
-void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps, XMQColor c, const char *start, const char *stop);
-void print_quoted_spaces(XMQPrintState *ps, XMQColor c, int n);
-void print_quotes(XMQPrintState *ps, int num, XMQColor c);
-void print_double_quote(XMQPrintState *ps, XMQColor c);
-void print_slashes(XMQPrintState *ps, const char *pre, const char *post, size_t n);
-void print_white_spaces(XMQPrintState *ps, int n);
-void print_all_whitespace(XMQPrintState *ps, const char *start, const char *stop, Level level);
 
-void print_nodes(XMQPrintState *ps, xmlNode *from, xmlNode *to, size_t align);
-void print_node(XMQPrintState *ps, xmlNode *node, size_t align);
-void print_entity_node(XMQPrintState *ps, xmlNode *node);
-void print_content_node(XMQPrintState *ps, xmlNode *node);
-void print_comment_node(XMQPrintState *ps, xmlNode *node);
-void print_doctype(XMQPrintState *ps, xmlNode *node);
-void print_key_node(XMQPrintState *ps, xmlNode *node, size_t align);
-void print_leaf_node(XMQPrintState *ps, xmlNode *node);
-void print_element_with_children(XMQPrintState *ps, xmlNode *node, size_t align);
-size_t print_element_name_and_attributes(XMQPrintState *ps, xmlNode *node);
-void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align);
-void print_attributes(XMQPrintState *ps, xmlNodePtr node);
-void print_value(XMQPrintState *ps, xmlNode *node, Level level);
-void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level);
-void print_value_internal(XMQPrintState *ps, xmlNode *node, Level level);
-const char *needs_escape(XMQRenderFormat f, const char *start, const char *stop);
-void print_quote(XMQPrintState *ps, XMQColor c, const char *start, const char *stop);
 
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;

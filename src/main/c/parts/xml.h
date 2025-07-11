@@ -56,7 +56,6 @@ bool is_key_value_node(xmlNodePtr node);
 bool is_single_empty_text_node(xmlNodePtr node);
 bool is_leaf_node(xmlNode *node);
 bool has_attributes(xmlNodePtr node);
-char *xml_collapse_text(xmlNode *node);
 int decode_entity_ref(const char *name);
 void xml_add_root_child(xmlDoc *doc, xmlNode *node);
 
