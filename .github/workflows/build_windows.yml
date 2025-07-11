@@ -14,7 +14,7 @@ jobs:
     - id: APT_UPDATE
       run: sudo apt update
     - id: INSTALL_ADDITIONAL_BUILD_DEPENDENCIES
-      run: sudo apt install -y eatmydata gcc-mingw-w64 wixl
+      run: sudo apt install -y eatmydata gcc-mingw-w64 wixl wine64
     - id: FETCH_DEPS
       run: cd 3rdparty; ./fetch_and_build.sh x86_64-w64-mingw32
     - id: CONFIGURE
