@@ -28,8 +28,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 #include<stdbool.h>
 #include<string.h>
 
-char *buf_vsnprintf(const char *format, va_list ap);
-
 #endif
 
 #ifdef MEMBUFFER_MODULE

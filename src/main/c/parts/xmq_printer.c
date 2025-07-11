@@ -19,8 +19,6 @@
 size_t find_attr_key_max_u_width(xmlAttr *a);
 size_t find_namespace_max_u_width(size_t max, xmlNs *ns);
 size_t find_element_key_max_width(xmlNodePtr node, xmlNodePtr *restart_find_at_node);
-bool xml_has_non_empty_namespace_defs(xmlNode *node);
-bool xml_non_empty_namespace(xmlNs *ns);
 const char *toHtmlEntity(int uc);
 
 /**

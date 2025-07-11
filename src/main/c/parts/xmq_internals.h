@@ -526,7 +526,6 @@ void parse_xmq_whitespace(XMQParseState *state);
 // XML/HTML dom functions ///////////////////////////////////////////////////////////////
 
 xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop);
-char *xml_collapse_text(xmlNode *node);
 void trim_node(xmlNode *node, int flags);
 void trim_text_node(xmlNode *node, int flags);
 
