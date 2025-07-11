@@ -184,8 +184,8 @@ $(OUTPUT_ROOT)/$(TYPE)/libwinpthread-1.dll:
 	@echo "Installed $@"
 
 $(OUTPUT_ROOT)/$(TYPE)/libxml2-2.dll:
-	find $(SRC_ROOT)/3rdparty -name "*.dll"
-	$(AT)cp "$$(find $(SRC_ROOT)/3rdparty/libxml2-winapi -name libxml2-2.dll | grep -m 1 libxml2-2.dll)" $@
+# This dll changes name libxml2-2.dll to libxml2-16.dll a version nr perhaps?
+	$(AT)cp "$$(find $(SRC_ROOT)/3rdparty/libxml2-winapi -name libxml2-*.dll | grep -m 1 '/libxml2-[0-9]*\.dll')" $@
 	@echo "Installed $@"
 
 $(OUTPUT_ROOT)/$(TYPE)/libxslt-1.dll:
