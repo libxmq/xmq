@@ -673,7 +673,7 @@ struct YaepParseState
 
     /* The following 3 tables contain references for sets which refers
        for set cores or matched_lengths or both which are in the tables.*/
-    hash_table_t set_of_cores;        /* key is only start dotted_rules.*/
+    hash_table_t map_stateset_to_core;     /* key is the started dotted rules from a state set. */
     hash_table_t set_of_matched_lengthses;        /* key is matched_lengths we have a set of matched_lengthses.*/
     hash_table_t set_of_tuples_core_matched_lengths;        /* key is(core, matched_lengths).*/
 
