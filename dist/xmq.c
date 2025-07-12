@@ -22086,7 +22086,6 @@ void try_eat_token(const char *info, YaepParseState *ps, YaepStateSet *set,
 
     // This combo dotted_rule + matched_length did not already exist, lets add it.
     // But first test if there is a not lookahead that blocks....
-    YaepSymbol *sym = new_dotted_rule->rule->rhs[new_dotted_rule->dot_j];
     if (!blocked_by_lookahead(ps, new_dotted_rule, new_dotted_rule->rule->rhs[new_dotted_rule->dot_j], 1, info))
     {
         if (!dotted_rule_matched_length_test_and_set(ps, new_dotted_rule, matched_length))
@@ -23126,9 +23125,6 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
 
 static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 {
-    YaepStateSet *set, *check_set;
-    YaepStateSetCore *set_core, *check_set_core;
-    YaepDottedRule *dotted_rule, *check_dotted_rule;
     YaepRule *rule, *dotted_rule_rule;
     YaepSymbol *symb;
     YaepCoreSymbToPredComps *core_symb_ids, *check_core_symb_ids;
@@ -23160,11 +23156,11 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     ps->n_parse_term_nodes = ps->n_parse_abstract_nodes = ps->n_parse_alt_nodes = 0;
 
     // Pick the final state set, where we completed the axiom $.
-    set = ps->state_sets[ps->state_set_k];
+    YaepStateSet *set = ps->state_sets[ps->state_set_k];
     assert(ps->run.grammar->axiom != NULL);
 
     /* We have only one start dotted_rule: "$ : <start symb> eof .". */
-    dotted_rule = (set->core->dotted_rules != NULL ? set->core->dotted_rules[0] : NULL);
+    YaepDottedRule *dotted_rule = (set->core->dotted_rules != NULL ? set->core->dotted_rules[0] : NULL);
 
     if (dotted_rule == NULL
         || set->matched_lengths[0] != ps->state_set_k
@@ -23380,7 +23376,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
         /* Nonterminal before dot: */
         set = ps->state_sets[state_set_k];
-        set_core = set->core;
+        YaepStateSetCore *set_core = set->core;
         core_symb_ids = core_symb_ids_find(ps, set_core, symb);
         debug("ixml.pa.c=", "core core%d symb %s -> %p", set_core->id, symb->hr, core_symb_ids);
         if (!core_symb_ids) continue;
@@ -23416,9 +23412,8 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                 dotted_rule_from_i = state_set_k;
             }
 
-
-            check_set = ps->state_sets[dotted_rule_from_i];
-            check_set_core = check_set->core;
+            YaepStateSet *check_set = ps->state_sets[dotted_rule_from_i];
+            YaepStateSetCore *check_set_core = check_set->core;
             check_core_symb_ids = core_symb_ids_find(ps, check_set_core, symb);
             assert(check_core_symb_ids != NULL);
             found = false;
@@ -23441,30 +23436,24 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             for (j = 0; j < check_core_symb_ids->predictions.len; j++)
             {
                 check_dotted_rule_id = check_core_symb_ids->predictions.ids[j];
-                check_dotted_rule = check_set->core->dotted_rules[check_dotted_rule_id];
-                debug("ixml.tr.c=", "check %s", check_dotted_rule->rule->lhs->hr);
+                YaepDottedRule *check_dotted_rule = check_set->core->dotted_rules[check_dotted_rule_id];
                 if (check_dotted_rule->rule != rule || check_dotted_rule->dot_j != pos_j)
                 {
-                    debug("ixml.tr.c=", "skip1");
                     continue;
                 }
                 check_dotted_rule_from_i = dotted_rule_from_i;
-                debug("ixml.tr.c=", "check cdri=%d num=%d", check_dotted_rule_id, check_set_core->num_all_matched_lengths);
 
                 if (check_dotted_rule_id < check_set_core->num_all_matched_lengths)
                 {
                     if (check_dotted_rule_id < check_set_core->num_started_dotted_rules)
                     {
                         check_dotted_rule_from_i = dotted_rule_from_i - check_set->matched_lengths[check_dotted_rule_id];
-                        debug("ixml.tr.c=", "cfi=%d     1", check_dotted_rule_from_i);
                     }
                     else
                     {
                         check_dotted_rule_from_i = (dotted_rule_from_i - check_set->matched_lengths[check_set_core->parent_dotted_rule_ids[check_dotted_rule_id]]);
-                        debug("ixml.tr.c=", "cfi=%d     2", check_dotted_rule_from_i);
                     }
                 }
-                debug("ixml.tr.c=", "check cfi=%d   fi=%d", check_dotted_rule_from_i, from_i);
                 if (check_dotted_rule_from_i == from_i)
                 {
                     debug("ixml.tr.c=", "found check dotted rule %d         dri=%d", check_dotted_rule_id, dotted_rule_id);
