@@ -5023,7 +5023,6 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 {
     int n_candidates;
 
-    int dotted_rule_from_i, check_dotted_rule_from_i;
     bool new_p;
 
     // The result pointer points to the final parse tree.
@@ -5286,7 +5285,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         {
             int rule_index_in_core = core_symb_ids->completions.ids[i];
             dotted_rule = set_core->dotted_rules[rule_index_in_core];
-
+            int dotted_rule_from_i;
             if (rule_index_in_core < set_core->num_started_dotted_rules)
             {
                 // The state_set_k is the tok_i for which the state set was created.
@@ -5334,7 +5333,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                 {
                     continue;
                 }
-                check_dotted_rule_from_i = dotted_rule_from_i;
+                int check_dotted_rule_from_i = dotted_rule_from_i;
 
                 if (rule_index_in_check_core < check_set_core->num_all_matched_lengths)
                 {
