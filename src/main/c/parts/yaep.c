@@ -5021,17 +5021,16 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
 
 static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 {
+    // Number of candiate trees found.
     int n_candidates;
-
-    // The result pointer points to the final parse tree.
-    YaepTreeNode *result;
-    YaepTreeNode *result2;
-    YaepTreeNode *result3;
 
     YaepParseTreeBuildState root_state;
     YaepTreeNode root_anode;
 
-   YaepTreeNode **term_node_array = NULL;
+    // The result pointer points to the final parse tree.
+    YaepTreeNode *result;
+
+    YaepTreeNode **term_node_array = NULL;
     vlo_t stack, orig_states;
 
     ps->n_parse_term_nodes = ps->n_parse_abstract_nodes = ps->n_parse_alt_nodes = 0;
@@ -5079,8 +5078,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
     // The result tree starts empty.
     result = NULL;
-    result2 = NULL;
-    result3 = NULL;
+
     // The root abstract node points to the result tree pointer.
     root_anode.val.anode.children = &result;
     // The root state pointsto the root abstract node.
@@ -5619,7 +5617,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     }
     if (ps->run.trace)
     {
-        fprintf(stderr, "(ixml) yaep parse tree: %p %p %p\n", result, result2, result3);
+        fprintf(stderr, "(ixml) yaep parse tree: %p\n", result);
         print_parse(ps, stderr, result);
         fprintf(stderr, "\n");
     }
