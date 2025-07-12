@@ -5035,7 +5035,6 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     YaepParseTreeBuildState *table_state, *parent_anode_state;
 
     YaepTreeNode *empty_node, *node, *error_node;
-    YaepTreeNode *parent_anode, *anode;
 
     bool saved_one_parse_p;
     YaepTreeNode **term_node_array = NULL;
@@ -5154,9 +5153,9 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         int pos_j = --state->dot_j;
         rule = state->rule;
         parent_anode_state = state->parent_anode_state;
-        parent_anode = parent_anode_state->anode;
+        YaepTreeNode *parent_anode = parent_anode_state->anode;
         int parent_rhs_offset = state->parent_rhs_offset;
-        anode = state->anode;
+        YaepTreeNode *anode = state->anode;
         int rhs_offset = rule->order[pos_j];
         int state_set_k = state->state_set_k;
         int from_i = state->from_i;
