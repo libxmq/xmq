@@ -5035,7 +5035,6 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
     YaepTreeNode *empty_node, *node, *error_node;
 
-    bool saved_one_parse_p;
     YaepTreeNode **term_node_array = NULL;
     vlo_t stack, orig_states;
 
@@ -5057,7 +5056,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         assert(!ps->run.grammar->error_recovery_p);
         return NULL;
     }
-    saved_one_parse_p = ps->run.grammar->one_parse_p;
+    bool saved_one_parse_p = ps->run.grammar->one_parse_p;
     if (ps->run.grammar->cost_p)
     {
         /* We need all parses to choose the minimal one. */
