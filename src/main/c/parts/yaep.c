@@ -5023,8 +5023,6 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 {
     int n_candidates;
 
-    bool new_p;
-
     // The result pointer points to the final parse tree.
     YaepTreeNode *result;
     YaepTreeNode *result2;
@@ -5039,7 +5037,6 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     YaepTreeNode *empty_node, *node, *error_node;
     YaepTreeNode *parent_anode, *anode;
 
-    int parent_rhs_offset;
     bool saved_one_parse_p;
     YaepTreeNode **term_node_array = NULL;
     vlo_t stack, orig_states;
@@ -5158,7 +5155,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         rule = state->rule;
         parent_anode_state = state->parent_anode_state;
         parent_anode = parent_anode_state->anode;
-        parent_rhs_offset = state->parent_rhs_offset;
+        int parent_rhs_offset = state->parent_rhs_offset;
         anode = state->anode;
         int rhs_offset = rule->order[pos_j];
         int state_set_k = state->state_set_k;
@@ -5458,6 +5455,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                     state->from_i = dotted_rule_from_i;
                     state->state_set_k = state_set_k;
                     table_state = NULL;
+                    bool new_p;
                     if (!ps->run.grammar->one_parse_p)
                     {
                         table_state = parse_state_insert(ps, state, &new_p);
