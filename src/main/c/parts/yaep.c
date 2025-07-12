@@ -515,7 +515,7 @@ static bool stateset_core_matched_lengths_eq(hash_table_entry_t s1, hash_table_e
 }
 
 /* Hash of triple(set, term, lookahead). */
-static unsigned core_term_lookahead_hash(hash_table_entry_t s)
+static unsigned stateset_term_lookahead_hash(hash_table_entry_t s)
 {
     YaepStateSet *set = ((YaepStateSetTermLookAhead*)s)->set;
     YaepSymbol *term = ((YaepStateSetTermLookAhead*)s)->term;
@@ -525,7 +525,7 @@ static unsigned core_term_lookahead_hash(hash_table_entry_t s)
 }
 
 /* Equality of tripes(set, term, lookahead).*/
-static bool core_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool stateset_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepStateSet *set1 =((YaepStateSetTermLookAhead*)s1)->set;
     YaepStateSet *set2 =((YaepStateSetTermLookAhead*)s2)->set;
@@ -631,7 +631,7 @@ static void set_init(YaepParseState *ps, int n_input)
     ps->set_of_tuples_core_matched_lengths = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
                                 stateset_core_matched_lengths_hash, stateset_core_matched_lengths_eq);
     ps->set_of_triplets_core_term_lookahead = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
-                                               core_term_lookahead_hash, core_term_lookahead_eq);
+                                               stateset_term_lookahead_hash, stateset_term_lookahead_eq);
     ps->num_set_cores = ps->num_set_core_start_dotted_rules= 0;
     ps->num_set_matched_lengths = ps->num_set_matched_lengths_len = ps->num_parent_dotted_rule_ids = 0;
     ps->num_sets_total = ps->num_dotted_rules_total= 0;
