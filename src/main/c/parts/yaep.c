@@ -5021,7 +5021,8 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
 
 static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 {
-    int state_set_k, n_candidates, rhs_offset;
+    int n_candidates;
+
     int dotted_rule_id, check_dotted_rule_id;
     int dotted_rule_from_i, check_dotted_rule_from_i;
     bool new_p;
@@ -5161,8 +5162,8 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         parent_anode = parent_anode_state->anode;
         parent_rhs_offset = state->parent_rhs_offset;
         anode = state->anode;
-        rhs_offset = rule->order[pos_j];
-        state_set_k = state->state_set_k;
+        int rhs_offset = rule->order[pos_j];
+        int state_set_k = state->state_set_k;
         int from_i = state->from_i;
 
         if (pos_j < 0)
