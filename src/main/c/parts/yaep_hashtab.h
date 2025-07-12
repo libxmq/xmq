@@ -52,6 +52,8 @@
 
 typedef const void *hash_table_entry_t;
 
+typedef bool (*hash_table_eq_function) (hash_table_entry_t el1_ptr, hash_table_entry_t el2_ptr);
+
 
 /* Hash tables are of the following type.  The structure
    (implementation) of this type is not needed for using the hash
@@ -77,8 +79,7 @@ typedef struct
   unsigned (*hash_function) (hash_table_entry_t el_ptr);
   /* Pointer to function for test on equality of hash table elements (two
      parameter of type hash_table_entry_t. */
-  bool (*eq_function) (hash_table_entry_t el1_ptr,
-                       hash_table_entry_t el2_ptr);
+  hash_table_eq_function eq_function;
   /* Table itself */
   hash_table_entry_t *entries;
   /* Allocator */
@@ -101,7 +102,7 @@ typedef struct
 extern hash_table_t create_hash_table(YaepAllocator * allocator,
                                       size_t size,
                                       unsigned int ( *hash_function )( hash_table_entry_t el_ptr ),
-                                      bool (*eq_function)(hash_table_entry_t el1_ptr,hash_table_entry_t el2_ptr));
+                                      hash_table_eq_function eq_function);
 
 extern void empty_hash_table (hash_table_t htab);
 

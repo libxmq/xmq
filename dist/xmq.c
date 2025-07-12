@@ -954,6 +954,8 @@ void yaep_alloc_seterr (YaepAllocator * allocator, Yaep_alloc_error errfunc,
 
 typedef const void *hash_table_entry_t;
 
+typedef bool (*hash_table_eq_function) (hash_table_entry_t el1_ptr, hash_table_entry_t el2_ptr);
+
 
 /* Hash tables are of the following type.  The structure
    (implementation) of this type is not needed for using the hash
@@ -979,8 +981,7 @@ typedef struct
   unsigned (*hash_function) (hash_table_entry_t el_ptr);
   /* Pointer to function for test on equality of hash table elements (two
      parameter of type hash_table_entry_t. */
-  bool (*eq_function) (hash_table_entry_t el1_ptr,
-                       hash_table_entry_t el2_ptr);
+  hash_table_eq_function eq_function;
   /* Table itself */
   hash_table_entry_t *entries;
   /* Allocator */
@@ -1003,7 +1004,7 @@ typedef struct
 extern hash_table_t create_hash_table(YaepAllocator * allocator,
                                       size_t size,
                                       unsigned int ( *hash_function )( hash_table_entry_t el_ptr ),
-                                      bool (*eq_function)(hash_table_entry_t el1_ptr,hash_table_entry_t el2_ptr));
+                                      hash_table_eq_function eq_function);
 
 extern void empty_hash_table (hash_table_t htab);
 
@@ -2569,8 +2570,8 @@ struct YaepParseState
 
     /* The following 3 tables contain references for sets which refers
        for set cores or matched_lengths or both which are in the tables.*/
-    hash_table_t map_stateset_to_core;     /* key is the started dotted rules from a state set. */
-    hash_table_t set_of_matched_lengthses;        /* key is matched_lengths we have a set of matched_lengthses.*/
+    hash_table_t cache_stateset_cores;                /* key is the started dotted rules from a state set. */
+    hash_table_t cache_matched_lengthses;             /* key is matched_lengths.*/
     hash_table_t set_of_tuples_core_matched_lengths;        /* key is(core, matched_lengths).*/
 
     /* Table for triplets (core, term, lookahead). */
@@ -20687,7 +20688,7 @@ static unsigned stateset_core_hash(hash_table_entry_t s)
 }
 
 /* Equality of set cores. */
-static bool stateset_core_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool stateset_core_eq(YaepStateSet *s1, YaepStateSet *s2)
 {
     YaepStateSetCore*set_core1 = ((YaepStateSet*) s1)->core;
     YaepStateSetCore*set_core2 = ((YaepStateSet*) s2)->core;
@@ -20759,7 +20760,7 @@ static bool stateset_core_matched_lengths_eq(hash_table_entry_t s1, hash_table_e
 }
 
 /* Hash of triple(set, term, lookahead). */
-static unsigned core_term_lookahead_hash(hash_table_entry_t s)
+static unsigned stateset_term_lookahead_hash(hash_table_entry_t s)
 {
     YaepStateSet *set = ((YaepStateSetTermLookAhead*)s)->set;
     YaepSymbol *term = ((YaepStateSetTermLookAhead*)s)->term;
@@ -20769,7 +20770,7 @@ static unsigned core_term_lookahead_hash(hash_table_entry_t s)
 }
 
 /* Equality of tripes(set, term, lookahead).*/
-static bool core_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool stateset_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
     YaepStateSet *set1 =((YaepStateSetTermLookAhead*)s1)->set;
     YaepStateSet *set2 =((YaepStateSetTermLookAhead*)s2)->set;
@@ -20870,12 +20871,12 @@ static void set_init(YaepParseState *ps, int n_input)
     OS_CREATE(ps->sets_os, ps->run.grammar->alloc, 0);
     OS_CREATE(ps->triplet_core_term_lookahead_os, ps->run.grammar->alloc, 0);
 
-    ps->map_stateset_to_core = create_hash_table(ps->run.grammar->alloc, 2000, stateset_core_hash, stateset_core_eq);
-    ps->set_of_matched_lengthses = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, matched_lengths_hash, matched_lengths_eq);
+    ps->cache_stateset_cores = create_hash_table(ps->run.grammar->alloc, 2000, stateset_core_hash, (hash_table_eq_function)stateset_core_eq);
+    ps->cache_matched_lengthses = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, matched_lengths_hash, matched_lengths_eq);
     ps->set_of_tuples_core_matched_lengths = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
                                 stateset_core_matched_lengths_hash, stateset_core_matched_lengths_eq);
     ps->set_of_triplets_core_term_lookahead = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
-                                               core_term_lookahead_hash, core_term_lookahead_eq);
+                                               stateset_term_lookahead_hash, stateset_term_lookahead_eq);
     ps->num_set_cores = ps->num_set_core_start_dotted_rules= 0;
     ps->num_set_matched_lengths = ps->num_set_matched_lengths_len = ps->num_parent_dotted_rule_ids = 0;
     ps->num_sets_total = ps->num_dotted_rules_total= 0;
@@ -21069,11 +21070,9 @@ static void setup_set_matched_lengths_hash(hash_table_entry_t s)
 }
 
 /* Set up hash of core of set S. */
-static void setup_stateset_core_hash(hash_table_entry_t s)
+static void setup_stateset_core_hash(YaepStateSet *s)
 {
-    YaepStateSetCore*set_core =((YaepStateSet*) s)->core;
-
-    set_core->hash = dotted_rules_hash(set_core->num_started_dotted_rules, set_core->dotted_rules);
+    s->core->hash = dotted_rules_hash(s->core->num_started_dotted_rules, s->core->dotted_rules);
 }
 
 static void prepare_for_leading_dotted_rules(YaepParseState *ps)
@@ -21109,7 +21108,7 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
 #ifdef USE_SET_HASH_TABLE
     // Lookup matched_lengths from cache table.
     setup_set_matched_lengths_hash(ps->new_set);
-    entry = find_hash_table_entry(ps->set_of_matched_lengthses, ps->new_set, true);
+    entry = find_hash_table_entry(ps->cache_matched_lengthses, ps->new_set, true);
     if (*entry != NULL)
     {
         // The matched lengths already existed use the cache.
@@ -21132,7 +21131,7 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
 
     /* Insert set core into table.*/
     setup_stateset_core_hash(ps->new_set);
-    entry = find_hash_table_entry(ps->map_stateset_to_core, ps->new_set, true);
+    entry = find_hash_table_entry(ps->cache_stateset_cores, ps->new_set, true);
     if (*entry != NULL)
     {
         // The core already existed, drop the core allocation.
@@ -21191,8 +21190,8 @@ static void free_sets(YaepParseState *ps)
     free_dotted_rule_matched_length_sets(ps);
     delete_hash_table(ps->set_of_triplets_core_term_lookahead);
     delete_hash_table(ps->set_of_tuples_core_matched_lengths);
-    delete_hash_table(ps->set_of_matched_lengthses);
-    delete_hash_table(ps-> map_stateset_to_core);
+    delete_hash_table(ps->cache_matched_lengthses);
+    delete_hash_table(ps->cache_stateset_cores);
     OS_DELETE(ps->triplet_core_term_lookahead_os);
     OS_DELETE(ps->sets_os);
     OS_DELETE(ps->set_parent_dotted_rule_ids_os);
