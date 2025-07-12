@@ -51,6 +51,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/yaep_structs.h"
 #include"parts/yaep_util.h"
 #include"parts/yaep_symbols.h"
+#include"parts/yaep_terminal_bitset.h"
 
 // XMQ STRUCTURES ////////////////////////////////////////////////
 
@@ -4964,6 +4965,7 @@ char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
 #include"parts/yaep_vlobject.c"
 #include"parts/yaep_util.c"
 #include"parts/yaep_symbols.c"
+#include"parts/yaep_terminal_bitset.c"
 #include"parts/yaep.c"
 
 #endif

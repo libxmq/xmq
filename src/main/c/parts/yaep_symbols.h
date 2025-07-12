@@ -67,6 +67,10 @@ void symb_empty(YaepParseState *ps, YaepSymbolStorage *symbs);
 
 void symbolstorage_free(YaepParseState *ps, YaepSymbolStorage *symbs);
 
+/* The following function prints symbol SYMB to file F.  Terminal is
+   printed with its code if CODE_P. */
+void symbol_print(MemBuffer *mb, YaepSymbol *symb, bool code_p);
+
 #define YAEP_SYMBOLS_MODULE
 
 #endif

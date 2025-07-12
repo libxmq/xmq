@@ -2793,7 +2793,52 @@ void symb_empty(YaepParseState *ps, YaepSymbolStorage *symbs);
 
 void symbolstorage_free(YaepParseState *ps, YaepSymbolStorage *symbs);
 
+/* The following function prints symbol SYMB to file F.  Terminal is
+   printed with its code if CODE_P. */
+void symbol_print(MemBuffer *mb, YaepSymbol *symb, bool code_p);
+
 #define YAEP_SYMBOLS_MODULE
+
+// PART H YAEP_TERMINAL_BITSET ////////////////////////////////////////
+
+#ifndef BUILDING_DIST_XMQ
+
+#include "yaep.h"
+#include "yaep_allocate.h"
+#include "yaep_hashtab.h"
+#include "yaep_structs.h"
+
+#endif
+
+unsigned terminal_bitset_hash(hash_table_entry_t s);
+bool terminal_bitset_eq(hash_table_entry_t s1, hash_table_entry_t s2);
+YaepTerminalSetStorage *termsetstorage_create(YaepGrammar *grammar);
+terminal_bitset_t *terminal_bitset_create(YaepParseState *ps);
+void terminal_bitset_clear(YaepParseState *ps, terminal_bitset_t* set);
+void terminal_bitset_fill(YaepParseState *ps, terminal_bitset_t* set);
+void terminal_bitset_copy(YaepParseState *ps, terminal_bitset_t *dest, terminal_bitset_t *src);
+/* Add all terminals from set OP with to SET.  Return true if SET has been changed.*/
+bool terminal_bitset_or(YaepParseState *ps, terminal_bitset_t *set, terminal_bitset_t *op);
+/* Add terminal with number NUM to SET.  Return true if SET has been changed.*/
+bool terminal_bitset_up(YaepParseState *ps, terminal_bitset_t *set, int num);
+/* Remove terminal with number NUM from SET.  Return true if SET has been changed.*/
+bool terminal_bitset_down(YaepParseState *ps, terminal_bitset_t *set, int num);
+/* Return true if terminal with number NUM is in SET. */
+int terminal_bitset_test(YaepParseState *ps, terminal_bitset_t *set, int num);
+/* The following function inserts terminal SET into the table and
+   returns its number.  If the set is already in table it returns -its
+   number - 1(which is always negative).  Don't set after
+   insertion!!! */
+int terminal_bitset_insert(YaepParseState *ps, terminal_bitset_t *set);
+/* The following function returns set which is in the table with number NUM. */
+terminal_bitset_t *terminal_bitset_from_table(YaepParseState *ps, int num);
+/* Print terminal SET into file F. */
+void terminal_bitset_print(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t *set);
+/* Free memory for terminal sets. */
+void terminal_bitset_empty(YaepTerminalSetStorage *term_sets);
+void termsetstorage_free(YaepGrammar *grammar, YaepTerminalSetStorage *term_sets);
+
+#define YAEP_TERMINAL_BITSET_MODULE
 
 
 // XMQ STRUCTURES ////////////////////////////////////////////////
@@ -19375,6 +19420,321 @@ void symbolstorage_free(YaepParseState *ps, YaepSymbolStorage *symbs)
     yaep_free(ps->run.grammar->alloc, symbs);
 }
 
+/* The following function prints symbol SYMB to file F.  Terminal is
+   printed with its code if CODE_P. */
+void symbol_print(MemBuffer *mb, YaepSymbol *symb, bool code_p)
+{
+    if (symb->is_terminal)
+    {
+        membuffer_append(mb, symb->hr);
+        return;
+    }
+    membuffer_append(mb, symb->repr);
+    if (code_p && symb->is_terminal)
+    {
+        membuffer_printf(mb, "(%d)", symb->u.terminal.code);
+    }
+}
+
+#endif
+
+// PART C YAEP_TERMINAL_BITSET_C ////////////////////////////////////////
+
+#ifdef YAEP_TERMINAL_BITSET_MODULE
+
+unsigned terminal_bitset_hash(hash_table_entry_t s)
+{
+    YaepTerminalSet *ts = (YaepTerminalSet*)s;
+    terminal_bitset_t *set = ts->set;
+    int num_elements = ts->num_elements;
+    terminal_bitset_t *bound = set + num_elements;
+    unsigned result = jauquet_prime_mod32;
+
+    while (set < bound)
+    {
+        result = result * hash_shift + *set++;
+    }
+    return result;
+}
+
+/* Equality of terminal sets. */
+bool terminal_bitset_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+{
+    YaepTerminalSet *ts1 = (YaepTerminalSet*)s1;
+    YaepTerminalSet *ts2 = (YaepTerminalSet*)s2;
+    terminal_bitset_t *i = ts1->set;
+    terminal_bitset_t *j = ts2->set;
+
+    assert(ts1->num_elements == ts2->num_elements);
+
+    int num_elements = ts1->num_elements;
+    terminal_bitset_t *i_bound = i + num_elements;
+
+    while (i < i_bound)
+    {
+        if (*i++ != *j++)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+YaepTerminalSetStorage *termsetstorage_create(YaepGrammar *grammar)
+{
+    void *mem;
+    YaepTerminalSetStorage *result;
+
+    mem = yaep_malloc(grammar->alloc, sizeof(YaepTerminalSetStorage));
+    result =(YaepTerminalSetStorage*) mem;
+    OS_CREATE(result->terminal_bitset_os, grammar->alloc, 0);
+    result->map_terminal_bitset_to_id = create_hash_table(grammar->alloc, 1000, terminal_bitset_hash, terminal_bitset_eq);
+    VLO_CREATE(result->terminal_bitset_vlo, grammar->alloc, 4096);
+    result->n_term_sets = result->n_term_sets_size = 0;
+
+    return result;
+}
+
+terminal_bitset_t *terminal_bitset_create(YaepParseState *ps)
+{
+    int size_bytes;
+    terminal_bitset_t *result;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
+
+    assert(sizeof(terminal_bitset_t) <= 8);
+
+    size_bytes = sizeof(terminal_bitset_t) * CALC_NUM_ELEMENTS(num_terminals);
+
+    OS_TOP_EXPAND(ps->run.grammar->term_sets_ptr->terminal_bitset_os, size_bytes);
+    result =(terminal_bitset_t*) OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->terminal_bitset_os);
+    OS_TOP_FINISH(ps->run.grammar->term_sets_ptr->terminal_bitset_os);
+    ps->run.grammar->term_sets_ptr->n_term_sets++;
+    ps->run.grammar->term_sets_ptr->n_term_sets_size += size_bytes;
+
+    return result;
+}
+
+void terminal_bitset_clear(YaepParseState *ps, terminal_bitset_t* set)
+{
+    terminal_bitset_t*bound;
+    int size;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
+
+    size = CALC_NUM_ELEMENTS(num_terminals);
+    bound = set + size;
+    while(set < bound)
+    {
+       *set++ = 0;
+    }
+}
+
+void terminal_bitset_fill(YaepParseState *ps, terminal_bitset_t* set)
+{
+    terminal_bitset_t*bound;
+    int size;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
+
+    size = CALC_NUM_ELEMENTS(num_terminals);
+    bound = set + size;
+    while(set < bound)
+    {
+        *set++ = (terminal_bitset_t)-1;
+    }
+}
+
+/* Copy SRC into DEST. */
+void terminal_bitset_copy(YaepParseState *ps, terminal_bitset_t *dest, terminal_bitset_t *src)
+{
+    terminal_bitset_t *bound;
+    int size;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
+
+    size = CALC_NUM_ELEMENTS(num_terminals);
+    bound = dest + size;
+
+    while (dest < bound)
+    {
+       *dest++ = *src++;
+    }
+}
+
+/* Add all terminals from set OP with to SET.  Return true if SET has been changed.*/
+bool terminal_bitset_or(YaepParseState *ps, terminal_bitset_t *set, terminal_bitset_t *op)
+{
+    terminal_bitset_t *bound;
+    int size;
+    bool changed_p;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
+
+    size = CALC_NUM_ELEMENTS(num_terminals);
+    bound = set + size;
+    changed_p = false;
+    while (set < bound)
+    {
+        if ((*set |*op) !=*set)
+        {
+            changed_p = true;
+        }
+       *set++ |= *op++;
+    }
+    return changed_p;
+}
+
+/* Add terminal with number NUM to SET.  Return true if SET has been changed.*/
+bool terminal_bitset_up(YaepParseState *ps, terminal_bitset_t *set, int num)
+{
+    const int bits_in_word = CHAR_BIT*sizeof(terminal_bitset_t);
+
+    int word_offset;
+    terminal_bitset_t bit_in_word;
+    bool changed_p;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
+
+    assert(num < num_terminals);
+
+    word_offset = num / bits_in_word;
+    bit_in_word = ((terminal_bitset_t)1) << (num % bits_in_word);
+    changed_p = (set[word_offset] & bit_in_word ? false : true);
+    set[word_offset] |= bit_in_word;
+
+    return changed_p;
+}
+
+/* Remove terminal with number NUM from SET.  Return true if SET has been changed.*/
+bool terminal_bitset_down(YaepParseState *ps, terminal_bitset_t *set, int num)
+{
+    const int bits_in_word = CHAR_BIT*sizeof(terminal_bitset_t);
+
+    int word_offset;
+    terminal_bitset_t bit_in_word;
+    bool changed_p;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
+
+    assert(num < num_terminals);
+
+    word_offset = num / bits_in_word;
+    bit_in_word = ((terminal_bitset_t)1) << (num % bits_in_word);
+    changed_p = (set[word_offset] & bit_in_word ? true : false);
+    set[word_offset] &= ~bit_in_word;
+
+    return changed_p;
+}
+
+/* Return true if terminal with number NUM is in SET. */
+int terminal_bitset_test(YaepParseState *ps, terminal_bitset_t *set, int num)
+{
+    const int bits_in_word = CHAR_BIT*sizeof(terminal_bitset_t);
+
+    int word_offset;
+    terminal_bitset_t bit_in_word;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
+
+    assert(num < num_terminals);
+
+    word_offset = num / bits_in_word;
+    bit_in_word = ((terminal_bitset_t)1) << (num % bits_in_word);
+
+    return (set[word_offset] & bit_in_word) != 0;
+}
+
+/* The following function inserts terminal SET into the table and
+   returns its number.  If the set is already in table it returns -its
+   number - 1(which is always negative).  Don't set after
+   insertion!!! */
+int terminal_bitset_insert(YaepParseState *ps, terminal_bitset_t *set)
+{
+    hash_table_entry_t *entry;
+    YaepTerminalSet term_set,*terminal_bitset_ptr;
+
+    term_set.set = set;
+    entry = find_hash_table_entry(ps->run.grammar->term_sets_ptr->map_terminal_bitset_to_id, &term_set, true);
+
+    if (*entry != NULL)
+    {
+        return -((YaepTerminalSet*)*entry)->id - 1;
+    }
+    else
+    {
+        OS_TOP_EXPAND(ps->run.grammar->term_sets_ptr->terminal_bitset_os, sizeof(YaepTerminalSet));
+        terminal_bitset_ptr = (YaepTerminalSet*)OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->terminal_bitset_os);
+        OS_TOP_FINISH(ps->run.grammar->term_sets_ptr->terminal_bitset_os);
+       *entry =(hash_table_entry_t) terminal_bitset_ptr;
+        terminal_bitset_ptr->set = set;
+        terminal_bitset_ptr->id = (VLO_LENGTH(ps->run.grammar->term_sets_ptr->terminal_bitset_vlo) / sizeof(YaepTerminalSet*));
+        terminal_bitset_ptr->num_elements = CALC_NUM_ELEMENTS(ps->run.grammar->symbs_ptr->num_terminals);
+
+        VLO_ADD_MEMORY(ps->run.grammar->term_sets_ptr->terminal_bitset_vlo, &terminal_bitset_ptr, sizeof(YaepTerminalSet*));
+
+        return((YaepTerminalSet*)*entry)->id;
+    }
+}
+
+/* The following function returns set which is in the table with number NUM. */
+terminal_bitset_t *terminal_bitset_from_table(YaepParseState *ps, int num)
+{
+    assert(num >= 0);
+    assert((long unsigned int)num < VLO_LENGTH(ps->run.grammar->term_sets_ptr->terminal_bitset_vlo) / sizeof(YaepTerminalSet*));
+
+    return ((YaepTerminalSet**)VLO_BEGIN(ps->run.grammar->term_sets_ptr->terminal_bitset_vlo))[num]->set;
+}
+
+/* Print terminal SET into file F. */
+void terminal_bitset_print(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t *set)
+{
+    bool first = true;
+    int num_set = 0;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
+    for (int i = 0; i < num_terminals; i++) num_set += terminal_bitset_test(ps, set, i);
+
+    if (num_set > num_terminals/2)
+    {
+        // Print the negation
+        membuffer_append(mb, "~[");
+        for (int i = 0; i < num_terminals; i++)
+        {
+            if (!terminal_bitset_test(ps, set, i))
+            {
+                if (!first) membuffer_append(mb, " "); else first = false;
+                symbol_print(mb, term_get(ps, i), false);
+            }
+        }
+        membuffer_append_char(mb, ']');
+    }
+
+    membuffer_append_char(mb, '[');
+    for (int i = 0; i < num_terminals; i++)
+    {
+        if (terminal_bitset_test(ps, set, i))
+        {
+            if (!first) membuffer_append(mb, " "); else first = false;
+            symbol_print(mb, term_get(ps, i), false);
+        }
+    }
+    membuffer_append_char(mb, ']');
+}
+
+/* Free memory for terminal sets. */
+void terminal_bitset_empty(YaepTerminalSetStorage *term_sets)
+{
+    if (term_sets == NULL) return;
+
+    VLO_NULLIFY(term_sets->terminal_bitset_vlo);
+    empty_hash_table(term_sets->map_terminal_bitset_to_id);
+    OS_EMPTY(term_sets->terminal_bitset_os);
+    term_sets->n_term_sets = term_sets->n_term_sets_size = 0;
+}
+
+void termsetstorage_free(YaepGrammar *grammar, YaepTerminalSetStorage *term_sets)
+{
+    if (term_sets == NULL) return;
+
+    VLO_DELETE(term_sets->terminal_bitset_vlo);
+    delete_hash_table(term_sets->map_terminal_bitset_to_id);
+    OS_DELETE(term_sets->terminal_bitset_os);
+    yaep_free(grammar->alloc, term_sets);
+    term_sets = NULL;
+}
+
 #endif
 
 // PART C YAEP_C ////////////////////////////////////////
@@ -19413,7 +19773,6 @@ static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule 
 static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *dotted_rule, int parent_dotted_rule_id);
 static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps);
 static void prepare_for_leading_dotted_rules(YaepParseState *ps);
-static void symbol_print(MemBuffer *mb, YaepSymbol *symb, bool code_p);
 static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 
 // Global variables /////////////////////////////////////////////////////
@@ -19496,298 +19855,6 @@ static void print_coresymbvects(MemBuffer*mb, YaepParseState *ps, YaepCoreSymbTo
     }
 }
 
-static unsigned terminal_bitset_hash(hash_table_entry_t s)
-{
-    YaepTerminalSet *ts = (YaepTerminalSet*)s;
-    terminal_bitset_t *set = ts->set;
-    int num_elements = ts->num_elements;
-    terminal_bitset_t *bound = set + num_elements;
-    unsigned result = jauquet_prime_mod32;
-
-    while (set < bound)
-    {
-        result = result * hash_shift + *set++;
-    }
-    return result;
-}
-
-/* Equality of terminal sets. */
-static bool terminal_bitset_eq(hash_table_entry_t s1, hash_table_entry_t s2)
-{
-    YaepTerminalSet *ts1 = (YaepTerminalSet*)s1;
-    YaepTerminalSet *ts2 = (YaepTerminalSet*)s2;
-    terminal_bitset_t *i = ts1->set;
-    terminal_bitset_t *j = ts2->set;
-
-    assert(ts1->num_elements == ts2->num_elements);
-
-    int num_elements = ts1->num_elements;
-    terminal_bitset_t *i_bound = i + num_elements;
-
-    while (i < i_bound)
-    {
-        if (*i++ != *j++)
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-static YaepTerminalSetStorage *termsetstorage_create(YaepGrammar *grammar)
-{
-    void *mem;
-    YaepTerminalSetStorage *result;
-
-    mem = yaep_malloc(grammar->alloc, sizeof(YaepTerminalSetStorage));
-    result =(YaepTerminalSetStorage*) mem;
-    OS_CREATE(result->terminal_bitset_os, grammar->alloc, 0);
-    result->map_terminal_bitset_to_id = create_hash_table(grammar->alloc, 1000, terminal_bitset_hash, terminal_bitset_eq);
-    VLO_CREATE(result->terminal_bitset_vlo, grammar->alloc, 4096);
-    result->n_term_sets = result->n_term_sets_size = 0;
-
-    return result;
-}
-
-static terminal_bitset_t *terminal_bitset_create(YaepParseState *ps)
-{
-    int size_bytes;
-    terminal_bitset_t *result;
-    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
-
-    assert(sizeof(terminal_bitset_t) <= 8);
-
-    size_bytes = sizeof(terminal_bitset_t) * CALC_NUM_ELEMENTS(num_terminals);
-
-    OS_TOP_EXPAND(ps->run.grammar->term_sets_ptr->terminal_bitset_os, size_bytes);
-    result =(terminal_bitset_t*) OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->terminal_bitset_os);
-    OS_TOP_FINISH(ps->run.grammar->term_sets_ptr->terminal_bitset_os);
-    ps->run.grammar->term_sets_ptr->n_term_sets++;
-    ps->run.grammar->term_sets_ptr->n_term_sets_size += size_bytes;
-
-    return result;
-}
-
-static void terminal_bitset_clear(YaepParseState *ps, terminal_bitset_t* set)
-{
-    terminal_bitset_t*bound;
-    int size;
-    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
-
-    size = CALC_NUM_ELEMENTS(num_terminals);
-    bound = set + size;
-    while(set < bound)
-    {
-       *set++ = 0;
-    }
-}
-
-static void terminal_bitset_fill(YaepParseState *ps, terminal_bitset_t* set)
-{
-    terminal_bitset_t*bound;
-    int size;
-    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
-
-    size = CALC_NUM_ELEMENTS(num_terminals);
-    bound = set + size;
-    while(set < bound)
-    {
-        *set++ = (terminal_bitset_t)-1;
-    }
-}
-
-/* Copy SRC into DEST. */
-static void terminal_bitset_copy(YaepParseState *ps, terminal_bitset_t *dest, terminal_bitset_t *src)
-{
-    terminal_bitset_t *bound;
-    int size;
-    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
-
-    size = CALC_NUM_ELEMENTS(num_terminals);
-    bound = dest + size;
-
-    while (dest < bound)
-    {
-       *dest++ = *src++;
-    }
-}
-
-/* Add all terminals from set OP with to SET.  Return true if SET has been changed.*/
-static bool terminal_bitset_or(YaepParseState *ps, terminal_bitset_t *set, terminal_bitset_t *op)
-{
-    terminal_bitset_t *bound;
-    int size;
-    bool changed_p;
-    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
-
-    size = CALC_NUM_ELEMENTS(num_terminals);
-    bound = set + size;
-    changed_p = false;
-    while (set < bound)
-    {
-        if ((*set |*op) !=*set)
-        {
-            changed_p = true;
-        }
-       *set++ |= *op++;
-    }
-    return changed_p;
-}
-
-/* Add terminal with number NUM to SET.  Return true if SET has been changed.*/
-static bool terminal_bitset_up(YaepParseState *ps, terminal_bitset_t *set, int num)
-{
-    const int bits_in_word = CHAR_BIT*sizeof(terminal_bitset_t);
-
-    int word_offset;
-    terminal_bitset_t bit_in_word;
-    bool changed_p;
-    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
-
-    assert(num < num_terminals);
-
-    word_offset = num / bits_in_word;
-    bit_in_word = ((terminal_bitset_t)1) << (num % bits_in_word);
-    changed_p = (set[word_offset] & bit_in_word ? false : true);
-    set[word_offset] |= bit_in_word;
-
-    return changed_p;
-}
-
-/* Remove terminal with number NUM from SET.  Return true if SET has been changed.*/
-static bool terminal_bitset_down(YaepParseState *ps, terminal_bitset_t *set, int num)
-{
-    const int bits_in_word = CHAR_BIT*sizeof(terminal_bitset_t);
-
-    int word_offset;
-    terminal_bitset_t bit_in_word;
-    bool changed_p;
-    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
-
-    assert(num < num_terminals);
-
-    word_offset = num / bits_in_word;
-    bit_in_word = ((terminal_bitset_t)1) << (num % bits_in_word);
-    changed_p = (set[word_offset] & bit_in_word ? true : false);
-    set[word_offset] &= ~bit_in_word;
-
-    return changed_p;
-}
-
-/* Return true if terminal with number NUM is in SET. */
-static int terminal_bitset_test(YaepParseState *ps, terminal_bitset_t *set, int num)
-{
-    const int bits_in_word = CHAR_BIT*sizeof(terminal_bitset_t);
-
-    int word_offset;
-    terminal_bitset_t bit_in_word;
-    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
-
-    assert(num < num_terminals);
-
-    word_offset = num / bits_in_word;
-    bit_in_word = ((terminal_bitset_t)1) << (num % bits_in_word);
-
-    return (set[word_offset] & bit_in_word) != 0;
-}
-
-/* The following function inserts terminal SET into the table and
-   returns its number.  If the set is already in table it returns -its
-   number - 1(which is always negative).  Don't set after
-   insertion!!! */
-static int terminal_bitset_insert(YaepParseState *ps, terminal_bitset_t *set)
-{
-    hash_table_entry_t *entry;
-    YaepTerminalSet term_set,*terminal_bitset_ptr;
-
-    term_set.set = set;
-    entry = find_hash_table_entry(ps->run.grammar->term_sets_ptr->map_terminal_bitset_to_id, &term_set, true);
-
-    if (*entry != NULL)
-    {
-        return -((YaepTerminalSet*)*entry)->id - 1;
-    }
-    else
-    {
-        OS_TOP_EXPAND(ps->run.grammar->term_sets_ptr->terminal_bitset_os, sizeof(YaepTerminalSet));
-        terminal_bitset_ptr = (YaepTerminalSet*)OS_TOP_BEGIN(ps->run.grammar->term_sets_ptr->terminal_bitset_os);
-        OS_TOP_FINISH(ps->run.grammar->term_sets_ptr->terminal_bitset_os);
-       *entry =(hash_table_entry_t) terminal_bitset_ptr;
-        terminal_bitset_ptr->set = set;
-        terminal_bitset_ptr->id = (VLO_LENGTH(ps->run.grammar->term_sets_ptr->terminal_bitset_vlo) / sizeof(YaepTerminalSet*));
-        terminal_bitset_ptr->num_elements = CALC_NUM_ELEMENTS(ps->run.grammar->symbs_ptr->num_terminals);
-
-        VLO_ADD_MEMORY(ps->run.grammar->term_sets_ptr->terminal_bitset_vlo, &terminal_bitset_ptr, sizeof(YaepTerminalSet*));
-
-        return((YaepTerminalSet*)*entry)->id;
-    }
-}
-
-/* The following function returns set which is in the table with number NUM. */
-static terminal_bitset_t *terminal_bitset_from_table(YaepParseState *ps, int num)
-{
-    assert(num >= 0);
-    assert((long unsigned int)num < VLO_LENGTH(ps->run.grammar->term_sets_ptr->terminal_bitset_vlo) / sizeof(YaepTerminalSet*));
-
-    return ((YaepTerminalSet**)VLO_BEGIN(ps->run.grammar->term_sets_ptr->terminal_bitset_vlo))[num]->set;
-}
-
-/* Print terminal SET into file F. */
-static void terminal_bitset_print(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t *set)
-{
-    bool first = true;
-    int num_set = 0;
-    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
-    for (int i = 0; i < num_terminals; i++) num_set += terminal_bitset_test(ps, set, i);
-
-    if (num_set > num_terminals/2)
-    {
-        // Print the negation
-        membuffer_append(mb, "~[");
-        for (int i = 0; i < num_terminals; i++)
-        {
-            if (!terminal_bitset_test(ps, set, i))
-            {
-                if (!first) membuffer_append(mb, " "); else first = false;
-                symbol_print(mb, term_get(ps, i), false);
-            }
-        }
-        membuffer_append_char(mb, ']');
-    }
-
-    membuffer_append_char(mb, '[');
-    for (int i = 0; i < num_terminals; i++)
-    {
-        if (terminal_bitset_test(ps, set, i))
-        {
-            if (!first) membuffer_append(mb, " "); else first = false;
-            symbol_print(mb, term_get(ps, i), false);
-        }
-    }
-    membuffer_append_char(mb, ']');
-}
-
-/* Free memory for terminal sets. */
-static void terminal_bitset_empty(YaepTerminalSetStorage *term_sets)
-{
-    if (term_sets == NULL) return;
-
-    VLO_NULLIFY(term_sets->terminal_bitset_vlo);
-    empty_hash_table(term_sets->map_terminal_bitset_to_id);
-    OS_EMPTY(term_sets->terminal_bitset_os);
-    term_sets->n_term_sets = term_sets->n_term_sets_size = 0;
-}
-
-static void termsetstorage_free(YaepGrammar *grammar, YaepTerminalSetStorage *term_sets)
-{
-    if (term_sets == NULL) return;
-
-    VLO_DELETE(term_sets->terminal_bitset_vlo);
-    delete_hash_table(term_sets->map_terminal_bitset_to_id);
-    OS_DELETE(term_sets->terminal_bitset_os);
-    yaep_free(grammar->alloc, term_sets);
-    term_sets = NULL;
-}
 
 /* Initialize work with rules and returns pointer to rules storage. */
 static YaepRuleStorage *rulestorage_create(YaepGrammar *grammar)
@@ -24092,23 +24159,6 @@ void yaepFreeTree(YaepTreeNode *root, void (*parse_free)(void*), void (*termcb)(
      On the second walk, we recursively free the tree nodes. */
     free_tree_reduce(root);
     free_tree_sweep(root, parse_free, termcb);
-}
-
-
-/* The following function prints symbol SYMB to file F.  Terminal is
-   printed with its code if CODE_P. */
-static void symbol_print(MemBuffer *mb, YaepSymbol *symb, bool code_p)
-{
-    if (symb->is_terminal)
-    {
-        membuffer_append(mb, symb->hr);
-        return;
-    }
-    membuffer_append(mb, symb->repr);
-    if (code_p && symb->is_terminal)
-    {
-        membuffer_printf(mb, "(%d)", symb->u.terminal.code);
-    }
 }
 
 /* The following function prints RULE with its translation(if TRANS_P) to file F.*/

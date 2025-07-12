@@ -81,6 +81,7 @@ do_part yaep
 do_part yaep_structs
 do_part yaep_util
 do_part yaep_symbols
+do_part yaep_terminal_bitset
 
 
 do_version
