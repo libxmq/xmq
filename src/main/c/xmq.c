@@ -48,6 +48,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/yaep_objstack.h"
 #include"parts/yaep_vlobject.h"
 #include"parts/yaep.h"
+#include"parts/yaep_structs.h"
 
 // XMQ STRUCTURES ////////////////////////////////////////////////
 

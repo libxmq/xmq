@@ -78,6 +78,7 @@ do_part yaep_hashtab
 do_part yaep_objstack
 do_part yaep_vlobject
 do_part yaep
+do_part yaep_structs
 
 
 do_version
