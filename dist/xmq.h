@@ -501,7 +501,7 @@ void xmqSetPrintAllParsesIXML(XMQParseState *state, bool all_parses);
    @state: the parse state.
    @try_recover: if true then try to recover a failed parse.
 
-   If the parse fails then try to recover.
+   If the parse fails then try to recover. Default is to fail.
 */
 void xmqSetTryToRecoverIXML(XMQParseState *state, bool try_recover);
 

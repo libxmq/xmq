@@ -79,6 +79,8 @@ do_part yaep_objstack
 do_part yaep_vlobject
 do_part yaep
 do_part yaep_structs
+do_part yaep_util
+do_part yaep_symbols
 
 
 do_version

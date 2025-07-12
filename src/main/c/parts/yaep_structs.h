@@ -32,6 +32,18 @@
 #ifndef YAEP_STRUCTS_H
 #define YAEP_STRUCTS_H
 
+#ifndef BUILDING_DIST_XMQ
+
+#include <stdbool.h>
+
+#include "yaep.h"
+#include "yaep_allocate.h"
+#include "yaep_hashtab.h"
+#include "yaep_objstack.h"
+#include "yaep_vlobject.h"
+
+#endif
+
 /* Terminals are stored a in term set using bits in a bit array.
    The array consists of long ints, typedefed as terminal_bitset_el_t.
    A long int is 8 bytes, ie 64 bits. */
@@ -814,6 +826,8 @@ struct YaepParseState
        grammar more compact.  It is used only when we want all
        translations. */
     hash_table_t map_rule_orig_statesetind_to_internalstate;        /* Key is rule, origin, state_set_k.*/
+
+    int core_symb_to_pred_comps_counter;
 };
 typedef struct YaepParseState YaepParseState;
 
