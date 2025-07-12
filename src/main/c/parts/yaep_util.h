@@ -27,7 +27,34 @@
 #ifndef YAEP_UTIL_H
 #define YAEP_UTIL_H
 
+#ifndef BUILDING_DIST_XMQ
+
+#include <stdio.h>
+
+#endif
+
+// Debug functions available to gdb.
+
+void dbg_breakpoint();
+
+void dbg_print_core(YaepParseState *ps, YaepStateSetCore *c);
+void dbg_print_coresymbvects(YaepParseState *ps, YaepCoreSymbToPredComps *v);
+void dbg_print_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule);
+
+void fetch_state_vars(YaepParseState *ps, YaepStateSet *state_set, StateVars *out);
+int find_matched_length(YaepParseState *ps, YaepStateSet *state_set, StateVars *vars, int dotted_rule_id);
+
 bool is_not_rule(YaepSymbol *symb);
+
+void print_core(MemBuffer*mb, YaepStateSetCore *c, YaepStateSet *s);
+void print_coresymbvects(MemBuffer*mb, YaepParseState *ps, YaepCoreSymbToPredComps *v);
+void print_dotted_rule(MemBuffer *mb, YaepParseState *ps, int from_i, YaepDottedRule *dotted_rule, int matched_length, int parent_id, const char *why);
+void print_rule(MemBuffer *mb, YaepParseState *ps, YaepRule *rule);
+void print_rule_with_dot(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, int pos);
+void print_state_set(MemBuffer *mb, YaepParseState *ps, YaepStateSet *set, int from_i);
+void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
+void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p);
+void print_parse(YaepParseState *ps, FILE* f, YaepTreeNode*root);
 
 #define YAEP_UTIL_MODULE
 
