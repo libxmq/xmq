@@ -3967,19 +3967,19 @@ static void trace_lookahead_predicts_no_match(YaepParseState *ps, int lookahead_
     debug_mb("ixml.pa.c=", mb);
 }
 
-void try_scan_token(YaepParseState *ps, YaepStateSet *set,
-                    YaepDottedRule *dotted_rule, int rule_index_in_core,
-                    int lookahead_term_id, int local_lookahead_level,
-                    int add_matched_length);
+void try_eat_token(const char *info, YaepParseState *ps, YaepStateSet *set,
+                   YaepDottedRule *dotted_rule, int rule_index_in_core,
+                   int lookahead_term_id, int local_lookahead_level,
+                   int add_matched_length);
 
-void try_scan_token(YaepParseState *ps, YaepStateSet *set,
-                    YaepDottedRule *dotted_rule, int rule_index_in_core,
-                    int lookahead_term_id, int local_lookahead_level,
-                    int add_matched_length)
+void try_eat_token(const char *info, YaepParseState *ps, YaepStateSet *set,
+                   YaepDottedRule *dotted_rule, int rule_index_in_core,
+                   int lookahead_term_id, int local_lookahead_level,
+                   int add_matched_length)
 {
     YaepDottedRule *new_dotted_rule = create_dotted_rule(ps,
                                                          dotted_rule->rule, dotted_rule->dot_j + 1,
-                                                         dotted_rule->dyn_lookahead_context, "scan");
+                                                         dotted_rule->dyn_lookahead_context, info);
     if (local_lookahead_level != 0 &&
         !terminal_bitset_test(ps, new_dotted_rule->lookahead, lookahead_term_id) &&
         !terminal_bitset_test(ps, new_dotted_rule->lookahead, ps->run.grammar->term_error_id))
@@ -3994,7 +3994,7 @@ void try_scan_token(YaepParseState *ps, YaepStateSet *set,
     // This combo dotted_rule + matched_length did not already exist, lets add it.
     // But first test if there is a not lookahead that blocks....
     YaepSymbol *sym = new_dotted_rule->rule->rhs[new_dotted_rule->dot_j];
-    if (!blocked_by_lookahead(ps, new_dotted_rule, new_dotted_rule->rule->rhs[new_dotted_rule->dot_j], 1, "lookahead4"))
+    if (!blocked_by_lookahead(ps, new_dotted_rule, new_dotted_rule->rule->rhs[new_dotted_rule->dot_j], 1, info))
     {
         if (!dotted_rule_matched_length_test_and_set(ps, new_dotted_rule, matched_length))
         {
@@ -4013,7 +4013,7 @@ void check_predicted_dotted_rules(YaepParseState *ps,
     {
         int rule_index_in_core = predictions->ids[i];
         YaepDottedRule *dotted_rule = set->core->dotted_rules[rule_index_in_core];
-        try_scan_token(ps, set, dotted_rule, rule_index_in_core, lookahead_term_id, local_lookahead_level, 1);
+        try_eat_token("scan", ps, set, dotted_rule, rule_index_in_core, lookahead_term_id, local_lookahead_level, 1);
     }
 }
 
@@ -4050,33 +4050,11 @@ void check_leading_dotted_rules(YaepParseState *ps, YaepStateSet *set, int looka
             curr_el = prev_core_symb_ids->predictions.ids;
             bound = curr_el + prev_core_symb_ids->predictions.len;
             assert(curr_el != NULL);
-            YaepDottedRule **prev_dotted_rules = prev_set->core->dotted_rules;
             while (curr_el < bound)
             {
-                int dotted_rule_id = *curr_el++;
-                YaepDottedRule *dotted_rule = prev_dotted_rules[dotted_rule_id];
-                new_dotted_rule = create_dotted_rule(ps, dotted_rule->rule, dotted_rule->dot_j + 1, dotted_rule->dyn_lookahead_context, "complete");
-                if (local_lookahead_level != 0 &&
-                    !terminal_bitset_test(ps, new_dotted_rule->lookahead, lookahead_term_id) &&
-                    !terminal_bitset_test(ps, new_dotted_rule->lookahead, ps->run.grammar->term_error_id))
-                {
-                    if (ps->run.trace)
-                        trace_lookahead_predicts_no_match(ps, lookahead_term_id, new_dotted_rule, "completepredict2");
-
-                    continue;
-                }
-                int matched_length = lookup_matched_length(ps, prev_set, dotted_rule_id);
-                matched_length += new_matched_length;
-                // This combo dotted_rule + matched_length did not already exist, lets add it.
-                // But first test if there is a not lookahead that blocks....
-                YaepSymbol *sym = new_dotted_rule->rule->rhs[new_dotted_rule->dot_j];
-                if (!blocked_by_lookahead(ps, new_dotted_rule, sym, 1, "lookahead6gurka"))
-                {
-                    if (!dotted_rule_matched_length_test_and_set(ps, new_dotted_rule, matched_length))
-                    {
-                        set_add_dotted_rule_with_matched_length(ps, new_dotted_rule, matched_length);
-                    }
-                }
+                int rule_index_in_core = *curr_el++;
+                YaepDottedRule *dotted_rule = prev_set->core->dotted_rules[rule_index_in_core];
+                try_eat_token("complete", ps, prev_set, dotted_rule, rule_index_in_core, lookahead_term_id, local_lookahead_level, new_matched_length);
             }
         }
     }
