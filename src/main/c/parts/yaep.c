@@ -5039,15 +5039,11 @@ void loop_stack(YaepTreeNode **result,
 
     if (!ps->run.grammar->one_parse_p)
     {
-        void *mem;
-
-        /* We need this array to reuse terminal nodes only for generation of several parses. */
-        mem = yaep_malloc(ps->run.grammar->alloc, sizeof(YaepTreeNode*)* ps->input_len);
-        term_node_array = (YaepTreeNode**)mem;
-        for (int i = 0; i < ps->input_len; i++)
-        {
-            term_node_array[i] = NULL;
-        }
+        /* We need this array to reuse terminal nodes when building a parse tree with ALT nodes.
+           I.e. a tree with multiple possible parses. */
+        size_t term_node_array_size = ps->input_len * sizeof(YaepTreeNode*);
+        term_node_array = (YaepTreeNode**)yaep_malloc(ps->run.grammar->alloc, term_node_array_size);
+        memset(term_node_array, 0, term_node_array_size);
         /* The following is used to check necessity to create current state with different state_set_k. */
         VLO_CREATE(orig_states, ps->run.grammar->alloc, 0);
     }
