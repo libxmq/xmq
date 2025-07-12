@@ -5031,7 +5031,6 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     YaepParseTreeBuildState root_state;
     YaepTreeNode root_anode;
 
-    YaepParseTreeBuildState *state, *orig_state, *curr_state;
     YaepParseTreeBuildState *table_state, *parent_anode_state;
 
     YaepTreeNode *empty_node, *node, *error_node;
@@ -5093,7 +5092,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     root_state.anode = &root_anode;
 
     // Push a new state on the stack
-    state = parse_state_alloc(ps);
+    YaepParseTreeBuildState *state = parse_state_alloc(ps);
     VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
     ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
 
@@ -5271,7 +5270,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
         assert(core_symb_ids->completions.len != 0);
         n_candidates = 0;
-        orig_state = state;
+        YaepParseTreeBuildState *orig_state = state;
         if (!ps->run.grammar->one_parse_p)
         {
             VLO_NULLIFY(orig_states);
@@ -5373,7 +5372,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
             if (parent_anode != NULL && rhs_offset >= 0)
             {
                 /* We should generate and use the translation of the nonterminal. */
-                curr_state = orig_state;
+                YaepParseTreeBuildState *curr_state = orig_state;
                 anode = orig_state->anode;
                 /* We need translation of the rule. */
                 if (n_candidates != 0)
