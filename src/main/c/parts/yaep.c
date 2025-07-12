@@ -473,15 +473,13 @@ static unsigned matched_lengths_hash(hash_table_entry_t s)
 }
 
 /* Compare all the matched_lengths stored in the two state sets. */
-static bool matched_lengths_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool matched_lengths_eq(YaepStateSet *s1, YaepStateSet *s2)
 {
-    YaepStateSet *st1 = (YaepStateSet*)s1;
-    YaepStateSet *st2 = (YaepStateSet*)s2;
-    int *i = st1->matched_lengths;
-    int *j = st2->matched_lengths;
-    int num_matched_lengths = st1->core->num_started_dotted_rules;
+    int *i = s1->matched_lengths;
+    int *j = s2->matched_lengths;
+    int num_matched_lengths = s1->core->num_started_dotted_rules;
 
-    if (num_matched_lengths != st2->core->num_started_dotted_rules)
+    if (num_matched_lengths != s2->core->num_started_dotted_rules)
     {
         return false;
     }
@@ -515,24 +513,24 @@ static bool stateset_core_matched_lengths_eq(hash_table_entry_t s1, hash_table_e
 }
 
 /* Hash of triple(set, term, lookahead). */
-static unsigned stateset_term_lookahead_hash(hash_table_entry_t s)
+static unsigned stateset_core_term_lookahead_hash(hash_table_entry_t s)
 {
-    YaepStateSet *set = ((YaepStateSetTermLookAhead*)s)->set;
-    YaepSymbol *term = ((YaepStateSetTermLookAhead*)s)->term;
-    int lookahead = ((YaepStateSetTermLookAhead*)s)->lookahead;
+    YaepStateSet *set = ((YaepStateSetCoreTermLookAhead*)s)->set;
+    YaepSymbol *term = ((YaepStateSetCoreTermLookAhead*)s)->term;
+    int lookahead = ((YaepStateSetCoreTermLookAhead*)s)->lookahead;
 
     return ((stateset_core_matched_lengths_hash(set)* hash_shift + term->u.terminal.term_id)* hash_shift + lookahead);
 }
 
 /* Equality of tripes(set, term, lookahead).*/
-static bool stateset_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool stateset_core_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
 {
-    YaepStateSet *set1 =((YaepStateSetTermLookAhead*)s1)->set;
-    YaepStateSet *set2 =((YaepStateSetTermLookAhead*)s2)->set;
-    YaepSymbol *term1 =((YaepStateSetTermLookAhead*)s1)->term;
-    YaepSymbol *term2 =((YaepStateSetTermLookAhead*)s2)->term;
-    int lookahead1 =((YaepStateSetTermLookAhead*)s1)->lookahead;
-    int lookahead2 =((YaepStateSetTermLookAhead*)s2)->lookahead;
+    YaepStateSet *set1 =((YaepStateSetCoreTermLookAhead*)s1)->set;
+    YaepStateSet *set2 =((YaepStateSetCoreTermLookAhead*)s2)->set;
+    YaepSymbol *term1 =((YaepStateSetCoreTermLookAhead*)s1)->term;
+    YaepSymbol *term2 =((YaepStateSetCoreTermLookAhead*)s2)->term;
+    int lookahead1 =((YaepStateSetCoreTermLookAhead*)s1)->lookahead;
+    int lookahead2 =((YaepStateSetCoreTermLookAhead*)s2)->lookahead;
 
     return set1 == set2 && term1 == term2 && lookahead1 == lookahead2;
 }
@@ -627,11 +625,11 @@ static void set_init(YaepParseState *ps, int n_input)
     OS_CREATE(ps->triplet_core_term_lookahead_os, ps->run.grammar->alloc, 0);
 
     ps->cache_stateset_cores = create_hash_table(ps->run.grammar->alloc, 2000, stateset_core_hash, (hash_table_eq_function)stateset_core_eq);
-    ps->cache_matched_lengthses = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, matched_lengths_hash, matched_lengths_eq);
-    ps->set_of_tuples_core_matched_lengths = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
-                                stateset_core_matched_lengths_hash, stateset_core_matched_lengths_eq);
-    ps->set_of_triplets_core_term_lookahead = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
-                                               stateset_term_lookahead_hash, stateset_term_lookahead_eq);
+    ps->cache_stateset_matched_lengths = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, matched_lengths_hash, (hash_table_eq_function)matched_lengths_eq);
+    ps->cache_stateset_core_matched_lengths = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
+                                                                stateset_core_matched_lengths_hash, stateset_core_matched_lengths_eq);
+    ps->cache_stateset_core_term_lookahead = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
+                                               stateset_core_term_lookahead_hash, stateset_core_term_lookahead_eq);
     ps->num_set_cores = ps->num_set_core_start_dotted_rules= 0;
     ps->num_set_matched_lengths = ps->num_set_matched_lengths_len = ps->num_parent_dotted_rule_ids = 0;
     ps->num_sets_total = ps->num_dotted_rules_total= 0;
@@ -863,7 +861,7 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
 #ifdef USE_SET_HASH_TABLE
     // Lookup matched_lengths from cache table.
     setup_set_matched_lengths_hash(ps->new_set);
-    entry = find_hash_table_entry(ps->cache_matched_lengthses, ps->new_set, true);
+    entry = find_hash_table_entry(ps->cache_stateset_matched_lengths, ps->new_set, true);
     if (*entry != NULL)
     {
         // The matched lengths already existed use the cache.
@@ -911,7 +909,7 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
     }
 #ifdef USE_SET_HASH_TABLE
     /* Insert set into table.*/
-    entry = find_hash_table_entry(ps->set_of_tuples_core_matched_lengths, ps->new_set, true);
+    entry = find_hash_table_entry(ps->cache_stateset_core_matched_lengths, ps->new_set, true);
     if (*entry == NULL)
     {
        *entry =(hash_table_entry_t)ps->new_set;
@@ -943,9 +941,9 @@ static void set_new_core_stop(YaepParseState *ps)
 static void free_sets(YaepParseState *ps)
 {
     free_dotted_rule_matched_length_sets(ps);
-    delete_hash_table(ps->set_of_triplets_core_term_lookahead);
-    delete_hash_table(ps->set_of_tuples_core_matched_lengths);
-    delete_hash_table(ps->cache_matched_lengthses);
+    delete_hash_table(ps->cache_stateset_core_term_lookahead);
+    delete_hash_table(ps->cache_stateset_core_matched_lengths);
+    delete_hash_table(ps->cache_stateset_matched_lengths);
     delete_hash_table(ps->cache_stateset_cores);
     OS_DELETE(ps->triplet_core_term_lookahead_os);
     OS_DELETE(ps->sets_os);
@@ -2854,18 +2852,18 @@ static int try_to_recover(YaepParseState *ps)
     return 0;
 }
 
-static YaepStateSetTermLookAhead *lookup_cached_set(YaepParseState *ps,
+static YaepStateSetCoreTermLookAhead *lookup_cached_set(YaepParseState *ps,
                                                     YaepSymbol *THE_TERMINAL,
                                                     YaepSymbol *NEXT_TERMINAL,
                                                     YaepStateSet *set)
 {
     int i;
     hash_table_entry_t *entry;
-    YaepStateSetTermLookAhead *new_core_term_lookahead;
+    YaepStateSetCoreTermLookAhead *new_core_term_lookahead;
 
-    OS_TOP_EXPAND(ps->triplet_core_term_lookahead_os, sizeof(YaepStateSetTermLookAhead));
+    OS_TOP_EXPAND(ps->triplet_core_term_lookahead_os, sizeof(YaepStateSetCoreTermLookAhead));
 
-    new_core_term_lookahead = (YaepStateSetTermLookAhead*) OS_TOP_BEGIN(ps->triplet_core_term_lookahead_os);
+    new_core_term_lookahead = (YaepStateSetCoreTermLookAhead*) OS_TOP_BEGIN(ps->triplet_core_term_lookahead_os);
     new_core_term_lookahead->set = set;
     new_core_term_lookahead->term = THE_TERMINAL;
     new_core_term_lookahead->lookahead = NEXT_TERMINAL?NEXT_TERMINAL->u.terminal.term_id:-1;
@@ -2877,7 +2875,7 @@ static YaepStateSetTermLookAhead *lookup_cached_set(YaepParseState *ps,
     new_core_term_lookahead->curr = 0;
     // We write into the hashtable using the entry point! Yay!
     // I.e. there is no write hash table entry function.....
-    entry = find_hash_table_entry(ps->set_of_triplets_core_term_lookahead, new_core_term_lookahead, true);
+    entry = find_hash_table_entry(ps->cache_stateset_core_term_lookahead, new_core_term_lookahead, true);
 
     if (*entry != NULL)
     {
@@ -2886,13 +2884,13 @@ static YaepStateSetTermLookAhead *lookup_cached_set(YaepParseState *ps,
         OS_TOP_NULLIFY(ps->triplet_core_term_lookahead_os);
         for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
         {
-            if ((s = ((YaepStateSetTermLookAhead*)*entry)->result[i]) == NULL)
+            if ((s = ((YaepStateSetCoreTermLookAhead*)*entry)->result[i]) == NULL)
             {
                 break;
             }
             else if (check_cached_transition_set(ps,
                                                  s,
-                                                 ((YaepStateSetTermLookAhead*)*entry)->place[i]))
+                                                 ((YaepStateSetCoreTermLookAhead*)*entry)->place[i]))
             {
                 ps->new_set = s;
                 ps->n_goto_successes++;
@@ -2908,11 +2906,11 @@ static YaepStateSetTermLookAhead *lookup_cached_set(YaepParseState *ps,
         ps->num_triplets_core_term_lookahead++;
     }
 
-    return (YaepStateSetTermLookAhead*)*entry;
+    return (YaepStateSetCoreTermLookAhead*)*entry;
 }
 
 /* Save(set, term, lookahead) -> new_set in the table. */
-static void save_cached_set(YaepParseState *ps, YaepStateSetTermLookAhead *entry, YaepSymbol *NEXT_TERMINAL)
+static void save_cached_set(YaepParseState *ps, YaepStateSetCoreTermLookAhead *entry, YaepSymbol *NEXT_TERMINAL)
 {
     int i = entry->curr;
     entry->result[i] = ps->new_set;
@@ -2959,7 +2957,7 @@ static void perform_parse(YaepParseState *ps)
 #ifdef USE_SET_HASH_TABLE
         // This command also adds the set to the hashtable if it does not already exist.
         // As a side effect it writes into ps->new_set
-        YaepStateSetTermLookAhead *entry = lookup_cached_set(ps, THE_TERMINAL, NEXT_TERMINAL, set);
+        YaepStateSetCoreTermLookAhead *entry = lookup_cached_set(ps, THE_TERMINAL, NEXT_TERMINAL, set);
 #endif
 
         if (ps->new_set == NULL)

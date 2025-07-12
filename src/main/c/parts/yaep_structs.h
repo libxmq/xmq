@@ -122,8 +122,8 @@ typedef struct YaepDottedRule YaepDottedRule;
 struct YaepInputToken;
 typedef struct YaepInputToken YaepInputToken;
 
-struct YaepStateSetTermLookAhead;
-typedef struct YaepStateSetTermLookAhead YaepStateSetTermLookAhead;
+struct YaepStateSetCoreTermLookAhead;
+typedef struct YaepStateSetCoreTermLookAhead YaepStateSetCoreTermLookAhead;
 
 struct YaepParseTreeBuildState;
 typedef struct YaepParseTreeBuildState YaepParseTreeBuildState;
@@ -453,7 +453,7 @@ struct YaepInputToken
 };
 
 /* The triple and possible goto sets for it. */
-struct YaepStateSetTermLookAhead
+struct YaepStateSetCoreTermLookAhead
 {
     YaepStateSet*set;
     YaepSymbol*term;
@@ -673,12 +673,10 @@ struct YaepParseState
 
     /* The following 3 tables contain references for sets which refers
        for set cores or matched_lengths or both which are in the tables.*/
-    hash_table_t cache_stateset_cores;                /* key is the started dotted rules from a state set. */
-    hash_table_t cache_matched_lengthses;             /* key is matched_lengths.*/
-    hash_table_t set_of_tuples_core_matched_lengths;        /* key is(core, matched_lengths).*/
-
-    /* Table for triplets (core, term, lookahead). */
-    hash_table_t set_of_triplets_core_term_lookahead;        /* key is (core, term, lookeahed). */
+    hash_table_t cache_stateset_cores;                /* key is the started dotted rules from a stateset. */
+    hash_table_t cache_stateset_matched_lengths;      /* key is matched_lengths from a stateset. */
+    hash_table_t cache_stateset_core_matched_lengths; /* key is(core, matched_lengths). */
+    hash_table_t cache_stateset_core_term_lookahead;  /* key is (core, term, lookeahed). */
 
     /* The following contains current number of unique dotted_rules. */
     int num_all_dotted_rules;
