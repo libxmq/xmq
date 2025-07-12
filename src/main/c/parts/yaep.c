@@ -5033,9 +5033,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
     YaepParseTreeBuildState *table_state, *parent_anode_state;
 
-    YaepTreeNode *empty_node, *node, *error_node;
-
-    YaepTreeNode **term_node_array = NULL;
+   YaepTreeNode **term_node_array = NULL;
     vlo_t stack, orig_states;
 
     ps->n_parse_term_nodes = ps->n_parse_abstract_nodes = ps->n_parse_alt_nodes = 0;
@@ -5109,11 +5107,11 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     state->anode = NULL;
 
     /* Create empty and error node:*/
-    empty_node = ((YaepTreeNode*)(*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
+    YaepTreeNode *empty_node = ((YaepTreeNode*)(*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
     empty_node->type = YAEP_NIL;
     empty_node->val.nil.used = 0;
 
-    error_node = ((YaepTreeNode*)(*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
+    YaepTreeNode *error_node = ((YaepTreeNode*)(*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
     error_node->type = YAEP_ERROR;
     error_node->val.error.used = 0;
 
@@ -5202,6 +5200,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
         assert(pos_j >= 0);
 
+        YaepTreeNode *node;
         YaepSymbol *symb = rule->rhs[pos_j];
         if (symb->is_terminal)
         {
