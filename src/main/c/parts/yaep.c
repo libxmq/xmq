@@ -1755,7 +1755,7 @@ static void free_input(YaepParseState *ps)
     VLO_DELETE(ps->input_vlo);
 }
 
-static void create_dotted_rules(YaepParseState *ps)
+static void init_dotted_rules(YaepParseState *ps)
 {
     ps->num_all_dotted_rules = 0;
     OS_CREATE(ps->dotted_rules_os, ps->run.grammar->alloc, 0);
@@ -1881,20 +1881,9 @@ static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, in
     dotted_rule->dyn_lookahead_context = dyn_lookahead_context;
     dotted_rule->empty_tail_p = dotted_rule_calculate_lookahead(ps, dotted_rule);
     dotted_rule->info = info;
+
     (*dyn_lookahead_context_dotted_rules_table_ptr)[rule->rule_start_offset + dot_j] = dotted_rule;
 
-    /*
-    MemBuffer *mb = new_membuffer();
-    membuffer_printf(mb, "crea @%d %s ", ps->tok_i, info);
-
-    // We add one to the state_set_k because the index is updated at the end of the parse loop.
-    int k = 1+ps->state_set_k;
-    if (k < 0) k = 0;
-
-    print_dotted_rule(mb, ps, k, dotted_rule, 0);
-    debug_mb("ixml.pa.c=", mb);
-    free_membuffer_and_free_content(mb);
-    */
     assert(dotted_rule->lookahead);
     return dotted_rule;
 }
@@ -3521,7 +3510,7 @@ static void yaep_parse_init(YaepParseState *ps, int n_input)
 {
     YaepRule*rule;
 
-    create_dotted_rules(ps);
+    init_dotted_rules(ps);
     set_init(ps, n_input);
     core_symb_ids_init(ps);
 #ifdef USE_CORE_SYMB_HASH_TABLE
@@ -3993,7 +3982,6 @@ void try_eat_token(const char *info, YaepParseState *ps, YaepStateSet *set,
 
     // This combo dotted_rule + matched_length did not already exist, lets add it.
     // But first test if there is a not lookahead that blocks....
-    YaepSymbol *sym = new_dotted_rule->rule->rhs[new_dotted_rule->dot_j];
     if (!blocked_by_lookahead(ps, new_dotted_rule, new_dotted_rule->rule->rhs[new_dotted_rule->dot_j], 1, info))
     {
         if (!dotted_rule_matched_length_test_and_set(ps, new_dotted_rule, matched_length))
@@ -4046,9 +4034,9 @@ void check_leading_dotted_rules(YaepParseState *ps, YaepStateSet *set, int looka
                 assert(new_dotted_rule->rule->lhs == ps->run.grammar->axiom);
                 continue;
             }
-            for (int i = 0; i < prev_core_symb_ids->predictions.len; i++)
+            for (int j = 0; j < prev_core_symb_ids->predictions.len; j++)
             {
-                int rule_index_in_core = prev_core_symb_ids->predictions.ids[i];
+                int rule_index_in_core = prev_core_symb_ids->predictions.ids[j];
                 YaepDottedRule *dotted_rule = prev_set->core->dotted_rules[rule_index_in_core];
                 try_eat_token("complete", ps, prev_set, dotted_rule, rule_index_in_core, lookahead_term_id, local_lookahead_level, new_matched_length);
             }

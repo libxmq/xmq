@@ -2380,7 +2380,6 @@ void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, 
 
 // Common parser functions ///////////////////////////////////////
 
-
 Level enter_compound_level(Level l);
 XMQColor level_to_quote_color(Level l);
 XMQColor level_to_entity_color(Level l);
@@ -2422,8 +2421,6 @@ void trim_text_node(xmlNode *node, int flags);
 const char *needs_escape(XMQRenderFormat f, const char *start, const char *stop);
 
 const char *build_error_message(const char *fmt, ...);
-
-void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
 
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
@@ -14524,106 +14521,6 @@ const char *needs_escape(XMQRenderFormat f, const char *start, const char *stop)
     return NULL;
 }
 
-void node_strlen_name_prefix(xmlNode *node,
-                        const char **name, size_t *name_len,
-                        const char **prefix, size_t *prefix_len,
-                        size_t *total_len)
-{
-    *name_len = strlen((const char*)node->name);
-    *name = (const char*)node->name;
-
-    if (node->ns && node->ns->prefix)
-    {
-        *prefix = (const char*)node->ns->prefix;
-        *prefix_len = strlen((const char*)node->ns->prefix);
-        *total_len = *name_len + *prefix_len +1;
-    }
-    else
-    {
-        *prefix = NULL;
-        *prefix_len = 0;
-        *total_len = *name_len;
-    }
-    assert(*name != NULL);
-}
-
-void attr_strlen_name_prefix(xmlAttr *attr, const char **name, const char **prefix, size_t *total_u_len)
-{
-    *name = (const char*)attr->name;
-    size_t name_b_len;
-    size_t name_u_len;
-    size_t prefix_b_len;
-    size_t prefix_u_len;
-    str_b_u_len(*name, NULL, &name_b_len, &name_u_len);
-
-    if (attr->ns && attr->ns->prefix)
-    {
-        *prefix = (const char*)attr->ns->prefix;
-        str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
-        *total_u_len = name_u_len + prefix_u_len + 1;
-    }
-    else
-    {
-        *prefix = NULL;
-        prefix_b_len = 0;
-        prefix_u_len = 0;
-        *total_u_len = name_u_len;
-    }
-    assert(*name != NULL);
-}
-
-void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len)
-{
-    size_t prefix_b_len;
-    size_t prefix_u_len;
-
-    if (ns->prefix)
-    {
-        *prefix = (const char*)ns->prefix;
-        str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
-        *total_u_len = /* xmlns */ 5  + prefix_u_len + 1;
-    }
-    else
-    {
-        *prefix = NULL;
-        prefix_b_len = 0;
-        prefix_u_len = 0;
-        *total_u_len = /* xmlns */ 5;
-    }
-}
-
-void element_strlen_name_prefix(xmlNode *element, const char **name, const char **prefix, size_t *total_u_len)
-{
-    *name = (const char*)element->name;
-    if (!*name)
-    {
-        *name = "";
-        *prefix = "";
-        *total_u_len = 0;
-        return;
-    }
-    size_t name_b_len;
-    size_t name_u_len;
-    size_t prefix_b_len;
-    size_t prefix_u_len;
-    str_b_u_len(*name, NULL, &name_b_len, &name_u_len);
-
-    if (element->ns && element->ns->prefix)
-    {
-        *prefix = (const char*)element->ns->prefix;
-        str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
-        *total_u_len = name_u_len + prefix_u_len + 1;
-    }
-    else
-    {
-        *prefix = NULL;
-        prefix_b_len = 0;
-        prefix_u_len = 0;
-        *total_u_len = name_u_len;
-    }
-    assert(*name != NULL);
-}
-
 /**
     enter_compound_level:
 
@@ -14785,43 +14682,43 @@ const char *build_error_message(const char* fmt, ...)
 #ifdef XMQ_PARSER_MODULE
 
 size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
-void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop);
-void eat_xmq_entity(XMQParseState *state);
-void eat_xmq_comment_to_eol(XMQParseState *state, const char **content_start, const char **content_stop);
+void eat_json_quote(XMQParseState *state, char **content_start, char **content_stop);
 void eat_xmq_comment_to_close(XMQParseState *state, const char **content_start, const char **content_stop, size_t n, bool *found_asterisk);
-void eat_xmq_text_value(XMQParseState *state);
-bool peek_xmq_next_is_equal(XMQParseState *state);
+void eat_xmq_comment_to_eol(XMQParseState *state, const char **content_start, const char **content_stop);
 void eat_xmq_doctype(XMQParseState *state, const char **text_start, const char **text_stop);
+void eat_xmq_entity(XMQParseState *state);
 void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text_stop);
 void eat_xmq_text_name(XMQParseState *state, const char **content_start, const char **content_stop, const char **namespace_start, const char **namespace_stop);
-bool possibly_lost_content_after_equals(XMQParseState *state);
-bool possibly_need_more_quotes(XMQParseState *state);
-void eat_json_quote(XMQParseState *state, char **content_start, char **content_stop);
-bool is_xmq_quote_start(char c);
-bool is_xmq_json_quote_start(char c);
-bool is_xmq_entity_start(char c);
+void eat_xmq_text_value(XMQParseState *state);
+void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop);
 bool is_xmq_attribute_key_start(char c);
-bool is_xmq_compound_start(char c);
 bool is_xmq_comment_start(char c, char cc);
-bool is_xmq_pi_start(const char *start, const char *stop);
+bool is_xmq_compound_start(char c);
 bool is_xmq_doctype_start(const char *start, const char *stop);
+bool is_xmq_entity_start(char c);
+bool is_xmq_json_quote_start(char c);
+bool is_xmq_pi_start(const char *start, const char *stop);
+bool is_xmq_quote_start(char c);
 void parse_xmq_attribute(XMQParseState *state);
 void parse_xmq_attributes(XMQParseState *state);
 void parse_xmq_comment(XMQParseState *state, char cc);
 void parse_xmq_compound(XMQParseState *state, Level level);
 void parse_xmq_compound_children(XMQParseState *state, Level level);
-void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi);
-void parse_xmq_element(XMQParseState *state);
 void parse_xmq_doctype(XMQParseState *state);
-void parse_xmq_pi(XMQParseState *state);
+void parse_xmq_element(XMQParseState *state);
+void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi);
 void parse_xmq_entity(XMQParseState *state, Level level);
-void parse_xmq_quote(XMQParseState *state, Level level);
 void parse_xmq_json_quote(XMQParseState *state, Level level);
+void parse_xmq_pi(XMQParseState *state);
+void parse_xmq_quote(XMQParseState *state, Level level);
 void parse_xmq_text_any(XMQParseState *state);
 void parse_xmq_text_name(XMQParseState *state);
 void parse_xmq_text_value(XMQParseState *state, Level level);
 void parse_xmq_value(XMQParseState *state, Level level);
 void parse_xmq_whitespace(XMQParseState *state);
+bool peek_xmq_next_is_equal(XMQParseState *state);
+bool possibly_lost_content_after_equals(XMQParseState *state);
+bool possibly_need_more_quotes(XMQParseState *state);
 
 size_t count_xmq_quotes(const char *i, const char *stop)
 {
@@ -16015,6 +15912,8 @@ size_t find_attr_key_max_u_width(xmlAttr *a);
 size_t find_namespace_max_u_width(size_t max, xmlNs *ns);
 size_t find_element_key_max_width(xmlNodePtr node, xmlNodePtr *restart_find_at_node);
 const char *toHtmlEntity(int uc);
+void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
+
 
 /**
     count_necessary_quotes:
@@ -17586,6 +17485,106 @@ void print_value(XMQPrintState *ps, xmlNode *node, Level level)
     ps->line_indent = old_line_indent;
 }
 
+void node_strlen_name_prefix(xmlNode *node,
+                        const char **name, size_t *name_len,
+                        const char **prefix, size_t *prefix_len,
+                        size_t *total_len)
+{
+    *name_len = strlen((const char*)node->name);
+    *name = (const char*)node->name;
+
+    if (node->ns && node->ns->prefix)
+    {
+        *prefix = (const char*)node->ns->prefix;
+        *prefix_len = strlen((const char*)node->ns->prefix);
+        *total_len = *name_len + *prefix_len +1;
+    }
+    else
+    {
+        *prefix = NULL;
+        *prefix_len = 0;
+        *total_len = *name_len;
+    }
+    assert(*name != NULL);
+}
+
+void attr_strlen_name_prefix(xmlAttr *attr, const char **name, const char **prefix, size_t *total_u_len)
+{
+    *name = (const char*)attr->name;
+    size_t name_b_len;
+    size_t name_u_len;
+    size_t prefix_b_len;
+    size_t prefix_u_len;
+    str_b_u_len(*name, NULL, &name_b_len, &name_u_len);
+
+    if (attr->ns && attr->ns->prefix)
+    {
+        *prefix = (const char*)attr->ns->prefix;
+        str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
+        *total_u_len = name_u_len + prefix_u_len + 1;
+    }
+    else
+    {
+        *prefix = NULL;
+        prefix_b_len = 0;
+        prefix_u_len = 0;
+        *total_u_len = name_u_len;
+    }
+    assert(*name != NULL);
+}
+
+void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len)
+{
+    size_t prefix_b_len;
+    size_t prefix_u_len;
+
+    if (ns->prefix)
+    {
+        *prefix = (const char*)ns->prefix;
+        str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
+        *total_u_len = /* xmlns */ 5  + prefix_u_len + 1;
+    }
+    else
+    {
+        *prefix = NULL;
+        prefix_b_len = 0;
+        prefix_u_len = 0;
+        *total_u_len = /* xmlns */ 5;
+    }
+}
+
+void element_strlen_name_prefix(xmlNode *element, const char **name, const char **prefix, size_t *total_u_len)
+{
+    *name = (const char*)element->name;
+    if (!*name)
+    {
+        *name = "";
+        *prefix = "";
+        *total_u_len = 0;
+        return;
+    }
+    size_t name_b_len;
+    size_t name_u_len;
+    size_t prefix_b_len;
+    size_t prefix_u_len;
+    str_b_u_len(*name, NULL, &name_b_len, &name_u_len);
+
+    if (element->ns && element->ns->prefix)
+    {
+        *prefix = (const char*)element->ns->prefix;
+        str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
+        *total_u_len = name_u_len + prefix_u_len + 1;
+    }
+    else
+    {
+        *prefix = NULL;
+        prefix_b_len = 0;
+        prefix_u_len = 0;
+        *total_u_len = name_u_len;
+    }
+    assert(*name != NULL);
+}
+
 #endif // XMQ_PRINTER_MODULE
 
 // PART C YAEP_ALLOCATE_C ////////////////////////////////////////
@@ -19020,7 +19019,8 @@ static void dbg_print_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rul
 // Declarations ///////////////////////////////////////////////////
 
 static bool blocked_by_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule, YaepSymbol *symb, int n, const char *info);
-void check_predictions(YaepParseState *ps, YaepStateSet *set, YaepVect *predictions, int lookahead_term_id, int local_lookahead_level);
+void check_predicted_dotted_rules(YaepParseState *ps, YaepStateSet *set, YaepVect *predictions, int lookahead_term_id, int local_lookahead_level);
+void check_leading_dotted_rules(YaepParseState *ps, YaepStateSet *set, int lookahead_term_id, int local_lookahead_level);
 static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n);
 static bool is_not_rule(YaepSymbol *symb);
 static int default_read_token(YaepParseRun *ps, void **attr);
@@ -19859,7 +19859,7 @@ static void free_input(YaepParseState *ps)
     VLO_DELETE(ps->input_vlo);
 }
 
-static void create_dotted_rules(YaepParseState *ps)
+static void init_dotted_rules(YaepParseState *ps)
 {
     ps->num_all_dotted_rules = 0;
     OS_CREATE(ps->dotted_rules_os, ps->run.grammar->alloc, 0);
@@ -19985,20 +19985,9 @@ static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, in
     dotted_rule->dyn_lookahead_context = dyn_lookahead_context;
     dotted_rule->empty_tail_p = dotted_rule_calculate_lookahead(ps, dotted_rule);
     dotted_rule->info = info;
+
     (*dyn_lookahead_context_dotted_rules_table_ptr)[rule->rule_start_offset + dot_j] = dotted_rule;
 
-    /*
-    MemBuffer *mb = new_membuffer();
-    membuffer_printf(mb, "crea @%d %s ", ps->tok_i, info);
-
-    // We add one to the state_set_k because the index is updated at the end of the parse loop.
-    int k = 1+ps->state_set_k;
-    if (k < 0) k = 0;
-
-    print_dotted_rule(mb, ps, k, dotted_rule, 0);
-    debug_mb("ixml.pa.c=", mb);
-    free_membuffer_and_free_content(mb);
-    */
     assert(dotted_rule->lookahead);
     return dotted_rule;
 }
@@ -21625,7 +21614,7 @@ static void yaep_parse_init(YaepParseState *ps, int n_input)
 {
     YaepRule*rule;
 
-    create_dotted_rules(ps);
+    init_dotted_rules(ps);
     set_init(ps, n_input);
     core_symb_ids_init(ps);
 #ifdef USE_CORE_SYMB_HASH_TABLE
@@ -22071,57 +22060,93 @@ static void trace_lookahead_predicts_no_match(YaepParseState *ps, int lookahead_
     debug_mb("ixml.pa.c=", mb);
 }
 
-void check_predictions(YaepParseState *ps,
-                       YaepStateSet *set,
-                       YaepVect *predictions,
-                       int lookahead_term_id,
-                       int local_lookahead_level)
-{
-        for (int i = 0; i < predictions->len; i++)
-        {
-                int dotted_rule_id = predictions->ids[i];
-                trace("ixml.pa.c=", "csl pfoof drid=%d", dotted_rule_id);
-                YaepDottedRule *dotted_rule = set->core->dotted_rules[dotted_rule_id];
-                YaepDottedRule *new_dotted_rule = create_dotted_rule(ps,
-                                dotted_rule->rule, dotted_rule->dot_j + 1,
-                                dotted_rule->dyn_lookahead_context, "scan");
-                /*if (NEXT_TERMINAL) fprintf(stderr, "NEXT %s\n", NEXT_TERMINAL->hr);
-                 else fprintf(stderr, "NEXT null\n");*/
-                if (local_lookahead_level != 0
-                                && !terminal_bitset_test(ps, new_dotted_rule->lookahead,
-                                                lookahead_term_id)
-                                && !terminal_bitset_test(ps, new_dotted_rule->lookahead,
-                                                ps->run.grammar->term_error_id)) {
-                        // Lookahead predicted no-match. Stop here.
-                        if (ps->run.trace)
-                                trace_lookahead_predicts_no_match(ps, lookahead_term_id,
-                                                new_dotted_rule, "complete_predict1");
+void try_eat_token(const char *info, YaepParseState *ps, YaepStateSet *set,
+                   YaepDottedRule *dotted_rule, int rule_index_in_core,
+                   int lookahead_term_id, int local_lookahead_level,
+                   int add_matched_length);
 
-                        trace("ixml.pa.c=", "csl stop");
-                        continue;
-                }
-                int matched_length = lookup_matched_length(ps, set, dotted_rule_id);
-                matched_length++;
-                trace("ixml.pa.c=", "csl next");
-                // This combo dotted_rule + matched_length did not already exist, lets add it.
-                // But first test if there is a not lookahead that blocks....
-                YaepSymbol *sym = new_dotted_rule->rule->rhs[new_dotted_rule->dot_j];
-                if (sym)
-                        debug("ixml.pa.c=", "PRU1 %s", sym->hr);
-                if (!blocked_by_lookahead(ps, new_dotted_rule,
-                                new_dotted_rule->rule->rhs[new_dotted_rule->dot_j], 1,
-                                "lookahead4")) {
-                        if (!dotted_rule_matched_length_test_and_set(ps, new_dotted_rule,
-                                        matched_length)) {
-                                debug("ixml.pa.c=", "PRUTT1");
-                                set_add_dotted_rule_with_matched_length(ps, new_dotted_rule,
-                                                matched_length);
-                        } else {
-                                debug("ixml.pa.c=", "s%d already existed", set->id);
-                        }
-                }
-                trace("ixml.pa.c=", "csl stooooop");
+void try_eat_token(const char *info, YaepParseState *ps, YaepStateSet *set,
+                   YaepDottedRule *dotted_rule, int rule_index_in_core,
+                   int lookahead_term_id, int local_lookahead_level,
+                   int add_matched_length)
+{
+    YaepDottedRule *new_dotted_rule = create_dotted_rule(ps,
+                                                         dotted_rule->rule, dotted_rule->dot_j + 1,
+                                                         dotted_rule->dyn_lookahead_context, info);
+    if (local_lookahead_level != 0 &&
+        !terminal_bitset_test(ps, new_dotted_rule->lookahead, lookahead_term_id) &&
+        !terminal_bitset_test(ps, new_dotted_rule->lookahead, ps->run.grammar->term_error_id))
+    {
+        // Lookahead predicted no-match. Stop here.
+        return;
+    }
+
+    int matched_length = lookup_matched_length(ps, set, rule_index_in_core);
+    matched_length += add_matched_length;
+
+    // This combo dotted_rule + matched_length did not already exist, lets add it.
+    // But first test if there is a not lookahead that blocks....
+    YaepSymbol *sym = new_dotted_rule->rule->rhs[new_dotted_rule->dot_j];
+    if (!blocked_by_lookahead(ps, new_dotted_rule, new_dotted_rule->rule->rhs[new_dotted_rule->dot_j], 1, info))
+    {
+        if (!dotted_rule_matched_length_test_and_set(ps, new_dotted_rule, matched_length))
+        {
+            set_add_dotted_rule_with_matched_length(ps, new_dotted_rule, matched_length);
         }
+    }
+}
+
+void check_predicted_dotted_rules(YaepParseState *ps,
+                                  YaepStateSet *set,
+                                  YaepVect *predictions,
+                                  int lookahead_term_id,
+                                  int local_lookahead_level)
+{
+    for (int i = 0; i < predictions->len; i++)
+    {
+        int rule_index_in_core = predictions->ids[i];
+        YaepDottedRule *dotted_rule = set->core->dotted_rules[rule_index_in_core];
+        try_eat_token("scan", ps, set, dotted_rule, rule_index_in_core, lookahead_term_id, local_lookahead_level, 1);
+    }
+}
+
+void check_leading_dotted_rules(YaepParseState *ps, YaepStateSet *set, int lookahead_term_id, int local_lookahead_level)
+{
+    for (int i = 0; i < ps->new_num_leading_dotted_rules; i++)
+    {
+        YaepDottedRule *new_dotted_rule = ps->new_dotted_rules[i];
+        bool completed = new_dotted_rule->empty_tail_p;
+
+        YaepSymbol *sym = new_dotted_rule->rule->rhs[new_dotted_rule->dot_j];
+        if (!completed && sym && is_not_rule(sym)
+            && !blocked_by_lookahead(ps, new_dotted_rule, new_dotted_rule->rule->rhs[new_dotted_rule->dot_j], 1, "lookaheadbanan"))
+        {
+            completed = true;
+        }
+
+        // Note that empty_tail_p is both true if you reached the end of the rule
+        // and if the rule can derive the empty string from the dot.
+        if (completed)
+        {
+            /* All tail in new sitiation may derivate empty string so
+               make reduce and add new dotted_rules. */
+            int new_matched_length = ps->new_matched_lengths[i];
+            int place = ps->state_set_k + 1 - new_matched_length;
+            YaepStateSet *prev_set = ps->state_sets[place];
+            YaepCoreSymbToPredComps *prev_core_symb_ids = core_symb_ids_find(ps, prev_set->core, new_dotted_rule->rule->lhs);
+            if (prev_core_symb_ids == NULL)
+            {
+                assert(new_dotted_rule->rule->lhs == ps->run.grammar->axiom);
+                continue;
+            }
+            for (int j = 0; j < prev_core_symb_ids->predictions.len; j++)
+            {
+                int rule_index_in_core = prev_core_symb_ids->predictions.ids[j];
+                YaepDottedRule *dotted_rule = prev_set->core->dotted_rules[rule_index_in_core];
+                try_eat_token("complete", ps, prev_set, dotted_rule, rule_index_in_core, lookahead_term_id, local_lookahead_level, new_matched_length);
+            }
+        }
+    }
 }
 
 /* The following function predicts a new state set by shifting dotted_rules
@@ -22133,9 +22158,6 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
                                                YaepSymbol *THE_TERMINAL,
                                                YaepSymbol *NEXT_TERMINAL)
 {
-    debug("ixml.pa.c=", "complete_and_predict %s    %s",
-          THE_TERMINAL->hr?THE_TERMINAL->hr:"?",
-          NEXT_TERMINAL?NEXT_TERMINAL->hr:"<EOF>");
     int lookahead_term_id = NEXT_TERMINAL?NEXT_TERMINAL->u.terminal.term_id:-1;
     int local_lookahead_level = (lookahead_term_id < 0 ? 0 : ps->run.grammar->lookahead_level);
 
@@ -22145,89 +22167,8 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 
     clear_dotted_rule_matched_length_set(ps);
 
-        check_predictions(ps, set, predictions, lookahead_term_id, local_lookahead_level);
-
-    for (int i = 0; i < ps->new_num_leading_dotted_rules; i++)
-    {
-        YaepDottedRule *new_dotted_rule = ps->new_dotted_rules[i];
-        trace("ixml.pa.c=", "csl noop drid=%d etail=%d", i, new_dotted_rule->empty_tail_p);
-
-        bool completed = new_dotted_rule->empty_tail_p;
-
-        YaepSymbol *sym = new_dotted_rule->rule->rhs[new_dotted_rule->dot_j];
-        if (!completed && sym && is_not_rule(sym) && !blocked_by_lookahead(ps,
-                                                                    new_dotted_rule,
-                                                                    new_dotted_rule->rule->rhs[new_dotted_rule->dot_j],
-                                                                    1,
-                                                                    "lookaheadbanan"))
-        {
-            completed = true;
-            trace("ixml.pa.c=", "Le prutt");
-        }
-
-        // Note that empty_tail_p is both true if you reached the end of the rule
-        // and if the rule can derive the empty string from the dot.
-        if (completed)
-        {
-            int *curr_el, *bound;
-
-            /* All tail in new sitiation may derivate empty string so
-               make reduce and add new dotted_rules.*/
-            int new_matched_length = ps->new_matched_lengths[i];
-            int place = ps->state_set_k + 1 - new_matched_length;
-            YaepStateSet *prev_set = ps->state_sets[place];
-            YaepCoreSymbToPredComps *prev_core_symb_ids = core_symb_ids_find(ps, prev_set->core, new_dotted_rule->rule->lhs);
-            if (prev_core_symb_ids == NULL)
-            {
-                assert(new_dotted_rule->rule->lhs == ps->run.grammar->axiom);
-                continue;
-            }
-            curr_el = prev_core_symb_ids->predictions.ids;
-            bound = curr_el + prev_core_symb_ids->predictions.len;
-
-            assert(curr_el != NULL);
-            YaepDottedRule **prev_dotted_rules = prev_set->core->dotted_rules;
-            while (curr_el < bound)
-            {
-                int dotted_rule_id = *curr_el++;
-                YaepDottedRule *dotted_rule = prev_dotted_rules[dotted_rule_id];
-                new_dotted_rule = create_dotted_rule(ps,
-                                                     dotted_rule->rule,
-                                                     dotted_rule->dot_j+1,
-                                                     dotted_rule->dyn_lookahead_context,
-                                                     "complete");
-
-                if (local_lookahead_level != 0
-                    && !terminal_bitset_test(ps, new_dotted_rule->lookahead, lookahead_term_id)
-                    && !terminal_bitset_test(ps, new_dotted_rule->lookahead, ps->run.grammar->term_error_id))
-                {
-                    if (ps->run.trace) trace_lookahead_predicts_no_match(ps, lookahead_term_id, new_dotted_rule, "completepredict2");
-                    continue;
-                }
-                int matched_length = lookup_matched_length(ps, prev_set, dotted_rule_id);
-                matched_length += new_matched_length;
-
-                // This combo dotted_rule + matched_length did not already exist, lets add it.
-                // But first test if there is a not lookahead that blocks....
-                if (!blocked_by_lookahead(ps,
-                                          new_dotted_rule,
-                                          new_dotted_rule->rule->rhs[new_dotted_rule->dot_j],
-                                          1,
-                                          "lookahead6gurka"))
-                {
-                    if (!dotted_rule_matched_length_test_and_set(ps, new_dotted_rule, matched_length))
-                    {
-                        debug("ixml.pa.c=", "PRUTT2");
-                        set_add_dotted_rule_with_matched_length(ps, new_dotted_rule, matched_length);
-                    }
-                    else
-                    {
-                        debug("ixml.pa.c=", "s%d already existed", set->id);
-                    }
-                }
-            }
-        }
-    }
+    check_predicted_dotted_rules(ps, set, predictions, lookahead_term_id, local_lookahead_level);
+    check_leading_dotted_rules(ps, set, lookahead_term_id, local_lookahead_level);
 
     bool core_added = convert_leading_dotted_rules_into_new_set(ps);
 
