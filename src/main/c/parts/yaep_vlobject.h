@@ -158,8 +158,7 @@ typedef struct
 #define VLO_TAILOR(vlo) _VLO_tailor_function(&(vlo))
 
 
-/* This macro returns current length of VLO.  The macro has side
-   effects! */
+/* This macro returns current length of VLO.  The macro has side effects! */
 
 #ifndef NDEBUG
 #define VLO_LENGTH(vlo) ((vlo).vlo_start != NULL\
