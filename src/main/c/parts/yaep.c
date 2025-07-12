@@ -5031,8 +5031,6 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     YaepParseTreeBuildState root_state;
     YaepTreeNode root_anode;
 
-    YaepParseTreeBuildState *table_state, *parent_anode_state;
-
    YaepTreeNode **term_node_array = NULL;
     vlo_t stack, orig_states;
 
@@ -5148,7 +5146,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
         int pos_j = --state->dot_j;
         rule = state->rule;
-        parent_anode_state = state->parent_anode_state;
+        YaepParseTreeBuildState *parent_anode_state = state->parent_anode_state;
         YaepTreeNode *parent_anode = parent_anode_state->anode;
         int parent_rhs_offset = state->parent_rhs_offset;
         YaepTreeNode *anode = state->anode;
@@ -5450,7 +5448,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                     state->dot_j = dotted_rule->dot_j;
                     state->from_i = dotted_rule_from_i;
                     state->state_set_k = state_set_k;
-                    table_state = NULL;
+                    YaepParseTreeBuildState *table_state = NULL;
                     bool new_p;
                     if (!ps->run.grammar->one_parse_p)
                     {
