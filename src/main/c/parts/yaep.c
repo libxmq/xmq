@@ -5023,7 +5023,6 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 {
     int n_candidates;
 
-    int dotted_rule_id, check_dotted_rule_id;
     int dotted_rule_from_i, check_dotted_rule_from_i;
     bool new_p;
 
@@ -5285,21 +5284,21 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
         for(int i = 0; i < core_symb_ids->completions.len; i++)
         {
-            dotted_rule_id = core_symb_ids->completions.ids[i];
-            dotted_rule = set_core->dotted_rules[dotted_rule_id];
+            int rule_index_in_core = core_symb_ids->completions.ids[i];
+            dotted_rule = set_core->dotted_rules[rule_index_in_core];
 
-            if (dotted_rule_id < set_core->num_started_dotted_rules)
+            if (rule_index_in_core < set_core->num_started_dotted_rules)
             {
                 // The state_set_k is the tok_i for which the state set was created.
                 // Ie, it is the to_i inside the Earley item.
                 // Now subtract the matched length from this to_i to get the from_i
                 // which is the origin.
-                dotted_rule_from_i = state_set_k - set->matched_lengths[dotted_rule_id];
+                dotted_rule_from_i = state_set_k - set->matched_lengths[rule_index_in_core];
             }
-            else if (dotted_rule_id < set_core->num_all_matched_lengths)
+            else if (rule_index_in_core < set_core->num_all_matched_lengths)
             {
                 // Parent??
-                dotted_rule_from_i = state_set_k - set->matched_lengths[set_core->parent_dotted_rule_ids[dotted_rule_id]];
+                dotted_rule_from_i = state_set_k - set->matched_lengths[set_core->parent_dotted_rule_ids[rule_index_in_core]];
             }
             else
             {
@@ -5329,28 +5328,28 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
             for (int j = 0; j < check_core_symb_ids->predictions.len; j++)
             {
-                check_dotted_rule_id = check_core_symb_ids->predictions.ids[j];
-                YaepDottedRule *check_dotted_rule = check_set->core->dotted_rules[check_dotted_rule_id];
+                int rule_index_in_check_core = check_core_symb_ids->predictions.ids[j];
+                YaepDottedRule *check_dotted_rule = check_set->core->dotted_rules[rule_index_in_check_core];
                 if (check_dotted_rule->rule != rule || check_dotted_rule->dot_j != pos_j)
                 {
                     continue;
                 }
                 check_dotted_rule_from_i = dotted_rule_from_i;
 
-                if (check_dotted_rule_id < check_set_core->num_all_matched_lengths)
+                if (rule_index_in_check_core < check_set_core->num_all_matched_lengths)
                 {
-                    if (check_dotted_rule_id < check_set_core->num_started_dotted_rules)
+                    if (rule_index_in_check_core < check_set_core->num_started_dotted_rules)
                     {
-                        check_dotted_rule_from_i = dotted_rule_from_i - check_set->matched_lengths[check_dotted_rule_id];
+                        check_dotted_rule_from_i = dotted_rule_from_i - check_set->matched_lengths[rule_index_in_check_core];
                     }
                     else
                     {
-                        check_dotted_rule_from_i = (dotted_rule_from_i - check_set->matched_lengths[check_set_core->parent_dotted_rule_ids[check_dotted_rule_id]]);
+                        check_dotted_rule_from_i = (dotted_rule_from_i - check_set->matched_lengths[check_set_core->parent_dotted_rule_ids[rule_index_in_check_core]]);
                     }
                 }
                 if (check_dotted_rule_from_i == from_i)
                 {
-                    debug("ixml.tr.c=", "found check dotted rule %d         dri=%d", check_dotted_rule_id, dotted_rule_id);
+                    debug("ixml.tr.c=", "found check dotted rule %d         dri=%d", rule_index_in_check_core, rule_index_in_core);
                     found = true;
                     break;
                 }
