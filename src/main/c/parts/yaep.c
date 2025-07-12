@@ -4022,22 +4022,21 @@ void check_leading_dotted_rules(YaepParseState *ps, YaepStateSet *set, int looka
     for (int i = 0; i < ps->new_num_leading_dotted_rules; i++)
     {
         YaepDottedRule *new_dotted_rule = ps->new_dotted_rules[i];
-        trace("ixml.pa.c=", "csl noop drid=%d etail=%d", i, new_dotted_rule->empty_tail_p);
-        _Bool completed = new_dotted_rule->empty_tail_p;
+        bool completed = new_dotted_rule->empty_tail_p;
+
         YaepSymbol *sym = new_dotted_rule->rule->rhs[new_dotted_rule->dot_j];
         if (!completed && sym && is_not_rule(sym)
             && !blocked_by_lookahead(ps, new_dotted_rule, new_dotted_rule->rule->rhs[new_dotted_rule->dot_j], 1, "lookaheadbanan"))
         {
             completed = true;
-            trace("ixml.pa.c=", "Le prutt");
         }
+
         // Note that empty_tail_p is both true if you reached the end of the rule
         // and if the rule can derive the empty string from the dot.
         if (completed)
         {
-            int *curr_el, *bound;
             /* All tail in new sitiation may derivate empty string so
-             make reduce and add new dotted_rules.*/
+               make reduce and add new dotted_rules. */
             int new_matched_length = ps->new_matched_lengths[i];
             int place = ps->state_set_k + 1 - new_matched_length;
             YaepStateSet *prev_set = ps->state_sets[place];
@@ -4047,12 +4046,9 @@ void check_leading_dotted_rules(YaepParseState *ps, YaepStateSet *set, int looka
                 assert(new_dotted_rule->rule->lhs == ps->run.grammar->axiom);
                 continue;
             }
-            curr_el = prev_core_symb_ids->predictions.ids;
-            bound = curr_el + prev_core_symb_ids->predictions.len;
-            assert(curr_el != NULL);
-            while (curr_el < bound)
+            for (int i = 0; i < prev_core_symb_ids->predictions.len; i++)
             {
-                int rule_index_in_core = *curr_el++;
+                int rule_index_in_core = prev_core_symb_ids->predictions.ids[i];
                 YaepDottedRule *dotted_rule = prev_set->core->dotted_rules[rule_index_in_core];
                 try_eat_token("complete", ps, prev_set, dotted_rule, rule_index_in_core, lookahead_term_id, local_lookahead_level, new_matched_length);
             }
