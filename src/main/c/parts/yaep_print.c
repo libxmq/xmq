@@ -93,7 +93,7 @@ void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p)
         && rule->mark != '*')
     {
         membuffer_append(mb, "\n(yaep) internal error bad rule: ");
-        symbol_print(mb, rule->lhs, false);
+        print_symbol(mb, rule->lhs, false);
         debug_mb("ixml=", mb);
         free_membuffer_and_free_content(mb);
         assert(false);
@@ -104,7 +104,7 @@ void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p)
     {
         membuffer_append_char(mb, m);
     }
-    symbol_print(mb, rule->lhs, false);
+    print_symbol(mb, rule->lhs, false);
     if (strcmp(rule->lhs->repr, rule->anode))
     {
         membuffer_append_char(mb, '(');
@@ -130,7 +130,7 @@ void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p)
             if (!m) membuffer_append(mb, "  ");
             else    assert(false);
         }
-        symbol_print(mb, rule->rhs[i], false);
+        print_symbol(mb, rule->rhs[i], false);
     }
     /*
       if (false && trans_p)
@@ -172,12 +172,12 @@ void print_rule_with_dot(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, int 
 
     assert(pos >= 0 && pos <= rule->rhs_len);
 
-    symbol_print(mb, rule->lhs, false);
+    print_symbol(mb, rule->lhs, false);
     membuffer_append(mb, " → ");
     for(i = 0; i < rule->rhs_len; i++)
     {
         membuffer_append(mb, i == pos ? " · " : " ");
-        symbol_print(mb, rule->rhs[i], false);
+        print_symbol(mb, rule->rhs[i], false);
     }
 }
 
@@ -185,12 +185,12 @@ void print_rule(MemBuffer *mb, YaepParseState *ps, YaepRule *rule)
 {
     int i;
 
-    symbol_print(mb, rule->lhs, false);
+    print_symbol(mb, rule->lhs, false);
     membuffer_append(mb, " → ");
     for(i = 0; i < rule->rhs_len; i++)
     {
         membuffer_append_char(mb, ' ');
-        symbol_print(mb, rule->rhs[i], false);
+        print_symbol(mb, rule->rhs[i], false);
     }
 }
 
@@ -277,7 +277,7 @@ void print_dotted_rule(MemBuffer *mb,
         if (ps->run.grammar->lookahead_level != 0 && matched_length >= 0)
         {
             membuffer_append(mb, "    ");
-            terminal_bitset_print(mb, ps, dotted_rule->lookahead);
+            print_terminal_bitset(mb, ps, dotted_rule->lookahead);
         }
     }
 }
@@ -451,6 +451,56 @@ void print_state_set(MemBuffer *mb,
         membuffer_append(mb, "\n");
         print_dotted_rule(mb, ps, from_i, vars.dotted_rules[dotted_rule_id], matched_length, -1, "woot3");
     }
+}
+
+/* The following function prints symbol SYMB to file F.  Terminal is
+   printed with its code if CODE_P. */
+void print_symbol(MemBuffer *mb, YaepSymbol *symb, bool code_p)
+{
+    if (symb->is_terminal)
+    {
+        membuffer_append(mb, symb->hr);
+        return;
+    }
+    membuffer_append(mb, symb->repr);
+    if (code_p && symb->is_terminal)
+    {
+        membuffer_printf(mb, "(%d)", symb->u.terminal.code);
+    }
+}
+
+void print_terminal_bitset(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t *set)
+{
+    bool first = true;
+    int num_set = 0;
+    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
+    for (int i = 0; i < num_terminals; i++) num_set += terminal_bitset_test(ps, set, i);
+
+    if (num_set > num_terminals/2)
+    {
+        // Print the negation
+        membuffer_append(mb, "~[");
+        for (int i = 0; i < num_terminals; i++)
+        {
+            if (!terminal_bitset_test(ps, set, i))
+            {
+                if (!first) membuffer_append(mb, " "); else first = false;
+                print_symbol(mb, term_get(ps, i), false);
+            }
+        }
+        membuffer_append_char(mb, ']');
+    }
+
+    membuffer_append_char(mb, '[');
+    for (int i = 0; i < num_terminals; i++)
+    {
+        if (terminal_bitset_test(ps, set, i))
+        {
+            if (!first) membuffer_append(mb, " "); else first = false;
+            print_symbol(mb, term_get(ps, i), false);
+        }
+    }
+    membuffer_append_char(mb, ']');
 }
 
 #endif

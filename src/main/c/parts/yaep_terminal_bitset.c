@@ -269,41 +269,6 @@ terminal_bitset_t *terminal_bitset_from_table(YaepParseState *ps, int num)
     return ((YaepTerminalSet**)VLO_BEGIN(ps->run.grammar->term_sets_ptr->terminal_bitset_vlo))[num]->set;
 }
 
-/* Print terminal SET into file F. */
-void terminal_bitset_print(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t *set)
-{
-    bool first = true;
-    int num_set = 0;
-    int num_terminals = ps->run.grammar->symbs_ptr->num_terminals;
-    for (int i = 0; i < num_terminals; i++) num_set += terminal_bitset_test(ps, set, i);
-
-    if (num_set > num_terminals/2)
-    {
-        // Print the negation
-        membuffer_append(mb, "~[");
-        for (int i = 0; i < num_terminals; i++)
-        {
-            if (!terminal_bitset_test(ps, set, i))
-            {
-                if (!first) membuffer_append(mb, " "); else first = false;
-                symbol_print(mb, term_get(ps, i), false);
-            }
-        }
-        membuffer_append_char(mb, ']');
-    }
-
-    membuffer_append_char(mb, '[');
-    for (int i = 0; i < num_terminals; i++)
-    {
-        if (terminal_bitset_test(ps, set, i))
-        {
-            if (!first) membuffer_append(mb, " "); else first = false;
-            symbol_print(mb, term_get(ps, i), false);
-        }
-    }
-    membuffer_append_char(mb, ']');
-}
-
 /* Free memory for terminal sets. */
 void terminal_bitset_empty(YaepTerminalSetStorage *term_sets)
 {

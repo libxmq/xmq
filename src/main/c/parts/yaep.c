@@ -1971,9 +1971,9 @@ int yaep_read_grammar(YaepParseRun *pr,
                                  (symb->access_p ? "" : " OUPS_NOT_REACHABLE"),
                                  (symb->derivation_p ? "" : " OUPS_NO_TEXT"));
                 membuffer_append(mb, "  1st: ");
-                terminal_bitset_print(mb, ps, symb->u.nonterminal.first);
+                print_terminal_bitset(mb, ps, symb->u.nonterminal.first);
                 membuffer_append(mb, "\n  2nd: ");
-                terminal_bitset_print(mb, ps, symb->u.nonterminal.follow);
+                print_terminal_bitset(mb, ps, symb->u.nonterminal.follow);
                 debug_mb("ixml.nt=", mb);
                 free_membuffer_and_free_content(mb);
             }
@@ -2986,7 +2986,7 @@ static void perform_parse(YaepParseState *ps)
             {
                 MemBuffer *mb = new_membuffer();
                 membuffer_printf(mb, "input[%d]=", ps->tok_i);
-                symbol_print(mb, THE_TERMINAL, true);
+                print_symbol(mb, THE_TERMINAL, true);
                 membuffer_printf(mb, " s%d core%d -> csl%d", set->id, set->core->id, core_symb_ids->id);
                 debug_mb("ixml.pa=", mb);
                 free_membuffer_and_free_content(mb);

@@ -43,6 +43,8 @@ void print_state_set(MemBuffer *mb, YaepParseState *ps, YaepStateSet *set, int f
 void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
 void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p);
 void print_parse(YaepParseState *ps, FILE* f, YaepTreeNode*root);
+void print_symbol(MemBuffer *mb, YaepSymbol *symb, bool code_p);
+void print_terminal_bitset(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t *set);
 
 #define YAEP_PRINT_MODULE
 

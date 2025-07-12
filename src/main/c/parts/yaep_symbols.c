@@ -327,20 +327,4 @@ void symbolstorage_free(YaepParseState *ps, YaepSymbolStorage *symbs)
     yaep_free(ps->run.grammar->alloc, symbs);
 }
 
-/* The following function prints symbol SYMB to file F.  Terminal is
-   printed with its code if CODE_P. */
-void symbol_print(MemBuffer *mb, YaepSymbol *symb, bool code_p)
-{
-    if (symb->is_terminal)
-    {
-        membuffer_append(mb, symb->hr);
-        return;
-    }
-    membuffer_append(mb, symb->repr);
-    if (code_p && symb->is_terminal)
-    {
-        membuffer_printf(mb, "(%d)", symb->u.terminal.code);
-    }
-}
-
 #endif
