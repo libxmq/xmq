@@ -5021,9 +5021,6 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
 
 static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 {
-    YaepRule *rule, *dotted_rule_rule;
-    YaepSymbol *symb;
-    YaepCoreSymbToPredComps *core_symb_ids, *check_core_symb_ids;
     int i, j, k, found, pos_j, from_i;
     int state_set_k, n_candidates, rhs_offset;
     int dotted_rule_id, check_dotted_rule_id;
@@ -5106,7 +5103,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
     ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
 
-    rule = state->rule = dotted_rule->rule;
+    YaepRule *rule = state->rule = dotted_rule->rule;
     state->dotted_rule = dotted_rule;
     state->dot_j = dotted_rule->dot_j;
     state->from_i = 0;
@@ -5212,7 +5209,8 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         }
 
         assert(pos_j >= 0);
-        symb = rule->rhs[pos_j];
+
+        YaepSymbol *symb = rule->rhs[pos_j];
         if (symb->is_terminal)
         {
             /* Terminal before dot:*/
@@ -5273,7 +5271,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         /* Nonterminal before dot: */
         set = ps->state_sets[state_set_k];
         YaepStateSetCore *set_core = set->core;
-        core_symb_ids = core_symb_ids_find(ps, set_core, symb);
+        YaepCoreSymbToPredComps *core_symb_ids = core_symb_ids_find(ps, set_core, symb);
         debug("ixml.pa.c=", "core core%d symb %s -> %p", set_core->id, symb->hr, core_symb_ids);
         if (!core_symb_ids) continue;
 
@@ -5310,7 +5308,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
             YaepStateSet *check_set = ps->state_sets[dotted_rule_from_i];
             YaepStateSetCore *check_set_core = check_set->core;
-            check_core_symb_ids = core_symb_ids_find(ps, check_set_core, symb);
+            YaepCoreSymbToPredComps *check_core_symb_ids = core_symb_ids_find(ps, check_set_core, symb);
             assert(check_core_symb_ids != NULL);
             found = false;
 
@@ -5373,7 +5371,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                 }
             }
 
-            dotted_rule_rule = dotted_rule->rule;
+            YaepRule *dotted_rule_rule = dotted_rule->rule;
             if (n_candidates == 0)
             {
                 orig_state->state_set_k = dotted_rule_from_i;
