@@ -2852,10 +2852,10 @@ static int try_to_recover(YaepParseState *ps)
     return 0;
 }
 
-static YaepStateSetCoreTermLookAhead *lookup_cached_set(YaepParseState *ps,
-                                                    YaepSymbol *THE_TERMINAL,
-                                                    YaepSymbol *NEXT_TERMINAL,
-                                                    YaepStateSet *set)
+static YaepStateSetCoreTermLookAhead *lookup_cached_core_term_lookahead(YaepParseState *ps,
+                                                                        YaepSymbol *THE_TERMINAL,
+                                                                        YaepSymbol *NEXT_TERMINAL,
+                                                                        YaepStateSet *set)
 {
     int i;
     hash_table_entry_t *entry;
@@ -2957,7 +2957,7 @@ static void perform_parse(YaepParseState *ps)
 #ifdef USE_SET_HASH_TABLE
         // This command also adds the set to the hashtable if it does not already exist.
         // As a side effect it writes into ps->new_set
-        YaepStateSetCoreTermLookAhead *entry = lookup_cached_set(ps, THE_TERMINAL, NEXT_TERMINAL, set);
+        YaepStateSetCoreTermLookAhead *entry = lookup_cached_core_term_lookahead(ps, THE_TERMINAL, NEXT_TERMINAL, set);
 #endif
 
         if (ps->new_set == NULL)
