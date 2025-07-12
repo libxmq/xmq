@@ -5021,8 +5021,6 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
 
 static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 {
-    YaepStateSet *set, *check_set;
-    YaepStateSetCore *set_core, *check_set_core;
     YaepDottedRule *dotted_rule, *check_dotted_rule;
     YaepRule *rule, *dotted_rule_rule;
     YaepSymbol *symb;
@@ -5055,7 +5053,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     ps->n_parse_term_nodes = ps->n_parse_abstract_nodes = ps->n_parse_alt_nodes = 0;
 
     // Pick the final state set, where we completed the axiom $.
-    set = ps->state_sets[ps->state_set_k];
+    YaepStateSet *set = ps->state_sets[ps->state_set_k];
     assert(ps->run.grammar->axiom != NULL);
 
     /* We have only one start dotted_rule: "$ : <start symb> eof .". */
@@ -5275,7 +5273,7 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 
         /* Nonterminal before dot: */
         set = ps->state_sets[state_set_k];
-        set_core = set->core;
+        YaepStateSetCore *set_core = set->core;
         core_symb_ids = core_symb_ids_find(ps, set_core, symb);
         debug("ixml.pa.c=", "core core%d symb %s -> %p", set_core->id, symb->hr, core_symb_ids);
         if (!core_symb_ids) continue;
@@ -5311,9 +5309,8 @@ static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
                 dotted_rule_from_i = state_set_k;
             }
 
-
-            check_set = ps->state_sets[dotted_rule_from_i];
-            check_set_core = check_set->core;
+            YaepStateSet *check_set = ps->state_sets[dotted_rule_from_i];
+            YaepStateSetCore *check_set_core = check_set->core;
             check_core_symb_ids = core_symb_ids_find(ps, check_set_core, symb);
             assert(check_core_symb_ids != NULL);
             found = false;
