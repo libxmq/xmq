@@ -97,6 +97,7 @@
 #include "yaep_structs.h"
 #include "yaep_util.h"
 #include "yaep_tree.h"
+#include "yaep_print.h"
 #include "yaep_symbols.h"
 #include "yaep_terminal_bitset.h"
 #include "xmq.h"
