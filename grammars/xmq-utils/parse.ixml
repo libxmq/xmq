@@ -22,7 +22,7 @@ scan  = -'(ixml.pa) input[',index,-"]=",char, -~[#a]+.
 step_marker = 'step'.
 info_marker = 'info'.
 info_text = ~[#a]*.
-step = -'(ixml.pa) ', @step_marker, -' @',toki, -' (', id, -')', s, name, s, -'→', s, body?, dot?, where, cost?, -' ', info, -~[#a]*
+step = -'(ixml.pa) ', @step_marker, -' @',toki, -' (', id, -')', s, name, s, -'→', s, body?, dot?, where, cost?, -~[#a]*
      | -'(ixml.pa) ', @info_marker, -' @',toki, info_text.
 -ignorec  = -'(ixml.pa) @',-[N]+,-' created ', -~[#a]*.
 -testnot  = -'(ixml.pa) @',-[N]+,-' test ', -~[#a]*.

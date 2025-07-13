@@ -633,10 +633,11 @@ static void set_init(YaepParseState *ps, int n_input)
     dotted_rule_matched_length_set_init(ps);
 }
 
-static void debug_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, int parent_id, const char *why, bool blocked)
+static void debug_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, int parent_id)
 {
     if (!ps->run.debug) return;
 
+    /*
     if (blocked)
     {
         MemBuffer *mb = new_membuffer();
@@ -644,7 +645,7 @@ static void debug_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int matc
         debug_mb("ixml.pa=", mb);
         free_membuffer_and_free_content(mb);
         return;
-    }
+        }*/
 
     MemBuffer *mb = new_membuffer();
     membuffer_printf(mb, "step @%d ", ps->tok_i);
@@ -653,7 +654,7 @@ static void debug_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int matc
     int k = 1+ps->state_set_k;
     if (k < 0) k = 0;
 
-    print_dotted_rule(mb, ps, k, dotted_rule, matched_length, parent_id, why);
+    print_dotted_rule(mb, ps, k, dotted_rule, matched_length, parent_id, NULL);
     debug_mb("ixml.pa=", mb);
     free_membuffer_and_free_content(mb);
 
@@ -742,7 +743,8 @@ static void set_add_dotted_rule_with_matched_length(YaepParseState *ps, YaepDott
 
     ps->new_num_leading_dotted_rules++;
 
-    debug_step(ps, dotted_rule, matched_length, -1, "add_dotted_rule_with_matched_length", false);
+    debug_info(ps, "add_dotted_rule_with_matched_length");
+    debug_step(ps, dotted_rule, matched_length, -1);
 }
 
 /* Add non-start (initial) SIT with zero distance at the end of the
@@ -771,7 +773,8 @@ static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule 
     /* Remember we do not store matched_length for not-yet-started dotted_rules. */
     append_dotted_rule_to_core(ps, dotted_rule);
 
-    debug_step(ps, dotted_rule, 0, -1, "add_dotted_rule_no_match_yet", false);
+    debug_info(ps, "add dotted rule no match yet");
+    debug_step(ps, dotted_rule, 0, -1);
 }
 
 /* Add nonstart, noninitial SIT with distance DIST at the end of the
@@ -816,7 +819,8 @@ static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *
     ps->new_core->parent_dotted_rule_ids[ps->new_core->num_all_matched_lengths++] = parent_dotted_rule_id;
     ps->num_parent_dotted_rule_ids++;
 
-    debug_step(ps, dotted_rule, 0, parent_dotted_rule_id, "set_add_dotted_rule_with_parent", false);
+    debug_info(ps, "set_add_dotted_rule_with_parent");
+    debug_step(ps, dotted_rule, 0, parent_dotted_rule_id);
 }
 
 /* Set up hash of matched_lengths of set S. */
@@ -881,14 +885,16 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
         // The matched lengths already existed use the cache.
         ps->new_matched_lengths = ps->new_set->matched_lengths = (*sm)->matched_lengths;
         OS_TOP_NULLIFY(ps->set_matched_lengths_os);
+        debug_info(ps, "re-using matched lengths");
     }
     else
     {
-        // This is a new set of matched lengths. Insert this a
+        // This is a new set of matched lengths.
         OS_TOP_FINISH(ps->set_matched_lengths_os);
         *sm = ps->new_set;
         ps->num_set_matched_lengths++;
         ps->num_set_matched_lengths_len += ps->new_num_leading_dotted_rules;
+        debug_info(ps, "new matched lengths");
     }
 #else
     OS_TOP_FINISH(ps->set_matched_lengths_os);
@@ -934,18 +940,20 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
         ps->num_sets_total++;
         ps->num_dotted_rules_total += ps->new_num_leading_dotted_rules;
         OS_TOP_FINISH(ps->sets_os);
+        debug_info(ps, "new stateset");
     }
     else
     {
         ps->new_set = *scm;
         OS_TOP_NULLIFY(ps->sets_os);
+        debug_info(ps, "re-using stateset s%d", ps->new_set->id);
     }
 #else
     OS_TOP_FINISH(ps->sets_os);
 #endif
 
     ps->new_set_ready_p = true;
-
+    debug_info(ps, "new set ready");
     return added;
 }
 
@@ -2161,7 +2169,7 @@ static bool blocked_by_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule
         membuffer_printf(mb, "}");
         membuffer_append_null(mb);
 
-        debug_step(ps, dotted_rule, 0, -1, mb->buffer_, true);
+        debug_info(ps, mb->buffer_);
 
         free_membuffer_and_free_content(mb);
     }
