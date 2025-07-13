@@ -954,6 +954,7 @@ void yaep_alloc_seterr (YaepAllocator * allocator, Yaep_alloc_error errfunc,
 
 typedef const void *hash_table_entry_t;
 
+typedef unsigned int ( *hash_table_hash_function )(hash_table_entry_t el_ptr);
 typedef bool (*hash_table_eq_function) (hash_table_entry_t el1_ptr, hash_table_entry_t el2_ptr);
 
 
@@ -978,7 +979,7 @@ typedef struct
   int collisions;
   /* Pointer to function for evaluation of hash value (any unsigned value).
      This function has one parameter of type hash_table_entry_t. */
-  unsigned (*hash_function) (hash_table_entry_t el_ptr);
+  hash_table_hash_function hash_function;
   /* Pointer to function for test on equality of hash table elements (two
      parameter of type hash_table_entry_t. */
   hash_table_eq_function eq_function;
@@ -1003,7 +1004,7 @@ typedef struct
 
 extern hash_table_t create_hash_table(YaepAllocator * allocator,
                                       size_t size,
-                                      unsigned int ( *hash_function )( hash_table_entry_t el_ptr ),
+                                      hash_table_hash_function hash_function,
                                       hash_table_eq_function eq_function);
 
 extern void empty_hash_table (hash_table_t htab);
@@ -2568,11 +2569,9 @@ struct YaepParseState
     /* Container for triples(set, term, lookahead. */
     os_t triplet_core_term_lookahead_os;
 
-    /* The following 3 tables contain references for sets which refers
-       for set cores or matched_lengths or both which are in the tables.*/
     hash_table_t cache_stateset_cores;                /* key is the started dotted rules from a stateset. */
     hash_table_t cache_stateset_matched_lengths;      /* key is matched_lengths from a stateset. */
-    hash_table_t cache_stateset_core_matched_lengths; /* key is(core, matched_lengths). */
+    hash_table_t cache_stateset_core_matched_lengths; /* key is (core, matched_lengths). */
     hash_table_t cache_stateset_core_term_lookahead;  /* key is (core, term, lookeahed). */
 
     /* The following contains current number of unique dotted_rules. */
@@ -21272,23 +21271,16 @@ static void free_vlo_array(YaepParseState *ps)
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
 /* Hash of core_symb_ids.*/
-static unsigned core_symb_ids_hash(hash_table_entry_t t)
+static unsigned core_symb_ids_hash(YaepCoreSymbToPredComps *core_symb_ids)
 {
-    YaepCoreSymbToPredComps*core_symb_ids =(YaepCoreSymbToPredComps*) t;
-
-    return((jauquet_prime_mod32* hash_shift
-            +(size_t)/* was unsigned */core_symb_ids->core)* hash_shift
-           +(size_t)/* was unsigned */core_symb_ids->symb);
+    return (jauquet_prime_mod32* hash_shift+(size_t)/* was unsigned */core_symb_ids->core) * hash_shift
+        +(size_t)/* was unsigned */core_symb_ids->symb;
 }
 
-/* Equality of core_symb_idss.*/
-static bool core_symb_ids_eq(hash_table_entry_t t1, hash_table_entry_t t2)
+/* Equality of core_symb_ids.*/
+static bool core_symb_ids_eq(YaepCoreSymbToPredComps *core_symb_ids1, YaepCoreSymbToPredComps *core_symb_ids2)
 {
-    YaepCoreSymbToPredComps*core_symb_ids1 =(YaepCoreSymbToPredComps*) t1;
-    YaepCoreSymbToPredComps*core_symb_ids2 =(YaepCoreSymbToPredComps*) t2;
-
-    return(core_symb_ids1->core == core_symb_ids2->core
-            && core_symb_ids1->symb == core_symb_ids2->symb);
+    return core_symb_ids1->core == core_symb_ids2->core && core_symb_ids1->symb == core_symb_ids2->symb;
 }
 #endif
 
@@ -21345,7 +21337,9 @@ static void core_symb_ids_init(YaepParseState *ps)
 
     vlo_array_init(ps);
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    ps->map_core_symb_to_vect = create_hash_table(ps->run.grammar->alloc, 3000, core_symb_ids_hash, core_symb_ids_eq);
+    ps->map_core_symb_to_vect = create_hash_table(ps->run.grammar->alloc, 3000,
+                                                  (hash_table_hash_function)core_symb_ids_hash,
+                                                  (hash_table_eq_function)core_symb_ids_eq);
 #else
     VLO_CREATE(ps->core_symb_table_vlo, ps->run.grammar->alloc, 4096);
     ps->core_symb_table = (YaepCoreSymbToPredComps***)VLO_BEGIN(ps->core_symb_table_vlo);

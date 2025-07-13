@@ -52,6 +52,7 @@
 
 typedef const void *hash_table_entry_t;
 
+typedef unsigned int ( *hash_table_hash_function )(hash_table_entry_t el_ptr);
 typedef bool (*hash_table_eq_function) (hash_table_entry_t el1_ptr, hash_table_entry_t el2_ptr);
 
 
@@ -76,7 +77,7 @@ typedef struct
   int collisions;
   /* Pointer to function for evaluation of hash value (any unsigned value).
      This function has one parameter of type hash_table_entry_t. */
-  unsigned (*hash_function) (hash_table_entry_t el_ptr);
+  hash_table_hash_function hash_function;
   /* Pointer to function for test on equality of hash table elements (two
      parameter of type hash_table_entry_t. */
   hash_table_eq_function eq_function;
@@ -101,7 +102,7 @@ typedef struct
 
 extern hash_table_t create_hash_table(YaepAllocator * allocator,
                                       size_t size,
-                                      unsigned int ( *hash_function )( hash_table_entry_t el_ptr ),
+                                      hash_table_hash_function hash_function,
                                       hash_table_eq_function eq_function);
 
 extern void empty_hash_table (hash_table_t htab);

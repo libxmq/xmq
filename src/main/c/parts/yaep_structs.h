@@ -671,11 +671,9 @@ struct YaepParseState
     /* Container for triples(set, term, lookahead. */
     os_t triplet_core_term_lookahead_os;
 
-    /* The following 3 tables contain references for sets which refers
-       for set cores or matched_lengths or both which are in the tables.*/
     hash_table_t cache_stateset_cores;                /* key is the started dotted rules from a stateset. */
     hash_table_t cache_stateset_matched_lengths;      /* key is matched_lengths from a stateset. */
-    hash_table_t cache_stateset_core_matched_lengths; /* key is(core, matched_lengths). */
+    hash_table_t cache_stateset_core_matched_lengths; /* key is (core, matched_lengths). */
     hash_table_t cache_stateset_core_term_lookahead;  /* key is (core, term, lookeahed). */
 
     /* The following contains current number of unique dotted_rules. */
