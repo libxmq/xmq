@@ -21548,7 +21548,7 @@ static void core_symb_to_predcomps_add_predict(YaepParseState *ps,
     vect_add_id(ps, &core_symb_to_predcomps->predictions, rule_index_in_core);
 
     YaepDottedRule *dotted_rule = core_symb_to_predcomps->core->dotted_rules[rule_index_in_core];
-    debug_info(ps, "add predict cspc%d [core%d, %s] -> d%d",
+    debug_info(ps, "add pred cspc%d [core%d, %s] -> d%d",
                core_symb_to_predcomps->id,
                core_symb_to_predcomps->core->id,
                core_symb_to_predcomps->symb->hr,
@@ -21561,7 +21561,7 @@ static void core_symb_to_predcomps_add_complete(YaepParseState *ps,
 {
     vect_add_id(ps, &core_symb_to_predcomps->completions, rule_index_in_core);
     YaepDottedRule *dotted_rule = core_symb_to_predcomps->core->dotted_rules[rule_index_in_core];
-    debug_info(ps, "add complete cspc%d [core%d, %s] -> d%d",
+    debug_info(ps, "add comp cspc%d [core%d, %s] -> d%d",
                core_symb_to_predcomps->id,
                core_symb_to_predcomps->core->id,
                core_symb_to_predcomps->symb->hr,
