@@ -10,10 +10,8 @@ xsl:stylesheet(version   = 1.0
     xsl:key(name  = "blokey"
             match = "parse/block"
             use   = id)
-    xsl:variable(name   = gtot
-                 select = /parse/step[@step_marker][1]/total)
     xsl:variable(name   = gtotal
-                 select = $gtot+2)
+                 select = /parse/step[@step_marker][1]/total)
     xsl:template(match = /)
     {
         html {
@@ -90,12 +88,15 @@ xsl:stylesheet(version   = 1.0
     xsl:template(name = leinfo)
     {
         tr {
-            td(class   = leinfo)
+            td
             {
                 xsl:attribute(name = colspan)
                 {
                     xsl:value-of(select = "$gtotal")
                 }
+            }
+            td(class = leinfo)
+            {
                 xsl:value-of(select = 'info_text')
             }
         }

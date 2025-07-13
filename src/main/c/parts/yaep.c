@@ -909,9 +909,8 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
 
         OS_TOP_NULLIFY(ps->set_dotted_rules_os);
         added = false;
-        char buf[64];
-        snprintf(buf, 64, "re-using core%d", (*sc)->core->id);
-        debug_info(ps, buf);
+
+        debug_info(ps, "re-using core%d", (*sc)->core->id);
     }
     else
     {
@@ -921,8 +920,9 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
         ps->new_core->num_all_matched_lengths = ps->new_num_leading_dotted_rules;
         ps->new_core->parent_dotted_rule_ids = NULL;
         *sc = ps->new_set;
-        ps->num_set_core_start_dotted_rules+= ps->new_num_leading_dotted_rules;
+        ps->num_set_core_start_dotted_rules += ps->new_num_leading_dotted_rules;
         added = true;
+        debug_info(ps, "new core%d", (*sc)->core->id);
     }
 
 #ifdef USE_SET_HASH_TABLE
