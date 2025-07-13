@@ -10,6 +10,10 @@ xsl:stylesheet(version   = 1.0
     xsl:key(name  = "blokey"
             match = "parse/block"
             use   = id)
+    xsl:variable(name   = gtot
+                 select = /parse/step[@step_marker][1]/total)
+    xsl:variable(name   = gtotal
+                 select = $gtot+2)
     xsl:template(match = /)
     {
         html {
@@ -34,6 +38,7 @@ xsl:stylesheet(version   = 1.0
                          .predotted { color: black; background-color: orange;}
                          .dotted { color: darkorange;}
                          .info { text-align: left; background: lightyellow; font-size: 0.5em; }
+                         .leinfo { text-align: left; background: #eee; font-size: 0.5em; }
                          .dotted[blocked="true"] { color: white; background: red; }
                          .completed { color: black; background-color: lightgreen; }
                          .predicted { color: black; background-color: lightyellow; }'
@@ -47,7 +52,7 @@ xsl:stylesheet(version   = 1.0
                                          select = char)
                             th
                             {
-                                xsl:attribute(name="class") {
+                                xsl:attribute(name = class) {
                                     xsl:choose {
                                         xsl:when(test = "$content = 'ω'") = 'top eof'
                                         xsl:when(test = "$content = 'Ω'") = 'top eof'
@@ -72,6 +77,30 @@ xsl:stylesheet(version   = 1.0
     // [(position() > 2) and (position() < last()-1)]
     xsl:template(match = tra)
     xsl:template(match = step)
+    {
+        xsl:choose {
+            xsl:when(test = @step_marker) {
+                xsl:call-template(name = lestep)
+            }
+            xsl:otherwise {
+                xsl:call-template(name = leinfo)
+            }
+        }
+    }
+    xsl:template(name = leinfo)
+    {
+        tr {
+            td(class   = leinfo)
+            {
+                xsl:attribute(name = colspan)
+                {
+                    xsl:value-of(select = "$gtotal")
+                }
+                xsl:value-of(select = 'info_text')
+            }
+        }
+    }
+    xsl:template(name = lestep)
     {
         xsl:variable(name   = id
                      select = id)

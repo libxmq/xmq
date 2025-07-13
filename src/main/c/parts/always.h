@@ -27,6 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<stdbool.h>
 #include<stdlib.h>
 #include<stdarg.h>
+#include<setjmp.h>
 
 struct XMQLineConfig
 {
