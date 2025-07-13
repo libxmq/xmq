@@ -3066,18 +3066,25 @@ static void parse_state_free(YaepParseState *ps, YaepParseTreeBuildState*state)
    In the last case, the function also sets up*NEW_P.*/
 static YaepParseTreeBuildState *parse_state_insert(YaepParseState *ps, YaepParseTreeBuildState *state, bool *new_p)
 {
-    hash_table_entry_t*entry;
+    YaepParseTreeBuildState **entry = (YaepParseTreeBuildState**)find_hash_table_entry(
+        ps->map_rule_orig_statesetind_to_internalstate,
+        state,
+        true);
 
-    entry = find_hash_table_entry(ps->map_rule_orig_statesetind_to_internalstate, state, true);
+    *new_p = false;
 
-   *new_p = false;
     if (*entry != NULL)
-        return(YaepParseTreeBuildState*)*entry;
-   *new_p = true;
-    /* We make copy because state_set_k can be changed in further processing state.*/
-   *entry = parse_state_alloc(ps);
-   *(YaepParseTreeBuildState*)*entry =*state;
-    return(YaepParseTreeBuildState*)*entry;
+    {
+        return *entry;
+    }
+
+    *new_p = true;
+
+    /* We make copy because state_set_k can be changed in further processing state. */
+    *entry = parse_state_alloc(ps);
+    **entry = *state;
+
+    return *entry;
 }
 
 static void free_parse_state(YaepParseState *ps)
