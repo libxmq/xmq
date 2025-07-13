@@ -725,7 +725,7 @@ struct YaepParseState
     os_t vect_ids_os;
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    hash_table_t map_core_symb_to_vect;        /* key is set_core and symb.*/
+    hash_table_t map_core_symb_to_predcomps;        /* key is core and symb.*/
 #else
     /* The following two variables contains table(set core,
        symbol)->core_symb_to_predcomps implemented as two dimensional array.*/

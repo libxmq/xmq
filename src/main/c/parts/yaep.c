@@ -1113,9 +1113,9 @@ static void core_symb_to_predcomps_init(YaepParseState *ps)
 
     vlo_array_init(ps);
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    ps->map_core_symb_to_vect = create_hash_table(ps->run.grammar->alloc, 3000,
-                                                  (hash_table_hash_function)core_symb_to_predcomps_hash,
-                                                  (hash_table_eq_function)core_symb_to_predcomps_eq);
+    ps->map_core_symb_to_predcomps = create_hash_table(ps->run.grammar->alloc, 3000,
+                                                       (hash_table_hash_function)core_symb_to_predcomps_hash,
+                                                       (hash_table_eq_function)core_symb_to_predcomps_eq);
 #else
     VLO_CREATE(ps->core_symb_table_vlo, ps->run.grammar->alloc, 4096);
     ps->core_symb_table = (YaepCoreSymbToPredComps***)VLO_BEGIN(ps->core_symb_table_vlo);
@@ -1150,7 +1150,7 @@ static YaepCoreSymbToPredComps **core_symb_to_pred_comps_addr_get(YaepParseState
         return &triple->symb->cached_core_symb_to_predcomps;
     }
 
-    result = ((YaepCoreSymbToPredComps**)find_hash_table_entry(ps->map_core_symb_to_vect, triple, reserv_p));
+    result = ((YaepCoreSymbToPredComps**)find_hash_table_entry(ps->map_core_symb_to_predcomps, triple, reserv_p));
 
     triple->symb->cached_core_symb_to_predcomps = *result;
 
@@ -1370,7 +1370,7 @@ static void free_core_symb_to_vect_lookup(YaepParseState *ps)
     delete_hash_table(ps->map_reduce_to_coresymbvect);
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    delete_hash_table(ps->map_core_symb_to_vect);
+    delete_hash_table(ps->map_core_symb_to_predcomps);
 #else
     OS_DELETE(ps->core_symb_tab_rows);
     VLO_DELETE(ps->core_symb_table_vlo);
