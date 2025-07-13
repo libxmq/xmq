@@ -35,6 +35,7 @@
 #ifndef BUILDING_DIST_XMQ
 
 #include <stdbool.h>
+#include <setjmp.h>
 
 #include "yaep.h"
 #include "yaep_allocate.h"
@@ -195,6 +196,9 @@ struct YaepGrammar
 
     /* A user supplied pointer that is available to user callbacks through the grammar pointer. */
     void *user_data;
+
+    /* Long jump here if there is an error. */
+    jmp_buf error_longjump_buff;
 };
 
 struct YaepSymbol
@@ -824,6 +828,9 @@ struct YaepParseState
     hash_table_t map_rule_orig_statesetind_to_internalstate;        /* Key is rule, origin, state_set_k.*/
 
     int core_symb_to_pred_comps_counter;
+
+    /* Jump here when error. */
+    jmp_buf error_longjump_buff;
 };
 typedef struct YaepParseState YaepParseState;
 

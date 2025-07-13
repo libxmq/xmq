@@ -20671,25 +20671,22 @@ static unsigned dotted_rules_hash(int num_dotted_rules, YaepDottedRule **dotted_
     return result;
 }
 
-/* Finalize work with dotted_rules. */
 static void free_dotted_rules(YaepParseState *ps)
 {
     VLO_DELETE(ps->dotted_rules_table_vlo);
     OS_DELETE(ps->dotted_rules_os);
 }
 
-/* Hash of set core. */
-static unsigned stateset_core_hash(hash_table_entry_t s)
+static unsigned stateset_core_hash(YaepStateSet* s)
 {
-    return ((YaepStateSet*)s)->core->hash;
+    return s->core->hash;
 }
 
-/* Equality of set cores. */
 static bool stateset_core_eq(YaepStateSet *s1, YaepStateSet *s2)
 {
-    YaepStateSetCore*set_core1 = ((YaepStateSet*) s1)->core;
-    YaepStateSetCore*set_core2 = ((YaepStateSet*) s2)->core;
     YaepDottedRule **dotted_rule_ptr1, **dotted_rule_ptr2, **dotted_rule_bound1;
+    YaepStateSetCore*set_core1 = s1->core;
+    YaepStateSetCore*set_core2 = s2->core;
 
     if (set_core1->num_started_dotted_rules != set_core2->num_started_dotted_rules)
     {
@@ -20708,10 +20705,9 @@ static bool stateset_core_eq(YaepStateSet *s1, YaepStateSet *s2)
     return true;
 }
 
-/* Hash of set matched_lengths. */
-static unsigned matched_lengths_hash(hash_table_entry_t s)
+static unsigned matched_lengths_hash(YaepStateSet *s)
 {
-    return((YaepStateSet*) s)->matched_lengths_hash;
+    return s->matched_lengths_hash;
 }
 
 /* Compare all the matched_lengths stored in the two state sets. */
@@ -20737,42 +20733,38 @@ static bool matched_lengths_eq(YaepStateSet *s1, YaepStateSet *s2)
     return true;
 }
 
-/* Hash of set core and matched_lengths. */
-static unsigned stateset_core_matched_lengths_hash(hash_table_entry_t s)
+static unsigned stateset_core_matched_lengths_hash(YaepStateSet *s)
 {
     return stateset_core_hash(s) * hash_shift + matched_lengths_hash(s);
 }
 
-/* Equality of set cores and matched_lengths. */
-static bool stateset_core_matched_lengths_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool stateset_core_matched_lengths_eq(YaepStateSet *s1, YaepStateSet *s2)
 {
-    YaepStateSetCore *set_core1 = ((YaepStateSet*)s1)->core;
-    YaepStateSetCore *set_core2 = ((YaepStateSet*)s2)->core;
-    int*matched_lengths1 = ((YaepStateSet*)s1)->matched_lengths;
-    int*matched_lengths2 = ((YaepStateSet*)s2)->matched_lengths;
+    YaepStateSetCore *set_core1 = s1->core;
+    YaepStateSetCore *set_core2 = s2->core;
+    int*matched_lengths1 = s1->matched_lengths;
+    int*matched_lengths2 = s2->matched_lengths;
 
     return set_core1 == set_core2 && matched_lengths1 == matched_lengths2;
 }
 
-/* Hash of triple(set, term, lookahead). */
-static unsigned stateset_core_term_lookahead_hash(hash_table_entry_t s)
+static unsigned stateset_core_term_lookahead_hash(YaepStateSetCoreTermLookAhead *s)
 {
-    YaepStateSet *set = ((YaepStateSetCoreTermLookAhead*)s)->set;
-    YaepSymbol *term = ((YaepStateSetCoreTermLookAhead*)s)->term;
-    int lookahead = ((YaepStateSetCoreTermLookAhead*)s)->lookahead;
+    YaepStateSet *set = s->set;
+    YaepSymbol *term = s->term;
+    int lookahead = s->lookahead;
 
     return ((stateset_core_matched_lengths_hash(set)* hash_shift + term->u.terminal.term_id)* hash_shift + lookahead);
 }
 
-/* Equality of tripes(set, term, lookahead).*/
-static bool stateset_core_term_lookahead_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+static bool stateset_core_term_lookahead_eq(YaepStateSetCoreTermLookAhead *s1, YaepStateSetCoreTermLookAhead *s2)
 {
-    YaepStateSet *set1 =((YaepStateSetCoreTermLookAhead*)s1)->set;
-    YaepStateSet *set2 =((YaepStateSetCoreTermLookAhead*)s2)->set;
-    YaepSymbol *term1 =((YaepStateSetCoreTermLookAhead*)s1)->term;
-    YaepSymbol *term2 =((YaepStateSetCoreTermLookAhead*)s2)->term;
-    int lookahead1 =((YaepStateSetCoreTermLookAhead*)s1)->lookahead;
-    int lookahead2 =((YaepStateSetCoreTermLookAhead*)s2)->lookahead;
+    YaepStateSet *set1 = s1->set;
+    YaepStateSet *set2 = s2->set;
+    YaepSymbol *term1 = s1->term;
+    YaepSymbol *term2 = s2->term;
+    int lookahead1 = s1->lookahead;
+    int lookahead2 = s2->lookahead;
 
     return set1 == set2 && term1 == term2 && lookahead1 == lookahead2;
 }
@@ -20866,12 +20858,22 @@ static void set_init(YaepParseState *ps, int n_input)
     OS_CREATE(ps->sets_os, ps->run.grammar->alloc, 0);
     OS_CREATE(ps->triplet_core_term_lookahead_os, ps->run.grammar->alloc, 0);
 
-    ps->cache_stateset_cores = create_hash_table(ps->run.grammar->alloc, 2000, stateset_core_hash, (hash_table_eq_function)stateset_core_eq);
-    ps->cache_stateset_matched_lengths = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n, matched_lengths_hash, (hash_table_eq_function)matched_lengths_eq);
+    ps->cache_stateset_cores = create_hash_table(ps->run.grammar->alloc, 2000,
+                                                 (hash_table_hash_function)stateset_core_hash,
+                                                 (hash_table_eq_function)stateset_core_eq);
+
+    ps->cache_stateset_matched_lengths = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
+                                                           (hash_table_hash_function)matched_lengths_hash,
+                                                           (hash_table_eq_function)matched_lengths_eq);
+
     ps->cache_stateset_core_matched_lengths = create_hash_table(ps->run.grammar->alloc, n < 20000 ? 20000 : n,
-                                                                stateset_core_matched_lengths_hash, stateset_core_matched_lengths_eq);
+                                                                (hash_table_hash_function)stateset_core_matched_lengths_hash,
+                                                                (hash_table_eq_function)stateset_core_matched_lengths_eq);
+
     ps->cache_stateset_core_term_lookahead = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
-                                               stateset_core_term_lookahead_hash, stateset_core_term_lookahead_eq);
+                                                               (hash_table_hash_function)stateset_core_term_lookahead_hash,
+                                                               (hash_table_eq_function)stateset_core_term_lookahead_eq);
+
     ps->num_set_cores = ps->num_set_core_start_dotted_rules= 0;
     ps->num_set_matched_lengths = ps->num_set_matched_lengths_len = ps->num_parent_dotted_rule_ids = 0;
     ps->num_sets_total = ps->num_dotted_rules_total= 0;
@@ -21346,8 +21348,13 @@ static void core_symb_ids_init(YaepParseState *ps)
     OS_CREATE(ps->core_symb_tab_rows, ps->run.grammar->alloc, 8192);
 #endif
 
-    ps->map_transition_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000, prediction_ids_hash, prediction_ids_eq);
-    ps->map_reduce_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000, completion_ids_hash, completion_ids_eq);
+    ps->map_transition_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000,
+                                                           (hash_table_hash_function)prediction_ids_hash,
+                                                           (hash_table_eq_function)prediction_ids_eq);
+
+    ps->map_reduce_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000,
+                                                       (hash_table_hash_function)completion_ids_hash,
+                                                       (hash_table_eq_function)completion_ids_eq);
 
     ps->n_core_symb_pairs = ps->n_core_symb_ids_len = 0;
     ps->n_transition_vects = ps->n_transition_vect_len = 0;
@@ -23277,9 +23284,12 @@ static void parse_state_init(YaepParseState *ps)
     ps->free_parse_state = NULL;
     OS_CREATE(ps->parse_state_os, ps->run.grammar->alloc, 0);
     if (!ps->run.grammar->one_parse_p)
+    {
         ps->map_rule_orig_statesetind_to_internalstate =
-            create_hash_table(ps->run.grammar->alloc, ps->input_len* 2, parse_state_hash,
-                               parse_state_eq);
+            create_hash_table(ps->run.grammar->alloc, ps->input_len* 2,
+                              (hash_table_hash_function)parse_state_hash,
+                              (hash_table_eq_function)parse_state_eq);
+    }
 }
 
 /* The following function returns new parser state.*/
@@ -23543,8 +23553,9 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
 
     if (ps->run.parse_free != NULL)
     {
-        ps->set_of_reserved_memory = create_hash_table(ps->run.grammar->alloc, ps->input_len* 4, reserv_mem_hash,
-                                           reserv_mem_eq);
+        ps->set_of_reserved_memory = create_hash_table(ps->run.grammar->alloc, ps->input_len* 4,
+                                                       (hash_table_hash_function)reserv_mem_hash,
+                                                       (hash_table_eq_function)reserv_mem_eq);
 
         VLO_CREATE(ps->tnodes_vlo, ps->run.grammar->alloc, ps->input_len* 4* sizeof(void*));
     }

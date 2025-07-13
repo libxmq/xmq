@@ -85,7 +85,6 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include <setjmp.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -126,11 +125,6 @@ static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *
 static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps);
 static void prepare_for_leading_dotted_rules(YaepParseState *ps);
 static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
-
-// Global variables /////////////////////////////////////////////////////
-
-/* Jump buffer for processing errors.*/
-jmp_buf error_longjump_buff;
 
 // Implementations ////////////////////////////////////////////////////////////////////
 
@@ -1388,7 +1382,7 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...)
     vsprintf(ps->run.grammar->error_message, format, arguments);
     va_end(arguments);
     assert(strlen(ps->run.grammar->error_message) < YAEP_MAX_ERROR_MESSAGE_LENGTH);
-    longjmp(error_longjump_buff, code);
+    longjmp(ps->error_longjump_buff, code);
 }
 
 /* The following function processes allocation errors. */
@@ -1416,12 +1410,7 @@ YaepGrammar *yaepNewGrammar()
     grammar->alloc = allocator;
     yaep_alloc_seterr(allocator, error_func_for_allocate,
                       yaep_alloc_getuserptr(allocator));
-    if (setjmp(error_longjump_buff) != 0)
-    {
-        //yaepFreeGrammar(pr, grammar);
-        assert(0);
-        return NULL;
-    }
+
     grammar->undefined_p = true;
     grammar->error_code = 0;
    *grammar->error_message = '\0';
@@ -1772,7 +1761,7 @@ int yaep_read_grammar(YaepParseRun *pr,
     YaepParseState *ps = (YaepParseState*)pr;
     assert(CHECK_PARSE_STATE_MAGIC(ps));
 
-    if ((code = setjmp(error_longjump_buff)) != 0)
+    if ((code = setjmp(ps->error_longjump_buff)) != 0)
     {
         return code;
     }
@@ -3987,7 +3976,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
 
     if (!ps->run.read_token) ps->run.read_token = default_read_token;
 
-    if ((code = setjmp(error_longjump_buff)) != 0)
+    if ((code = setjmp(ps->error_longjump_buff)) != 0)
     {
         free_state_sets(ps);
         if (parse_init_p)
