@@ -253,8 +253,8 @@ struct YaepSymbol
     bool is_not_lookahead_p;
 #ifdef USE_CORE_SYMB_HASH_TABLE
     /* The following is used as cache for subsequent search for
-       core_symb_ids with given symb. */
-    YaepCoreSymbToPredComps *cached_core_symb_ids;
+       core_symb_to_predcomps with given symb. */
+    YaepCoreSymbToPredComps *cached_core_symb_to_predcomps;
 #endif
 };
 
@@ -318,7 +318,7 @@ struct YaepTerminalSetStorage
 struct YaepVect
 {
     /* The following member is used internally.  The value is
-       nonnegative for core_symb_ids being formed.  It is index of vlo
+       nonnegative for core_symb_to_predcomps being formed.  It is index of vlo
        in vlos array which contains the vector elements. */
     int intern;
 
@@ -710,16 +710,16 @@ struct YaepParseState
        their summary(transitive) prediction and completed vectors length,
        unique(transitive) prediction vectors and their summary length,
        and unique completed vectors and their summary length. */
-    int n_core_symb_pairs, n_core_symb_ids_len;
+    int n_core_symb_pairs, n_core_symb_to_predcomps_len;
     int n_transition_vects, n_transition_vect_len;
     int n_reduce_vects, n_reduce_vect_len;
 
     /* All triples(set core, symbol, vect) are placed in the following object. */
-    os_t core_symb_ids_os;
+    os_t core_symb_to_predcomps_os;
 
     /* Pointers to triples(set core, symbol, vect) being formed are
        placed in the following object. */
-    vlo_t new_core_symb_ids_vlo;
+    vlo_t new_core_symb_to_predcomps_vlo;
 
     /* All elements of vectors (transitive_)predictions and completions, are placed in the following os. */
     os_t vect_ids_os;
@@ -728,7 +728,7 @@ struct YaepParseState
     hash_table_t map_core_symb_to_vect;        /* key is set_core and symb.*/
 #else
     /* The following two variables contains table(set core,
-       symbol)->core_symb_ids implemented as two dimensional array.*/
+       symbol)->core_symb_to_predcomps implemented as two dimensional array.*/
     /* The following object contains pointers to the table rows for each
        set core.*/
     vlo_t core_symb_table_vlo;
@@ -741,7 +741,7 @@ struct YaepParseState
     os_t core_symb_tab_rows;
 #endif
 
-    /* The following tables contains references for core_symb_ids which
+    /* The following tables contains references for core_symb_to_predcomps which
        (through(transitive) predictions and completions correspondingly)
        refers for elements which are in the tables.  Sequence elements are
        stored in one exemplar to save memory.*/
@@ -782,7 +782,7 @@ struct YaepParseState
     int original_last_state_set_el;
 
     /* This page contains code for work with array of vlos.  It is used
-       only to implement abstract data `core_symb_ids'. */
+       only to implement abstract data `core_symb_to_predcomps'. */
 
     /* All vlos being formed are placed in the following object. */
     vlo_t vlo_array;

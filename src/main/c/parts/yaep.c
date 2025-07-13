@@ -759,7 +759,7 @@ static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule 
 
     /* When we add not-yet-started dotted_rules we need to have pairs
        (dotted_rule, the corresponding matched_length) without duplicates
-       because we also form core_symb_ids at that time. */
+       because we also form core_symb_to_predcomps at that time. */
     for (int i = ps->new_num_leading_dotted_rules; i < ps->new_core->num_dotted_rules; i++)
     {
         // Check if already added.
@@ -788,7 +788,7 @@ static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *
 
     /* When we add predicted dotted_rules we need to have pairs
        (dotted_rule + parent_dotted_rule_id) without duplicates
-       because we also form core_symb_ids at that time. */
+       because we also form core_symb_to_predcomps at that time. */
     for (int dotted_rule_id = ps->new_num_leading_dotted_rules;
          dotted_rule_id < ps->new_core->num_dotted_rules;
          dotted_rule_id++)
@@ -1046,17 +1046,17 @@ static void free_vlo_array(YaepParseState *ps)
 }
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
-/* Hash of core_symb_ids.*/
-static unsigned core_symb_ids_hash(YaepCoreSymbToPredComps *core_symb_ids)
+/* Hash of core_symb_to_predcomps.*/
+static unsigned core_symb_to_predcomps_hash(YaepCoreSymbToPredComps *core_symb_to_predcomps)
 {
-    return (jauquet_prime_mod32* hash_shift+(size_t)/* was unsigned */core_symb_ids->core) * hash_shift
-        +(size_t)/* was unsigned */core_symb_ids->symb;
+    return (jauquet_prime_mod32* hash_shift+(size_t)/* was unsigned */core_symb_to_predcomps->core) * hash_shift
+        +(size_t)/* was unsigned */core_symb_to_predcomps->symb;
 }
 
-/* Equality of core_symb_ids.*/
-static bool core_symb_ids_eq(YaepCoreSymbToPredComps *core_symb_ids1, YaepCoreSymbToPredComps *core_symb_ids2)
+/* Equality of core_symb_to_predcomps.*/
+static bool core_symb_to_predcomps_eq(YaepCoreSymbToPredComps *core_symb_to_predcomps1, YaepCoreSymbToPredComps *core_symb_to_predcomps2)
 {
-    return core_symb_ids1->core == core_symb_ids2->core && core_symb_ids1->symb == core_symb_ids2->symb;
+    return core_symb_to_predcomps1->core == core_symb_to_predcomps2->core && core_symb_to_predcomps1->symb == core_symb_to_predcomps2->symb;
 }
 #endif
 
@@ -1105,17 +1105,17 @@ static bool completion_ids_eq(hash_table_entry_t t1, hash_table_entry_t t2)
 }
 
 /* Initialize work with the triples(set core, symbol, vector).*/
-static void core_symb_ids_init(YaepParseState *ps)
+static void core_symb_to_predcomps_init(YaepParseState *ps)
 {
-    OS_CREATE(ps->core_symb_ids_os, ps->run.grammar->alloc, 0);
-    VLO_CREATE(ps->new_core_symb_ids_vlo, ps->run.grammar->alloc, 0);
+    OS_CREATE(ps->core_symb_to_predcomps_os, ps->run.grammar->alloc, 0);
+    VLO_CREATE(ps->new_core_symb_to_predcomps_vlo, ps->run.grammar->alloc, 0);
     OS_CREATE(ps->vect_ids_os, ps->run.grammar->alloc, 0);
 
     vlo_array_init(ps);
 #ifdef USE_CORE_SYMB_HASH_TABLE
     ps->map_core_symb_to_vect = create_hash_table(ps->run.grammar->alloc, 3000,
-                                                  (hash_table_hash_function)core_symb_ids_hash,
-                                                  (hash_table_eq_function)core_symb_ids_eq);
+                                                  (hash_table_hash_function)core_symb_to_predcomps_hash,
+                                                  (hash_table_eq_function)core_symb_to_predcomps_eq);
 #else
     VLO_CREATE(ps->core_symb_table_vlo, ps->run.grammar->alloc, 4096);
     ps->core_symb_table = (YaepCoreSymbToPredComps***)VLO_BEGIN(ps->core_symb_table_vlo);
@@ -1130,7 +1130,7 @@ static void core_symb_ids_init(YaepParseState *ps)
                                                        (hash_table_hash_function)completion_ids_hash,
                                                        (hash_table_eq_function)completion_ids_eq);
 
-    ps->n_core_symb_pairs = ps->n_core_symb_ids_len = 0;
+    ps->n_core_symb_pairs = ps->n_core_symb_to_predcomps_len = 0;
     ps->n_transition_vects = ps->n_transition_vect_len = 0;
     ps->n_reduce_vects = ps->n_reduce_vect_len = 0;
 }
@@ -1144,15 +1144,15 @@ static YaepCoreSymbToPredComps **core_symb_to_pred_comps_addr_get(YaepParseState
 {
     YaepCoreSymbToPredComps **result;
 
-    if (triple->symb->cached_core_symb_ids != NULL
-        && triple->symb->cached_core_symb_ids->core == triple->core)
+    if (triple->symb->cached_core_symb_to_predcomps != NULL
+        && triple->symb->cached_core_symb_to_predcomps->core == triple->core)
     {
-        return &triple->symb->cached_core_symb_ids;
+        return &triple->symb->cached_core_symb_to_predcomps;
     }
 
     result = ((YaepCoreSymbToPredComps**)find_hash_table_entry(ps->map_core_symb_to_vect, triple, reserv_p));
 
-    triple->symb->cached_core_symb_ids = *result;
+    triple->symb->cached_core_symb_to_predcomps = *result;
 
     return result;
 }
@@ -1161,18 +1161,18 @@ static YaepCoreSymbToPredComps **core_symb_to_pred_comps_addr_get(YaepParseState
 
 /* The following function returns entry in the table where pointer to
    corresponding triple with SET_CORE and SYMB is placed. */
-static YaepCoreSymbToPredComps **core_symb_ids_addr_get(YaepParseState *ps, YaepStateSetCore *set_core, YaepSymbol *symb)
+static YaepCoreSymbToPredComps **core_symb_to_predcomps_addr_get(YaepParseState *ps, YaepStateSetCore *set_core, YaepSymbol *symb)
 {
-    YaepCoreSymbToPredComps***core_symb_ids_ptr;
+    YaepCoreSymbToPredComps***core_symb_to_predcomps_ptr;
 
-    core_symb_ids_ptr = ps->core_symb_table + set_core->id;
+    core_symb_to_predcomps_ptr = ps->core_symb_table + set_core->id;
 
-    if ((char*) core_symb_ids_ptr >=(char*) VLO_BOUND(ps->core_symb_table_vlo))
+    if ((char*) core_symb_to_predcomps_ptr >=(char*) VLO_BOUND(ps->core_symb_table_vlo))
     {
         YaepCoreSymbToPredComps***ptr,***bound;
         int diff, i;
 
-        diff =((char*) core_symb_ids_ptr
+        diff =((char*) core_symb_to_predcomps_ptr
                 -(char*) VLO_BOUND(ps->core_symb_table_vlo));
         diff += sizeof(YaepCoreSymbToPredComps**);
         if (diff == sizeof(YaepCoreSymbToPredComps**))
@@ -1180,7 +1180,7 @@ static YaepCoreSymbToPredComps **core_symb_ids_addr_get(YaepParseState *ps, Yaep
 
         VLO_EXPAND(ps->core_symb_table_vlo, diff);
         ps->core_symb_table = (YaepCoreSymbToPredComps***) VLO_BEGIN(ps->core_symb_table_vlo);
-        core_symb_ids_ptr = ps->core_symb_table + set_core->id;
+        core_symb_to_predcomps_ptr = ps->core_symb_table + set_core->id;
         bound =(YaepCoreSymbToPredComps***) VLO_BOUND(ps->core_symb_table_vlo);
 
         ptr = bound - diff / sizeof(YaepCoreSymbToPredComps**);
@@ -1196,23 +1196,23 @@ static YaepCoreSymbToPredComps **core_symb_ids_addr_get(YaepParseState *ps, Yaep
             ptr++;
         }
     }
-    return &(*core_symb_ids_ptr)[symb->id];
+    return &(*core_symb_to_predcomps_ptr)[symb->id];
 }
 #endif
 
 /* The following function returns the triple(if any) for given SET_CORE and SYMB. */
-static YaepCoreSymbToPredComps *core_symb_ids_find(YaepParseState *ps, YaepStateSetCore *core, YaepSymbol *symb)
+static YaepCoreSymbToPredComps *core_symb_to_predcomps_find(YaepParseState *ps, YaepStateSetCore *core, YaepSymbol *symb)
 {
     YaepCoreSymbToPredComps *r;
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    YaepCoreSymbToPredComps core_symb_ids;
+    YaepCoreSymbToPredComps core_symb_to_predcomps;
 
-    core_symb_ids.core = core;
-    core_symb_ids.symb = symb;
-    r = *core_symb_to_pred_comps_addr_get(ps, &core_symb_ids, false);
+    core_symb_to_predcomps.core = core;
+    core_symb_to_predcomps.symb = symb;
+    r = *core_symb_to_pred_comps_addr_get(ps, &core_symb_to_predcomps, false);
 #else
-    r = *core_symb_ids_addr_get(ps, core, symb);
+    r = *core_symb_to_predcomps_addr_get(ps, core, symb);
 #endif
 
     return r;
@@ -1225,12 +1225,12 @@ static YaepCoreSymbToPredComps *core_symb_to_predcomps_new(YaepParseState *ps, Y
     vlo_t*vlo_ptr;
 
     /* Create table element.*/
-    OS_TOP_EXPAND(ps->core_symb_ids_os, sizeof(YaepCoreSymbToPredComps));
-    core_symb_to = ((YaepCoreSymbToPredComps*) OS_TOP_BEGIN(ps->core_symb_ids_os));
+    OS_TOP_EXPAND(ps->core_symb_to_predcomps_os, sizeof(YaepCoreSymbToPredComps));
+    core_symb_to = ((YaepCoreSymbToPredComps*) OS_TOP_BEGIN(ps->core_symb_to_predcomps_os));
     core_symb_to->id = ps->core_symb_to_pred_comps_counter++;
     core_symb_to->core = core;
     core_symb_to->symb = symb;
-    OS_TOP_FINISH(ps->core_symb_ids_os);
+    OS_TOP_FINISH(ps->core_symb_to_predcomps_os);
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
     addr = core_symb_to_pred_comps_addr_get(ps, core_symb_to, true);
@@ -1249,7 +1249,7 @@ static YaepCoreSymbToPredComps *core_symb_to_predcomps_new(YaepParseState *ps, Y
     vlo_ptr = vlo_array_el(ps, core_symb_to->completions.intern);
     core_symb_to->completions.len = 0;
     core_symb_to->completions.ids =(int*) VLO_BEGIN(*vlo_ptr);
-    VLO_ADD_MEMORY(ps->new_core_symb_ids_vlo, &core_symb_to,
+    VLO_ADD_MEMORY(ps->new_core_symb_to_predcomps_vlo, &core_symb_to,
                     sizeof(YaepCoreSymbToPredComps*));
     ps->n_core_symb_pairs++;
 
@@ -1262,7 +1262,7 @@ static void vect_add_id(YaepParseState *ps, YaepVect *vec, int id)
     vlo_t *vlo_ptr = vlo_array_el(ps, vec->intern);
     VLO_ADD_MEMORY(*vlo_ptr, &id, sizeof(int));
     vec->ids =(int*) VLO_BEGIN(*vlo_ptr);
-    ps->n_core_symb_ids_len++;
+    ps->n_core_symb_to_predcomps_len++;
 }
 
 static void log_dotted_rule(YaepParseState *ps, int lookahead_term_id, YaepDottedRule *new_dotted_rule)
@@ -1278,38 +1278,38 @@ static void log_dotted_rule(YaepParseState *ps, int lookahead_term_id, YaepDotte
     debug_mb("ixml.pa.c=", mb);*/
 }
 
-static void core_symb_ids_add_predict(YaepParseState *ps,
-                                      YaepCoreSymbToPredComps *core_symb_ids,
+static void core_symb_to_predcomps_add_predict(YaepParseState *ps,
+                                      YaepCoreSymbToPredComps *core_symb_to_predcomps,
                                       int rule_index_in_core)
 {
-    vect_add_id(ps, &core_symb_ids->predictions, rule_index_in_core);
+    vect_add_id(ps, &core_symb_to_predcomps->predictions, rule_index_in_core);
 
-    YaepDottedRule *dotted_rule = core_symb_ids->core->dotted_rules[rule_index_in_core];
+    YaepDottedRule *dotted_rule = core_symb_to_predcomps->core->dotted_rules[rule_index_in_core];
     debug_info(ps, "add predict cspc%d [core%d, %s] -> d%d",
-               core_symb_ids->id,
-               core_symb_ids->core->id,
-               core_symb_ids->symb->hr,
+               core_symb_to_predcomps->id,
+               core_symb_to_predcomps->core->id,
+               core_symb_to_predcomps->symb->hr,
                dotted_rule->id);
 }
 
-static void core_symb_ids_add_complete(YaepParseState *ps,
-                                       YaepCoreSymbToPredComps *core_symb_ids,
+static void core_symb_to_predcomps_add_complete(YaepParseState *ps,
+                                       YaepCoreSymbToPredComps *core_symb_to_predcomps,
                                        int rule_index_in_core)
 {
-    vect_add_id(ps, &core_symb_ids->completions, rule_index_in_core);
-    YaepDottedRule *dotted_rule = core_symb_ids->core->dotted_rules[rule_index_in_core];
+    vect_add_id(ps, &core_symb_to_predcomps->completions, rule_index_in_core);
+    YaepDottedRule *dotted_rule = core_symb_to_predcomps->core->dotted_rules[rule_index_in_core];
     debug_info(ps, "add complete cspc%d [core%d, %s] -> d%d",
-               core_symb_ids->id,
-               core_symb_ids->core->id,
-               core_symb_ids->symb->hr,
+               core_symb_to_predcomps->id,
+               core_symb_to_predcomps->core->id,
+               core_symb_to_predcomps->symb->hr,
                dotted_rule->id);
 
 }
 
-/* Insert vector VEC from CORE_SYMB_IDS into table TAB.  Update
+/* Insert vector VEC from CORE_SYMB_TO_PREDCOMPS into table TAB.  Update
    *N_VECTS and INT*N_VECT_LEN if it is a new vector in the table. */
-static void process_core_symb_ids_el(YaepParseState *ps,
-                                      YaepCoreSymbToPredComps *core_symb_ids,
+static void process_core_symb_to_predcomps_el(YaepParseState *ps,
+                                      YaepCoreSymbToPredComps *core_symb_to_predcomps,
                                       YaepVect *vec,
                                       hash_table_t *tab,
                                       int *n_vects,
@@ -1323,16 +1323,16 @@ static void process_core_symb_ids_el(YaepParseState *ps,
     }
     else
     {
-        entry = find_hash_table_entry(*tab, core_symb_ids, true);
+        entry = find_hash_table_entry(*tab, core_symb_to_predcomps, true);
         if (*entry != NULL)
         {
-            vec->ids = (&core_symb_ids->predictions == vec
+            vec->ids = (&core_symb_to_predcomps->predictions == vec
                         ?((YaepCoreSymbToPredComps*)*entry)->predictions.ids
                         :((YaepCoreSymbToPredComps*)*entry)->completions.ids);
         }
         else
         {
-            *entry = (hash_table_entry_t)core_symb_ids;
+            *entry = (hash_table_entry_t)core_symb_to_predcomps;
             OS_TOP_ADD_MEMORY(ps->vect_ids_os, vec->ids, vec->len* sizeof(int));
             vec->ids =(int*) OS_TOP_BEGIN(ps->vect_ids_os);
             OS_TOP_FINISH(ps->vect_ids_os);
@@ -1343,24 +1343,24 @@ static void process_core_symb_ids_el(YaepParseState *ps,
     vec->intern = -1;
 }
 
-/* Finish forming all new triples core_symb_ids.*/
-static void core_symb_ids_new_all_stop(YaepParseState *ps)
+/* Finish forming all new triples core_symb_to_predcomps.*/
+static void core_symb_to_predcomps_new_all_stop(YaepParseState *ps)
 {
     YaepCoreSymbToPredComps**triple_ptr;
 
-    for(triple_ptr =(YaepCoreSymbToPredComps**) VLO_BEGIN(ps->new_core_symb_ids_vlo);
-        (char*) triple_ptr <(char*) VLO_BOUND(ps->new_core_symb_ids_vlo);
+    for(triple_ptr =(YaepCoreSymbToPredComps**) VLO_BEGIN(ps->new_core_symb_to_predcomps_vlo);
+        (char*) triple_ptr <(char*) VLO_BOUND(ps->new_core_symb_to_predcomps_vlo);
          triple_ptr++)
     {
-        process_core_symb_ids_el(ps, *triple_ptr, &(*triple_ptr)->predictions,
+        process_core_symb_to_predcomps_el(ps, *triple_ptr, &(*triple_ptr)->predictions,
                                   &ps->map_transition_to_coresymbvect, &ps->n_transition_vects,
                                   &ps->n_transition_vect_len);
-        process_core_symb_ids_el(ps, *triple_ptr, &(*triple_ptr)->completions,
+        process_core_symb_to_predcomps_el(ps, *triple_ptr, &(*triple_ptr)->completions,
                                   &ps->map_reduce_to_coresymbvect, &ps->n_reduce_vects,
                                   &ps->n_reduce_vect_len);
     }
     vlo_array_nullify(ps);
-    VLO_NULLIFY(ps->new_core_symb_ids_vlo);
+    VLO_NULLIFY(ps->new_core_symb_to_predcomps_vlo);
 }
 
 /* Finalize work with all triples(set core, symbol, vector).*/
@@ -1377,8 +1377,8 @@ static void free_core_symb_to_vect_lookup(YaepParseState *ps)
 #endif
     free_vlo_array(ps);
     OS_DELETE(ps->vect_ids_os);
-    VLO_DELETE(ps->new_core_symb_ids_vlo);
-    OS_DELETE(ps->core_symb_ids_os);
+    VLO_DELETE(ps->new_core_symb_to_predcomps_vlo);
+    OS_DELETE(ps->core_symb_to_predcomps_os);
 }
 
 /* The following function stores error CODE and MESSAGE.  The function
@@ -2034,7 +2034,7 @@ static void yaep_parse_init(YaepParseState *ps, int n_input)
 
     init_dotted_rules(ps);
     set_init(ps, n_input);
-    core_symb_ids_init(ps);
+    core_symb_to_predcomps_init(ps);
 #ifdef USE_CORE_SYMB_HASH_TABLE
     {
         int i;
@@ -2042,7 +2042,7 @@ static void yaep_parse_init(YaepParseState *ps, int n_input)
 
         for(i = 0;(symb = symb_get(ps, i)) != NULL; i++)
         {
-            symb->cached_core_symb_ids = NULL;
+            symb->cached_core_symb_to_predcomps = NULL;
         }
     }
 #endif
@@ -2231,12 +2231,12 @@ static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
 /* The following function adds the rest(predicted not-yet-started) dotted_rules to the
    new set and and forms triples(set_core, symbol, indexes) for
    further fast search of start dotted_rules from given core by
-   transition on given symbol(see comment for abstract data `core_symb_ids'). */
+   transition on given symbol(see comment for abstract data `core_symb_to_predcomps'). */
 static void expand_new_set(YaepParseState *ps)
 {
     YaepDottedRule *dotted_rule;
     YaepSymbol *symb;
-    YaepCoreSymbToPredComps *core_symb_ids;
+    YaepCoreSymbToPredComps *core_symb_to_predcomps;
     YaepRule *rule;
 
     /* Look for dotted rules that can be progressed because the next non-terminal
@@ -2262,9 +2262,9 @@ static void expand_new_set(YaepParseState *ps)
         {
             // Yes.
             symb = dotted_rule->rule->rhs[dotted_rule->dot_j];
-            core_symb_ids = core_symb_ids_find(ps, ps->new_core, symb);
+            core_symb_to_predcomps = core_symb_to_predcomps_find(ps, ps->new_core, symb);
 
-            if (core_symb_ids)
+            if (core_symb_to_predcomps)
             {
                 //trace("ixml.pa.c=", "found csl core symb ids core=%d symb=%s\n", ps->new_core->id, symb->hr);
             }
@@ -2273,7 +2273,7 @@ static void expand_new_set(YaepParseState *ps)
                 //trace("ixml.pa.c=",  "adding csl core symb ids core=%d symb=%s\n", ps->new_core->id, symb->hr);
                 // No vector found for this core+symb combo.
                 // Add a new vector.
-                core_symb_ids = core_symb_to_predcomps_new(ps, ps->new_core, symb);
+                core_symb_to_predcomps = core_symb_to_predcomps_new(ps, ps->new_core, symb);
 
                 if (!symb->is_terminal)
                 {
@@ -2288,7 +2288,7 @@ static void expand_new_set(YaepParseState *ps)
             // I.e. when we reach a certain symbol within this core, the we just find
             // a vector using the core+symb lookup. This vector stores all predicted dotted_rules
             // that should be added for further parsing.
-            core_symb_ids_add_predict(ps, core_symb_ids, rule_index_in_core);
+            core_symb_to_predcomps_add_predict(ps, core_symb_to_predcomps, rule_index_in_core);
 
             // The non-terminal can be empty and this is a not-yet added dotted_rule.
             if (symb->empty_p && rule_index_in_core >= ps->new_core->num_all_matched_lengths)
@@ -2333,12 +2333,12 @@ static void expand_new_set(YaepParseState *ps)
         // Yes, all rhs elements have been completed/scanned.
         symb = dotted_rule->rule->lhs;
 
-        core_symb_ids = core_symb_ids_find(ps, ps->new_core, symb);
-        if (core_symb_ids == NULL)
+        core_symb_to_predcomps = core_symb_to_predcomps_find(ps, ps->new_core, symb);
+        if (core_symb_to_predcomps == NULL)
         {
-            core_symb_ids = core_symb_to_predcomps_new(ps, ps->new_core, symb);
+            core_symb_to_predcomps = core_symb_to_predcomps_new(ps, ps->new_core, symb);
         }
-        core_symb_ids_add_complete(ps, core_symb_ids, rule_index_in_core);
+        core_symb_to_predcomps_add_complete(ps, core_symb_to_predcomps, rule_index_in_core);
     }
 
     if (ps->run.grammar->lookahead_level > 1)
@@ -2360,11 +2360,11 @@ static void expand_new_set(YaepParseState *ps)
                 terminal_bitset_clear(ps, dyn_lookahead_context_set);
                 new_dotted_rule = ps->new_dotted_rules[new_rule_index_in_core];
 
-                core_symb_ids = core_symb_ids_find(ps, ps->new_core, new_dotted_rule->rule->lhs);
+                core_symb_to_predcomps = core_symb_to_predcomps_find(ps, ps->new_core, new_dotted_rule->rule->lhs);
 
-                for (j = 0; j < core_symb_ids->predictions.len; j++)
+                for (j = 0; j < core_symb_to_predcomps->predictions.len; j++)
                 {
-                    int rule_index_in_core = core_symb_ids->predictions.ids[j];
+                    int rule_index_in_core = core_symb_to_predcomps->predictions.ids[j];
                     dotted_rule = ps->new_dotted_rules[rule_index_in_core];
                     shifted_dotted_rule = create_dotted_rule(ps,
                                                              dotted_rule->rule,
@@ -2399,7 +2399,7 @@ static void expand_new_set(YaepParseState *ps)
     }
 
     set_new_core_stop(ps);
-    core_symb_ids_new_all_stop(ps);
+    core_symb_to_predcomps_new_all_stop(ps);
 }
 
 static void build_start_set(YaepParseState *ps)
@@ -2527,15 +2527,15 @@ void check_leading_dotted_rules(YaepParseState *ps, YaepStateSet *set, int looka
             int new_matched_length = ps->new_matched_lengths[i];
             int place = ps->state_set_k + 1 - new_matched_length;
             YaepStateSet *prev_set = ps->state_sets[place];
-            YaepCoreSymbToPredComps *prev_core_symb_ids = core_symb_ids_find(ps, prev_set->core, new_dotted_rule->rule->lhs);
-            if (prev_core_symb_ids == NULL)
+            YaepCoreSymbToPredComps *prev_core_symb_to_predcomps = core_symb_to_predcomps_find(ps, prev_set->core, new_dotted_rule->rule->lhs);
+            if (prev_core_symb_to_predcomps == NULL)
             {
                 assert(new_dotted_rule->rule->lhs == ps->run.grammar->axiom);
                 continue;
             }
-            for (int j = 0; j < prev_core_symb_ids->predictions.len; j++)
+            for (int j = 0; j < prev_core_symb_to_predcomps->predictions.len; j++)
             {
-                int rule_index_in_core = prev_core_symb_ids->predictions.ids[j];
+                int rule_index_in_core = prev_core_symb_to_predcomps->predictions.ids[j];
                 YaepDottedRule *dotted_rule = prev_set->core->dotted_rules[rule_index_in_core];
                 try_eat_token("complete", ps, prev_set, dotted_rule, rule_index_in_core, lookahead_term_id, local_lookahead_level, new_matched_length);
             }
@@ -2544,11 +2544,11 @@ void check_leading_dotted_rules(YaepParseState *ps, YaepStateSet *set, int looka
 }
 
 /* The following function predicts a new state set by shifting dotted_rules
-   of SET given in CORE_SYMB_IDS with given lookahead terminal number.
+   of SET given in CORE_SYMB_TO_PREDCOMPS with given lookahead terminal number.
    If the number is negative, we ignore lookahead at all. */
 static void complete_and_predict_new_state_set(YaepParseState *ps,
                                                YaepStateSet *set,
-                                               YaepCoreSymbToPredComps *core_symb_ids,
+                                               YaepCoreSymbToPredComps *core_symb_to_predcomps,
                                                YaepSymbol *THE_TERMINAL,
                                                YaepSymbol *NEXT_TERMINAL)
 {
@@ -2557,7 +2557,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
 
     prepare_for_leading_dotted_rules(ps);
 
-    YaepVect *predictions = &core_symb_ids->predictions;
+    YaepVect *predictions = &core_symb_to_predcomps->predictions;
 
     clear_dotted_rule_matched_length_set(ps);
 
@@ -2569,7 +2569,7 @@ static void complete_and_predict_new_state_set(YaepParseState *ps,
     if (core_added)
     {
         expand_new_set(ps);
-        ps->new_core->term = core_symb_ids->symb;
+        ps->new_core->term = core_symb_to_predcomps->symb;
     }
 }
 
@@ -2661,7 +2661,7 @@ static int find_error_state_set_set(YaepParseState *ps, int start_state_set_set,
     assert(start_state_set_set >= 0);
    *cost = 0;
     for(curr_pl = start_state_set_set; curr_pl >= 0; curr_pl--)
-        if (core_symb_ids_find(ps, ps->state_sets[curr_pl]->core, ps->run.grammar->term_error) != NULL)
+        if (core_symb_to_predcomps_find(ps, ps->state_sets[curr_pl]->core, ps->run.grammar->term_error) != NULL)
             break;
         else if (ps->state_sets[curr_pl]->core->term != ps->run.grammar->term_error)
            (*cost)++;
@@ -2948,9 +2948,9 @@ static void perform_parse(YaepParseState *ps)
 
         if (ps->new_set == NULL)
         {
-            YaepCoreSymbToPredComps *core_symb_ids = core_symb_ids_find(ps, set->core, THE_TERMINAL);
+            YaepCoreSymbToPredComps *core_symb_to_predcomps = core_symb_to_predcomps_find(ps, set->core, THE_TERMINAL);
 
-            if (core_symb_ids == NULL)
+            if (core_symb_to_predcomps == NULL)
             {
                 int c = try_to_recover(ps);
                 if (c == 1)
@@ -2968,13 +2968,13 @@ static void perform_parse(YaepParseState *ps)
                 MemBuffer *mb = new_membuffer();
                 membuffer_printf(mb, "input[%d]=", ps->tok_i);
                 print_symbol(mb, THE_TERMINAL, true);
-                membuffer_printf(mb, " s%d core%d -> csl%d", set->id, set->core->id, core_symb_ids->id);
+                membuffer_printf(mb, " s%d core%d -> csl%d", set->id, set->core->id, core_symb_to_predcomps->id);
                 debug_mb("ixml.pa=", mb);
                 free_membuffer_and_free_content(mb);
             }
 
             // Do the actual predict/complete cycle.
-            complete_and_predict_new_state_set(ps, set, core_symb_ids, THE_TERMINAL, NEXT_TERMINAL);
+            complete_and_predict_new_state_set(ps, set, core_symb_to_predcomps, THE_TERMINAL, NEXT_TERMINAL);
 
 #ifdef USE_SET_HASH_TABLE
             save_cached_set(ps, entry, NEXT_TERMINAL);
@@ -3508,21 +3508,21 @@ static void loop_stack(YaepTreeNode **result,
         /* Nonterminal before dot: */
         set = ps->state_sets[state_set_k];
         YaepStateSetCore *set_core = set->core;
-        YaepCoreSymbToPredComps *core_symb_ids = core_symb_ids_find(ps, set_core, symb);
-        debug("ixml.pa.c=", "core core%d symb %s -> %p", set_core->id, symb->hr, core_symb_ids);
-        if (!core_symb_ids)
+        YaepCoreSymbToPredComps *core_symb_to_predcomps = core_symb_to_predcomps_find(ps, set_core, symb);
+        debug("ixml.pa.c=", "core core%d symb %s -> %p", set_core->id, symb->hr, core_symb_to_predcomps);
+        if (!core_symb_to_predcomps)
             continue;
 
-        assert(core_symb_ids->completions.len != 0);
+        assert(core_symb_to_predcomps->completions.len != 0);
         n_candidates = 0;
         YaepParseTreeBuildState *orig_state = state;
         if (!ps->run.grammar->one_parse_p)
         {
             VLO_NULLIFY(orig_states);
         }
-        for (int i = 0; i < core_symb_ids->completions.len; i++)
+        for (int i = 0; i < core_symb_to_predcomps->completions.len; i++)
         {
-            int rule_index_in_core = core_symb_ids->completions.ids[i];
+            int rule_index_in_core = core_symb_to_predcomps->completions.ids[i];
             dotted_rule = set_core->dotted_rules[rule_index_in_core];
             int dotted_rule_from_i;
             if (rule_index_in_core < set_core->num_started_dotted_rules)
@@ -3544,21 +3544,21 @@ static void loop_stack(YaepTreeNode **result,
 
             YaepStateSet *check_set = ps->state_sets[dotted_rule_from_i];
             YaepStateSetCore *check_set_core = check_set->core;
-            YaepCoreSymbToPredComps *check_core_symb_ids = core_symb_ids_find(ps, check_set_core, symb);
-            assert(check_core_symb_ids != NULL);
+            YaepCoreSymbToPredComps *check_core_symb_to_predcomps = core_symb_to_predcomps_find(ps, check_set_core, symb);
+            assert(check_core_symb_to_predcomps != NULL);
             bool found = false;
             if (ps->run.debug)
             {
                 MemBuffer *mb = new_membuffer();
                 membuffer_printf(mb, "trying (s%d,d%d) [%d-%d]  csl%d check_csl%d  ", state_set_k, dotted_rule->id, dotted_rule_from_i, state_set_k,
-                                core_symb_ids->id, check_core_symb_ids->id);
+                                core_symb_to_predcomps->id, check_core_symb_to_predcomps->id);
                 print_rule(mb, ps, dotted_rule->rule);
                 debug_mb("ixml.tr.c=", mb);
                 free_membuffer_and_free_content(mb);
             }
-            for (int j = 0; j < check_core_symb_ids->predictions.len; j++)
+            for (int j = 0; j < check_core_symb_to_predcomps->predictions.len; j++)
             {
-                int rule_index_in_check_core = check_core_symb_ids->predictions.ids[j];
+                int rule_index_in_check_core = check_core_symb_to_predcomps->predictions.ids[j];
                 YaepDottedRule *check_dotted_rule = check_set->core->dotted_rules[rule_index_in_check_core];
                 if (check_dotted_rule->rule != rule || check_dotted_rule->dot_j != pos_j)
                 {
@@ -4034,7 +4034,7 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
         membuffer_printf(mb, "#unique triples(set, term, lookahead) = %d, goto successes=%d\n",
                 ps->num_triplets_core_term_lookahead, ps->n_goto_successes);
         membuffer_printf(mb, "#pairs(set core, symb) = %d, their trans+reduce vects length = %d\n",
-                 ps->n_core_symb_pairs, ps->n_core_symb_ids_len);
+                 ps->n_core_symb_pairs, ps->n_core_symb_to_predcomps_len);
         membuffer_printf(mb, "#unique transition vectors = %d, their length = %d\n",
                 ps->n_transition_vects, ps->n_transition_vect_len);
         membuffer_printf(mb, "#unique reduce vectors = %d, their length = %d\n",
@@ -4262,7 +4262,7 @@ static int default_read_token(YaepParseRun *ps, void **attr)
 static void error_recovery(YaepParseState *ps, int *start, int *stop)
 {
     YaepStateSet*set;
-    YaepCoreSymbToPredComps*core_symb_ids;
+    YaepCoreSymbToPredComps*core_symb_to_predcomps;
     YaepRecoveryState best_state, state;
     int best_cost, cost, num_matched_input;
     int back_to_frontier_move_cost, backward_move_cost;
@@ -4345,13 +4345,13 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         }
 
         /* Shift error:*/
-        core_symb_ids = core_symb_ids_find(ps, set->core, ps->run.grammar->term_error);
-        assert(core_symb_ids != NULL);
+        core_symb_to_predcomps = core_symb_to_predcomps_find(ps, set->core, ps->run.grammar->term_error);
+        assert(core_symb_to_predcomps != NULL);
 
         if (ps->run.debug)
             fprintf(stderr, "++++Making error shift in set=%d\n", ps->state_set_k);
 
-        complete_and_predict_new_state_set(ps, set, core_symb_ids, NULL, NULL);
+        complete_and_predict_new_state_set(ps, set, core_symb_to_predcomps, NULL, NULL);
         ps->state_sets[++ps->state_set_k] = ps->new_set;
 
         if (ps->run.debug)
@@ -4364,8 +4364,8 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         /* Search the first right token.*/
         while(ps->tok_i < ps->input_len)
         {
-            core_symb_ids = core_symb_ids_find(ps, ps->new_core, ps->input[ps->tok_i].symb);
-            if (core_symb_ids != NULL)
+            core_symb_to_predcomps = core_symb_to_predcomps_find(ps, ps->new_core, ps->input[ps->tok_i].symb);
+            if (core_symb_to_predcomps != NULL)
                 break;
 
             if (ps->run.debug)
@@ -4416,7 +4416,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
         {
             NEXT_TERMINAL = ps->input[ps->tok_i + 1].symb;
         }
-        complete_and_predict_new_state_set(ps, ps->new_set, core_symb_ids, NULL, NEXT_TERMINAL);
+        complete_and_predict_new_state_set(ps, ps->new_set, core_symb_to_predcomps, NULL, NEXT_TERMINAL);
         ps->state_sets[++ps->state_set_k] = ps->new_set;
 
         if (ps->run.debug)
@@ -4450,7 +4450,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
                 break;
             }
             /* Push secondary recovery state(with error in set).*/
-            if (core_symb_ids_find(ps, ps->new_core, ps->run.grammar->term_error) != NULL)
+            if (core_symb_to_predcomps_find(ps, ps->new_core, ps->run.grammar->term_error) != NULL)
             {
                 if (ps->run.debug)
                 {
@@ -4462,8 +4462,8 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
 
                 push_recovery_state(ps, state.last_original_state_set_el, cost);
             }
-            core_symb_ids = core_symb_ids_find(ps, ps->new_core, ps->input[ps->tok_i].symb);
-            if (core_symb_ids == NULL)
+            core_symb_to_predcomps = core_symb_to_predcomps_find(ps, ps->new_core, ps->input[ps->tok_i].symb);
+            if (core_symb_to_predcomps == NULL)
             {
                 break;
             }
@@ -4472,7 +4472,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
             {
                 NEXT_TERMINAL = ps->input[ps->tok_i + 1].symb;
             }
-            complete_and_predict_new_state_set(ps, ps->new_set, core_symb_ids, NULL, NEXT_TERMINAL);
+            complete_and_predict_new_state_set(ps, ps->new_set, core_symb_to_predcomps, NULL, NEXT_TERMINAL);
             ps->state_sets[++ps->state_set_k] = ps->new_set;
         }
         if (num_matched_input >= ps->run.grammar->recovery_token_matches || ps->tok_i >= ps->input_len)
