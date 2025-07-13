@@ -1140,9 +1140,9 @@ static void core_symb_ids_init(YaepParseState *ps)
 /* The following function returns entry in the table where pointer to
    corresponding triple with the same keys as TRIPLE ones is
    placed.*/
-static YaepCoreSymbToPredComps **core_symb_ids_addr_get(YaepParseState *ps, YaepCoreSymbToPredComps *triple, int reserv_p)
+static YaepCoreSymbToPredComps **core_symb_to_pred_comps_addr_get(YaepParseState *ps, YaepCoreSymbToPredComps *triple, int reserv_p)
 {
-    YaepCoreSymbToPredComps**result;
+    YaepCoreSymbToPredComps **result;
 
     if (triple->symb->cached_core_symb_ids != NULL
         && triple->symb->cached_core_symb_ids->core == triple->core)
@@ -1210,7 +1210,7 @@ static YaepCoreSymbToPredComps *core_symb_ids_find(YaepParseState *ps, YaepState
 
     core_symb_ids.core = core;
     core_symb_ids.symb = symb;
-    r = *core_symb_ids_addr_get(ps, &core_symb_ids, false);
+    r = *core_symb_to_pred_comps_addr_get(ps, &core_symb_ids, false);
 #else
     r = *core_symb_ids_addr_get(ps, core, symb);
 #endif
@@ -1218,43 +1218,42 @@ static YaepCoreSymbToPredComps *core_symb_ids_find(YaepParseState *ps, YaepState
     return r;
 }
 
-/* Add given triple(SET_CORE, TERM, ...) to the table and return a pointer to it.*/
-static YaepCoreSymbToPredComps *core_symb_ids_new(YaepParseState *ps, YaepStateSetCore*core, YaepSymbol*symb)
+static YaepCoreSymbToPredComps *core_symb_to_predcomps_new(YaepParseState *ps, YaepStateSetCore*core, YaepSymbol*symb)
 {
-    YaepCoreSymbToPredComps*triple;
+    YaepCoreSymbToPredComps*core_symb_to;
     YaepCoreSymbToPredComps**addr;
     vlo_t*vlo_ptr;
 
     /* Create table element.*/
     OS_TOP_EXPAND(ps->core_symb_ids_os, sizeof(YaepCoreSymbToPredComps));
-    triple = ((YaepCoreSymbToPredComps*) OS_TOP_BEGIN(ps->core_symb_ids_os));
-    triple->id = ps->core_symb_to_pred_comps_counter++;
-    triple->core = core;
-    triple->symb = symb;
+    core_symb_to = ((YaepCoreSymbToPredComps*) OS_TOP_BEGIN(ps->core_symb_ids_os));
+    core_symb_to->id = ps->core_symb_to_pred_comps_counter++;
+    core_symb_to->core = core;
+    core_symb_to->symb = symb;
     OS_TOP_FINISH(ps->core_symb_ids_os);
 
 #ifdef USE_CORE_SYMB_HASH_TABLE
-    addr = core_symb_ids_addr_get(ps, triple, true);
+    addr = core_symb_to_pred_comps_addr_get(ps, core_symb_to, true);
 #else
-    addr = core_symb_ids_addr_get(ps, core, symb);
+    addr = core_symb_to_pred_comps_addr_get(ps, core, symb);
 #endif
     assert(*addr == NULL);
-   *addr = triple;
+   *addr = core_symb_to;
 
-    triple->predictions.intern = vlo_array_expand(ps);
-    vlo_ptr = vlo_array_el(ps, triple->predictions.intern);
-    triple->predictions.len = 0;
-    triple->predictions.ids =(int*) VLO_BEGIN(*vlo_ptr);
+    core_symb_to->predictions.intern = vlo_array_expand(ps);
+    vlo_ptr = vlo_array_el(ps, core_symb_to->predictions.intern);
+    core_symb_to->predictions.len = 0;
+    core_symb_to->predictions.ids =(int*) VLO_BEGIN(*vlo_ptr);
 
-    triple->completions.intern = vlo_array_expand(ps);
-    vlo_ptr = vlo_array_el(ps, triple->completions.intern);
-    triple->completions.len = 0;
-    triple->completions.ids =(int*) VLO_BEGIN(*vlo_ptr);
-    VLO_ADD_MEMORY(ps->new_core_symb_ids_vlo, &triple,
+    core_symb_to->completions.intern = vlo_array_expand(ps);
+    vlo_ptr = vlo_array_el(ps, core_symb_to->completions.intern);
+    core_symb_to->completions.len = 0;
+    core_symb_to->completions.ids =(int*) VLO_BEGIN(*vlo_ptr);
+    VLO_ADD_MEMORY(ps->new_core_symb_ids_vlo, &core_symb_to,
                     sizeof(YaepCoreSymbToPredComps*));
     ps->n_core_symb_pairs++;
 
-    return triple;
+    return core_symb_to;
 }
 
 static void vect_add_id(YaepParseState *ps, YaepVect *vec, int id)
@@ -2274,7 +2273,7 @@ static void expand_new_set(YaepParseState *ps)
                 //trace("ixml.pa.c=",  "adding csl core symb ids core=%d symb=%s\n", ps->new_core->id, symb->hr);
                 // No vector found for this core+symb combo.
                 // Add a new vector.
-                core_symb_ids = core_symb_ids_new(ps, ps->new_core, symb);
+                core_symb_ids = core_symb_to_predcomps_new(ps, ps->new_core, symb);
 
                 if (!symb->is_terminal)
                 {
@@ -2337,7 +2336,7 @@ static void expand_new_set(YaepParseState *ps)
         core_symb_ids = core_symb_ids_find(ps, ps->new_core, symb);
         if (core_symb_ids == NULL)
         {
-            core_symb_ids = core_symb_ids_new(ps, ps->new_core, symb);
+            core_symb_ids = core_symb_to_predcomps_new(ps, ps->new_core, symb);
         }
         core_symb_ids_add_complete(ps, core_symb_ids, rule_index_in_core);
     }
