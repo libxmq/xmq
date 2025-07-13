@@ -659,12 +659,21 @@ static void debug_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int matc
 
 }
 
-static void debug_info(YaepParseState *ps, const char *why)
+static void debug_info(YaepParseState *ps, const char *format, ...)
 {
     if (!ps->run.debug) return;
 
+    va_list ap;
+    va_start(ap, format);
+
     MemBuffer *mb = new_membuffer();
-    membuffer_printf(mb, "info @%d %s", ps->tok_i, why);
+    membuffer_printf(mb, "info @%d ", ps->tok_i);
+
+    char *buf = buf_vsnprintf(format, ap);
+    membuffer_append(mb, buf);
+    membuffer_append_null(mb);
+    free(buf);
+
     debug_mb("ixml.pa=", mb);
     free_membuffer_and_free_content(mb);
     return;
@@ -1272,39 +1281,30 @@ static void log_dotted_rule(YaepParseState *ps, int lookahead_term_id, YaepDotte
 
 static void core_symb_ids_add_predict(YaepParseState *ps,
                                       YaepCoreSymbToPredComps *core_symb_ids,
-                                      int dotted_rule_id)
+                                      int rule_index_in_core)
 {
-    vect_add_id(ps, &core_symb_ids->predictions, dotted_rule_id);
+    vect_add_id(ps, &core_symb_ids->predictions, rule_index_in_core);
 
-    MemBuffer *mb = new_membuffer();
-    membuffer_printf(mb, "add predict dotted rule (%d) to csl%d (core%d, %s) ",
-                     dotted_rule_id,
-                     core_symb_ids->id,
-                     core_symb_ids->core->id,
-                     core_symb_ids->symb->hr);
-
-    YaepDottedRule *dotted_rule = core_symb_ids->core->dotted_rules[dotted_rule_id];
-    print_dotted_rule(mb, ps, ps->tok_i, dotted_rule, 0, 0, "");
-    debug_info(ps, mb->buffer_);
-    free_membuffer_and_free_content(mb);
+    YaepDottedRule *dotted_rule = core_symb_ids->core->dotted_rules[rule_index_in_core];
+    debug_info(ps, "add predict cspc%d [core%d, %s] -> d%d",
+               core_symb_ids->id,
+               core_symb_ids->core->id,
+               core_symb_ids->symb->hr,
+               dotted_rule->id);
 }
 
 static void core_symb_ids_add_complete(YaepParseState *ps,
                                        YaepCoreSymbToPredComps *core_symb_ids,
-                                       int dotted_rule_id)
+                                       int rule_index_in_core)
 {
-    vect_add_id(ps, &core_symb_ids->completions, dotted_rule_id);
-    MemBuffer *mb = new_membuffer();
-    membuffer_printf(mb, "add complete dotted rule (%d) to csl%d (core%d, %s) ",
-                     dotted_rule_id,
-                     core_symb_ids->id,
-                     core_symb_ids->core->id,
-                     core_symb_ids->symb->hr);
+    vect_add_id(ps, &core_symb_ids->completions, rule_index_in_core);
+    YaepDottedRule *dotted_rule = core_symb_ids->core->dotted_rules[rule_index_in_core];
+    debug_info(ps, "add complete cspc%d [core%d, %s] -> d%d",
+               core_symb_ids->id,
+               core_symb_ids->core->id,
+               core_symb_ids->symb->hr,
+               dotted_rule->id);
 
-    YaepDottedRule *dotted_rule = core_symb_ids->core->dotted_rules[dotted_rule_id];
-    print_dotted_rule(mb, ps, ps->tok_i, dotted_rule, 0, 0, "");
-    debug_info(ps, mb->buffer_);
-    free_membuffer_and_free_content(mb);
 }
 
 /* Insert vector VEC from CORE_SYMB_IDS into table TAB.  Update
@@ -2252,11 +2252,11 @@ static void expand_new_set(YaepParseState *ps)
         complete_empty_nonterminals_in_rule(ps, ps->new_dotted_rules[dotted_rule_id], dotted_rule_id, false);
     }
 
-    for (int dotted_rule_id = 0;
-         dotted_rule_id < ps->new_core->num_dotted_rules;
-         dotted_rule_id++)
+    for (int rule_index_in_core = 0;
+         rule_index_in_core < ps->new_core->num_dotted_rules;
+         rule_index_in_core++)
     {
-        dotted_rule = ps->new_dotted_rules[dotted_rule_id];
+        dotted_rule = ps->new_dotted_rules[rule_index_in_core];
 
         // Check that there is a symbol after the dot!
         if (dotted_rule->dot_j < dotted_rule->rule->rhs_len)
@@ -2289,10 +2289,10 @@ static void expand_new_set(YaepParseState *ps)
             // I.e. when we reach a certain symbol within this core, the we just find
             // a vector using the core+symb lookup. This vector stores all predicted dotted_rules
             // that should be added for further parsing.
-            core_symb_ids_add_predict(ps, core_symb_ids, dotted_rule_id);
+            core_symb_ids_add_predict(ps, core_symb_ids, rule_index_in_core);
 
             // The non-terminal can be empty and this is a not-yet added dotted_rule.
-            if (symb->empty_p && dotted_rule_id >= ps->new_core->num_all_matched_lengths)
+            if (symb->empty_p && rule_index_in_core >= ps->new_core->num_all_matched_lengths)
             {
                 int first = 1; //ps->new_set->id == 0 ? 0 : 1;
                 if (!blocked_by_lookahead(ps, dotted_rule, dotted_rule->rule->rhs[dotted_rule->dot_j], first, "lookahead2a"))
@@ -2306,7 +2306,7 @@ static void expand_new_set(YaepParseState *ps)
                     set_add_dotted_rule_no_match_yet(ps, nnnew_dotted_rule);
                 }
             }
-            if (is_not_rule(symb) && dotted_rule_id >= ps->new_core->num_all_matched_lengths)
+            if (is_not_rule(symb) && rule_index_in_core >= ps->new_core->num_all_matched_lengths)
             {
                 int first = ps->new_set->id == 0 ? 0 : 1;
                 if (!blocked_by_lookahead(ps, dotted_rule, dotted_rule->rule->rhs[dotted_rule->dot_j], first, "lookahead2b"))
@@ -2322,11 +2322,11 @@ static void expand_new_set(YaepParseState *ps)
         }
     }
 
-    for (int dotted_rule_id = 0;
-         dotted_rule_id < ps->new_core->num_dotted_rules;
-         dotted_rule_id++)
+    for (int rule_index_in_core = 0;
+         rule_index_in_core < ps->new_core->num_dotted_rules;
+         rule_index_in_core++)
     {
-        dotted_rule = ps->new_dotted_rules[dotted_rule_id];
+        dotted_rule = ps->new_dotted_rules[rule_index_in_core];
 
         // Is this dotted_rule complete? I.e. the dot is at its rightmost position?
         if (dotted_rule->dot_j != dotted_rule->rule->rhs_len) continue;
@@ -2339,7 +2339,7 @@ static void expand_new_set(YaepParseState *ps)
         {
             core_symb_ids = core_symb_ids_new(ps, ps->new_core, symb);
         }
-        core_symb_ids_add_complete(ps, core_symb_ids, dotted_rule_id);
+        core_symb_ids_add_complete(ps, core_symb_ids, rule_index_in_core);
     }
 
     if (ps->run.grammar->lookahead_level > 1)
@@ -2354,19 +2354,19 @@ static void expand_new_set(YaepParseState *ps)
         do
         {
             changed_p = false;
-            for(int new_dotted_rule_id = ps->new_core->num_all_matched_lengths;
-                new_dotted_rule_id < ps->new_core->num_dotted_rules;
-                new_dotted_rule_id++)
+            for(int new_rule_index_in_core = ps->new_core->num_all_matched_lengths;
+                new_rule_index_in_core < ps->new_core->num_dotted_rules;
+                new_rule_index_in_core++)
             {
                 terminal_bitset_clear(ps, dyn_lookahead_context_set);
-                new_dotted_rule = ps->new_dotted_rules[new_dotted_rule_id];
+                new_dotted_rule = ps->new_dotted_rules[new_rule_index_in_core];
 
                 core_symb_ids = core_symb_ids_find(ps, ps->new_core, new_dotted_rule->rule->lhs);
 
                 for (j = 0; j < core_symb_ids->predictions.len; j++)
                 {
-                    dotted_rule_id = core_symb_ids->predictions.ids[j];
-                    dotted_rule = ps->new_dotted_rules[dotted_rule_id];
+                    int rule_index_in_core = core_symb_ids->predictions.ids[j];
+                    dotted_rule = ps->new_dotted_rules[rule_index_in_core];
                     shifted_dotted_rule = create_dotted_rule(ps,
                                                              dotted_rule->rule,
                                                              dotted_rule->dot_j+1,
@@ -2391,7 +2391,7 @@ static void expand_new_set(YaepParseState *ps)
 
                 if (dotted_rule != new_dotted_rule)
                 {
-                    ps->new_dotted_rules[new_dotted_rule_id] = dotted_rule;
+                    ps->new_dotted_rules[new_rule_index_in_core] = dotted_rule;
                     changed_p = true;
                 }
             }

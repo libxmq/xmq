@@ -1,2 +1,4 @@
 src/main/c/parts/yaep.h
 src/main/c/parts/yaep.c
+dist/xmq.c
+dist/xmq.h

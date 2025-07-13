@@ -241,43 +241,47 @@ void print_dotted_rule(MemBuffer *mb,
     {
         membuffer_append(mb, " n/a[]");
     }
-    int cost = dotted_rule->rule->anode_cost;
-    if (cost > 0)
-    {
-        while (cost-- > 0) membuffer_append(mb, "<");
-        membuffer_append(mb, " ");
-    }
-    if (dotted_rule->rule->lhs->empty_p ||
-        dotted_rule->empty_tail_p ||
-        dotted_rule->info)
-    {
-        membuffer_append(mb, " ");
-    }
 
-    membuffer_printf(mb, "{%s:%s", dotted_rule->info, why);
-    if (dotted_rule->rule->lhs->empty_p || dotted_rule->empty_tail_p)
+    if (why)
     {
-        membuffer_append(mb, " ");
-    }
-    if (dotted_rule->empty_tail_p)
-    {
-        membuffer_append(mb, " empty_tail");
-    }
-    if (dotted_rule->rule->lhs->empty_p)
-    {
-        membuffer_append(mb, " empty_rule");
-    }
-
-    if (parent_id >= 0) membuffer_printf(mb, " parent=d%d", parent_id);
-    membuffer_printf(mb, " ml=%d", matched_length);
-    membuffer_append(mb, "}");
-
-    if (*why)
-    {
-        if (ps->run.grammar->lookahead_level != 0 && matched_length >= 0)
+        int cost = dotted_rule->rule->anode_cost;
+        if (cost > 0)
         {
-            membuffer_append(mb, "    ");
-            print_terminal_bitset(mb, ps, dotted_rule->lookahead);
+            while (cost-- > 0) membuffer_append(mb, "<");
+            membuffer_append(mb, " ");
+        }
+        if (dotted_rule->rule->lhs->empty_p ||
+            dotted_rule->empty_tail_p ||
+            dotted_rule->info)
+        {
+            membuffer_append(mb, " ");
+        }
+
+        membuffer_printf(mb, "{%s:%s", dotted_rule->info, why);
+        if (dotted_rule->rule->lhs->empty_p || dotted_rule->empty_tail_p)
+        {
+            membuffer_append(mb, " ");
+        }
+        if (dotted_rule->empty_tail_p)
+        {
+            membuffer_append(mb, " empty_tail");
+        }
+        if (dotted_rule->rule->lhs->empty_p)
+        {
+            membuffer_append(mb, " empty_rule");
+        }
+
+        if (parent_id >= 0) membuffer_printf(mb, " parent=d%d", parent_id);
+        membuffer_printf(mb, " ml=%d", matched_length);
+        membuffer_append(mb, "}");
+
+        if (*why)
+        {
+            if (ps->run.grammar->lookahead_level != 0 && matched_length >= 0)
+            {
+                membuffer_append(mb, "    ");
+                print_terminal_bitset(mb, ps, dotted_rule->lookahead);
+            }
         }
     }
 }
