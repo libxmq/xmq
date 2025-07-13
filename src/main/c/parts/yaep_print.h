@@ -37,14 +37,15 @@
 void print_core(MemBuffer*mb, YaepStateSetCore *c, YaepStateSet *s);
 void print_coresymbvects(MemBuffer*mb, YaepParseState *ps, YaepCoreSymbToPredComps *v);
 void print_dotted_rule(MemBuffer *mb, YaepParseState *ps, int from_i, YaepDottedRule *dotted_rule, int matched_length, int parent_id, const char *why);
+void print_matched_lenghts(MemBuffer *mb, YaepStateSet *s);
+void print_parse(YaepParseState *ps, FILE* f, YaepTreeNode*root);
 void print_rule(MemBuffer *mb, YaepParseState *ps, YaepRule *rule);
 void print_rule_with_dot(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, int pos);
 void print_state_set(MemBuffer *mb, YaepParseState *ps, YaepStateSet *set, int from_i);
-void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
-void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p);
-void print_parse(YaepParseState *ps, FILE* f, YaepTreeNode*root);
 void print_symbol(MemBuffer *mb, YaepSymbol *symb, bool code_p);
 void print_terminal_bitset(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t *set);
+void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
+void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p);
 
 #define YAEP_PRINT_MODULE
 

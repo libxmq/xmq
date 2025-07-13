@@ -286,6 +286,15 @@ void print_dotted_rule(MemBuffer *mb,
     }
 }
 
+void print_matched_lenghts(MemBuffer *mb, YaepStateSet *s)
+{
+    for (int i = 0; i < s->core->num_started_dotted_rules; ++i)
+    {
+        if (i > 0) membuffer_append_char(mb, ' ');
+        membuffer_printf(mb, "%d", s->matched_lengths[i]);
+    }
+}
+
 /* The following recursive function prints NODE into file F and prints
    all its children(if debug_level < 0 output format is for graphviz).*/
 void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node)

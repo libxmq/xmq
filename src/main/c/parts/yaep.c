@@ -773,7 +773,7 @@ static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule 
     /* Remember we do not store matched_length for not-yet-started dotted_rules. */
     append_dotted_rule_to_core(ps, dotted_rule);
 
-    debug_info(ps, "add dotted rule no match yet");
+    debug_info(ps, "add d%d no match yet", dotted_rule->id);
     debug_step(ps, dotted_rule, 0, -1);
 }
 
@@ -792,14 +792,15 @@ static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *
     /* When we add predicted dotted_rules we need to have pairs
        (dotted_rule + parent_dotted_rule_id) without duplicates
        because we also form core_symb_to_predcomps at that time. */
-    for (int dotted_rule_id = ps->new_num_leading_dotted_rules;
-         dotted_rule_id < ps->new_core->num_dotted_rules;
-         dotted_rule_id++)
+    for (int rule_index_in_core = ps->new_num_leading_dotted_rules;
+         rule_index_in_core < ps->new_core->num_dotted_rules;
+         rule_index_in_core++)
     {
-        if (ps->new_dotted_rules[dotted_rule_id] == dotted_rule &&
-            ps->new_core->parent_dotted_rule_ids[dotted_rule_id] == parent_dotted_rule_id)
+        if (ps->new_dotted_rules[rule_index_in_core] == dotted_rule &&
+            ps->new_core->parent_dotted_rule_ids[rule_index_in_core] == parent_dotted_rule_id)
         {
             // The dotted_rule + parent dotted rule already exists.
+            debug_info(ps, "reusing d%d with parent d%d", dotted_rule->id, parent_dotted_rule_id);
             return;
         }
     }
@@ -819,7 +820,7 @@ static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *
     ps->new_core->parent_dotted_rule_ids[ps->new_core->num_all_matched_lengths++] = parent_dotted_rule_id;
     ps->num_parent_dotted_rule_ids++;
 
-    debug_info(ps, "set_add_dotted_rule_with_parent");
+    debug_info(ps, "add d%d with parent d%d", dotted_rule->id, parent_dotted_rule_id);
     debug_step(ps, dotted_rule, 0, parent_dotted_rule_id);
 }
 
@@ -836,7 +837,7 @@ static void setup_set_matched_lengths_hash(hash_table_entry_t s)
 
     while (i < stop)
     {
-        result = result* hash_shift +*i++;
+        result = result*hash_shift + *i++;
     }
     set->matched_lengths_hash = result;
 }
@@ -894,7 +895,11 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
         *sm = ps->new_set;
         ps->num_set_matched_lengths++;
         ps->num_set_matched_lengths_len += ps->new_num_leading_dotted_rules;
-        debug_info(ps, "new matched lengths");
+        MemBuffer *mb = new_membuffer();
+        print_matched_lenghts(mb, ps->new_set);
+        membuffer_append_null(mb);
+        debug_info(ps, "new matched lengths (%s)", mb->buffer_);
+        free_membuffer_and_free_content(mb);
     }
 #else
     OS_TOP_FINISH(ps->set_matched_lengths_os);
