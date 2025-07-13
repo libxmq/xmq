@@ -3,12 +3,11 @@ xsl:stylesheet(version   = 1.0
 {
     xsl:output(method         = html
                doctype-system = about:legacy-compat)
-
-    xsl:key(name  = "trakey"
-            match = "parse/tra"
+    xsl:key(name  = trakey
+            match = parse/tra
             use   = id)
-    xsl:key(name  = "blokey"
-            match = "parse/block"
+    xsl:key(name  = blokey
+            match = parse/block
             use   = id)
     xsl:variable(name   = gtotal
                  select = /parse/step[@step_marker][1]/total)
@@ -24,7 +23,7 @@ xsl:stylesheet(version   = 1.0
                          table, th, td { border: 1px solid; text-align: center; }
                          td, th { min-width: 2em; min-height: 1em; white-space: nowrap; }
                          .rule { text-align: left; background-color: cyan; padding-right: 1em; padding-left: 1em; position: sticky; right: 0px;
-                                 max-width: 20vw; white-space: wrap; }
+                                 max-width: 30vw; white-space: wrap; }
                          .rulebox { flex-wrap: wrap; flex-direction: row; display: flex; justify-content: space-between; }
                          span.rulecontent { }
                          span.ruleid { font-size: 0.5em; }
@@ -39,7 +38,8 @@ xsl:stylesheet(version   = 1.0
                          .predotted { color: black; background-color: orange;}
                          .dotted { color: darkorange;}
                          .info { text-align: left; background: lightyellow; font-size: 0.5em; }
-                         .leinfo { text-align: left; background: #eee; font-size: 0.5em; }
+                         .leinfo { text-align: left; font-size: 0.5em; background-color: cyan; padding-right: 1em; padding-left: 1em; position: sticky; right: 0px; max-width: 30vw; white-space: wrap; }
+
                          .dotted[blocked="true"] { color: white; background: red; }
                          .completed { color: black; background-color: lightgreen; }
                          .predicted { color: black; background-color: lightyellow; }'
@@ -51,12 +51,16 @@ xsl:stylesheet(version   = 1.0
                         {
                             xsl:variable(name   = content
                                          select = char)
-                            th
-                            {
-                                xsl:attribute(name = class) {
+                            th {
+                                xsl:attribute(name = class)
+                                {
                                     xsl:choose {
-                                        xsl:when(test = "$content = 'ω'") = 'top eof'
-                                        xsl:when(test = "$content = 'Ω'") = 'top eof'
+                                        xsl:when(test = '''
+                                                        $content = 'ω'
+                                                        ''') = 'top eof'
+                                        xsl:when(test = '''
+                                                        $content = 'Ω'
+                                                        ''') = 'top eof'
                                         xsl:otherwise = top
                                     }
                                 }
@@ -64,8 +68,6 @@ xsl:stylesheet(version   = 1.0
                             }
                         }
                         th(class = rule)
-                        {
-                        }
                     }
                     xsl:apply-templates(match = parse/step)
                 }
@@ -80,7 +82,8 @@ xsl:stylesheet(version   = 1.0
     xsl:template(match = step)
     {
         xsl:choose {
-            xsl:when(test = @step_marker) {
+            xsl:when(test = @step_marker)
+            {
                 xsl:call-template(name = lestep)
             }
             xsl:otherwise {
@@ -91,16 +94,15 @@ xsl:stylesheet(version   = 1.0
     xsl:template(name = leinfo)
     {
         tr {
-            td
-            {
+            td {
                 xsl:attribute(name = colspan)
                 {
-                    xsl:value-of(select = "$gtotal")
+                    xsl:value-of(select = $gtotal)
                 }
             }
             td(class = leinfo)
             {
-                xsl:value-of(select = 'info_text')
+                xsl:value-of(select = info_text)
             }
         }
     }
@@ -123,53 +125,63 @@ xsl:stylesheet(version   = 1.0
         xsl:variable(name = final)
         {
             xsl:choose {
-                xsl:when(test= "$total = $to")
-                {
-                    '0'
-                }
-                xsl:otherwise = '1'
+                xsl:when(test = '$total = $to') = 0
+                xsl:otherwise = 1
             }
-         }
-
+        }
         tr {
-/*            td {
-                't=' xsl:value-of(select = '$total') ' '
-                'fr =' xsl:value-of(select = '$from') ' '
-                'to =' xsl:value-of(select = '$to') ' '
-                'p=' xsl:value-of(select = '$pre') ' '
-                'm=' xsl:value-of(select = '$mid') ' '
-                'ps=' xsl:value-of(select = '$post') ' '
-                'fi=' xsl:value-of(select = '$final') ' '
-            }*/
+            /*            td {
+                   't=' xsl:value-of(select = '$total') ' '
+                   'fr =' xsl:value-of(select = '$from') ' '
+                   'to =' xsl:value-of(select = '$to') ' '
+                   'p=' xsl:value-of(select = '$pre') ' '
+                   'm=' xsl:value-of(select = '$mid') ' '
+                   'ps=' xsl:value-of(select = '$post') ' '
+                   'fi=' xsl:value-of(select = '$final') ' '
+               } */
             xsl:call-template(name = gencols)
             {
                 xsl:with-param(name = class) = ''
-                xsl:with-param(name = count) {
-                    xsl:value-of(select = '$pre')
+                xsl:with-param(name = count)
+                {
+                    xsl:value-of(select = $pre)
                 }
             }
             td(colspan = '{$mid}')
             {
-                xsl:attribute(name="class") {
+                xsl:attribute(name = class)
+                {
                     xsl:choose {
-                        xsl:when(test = "type = 'complete'") = step
-                        xsl:when(test = "type = 'prediction'") = pred
-                        xsl:when(test = "type = 'not'") = notlookahead
+                        xsl:when(test = '''
+                                        type = 'complete'
+                                        ''') = step
+                        xsl:when(test = '''
+                                        type = 'prediction'
+                                        ''') = pred
+                        xsl:when(test = '''
+                                        type = 'not'
+                                        ''') = notlookahead
                         xsl:otherwise = dot
                     }
                 }
-                xsl:attribute(name="used") {
-                    xsl:for-each(select = "key('trakey',$id)") {
-                        xsl:if(test = "position()=1") = true
+                xsl:attribute(name = used)
+                {
+                    xsl:for-each(select = '''key('trakey',$id)''')
+                    {
+                        xsl:if(test = 'position()=1') = true
                     }
                 }
-                xsl:attribute(name="blocked") {
-                    xsl:for-each(select = "key('blokey',$id)") {
-                        xsl:if(test = "position()=1") = true
+                xsl:attribute(name = blocked)
+                {
+                    xsl:for-each(select = '''key('blokey',$id)''')
+                    {
+                        xsl:if(test = 'position()=1') = true
                     }
                 }
                 xsl:choose {
-                    xsl:when(test = "type = 'not'") = ' '
+                    xsl:when(test = '''
+                                    type = 'not'
+                                    ''') = ' '
                     xsl:otherwise {
                         xsl:apply-templates(select = name)
                     }
@@ -178,52 +190,62 @@ xsl:stylesheet(version   = 1.0
             xsl:call-template(name = gencols)
             {
                 xsl:with-param(name = class) = ''
-                xsl:with-param(name = count) {
-                    xsl:value-of(select = '$post')
+                xsl:with-param(name = count)
+                {
+                    xsl:value-of(select = $post)
                 }
             }
             xsl:call-template(name = gencols)
             {
-                xsl:with-param(name = class) = 'eof'
-                xsl:with-param(name = count) {
-                    xsl:value-of(select = '$final')
+                xsl:with-param(name = class) = eof
+                xsl:with-param(name = count)
+                {
+                    xsl:value-of(select = $final)
                 }
             }
-            td(class = rule) {
+            td(class = rule)
+            {
                 div(class = rulebox)
                 {
-                span(class = rulecontent)
-                {
-                xsl:apply-templates(select = name)
-                xsl:apply-templates(select = cost)
-                xsl:choose {
-                    xsl:when(test = "type = 'not'") = ''
-                    xsl:otherwise {
-                        ' → '
-                        span(class = completed) {
-                            xsl:apply-templates(select = body)
-                        }
-                        span(class = dotted) {
-                            xsl:attribute(name="blocked") {
-                                xsl:for-each(select = "key('blokey',$id)") {
-                                    xsl:if(test = "position()=1") = true
+                    span(class = rulecontent)
+                    {
+                        xsl:apply-templates(select = name)
+                        xsl:apply-templates(select = cost)
+                        xsl:choose {
+                            xsl:when(test = '''
+                                            type = 'not'
+                                            ''') = ''
+                            xsl:otherwise {
+                                ' → '
+                                span(class = completed)
+                                {
+                                    xsl:apply-templates(select = body)
+                                }
+                                span(class = dotted)
+                                {
+                                    xsl:attribute(name = blocked)
+                                    {
+                                        xsl:for-each(select = '''key('blokey',$id)''')
+                                        {
+                                            xsl:if(test = 'position()=1') = true
+                                        }
+                                    }
+                                }
+                                xsl:apply-templates(select = dot)
+                                xsl:for-each(select = '''key('blokey',$id)''')
+                                {
+                                    '*'
+                                    xsl:value-of(select = btype)
                                 }
                             }
                         }
-                        xsl:apply-templates(select = dot)
-                        xsl:for-each(select = "key('blokey',$id)") {
-                            '*'
-                            xsl:value-of(select = btype)
-                        }
                     }
-                }
-                }
-                span(class = ruleid)
-                {
-               '('
-               xsl:value-of(select = id)
-               ') '
-                }
+                    span(class = ruleid)
+                    {
+                        '('
+                        xsl:value-of(select = id)
+                        ') '
+                    }
                 }
             }
         }
@@ -243,7 +265,7 @@ xsl:stylesheet(version   = 1.0
             {
                 xsl:with-param(name = i)
                 {
-                    xsl:value-of(select = '$class')
+                    xsl:value-of(select = $class)
                 }
                 xsl:with-param(name = count)
                 {
