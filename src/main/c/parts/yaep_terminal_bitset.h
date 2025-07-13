@@ -24,6 +24,36 @@
    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/*
+    A terminal bitset stores a bit per terminal. For the ixml use case
+    this is a bit per unicode character used in the input file.
+
+    If the input file only contains the characters ABC, eg "ABCBABABCBCBA"
+    then only three bits are used. This will fit in a single entry terminal_bitset_t
+    aka a long int (64 bits) aka 8 bytes.
+
+    If the input file contains an ascii only source file, then the number of
+    distinct characters used are less than 128, typically ~100. This means 100 bits
+    are used, and this requires two terminal_bitset_t (aka 128 bits aka 16 bytes).
+
+    A rule lookahead scans all possible child rules and their leading characters.
+    These characters are translated into a bits and or:ed togeter into a lookahead bitset.
+
+    E.g. for the ABC file, if a rule only allows a single possible parse starting with A
+    then the lookahead bitset is 0x1 since A was assigned bit 0x1.
+    But if a rule allows for A and C as possible parses, then the lookahead bitset will
+    be 0x5 which is the or of 0x1 (A) and 0x4 (C).
+
+    The test whether the rule should be predicted or not can now be done with a simple bit test.
+    The next char is B (0x2) is the bit 0x2 set in 0x5? No, it isn't then we avoid adding the
+    rule to the predictions.
+
+    This means that an ixml charset rule such as ~['A'] with the possible child rules 'B' and 'C'.
+    will get a single lookahead terminal bitset 0x6 and the test wether a charset is applicable
+    also becomes a single bit test. I.e. even if there are a lot of child rules (one for each possible char)
+    the actual prediction is fast, a single bit test.
+*/
+
 #ifndef YAEP_TERMINAL_BITSET_H
 #define YAEP_TERMINAL_BITSET_H
 
