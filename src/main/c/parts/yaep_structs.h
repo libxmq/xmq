@@ -249,13 +249,13 @@ struct YaepSymbol
     bool derivation_p;
     /* The following is true if it is a nonterminal which may derive the empty string. */
     bool empty_p;
-    /* If the rule is a not lookahead. */
-    bool is_not_lookahead_p;
 #ifdef USE_CORE_SYMB_HASH_TABLE
     /* The following is used as cache for subsequent search for
        core_symb_to_predcomps with given symb. */
     YaepCoreSymbToPredComps *cached_core_symb_to_predcomps;
 #endif
+    /* Is it a not operator? E.g. !"CHAPTER" ![L] */
+    bool is_not_operator;
 };
 
 struct YaepSymbolStorage
@@ -500,9 +500,9 @@ struct YaepRule
     char *marks;
     /* The following three members define rule translation. */
 
-    const char *anode;                /* abstract node name if any. */
+    const char *anode;             /* abstract node name if any. */
     int anode_cost;                /* the cost of the abstract node if any, otherwise 0. */
-    int trans_len;                /* number of symbol translations in the rule translation. */
+    int trans_len;                 /* number of symbol translations in the rule translation. */
 
     /* The following array elements correspond to element of rhs with
        the same index.  The element value is order number of the
@@ -520,6 +520,9 @@ struct YaepRule
 
     /* The following is the same string as anode but memory allocated in parse_alloc. */
     char *caller_anode;
+
+    /* True if the rule contains any not operator. */
+    bool contains_not_operator;
 };
 
 /* The following container for the abstract data.*/

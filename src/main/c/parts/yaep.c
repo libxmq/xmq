@@ -111,6 +111,7 @@
 // Declarations ///////////////////////////////////////////////////
 
 static bool blocked_by_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule, YaepSymbol *symb, int n, const char *info);
+static bool core_has_not_rules(YaepStateSetCore *core);
 static void check_predicted_dotted_rules(YaepParseState *ps, YaepStateSet *set, YaepVect *predictions, int lookahead_term_id, int local_lookahead_level);
 static void check_leading_dotted_rules(YaepParseState *ps, YaepStateSet *set, int lookahead_term_id, int local_lookahead_level);
 static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n);
@@ -156,6 +157,7 @@ static YaepRule *rule_new_start(YaepParseState *ps, YaepSymbol *lhs, const char 
     OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
     rule->lhs = lhs;
     rule->mark = 0;
+    rule->contains_not_operator = false;
     if (anode == NULL)
     {
         rule->anode = NULL;
@@ -197,13 +199,15 @@ static YaepRule *rule_new_start(YaepParseState *ps, YaepSymbol *lhs, const char 
 /* Add SYMB at the end of current rule rhs. */
 static void rule_new_symb_add(YaepParseState *ps, YaepSymbol *symb)
 {
-    YaepSymbol *empty;
+    YaepSymbol *ignore = NULL;
 
-    empty = NULL;
-    OS_TOP_ADD_MEMORY(ps->run.grammar->rulestorage_ptr->rules_os, &empty, sizeof(YaepSymbol*));
-    ps->run.grammar->rulestorage_ptr->current_rule->rhs = (YaepSymbol**)OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
-    ps->run.grammar->rulestorage_ptr->current_rule->rhs[ps->run.grammar->rulestorage_ptr->current_rule->rhs_len] = symb;
-    ps->run.grammar->rulestorage_ptr->current_rule->rhs_len++;
+    OS_TOP_ADD_MEMORY(ps->run.grammar->rulestorage_ptr->rules_os, &ignore, sizeof(YaepSymbol*));
+
+    YaepRule *r = ps->run.grammar->rulestorage_ptr->current_rule;
+    r->rhs = (YaepSymbol**)OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
+    r->rhs[ps->run.grammar->rulestorage_ptr->current_rule->rhs_len] = symb;
+    r->rhs_len++;
+    r->contains_not_operator |= symb->is_not_operator;
     ps->run.grammar->rulestorage_ptr->n_rhs_lens++;
 }
 
@@ -300,7 +304,7 @@ static bool dotted_rule_calculate_lookahead(YaepParseState *ps, YaepDottedRule *
         terminal_bitset_clear(ps, dotted_rule->lookahead);
     }
 
-    if (is_not_rule(dotted_rule->rule->lhs)) return false;
+    if (dotted_rule->rule->lhs->is_not_operator) return false;
 
     // Point to the first symbol after the dot.
     symb_ptr = &dotted_rule->rule->rhs[dotted_rule->dot_j];
@@ -318,8 +322,8 @@ static bool dotted_rule_calculate_lookahead(YaepParseState *ps, YaepDottedRule *
             }
         }
         // Stop collecting lookahead if non-empty rule and its not a not-rule.
-        if (!symb->empty_p && !is_not_rule(symb)) break;
-        if (is_not_rule(symb)) found_not = true;
+        if (!symb->empty_p && !symb->is_not_operator) break;
+        if (symb->is_not_operator) found_not = true;
         symb_ptr++;
     }
 
@@ -925,7 +929,15 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
     setup_stateset_core_hash(ps->new_set);
     /* We look for a core with an identical list of started dotted rules (pointer equivalence). */
     YaepStateSet **sc = (YaepStateSet**)find_hash_table_entry(ps->cache_stateset_cores, ps->new_set, true);
-    if (false && *sc != NULL)
+    bool reuse_core = *sc != NULL;
+    if (reuse_core)
+    {
+        // We can potentially re-use this core, but lets check if there are not-operators in any of the dotted rules.
+        // If so, then we cannot re-use the core. Later on we can improve this by checking if the not rules
+        // apply to this position as well.
+        if (core_has_not_rules((*sc)->core)) reuse_core = false;
+    }
+    if (reuse_core)
     {
         // The core already existed, drop the core allocation.
         // Point to the old core instead.
@@ -1597,7 +1609,7 @@ static void create_first_follow_sets(YaepParseState *ps)
                                     |= terminal_bitset_or(ps, rhs_symb->u.nonterminal.follow,
                                                    next_rhs_symb->u.nonterminal.first);
                             }
-                            if (!next_rhs_symb->empty_p && !is_not_rule(next_rhs_symb))
+                            if (!next_rhs_symb->empty_p && !next_rhs_symb->is_not_operator)
                             {
                                 break;
                             }
@@ -1608,8 +1620,10 @@ static void create_first_follow_sets(YaepParseState *ps)
                                                      symb->u.nonterminal.follow);
                         }
                     }
-                    if (!rhs_symb->empty_p && !is_not_rule(rhs_symb))
+                    if (!rhs_symb->empty_p && !rhs_symb->is_not_operator)
+                    {
                         first_continue_p = false;
+                    }
                 }
             }
         }
@@ -1646,7 +1660,7 @@ static void set_empty_access_derives(YaepParseState *ps)
                 bool empty_p = true;
                 bool derivation_p = true;
 
-                if (is_not_rule(rule->lhs))
+                if (rule->lhs->is_not_operator)
                 {
                     empty_p = 0;
                 }
@@ -1660,7 +1674,7 @@ static void set_empty_access_derives(YaepParseState *ps)
                         rhs_symb->access_p = 1;
                     }
                     // A not rule forbids emptiness since it must always be checked against the input.
-                    if (is_not_rule(rhs_symb))
+                    if (rhs_symb->is_not_operator)
                     {
                         empty_p = 0;
                     }
@@ -2007,7 +2021,7 @@ int yaep_read_grammar(YaepParseRun *pr,
                 membuffer_printf(mb, "%s%s%s%s%s\n",
                                  symb->repr,
                                  (symb->empty_p ? " CAN_BECOME_EMPTY" : ""),
-                                 (symb->is_not_lookahead_p ? " NOT_LOOKAHEAD" : ""),
+                                 (symb->is_not_operator ? " NOT_OP" : ""),
                                  (symb->access_p ? "" : " OUPS_NOT_REACHABLE"),
                                  (symb->derivation_p ? "" : " OUPS_NO_TEXT"));
                 membuffer_append(mb, "  1st: ");
@@ -2138,7 +2152,7 @@ static void complete_empty_nonterminals_in_rule(YaepParseState *ps,
                 set_add_dotted_rule_with_parent(ps, new_dotted_rule, dotted_rule_parent_id);
             }
         }
-        else if (is_not_rule(rule->rhs[j]))
+        else if (rule->rhs[j]->is_not_operator)
         {
             if (blocked_by_lookahead(ps, dotted_rule, rule->rhs[j], 1-only_nots, "lookahead1"))
             {
@@ -2174,7 +2188,7 @@ static bool blocked_by_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule
     // and !#41 which becomes |!SA
 
     if (!symb) return false;
-    if (!is_not_rule(symb)) return false;
+    if (!symb->is_not_operator) return false;
 
     // The rule is a NOT lookup rule that can potentially block the completion of this empty rule if the matching lookahead exists.
     bool is_blocked = has_lookahead(ps, symb, n);
@@ -2270,6 +2284,16 @@ static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
     return match;
 }
 
+static bool core_has_not_rules(YaepStateSetCore *c)
+{
+    for (int i = 0; i < c->num_started_dotted_rules; ++i)
+    {
+        YaepDottedRule *dotted_rule = c->dotted_rules[i];
+        if (dotted_rule->rule->contains_not_operator) return true;
+    }
+    return false;
+}
+
 /* The following function adds the rest(predicted not-yet-started) dotted_rules to the
    new set and and forms triples(set_core, symbol, indexes) for
    further fast search of start dotted_rules from given core by
@@ -2347,7 +2371,7 @@ static void expand_new_set(YaepParseState *ps)
                     set_add_dotted_rule_no_match_yet(ps, nnnew_dotted_rule);
                 }
             }
-            if (is_not_rule(symb) && rule_index_in_core >= ps->new_core->num_all_matched_lengths)
+            if (symb->is_not_operator && rule_index_in_core >= ps->new_core->num_all_matched_lengths)
             {
                 int first = ps->new_set->id == 0 ? 0 : 1;
                 if (!blocked_by_lookahead(ps, dotted_rule, dotted_rule->rule->rhs[dotted_rule->dot_j], first, "lookahead2b"))
@@ -2554,7 +2578,7 @@ void check_leading_dotted_rules(YaepParseState *ps, YaepStateSet *set, int looka
         bool completed = new_dotted_rule->empty_tail_p;
 
         YaepSymbol *sym = new_dotted_rule->rule->rhs[new_dotted_rule->dot_j];
-        if (!completed && sym && is_not_rule(sym)
+        if (!completed && sym && sym->is_not_operator
             && !blocked_by_lookahead(ps, new_dotted_rule, new_dotted_rule->rule->rhs[new_dotted_rule->dot_j], 1, "lookaheadbanan"))
         {
             completed = true;

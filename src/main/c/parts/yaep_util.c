@@ -118,11 +118,4 @@ int find_matched_length(YaepParseState *ps,
     return matched_length;
 }
 
-bool is_not_rule(YaepSymbol *symb)
-{
-   if (symb->repr[0]!= '|' || symb->repr[1] != '!') return false;
-   return true;
-}
-
-
 #endif

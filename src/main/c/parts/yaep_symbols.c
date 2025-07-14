@@ -162,7 +162,7 @@ YaepSymbol *symb_add_terminal(YaepParseState *ps, const char*name, int code)
     symb.u.terminal.code = code;
     symb.u.terminal.term_id = ps->run.grammar->symbs_ptr->num_terminals++;
     symb.empty_p = false;
-    symb.is_not_lookahead_p = false;
+    symb.is_not_operator = false;
     repr_entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_repr_to_symb, &symb, true);
     assert(*repr_entry == NULL);
     code_entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_code_to_symb, &symb, true);
@@ -193,12 +193,14 @@ YaepSymbol *symb_add_nonterm(YaepParseState *ps, const char *name)
     strncpy(symb.hr, name, 6);
 
     symb.is_terminal = false;
-    symb.is_not_lookahead_p = false;
+    symb.is_not_operator = false;
     // Assign the next available id.
     symb.id = ps->run.grammar->symbs_ptr->num_nonterminals + ps->run.grammar->symbs_ptr->num_terminals;
     symb.u.nonterminal.rules = NULL;
     symb.u.nonterminal.loop_p = false;
     symb.u.nonterminal.nonterm_id = ps->run.grammar->symbs_ptr->num_nonterminals++;
+    symb.is_not_operator = (symb.repr[0] == '|' && symb.repr[1] == '!');
+
     entry = find_hash_table_entry(ps->run.grammar->symbs_ptr->map_repr_to_symb, &symb, true);
     assert(*entry == NULL);
     OS_TOP_ADD_STRING(ps->run.grammar->symbs_ptr->symbs_os, name);
@@ -207,14 +209,11 @@ YaepSymbol *symb_add_nonterm(YaepParseState *ps, const char *name)
     OS_TOP_ADD_MEMORY(ps->run.grammar->symbs_ptr->symbs_os, &symb, sizeof(YaepSymbol));
     result =(YaepSymbol*) OS_TOP_BEGIN(ps->run.grammar->symbs_ptr->symbs_os);
     OS_TOP_FINISH(ps->run.grammar->symbs_ptr->symbs_os);
-   *entry =(hash_table_entry_t) result;
+    *entry =(hash_table_entry_t) result;
     VLO_ADD_MEMORY(ps->run.grammar->symbs_ptr->symbs_vlo, &result, sizeof(YaepSymbol*));
     VLO_ADD_MEMORY(ps->run.grammar->symbs_ptr->nonterminals_vlo, &result, sizeof(YaepSymbol*));
 
-    if (is_not_rule(result))
-    {
-        result->is_not_lookahead_p = true;
-    }
+
     return result;
 }
 
