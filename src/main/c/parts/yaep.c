@@ -3431,6 +3431,20 @@ static void loop_stack(YaepTreeNode **result,
     state->parent_rhs_offset = 0;
     state->anode = NULL;
 
+    if (ps->run.debug)
+    {
+        // Log the starting node.
+        MemBuffer *mb = new_membuffer();
+	membuffer_printf(mb, "adding (s%d,d%d) [%d-%d]    ",
+                         state->state_set_k,
+                         state->dotted_rule->id,
+                         state->from_i,
+                         state->state_set_k);
+	print_rule(mb, ps, state->rule);
+        debug_mb("ixml.tr=", mb);
+        free_membuffer_and_free_content(mb);
+    }
+
     while (VLO_LENGTH(stack) != 0)
     {
         if (ps->run.debug && state->dot_j == state->rule->rhs_len)
