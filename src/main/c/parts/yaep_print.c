@@ -38,26 +38,17 @@
 
 #ifdef YAEP_PRINT_MODULE
 
-void print_core(MemBuffer*mb, YaepStateSetCore *c, YaepStateSet *s)
+void print_core(MemBuffer*mb, YaepStateSetCore *c)
 {
-    membuffer_printf(mb, "core %d %s {", c->id, c->term->hr);
+    membuffer_printf(mb, "core%d{", c->id);
 
-    for (int i = 0; i < c->num_dotted_rules; ++i)
+    for (int i = 0; i < c->num_started_dotted_rules; ++i)
     {
+        if (i > 0) membuffer_append_char(mb, ' ');
+
         // num_started_dotted_rules;
         YaepDottedRule *dotted_rule = c->dotted_rules[i];
-        membuffer_printf(mb, " %d[%d]",
-                         dotted_rule->id,
-                         dotted_rule->dot_j);
-
-        if (i < c->num_all_matched_lengths)
-        {
-            int len = -1;
-            if (s) len = s->matched_lengths[i];
-            membuffer_printf(mb, "(len%d,pid%d)",
-                             len,
-                             c->parent_dotted_rule_ids[i]);
-        }
+        membuffer_printf(mb, "d%d", dotted_rule->id);
     }
     membuffer_printf(mb, "}");
 }
@@ -291,7 +282,7 @@ void print_matched_lenghts(MemBuffer *mb, YaepStateSet *s)
     for (int i = 0; i < s->core->num_started_dotted_rules; ++i)
     {
         if (i > 0) membuffer_append_char(mb, ' ');
-        membuffer_printf(mb, "%d", s->matched_lengths[i]);
+        membuffer_printf(mb, "%d(d%d)", s->matched_lengths[i], s->core->dotted_rules[i]->id);
     }
 }
 

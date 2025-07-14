@@ -44,7 +44,7 @@ void dbg_breakpoint()
 void dbg_print_core(YaepParseState *ps, YaepStateSetCore *c)
 {
     MemBuffer *mb = new_membuffer();
-    print_core(mb, c, NULL);
+    print_core(mb, c);
     free_membuffer_and_free_content(mb);
 }
 
