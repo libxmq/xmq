@@ -230,6 +230,11 @@ static void rule_new_stop(YaepParseState *ps)
     ps->run.grammar->rulestorage_ptr->current_rule->marks = (char*)OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
     memset(ps->run.grammar->rulestorage_ptr->current_rule->marks, 0, ps->run.grammar->rulestorage_ptr->current_rule->rhs_len* sizeof(char));
     OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
+
+    /*
+    if (ps->run.grammar->rulestorage_ptr->current_rule->contains_not_operator)
+        fprintf(stderr, "NOT inside %s\n", ps->run.grammar->rulestorage_ptr->current_rule->lhs->hr);
+    */
 }
 
 /* The following function frees memory for rules.*/
