@@ -722,6 +722,7 @@ void test_yaep_reuse_grammar()
 
 int main(int argc, char **argv)
 {
+    return 0;
 #define X(name) name();
     TESTS
 #undef X

@@ -2335,22 +2335,26 @@ static void expand_new_set(YaepParseState *ps)
             symb = dotted_rule->rule->rhs[dotted_rule->dot_j];
             core_symb_to_predcomps = core_symb_to_predcomps_find(ps, ps->new_core, symb);
 
+            debug_info(ps, "csl lookup c%d %s", ps->new_core->id, symb->hr);
+
             if (core_symb_to_predcomps)
             {
                 //trace("ixml.pa.c=", "found csl core symb ids core=%d symb=%s\n", ps->new_core->id, symb->hr);
+                debug_info(ps, "found csl core symb ids core=%d symb=%s", ps->new_core->id, symb->hr);
             }
             else
             {
-                //trace("ixml.pa.c=",  "adding csl core symb ids core=%d symb=%s\n", ps->new_core->id, symb->hr);
+                debug_info(ps, "adding csl core symb ids core=%d symb=%s", ps->new_core->id, symb->hr);
                 // No vector found for this core+symb combo.
                 // Add a new vector.
                 core_symb_to_predcomps = core_symb_to_predcomps_new(ps, ps->new_core, symb);
 
                 if (!symb->is_terminal)
                 {
-                    for (rule = symb->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
+                    for (YaepRule *r = symb->u.nonterminal.rules; r != NULL; r = r->lhs_next)
                     {
-                        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, 0, "predict");
+                        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, r, 0, 0, "predict");
+                        debug_info(ps, "predict %s", r->lhs->hr);
                         set_add_dotted_rule_no_match_yet(ps, new_dotted_rule);
                     }
                 }
@@ -2373,6 +2377,7 @@ static void expand_new_set(YaepParseState *ps)
                                                                          0,
                                                                          "complete_empty_rule_gurka");
                     // Add new rule to be handled in next loop iteration.
+                    debug_info(ps, "complete_empty_rule_gurka");
                     set_add_dotted_rule_no_match_yet(ps, nnnew_dotted_rule);
                 }
             }
@@ -2386,6 +2391,7 @@ static void expand_new_set(YaepParseState *ps)
                                                                          dotted_rule->dot_j+1,
                                                                          0,
                                                                          "complete_lookahead_ok");
+                    debug_info(ps, "complete lookahead ok");
                     set_add_dotted_rule_no_match_yet(ps, new_dotted_rule);
                 }
             }

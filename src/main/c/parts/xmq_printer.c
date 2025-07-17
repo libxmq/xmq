@@ -29,6 +29,7 @@ void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len,
     @stop:  Points to byte after memory buffer.
     @add_nls: Returns whether we need leading and ending newlines.
     @add_compound: Compounds ( ) is necessary.
+    @use_single: True if we should use single quotes ('), false use double quotes (").
 
     Scan the content to determine how it must be quoted, or if the content can
     remain as text without quotes. Return 0, nl_begin=nl_end=false for safe text.
@@ -39,10 +40,8 @@ void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len,
     Set add_compound to true if content starts or ends with spaces/newlines or if forbid_nl==true and
     content starts/ends with quotes.
 */
-int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound)
+int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound, bool *use_double_quotes)
 {
-    size_t max = 0;
-    size_t curr = 0;
     bool all_safe = true;
 
     assert(stop > start);
@@ -51,19 +50,6 @@ int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, b
     {
         // Content starts with = & // /* or < so it must be quoted.
         all_safe = false;
-    }
-
-    if (*start == '\'' || *(stop-1) == '\'')
-    {
-        // If leading or ending quote, then add newlines both at the beginning and at the end.
-        // Strictly speaking, if only a leading quote, then only newline at beginning is needed.
-        // However to reduce visual confusion, we add newlines at beginning and end.
-
-        // We might quote this using:
-        // '''
-        // 'howdy'
-        // '''
-        *add_nls = true;
     }
 
     size_t only_prepended_newlines = 0;
@@ -79,26 +65,72 @@ int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, b
         // Leading ending ws + nl, nl + ws will be trimmed, so we need a compound and entities.
         *add_compound = true;
     }
+    else
+    {
+        *add_compound = false;
+    }
 
-    //bool found_double_quote = false;
-    //bool found_newline = false;
+    size_t max_single = 0;
+    size_t curr_single = 0;
+    size_t max_double = 0;
+    size_t curr_double = 0;
+
     for (const char *i = start; i < stop; ++i)
     {
         char c = *i;
         if (c == '\'')
         {
-            curr++;
-            if (curr > max) max = curr;
+            curr_single++;
+            if (curr_single > max_single) max_single = curr_single;
         }
         else
         {
-            curr = 0;
-            all_safe &= is_safe_value_char(i, stop);
-            //if (c == '"') found_double_quote = true;
-            //if (c == '\n') found_newline = true;
+            curr_single = 0;
+            if (c == '"')
+            {
+                curr_double++;
+                if (curr_double > max_double) max_double = curr_double;
+            }
+            else
+            {
+                curr_double = 0;
+                all_safe &= is_safe_value_char(i, stop);
+            }
         }
     }
-    // We found 3 quotes, thus we need 4 quotes to quote them.
+
+    bool leading_ending_sqs = false;
+    bool leading_ending_dqs = false;
+    // We default to using single quotes.
+    bool use_dqs = false;
+    size_t max = max_single;
+
+    if (*start == '\'' || *(stop-1) == '\'') leading_ending_sqs = true;
+    if (*start == '"' || *(stop-1) == '"') leading_ending_dqs = true;
+
+    if (max_double == max_single)
+    {
+        // Same number of quotes, we prefer single quotes unless...
+        if (leading_ending_sqs && !leading_ending_dqs) use_dqs = true;
+        // All other cases default to single quotes.
+    }
+    else if (max_single > max_double)
+    {
+        // We have a longer stretch of singles, than doubles, then use doubles instead.
+        // >alfa'''beta"gamma< is quoted as """alfa'''beta"gamma""" (23) and not ''''alfa'''beta"gamma'''' (25)
+        use_dqs = true;
+    }
+
+    if (use_dqs)
+    {
+        max = max_double;
+    }
+    else
+    {
+        max = max_single;
+    }
+
+    // We found x quotes, thus we need x+1 quotes to quote them.
     if (max > 0) max++;
     // Content contains no quotes ', but has unsafe chars, a single quote is enough.
     if (max == 0 && !all_safe) max = 1;
@@ -106,7 +138,24 @@ int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, b
     // Since two quotes means the empty string.
     if (max == 2) max = 3;
 
-    //if (max > 1 && found_double_quote == false && found_newline == false) return -1;
+    if ((use_dqs && leading_ending_dqs) || (!use_dqs && leading_ending_sqs))
+    {
+        // If leading or ending quote, then add newlines both at the beginning and at the end.
+        // Strictly speaking, if only a leading quote, then only newline at beginning is needed.
+        // However to reduce visual confusion, we add newlines at beginning and end.
+
+        // We might quote this using:
+        // '''
+        // 'howdy'
+        // '''
+        *add_nls = true;
+    }
+    else
+    {
+        *add_nls = false;
+    }
+
+    *use_double_quotes = use_dqs;
 
     return max;
 }
@@ -649,7 +698,7 @@ void print_quoted_spaces(XMQPrintState *ps, XMQColor color, int num)
     if (c && c->quote.post) write(writer_state, c->quote.post, NULL);
 }
 
-void print_quotes(XMQPrintState *ps, int num, XMQColor color)
+void print_quotes(XMQPrintState *ps, int num, XMQColor color, bool use_double_quotes)
 {
     assert(num > 0);
     XMQOutputSettings *os = ps->output_settings;
@@ -661,12 +710,14 @@ void print_quotes(XMQPrintState *ps, int num, XMQColor color)
     getThemeStrings(os, color, &pre, &post);
 
     if (pre) write(writer_state, pre, NULL);
+    const char *q = "'";
+    if (use_double_quotes) q = "\"";
     for (int i=0; i<num; ++i)
     {
-        write(writer_state, "'", NULL);
+        write(writer_state, q, NULL);
     }
     ps->current_indent += num;
-    ps->last_char = '\'';
+    ps->last_char = q[0];
     if (post) write(writer_state, post, NULL);
 }
 
@@ -1117,7 +1168,8 @@ void print_safe_leaf_quote(XMQPrintState *ps,
     bool force = true;
     bool add_nls = false;
     bool add_compound = false;
-    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound);
+    bool use_double_quotes = false;
+    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound, &use_double_quotes);
     size_t indent = ps->current_indent;
 
 /*    if (numq == -1) // && !ps->output_settings->allow_json_quotes)
@@ -1196,7 +1248,7 @@ void print_safe_leaf_quote(XMQPrintState *ps,
         ps->line_indent = ps->current_indent;
     }
 
-    print_quotes(ps, numq, c);
+    print_quotes(ps, numq, c, use_double_quotes);
 
     if (!add_nls)
     {
@@ -1224,7 +1276,7 @@ void print_safe_leaf_quote(XMQPrintState *ps,
         print_nl_and_indent(ps, NULL, NULL);
     }
 
-    print_quotes(ps, numq, c);
+    print_quotes(ps, numq, c, use_double_quotes);
 
     if (add_nls)
     {
@@ -1404,7 +1456,8 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
             bool add_nls = false;
             bool add_compound = false;
             bool compact = ps->output_settings->compact;
-            count_necessary_quotes(from, to, &add_nls, &add_compound);
+            bool use_double_quotes = false;
+            count_necessary_quotes(from, to, &add_nls, &add_compound, &use_double_quotes);
             if (!add_compound && (!add_nls || !compact))
             {
                 check_space_before_quote(ps, level);

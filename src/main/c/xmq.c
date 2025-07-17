@@ -1772,6 +1772,9 @@ void xmqFreeParseState(XMQParseState *state)
     if (state->ixml_terminals_map) hashmap_free_and_values(state->ixml_terminals_map, (FreeFuncPtr)free_ixml_terminal);
     state->ixml_terminals_map = NULL;
 
+    if (state->ixml_non_terminals_map) hashmap_free(state->ixml_non_terminals_map);
+    state->ixml_non_terminals_map = NULL;
+
     if (state->ixml_non_terminals) vector_free_and_values(state->ixml_non_terminals, (FreeFuncPtr)free_ixml_nonterminal);
     state->ixml_non_terminals = NULL;
 
@@ -3704,7 +3707,8 @@ char *xmq_quote_default(int indent,
 {
     bool add_nls = false;
     bool add_compound = false;
-    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound);
+    bool use_double_quotes = false;
+    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound, &use_double_quotes);
 
     if (numq > 0)
     {

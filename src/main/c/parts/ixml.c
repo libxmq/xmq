@@ -1610,6 +1610,7 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
     pr->grammar = g;
     state->ixml_rules = vector_create();
     state->ixml_terminals_map = hashmap_create(256);
+    state->ixml_non_terminals_map = hashmap_create(256);
     state->ixml_non_terminals = vector_create();
     state->ixml_rule_stack = stack_create();
 
@@ -1763,6 +1764,7 @@ IXMLNonTerminal *lookup_yaep_nonterminal_already(XMQParseState *state, const cha
 
 void add_yaep_nonterminal(XMQParseState *state, IXMLNonTerminal *nt)
 {
+    hashmap_put(state->ixml_non_terminals_map, nt->name, nt);
     vector_push_back(state->ixml_non_terminals, nt);
 }
 
@@ -1809,37 +1811,56 @@ void add_insertion_rule(XMQParseState *state, const char *content)
 
 void add_not_rule_string(XMQParseState *state, const char *content)
 {
-    IXMLRule *rule = new_ixml_rule();
     // Generate a name like |!S.......
     char *name = (char*)malloc(strlen(content)+4);
     name[0] = '|';
     name[1] = '!';
     name[2] = 'S';
     strcpy(name+3, content);
+
+    IXMLNonTerminal *nt = (IXMLNonTerminal*)hashmap_get(state->ixml_non_terminals_map, name);
+    if (nt) {
+        // This not rule has already been recorded. Do not add it again.
+        free(name);
+        return;
+    }
+
+    IXMLRule *rule = new_ixml_rule();
     rule->rule_name->name = name;
     rule->mark = ' ';
     vector_push_back(state->ixml_rules, rule);
 
-    IXMLNonTerminal *nt = copy_ixml_nonterminal(rule->rule_name);
+    nt = copy_ixml_nonterminal(rule->rule_name);
     add_yaep_nonterminal(state, nt);
     add_yaep_term_to_rule(state, 0, NULL, nt);
+    hashmap_put(state->ixml_non_terminals_map, name, nt);
 }
 
 void add_not_rule_charset(XMQParseState *state, IXMLNonTerminal *cs)
 {
-    IXMLRule *rule = new_ixml_rule();
     // Generate a name like |![...]
     char *name = (char*)malloc(strlen(cs->name)+3);
     name[0] = '|';
     name[1] = '!';
     strcpy(name+2, cs->name);
+
+    IXMLNonTerminal *nt = (IXMLNonTerminal*)hashmap_get(state->ixml_non_terminals_map, name);
+    if (nt) {
+        // This not rule has already been recorded. Do not add it again.
+        free(name);
+        return;
+    }
+
+    IXMLRule *rule = new_ixml_rule();
+
     rule->rule_name->name = name;
     rule->mark = ' ';
     vector_push_back(state->ixml_rules, rule);
 
-    IXMLNonTerminal *nt = copy_ixml_nonterminal(rule->rule_name);
+    nt = copy_ixml_nonterminal(rule->rule_name);
     add_yaep_nonterminal(state, nt);
     add_yaep_term_to_rule(state, 0, NULL, nt);
+    hashmap_put(state->ixml_non_terminals_map, name, nt);
 }
 
 void scan_content_fixup_charsets(XMQParseState *state, const char *start, const char *stop)

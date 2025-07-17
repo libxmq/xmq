@@ -344,6 +344,8 @@ struct XMQParseState
     // Collect all unique terminals in this map from the name. #78 and 'x' is the same terminal with code 120.
     // The name is a #hex version of unicode codepoint.
     HashMap *ixml_terminals_map;
+    // Collect all non-terminal names here, map name to non-terminal.
+    HashMap *ixml_non_terminals_map;
     // References to non-terminals, ie rules (includes mark -^@).
     Vector *ixml_non_terminals;
     // Store all rules here. The rule has a rule_name which is a non-terminal ref to itself.
