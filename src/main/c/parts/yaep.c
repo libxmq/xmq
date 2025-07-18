@@ -352,7 +352,7 @@ static bool dotted_rule_calculate_lookahead(YaepParseState *ps, YaepDottedRule *
 /* The following function returns dotted_rules with given
    characteristics.  Remember that dotted_rules are stored in one
    exemplar. */
-static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, int dot_j, int dyn_lookahead_context, const char *info)
+static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, int dot_j, int dyn_lookahead_context)
 {
     YaepDottedRule *dotted_rule;
     YaepDottedRule ***dyn_lookahead_context_dotted_rules_table_ptr;
@@ -408,7 +408,6 @@ static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, in
     dotted_rule->id = ps->num_all_dotted_rules;
     dotted_rule->dyn_lookahead_context = dyn_lookahead_context;
     dotted_rule->empty_tail_p = dotted_rule_calculate_lookahead(ps, dotted_rule);
-    dotted_rule->info = info;
 
     (*dyn_lookahead_context_dotted_rules_table_ptr)[rule->rule_start_offset + dot_j] = dotted_rule;
 
@@ -865,6 +864,8 @@ static void prepare_for_leading_dotted_rules(YaepParseState *ps)
     ps->new_dotted_rules = NULL;
     ps->new_matched_lengths = NULL;
     ps->new_num_leading_dotted_rules = 0;
+
+    debug_info(ps, "start collecting leading rules");
 }
 
 /* The new set should contain only start dotted_rules.
@@ -1344,7 +1345,7 @@ static void core_symb_to_predcomps_add_predict(YaepParseState *ps,
     vect_add_id(ps, &core_symb_to_predcomps->predictions, rule_index_in_core);
 
     YaepDottedRule *dotted_rule = core_symb_to_predcomps->core->dotted_rules[rule_index_in_core];
-    debug_info(ps, "add pred cspc%d [core%d, %s] -> d%d",
+    debug_info(ps, "add prediction cspc%d[c%d %s] -> d%d",
                core_symb_to_predcomps->id,
                core_symb_to_predcomps->core->id,
                core_symb_to_predcomps->symb->hr,
@@ -1357,11 +1358,12 @@ static void core_symb_to_predcomps_add_complete(YaepParseState *ps,
 {
     vect_add_id(ps, &core_symb_to_predcomps->completions, rule_index_in_core);
     YaepDottedRule *dotted_rule = core_symb_to_predcomps->core->dotted_rules[rule_index_in_core];
-    debug_info(ps, "add comp cspc%d [core%d, %s] -> d%d",
+    debug_info(ps, "completed d%d store in cspc%d[c%d %s]",
+               dotted_rule->id,
                core_symb_to_predcomps->id,
                core_symb_to_predcomps->core->id,
-               core_symb_to_predcomps->symb->hr,
-               dotted_rule->id);
+               core_symb_to_predcomps->symb->hr
+               );
 
 }
 
@@ -2153,7 +2155,7 @@ static void complete_empty_nonterminals_in_rule(YaepParseState *ps,
         {
             if (!only_nots)
             {
-                YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, dyn_lookahead_context, "complete_empty");
+                YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, dyn_lookahead_context); // "complete_empty"
                 set_add_dotted_rule_with_parent(ps, new_dotted_rule, dotted_rule_parent_id);
             }
         }
@@ -2165,7 +2167,7 @@ static void complete_empty_nonterminals_in_rule(YaepParseState *ps,
             }
             else
             {
-                YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, dyn_lookahead_context, "complete_lookahead_ok_pre");
+                YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, dyn_lookahead_context); // complete_lookahead_ok_pre
                 set_add_dotted_rule_with_parent(ps, new_dotted_rule, dotted_rule_parent_id);
             }
         }
@@ -2335,25 +2337,24 @@ static void expand_new_set(YaepParseState *ps)
             symb = dotted_rule->rule->rhs[dotted_rule->dot_j];
             core_symb_to_predcomps = core_symb_to_predcomps_find(ps, ps->new_core, symb);
 
-            debug_info(ps, "csl lookup c%d %s", ps->new_core->id, symb->hr);
+            debug_info(ps, "lookup cspc? [c%d %s]", ps->new_core->id, symb->hr);
 
             if (core_symb_to_predcomps)
             {
-                //trace("ixml.pa.c=", "found csl core symb ids core=%d symb=%s\n", ps->new_core->id, symb->hr);
-                debug_info(ps, "found csl core symb ids core=%d symb=%s", ps->new_core->id, symb->hr);
+                debug_info(ps, "found cspc%d[c%d %s]", core_symb_to_predcomps->id, ps->new_core->id, symb->hr);
             }
             else
             {
-                debug_info(ps, "adding csl core symb ids core=%d symb=%s", ps->new_core->id, symb->hr);
                 // No vector found for this core+symb combo.
                 // Add a new vector.
                 core_symb_to_predcomps = core_symb_to_predcomps_new(ps, ps->new_core, symb);
+                debug_info(ps, "new cspc%d [c%d %s]", core_symb_to_predcomps->id, ps->new_core->id, symb->hr);
 
                 if (!symb->is_terminal)
                 {
                     for (YaepRule *r = symb->u.nonterminal.rules; r != NULL; r = r->lhs_next)
                     {
-                        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, r, 0, 0, "predict");
+                        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, r, 0, 0); // predict
                         debug_info(ps, "predict %s", r->lhs->hr);
                         set_add_dotted_rule_no_match_yet(ps, new_dotted_rule);
                     }
@@ -2372,12 +2373,12 @@ static void expand_new_set(YaepParseState *ps)
                 if (!blocked_by_lookahead(ps, dotted_rule, dotted_rule->rule->rhs[dotted_rule->dot_j], first, "lookahead2a"))
                 {
                     YaepDottedRule *nnnew_dotted_rule = create_dotted_rule(ps,
-                                                                         dotted_rule->rule,
-                                                                         dotted_rule->dot_j+1,
-                                                                         0,
-                                                                         "complete_empty_rule_gurka");
+                                                                           dotted_rule->rule,
+                                                                           dotted_rule->dot_j+1,
+                                                                           0);
+                    //  "complete_empty_rule_gurka");
                     // Add new rule to be handled in next loop iteration.
-                    debug_info(ps, "complete_empty_rule_gurka");
+                    debug_info(ps, "complete empty rule %s", dotted_rule->rule->lhs->hr);
                     set_add_dotted_rule_no_match_yet(ps, nnnew_dotted_rule);
                 }
             }
@@ -2389,8 +2390,8 @@ static void expand_new_set(YaepParseState *ps)
                     YaepDottedRule *new_dotted_rule = create_dotted_rule(ps,
                                                                          dotted_rule->rule,
                                                                          dotted_rule->dot_j+1,
-                                                                         0,
-                                                                         "complete_lookahead_ok");
+                                                                         0);
+                    //"complete_lookahead_ok");
                     debug_info(ps, "complete lookahead ok");
                     set_add_dotted_rule_no_match_yet(ps, new_dotted_rule);
                 }
@@ -2446,8 +2447,8 @@ static void expand_new_set(YaepParseState *ps)
                     shifted_dotted_rule = create_dotted_rule(ps,
                                                              dotted_rule->rule,
                                                              dotted_rule->dot_j+1,
-                                                             dotted_rule->dyn_lookahead_context,
-                                                             "expand_enss3");
+                                                             dotted_rule->dyn_lookahead_context);
+                    //                                                             "expand_enss3");
                     terminal_bitset_or(ps, dyn_lookahead_context_set, shifted_dotted_rule->lookahead);
                 }
                 dyn_lookahead_context = terminal_bitset_insert(ps, dyn_lookahead_context_set);
@@ -2462,8 +2463,8 @@ static void expand_new_set(YaepParseState *ps)
                 dotted_rule = create_dotted_rule(ps,
                                                  new_dotted_rule->rule,
                                                  new_dotted_rule->dot_j,
-                                                 dyn_lookahead_context,
-                                                 "expand_enss4");
+                                                 dyn_lookahead_context);
+                // "expand_enss4");
 
                 if (dotted_rule != new_dotted_rule)
                 {
@@ -2497,7 +2498,8 @@ static void build_start_set(YaepParseState *ps)
 
     for (YaepRule *rule = ps->run.grammar->axiom->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
     {
-        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, dyn_lookahead_context, "axiom");
+        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, dyn_lookahead_context); //, "axiom");
+        debug_info(ps, "adding axiom");
         set_add_dotted_rule_with_matched_length(ps, new_dotted_rule, 0);
     }
 
@@ -2544,7 +2546,7 @@ void try_eat_token(const char *info, YaepParseState *ps, YaepStateSet *set,
 {
     YaepDottedRule *new_dotted_rule = create_dotted_rule(ps,
                                                          dotted_rule->rule, dotted_rule->dot_j + 1,
-                                                         dotted_rule->dyn_lookahead_context, info);
+                                                         dotted_rule->dyn_lookahead_context);
     if (local_lookahead_level != 0 &&
         !terminal_bitset_test(ps, new_dotted_rule->lookahead, lookahead_term_id) &&
         !terminal_bitset_test(ps, new_dotted_rule->lookahead, ps->run.grammar->term_error_id))
@@ -2966,7 +2968,10 @@ static YaepStateSetCoreTermLookAhead *lookup_cached_core_term_lookahead(YaepPars
         // Write the new_core_term_lookahead triplet into the hash table.
         *entry = (hash_table_entry_t)new_core_term_lookahead;
         ps->num_triplets_core_term_lookahead++;
-        debug_info(ps, "cached core-term-lookahead");
+        debug_info(ps, "store core-term-lookahead [s%dc%d %s]",
+                   new_core_term_lookahead->set->id,
+                   new_core_term_lookahead->set->core->id,
+                   new_core_term_lookahead->term->hr);
     }
 
     return (YaepStateSetCoreTermLookAhead*)*entry;
