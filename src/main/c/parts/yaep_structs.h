@@ -441,9 +441,6 @@ struct YaepDottedRule
        FIRST(the dotted_rule tail || FOLLOW(lhs)) for statik lookaheads
        and FIRST(the dotted_rule tail || dyn_lookahead_context) for dynamic ones. */
     terminal_bitset_t *lookahead;
-
-    /* Debug information about which call added this dotted rule. */
-    const char *info;
 };
 
 struct YaepInputToken

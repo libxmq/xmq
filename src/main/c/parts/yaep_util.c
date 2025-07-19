@@ -58,7 +58,7 @@ void dbg_print_coresymbvects(YaepParseState *ps, YaepCoreSymbToPredComps *v)
 void dbg_print_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule)
 {
     MemBuffer *mb = new_membuffer();
-    print_dotted_rule(mb, ps, 0 /*from_i*/, dotted_rule, 0, 0, "");
+    print_dotted_rule(mb, ps, 0 /*from_i*/, dotted_rule, 0, 0);
     membuffer_append_null(mb);
     puts(mb->buffer_);
     free_membuffer_and_free_content(mb);

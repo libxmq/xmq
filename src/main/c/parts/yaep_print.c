@@ -40,7 +40,7 @@
 
 void print_core(MemBuffer*mb, YaepStateSetCore *c)
 {
-    membuffer_printf(mb, "core%d{", c->id);
+    membuffer_printf(mb, "c%d{", c->id);
 
     for (int i = 0; i < c->num_started_dotted_rules; ++i)
     {
@@ -189,15 +189,30 @@ void print_rule(MemBuffer *mb, YaepParseState *ps, YaepRule *rule)
    Print the lookahead set if lookahead_p is true. */
 void print_dotted_rule(MemBuffer *mb,
                        YaepParseState *ps,
-                       int from_i,
+                       int tok_i, // aka state_set_k
                        YaepDottedRule *dotted_rule,
                        int matched_length,
-                       int parent_id,
-                       const char *why)
+                       int parent_id)
 {
     char buf[256];
 
-    snprintf(buf, 256, "(s%d,d%d) ", from_i, dotted_rule->id);
+    int from = 0;
+    int to = 0;
+
+    assert(matched_length >= 0);
+
+    if (matched_length == 0)
+    {
+        from = tok_i;
+        to = tok_i+1;
+    }
+    else
+    {
+        from = 1+tok_i-matched_length;
+        to = 1+tok_i;
+    }
+
+    snprintf(buf, 256, "(%d-%d,d%d) ", from, to, dotted_rule->id);
     membuffer_append(mb, buf);
     print_rule_with_dot(mb, ps, dotted_rule->rule, dotted_rule->dot_j);
 
@@ -206,12 +221,12 @@ void print_dotted_rule(MemBuffer *mb,
         if (dotted_rule->rule->rhs_len == dotted_rule->dot_j)
         {
             if (dotted_rule->rule->rhs_len == 0) membuffer_append(mb, " ε");
-            snprintf(buf, 256, " complete[%d-%d/%d]", ps->tok_i, 1+ps->tok_i, ps->input_len);
+            snprintf(buf, 256, " complete[%d-%d/%d]", tok_i, 1+tok_i, ps->input_len);
             membuffer_append(mb, buf);
         }
         else
         {
-            snprintf(buf, 256, " prediction[%d-%d/%d]", ps->tok_i, 1+ps->tok_i, ps->input_len);
+            snprintf(buf, 256, " prediction[%d-%d/%d]", tok_i, 1+tok_i, ps->input_len);
             membuffer_append(mb, buf);
         }
     }
@@ -219,12 +234,12 @@ void print_dotted_rule(MemBuffer *mb,
     {
         if (dotted_rule->rule->rhs_len == dotted_rule->dot_j)
         {
-            snprintf(buf, 256, " complete[%d-%d/%d]", 1+ps->tok_i-matched_length, 1+ps->tok_i, ps->input_len);
+            snprintf(buf, 256, " complete[%d-%d/%d]", 1+tok_i-matched_length, 1+tok_i, ps->input_len);
             membuffer_append(mb, buf);
         }
         else
         {
-            snprintf(buf, 256, " partial[%d-%d/%d]", 1+ps->tok_i-matched_length, 1+ps->tok_i, ps->input_len);
+            snprintf(buf, 256, " partial[%d-%d/%d]", 1+tok_i-matched_length, 1+tok_i, ps->input_len);
             membuffer_append(mb, buf);
         }
     }
@@ -233,26 +248,16 @@ void print_dotted_rule(MemBuffer *mb,
         membuffer_append(mb, " n/a[]");
     }
 
-    if (why)
+    int cost = dotted_rule->rule->anode_cost;
+    if (cost > 0)
     {
-        int cost = dotted_rule->rule->anode_cost;
-        if (cost > 0)
-        {
-            while (cost-- > 0) membuffer_append(mb, "<");
-            membuffer_append(mb, " ");
-        }
-        if (dotted_rule->rule->lhs->empty_p ||
-            dotted_rule->empty_tail_p ||
-            dotted_rule->info)
-        {
-            membuffer_append(mb, " ");
-        }
-
-        membuffer_printf(mb, "{%s:%s", dotted_rule->info, why);
-        if (dotted_rule->rule->lhs->empty_p || dotted_rule->empty_tail_p)
-        {
-            membuffer_append(mb, " ");
-        }
+        while (cost-- > 0) membuffer_append(mb, "<");
+        membuffer_append(mb, " ");
+    }
+    if (dotted_rule->rule->lhs->empty_p ||
+        dotted_rule->empty_tail_p)
+    {
+        membuffer_printf(mb, " {");
         if (dotted_rule->empty_tail_p)
         {
             membuffer_append(mb, " empty_tail");
@@ -265,15 +270,6 @@ void print_dotted_rule(MemBuffer *mb,
         if (parent_id >= 0) membuffer_printf(mb, " parent=d%d", parent_id);
         membuffer_printf(mb, " ml=%d", matched_length);
         membuffer_append(mb, "}");
-
-        if (*why)
-        {
-            if (ps->run.grammar->lookahead_level != 0 && matched_length >= 0)
-            {
-                membuffer_append(mb, "    ");
-                print_terminal_bitset(mb, ps, dotted_rule->lookahead);
-            }
-        }
     }
 }
 
@@ -453,7 +449,7 @@ void print_state_set(MemBuffer *mb,
     {
         int matched_length = find_matched_length(ps, state_set, &vars, dotted_rule_id);
         membuffer_append(mb, "\n");
-        print_dotted_rule(mb, ps, from_i, vars.dotted_rules[dotted_rule_id], matched_length, -1, "woot3");
+        print_dotted_rule(mb, ps, from_i, vars.dotted_rules[dotted_rule_id], matched_length, -1);
     }
 }
 

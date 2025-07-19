@@ -36,7 +36,7 @@
 
 void print_core(MemBuffer*mb, YaepStateSetCore *c);
 void print_coresymbvects(MemBuffer*mb, YaepParseState *ps, YaepCoreSymbToPredComps *v);
-void print_dotted_rule(MemBuffer *mb, YaepParseState *ps, int from_i, YaepDottedRule *dotted_rule, int matched_length, int parent_id, const char *why);
+void print_dotted_rule(MemBuffer *mb, YaepParseState *ps, int from_i, YaepDottedRule *dotted_rule, int matched_length, int parent_id);
 void print_matched_lenghts(MemBuffer *mb, YaepStateSet *s);
 void print_parse(YaepParseState *ps, FILE* f, YaepTreeNode*root);
 void print_rule(MemBuffer *mb, YaepParseState *ps, YaepRule *rule);
