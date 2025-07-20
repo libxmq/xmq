@@ -3,13 +3,14 @@ xsl:stylesheet(version   = 1.0
 {
     xsl:output(method         = html
                doctype-system = about:legacy-compat)
+    xsl:param(name = level)
     xsl:key(name  = trakey
-            match = parse/tra
-            use   = id)
+            match = parse/ixml-bt-step
+            use   = dr)
     xsl:key(name  = blokey
             match = parse/block
             use   = id)
-    xsl:variable(name   = gtotal
+    xsl:variable(name   = num_tokens
                  select = /parse/ixml-pa-step[1]/n)
     xsl:template(match = /)
     {
@@ -76,7 +77,7 @@ xsl:stylesheet(version   = 1.0
             td {
                 xsl:attribute(name = colspan)
                 {
-                    xsl:value-of(select = $gtotal)
+                    xsl:value-of(select = $num_tokens)
                 }
             }
             td(class = leinfo)
@@ -87,11 +88,14 @@ xsl:stylesheet(version   = 1.0
     }
     xsl:template(match = parse/ixml-bt-step)
     {
+        xsl:choose {
+            xsl:when(test = "$level = 'trace'")
+            {
         tr {
             td {
                 xsl:attribute(name = colspan)
                 {
-                    xsl:value-of(select = $gtotal)
+                    xsl:value-of(select = $num_tokens)
                 }
             }
             td(class = leinfo)
@@ -105,6 +109,9 @@ xsl:stylesheet(version   = 1.0
                 ')'
             }
         }
+            }
+            xsl:otherwise
+        }
     }
     xsl:template(match = parse/ixml-bt-info)
     {
@@ -112,7 +119,7 @@ xsl:stylesheet(version   = 1.0
             td {
                 xsl:attribute(name = colspan)
                 {
-                    xsl:value-of(select = $gtotal)
+                    xsl:value-of(select = $num_tokens)
                 }
             }
             td(class = leinfo)
@@ -156,16 +163,6 @@ xsl:stylesheet(version   = 1.0
             }
         }
         tr {
-        /*            td {
-                   't=' xsl:value-of(select = '$total') ' '
-                   'fr=' xsl:value-of(select = '$from') ' '
-                   'too=' xsl:value-of(select = '$too') ' '
-                   'to=' xsl:value-of(select = '$to') ' '
-                   'pre=' xsl:value-of(select = '$pre') ' '
-                   'mid=' xsl:value-of(select = '$mid') ' '
-                   'po=' xsl:value-of(select = '$post') ' '
-                   'fi=' xsl:value-of(select = '$final') ' '
-               }*/
             xsl:call-template(name = gencols)
             {
                 xsl:with-param(name = class) = ''
@@ -187,7 +184,7 @@ xsl:stylesheet(version   = 1.0
                 }
                 xsl:attribute(name = used)
                 {
-                    xsl:for-each(select = '''key('trakey',$id)''')
+                    xsl:for-each(select = '''key('trakey',dr)''')
                     {
                         xsl:if(test = 'position()=1') = true
                     }
