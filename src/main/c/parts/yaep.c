@@ -3694,6 +3694,7 @@ static void loop_stack(YaepTreeNode **result,
             {
                 // Oups, n_candidates is > 0 already, this means that a previous completion matched.
                 // We have more than one parse.
+                debug("ixml.bt.info=", "n_candidates=%d -> ambiguous=true", n_candidates);
                 *ambiguous_p = true;
                 if (ps->run.grammar->one_parse_p)
                 {

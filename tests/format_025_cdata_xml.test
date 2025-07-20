@@ -5,10 +5,10 @@ START
     </body>
 </tml>
 COMPACT
-tml{body='''Howdy xcdata '</cdata>x'''}
+tml{body="Howdy xcdata '</cdata>x"}
 XMQ
 tml {
-    body = '''Howdy xcdata '</cdata>x'''
+    body = "Howdy xcdata '</cdata>x"
 }
 END
 ARGS

@@ -11,7 +11,7 @@ START
   </sp>
 </root>
 COMPACT
-root{p(xml:lang=en)='The quick brown fox jumps over the lazy dog.'p(xml:lang=en-GB)='What colour is it?'p(xml:lang=en-US)='What color is it?'sp(who=Faust desc=leise xml:lang=de){l='Habe nun, ach! Philosophie,'l='Juristerei, und Medizin'l='und leider auch Theologie'l='''durchaus studiert mit heißem Bemüh'n.'''}}
+root{p(xml:lang=en)='The quick brown fox jumps over the lazy dog.'p(xml:lang=en-GB)='What colour is it?'p(xml:lang=en-US)='What color is it?'sp(who=Faust desc=leise xml:lang=de){l='Habe nun, ach! Philosophie,'l='Juristerei, und Medizin'l='und leider auch Theologie'l="durchaus studiert mit heißem Bemüh'n."}}
 XMQ
 root {
     p(xml:lang = en) = 'The quick brown fox jumps over the lazy dog.'
@@ -24,7 +24,7 @@ root {
         l = 'Habe nun, ach! Philosophie,'
         l = 'Juristerei, und Medizin'
         l = 'und leider auch Theologie'
-        l = '''durchaus studiert mit heißem Bemüh'n.'''
+        l = "durchaus studiert mit heißem Bemüh'n."
     }
 }
 END

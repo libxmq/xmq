@@ -4442,6 +4442,13 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
                 {
                     new_node = xmlNewDocComment(doc, (xmlChar*)an->name+4);
                 }
+                if(an->name[2] == '#')
+                {
+                    int value = (int)strtol(an->name+3, NULL, 16);
+                    UTF8Char c;
+                    encode_utf8(value, &c);
+                    new_node = xmlNewDocText(doc, (xmlChar*)c.bytes);
+                }
                 else
                 {
                     new_node = xmlNewDocText(doc, (xmlChar*)an->name+2);

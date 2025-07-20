@@ -983,7 +983,9 @@ void parse_ixml_insertion(XMQParseState *state)
         parse_ixml_encoded(state, true);
         UTF8Char c;
         encode_utf8(state->ixml_encoded, &c);
-        add_insertion_rule(state, c.bytes);
+        char buf[16];
+        snprintf(buf, 16, "#%x", state->ixml_encoded),
+        add_insertion_rule(state, buf);
         free_yaep_tmp_terminals_and_content(state);
     }
     else
@@ -1794,18 +1796,30 @@ void add_single_char_rule(XMQParseState *state, IXMLNonTerminal *nt, int uc, cha
 
 void add_insertion_rule(XMQParseState *state, const char *content)
 {
-    IXMLRule *rule = new_ixml_rule();
     // Generate a name like |+.......
     char *name = (char*)malloc(strlen(content)+3);
     name[0] = '|';
     name[1] = '+';
     strcpy(name+2, content);
-    rule->rule_name->name = name;
-    rule->mark = ' ';
-    vector_push_back(state->ixml_rules, rule);
 
-    IXMLNonTerminal *nt = copy_ixml_nonterminal(rule->rule_name);
-    add_yaep_nonterminal(state, nt);
+    IXMLNonTerminal *nt = (IXMLNonTerminal*)hashmap_get(state->ixml_non_terminals_map, name);
+    if (!nt)
+    {
+        IXMLRule *rule = new_ixml_rule();
+        rule->rule_name->name = name;
+        rule->mark = ' ';
+        vector_push_back(state->ixml_rules, rule);
+
+        nt = copy_ixml_nonterminal(rule->rule_name);
+        add_yaep_nonterminal(state, nt);
+    }
+    else
+    {
+        // This insertion rule has already been added as a non terminal.
+        free(name);
+    }
+
+    // Add nt to rule.
     add_yaep_term_to_rule(state, 0, NULL, nt);
 }
 
