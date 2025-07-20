@@ -123,8 +123,8 @@ typedef struct YaepDottedRule YaepDottedRule;
 struct YaepInputToken;
 typedef struct YaepInputToken YaepInputToken;
 
-struct YaepStateSetCoreTermLookAhead;
-typedef struct YaepStateSetCoreTermLookAhead YaepStateSetCoreTermLookAhead;
+struct YaepStateSetTermLookAhead;
+typedef struct YaepStateSetTermLookAhead YaepStateSetTermLookAhead;
 
 struct YaepParseTreeBuildState;
 typedef struct YaepParseTreeBuildState YaepParseTreeBuildState;
@@ -453,18 +453,22 @@ struct YaepInputToken
     void *attr;
 };
 
-/* The triple and possible goto sets for it. */
-struct YaepStateSetCoreTermLookAhead
+/* The set-term-lookahead maps to goto sets. */
+struct YaepStateSetTermLookAhead
 {
-    YaepStateSet*set;
-    YaepSymbol*term;
-    int lookahead;
+    /* Keys */
+    YaepStateSet *set;
+    YaepSymbol *term;
+    int lookahead_term; // The next terminal to be scanned.
+
     /* Saved goto sets form a queue.  The last goto is saved at the
-       following array elements whose index is given by CURR. */
+       following array elements whose index is given by curr.
+       When curr reaches MAX_CACHED_GOTO_RESULTS it loops back to 0. */
     int curr;
     /* Saved goto sets to which we can go from SET by the terminal with
        subsequent terminal LOOKAHEAD given by its code. */
-    YaepStateSet*result[MAX_CACHED_GOTO_RESULTS];
+    YaepStateSet *result[MAX_CACHED_GOTO_RESULTS];
+
     /* Corresponding places of the goto sets in the parsing list. */
     int place[MAX_CACHED_GOTO_RESULTS];
 };
@@ -652,8 +656,8 @@ struct YaepParseState
     /* Number of state sets and their number of dotted_rules. */
     int num_sets_total, num_dotted_rules_total;
 
-    /* Number unique triples(core, term, lookahead). */
-    int num_triplets_core_term_lookahead;
+    /* Number of lookaheads (set, term, lookahead). */
+    int num_set_term_lookahead;
 
     /* The set cores of formed sets are placed in the following os.*/
     os_t set_cores_os;
@@ -672,13 +676,13 @@ struct YaepParseState
     /* The sets themself are placed in the following os.*/
     os_t sets_os;
 
-    /* Container for triples(set, term, lookahead. */
-    os_t triplet_core_term_lookahead_os;
+    /* Container for lookaheads (set, core, term, lookahead. */
+    os_t set_term_lookahead_os;
 
     hash_table_t cache_stateset_cores;                /* key is the started dotted rules from a stateset. */
     hash_table_t cache_stateset_matched_lengths;      /* key is matched_lengths from a stateset. */
     hash_table_t cache_stateset_core_matched_lengths; /* key is (core, matched_lengths). */
-    hash_table_t cache_stateset_core_term_lookahead;  /* key is (core, term, lookeahed). */
+    hash_table_t cache_stateset_term_lookahead;       /* key is (set, term, lookeahed). */
 
     /* The following contains current number of unique dotted_rules. */
     int num_all_dotted_rules;

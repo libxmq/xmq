@@ -1,57 +1,42 @@
 parse = line++-#a, -#a?.
--line = comment|state|pac|trc|stats|xmq|xmqd|xmqa|ix|not|gr|ru|lh|pa|trb|trp|trt|chk|str|tra|trpp|st|scan|core|crea|step|testnot|block|ignore|ignorec|.
+-line = ixml-gr|
+        ixml-nt|
+        ixml-pa-token|
+        ixml-pa-step|
+        ixml-pa-info|
+        ixml-pa-state|
+        ixml-bt-step|
+        ixml-bt-info.
 
--comment = -'(ixml.c)', -~[#a]+.
--xmq = -'xmq: ', -~[#a]+.
--xmqd = -'xmqd: ', -~[#a]+.
--xmqa = -'xmqa: ', -~[#a]+.
--ix = -'(ixml) ', -~[#a]+.
--not = -'(ixml.pa) not', -~[#a]+.
--stats = -'(ixml.stats)', -~[#a]+.
--gr = -'(ixml.gr) ', -~[#a]+.
--ru = -'(ixml.nt) ', -~[#a]+.
--lh = -'(ixml.lh) ', -~[#a]+.
--st = -'(ixml.st) ', -~[#a]+.
--pa    = -'(ixml.pa) parsing', -~[#a]+.
-scan  = -'(ixml.pa) input[',index,-"]=",char, -~[#a]+.
--core = -'(ixml.pa) state', -~[#a]+.
--crea = -'(ixml.pa) crea ', -~[#a]+.
--state = -'(ixml.pa.st) ', -~[#a]+.
--pac = -'(ixml.pa.c) ', -~[#a]+.
--trc = -'(ixml.tr.c) ', -~[#a]+.
-step_marker = 'step'.
-info_marker = 'info'.
-info_text = ~[#a]*.
-step = -'(ixml.pa) ', @step_marker, -' @',toki, -' (', id, -')', s, name, s, -'→', s, body?, dot?, where, cost?, -~[#a]*
-     | -'(ixml.pa) ', @info_marker, -' @',toki, -' ', info_text.
--ignorec  = -'(ixml.pa) @',-[N]+,-' created ', -~[#a]*.
--testnot  = -'(ixml.pa) @',-[N]+,-' test ', -~[#a]*.
--ignore = -'(ixml.pa) (', -~[#a]*.
-block = -'(ixml.pa) blocked', btype, -' (', id, -')', -~[#a]*.
-toki  = [N]+.
-btype = [N]+.
-info = -'{', ~['}']+, -'}'.
+-ixml-gr = -'(ixml.gr)', -~[#a]+.
+-ixml-nt = -'(ixml.nt)', -~[#a]+.
 
--trb = -'(ixml.tr) building ', -~[#a]+.
--trp = -'(ixml.tr) processing ', -~[#a]+.
--trt = -'(ixml.tr) trying ', -~[#a]+.
--chk = -'(ixml.tr) check', -~[#a]+.
--str = -'(ixml.tr) start', -~[#a]+.
-tra = -'(ixml.tr) adding (',id,-')', -~[#a]+.
--trpp = -'(ixml.tr) popping ', -~[#a]+.
+{ pa = parse }
+ixml-pa-step = -'(ixml.pa.step) @',tok_i, -' ', dr, -' ', type, '/', n, -' ', rule.
+ixml-pa-info = -'(ixml.pa.info) @',tok_i, info.
+-ixml-pa-state = -'(ixml.pa.state) ', -~[#a]+.
 
-char = -"'",~[#a],-"'" | 'ω' | 'Ω' | '#',[N;L]+.
-token = -"=", ~[#a]*.
+{ bt = build tree }
+ixml-bt-step = -'(ixml.bt.step) adding ', dr, -~[#a]+.
+ixml-bt-info = -'(ixml.bt.info) ', info.
 
-index = [N]+.
-id = [Ll;N;',-']+.
+ixml-pa-token = -'(ixml.pa.token) @',tok_i,-' ',char.
+
+tok_i = [N]+.
+char = -"'",~[#a],-"'" | 'ω' | '#',[N;L]+.
+
+type = 'none' | 'part' | 'full'.
+n = [N]+.
+
+{ S →  · S '+' M }
+rule = name, ' →  ', body?, dot_body?.
 name = [L;N;'|[]_#-$;+!~']+.
--s = -' '+.
-body = ~[' ·'], ~[#a;'·']+.
-dot = '·', ~[#a]+.
--where = type, -'[', from, -'-', to, -'/', total, -']'.
-cost = '<'+.
-type = "complete"|"partial"|"prediction"|"not".
+body = ~['·'], ~[#a;'·']*.
+dot_body = '·', ~[#a]*.
+
+dr = -'(d',id,-',',from,-'-',to,-')'.
+id = [N]+.
 from = [N]+.
 to = [N]+.
-total = [N]+.
+
+info = ~[#a]+.

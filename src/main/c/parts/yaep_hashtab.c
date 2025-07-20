@@ -179,13 +179,21 @@ expand_hash_table (hash_table_t htab)
 
 /* The following variable is used for debugging. Its value is number
    of all calls of `find_hash_table_entry' for all hash tables. */
-
 int all_searches = 0;
 
 /* The following variable is used for debugging. Its value is number
    of collisions fixed for time of work with all hash tables. */
-
 int all_collisions = 0;
+
+int get_all_searches ()
+{
+    return all_searches;
+}
+
+int get_all_collisions()
+{
+    return all_collisions;
+}
 
 /* This function searches for hash table entry which contains element
    equal to given value or empty entry in which given value can be

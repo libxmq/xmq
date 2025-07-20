@@ -4637,12 +4637,18 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
         return false;
     }
 
-    if (run->ambiguous_p && !(flags & XMQ_FLAG_IXML_ALL_PARSES))
+    generate_dom_from_yaep_node(doc->docptr_.xml, NULL, run->root, NULL, 0, 0);
+
+    if (run->ambiguous_p)
     {
-        fprintf(stderr, "ixml: Warning! The input can be parsed in multiple ways, ie it is ambiguous!\n");
+        xmlNodePtr element = xmlDocGetRootElement(doc->docptr_.xml);
+        xmlNsPtr ns = xmlNewNs(element,
+                               (const xmlChar *)"http://invisiblexml.org/NS",
+                               (const xmlChar *)"ixml");
+
+        xmlSetNsProp(element, ns, (xmlChar*)"state", (xmlChar*)"ambiguous");
     }
 
-    generate_dom_from_yaep_node(doc->docptr_.xml, NULL, run->root, NULL, 0, 0);
 
     if (run->root) yaepFreeTree(run->root, NULL, NULL);
 

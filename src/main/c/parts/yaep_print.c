@@ -157,18 +157,21 @@ void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p)
 /* The following function prints RULE to file F with dot in position pos.
    Pos == 0 means that the dot is all the way to the left in the starting position.
    Pos == rhs_len means that the whole rule has been matched. */
-void print_rule_with_dot(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, int pos)
+void print_rule_with_dot(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, int dot_j)
 {
-    int i;
-
-    assert(pos >= 0 && pos <= rule->rhs_len);
+    assert(dot_j >= 0 && dot_j <= rule->rhs_len);
 
     print_symbol(mb, rule->lhs, false);
     membuffer_append(mb, " → ");
-    for(i = 0; i < rule->rhs_len; i++)
+    for(int j = 0; j < rule->rhs_len; j++)
     {
-        membuffer_append(mb, i == pos ? " · " : " ");
-        print_symbol(mb, rule->rhs[i], false);
+        membuffer_append(mb, j == dot_j ? " · " : " ");
+        print_symbol(mb, rule->rhs[j], false);
+    }
+
+    if (rule->rhs_len == dot_j && rule->rhs_len == 0)
+    {
+        membuffer_append(mb, " ε");
     }
 }
 
@@ -204,7 +207,7 @@ void print_dotted_rule(MemBuffer *mb,
     if (matched_length == 0)
     {
         from = tok_i;
-        to = tok_i+1;
+        to = tok_i;
     }
     else
     {
@@ -212,65 +215,37 @@ void print_dotted_rule(MemBuffer *mb,
         to = 1+tok_i;
     }
 
-    snprintf(buf, 256, "(%d-%d,d%d) ", from, to, dotted_rule->id);
+    snprintf(buf, 256, "(d%d,%d-%d) ", dotted_rule->id, from, to);
     membuffer_append(mb, buf);
-    print_rule_with_dot(mb, ps, dotted_rule->rule, dotted_rule->dot_j);
 
     if (matched_length == 0)
     {
         if (dotted_rule->rule->rhs_len == dotted_rule->dot_j)
         {
-            if (dotted_rule->rule->rhs_len == 0) membuffer_append(mb, " ε");
-            snprintf(buf, 256, " complete[%d-%d/%d]", tok_i, 1+tok_i, ps->input_len);
-            membuffer_append(mb, buf);
+            snprintf(buf, 256, "full/%d ", ps->input_len);
         }
         else
         {
-            snprintf(buf, 256, " prediction[%d-%d/%d]", tok_i, 1+tok_i, ps->input_len);
-            membuffer_append(mb, buf);
+            snprintf(buf, 256, "none/%d ", ps->input_len);
         }
     }
     else if (matched_length > 0)
     {
-        if (dotted_rule->rule->rhs_len == dotted_rule->dot_j)
+        if (dotted_rule->empty_tail_p || dotted_rule->rule->rhs_len == dotted_rule->dot_j)
         {
-            snprintf(buf, 256, " complete[%d-%d/%d]", 1+tok_i-matched_length, 1+tok_i, ps->input_len);
-            membuffer_append(mb, buf);
+            snprintf(buf, 256, "full/%d ", ps->input_len);
         }
         else
         {
-            snprintf(buf, 256, " partial[%d-%d/%d]", 1+tok_i-matched_length, 1+tok_i, ps->input_len);
-            membuffer_append(mb, buf);
+            snprintf(buf, 256, "part/%d ", ps->input_len);
         }
-    }
-    else
-    {
-        membuffer_append(mb, " n/a[]");
     }
 
-    int cost = dotted_rule->rule->anode_cost;
-    if (cost > 0)
-    {
-        while (cost-- > 0) membuffer_append(mb, "<");
-        membuffer_append(mb, " ");
-    }
-    if (dotted_rule->rule->lhs->empty_p ||
-        dotted_rule->empty_tail_p)
-    {
-        membuffer_printf(mb, " {");
-        if (dotted_rule->empty_tail_p)
-        {
-            membuffer_append(mb, " empty_tail");
-        }
-        if (dotted_rule->rule->lhs->empty_p)
-        {
-            membuffer_append(mb, " empty_rule");
-        }
+    membuffer_append(mb, buf);
 
-        if (parent_id >= 0) membuffer_printf(mb, " parent=d%d", parent_id);
-        membuffer_printf(mb, " ml=%d", matched_length);
-        membuffer_append(mb, "}");
-    }
+    print_rule_with_dot(mb, ps, dotted_rule->rule, dotted_rule->dot_j);
+
+    if (parent_id >= 0) membuffer_printf(mb, " { parent=d%d }", parent_id);
 }
 
 void print_matched_lenghts(MemBuffer *mb, YaepStateSet *s)
@@ -442,7 +417,7 @@ void print_state_set(MemBuffer *mb,
     StateVars vars;
     fetch_state_vars(ps, state_set, &vars);
 
-    membuffer_printf(mb, "state=%d core=%d", vars.state_id, vars.core_id);
+    membuffer_printf(mb, "@%d summary s%dc%d", ps->tok_i, vars.state_id, vars.core_id);
 
     int dotted_rule_id = 0;
     for(; dotted_rule_id < vars.num_dotted_rules; dotted_rule_id++)

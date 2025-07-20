@@ -69,6 +69,7 @@ _OS_create_function (os_t * os, size_t initial_segment_length)
   os->os_top_object_start = (char *)_OS_ALIGNED_ADDRESS (os->os_current_segment->os_segment_contest);
   os->os_top_object_stop = os->os_top_object_start;
   os->os_segment_stop = os->os_top_object_start + initial_segment_length;
+  os->os_current_segment->os_segment_size = os->os_top_object_stop - os->os_top_object_start;
   os->initial_segment_length = initial_segment_length;
 }
 
@@ -124,18 +125,21 @@ _OS_empty_function (os_t * os)
 void
 _OS_add_string_function (os_t * os, const char *str)
 {
-  size_t string_length;
+    size_t string_length;
 
-  assert (os->os_top_object_start != NULL);
-  if (str == NULL)
-    return;
-  if (os->os_top_object_stop != os->os_top_object_start)
-    OS_TOP_SHORTEN (*os, 1);
-  string_length = strlen (str) + 1;
-  if (os->os_top_object_stop + string_length > os->os_segment_stop)
-    _OS_expand_memory (os, string_length);
-  memcpy( os->os_top_object_stop, str, string_length );
-  os->os_top_object_stop = os->os_top_object_stop + string_length;
+    assert (os->os_top_object_start != NULL);
+    if (str == NULL) return;
+    if (os->os_top_object_stop != os->os_top_object_start)
+    {
+        OS_TOP_SHORTEN (*os, 1);
+    }
+    string_length = strlen (str) + 1;
+    if (os->os_top_object_stop + string_length > os->os_segment_stop)
+    {
+        _OS_expand_memory (os, string_length);
+    }
+    memcpy( os->os_top_object_stop, str, string_length);
+    os->os_top_object_stop = os->os_top_object_stop + string_length;
 }
 
 /* The function creates new segment for OS.  The segment becames
@@ -149,36 +153,55 @@ _OS_add_string_function (os_t * os, const char *str)
 void
 _OS_expand_memory (os_t * os, size_t additional_length)
 {
-  size_t os_top_object_length, segment_length;
-  struct _os_segment *new_segment, *previous_segment;
-  char *new_os_top_object_start;
+    size_t os_top_object_length, segment_length;
+    struct _os_segment *new_segment, *previous_segment;
+    char *new_os_top_object_start;
 
-  assert (os->os_top_object_start != NULL);
-  os_top_object_length = OS_TOP_LENGTH (*os);
-  segment_length = os_top_object_length + additional_length;
-  segment_length += segment_length / 2 + 1;
-  if (segment_length < OS_DEFAULT_SEGMENT_LENGTH)
-    segment_length = OS_DEFAULT_SEGMENT_LENGTH;
-  new_segment = (struct _os_segment*)
-    yaep_malloc (os->os_alloc, segment_length + sizeof (struct _os_segment));
-  new_os_top_object_start =
-    (char *) _OS_ALIGNED_ADDRESS (new_segment->os_segment_contest);
-  memcpy (new_os_top_object_start, os->os_top_object_start,
-	      os_top_object_length);
-  if (os->os_top_object_start ==
-      (char *) _OS_ALIGNED_ADDRESS (os->os_current_segment->
-				    os_segment_contest))
+    assert (os->os_top_object_start != NULL);
+    os_top_object_length = OS_TOP_LENGTH(*os);
+
+    segment_length = os_top_object_length + additional_length;
+    segment_length += segment_length / 2 + 1;
+
+    if (segment_length < OS_DEFAULT_SEGMENT_LENGTH)
     {
-      previous_segment = os->os_current_segment->os_previous_segment;
-      yaep_free (os->os_alloc, os->os_current_segment);
+        segment_length = OS_DEFAULT_SEGMENT_LENGTH;
     }
-  else
-    previous_segment = os->os_current_segment;
-  os->os_current_segment = new_segment;
-  new_segment->os_previous_segment = previous_segment;
-  os->os_top_object_start = new_os_top_object_start;
-  os->os_top_object_stop = os->os_top_object_start + os_top_object_length;
-  os->os_segment_stop = os->os_top_object_start + segment_length;
+
+    new_segment = (struct _os_segment*)yaep_malloc (os->os_alloc, segment_length + sizeof (struct _os_segment));
+    new_os_top_object_start = (char *)_OS_ALIGNED_ADDRESS (new_segment->os_segment_contest);
+    memcpy (new_os_top_object_start, os->os_top_object_start, os_top_object_length);
+
+    if (os->os_top_object_start == (char *)_OS_ALIGNED_ADDRESS (os->os_current_segment->os_segment_contest))
+    {
+        previous_segment = os->os_current_segment->os_previous_segment;
+        yaep_free (os->os_alloc, os->os_current_segment);
+    }
+    else
+    {
+        previous_segment = os->os_current_segment;
+    }
+    os->os_current_segment = new_segment;
+    new_segment->os_previous_segment = previous_segment;
+    if (previous_segment) previous_segment->os_segment_size = os->os_top_object_stop - os->os_top_object_start;
+
+    os->os_top_object_start = new_os_top_object_start;
+    os->os_top_object_stop = os->os_top_object_start + os_top_object_length;
+    os->os_segment_stop = os->os_top_object_start + segment_length;
+}
+
+size_t objstack_size(os_t *os)
+{
+    size_t sum = 0;
+    struct _os_segment *curr = os->os_current_segment;
+
+    while (curr)
+    {
+        sum += curr->os_segment_size;
+        curr = curr->os_previous_segment;
+    }
+
+    return sum;
 }
 
 #endif

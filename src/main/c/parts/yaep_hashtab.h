@@ -138,23 +138,12 @@ get_collisions (hash_table_t htab)
 
 /* The following function returns number of searches during all work
    with all hash tables. */
-static inline int
-get_all_searches (void)
-{
-    return 0; // all_searches; TODO FREDRIK
-}
-
+int get_all_searches();
 /* The following function returns number of occurred collisions
    during all work with all hash tables. */
-static inline int
-get_all_collisions (void)
-{
-    return 0; // all_collisions; // TODO FREDRIK
-}
-
-extern int hash_table_collision_percentage (hash_table_t htab);
-
-extern int all_hash_table_collision_percentage (void);
+int get_all_collisions();
+int hash_table_collision_percentage (hash_table_t htab);
+int all_hash_table_collision_percentage (void);
 
 #define YAEP_HASHTAB_MODULE
 
