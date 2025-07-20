@@ -69,12 +69,7 @@ xsl:stylesheet(version   = 1.0
             }
         }
     }
-    xsl:template(match = scan)
-    xsl:template(match = block)
-    // sl:template(match = 'step[(position() <=2) or (position() >= last()-1)]')
-    // [(position() > 2) and (position() < last()-1)]
-    xsl:template(match = tra)
-
+    xsl:template(match = parse/ixml-pa-token)
     xsl:template(match = parse/ixml-pa-info)
     {
         tr {
@@ -87,6 +82,27 @@ xsl:stylesheet(version   = 1.0
             td(class = leinfo)
             {
                 xsl:value-of(select = info)
+            }
+        }
+    }
+    xsl:template(match = parse/ixml-bt-step)
+    {
+        tr {
+            td {
+                xsl:attribute(name = colspan)
+                {
+                    xsl:value-of(select = $gtotal)
+                }
+            }
+            td(class = leinfo)
+            {
+                'adding (d'
+                xsl:value-of(select = dr/id)
+                ','
+                xsl:value-of(select = dr/from)
+                '-'
+                xsl:value-of(select = dr/to)
+                ')'
             }
         }
     }
