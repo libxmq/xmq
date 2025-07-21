@@ -79,7 +79,7 @@ void fetch_state_vars(YaepParseState *ps,
             = out->num_all_matched_lengths = ps->new_num_leading_dotted_rules;
         out->dotted_rules = ps->new_dotted_rules;
         out->matched_lengths = ps->new_matched_lengths;
-        out->parent_dotted_rule_ids = NULL;
+        out->to_parent_rule_index = NULL;
         return;
     }
 
@@ -90,29 +90,29 @@ void fetch_state_vars(YaepParseState *ps,
     out->num_started_dotted_rules = state_set->core->num_started_dotted_rules;
     out->matched_lengths = state_set->matched_lengths;
     out->num_all_matched_lengths = state_set->core->num_all_matched_lengths;
-    out->parent_dotted_rule_ids = state_set->core->parent_dotted_rule_ids;
+    out->to_parent_rule_index = state_set->core->to_parent_rule_index;
     out->num_started_dotted_rules = state_set->core->num_started_dotted_rules;
 }
 
 int find_matched_length(YaepParseState *ps,
                         YaepStateSet *state_set,
                         StateVars *vars,
-                        int dotted_rule_id)
+                        int rule_index_in_core)
 {
     int matched_length;
 
-    if (dotted_rule_id >= vars->num_all_matched_lengths)
+    if (rule_index_in_core >= vars->num_all_matched_lengths)
     {
         // No match yet.
         matched_length = 0;
     }
-    else if (dotted_rule_id < vars->num_started_dotted_rules)
+    else if (rule_index_in_core< vars->num_started_dotted_rules)
     {
-        matched_length = vars->matched_lengths[dotted_rule_id];
+        matched_length = vars->matched_lengths[rule_index_in_core];
     }
     else
     {
-        matched_length = vars->matched_lengths[vars->parent_dotted_rule_ids[dotted_rule_id]];
+        matched_length = vars->matched_lengths[vars->to_parent_rule_index[rule_index_in_core]];
     }
 
     return matched_length;

@@ -29,9 +29,9 @@ type = 'none' | 'part' | 'full'.
 n = [N]+.
 
 { S →  · S '+' M }
-rule = name, ' →  ', body?, dot_body?.
+rule = name, ' →', -' '+, body?, dot_body?.
 name = [L;N;'|[]_#-$;+!~']+.
-body = ~['·'], ~[#a;'·']*.
+body = ~['· '], ~[#a;'·']*.
 dot_body = '·', ~[#a]*.
 
 dr = -'(d',id,-',',from,-'-',to,-')'.

@@ -380,9 +380,9 @@ struct YaepStateSetCore
        matched_lengths.  This matched_lengths are not stored. */
     int num_all_matched_lengths;
 
-    /* The following is an array containing the number of dotted rules from
+    /* The following is an array containing the parent rule index from
        which matched_length of dotted_rule with given index (between n_start_dotted_rules -> num_all_matched_lengths) is taken. */
-    int *parent_dotted_rule_ids;
+    int *to_parent_rule_index;
 };
 
 /* A YaepStateSet (aka parse list) stores chart entries (aka items) [from, to, S →  VP 🞄 NP ]
@@ -853,7 +853,7 @@ struct StateVars
     int num_all_matched_lengths;
     YaepDottedRule **dotted_rules;
     int *matched_lengths;
-    int *parent_dotted_rule_ids;
+    int *to_parent_rule_index;
 };
 
 #endif

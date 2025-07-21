@@ -788,7 +788,10 @@ static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule 
    distance), we do not add it.
    set_add_new_nonstart_sit (struct sit *sit, int parent)
 */
-static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *dotted_rule, int parent_dotted_rule_id, const char *why)
+static void set_add_dotted_rule_with_parent(YaepParseState *ps,
+                                            YaepDottedRule *dotted_rule,
+                                            int parent_rule_index,
+                                            const char *why)
 {
     assert(ps->new_set_ready_p);
     assert(ps->new_set);
@@ -802,10 +805,10 @@ static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *
          rule_index_in_core++)
     {
         if (ps->new_dotted_rules[rule_index_in_core] == dotted_rule &&
-            ps->new_core->parent_dotted_rule_ids[rule_index_in_core] == parent_dotted_rule_id)
+            ps->new_core->to_parent_rule_index[rule_index_in_core] == parent_rule_index)
         {
             // The dotted_rule + parent dotted rule already exists.
-            debug_info(ps, "reusing d%d with parent d%d", dotted_rule->id, parent_dotted_rule_id);
+            debug_info(ps, "reusing d%d with parent rule index %d", dotted_rule->id, parent_rule_index);
             return;
         }
     }
@@ -817,17 +820,18 @@ static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *
     // Increase the parent index vector with another int.
     // This integer points to ...?
     OS_TOP_EXPAND(ps->set_parent_dotted_rule_ids_os, sizeof(int));
-    ps->new_core->parent_dotted_rule_ids = (int*)OS_TOP_BEGIN(ps->set_parent_dotted_rule_ids_os) - ps->new_num_leading_dotted_rules;
+    ps->new_core->to_parent_rule_index = (int*)OS_TOP_BEGIN(ps->set_parent_dotted_rule_ids_os) - ps->new_num_leading_dotted_rules;
 
     // Store dotted_rule into new dotted_rules.
     ps->new_dotted_rules[ps->new_core->num_dotted_rules++] = dotted_rule;
     // Store parent index. Meanst what...?
-    ps->new_core->parent_dotted_rule_ids[ps->new_core->num_all_matched_lengths++] = parent_dotted_rule_id;
+    ps->new_core->to_parent_rule_index[ps->new_core->num_all_matched_lengths++] = parent_rule_index;
     ps->num_parent_dotted_rule_ids++;
 
-    debug_info(ps, "add d%d with parent d%d to c%d", dotted_rule->id, parent_dotted_rule_id, ps->new_core->id);
+    int matched_length = ps->new_set->matched_lengths[parent_rule_index];
 
-    debug_step(ps, dotted_rule, 0, parent_dotted_rule_id);
+    debug_info(ps, "add d%d with parent index %d to c%d", dotted_rule->id, parent_rule_index, ps->new_core->id);
+    debug_step(ps, dotted_rule, matched_length, parent_rule_index);
 }
 
 /* Set up hash of matched_lengths of set S. */
@@ -967,7 +971,7 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
         ps->new_core->id = ps->num_set_cores++;
         ps->new_core->num_dotted_rules = ps->new_num_leading_dotted_rules;
         ps->new_core->num_all_matched_lengths = ps->new_num_leading_dotted_rules;
-        ps->new_core->parent_dotted_rule_ids = NULL;
+        ps->new_core->to_parent_rule_index = NULL;
         *sc = ps->new_set;
         ps->num_set_core_start_dotted_rules += ps->new_num_leading_dotted_rules;
         added = true;
@@ -2510,17 +2514,17 @@ static void build_start_set(YaepParseState *ps)
     ps->state_sets[0] = ps->new_set;
 }
 
-static int lookup_matched_length(YaepParseState *ps, YaepStateSet *set, int dotted_rule_id)
+static int lookup_matched_length(YaepParseState *ps, YaepStateSet *set, int rule_index_in_core)
 {
-    if (dotted_rule_id >= set->core->num_all_matched_lengths)
+    if (rule_index_in_core >= set->core->num_all_matched_lengths)
     {
         return 0;
     }
-    if (dotted_rule_id < set->core->num_started_dotted_rules)
+    if (rule_index_in_core < set->core->num_started_dotted_rules)
     {
-        return set->matched_lengths[dotted_rule_id];
+        return set->matched_lengths[rule_index_in_core];
     }
-    return set->matched_lengths[set->core->parent_dotted_rule_ids[dotted_rule_id]];
+    return set->matched_lengths[set->core->to_parent_rule_index[rule_index_in_core]];
 }
 
 static void trace_lookahead_predicts_no_match(YaepParseState *ps, int lookahead_term_id, YaepDottedRule *new_dotted_rule, const  char *info)
@@ -3640,7 +3644,7 @@ static void loop_stack(YaepTreeNode **result,
             if (rule_index_in_core < set_core->num_all_matched_lengths)
             {
                 // Parent??
-                dotted_rule_from_i = state_set_k - set->matched_lengths[set_core->parent_dotted_rule_ids[rule_index_in_core]];
+                dotted_rule_from_i = state_set_k - set->matched_lengths[set_core->to_parent_rule_index[rule_index_in_core]];
             } else
             {
                 dotted_rule_from_i = state_set_k;
@@ -3677,7 +3681,7 @@ static void loop_stack(YaepTreeNode **result,
                     } else
                     {
                         check_dotted_rule_from_i = (dotted_rule_from_i
-                                        - check_set->matched_lengths[check_set_core->parent_dotted_rule_ids[rule_index_in_check_core]]);
+                                        - check_set->matched_lengths[check_set_core->to_parent_rule_index[rule_index_in_check_core]]);
                     }
                 }
                 if (check_dotted_rule_from_i == from_i)

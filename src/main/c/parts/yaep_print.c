@@ -169,10 +169,11 @@ void print_rule_with_dot(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, int 
         print_symbol(mb, rule->rhs[j], false);
     }
 
+    /*
     if (rule->rhs_len == dot_j && rule->rhs_len == 0)
     {
         membuffer_append(mb, " ε");
-    }
+        }*/
 }
 
 void print_rule(MemBuffer *mb, YaepParseState *ps, YaepRule *rule)
@@ -231,7 +232,7 @@ void print_dotted_rule(MemBuffer *mb,
     }
     else if (matched_length > 0)
     {
-        if (dotted_rule->empty_tail_p || dotted_rule->rule->rhs_len == dotted_rule->dot_j)
+        if (dotted_rule->rule->rhs_len == dotted_rule->dot_j)
         {
             snprintf(buf, 256, "full/%d ", ps->input_len);
         }
@@ -245,7 +246,7 @@ void print_dotted_rule(MemBuffer *mb,
 
     print_rule_with_dot(mb, ps, dotted_rule->rule, dotted_rule->dot_j);
 
-    if (parent_id >= 0) membuffer_printf(mb, " { parent=d%d }", parent_id);
+    //if (parent_id >= 0) membuffer_printf(mb, " { parent=d%d }", parent_id);
 }
 
 void print_matched_lenghts(MemBuffer *mb, YaepStateSet *s)
