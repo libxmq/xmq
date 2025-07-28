@@ -1,0 +1,35 @@
+START
+<tests>
+   <a1>nospaces</a1>
+   <a2>a space</a2>
+   <a3>single'apostrophe</a3>
+   <a4>single"double-quote</a4>
+   <a5>'Fraid so. 'Nother drink?</a5>
+   <a6>"That's it" - he growled.</a6>
+   <a7>"""""</a7>
+   <a8>'''''</a8>
+   <a9>x'''y"""z</a9>
+   <a10>x''''y"""z</a10>
+</tests>
+COMPACT
+tests{a1=nospaces a2='a space'a3="single'apostrophe"a4='single"double-quote'a5=&#39;"Fraid so. 'Nother drink?"a6='''"That's it" - he growled.'''a7='"""""'a8="'''''"a9=''''x'''y"""z''''a10=""""x''''y"""z""""}
+XMQ
+tests {
+    a1  = nospaces
+    a2  = 'a space'
+    a3  = "single'apostrophe"
+    a4  = 'single"double-quote'
+    a5  = "'Fraid so. 'Nother drink?"
+    a6  = '''"That's it" - he growled.'''
+    a7  = '"""""'
+    a8  = "'''''"
+    a9  = ''''
+          x'''y"""z
+          ''''
+    a10 = """"
+          x''''y"""z
+          """"
+}
+END
+ARGS
+CMDS to-xmq
