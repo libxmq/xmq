@@ -127,7 +127,7 @@ typedef struct
     vlo_t *_temp_vlo = &(vlo);\
     assert (_temp_vlo->vlo_start != NULL);\
     yaep_free( _temp_vlo->vlo_alloc,_temp_vlo->vlo_start );\
-    _temp_vlo->vlo_start = NULL;\
+    _temp_vlo->vlo_start = _temp_vlo->vlo_segment_stop = NULL;\
   }\
   while (0)
 #else
@@ -135,6 +135,7 @@ typedef struct
   do { \
     vlo_t * _temp_vlo = &( vlo ); \
     yaep_free( _temp_vlo->vlo_alloc, _temp_vlo->vlo_start ); \
+    _temp_vlo->vlo_start = _temp_vlo->vlo_segment_stop = NULL;\
   } while( 0 )
 #endif /* #ifndef NDEBUG */
 

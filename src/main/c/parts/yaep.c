@@ -126,6 +126,7 @@ static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule 
 static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *dotted_rule, int parent_dotted_rule_id, const char *why);
 static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps);
 static void prepare_for_leading_dotted_rules(YaepParseState *ps);
+static void verbose_stats(YaepParseState *ps);
 static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 
 // Implementations ////////////////////////////////////////////////////////////////////
@@ -1445,6 +1446,21 @@ static void free_core_symb_to_vect_lookup(YaepParseState *ps)
     OS_DELETE(ps->core_symb_to_predcomps_os);
 }
 
+static void verbose_stats(YaepParseState *ps)
+{
+    size_t size = memusage(ps);
+    char *siz = humanReadableTwoDecimals(size);
+    verbose("ixml=", "@%d/%d #sets=%d #cores=%d #dotted_rules=%d #matched_lengths=%d mem=%s",
+            ps->tok_i,
+            ps->input_len,
+            ps->num_sets_total,
+            ps->num_set_cores,
+            ps->num_dotted_rules_total,
+            ps->num_set_matched_lengths,
+            siz
+        );
+    free(siz);
+}
 /* The following function stores error CODE and MESSAGE.  The function
    makes long jump after that.  So the function is designed to process
    only one error.*/
@@ -3096,20 +3112,9 @@ static void perform_parse(YaepParseState *ps)
 
         assert(ps->tok_i == ps->state_set_k);
 
-        if (ps->tok_i % 1000 == 0)
+        if (xmq_verbose_enabled_ && ps->tok_i % 100000 == 0)
         {
-            size_t size = memusage(ps);
-            char *siz = humanReadableTwoDecimals(size);
-            verbose("ixml=", "@%d/%d #sets=%d #cores=%d #dotted_rules=%d #matched_lengths=%d mem=%s",
-                    ps->tok_i,
-                    ps->input_len,
-                    ps->num_sets_total,
-                    ps->num_set_cores,
-                    ps->num_dotted_rules_total,
-                    ps->num_set_matched_lengths,
-                    siz
-                );
-            free(siz);
+            verbose_stats(ps);
         }
         debug("ixml.pa.token=", "@%d %s", ps->tok_i, THE_TERMINAL->hr);
         debug_info(ps, "READ %s next %s", THE_TERMINAL->hr, NEXT_TERMINAL?NEXT_TERMINAL->hr:"?");
@@ -3171,6 +3176,8 @@ static void perform_parse(YaepParseState *ps)
         }
     }
     free_error_recovery(ps);
+
+    verbose_stats(ps);
 }
 
 static unsigned parse_state_hash(hash_table_entry_t s)
