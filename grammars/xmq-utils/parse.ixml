@@ -8,11 +8,12 @@ parse = line++-#a, -#a?.
         ixml-bt-step|
         ixml-bt-info.
 
--ixml-gr = -'(ixml.gr)', -~[#a]+.
--ixml-nt = -'(ixml.nt)', -~[#a]+.
+{ grammar and non-terminal predictions }
+ixml-gr = -'(ixml.gr) ', ~[#a]+.
+ixml-nt = -'(ixml.nt)', ~[#a]+.
 
 { pa = parse }
-ixml-pa-step = -'(ixml.pa.step) @',tok_i, -' ', dr, -' ', type, '/', n, -' ', rule.
+ixml-pa-step = -'(ixml.pa.step) @',tok_i, -' ', dr, -' ', type, -'/', n, -' ', rule.
 ixml-pa-info = -'(ixml.pa.info) @',tok_i, info.
 -ixml-pa-state = -'(ixml.pa.state) ', -~[#a]+.
 
@@ -31,7 +32,7 @@ n = [N]+.
 { S →  · S '+' M }
 rule = name, ' →', -' '+, body?, dot_body?.
 name = [L;N;'|[]_#-$;+!~']+.
-body = ~['· '], ~[#a;'·']*.
+body = ~['· ';#a], ~[#a;'·']*.
 dot_body = '·', ~[#a]*.
 
 dr = -'(d',id,-',',from,-'-',to,-')'.

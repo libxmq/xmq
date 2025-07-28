@@ -287,6 +287,8 @@ extern void _VLO_tailor_function (vlo_t *vlo);
 extern void _VLO_add_string_function (vlo_t *vlo, const char *str);
 extern void _VLO_expand_memory (vlo_t *vlo, size_t additional_length);
 
+size_t vlo_memusage(vlo_t *vlo);
+
 #define YAEP_VLOBJECT_MODULE
 
 #endif

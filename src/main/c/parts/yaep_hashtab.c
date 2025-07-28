@@ -292,4 +292,10 @@ hash_table_elements_number (hash_table_t htab)
   return htab->number_of_elements - htab->number_of_deleted_elements;
 }
 
+size_t hash_table_memusage(hash_table_t htab)
+{
+    if (!htab) return 0;
+    return htab->size*sizeof(hash_table_entry_t);
+}
+
 #endif

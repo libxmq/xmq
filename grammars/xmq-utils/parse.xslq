@@ -12,6 +12,8 @@ xsl:stylesheet(version   = 1.0
             use   = id)
     xsl:variable(name   = num_tokens
                  select = /parse/ixml-pa-step[1]/n)
+    xsl:variable(name   = num_steps
+                 select = 'count(/parse/ixml-pa-step)')
     xsl:template(match = /)
     {
         html {
@@ -21,7 +23,11 @@ xsl:stylesheet(version   = 1.0
                          table { border-collapse: collapse; }
                          h1   {color: blue;}
                          p    {color: red;}
-                         table, th, td { border: 1px solid; text-align: center; }
+                         a { cursor: pointer; }
+                         #grammar { display: none; }
+                         td.grammar { border: 1px solid; text-align: left; background-color: #aaa; }
+                         td.lookahead { border: 1px solid; text-align: left; background-color: yellow; }
+                         table.steps, th, td { border: 1px solid; text-align: center; }
                          td, th { min-width: 2em; min-height: 1em; white-space: nowrap; }
                          .rule { text-align: left; background-color: cyan; padding-right: 1em; padding-left: 1em; position: sticky; right: 0px;
                                  max-width: 30vw; white-space: wrap; }
@@ -44,9 +50,19 @@ xsl:stylesheet(version   = 1.0
                          .dotted[blocked="true"] { color: white; background: red; }
                          .completed { color: black; background-color: lightgreen; }
                          .predicted { color: black; background-color: lightyellow; }'
+                script = "function toggle(name) { const e = document.getElementById(name);
+                                                  if (e.style.display === 'none' || e.style.display === '')
+                                                       e.style.display = 'table';
+                                                  else e.style.display = 'none';  }"
             }
             body {
-                table {
+                a(onclick = "toggle('grammar'); return false;") = '⊞ Grammar'
+                table(id = grammar)
+                {
+                    xsl:apply-templates(select = parse/ixml-gr)
+                    xsl:apply-templates(select = parse/ixml-nt)
+                }
+                table(class = steps) {
                     tr {
                         xsl:for-each(select = parse/ixml-pa-token)
                         {
@@ -65,11 +81,30 @@ xsl:stylesheet(version   = 1.0
                         }
                         th(class = rule)
                     }
-                    xsl:apply-templates
+                    xsl:apply-templates(select = ixml-pa-token|parse/ixml-pa-info|parse/ixml-bt-step|parse/ixml-bt-info|parse/ixml-pa-step)
                 }
             }
         }
     }
+    xsl:template(match = parse/ixml-gr)
+    {
+        tr {
+            td(class = grammar)
+            {
+                xsl:value-of(select = .)
+            }
+        }
+     }
+     xsl:template(match = parse/ixml-nt)
+     {
+         tr {
+             td(class = lookahead)
+             {
+                 xsl:value-of(select = .)
+             }
+         }
+     }
+
     xsl:template(match = parse/ixml-pa-token)
     xsl:template(match = parse/ixml-pa-info)
     {

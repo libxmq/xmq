@@ -117,7 +117,7 @@ struct _os_segment
 {
     struct _os_segment *os_previous_segment;
     size_t os_segment_size; // Fredrik added this, does this change the OS_ALIGNMENT calculation? TODO.
-    char os_segment_contest[_OS_ALIGNMENT];
+    char os_segment_content[_OS_ALIGNMENT];
 };
 
 /* This type describes a descriptor of stack of objects.  All work
@@ -334,7 +334,7 @@ extern void _OS_add_string_function (os_t *os, const char *str);
 extern void _OS_expand_memory (os_t *os, size_t additional_length);
 
 /* Return total amount of memory used by this objstack. */
-size_t objstack_size(os_t *os);
+size_t objstack_memusage(os_t *os);
 
 #define YAEP_OBJSTACK_MODULE
 

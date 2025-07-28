@@ -73,6 +73,8 @@ char *strndup(const char *s, size_t l);
 // A common free function ptr to be used when freeing collections.
 typedef void(*FreeFuncPtr)(void*);
 
+char *humanReadableTwoDecimals(size_t s);
+
 #define ALWAYS_MODULE
 
 #endif // ALWAYS_H

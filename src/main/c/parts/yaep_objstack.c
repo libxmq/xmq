@@ -63,13 +63,13 @@ _OS_create_function (os_t * os, size_t initial_segment_length)
 {
   if (initial_segment_length == 0) initial_segment_length = OS_DEFAULT_SEGMENT_LENGTH;
 
-  os->os_current_segment = (struct _os_segment*)yaep_malloc (os->os_alloc,
-                                                             initial_segment_length + sizeof (struct _os_segment));
+  size_t segment_size = initial_segment_length + sizeof (struct _os_segment);
+  os->os_current_segment = (struct _os_segment*)yaep_malloc (os->os_alloc, segment_size);
+  os->os_current_segment->os_segment_size = segment_size;
   os->os_current_segment->os_previous_segment = NULL;
-  os->os_top_object_start = (char *)_OS_ALIGNED_ADDRESS (os->os_current_segment->os_segment_contest);
+  os->os_top_object_start = (char *)_OS_ALIGNED_ADDRESS (os->os_current_segment->os_segment_content);
   os->os_top_object_stop = os->os_top_object_start;
   os->os_segment_stop = os->os_top_object_start + initial_segment_length;
-  os->os_current_segment->os_segment_size = os->os_top_object_stop - os->os_top_object_start;
   os->initial_segment_length = initial_segment_length;
 }
 
@@ -113,7 +113,7 @@ _OS_empty_function (os_t * os)
     }
   os->os_current_segment = current_segment;
   os->os_top_object_start
-    = (char *) _OS_ALIGNED_ADDRESS (current_segment->os_segment_contest);
+    = (char *) _OS_ALIGNED_ADDRESS (current_segment->os_segment_content);
   os->os_top_object_stop = os->os_top_object_start;
   os->os_segment_stop = os->os_top_object_start + os->initial_segment_length;
 }
@@ -168,11 +168,13 @@ _OS_expand_memory (os_t * os, size_t additional_length)
         segment_length = OS_DEFAULT_SEGMENT_LENGTH;
     }
 
-    new_segment = (struct _os_segment*)yaep_malloc (os->os_alloc, segment_length + sizeof (struct _os_segment));
-    new_os_top_object_start = (char *)_OS_ALIGNED_ADDRESS (new_segment->os_segment_contest);
+    size_t new_segment_size = segment_length + sizeof (struct _os_segment);
+    new_segment = (struct _os_segment*)yaep_malloc (os->os_alloc, new_segment_size);
+    new_segment->os_segment_size = new_segment_size;
+    new_os_top_object_start = (char *)_OS_ALIGNED_ADDRESS (new_segment->os_segment_content);
     memcpy (new_os_top_object_start, os->os_top_object_start, os_top_object_length);
 
-    if (os->os_top_object_start == (char *)_OS_ALIGNED_ADDRESS (os->os_current_segment->os_segment_contest))
+    if (os->os_top_object_start == (char *)_OS_ALIGNED_ADDRESS (os->os_current_segment->os_segment_content))
     {
         previous_segment = os->os_current_segment->os_previous_segment;
         yaep_free (os->os_alloc, os->os_current_segment);
@@ -183,15 +185,16 @@ _OS_expand_memory (os_t * os, size_t additional_length)
     }
     os->os_current_segment = new_segment;
     new_segment->os_previous_segment = previous_segment;
-    if (previous_segment) previous_segment->os_segment_size = os->os_top_object_stop - os->os_top_object_start;
 
     os->os_top_object_start = new_os_top_object_start;
     os->os_top_object_stop = os->os_top_object_start + os_top_object_length;
     os->os_segment_stop = os->os_top_object_start + segment_length;
 }
 
-size_t objstack_size(os_t *os)
+size_t objstack_memusage(os_t *os)
 {
+    if (!os) return 0;
+
     size_t sum = 0;
     struct _os_segment *curr = os->os_current_segment;
 

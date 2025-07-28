@@ -1,4 +1,4 @@
-json: S, object.
+json: S, (object | array).
 object: "{", S, members, "}", S.
 -members: pair**(",", S).
 pair: @string, S, ":", S, value.
@@ -11,9 +11,8 @@ number: "-"?, int, frac?, exp?.
 -frac: ".", digit+.
 -exp: ("e"; "E"), sign?, digit+.
 -sign: "+"; "-".
--S: " "*.
+-S: [" ";#a]*.
 -digit: ["0"-"9"].
 -digit19: ["1"-"9"].
 -hexdigits: hexdigit, hexdigit, hexdigit, hexdigit.
 -hexdigit: digit; ["a"-"f"]; ["A"-"F"].
-

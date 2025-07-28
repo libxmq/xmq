@@ -173,5 +173,52 @@ char *strndup(const char *s, size_t l)
 }
 #endif
 
+static char *helper(size_t scale, size_t s, const char *suffix)
+{
+    size_t o = s;
+    s /= scale;
+    size_t diff = o-(s*scale);
+    if (diff == 0) {
+        char *buf = malloc(64);
+        snprintf(buf, 64, "%zu.00%s", s, suffix);
+        return buf;
+    }
+    size_t dec = (int)(100*(diff+1) / scale);
+    char *buf = malloc(64);
+    snprintf(buf, 64, "%zu.%02zu%s", s, dec, suffix);
+    return buf;
+}
+
+#define KB 1024
+
+char *humanReadableTwoDecimals(size_t s)
+{
+    if (s < KB)
+    {
+        return helper(1, s, " B");
+    }
+    if (s < KB * KB)
+    {
+        return helper(KB, s, " KiB");
+    }
+    if (s < KB * KB * KB)
+    {
+        return helper(KB*KB, s, " MiB");
+    }
+#if SIZEOF_SIZE_T == 8
+    if (s < KB * KB * KB * KB)
+    {
+     	return helper(KB*KB*KB, s, " GiB");
+    }
+    if (s < KB * KB * KB * KB * KB)
+    {
+        return helper(KB*KB*KB*KB, s, " TiB");
+    }
+    return helper(KB*KB*KB*KB*KB, s, " PiB");
+#else
+    return helper(KB*KB*KB, s, " GiB");
+#endif
+}
+
 
 #endif // ALWAYS_MODULE

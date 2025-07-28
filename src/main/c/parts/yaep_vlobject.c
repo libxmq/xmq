@@ -122,4 +122,10 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
   vlo->vlo_segment_stop = vlo->vlo_start + vlo_length;
 }
 
+size_t vlo_memusage(vlo_t *vlo)
+{
+    if (!vlo) return 0;
+    return vlo->vlo_segment_stop - vlo->vlo_start;
+}
+
 #endif

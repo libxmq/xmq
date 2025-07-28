@@ -145,6 +145,8 @@ int get_all_collisions();
 int hash_table_collision_percentage (hash_table_t htab);
 int all_hash_table_collision_percentage (void);
 
+size_t hash_table_memusage(hash_table_t htab);
+
 #define YAEP_HASHTAB_MODULE
 
 #endif

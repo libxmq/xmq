@@ -119,6 +119,7 @@ static int default_read_token(YaepParseRun *ps, void **attr);
 static void error_recovery(YaepParseState *ps, int *start, int *stop);
 static void error_recovery_init(YaepParseState *ps);
 static void free_error_recovery(YaepParseState *ps);
+static size_t memusage(YaepParseState *ps);
 static void read_input(YaepParseState *ps);
 static void set_add_dotted_rule_with_matched_length(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, const char *why);
 static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule *dotted_rule, const char *why);
@@ -2124,6 +2125,72 @@ static void free_inside_parse_state(YaepParseState *ps)
     free_dotted_rules(ps);
 }
 
+static size_t memusage(YaepParseState *ps)
+{
+    size_t sum = 0;
+
+    // Grammar...
+
+    // Symbols, the memory usage for the symbols is static during the parse.
+    sum += objstack_memusage(&ps->run.grammar->symbs_ptr->symbs_os);
+    sum += vlo_memusage(&ps->run.grammar->symbs_ptr->symbs_vlo);
+    sum += vlo_memusage(&ps->run.grammar->symbs_ptr->terminals_vlo);
+    sum += vlo_memusage(&ps->run.grammar->symbs_ptr->nonterminals_vlo);
+    sum += hash_table_memusage(ps->run.grammar->symbs_ptr->map_repr_to_symb);
+    sum += hash_table_memusage(ps->run.grammar->symbs_ptr->map_code_to_symb);
+
+    // Rules, the memory usage is static during the parse.
+    sum += objstack_memusage(&ps->run.grammar->rulestorage_ptr->rules_os);
+
+    // Terminal bitsets static.
+    sum += objstack_memusage(&ps->run.grammar->term_sets_ptr->terminal_bitset_os);
+    sum += vlo_memusage(&ps->run.grammar->term_sets_ptr->terminal_bitset_vlo);
+    sum += hash_table_memusage(ps->run.grammar->term_sets_ptr->map_terminal_bitset_to_id);
+
+    // Parse state, increasing during parse.
+
+    sum += objstack_memusage(&ps->set_cores_os);
+    sum += objstack_memusage(&ps->set_dotted_rules_os);
+    sum += objstack_memusage(&ps->set_parent_dotted_rule_ids_os);
+    sum += objstack_memusage(&ps->set_matched_lengths_os);
+    sum += objstack_memusage(&ps->sets_os);
+    sum += objstack_memusage(&ps->set_term_lookahead_os);
+
+    sum += hash_table_memusage(ps->cache_stateset_cores);
+    sum += hash_table_memusage(ps->cache_stateset_matched_lengths);
+    sum += hash_table_memusage(ps->cache_stateset_core_matched_lengths);
+    sum += hash_table_memusage(ps->cache_stateset_term_lookahead);
+
+    sum += vlo_memusage(&ps->dotted_rules_table_vlo);
+    sum += objstack_memusage(&ps->dotted_rules_os);
+    sum += vlo_memusage(&ps->dotted_rule_matched_length_vec_vlo);
+    sum += objstack_memusage(&ps->core_symb_to_predcomps_os);
+    sum += vlo_memusage(&ps->new_core_symb_to_predcomps_vlo);
+    sum += objstack_memusage(&ps->vect_ids_os);
+
+#ifdef USE_CORE_SYMB_HASH_TABLE
+    sum += hash_table_memusage(ps->map_core_symb_to_predcomps);
+#else
+    sum += vlo_memusage(&ps->core_symb_table_vlo);
+    sum += objstack_memusage(&ps->core_symb_tab_rows);
+#endif
+
+    sum += hash_table_memusage(ps->map_transition_to_coresymbvect);
+    sum += hash_table_memusage(ps->map_reduce_to_coresymbvect);
+    sum += objstack_memusage(&ps->recovery_state_tail_sets);
+    sum += vlo_memusage(&ps->original_state_set_tail_stack);
+    sum += vlo_memusage(&ps->vlo_array);
+    sum += hash_table_memusage(ps->set_of_reserved_memory);
+    sum += vlo_memusage(&ps->tnodes_vlo);
+    sum += hash_table_memusage(ps->map_node_to_visit);
+    sum += objstack_memusage(&ps->node_visits_os);
+    sum += vlo_memusage(&ps->recovery_state_stack);
+    sum += objstack_memusage(&ps->parse_state_os);
+    sum += hash_table_memusage(ps->map_rule_orig_statesetind_to_internalstate);
+
+    return sum;
+}
+
 /* The following function reads all input tokens.*/
 static void read_input(YaepParseState *ps)
 {
@@ -3015,7 +3082,8 @@ static void perform_parse(YaepParseState *ps)
     for(; ps->tok_i < ps->input_len; ps->tok_i++)
     {
         // This assert is TODO! Theoretically the state_set_k could be less than tok_i
-        // assuming a state set has been reused. So far I have not seen that, so assume state_set_k == tok_i == index of input char.
+        // assuming a state set has been reused.
+        // So far I have not seen that, so assume state_set_k == tok_i == index of input char.
         assert(ps->tok_i == ps->state_set_k);
 
         YaepSymbol *THE_TERMINAL = ps->input[ps->tok_i].symb;
@@ -3028,6 +3096,21 @@ static void perform_parse(YaepParseState *ps)
 
         assert(ps->tok_i == ps->state_set_k);
 
+        if (ps->tok_i % 1000 == 0)
+        {
+            size_t size = memusage(ps);
+            char *siz = humanReadableTwoDecimals(size);
+            verbose("ixml=", "@%d/%d #sets=%d #cores=%d #dotted_rules=%d #matched_lengths=%d mem=%s",
+                    ps->tok_i,
+                    ps->input_len,
+                    ps->num_sets_total,
+                    ps->num_set_cores,
+                    ps->num_dotted_rules_total,
+                    ps->num_set_matched_lengths,
+                    siz
+                );
+            free(siz);
+        }
         debug("ixml.pa.token=", "@%d %s", ps->tok_i, THE_TERMINAL->hr);
         debug_info(ps, "READ %s next %s", THE_TERMINAL->hr, NEXT_TERMINAL?NEXT_TERMINAL->hr:"?");
 
@@ -4045,7 +4128,7 @@ static void print_statistics(YaepParseState *ps, bool *ambiguous_p, int table_se
     if (ps->run.debug)
     {
         debug_info(ps, "print_statistics()");
-        debug_info(ps, "symbs_os=%zu", objstack_size(&ps->run.grammar->symbs_ptr->symbs_os));
+        debug_info(ps, "symbs_os=%zu", objstack_memusage(&ps->run.grammar->symbs_ptr->symbs_os));
 
         debug_info(ps, "input_len=%d #s=%d #dotted_rules=%d",
                    ps->input_len,
