@@ -25,6 +25,8 @@ xsl:stylesheet(version   = 1.0
                          p    {color: red;}
                          a { cursor: pointer; }
                          #grammar { display: none; }
+                         #terminology { display: none; font-size: 1ex; }
+                         pre#grammar { border: 1px solid; padding: 1em; margin: 1em;}
                          td.grammar { border: 1px solid; text-align: left; background-color: #aaa; }
                          td.lookahead { border: 1px solid; text-align: left; background-color: yellow; }
                          table.steps, th, td { border: 1px solid; text-align: center; }
@@ -56,11 +58,68 @@ xsl:stylesheet(version   = 1.0
                                                   else e.style.display = 'none';  }"
             }
             body {
-                a(onclick = "toggle('grammar'); return false;") = '⊞ Grammar'
-                table(id = grammar)
+                a(onclick = "toggle('grammar'); return false;") = 'Grammar '
+                a(onclick = "toggle('terminology'); return false;") = 'Terminology '
+                a(onclick = "toggle('statistics'); return false;") = 'Statistics '
+                br
+                pre(id = grammar)
                 {
                     xsl:apply-templates(select = parse/ixml-gr)
-                    xsl:apply-templates(select = parse/ixml-nt)
+                }
+                pre(id = terminology)
+                {
+""""
+  Input tokens:  The content to be parsed stored as an array of symbols
+                 (with user supplied attributes attached that can be user fetched later).
+                 The tokens can be lexer symbols or unicode characters (ixml).
+                 An offset into the input tokens array is always denoted with the suffix _i.
+                 E.g. input[tok_i] (current input token being scanned), from_i, to_i, state_set_i etc.
+                 An offset inside the rhs of a rule is denoted with the suffix _j.
+
+   Rule:        A grammar rule: S →  NP VP
+
+   Dotted Rule: A rule with a dot: S →  NP 🞄 VP
+                The dot symbolizes how far the rule has been matched against input.
+                The dot_j starts at zero which means nothing has been matched.
+                A dotted rule is started if the dot_j > 0, ie it has matched something.
+
+   Earley Item: Every input token input[tok_i] gets a state set that stores Early items (aka chart entries).
+                An early item: [from_i, to_i, S →  NP 🞄 VP]
+                The item maps a token range with a partial (or fully completed) dotted rule.
+                Since to_i == tok_i we do not need to actually store to_i, its implicit from the state set.
+                Instead we store the match_length (== to_i - from_i).
+
+                The matched lengths are stored in a separate array and are not needed for
+                parsing/recognition but are required when building the parse tree.
+
+                Because of the separate array, there is no need not have an Earley Item structure
+                in this implementation. Instead we store dotted rules and match_lengths arrays.
+
+   StateSetCore: The part of a state set that can be shared between StateSets.
+                 This is where we store the dotted rules, the dotted_rule_lenghts,
+                 and the scanned terminal that created this core.
+                 Again, the dotted_rule_lengths are only used to build the final parse tree
+                 after at least one valid parse has been found.
+                 The StateSetCores can be reused a lot.
+
+   StateSet: For each input token, we build a state set with all possible Earley items.
+             started (some match) and not-yet-started (no match yet). Theses items
+             come from the scan/complete/predict algorithm.
+
+             A started dotted_rule stores the matched length in number of tokens as matched_length.
+
+             We compress the StateSet with an immutable StateSetCore and a separate
+             array of matched_lengths corresponding to the dotted rules inside the state set core.
+
+    Abbreviations:
+
+    d12        dotted rule nr 12 e.g. S → S '+' · M
+    (d12,7-10) dotted rule 12 maps to input range 7-10 aka (X → α • β, i)
+    s7         state set 7
+    c17        state core 17
+    cspc2      core+symbol maps to predictions/completions vectors
+    stlg       state set lookahead goto
+""""
                 }
                 table(class = steps) {
                     tr {
@@ -88,22 +147,18 @@ xsl:stylesheet(version   = 1.0
     }
     xsl:template(match = parse/ixml-gr)
     {
+        xsl:value-of(select = .)
+        br
+    }
+    xsl:template(match = parse/ixml-nt)
+    {
         tr {
-            td(class = grammar)
+            td(class = lookahead)
             {
                 xsl:value-of(select = .)
             }
         }
-     }
-     xsl:template(match = parse/ixml-nt)
-     {
-         tr {
-             td(class = lookahead)
-             {
-                 xsl:value-of(select = .)
-             }
-         }
-     }
+    }
 
     xsl:template(match = parse/ixml-pa-token)
     xsl:template(match = parse/ixml-pa-info)
