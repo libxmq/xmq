@@ -3,11 +3,11 @@ START
   <exec inputstring="&#10;" sep="'"/>
 </target>
 COMPACT
-target{exec(inputstring=&#10;sep=&apos;)}
+target{exec(inputstring=&#10;sep="'")}
 XMQ
 target {
     exec(inputstring = &#10;
-         sep         = &apos;)
+         sep         = "'")
 }
 END
 ARGS

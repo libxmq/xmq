@@ -45,7 +45,7 @@ bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out
 size_t encode_utf8(int uc, UTF8Char *utf8);
 const char *has_ending_nl_space(const char *start, const char *stop, size_t *only_newlines);
 const char *has_leading_space_nl(const char *start, const char *stop, size_t *only_newlines);
-bool has_leading_ending_quote(const char *start, const char *stop);
+bool has_leading_ending_different_quotes(const char *start, const char *stop);
 bool has_newlines(const char *start, const char *stop);
 bool has_must_escape_chars(const char *start, const char *stop);
 bool has_all_quotes(const char *start, const char *stop);

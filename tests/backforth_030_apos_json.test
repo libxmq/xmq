@@ -1,12 +1,12 @@
 INPUT
 _ {
-   y = &apos;
+   y = "'"
 }
 FIRST
 {"y":"'"}
 SECOND
 _ {
-    y = &apos;
+    y = "'"
 }
 END
 ARGS_FIRST

@@ -71,7 +71,7 @@ XMQProceed catch_single_content(XMQDoc *doc, XMQNode *node, void *user_data);
 size_t calculate_buffer_size(const char *start, const char *stop, int indent, const char *pre_line, const char *post_line);
 bool check_leading_space_nl(const char *start, const char *stop);
 void copy_and_insert(MemBuffer *mb, const char *start, const char *stop, int num_prefix_spaces, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
-char *copy_lines(int num_prefix_spaces, const char *start, const char *stop, int num_quotes, bool add_nls, bool add_compound, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
+char *copy_lines(int num_prefix_spaces, const char *start, const char *stop, int num_quotes, bool use_dqs, bool add_nls, bool add_compound, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
 void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSettings *os);
 xmlNodePtr create_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop, xmlNodePtr parent);
 void create_node(XMQParseState *state, const char *start, const char *stop);
@@ -734,6 +734,11 @@ void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode)
     os->bg_dark_mode = bg_dark_mode;
 }
 
+void xmqSetPreferDoubleQuotes(XMQOutputSettings *os, bool prefer_double_quotes)
+{
+    os->prefer_double_quotes = prefer_double_quotes;
+}
+
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines)
 {
     os->escape_newlines = escape_newlines;
@@ -1262,7 +1267,9 @@ char *xmq_un_quote(const char *start, const char *stop, bool remove_qs, bool is_
     size_t j = 0;
     if (remove_qs)
     {
-        while (*(start+j) == '\'' && *(stop-j-1) == '\'' && (start+j) < (stop-j)) j++;
+        const char q = *start;
+        assert(q == '\'' || q == '"');
+        while (*(start+j) == q && *(stop-j-1) == q && (start+j) < (stop-j)) j++;
     }
 
     start = start+j;
@@ -3557,6 +3564,7 @@ char *copy_lines(int num_prefix_spaces,
                  const char *start,
                  const char *stop,
                  int num_quotes,
+                 bool use_dqs,
                  bool add_nls,
                  bool add_compound,
                  const char *implicit_indentation,
@@ -3588,7 +3596,9 @@ char *copy_lines(int num_prefix_spaces,
         }
     }
 
-    for (int i = 0; i < num_quotes; ++i) membuffer_append_char(mb, '\'');
+    const char q = use_dqs?'"':'\'';
+
+    for (int i = 0; i < num_quotes; ++i) membuffer_append_char(mb, q);
     membuffer_append_region(mb, prefix_line, NULL);
     if (add_nls)
     {
@@ -3610,7 +3620,7 @@ char *copy_lines(int num_prefix_spaces,
     }
 
     membuffer_append_region(mb, postfix_line, NULL);
-    for (int i = 0; i < num_quotes; ++i) membuffer_append_char(mb, '\'');
+    for (int i = 0; i < num_quotes; ++i) membuffer_append_char(mb, q);
 
     if (add_compound)
     {
@@ -3636,19 +3646,21 @@ size_t line_length(const char *start, const char *stop, int *numq, int *lq, int 
     int llq = 0, eeq = 0;
     int num = 0, max = 0;
     // Skip line leading quotes
-    while (*i == '\'') { i++; llq++;  }
+    const char q = *i;
+    assert(q == '\'' || q == '"');
+    while (*i == q) { i++; llq++;  }
     const char *lstart = i; // Points to text after leading quotes.
     // Find end of line.
     while (i < stop && *i != '\n') i++;
     const char *eol = i;
     i--;
-    while (i > lstart && *i == '\'') { i--; eeq++; }
+    while (i > lstart && *i == q) { i--; eeq++; }
     i++;
     const char *lstop = i;
     // Mark endof text inside ending quotes.
     for (i = lstart; i < lstop; ++i)
     {
-        if (*i == '\'')
+        if (*i == q)
         {
             num++;
             if (num > max) max = num;
@@ -3708,7 +3720,8 @@ char *xmq_quote_default(int indent,
     bool add_nls = false;
     bool add_compound = false;
     bool use_double_quotes = false;
-    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound, &use_double_quotes);
+    bool prefer_double_quotes = false;
+    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound, prefer_double_quotes, &use_double_quotes);
 
     if (numq > 0)
     {
@@ -3761,6 +3774,7 @@ char *xmq_quote_default(int indent,
                       start,
                       stop,
                       numq,
+                      use_double_quotes,
                       add_nls,
                       add_compound,
                       settings->indentation_space,
@@ -4896,7 +4910,7 @@ char *xmq_line_vprintf_xmq(XMQLineConfig *lc, const char *element_name, va_list 
 
         size_t kl = strlen(key);
         char last = membuffer_back(mb);
-        if (last != '\'' && last != '(' && last != ')'  && last != '{' && last != '}')
+        if (last != '"' && last != '\'' && last != '(' && last != ')'  && last != '{' && last != '}')
         {
             membuffer_append(mb, " ");
         }

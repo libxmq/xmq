@@ -218,6 +218,7 @@ struct XMQCliCommand
     int  add_indent;
     bool omit_decl; // If true, then do not print <?xml ..?>
     bool compact;
+    bool prefer_double_quotes; // If true, then prefer double quotes.
     bool escape_newlines;
     bool escape_non_7bit;
     bool escape_tabs;
@@ -287,6 +288,11 @@ typedef struct
     size_t size_doctype;
     size_t num_cdata_nodes;
     size_t size_cdata_nodes;
+    size_t num_nodes_with_sqs;
+    size_t num_nodes_with_dqs;
+    size_t num_nodes_with_any_qs;
+    size_t num_nodes_with_no_qs;
+    size_t num_nodes_with_both_qs;
 } Stats;
 
 // FUNCTION DECLARATIONS /////////////////////////////////////////////////////////////
@@ -828,6 +834,11 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         if (!strcmp(arg, "--escape-newlines"))
         {
             command->escape_newlines = true;
+            return true;
+        }
+        if (!strcmp(arg, "--prefer-double-quotes"))
+        {
+            command->prefer_double_quotes = true;
             return true;
         }
         if (!strcmp(arg, "--escape-non-7bit"))
@@ -2039,6 +2050,7 @@ bool cmd_to(XMQCliCommand *command)
 {
     XMQOutputSettings *settings = xmqNewOutputSettings();
     xmqSetCompact(settings, command->compact);
+    xmqSetPreferDoubleQuotes(settings, command->prefer_double_quotes);
     xmqSetEscapeNewlines(settings, command->escape_newlines);
     xmqSetEscapeNon7bit(settings, command->escape_non_7bit);
     xmqSetEscapeTabs(settings, command->escape_tabs);
@@ -2507,6 +2519,33 @@ void accumulate_statistics(Stats *stats, xmlNode *node)
     {
         stats->num_text_nodes++;
         stats->size_text_nodes += strlen((const char*)node->content);
+        bool has_quote = false;
+        bool has_sq = false;
+        bool has_dq = false;
+        if (strchr((const char*)node->content, '"'))
+        {
+            stats->num_nodes_with_dqs++;
+            has_quote = true;
+            has_dq = true;
+        }
+        if (strchr((const char*)node->content, '\''))
+        {
+            stats->num_nodes_with_sqs++;
+            has_quote = true;
+            has_sq = true;
+        }
+        if (has_quote)
+        {
+            stats->num_nodes_with_any_qs++;
+        }
+        else
+        {
+            stats->num_nodes_with_no_qs++;
+        }
+        if (has_dq && has_sq)
+        {
+            stats->num_nodes_with_both_qs++;
+        }
         return;
     }
     else if (node->type == XML_COMMENT_NODE)
@@ -2593,6 +2632,11 @@ bool cmd_statistics(XMQCliCommand *command)
     if (stats.size_doctype) add_key_value(new_doc, root, "size_doctype", stats.size_doctype);
     if (stats.num_cdata_nodes) add_key_value(new_doc, root, "num_cdata_nodes", stats.num_cdata_nodes);
     if (stats.size_cdata_nodes) add_key_value(new_doc, root, "size_cdata_nodes", stats.size_cdata_nodes);
+    if (stats.num_nodes_with_sqs) add_key_value(new_doc, root, "num_text_nodes_with_single_quotes", stats.num_nodes_with_sqs);
+    if (stats.num_nodes_with_dqs) add_key_value(new_doc, root, "num_text_nodes_with_double_quotes", stats.num_nodes_with_dqs);
+    if (stats.num_nodes_with_no_qs) add_key_value(new_doc, root, "num_text_nodes_with_no_quotes", stats.num_nodes_with_no_qs);
+    if (stats.num_nodes_with_any_qs) add_key_value(new_doc, root, "num_text_nodes_with_any_quotes", stats.num_nodes_with_any_qs);
+    if (stats.num_nodes_with_both_qs) add_key_value(new_doc, root, "num_text_nodes_with_both_quotes", stats.num_nodes_with_both_qs);
 
     size_t sum_meta = stats.size_element_names+stats.size_attribute_names+stats.size_attribute_content+stats.size_doctype;
     size_t sum_text = stats.size_text_nodes;

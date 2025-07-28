@@ -6,11 +6,9 @@
 Galärvarvsvägen 14
 115 21 Stockholm
 Sweden</address>
-    <extra>Four ships were built after Vasa: Äpplet ("The Apple"), Kronan ("The Crown"),
-Scepter and Göta Ark (literally "Ark of Götaland").</extra>
-    <content>Vasa's main mast is 52.4 meters</info>
     <!-- Remember to verify coord. -->
     <coord>59°19'41.0"N 18°05'29.0"E</coord>
+    <info>"I was struck by its massive size," said the visitor.</info>
   </shipto>
   <rules/>
 </shiporder>

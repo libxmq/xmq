@@ -177,6 +177,7 @@ struct XMQOutputSettings
     bool omit_decl;
     bool use_color;
     bool bg_dark_mode;
+    bool prefer_double_quotes;
     bool escape_newlines;
     bool escape_non_7bit;
     bool escape_tabs;
@@ -438,6 +439,7 @@ typedef struct XMQPrintState XMQPrintState;
     @force:           Always add single quotes. More quotes if necessary.
     @compact:         Generate compact quote on a single line. Using &#10; and no superfluous whitespace.
     @value_after_key: If enties are introduced by the quoting, then use compound ( ) around the content.
+    @prefer_double_quotes: // By default xmq uses the single quote, but we can change this here.
 
     @indentation_space: Use this as the indentation character. If NULL default to " ".
     @explicit_space: Use this as the explicit space/indentation character. If NULL default to " ".
@@ -455,6 +457,7 @@ struct XMQQuoteSettings
     bool compact; // Generate compact quote on a single line. Using &#10; and no superfluous whitespace.
     bool allow_json_quotes; // Permit "..." json quoting.
     bool value_after_key; // If enties are introduced by the quoting, then use compound ( ) around the content.
+    bool prefer_double_quotes; // By default xmq uses the single quote, but we can change this here.
 
     const char *indentation_space;  // Use this as the indentation character. If NULL default to " ".
     const char *explicit_space;  // Use this as the explicit space character inside quotes. If NULL default to " ".

@@ -34,7 +34,7 @@ enum Level;
 #endif
 typedef enum Level Level;
 
-int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound, bool *use_double_quotes);
+int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound, bool prefer_double_quotes, bool *use_double_quotes);
 size_t count_necessary_slashes(const char *start, const char *stop);
 
 void print_nodes(XMQPrintState *ps, xmlNode *from, xmlNode *to, size_t align);

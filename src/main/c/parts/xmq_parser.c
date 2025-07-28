@@ -56,8 +56,11 @@ bool possibly_need_more_quotes(XMQParseState *state);
 size_t count_xmq_quotes(const char *i, const char *stop)
 {
     const char *start = i;
+    char c = *i;
 
-    while (i < stop && *i == '\'') i++;
+    assert(c == '\'' || c == '"');
+
+    while (i < stop && *i == c) i++;
 
     return i-start;
 }
@@ -66,6 +69,10 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
 {
     const char *i = state->i;
     const char *end = state->buffer_stop;
+    const char q = *i;
+
+    assert(q == '\'' || q == '"');
+
     size_t line = state->line;
     size_t col = state->col;
 
@@ -80,7 +87,7 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
 
     while (count > 0)
     {
-        increment('\'', 1, &i, &line, &col);
+        increment(q, 1, &i, &line, &col);
         count--;
     }
 
@@ -97,7 +104,7 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
     while (i < end)
     {
         char c = *i;
-        if (c != '\'')
+        if (c != q)
         {
             increment(c, 1, &i, &line, &col);
             continue;
@@ -113,7 +120,7 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
         {
             while (count > 0)
             {
-                increment('\'', 1, &i, &line, &col);
+                increment(q, 1, &i, &line, &col);
                 count--;
             }
             continue;
@@ -123,7 +130,7 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
         {
             while (count > 0)
             {
-                increment('\'', 1, &i, &line, &col);
+                increment(q, 1, &i, &line, &col);
                 count--;
             }
             depth = 0;
@@ -457,12 +464,7 @@ void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text
 
 bool is_xmq_quote_start(char c)
 {
-    return c == '\'';
-}
-
-bool is_xmq_json_quote_start(char c)
-{
-    return c == '"';
+    return c == '\'' || c == '"';
 }
 
 bool is_xmq_entity_start(char c)
@@ -597,7 +599,6 @@ void parse_xmq(XMQParseState *state)
 
         if (is_xmq_token_whitespace(c)) parse_xmq_whitespace(state);
         else if (is_xmq_quote_start(c)) parse_xmq_quote(state, LEVEL_XMQ);
-        else if (is_xmq_json_quote_start(c)) parse_xmq_json_quote(state, LEVEL_XMQ);
         else if (is_xmq_entity_start(c)) parse_xmq_entity(state, LEVEL_XMQ);
         else if (is_xmq_comment_start(c, cc)) parse_xmq_comment(state, cc);
         else if (is_xmq_element_start(c)) parse_xmq_element(state);
@@ -788,10 +789,6 @@ void parse_xmq_value(XMQParseState *state, Level level)
     if (is_xmq_quote_start(c))
     {
         parse_xmq_quote(state, level);
-    }
-    else if (is_xmq_json_quote_start(c))
-    {
-        parse_xmq_json_quote(state, level);
     }
     else if (is_xmq_entity_start(c))
     {

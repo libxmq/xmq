@@ -2,14 +2,15 @@ INPUT
 root {
     alfa = "bertil"
     beta = 'bertil'
-    gamma = "bertil\tanders"
-    delta = "     \n     "
+    gamma = 'bertil	anders'
+    delta = (&#10;"      ")
 }
 FIRST
 <?xml version="1.0" encoding="utf-8"?>
-<root><alfa>bertil</alfa><beta>bertil</beta><gamma>bertil	anders</gamma><delta></delta></root>
+<root><alfa>bertil</alfa><beta>bertil</beta><gamma>bertil	anders</gamma><delta>
+      </delta></root>
 SECOND
-root{alfa=bertil beta=bertil gamma='bertil	anders'delta}
+root{alfa=bertil beta=bertil gamma='bertil	anders'delta=(&#10;'      ')}
 END
 ARGS_FIRST
 CMDS_FIRST to-xml

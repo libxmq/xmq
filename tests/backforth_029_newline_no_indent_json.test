@@ -4,7 +4,7 @@ FIRST
 html {
     body {
         pre {
-            x = &apos;
+            x = "'"
             ')
              {'
         }

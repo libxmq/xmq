@@ -35,6 +35,12 @@ fi
 rm -rf "$OUTPUT"
 mkdir -p "$OUTPUT"
 
+for i in tests/[0-9][0-9][0-9]_*.test
+do
+    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+    tests/test_single.sh "$PROG" "$OUTPUT" "$i"
+done
+
 for i in tests/ixml_not_[0-9][0-9][0-9]_*.test
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
@@ -71,12 +77,6 @@ for i in tests/ixml/correct/*.output.xmq
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
     tests/test_ixml_correct.sh "$PROG" "$OUTPUT" "$i" || (echo "Testing aborted" ; exit 1)
-done
-
-for i in tests/[0-9][0-9][0-9]_*.test
-do
-    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
-    tests/test_single.sh "$PROG" "$OUTPUT" "$i"
 done
 
 for i in tests/pipe_???_*.test

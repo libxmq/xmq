@@ -29,7 +29,8 @@ void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len,
     @stop:  Points to byte after memory buffer.
     @add_nls: Returns whether we need leading and ending newlines.
     @add_compound: Compounds ( ) is necessary.
-    @use_single: True if we should use single quotes ('), false use double quotes (").
+    @prefer_double_quotes: Set to true, will change the default to double quotes, instead of single quotes.
+    @use_double_quotese: Set to true if the quote should use double quotes.
 
     Scan the content to determine how it must be quoted, or if the content can
     remain as text without quotes. Return 0, nl_begin=nl_end=false for safe text.
@@ -40,7 +41,7 @@ void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len,
     Set add_compound to true if content starts or ends with spaces/newlines or if forbid_nl==true and
     content starts/ends with quotes.
 */
-int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound, bool *use_double_quotes)
+int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound, bool prefer_double_quotes, bool *use_double_quotes)
 {
     bool all_safe = true;
 
@@ -78,6 +79,7 @@ int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, b
     for (const char *i = start; i < stop; ++i)
     {
         char c = *i;
+        all_safe &= is_safe_value_char(i, stop);
         if (c == '\'')
         {
             curr_single++;
@@ -94,33 +96,41 @@ int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, b
             else
             {
                 curr_double = 0;
-                all_safe &= is_safe_value_char(i, stop);
             }
         }
     }
 
     bool leading_ending_sqs = false;
     bool leading_ending_dqs = false;
-    // We default to using single quotes.
-    bool use_dqs = false;
-    size_t max = max_single;
+    // We default to using single quotes. But prefer_double_quotes can be set with --prefer-double-quotes
+    bool use_dqs = prefer_double_quotes;
 
     if (*start == '\'' || *(stop-1) == '\'') leading_ending_sqs = true;
     if (*start == '"' || *(stop-1) == '"') leading_ending_dqs = true;
 
-    if (max_double == max_single)
+    if (leading_ending_sqs && !leading_ending_dqs)
     {
-        // Same number of quotes, we prefer single quotes unless...
-        if (leading_ending_sqs && !leading_ending_dqs) use_dqs = true;
-        // All other cases default to single quotes.
-    }
-    else if (max_single > max_double)
-    {
-        // We have a longer stretch of singles, than doubles, then use doubles instead.
-        // >alfa'''beta"gamma< is quoted as """alfa'''beta"gamma""" (23) and not ''''alfa'''beta"gamma'''' (25)
+        // If there is leading and ending single quotes, then always use double quotes.
         use_dqs = true;
     }
+    else if (!leading_ending_sqs && leading_ending_dqs)
+    {
+        // If there are leading ending double quotes, then always use single quotes.
+        use_dqs = false;
+    }
+    else if (max_double > max_single && max_double > 0) use_dqs = false; // We have more doubles than singles, use single quotes.
+    else if (max_double < max_single) use_dqs = true;  // We have fewer doubles than singles, use double quotes.
+    else // max_double == max_single
+    {
+        assert(max_double == max_single);
+        if (max_double > 0)
+        {
+            // If more than one quote is needed, then always use single quotes.
+            use_dqs = false;
+        }
+    }
 
+    size_t max;
     if (use_dqs)
     {
         max = max_double;
@@ -1169,27 +1179,8 @@ void print_safe_leaf_quote(XMQPrintState *ps,
     bool add_nls = false;
     bool add_compound = false;
     bool use_double_quotes = false;
-    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound, &use_double_quotes);
+    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound, ps->output_settings->prefer_double_quotes, &use_double_quotes);
     size_t indent = ps->current_indent;
-
-/*    if (numq == -1) // && !ps->output_settings->allow_json_quotes)
-    {
-        numq = 3;
-    }
-*/
-/*    if (numq == -1 || (numq > 0 && ps->output_settings->always_json_quotes))
-    {
-        // This quote can be best represented using a "..." instead of '''....'''.
-        char *quoted_value = xmq_quote_as_c(start, stop, false);
-        print_double_quote(ps, c);
-        print_quote_lines_and_color_uwhitespace(ps,
-                                                c,
-                                                quoted_value,
-                                                quoted_value+strlen(quoted_value));
-        print_double_quote(ps, c);
-        free(quoted_value);
-        return;
-        }*/
 
     if (numq > 0)
     {
@@ -1356,19 +1347,13 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
 
     if (has_all_quotes(start, stop))
     {
-        // A text with all single quotes, print using &apos; only.
-        // We could also be quoted using n+1 more quotes and newlines, but it seems a bit annoying:
-        // ''''''
-        // '''''
-        // ''''''
-        // compared to &apos;&apos;&apos;&apos;
-        // The &apos; solution takes a little bit more space, but works for compact too,
-        // lets use that for both normal and compact formatting.
-        check_space_before_entity_node(ps);
-        for (const char *i = start; i < stop; ++i)
-        {
-            print_utf8(ps, level_to_entity_color(level), 1, "&apos;", NULL);
-        }
+        // A text with all single quotes or all double quotes.
+        // "''''''''" or '"""""""'
+        check_space_before_quote(ps, level);
+        bool is_dq = *start == '"';
+        print_quotes(ps, 1, level_to_quote_color(level), !is_dq);
+        print_quotes(ps, stop-start, level_to_quote_color(level), is_dq);
+        print_quotes(ps, 1, level_to_quote_color(level), !is_dq);
         return;
     }
 
@@ -1457,7 +1442,7 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
             bool add_compound = false;
             bool compact = ps->output_settings->compact;
             bool use_double_quotes = false;
-            count_necessary_quotes(from, to, &add_nls, &add_compound, &use_double_quotes);
+            count_necessary_quotes(from, to, &add_nls, &add_compound, ps->output_settings->prefer_double_quotes, &use_double_quotes);
             if (!add_compound && (!add_nls || !compact))
             {
                 check_space_before_quote(ps, level);
@@ -1574,12 +1559,6 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
     const char *es = has_ending_nl_space(start, stop, &only_ending_newlines);
     if (es != NULL && only_ending_newlines == 0) return true;
 
-    if (has_all_quotes(start, stop))
-    {
-        // We will always pretty print a string of quotes as: &apos;&apos;&apos;
-        return true;
-    }
-
     if (compact)
     {
         // In compact form newlines must be escaped: &#10;
@@ -1589,7 +1568,7 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
         // '''
         // 'alfa'
         // '''
-        if (has_leading_ending_quote(start, stop)) return true;
+        if (has_leading_ending_different_quotes(start, stop)) return true;
     }
 
     bool newlines = ps->output_settings->escape_newlines;

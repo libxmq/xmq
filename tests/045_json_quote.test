@@ -1,7 +1,0 @@
-START
-value = "json quote"
-DEBUG
-[element_key "value" 1:1][whitespace " " 1:6][equals "=" 1:7][whitespace " " 1:8][element_value_quote "json quote" 1:9][whitespace "\n" 1:21]
-CONTENT
-{quote "json quote"}
-END

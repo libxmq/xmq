@@ -149,9 +149,12 @@ const char *has_ending_nl_space(const char *start, const char *stop, size_t *onl
     return i;
 }
 
-bool has_leading_ending_quote(const char *start, const char *stop)
+bool has_leading_ending_different_quotes(const char *start, const char *stop)
 {
-    return start < stop && ( *start == '\'' || *(stop-1) == '\'');
+    return start < stop && (
+        ( *start == '\'' && *(stop-1) == '"')
+        ||
+        ( *start == '"' && *(stop-1) == '\''));
 }
 
 bool has_newlines(const char *start, const char *stop)
@@ -175,10 +178,22 @@ bool has_must_escape_chars(const char *start, const char *stop)
 bool has_all_quotes(const char *start, const char *stop)
 {
     if (start == stop) return false;
+    bool all_sq = true;
     for (const char *i = start; i < stop; ++i)
     {
-        if (*i != '\'') return false;
+        if (*i != '\'')
+        {
+            all_sq = false;
+            break;
+        }
     }
+    if (all_sq) return true;
+
+    for (const char *i = start; i < stop; ++i)
+    {
+        if (*i != '"') return false;
+    }
+
     return true;
 }
 
