@@ -8,7 +8,6 @@ Galärvarvsvägen 14
 Sweden</address>
     <!-- Remember to verify coord. -->
     <coord>59°19'41.0"N 18°05'29.0"E</coord>
-    <info>"I was struck by its massive size," said the visitor.</info>
+    <code>regSale('container',123);</code>
   </shipto>
-  <rules/>
 </shiporder>
