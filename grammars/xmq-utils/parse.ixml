@@ -3,7 +3,9 @@ parse = line++-#a, -#a?.
         ixml-nt|
         ixml-pa-token|
         ixml-pa-step|
-        ixml-pa-info|
+        ixml-pa-trace|
+        ixml-pa-debug|
+        ixml-pa-view|
         ixml-pa-state|
         ixml-bt-step|
         ixml-bt-info.
@@ -14,19 +16,21 @@ ixml-nt = -'(ixml.nt)', ~[#a]+.
 
 { pa = parse }
 ixml-pa-step = -'(ixml.pa.step) @',tok_i, -' ', dr, -' ', type, -'/', n, -' ', rule.
-ixml-pa-info = -'(ixml.pa.info) @',tok_i, info.
+ixml-pa-trace = -'(ixml.pa.trace) @',tok_i, -' ', info.
+ixml-pa-debug = -'(ixml.pa.debug) @',tok_i, -' ', info.
+ixml-pa-view = -'(ixml.pa.view) @',tok_i, -' ', info.
 -ixml-pa-state = -'(ixml.pa.state) ', -~[#a]+.
 
 { bt = build tree }
 ixml-bt-step = -'(ixml.bt.step) adding ', dr, -~[#a]+.
 ixml-bt-info = -'(ixml.bt.info) ', info.
 
-ixml-pa-token = -'(ixml.pa.token) @',tok_i,-' ',char.
+ixml-pa-token = -'(ixml.pa.token) @',tok_i, -' ',char.
 
 tok_i = [N]+.
 char = -"'",~[#a],-"'" | 'ω' | '#',[N;L]+.
 
-type = 'none' | 'part' | 'full'.
+type = 'none' | 'part' | 'full' | 'block'.
 n = [N]+.
 
 { S →  · S '+' M }

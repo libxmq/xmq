@@ -23,9 +23,11 @@ xsl:stylesheet(version   = 1.0
                          table { border-collapse: collapse; }
                          h1   {color: blue;}
                          p    {color: red;}
-                         a { cursor: pointer; }
+                         a.toggle { cursor: pointer; display:inline-block; padding: 1ex; }
+                         a.toggle:hover { background-color: grey; }
                          #grammar { display: none; }
-                         #terminology { display: none; font-size: 1ex; }
+                         #terminology { display: none; font-size: 1rex; }
+                         #statistics { display: none; font-size: 1rex; }
                          pre#grammar { border: 1px solid; padding: 1em; margin: 1em;}
                          td.grammar { border: 1px solid; text-align: left; background-color: #aaa; }
                          td.lookahead { border: 1px solid; text-align: left; background-color: yellow; }
@@ -35,7 +37,7 @@ xsl:stylesheet(version   = 1.0
                                  max-width: 30vw; white-space: wrap; }
                          .rulebox { flex-wrap: wrap; flex-direction: row; display: flex; justify-content: space-between; }
                          span.rulecontent { }
-                         span.ruleid { font-size: 0.5em; }
+                         span.ruleid { font-size: 0.5rem; }
                          .top { background-color: cyan; font-weight: bold; position: sticky; top: 0px;}
                          .step { background-image: linear-gradient(45deg, #3bc420 41.67%, #e33030 41.67%, #e33030 50%, #3bc420 50%, #3bc420 91.67%, #e33030 91.67%, #e33030 100%); background-size: 16.97px 16.97px; }
                          .step[used="true"] { color: black; background: solid; background: lightgreen; }
@@ -46,8 +48,9 @@ xsl:stylesheet(version   = 1.0
                          .eof { background-color: lightgrey; min-width: 1ch; width: 1ch; }
                          .predotted { color: black; background-color: orange;}
                          .dotted { color: darkorange;}
-                         .info { text-align: left; background: lightyellow; font-size: 0.5em; }
-                         .leinfo { text-align: left; font-size: 0.5em; background-color: cyan; padding-right: 1em; padding-left: 1em; position: sticky; right: 0px; max-width: 30vw; white-space: wrap; }
+                         .info { text-align: left; background: lightyellow; font-size: 0.5rem; }
+                         .leinfo { text-align: left; font-size: 0.5rem; background-color: cyan; padding-right: 1em; padding-left: 1em; position: sticky; right: 0px; max-width: 30vw; white-space: wrap; }
+                         .ledebug { text-align: left; font-size: 0.5rem; background-color: yellow; padding-right: 1em; padding-left: 1em; position: sticky; right: 0px; max-width: 30vw; white-space: wrap; }
 
                          .dotted[blocked="true"] { color: white; background: red; }
                          .completed { color: black; background-color: lightgreen; }
@@ -58,13 +61,21 @@ xsl:stylesheet(version   = 1.0
                                                   else e.style.display = 'none';  }"
             }
             body {
-                a(onclick = "toggle('grammar'); return false;") = 'Grammar '
-                a(onclick = "toggle('terminology'); return false;") = 'Terminology '
-                a(onclick = "toggle('statistics'); return false;") = 'Statistics '
+                a(class = toggle
+                  onclick = "toggle('grammar'); return false;") = 'Grammar '
+                a(class = toggle
+                  onclick = "toggle('terminology'); return false;") = 'Terminology '
+                a(class = toggle
+                  onclick = "toggle('statistics'); return false;") = 'Statistics '
                 br
                 pre(id = grammar)
                 {
                     xsl:apply-templates(select = parse/ixml-gr)
+                }
+                pre(id = statistics)
+                {
+                    Statistics
+                    xsl:apply-templates(select = parse/ixml-stats)
                 }
                 pre(id = terminology)
                 {
@@ -140,7 +151,7 @@ xsl:stylesheet(version   = 1.0
                         }
                         th(class = rule)
                     }
-                    xsl:apply-templates(select = ixml-pa-token|parse/ixml-pa-info|parse/ixml-bt-step|parse/ixml-bt-info|parse/ixml-pa-step)
+                    xsl:apply-templates(select = ixml-pa-token|parse/ixml-pa-trace|parse/ixml-pa-debug|parse/ixml-pa-view|parse/ixml-bt-step|parse/ixml-bt-info|parse/ixml-pa-step)
                 }
             }
         }
@@ -161,8 +172,11 @@ xsl:stylesheet(version   = 1.0
     }
 
     xsl:template(match = parse/ixml-pa-token)
-    xsl:template(match = parse/ixml-pa-info)
+    xsl:template(match = parse/ixml-pa-trace)
     {
+        xsl:choose {
+        xsl:when(test = "$level = 'trace'")
+        {
         tr {
             td {
                 xsl:attribute(name = colspan)
@@ -171,6 +185,45 @@ xsl:stylesheet(version   = 1.0
                 }
             }
             td(class = leinfo)
+            {
+                xsl:value-of(select = info)
+            }
+        }
+        }
+        xsl:otherwise
+        }
+    }
+    xsl:template(match = parse/ixml-pa-debug)
+    {
+        xsl:choose {
+        xsl:when(test = "$level = 'trace' or $level = 'debug'")
+        {
+        tr {
+            td {
+                xsl:attribute(name = colspan)
+                {
+                    xsl:value-of(select = $num_tokens)
+                }
+            }
+            td(class = ledebug)
+            {
+                xsl:value-of(select = info)
+            }
+        }
+        }
+        xsl:otherwise
+        }
+    }
+    xsl:template(match = parse/ixml-pa-view)
+    {
+        tr {
+            td {
+                xsl:attribute(name = colspan)
+                {
+                    xsl:value-of(select = $num_tokens)
+                }
+            }
+            td(class = ledebug)
             {
                 xsl:value-of(select = info)
             }

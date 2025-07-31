@@ -465,6 +465,7 @@ struct YaepStateSetTermLookAhead
        following array elements whose index is given by curr.
        When curr reaches MAX_CACHED_GOTO_RESULTS it loops back to 0. */
     int curr;
+
     /* Saved goto sets to which we can go from SET by the terminal with
        subsequent terminal LOOKAHEAD given by its code. */
     YaepStateSet *result[MAX_CACHED_GOTO_RESULTS];

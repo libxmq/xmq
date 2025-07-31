@@ -245,8 +245,42 @@ void print_dotted_rule(MemBuffer *mb,
     membuffer_append(mb, buf);
 
     print_rule_with_dot(mb, ps, dotted_rule->rule, dotted_rule->dot_j);
+}
 
-    //if (parent_id >= 0) membuffer_printf(mb, " { parent=d%d }", parent_id);
+/* The following function prints the dotted_rule.
+   Print the lookahead set if lookahead_p is true. */
+void print_dotted_rule_blocked(MemBuffer *mb,
+                               YaepParseState *ps,
+                               int tok_i, // aka state_set_k
+                               YaepDottedRule *dotted_rule,
+                               int matched_length,
+                               int parent_id)
+{
+    char buf[256];
+
+    int from = 0;
+    int to = 0;
+
+    assert(matched_length >= 0);
+
+    if (matched_length == 0)
+    {
+        from = tok_i;
+        to = tok_i;
+    }
+    else
+    {
+        from = 1+tok_i-matched_length;
+        to = 1+tok_i;
+    }
+
+    snprintf(buf, 256, "(d%d,%d-%d) ", dotted_rule->id, from, to);
+    membuffer_append(mb, buf);
+
+    snprintf(buf, 256, "block/%d ", ps->input_len);
+    membuffer_append(mb, buf);
+
+    print_rule_with_dot(mb, ps, dotted_rule->rule, dotted_rule->dot_j);
 }
 
 void print_matched_lenghts(MemBuffer *mb, YaepStateSet *s)
