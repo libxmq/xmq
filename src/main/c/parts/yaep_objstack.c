@@ -91,6 +91,7 @@ _OS_delete_function (os_t * os)
       previous_segment = current_segment->os_previous_segment;
       yaep_free (os->os_alloc, current_segment);
     }
+  os->os_current_segment = NULL;
 }
 
 /* The following function implements macro `OS_EMPTY' (freeing memory
