@@ -74,6 +74,7 @@ do_part xmq_internals
 do_part xmq_parser
 do_part xmq_printer
 do_part yaep_allocate
+do_part yaep_cspc
 do_part yaep_hashtab
 do_part yaep_objstack
 do_part yaep_vlobject

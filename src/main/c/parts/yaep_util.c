@@ -118,4 +118,64 @@ int find_matched_length(YaepParseState *ps,
     return matched_length;
 }
 
+void yaep_debug(YaepParseState *ps, const char *format, ...)
+{
+    if (!ps->run.debug) return;
+
+    va_list ap;
+    va_start(ap, format);
+
+    MemBuffer *mb = new_membuffer();
+    membuffer_printf(mb, "@%d ", ps->tok_i);
+
+    char *buf = buf_vsnprintf(format, ap);
+    membuffer_append(mb, buf);
+    membuffer_append_null(mb);
+    free(buf);
+
+    debug_mb("ixml.pa.debug=", mb);
+    free_membuffer_and_free_content(mb);
+    return;
+}
+
+void yaep_trace(YaepParseState *ps, const char *format, ...)
+{
+    if (!ps->run.trace) return;
+
+    va_list ap;
+    va_start(ap, format);
+
+    MemBuffer *mb = new_membuffer();
+    membuffer_printf(mb, "@%d ", ps->tok_i);
+
+    char *buf = buf_vsnprintf(format, ap);
+    membuffer_append(mb, buf);
+    membuffer_append_null(mb);
+    free(buf);
+
+    debug_mb("ixml.pa.trace=", mb);
+    free_membuffer_and_free_content(mb);
+    return;
+}
+
+void yaep_view(YaepParseState *ps, const char *format, ...)
+{
+    if (!ps->run.debug) return;
+
+    va_list ap;
+    va_start(ap, format);
+
+    MemBuffer *mb = new_membuffer();
+    membuffer_printf(mb, "@%d ", ps->tok_i);
+
+    char *buf = buf_vsnprintf(format, ap);
+    membuffer_append(mb, buf);
+    membuffer_append_null(mb);
+    free(buf);
+
+    debug_mb("ixml.pa.view=", mb);
+    free_membuffer_and_free_content(mb);
+    return;
+}
+
 #endif

@@ -623,6 +623,7 @@ void xmqSetAddIndent(XMQOutputSettings *os, int add_indent);
 void xmqSetCompact(XMQOutputSettings *os, bool compact);
 void xmqSetUseColor(XMQOutputSettings *os, bool use_color);
 void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode);
+void xmqSetPreferDoubleQuotes(XMQOutputSettings *os, bool prefer_double_quotes);
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines);
 void xmqSetEscapeNon7bit(XMQOutputSettings *os, bool escape_non_7bit);
 void xmqSetEscapeTabs(XMQOutputSettings *os, bool escape_tabs);

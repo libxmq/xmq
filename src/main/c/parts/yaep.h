@@ -124,7 +124,7 @@ struct YaepParseRun
     bool trace;
 
     // This object continues with more data inside the implementation....
-    // Do not allocate this object yourself, use yaepNewParseRun andyaepFreeParseRun instead.
+    // Do not allocate this object yourself, use yaepNewParseRun and yaepFreeParseRun instead.
 };
 
 /* The following describes the type of parse tree node. */

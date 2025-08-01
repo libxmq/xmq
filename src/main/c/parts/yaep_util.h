@@ -43,6 +43,10 @@ void dbg_print_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule);
 void fetch_state_vars(YaepParseState *ps, YaepStateSet *state_set, StateVars *out);
 int find_matched_length(YaepParseState *ps, YaepStateSet *state_set, StateVars *vars, int dotted_rule_id);
 
+void yaep_view(YaepParseState *ps, const char *format, ...);
+void yaep_debug(YaepParseState *ps, const char *format, ...);
+void yaep_trace(YaepParseState *ps, const char *format, ...);
+
 #define YAEP_UTIL_MODULE
 
 #endif

@@ -79,6 +79,8 @@ char *strndup(const char *s, size_t l);
 // A common free function ptr to be used when freeing collections.
 typedef void(*FreeFuncPtr)(void*);
 
+char *humanReadableTwoDecimals(size_t s);
+
 #define ALWAYS_MODULE
 
 // PART H COLORS ////////////////////////////////////////
@@ -502,7 +504,7 @@ bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out
 size_t encode_utf8(int uc, UTF8Char *utf8);
 const char *has_ending_nl_space(const char *start, const char *stop, size_t *only_newlines);
 const char *has_leading_space_nl(const char *start, const char *stop, size_t *only_newlines);
-bool has_leading_ending_quote(const char *start, const char *stop);
+bool has_leading_ending_different_quotes(const char *start, const char *stop);
 bool has_newlines(const char *start, const char *stop);
 bool has_must_escape_chars(const char *start, const char *stop);
 bool has_all_quotes(const char *start, const char *stop);
@@ -627,7 +629,7 @@ enum Level;
 #endif
 typedef enum Level Level;
 
-int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound);
+int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound, bool prefer_double_quotes, bool *use_double_quotes);
 size_t count_necessary_slashes(const char *start, const char *stop);
 
 void print_nodes(XMQPrintState *ps, xmlNode *from, xmlNode *to, size_t align);
@@ -655,7 +657,7 @@ void print_white_spaces(XMQPrintState *ps, int num);
 void print_all_whitespace(XMQPrintState *ps, const char *start, const char *stop, Level level);
 void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num);
 void print_quoted_spaces(XMQPrintState *ps, XMQColor color, int num);
-void print_quotes(XMQPrintState *ps, int num, XMQColor color);
+void print_quotes(XMQPrintState *ps, int num, XMQColor color, bool use_double_quotes);
 void print_double_quote(XMQPrintState *ps, XMQColor color);
 void print_nl(XMQPrintState *ps, const char *prefix, const char *postfix);
 void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *postfix);
@@ -1041,23 +1043,14 @@ get_collisions (hash_table_t htab)
 
 /* The following function returns number of searches during all work
    with all hash tables. */
-static inline int
-get_all_searches (void)
-{
-    return 0; // all_searches; TODO FREDRIK
-}
-
+int get_all_searches();
 /* The following function returns number of occurred collisions
    during all work with all hash tables. */
-static inline int
-get_all_collisions (void)
-{
-    return 0; // all_collisions; // TODO FREDRIK
-}
+int get_all_collisions();
+int hash_table_collision_percentage (hash_table_t htab);
+int all_hash_table_collision_percentage (void);
 
-extern int hash_table_collision_percentage (hash_table_t htab);
-
-extern int all_hash_table_collision_percentage (void);
+size_t hash_table_memusage(hash_table_t htab);
 
 #define YAEP_HASHTAB_MODULE
 
@@ -1118,8 +1111,9 @@ struct _os_auxiliary_struct
 
 struct _os_segment
 {
-  struct _os_segment *os_previous_segment;
-  char os_segment_contest[_OS_ALIGNMENT];
+    struct _os_segment *os_previous_segment;
+    size_t os_segment_size; // Fredrik added this, does this change the OS_ALIGNMENT calculation? TODO.
+    char os_segment_content[_OS_ALIGNMENT];
 };
 
 /* This type describes a descriptor of stack of objects.  All work
@@ -1335,6 +1329,9 @@ extern void _OS_empty_function (os_t *os);
 extern void _OS_add_string_function (os_t *os, const char *str);
 extern void _OS_expand_memory (os_t *os, size_t additional_length);
 
+/* Return total amount of memory used by this objstack. */
+size_t objstack_memusage(os_t *os);
+
 #define YAEP_OBJSTACK_MODULE
 
 // PART H YAEP_VLOBJECT ////////////////////////////////////////
@@ -1412,7 +1409,7 @@ typedef struct
     vlo_t *_temp_vlo = &(vlo);\
     assert (_temp_vlo->vlo_start != NULL);\
     yaep_free( _temp_vlo->vlo_alloc,_temp_vlo->vlo_start );\
-    _temp_vlo->vlo_start = NULL;\
+    _temp_vlo->vlo_start = _temp_vlo->vlo_segment_stop = NULL;\
   }\
   while (0)
 #else
@@ -1420,6 +1417,7 @@ typedef struct
   do { \
     vlo_t * _temp_vlo = &( vlo ); \
     yaep_free( _temp_vlo->vlo_alloc, _temp_vlo->vlo_start ); \
+    _temp_vlo->vlo_start = _temp_vlo->vlo_segment_stop = NULL;\
   } while( 0 )
 #endif /* #ifndef NDEBUG */
 
@@ -1572,6 +1570,8 @@ extern void _VLO_tailor_function (vlo_t *vlo);
 extern void _VLO_add_string_function (vlo_t *vlo, const char *str);
 extern void _VLO_expand_memory (vlo_t *vlo, size_t additional_length);
 
+size_t vlo_memusage(vlo_t *vlo);
+
 #define YAEP_VLOBJECT_MODULE
 
 // PART H YAEP ////////////////////////////////////////
@@ -1668,7 +1668,7 @@ struct YaepParseRun
     bool trace;
 
     // This object continues with more data inside the implementation....
-    // Do not allocate this object yourself, use yaepNewParseRun andyaepFreeParseRun instead.
+    // Do not allocate this object yourself, use yaepNewParseRun and yaepFreeParseRun instead.
 };
 
 /* The following describes the type of parse tree node. */
@@ -2022,8 +2022,8 @@ typedef struct YaepDottedRule YaepDottedRule;
 struct YaepInputToken;
 typedef struct YaepInputToken YaepInputToken;
 
-struct YaepStateSetCoreTermLookAhead;
-typedef struct YaepStateSetCoreTermLookAhead YaepStateSetCoreTermLookAhead;
+struct YaepStateSetTermLookAhead;
+typedef struct YaepStateSetTermLookAhead YaepStateSetTermLookAhead;
 
 struct YaepParseTreeBuildState;
 typedef struct YaepParseTreeBuildState YaepParseTreeBuildState;
@@ -2279,9 +2279,9 @@ struct YaepStateSetCore
        matched_lengths.  This matched_lengths are not stored. */
     int num_all_matched_lengths;
 
-    /* The following is an array containing the number of dotted rules from
+    /* The following is an array containing the parent rule index from
        which matched_length of dotted_rule with given index (between n_start_dotted_rules -> num_all_matched_lengths) is taken. */
-    int *parent_dotted_rule_ids;
+    int *to_parent_rule_index;
 };
 
 /* A YaepStateSet (aka parse list) stores chart entries (aka items) [from, to, S →  VP 🞄 NP ]
@@ -2340,9 +2340,6 @@ struct YaepDottedRule
        FIRST(the dotted_rule tail || FOLLOW(lhs)) for statik lookaheads
        and FIRST(the dotted_rule tail || dyn_lookahead_context) for dynamic ones. */
     terminal_bitset_t *lookahead;
-
-    /* Debug information about which call added this dotted rule. */
-    const char *info;
 };
 
 struct YaepInputToken
@@ -2355,18 +2352,23 @@ struct YaepInputToken
     void *attr;
 };
 
-/* The triple and possible goto sets for it. */
-struct YaepStateSetCoreTermLookAhead
+/* The set-term-lookahead maps to goto sets. */
+struct YaepStateSetTermLookAhead
 {
-    YaepStateSet*set;
-    YaepSymbol*term;
-    int lookahead;
+    /* Keys */
+    YaepStateSet *set;
+    YaepSymbol *term;
+    int lookahead_term; // The next terminal to be scanned.
+
     /* Saved goto sets form a queue.  The last goto is saved at the
-       following array elements whose index is given by CURR. */
+       following array elements whose index is given by curr.
+       When curr reaches MAX_CACHED_GOTO_RESULTS it loops back to 0. */
     int curr;
+
     /* Saved goto sets to which we can go from SET by the terminal with
        subsequent terminal LOOKAHEAD given by its code. */
-    YaepStateSet*result[MAX_CACHED_GOTO_RESULTS];
+    YaepStateSet *result[MAX_CACHED_GOTO_RESULTS];
+
     /* Corresponding places of the goto sets in the parsing list. */
     int place[MAX_CACHED_GOTO_RESULTS];
 };
@@ -2554,8 +2556,8 @@ struct YaepParseState
     /* Number of state sets and their number of dotted_rules. */
     int num_sets_total, num_dotted_rules_total;
 
-    /* Number unique triples(core, term, lookahead). */
-    int num_triplets_core_term_lookahead;
+    /* Number of lookaheads (set, term, lookahead). */
+    int num_set_term_lookahead;
 
     /* The set cores of formed sets are placed in the following os.*/
     os_t set_cores_os;
@@ -2574,13 +2576,13 @@ struct YaepParseState
     /* The sets themself are placed in the following os.*/
     os_t sets_os;
 
-    /* Container for triples(set, term, lookahead. */
-    os_t triplet_core_term_lookahead_os;
+    /* Container for lookaheads (set, core, term, lookahead. */
+    os_t set_term_lookahead_os;
 
     hash_table_t cache_stateset_cores;                /* key is the started dotted rules from a stateset. */
     hash_table_t cache_stateset_matched_lengths;      /* key is matched_lengths from a stateset. */
     hash_table_t cache_stateset_core_matched_lengths; /* key is (core, matched_lengths). */
-    hash_table_t cache_stateset_core_term_lookahead;  /* key is (core, term, lookeahed). */
+    hash_table_t cache_stateset_term_lookahead;       /* key is (set, term, lookeahed). */
 
     /* The following contains current number of unique dotted_rules. */
     int num_all_dotted_rules;
@@ -2751,8 +2753,30 @@ struct StateVars
     int num_all_matched_lengths;
     YaepDottedRule **dotted_rules;
     int *matched_lengths;
-    int *parent_dotted_rule_ids;
+    int *to_parent_rule_index;
 };
+
+// PART H YAEP_CSPC ////////////////////////////////////////
+
+#ifndef BUILDING_DIST_XMQ
+
+#include "yaep_structs.h"
+
+#endif
+
+YaepCoreSymbToPredComps *core_symb_to_predcomps_new(YaepParseState *ps, YaepStateSetCore*core, YaepSymbol*symb);
+void core_symb_to_predcomps_init(YaepParseState *ps);
+YaepCoreSymbToPredComps *core_symb_to_predcomps_find(YaepParseState *ps, YaepStateSetCore *core, YaepSymbol *symb);
+void free_core_symb_to_vect_lookup(YaepParseState *ps);
+void core_symb_to_predcomps_add_predict(YaepParseState *ps,
+                                        YaepCoreSymbToPredComps *core_symb_to_predcomps,
+                                        int rule_index_in_core);
+void core_symb_to_predcomps_add_complete(YaepParseState *ps,
+                                         YaepCoreSymbToPredComps *core_symb_to_predcomps,
+                                         int rule_index_in_core);
+void core_symb_to_predcomps_new_all_stop(YaepParseState *ps);
+
+#define YAEP_CSPC_MODULE
 
 // PART H YAEP_UTIL ////////////////////////////////////////
 
@@ -2771,6 +2795,10 @@ void dbg_print_coresymbvects(YaepParseState *ps, YaepCoreSymbToPredComps *v);
 void dbg_print_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule);
 void fetch_state_vars(YaepParseState *ps, YaepStateSet *state_set, StateVars *out);
 int find_matched_length(YaepParseState *ps, YaepStateSet *state_set, StateVars *vars, int dotted_rule_id);
+
+void yaep_view(YaepParseState *ps, const char *format, ...);
+void yaep_debug(YaepParseState *ps, const char *format, ...);
+void yaep_trace(YaepParseState *ps, const char *format, ...);
 
 #define YAEP_UTIL_MODULE
 
@@ -2868,6 +2896,9 @@ void termsetstorage_free(YaepGrammar *grammar, YaepTerminalSetStorage *term_sets
 
 #endif
 
+/* Build the parse tree from the yaep parse. */
+YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p);
+
 /* Hash of translation visit node.*/
 unsigned trans_visit_node_hash(hash_table_entry_t n);
 
@@ -2896,7 +2927,8 @@ YaepTreeNodeVisit *visit_node(YaepParseState *ps, YaepTreeNode*node);
 
 void print_core(MemBuffer*mb, YaepStateSetCore *c);
 void print_coresymbvects(MemBuffer*mb, YaepParseState *ps, YaepCoreSymbToPredComps *v);
-void print_dotted_rule(MemBuffer *mb, YaepParseState *ps, int from_i, YaepDottedRule *dotted_rule, int matched_length, int parent_id, const char *why);
+void print_dotted_rule(MemBuffer *mb, YaepParseState *ps, int from_i, YaepDottedRule *dotted_rule, int matched_length, int parent_id);
+void print_dotted_rule_blocked(MemBuffer *mb, YaepParseState *ps, int from_i, YaepDottedRule *dotted_rule, int matched_length, int parent_id);
 void print_matched_lenghts(MemBuffer *mb, YaepStateSet *s);
 void print_parse(YaepParseState *ps, FILE* f, YaepTreeNode*root);
 void print_rule(MemBuffer *mb, YaepParseState *ps, YaepRule *rule);
@@ -3067,6 +3099,7 @@ struct XMQOutputSettings
     bool omit_decl;
     bool use_color;
     bool bg_dark_mode;
+    bool prefer_double_quotes;
     bool escape_newlines;
     bool escape_non_7bit;
     bool escape_tabs;
@@ -3234,6 +3267,8 @@ struct XMQParseState
     // Collect all unique terminals in this map from the name. #78 and 'x' is the same terminal with code 120.
     // The name is a #hex version of unicode codepoint.
     HashMap *ixml_terminals_map;
+    // Collect all non-terminal names here, map name to non-terminal.
+    HashMap *ixml_non_terminals_map;
     // References to non-terminals, ie rules (includes mark -^@).
     Vector *ixml_non_terminals;
     // Store all rules here. The rule has a rule_name which is a non-terminal ref to itself.
@@ -3326,6 +3361,7 @@ typedef struct XMQPrintState XMQPrintState;
     @force:           Always add single quotes. More quotes if necessary.
     @compact:         Generate compact quote on a single line. Using &#10; and no superfluous whitespace.
     @value_after_key: If enties are introduced by the quoting, then use compound ( ) around the content.
+    @prefer_double_quotes: // By default xmq uses the single quote, but we can change this here.
 
     @indentation_space: Use this as the indentation character. If NULL default to " ".
     @explicit_space: Use this as the explicit space/indentation character. If NULL default to " ".
@@ -3343,6 +3379,7 @@ struct XMQQuoteSettings
     bool compact; // Generate compact quote on a single line. Using &#10; and no superfluous whitespace.
     bool allow_json_quotes; // Permit "..." json quoting.
     bool value_after_key; // If enties are introduced by the quoting, then use compound ( ) around the content.
+    bool prefer_double_quotes; // By default xmq uses the single quote, but we can change this here.
 
     const char *indentation_space;  // Use this as the indentation character. If NULL default to " ".
     const char *explicit_space;  // Use this as the explicit space character inside quotes. If NULL default to " ".
@@ -3544,7 +3581,7 @@ XMQProceed catch_single_content(XMQDoc *doc, XMQNode *node, void *user_data);
 size_t calculate_buffer_size(const char *start, const char *stop, int indent, const char *pre_line, const char *post_line);
 bool check_leading_space_nl(const char *start, const char *stop);
 void copy_and_insert(MemBuffer *mb, const char *start, const char *stop, int num_prefix_spaces, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
-char *copy_lines(int num_prefix_spaces, const char *start, const char *stop, int num_quotes, bool add_nls, bool add_compound, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
+char *copy_lines(int num_prefix_spaces, const char *start, const char *stop, int num_quotes, bool use_dqs, bool add_nls, bool add_compound, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
 void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSettings *os);
 xmlNodePtr create_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop, xmlNodePtr parent);
 void create_node(XMQParseState *state, const char *start, const char *stop);
@@ -4207,6 +4244,11 @@ void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode)
     os->bg_dark_mode = bg_dark_mode;
 }
 
+void xmqSetPreferDoubleQuotes(XMQOutputSettings *os, bool prefer_double_quotes)
+{
+    os->prefer_double_quotes = prefer_double_quotes;
+}
+
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines)
 {
     os->escape_newlines = escape_newlines;
@@ -4735,7 +4777,9 @@ char *xmq_un_quote(const char *start, const char *stop, bool remove_qs, bool is_
     size_t j = 0;
     if (remove_qs)
     {
-        while (*(start+j) == '\'' && *(stop-j-1) == '\'' && (start+j) < (stop-j)) j++;
+        const char q = *start;
+        assert(q == '\'' || q == '"');
+        while (*(start+j) == q && *(stop-j-1) == q && (start+j) < (stop-j)) j++;
     }
 
     start = start+j;
@@ -5244,6 +5288,9 @@ void xmqFreeParseState(XMQParseState *state)
 
     if (state->ixml_terminals_map) hashmap_free_and_values(state->ixml_terminals_map, (FreeFuncPtr)free_ixml_terminal);
     state->ixml_terminals_map = NULL;
+
+    if (state->ixml_non_terminals_map) hashmap_free(state->ixml_non_terminals_map);
+    state->ixml_non_terminals_map = NULL;
 
     if (state->ixml_non_terminals) vector_free_and_values(state->ixml_non_terminals, (FreeFuncPtr)free_ixml_nonterminal);
     state->ixml_non_terminals = NULL;
@@ -7027,6 +7074,7 @@ char *copy_lines(int num_prefix_spaces,
                  const char *start,
                  const char *stop,
                  int num_quotes,
+                 bool use_dqs,
                  bool add_nls,
                  bool add_compound,
                  const char *implicit_indentation,
@@ -7058,7 +7106,9 @@ char *copy_lines(int num_prefix_spaces,
         }
     }
 
-    for (int i = 0; i < num_quotes; ++i) membuffer_append_char(mb, '\'');
+    const char q = use_dqs?'"':'\'';
+
+    for (int i = 0; i < num_quotes; ++i) membuffer_append_char(mb, q);
     membuffer_append_region(mb, prefix_line, NULL);
     if (add_nls)
     {
@@ -7080,7 +7130,7 @@ char *copy_lines(int num_prefix_spaces,
     }
 
     membuffer_append_region(mb, postfix_line, NULL);
-    for (int i = 0; i < num_quotes; ++i) membuffer_append_char(mb, '\'');
+    for (int i = 0; i < num_quotes; ++i) membuffer_append_char(mb, q);
 
     if (add_compound)
     {
@@ -7106,19 +7156,21 @@ size_t line_length(const char *start, const char *stop, int *numq, int *lq, int 
     int llq = 0, eeq = 0;
     int num = 0, max = 0;
     // Skip line leading quotes
-    while (*i == '\'') { i++; llq++;  }
+    const char q = *i;
+    assert(q == '\'' || q == '"');
+    while (*i == q) { i++; llq++;  }
     const char *lstart = i; // Points to text after leading quotes.
     // Find end of line.
     while (i < stop && *i != '\n') i++;
     const char *eol = i;
     i--;
-    while (i > lstart && *i == '\'') { i--; eeq++; }
+    while (i > lstart && *i == q) { i--; eeq++; }
     i++;
     const char *lstop = i;
     // Mark endof text inside ending quotes.
     for (i = lstart; i < lstop; ++i)
     {
-        if (*i == '\'')
+        if (*i == q)
         {
             num++;
             if (num > max) max = num;
@@ -7177,7 +7229,9 @@ char *xmq_quote_default(int indent,
 {
     bool add_nls = false;
     bool add_compound = false;
-    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound);
+    bool use_double_quotes = false;
+    bool prefer_double_quotes = false;
+    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound, prefer_double_quotes, &use_double_quotes);
 
     if (numq > 0)
     {
@@ -7230,6 +7284,7 @@ char *xmq_quote_default(int indent,
                       start,
                       stop,
                       numq,
+                      use_double_quotes,
                       add_nls,
                       add_compound,
                       settings->indentation_space,
@@ -7911,6 +7966,13 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
                 {
                     new_node = xmlNewDocComment(doc, (xmlChar*)an->name+4);
                 }
+                if(an->name[2] == '#')
+                {
+                    int value = (int)strtol(an->name+3, NULL, 16);
+                    UTF8Char c;
+                    encode_utf8(value, &c);
+                    new_node = xmlNewDocText(doc, (xmlChar*)c.bytes);
+                }
                 else
                 {
                     new_node = xmlNewDocText(doc, (xmlChar*)an->name+2);
@@ -8106,12 +8168,18 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
         return false;
     }
 
-    if (run->ambiguous_p && !(flags & XMQ_FLAG_IXML_ALL_PARSES))
+    generate_dom_from_yaep_node(doc->docptr_.xml, NULL, run->root, NULL, 0, 0);
+
+    if (run->ambiguous_p)
     {
-        fprintf(stderr, "ixml: Warning! The input can be parsed in multiple ways, ie it is ambiguous!\n");
+        xmlNodePtr element = xmlDocGetRootElement(doc->docptr_.xml);
+        xmlNsPtr ns = xmlNewNs(element,
+                               (const xmlChar *)"http://invisiblexml.org/NS",
+                               (const xmlChar *)"ixml");
+
+        xmlSetNsProp(element, ns, (xmlChar*)"state", (xmlChar*)"ambiguous");
     }
 
-    generate_dom_from_yaep_node(doc->docptr_.xml, NULL, run->root, NULL, 0, 0);
 
     if (run->root) yaepFreeTree(run->root, NULL, NULL);
 
@@ -8352,7 +8420,7 @@ char *xmq_line_vprintf_xmq(XMQLineConfig *lc, const char *element_name, va_list 
 
         size_t kl = strlen(key);
         char last = membuffer_back(mb);
-        if (last != '\'' && last != '(' && last != ')'  && last != '{' && last != '}')
+        if (last != '"' && last != '\'' && last != '(' && last != ')'  && last != '{' && last != '}')
         {
             membuffer_append(mb, " ");
         }
@@ -8578,6 +8646,53 @@ char *strndup(const char *s, size_t l)
     return buf;
 }
 #endif
+
+static char *helper(size_t scale, size_t s, const char *suffix)
+{
+    size_t o = s;
+    s /= scale;
+    size_t diff = o-(s*scale);
+    if (diff == 0) {
+        char *buf = (char*)malloc(64);
+        snprintf(buf, 64, "%zu.00%s", s, suffix);
+        return buf;
+    }
+    size_t dec = (int)(100*(diff+1) / scale);
+    char *buf = (char*)malloc(64);
+    snprintf(buf, 64, "%zu.%02zu%s", s, dec, suffix);
+    return buf;
+}
+
+#define KB 1024
+
+char *humanReadableTwoDecimals(size_t s)
+{
+    if (s < KB)
+    {
+        return helper(1, s, " B");
+    }
+    if (s < KB * KB)
+    {
+        return helper(KB, s, " KiB");
+    }
+    if (s < KB * KB * KB)
+    {
+        return helper(KB*KB, s, " MiB");
+    }
+#if SIZEOF_SIZE_T == 8
+    if (s < KB * KB * KB * KB)
+    {
+     	return helper(KB*KB*KB, s, " GiB");
+    }
+    if (s < KB * KB * KB * KB * KB)
+    {
+        return helper(KB*KB*KB*KB, s, " TiB");
+    }
+    return helper(KB*KB*KB*KB*KB, s, " PiB");
+#else
+    return helper(KB*KB*KB, s, " GiB");
+#endif
+}
 
 
 #endif // ALWAYS_MODULE
@@ -10620,7 +10735,9 @@ void parse_ixml_insertion(XMQParseState *state)
         parse_ixml_encoded(state, true);
         UTF8Char c;
         encode_utf8(state->ixml_encoded, &c);
-        add_insertion_rule(state, c.bytes);
+        char buf[16];
+        snprintf(buf, 16, "#%x", state->ixml_encoded),
+        add_insertion_rule(state, buf);
         free_yaep_tmp_terminals_and_content(state);
     }
     else
@@ -11247,6 +11364,7 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
     pr->grammar = g;
     state->ixml_rules = vector_create();
     state->ixml_terminals_map = hashmap_create(256);
+    state->ixml_non_terminals_map = hashmap_create(256);
     state->ixml_non_terminals = vector_create();
     state->ixml_rule_stack = stack_create();
 
@@ -11400,6 +11518,7 @@ IXMLNonTerminal *lookup_yaep_nonterminal_already(XMQParseState *state, const cha
 
 void add_yaep_nonterminal(XMQParseState *state, IXMLNonTerminal *nt)
 {
+    hashmap_put(state->ixml_non_terminals_map, nt->name, nt);
     vector_push_back(state->ixml_non_terminals, nt);
 }
 
@@ -11429,54 +11548,85 @@ void add_single_char_rule(XMQParseState *state, IXMLNonTerminal *nt, int uc, cha
 
 void add_insertion_rule(XMQParseState *state, const char *content)
 {
-    IXMLRule *rule = new_ixml_rule();
     // Generate a name like |+.......
     char *name = (char*)malloc(strlen(content)+3);
     name[0] = '|';
     name[1] = '+';
     strcpy(name+2, content);
-    rule->rule_name->name = name;
-    rule->mark = ' ';
-    vector_push_back(state->ixml_rules, rule);
 
-    IXMLNonTerminal *nt = copy_ixml_nonterminal(rule->rule_name);
-    add_yaep_nonterminal(state, nt);
+    IXMLNonTerminal *nt = (IXMLNonTerminal*)hashmap_get(state->ixml_non_terminals_map, name);
+    if (!nt)
+    {
+        IXMLRule *rule = new_ixml_rule();
+        rule->rule_name->name = name;
+        rule->mark = ' ';
+        vector_push_back(state->ixml_rules, rule);
+
+        nt = copy_ixml_nonterminal(rule->rule_name);
+        add_yaep_nonterminal(state, nt);
+    }
+    else
+    {
+        // This insertion rule has already been added as a non terminal.
+        free(name);
+    }
+
+    // Add nt to rule.
     add_yaep_term_to_rule(state, 0, NULL, nt);
 }
 
 void add_not_rule_string(XMQParseState *state, const char *content)
 {
-    IXMLRule *rule = new_ixml_rule();
     // Generate a name like |!S.......
     char *name = (char*)malloc(strlen(content)+4);
     name[0] = '|';
     name[1] = '!';
     name[2] = 'S';
     strcpy(name+3, content);
+
+    IXMLNonTerminal *nt = (IXMLNonTerminal*)hashmap_get(state->ixml_non_terminals_map, name);
+    if (nt) {
+        // This not rule has already been recorded. Do not add it again.
+        free(name);
+        return;
+    }
+
+    IXMLRule *rule = new_ixml_rule();
     rule->rule_name->name = name;
     rule->mark = ' ';
     vector_push_back(state->ixml_rules, rule);
 
-    IXMLNonTerminal *nt = copy_ixml_nonterminal(rule->rule_name);
+    nt = copy_ixml_nonterminal(rule->rule_name);
     add_yaep_nonterminal(state, nt);
     add_yaep_term_to_rule(state, 0, NULL, nt);
+    hashmap_put(state->ixml_non_terminals_map, name, nt);
 }
 
 void add_not_rule_charset(XMQParseState *state, IXMLNonTerminal *cs)
 {
-    IXMLRule *rule = new_ixml_rule();
     // Generate a name like |![...]
     char *name = (char*)malloc(strlen(cs->name)+3);
     name[0] = '|';
     name[1] = '!';
     strcpy(name+2, cs->name);
+
+    IXMLNonTerminal *nt = (IXMLNonTerminal*)hashmap_get(state->ixml_non_terminals_map, name);
+    if (nt) {
+        // This not rule has already been recorded. Do not add it again.
+        free(name);
+        return;
+    }
+
+    IXMLRule *rule = new_ixml_rule();
+
     rule->rule_name->name = name;
     rule->mark = ' ';
     vector_push_back(state->ixml_rules, rule);
 
-    IXMLNonTerminal *nt = copy_ixml_nonterminal(rule->rule_name);
+    nt = copy_ixml_nonterminal(rule->rule_name);
     add_yaep_nonterminal(state, nt);
     add_yaep_term_to_rule(state, 0, NULL, nt);
+    hashmap_put(state->ixml_non_terminals_map, name, nt);
 }
 
 void scan_content_fixup_charsets(XMQParseState *state, const char *start, const char *stop)
@@ -13923,9 +14073,12 @@ const char *has_ending_nl_space(const char *start, const char *stop, size_t *onl
     return i;
 }
 
-bool has_leading_ending_quote(const char *start, const char *stop)
+bool has_leading_ending_different_quotes(const char *start, const char *stop)
 {
-    return start < stop && ( *start == '\'' || *(stop-1) == '\'');
+    return start < stop && (
+        ( *start == '\'' && *(stop-1) == '"')
+        ||
+        ( *start == '"' && *(stop-1) == '\''));
 }
 
 bool has_newlines(const char *start, const char *stop)
@@ -13949,10 +14102,22 @@ bool has_must_escape_chars(const char *start, const char *stop)
 bool has_all_quotes(const char *start, const char *stop)
 {
     if (start == stop) return false;
+    bool all_sq = true;
     for (const char *i = start; i < stop; ++i)
     {
-        if (*i != '\'') return false;
+        if (*i != '\'')
+        {
+            all_sq = false;
+            break;
+        }
     }
+    if (all_sq) return true;
+
+    for (const char *i = start; i < stop; ++i)
+    {
+        if (*i != '"') return false;
+    }
+
     return true;
 }
 
@@ -15705,8 +15870,11 @@ bool possibly_need_more_quotes(XMQParseState *state);
 size_t count_xmq_quotes(const char *i, const char *stop)
 {
     const char *start = i;
+    char c = *i;
 
-    while (i < stop && *i == '\'') i++;
+    assert(c == '\'' || c == '"');
+
+    while (i < stop && *i == c) i++;
 
     return i-start;
 }
@@ -15715,6 +15883,10 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
 {
     const char *i = state->i;
     const char *end = state->buffer_stop;
+    const char q = *i;
+
+    assert(q == '\'' || q == '"');
+
     size_t line = state->line;
     size_t col = state->col;
 
@@ -15729,7 +15901,7 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
 
     while (count > 0)
     {
-        increment('\'', 1, &i, &line, &col);
+        increment(q, 1, &i, &line, &col);
         count--;
     }
 
@@ -15746,7 +15918,7 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
     while (i < end)
     {
         char c = *i;
-        if (c != '\'')
+        if (c != q)
         {
             increment(c, 1, &i, &line, &col);
             continue;
@@ -15762,7 +15934,7 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
         {
             while (count > 0)
             {
-                increment('\'', 1, &i, &line, &col);
+                increment(q, 1, &i, &line, &col);
                 count--;
             }
             continue;
@@ -15772,7 +15944,7 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
         {
             while (count > 0)
             {
-                increment('\'', 1, &i, &line, &col);
+                increment(q, 1, &i, &line, &col);
                 count--;
             }
             depth = 0;
@@ -16106,12 +16278,7 @@ void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text
 
 bool is_xmq_quote_start(char c)
 {
-    return c == '\'';
-}
-
-bool is_xmq_json_quote_start(char c)
-{
-    return c == '"';
+    return c == '\'' || c == '"';
 }
 
 bool is_xmq_entity_start(char c)
@@ -16246,7 +16413,6 @@ void parse_xmq(XMQParseState *state)
 
         if (is_xmq_token_whitespace(c)) parse_xmq_whitespace(state);
         else if (is_xmq_quote_start(c)) parse_xmq_quote(state, LEVEL_XMQ);
-        else if (is_xmq_json_quote_start(c)) parse_xmq_json_quote(state, LEVEL_XMQ);
         else if (is_xmq_entity_start(c)) parse_xmq_entity(state, LEVEL_XMQ);
         else if (is_xmq_comment_start(c, cc)) parse_xmq_comment(state, cc);
         else if (is_xmq_element_start(c)) parse_xmq_element(state);
@@ -16437,10 +16603,6 @@ void parse_xmq_value(XMQParseState *state, Level level)
     if (is_xmq_quote_start(c))
     {
         parse_xmq_quote(state, level);
-    }
-    else if (is_xmq_json_quote_start(c))
-    {
-        parse_xmq_json_quote(state, level);
     }
     else if (is_xmq_entity_start(c))
     {
@@ -16903,6 +17065,8 @@ void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len,
     @stop:  Points to byte after memory buffer.
     @add_nls: Returns whether we need leading and ending newlines.
     @add_compound: Compounds ( ) is necessary.
+    @prefer_double_quotes: Set to true, will change the default to double quotes, instead of single quotes.
+    @use_double_quotese: Set to true if the quote should use double quotes.
 
     Scan the content to determine how it must be quoted, or if the content can
     remain as text without quotes. Return 0, nl_begin=nl_end=false for safe text.
@@ -16913,10 +17077,8 @@ void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len,
     Set add_compound to true if content starts or ends with spaces/newlines or if forbid_nl==true and
     content starts/ends with quotes.
 */
-int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound)
+int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound, bool prefer_double_quotes, bool *use_double_quotes)
 {
-    size_t max = 0;
-    size_t curr = 0;
     bool all_safe = true;
 
     assert(stop > start);
@@ -16925,19 +17087,6 @@ int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, b
     {
         // Content starts with = & // /* or < so it must be quoted.
         all_safe = false;
-    }
-
-    if (*start == '\'' || *(stop-1) == '\'')
-    {
-        // If leading or ending quote, then add newlines both at the beginning and at the end.
-        // Strictly speaking, if only a leading quote, then only newline at beginning is needed.
-        // However to reduce visual confusion, we add newlines at beginning and end.
-
-        // We might quote this using:
-        // '''
-        // 'howdy'
-        // '''
-        *add_nls = true;
     }
 
     size_t only_prepended_newlines = 0;
@@ -16953,26 +17102,81 @@ int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, b
         // Leading ending ws + nl, nl + ws will be trimmed, so we need a compound and entities.
         *add_compound = true;
     }
+    else
+    {
+        *add_compound = false;
+    }
 
-    //bool found_double_quote = false;
-    //bool found_newline = false;
+    size_t max_single = 0;
+    size_t curr_single = 0;
+    size_t max_double = 0;
+    size_t curr_double = 0;
+
     for (const char *i = start; i < stop; ++i)
     {
         char c = *i;
+        all_safe &= is_safe_value_char(i, stop);
         if (c == '\'')
         {
-            curr++;
-            if (curr > max) max = curr;
+            curr_single++;
+            if (curr_single > max_single) max_single = curr_single;
         }
         else
         {
-            curr = 0;
-            all_safe &= is_safe_value_char(i, stop);
-            //if (c == '"') found_double_quote = true;
-            //if (c == '\n') found_newline = true;
+            curr_single = 0;
+            if (c == '"')
+            {
+                curr_double++;
+                if (curr_double > max_double) max_double = curr_double;
+            }
+            else
+            {
+                curr_double = 0;
+            }
         }
     }
-    // We found 3 quotes, thus we need 4 quotes to quote them.
+
+    bool leading_ending_sqs = false;
+    bool leading_ending_dqs = false;
+    // We default to using single quotes. But prefer_double_quotes can be set with --prefer-double-quotes
+    bool use_dqs = prefer_double_quotes;
+
+    if (*start == '\'' || *(stop-1) == '\'') leading_ending_sqs = true;
+    if (*start == '"' || *(stop-1) == '"') leading_ending_dqs = true;
+
+    if (leading_ending_sqs && !leading_ending_dqs)
+    {
+        // If there is leading and ending single quotes, then always use double quotes.
+        use_dqs = true;
+    }
+    else if (!leading_ending_sqs && leading_ending_dqs)
+    {
+        // If there are leading ending double quotes, then always use single quotes.
+        use_dqs = false;
+    }
+    else if (max_double > max_single && max_double > 0) use_dqs = false; // We have more doubles than singles, use single quotes.
+    else if (max_double < max_single) use_dqs = true;  // We have fewer doubles than singles, use double quotes.
+    else // max_double == max_single
+    {
+        assert(max_double == max_single);
+        if (max_double > 0)
+        {
+            // If more than one quote is needed, then always use single quotes.
+            use_dqs = false;
+        }
+    }
+
+    size_t max;
+    if (use_dqs)
+    {
+        max = max_double;
+    }
+    else
+    {
+        max = max_single;
+    }
+
+    // We found x quotes, thus we need x+1 quotes to quote them.
     if (max > 0) max++;
     // Content contains no quotes ', but has unsafe chars, a single quote is enough.
     if (max == 0 && !all_safe) max = 1;
@@ -16980,7 +17184,24 @@ int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, b
     // Since two quotes means the empty string.
     if (max == 2) max = 3;
 
-    //if (max > 1 && found_double_quote == false && found_newline == false) return -1;
+    if ((use_dqs && leading_ending_dqs) || (!use_dqs && leading_ending_sqs))
+    {
+        // If leading or ending quote, then add newlines both at the beginning and at the end.
+        // Strictly speaking, if only a leading quote, then only newline at beginning is needed.
+        // However to reduce visual confusion, we add newlines at beginning and end.
+
+        // We might quote this using:
+        // '''
+        // 'howdy'
+        // '''
+        *add_nls = true;
+    }
+    else
+    {
+        *add_nls = false;
+    }
+
+    *use_double_quotes = use_dqs;
 
     return max;
 }
@@ -17523,7 +17744,7 @@ void print_quoted_spaces(XMQPrintState *ps, XMQColor color, int num)
     if (c && c->quote.post) write(writer_state, c->quote.post, NULL);
 }
 
-void print_quotes(XMQPrintState *ps, int num, XMQColor color)
+void print_quotes(XMQPrintState *ps, int num, XMQColor color, bool use_double_quotes)
 {
     assert(num > 0);
     XMQOutputSettings *os = ps->output_settings;
@@ -17535,12 +17756,14 @@ void print_quotes(XMQPrintState *ps, int num, XMQColor color)
     getThemeStrings(os, color, &pre, &post);
 
     if (pre) write(writer_state, pre, NULL);
+    const char *q = "'";
+    if (use_double_quotes) q = "\"";
     for (int i=0; i<num; ++i)
     {
-        write(writer_state, "'", NULL);
+        write(writer_state, q, NULL);
     }
     ps->current_indent += num;
-    ps->last_char = '\'';
+    ps->last_char = q[0];
     if (post) write(writer_state, post, NULL);
 }
 
@@ -17991,27 +18214,9 @@ void print_safe_leaf_quote(XMQPrintState *ps,
     bool force = true;
     bool add_nls = false;
     bool add_compound = false;
-    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound);
+    bool use_double_quotes = false;
+    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound, ps->output_settings->prefer_double_quotes, &use_double_quotes);
     size_t indent = ps->current_indent;
-
-/*    if (numq == -1) // && !ps->output_settings->allow_json_quotes)
-    {
-        numq = 3;
-    }
-*/
-/*    if (numq == -1 || (numq > 0 && ps->output_settings->always_json_quotes))
-    {
-        // This quote can be best represented using a "..." instead of '''....'''.
-        char *quoted_value = xmq_quote_as_c(start, stop, false);
-        print_double_quote(ps, c);
-        print_quote_lines_and_color_uwhitespace(ps,
-                                                c,
-                                                quoted_value,
-                                                quoted_value+strlen(quoted_value));
-        print_double_quote(ps, c);
-        free(quoted_value);
-        return;
-        }*/
 
     if (numq > 0)
     {
@@ -18070,7 +18275,7 @@ void print_safe_leaf_quote(XMQPrintState *ps,
         ps->line_indent = ps->current_indent;
     }
 
-    print_quotes(ps, numq, c);
+    print_quotes(ps, numq, c, use_double_quotes);
 
     if (!add_nls)
     {
@@ -18098,7 +18303,7 @@ void print_safe_leaf_quote(XMQPrintState *ps,
         print_nl_and_indent(ps, NULL, NULL);
     }
 
-    print_quotes(ps, numq, c);
+    print_quotes(ps, numq, c, use_double_quotes);
 
     if (add_nls)
     {
@@ -18178,19 +18383,13 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
 
     if (has_all_quotes(start, stop))
     {
-        // A text with all single quotes, print using &apos; only.
-        // We could also be quoted using n+1 more quotes and newlines, but it seems a bit annoying:
-        // ''''''
-        // '''''
-        // ''''''
-        // compared to &apos;&apos;&apos;&apos;
-        // The &apos; solution takes a little bit more space, but works for compact too,
-        // lets use that for both normal and compact formatting.
-        check_space_before_entity_node(ps);
-        for (const char *i = start; i < stop; ++i)
-        {
-            print_utf8(ps, level_to_entity_color(level), 1, "&apos;", NULL);
-        }
+        // A text with all single quotes or all double quotes.
+        // "''''''''" or '"""""""'
+        check_space_before_quote(ps, level);
+        bool is_dq = *start == '"';
+        print_quotes(ps, 1, level_to_quote_color(level), !is_dq);
+        print_quotes(ps, stop-start, level_to_quote_color(level), is_dq);
+        print_quotes(ps, 1, level_to_quote_color(level), !is_dq);
         return;
     }
 
@@ -18278,7 +18477,8 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
             bool add_nls = false;
             bool add_compound = false;
             bool compact = ps->output_settings->compact;
-            count_necessary_quotes(from, to, &add_nls, &add_compound);
+            bool use_double_quotes = false;
+            count_necessary_quotes(from, to, &add_nls, &add_compound, ps->output_settings->prefer_double_quotes, &use_double_quotes);
             if (!add_compound && (!add_nls || !compact))
             {
                 check_space_before_quote(ps, level);
@@ -18395,12 +18595,6 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
     const char *es = has_ending_nl_space(start, stop, &only_ending_newlines);
     if (es != NULL && only_ending_newlines == 0) return true;
 
-    if (has_all_quotes(start, stop))
-    {
-        // We will always pretty print a string of quotes as: &apos;&apos;&apos;
-        return true;
-    }
-
     if (compact)
     {
         // In compact form newlines must be escaped: &#10;
@@ -18410,7 +18604,7 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
         // '''
         // 'alfa'
         // '''
-        if (has_leading_ending_quote(start, stop)) return true;
+        if (has_leading_ending_different_quotes(start, stop)) return true;
     }
 
     bool newlines = ps->output_settings->escape_newlines;
@@ -18749,6 +18943,389 @@ yaep_alloc_seterr (YaepAllocator * allocator, Yaep_alloc_error errfunc,
 
 #endif // YAEP_ALLOCATE_MODULE
 
+// PART C YAEP_CSPC_C ////////////////////////////////////////
+
+#ifdef YAEP_CSPC_MODULE
+
+/* Initialize work with array of vlos.*/
+static void vlo_array_init(YaepParseState *ps)
+{
+    VLO_CREATE(ps->vlo_array, ps->run.grammar->alloc, 4096);
+    ps->vlo_array_len = 0;
+}
+
+/* The function forms new empty vlo at the end of the array of vlos.*/
+static int vlo_array_expand(YaepParseState *ps)
+{
+    vlo_t*vlo_ptr;
+
+    if ((unsigned) ps->vlo_array_len >= VLO_LENGTH(ps->vlo_array) / sizeof(vlo_t))
+    {
+        VLO_EXPAND(ps->vlo_array, sizeof(vlo_t));
+        vlo_ptr = &((vlo_t*) VLO_BEGIN(ps->vlo_array))[ps->vlo_array_len];
+        VLO_CREATE(*vlo_ptr, ps->run.grammar->alloc, 64);
+    }
+    else
+    {
+        vlo_ptr = &((vlo_t*) VLO_BEGIN(ps->vlo_array))[ps->vlo_array_len];
+        VLO_NULLIFY(*vlo_ptr);
+    }
+    return ps->vlo_array_len++;
+}
+
+/* The function purges the array of vlos.*/
+static void vlo_array_nullify(YaepParseState *ps)
+{
+    ps->vlo_array_len = 0;
+}
+
+/* The following function returns pointer to vlo with INDEX.*/
+static vlo_t *vlo_array_el(YaepParseState *ps, int index)
+{
+    assert(index >= 0 && ps->vlo_array_len > index);
+    return &((vlo_t*) VLO_BEGIN(ps->vlo_array))[index];
+}
+
+static void free_vlo_array(YaepParseState *ps)
+{
+    vlo_t *vlo_ptr;
+
+    for (vlo_ptr = (vlo_t*)VLO_BEGIN(ps->vlo_array); (char*) vlo_ptr < (char*) VLO_BOUND(ps->vlo_array); vlo_ptr++)
+    {
+        VLO_DELETE(*vlo_ptr);
+    }
+    VLO_DELETE(ps->vlo_array);
+}
+
+
+#ifdef USE_CORE_SYMB_HASH_TABLE
+/* Hash of core_symb_to_predcomps.*/
+static unsigned core_symb_to_predcomps_hash(YaepCoreSymbToPredComps *core_symb_to_predcomps)
+{
+    return (jauquet_prime_mod32* hash_shift+(size_t)/* was unsigned */core_symb_to_predcomps->core) * hash_shift
+        +(size_t)/* was unsigned */core_symb_to_predcomps->symb;
+}
+
+/* Equality of core_symb_to_predcomps.*/
+static bool core_symb_to_predcomps_eq(YaepCoreSymbToPredComps *core_symb_to_predcomps1, YaepCoreSymbToPredComps *core_symb_to_predcomps2)
+{
+    return core_symb_to_predcomps1->core == core_symb_to_predcomps2->core && core_symb_to_predcomps1->symb == core_symb_to_predcomps2->symb;
+}
+#endif
+
+static unsigned vect_ids_hash(YaepVect*v)
+{
+    unsigned result = jauquet_prime_mod32;
+
+    for (int i = 0; i < v->len; i++)
+    {
+        result = result* hash_shift + v->ids[i];
+    }
+    return result;
+}
+
+static bool vect_ids_eq(YaepVect *v1, YaepVect *v2)
+{
+    if (v1->len != v2->len) return false;
+
+    for (int i = 0; i < v1->len; i++)
+    {
+        if (v1->ids[i] != v2->ids[i]) return false;
+    }
+    return true;
+}
+
+static unsigned prediction_ids_hash(hash_table_entry_t t)
+{
+    return vect_ids_hash(&((YaepCoreSymbToPredComps*)t)->predictions);
+}
+
+static bool prediction_ids_eq(hash_table_entry_t t1, hash_table_entry_t t2)
+{
+    return vect_ids_eq(&((YaepCoreSymbToPredComps*)t1)->predictions,
+                       &((YaepCoreSymbToPredComps*)t2)->predictions);
+}
+
+static unsigned completion_ids_hash(hash_table_entry_t t)
+{
+    return vect_ids_hash(&((YaepCoreSymbToPredComps*)t)->completions);
+}
+
+static bool completion_ids_eq(hash_table_entry_t t1, hash_table_entry_t t2)
+{
+    return vect_ids_eq(&((YaepCoreSymbToPredComps*) t1)->completions,
+                       &((YaepCoreSymbToPredComps*) t2)->completions);
+}
+
+/* Initialize work with the triples(set core, symbol, vector).*/
+void core_symb_to_predcomps_init(YaepParseState *ps)
+{
+    OS_CREATE(ps->core_symb_to_predcomps_os, ps->run.grammar->alloc, 0);
+    VLO_CREATE(ps->new_core_symb_to_predcomps_vlo, ps->run.grammar->alloc, 0);
+    OS_CREATE(ps->vect_ids_os, ps->run.grammar->alloc, 0);
+
+    vlo_array_init(ps);
+#ifdef USE_CORE_SYMB_HASH_TABLE
+    ps->map_core_symb_to_predcomps = create_hash_table(ps->run.grammar->alloc, 3000,
+                                                       (hash_table_hash_function)core_symb_to_predcomps_hash,
+                                                       (hash_table_eq_function)core_symb_to_predcomps_eq);
+#else
+    VLO_CREATE(ps->core_symb_table_vlo, ps->run.grammar->alloc, 4096);
+    ps->core_symb_table = (YaepCoreSymbToPredComps***)VLO_BEGIN(ps->core_symb_table_vlo);
+    OS_CREATE(ps->core_symb_tab_rows, ps->run.grammar->alloc, 8192);
+#endif
+
+    ps->map_transition_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000,
+                                                           (hash_table_hash_function)prediction_ids_hash,
+                                                           (hash_table_eq_function)prediction_ids_eq);
+
+    ps->map_reduce_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000,
+                                                       (hash_table_hash_function)completion_ids_hash,
+                                                       (hash_table_eq_function)completion_ids_eq);
+
+    ps->n_core_symb_pairs = ps->n_core_symb_to_predcomps_len = 0;
+    ps->n_transition_vects = ps->n_transition_vect_len = 0;
+    ps->n_reduce_vects = ps->n_reduce_vect_len = 0;
+}
+
+
+#ifdef USE_CORE_SYMB_HASH_TABLE
+
+/* The following function returns entry in the table where pointer to
+   corresponding triple with the same keys as TRIPLE ones is
+   placed.*/
+static YaepCoreSymbToPredComps **core_symb_to_pred_comps_addr_get(YaepParseState *ps, YaepCoreSymbToPredComps *triple, int reserv_p)
+{
+    YaepCoreSymbToPredComps **result;
+
+    if (triple->symb->cached_core_symb_to_predcomps != NULL
+        && triple->symb->cached_core_symb_to_predcomps->core == triple->core)
+    {
+        return &triple->symb->cached_core_symb_to_predcomps;
+    }
+
+    result = ((YaepCoreSymbToPredComps**)find_hash_table_entry(ps->map_core_symb_to_predcomps, triple, reserv_p));
+
+    triple->symb->cached_core_symb_to_predcomps = *result;
+
+    return result;
+}
+
+#else
+
+/* The following function returns entry in the table where pointer to
+   corresponding triple with SET_CORE and SYMB is placed. */
+static YaepCoreSymbToPredComps **core_symb_to_predcomps_addr_get(YaepParseState *ps, YaepStateSetCore *set_core, YaepSymbol *symb)
+{
+    YaepCoreSymbToPredComps***core_symb_to_predcomps_ptr;
+
+    core_symb_to_predcomps_ptr = ps->core_symb_table + set_core->id;
+
+    if ((char*) core_symb_to_predcomps_ptr >=(char*) VLO_BOUND(ps->core_symb_table_vlo))
+    {
+        YaepCoreSymbToPredComps***ptr,***bound;
+        int diff, i;
+
+        diff =((char*) core_symb_to_predcomps_ptr
+                -(char*) VLO_BOUND(ps->core_symb_table_vlo));
+        diff += sizeof(YaepCoreSymbToPredComps**);
+        if (diff == sizeof(YaepCoreSymbToPredComps**))
+            diff*= 10;
+
+        VLO_EXPAND(ps->core_symb_table_vlo, diff);
+        ps->core_symb_table = (YaepCoreSymbToPredComps***) VLO_BEGIN(ps->core_symb_table_vlo);
+        core_symb_to_predcomps_ptr = ps->core_symb_table + set_core->id;
+        bound =(YaepCoreSymbToPredComps***) VLO_BOUND(ps->core_symb_table_vlo);
+
+        ptr = bound - diff / sizeof(YaepCoreSymbToPredComps**);
+        while(ptr < bound)
+        {
+            OS_TOP_EXPAND(ps->core_symb_tab_rows,
+                          (ps->run.grammar->symbs_ptr->num_terminals + ps->run.grammar->symbs_ptr->num_nonterminals)
+                          * sizeof(YaepCoreSymbToPredComps*));
+           *ptr =(YaepCoreSymbToPredComps**) OS_TOP_BEGIN(ps->core_symb_tab_rows);
+            OS_TOP_FINISH(ps->core_symb_tab_rows);
+            for(i = 0; i < ps->run.grammar->symbs_ptr->num_terminals + ps->run.grammar->symbs_ptr->num_nonterminals; i++)
+               (*ptr)[i] = NULL;
+            ptr++;
+        }
+    }
+    return &(*core_symb_to_predcomps_ptr)[symb->id];
+}
+#endif
+
+/* The following function returns the triple(if any) for given SET_CORE and SYMB. */
+YaepCoreSymbToPredComps *core_symb_to_predcomps_find(YaepParseState *ps, YaepStateSetCore *core, YaepSymbol *symb)
+{
+    YaepCoreSymbToPredComps *r;
+
+#ifdef USE_CORE_SYMB_HASH_TABLE
+    YaepCoreSymbToPredComps core_symb_to_predcomps;
+
+    core_symb_to_predcomps.core = core;
+    core_symb_to_predcomps.symb = symb;
+    r = *core_symb_to_pred_comps_addr_get(ps, &core_symb_to_predcomps, false);
+#else
+    r = *core_symb_to_predcomps_addr_get(ps, core, symb);
+#endif
+
+    return r;
+}
+
+YaepCoreSymbToPredComps *core_symb_to_predcomps_new(YaepParseState *ps, YaepStateSetCore*core, YaepSymbol*symb)
+{
+    YaepCoreSymbToPredComps*core_symb_to;
+    YaepCoreSymbToPredComps**addr;
+    vlo_t*vlo_ptr;
+
+    /* Create table element.*/
+    OS_TOP_EXPAND(ps->core_symb_to_predcomps_os, sizeof(YaepCoreSymbToPredComps));
+    core_symb_to = ((YaepCoreSymbToPredComps*) OS_TOP_BEGIN(ps->core_symb_to_predcomps_os));
+    core_symb_to->id = ps->core_symb_to_pred_comps_counter++;
+    core_symb_to->core = core;
+    core_symb_to->symb = symb;
+    OS_TOP_FINISH(ps->core_symb_to_predcomps_os);
+
+#ifdef USE_CORE_SYMB_HASH_TABLE
+    addr = core_symb_to_pred_comps_addr_get(ps, core_symb_to, true);
+#else
+    addr = core_symb_to_pred_comps_addr_get(ps, core, symb);
+#endif
+    assert(*addr == NULL);
+   *addr = core_symb_to;
+
+    core_symb_to->predictions.intern = vlo_array_expand(ps);
+    vlo_ptr = vlo_array_el(ps, core_symb_to->predictions.intern);
+    core_symb_to->predictions.len = 0;
+    core_symb_to->predictions.ids =(int*) VLO_BEGIN(*vlo_ptr);
+
+    core_symb_to->completions.intern = vlo_array_expand(ps);
+    vlo_ptr = vlo_array_el(ps, core_symb_to->completions.intern);
+    core_symb_to->completions.len = 0;
+    core_symb_to->completions.ids =(int*) VLO_BEGIN(*vlo_ptr);
+    VLO_ADD_MEMORY(ps->new_core_symb_to_predcomps_vlo, &core_symb_to,
+                    sizeof(YaepCoreSymbToPredComps*));
+    ps->n_core_symb_pairs++;
+
+    return core_symb_to;
+}
+
+static void vect_add_id(YaepParseState *ps, YaepVect *vec, int id)
+{
+    vec->len++;
+    vlo_t *vlo_ptr = vlo_array_el(ps, vec->intern);
+    VLO_ADD_MEMORY(*vlo_ptr, &id, sizeof(int));
+    vec->ids =(int*) VLO_BEGIN(*vlo_ptr);
+    ps->n_core_symb_to_predcomps_len++;
+}
+
+void core_symb_to_predcomps_add_predict(YaepParseState *ps,
+                                      YaepCoreSymbToPredComps *core_symb_to_predcomps,
+                                      int rule_index_in_core)
+{
+    vect_add_id(ps, &core_symb_to_predcomps->predictions, rule_index_in_core);
+
+    YaepDottedRule *dotted_rule = core_symb_to_predcomps->core->dotted_rules[rule_index_in_core];
+    yaep_trace(ps, "add prediction cspc%d[c%d %s] -> d%d",
+               core_symb_to_predcomps->id,
+               core_symb_to_predcomps->core->id,
+               core_symb_to_predcomps->symb->hr,
+               dotted_rule->id);
+}
+
+void core_symb_to_predcomps_add_complete(YaepParseState *ps,
+                                       YaepCoreSymbToPredComps *core_symb_to_predcomps,
+                                       int rule_index_in_core)
+{
+    vect_add_id(ps, &core_symb_to_predcomps->completions, rule_index_in_core);
+    YaepDottedRule *dotted_rule = core_symb_to_predcomps->core->dotted_rules[rule_index_in_core];
+    yaep_trace(ps, "completed d%d store in cspc%d[c%d %s]",
+               dotted_rule->id,
+               core_symb_to_predcomps->id,
+               core_symb_to_predcomps->core->id,
+               core_symb_to_predcomps->symb->hr
+               );
+
+}
+
+/* Insert vector VEC from CORE_SYMB_TO_PREDCOMPS into table TAB.  Update
+   *N_VECTS and INT*N_VECT_LEN if it is a new vector in the table. */
+static void process_core_symb_to_predcomps_el(YaepParseState *ps,
+                                      YaepCoreSymbToPredComps *core_symb_to_predcomps,
+                                      YaepVect *vec,
+                                      hash_table_t *tab,
+                                      int *n_vects,
+                                      int *n_vect_len)
+{
+    hash_table_entry_t*entry;
+
+    if (vec->len == 0)
+    {
+        vec->ids = NULL;
+    }
+    else
+    {
+        entry = find_hash_table_entry(*tab, core_symb_to_predcomps, true);
+        if (*entry != NULL)
+        {
+            vec->ids = (&core_symb_to_predcomps->predictions == vec
+                        ?((YaepCoreSymbToPredComps*)*entry)->predictions.ids
+                        :((YaepCoreSymbToPredComps*)*entry)->completions.ids);
+        }
+        else
+        {
+            *entry = (hash_table_entry_t)core_symb_to_predcomps;
+            OS_TOP_ADD_MEMORY(ps->vect_ids_os, vec->ids, vec->len* sizeof(int));
+            vec->ids =(int*) OS_TOP_BEGIN(ps->vect_ids_os);
+            OS_TOP_FINISH(ps->vect_ids_os);
+            (*n_vects)++;
+            *n_vect_len += vec->len;
+        }
+    }
+    vec->intern = -1;
+}
+
+/* Finish forming all new triples core_symb_to_predcomps.*/
+void core_symb_to_predcomps_new_all_stop(YaepParseState *ps)
+{
+    YaepCoreSymbToPredComps**triple_ptr;
+
+    for(triple_ptr =(YaepCoreSymbToPredComps**) VLO_BEGIN(ps->new_core_symb_to_predcomps_vlo);
+        (char*) triple_ptr <(char*) VLO_BOUND(ps->new_core_symb_to_predcomps_vlo);
+         triple_ptr++)
+    {
+        process_core_symb_to_predcomps_el(ps, *triple_ptr, &(*triple_ptr)->predictions,
+                                  &ps->map_transition_to_coresymbvect, &ps->n_transition_vects,
+                                  &ps->n_transition_vect_len);
+        process_core_symb_to_predcomps_el(ps, *triple_ptr, &(*triple_ptr)->completions,
+                                  &ps->map_reduce_to_coresymbvect, &ps->n_reduce_vects,
+                                  &ps->n_reduce_vect_len);
+    }
+    vlo_array_nullify(ps);
+    VLO_NULLIFY(ps->new_core_symb_to_predcomps_vlo);
+}
+
+/* Finalize work with all triples(set core, symbol, vector).*/
+void free_core_symb_to_vect_lookup(YaepParseState *ps)
+{
+    delete_hash_table(ps->map_transition_to_coresymbvect);
+    delete_hash_table(ps->map_reduce_to_coresymbvect);
+
+#ifdef USE_CORE_SYMB_HASH_TABLE
+    delete_hash_table(ps->map_core_symb_to_predcomps);
+#else
+    OS_DELETE(ps->core_symb_tab_rows);
+    VLO_DELETE(ps->core_symb_table_vlo);
+#endif
+    free_vlo_array(ps);
+    OS_DELETE(ps->vect_ids_os);
+    VLO_DELETE(ps->new_core_symb_to_predcomps_vlo);
+    OS_DELETE(ps->core_symb_to_predcomps_os);
+}
+
+
+#endif
+
 // PART C YAEP_HASHTAB_C ////////////////////////////////////////
 
 #ifdef YAEP_HASHTAB_MODULE
@@ -18871,13 +19448,21 @@ expand_hash_table (hash_table_t htab)
 
 /* The following variable is used for debugging. Its value is number
    of all calls of `find_hash_table_entry' for all hash tables. */
-
 int all_searches = 0;
 
 /* The following variable is used for debugging. Its value is number
    of collisions fixed for time of work with all hash tables. */
-
 int all_collisions = 0;
+
+int get_all_searches ()
+{
+    return all_searches;
+}
+
+int get_all_collisions()
+{
+    return all_collisions;
+}
 
 /* This function searches for hash table entry which contains element
    equal to given value or empty entry in which given value can be
@@ -18976,6 +19561,12 @@ hash_table_elements_number (hash_table_t htab)
   return htab->number_of_elements - htab->number_of_deleted_elements;
 }
 
+size_t hash_table_memusage(hash_table_t htab)
+{
+    if (!htab) return 0;
+    return htab->size*sizeof(hash_table_entry_t);
+}
+
 #endif
 
 // PART C YAEP_OBJSTACK_C ////////////////////////////////////////
@@ -18991,10 +19582,11 @@ _OS_create_function (os_t * os, size_t initial_segment_length)
 {
   if (initial_segment_length == 0) initial_segment_length = OS_DEFAULT_SEGMENT_LENGTH;
 
-  os->os_current_segment = (struct _os_segment*)yaep_malloc (os->os_alloc,
-                                                             initial_segment_length + sizeof (struct _os_segment));
+  size_t segment_size = initial_segment_length + sizeof (struct _os_segment);
+  os->os_current_segment = (struct _os_segment*)yaep_malloc (os->os_alloc, segment_size);
+  os->os_current_segment->os_segment_size = segment_size;
   os->os_current_segment->os_previous_segment = NULL;
-  os->os_top_object_start = (char *)_OS_ALIGNED_ADDRESS (os->os_current_segment->os_segment_contest);
+  os->os_top_object_start = (char *)_OS_ALIGNED_ADDRESS (os->os_current_segment->os_segment_content);
   os->os_top_object_stop = os->os_top_object_start;
   os->os_segment_stop = os->os_top_object_start + initial_segment_length;
   os->initial_segment_length = initial_segment_length;
@@ -19040,7 +19632,7 @@ _OS_empty_function (os_t * os)
     }
   os->os_current_segment = current_segment;
   os->os_top_object_start
-    = (char *) _OS_ALIGNED_ADDRESS (current_segment->os_segment_contest);
+    = (char *) _OS_ALIGNED_ADDRESS (current_segment->os_segment_content);
   os->os_top_object_stop = os->os_top_object_start;
   os->os_segment_stop = os->os_top_object_start + os->initial_segment_length;
 }
@@ -19052,18 +19644,21 @@ _OS_empty_function (os_t * os)
 void
 _OS_add_string_function (os_t * os, const char *str)
 {
-  size_t string_length;
+    size_t string_length;
 
-  assert (os->os_top_object_start != NULL);
-  if (str == NULL)
-    return;
-  if (os->os_top_object_stop != os->os_top_object_start)
-    OS_TOP_SHORTEN (*os, 1);
-  string_length = strlen (str) + 1;
-  if (os->os_top_object_stop + string_length > os->os_segment_stop)
-    _OS_expand_memory (os, string_length);
-  memcpy( os->os_top_object_stop, str, string_length );
-  os->os_top_object_stop = os->os_top_object_stop + string_length;
+    assert (os->os_top_object_start != NULL);
+    if (str == NULL) return;
+    if (os->os_top_object_stop != os->os_top_object_start)
+    {
+        OS_TOP_SHORTEN (*os, 1);
+    }
+    string_length = strlen (str) + 1;
+    if (os->os_top_object_stop + string_length > os->os_segment_stop)
+    {
+        _OS_expand_memory (os, string_length);
+    }
+    memcpy( os->os_top_object_stop, str, string_length);
+    os->os_top_object_stop = os->os_top_object_stop + string_length;
 }
 
 /* The function creates new segment for OS.  The segment becames
@@ -19077,36 +19672,58 @@ _OS_add_string_function (os_t * os, const char *str)
 void
 _OS_expand_memory (os_t * os, size_t additional_length)
 {
-  size_t os_top_object_length, segment_length;
-  struct _os_segment *new_segment, *previous_segment;
-  char *new_os_top_object_start;
+    size_t os_top_object_length, segment_length;
+    struct _os_segment *new_segment, *previous_segment;
+    char *new_os_top_object_start;
 
-  assert (os->os_top_object_start != NULL);
-  os_top_object_length = OS_TOP_LENGTH (*os);
-  segment_length = os_top_object_length + additional_length;
-  segment_length += segment_length / 2 + 1;
-  if (segment_length < OS_DEFAULT_SEGMENT_LENGTH)
-    segment_length = OS_DEFAULT_SEGMENT_LENGTH;
-  new_segment = (struct _os_segment*)
-    yaep_malloc (os->os_alloc, segment_length + sizeof (struct _os_segment));
-  new_os_top_object_start =
-    (char *) _OS_ALIGNED_ADDRESS (new_segment->os_segment_contest);
-  memcpy (new_os_top_object_start, os->os_top_object_start,
-	      os_top_object_length);
-  if (os->os_top_object_start ==
-      (char *) _OS_ALIGNED_ADDRESS (os->os_current_segment->
-				    os_segment_contest))
+    assert (os->os_top_object_start != NULL);
+    os_top_object_length = OS_TOP_LENGTH(*os);
+
+    segment_length = os_top_object_length + additional_length;
+    segment_length += segment_length / 2 + 1;
+
+    if (segment_length < OS_DEFAULT_SEGMENT_LENGTH)
     {
-      previous_segment = os->os_current_segment->os_previous_segment;
-      yaep_free (os->os_alloc, os->os_current_segment);
+        segment_length = OS_DEFAULT_SEGMENT_LENGTH;
     }
-  else
-    previous_segment = os->os_current_segment;
-  os->os_current_segment = new_segment;
-  new_segment->os_previous_segment = previous_segment;
-  os->os_top_object_start = new_os_top_object_start;
-  os->os_top_object_stop = os->os_top_object_start + os_top_object_length;
-  os->os_segment_stop = os->os_top_object_start + segment_length;
+
+    size_t new_segment_size = segment_length + sizeof (struct _os_segment);
+    new_segment = (struct _os_segment*)yaep_malloc (os->os_alloc, new_segment_size);
+    new_segment->os_segment_size = new_segment_size;
+    new_os_top_object_start = (char *)_OS_ALIGNED_ADDRESS (new_segment->os_segment_content);
+    memcpy (new_os_top_object_start, os->os_top_object_start, os_top_object_length);
+
+    if (os->os_top_object_start == (char *)_OS_ALIGNED_ADDRESS (os->os_current_segment->os_segment_content))
+    {
+        previous_segment = os->os_current_segment->os_previous_segment;
+        yaep_free (os->os_alloc, os->os_current_segment);
+    }
+    else
+    {
+        previous_segment = os->os_current_segment;
+    }
+    os->os_current_segment = new_segment;
+    new_segment->os_previous_segment = previous_segment;
+
+    os->os_top_object_start = new_os_top_object_start;
+    os->os_top_object_stop = os->os_top_object_start + os_top_object_length;
+    os->os_segment_stop = os->os_top_object_start + segment_length;
+}
+
+size_t objstack_memusage(os_t *os)
+{
+    if (!os) return 0;
+
+    size_t sum = 0;
+    struct _os_segment *curr = os->os_current_segment;
+
+    while (curr)
+    {
+        sum += curr->os_segment_size;
+        curr = curr->os_previous_segment;
+    }
+
+    return sum;
 }
 
 #endif
@@ -19183,6 +19800,12 @@ _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
   vlo->vlo_segment_stop = vlo->vlo_start + vlo_length;
 }
 
+size_t vlo_memusage(vlo_t *vlo)
+{
+    if (!vlo) return 0;
+    return vlo->vlo_segment_stop - vlo->vlo_start;
+}
+
 #endif
 
 // PART C YAEP_UTIL_C ////////////////////////////////////////
@@ -19210,7 +19833,7 @@ void dbg_print_coresymbvects(YaepParseState *ps, YaepCoreSymbToPredComps *v)
 void dbg_print_dotted_rule(YaepParseState *ps, YaepDottedRule *dotted_rule)
 {
     MemBuffer *mb = new_membuffer();
-    print_dotted_rule(mb, ps, 0 /*from_i*/, dotted_rule, 0, 0, "");
+    print_dotted_rule(mb, ps, 0 /*from_i*/, dotted_rule, 0, 0);
     membuffer_append_null(mb);
     puts(mb->buffer_);
     free_membuffer_and_free_content(mb);
@@ -19231,7 +19854,7 @@ void fetch_state_vars(YaepParseState *ps,
             = out->num_all_matched_lengths = ps->new_num_leading_dotted_rules;
         out->dotted_rules = ps->new_dotted_rules;
         out->matched_lengths = ps->new_matched_lengths;
-        out->parent_dotted_rule_ids = NULL;
+        out->to_parent_rule_index = NULL;
         return;
     }
 
@@ -19242,32 +19865,92 @@ void fetch_state_vars(YaepParseState *ps,
     out->num_started_dotted_rules = state_set->core->num_started_dotted_rules;
     out->matched_lengths = state_set->matched_lengths;
     out->num_all_matched_lengths = state_set->core->num_all_matched_lengths;
-    out->parent_dotted_rule_ids = state_set->core->parent_dotted_rule_ids;
+    out->to_parent_rule_index = state_set->core->to_parent_rule_index;
     out->num_started_dotted_rules = state_set->core->num_started_dotted_rules;
 }
 
 int find_matched_length(YaepParseState *ps,
                         YaepStateSet *state_set,
                         StateVars *vars,
-                        int dotted_rule_id)
+                        int rule_index_in_core)
 {
     int matched_length;
 
-    if (dotted_rule_id >= vars->num_all_matched_lengths)
+    if (rule_index_in_core >= vars->num_all_matched_lengths)
     {
         // No match yet.
         matched_length = 0;
     }
-    else if (dotted_rule_id < vars->num_started_dotted_rules)
+    else if (rule_index_in_core< vars->num_started_dotted_rules)
     {
-        matched_length = vars->matched_lengths[dotted_rule_id];
+        matched_length = vars->matched_lengths[rule_index_in_core];
     }
     else
     {
-        matched_length = vars->matched_lengths[vars->parent_dotted_rule_ids[dotted_rule_id]];
+        matched_length = vars->matched_lengths[vars->to_parent_rule_index[rule_index_in_core]];
     }
 
     return matched_length;
+}
+
+void yaep_debug(YaepParseState *ps, const char *format, ...)
+{
+    if (!ps->run.debug) return;
+
+    va_list ap;
+    va_start(ap, format);
+
+    MemBuffer *mb = new_membuffer();
+    membuffer_printf(mb, "@%d ", ps->tok_i);
+
+    char *buf = buf_vsnprintf(format, ap);
+    membuffer_append(mb, buf);
+    membuffer_append_null(mb);
+    free(buf);
+
+    debug_mb("ixml.pa.debug=", mb);
+    free_membuffer_and_free_content(mb);
+    return;
+}
+
+void yaep_trace(YaepParseState *ps, const char *format, ...)
+{
+    if (!ps->run.trace) return;
+
+    va_list ap;
+    va_start(ap, format);
+
+    MemBuffer *mb = new_membuffer();
+    membuffer_printf(mb, "@%d ", ps->tok_i);
+
+    char *buf = buf_vsnprintf(format, ap);
+    membuffer_append(mb, buf);
+    membuffer_append_null(mb);
+    free(buf);
+
+    debug_mb("ixml.pa.trace=", mb);
+    free_membuffer_and_free_content(mb);
+    return;
+}
+
+void yaep_view(YaepParseState *ps, const char *format, ...)
+{
+    if (!ps->run.debug) return;
+
+    va_list ap;
+    va_start(ap, format);
+
+    MemBuffer *mb = new_membuffer();
+    membuffer_printf(mb, "@%d ", ps->tok_i);
+
+    char *buf = buf_vsnprintf(format, ap);
+    membuffer_append(mb, buf);
+    membuffer_append_null(mb);
+    free(buf);
+
+    debug_mb("ixml.pa.view=", mb);
+    free_membuffer_and_free_content(mb);
+    return;
 }
 
 #endif
@@ -19833,6 +20516,941 @@ void termsetstorage_free(YaepGrammar *grammar, YaepTerminalSetStorage *term_sets
 
 #ifdef YAEP_TREE_MODULE
 
+static unsigned parse_state_hash(hash_table_entry_t s)
+{
+    YaepParseTreeBuildState*state =((YaepParseTreeBuildState*) s);
+
+    /* The table contains only states with dot at the end of rule. */
+    assert(state->dot_j == state->rule->rhs_len);
+    return(((jauquet_prime_mod32* hash_shift +
+             (unsigned)(size_t) state->rule)* hash_shift +
+             state->from_i)* hash_shift + state->state_set_k);
+}
+
+static bool parse_state_eq(hash_table_entry_t s1, hash_table_entry_t s2)
+{
+    YaepParseTreeBuildState*state1 =((YaepParseTreeBuildState*) s1);
+    YaepParseTreeBuildState*state2 =((YaepParseTreeBuildState*) s2);
+
+    /* The table contains only states with dot at the end of rule.*/
+    assert(state1->dot_j == state1->rule->rhs_len
+            && state2->dot_j == state2->rule->rhs_len);
+    return(state1->rule == state2->rule && state1->from_i == state2->from_i
+            && state1->state_set_k == state2->state_set_k);
+}
+
+/* The following function initializes work with parser states.*/
+static void parse_state_init(YaepParseState *ps)
+{
+    ps->free_parse_state = NULL;
+    OS_CREATE(ps->parse_state_os, ps->run.grammar->alloc, 0);
+    if (!ps->run.grammar->one_parse_p)
+    {
+        ps->map_rule_orig_statesetind_to_internalstate =
+            create_hash_table(ps->run.grammar->alloc, ps->input_len* 2,
+                              (hash_table_hash_function)parse_state_hash,
+                              (hash_table_eq_function)parse_state_eq);
+    }
+}
+
+/* The following function returns new parser state.*/
+static YaepParseTreeBuildState *parse_state_alloc(YaepParseState *ps)
+{
+    YaepParseTreeBuildState*result;
+
+    if (ps->free_parse_state == NULL)
+    {
+        OS_TOP_EXPAND(ps->parse_state_os, sizeof(YaepParseTreeBuildState));
+        result =(YaepParseTreeBuildState*) OS_TOP_BEGIN(ps->parse_state_os);
+        OS_TOP_FINISH(ps->parse_state_os);
+    }
+    else
+    {
+        result = ps->free_parse_state;
+        ps->free_parse_state =(YaepParseTreeBuildState*) ps->free_parse_state->rule;
+    }
+    return result;
+}
+
+/* The following function frees STATE.*/
+static void parse_state_free(YaepParseState *ps, YaepParseTreeBuildState*state)
+{
+    state->rule = (YaepRule*)ps->free_parse_state;
+    ps->free_parse_state = state;
+}
+
+/* The following function searches for state in the table with the
+   same characteristics as "state".  If found, then it returns a pointer
+   to the state in the table.  Otherwise the function makes copy of
+  *STATE, inserts into the table and returns pointer to copied state.
+   In the last case, the function also sets up*NEW_P.*/
+static YaepParseTreeBuildState *parse_state_insert(YaepParseState *ps, YaepParseTreeBuildState *state, bool *new_p)
+{
+    YaepParseTreeBuildState **entry = (YaepParseTreeBuildState**)find_hash_table_entry(
+        ps->map_rule_orig_statesetind_to_internalstate,
+        state,
+        true);
+
+    *new_p = false;
+
+    if (*entry != NULL)
+    {
+        return *entry;
+    }
+
+    *new_p = true;
+
+    /* We make copy because state_set_k can be changed in further processing state. */
+    *entry = parse_state_alloc(ps);
+    **entry = *state;
+
+    return *entry;
+}
+
+static void free_parse_state(YaepParseState *ps)
+{
+    if (!ps->run.grammar->one_parse_p)
+    {
+        delete_hash_table(ps->map_rule_orig_statesetind_to_internalstate);
+    }
+    OS_DELETE(ps->parse_state_os);
+}
+
+/* The following function places translation NODE into *PLACE and
+   creates alternative nodes if it is necessary. */
+static void place_translation(YaepParseState *ps, YaepTreeNode **place, YaepTreeNode *node)
+{
+    YaepTreeNode *alt, *next_alt;
+
+    assert(place != NULL);
+    if (*place == NULL)
+    {
+        *place = node;
+        return;
+    }
+    /* We need an alternative.*/
+
+    ps->n_parse_alt_nodes++;
+
+    alt =(YaepTreeNode*)(*ps->run.parse_alloc)(sizeof(YaepTreeNode));
+    alt->type = YAEP_ALT;
+    alt->val.alt.node = node;
+    if ((*place)->type == YAEP_ALT)
+    {
+        alt->val.alt.next =*place;
+    }
+    else
+    {
+        /* We need alternative node for the 1st
+           alternative too.*/
+        ps->n_parse_alt_nodes++;
+        next_alt = alt->val.alt.next
+            =((YaepTreeNode*)
+              (*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
+        next_alt->type = YAEP_ALT;
+        next_alt->val.alt.node =*place;
+        next_alt->val.alt.next = NULL;
+    }
+   *place = alt;
+}
+
+static YaepTreeNode *copy_anode(YaepParseState *ps,
+                                YaepTreeNode **place,
+                                YaepTreeNode *anode,
+                                YaepRule *rule,
+                                int rhs_offset)
+{
+    YaepTreeNode*node;
+    int i;
+
+    node = ((YaepTreeNode*)(*ps->run.parse_alloc)(sizeof(YaepTreeNode)
+                                              + sizeof(YaepTreeNode*)
+                                              *(rule->trans_len + 1)));
+   *node =*anode;
+    node->val.anode.children = ((YaepTreeNode**)((char*) node + sizeof(YaepTreeNode)));
+    for(i = 0; i <= rule->trans_len; i++)
+    {
+        node->val.anode.children[i] = anode->val.anode.children[i];
+    }
+    node->val.anode.children[rhs_offset] = NULL;
+    place_translation(ps, place, node);
+
+    return node;
+}
+
+static void loop_stack(YaepTreeNode **result,
+                       int n_candidates,
+                       YaepParseState *ps,
+                       YaepTreeNode *empty_node,
+                       YaepTreeNode *error_node,
+                       YaepStateSet *set,
+                       YaepDottedRule *dotted_rule,
+                       bool *ambiguous_p)
+{
+    YaepParseTreeBuildState root_state;
+    YaepTreeNode root_anode;
+
+    vlo_t stack, orig_states;
+
+    YaepTreeNode **term_node_array = NULL;
+
+    VLO_CREATE(stack, ps->run.grammar->alloc, 10000);
+
+    if (!ps->run.grammar->one_parse_p)
+    {
+        /* We need this array to reuse terminal nodes when building a parse tree with ALT nodes.
+           I.e. a tree with multiple possible parses. */
+        size_t term_node_array_size = ps->input_len * sizeof(YaepTreeNode*);
+        term_node_array = (YaepTreeNode**)yaep_malloc(ps->run.grammar->alloc, term_node_array_size);
+        memset(term_node_array, 0, term_node_array_size);
+        /* The following is used to check necessity to create current state with different state_set_k. */
+        VLO_CREATE(orig_states, ps->run.grammar->alloc, 0);
+    }
+
+    // The root abstract node points to the result tree pointer.
+    root_anode.val.anode.children = result;
+    // The root state pointsto the root abstract node.
+    root_state.anode = &root_anode;
+
+    // Push a new state on the stack
+    YaepParseTreeBuildState *state = parse_state_alloc(ps);
+    VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
+    ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
+
+    YaepRule *rule = state->rule = dotted_rule->rule;
+    state->dotted_rule = dotted_rule;
+    state->dot_j = dotted_rule->dot_j;
+    state->from_i = 0;
+    state->state_set_k = ps->state_set_k;
+
+    // Again is state_set_k always == tok_i ????
+    assert(ps->state_set_k == ps->tok_i);
+
+    state->parent_anode_state = &root_state;
+    state->parent_rhs_offset = 0;
+    state->anode = NULL;
+
+    if (ps->run.debug)
+    {
+        // Log the starting node.
+        MemBuffer *mb = new_membuffer();
+	membuffer_printf(mb, "adding (d%d,%d-%d) ",
+                         state->dotted_rule->id,
+                         state->from_i,
+                         state->state_set_k);
+	print_rule(mb, ps, state->rule);
+        debug_mb("ixml.bt.step=", mb);
+        free_membuffer_and_free_content(mb);
+    }
+
+    while (VLO_LENGTH(stack) != 0)
+    {
+        if (ps->run.debug && state->dot_j == state->rule->rhs_len)
+        {
+            // top = (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1
+            MemBuffer *mb = new_membuffer();
+            membuffer_printf(mb, "push (s%d,d%d) [%d-%d]    ", state->state_set_k, state->dotted_rule->id, state->from_i, state->state_set_k);
+            print_rule(mb, ps, state->rule);
+            debug_mb("ixml.bt.info=", mb);
+            free_membuffer_and_free_content(mb);
+        }
+        int pos_j = --state->dot_j;
+        rule = state->rule;
+        YaepParseTreeBuildState *parent_anode_state = state->parent_anode_state;
+        YaepTreeNode *parent_anode = parent_anode_state->anode;
+        int parent_rhs_offset = state->parent_rhs_offset;
+        YaepTreeNode *anode = state->anode;
+        int rhs_offset = rule->order[pos_j];
+        int state_set_k = state->state_set_k;
+        int from_i = state->from_i;
+        if (pos_j < 0)
+        {
+            /* We've processed all rhs of the rule.*/
+            if (ps->run.debug)
+            {
+                MemBuffer *mb = new_membuffer();
+                membuffer_printf(mb, "pop ");
+                print_rule(mb, ps, state->rule);
+                debug_mb("ixml.bt.info=", mb);
+                free_membuffer_and_free_content(mb);
+            }
+            parse_state_free(ps, state);
+            VLO_SHORTEN(stack, sizeof(YaepParseTreeBuildState*));
+            if (VLO_LENGTH(stack) != 0)
+            {
+                state = ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1];
+            }
+            if (parent_anode != NULL && rule->trans_len == 0 && anode == NULL)
+            {
+                /* We do dotted_ruleuce nothing but we should. So write empty node.*/
+                place_translation(ps, parent_anode->val.anode.children + parent_rhs_offset, empty_node);
+                empty_node->val.nil.used = 1;
+            } else
+            if (anode != NULL)
+            {
+                /* Change NULLs into empty nodes.  We can not make it
+                 the first time because when building several parses
+                 the NULL means flag of absence of translations(see
+                 function `place_translation'). */
+                for (int i = 0; i < rule->trans_len; i++)
+                {
+                    if (anode->val.anode.children[i] == NULL)
+                    {
+                        anode->val.anode.children[i] = empty_node;
+                        empty_node->val.nil.used = 1;
+                    }
+                }
+            }
+
+            continue;
+        }
+        assert(pos_j >= 0);
+        YaepTreeNode *node;
+        YaepSymbol *symb = rule->rhs[pos_j];
+        if (symb->is_terminal)
+        {
+            /* Terminal before dot:*/
+            state_set_k--; /* l*/
+            /* Because of error recovery input [state_set_k].symb may be not equal to symb.*/
+            //assert(ps->input[state_set_k].symb == symb);
+            if (parent_anode != NULL && rhs_offset >= 0)
+            {
+                /* We should generate and use the translation of the terminal.  Add reference to the current node.*/
+                if (symb == ps->run.grammar->term_error)
+                {
+                    // Oups error node.
+                    node = error_node;
+                    error_node->val.error.used = 1;
+                } else
+                if (!ps->run.grammar->one_parse_p && (node = term_node_array[state_set_k]) != NULL)
+                {
+                    // Reuse existing terminal node.
+                } else
+                {
+                    // Allocate terminal node.
+                    ps->n_parse_term_nodes++;
+                    node = ((YaepTreeNode*) (*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
+                    node->type = YAEP_TERM;
+                    node->val.terminal.code = symb->u.terminal.code;
+                    if (rule->marks && rule->marks[pos_j])
+                    {
+                        // Copy the ixml mark from the rhs position on to the terminal.
+                        node->val.terminal.mark = rule->marks[pos_j];
+                    }
+                    // Copy any attr from input token to parsed terminal.
+                    node->val.terminal.attr = ps->input[state_set_k].attr;
+                    if (!ps->run.grammar->one_parse_p)
+                    {
+                        term_node_array[state_set_k] = node;
+                    }
+                }
+
+                YaepTreeNode **placement = NULL;
+                if (anode)
+                {
+                    placement = anode->val.anode.children + rhs_offset;
+                } else
+                {
+                    placement = parent_anode->val.anode.children + parent_rhs_offset;
+                }
+                place_translation(ps, placement, node);
+            }
+            if (pos_j != 0)
+            {
+                state->state_set_k = state_set_k;
+            }
+            continue;
+        }
+        /* Nonterminal before dot: */
+        set = ps->state_sets[state_set_k];
+        YaepStateSetCore *set_core = set->core;
+        YaepCoreSymbToPredComps *core_symb_to_predcomps = core_symb_to_predcomps_find(ps, set_core, symb);
+        //debug("ixml.pa.c=", "core core%d symb %s -> %p", set_core->id, symb->hr, core_symb_to_predcomps);
+        if (!core_symb_to_predcomps)
+            continue;
+
+        assert(core_symb_to_predcomps->completions.len != 0);
+        n_candidates = 0;
+        YaepParseTreeBuildState *orig_state = state;
+        if (!ps->run.grammar->one_parse_p)
+        {
+            VLO_NULLIFY(orig_states);
+        }
+        for (int i = 0; i < core_symb_to_predcomps->completions.len; i++)
+        {
+            int rule_index_in_core = core_symb_to_predcomps->completions.ids[i];
+            dotted_rule = set_core->dotted_rules[rule_index_in_core];
+            int dotted_rule_from_i;
+            if (rule_index_in_core < set_core->num_started_dotted_rules)
+            {
+                // The state_set_k is the tok_i for which the state set was created.
+                // Ie, it is the to_i inside the Earley item.
+                // Now subtract the matched length from this to_i to get the from_i
+                // which is the origin.
+                dotted_rule_from_i = state_set_k - set->matched_lengths[rule_index_in_core];
+            } else
+            if (rule_index_in_core < set_core->num_all_matched_lengths)
+            {
+                // Parent??
+                dotted_rule_from_i = state_set_k - set->matched_lengths[set_core->to_parent_rule_index[rule_index_in_core]];
+            } else
+            {
+                dotted_rule_from_i = state_set_k;
+            }
+
+            YaepStateSet *check_set = ps->state_sets[dotted_rule_from_i];
+            YaepStateSetCore *check_set_core = check_set->core;
+            YaepCoreSymbToPredComps *check_core_symb_to_predcomps = core_symb_to_predcomps_find(ps, check_set_core, symb);
+            assert(check_core_symb_to_predcomps != NULL);
+            bool found = false;
+            if (ps->run.debug)
+            {
+                MemBuffer *mb = new_membuffer();
+                membuffer_printf(mb, "trying (s%d,d%d) [%d-%d]  cspc%d check_cspc%d  ",
+                                 state_set_k,
+                                 dotted_rule->id,
+                                 dotted_rule_from_i,
+                                 state_set_k,
+                                 core_symb_to_predcomps->id,
+                                 check_core_symb_to_predcomps->id);
+                print_rule(mb, ps, dotted_rule->rule);
+                debug_mb("ixml.bt.info=", mb);
+                free_membuffer_and_free_content(mb);
+            }
+            for (int j = 0; j < check_core_symb_to_predcomps->predictions.len; j++)
+            {
+                int rule_index_in_check_core = check_core_symb_to_predcomps->predictions.ids[j];
+                YaepDottedRule *check_dotted_rule = check_set->core->dotted_rules[rule_index_in_check_core];
+                if (check_dotted_rule->rule != rule || check_dotted_rule->dot_j != pos_j)
+                {
+                    continue;
+                }
+                int check_dotted_rule_from_i = dotted_rule_from_i;
+                if (rule_index_in_check_core < check_set_core->num_all_matched_lengths)
+                {
+                    if (rule_index_in_check_core < check_set_core->num_started_dotted_rules)
+                    {
+                        check_dotted_rule_from_i = dotted_rule_from_i - check_set->matched_lengths[rule_index_in_check_core];
+                    } else
+                    {
+                        check_dotted_rule_from_i = (dotted_rule_from_i
+                                        - check_set->matched_lengths[check_set_core->to_parent_rule_index[rule_index_in_check_core]]);
+                    }
+                }
+                if (check_dotted_rule_from_i == from_i)
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                continue;
+            }
+            if (n_candidates != 0)
+            {
+                // Oups, n_candidates is > 0 already, this means that a previous completion matched.
+                // We have more than one parse.
+                debug("ixml.bt.info=", "n_candidates=%d -> ambiguous=true", n_candidates);
+                *ambiguous_p = true;
+                if (ps->run.grammar->one_parse_p)
+                {
+                    break;
+                }
+            }
+            YaepRule *dotted_rule_rule = dotted_rule->rule;
+            if (n_candidates == 0)
+            {
+                orig_state->state_set_k = dotted_rule_from_i;
+            }
+            if (parent_anode != NULL && rhs_offset >= 0)
+            {
+                /* We should generate and use the translation of the nonterminal. */
+                YaepParseTreeBuildState *curr_state = orig_state;
+                anode = orig_state->anode;
+                /* We need translation of the rule. */
+                if (n_candidates != 0)
+                {
+                    assert(!ps->run.grammar->one_parse_p);
+                    if (n_candidates == 1)
+                    {
+                        VLO_EXPAND(orig_states, sizeof(YaepParseTreeBuildState*));
+                        ((YaepParseTreeBuildState**) VLO_BOUND(orig_states))[-1] = orig_state;
+                    }
+                    int j = VLO_LENGTH(orig_states) / sizeof(YaepParseTreeBuildState*) - 1;
+                    while (j >= 0)
+                    {
+                        if (((YaepParseTreeBuildState**) VLO_BEGIN(orig_states))[j]->state_set_k == dotted_rule_from_i)
+                        {
+                            break;
+                        }
+                        j--;
+                    }
+                    if (j >= 0)
+                    {
+                        /* [A -> x., n] & [A -> y., n]*/
+                        curr_state = ((YaepParseTreeBuildState**) VLO_BEGIN(orig_states))[j];
+                        anode = curr_state->anode;
+                    } else
+                    {
+                        /* [A -> x., n] & [A -> y., m] where n != m.*/
+                        /* It is different from the previous ones so add
+                         it to process.*/
+                        // Push a new state on the stack.
+                        state = parse_state_alloc(ps);
+                        VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
+                        ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
+                        *state = *orig_state;
+                        state->state_set_k = dotted_rule_from_i;
+                        if (anode != NULL)
+                        {
+                            state->anode = copy_anode(ps, parent_anode->val.anode.children + parent_rhs_offset, anode, rule, rhs_offset);
+                        }
+                        VLO_EXPAND(orig_states, sizeof(YaepParseTreeBuildState*));
+                        ((YaepParseTreeBuildState**) VLO_BOUND(orig_states))[-1] = state;
+                        if (ps->run.debug)
+                        {
+                            MemBuffer *mb = new_membuffer();
+                            membuffer_printf(mb, "* (f%d,d%d) add1 modified dotted_rule=", dotted_rule_from_i, state->dotted_rule->id);
+                            print_rule_with_dot(mb, ps, state->rule, state->dot_j);
+                            membuffer_printf(mb, " state->from_i=%d", state->from_i);
+                            debug_mb("ixml.bt.c=", mb);
+                            free_membuffer_and_free_content(mb);
+                            assert(false);
+                        }
+                        curr_state = state;
+                        anode = state->anode;
+                    }
+                }
+                /* WOOT? if (n_candidates != 0)*/
+                if (dotted_rule_rule->anode != NULL)
+                {
+                    /* This rule creates abstract node. */
+                    // Push a new state on the stack.
+                    state = parse_state_alloc(ps);
+                    VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
+                    ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
+                    state->rule = dotted_rule_rule;
+                    state->dotted_rule = dotted_rule;
+                    state->dot_j = dotted_rule->dot_j;
+                    state->from_i = dotted_rule_from_i;
+                    state->state_set_k = state_set_k;
+                    YaepParseTreeBuildState *table_state = NULL;
+                    _Bool new_p;
+                    if (!ps->run.grammar->one_parse_p)
+                    {
+                        table_state = parse_state_insert(ps, state, &new_p);
+                    }
+                    if (table_state == NULL || new_p)
+                    {
+                        /* Allocate abtract node. */
+                        ps->n_parse_abstract_nodes++;
+                        node = ((YaepTreeNode*) (*ps->run.parse_alloc)(sizeof(YaepTreeNode) + sizeof(YaepTreeNode*) * (dotted_rule_rule->trans_len + 1)));
+                        node->type = YAEP_ANODE;
+                        state->anode = node;
+                        if (table_state != NULL)
+                        {
+                            table_state->anode = node;
+                        }
+                        if (dotted_rule_rule->caller_anode == NULL)
+                        {
+                            dotted_rule_rule->caller_anode = ((char*) (*ps->run.parse_alloc)(strlen(dotted_rule_rule->anode) + 1));
+                            strcpy(dotted_rule_rule->caller_anode, dotted_rule_rule->anode);
+                        }
+                        node->val.anode.name = dotted_rule_rule->caller_anode;
+                        node->val.anode.cost = dotted_rule_rule->anode_cost;
+                        // IXML Copy the rule name -to the generated abstract node.
+                        node->val.anode.mark = dotted_rule_rule->mark;
+                        if (rule->marks && rule->marks[pos_j])
+                        {
+                            // But override the mark with the rhs mark!
+                            node->val.anode.mark = rule->marks[pos_j];
+                        }
+                        /////////
+                        node->val.anode.children = ((YaepTreeNode**) ((char*) node + sizeof(YaepTreeNode)));
+                        for (int k = 0; k <= dotted_rule_rule->trans_len; k++)
+                        {
+                            node->val.anode.children[k] = NULL;
+                        }
+                        if (anode == NULL)
+                        {
+                            state->parent_anode_state = curr_state->parent_anode_state;
+                            state->parent_rhs_offset = parent_rhs_offset;
+                        } else
+                        {
+                            state->parent_anode_state = curr_state;
+                            state->parent_rhs_offset = rhs_offset;
+                        }
+                        if (ps->run.debug)
+                        {
+                            MemBuffer *mb = new_membuffer();
+                            membuffer_printf(mb, "adding (d%d,%d-%d) ",
+                                             state->dotted_rule->id,
+                                             state->from_i, state->state_set_k);
+                            print_rule(mb, ps, dotted_rule->rule);
+                            debug_mb("ixml.bt.step=", mb);
+                            free_membuffer_and_free_content(mb);
+                        }
+                    } else
+                    {
+                        /* We allready have the translation.*/
+                        assert(!ps->run.grammar->one_parse_p);
+                        parse_state_free(ps, state);
+                        state = ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1];
+                        node = table_state->anode;
+                        assert(node != NULL);
+                        if (ps->run.debug)
+                        {
+                            MemBuffer *mb = new_membuffer();
+                            membuffer_printf(mb, "* found prev. translation: state_set_k = %d, dotted_rule = ", state_set_k);
+                            print_dotted_rule(mb, ps, -1, dotted_rule, -1, -1);
+                            membuffer_printf(mb, ", %d\n", dotted_rule_from_i);
+                            debug_mb("ixml.bt.info=", mb);
+                            free_membuffer_and_free_content(mb);
+                            // assert(false);
+                        }
+                    }
+                    YaepTreeNode **placement = NULL;
+                    if (anode)
+                    {
+                        placement = anode->val.anode.children + rhs_offset;
+                    } else
+                    {
+                        placement = parent_anode->val.anode.children + parent_rhs_offset;
+                    }
+                    place_translation(ps, placement, node);
+                } /* if (dotted_rule_rule->anode != NULL)*/else
+                if (dotted_rule->dot_j != 0)
+                {
+                    /* We should generate and use the translation of the
+                     nonterminal.  Add state to get a translation.*/
+                    // Push a new state on the stack
+                    state = parse_state_alloc(ps);
+                    VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
+                    ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
+                    state->rule = dotted_rule_rule;
+                    state->dotted_rule = dotted_rule;
+                    state->dot_j = dotted_rule->dot_j;
+                    state->from_i = dotted_rule_from_i;
+                    state->state_set_k = state_set_k;
+                    state->parent_anode_state = (anode == NULL ? curr_state->parent_anode_state : curr_state);
+                    assert(state->parent_anode_state);
+                    state->parent_rhs_offset = anode == NULL ? parent_rhs_offset : rhs_offset;
+                    state->anode = NULL;
+                    if (ps->run.debug)
+                    {
+                        MemBuffer *mb = new_membuffer();
+                        membuffer_printf(mb, "* add3   state_set_k=%d   dotted_rule_from_i=%d    ", state_set_k, dotted_rule_from_i);
+                        print_rule(mb, ps, dotted_rule->rule);
+                        debug_mb("ixml.bt.info=", mb);
+                        free_membuffer_and_free_content(mb);
+                        //assert(false);
+                    }
+                } else
+                {
+                    /* Empty rule should dotted_ruleuce something not abtract
+                     node.  So place empty node.*/
+                    place_translation(ps, anode == NULL ? parent_anode->val.anode.children + parent_rhs_offset : anode->val.anode.children + rhs_offset,
+                                    empty_node);
+                    empty_node->val.nil.used = 1;
+                }
+            }
+            /* if (parent_anode != NULL && rhs_offset >= 0)*/                // Continue with next completion.
+            n_candidates++;
+        }
+        /* For all completions of the nonterminal.*//* We should have a parse.*/
+        assert(n_candidates != 0 && (!ps->run.grammar->one_parse_p || n_candidates == 1));
+    }
+    /* For all parser states.*/
+
+    VLO_DELETE(stack);
+
+    if (!ps->run.grammar->one_parse_p)
+    {
+        VLO_DELETE(orig_states);
+        yaep_free(ps->run.grammar->alloc, term_node_array);
+    }
+}
+
+/* The hash of the memory reference. */
+static unsigned reserv_mem_hash(hash_table_entry_t m)
+{
+    return (size_t)m;
+}
+
+/* The equity of the memory reference. */
+static bool reserv_mem_eq(hash_table_entry_t m1, hash_table_entry_t m2)
+{
+    return m1 == m2;
+}
+
+/* The following function sets up minimal cost for each abstract node.
+   The function returns minimal translation corresponding to NODE.
+   The function also collects references to memory which can be
+   freed. Remeber that the translation is DAG, altenatives form lists
+   (alt node may not refer for another alternative). */
+static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, int *cost)
+{
+    YaepTreeNode*child,*alt,*next_alt,*result = NULL;
+    int i, min_cost = INT_MAX;
+
+    assert(node != NULL);
+    switch(node->type)
+    {
+    case YAEP_NIL:
+    case YAEP_ERROR:
+    case YAEP_TERM:
+        if (ps->run.parse_free != NULL)
+        {
+            VLO_ADD_MEMORY(ps->tnodes_vlo, &node, sizeof(node));
+        }
+       *cost = 0;
+        return node;
+    case YAEP_ANODE:
+        if (node->val.anode.cost >= 0)
+        {
+            if (ps->run.parse_free != NULL)
+            {
+                VLO_ADD_MEMORY(ps->tnodes_vlo, &node, sizeof(node));
+            }
+            for (i = 0; (child = node->val.anode.children[i]) != NULL; i++)
+            {
+                node->val.anode.children[i] = prune_to_minimal(ps, child, cost);
+                if (node->val.anode.children[i] != child)
+                {
+                    //fprintf(stderr, "PRUNEDDDDDDD\n");
+                }
+                node->val.anode.cost += *cost;
+            }
+           *cost = node->val.anode.cost;
+            node->val.anode.cost = -node->val.anode.cost - 1;        /* flag of visit*/
+        }
+        return node;
+    case YAEP_ALT:
+        for(alt = node; alt != NULL; alt = next_alt)
+        {
+            if (ps->run.parse_free != NULL)
+            {
+                VLO_ADD_MEMORY(ps->tnodes_vlo, &alt, sizeof(alt));
+            }
+            next_alt = alt->val.alt.next;
+            alt->val.alt.node = prune_to_minimal(ps, alt->val.alt.node, cost);
+            if (alt == node || min_cost > *cost)
+            {
+                if (ps->run.debug)
+                {
+                    fprintf(stderr, "FOUND smaller cost %d %s\n", *cost, alt->val.alt.node->val.anode.name);
+                }
+                min_cost = *cost;
+                alt->val.alt.next = NULL;
+                result = alt;
+            }
+            else if (min_cost ==*cost && !ps->run.grammar->one_parse_p)
+            {
+                alt->val.alt.next = result;
+                result = alt;
+            }
+        }
+       *cost = min_cost;
+        return(result->val.alt.next == NULL ? result->val.alt.node : result);
+    default:
+        assert(false);
+    }
+   *cost = 0;
+    return NULL;
+}
+
+/* The following function traverses the translation collecting
+   reference to memory which may not be freed.*/
+static void traverse_pruned_translation(YaepParseState *ps, YaepTreeNode *node)
+{
+    YaepTreeNode*child;
+    hash_table_entry_t*entry;
+    int i;
+
+next:
+    assert(node != NULL);
+    if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->set_of_reserved_memory, node, true)) == NULL)
+    {
+       *entry = (hash_table_entry_t)node;
+    }
+    switch(node->type)
+    {
+    case YAEP_NIL:
+    case YAEP_ERROR:
+    case YAEP_TERM:
+        break;
+    case YAEP_ANODE:
+        if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->set_of_reserved_memory,
+                                                                      node->val.anode.name,
+                                                                      true)) == NULL)
+        {
+            *entry =(hash_table_entry_t) node->val.anode.name;
+        }
+        for(i = 0;(child = node->val.anode.children[i]) != NULL; i++)
+        {
+            traverse_pruned_translation(ps, child);
+        }
+        // FIXME Is this assert needed? What is its purpose?
+        // assert(node->val.anode.cost < 0);
+        node->val.anode.cost = -node->val.anode.cost - 1;
+        break;
+    case YAEP_ALT:
+        traverse_pruned_translation(ps, node->val.alt.node);
+        if ((node = node->val.alt.next) != NULL)
+            goto next;
+        break;
+    default:
+        assert(false);
+    }
+
+    return;
+}
+
+/* The function finds and returns a minimal cost parse(s). */
+static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *root)
+{
+    YaepTreeNode**node_ptr;
+    int cost;
+
+    if (ps->run.parse_free != NULL)
+    {
+        ps->set_of_reserved_memory = create_hash_table(ps->run.grammar->alloc, ps->input_len* 4,
+                                                       (hash_table_hash_function)reserv_mem_hash,
+                                                       (hash_table_eq_function)reserv_mem_eq);
+
+        VLO_CREATE(ps->tnodes_vlo, ps->run.grammar->alloc, ps->input_len* 4* sizeof(void*));
+    }
+    root = prune_to_minimal(ps, root, &cost);
+
+    traverse_pruned_translation(ps, root);
+
+    if (ps->run.parse_free != NULL)
+    {
+        for(node_ptr = (YaepTreeNode**)VLO_BEGIN(ps->tnodes_vlo);
+            node_ptr <(YaepTreeNode**)VLO_BOUND(ps->tnodes_vlo);
+            node_ptr++)
+        {
+            if (*find_hash_table_entry(ps->set_of_reserved_memory,*node_ptr, true) == NULL)
+            {
+                if ((*node_ptr)->type == YAEP_ANODE
+                    &&*find_hash_table_entry(ps->set_of_reserved_memory,
+                                             (*node_ptr)->val.anode.name,
+                                             true) == NULL)
+                {
+                    // (*ps->run.parse_free)((void*)(*node_ptr)->val.anode.name);
+                }
+                //(*ps->run.parse_free)(*node_ptr);
+            }
+        }
+        VLO_DELETE(ps->tnodes_vlo);
+        delete_hash_table(ps->set_of_reserved_memory);
+    }
+
+    return root;
+}
+
+YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
+{
+    yaep_debug(ps, "build_parse_tree()");
+
+    // Number of candiate trees found.
+    int n_candidates = 0;
+
+    // The result pointer points to the final parse tree.
+    YaepTreeNode *result;
+
+    ps->n_parse_term_nodes = ps->n_parse_abstract_nodes = ps->n_parse_alt_nodes = 0;
+
+    // Pick the final state set, where we completed the axiom $.
+    YaepStateSet *set = ps->state_sets[ps->state_set_k];
+    assert(ps->run.grammar->axiom != NULL);
+
+    /* We have only one start dotted_rule: "$ : <start symb> eof .". */
+    YaepDottedRule *dotted_rule = (set->core->dotted_rules != NULL ? set->core->dotted_rules[0] : NULL);
+
+    if (dotted_rule == NULL
+        || set->matched_lengths[0] != ps->state_set_k
+        || dotted_rule->rule->lhs != ps->run.grammar->axiom || dotted_rule->dot_j != dotted_rule->rule->rhs_len)
+    {
+        /* It is possible only if error recovery is switched off.
+           Because we always adds rule `axiom: error $eof'.*/
+        assert(!ps->run.grammar->error_recovery_p);
+        return NULL;
+    }
+    bool saved_one_parse_p = ps->run.grammar->one_parse_p;
+    if (ps->run.grammar->cost_p)
+    {
+        /* We need all parses to choose the minimal one. */
+        ps->run.grammar->one_parse_p = false;
+    }
+
+    parse_state_init(ps);
+
+    // The result tree starts empty.
+    result = NULL;
+
+    /* Create empty and error node:*/
+    YaepTreeNode *empty_node = ((YaepTreeNode*)(*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
+    empty_node->type = YAEP_NIL;
+    empty_node->val.nil.used = 0;
+
+    YaepTreeNode *error_node = ((YaepTreeNode*)(*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
+    error_node->type = YAEP_ERROR;
+    error_node->val.error.used = 0;
+
+    verbose("ixml=", "building tree");
+
+    loop_stack(&result, n_candidates, ps, empty_node, error_node, set, dotted_rule, ambiguous_p);
+
+    free_parse_state(ps);
+    ps->run.grammar->one_parse_p = saved_one_parse_p;
+    if (ps->run.grammar->cost_p && *ambiguous_p)
+    {
+        /* We can not build minimal tree during building parsing list
+           because we have not the translation yet. We can not make it
+           during parsing because the abstract nodes are created before
+           their children. */
+        result = find_minimal_translation(ps, result);
+    }
+    if (false)
+    {
+        fprintf(stderr, "(ixml) yaep parse tree: %p\n", result);
+        print_parse(ps, stderr, result);
+        fprintf(stderr, "\n");
+    }
+    if (false)
+    {
+        // Graphviz
+        fprintf(stderr, "digraph CFG {\n");
+        fprintf(stderr, "  node [shape=ellipse, fontsize=200];\n");
+        fprintf(stderr, "  ratio=fill;\n");
+        fprintf(stderr, "  ordering=out;\n");
+        fprintf(stderr, "  page = \"8.5, 11\"; // inches\n");
+        fprintf(stderr, "  size = \"7.5, 10\"; // inches\n\n");
+        print_parse(ps, stderr, result);
+        fprintf(stderr, "}\n");
+    }
+
+
+    /* Free empty and error node if they have not been used*/
+    if (ps->run.parse_free != NULL)
+    {
+        if (!empty_node->val.nil.used)
+        {
+            ps->run.parse_free(empty_node);
+        }
+        if (!error_node->val.error.used)
+        {
+            ps->run.parse_free(error_node);
+        }
+    }
+
+    assert(result != NULL && (!ps->run.grammar->one_parse_p || ps->n_parse_alt_nodes == 0));
+
+    return result;
+}
+
 /* Hash of translation visit node.*/
 unsigned trans_visit_node_hash(hash_table_entry_t n)
 {
@@ -19885,7 +21503,7 @@ YaepTreeNodeVisit *visit_node(YaepParseState *ps, YaepTreeNode*node)
 
 void print_core(MemBuffer*mb, YaepStateSetCore *c)
 {
-    membuffer_printf(mb, "core%d{", c->id);
+    membuffer_printf(mb, "c%d{", c->id);
 
     for (int i = 0; i < c->num_started_dotted_rules; ++i)
     {
@@ -20002,19 +21620,23 @@ void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p)
 /* The following function prints RULE to file F with dot in position pos.
    Pos == 0 means that the dot is all the way to the left in the starting position.
    Pos == rhs_len means that the whole rule has been matched. */
-void print_rule_with_dot(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, int pos)
+void print_rule_with_dot(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, int dot_j)
 {
-    int i;
-
-    assert(pos >= 0 && pos <= rule->rhs_len);
+    assert(dot_j >= 0 && dot_j <= rule->rhs_len);
 
     print_symbol(mb, rule->lhs, false);
     membuffer_append(mb, " → ");
-    for(i = 0; i < rule->rhs_len; i++)
+    for(int j = 0; j < rule->rhs_len; j++)
     {
-        membuffer_append(mb, i == pos ? " · " : " ");
-        print_symbol(mb, rule->rhs[i], false);
+        membuffer_append(mb, j == dot_j ? " · " : " ");
+        print_symbol(mb, rule->rhs[j], false);
     }
+
+    /*
+    if (rule->rhs_len == dot_j && rule->rhs_len == 0)
+    {
+        membuffer_append(mb, " ε");
+        }*/
 }
 
 void print_rule(MemBuffer *mb, YaepParseState *ps, YaepRule *rule)
@@ -20034,92 +21656,94 @@ void print_rule(MemBuffer *mb, YaepParseState *ps, YaepRule *rule)
    Print the lookahead set if lookahead_p is true. */
 void print_dotted_rule(MemBuffer *mb,
                        YaepParseState *ps,
-                       int from_i,
+                       int tok_i, // aka state_set_k
                        YaepDottedRule *dotted_rule,
                        int matched_length,
-                       int parent_id,
-                       const char *why)
+                       int parent_id)
 {
     char buf[256];
 
-    snprintf(buf, 256, "(s%d,d%d) ", from_i, dotted_rule->id);
+    int from = 0;
+    int to = 0;
+
+    assert(matched_length >= 0);
+
+    if (matched_length == 0)
+    {
+        from = tok_i;
+        to = tok_i;
+    }
+    else
+    {
+        from = 1+tok_i-matched_length;
+        to = 1+tok_i;
+    }
+
+    snprintf(buf, 256, "(d%d,%d-%d) ", dotted_rule->id, from, to);
     membuffer_append(mb, buf);
-    print_rule_with_dot(mb, ps, dotted_rule->rule, dotted_rule->dot_j);
 
     if (matched_length == 0)
     {
         if (dotted_rule->rule->rhs_len == dotted_rule->dot_j)
         {
-            if (dotted_rule->rule->rhs_len == 0) membuffer_append(mb, " ε");
-            snprintf(buf, 256, " complete[%d-%d/%d]", ps->tok_i, 1+ps->tok_i, ps->input_len);
-            membuffer_append(mb, buf);
+            snprintf(buf, 256, "full/%d ", ps->input_len);
         }
         else
         {
-            snprintf(buf, 256, " prediction[%d-%d/%d]", ps->tok_i, 1+ps->tok_i, ps->input_len);
-            membuffer_append(mb, buf);
+            snprintf(buf, 256, "none/%d ", ps->input_len);
         }
     }
     else if (matched_length > 0)
     {
         if (dotted_rule->rule->rhs_len == dotted_rule->dot_j)
         {
-            snprintf(buf, 256, " complete[%d-%d/%d]", 1+ps->tok_i-matched_length, 1+ps->tok_i, ps->input_len);
-            membuffer_append(mb, buf);
+            snprintf(buf, 256, "full/%d ", ps->input_len);
         }
         else
         {
-            snprintf(buf, 256, " partial[%d-%d/%d]", 1+ps->tok_i-matched_length, 1+ps->tok_i, ps->input_len);
-            membuffer_append(mb, buf);
+            snprintf(buf, 256, "part/%d ", ps->input_len);
         }
+    }
+
+    membuffer_append(mb, buf);
+
+    print_rule_with_dot(mb, ps, dotted_rule->rule, dotted_rule->dot_j);
+}
+
+/* The following function prints the dotted_rule.
+   Print the lookahead set if lookahead_p is true. */
+void print_dotted_rule_blocked(MemBuffer *mb,
+                               YaepParseState *ps,
+                               int tok_i, // aka state_set_k
+                               YaepDottedRule *dotted_rule,
+                               int matched_length,
+                               int parent_id)
+{
+    char buf[256];
+
+    int from = 0;
+    int to = 0;
+
+    assert(matched_length >= 0);
+
+    if (matched_length == 0)
+    {
+        from = tok_i;
+        to = tok_i;
     }
     else
     {
-        membuffer_append(mb, " n/a[]");
+        from = 1+tok_i-matched_length;
+        to = 1+tok_i;
     }
 
-    if (why)
-    {
-        int cost = dotted_rule->rule->anode_cost;
-        if (cost > 0)
-        {
-            while (cost-- > 0) membuffer_append(mb, "<");
-            membuffer_append(mb, " ");
-        }
-        if (dotted_rule->rule->lhs->empty_p ||
-            dotted_rule->empty_tail_p ||
-            dotted_rule->info)
-        {
-            membuffer_append(mb, " ");
-        }
+    snprintf(buf, 256, "(d%d,%d-%d) ", dotted_rule->id, from, to);
+    membuffer_append(mb, buf);
 
-        membuffer_printf(mb, "{%s:%s", dotted_rule->info, why);
-        if (dotted_rule->rule->lhs->empty_p || dotted_rule->empty_tail_p)
-        {
-            membuffer_append(mb, " ");
-        }
-        if (dotted_rule->empty_tail_p)
-        {
-            membuffer_append(mb, " empty_tail");
-        }
-        if (dotted_rule->rule->lhs->empty_p)
-        {
-            membuffer_append(mb, " empty_rule");
-        }
+    snprintf(buf, 256, "block/%d ", ps->input_len);
+    membuffer_append(mb, buf);
 
-        if (parent_id >= 0) membuffer_printf(mb, " parent=d%d", parent_id);
-        membuffer_printf(mb, " ml=%d", matched_length);
-        membuffer_append(mb, "}");
-
-        if (*why)
-        {
-            if (ps->run.grammar->lookahead_level != 0 && matched_length >= 0)
-            {
-                membuffer_append(mb, "    ");
-                print_terminal_bitset(mb, ps, dotted_rule->lookahead);
-            }
-        }
-    }
+    print_rule_with_dot(mb, ps, dotted_rule->rule, dotted_rule->dot_j);
 }
 
 void print_matched_lenghts(MemBuffer *mb, YaepStateSet *s)
@@ -20291,14 +21915,14 @@ void print_state_set(MemBuffer *mb,
     StateVars vars;
     fetch_state_vars(ps, state_set, &vars);
 
-    membuffer_printf(mb, "state=%d core=%d", vars.state_id, vars.core_id);
+    membuffer_printf(mb, "@%d summary s%dc%d", ps->tok_i, vars.state_id, vars.core_id);
 
     int dotted_rule_id = 0;
     for(; dotted_rule_id < vars.num_dotted_rules; dotted_rule_id++)
     {
         int matched_length = find_matched_length(ps, state_set, &vars, dotted_rule_id);
         membuffer_append(mb, "\n");
-        print_dotted_rule(mb, ps, from_i, vars.dotted_rules[dotted_rule_id], matched_length, -1, "woot3");
+        print_dotted_rule(mb, ps, from_i, vars.dotted_rules[dotted_rule_id], matched_length, -1);
     }
 }
 
@@ -20369,12 +21993,14 @@ static int default_read_token(YaepParseRun *ps, void **attr);
 static void error_recovery(YaepParseState *ps, int *start, int *stop);
 static void error_recovery_init(YaepParseState *ps);
 static void free_error_recovery(YaepParseState *ps);
+static size_t memusage(YaepParseState *ps);
 static void read_input(YaepParseState *ps);
-static void set_add_dotted_rule_with_matched_length(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length);
-static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule *dotted_rule);
-static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *dotted_rule, int parent_dotted_rule_id);
+static void set_add_dotted_rule_with_matched_length(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, const char *why);
+static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule *dotted_rule, const char *why);
+static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *dotted_rule, int parent_dotted_rule_id, const char *why);
 static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps);
 static void prepare_for_leading_dotted_rules(YaepParseState *ps);
+static void verbose_stats(YaepParseState *ps);
 static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 
 // Implementations ////////////////////////////////////////////////////////////////////
@@ -20602,7 +22228,7 @@ static bool dotted_rule_calculate_lookahead(YaepParseState *ps, YaepDottedRule *
 /* The following function returns dotted_rules with given
    characteristics.  Remember that dotted_rules are stored in one
    exemplar. */
-static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, int dot_j, int dyn_lookahead_context, const char *info)
+static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, int dot_j, int dyn_lookahead_context)
 {
     YaepDottedRule *dotted_rule;
     YaepDottedRule ***dyn_lookahead_context_dotted_rules_table_ptr;
@@ -20658,7 +22284,6 @@ static YaepDottedRule *create_dotted_rule(YaepParseState *ps, YaepRule *rule, in
     dotted_rule->id = ps->num_all_dotted_rules;
     dotted_rule->dyn_lookahead_context = dyn_lookahead_context;
     dotted_rule->empty_tail_p = dotted_rule_calculate_lookahead(ps, dotted_rule);
-    dotted_rule->info = info;
 
     (*dyn_lookahead_context_dotted_rules_table_ptr)[rule->rule_start_offset + dot_j] = dotted_rule;
 
@@ -20759,23 +22384,23 @@ static bool stateset_core_matched_lengths_eq(YaepStateSet *s1, YaepStateSet *s2)
     return set_core1 == set_core2 && matched_lengths1 == matched_lengths2;
 }
 
-static unsigned stateset_core_term_lookahead_hash(YaepStateSetCoreTermLookAhead *s)
+static unsigned stateset_term_lookahead_hash(YaepStateSetTermLookAhead *s)
 {
     YaepStateSet *set = s->set;
     YaepSymbol *term = s->term;
-    int lookahead = s->lookahead;
+    int lookahead_term = s->lookahead_term;
 
-    return ((stateset_core_matched_lengths_hash(set)* hash_shift + term->u.terminal.term_id)* hash_shift + lookahead);
+    return ((stateset_core_matched_lengths_hash(set)* hash_shift + term->u.terminal.term_id)* hash_shift + lookahead_term);
 }
 
-static bool stateset_core_term_lookahead_eq(YaepStateSetCoreTermLookAhead *s1, YaepStateSetCoreTermLookAhead *s2)
+static bool stateset_term_lookahead_eq(YaepStateSetTermLookAhead *s1, YaepStateSetTermLookAhead *s2)
 {
     YaepStateSet *set1 = s1->set;
     YaepStateSet *set2 = s2->set;
     YaepSymbol *term1 = s1->term;
     YaepSymbol *term2 = s2->term;
-    int lookahead1 = s1->lookahead;
-    int lookahead2 = s2->lookahead;
+    int lookahead1 = s1->lookahead_term;
+    int lookahead2 = s2->lookahead_term;
 
     return set1 == set2 && term1 == term2 && lookahead1 == lookahead2;
 }
@@ -20867,7 +22492,7 @@ static void set_init(YaepParseState *ps, int n_input)
     OS_CREATE(ps->set_parent_dotted_rule_ids_os, ps->run.grammar->alloc, 2048);
     OS_CREATE(ps->set_matched_lengths_os, ps->run.grammar->alloc, 2048);
     OS_CREATE(ps->sets_os, ps->run.grammar->alloc, 0);
-    OS_CREATE(ps->triplet_core_term_lookahead_os, ps->run.grammar->alloc, 0);
+    OS_CREATE(ps->set_term_lookahead_os, ps->run.grammar->alloc, 0);
 
     ps->cache_stateset_cores = create_hash_table(ps->run.grammar->alloc, 2000,
                                                  (hash_table_hash_function)stateset_core_hash,
@@ -20881,14 +22506,14 @@ static void set_init(YaepParseState *ps, int n_input)
                                                                 (hash_table_hash_function)stateset_core_matched_lengths_hash,
                                                                 (hash_table_eq_function)stateset_core_matched_lengths_eq);
 
-    ps->cache_stateset_core_term_lookahead = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
-                                                               (hash_table_hash_function)stateset_core_term_lookahead_hash,
-                                                               (hash_table_eq_function)stateset_core_term_lookahead_eq);
+    ps->cache_stateset_term_lookahead = create_hash_table(ps->run.grammar->alloc, n < 30000 ? 30000 : n,
+                                                          (hash_table_hash_function)stateset_term_lookahead_hash,
+                                                          (hash_table_eq_function)stateset_term_lookahead_eq);
 
     ps->num_set_cores = ps->num_set_core_start_dotted_rules= 0;
     ps->num_set_matched_lengths = ps->num_set_matched_lengths_len = ps->num_parent_dotted_rule_ids = 0;
     ps->num_sets_total = ps->num_dotted_rules_total= 0;
-    ps->num_triplets_core_term_lookahead = 0;
+    ps->num_set_term_lookahead = 0;
     dotted_rule_matched_length_set_init(ps);
 }
 
@@ -20896,47 +22521,27 @@ static void debug_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int matc
 {
     if (!ps->run.debug) return;
 
-    /*
-    if (blocked)
-    {
-        MemBuffer *mb = new_membuffer();
-        membuffer_printf(mb, "step @%d %s", ps->tok_i, why);
-        debug_mb("ixml.pa=", mb);
-        free_membuffer_and_free_content(mb);
-        return;
-        }*/
-
     MemBuffer *mb = new_membuffer();
-    membuffer_printf(mb, "step @%d ", ps->tok_i);
+    membuffer_printf(mb, "@%d ", ps->tok_i);
 
-    // We add one to the state_set_k because the index is updated at the end of the parse loop.
-    int k = 1+ps->state_set_k;
-    if (k < 0) k = 0;
+    print_dotted_rule(mb, ps, ps->tok_i, dotted_rule, matched_length, parent_id);
 
-    print_dotted_rule(mb, ps, k, dotted_rule, matched_length, parent_id, NULL);
-    debug_mb("ixml.pa=", mb);
+    debug_mb("ixml.pa.step=", mb);
     free_membuffer_and_free_content(mb);
 
 }
 
-static void debug_info(YaepParseState *ps, const char *format, ...)
+static void debug_step_blocked(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, int parent_id)
 {
     if (!ps->run.debug) return;
 
-    va_list ap;
-    va_start(ap, format);
-
     MemBuffer *mb = new_membuffer();
-    membuffer_printf(mb, "info @%d ", ps->tok_i);
+    membuffer_printf(mb, "@%d ", ps->tok_i);
 
-    char *buf = buf_vsnprintf(format, ap);
-    membuffer_append(mb, buf);
-    membuffer_append_null(mb);
-    free(buf);
+    print_dotted_rule_blocked(mb, ps, ps->tok_i, dotted_rule, matched_length, parent_id);
 
-    debug_mb("ixml.pa=", mb);
+    debug_mb("ixml.pa.step=", mb);
     free_membuffer_and_free_content(mb);
-    return;
 }
 
 static void append_dotted_rule_no_core_yet(YaepParseState *ps, YaepDottedRule *dotted_rule)
@@ -20991,7 +22596,7 @@ static void append_matched_length_no_core_yet(YaepParseState *ps, int matched_le
    of the set being formed.
    set_new_add_start_sit (struct sit *sit, int dist)
 */
-static void set_add_dotted_rule_with_matched_length(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length)
+static void set_add_dotted_rule_with_matched_length(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, const char *why)
 {
     assert(!ps->new_set_ready_p);
     assert(!ps->new_set);
@@ -21002,7 +22607,7 @@ static void set_add_dotted_rule_with_matched_length(YaepParseState *ps, YaepDott
 
     ps->new_num_leading_dotted_rules++;
 
-    debug_info(ps, "add d%d len %d", dotted_rule->id, matched_length);
+    yaep_trace(ps, "%s add leading d%d len %d", why, dotted_rule->id, matched_length);
     debug_step(ps, dotted_rule, matched_length, -1);
 }
 
@@ -21012,7 +22617,7 @@ static void set_add_dotted_rule_with_matched_length(YaepParseState *ps, YaepDott
    distance), we do not add it.
    set_new_add_initial_sit (struct sit *sit)
 */
-static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule *dotted_rule)
+static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule *dotted_rule, const char *why)
 {
     assert(ps->new_set_ready_p);
     assert(ps->new_set);
@@ -21025,14 +22630,14 @@ static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule 
     {
         // Check if already added.
         if (ps->new_dotted_rules[i] == dotted_rule) {
-            //debug_info(ps, "skip d%", dotted_rule->id);
+            //yaep_trace(ps, "skip d%", dotted_rule->id);
             return;
         }
     }
     /* Remember we do not store matched_length for not-yet-started dotted_rules. */
     append_dotted_rule_to_core(ps, dotted_rule);
 
-    debug_info(ps, "add d%d", dotted_rule->id);
+    yaep_trace(ps, "%s add d%d to c%d", why, dotted_rule->id, ps->new_core->id);
     debug_step(ps, dotted_rule, 0, -1);
 }
 
@@ -21042,7 +22647,10 @@ static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule 
    distance), we do not add it.
    set_add_new_nonstart_sit (struct sit *sit, int parent)
 */
-static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *dotted_rule, int parent_dotted_rule_id)
+static void set_add_dotted_rule_with_parent(YaepParseState *ps,
+                                            YaepDottedRule *dotted_rule,
+                                            int parent_rule_index,
+                                            const char *why)
 {
     assert(ps->new_set_ready_p);
     assert(ps->new_set);
@@ -21056,10 +22664,10 @@ static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *
          rule_index_in_core++)
     {
         if (ps->new_dotted_rules[rule_index_in_core] == dotted_rule &&
-            ps->new_core->parent_dotted_rule_ids[rule_index_in_core] == parent_dotted_rule_id)
+            ps->new_core->to_parent_rule_index[rule_index_in_core] == parent_rule_index)
         {
             // The dotted_rule + parent dotted rule already exists.
-            debug_info(ps, "reusing d%d with parent d%d", dotted_rule->id, parent_dotted_rule_id);
+            yaep_trace(ps, "reusing d%d with parent rule index %d", dotted_rule->id, parent_rule_index);
             return;
         }
     }
@@ -21071,16 +22679,18 @@ static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *
     // Increase the parent index vector with another int.
     // This integer points to ...?
     OS_TOP_EXPAND(ps->set_parent_dotted_rule_ids_os, sizeof(int));
-    ps->new_core->parent_dotted_rule_ids = (int*)OS_TOP_BEGIN(ps->set_parent_dotted_rule_ids_os) - ps->new_num_leading_dotted_rules;
+    ps->new_core->to_parent_rule_index = (int*)OS_TOP_BEGIN(ps->set_parent_dotted_rule_ids_os) - ps->new_num_leading_dotted_rules;
 
     // Store dotted_rule into new dotted_rules.
     ps->new_dotted_rules[ps->new_core->num_dotted_rules++] = dotted_rule;
     // Store parent index. Meanst what...?
-    ps->new_core->parent_dotted_rule_ids[ps->new_core->num_all_matched_lengths++] = parent_dotted_rule_id;
+    ps->new_core->to_parent_rule_index[ps->new_core->num_all_matched_lengths++] = parent_rule_index;
     ps->num_parent_dotted_rule_ids++;
 
-    debug_info(ps, "add d%d with parent d%d", dotted_rule->id, parent_dotted_rule_id);
-    debug_step(ps, dotted_rule, 0, parent_dotted_rule_id);
+    int matched_length = ps->new_set->matched_lengths[parent_rule_index];
+
+    yaep_trace(ps, "%s add d%d with parent index %d to c%d", why, dotted_rule->id, parent_rule_index, ps->new_core->id);
+    debug_step(ps, dotted_rule, matched_length, parent_rule_index);
 }
 
 /* Set up hash of matched_lengths of set S. */
@@ -21115,6 +22725,8 @@ static void prepare_for_leading_dotted_rules(YaepParseState *ps)
     ps->new_dotted_rules = NULL;
     ps->new_matched_lengths = NULL;
     ps->new_num_leading_dotted_rules = 0;
+
+    yaep_trace(ps, "start collecting leading rules");
 }
 
 /* The new set should contain only start dotted_rules.
@@ -21131,7 +22743,7 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
     ps->new_set->matched_lengths = ps->new_matched_lengths;
     ps->new_set->id = ps->num_sets_total;
 
-    debug_info(ps, "convert leading rules into s%d", ps->new_set->id);
+    yaep_trace(ps, "convert leading rules into s%d", ps->new_set->id);
 
     OS_TOP_EXPAND(ps->set_cores_os, sizeof(YaepStateSetCore));
     ps->new_set->core = ps->new_core = (YaepStateSetCore*) OS_TOP_BEGIN(ps->set_cores_os);
@@ -21153,7 +22765,7 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
             MemBuffer *mb = new_membuffer();
             print_matched_lenghts(mb, ps->new_set);
             membuffer_append_null(mb);
-            debug_info(ps, "re-using matched lengths %s", mb->buffer_);
+            yaep_trace(ps, "re-using matched lengths %s", mb->buffer_);
             free_membuffer_and_free_content(mb);
         }
     }
@@ -21170,7 +22782,7 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
             MemBuffer *mb = new_membuffer();
             print_matched_lenghts(mb, ps->new_set);
             membuffer_append_null(mb);
-            debug_info(ps, "new matched lengths (%s)", mb->buffer_);
+            yaep_trace(ps, "new matched lengths (%s)", mb->buffer_);
             free_membuffer_and_free_content(mb);
         }
     }
@@ -21208,7 +22820,7 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
             MemBuffer *mb = new_membuffer();
             print_core(mb, (*sc)->core);
             membuffer_append_null(mb);
-            debug_info(ps, "re-using %s", mb->buffer_);
+            yaep_trace(ps, "re-using %s", mb->buffer_);
             free_membuffer_and_free_content(mb);
         }
     }
@@ -21218,7 +22830,7 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
         ps->new_core->id = ps->num_set_cores++;
         ps->new_core->num_dotted_rules = ps->new_num_leading_dotted_rules;
         ps->new_core->num_all_matched_lengths = ps->new_num_leading_dotted_rules;
-        ps->new_core->parent_dotted_rule_ids = NULL;
+        ps->new_core->to_parent_rule_index = NULL;
         *sc = ps->new_set;
         ps->num_set_core_start_dotted_rules += ps->new_num_leading_dotted_rules;
         added = true;
@@ -21228,7 +22840,7 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
             MemBuffer *mb = new_membuffer();
             print_core(mb, ps->new_set->core);
             membuffer_append_null(mb);
-            debug_info(ps, "new %s", mb->buffer_);
+            yaep_trace(ps, "new %s", mb->buffer_);
             free_membuffer_and_free_content(mb);
         }
     }
@@ -21242,13 +22854,13 @@ static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps)
         ps->num_sets_total++;
         ps->num_dotted_rules_total += ps->new_num_leading_dotted_rules;
         OS_TOP_FINISH(ps->sets_os);
-        debug_info(ps, "new s%d", ps->new_set->id);
+        yaep_trace(ps, "new s%d", ps->new_set->id);
     }
     else
     {
         ps->new_set = *scm;
         OS_TOP_NULLIFY(ps->sets_os);
-        debug_info(ps, "re-using s%d", ps->new_set->id);
+        yaep_trace(ps, "re-using s%d", ps->new_set->id);
     }
 #else
     OS_TOP_FINISH(ps->sets_os);
@@ -21268,11 +22880,11 @@ static void set_new_core_stop(YaepParseState *ps)
 static void free_sets(YaepParseState *ps)
 {
     free_dotted_rule_matched_length_sets(ps);
-    delete_hash_table(ps->cache_stateset_core_term_lookahead);
+    delete_hash_table(ps->cache_stateset_term_lookahead);
     delete_hash_table(ps->cache_stateset_core_matched_lengths);
     delete_hash_table(ps->cache_stateset_matched_lengths);
     delete_hash_table(ps->cache_stateset_cores);
-    OS_DELETE(ps->triplet_core_term_lookahead_os);
+    OS_DELETE(ps->set_term_lookahead_os);
     OS_DELETE(ps->sets_os);
     OS_DELETE(ps->set_parent_dotted_rule_ids_os);
     OS_DELETE(ps->set_dotted_rules_os);
@@ -21304,392 +22916,21 @@ static void free_state_sets(YaepParseState *ps)
     }
 }
 
-/* Initialize work with array of vlos.*/
-static void vlo_array_init(YaepParseState *ps)
+static void verbose_stats(YaepParseState *ps)
 {
-    VLO_CREATE(ps->vlo_array, ps->run.grammar->alloc, 4096);
-    ps->vlo_array_len = 0;
+    size_t size = memusage(ps);
+    char *siz = humanReadableTwoDecimals(size);
+    verbose("ixml=", "@%d/%d #sets=%d #cores=%d #dotted_rules=%d #matched_lengths=%d mem=%s",
+            ps->tok_i,
+            ps->input_len,
+            ps->num_sets_total,
+            ps->num_set_cores,
+            ps->num_dotted_rules_total,
+            ps->num_set_matched_lengths,
+            siz
+        );
+    free(siz);
 }
-
-/* The function forms new empty vlo at the end of the array of vlos.*/
-static int vlo_array_expand(YaepParseState *ps)
-{
-    vlo_t*vlo_ptr;
-
-    if ((unsigned) ps->vlo_array_len >= VLO_LENGTH(ps->vlo_array) / sizeof(vlo_t))
-    {
-        VLO_EXPAND(ps->vlo_array, sizeof(vlo_t));
-        vlo_ptr = &((vlo_t*) VLO_BEGIN(ps->vlo_array))[ps->vlo_array_len];
-        VLO_CREATE(*vlo_ptr, ps->run.grammar->alloc, 64);
-    }
-    else
-    {
-        vlo_ptr = &((vlo_t*) VLO_BEGIN(ps->vlo_array))[ps->vlo_array_len];
-        VLO_NULLIFY(*vlo_ptr);
-    }
-    return ps->vlo_array_len++;
-}
-
-/* The function purges the array of vlos.*/
-static void vlo_array_nullify(YaepParseState *ps)
-{
-    ps->vlo_array_len = 0;
-}
-
-/* The following function returns pointer to vlo with INDEX.*/
-static vlo_t *vlo_array_el(YaepParseState *ps, int index)
-{
-    assert(index >= 0 && ps->vlo_array_len > index);
-    return &((vlo_t*) VLO_BEGIN(ps->vlo_array))[index];
-}
-
-static void free_vlo_array(YaepParseState *ps)
-{
-    vlo_t *vlo_ptr;
-
-    for (vlo_ptr = (vlo_t*)VLO_BEGIN(ps->vlo_array); (char*) vlo_ptr < (char*) VLO_BOUND(ps->vlo_array); vlo_ptr++)
-    {
-        VLO_DELETE(*vlo_ptr);
-    }
-    VLO_DELETE(ps->vlo_array);
-}
-
-#ifdef USE_CORE_SYMB_HASH_TABLE
-/* Hash of core_symb_to_predcomps.*/
-static unsigned core_symb_to_predcomps_hash(YaepCoreSymbToPredComps *core_symb_to_predcomps)
-{
-    return (jauquet_prime_mod32* hash_shift+(size_t)/* was unsigned */core_symb_to_predcomps->core) * hash_shift
-        +(size_t)/* was unsigned */core_symb_to_predcomps->symb;
-}
-
-/* Equality of core_symb_to_predcomps.*/
-static bool core_symb_to_predcomps_eq(YaepCoreSymbToPredComps *core_symb_to_predcomps1, YaepCoreSymbToPredComps *core_symb_to_predcomps2)
-{
-    return core_symb_to_predcomps1->core == core_symb_to_predcomps2->core && core_symb_to_predcomps1->symb == core_symb_to_predcomps2->symb;
-}
-#endif
-
-static unsigned vect_ids_hash(YaepVect*v)
-{
-    unsigned result = jauquet_prime_mod32;
-
-    for (int i = 0; i < v->len; i++)
-    {
-        result = result* hash_shift + v->ids[i];
-    }
-    return result;
-}
-
-static bool vect_ids_eq(YaepVect *v1, YaepVect *v2)
-{
-    if (v1->len != v2->len) return false;
-
-    for (int i = 0; i < v1->len; i++)
-    {
-        if (v1->ids[i] != v2->ids[i]) return false;
-    }
-    return true;
-}
-
-static unsigned prediction_ids_hash(hash_table_entry_t t)
-{
-    return vect_ids_hash(&((YaepCoreSymbToPredComps*)t)->predictions);
-}
-
-static bool prediction_ids_eq(hash_table_entry_t t1, hash_table_entry_t t2)
-{
-    return vect_ids_eq(&((YaepCoreSymbToPredComps*)t1)->predictions,
-                       &((YaepCoreSymbToPredComps*)t2)->predictions);
-}
-
-static unsigned completion_ids_hash(hash_table_entry_t t)
-{
-    return vect_ids_hash(&((YaepCoreSymbToPredComps*)t)->completions);
-}
-
-static bool completion_ids_eq(hash_table_entry_t t1, hash_table_entry_t t2)
-{
-    return vect_ids_eq(&((YaepCoreSymbToPredComps*) t1)->completions,
-                       &((YaepCoreSymbToPredComps*) t2)->completions);
-}
-
-/* Initialize work with the triples(set core, symbol, vector).*/
-static void core_symb_to_predcomps_init(YaepParseState *ps)
-{
-    OS_CREATE(ps->core_symb_to_predcomps_os, ps->run.grammar->alloc, 0);
-    VLO_CREATE(ps->new_core_symb_to_predcomps_vlo, ps->run.grammar->alloc, 0);
-    OS_CREATE(ps->vect_ids_os, ps->run.grammar->alloc, 0);
-
-    vlo_array_init(ps);
-#ifdef USE_CORE_SYMB_HASH_TABLE
-    ps->map_core_symb_to_predcomps = create_hash_table(ps->run.grammar->alloc, 3000,
-                                                       (hash_table_hash_function)core_symb_to_predcomps_hash,
-                                                       (hash_table_eq_function)core_symb_to_predcomps_eq);
-#else
-    VLO_CREATE(ps->core_symb_table_vlo, ps->run.grammar->alloc, 4096);
-    ps->core_symb_table = (YaepCoreSymbToPredComps***)VLO_BEGIN(ps->core_symb_table_vlo);
-    OS_CREATE(ps->core_symb_tab_rows, ps->run.grammar->alloc, 8192);
-#endif
-
-    ps->map_transition_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000,
-                                                           (hash_table_hash_function)prediction_ids_hash,
-                                                           (hash_table_eq_function)prediction_ids_eq);
-
-    ps->map_reduce_to_coresymbvect = create_hash_table(ps->run.grammar->alloc, 3000,
-                                                       (hash_table_hash_function)completion_ids_hash,
-                                                       (hash_table_eq_function)completion_ids_eq);
-
-    ps->n_core_symb_pairs = ps->n_core_symb_to_predcomps_len = 0;
-    ps->n_transition_vects = ps->n_transition_vect_len = 0;
-    ps->n_reduce_vects = ps->n_reduce_vect_len = 0;
-}
-
-#ifdef USE_CORE_SYMB_HASH_TABLE
-
-/* The following function returns entry in the table where pointer to
-   corresponding triple with the same keys as TRIPLE ones is
-   placed.*/
-static YaepCoreSymbToPredComps **core_symb_to_pred_comps_addr_get(YaepParseState *ps, YaepCoreSymbToPredComps *triple, int reserv_p)
-{
-    YaepCoreSymbToPredComps **result;
-
-    if (triple->symb->cached_core_symb_to_predcomps != NULL
-        && triple->symb->cached_core_symb_to_predcomps->core == triple->core)
-    {
-        return &triple->symb->cached_core_symb_to_predcomps;
-    }
-
-    result = ((YaepCoreSymbToPredComps**)find_hash_table_entry(ps->map_core_symb_to_predcomps, triple, reserv_p));
-
-    triple->symb->cached_core_symb_to_predcomps = *result;
-
-    return result;
-}
-
-#else
-
-/* The following function returns entry in the table where pointer to
-   corresponding triple with SET_CORE and SYMB is placed. */
-static YaepCoreSymbToPredComps **core_symb_to_predcomps_addr_get(YaepParseState *ps, YaepStateSetCore *set_core, YaepSymbol *symb)
-{
-    YaepCoreSymbToPredComps***core_symb_to_predcomps_ptr;
-
-    core_symb_to_predcomps_ptr = ps->core_symb_table + set_core->id;
-
-    if ((char*) core_symb_to_predcomps_ptr >=(char*) VLO_BOUND(ps->core_symb_table_vlo))
-    {
-        YaepCoreSymbToPredComps***ptr,***bound;
-        int diff, i;
-
-        diff =((char*) core_symb_to_predcomps_ptr
-                -(char*) VLO_BOUND(ps->core_symb_table_vlo));
-        diff += sizeof(YaepCoreSymbToPredComps**);
-        if (diff == sizeof(YaepCoreSymbToPredComps**))
-            diff*= 10;
-
-        VLO_EXPAND(ps->core_symb_table_vlo, diff);
-        ps->core_symb_table = (YaepCoreSymbToPredComps***) VLO_BEGIN(ps->core_symb_table_vlo);
-        core_symb_to_predcomps_ptr = ps->core_symb_table + set_core->id;
-        bound =(YaepCoreSymbToPredComps***) VLO_BOUND(ps->core_symb_table_vlo);
-
-        ptr = bound - diff / sizeof(YaepCoreSymbToPredComps**);
-        while(ptr < bound)
-        {
-            OS_TOP_EXPAND(ps->core_symb_tab_rows,
-                          (ps->run.grammar->symbs_ptr->num_terminals + ps->run.grammar->symbs_ptr->num_nonterminals)
-                          * sizeof(YaepCoreSymbToPredComps*));
-           *ptr =(YaepCoreSymbToPredComps**) OS_TOP_BEGIN(ps->core_symb_tab_rows);
-            OS_TOP_FINISH(ps->core_symb_tab_rows);
-            for(i = 0; i < ps->run.grammar->symbs_ptr->num_terminals + ps->run.grammar->symbs_ptr->num_nonterminals; i++)
-               (*ptr)[i] = NULL;
-            ptr++;
-        }
-    }
-    return &(*core_symb_to_predcomps_ptr)[symb->id];
-}
-#endif
-
-/* The following function returns the triple(if any) for given SET_CORE and SYMB. */
-static YaepCoreSymbToPredComps *core_symb_to_predcomps_find(YaepParseState *ps, YaepStateSetCore *core, YaepSymbol *symb)
-{
-    YaepCoreSymbToPredComps *r;
-
-#ifdef USE_CORE_SYMB_HASH_TABLE
-    YaepCoreSymbToPredComps core_symb_to_predcomps;
-
-    core_symb_to_predcomps.core = core;
-    core_symb_to_predcomps.symb = symb;
-    r = *core_symb_to_pred_comps_addr_get(ps, &core_symb_to_predcomps, false);
-#else
-    r = *core_symb_to_predcomps_addr_get(ps, core, symb);
-#endif
-
-    return r;
-}
-
-static YaepCoreSymbToPredComps *core_symb_to_predcomps_new(YaepParseState *ps, YaepStateSetCore*core, YaepSymbol*symb)
-{
-    YaepCoreSymbToPredComps*core_symb_to;
-    YaepCoreSymbToPredComps**addr;
-    vlo_t*vlo_ptr;
-
-    /* Create table element.*/
-    OS_TOP_EXPAND(ps->core_symb_to_predcomps_os, sizeof(YaepCoreSymbToPredComps));
-    core_symb_to = ((YaepCoreSymbToPredComps*) OS_TOP_BEGIN(ps->core_symb_to_predcomps_os));
-    core_symb_to->id = ps->core_symb_to_pred_comps_counter++;
-    core_symb_to->core = core;
-    core_symb_to->symb = symb;
-    OS_TOP_FINISH(ps->core_symb_to_predcomps_os);
-
-#ifdef USE_CORE_SYMB_HASH_TABLE
-    addr = core_symb_to_pred_comps_addr_get(ps, core_symb_to, true);
-#else
-    addr = core_symb_to_pred_comps_addr_get(ps, core, symb);
-#endif
-    assert(*addr == NULL);
-   *addr = core_symb_to;
-
-    core_symb_to->predictions.intern = vlo_array_expand(ps);
-    vlo_ptr = vlo_array_el(ps, core_symb_to->predictions.intern);
-    core_symb_to->predictions.len = 0;
-    core_symb_to->predictions.ids =(int*) VLO_BEGIN(*vlo_ptr);
-
-    core_symb_to->completions.intern = vlo_array_expand(ps);
-    vlo_ptr = vlo_array_el(ps, core_symb_to->completions.intern);
-    core_symb_to->completions.len = 0;
-    core_symb_to->completions.ids =(int*) VLO_BEGIN(*vlo_ptr);
-    VLO_ADD_MEMORY(ps->new_core_symb_to_predcomps_vlo, &core_symb_to,
-                    sizeof(YaepCoreSymbToPredComps*));
-    ps->n_core_symb_pairs++;
-
-    return core_symb_to;
-}
-
-static void vect_add_id(YaepParseState *ps, YaepVect *vec, int id)
-{
-    vec->len++;
-    vlo_t *vlo_ptr = vlo_array_el(ps, vec->intern);
-    VLO_ADD_MEMORY(*vlo_ptr, &id, sizeof(int));
-    vec->ids =(int*) VLO_BEGIN(*vlo_ptr);
-    ps->n_core_symb_to_predcomps_len++;
-}
-
-static void log_dotted_rule(YaepParseState *ps, int lookahead_term_id, YaepDottedRule *new_dotted_rule)
-{
-    /*
-    MemBuffer *mb = new_membuffer();
-    YaepSymbol *symb = symb_find_by_term_id(ps, lookahead_term_id);
-    const char *hr = symb->hr;
-    if (!symb) hr = "?";
-    membuffer_printf(mb, "lookahead (%d) %s blocked by ", lookahead_term_id, hr);
-    print_dotted_rule(mb, ps, ps->tok_i-1, new_dotted_rule, 0, 0, "woot1");
-    membuffer_append(mb, "\n");
-    debug_mb("ixml.pa.c=", mb);*/
-}
-
-static void core_symb_to_predcomps_add_predict(YaepParseState *ps,
-                                      YaepCoreSymbToPredComps *core_symb_to_predcomps,
-                                      int rule_index_in_core)
-{
-    vect_add_id(ps, &core_symb_to_predcomps->predictions, rule_index_in_core);
-
-    YaepDottedRule *dotted_rule = core_symb_to_predcomps->core->dotted_rules[rule_index_in_core];
-    debug_info(ps, "add pred cspc%d [core%d, %s] -> d%d",
-               core_symb_to_predcomps->id,
-               core_symb_to_predcomps->core->id,
-               core_symb_to_predcomps->symb->hr,
-               dotted_rule->id);
-}
-
-static void core_symb_to_predcomps_add_complete(YaepParseState *ps,
-                                       YaepCoreSymbToPredComps *core_symb_to_predcomps,
-                                       int rule_index_in_core)
-{
-    vect_add_id(ps, &core_symb_to_predcomps->completions, rule_index_in_core);
-    YaepDottedRule *dotted_rule = core_symb_to_predcomps->core->dotted_rules[rule_index_in_core];
-    debug_info(ps, "add comp cspc%d [core%d, %s] -> d%d",
-               core_symb_to_predcomps->id,
-               core_symb_to_predcomps->core->id,
-               core_symb_to_predcomps->symb->hr,
-               dotted_rule->id);
-
-}
-
-/* Insert vector VEC from CORE_SYMB_TO_PREDCOMPS into table TAB.  Update
-   *N_VECTS and INT*N_VECT_LEN if it is a new vector in the table. */
-static void process_core_symb_to_predcomps_el(YaepParseState *ps,
-                                      YaepCoreSymbToPredComps *core_symb_to_predcomps,
-                                      YaepVect *vec,
-                                      hash_table_t *tab,
-                                      int *n_vects,
-                                      int *n_vect_len)
-{
-    hash_table_entry_t*entry;
-
-    if (vec->len == 0)
-    {
-        vec->ids = NULL;
-    }
-    else
-    {
-        entry = find_hash_table_entry(*tab, core_symb_to_predcomps, true);
-        if (*entry != NULL)
-        {
-            vec->ids = (&core_symb_to_predcomps->predictions == vec
-                        ?((YaepCoreSymbToPredComps*)*entry)->predictions.ids
-                        :((YaepCoreSymbToPredComps*)*entry)->completions.ids);
-        }
-        else
-        {
-            *entry = (hash_table_entry_t)core_symb_to_predcomps;
-            OS_TOP_ADD_MEMORY(ps->vect_ids_os, vec->ids, vec->len* sizeof(int));
-            vec->ids =(int*) OS_TOP_BEGIN(ps->vect_ids_os);
-            OS_TOP_FINISH(ps->vect_ids_os);
-            (*n_vects)++;
-            *n_vect_len += vec->len;
-        }
-    }
-    vec->intern = -1;
-}
-
-/* Finish forming all new triples core_symb_to_predcomps.*/
-static void core_symb_to_predcomps_new_all_stop(YaepParseState *ps)
-{
-    YaepCoreSymbToPredComps**triple_ptr;
-
-    for(triple_ptr =(YaepCoreSymbToPredComps**) VLO_BEGIN(ps->new_core_symb_to_predcomps_vlo);
-        (char*) triple_ptr <(char*) VLO_BOUND(ps->new_core_symb_to_predcomps_vlo);
-         triple_ptr++)
-    {
-        process_core_symb_to_predcomps_el(ps, *triple_ptr, &(*triple_ptr)->predictions,
-                                  &ps->map_transition_to_coresymbvect, &ps->n_transition_vects,
-                                  &ps->n_transition_vect_len);
-        process_core_symb_to_predcomps_el(ps, *triple_ptr, &(*triple_ptr)->completions,
-                                  &ps->map_reduce_to_coresymbvect, &ps->n_reduce_vects,
-                                  &ps->n_reduce_vect_len);
-    }
-    vlo_array_nullify(ps);
-    VLO_NULLIFY(ps->new_core_symb_to_predcomps_vlo);
-}
-
-/* Finalize work with all triples(set core, symbol, vector).*/
-static void free_core_symb_to_vect_lookup(YaepParseState *ps)
-{
-    delete_hash_table(ps->map_transition_to_coresymbvect);
-    delete_hash_table(ps->map_reduce_to_coresymbvect);
-
-#ifdef USE_CORE_SYMB_HASH_TABLE
-    delete_hash_table(ps->map_core_symb_to_predcomps);
-#else
-    OS_DELETE(ps->core_symb_tab_rows);
-    VLO_DELETE(ps->core_symb_table_vlo);
-#endif
-    free_vlo_array(ps);
-    OS_DELETE(ps->vect_ids_os);
-    VLO_DELETE(ps->new_core_symb_to_predcomps_vlo);
-    OS_DELETE(ps->core_symb_to_predcomps_os);
-}
-
 /* The following function stores error CODE and MESSAGE.  The function
    makes long jump after that.  So the function is designed to process
    only one error.*/
@@ -22370,6 +23611,72 @@ static void free_inside_parse_state(YaepParseState *ps)
     free_dotted_rules(ps);
 }
 
+static size_t memusage(YaepParseState *ps)
+{
+    size_t sum = 0;
+
+    // Grammar...
+
+    // Symbols, the memory usage for the symbols is static during the parse.
+    sum += objstack_memusage(&ps->run.grammar->symbs_ptr->symbs_os);
+    sum += vlo_memusage(&ps->run.grammar->symbs_ptr->symbs_vlo);
+    sum += vlo_memusage(&ps->run.grammar->symbs_ptr->terminals_vlo);
+    sum += vlo_memusage(&ps->run.grammar->symbs_ptr->nonterminals_vlo);
+    sum += hash_table_memusage(ps->run.grammar->symbs_ptr->map_repr_to_symb);
+    sum += hash_table_memusage(ps->run.grammar->symbs_ptr->map_code_to_symb);
+
+    // Rules, the memory usage is static during the parse.
+    sum += objstack_memusage(&ps->run.grammar->rulestorage_ptr->rules_os);
+
+    // Terminal bitsets static.
+    sum += objstack_memusage(&ps->run.grammar->term_sets_ptr->terminal_bitset_os);
+    sum += vlo_memusage(&ps->run.grammar->term_sets_ptr->terminal_bitset_vlo);
+    sum += hash_table_memusage(ps->run.grammar->term_sets_ptr->map_terminal_bitset_to_id);
+
+    // Parse state, increasing during parse.
+
+    sum += objstack_memusage(&ps->set_cores_os);
+    sum += objstack_memusage(&ps->set_dotted_rules_os);
+    sum += objstack_memusage(&ps->set_parent_dotted_rule_ids_os);
+    sum += objstack_memusage(&ps->set_matched_lengths_os);
+    sum += objstack_memusage(&ps->sets_os);
+    sum += objstack_memusage(&ps->set_term_lookahead_os);
+
+    sum += hash_table_memusage(ps->cache_stateset_cores);
+    sum += hash_table_memusage(ps->cache_stateset_matched_lengths);
+    sum += hash_table_memusage(ps->cache_stateset_core_matched_lengths);
+    sum += hash_table_memusage(ps->cache_stateset_term_lookahead);
+
+    sum += vlo_memusage(&ps->dotted_rules_table_vlo);
+    sum += objstack_memusage(&ps->dotted_rules_os);
+    sum += vlo_memusage(&ps->dotted_rule_matched_length_vec_vlo);
+    sum += objstack_memusage(&ps->core_symb_to_predcomps_os);
+    sum += vlo_memusage(&ps->new_core_symb_to_predcomps_vlo);
+    sum += objstack_memusage(&ps->vect_ids_os);
+
+#ifdef USE_CORE_SYMB_HASH_TABLE
+    sum += hash_table_memusage(ps->map_core_symb_to_predcomps);
+#else
+    sum += vlo_memusage(&ps->core_symb_table_vlo);
+    sum += objstack_memusage(&ps->core_symb_tab_rows);
+#endif
+
+    sum += hash_table_memusage(ps->map_transition_to_coresymbvect);
+    sum += hash_table_memusage(ps->map_reduce_to_coresymbvect);
+    sum += objstack_memusage(&ps->recovery_state_tail_sets);
+    sum += vlo_memusage(&ps->original_state_set_tail_stack);
+    sum += vlo_memusage(&ps->vlo_array);
+    sum += hash_table_memusage(ps->set_of_reserved_memory);
+    sum += vlo_memusage(&ps->tnodes_vlo);
+    sum += hash_table_memusage(ps->map_node_to_visit);
+    sum += objstack_memusage(&ps->node_visits_os);
+    sum += vlo_memusage(&ps->recovery_state_stack);
+    sum += objstack_memusage(&ps->parse_state_os);
+    sum += hash_table_memusage(ps->map_rule_orig_statesetind_to_internalstate);
+
+    return sum;
+}
+
 /* The following function reads all input tokens.*/
 static void read_input(YaepParseState *ps)
 {
@@ -22403,8 +23710,8 @@ static void complete_empty_nonterminals_in_rule(YaepParseState *ps,
         {
             if (!only_nots)
             {
-                YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, dyn_lookahead_context, "complete_empty");
-                set_add_dotted_rule_with_parent(ps, new_dotted_rule, dotted_rule_parent_id);
+                YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, dyn_lookahead_context);
+                set_add_dotted_rule_with_parent(ps, new_dotted_rule, dotted_rule_parent_id, "complete empty");
             }
         }
         else if (rule->rhs[j]->is_not_operator)
@@ -22415,8 +23722,8 @@ static void complete_empty_nonterminals_in_rule(YaepParseState *ps,
             }
             else
             {
-                YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, dyn_lookahead_context, "complete_lookahead_ok_pre");
-                set_add_dotted_rule_with_parent(ps, new_dotted_rule, dotted_rule_parent_id);
+                YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, dyn_lookahead_context);
+                set_add_dotted_rule_with_parent(ps, new_dotted_rule, dotted_rule_parent_id, "complete lookahead ok pre");
             }
         }
         else
@@ -22452,10 +23759,8 @@ static bool blocked_by_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule
     {
         MemBuffer *mb = new_membuffer();
         int tok_i = ps->tok_i+n;
-        membuffer_printf(mb, "(s%d,-) %s →  ε not[%d-%d/%d] ",
-                         1+ps->state_set_k,
-                         symb->repr, ps->tok_i, ps->tok_i+1, ps->input_len);
-        membuffer_printf(mb, "{%s", info);
+        membuffer_printf(mb, "@%d NOT operator %s ", ps->tok_i, symb->repr);
+        membuffer_printf(mb, "%s", info);
         if (is_blocked)
         {
             membuffer_printf(mb, " blocked: ");
@@ -22469,10 +23774,10 @@ static bool blocked_by_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule
         {
             membuffer_printf(mb, "%s ", ps->input[i].symb->hr);
         }
-        membuffer_printf(mb, "}");
         membuffer_append_null(mb);
 
-        debug_info(ps, mb->buffer_);
+        yaep_trace(ps, mb->buffer_);
+        debug_step_blocked(ps, dotted_rule, 0, 0);
 
         free_membuffer_and_free_content(mb);
     }
@@ -22555,7 +23860,6 @@ static bool core_has_not_rules(YaepStateSetCore *c)
    transition on given symbol(see comment for abstract data `core_symb_to_predcomps'). */
 static void expand_new_set(YaepParseState *ps)
 {
-    YaepDottedRule *dotted_rule;
     YaepSymbol *symb;
     YaepCoreSymbToPredComps *core_symb_to_predcomps;
     YaepRule *rule;
@@ -22565,18 +23869,22 @@ static void expand_new_set(YaepParseState *ps)
        S = E, 'a'.
        E = .
     */
-    for (int dotted_rule_id = 0;
-         dotted_rule_id < ps->new_num_leading_dotted_rules;
-         dotted_rule_id++)
+    for (int leading_rule_index = 0;
+         leading_rule_index < ps->new_num_leading_dotted_rules;
+         leading_rule_index++)
     {
-        complete_empty_nonterminals_in_rule(ps, ps->new_dotted_rules[dotted_rule_id], dotted_rule_id, false);
+        YaepDottedRule *dotted_rule = ps->new_dotted_rules[leading_rule_index];
+        complete_empty_nonterminals_in_rule(ps,
+                                            dotted_rule,
+                                            leading_rule_index,
+                                            false);
     }
 
     for (int rule_index_in_core = 0;
          rule_index_in_core < ps->new_core->num_dotted_rules;
          rule_index_in_core++)
     {
-        dotted_rule = ps->new_dotted_rules[rule_index_in_core];
+        YaepDottedRule *dotted_rule = ps->new_dotted_rules[rule_index_in_core];
 
         // Check that there is a symbol after the dot!
         if (dotted_rule->dot_j < dotted_rule->rule->rhs_len)
@@ -22587,21 +23895,23 @@ static void expand_new_set(YaepParseState *ps)
 
             if (core_symb_to_predcomps)
             {
-                //trace("ixml.pa.c=", "found csl core symb ids core=%d symb=%s\n", ps->new_core->id, symb->hr);
+                //yaep_trace(ps, "re-using cspc%d[c%d %s]", core_symb_to_predcomps->id, ps->new_core->id, symb->hr);
             }
             else
             {
-                //trace("ixml.pa.c=",  "adding csl core symb ids core=%d symb=%s\n", ps->new_core->id, symb->hr);
                 // No vector found for this core+symb combo.
                 // Add a new vector.
                 core_symb_to_predcomps = core_symb_to_predcomps_new(ps, ps->new_core, symb);
+                yaep_trace(ps, "new cspc%d [c%d %s]", core_symb_to_predcomps->id, ps->new_core->id, symb->hr);
 
                 if (!symb->is_terminal)
                 {
-                    for (rule = symb->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
+                    for (YaepRule *r = symb->u.nonterminal.rules; r != NULL; r = r->lhs_next)
                     {
-                        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, 0, "predict");
-                        set_add_dotted_rule_no_match_yet(ps, new_dotted_rule);
+                        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, r, 0, 0);
+                        char buf[128];
+                        snprintf(buf, 128, "d%d@%d predicts %s", dotted_rule->id, dotted_rule->dot_j, r->lhs->hr);
+                        set_add_dotted_rule_no_match_yet(ps, new_dotted_rule, buf);
                     }
                 }
             }
@@ -22618,12 +23928,13 @@ static void expand_new_set(YaepParseState *ps)
                 if (!blocked_by_lookahead(ps, dotted_rule, dotted_rule->rule->rhs[dotted_rule->dot_j], first, "lookahead2a"))
                 {
                     YaepDottedRule *nnnew_dotted_rule = create_dotted_rule(ps,
-                                                                         dotted_rule->rule,
-                                                                         dotted_rule->dot_j+1,
-                                                                         0,
-                                                                         "complete_empty_rule_gurka");
+                                                                           dotted_rule->rule,
+                                                                           dotted_rule->dot_j+1,
+                                                                           0);
+                    //  "complete_empty_rule_gurka");
                     // Add new rule to be handled in next loop iteration.
-                    set_add_dotted_rule_no_match_yet(ps, nnnew_dotted_rule);
+                    yaep_trace(ps, "complete empty rule %s", dotted_rule->rule->lhs->hr);
+                    set_add_dotted_rule_no_match_yet(ps, nnnew_dotted_rule, "complete empty rule");
                 }
             }
             if (symb->is_not_operator && rule_index_in_core >= ps->new_core->num_all_matched_lengths)
@@ -22634,9 +23945,10 @@ static void expand_new_set(YaepParseState *ps)
                     YaepDottedRule *new_dotted_rule = create_dotted_rule(ps,
                                                                          dotted_rule->rule,
                                                                          dotted_rule->dot_j+1,
-                                                                         0,
-                                                                         "complete_lookahead_ok");
-                    set_add_dotted_rule_no_match_yet(ps, new_dotted_rule);
+                                                                         0);
+                    //"complete_lookahead_ok");
+                    yaep_trace(ps, "complete lookahead ok");
+                    set_add_dotted_rule_no_match_yet(ps, new_dotted_rule, "complete lookahead ok");
                 }
             }
         }
@@ -22646,7 +23958,7 @@ static void expand_new_set(YaepParseState *ps)
          rule_index_in_core < ps->new_core->num_dotted_rules;
          rule_index_in_core++)
     {
-        dotted_rule = ps->new_dotted_rules[rule_index_in_core];
+        YaepDottedRule *dotted_rule = ps->new_dotted_rules[rule_index_in_core];
 
         // Is this dotted_rule complete? I.e. the dot is at its rightmost position?
         if (dotted_rule->dot_j != dotted_rule->rule->rhs_len) continue;
@@ -22658,6 +23970,7 @@ static void expand_new_set(YaepParseState *ps)
         if (core_symb_to_predcomps == NULL)
         {
             core_symb_to_predcomps = core_symb_to_predcomps_new(ps, ps->new_core, symb);
+            yaep_trace(ps, "new cspc%d [c%d %s]", core_symb_to_predcomps->id, ps->new_core->id, symb->hr);
         }
         core_symb_to_predcomps_add_complete(ps, core_symb_to_predcomps, rule_index_in_core);
     }
@@ -22686,12 +23999,12 @@ static void expand_new_set(YaepParseState *ps)
                 for (j = 0; j < core_symb_to_predcomps->predictions.len; j++)
                 {
                     int rule_index_in_core = core_symb_to_predcomps->predictions.ids[j];
-                    dotted_rule = ps->new_dotted_rules[rule_index_in_core];
+                    YaepDottedRule *dotted_rule = ps->new_dotted_rules[rule_index_in_core];
                     shifted_dotted_rule = create_dotted_rule(ps,
                                                              dotted_rule->rule,
                                                              dotted_rule->dot_j+1,
-                                                             dotted_rule->dyn_lookahead_context,
-                                                             "expand_enss3");
+                                                             dotted_rule->dyn_lookahead_context);
+                    //                                                             "expand_enss3");
                     terminal_bitset_or(ps, dyn_lookahead_context_set, shifted_dotted_rule->lookahead);
                 }
                 dyn_lookahead_context = terminal_bitset_insert(ps, dyn_lookahead_context_set);
@@ -22703,11 +24016,11 @@ static void expand_new_set(YaepParseState *ps)
                 {
                     dyn_lookahead_context = -dyn_lookahead_context - 1;
                 }
-                dotted_rule = create_dotted_rule(ps,
-                                                 new_dotted_rule->rule,
-                                                 new_dotted_rule->dot_j,
-                                                 dyn_lookahead_context,
-                                                 "expand_enss4");
+                YaepDottedRule *dotted_rule = create_dotted_rule(ps,
+                                                                 new_dotted_rule->rule,
+                                                                 new_dotted_rule->dot_j,
+                                                                 dyn_lookahead_context);
+                // "expand_enss4");
 
                 if (dotted_rule != new_dotted_rule)
                 {
@@ -22741,8 +24054,8 @@ static void build_start_set(YaepParseState *ps)
 
     for (YaepRule *rule = ps->run.grammar->axiom->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
     {
-        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, dyn_lookahead_context, "axiom");
-        set_add_dotted_rule_with_matched_length(ps, new_dotted_rule, 0);
+        YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, 0, dyn_lookahead_context);
+        set_add_dotted_rule_with_matched_length(ps, new_dotted_rule, 0, "axiom");
     }
 
     bool core_added = convert_leading_dotted_rules_into_new_set(ps);
@@ -22752,17 +24065,17 @@ static void build_start_set(YaepParseState *ps)
     ps->state_sets[0] = ps->new_set;
 }
 
-static int lookup_matched_length(YaepParseState *ps, YaepStateSet *set, int dotted_rule_id)
+static int lookup_matched_length(YaepParseState *ps, YaepStateSet *set, int rule_index_in_core)
 {
-    if (dotted_rule_id >= set->core->num_all_matched_lengths)
+    if (rule_index_in_core >= set->core->num_all_matched_lengths)
     {
         return 0;
     }
-    if (dotted_rule_id < set->core->num_started_dotted_rules)
+    if (rule_index_in_core < set->core->num_started_dotted_rules)
     {
-        return set->matched_lengths[dotted_rule_id];
+        return set->matched_lengths[rule_index_in_core];
     }
-    return set->matched_lengths[set->core->parent_dotted_rule_ids[dotted_rule_id]];
+    return set->matched_lengths[set->core->to_parent_rule_index[rule_index_in_core]];
 }
 
 static void trace_lookahead_predicts_no_match(YaepParseState *ps, int lookahead_term_id, YaepDottedRule *new_dotted_rule, const  char *info)
@@ -22772,24 +24085,24 @@ static void trace_lookahead_predicts_no_match(YaepParseState *ps, int lookahead_
     const char *hr = symb->hr;
     if (!symb) hr = "?";
     membuffer_printf(mb, "look bitset %s (%d) %s blocked by ", info, lookahead_term_id, hr);
-    print_dotted_rule(mb, ps, ps->tok_i-1, new_dotted_rule, 0, 0, "woot1");
+    print_dotted_rule(mb, ps, ps->tok_i-1, new_dotted_rule, 0, 0);
     membuffer_append(mb, "\n");
 }
 
-void try_eat_token(const char *info, YaepParseState *ps, YaepStateSet *set,
+void try_eat_token(const char *why, YaepParseState *ps, YaepStateSet *set,
                    YaepDottedRule *dotted_rule, int rule_index_in_core,
                    int lookahead_term_id, int local_lookahead_level,
                    int add_matched_length);
 
-void try_eat_token(const char *info, YaepParseState *ps, YaepStateSet *set,
+void try_eat_token(const char *why, YaepParseState *ps, YaepStateSet *set,
                    YaepDottedRule *dotted_rule, int rule_index_in_core,
                    int lookahead_term_id, int local_lookahead_level,
                    int add_matched_length)
 {
     YaepDottedRule *new_dotted_rule = create_dotted_rule(ps,
                                                          dotted_rule->rule, dotted_rule->dot_j + 1,
-                                                         dotted_rule->dyn_lookahead_context, info);
-    if (local_lookahead_level != 0 &&
+                                                         dotted_rule->dyn_lookahead_context);
+    if (false && local_lookahead_level != 0 &&
         !terminal_bitset_test(ps, new_dotted_rule->lookahead, lookahead_term_id) &&
         !terminal_bitset_test(ps, new_dotted_rule->lookahead, ps->run.grammar->term_error_id))
     {
@@ -22802,11 +24115,11 @@ void try_eat_token(const char *info, YaepParseState *ps, YaepStateSet *set,
 
     // This combo dotted_rule + matched_length did not already exist, lets add it.
     // But first test if there is a not lookahead that blocks....
-    if (!blocked_by_lookahead(ps, new_dotted_rule, new_dotted_rule->rule->rhs[new_dotted_rule->dot_j], 1, info))
+    if (!blocked_by_lookahead(ps, new_dotted_rule, new_dotted_rule->rule->rhs[new_dotted_rule->dot_j], 1, why))
     {
         if (!dotted_rule_matched_length_test_and_set(ps, new_dotted_rule, matched_length))
         {
-            set_add_dotted_rule_with_matched_length(ps, new_dotted_rule, matched_length);
+            set_add_dotted_rule_with_matched_length(ps, new_dotted_rule, matched_length, why);
         }
     }
 }
@@ -23101,7 +24414,7 @@ static YaepRecoveryState pop_recovery_state(YaepParseState *ps)
 /* Return true if goto set SET from parsing list PLACE can be used as
    the next set.  The criterium is that all origin sets of start
    dotted_rules are the same as from PLACE. */
-static bool check_cached_transition_set(YaepParseState *ps, YaepStateSet*set, int place)
+static bool can_transition_to_set(YaepParseState *ps, YaepStateSet*set, int place)
 {
     int i, dist;
     int*matched_lengths = set->matched_lengths;
@@ -23158,76 +24471,102 @@ static int try_to_recover(YaepParseState *ps)
     return 0;
 }
 
-static YaepStateSetCoreTermLookAhead *lookup_cached_core_term_lookahead(YaepParseState *ps,
-                                                                        YaepSymbol *THE_TERMINAL,
-                                                                        YaepSymbol *NEXT_TERMINAL,
-                                                                        YaepStateSet *set)
+static YaepStateSetTermLookAhead *lookup_cached_set_term_lookahead(YaepParseState *ps,
+                                                                   YaepSymbol *THE_TERMINAL,
+                                                                   YaepSymbol *NEXT_TERMINAL,
+                                                                   YaepStateSet *set)
 {
-    int i;
-    hash_table_entry_t *entry;
-    YaepStateSetCoreTermLookAhead *new_core_term_lookahead;
+    OS_TOP_EXPAND(ps->set_term_lookahead_os, sizeof(YaepStateSetTermLookAhead));
 
-    OS_TOP_EXPAND(ps->triplet_core_term_lookahead_os, sizeof(YaepStateSetCoreTermLookAhead));
+    YaepStateSetTermLookAhead *new_set_term_lookahead = (YaepStateSetTermLookAhead*)OS_TOP_BEGIN(ps->set_term_lookahead_os);
+    new_set_term_lookahead->set = set;
+    new_set_term_lookahead->term = THE_TERMINAL;
+    new_set_term_lookahead->lookahead_term = NEXT_TERMINAL?NEXT_TERMINAL->u.terminal.term_id:-1;
 
-    new_core_term_lookahead = (YaepStateSetCoreTermLookAhead*) OS_TOP_BEGIN(ps->triplet_core_term_lookahead_os);
-    new_core_term_lookahead->set = set;
-    new_core_term_lookahead->term = THE_TERMINAL;
-    new_core_term_lookahead->lookahead = NEXT_TERMINAL?NEXT_TERMINAL->u.terminal.term_id:-1;
+    memset(new_set_term_lookahead->result, 0, MAX_CACHED_GOTO_RESULTS*sizeof(new_set_term_lookahead->result[0]));
 
-    for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
-    {
-        new_core_term_lookahead->result[i] = NULL;
-    }
-    new_core_term_lookahead->curr = 0;
+    new_set_term_lookahead->curr = 0;
     // We write into the hashtable using the entry point! Yay!
     // I.e. there is no write hash table entry function.....
-    entry = find_hash_table_entry(ps->cache_stateset_core_term_lookahead, new_core_term_lookahead, true);
+    YaepStateSetTermLookAhead **stlg = (YaepStateSetTermLookAhead**)find_hash_table_entry(ps->cache_stateset_term_lookahead, new_set_term_lookahead, true);
 
-    if (*entry != NULL)
+    if (*stlg != NULL)
     {
         YaepStateSet *s;
 
-        OS_TOP_NULLIFY(ps->triplet_core_term_lookahead_os);
-        for(i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
+        OS_TOP_NULLIFY(ps->set_term_lookahead_os);
+        for(int i = 0; i < MAX_CACHED_GOTO_RESULTS; i++)
         {
-            if ((s = ((YaepStateSetCoreTermLookAhead*)*entry)->result[i]) == NULL)
-            {
-                break;
-            }
-            else if (check_cached_transition_set(ps,
-                                                 s,
-                                                 ((YaepStateSetCoreTermLookAhead*)*entry)->place[i]))
+            s = (*stlg)->result[i];
+            if (s == NULL) break;
+            if (can_transition_to_set(ps, s, (*stlg)->place[i]))
             {
                 ps->new_set = s;
                 ps->n_goto_successes++;
+                if (xmq_trace_enabled_)
+                {
+                    YaepSymbol *lookahead_symb = symb_find_by_term_id(ps, new_set_term_lookahead->lookahead_term);
+                    const char *losymb = "";
+                    if (lookahead_symb && lookahead_symb->hr) losymb = lookahead_symb->hr;
+
+                    yaep_trace(ps, "found stlg [s%d %s %s] -> s%d",
+                               new_set_term_lookahead->set->id,
+                               new_set_term_lookahead->term->hr,
+                               losymb,
+                               ps->new_set->id);
+                }
                 break;
             }
         }
     }
     else
     {
-        OS_TOP_FINISH(ps->triplet_core_term_lookahead_os);
-        // Write the new_core_term_lookahead triplet into the hash table.
-        *entry = (hash_table_entry_t)new_core_term_lookahead;
-        ps->num_triplets_core_term_lookahead++;
-        debug_info(ps, "cached core-term-lookahead");
+        OS_TOP_FINISH(ps->set_term_lookahead_os);
+        // Write the new_set_term_lookahead triplet into the hash table.
+        *stlg = new_set_term_lookahead;
+        ps->num_set_term_lookahead++;
+
+        /*
+        if (xmq_trace_enabled_)
+        {
+            YaepSymbol *lookahead_symb = symb_find_by_term_id(ps, new_set_term_lookahead->lookahead_term);
+            const char *losymb = "";
+            if (lookahead_symb && lookahead_symb->hr) losymb = lookahead_symb->hr;
+            yaep_trace(ps, "create stlg [s%d %s %s]",
+                       new_set_term_lookahead->set->id,
+                       new_set_term_lookahead->term->hr,
+                       losymb);
+                       }*/
     }
 
-    return (YaepStateSetCoreTermLookAhead*)*entry;
+    return *stlg;
 }
 
 /* Save(set, term, lookahead) -> new_set in the table. */
-static void save_cached_set(YaepParseState *ps, YaepStateSetCoreTermLookAhead *entry, YaepSymbol *NEXT_TERMINAL)
+static void save_cached_set(YaepParseState *ps, YaepStateSetTermLookAhead *entry, YaepSymbol *NEXT_TERMINAL)
 {
     int i = entry->curr;
     entry->result[i] = ps->new_set;
     entry->place[i] = ps->state_set_k;
-    entry->lookahead = NEXT_TERMINAL ? NEXT_TERMINAL->u.terminal.term_id : -1;
+    entry->lookahead_term = NEXT_TERMINAL ? NEXT_TERMINAL->u.terminal.term_id : -1;
     entry->curr = (i + 1) % MAX_CACHED_GOTO_RESULTS;
+
+    if (xmq_trace_enabled_)
+    {
+        YaepSymbol *lookahead_symb = symb_find_by_term_id(ps, entry->lookahead_term);
+        const char *losymb = "";
+        if (lookahead_symb && lookahead_symb->hr) losymb = lookahead_symb->hr;
+        yaep_trace(ps, "store stlg [s%d %s %s] -> s%d",
+                   entry->set->id,
+                   entry->term->hr,
+                   losymb,
+                   ps->new_set->id);
+    }
 }
 
 static void perform_parse(YaepParseState *ps)
 {
+    yaep_debug(ps, "perform_parse()");
     error_recovery_init(ps);
     build_start_set(ps);
 
@@ -23235,7 +24574,7 @@ static void perform_parse(YaepParseState *ps)
     {
         MemBuffer *mb = new_membuffer();
         print_state_set(mb, ps, ps->new_set, 0);
-        debug_mb("ixml.pa.st=", mb);
+        debug_mb("ixml.pa.state=", mb);
         free_membuffer_and_free_content(mb);
     }
 
@@ -23245,7 +24584,8 @@ static void perform_parse(YaepParseState *ps)
     for(; ps->tok_i < ps->input_len; ps->tok_i++)
     {
         // This assert is TODO! Theoretically the state_set_k could be less than tok_i
-        // assuming a state set has been reused. So far I have not seen that, so assume state_set_k == tok_i == index of input char.
+        // assuming a state set has been reused.
+        // So far I have not seen that, so assume state_set_k == tok_i == index of input char.
         assert(ps->tok_i == ps->state_set_k);
 
         YaepSymbol *THE_TERMINAL = ps->input[ps->tok_i].symb;
@@ -23258,7 +24598,19 @@ static void perform_parse(YaepParseState *ps)
 
         assert(ps->tok_i == ps->state_set_k);
 
-        debug_info(ps, "LOOP token %s next %s", THE_TERMINAL->hr, NEXT_TERMINAL?NEXT_TERMINAL->hr:"?");
+        if (xmq_verbose_enabled_ && ps->tok_i % 100000 == 0)
+        {
+            verbose_stats(ps);
+        }
+        debug("ixml.pa.token=", "@%d %s", ps->tok_i, THE_TERMINAL->hr);
+        if (NEXT_TERMINAL && xmq_trace_enabled_)
+        {
+            yaep_view(ps, "READ %s next %s", THE_TERMINAL->hr, NEXT_TERMINAL->hr);
+        }
+        else
+        {
+            yaep_view(ps, "READ %s", THE_TERMINAL->hr);
+        }
 
         YaepStateSet *set = ps->state_sets[ps->state_set_k];
         ps->new_set = NULL;
@@ -23266,7 +24618,7 @@ static void perform_parse(YaepParseState *ps)
 #ifdef USE_SET_HASH_TABLE
         // This command also adds the set to the hashtable if it does not already exist.
         // As a side effect it writes into ps->new_set
-        YaepStateSetCoreTermLookAhead *entry = lookup_cached_core_term_lookahead(ps, THE_TERMINAL, NEXT_TERMINAL, set);
+        YaepStateSetTermLookAhead *entry = lookup_cached_set_term_lookahead(ps, THE_TERMINAL, NEXT_TERMINAL, set);
 #endif
 
         if (ps->new_set == NULL)
@@ -23286,15 +24638,16 @@ static void perform_parse(YaepParseState *ps)
                 }
             }
 
+            /*
             if (ps->run.debug)
             {
                 MemBuffer *mb = new_membuffer();
                 membuffer_printf(mb, "input[%d]=", ps->tok_i);
                 print_symbol(mb, THE_TERMINAL, true);
                 membuffer_printf(mb, " s%d core%d -> csl%d", set->id, set->core->id, core_symb_to_predcomps->id);
-                debug_mb("ixml.pa=", mb);
+                debug_mb("ixml.pa.scan=", mb);
                 free_membuffer_and_free_content(mb);
-            }
+                }*/
 
             // Do the actual predict/complete cycle.
             complete_and_predict_new_state_set(ps, set, core_symb_to_predcomps, THE_TERMINAL, NEXT_TERMINAL);
@@ -23311,938 +24664,16 @@ static void perform_parse(YaepParseState *ps)
         {
             MemBuffer *mb = new_membuffer();
             print_state_set(mb, ps, ps->new_set, ps->state_set_k);
-            debug_mb("ixml.pa.st=", mb);
+            debug_mb("ixml.pa.state=", mb);
             free_membuffer_and_free_content(mb);
         }
     }
     free_error_recovery(ps);
+
+    verbose_stats(ps);
 }
 
-static unsigned parse_state_hash(hash_table_entry_t s)
-{
-    YaepParseTreeBuildState*state =((YaepParseTreeBuildState*) s);
 
-    /* The table contains only states with dot at the end of rule. */
-    assert(state->dot_j == state->rule->rhs_len);
-    return(((jauquet_prime_mod32* hash_shift +
-             (unsigned)(size_t) state->rule)* hash_shift +
-             state->from_i)* hash_shift + state->state_set_k);
-}
-
-static bool parse_state_eq(hash_table_entry_t s1, hash_table_entry_t s2)
-{
-    YaepParseTreeBuildState*state1 =((YaepParseTreeBuildState*) s1);
-    YaepParseTreeBuildState*state2 =((YaepParseTreeBuildState*) s2);
-
-    /* The table contains only states with dot at the end of rule.*/
-    assert(state1->dot_j == state1->rule->rhs_len
-            && state2->dot_j == state2->rule->rhs_len);
-    return(state1->rule == state2->rule && state1->from_i == state2->from_i
-            && state1->state_set_k == state2->state_set_k);
-}
-
-/* The following function initializes work with parser states.*/
-static void parse_state_init(YaepParseState *ps)
-{
-    ps->free_parse_state = NULL;
-    OS_CREATE(ps->parse_state_os, ps->run.grammar->alloc, 0);
-    if (!ps->run.grammar->one_parse_p)
-    {
-        ps->map_rule_orig_statesetind_to_internalstate =
-            create_hash_table(ps->run.grammar->alloc, ps->input_len* 2,
-                              (hash_table_hash_function)parse_state_hash,
-                              (hash_table_eq_function)parse_state_eq);
-    }
-}
-
-/* The following function returns new parser state.*/
-static YaepParseTreeBuildState *parse_state_alloc(YaepParseState *ps)
-{
-    YaepParseTreeBuildState*result;
-
-    if (ps->free_parse_state == NULL)
-    {
-        OS_TOP_EXPAND(ps->parse_state_os, sizeof(YaepParseTreeBuildState));
-        result =(YaepParseTreeBuildState*) OS_TOP_BEGIN(ps->parse_state_os);
-        OS_TOP_FINISH(ps->parse_state_os);
-    }
-    else
-    {
-        result = ps->free_parse_state;
-        ps->free_parse_state =(YaepParseTreeBuildState*) ps->free_parse_state->rule;
-    }
-    return result;
-}
-
-/* The following function frees STATE.*/
-static void parse_state_free(YaepParseState *ps, YaepParseTreeBuildState*state)
-{
-    state->rule = (YaepRule*)ps->free_parse_state;
-    ps->free_parse_state = state;
-}
-
-/* The following function searches for state in the table with the
-   same characteristics as "state".  If found, then it returns a pointer
-   to the state in the table.  Otherwise the function makes copy of
-  *STATE, inserts into the table and returns pointer to copied state.
-   In the last case, the function also sets up*NEW_P.*/
-static YaepParseTreeBuildState *parse_state_insert(YaepParseState *ps, YaepParseTreeBuildState *state, bool *new_p)
-{
-    YaepParseTreeBuildState **entry = (YaepParseTreeBuildState**)find_hash_table_entry(
-        ps->map_rule_orig_statesetind_to_internalstate,
-        state,
-        true);
-
-    *new_p = false;
-
-    if (*entry != NULL)
-    {
-        return *entry;
-    }
-
-    *new_p = true;
-
-    /* We make copy because state_set_k can be changed in further processing state. */
-    *entry = parse_state_alloc(ps);
-    **entry = *state;
-
-    return *entry;
-}
-
-static void free_parse_state(YaepParseState *ps)
-{
-    if (!ps->run.grammar->one_parse_p)
-    {
-        delete_hash_table(ps->map_rule_orig_statesetind_to_internalstate);
-    }
-    OS_DELETE(ps->parse_state_os);
-}
-
-/* The following function places translation NODE into *PLACE and
-   creates alternative nodes if it is necessary. */
-static void place_translation(YaepParseState *ps, YaepTreeNode **place, YaepTreeNode *node)
-{
-    YaepTreeNode *alt, *next_alt;
-
-    assert(place != NULL);
-    if (*place == NULL)
-    {
-        *place = node;
-        return;
-    }
-    /* We need an alternative.*/
-
-    ps->n_parse_alt_nodes++;
-
-    alt =(YaepTreeNode*)(*ps->run.parse_alloc)(sizeof(YaepTreeNode));
-    alt->type = YAEP_ALT;
-    alt->val.alt.node = node;
-    if ((*place)->type == YAEP_ALT)
-    {
-        alt->val.alt.next =*place;
-    }
-    else
-    {
-        /* We need alternative node for the 1st
-           alternative too.*/
-        ps->n_parse_alt_nodes++;
-        next_alt = alt->val.alt.next
-            =((YaepTreeNode*)
-              (*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
-        next_alt->type = YAEP_ALT;
-        next_alt->val.alt.node =*place;
-        next_alt->val.alt.next = NULL;
-    }
-   *place = alt;
-}
-
-static YaepTreeNode *copy_anode(YaepParseState *ps,
-                                YaepTreeNode **place,
-                                YaepTreeNode *anode,
-                                YaepRule *rule,
-                                int rhs_offset)
-{
-    YaepTreeNode*node;
-    int i;
-
-    node = ((YaepTreeNode*)(*ps->run.parse_alloc)(sizeof(YaepTreeNode)
-                                              + sizeof(YaepTreeNode*)
-                                              *(rule->trans_len + 1)));
-   *node =*anode;
-    node->val.anode.children = ((YaepTreeNode**)((char*) node + sizeof(YaepTreeNode)));
-    for(i = 0; i <= rule->trans_len; i++)
-    {
-        node->val.anode.children[i] = anode->val.anode.children[i];
-    }
-    node->val.anode.children[rhs_offset] = NULL;
-    place_translation(ps, place, node);
-
-    return node;
-}
-
-/* The hash of the memory reference. */
-static unsigned reserv_mem_hash(hash_table_entry_t m)
-{
-    return (size_t)m;
-}
-
-/* The equity of the memory reference. */
-static bool reserv_mem_eq(hash_table_entry_t m1, hash_table_entry_t m2)
-{
-    return m1 == m2;
-}
-
-/* The following function sets up minimal cost for each abstract node.
-   The function returns minimal translation corresponding to NODE.
-   The function also collects references to memory which can be
-   freed. Remeber that the translation is DAG, altenatives form lists
-   (alt node may not refer for another alternative). */
-static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, int *cost)
-{
-    YaepTreeNode*child,*alt,*next_alt,*result = NULL;
-    int i, min_cost = INT_MAX;
-
-    assert(node != NULL);
-    switch(node->type)
-    {
-    case YAEP_NIL:
-    case YAEP_ERROR:
-    case YAEP_TERM:
-        if (ps->run.parse_free != NULL)
-        {
-            VLO_ADD_MEMORY(ps->tnodes_vlo, &node, sizeof(node));
-        }
-       *cost = 0;
-        return node;
-    case YAEP_ANODE:
-        if (node->val.anode.cost >= 0)
-        {
-            if (ps->run.parse_free != NULL)
-            {
-                VLO_ADD_MEMORY(ps->tnodes_vlo, &node, sizeof(node));
-            }
-            for (i = 0; (child = node->val.anode.children[i]) != NULL; i++)
-            {
-                node->val.anode.children[i] = prune_to_minimal(ps, child, cost);
-                if (node->val.anode.children[i] != child)
-                {
-                    //fprintf(stderr, "PRUNEDDDDDDD\n");
-                }
-                node->val.anode.cost += *cost;
-            }
-           *cost = node->val.anode.cost;
-            node->val.anode.cost = -node->val.anode.cost - 1;        /* flag of visit*/
-        }
-        return node;
-    case YAEP_ALT:
-        for(alt = node; alt != NULL; alt = next_alt)
-        {
-            if (ps->run.parse_free != NULL)
-            {
-                VLO_ADD_MEMORY(ps->tnodes_vlo, &alt, sizeof(alt));
-            }
-            next_alt = alt->val.alt.next;
-            alt->val.alt.node = prune_to_minimal(ps, alt->val.alt.node, cost);
-            if (alt == node || min_cost > *cost)
-            {
-                if (ps->run.debug)
-                {
-                    fprintf(stderr, "FOUND smaller cost %d %s\n", *cost, alt->val.alt.node->val.anode.name);
-                }
-                min_cost = *cost;
-                alt->val.alt.next = NULL;
-                result = alt;
-            }
-            else if (min_cost ==*cost && !ps->run.grammar->one_parse_p)
-            {
-                alt->val.alt.next = result;
-                result = alt;
-            }
-        }
-       *cost = min_cost;
-        return(result->val.alt.next == NULL ? result->val.alt.node : result);
-    default:
-        assert(false);
-    }
-   *cost = 0;
-    return NULL;
-}
-
-/* The following function traverses the translation collecting
-   reference to memory which may not be freed.*/
-static void traverse_pruned_translation(YaepParseState *ps, YaepTreeNode *node)
-{
-    YaepTreeNode*child;
-    hash_table_entry_t*entry;
-    int i;
-
-next:
-    assert(node != NULL);
-    if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->set_of_reserved_memory, node, true)) == NULL)
-    {
-       *entry = (hash_table_entry_t)node;
-    }
-    switch(node->type)
-    {
-    case YAEP_NIL:
-    case YAEP_ERROR:
-    case YAEP_TERM:
-        break;
-    case YAEP_ANODE:
-        if (ps->run.parse_free != NULL && *(entry = find_hash_table_entry(ps->set_of_reserved_memory,
-                                                                      node->val.anode.name,
-                                                                      true)) == NULL)
-        {
-            *entry =(hash_table_entry_t) node->val.anode.name;
-        }
-        for(i = 0;(child = node->val.anode.children[i]) != NULL; i++)
-        {
-            traverse_pruned_translation(ps, child);
-        }
-        // FIXME Is this assert needed? What is its purpose?
-        // assert(node->val.anode.cost < 0);
-        node->val.anode.cost = -node->val.anode.cost - 1;
-        break;
-    case YAEP_ALT:
-        traverse_pruned_translation(ps, node->val.alt.node);
-        if ((node = node->val.alt.next) != NULL)
-            goto next;
-        break;
-    default:
-        assert(false);
-    }
-
-    return;
-}
-
-/* The function finds and returns a minimal cost parse(s). */
-static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *root)
-{
-    YaepTreeNode**node_ptr;
-    int cost;
-
-    if (ps->run.parse_free != NULL)
-    {
-        ps->set_of_reserved_memory = create_hash_table(ps->run.grammar->alloc, ps->input_len* 4,
-                                                       (hash_table_hash_function)reserv_mem_hash,
-                                                       (hash_table_eq_function)reserv_mem_eq);
-
-        VLO_CREATE(ps->tnodes_vlo, ps->run.grammar->alloc, ps->input_len* 4* sizeof(void*));
-    }
-    root = prune_to_minimal(ps, root, &cost);
-
-    traverse_pruned_translation(ps, root);
-
-    if (ps->run.parse_free != NULL)
-    {
-        for(node_ptr = (YaepTreeNode**)VLO_BEGIN(ps->tnodes_vlo);
-            node_ptr <(YaepTreeNode**)VLO_BOUND(ps->tnodes_vlo);
-            node_ptr++)
-        {
-            if (*find_hash_table_entry(ps->set_of_reserved_memory,*node_ptr, true) == NULL)
-            {
-                if ((*node_ptr)->type == YAEP_ANODE
-                    &&*find_hash_table_entry(ps->set_of_reserved_memory,
-                                             (*node_ptr)->val.anode.name,
-                                             true) == NULL)
-                {
-                    // (*ps->run.parse_free)((void*)(*node_ptr)->val.anode.name);
-                }
-                //(*ps->run.parse_free)(*node_ptr);
-            }
-        }
-        VLO_DELETE(ps->tnodes_vlo);
-        delete_hash_table(ps->set_of_reserved_memory);
-    }
-
-    return root;
-}
-
-static void loop_stack(YaepTreeNode **result,
-                       int n_candidates,
-                       YaepParseState *ps,
-                       YaepTreeNode *empty_node,
-                       YaepTreeNode *error_node,
-                       YaepStateSet *set,
-                       YaepDottedRule *dotted_rule,
-                       bool *ambiguous_p)
-{
-    YaepParseTreeBuildState root_state;
-    YaepTreeNode root_anode;
-
-    vlo_t stack, orig_states;
-
-    YaepTreeNode **term_node_array = NULL;
-
-    VLO_CREATE(stack, ps->run.grammar->alloc, 10000);
-
-    if (!ps->run.grammar->one_parse_p)
-    {
-        /* We need this array to reuse terminal nodes when building a parse tree with ALT nodes.
-           I.e. a tree with multiple possible parses. */
-        size_t term_node_array_size = ps->input_len * sizeof(YaepTreeNode*);
-        term_node_array = (YaepTreeNode**)yaep_malloc(ps->run.grammar->alloc, term_node_array_size);
-        memset(term_node_array, 0, term_node_array_size);
-        /* The following is used to check necessity to create current state with different state_set_k. */
-        VLO_CREATE(orig_states, ps->run.grammar->alloc, 0);
-    }
-
-    // The root abstract node points to the result tree pointer.
-    root_anode.val.anode.children = result;
-    // The root state pointsto the root abstract node.
-    root_state.anode = &root_anode;
-
-    // Push a new state on the stack
-    YaepParseTreeBuildState *state = parse_state_alloc(ps);
-    VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
-    ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
-
-    YaepRule *rule = state->rule = dotted_rule->rule;
-    state->dotted_rule = dotted_rule;
-    state->dot_j = dotted_rule->dot_j;
-    state->from_i = 0;
-    state->state_set_k = ps->state_set_k;
-
-    // Again is state_set_k always == tok_i ????
-    assert(ps->state_set_k == ps->tok_i);
-
-    state->parent_anode_state = &root_state;
-    state->parent_rhs_offset = 0;
-    state->anode = NULL;
-
-    if (ps->run.debug)
-    {
-        // Log the starting node.
-        MemBuffer *mb = new_membuffer();
-	membuffer_printf(mb, "adding (s%d,d%d) [%d-%d]    ",
-                         state->state_set_k,
-                         state->dotted_rule->id,
-                         state->from_i,
-                         state->state_set_k);
-	print_rule(mb, ps, state->rule);
-        debug_mb("ixml.tr=", mb);
-        free_membuffer_and_free_content(mb);
-    }
-
-    while (VLO_LENGTH(stack) != 0)
-    {
-        if (ps->run.debug && state->dot_j == state->rule->rhs_len)
-        {
-            // top = (long) VLO_LENGTH(stack) / sizeof(YaepParseTreeBuildState*) - 1
-            MemBuffer *mb = new_membuffer();
-            membuffer_printf(mb, "processing (s%d,dri%d) [%d-%d]    ", state->state_set_k, state->dotted_rule->id, state->from_i, state->state_set_k);
-            print_rule(mb, ps, state->rule);
-            debug_mb("ixml.tr.c=", mb);
-            free_membuffer_and_free_content(mb);
-        }
-        int pos_j = --state->dot_j;
-        rule = state->rule;
-        YaepParseTreeBuildState *parent_anode_state = state->parent_anode_state;
-        YaepTreeNode *parent_anode = parent_anode_state->anode;
-        int parent_rhs_offset = state->parent_rhs_offset;
-        YaepTreeNode *anode = state->anode;
-        int rhs_offset = rule->order[pos_j];
-        int state_set_k = state->state_set_k;
-        int from_i = state->from_i;
-        if (pos_j < 0)
-        {
-            /* We've processed all rhs of the rule.*/
-            if (ps->run.debug)
-            {
-                MemBuffer *mb = new_membuffer();
-                membuffer_printf(mb, "popping    ");
-                print_rule(mb, ps, state->rule);
-                debug_mb("ixml.tr.c=", mb);
-                free_membuffer_and_free_content(mb);
-            }
-            parse_state_free(ps, state);
-            VLO_SHORTEN(stack, sizeof(YaepParseTreeBuildState*));
-            if (VLO_LENGTH(stack) != 0)
-            {
-                state = ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1];
-            }
-            if (parent_anode != NULL && rule->trans_len == 0 && anode == NULL)
-            {
-                /* We do dotted_ruleuce nothing but we should. So write empty node.*/
-                place_translation(ps, parent_anode->val.anode.children + parent_rhs_offset, empty_node);
-                empty_node->val.nil.used = 1;
-            } else
-            if (anode != NULL)
-            {
-                /* Change NULLs into empty nodes.  We can not make it
-                 the first time because when building several parses
-                 the NULL means flag of absence of translations(see
-                 function `place_translation'). */
-                for (int i = 0; i < rule->trans_len; i++)
-                {
-                    if (anode->val.anode.children[i] == NULL)
-                    {
-                        anode->val.anode.children[i] = empty_node;
-                        empty_node->val.nil.used = 1;
-                    }
-                }
-            }
-
-            continue;
-        }
-        assert(pos_j >= 0);
-        YaepTreeNode *node;
-        YaepSymbol *symb = rule->rhs[pos_j];
-        if (symb->is_terminal)
-        {
-            /* Terminal before dot:*/
-            state_set_k--; /* l*/
-            /* Because of error recovery input [state_set_k].symb may be not equal to symb.*/
-            //assert(ps->input[state_set_k].symb == symb);
-            if (parent_anode != NULL && rhs_offset >= 0)
-            {
-                /* We should generate and use the translation of the terminal.  Add reference to the current node.*/
-                if (symb == ps->run.grammar->term_error)
-                {
-                    // Oups error node.
-                    node = error_node;
-                    error_node->val.error.used = 1;
-                } else
-                if (!ps->run.grammar->one_parse_p && (node = term_node_array[state_set_k]) != NULL)
-                {
-                    // Reuse existing terminal node.
-                } else
-                {
-                    // Allocate terminal node.
-                    ps->n_parse_term_nodes++;
-                    node = ((YaepTreeNode*) (*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
-                    node->type = YAEP_TERM;
-                    node->val.terminal.code = symb->u.terminal.code;
-                    if (rule->marks && rule->marks[pos_j])
-                    {
-                        // Copy the ixml mark from the rhs position on to the terminal.
-                        node->val.terminal.mark = rule->marks[pos_j];
-                    }
-                    // Copy any attr from input token to parsed terminal.
-                    node->val.terminal.attr = ps->input[state_set_k].attr;
-                    if (!ps->run.grammar->one_parse_p)
-                    {
-                        term_node_array[state_set_k] = node;
-                    }
-                }
-
-                YaepTreeNode **placement = NULL;
-                if (anode)
-                {
-                    placement = anode->val.anode.children + rhs_offset;
-                } else
-                {
-                    placement = parent_anode->val.anode.children + parent_rhs_offset;
-                }
-                place_translation(ps, placement, node);
-            }
-            if (pos_j != 0)
-            {
-                state->state_set_k = state_set_k;
-            }
-            continue;
-        }
-        /* Nonterminal before dot: */
-        set = ps->state_sets[state_set_k];
-        YaepStateSetCore *set_core = set->core;
-        YaepCoreSymbToPredComps *core_symb_to_predcomps = core_symb_to_predcomps_find(ps, set_core, symb);
-        debug("ixml.pa.c=", "core core%d symb %s -> %p", set_core->id, symb->hr, core_symb_to_predcomps);
-        if (!core_symb_to_predcomps)
-            continue;
-
-        assert(core_symb_to_predcomps->completions.len != 0);
-        n_candidates = 0;
-        YaepParseTreeBuildState *orig_state = state;
-        if (!ps->run.grammar->one_parse_p)
-        {
-            VLO_NULLIFY(orig_states);
-        }
-        for (int i = 0; i < core_symb_to_predcomps->completions.len; i++)
-        {
-            int rule_index_in_core = core_symb_to_predcomps->completions.ids[i];
-            dotted_rule = set_core->dotted_rules[rule_index_in_core];
-            int dotted_rule_from_i;
-            if (rule_index_in_core < set_core->num_started_dotted_rules)
-            {
-                // The state_set_k is the tok_i for which the state set was created.
-                // Ie, it is the to_i inside the Earley item.
-                // Now subtract the matched length from this to_i to get the from_i
-                // which is the origin.
-                dotted_rule_from_i = state_set_k - set->matched_lengths[rule_index_in_core];
-            } else
-            if (rule_index_in_core < set_core->num_all_matched_lengths)
-            {
-                // Parent??
-                dotted_rule_from_i = state_set_k - set->matched_lengths[set_core->parent_dotted_rule_ids[rule_index_in_core]];
-            } else
-            {
-                dotted_rule_from_i = state_set_k;
-            }
-
-            YaepStateSet *check_set = ps->state_sets[dotted_rule_from_i];
-            YaepStateSetCore *check_set_core = check_set->core;
-            YaepCoreSymbToPredComps *check_core_symb_to_predcomps = core_symb_to_predcomps_find(ps, check_set_core, symb);
-            assert(check_core_symb_to_predcomps != NULL);
-            bool found = false;
-            if (ps->run.debug)
-            {
-                MemBuffer *mb = new_membuffer();
-                membuffer_printf(mb, "trying (s%d,d%d) [%d-%d]  csl%d check_csl%d  ", state_set_k, dotted_rule->id, dotted_rule_from_i, state_set_k,
-                                core_symb_to_predcomps->id, check_core_symb_to_predcomps->id);
-                print_rule(mb, ps, dotted_rule->rule);
-                debug_mb("ixml.tr.c=", mb);
-                free_membuffer_and_free_content(mb);
-            }
-            for (int j = 0; j < check_core_symb_to_predcomps->predictions.len; j++)
-            {
-                int rule_index_in_check_core = check_core_symb_to_predcomps->predictions.ids[j];
-                YaepDottedRule *check_dotted_rule = check_set->core->dotted_rules[rule_index_in_check_core];
-                if (check_dotted_rule->rule != rule || check_dotted_rule->dot_j != pos_j)
-                {
-                    continue;
-                }
-                int check_dotted_rule_from_i = dotted_rule_from_i;
-                if (rule_index_in_check_core < check_set_core->num_all_matched_lengths)
-                {
-                    if (rule_index_in_check_core < check_set_core->num_started_dotted_rules)
-                    {
-                        check_dotted_rule_from_i = dotted_rule_from_i - check_set->matched_lengths[rule_index_in_check_core];
-                    } else
-                    {
-                        check_dotted_rule_from_i = (dotted_rule_from_i
-                                        - check_set->matched_lengths[check_set_core->parent_dotted_rule_ids[rule_index_in_check_core]]);
-                    }
-                }
-                if (check_dotted_rule_from_i == from_i)
-                {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found)
-            {
-                continue;
-            }
-            if (n_candidates != 0)
-            {
-                // Oups, n_candidates is > 0 already, this means that a previous completion matched.
-                // We have more than one parse.
-                *ambiguous_p = true;
-                if (ps->run.grammar->one_parse_p)
-                {
-                    break;
-                }
-            }
-            YaepRule *dotted_rule_rule = dotted_rule->rule;
-            if (n_candidates == 0)
-            {
-                orig_state->state_set_k = dotted_rule_from_i;
-            }
-            if (parent_anode != NULL && rhs_offset >= 0)
-            {
-                /* We should generate and use the translation of the nonterminal. */
-                YaepParseTreeBuildState *curr_state = orig_state;
-                anode = orig_state->anode;
-                /* We need translation of the rule. */
-                if (n_candidates != 0)
-                {
-                    assert(!ps->run.grammar->one_parse_p);
-                    if (n_candidates == 1)
-                    {
-                        VLO_EXPAND(orig_states, sizeof(YaepParseTreeBuildState*));
-                        ((YaepParseTreeBuildState**) VLO_BOUND(orig_states))[-1] = orig_state;
-                    }
-                    int j = VLO_LENGTH(orig_states) / sizeof(YaepParseTreeBuildState*) - 1;
-                    while (j >= 0)
-                    {
-                        if (((YaepParseTreeBuildState**) VLO_BEGIN(orig_states))[j]->state_set_k == dotted_rule_from_i)
-                        {
-                            break;
-                        }
-                        j--;
-                    }
-                    if (j >= 0)
-                    {
-                        /* [A -> x., n] & [A -> y., n]*/
-                        curr_state = ((YaepParseTreeBuildState**) VLO_BEGIN(orig_states))[j];
-                        anode = curr_state->anode;
-                    } else
-                    {
-                        /* [A -> x., n] & [A -> y., m] where n != m.*/
-                        /* It is different from the previous ones so add
-                         it to process.*/
-                        // Push a new state on the stack.
-                        state = parse_state_alloc(ps);
-                        VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
-                        ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
-                        *state = *orig_state;
-                        state->state_set_k = dotted_rule_from_i;
-                        if (anode != NULL)
-                        {
-                            state->anode = copy_anode(ps, parent_anode->val.anode.children + parent_rhs_offset, anode, rule, rhs_offset);
-                        }
-                        VLO_EXPAND(orig_states, sizeof(YaepParseTreeBuildState*));
-                        ((YaepParseTreeBuildState**) VLO_BOUND(orig_states))[-1] = state;
-                        if (ps->run.debug)
-                        {
-                            MemBuffer *mb = new_membuffer();
-                            membuffer_printf(mb, "* (f%d,d%d) add1 modified dotted_rule=", dotted_rule_from_i, state->dotted_rule->id);
-                            print_rule_with_dot(mb, ps, state->rule, state->dot_j);
-                            membuffer_printf(mb, " state->from_i=%d", state->from_i);
-                            debug_mb("ixml.tr.c=", mb);
-                            free_membuffer_and_free_content(mb);
-                            assert(false);
-                        }
-                        curr_state = state;
-                        anode = state->anode;
-                    }
-                }
-                /* WOOT? if (n_candidates != 0)*/
-                if (dotted_rule_rule->anode != NULL)
-                {
-                    /* This rule creates abstract node. */
-                    // Push a new state on the stack.
-                    state = parse_state_alloc(ps);
-                    VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
-                    ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
-                    state->rule = dotted_rule_rule;
-                    state->dotted_rule = dotted_rule;
-                    state->dot_j = dotted_rule->dot_j;
-                    state->from_i = dotted_rule_from_i;
-                    state->state_set_k = state_set_k;
-                    YaepParseTreeBuildState *table_state = NULL;
-                    _Bool new_p;
-                    if (!ps->run.grammar->one_parse_p)
-                    {
-                        table_state = parse_state_insert(ps, state, &new_p);
-                    }
-                    if (table_state == NULL || new_p)
-                    {
-                        /* Allocate abtract node. */
-                        ps->n_parse_abstract_nodes++;
-                        node = ((YaepTreeNode*) (*ps->run.parse_alloc)(sizeof(YaepTreeNode) + sizeof(YaepTreeNode*) * (dotted_rule_rule->trans_len + 1)));
-                        node->type = YAEP_ANODE;
-                        state->anode = node;
-                        if (table_state != NULL)
-                        {
-                            table_state->anode = node;
-                        }
-                        if (dotted_rule_rule->caller_anode == NULL)
-                        {
-                            dotted_rule_rule->caller_anode = ((char*) (*ps->run.parse_alloc)(strlen(dotted_rule_rule->anode) + 1));
-                            strcpy(dotted_rule_rule->caller_anode, dotted_rule_rule->anode);
-                        }
-                        node->val.anode.name = dotted_rule_rule->caller_anode;
-                        node->val.anode.cost = dotted_rule_rule->anode_cost;
-                        // IXML Copy the rule name -to the generated abstract node.
-                        node->val.anode.mark = dotted_rule_rule->mark;
-                        if (rule->marks && rule->marks[pos_j])
-                        {
-                            // But override the mark with the rhs mark!
-                            node->val.anode.mark = rule->marks[pos_j];
-                        }
-                        /////////
-                        node->val.anode.children = ((YaepTreeNode**) ((char*) node + sizeof(YaepTreeNode)));
-                        for (int k = 0; k <= dotted_rule_rule->trans_len; k++)
-                        {
-                            node->val.anode.children[k] = NULL;
-                        }
-                        if (anode == NULL)
-                        {
-                            state->parent_anode_state = curr_state->parent_anode_state;
-                            state->parent_rhs_offset = parent_rhs_offset;
-                        } else
-                        {
-                            state->parent_anode_state = curr_state;
-                            state->parent_rhs_offset = rhs_offset;
-                        }
-                        if (ps->run.debug)
-                        {
-                            MemBuffer *mb = new_membuffer();
-                            membuffer_printf(mb, "adding (s%d,d%d) [%d-%d] ", state->state_set_k, state->dotted_rule->id, state->from_i, state->state_set_k);
-                            print_rule(mb, ps, dotted_rule->rule);
-                            debug_mb("ixml.tr=", mb);
-                            free_membuffer_and_free_content(mb);
-                        }
-                    } else
-                    {
-                        /* We allready have the translation.*/
-                        assert(!ps->run.grammar->one_parse_p);
-                        parse_state_free(ps, state);
-                        state = ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1];
-                        node = table_state->anode;
-                        assert(node != NULL);
-                        if (ps->run.debug)
-                        {
-                            MemBuffer *mb = new_membuffer();
-                            membuffer_printf(mb, "* found prev. translation: state_set_k = %d, dotted_rule = ", state_set_k);
-                            print_dotted_rule(mb, ps, -1, dotted_rule, -1, -1, "woot2");
-                            membuffer_printf(mb, ", %d\n", dotted_rule_from_i);
-                            debug_mb("ixml.tr.c=", mb);
-                            free_membuffer_and_free_content(mb);
-                            // assert(false);
-                        }
-                    }
-                    YaepTreeNode **placement = NULL;
-                    if (anode)
-                    {
-                        placement = anode->val.anode.children + rhs_offset;
-                    } else
-                    {
-                        placement = parent_anode->val.anode.children + parent_rhs_offset;
-                    }
-                    place_translation(ps, placement, node);
-                } /* if (dotted_rule_rule->anode != NULL)*/else
-                if (dotted_rule->dot_j != 0)
-                {
-                    /* We should generate and use the translation of the
-                     nonterminal.  Add state to get a translation.*/
-                    // Push a new state on the stack
-                    state = parse_state_alloc(ps);
-                    VLO_EXPAND(stack, sizeof(YaepParseTreeBuildState*));
-                    ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1] = state;
-                    state->rule = dotted_rule_rule;
-                    state->dotted_rule = dotted_rule;
-                    state->dot_j = dotted_rule->dot_j;
-                    state->from_i = dotted_rule_from_i;
-                    state->state_set_k = state_set_k;
-                    state->parent_anode_state = (anode == NULL ? curr_state->parent_anode_state : curr_state);
-                    assert(state->parent_anode_state);
-                    state->parent_rhs_offset = anode == NULL ? parent_rhs_offset : rhs_offset;
-                    state->anode = NULL;
-                    if (ps->run.debug)
-                    {
-                        MemBuffer *mb = new_membuffer();
-                        membuffer_printf(mb, "* add3   state_set_k=%d   dotted_rule_from_i=%d    ", state_set_k, dotted_rule_from_i);
-                        print_rule(mb, ps, dotted_rule->rule);
-                        debug_mb("ixml.tr.c=", mb);
-                        free_membuffer_and_free_content(mb);
-                        //assert(false);
-                    }
-                } else
-                {
-                    /* Empty rule should dotted_ruleuce something not abtract
-                     node.  So place empty node.*/
-                    place_translation(ps, anode == NULL ? parent_anode->val.anode.children + parent_rhs_offset : anode->val.anode.children + rhs_offset,
-                                    empty_node);
-                    empty_node->val.nil.used = 1;
-                }
-            }
-            /* if (parent_anode != NULL && rhs_offset >= 0)*/                // Continue with next completion.
-            n_candidates++;
-        }
-        /* For all completions of the nonterminal.*//* We should have a parse.*/
-        assert(n_candidates != 0 && (!ps->run.grammar->one_parse_p || n_candidates == 1));
-    }
-    /* For all parser states.*/
-
-    VLO_DELETE(stack);
-
-    if (!ps->run.grammar->one_parse_p)
-    {
-        VLO_DELETE(orig_states);
-        yaep_free(ps->run.grammar->alloc, term_node_array);
-    }
-}
-
-static YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
-{
-    // Number of candiate trees found.
-    int n_candidates = 0;
-
-    // The result pointer points to the final parse tree.
-    YaepTreeNode *result;
-
-    ps->n_parse_term_nodes = ps->n_parse_abstract_nodes = ps->n_parse_alt_nodes = 0;
-
-    // Pick the final state set, where we completed the axiom $.
-    YaepStateSet *set = ps->state_sets[ps->state_set_k];
-    assert(ps->run.grammar->axiom != NULL);
-
-    /* We have only one start dotted_rule: "$ : <start symb> eof .". */
-    YaepDottedRule *dotted_rule = (set->core->dotted_rules != NULL ? set->core->dotted_rules[0] : NULL);
-
-    if (dotted_rule == NULL
-        || set->matched_lengths[0] != ps->state_set_k
-        || dotted_rule->rule->lhs != ps->run.grammar->axiom || dotted_rule->dot_j != dotted_rule->rule->rhs_len)
-    {
-        /* It is possible only if error recovery is switched off.
-           Because we always adds rule `axiom: error $eof'.*/
-        assert(!ps->run.grammar->error_recovery_p);
-        return NULL;
-    }
-    bool saved_one_parse_p = ps->run.grammar->one_parse_p;
-    if (ps->run.grammar->cost_p)
-    {
-        /* We need all parses to choose the minimal one. */
-        ps->run.grammar->one_parse_p = false;
-    }
-
-    parse_state_init(ps);
-
-    // The result tree starts empty.
-    result = NULL;
-
-    /* Create empty and error node:*/
-    YaepTreeNode *empty_node = ((YaepTreeNode*)(*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
-    empty_node->type = YAEP_NIL;
-    empty_node->val.nil.used = 0;
-
-    YaepTreeNode *error_node = ((YaepTreeNode*)(*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
-    error_node->type = YAEP_ERROR;
-    error_node->val.error.used = 0;
-
-    verbose("ixml=", "building tree");
-
-    loop_stack(&result, n_candidates, ps, empty_node, error_node, set, dotted_rule, ambiguous_p);
-
-    free_parse_state(ps);
-    ps->run.grammar->one_parse_p = saved_one_parse_p;
-    if (ps->run.grammar->cost_p && *ambiguous_p)
-    {
-        /* We can not build minimal tree during building parsing list
-           because we have not the translation yet. We can not make it
-           during parsing because the abstract nodes are created before
-           their children. */
-        result = find_minimal_translation(ps, result);
-    }
-    if (false)
-    {
-        fprintf(stderr, "(ixml) yaep parse tree: %p\n", result);
-        print_parse(ps, stderr, result);
-        fprintf(stderr, "\n");
-    }
-    if (false)
-    {
-        // Graphviz
-        fprintf(stderr, "digraph CFG {\n");
-        fprintf(stderr, "  node [shape=ellipse, fontsize=200];\n");
-        fprintf(stderr, "  ratio=fill;\n");
-        fprintf(stderr, "  ordering=out;\n");
-        fprintf(stderr, "  page = \"8.5, 11\"; // inches\n");
-        fprintf(stderr, "  size = \"7.5, 10\"; // inches\n\n");
-        print_parse(ps, stderr, result);
-        fprintf(stderr, "}\n");
-    }
-
-
-    /* Free empty and error node if they have not been used*/
-    if (ps->run.parse_free != NULL)
-    {
-        if (!empty_node->val.nil.used)
-        {
-            ps->run.parse_free(empty_node);
-        }
-        if (!error_node->val.error.used)
-        {
-            ps->run.parse_free(error_node);
-        }
-    }
-
-    assert(result != NULL && (!ps->run.grammar->one_parse_p || ps->n_parse_alt_nodes == 0));
-
-    return result;
-}
 
 static void *parse_alloc_default(int nmemb)
 {
@@ -24264,6 +24695,60 @@ static void parse_free_default(void *mem)
     free(mem);
 }
 
+static void print_statistics(YaepParseState *ps, bool *ambiguous_p, int table_searches, int table_collisions)
+{
+    if (ps->run.debug)
+    {
+        yaep_debug(ps, "print_statistics()");
+        yaep_trace(ps, "symbs_os=%zu", objstack_memusage(&ps->run.grammar->symbs_ptr->symbs_os));
+
+        yaep_trace(ps, "input_len=%d #s=%d #dotted_rules=%d",
+                   ps->input_len,
+                   ps->num_sets_total,
+                   ps->num_dotted_rules_total);
+
+        yaep_trace(ps, "#terminals=%d #nonterms=%d %s",
+                   ps->run.grammar->symbs_ptr->num_terminals,
+                   ps->run.grammar->symbs_ptr->num_nonterminals,
+                   *ambiguous_p ? "AMBIGUOUS " : "");
+
+        yaep_trace(ps, "#terminals=%d #nonterms=%d %s",
+                   ps->run.grammar->symbs_ptr->num_terminals,
+                   ps->run.grammar->symbs_ptr->num_nonterminals,
+                   *ambiguous_p ? "AMBIGUOUS " : "");
+        yaep_trace(ps, "#rules=%d lengths=%d",
+                 ps->run.grammar->rulestorage_ptr->num_rules,
+                 ps->run.grammar->rulestorage_ptr->n_rhs_lens);
+        yaep_trace(ps,  "#tokens=%d  #unique_dotted_rules=%d",
+                   ps->input_len, ps->num_all_dotted_rules);
+        yaep_trace(ps, "#terminal_sets=%d size=%d",
+                 ps->run.grammar->term_sets_ptr->n_term_sets, ps->run.grammar->term_sets_ptr->n_term_sets_size);
+        yaep_trace(ps, "#cores=%d #their start dotted_rules=%d",
+                 ps->num_set_cores, ps->num_set_core_start_dotted_rules);
+        yaep_trace(ps, "#parent indexes for some non start dotted_rules = %d",
+                 ps->num_parent_dotted_rule_ids);
+        yaep_trace(ps, "#unique set dist. vects = %d, their length = %d",
+                 ps->num_set_matched_lengths, ps->num_set_matched_lengths_len);
+        yaep_trace(ps, "#stl=%d goto_successes=%d",
+                ps->num_set_term_lookahead, ps->n_goto_successes);
+        yaep_trace(ps, "#cspc=%d cspc_vector_lengths=%d",
+                 ps->n_core_symb_pairs, ps->n_core_symb_to_predcomps_len);
+        yaep_trace(ps, "#unique transition vectors = %d, their length = %d",
+                ps->n_transition_vects, ps->n_transition_vect_len);
+        yaep_trace(ps, "#unique reduce vectors = %d, their length = %d",
+                 ps->n_reduce_vects, ps->n_reduce_vect_len);
+        yaep_trace(ps, "#term nodes = %d, #abstract nodes = %d",
+                 ps->n_parse_term_nodes, ps->n_parse_abstract_nodes);
+        yaep_trace(ps, "#alternative nodes = %d, #all nodes = %d",
+                 ps->n_parse_alt_nodes,
+                 ps->n_parse_term_nodes + ps->n_parse_abstract_nodes
+                 + ps->n_parse_alt_nodes);
+        if (table_searches == 0) table_searches++;
+        yaep_trace(ps, "#table collisions = %.2g%%(%d out of %d)",
+                 table_collisions* 100.0 / table_searches,
+                 table_collisions, table_searches);
+    }
+}
 /* The following function parses input according read grammar.
    ONE_PARSE_FLAG means build only one parse tree.  For unambiguous
    grammar the flag does not affect the result.  LA_LEVEL means usage
@@ -24288,7 +24773,6 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
 
     int code;
     bool tok_init_p, parse_init_p;
-    int table_collisions, table_searches;
 
     /* Set up parse allocation*/
     if (ps->run.parse_alloc == NULL)
@@ -24335,8 +24819,9 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     yaep_parse_init(ps, ps->input_len);
     parse_init_p = true;
     allocate_state_sets(ps);
-    table_collisions = get_all_collisions();
-    table_searches = get_all_searches();
+
+    int table_collisions_init = get_all_collisions();
+    int table_searches_init = get_all_searches();
 
     // Perform a parse.
     perform_parse(ps);
@@ -24344,51 +24829,10 @@ int yaepParse(YaepParseRun *pr, YaepGrammar *g)
     // Reconstruct a parse tree from the state sets.
     *root = build_parse_tree(ps, ambiguous_p);
 
-    table_collisions = get_all_collisions() - table_collisions;
-    table_searches = get_all_searches() - table_searches;
+    int table_collisions = get_all_collisions() - table_collisions_init;
+    int table_searches = get_all_searches() - table_searches_init;
 
-    if (ps->run.debug)
-    {
-        MemBuffer *mb = new_membuffer();
-        membuffer_printf(mb, "%sparse statistics\n#terminals = %d, #nonterms = %d\n",
-                *ambiguous_p ? "AMBIGUOUS " : "",
-                 ps->run.grammar->symbs_ptr->num_terminals, ps->run.grammar->symbs_ptr->num_nonterminals);
-        membuffer_printf(mb, "#rules = %d, rules size = %d\n",
-                 ps->run.grammar->rulestorage_ptr->num_rules,
-                 ps->run.grammar->rulestorage_ptr->n_rhs_lens + ps->run.grammar->rulestorage_ptr->num_rules);
-        membuffer_printf(mb, "#tokens = %d, #unique dotted_rules = %d\n",
-                 ps->input_len, ps->num_all_dotted_rules);
-        membuffer_printf(mb, "#terminal sets = %d, their size = %d\n",
-                 ps->run.grammar->term_sets_ptr->n_term_sets, ps->run.grammar->term_sets_ptr->n_term_sets_size);
-        membuffer_printf(mb, "#unique set cores = %d, #their start dotted_rules = %d\n",
-                 ps->num_set_cores, ps->num_set_core_start_dotted_rules);
-        membuffer_printf(mb, "#parent indexes for some non start dotted_rules = %d\n",
-                 ps->num_parent_dotted_rule_ids);
-        membuffer_printf(mb, "#unique set dist. vects = %d, their length = %d\n",
-                 ps->num_set_matched_lengths, ps->num_set_matched_lengths_len);
-        membuffer_printf(mb, "#unique sets = %d, #their start dotted_rules = %d\n",
-                 ps->num_sets_total, ps->num_dotted_rules_total);
-        membuffer_printf(mb, "#unique triples(set, term, lookahead) = %d, goto successes=%d\n",
-                ps->num_triplets_core_term_lookahead, ps->n_goto_successes);
-        membuffer_printf(mb, "#pairs(set core, symb) = %d, their trans+reduce vects length = %d\n",
-                 ps->n_core_symb_pairs, ps->n_core_symb_to_predcomps_len);
-        membuffer_printf(mb, "#unique transition vectors = %d, their length = %d\n",
-                ps->n_transition_vects, ps->n_transition_vect_len);
-        membuffer_printf(mb, "#unique reduce vectors = %d, their length = %d\n",
-                 ps->n_reduce_vects, ps->n_reduce_vect_len);
-        membuffer_printf(mb, "#term nodes = %d, #abstract nodes = %d\n",
-                 ps->n_parse_term_nodes, ps->n_parse_abstract_nodes);
-        membuffer_printf(mb, "#alternative nodes = %d, #all nodes = %d\n",
-                 ps->n_parse_alt_nodes,
-                 ps->n_parse_term_nodes + ps->n_parse_abstract_nodes
-                 + ps->n_parse_alt_nodes);
-        if (table_searches == 0) table_searches++;
-        membuffer_printf(mb, "#table collisions = %.2g%%(%d out of %d)",
-                 table_collisions* 100.0 / table_searches,
-                 table_collisions, table_searches);
-        debug_mb("ixml.st=", mb);
-        free_membuffer_and_free_content(mb);
-    }
+    print_statistics(ps, ambiguous_p, table_searches, table_collisions);
 
     free_state_sets(ps);
     free_inside_parse_state(ps);

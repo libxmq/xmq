@@ -24,8 +24,8 @@
    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef YAEP_TREE_H
-#define YAEP_TREE_H
+#ifndef YAEP_CSPC_H
+#define YAEP_CSPC_H
 
 #ifndef BUILDING_DIST_XMQ
 
@@ -33,24 +33,18 @@
 
 #endif
 
-/* Build the parse tree from the yaep parse. */
-YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p);
+YaepCoreSymbToPredComps *core_symb_to_predcomps_new(YaepParseState *ps, YaepStateSetCore*core, YaepSymbol*symb);
+void core_symb_to_predcomps_init(YaepParseState *ps);
+YaepCoreSymbToPredComps *core_symb_to_predcomps_find(YaepParseState *ps, YaepStateSetCore *core, YaepSymbol *symb);
+void free_core_symb_to_vect_lookup(YaepParseState *ps);
+void core_symb_to_predcomps_add_predict(YaepParseState *ps,
+                                        YaepCoreSymbToPredComps *core_symb_to_predcomps,
+                                        int rule_index_in_core);
+void core_symb_to_predcomps_add_complete(YaepParseState *ps,
+                                         YaepCoreSymbToPredComps *core_symb_to_predcomps,
+                                         int rule_index_in_core);
+void core_symb_to_predcomps_new_all_stop(YaepParseState *ps);
 
-/* Hash of translation visit node.*/
-unsigned trans_visit_node_hash(hash_table_entry_t n);
-
-/* Equality of translation visit nodes.*/
-bool trans_visit_node_eq(hash_table_entry_t n1, hash_table_entry_t n2);
-
-/* The following function returns the positive order number of node with number NUM.*/
-int canon_node_id(int id);
-
-/* The following function checks presence translation visit node with
-   given NODE in the table and if it is not present in the table, the
-   function creates the translation visit node and inserts it into
-   the table.*/
-YaepTreeNodeVisit *visit_node(YaepParseState *ps, YaepTreeNode*node);
-
-#define YAEP_TREE_MODULE
+#define YAEP_CSPC_MODULE
 
 #endif

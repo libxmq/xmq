@@ -179,12 +179,12 @@ static char *helper(size_t scale, size_t s, const char *suffix)
     s /= scale;
     size_t diff = o-(s*scale);
     if (diff == 0) {
-        char *buf = malloc(64);
+        char *buf = (char*)malloc(64);
         snprintf(buf, 64, "%zu.00%s", s, suffix);
         return buf;
     }
     size_t dec = (int)(100*(diff+1) / scale);
-    char *buf = malloc(64);
+    char *buf = (char*)malloc(64);
     snprintf(buf, 64, "%zu.%02zu%s", s, dec, suffix);
     return buf;
 }

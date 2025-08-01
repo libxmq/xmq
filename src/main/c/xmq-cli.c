@@ -2207,7 +2207,7 @@ bool cmd_quote_unquote(XMQCliCommand *command)
         if (command->add_nl)
         {
             size_t len = strlen(quoted_value);
-            char *q = malloc(len+2);
+            char *q = (char*)malloc(len+2);
             strcpy(q, quoted_value);
             strcat(q, "\n");
             free(quoted_value);
@@ -3427,7 +3427,7 @@ char *grab_name(const char *s, const char **out_name_start)
     assert(*i == '}');
     i++;
     size_t len = name_stop-name_start;
-    char *buf = malloc(len+1);
+    char *buf = (char*)malloc(len+1);
     *out_name_start = name_start;
     memcpy(buf, name_start, len);
     buf[len]  = 0;
