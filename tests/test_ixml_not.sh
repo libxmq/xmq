@@ -45,3 +45,5 @@ else
     cat $OUTPUT/${TEST_NAME}.output | sed "s|${OUTPUT}||"
     exit 1
 fi
+
+exit 0

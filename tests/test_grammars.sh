@@ -21,3 +21,27 @@ else
     echo "ERR: Failed to parse ixml.ixml"
     exit 1
 fi
+
+for i in grammars/data/*.ixml
+do
+    g="$i"
+    n="$(basename $g)"
+    n="${n%.ixml}-test"
+    testdir="$(dirname $g)/$n"
+
+    if [ -d "$testdir" ]
+    then
+        for t in $testdir/*.inp
+        do
+            o="${t%.inp}.out"
+            $PROG $i $t > $OUTPUT/tmp
+            if diff $OUTPUT/tmp $o
+            then
+                echo OK: $t
+            else
+                echo ERROR: $t
+                exit 1
+            fi
+        done
+    fi
+done
