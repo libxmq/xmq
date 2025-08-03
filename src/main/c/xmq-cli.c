@@ -360,7 +360,7 @@ bool has_debug(int argc, const char **argv);
 bool has_log_xmq(int argc, const char **argv);
 bool has_trace(int argc, const char **argv);
 bool has_verbose(int argc, const char **argv);
-void invoke_shell(xmlNode *n, const char *cmd);
+bool invoke_shell(xmlNode *n, const char *cmd);
 char *load_file_into_buffer(const char *file);
 char *make_shell_safe_name(char *name, char *name_start);
 int mkpath(char* file_path, mode_t mode);
@@ -3568,8 +3568,9 @@ char *grab_content(xmlNode *n, const char *name)
 // (On some systems this is also declared in unistd.h)
 extern char **environ;
 
-void invoke_shell(xmlNode *n, const char *shell_command)
+bool invoke_shell(xmlNode *node, const char *shell_command)
 {
+    bool ok = true;
 #ifndef PLATFORM_WINAPI
     char *cmd = strdup(shell_command);
     char **argv = malloc(sizeof(char*)*4);
@@ -3597,7 +3598,7 @@ void invoke_shell(xmlNode *n, const char *shell_command)
             if (name)
             {
                 char *safe_name = make_shell_safe_name(name, (char*)name_start);
-                char *content = grab_content(n, name);
+                char *content = grab_content(node, name);
                 if (content)
                 {
                     MemBuffer *kv = new_membuffer();
@@ -3642,7 +3643,8 @@ void invoke_shell(xmlNode *n, const char *shell_command)
             int rc = WEXITSTATUS(status);
             debug_("shell=", "%s: return code %d\n", "/bin/sh", rc);
             if (rc != 0) {
-                verbose_("shell=", "%s exited with non-zero return code: %d\n", "/bin/sh", rc);
+                verbose_("shell=", "/bin/sh -c %s exited with non-zero return code: %d\n", "/bin/sh", rc);
+                ok = false;
             }
         }
         free(argv);
@@ -3658,6 +3660,7 @@ void invoke_shell(xmlNode *n, const char *shell_command)
     }
     free(cmd);
 #endif
+    return ok;
 }
 
 void page(const char *start, const char *stop)
@@ -3888,31 +3891,36 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
 
             char local_file[256];
             snprintf(local_file, 256, "%s/grammars/%s.ixml", download_dir(), file);
-            char *content = load_file_into_buffer(local_file);
-            if (!content)
+            FILE *f = fopen(local_file, "rb");
+            if (f) fclose(f);
+            if (!f)
             {
                 // Not in download dir, download...
                 // curl https://libxmq.org/ixml/grammars/data/tsv.ixml
+                char url[256];
+                snprintf(url, 256, "https://libxmq.org/ixml/grammars/%s.ixml", file);
+
                 char cmd[1024];
-                snprintf(cmd, 1024, "curl https://libxmq.org/ixml/grammars/%s.ixml --create-dirs -o %s", file, local_file);
+                snprintf(cmd, 1024, "curl -s --fail %s --create-dirs -o %s", url, local_file);
 
-                fprintf(stderr, "CMD >%s<\n", cmd);
-                exit(1);
-                /*
-                if (isatty(0))
+                fprintf(stderr, "fetching %s\n", url);
+#ifndef PLATFORM_WINAPI
+                bool ok = invoke_shell(NULL, cmd);
+                if (!ok)
                 {
-                    fprintf(stderr, "Grammar %s not yet downloaded, download now? [y/n]\n");
+                    fprintf(stderr, "xmq: failed to fetch ixml using this command: %s\n", cmd);
+                    exit(1);
                 }
-
-                content = load_file_into_buffer(buf);
-                if (!content)
-                {
-                }*/
+#else
+                printf("Please execute: %s\n", cmd);
+                exit(0);
+#endif
+                fprintf(stderr, "downloaded and cached %s\n", local_file);
             }
 
-            //verbose_("xmq=", "reading ixml file %s", cmd);
+            verbose_("xmq=", "reading ixml file %s", local_file);
             load_command->ixml_filename = strdup(local_file);
-            load_command->ixml_source = content;
+            load_command->ixml_source = load_file_into_buffer(local_file);
             if (load_command->ixml_source == NULL) exit(1);
             i++;
         }
