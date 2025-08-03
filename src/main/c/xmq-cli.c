@@ -1247,6 +1247,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
     return false;
 }
 
+
 int mkpath(char *file_path, mode_t mode)
 {
     assert(file_path && *file_path);
@@ -1254,7 +1255,12 @@ int mkpath(char *file_path, mode_t mode)
     for (char* p = strchr(file_path + 1, '/'); p; p = strchr(p + 1, '/'))
     {
         *p = '\0';
-        if (mkdir(file_path, mode) == -1)
+#ifdef PLATFORM_WINAPI
+        int rc = mkdir(file_path);
+#else
+        int rc = mkdir(file_path, mode);
+#endif
+        if (rc == -1)
         {
             if (errno != EEXIST) {
                 *p = '/';
