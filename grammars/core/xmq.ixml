@@ -1,0 +1,116 @@
+{ XMQ grammar in IXML by Fredrik Öhrström 2024 spdx: MIT }
+
+xmq = s?, nodestart, s?.
+-nodestart = entitystart | quotestart | commentstart | namestart.
+
+-entitystart = entity
+             | entity, s?, nodestart.
+
+entity = "&", -name, ";".
+
+-quotestart = quote
+            | quote, s, quotestart
+            | quote, s?, (entitystart | commentstart | namestart).
+
+-commentstart = comment_ml
+              | comment_ml, s?, nodestart
+              | comment_sl
+              | comment_sl, s?, nodestart.
+
+comment_sl = "//", ~[#a]*, -#a.
+
+comment_ml = c1 | c2 | c3 | c4.
+-c1 = -"/*", cl1++cls1, -"*/".
+-c2 = -"/**", cl2++cls2, -"**/".
+-c3 = -"/***", cl3++cls3, -"***/".
+-c4 = -"/****", cl4++cls4, -"****/".
+
+-cls1 = -"*/*".
+-cls2 = -"**/**".
+-cls3 = -"***/***".
+-cls4 = -"****/****".
+
+cl1>line = ~["*"], (~["*"] | "*", ~["/"])*.
+cl2>line = ~["*"], (~["*"] | "*", ~["*"] | "**", ~["/"])*.
+cl3>line = ~["*"], (~["*"] | "*", ~["*"] | "**", ~["*"] | "***", ~["/"])*.
+cl4>line = ~["*"], (~["*"] | "*", ~["*"] | "**", ~["*"] | "***", ~["*"] | "****", ~["/"])*.
+
+-namestart = element_empty
+           | element_empty, s, nodestart
+           | element_empty, s?, (entitystart | quotestart)
+           | element_empty, s?, -'{', s?, -'}'
+           | element_empty, s?, -'(', s?, -')'
+           | element_empty, s?, -'(', s?, -')', s?, -'{', s?, -'}'
+           | element_with_attrs_no_children
+           | element_with_attrs_no_children, nodestart
+           | element_with_children
+           | element_with_children, s?, nodestart
+           | element_with_attrs_and_children
+           | element_with_attrs_and_children, s?, nodestart
+           | keyvaluestart.
+
+element_empty = @name.
+element_with_attrs_no_children = @name, s?, -'(', s?, attributes, s?, -')'
+                               |  @name, s?, -'(', s?, attributes, s?, -')', s?, -'{', s?, -'}'.
+element_with_children = @name, s?, -'{', s?, children, s?, -'}'.
+element_with_attrs_and_children = @name, s?, -'(', s?, attributes, s?, -')', s?, -'{', s?, children, s?, -'}'.
+
+attributes = attrstart.
+-attrstart = attr_empty
+           | attr_empty, s, attrstart
+           | attr_sv
+           | attr_sv, s, attrstart
+           | attr_ev
+           | attr_ev, s?, attrstart
+           | attr_cv
+           | attr_cv, s?, attrstart
+           | attr_qv
+           | attr_qv, s?, attrstart.
+
+attr_empty = @name.
+attr_ev = @name, s?, -'=', s?, entity.
+attr_sv = @name, s?, -'=', s?, safe_text.
+attr_cv = @name, s?, -'=', s?, compound.
+attr_qv = @name, s?, -'=', s?, quote.
+
+children = nodestart.
+
+-keyvaluestart = keyvalue_st
+               | keyvalue_st, s, namestart
+               | keyvalue_q
+               | keyvalue_q, s, quotestart
+               | keyvalue_q, s?, (entitystart | namestart)
+               | keyvalue_c
+               | keyvalue_c, nodestart.
+
+keyvalue_st = @name, s?, -'=', s?, safe_text.
+keyvalue_q  = @name, s?, -'=', s?, quote.
+keyvalue_c  = @name, s?, -'=', s?, compound.
+
+compound = -'(', s?, (cqstart | cestart), s?, -')'.
+
+-cqstart = quote
+         | quote, s, cqstart
+         | quote, s?, cestart.
+
+-cestart = entity
+         | entity, s, cestart
+         | entity, s?, cqstart.
+
+quote = q1 | q2 | q3 | q4 | q5 | q6.
+-q1 = -"'", ~["'"]+, -"'".
+-q2 = -"''".
+-q3 = -"'''",  nq++qq2, -"'''".
+-q4 = -"''''",  nq++qq3, -"''''".
+-q5 = -"'''''",  nq++qq4, -"'''''".
+-q6 = -"''''''",  nq++qq5, -"''''''".
+-qq2 = -"'" | -"''".
+-qq3 = qq2 | -"'''".
+-qq4 = qq3 | -"''''".
+-qq5 = qq4 | -"'''''".
+-nq = ~["'"]+.
+
+name       = [Ll;"_"]+.
+safe_text  = ~[Zs;#a;#d;'(){}"';"'"]+.
+
+-s         = -[' ';#a;#d]+.
