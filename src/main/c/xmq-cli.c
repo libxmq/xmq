@@ -341,7 +341,7 @@ bool delete_entity(XMQCliCommand *command);
 bool delete_xpath(XMQCliCommand *command);
 void disable_stdout_raw_input_mode();
 bool dot_found(const char *arg);
-bool download(const char *dir, const char *suffix, const char *file, const char *local_file);
+bool download(const char *suffix, const char *file, const char *local_file);
 const char *download_dir();
 const char *share_dir();
 void enableAnsiColorsWindowsConsole();
@@ -3855,7 +3855,7 @@ bool dot_found(const char *file)
     return false;
 }
 
-bool download(const char *dir, const char *suffix, const char *file, const char *local_file)
+bool download(const char *suffix, const char *file, const char *local_file)
 {
     FILE *f = fopen(local_file, "rb");
     if (f)
@@ -3866,9 +3866,9 @@ bool download(const char *dir, const char *suffix, const char *file, const char 
     }
 
     // Not in download dir, download...
-    // curl https://libxmq.org/ixml/grammars/data/tsv.ixml
+    // curl https://libxmq.org/library/data/tsv.ixml
     char url[256];
-    snprintf(url, 256, "https://libxmq.org/ixml/%s/%s%s", dir, file, suffix);
+    snprintf(url, 256, "https://libxmq.org/library/%s%s", file, suffix);
 
     char cmd[1024];
     snprintf(cmd, 1024, "curl -s --fail %s --create-dirs -o %s", url, local_file);
@@ -3941,8 +3941,8 @@ void prepare_xslt_command(XMQCliCommand *command, const char *arg)
     }
 
     char local_file[256];
-    snprintf(local_file, 256, "%s/transforms/%s.xslq", download_dir(), file);
-    download("transforms", ".xslq", file, local_file);
+    snprintf(local_file, 256, "%s/library/%s.xslq", download_dir(), file);
+    download(".xslq", file, local_file);
 
     verbose_("xmq=", "reading ixml file %s", local_file);
     command->cmd = XMQ_CLI_CMD_TRANSFORM;
@@ -3980,7 +3980,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
 
     if (argv[i])
     {
-        // An ixml:data/csv argument is interpreted as --ixml=~/.local/share/xmq/grammars/data/csv.ixml
+        // An ixml:data/csv argument is interpreted as --ixml=~/.local/share/xmq/library/data/csv.ixml
         const char *file = is_ixml_cmd(argv[i]);
         if (file)
         {
@@ -3991,8 +3991,8 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
             }
 
             char local_file[256];
-            snprintf(local_file, 256, "%s/grammars/%s.ixml", download_dir(), file);
-            download("grammars", ".ixml", file, local_file);
+            snprintf(local_file, 256, "%s/library/%s.ixml", download_dir(), file);
+            download(".ixml", file, local_file);
 
             verbose_("xmq=", "reading ixml file %s", local_file);
             load_command->ixml_filename = strdup(local_file);
