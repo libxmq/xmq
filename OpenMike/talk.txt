@@ -1,0 +1,49 @@
+# Show a simple csv file.
+cat people.csv
+
+# Show a simple ixml file that parses the csv file and produces xml.
+xmq csv.ixml people.csv to-xml | xmllint --format -
+
+# Show the xml pretty printed with colors in a browser.
+xmq csv.ixml people.csv br
+
+# Show the xml pretty printed with colors in a browser.
+xmq csv.ixml people.csv transform table-to-web.xslq to-html br
+
+# Take a look at a simple formula.ixml
+cat formula.ixml
+
+# Now show a formula parser where multiplication has higher priority to addition.
+xmq formula.ixml -i 1+2*3
+
+# Lets trace the ixml parse....
+xmq --trace=ixml formula.ixml -i 1+2*3
+
+# Lets parse the trace of the ixml parse using ixml
+xmq parse-trace.ixml render_temp
+
+# Lets generate html and browse it!
+xmq parse-trace.ixml temp_render transform render-trace.xslq to-html br
+
+# Short (no predictions)
+./view-ixml.sh formula.ixml -i 1+2*3
+
+# Debug (includes predictions)
+./debug-ixml.sh formula.ixml -i 1+2*3
+
+# Trace for the ixml parser developer...
+./trace-ixml.sh formula.ixml -i 1+2*3
+
+# Check out ambigiuity
+cat ambig.ixml
+./view-ixml.sh ambig.ixml -i ab
+
+# Check out ambigiuity in broken basic parser
+cat basic.ixml
+./view-ixml.sh basic.ixml basic.inp
+
+# Fix the basic ambiguity
+./view-ixml.sh basic.ixml basic.inp
+
+# Small json example
+./view-ixml.sh json1.ixml -i '{"hej":123}'

@@ -1,0 +1,13 @@
+
+program = nl*, line++nl, nl*.
+-nl = -#a.
+line = number, (let | print | goto).
+number = [N]+, -' '+.
+let = ('LET ' | 'let '), -' '*, var, -' '*, '=', val.
+var = [L]+.
+val = number | string.
+string = '"', ~['"']*, '"'.
+
+goto = ('GOTO' | 'goto'), -' '+, number.
+
+print = -' '*, (-'PRINT' | -'print'), -' '+, var.
