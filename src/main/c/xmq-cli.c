@@ -340,6 +340,8 @@ void delete_entities(XMQDoc *doq, const char *entity);
 bool delete_entity(XMQCliCommand *command);
 bool delete_xpath(XMQCliCommand *command);
 void disable_stdout_raw_input_mode();
+bool dot_found(const char *arg);
+bool download(const char *dir, const char *file, const char *local_file);
 const char *download_dir();
 const char *share_dir();
 void enableAnsiColorsWindowsConsole();
@@ -361,13 +363,18 @@ bool has_log_xmq(int argc, const char **argv);
 bool has_trace(int argc, const char **argv);
 bool has_verbose(int argc, const char **argv);
 bool invoke_shell(xmlNode *n, const char *cmd);
+const char *is_ixml_cmd(const char *arg);
+const char *is_xslt_cmd(const char *arg);
 char *load_file_into_buffer(const char *file);
+bool load_xslt(XMQCliCommand *command, const char *arg);
 char *make_shell_safe_name(char *name, char *name_start);
 int mkpath(char* file_path, mode_t mode);
 void open_browser(const char *file);
 void page(const char *start, const char *stop);
 bool perform_command(XMQCliCommand *c, bool *no_more_data);
 void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command);
+void prepare_ixml_command(XMQCliCommand *c, const char *arg);
+void prepare_xslt_command(XMQCliCommand *c, const char *arg);
 void print_command_help(XMQCliCmd c);
 void print_license_and_exit();
 void print_version_and_exit();
@@ -1146,40 +1153,8 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         }
         if (command->xslt == NULL)
         {
-            XMQDoc *doq = xmqNewDoc();
-
-            // We load the xslt transform with TRIM_NONE! Why?
-            // XSLT transform are terribly picky with whitespace and the xslt compiler will also trim whitespace
-            // so to make a normal xslt transform work here we do not use the whitespace trimming heuristic.
-            // There might be other problems here when loading normal old xslt transforms, we will get to them when we
-            // find them.
-            //
-            // When loading an xslq transform the default is TRIM_NONE anyway since it is xmq.
-            bool ok = xmqParseFileWithType(doq, arg, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE);
-
-            if (!ok)
-            {
-                const char *error = xmqDocError(doq);
-                fprintf(stderr, error, command->in);
-                xmqFreeDoc(doq);
-                return false;
-            }
-
-            verbose_("xmq=", "loaded xslt %s", arg);
-
-            xmlDocPtr xslt = (xmlDocPtr)xmqGetImplementationDoc(doq);
-            if (xmqGetOriginalContentType(doq) == XMQ_CONTENT_XMQ ||
-                xmqGetOriginalContentType(doq) == XMQ_CONTENT_HTMQ)
-            {
-                // We want to be able to use char entities in the xslq by default.
-                // So we replace any explicit &#10; with actual newlines etc.
-                xmlNodePtr root = xmlDocGetRootElement(xslt);
-                while (root->prev) root = root->prev;
-                // Replace all char entities! I.e. &#10; is replaced with a newline.
-                substitute_entity(xslt, root, NULL, true);
-            }
-            command->xslt_doq = doq;
-            command->xslt = xsltParseStylesheetDoc(xslt);
+            bool ok = load_xslt(command, arg);
+            if (!ok) return false;
             if (!command->xslt) return false;
             return true;
         }
@@ -3851,6 +3826,134 @@ bool perform_command(XMQCliCommand *c, bool *no_more_data)
     return false;
 }
 
+const char *is_ixml_cmd(const char *arg)
+{
+    // Does arrg look like:  ixml:data/csv
+    char *colon = strrchr(arg, ':');
+    if (colon && !strncmp("ixml:", arg, colon-arg))
+    {
+        return arg+5;
+    }
+    return NULL;
+}
+
+const char*is_xslt_cmd(const char *arg)
+{
+    // Does arrg look like:  xslt:web/render-csv
+    char *colon = strrchr(arg, ':');
+    if (colon && !strncmp("xslt:", arg, colon-arg))
+    {
+        return arg+5;
+    }
+    return NULL;
+}
+
+bool dot_found(const char *file)
+{
+    char *dot = strrchr(file, '.');
+    if (dot) return true;
+    return false;
+}
+
+bool download(const char *dir, const char *file, const char *local_file)
+{
+    FILE *f = fopen(local_file, "rb");
+    if (f)
+    {
+        // Already downloaded
+        fclose(f);
+        return true;
+    }
+
+    // Not in download dir, download...
+    // curl https://libxmq.org/ixml/grammars/data/tsv.ixml
+    char url[256];
+    snprintf(url, 256, "https://libxmq.org/ixml/%s/%s.ixml", dir, file);
+
+    char cmd[1024];
+    snprintf(cmd, 1024, "curl -s --fail %s --create-dirs -o %s", url, local_file);
+
+    fprintf(stderr, "fetching %s\n", url);
+#ifndef PLATFORM_WINAPI
+    bool ok = invoke_shell(NULL, cmd);
+    if (!ok)
+    {
+        fprintf(stderr, "xmq: failed to fetch ixml using this command: %s\n", cmd);
+        exit(1);
+    }
+#else
+    printf("Invokaction for curl for WINAPI is not yet implemented.\n");
+    printf("Please execute: %s\n", cmd);
+    exit(0);
+#endif
+    fprintf(stderr, "downloaded and cached %s\n", local_file);
+    return true;
+}
+
+bool load_xslt(XMQCliCommand *command, const char *arg)
+{
+    XMQDoc *doq = xmqNewDoc();
+
+    // We load the xslt transform with TRIM_NONE! Why?
+    // XSLT transform are terribly picky with whitespace and the xslt compiler will also trim whitespace
+    // so to make a normal xslt transform work here we do not use the whitespace trimming heuristic.
+    // There might be other problems here when loading normal old xslt transforms, we will get to them when we
+    // find them.
+    //
+    // When loading an xslq transform the default is TRIM_NONE anyway since it is xmq.
+    bool ok = xmqParseFileWithType(doq, arg, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE);
+
+    if (!ok)
+    {
+        const char *error = xmqDocError(doq);
+        fprintf(stderr, error, command->in);
+        xmqFreeDoc(doq);
+        return false;
+    }
+
+    verbose_("xmq=", "loaded xslt %s", arg);
+
+    xmlDocPtr xslt = (xmlDocPtr)xmqGetImplementationDoc(doq);
+    if (xmqGetOriginalContentType(doq) == XMQ_CONTENT_XMQ ||
+        xmqGetOriginalContentType(doq) == XMQ_CONTENT_HTMQ)
+    {
+        // We want to be able to use char entities in the xslq by default.
+        // So we replace any explicit &#10; with actual newlines etc.
+        xmlNodePtr root = xmlDocGetRootElement(xslt);
+        while (root->prev) root = root->prev;
+        // Replace all char entities! I.e. &#10; is replaced with a newline.
+        substitute_entity(xslt, root, NULL, true);
+    }
+    command->xslt_doq = doq;
+    command->xslt = xsltParseStylesheetDoc(xslt);
+    return true;
+}
+
+void prepare_xslt_command(XMQCliCommand *command, const char *arg)
+{
+    // An xsltl:web/render-csv argument is interpreted as
+    // transform ~/.local/share/xmq/transforms/web/render-csv.ixml
+    const char *file = is_ixml_cmd(arg);
+    if (dot_found(file))
+    {
+        printf("xmq: file after xslt: must not contain dots (%s)\n", arg);
+        exit(1);
+    }
+
+    char local_file[256];
+    snprintf(local_file, 256, "%s/transforms/%s.ixml", download_dir(), file);
+    download("transforms", file, local_file);
+
+    verbose_("xmq=", "reading ixml file %s", local_file);
+    command->cmd = XMQ_CLI_CMD_TRANSFORM;
+    bool ok = load_xslt(command, local_file);
+    if (!ok || command->xslt == NULL)
+    {
+        printf("xmq: could not load %s\n", local_file);
+        exit(1);
+    }
+}
+
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command)
 {
     int i = 1;
@@ -3878,45 +3981,18 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
     if (argv[i])
     {
         // An ixml:data/csv argument is interpreted as --ixml=~/.local/share/xmq/grammars/data/csv.ixml
-        char *colon = strrchr(argv[i], ':');
-        if (colon && !strncmp("ixml:", argv[i], colon-argv[i]))
+        const char *file = is_ixml_cmd(argv[i]);
+        if (file)
         {
-            const char *file = argv[i]+5;
-            char *dot = strrchr(file, '.');
-            if (dot && !strcmp(dot, ".ixml"))
+            if (dot_found(file))
             {
-                printf("xmq: file arg after ixml: should not end in .ixml (%s)\n", argv[i]);
+                printf("xmq: file after ixml: must not contain dots (%s)\n", argv[i]);
                 return false;
             }
 
             char local_file[256];
             snprintf(local_file, 256, "%s/grammars/%s.ixml", download_dir(), file);
-            FILE *f = fopen(local_file, "rb");
-            if (f) fclose(f);
-            if (!f)
-            {
-                // Not in download dir, download...
-                // curl https://libxmq.org/ixml/grammars/data/tsv.ixml
-                char url[256];
-                snprintf(url, 256, "https://libxmq.org/ixml/grammars/%s.ixml", file);
-
-                char cmd[1024];
-                snprintf(cmd, 1024, "curl -s --fail %s --create-dirs -o %s", url, local_file);
-
-                fprintf(stderr, "fetching %s\n", url);
-#ifndef PLATFORM_WINAPI
-                bool ok = invoke_shell(NULL, cmd);
-                if (!ok)
-                {
-                    fprintf(stderr, "xmq: failed to fetch ixml using this command: %s\n", cmd);
-                    exit(1);
-                }
-#else
-                printf("Please execute: %s\n", cmd);
-                exit(0);
-#endif
-                fprintf(stderr, "downloaded and cached %s\n", local_file);
-            }
+            download("grammars", file, local_file);
 
             verbose_("xmq=", "reading ixml file %s", local_file);
             load_command->ixml_filename = strdup(local_file);
@@ -3976,6 +4052,12 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
         command = allocate_cli_command(command->env);
         load_command->next = command;
         command->cmd = cmd_from(argv[i]);
+
+        if (command->cmd == XMQ_CLI_CMD_NONE && is_xslt_cmd(argv[i]))
+        {
+            prepare_xslt_command(command, argv[i]);
+        }
+
         if (command->cmd == XMQ_CLI_CMD_NONE)
         {
             fprintf(stderr, "xmq: no such command \"%s\"\n", argv[i-1]);
