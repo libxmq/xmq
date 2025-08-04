@@ -19610,6 +19610,7 @@ _OS_delete_function (os_t * os)
       previous_segment = current_segment->os_previous_segment;
       yaep_free (os->os_alloc, current_segment);
     }
+  os->os_current_segment = NULL;
 }
 
 /* The following function implements macro `OS_EMPTY' (freeing memory
@@ -23862,7 +23863,6 @@ static void expand_new_set(YaepParseState *ps)
 {
     YaepSymbol *symb;
     YaepCoreSymbToPredComps *core_symb_to_predcomps;
-    YaepRule *rule;
 
     /* Look for dotted rules that can be progressed because the next non-terminal
        can be empty. I.e. we can complete the E immediately.
@@ -23979,7 +23979,7 @@ static void expand_new_set(YaepParseState *ps)
     {
         YaepDottedRule *new_dotted_rule, *shifted_dotted_rule;
         terminal_bitset_t *dyn_lookahead_context_set;
-        int dotted_rule_id, dyn_lookahead_context, j;
+        int dyn_lookahead_context, j;
         bool changed_p;
 
         /* Now we have incorrect initial dotted_rules because their dyn_lookahead_context is not correct. */
