@@ -3933,7 +3933,8 @@ void prepare_xslt_command(XMQCliCommand *command, const char *arg)
 {
     // An xsltl:web/render-csv argument is interpreted as
     // transform ~/.local/share/xmq/transforms/web/render-csv.ixml
-    const char *file = is_ixml_cmd(arg);
+    const char *file = is_xslt_cmd(arg);
+    assert(file);
     if (dot_found(file))
     {
         printf("xmq: file after xslt: must not contain dots (%s)\n", arg);
