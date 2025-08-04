@@ -1,5 +1,0 @@
-{ Lines with tab separated values. Fredrik Öhrström spdx: CC0-1.0 }
-lines = nl*, line++nl, nl*.
-line  = col++-#9.
-col   = ~[ #9; #a; #d ]+.
--nl   = -#d?, -#a.

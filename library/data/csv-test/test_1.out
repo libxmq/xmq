@@ -1,0 +1,17 @@
+table {
+    tr {
+        td = 1
+        td = 2
+        td = 3
+    }
+    tr {
+        td = 1
+        td = 2
+        td = 3
+    }
+    tr {
+        td = 1
+        td = 2
+        td = 3
+    }
+}

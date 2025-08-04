@@ -1,6 +1,0 @@
-{ Lines with comma separated values. Fredrik Öhrström spdx: CC0-1.0 }
-lines      = nl*, line++nl, nl*.
-line       = col++-','.
-col        = ~['",';#a;#d], ~[',';#a;#d]* | -'"', character*, -'"'.
--nl        = -#d?, -#a.
--character = ~['"'] | -'""', +'"'.

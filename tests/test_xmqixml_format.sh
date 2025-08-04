@@ -32,7 +32,7 @@ then
     CMDS="to-xmq"
 fi
 
-$PROG $ARGS --ixml=grammars/core/xmq.ixml $OUTPUT/${TEST_NAME}.input $CMDS > $OUTPUT/${TEST_NAME}.output
+$PROG $ARGS --ixml=library/core/xmq.ixml $OUTPUT/${TEST_NAME}.input $CMDS > $OUTPUT/${TEST_NAME}.output
 
 if diff $OUTPUT/${TEST_NAME}.expected $OUTPUT/${TEST_NAME}.output > /dev/null
 then

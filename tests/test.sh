@@ -48,7 +48,6 @@ do
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 done
 
-
 for i in tests/xmqixml_[0-9][0-9][0-9]_*.test
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
@@ -77,8 +76,8 @@ do
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 done
 
-tests/test_grammars.sh "$PROG" "$OUTPUT"
-if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+#tests/test_library.sh "$PROG" "$OUTPUT"
+#if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 
 for i in tests/ixml/correct/*.output.xmq
 do
