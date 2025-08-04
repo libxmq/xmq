@@ -1,14 +1,17 @@
 
-#ifndef BUILDING_XMQ
+#include"json.h"
+
+#ifndef BUILDING_DIST_XMQ
 
 #include"always.h"
 #include"colors.h"
 #include"hashmap.h"
-#include"json.h"
 #include"membuffer.h"
-#include"parts/xmq_internals.h"
+#include"xmq_internals.h"
+#include"xmq_parser.h"
 #include"stack.h"
 #include"text.h"
+#include"utf8.h"
 #include"xml.h"
 
 #include<assert.h>
@@ -52,8 +55,6 @@ void json_print_comment_node(XMQPrintState *ps, xmlNodePtr node, bool prefix_ul,
 void json_print_doctype_node(XMQPrintState *ps, xmlNodePtr node);
 void json_print_entity_node(XMQPrintState *ps, xmlNodePtr node);
 void json_print_standalone_quote(XMQPrintState *ps, xmlNode *container, xmlNodePtr node, size_t total, size_t used);
-void json_print_object_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
-void json_print_array_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from, xmlNode *to);
 void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 void json_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, Level level, bool force_string);
 void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
@@ -67,8 +68,6 @@ bool json_is_keyword(const char *start);
 void json_print_leaf_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 
 void trim_index_suffix(const char *key_start, const char **stop);
-
-bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const char *stop);
 
 char equals[] = "=";
 char underline[] = "_";
@@ -114,7 +113,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
         {
             increment(c, 1, &i, &line, &col);
             c = *i;
-            if (c == '"' || c == '\\' || c == 'b' || c == 'f' || c == 'n' || c == 'r' || c == 't')
+            if (c == '"' || c == '\\' || c == 'b' || c == 'f' || c == 'n' || c == 'r' || c == 't' || c == '/')
             {
                 increment(c, 1, &i, &line, &col);
                 switch(c)
@@ -124,6 +123,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
                 case 'n': c = 10; break;
                 case 'r': c = 13; break;
                 case 't': c = 9; break;
+                case '/': c = '/'; break; // Silly, but actually used sometimes in json....
                 }
                 membuffer_append_char(buf, c);
                 continue;

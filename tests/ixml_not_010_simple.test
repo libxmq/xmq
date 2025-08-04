@@ -1,0 +1,10 @@
+START
+s = vp.
+vp = 'a', ![L], ~[].
+INPUT
+a.
+OUTPUT
+s {
+    vp = a.
+}
+END

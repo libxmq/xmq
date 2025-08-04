@@ -23,7 +23,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include"xmq.h"
 
-#define BUILDING_XMQ
+// If we are concatening a single source file dist/xmq.dc then add the define BUILDING_DIST_XMQ
+//#define BUILDING_DIST_XMQ
 
 // PART HEADERS //////////////////////////////////////////////////
 
@@ -42,7 +43,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/xml.h"
 #include"parts/xmq_parser.h"
 #include"parts/xmq_printer.h"
+#include"parts/yaep_allocate.h"
+#include"parts/yaep_hashtab.h"
+#include"parts/yaep_objstack.h"
+#include"parts/yaep_vlobject.h"
 #include"parts/yaep.h"
+#include"parts/yaep_structs.h"
+#include"parts/yaep_cspc.h"
+#include"parts/yaep_util.h"
+#include"parts/yaep_symbols.h"
+#include"parts/yaep_terminal_bitset.h"
+#include"parts/yaep_tree.h"
+#include"parts/yaep_print.h"
 
 // XMQ STRUCTURES ////////////////////////////////////////////////
 
@@ -60,7 +72,7 @@ XMQProceed catch_single_content(XMQDoc *doc, XMQNode *node, void *user_data);
 size_t calculate_buffer_size(const char *start, const char *stop, int indent, const char *pre_line, const char *post_line);
 bool check_leading_space_nl(const char *start, const char *stop);
 void copy_and_insert(MemBuffer *mb, const char *start, const char *stop, int num_prefix_spaces, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
-char *copy_lines(int num_prefix_spaces, const char *start, const char *stop, int num_quotes, bool add_nls, bool add_compound, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
+char *copy_lines(int num_prefix_spaces, const char *start, const char *stop, int num_quotes, bool use_dqs, bool add_nls, bool add_compound, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
 void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSettings *os);
 xmlNodePtr create_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop, xmlNodePtr parent);
 void create_node(XMQParseState *state, const char *start, const char *stop);
@@ -99,8 +111,6 @@ void do_ns_colon(XMQParseState *state, size_t line, size_t col, const char *star
 void do_quote(XMQParseState *state, size_t l, size_t col, const char *start, const char *stop, const char *suffix);
 void do_whitespace(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
 bool find_line(const char *start, const char *stop, size_t *indent, const char **after_last_non_space, const char **eol);
-const char *find_next_line_end(XMQPrintState *ps, const char *start, const char *stop);
-const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop);
 void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared);
 void fixup_comments(XMQDoc *doq, xmlNode *node, int depth);
 void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index);
@@ -112,13 +122,8 @@ void handle_yaep_syntax_error(YaepParseRun *pr,
                               int start_recovered_tok_num,
                               void *start_recovered_tok_attr);
 
-bool has_leading_ending_quote(const char *start, const char *stop);
-bool is_safe_char(const char *i, const char *stop);
 size_t line_length(const char *start, const char *stop, int *numq, int *lq, int *eq);
-bool need_separation_before_entity(XMQPrintState *ps);
 const char *node_yaep_type_to_string(YaepTreeNodeType t);
-size_t num_utf8_bytes(char c);
-void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num);
 void reset_ansi(XMQParseState *state);
 void reset_ansi_nl(XMQParseState *state);
 const char *skip_any_potential_bom(const char *start, const char *stop);
@@ -150,9 +155,6 @@ char *xmq_quote_default(int indent, const char *start, const char *stop, XMQQuot
 const char *xml_element_type_to_string(xmlElementType type);
 const char *indent_depth(int i);
 void free_indent_depths();
-
-xmlNode *merge_surrounding_text_nodes(xmlNode *node);
-xmlNode *merge_hex_chars_node(xmlNode *node);
 
 // Declare tokenize_whitespace tokenize_name functions etc...
 #define X(TYPE) void tokenize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start, const char *stop, const char *suffix);
@@ -688,6 +690,7 @@ XMQOutputSettings *xmqNewOutputSettings()
     os->explicit_cr = theme->explicit_cr = "\r";
     os->add_indent = 4;
     os->use_color = false;
+    os->allow_json_quotes = true;
 
     return os;
 }
@@ -730,6 +733,11 @@ void xmqSetUseColor(XMQOutputSettings *os, bool use_color)
 void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode)
 {
     os->bg_dark_mode = bg_dark_mode;
+}
+
+void xmqSetPreferDoubleQuotes(XMQOutputSettings *os, bool prefer_double_quotes)
+{
+    os->prefer_double_quotes = prefer_double_quotes;
 }
 
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines)
@@ -907,7 +915,7 @@ XMQParseState *xmqNewParseState(XMQParseCallbacks *callbacks, XMQOutputSettings 
     return state;
 }
 
-bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop)
+bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stopp)
 {
     if (state->magic_cookie != MAGIC_COOKIE)
     {
@@ -916,9 +924,14 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
         exit(1);
     }
 
-    if (!stop) stop = start + strlen(start);
+    state->buffer_start = start;
+    state->buffer_stop =  stopp?stopp:start + strlen(start);
+    state->i = start;
+    state->line = 1;
+    state->col = 1;
+    state->error_nr = XMQ_ERROR_NONE;
 
-    XMQContentType detected_ct = xmqDetectContentType(start, stop);
+    XMQContentType detected_ct = xmqDetectContentType(state->buffer_start, state->buffer_stop);
     if (detected_ct != XMQ_CONTENT_XMQ)
     {
         state->generated_error_msg = strdup("xmq: you can only tokenize the xmq format");
@@ -926,12 +939,6 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
         return false;
     }
 
-    state->buffer_start = start;
-    state->buffer_stop = stop;
-    state->i = start;
-    state->line = 1;
-    state->col = 1;
-    state->error_nr = XMQ_ERROR_NONE;
 
     if (state->parse->init) state->parse->init(state);
 
@@ -959,9 +966,9 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
         if (error_nr == XMQ_ERROR_INVALID_CHAR && state->last_suspicios_quote_end)
         {
             // Add warning about suspicious quote before the error.
-            generate_state_error_message(state, XMQ_WARNING_QUOTES_NEEDED, start, stop);
+            generate_state_error_message(state, XMQ_WARNING_QUOTES_NEEDED, state->buffer_start, state->buffer_stop);
         }
-        generate_state_error_message(state, error_nr, start, stop);
+        generate_state_error_message(state, error_nr, state->buffer_start, state->buffer_stop);
 
         return false;
     }
@@ -1231,6 +1238,11 @@ void xmqSetLogHumanReadable(bool e)
     xmq_log_line_config_.human_readable_ = e;
 }
 
+void xmqLogFilter(const char *log_filter)
+{
+    xmq_log_filter_ = log_filter;
+}
+
 /**
     xmq_un_quote:
     @indent: The number of chars before the quote starts on the first line.
@@ -1256,7 +1268,9 @@ char *xmq_un_quote(const char *start, const char *stop, bool remove_qs, bool is_
     size_t j = 0;
     if (remove_qs)
     {
-        while (*(start+j) == '\'' && *(stop-j-1) == '\'' && (start+j) < (stop-j)) j++;
+        const char q = *start;
+        assert(q == '\'' || q == '"');
+        while (*(start+j) == q && *(stop-j-1) == q && (start+j) < (stop-j)) j++;
     }
 
     start = start+j;
@@ -1459,7 +1473,7 @@ char *xmq_trim_quote(const char *start, const char *stop, bool is_xmq, bool is_c
         char *buf = (char*)malloc(stop-start+append_newlines+1);
         memcpy(buf, start, stop-start);
         size_t i = stop-start;
-        for (int j = 0; j < append_newlines; ++j) buf[i++] = '\n';
+        for (size_t j = 0; j < append_newlines; ++j) buf[i++] = '\n';
         buf[i++] = 0;
         return buf;
     }
@@ -1765,6 +1779,9 @@ void xmqFreeParseState(XMQParseState *state)
 
     if (state->ixml_terminals_map) hashmap_free_and_values(state->ixml_terminals_map, (FreeFuncPtr)free_ixml_terminal);
     state->ixml_terminals_map = NULL;
+
+    if (state->ixml_non_terminals_map) hashmap_free(state->ixml_non_terminals_map);
+    state->ixml_non_terminals_map = NULL;
 
     if (state->ixml_non_terminals) vector_free_and_values(state->ixml_non_terminals, (FreeFuncPtr)free_ixml_nonterminal);
     state->ixml_non_terminals = NULL;
@@ -2700,6 +2717,7 @@ void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSet
     qs->prefix_line = os->prefix_line;
     qs->postfix_line = os->prefix_line;
     qs->compact = os->compact;
+    qs->allow_json_quotes = os->allow_json_quotes;
 }
 
 void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings)
@@ -3547,6 +3565,7 @@ char *copy_lines(int num_prefix_spaces,
                  const char *start,
                  const char *stop,
                  int num_quotes,
+                 bool use_dqs,
                  bool add_nls,
                  bool add_compound,
                  const char *implicit_indentation,
@@ -3578,7 +3597,9 @@ char *copy_lines(int num_prefix_spaces,
         }
     }
 
-    for (int i = 0; i < num_quotes; ++i) membuffer_append_char(mb, '\'');
+    const char q = use_dqs?'"':'\'';
+
+    for (int i = 0; i < num_quotes; ++i) membuffer_append_char(mb, q);
     membuffer_append_region(mb, prefix_line, NULL);
     if (add_nls)
     {
@@ -3600,7 +3621,7 @@ char *copy_lines(int num_prefix_spaces,
     }
 
     membuffer_append_region(mb, postfix_line, NULL);
-    for (int i = 0; i < num_quotes; ++i) membuffer_append_char(mb, '\'');
+    for (int i = 0; i < num_quotes; ++i) membuffer_append_char(mb, q);
 
     if (add_compound)
     {
@@ -3626,19 +3647,21 @@ size_t line_length(const char *start, const char *stop, int *numq, int *lq, int 
     int llq = 0, eeq = 0;
     int num = 0, max = 0;
     // Skip line leading quotes
-    while (*i == '\'') { i++; llq++;  }
+    const char q = *i;
+    assert(q == '\'' || q == '"');
+    while (*i == q) { i++; llq++;  }
     const char *lstart = i; // Points to text after leading quotes.
     // Find end of line.
     while (i < stop && *i != '\n') i++;
     const char *eol = i;
     i--;
-    while (i > lstart && *i == '\'') { i--; eeq++; }
+    while (i > lstart && *i == q) { i--; eeq++; }
     i++;
     const char *lstop = i;
     // Mark endof text inside ending quotes.
     for (i = lstart; i < lstop; ++i)
     {
-        if (*i == '\'')
+        if (*i == q)
         {
             num++;
             if (num > max) max = num;
@@ -3697,7 +3720,9 @@ char *xmq_quote_default(int indent,
 {
     bool add_nls = false;
     bool add_compound = false;
-    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound);
+    bool use_double_quotes = false;
+    bool prefer_double_quotes = false;
+    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound, prefer_double_quotes, &use_double_quotes);
 
     if (numq > 0)
     {
@@ -3750,6 +3775,7 @@ char *xmq_quote_default(int indent,
                       start,
                       stop,
                       numq,
+                      use_double_quotes,
                       add_nls,
                       add_compound,
                       settings->indentation_space,
@@ -3955,8 +3981,8 @@ bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, int 
 
     int parse_options = XML_PARSE_NOCDATA | XML_PARSE_NONET;
     bool should_trim = false;
-    if (flags & XMQ_FLAG_TRIM_HEURISTIC ||
-        flags & XMQ_FLAG_TRIM_EXACT) should_trim = true;
+    if ((flags & XMQ_FLAG_TRIM_HEURISTIC) ||
+        (flags & XMQ_FLAG_TRIM_EXACT)) should_trim = true;
     if (flags & XMQ_FLAG_TRIM_NONE) should_trim = false;
 
     if (should_trim) parse_options |= XML_PARSE_NOBLANKS;
@@ -3993,8 +4019,8 @@ bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, int
     int parse_options = HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET;
 
     bool should_trim = false;
-    if (flags & XMQ_FLAG_TRIM_HEURISTIC ||
-        flags & XMQ_FLAG_TRIM_EXACT) should_trim = true;
+    if ((flags & XMQ_FLAG_TRIM_HEURISTIC) ||
+        (flags & XMQ_FLAG_TRIM_EXACT)) should_trim = true;
     if (flags & XMQ_FLAG_TRIM_NONE) should_trim = false;
 
     if (should_trim) parse_options |= HTML_PARSE_NOBLANKS;
@@ -4146,8 +4172,8 @@ exit:
     {
         bool should_trim = false;
 
-        if (flags & XMQ_FLAG_TRIM_HEURISTIC ||
-            flags & XMQ_FLAG_TRIM_EXACT) should_trim = true;
+        if ((flags & XMQ_FLAG_TRIM_HEURISTIC) ||
+            (flags & XMQ_FLAG_TRIM_EXACT)) should_trim = true;
 
         if (!(flags & XMQ_FLAG_TRIM_NONE) &&
             (ct == XMQ_CONTENT_XML ||
@@ -4410,13 +4436,18 @@ void collect_text(YaepTreeNode *n, MemBuffer *mb)
 void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index)
 {
     if (n == NULL) return;
+    if (n->type == YAEP_TERM && n->val.terminal.code == -1) return;
     if (n->type == YAEP_ANODE)
     {
         YaepAbstractNode *an = &n->val.anode;
 
         if (an != NULL && an->name != NULL)
         {
-            if (an->name[0] == '|' && an->name[1] == '+')
+            if (an->name[0] == '|' && an->name[1] == '!')
+            {
+                // The content is a not lookahead node. Discard it.
+            }
+            else if (an->name[0] == '|' && an->name[1] == '+')
             {
                 // The content to be inserted has been encoded in the rule name.
                 // A hack yes. Does it work? Yes!
@@ -4425,6 +4456,13 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
                 if(an->name[2] == '/' && an->name[3] == '/')
                 {
                     new_node = xmlNewDocComment(doc, (xmlChar*)an->name+4);
+                }
+                if(an->name[2] == '#')
+                {
+                    int value = (int)strtol(an->name+3, NULL, 16);
+                    UTF8Char c;
+                    encode_utf8(value, &c);
+                    new_node = xmlNewDocText(doc, (xmlChar*)c.bytes);
                 }
                 else
                 {
@@ -4575,7 +4613,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     {
         state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
         state->error_info = "internal error, yaep did not accept generated yaep grammar";
-        printf("xmq: could not parse input using ixml grammar: %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
+        printf("xmq: internal error generating yaep grammar from ixml grammar %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
         longjmp(state->error_handler, 1);
     }
 
@@ -4617,16 +4655,22 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
     if (rc)
     {
-        printf("xmq: could not parse input using ixml grammar: %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
+        // Syntax error has already been printed.
         return false;
     }
 
-    if (run->ambiguous_p && !(flags & XMQ_FLAG_IXML_ALL_PARSES))
+    generate_dom_from_yaep_node(doc->docptr_.xml, NULL, run->root, NULL, 0, 0);
+
+    if (run->ambiguous_p)
     {
-        fprintf(stderr, "ixml: Warning! The input can be parsed in multiple ways, ie it is ambiguous!\n");
+        xmlNodePtr element = xmlDocGetRootElement(doc->docptr_.xml);
+        xmlNsPtr ns = xmlNewNs(element,
+                               (const xmlChar *)"http://invisiblexml.org/NS",
+                               (const xmlChar *)"ixml");
+
+        xmlSetNsProp(element, ns, (xmlChar*)"state", (xmlChar*)"ambiguous");
     }
 
-    generate_dom_from_yaep_node(doc->docptr_.xml, NULL, run->root, NULL, 0, 0);
 
     if (run->root) yaepFreeTree(run->root, NULL, NULL);
 
@@ -4714,26 +4758,6 @@ char *xmqLineDoc(XMQLineConfig *lc, XMQDoc *doc)
     return start;
 }
 
-char *buf_vsnprintf(const char *format, va_list ap);
-char *buf_vsnprintf(const char *format, va_list ap)
-{
-    size_t buf_size = 1024;
-    char *buf = (char*)malloc(buf_size);
-
-    for (;;)
-    {
-        size_t n = vsnprintf(buf, buf_size, format, ap);
-        if (n < buf_size) break;
-        buf_size *= 2;
-        free(buf);
-        // Why not realloc? Well, we are goint to redo the printf anyway overwriting
-        // the buffer again. So why allow realloc to spend time copying the content before
-        // it is overwritten?
-        buf = (char*)malloc(buf_size);
-    }
-    return buf;
-}
-
 char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list ap);
 char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list ap)
 {
@@ -4750,6 +4774,9 @@ char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list a
 
     char c = element_name[strlen(element_name)-1];
 
+    char module[256];
+    snprintf(module, 256, "(%.*s) ", (int)strlen(element_name)-1, element_name);
+
     if (c != '{')
     {
         MemBuffer *mb = new_membuffer();
@@ -4763,21 +4790,16 @@ char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list a
         else
         {
             format = va_arg(ap, const char *);
-            membuffer_append(mb, "(");
-            membuffer_append_region(mb, element_name, element_name+strlen(element_name)-1);
-            membuffer_append(mb, ") ");
         }
         char *buf = buf_vsnprintf(format, ap);
         membuffer_append(mb, buf);
         free(buf);
+        membuffer_prefix_lines(mb, module);
         membuffer_append_null(mb);
         return free_membuffer_but_return_trimmed_content(mb);
     }
 
     MemBuffer *mb = new_membuffer();
-    membuffer_append(mb, "(");
-    membuffer_append(mb, element_name);
-    membuffer_append(mb, ") ");
 
     char *buf = (char*)malloc(1024);
     size_t buf_size = 1024;
@@ -4828,6 +4850,8 @@ char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list a
     }
 
     free(buf);
+
+    membuffer_prefix_lines(mb, module);
     membuffer_append_null(mb);
 
     return free_membuffer_but_return_trimmed_content(mb);
@@ -4887,7 +4911,7 @@ char *xmq_line_vprintf_xmq(XMQLineConfig *lc, const char *element_name, va_list 
 
         size_t kl = strlen(key);
         char last = membuffer_back(mb);
-        if (last != '\'' && last != '(' && last != ')'  && last != '{' && last != '}')
+        if (last != '"' && last != '\'' && last != '(' && last != ')'  && last != '{' && last != '}')
         {
             membuffer_append(mb, " ");
         }
@@ -4950,6 +4974,8 @@ char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
     return v;
 }
 
+#ifdef BUILDING_DIST_XMQ
+
 #include"parts/always.c"
 #include"parts/colors.c"
 #include"parts/core.c"
@@ -4967,4 +4993,16 @@ char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
 #include"parts/xmq_internals.c"
 #include"parts/xmq_parser.c"
 #include"parts/xmq_printer.c"
+#include"parts/yaep_allocate.c"
+#include"parts/yaep_cspc.c"
+#include"parts/yaep_hashtab.c"
+#include"parts/yaep_objstack.c"
+#include"parts/yaep_vlobject.c"
+#include"parts/yaep_util.c"
+#include"parts/yaep_symbols.c"
+#include"parts/yaep_terminal_bitset.c"
+#include"parts/yaep_tree.c"
+#include"parts/yaep_print.c"
 #include"parts/yaep.c"
+
+#endif

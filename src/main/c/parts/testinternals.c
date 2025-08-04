@@ -2,9 +2,10 @@
 #include"colors.h"
 #include"core.h"
 #include"hashmap.h"
+#include"quicksort_strings.h"
 #include"stack.h"
 #include"text.h"
-#include"quicksort_strings.h"
+#include"yaep_objstack.h"
 
 #include<assert.h>
 #include<stdint.h>
@@ -16,6 +17,7 @@
     X(test_stack) \
     X(test_binary_search) \
     X(test_colors) \
+    X(test_objstack) \
 
 #define X(name) void name();
 TESTS
@@ -157,6 +159,33 @@ void test_colors()
     generate_tex_color(buf, sizeof(buf), &def, "GURKA");
 
     printf("TEX %s\n", buf);
+}
+
+void test_objstack()
+{
+    os_t test_os;
+    YaepAllocator *allocator = yaep_alloc_new (NULL, NULL, NULL, NULL);
+
+    const char *org = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    OS_CREATE(test_os, allocator, 0);
+    OS_TOP_ADD_STRING(test_os, org);
+    const char *msg = (char*)OS_TOP_BEGIN(test_os);
+    OS_TOP_FINISH(test_os);
+    if (strcmp(msg, org))
+    {
+        printf("BAD YAEP OBJSTACK\n");
+        all_ok_ = false;
+    }
+
+    char *s = humanReadableTwoDecimals(objstack_memusage(&test_os));
+    if (strcmp(s, "536.00 B"))
+    {
+        printf("BAD YAEP OBJSTACK SIZE\n");
+        all_ok_ = false;
+    }
+    free(s);
+    OS_DELETE(test_os);
+    yaep_alloc_del(allocator);
 }
 
 /*

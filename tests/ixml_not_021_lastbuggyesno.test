@@ -1,0 +1,17 @@
+START
+s = (chap | line)+.
+line = !'c', ~[#a]*, -#a.
+chap = 'c', ~[#a]*, -#a.
+INPUT
+c1
+A
+B
+c2
+OUTPUT
+s {
+    chap = c1
+    line = A
+    line = B
+    chap = c2
+}
+END

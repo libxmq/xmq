@@ -1,0 +1,12 @@
+START
+work =
+"
+howdy
+there
+neighbour
+"
+DEBUG
+[element_key "work" 1:1][whitespace " " 1:5][equals "=" 1:6][whitespace "\n" 1:7][element_value_quote "\"\nhowdy\nthere\nneighbour\n\"" 2:1][whitespace "\n" 6:2]
+CONTENT
+{quote "howdy\nthere\nneighbour"}
+END

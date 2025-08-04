@@ -501,7 +501,7 @@ void xmqSetPrintAllParsesIXML(XMQParseState *state, bool all_parses);
    @state: the parse state.
    @try_recover: if true then try to recover a failed parse.
 
-   If the parse fails then try to recover.
+   If the parse fails then try to recover. Default is to fail.
 */
 void xmqSetTryToRecoverIXML(XMQParseState *state, bool try_recover);
 
@@ -623,6 +623,7 @@ void xmqSetAddIndent(XMQOutputSettings *os, int add_indent);
 void xmqSetCompact(XMQOutputSettings *os, bool compact);
 void xmqSetUseColor(XMQOutputSettings *os, bool use_color);
 void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode);
+void xmqSetPreferDoubleQuotes(XMQOutputSettings *os, bool prefer_double_quotes);
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines);
 void xmqSetEscapeNon7bit(XMQOutputSettings *os, bool escape_non_7bit);
 void xmqSetEscapeTabs(XMQOutputSettings *os, bool escape_tabs);
@@ -804,6 +805,13 @@ void xmqSetDebug(bool e);
     Enable/Disable tracing.
 */
 void xmqSetTrace(bool e);
+
+/**
+    xmqLogFilter
+
+    Enable/Disable debug/trace logging for certain prefixes.
+*/
+void xmqLogFilter(const char *log_filter);
 
 /**
    xmqDebugging:

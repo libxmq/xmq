@@ -124,7 +124,7 @@ month  = 'January' | 'February' | 'March' | 'April' | 'May' | 'June' |
 year   = digit, digit, digit, digit.
 ```
 
-Then you run `xmq --ixml=dates.ixml -i '22 November 2024'`
+Then you run `xmq dates.ixml -i '22 November 2024'`
 and you will get the output:
 ```
 date {

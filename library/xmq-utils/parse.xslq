@@ -1,0 +1,438 @@
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:output(method         = html
+               doctype-system = about:legacy-compat)
+    xsl:param(name = level)
+    xsl:key(name  = trakey
+            match = parse/ixml-bt-step
+            use   = dr)
+    xsl:key(name  = blokey
+            match = parse/block
+            use   = id)
+    xsl:variable(name   = num_tokens
+                 select = /parse/ixml-pa-step[1]/n)
+    xsl:variable(name   = num_steps
+                 select = 'count(/parse/ixml-pa-step)')
+    xsl:template(match = /)
+    {
+        html {
+            head {
+                style = 'body {}
+                         * { font-family: monospace, Consolar, DejaVu Sans Mono, Lucida Console, Courier, "Courier New"; }
+                         table { border-collapse: collapse; }
+                         h1   {color: blue;}
+                         p    {color: red;}
+                         a.toggle { cursor: pointer; display:inline-block; padding: 1ex; }
+                         a.toggle:hover { background-color: grey; }
+                         #grammar { display: none; }
+                         #terminology { display: none; font-size: 1rex; }
+                         #statistics { display: none; font-size: 1rex; }
+                         pre#grammar { border: 1px solid; padding: 1em; margin: 1em;}
+                         td.grammar { border: 1px solid; text-align: left; background-color: #aaa; }
+                         td.lookahead { border: 1px solid; text-align: left; background-color: yellow; }
+                         table.steps, th, td { border: 1px solid; text-align: center; }
+                         td, th { min-width: 2em; min-height: 1em; white-space: nowrap; }
+                         .rule { text-align: left; background-color: cyan; padding-right: 1em; padding-left: 1em; position: sticky; right: 0px;
+                                 max-width: 30vw; white-space: wrap; }
+                         .rulebox { flex-wrap: wrap; flex-direction: row; display: flex; justify-content: space-between; }
+                         span.rulecontent { }
+                         span.ruleid { font-size: 0.5rem; }
+                         .top { background-color: cyan; font-weight: bold; position: sticky; top: 0px;}
+                         .step { background-image: linear-gradient(45deg, #3bc420 41.67%, #e33030 41.67%, #e33030 50%, #3bc420 50%, #3bc420 91.67%, #e33030 91.67%, #e33030 100%); background-size: 16.97px 16.97px; }
+                         .step[used="true"] { color: black; background: solid; background: lightgreen; }
+                         .dot[blocked="true"] { color: red; background: solid; background: orange; }
+                         .pred { background-color: lightyellow; }
+                         .notlookahead { text-color: white; background-color: purple; }
+                         .dot { background-color: orange; }
+                         .eof { background-color: lightgrey; min-width: 1ch; width: 1ch; }
+                         .predotted { color: black; background-color: orange;}
+                         .dotted { color: darkorange;}
+                         .info { text-align: left; background: lightyellow; font-size: 0.5rem; }
+                         .leinfo { text-align: left; font-size: 0.5rem; background-color: cyan; padding-right: 1em; padding-left: 1em; position: sticky; right: 0px; max-width: 30vw; white-space: wrap; }
+                         .ledebug { text-align: left; font-size: 0.5rem; background-color: yellow; padding-right: 1em; padding-left: 1em; position: sticky; right: 0px; max-width: 30vw; white-space: wrap; }
+
+                         .dotted[blocked="true"] { color: white; background: red; }
+                         .completed { color: black; background-color: lightgreen; }
+                         .predicted { color: black; background-color: lightyellow; }'
+                script = "function toggle(name) { const e = document.getElementById(name);
+                                                  if (e.style.display === 'none' || e.style.display === '')
+                                                       e.style.display = 'table';
+                                                  else e.style.display = 'none';  }"
+            }
+            body {
+                a(class = toggle
+                  onclick = "toggle('grammar'); return false;") = 'Grammar '
+                a(class = toggle
+                  onclick = "toggle('terminology'); return false;") = 'Terminology '
+                a(class = toggle
+                  onclick = "toggle('statistics'); return false;") = 'Statistics '
+                br
+                pre(id = grammar)
+                {
+                    xsl:apply-templates(select = parse/ixml-gr)
+                }
+                pre(id = statistics)
+                {
+                    Statistics
+                    xsl:apply-templates(select = parse/ixml-stats)
+                }
+                pre(id = terminology)
+                {
+""""
+  Input tokens:  The content to be parsed stored as an array of symbols
+                 (with user supplied attributes attached that can be user fetched later).
+                 The tokens can be lexer symbols or unicode characters (ixml).
+                 An offset into the input tokens array is always denoted with the suffix _i.
+                 E.g. input[tok_i] (current input token being scanned), from_i, to_i, state_set_i etc.
+                 An offset inside the rhs of a rule is denoted with the suffix _j.
+
+   Rule:        A grammar rule: S →  NP VP
+
+   Dotted Rule: A rule with a dot: S →  NP 🞄 VP
+                The dot symbolizes how far the rule has been matched against input.
+                The dot_j starts at zero which means nothing has been matched.
+                A dotted rule is started if the dot_j > 0, ie it has matched something.
+
+   Earley Item: Every input token input[tok_i] gets a state set that stores Early items (aka chart entries).
+                An early item: [from_i, to_i, S →  NP 🞄 VP]
+                The item maps a token range with a partial (or fully completed) dotted rule.
+                Since to_i == tok_i we do not need to actually store to_i, its implicit from the state set.
+                Instead we store the match_length (== to_i - from_i).
+
+                The matched lengths are stored in a separate array and are not needed for
+                parsing/recognition but are required when building the parse tree.
+
+                Because of the separate array, there is no need not have an Earley Item structure
+                in this implementation. Instead we store dotted rules and match_lengths arrays.
+
+   StateSetCore: The part of a state set that can be shared between StateSets.
+                 This is where we store the dotted rules, the dotted_rule_lenghts,
+                 and the scanned terminal that created this core.
+                 Again, the dotted_rule_lengths are only used to build the final parse tree
+                 after at least one valid parse has been found.
+                 The StateSetCores can be reused a lot.
+
+   StateSet: For each input token, we build a state set with all possible Earley items.
+             started (some match) and not-yet-started (no match yet). Theses items
+             come from the scan/complete/predict algorithm.
+
+             A started dotted_rule stores the matched length in number of tokens as matched_length.
+
+             We compress the StateSet with an immutable StateSetCore and a separate
+             array of matched_lengths corresponding to the dotted rules inside the state set core.
+
+    Abbreviations:
+
+    d12        dotted rule nr 12 e.g. S → S '+' · M
+    (d12,7-10) dotted rule 12 maps to input range 7-10 aka (X → α • β, i)
+    s7         state set 7
+    c17        state core 17
+    cspc2      core+symbol maps to predictions/completions vectors
+    stlg       state set lookahead goto
+""""
+                }
+                table(class = steps) {
+                    tr {
+                        xsl:for-each(select = parse/ixml-pa-token)
+                        {
+                            xsl:variable(name   = content
+                                         select = char)
+                            th {
+                                xsl:attribute(name = class)
+                                {
+                                    xsl:choose {
+                                        xsl:when(test = "$content = 'ω'") = 'top eof'
+                                        xsl:otherwise = top
+                                    }
+                                }
+                                xsl:value-of(select = $content)
+                            }
+                        }
+                        th(class = rule)
+                    }
+                    xsl:apply-templates(select = ixml-pa-token|parse/ixml-pa-trace|parse/ixml-pa-debug|parse/ixml-pa-view|parse/ixml-bt-step|parse/ixml-bt-info|parse/ixml-pa-step)
+                }
+            }
+        }
+    }
+    xsl:template(match = parse/ixml-gr)
+    {
+        xsl:value-of(select = .)
+        br
+    }
+    xsl:template(match = parse/ixml-nt)
+    {
+        tr {
+            td(class = lookahead)
+            {
+                xsl:value-of(select = .)
+            }
+        }
+    }
+
+    xsl:template(match = parse/ixml-pa-token)
+    xsl:template(match = parse/ixml-pa-trace)
+    {
+        xsl:choose {
+        xsl:when(test = "$level = 'trace'")
+        {
+        tr {
+            td {
+                xsl:attribute(name = colspan)
+                {
+                    xsl:value-of(select = $num_tokens)
+                }
+            }
+            td(class = leinfo)
+            {
+                xsl:value-of(select = info)
+            }
+        }
+        }
+        xsl:otherwise
+        }
+    }
+    xsl:template(match = parse/ixml-pa-debug)
+    {
+        xsl:choose {
+        xsl:when(test = "$level = 'trace' or $level = 'debug'")
+        {
+        tr {
+            td {
+                xsl:attribute(name = colspan)
+                {
+                    xsl:value-of(select = $num_tokens)
+                }
+            }
+            td(class = ledebug)
+            {
+                xsl:value-of(select = info)
+            }
+        }
+        }
+        xsl:otherwise
+        }
+    }
+    xsl:template(match = parse/ixml-pa-view)
+    {
+        tr {
+            td {
+                xsl:attribute(name = colspan)
+                {
+                    xsl:value-of(select = $num_tokens)
+                }
+            }
+            td(class = ledebug)
+            {
+                xsl:value-of(select = info)
+            }
+        }
+    }
+    xsl:template(match = parse/ixml-bt-step)
+    {
+        xsl:choose {
+            xsl:when(test = "$level = 'trace'")
+            {
+        tr {
+            td {
+                xsl:attribute(name = colspan)
+                {
+                    xsl:value-of(select = $num_tokens)
+                }
+            }
+            td(class = leinfo)
+            {
+                'adding (d'
+                xsl:value-of(select = dr/id)
+                ','
+                xsl:value-of(select = dr/from)
+                '-'
+                xsl:value-of(select = dr/to)
+                ')'
+            }
+        }
+            }
+            xsl:otherwise
+        }
+    }
+    xsl:template(match = parse/ixml-bt-info)
+    {
+        tr {
+            td {
+                xsl:attribute(name = colspan)
+                {
+                    xsl:value-of(select = $num_tokens)
+                }
+            }
+            td(class = leinfo)
+            {
+                xsl:value-of(select = info)
+            }
+        }
+    }
+    xsl:template(match = parse/ixml-pa-step)
+    {
+        xsl:variable(name   = id
+                     select = dr/id)
+        xsl:variable(name   = from
+                     select = dr/from)
+        xsl:variable(name   = too
+                     select = dr/to)
+        xsl:variable(name = to)
+        {
+            xsl:choose {
+                xsl:when(test = '$too = $from') {
+                    xsl:value-of(select = $from+1)
+                }
+                xsl:otherwise {
+                    xsl:value-of(select = $too)
+                }
+            }
+        }
+        xsl:variable(name   = total
+                     select = n)
+        xsl:variable(name   = pre
+                     select = 'number($from)')
+        xsl:variable(name   = mid
+                     select = 'number($to)-number($from)')
+        xsl:variable(name   = post
+                     select = 'number($total)-number($to)-1')
+        xsl:variable(name = final)
+        {
+            xsl:choose {
+                xsl:when(test = '$total = $to') = 0
+                xsl:otherwise = 1
+            }
+        }
+        tr {
+            xsl:call-template(name = gencols)
+            {
+                xsl:with-param(name = class) = ''
+                xsl:with-param(name = count)
+                {
+                    xsl:value-of(select = $pre)
+                }
+            }
+            td(colspan = '{$mid}')
+            {
+                xsl:attribute(name = class)
+                {
+                    xsl:choose {
+                        xsl:when(test = "type = 'full'") = step
+                        xsl:when(test = "type = 'none'") = pred
+                        xsl:when(test = "type = 'not'") = notlookahead
+                        xsl:otherwise = dot
+                    }
+                }
+                xsl:attribute(name = used)
+                {
+                    xsl:for-each(select = '''key('trakey',dr)''')
+                    {
+                        xsl:if(test = 'position()=1') = true
+                    }
+                }
+                xsl:attribute(name = blocked)
+                {
+                    xsl:for-each(select = '''key('blokey',$id)''')
+                    {
+                        xsl:if(test = 'position()=1') = true
+                    }
+                }
+                xsl:choose {
+                    xsl:when(test = "type = 'not'") = ' '
+                    xsl:otherwise {
+                        xsl:apply-templates(select = rule/name)
+                    }
+                }
+            }
+            xsl:call-template(name = gencols)
+            {
+                xsl:with-param(name = class) = ''
+                xsl:with-param(name = count)
+                {
+                    xsl:value-of(select = $post)
+                }
+            }
+            xsl:call-template(name = gencols)
+            {
+                xsl:with-param(name = class) = eof
+                xsl:with-param(name = count)
+                {
+                    xsl:value-of(select = $final)
+                }
+            }
+            td(class = rule)
+            {
+                div(class = rulebox)
+                {
+                    span(class = rulecontent)
+                    {
+                        xsl:apply-templates(select = rule/name)
+                        xsl:apply-templates(select = cost)
+                        xsl:choose {
+                            xsl:when(test = "type = 'not'") = ''
+                            xsl:otherwise {
+                                ' → '
+                                span(class = completed)
+                                {
+                                    xsl:apply-templates(select = rule/body)
+                                }
+                                span(class = dotted)
+                                {
+                                    xsl:attribute(name = blocked)
+                                    {
+                                        xsl:for-each(select = "key('blokey',$id)")
+                                        {
+                                            xsl:if(test = 'position()=1') = true
+                                        }
+                                    }
+                                }
+                                xsl:apply-templates(select = rule/dot_body)
+                                xsl:for-each(select = "key('blokey',$id)")
+                                {
+                                    '*'
+                                    xsl:value-of(select = btype)
+                                }
+                            }
+                        }
+                    }
+                    span(class = ruleid)
+                    {
+                        '(d'
+                        xsl:value-of(select = dr/id)
+                        ','
+                        xsl:value-of(select = dr/from)
+                        '-'
+                        xsl:value-of(select = dr/to)
+                        ') '
+                    }
+                }
+            }
+        }
+    }
+    // The gencols macro repeats empty td columns exactly count times.
+    xsl:template(name = gencols)
+    {
+        xsl:param(name = class)
+        xsl:param(name = count)
+        xsl:if(test = '$count > 0')
+        {
+            td(class = '{$class}')
+        }
+        xsl:if(test = '$count > 0')
+        {
+            xsl:call-template(name = gencols)
+            {
+                xsl:with-param(name = i)
+                {
+                    xsl:value-of(select = $class)
+                }
+                xsl:with-param(name = count)
+                {
+                    xsl:value-of(select = '$count - 1')
+                }
+            }
+        }
+    }
+}

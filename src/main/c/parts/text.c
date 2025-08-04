@@ -1,5 +1,5 @@
 
-#ifndef BUILDING_XMQ
+#ifndef BUILDING_DIST_XMQ
 
 #include"always.h"
 #include"text.h"
@@ -11,6 +11,58 @@
 #endif
 
 #ifdef TEXT_MODULE
+
+size_t count_whitespace(const char *i, const char *stop)
+{
+    unsigned char c = *i;
+    if (c == ' ' || c == '\n' || c == '\t' || c == '\r')
+    {
+        return 1;
+    }
+
+    if (i+1 >= stop) return 0;
+
+    // If not a unbreakable space U+00A0 (utf8 0xc2a0)
+    // or the other unicode whitespaces (utf8 starts with 0xe2)
+    // then we have not whitespaces here.
+    if (c != 0xc2 && c != 0xe2) return 0;
+
+    unsigned char cc = *(i+1);
+
+    if (c == 0xC2 && cc == 0xA0)
+    {
+        // Unbreakable space. 0xA0
+        return 2;
+    }
+    if (c == 0xE2 && cc == 0x80)
+    {
+        if (i+2 >= stop) return 0;
+
+        unsigned char ccc = *(i+2);
+
+        if (ccc == 0x80)
+        {
+            // EN quad. &#8192; U+2000 utf8 E2 80 80
+            return 3;
+        }
+        if (ccc == 0x81)
+        {
+            // EM quad. &#8193; U+2001 utf8 E2 80 81
+            return 3;
+        }
+        if (ccc == 0x82)
+        {
+            // EN space. &#8194; U+2002 utf8 E2 80 82
+            return 3;
+        }
+        if (ccc == 0x83)
+        {
+            // EM space. &#8195; U+2003 utf8 E2 80 83
+            return 3;
+        }
+    }
+    return 0;
+}
 
 const char *has_leading_space_nl(const char *start, const char *stop, size_t *only_newlines)
 {
@@ -97,9 +149,12 @@ const char *has_ending_nl_space(const char *start, const char *stop, size_t *onl
     return i;
 }
 
-bool has_leading_ending_quote(const char *start, const char *stop)
+bool has_leading_ending_different_quotes(const char *start, const char *stop)
 {
-    return start < stop && ( *start == '\'' || *(stop-1) == '\'');
+    return start < stop && (
+        ( *start == '\'' && *(stop-1) == '"')
+        ||
+        ( *start == '"' && *(stop-1) == '\''));
 }
 
 bool has_newlines(const char *start, const char *stop)
@@ -123,10 +178,22 @@ bool has_must_escape_chars(const char *start, const char *stop)
 bool has_all_quotes(const char *start, const char *stop)
 {
     if (start == stop) return false;
+    bool all_sq = true;
     for (const char *i = start; i < stop; ++i)
     {
-        if (*i != '\'') return false;
+        if (*i != '\'')
+        {
+            all_sq = false;
+            break;
+        }
     }
+    if (all_sq) return true;
+
+    for (const char *i = start; i < stop; ++i)
+    {
+        if (*i != '"') return false;
+    }
+
     return true;
 }
 
@@ -258,6 +325,7 @@ size_t encode_utf8(int uc, UTF8Char *utf8)
     utf8->bytes[1] = 0;
     utf8->bytes[2] = 0;
     utf8->bytes[3] = 0;
+    utf8->bytes[4] = 0;
 
     if (uc <= 0x7f)
     {
@@ -909,6 +977,32 @@ const char *find_eol_or_stop(const char *start, const char *stop)
         i++;
     }
     return stop;
+}
+
+bool is_hex(char c)
+{
+    return
+        (c >= '0' && c <= '9') ||
+        (c >= 'a' && c <= 'f') ||
+        (c >= 'A' && c <= 'F');
+}
+
+unsigned char hex_value(char c)
+{
+    if (c >= '0' && c <= '9') return c-'0';
+    if (c >= 'a' && c <= 'f') return 10+c-'a';
+    if (c >= 'A' && c <= 'F') return 10+c-'A';
+    assert(false);
+    return 0;
+}
+
+bool is_unicode_whitespace(const char *start, const char *stop)
+{
+    size_t n = count_whitespace(start, stop);
+
+    // Single char whitespace is ' ' '\t' '\n' '\r'
+    // First unicode whitespace is 160 nbsp require two or more chars.
+    return n > 1;
 }
 
 #endif // TEXT_MODULE

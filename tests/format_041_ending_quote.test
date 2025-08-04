@@ -5,10 +5,10 @@ START
 	banan
 </alfa>
 COMPACT
-alfa=('''	prutt 'homepage'''&#39;&#10;'	banan')
+alfa=("	prutt 'homepage'"&#10;'	banan')
 XMQ
-alfa = '''	prutt 'homepage'
-          	banan'''
+alfa = "	prutt 'homepage'
+        	banan"
 END
 ARGS
 CMDS

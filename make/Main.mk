@@ -70,25 +70,23 @@ PARTS_SOURCES:=$(wildcard $(SRC_ROOT)/src/main/c/parts/*.c)
 WINAPI_SOURCES:=$(filter-out %posix.c, $(SOURCES))
 WINAPI_PARTS_SOURCES:=$(filter-out %posix.c, $(PARTS_SOURCES))
 WINAPI_OBJS:=\
-    $(patsubst %.c,%.o,$(subst $(SRC_ROOT)/src/main/c,$(OUTPUT_ROOT)/$(TYPE),$(WINAPI_SOURCES)))
-WINAPI_PARTS_OBJS:=\
-    $(patsubst %.c,%.o,$(subst $(SRC_ROOT)/src/main/c,$(OUTPUT_ROOT)/$(TYPE),$(WINAPI_PARTS_SOURCES)))
-WINAPI_LIBXMQ_OBJS:=$(filter-out %testinternals.o,$(WINAPI_OBJS))
-WINAPI_TESTINTERNALS_OBJS:=$(filter-out %xmq-cli.o,$(WINAPI_OBJS))
+    $(patsubst %.c,%.o,$(subst $(SRC_ROOT)/src/main/c,$(OUTPUT_ROOT)/$(TYPE),$(WINAPI_SOURCES))) $(patsubst %.c,%.o,$(subst $(SRC_ROOT)/src/main/c,$(OUTPUT_ROOT)/$(TYPE),$(WINAPI_PARTS_SOURCES)))
+WINAPI_LIBXMQ_OBJS:=$(filter-out %xmq-cli.o, $(filter-out %parts/testinternals.o, $(filter-out %testinternals.o,$(WINAPI_OBJS))))
+WINAPI_TESTINTERNALS_OBJS:=$(filter-out %xmq-cli.o,$(WINAPI_LIBXMQ_OBJS))
 WINAPI_LIBS := \
 $(OUTPUT_ROOT)/$(TYPE)/libgcc_s_seh-1.dll \
 $(OUTPUT_ROOT)/$(TYPE)/libstdc++-6.dll \
 $(OUTPUT_ROOT)/$(TYPE)/libwinpthread-1.dll \
-$(OUTPUT_ROOT)/$(TYPE)/libxml2-2.dll \
-$(OUTPUT_ROOT)/$(TYPE)/libxslt-1.dll
+$(OUTPUT_ROOT)/$(TYPE)/$(LIBXML2_LIBNAME) \
+$(OUTPUT_ROOT)/$(TYPE)/libxslt-1.dll \
+$(OUTPUT_ROOT)/$(TYPE)/bcrypt.dll
 WINAPI_SUFFIX:=.exe
 
 POSIX_SOURCES:=$(filter-out %winapi.c,$(SOURCES))
 POSIX_PARTS_SOURCES:=$(filter-out %winapi.c,$(PARTS_SOURCES))
-POSIX_OBJS:=$(patsubst %.c,%.o,$(subst $(SRC_ROOT)/src/main/c,$(OUTPUT_ROOT)/$(TYPE),$(POSIX_SOURCES)))
-POSIX_PARTS_OBJS:=$(patsubst %.c,%.o,$(subst $(SRC_ROOT)/src/main/c,$(OUTPUT_ROOT)/$(TYPE),$(POSIX_PARTS_SOURCES)))
-POSIX_LIBXMQ_OBJS:=$(filter-out %testinternals.o,$(POSIX_OBJS))
-POSIX_TESTINTERNALS_OBJS:=$(filter-out %xmq-cli.o,$(POSIX_OBJS))
+POSIX_OBJS:=$(patsubst %.c,%.o,$(subst $(SRC_ROOT)/src/main/c,$(OUTPUT_ROOT)/$(TYPE),$(POSIX_SOURCES))) $(patsubst %.c,%.o,$(subst $(SRC_ROOT)/src/main/c,$(OUTPUT_ROOT)/$(TYPE),$(POSIX_PARTS_SOURCES)))
+POSIX_LIBXMQ_OBJS:=$(filter-out %xmq-cli.o,$(filter-out %parts/testinternals.o, $(filter-out %testinternals.o,$(POSIX_OBJS))))
+POSIX_TESTINTERNALS_OBJS:=$(filter-out %xmq-cli.o,$(POSIX_LIBXMQ_OBJS))
 POSIX_LIBS:=
 POSIX_SUFFIX:=
 
@@ -106,13 +104,12 @@ $(OUTPUT_ROOT)/generated_filetypes.h: $(SRC_ROOT)/scripts/filetypes.inc
 
 LIBXMQ_OBJS:=$($(PLATFORM)_LIBXMQ_OBJS)
 TESTINTERNALS_OBJS:=$($(PLATFORM)_TESTINTERNALS_OBJS)
-PARTS_TESTINTERNALS_OBJS:=$($(PLATFORM)_PARTS_TESTINTERNALS_OBJS)
 SUFFIX:=$($(PLATFORM)_SUFFIX)
 
 $(OUTPUT_ROOT)/$(TYPE)/xmq_genautocomp.o: $(OUTPUT_ROOT)/generated_autocomplete.h
 $(OUTPUT_ROOT)/$(TYPE)/fileinfo.o: $(OUTPUT_ROOT)/generated_filetypes.h
 
-$(OUTPUT_ROOT)/$(TYPE)/%.o: $(SRC_ROOT)/src/main/c/%.c $(PARTS_SOURCES) $(OUTPUT_ROOT)/update_yaep
+$(OUTPUT_ROOT)/$(TYPE)/%.o: $(SRC_ROOT)/src/main/c/%.c $(PARTS_SOURCES)
 	@echo Compiling $(TYPE) $(CONF_MNEMONIC) $$(basename $<)
 	$(AT)$(CC) -fpic -g $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c -o $@
 	$(AT)$(CC) -E $(CFLAGS_$(TYPE)) $(CFLAGS) -I$(SRC_ROOT)/src/main/c -I$(OUTPUT_ROOT) -I$(BUILD_ROOT) -MMD $< -c > $@.source
@@ -125,20 +122,20 @@ $(OUTPUT_ROOT)/$(TYPE)/parts/%.o: $(SRC_ROOT)/src/main/c/parts/%.c
 ifneq ($(PLATFORM),WINAPI)
 $(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(POSIX_OBJS)
 	@echo "Linking libxmq.so"
-	$(AT)$(CC) -shared -g -o $(OUTPUT_ROOT)/$(TYPE)/libxmq.so $(OUTPUT_ROOT)/$(TYPE)/xmq.o $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSBEGIN_$(TYPE)) $(DEBUG_LDFLAGS) $(LDFLAGSEND_$(TYPE))
+	$(AT)$(CC) -shared -g -o $(OUTPUT_ROOT)/$(TYPE)/libxmq.so $(LIBXMQ_OBJS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSBEGIN_$(TYPE)) $(DEBUG_LDFLAGS) $(LDFLAGSEND_$(TYPE))
 else
 $(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(WINAPI_OBJS) $(PARTS_SOURCES)
 	touch $@
 endif
 
-$(OUTPUT_ROOT)/$(TYPE)/libxmq.a: $(POSIX_OBJS)
+$(OUTPUT_ROOT)/$(TYPE)/libxmq.a: $(LIBXMQ_OBJS)
 	@echo Archiving libxmq.a
 	$(AT)ar rcs $@ $^
 
 ifeq ($(ENABLE_STATIC_XMQ),no)
-$(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(EXTRA_LIBS)
+$(OUTPUT_ROOT)/$(TYPE)/xmq: $(OUTPUT_ROOT)/$(TYPE)/xmq-cli.o $(LIBXMQ_OBJS) $(EXTRA_LIBS)
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
-	$(AT)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS) \
+	$(AT)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(OUTPUT_ROOT)/$(TYPE)/xmq-cli.o $(LIBXMQ_OBJS) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(AT)cp $@ $@.g
 	$(AT)$(STRIP_COMMAND) $@$(SUFFIX)
@@ -149,9 +146,9 @@ ifeq ($(PLATFORM),WINAPI)
 	$(AT)(cd build/windows_installer; makensis xmq.nsis)
 endif
 else
-$(OUTPUT_ROOT)/$(TYPE)/xmq: $(LIBXMQ_OBJS) $(PARTS_SOURCES) $(EXTRA_LIBS)
+$(OUTPUT_ROOT)/$(TYPE)/xmq: $(OUTPUT_ROOT)/$(TYPE)/xmq-cli.o $(LIBXMQ_OBJS) $(EXTRA_LIBS)
 	@echo Linking static $(TYPE) $(CONF_MNEMONIC) $@
-	$(AT)$(CC) -static -o $@ $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(LIBXMQ_OBJS) \
+	$(AT)$(CC) -static -o $@ $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(OUTPUT_ROOT)/$(TYPE)/xmq-cli.o $(LIBXMQ_OBJS) \
                       $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 ifeq ($(PLATFORM),WINAPI)
 	$(AT)mkdir -p $(OUTPUT_ROOT)/windows_installer
@@ -161,16 +158,18 @@ ifeq ($(PLATFORM),WINAPI)
 endif
 endif
 
-$(OUTPUT_ROOT)/$(TYPE)/testinternals: $(TESTINTERNALS_OBJS)
+$(OUTPUT_ROOT)/$(TYPE)/testinternals: $(OUTPUT_ROOT)/$(TYPE)/testinternals.o $(TESTINTERNALS_OBJS)
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
-	$(AT)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(TESTINTERNALS_OBJS) \
-                      $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
+	$(AT)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) \
+	    $(OUTPUT_ROOT)/$(TYPE)/testinternals.o $(TESTINTERNALS_OBJS) \
+	    $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(AT)$(STRIP_COMMAND) $@$(SUFFIX)
 
-$(OUTPUT_ROOT)/$(TYPE)/parts/testinternals: $($(PLATFORM)_PARTS_OBJS)
+$(OUTPUT_ROOT)/$(TYPE)/parts/testinternals: $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals.o $(TESTINTERNALS_OBJS)
 	@echo Linking parts $(TYPE) $(CONF_MNEMONIC) $@
-	$(AT)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $($(PLATFORM)_PARTS_OBJS) \
-                      $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
+	$(AT)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) \
+	    $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals.o $(TESTINTERNALS_OBJS) \
+            $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(AT)$(STRIP_COMMAND) $@$(SUFFIX)
 
 $(OUTPUT_ROOT)/$(TYPE)/libgcc_s_seh-1.dll:
@@ -185,12 +184,16 @@ $(OUTPUT_ROOT)/$(TYPE)/libwinpthread-1.dll:
 	$(AT)cp "$$(find /usr -name libwinpthread-1.dll | grep -m 1 x86_64)" $@
 	@echo "Installed $@"
 
-$(OUTPUT_ROOT)/$(TYPE)/libxml2-2.dll:
-	$(AT)cp "$$(find $(SRC_ROOT)/3rdparty/libxml2-winapi -name libxml2-2.dll | grep -m 1 libxml2-2.dll)" $@
+$(OUTPUT_ROOT)/$(TYPE)/$(LIBXML2_LIBNAME):
+	$(AT)cp "$$(find $(SRC_ROOT)/3rdparty/libxml2-winapi -name $(LIBXML2_LIBNAME) | grep -m 1 '/$(LIBXML2_LIBNAME)')" $@
 	@echo "Installed $@"
 
 $(OUTPUT_ROOT)/$(TYPE)/libxslt-1.dll:
 	$(AT)cp "$$(find $(SRC_ROOT)/3rdparty/libxslt-winapi -name libxslt-1.dll | grep -m 1 libxslt-1.dll)" $@
+	@echo "Installed $@"
+
+$(OUTPUT_ROOT)/$(TYPE)/bcrypt.dll:
+	$(AT)cp "$(BCRYPT_DLL)" $@
 	@echo "Installed $@"
 
 BINARIES:=$(OUTPUT_ROOT)/$(TYPE)/libxmq.a \
@@ -203,16 +206,10 @@ $(SRC_ROOT)/dist/xmq.h: $(SRC_ROOT)/src/main/c/xmq.h
 	@cp $< $@
 	@echo "Copied dist/xmq.h"
 
-$(SRC_ROOT)/dist/xmq.c: $(SRC_ROOT)/src/main/c/xmq.c $(PARTS_SOURCES) $(OUTPUT_ROOT)/update_yaep
+$(SRC_ROOT)/dist/xmq.c: $(SRC_ROOT)/src/main/c/xmq.c $(PARTS_SOURCES)
 	$(AT)$(SRC_ROOT)/scripts/build_xmq_from_parts.sh $(OUTPUT_ROOT) $< $(SRC_ROOT)/dist/VERSION
 	$(AT)cp $(OUTPUT_ROOT)/xmq-in-progress $(SRC_ROOT)/dist/xmq.c
 	@echo "Generated dist/xmq.c"
-
-$(OUTPUT_ROOT)/update_yaep: $(SRC_ROOT)/src/main/c/yaep/src/yaep.c $(SRC_ROOT)/src/main/c/yaep/src/yaep.h
-	@rm -f $(SRC_ROOT)/src/main/c/parts/yaep.h $(SRC_ROOT)/src/main/c/parts/yaep.c
-	@(cd $(SRC_ROOT)/src/main/c/yaep ; ./build_single_yaep_source_file.sh)
-	@echo Generated yaep.h yaep.c
-	@touch $@
 
 ifeq ($(CLEAN),clean)
 # Clean!
@@ -220,7 +217,6 @@ release debug asan:
 	rm -f $(OUTPUT_ROOT)/$(TYPE)/*
 	rm -f $(OUTPUT_ROOT)/$(TYPE)/generated_autocomplete.h
 	rm -f $(OUTPUT_ROOT)/$(TYPE)/generated_filetypes.h
-	rm -f $(OUTPUT_ROOT)/update_yaep
 else
 # Build!
 release debug asan: $(BINARIES) $(EXTRA_LIBS)
@@ -251,4 +247,4 @@ lcov:
 .PHONY: release debug
 
 # Include dependency information generated by gcc in a previous compile.
-#include $(wildcard $(patsubst %.o,%.d,$(POSIX_OBJS)))
+include $(wildcard $(patsubst %.o,%.d,$(POSIX_OBJS)))

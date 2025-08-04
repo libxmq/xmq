@@ -1,0 +1,2815 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ST26SequenceListing PUBLIC "-//WIPO//DTD Sequence Listing 1.3//EN" "ST26SequenceListing_V1_3.dtd">
+<ST26SequenceListing   dtdVersion="V1_3" fileName="3.Sequence Listing_TG22-003EP.xml" softwareName="WIPO Sequence" softwareVersion="2.1.0" productionDate="2022-07-08">
+	<ApplicantFileReference>TG22-003EP</ApplicantFileReference>
+	<EarliestPriorityApplicationIdentification>
+		<IPOfficeCode>JP</IPOfficeCode>
+		<ApplicationNumberText>JP 2021-116560</ApplicationNumberText>
+		<FilingDate>2021-07-14</FilingDate>
+	</EarliestPriorityApplicationIdentification>
+	<ApplicantName languageCode="en">TOAGOSEI CO., LTD.</ApplicantName>
+	<InventionTitle languageCode="en">siRNA based on RNA sequence of SARS-CoV-2 and use thereof</InventionTitle>
+	<SequenceTotalQuantity>42</SequenceTotalQuantity>
+	<SequenceData sequenceIDNumber="1">
+		<INSDSeq>
+			<INSDSeq_length>19</INSDSeq_length>
+			<INSDSeq_moltype>RNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q1">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>target sequence in siRNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other RNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q2">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>gttttattgccactagtct</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="2">
+		<INSDSeq>
+			<INSDSeq_length>19</INSDSeq_length>
+			<INSDSeq_moltype>RNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q3">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>target sequence in siRNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other RNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q4">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>gtctctagtcagtgtgtta</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="3">
+		<INSDSeq>
+			<INSDSeq_length>19</INSDSeq_length>
+			<INSDSeq_moltype>RNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q5">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>target sequence in siRNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other RNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q6">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>cagtgtgttaatcttacaa</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="4">
+		<INSDSeq>
+			<INSDSeq_length>16</INSDSeq_length>
+			<INSDSeq_moltype>AA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..16</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>protein</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q7">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>Severe acute respiratory syndrome coronavirus 2</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>MFVFLVLLPLVSSQCV</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="5">
+		<INSDSeq>
+			<INSDSeq_length>48</INSDSeq_length>
+			<INSDSeq_moltype>RNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..48</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>viral cRNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q8">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>Severe acute respiratory syndrome coronavirus 2</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>atgtttgtttttcttgttttattgccactagtctctagtcagtgtgtt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="6">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q9">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q10">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>2..5</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q82">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>7..8</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q83">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>14</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q84">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>17</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q85">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q86">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q168">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>gttttattgccactagtcttt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="7">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q11">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q12">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>5</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q87">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>8</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q88">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>14</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q89">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q169">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>agactagtggcaataaaactt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="8">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q13">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q14">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>2</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q90">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>4</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q91">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>6</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q92">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>9</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q93">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>13</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q94">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>15</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q95">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>17..18</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q96">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q170">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>gtctctagtcagtgtgttatt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="9">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q15">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q16">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>1</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q97">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>9</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q98">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>13</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q99">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q171">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>taacacactgactagagactt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="10">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q17">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q18">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>4</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q100">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>6</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q101">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>8..9</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q102">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>12</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q103">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>14..15</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q104">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q172">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>cagtgtgttaatcttacaatt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="11">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q19">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q20">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>1..2</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q105">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>4</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q106">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>9..10</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q107">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>18</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q108">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q173">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>ttgtaagattaacacactgtt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="12">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q21">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q22">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>2..5</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q109">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>7..8</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q110">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>14</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q111">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>17</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q112">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q174">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>gttttcttaggaatcatcatt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="13">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q23">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q24">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>1</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q113">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>4</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q114">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>7..8</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q115">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>11</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q116">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q175">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>tgatgattcctaagaaaactt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="14">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q25">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q26">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>3</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q117">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>7..9</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q118">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q119">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q176">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>gctgcatttcaccaagaattt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="15">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q27">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q28">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>2..3</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q120">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>5..6</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q121">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>9</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q122">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>14</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q123">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q177">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>attcttggtgaaatgcagctt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="16">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q29">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q30">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>7</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q124">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>9</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q125">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>12..14</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q126">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q127">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q178">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>caagaatgtagtttacagttt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="17">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q31">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q32">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>3</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q128">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>5</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q129">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>10</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q130">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>14..15</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q131">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>17..18</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q132">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q179">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>actgtaaactacattcttgtt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="18">
+		<INSDSeq>
+			<INSDSeq_length>45</INSDSeq_length>
+			<INSDSeq_moltype>RNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..45</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>viral cRNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q33">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>Severe acute respiratory syndrome coronavirus 2</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>atgaaatttcttgttttcttaggaatcatcacaactgtagctgca</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="19">
+		<INSDSeq>
+			<INSDSeq_length>20</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..20</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q34">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>PCR_primers_fwd_seq</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..20</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q35">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>cttccctcagtcagcacctc</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="20">
+		<INSDSeq>
+			<INSDSeq_length>20</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..20</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q36">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>PCR_primers_rev_seq</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..20</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q37">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>aaccagtgtgtgccatttga</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="21">
+		<INSDSeq>
+			<INSDSeq_length>20</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..20</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q38">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>PCR_primers_fwd_seq</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..20</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q39">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>gctgcatttcaccaagaatg</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="22">
+		<INSDSeq>
+			<INSDSeq_length>20</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..20</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q40">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>PCR_primers_rev_seq</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..20</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q41">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>ctcatccacgcacaattcaa</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="23">
+		<INSDSeq>
+			<INSDSeq_length>23</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..23</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q42">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>PCR_primers_fwd_seq</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..23</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q43">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>cactttgcttcacactcaaaaga</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="24">
+		<INSDSeq>
+			<INSDSeq_length>22</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..22</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q44">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>PCR_primers_rev_seq</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..22</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q45">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>cattcttggtgaaatgcagcta</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="25">
+		<INSDSeq>
+			<INSDSeq_length>26</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..26</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q46">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>PCR_primers_fwd_seq</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..26</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q47">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>ccaggtaacaaaccaaccaactttcg</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="26">
+		<INSDSeq>
+			<INSDSeq_length>24</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..24</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q48">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>PCR_primers_rev_seq</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..24</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q49">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>ggttactgccagttgaatctgagg</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="27">
+		<INSDSeq>
+			<INSDSeq_length>23</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..23</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q50">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>PCR_primers_fwd_seq</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..23</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q51">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>agcctcttctcgttcctcatcac</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="28">
+		<INSDSeq>
+			<INSDSeq_length>19</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q52">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>PCR_primers_rev_seq</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q53">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>ccgccattgccagccattc</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="29">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q54">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>PCR_primers_fwd_seq</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q55">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>ggagcgagatccctccaaaat</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="30">
+		<INSDSeq>
+			<INSDSeq_length>23</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..23</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q56">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>PCR_primers_rev_seq</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..23</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q57">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>ggctgttgtcatacttctcatgg</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="31">
+		<INSDSeq>
+			<INSDSeq_length>19</INSDSeq_length>
+			<INSDSeq_moltype>RNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q58">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>target sequence in siRNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other RNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q59">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>gtttgtttttcttgtttta</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="32">
+		<INSDSeq>
+			<INSDSeq_length>19</INSDSeq_length>
+			<INSDSeq_moltype>RNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q60">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>target sequence in siRNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other RNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q61">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>ccactagtctctagtcagt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="33">
+		<INSDSeq>
+			<INSDSeq_length>19</INSDSeq_length>
+			<INSDSeq_moltype>RNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q62">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>target sequence in siRNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other RNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q63">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>ctctagtcagtgtgttaat</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="34">
+		<INSDSeq>
+			<INSDSeq_length>19</INSDSeq_length>
+			<INSDSeq_moltype>RNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q64">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>target sequence in siRNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other RNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q65">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>ctagtcagtgtgttaatct</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="35">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q66">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q67">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>2..4</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q133">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>6..10</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q134">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>12..13</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q135">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>15..18</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q136">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q180">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>gtttgtttttcttgttttatt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="36">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q68">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q69">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>1</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q137">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q181">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>taaaacaagaaaaacaaactt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="37">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q70">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q71">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>5</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q138">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>8</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q139">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>10</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q140">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>12</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q141">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>15</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q142">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q143">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q182">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>ccactagtctctagtcagttt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="38">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q72">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q73">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>3</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q144">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>7</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q145">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>14</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q146">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>17</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q147">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q183">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>actgactagagactagtggtt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="39">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q74">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q75">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>2</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q148">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>4</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q149">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>7</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q150">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>11</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q151">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>13</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q152">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>15..16</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q153">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q154">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q184">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>ctctagtcagtgtgttaattt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="40">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q76">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q77">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>2..3</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q155">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>11</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q156">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>15</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q157">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q185">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>attaacacactgactagagtt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="41">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q78">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q79">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>2</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q158">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>5</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q159">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>9</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q160">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>11</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q161">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>13..14</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q162">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>17</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q163">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q164">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q186">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>ctagtcagtgtgttaatcttt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+	<SequenceData sequenceIDNumber="42">
+		<INSDSeq>
+			<INSDSeq_length>21</INSDSeq_length>
+			<INSDSeq_moltype>DNA</INSDSeq_moltype>
+			<INSDSeq_division>PAT</INSDSeq_division>
+			<INSDSeq_feature-table>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>1..19</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q80">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>RNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>source</INSDFeature_key>
+					<INSDFeature_location>1..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mol_type</INSDQualifier_name>
+							<INSDQualifier_value>other DNA</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q81">
+							<INSDQualifier_name>organism</INSDQualifier_name>
+							<INSDQualifier_value>synthetic construct</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>4..5</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q165">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>13</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q166">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>modified_base</INSDFeature_key>
+					<INSDFeature_location>17</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier>
+							<INSDQualifier_name>mod_base</INSDQualifier_name>
+							<INSDQualifier_value>OTHER</INSDQualifier_value>
+						</INSDQualifier>
+						<INSDQualifier id="q167">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>uracil</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+				<INSDFeature>
+					<INSDFeature_key>misc_feature</INSDFeature_key>
+					<INSDFeature_location>20..21</INSDFeature_location>
+					<INSDFeature_quals>
+						<INSDQualifier id="q187">
+							<INSDQualifier_name>note</INSDQualifier_name>
+							<INSDQualifier_value>DNA</INSDQualifier_value>
+						</INSDQualifier>
+					</INSDFeature_quals>
+				</INSDFeature>
+			</INSDSeq_feature-table>
+			<INSDSeq_sequence>agattaacacactgactagtt</INSDSeq_sequence>
+		</INSDSeq>
+	</SequenceData>
+</ST26SequenceListing>

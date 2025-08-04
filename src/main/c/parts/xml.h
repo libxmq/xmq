@@ -27,38 +27,38 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<stdbool.h>
 #include<libxml/tree.h>
 
+int decode_entity_ref(const char *name);
 void free_xml(xmlNode * node);
-xmlNode *xml_first_child(xmlNode *node);
-xmlNode *xml_last_child(xmlNode *node);
-xmlNode *xml_next_sibling(xmlNode *node);
-xmlNode *xml_prev_sibling(xmlNode *node);
-xmlAttr *xml_first_attribute(xmlNode *node);
-xmlAttr *xml_next_attribute(xmlAttr *attr);
-xmlAttr *xml_get_attribute(xmlNode *node, const char *name);
-xmlNs *xml_first_namespace_def(xmlNode *node);
-xmlNs *xml_next_namespace_def(xmlNs *ns);
-bool xml_non_empty_namespace(xmlNs *ns);
-bool xml_has_non_empty_namespace_defs(xmlNode *node);
-const char*xml_element_name(xmlNode *node);
-const char*xml_element_content(xmlNode *node);
-const char *xml_element_ns_prefix(const xmlNode *node);
-const char *xml_attr_key(xmlAttr *attr);
-const char* xml_namespace_href(xmlNs *ns);
-bool is_entity_node(const xmlNode *node);
-bool is_content_node(const xmlNode *node);
+bool has_attributes(xmlNodePtr node);
+bool is_attribute_node(const xmlNode *node);
 bool is_comment_node(const xmlNode *node);
-bool is_pi_node(const xmlNode *node);
+bool is_content_node(const xmlNode *node);
 bool is_doctype_node(const xmlNode *node);
 bool is_element_node(const xmlNode *node);
-bool is_text_node(const xmlNode *node);
-bool is_attribute_node(const xmlNode *node);
+bool is_entity_node(const xmlNode *node);
 bool is_key_value_node(xmlNodePtr node);
-bool is_single_empty_text_node(xmlNodePtr node);
 bool is_leaf_node(xmlNode *node);
-bool has_attributes(xmlNodePtr node);
-char *xml_collapse_text(xmlNode *node);
-int decode_entity_ref(const char *name);
+bool is_pi_node(const xmlNode *node);
+bool is_single_empty_text_node(xmlNodePtr node);
+bool is_text_node(const xmlNode *node);
 void xml_add_root_child(xmlDoc *doc, xmlNode *node);
+const char *xml_attr_key(xmlAttr *attr);
+char *xml_collapse_text(xmlNode *node);
+const char *xml_element_content(xmlNode *node);
+const char *xml_element_name(xmlNode *node);
+const char *xml_element_ns_prefix(const xmlNode *node);
+xmlAttr *xml_first_attribute(xmlNode *node);
+xmlNode *xml_first_child(xmlNode *node);
+xmlNs *xml_first_namespace_def(xmlNode *node);
+xmlAttr *xml_get_attribute(xmlNode *node, const char *name);
+bool xml_has_non_empty_namespace_defs(xmlNode *node);
+xmlNode *xml_last_child(xmlNode *node);
+const char *xml_namespace_href(xmlNs *ns);
+xmlAttr *xml_next_attribute(xmlAttr *attr);
+xmlNs *xml_next_namespace_def(xmlNs *ns);
+xmlNode *xml_next_sibling(xmlNode *node);
+bool xml_non_empty_namespace(xmlNs *ns);
+xmlNode *xml_prev_sibling(xmlNode *node);
 
 #define XML_MODULE
 

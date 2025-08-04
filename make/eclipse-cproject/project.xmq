@@ -1,0 +1,22 @@
+projectDescription {
+    name = libxmq
+    comment
+    projects
+    buildSpec {
+        buildCommand {
+            name     = org.eclipse.cdt.managedbuilder.core.genmakebuilder
+            triggers = clean,full,incremental,
+            arguments
+        }
+        buildCommand {
+            name     = org.eclipse.cdt.managedbuilder.core.ScannerConfigBuilder
+            triggers = full,incremental,
+            arguments
+        }
+    }
+    natures {
+        nature = org.eclipse.cdt.core.cnature
+        nature = org.eclipse.cdt.managedbuilder.core.managedBuildNature
+        nature = org.eclipse.cdt.managedbuilder.core.ScannerConfigNature
+    }
+}

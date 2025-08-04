@@ -1,0 +1,18 @@
+START
+book = word++'.'.
+word = alfa | beta.
+alfa = !'b', ~['.']+.
+beta = 'b', ~['.']*.
+INPUT
+a.b
+OUTPUT
+book {
+    word {
+        alfa = a
+    }
+    '.'
+    word {
+        beta = b
+    }
+}
+END

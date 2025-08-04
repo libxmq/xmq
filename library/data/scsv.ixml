@@ -1,0 +1,7 @@
+{ Create a table/tr/td from a scsv file (semicolon separated values). }
+{ by Fredrik Öhrström spdx: CC0-1.0 }
+table      = nl*, tr++nl, nl*.
+tr e       = td++-';'.
+td         = | ~['";';#a;#d], ~[';';#a;#d]* | -'"', character*, -'"'.
+-nl        = -#d?, -#a.
+-character = ~['"'] | -'""', +'"'.

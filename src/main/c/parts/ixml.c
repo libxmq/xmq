@@ -19,13 +19,13 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
-#ifndef BUILDING_XMQ
+#ifndef BUILDING_DIST_XMQ
 
 #include"always.h"
 #include"hashmap.h"
 #include"ixml.h"
 #include"membuffer.h"
-#include"parts/xmq_internals.h"
+#include"xmq_internals.h"
 #include"stack.h"
 #include"text.h"
 #include"vector.h"
@@ -82,6 +82,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 #endif
 
 void add_insertion_rule(XMQParseState *state, const char *content);
+void add_not_rule_string(XMQParseState *state, const char *content);
+void add_not_rule_charset(XMQParseState *state, IXMLNonTerminal *nt);
 void add_single_char_rule(XMQParseState *state, IXMLNonTerminal *nt, int uc, char mark, char tmark);
 
 bool is_ixml_eob(XMQParseState *state);
@@ -98,6 +100,7 @@ bool is_ixml_group_end(XMQParseState *state);
 bool is_ixml_hex_char(char c);
 bool is_ixml_hex_start(XMQParseState *state);
 bool is_ixml_insertion_start(XMQParseState *state);
+bool is_ixml_not_start(XMQParseState *state);
 bool is_ixml_literal_start(XMQParseState *state);
 bool is_ixml_mark_char(char c);
 bool is_ixml_name_follower(char c);
@@ -124,13 +127,14 @@ void parse_ixml(XMQParseState *state);
 void parse_ixml_alias(XMQParseState *state, const char **alias_start, const char **alias_stop);
 void parse_ixml_alt(XMQParseState *state);
 void parse_ixml_alts(XMQParseState *state);
-void parse_ixml_charset(XMQParseState *state);
+IXMLNonTerminal *parse_ixml_charset(XMQParseState *state, int *tmark);
 void parse_ixml_comment(XMQParseState *state);
 void parse_ixml_encoded(XMQParseState *state, bool add_terminal);
 void parse_ixml_factor(XMQParseState *state);
 void parse_ixml_group(XMQParseState *state);
 void parse_ixml_hex(XMQParseState *state, int *value);
 void parse_ixml_insertion(XMQParseState *state);
+void parse_ixml_not(XMQParseState *state);
 void parse_ixml_literal(XMQParseState *state);
 void parse_ixml_name(XMQParseState *state, const char **content_start, const char **content_stop);
 void parse_ixml_naming(XMQParseState *state,
@@ -176,15 +180,10 @@ void do_ixml_nonterminal(XMQParseState *state, const char *name_start, char *nam
 void do_ixml_option(XMQParseState *state);
 
 IXMLRule *new_ixml_rule();
-void free_ixml_rule(IXMLRule *r);
-IXMLTerminal *new_ixml_terminal();
 IXMLCharset *new_ixml_charset(bool exclude);
 void new_ixml_charset_part(IXMLCharset *cs, int from, int to, const char *category);
 void free_ixml_charset(IXMLCharset *cs);
-void free_ixml_terminal(IXMLTerminal *t);
-IXMLNonTerminal *new_ixml_nonterminal();
 IXMLNonTerminal *copy_ixml_nonterminal(IXMLNonTerminal *nt);
-void free_ixml_nonterminal(IXMLNonTerminal *t);
 void free_ixml_term(IXMLTerm *t);
 
 char *generate_rule_name(XMQParseState *state);
@@ -212,6 +211,7 @@ bool is_ixml_alt_start(XMQParseState *state)
     char c = *(state->i);
     return
         c == '+' || // Insertion +"hej" or +#a
+        c == '!' || // Not lookahead !"hejsan" ![L]
         c == '#' || // encoded literal
         c == '(' || // Group ( "svej" | "hojt" )
         c == '"' || // "string"
@@ -280,6 +280,7 @@ bool is_ixml_factor_start(XMQParseState *state)
         is_ixml_terminal_start(state) ||
         is_ixml_nonterminal_start(state) ||
         is_ixml_insertion_start(state) ||
+        is_ixml_not_start(state) ||
         is_ixml_group_start(state);
 }
 
@@ -296,6 +297,11 @@ bool is_ixml_group_end(XMQParseState *state)
 bool is_ixml_insertion_start(XMQParseState *state)
 {
     return *(state->i) == '+';
+}
+
+bool is_ixml_not_start(XMQParseState *state)
+{
+    return *(state->i) == '!';
 }
 
 bool is_ixml_hex_char(char c)
@@ -607,7 +613,7 @@ void parse_ixml_alts(XMQParseState *state)
     IXML_DONE(alts, state);
 }
 
-void parse_ixml_charset(XMQParseState *state)
+IXMLNonTerminal *parse_ixml_charset(XMQParseState *state, int *out_tmark)
 {
     IXML_STEP(charset, state);
     ASSERT(is_ixml_charset_start(state));
@@ -731,7 +737,8 @@ void parse_ixml_charset(XMQParseState *state)
         state->ixml_charset = NULL;
         free(cs_name);
     }
-    add_yaep_term_to_rule(state, tmark, NULL, nt);
+    *out_tmark = tmark;
+    return nt;
 }
 
 void parse_ixml_comment(XMQParseState *state)
@@ -859,6 +866,10 @@ void parse_ixml_factor(XMQParseState *state)
     {
         parse_ixml_insertion(state);
     }
+    else  if (is_ixml_not_start(state))
+    {
+        parse_ixml_not(state);
+    }
     else if (is_ixml_group_start(state))
     {
         parse_ixml_group(state);
@@ -972,7 +983,9 @@ void parse_ixml_insertion(XMQParseState *state)
         parse_ixml_encoded(state, true);
         UTF8Char c;
         encode_utf8(state->ixml_encoded, &c);
-        add_insertion_rule(state, c.bytes);
+        char buf[16];
+        snprintf(buf, 16, "#%x", state->ixml_encoded),
+        add_insertion_rule(state, buf);
         free_yaep_tmp_terminals_and_content(state);
     }
     else
@@ -985,6 +998,61 @@ void parse_ixml_insertion(XMQParseState *state)
     IXML_DONE(insertion, state);
 }
 
+void parse_ixml_not(XMQParseState *state)
+{
+    IXML_STEP(insertion,state);
+
+    ASSERT(is_ixml_not_start(state));
+
+    EAT(not_bang, 1);
+
+    parse_ixml_whitespace(state);
+
+    if (is_ixml_string_start(state))
+    {
+        int *content = NULL;
+        parse_ixml_string(state, &content);
+        size_t len;
+        for (len = 0; content[len]; ++len);
+        // If all require 4 bytes of utf8, then this is the max length.
+        char *buf = (char*)malloc(len*4 + 1);
+        size_t offset = 0;
+        for (size_t i = 0; i < len; ++i)
+        {
+            UTF8Char c;
+            size_t l = encode_utf8(content[i], &c);
+            strncpy(buf+offset, c.bytes, l);
+            offset += l;
+        }
+        buf[offset] = 0;
+        add_not_rule_string(state, buf);
+        free(buf);
+        free(content);
+    }
+    else if (is_ixml_encoded_start(state))
+    {
+        allocate_yaep_tmp_terminals(state);
+        parse_ixml_encoded(state, true);
+        UTF8Char c;
+        encode_utf8(state->ixml_encoded, &c);
+        add_not_rule_string(state, c.bytes);
+        free_yaep_tmp_terminals_and_content(state);
+    }
+    else if (is_ixml_charset_start(state))
+    {
+        int tmark;
+        IXMLNonTerminal *nt = parse_ixml_charset(state, &tmark);
+        add_not_rule_charset(state, nt);
+    }
+    else
+    {
+        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+        state->error_info = "expected string or encoded character after insertion +";
+        longjmp(state->error_handler, 1);
+    }
+
+    IXML_DONE(insertion, state);
+}
 
 void parse_ixml_literal(XMQParseState *state)
 {
@@ -1409,7 +1477,9 @@ void parse_ixml_terminal(XMQParseState *state)
     }
     else
     {
-        parse_ixml_charset(state);
+        int tmark;
+        IXMLNonTerminal *nt = parse_ixml_charset(state, &tmark);
+        add_yaep_term_to_rule(state, tmark, NULL, nt);
     }
 
     IXML_DONE(terminal, state);
@@ -1436,9 +1506,6 @@ void parse_ixml_whitespace(XMQParseState *state)
     IXML_DONE(ws, state);
 }
 
-const char *ixml_to_yaep_read_terminal(YaepParseRun *pr,
-                                       YaepGrammar *g,
-                                       int *code);
 
 const char *ixml_to_yaep_read_terminal(YaepParseRun *pr,
                                        YaepGrammar *g,
@@ -1458,15 +1525,6 @@ const char *ixml_to_yaep_read_terminal(YaepParseRun *pr,
 
     return NULL;
 }
-
-const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
-                                   YaepGrammar *g,
-                                   const char ***rhs,
-                                   const char **abs_node,
-                                   int *cost,
-                                   int **transl,
-                                   char *mark,
-                                   char **marks);
 
 const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
                                    YaepGrammar *g,
@@ -1554,6 +1612,7 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
     pr->grammar = g;
     state->ixml_rules = vector_create();
     state->ixml_terminals_map = hashmap_create(256);
+    state->ixml_non_terminals_map = hashmap_create(256);
     state->ixml_non_terminals = vector_create();
     state->ixml_rule_stack = stack_create();
 
@@ -1707,6 +1766,7 @@ IXMLNonTerminal *lookup_yaep_nonterminal_already(XMQParseState *state, const cha
 
 void add_yaep_nonterminal(XMQParseState *state, IXMLNonTerminal *nt)
 {
+    hashmap_put(state->ixml_non_terminals_map, nt->name, nt);
     vector_push_back(state->ixml_non_terminals, nt);
 }
 
@@ -1736,19 +1796,85 @@ void add_single_char_rule(XMQParseState *state, IXMLNonTerminal *nt, int uc, cha
 
 void add_insertion_rule(XMQParseState *state, const char *content)
 {
-    IXMLRule *rule = new_ixml_rule();
     // Generate a name like |+.......
     char *name = (char*)malloc(strlen(content)+3);
     name[0] = '|';
     name[1] = '+';
     strcpy(name+2, content);
+
+    IXMLNonTerminal *nt = (IXMLNonTerminal*)hashmap_get(state->ixml_non_terminals_map, name);
+    if (!nt)
+    {
+        IXMLRule *rule = new_ixml_rule();
+        rule->rule_name->name = name;
+        rule->mark = ' ';
+        vector_push_back(state->ixml_rules, rule);
+
+        nt = copy_ixml_nonterminal(rule->rule_name);
+        add_yaep_nonterminal(state, nt);
+    }
+    else
+    {
+        // This insertion rule has already been added as a non terminal.
+        free(name);
+    }
+
+    // Add nt to rule.
+    add_yaep_term_to_rule(state, 0, NULL, nt);
+}
+
+void add_not_rule_string(XMQParseState *state, const char *content)
+{
+    // Generate a name like |!S.......
+    char *name = (char*)malloc(strlen(content)+4);
+    name[0] = '|';
+    name[1] = '!';
+    name[2] = 'S';
+    strcpy(name+3, content);
+
+    IXMLNonTerminal *nt = (IXMLNonTerminal*)hashmap_get(state->ixml_non_terminals_map, name);
+    if (nt) {
+        // This not rule has already been recorded. Do not add it again.
+        free(name);
+        return;
+    }
+
+    IXMLRule *rule = new_ixml_rule();
     rule->rule_name->name = name;
     rule->mark = ' ';
     vector_push_back(state->ixml_rules, rule);
 
-    IXMLNonTerminal *nt = copy_ixml_nonterminal(rule->rule_name);
+    nt = copy_ixml_nonterminal(rule->rule_name);
     add_yaep_nonterminal(state, nt);
     add_yaep_term_to_rule(state, 0, NULL, nt);
+    hashmap_put(state->ixml_non_terminals_map, name, nt);
+}
+
+void add_not_rule_charset(XMQParseState *state, IXMLNonTerminal *cs)
+{
+    // Generate a name like |![...]
+    char *name = (char*)malloc(strlen(cs->name)+3);
+    name[0] = '|';
+    name[1] = '!';
+    strcpy(name+2, cs->name);
+
+    IXMLNonTerminal *nt = (IXMLNonTerminal*)hashmap_get(state->ixml_non_terminals_map, name);
+    if (nt) {
+        // This not rule has already been recorded. Do not add it again.
+        free(name);
+        return;
+    }
+
+    IXMLRule *rule = new_ixml_rule();
+
+    rule->rule_name->name = name;
+    rule->mark = ' ';
+    vector_push_back(state->ixml_rules, rule);
+
+    nt = copy_ixml_nonterminal(rule->rule_name);
+    add_yaep_nonterminal(state, nt);
+    add_yaep_term_to_rule(state, 0, NULL, nt);
+    hashmap_put(state->ixml_non_terminals_map, name, nt);
 }
 
 void scan_content_fixup_charsets(XMQParseState *state, const char *start, const char *stop)

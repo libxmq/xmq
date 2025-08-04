@@ -179,7 +179,7 @@ distinguishes between significant and insignificant.
 \texttt{\flushleft\noindent \xmqEN{shiporder}\xmqI \{\linebreak
 \xmqI \xmqI \xmqI \xmqI \xmqEK{id}\xmqI \xmqI \xmqI =\xmqI \xmqEKV{889923}\linebreak
 \xmqI \xmqI \xmqI \xmqI \xmqEK{type}\xmqI =\xmqI \xmqEKV{container}\linebreak
-\xmqI \xmqI \xmqI \xmqI \xmqEN{shipto}(\xmqAK{sailing}\xmqI =\xmqI \xmqAKV{{'}{'}})\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEN{shipto}(\xmqAK{sailing})\linebreak
 \xmqI \xmqI \xmqI \xmqI \{\linebreak
 \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEK{address}\xmqI =\xmqI \xmqEKV{'}\xmqEKV{The Vasa Museum}\linebreak
 \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEKV{Galärvarvsvägen 14}\linebreak
@@ -187,17 +187,17 @@ distinguishes between significant and insignificant.
 \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEKV{Sweden}\xmqEKV{'}\linebreak
 \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqC{// Remember to verify coord.}\linebreak
 \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEK{coord}\xmqI =\xmqI \xmqEKV{'''}\xmqEKV{59°19{'}41.0"N 18°05{'}29.0"E}\xmqEKV{'''}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEK{code}\xmqI \xmqI =\xmqI \xmqEKV{"}\xmqEKV{regSale({'}container{'},123);}\xmqEKV{"}\linebreak
 \xmqI \xmqI \xmqI \xmqI \}\linebreak
-\xmqI \xmqI \xmqI \xmqI \xmqEN{rules}\linebreak
 \}
 }
 \end{minipage}
 \POS{56mm}{-64mm}{\begin{picture}(10,10)\vector(-1,-1){4}\put(1,0){\emph{no quotes needed for safe strings, ie no whitespace} {\footnotesize{\texttt{' " ( )\{ \}}}} \emph{not start with} {\footnotesize{\texttt{= \& // /*}}}}\end{picture}}%
-\POS{50mm}{-54mm}{\begin{picture}(10,10)\vector(-1,-1){4}\put(1,0){\emph{two single quotes are the empty string}}\end{picture}}%
 \POS{40mm}{-34mm}{\begin{picture}(10,10)\vector(-1,-1){4}\put(1,0){\emph{multiline quote with incidental indentation removed}}\end{picture}}%
 \POS{36mm}{-24mm}{\begin{picture}(10,10)\put(1,0){\emph{there are 5 spaces and 3 newlines in this quote}}\end{picture}}%
-\POS{20mm}{-27mm}{\begin{picture}(10,10)\vector(-1,-1){4}\put(1,0){\emph{single quote that needs to be quoted}}\end{picture}}%
-\POS{8mm}{-63mm}{\begin{picture}(10,10)\vector(-1,1){4}\put(-2,-3){\emph{n+1 quotes to quote n quotes (cave! empty string is 2 quotes)}}\end{picture}}%
+\POS{20mm}{-27mm}{\begin{picture}(10,10)\vector(-1,-1){4}\put(1,0){\emph{single and double quotes that need to be quoted}}\end{picture}}%
+\POS{8mm}{-12mm}{\begin{picture}(10,10)\vector(-1,1){4}\put(-2,-3){\emph{n+1 quotes to quote n quotes (cave! empty string is 2 quotes)}}\end{picture}}%
+\POS{3mm}{-66mm}{\begin{picture}(10,10)\vector(-1,1){4}\put(-2,-3){\emph{double quotes mirror single quotes}}\end{picture}}%
 \POS{26mm}{-66mm}{\begin{picture}(10,10)\vector(-1,0){35}\vector(1,0){35}\put(-25,0.9){\emph{\footnotesize incidental}}\put(-25,-2.5){\emph{\footnotesize indentation}}\end{picture}}%
 
 The shiporder only has content whitespace in the \xmqEK{address} and in the \xmqEK{coord}.
@@ -207,10 +207,9 @@ The shiporder only has content whitespace in the \xmqEK{address} and in the \xmq
 {\flushleft{\large\textsc{\color{Red}{Compact}}}} Every XMQ file can be printed in compact form on a single line where separating whitespace between tokens is minimized and the actual newlines are escaped.
 
 \vspace{-7mm}
-\texttt{\flushleft\noindent \xmqEN{shiporder}\{\xmqEK{id}=\xmqEKV{889923}\xmqI \xmqEK{type}=\xmqEKV{container}\xmqI \xmqEN{shipto}(\xmqAK{sailing}=\xmqAKV{{'}{'}})\{\xmqEK{address}=\xmqCP{(}\xmqEKV{'}\xmqEKV{The Vasa \\
-    Museum}\xmqEKV{'}\xmqE{\&\#10;}\xmqEKV{'}\xmqEKV{Galärvarvsvägen 14}\xmqEKV{'}\xmqE{\&\#10;}\xmqEKV{'}\xmqEKV{115 21 Stockholm}\xmqEKV{'}\xmqE{\&\#10;}\xmqEKV{'}\xmqEKV{Sweden}\xmqEKV{'}\xmqCP{)}\xmqC{/*Re\\
-    member to verify coord.*/}\xmqEK{coord}=\xmqEKV{'''}\xmqEKV{59°19{'}41.0"N 18°05{'}29.0"E}\xmqEKV{'''}\}\xmqEN{rules}\}
+\texttt{\flushleft\noindent \xmqEN{shiporder}\{\xmqEK{id}=\xmqEKV{889923} \xmqEK{type}=\xmqEKV{container} \xmqEN{shipto}(\xmqAK{sailing})\{\xmqEK{address}=\xmqCP{(}\xmqEKV{'The Vasa Museum'}\xmqE{\&\#10;}\xmqEKV{'Galärvarvsvägen 14'}\xmqE{\&\#10;}\xmqEKV{'115 21 Stockholm'}\xmqE{\&\#10;}\xmqEKV{'Sweden'}\xmqCP{)}\xmqC{/*Remember to verify coord.*/}\xmqEK{coord}=\xmqEKV{'''59°19'41.0"N 18°05'29.0"E'''}\xmqEK{code}=\xmqEKV{"regSale('container',123);"}\}\}
 }
+
 
 XMQ can always switch between a compact and a pretty printed layout.
 Compact XMQ is useful for log files where each appended line can be a complete and valid XMQ document.
@@ -322,7 +321,7 @@ because this would introduce unwanted whitespace in the output.
 \texttt{Input must be valid UTF8 (0x9 | 0xa | 0xd | [20-d7ff] | [e000-fffd] | [10000-10ffff]) \\
   CRLF pairs (0xd 0xa) and standalone CR (0xd) are treated as LF (0xa) when parsing.}
 
-\shifttext{-20mm}{\raisebox{-10cm}{\smash{\rotatebox{90}{\rule{50mm}{0.5pt}\ \texttt{LEXER}\ \rule{40mm}{.5pt}}}}}
+\shifttext{-20mm}{\raisebox{-10.5cm}{\smash{\rotatebox{90}{\rule{55mm}{0.5pt}\ \texttt{LEXER}\ \rule{40mm}{.5pt}}}}}
 \hbox{
   \raisebox{-4pt}{\hspace{-1.3em}\texttt{WS:}}
   \begin{minipage}{5cm}
@@ -340,7 +339,7 @@ because this would introduce unwanted whitespace in the output.
 }
 
 \raisebox{32pt}{\texttt{QUOTE:}}
-\begin{minipage}{15cm}
+\hbox{\begin{minipage}{10cm}
 \begin{rail}
   "''"
   |"'" "UTF8 with no '" "'"
@@ -348,6 +347,15 @@ because this would introduce unwanted whitespace in the output.
   | "'"[$\times$ n] "UTF8 max n-1 consec '" "'"[$\times$ n]
 \end{rail}
 \end{minipage}
+\begin{minipage}{6cm}
+  Symmetrically with double quotes:
+  \texttt{""}
+
+  \texttt{"That's one small step for man."}
+
+  \texttt{"""invoke("msg",'arg')"""}
+\end{minipage}
+}
 
 \raisebox{-4pt}{\texttt{ENTITY:}}
 \begin{minipage}{15cm}
@@ -367,62 +375,69 @@ because this would introduce unwanted whitespace in the output.
 \raisebox{-4pt}{\texttt{TEXT:}}
 \begin{minipage}{15cm}
 \begin{rail}
-"UTF8 excluding all-spaces and ' '\!\!' ( ) \{ \} must not start with = \& // /*"
+"UTF8 excluding all-spaces and ' '\!\!' ( ) \{ \} must not start with = \& // /* <"
 \end{rail}
 \end{minipage}
 
+\vspace{1cm}
+
 \shifttext{-20mm}{\raisebox{-10.2cm}{\smash{\rotatebox{90}{\rule{43mm}{0.5pt}\ \texttt{PARSER}\ \rule{43mm}{.5pt}}}}}
 
-\vspace{-10pt}
+\hbox{
 \begin{minipage}{6cm}
   \raisebox{9pt}{\texttt{xmq:}}
-  \begin{minipage}{5cm}
+  \begin{minipage}{6cm}
     \begin{rail}
       "node"+
     \end{rail}
   \end{minipage}
 \end{minipage}
+
 \raisebox{8pt}{\texttt{attr:}}
-\begin{minipage}{15cm}
+\begin{minipage}{5cm}
   \begin{rail}
     "TEXT:key" ( | '=' VALUE )
   \end{rail}
 \end{minipage}
+}
 
+\hbox{
 \vspace{-8pt}
-\begin{minipage}{7cm}
-  \raisebox{21pt}{\texttt{node:}}
-  \begin{minipage}{6cm}
+\begin{minipage}{8cm}
+  \raisebox{44pt}{\texttt{node:}}
+  \begin{minipage}{8cm}
     \begin{rail}
-      "COMMENT" | "qe" | "element"
+      "COMMENT" | "qe" | "element" | '<' 'xml/html' '>' | '\{' 'json' '\}'
     \end{rail}
   \end{minipage}
-
-  \begin{minipage}{7cm}
-    \raisebox{8pt}{\texttt{qe:}}
-    \begin{minipage}{6cm}
-      \begin{rail}
-        "QUOTE" | "ENTITY"
-      \end{rail}
-    \end{minipage}
-  \end{minipage}
-\end{minipage}
-\begin{minipage}{7cm}
-  \begin{minipage}{7cm}
-    \raisebox{44pt}{\texttt{value:}}
-    \begin{minipage}{6cm}
-      \begin{rail}
-        "TEXT" | "qe" | '(' ')' | '(' ( "qe"+) ')'
-      \end{rail}
-    \end{minipage}
-  \end{minipage}
 \end{minipage}
 
+\begin{minipage}{6cm}
+  \raisebox{44pt}{\texttt{value:}}
+  \begin{minipage}{6cm}
+    \begin{rail}
+      "TEXT" | "qe" | '(' ')' | '(' ( "qe"+) ')'
+    \end{rail}
+  \end{minipage}
+\end{minipage}
+}
+
+\vspace{5pt}
 \raisebox{44pt}{\texttt{element:}}
 \begin{minipage}{15cm}
   \begin{rail}
     "TEXT:namekey" ( | '(' ')' | '(' ( "attr"+) ')' ) ( | '=' VALUE | LBRACE RBRACE | LBRACE ( "node" + ) RBRACE)
   \end{rail}
+\end{minipage}
+
+\vspace{-68pt}
+\begin{minipage}{7cm}
+  \raisebox{8pt}{\texttt{qe:}}
+  \begin{minipage}{6cm}
+    \begin{rail}
+      "QUOTE" | "ENTITY"
+    \end{rail}
+  \end{minipage}
 \end{minipage}
 
 \pagebreak
@@ -522,7 +537,8 @@ $\hookrightarrow$\verb|<img url="/img/i.png">Click here!</a>|\\
 
 \texttt{Explicit spaces:  \xmqEK{abc} \xmqEq\ \xmqQu \ \ \ \ \xmqQu \ \ \ \  \xmqEN{abc} \xmqLB \xmqQu \ \ \ \ \xmqQu \xmqRB \\
 Spaces surrounding newline: \xmqEK{abc} \xmqEq\ \xmqLP\xmqQu\ \xmqQu\ \xmqE{\#10;} \xmqQu\ \xmqQu \xmqRP\ \ \ \xmqEN{abc} \xmqLB \xmqQu\ \xmqQu\ \xmqE{\#10;} \xmqQu\ \xmqQu \xmqRB \\
-Value with leading/ending quotes: \xmqEK{x} \xmqEq\ \xmqLP\ \xmqE{\#39;} \xmqQ{'quoted quote'}\ \xmqE{\#39;} \xmqRP\ or: \\
+Value with leading/ending single quotes: \xmqEK{x} \xmqEq\ \xmqQ{"'quoted quote'"}\ \\
+or: \xmqEK{x} \xmqEq\ \xmqLP\ \xmqE{\#39;} \xmqQ{'quoted quote'}\ \xmqE{\#39;} \xmqRP\ or: \\
 \xmqQu\xmqQu\xmqQu\\
 \xmqQ{'quoted quote'}\\
 \xmqQu\xmqQu\xmqQu \\

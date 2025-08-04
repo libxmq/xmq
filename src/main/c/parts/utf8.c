@@ -1,8 +1,9 @@
 
-#ifndef BUILDING_XMQ
+#ifndef BUILDING_DIST_XMQ
 
 #include"utf8.h"
-#include"parts/xmq_internals.h"
+#include"text.h"
+#include"xmq_printer.h"
 
 #endif
 

@@ -1,0 +1,12 @@
+START
+S = (A | B), ~[].
+A = '0', ![N].
+B = '1', ![N].
+INPUT
+1x
+OUTPUT
+S {
+    B = 1
+    'x'
+}
+END

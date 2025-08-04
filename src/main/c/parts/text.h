@@ -40,15 +40,17 @@ typedef struct
     char bytes[MAX_NUM_UTF8_BYTES];
 } UTF8Char;
 
+size_t count_whitespace(const char *i, const char *stop);
 bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
 size_t encode_utf8(int uc, UTF8Char *utf8);
 const char *has_ending_nl_space(const char *start, const char *stop, size_t *only_newlines);
 const char *has_leading_space_nl(const char *start, const char *stop, size_t *only_newlines);
-bool has_leading_ending_quote(const char *start, const char *stop);
+bool has_leading_ending_different_quotes(const char *start, const char *stop);
 bool has_newlines(const char *start, const char *stop);
 bool has_must_escape_chars(const char *start, const char *stop);
 bool has_all_quotes(const char *start, const char *stop);
 bool has_all_whitespace(const char *start, const char *stop, bool *all_space, bool *only_newlines);
+void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col);
 bool is_lowercase_hex(char c);
 bool is_xmq_token_whitespace(char c);
 bool is_xml_whitespace(char c);
@@ -56,6 +58,9 @@ bool is_all_xml_whitespace(const char *s);
 bool is_xmq_element_name(const char *start, const char *stop, const char **colon);
 bool is_xmq_element_start(char c);
 bool is_xmq_text_name(char c);
+bool is_hex(char c);
+unsigned char hex_value(char c);
+bool is_unicode_whitespace(const char *start, const char *stop);
 size_t num_utf8_bytes(char c);
 size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc);
 void str_b_u_len(const char *start, const char *stop, size_t *b_len, size_t *u_len);

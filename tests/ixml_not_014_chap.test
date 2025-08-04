@@ -1,0 +1,11 @@
+START
+s = chap | line.
+line = !'chap', ~[]+.
+chap = 'chap', ~[]+.
+INPUT
+chap 1
+OUTPUT
+s {
+    chap = 'chap 1'
+}
+END

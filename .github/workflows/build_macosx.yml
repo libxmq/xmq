@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - AddNotOperator
 
 jobs:
   job_build_on_macos:

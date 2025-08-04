@@ -19,10 +19,11 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
-#ifndef BUILDING_XMQ
+#ifndef BUILDING_DIST_XMQ
 
 #include"always.h"
 #include"membuffer.h"
+#include"xmq.h"
 #include<assert.h>
 #include<stdbool.h>
 #include<string.h>
@@ -151,6 +152,11 @@ void membuffer_append_null(MemBuffer *mb)
     membuffer_append_char(mb, 0);
 }
 
+void membuffer_append_nl(MemBuffer *mb)
+{
+    membuffer_append_char(mb, '\n');
+}
+
 void membuffer_drop_last_null(MemBuffer *mb)
 {
     char *buf = mb->buffer_;
@@ -186,6 +192,28 @@ void membuffer_append_pointer(MemBuffer *mb, void *ptr)
     mb->used_ += add;
 }
 
+void membuffer_logf(MemBuffer *mb, const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
+    membuffer_append(mb, line);
+    free(line);
+    va_end(args);
+}
+
+void membuffer_printf(MemBuffer *mb, const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+
+    char *buf = buf_vsnprintf(fmt, args);
+    membuffer_append(mb, buf);
+    free(buf);
+
+    va_end(args);
+}
+
 size_t membuffer_used(MemBuffer *mb)
 {
     return mb->used_;
@@ -195,6 +223,39 @@ char membuffer_back(MemBuffer *mb)
 {
     if (mb->used_ == 0) return 0;
     return mb->buffer_[mb->used_-1];
+}
+
+void membuffer_prefix_lines(MemBuffer *mb, const char *prefix)
+{
+    MemBuffer *nb = new_membuffer();
+    const char *last = mb->buffer_;
+    const char *stop = mb->buffer_ + mb->used_;
+    const char *i = mb->buffer_;
+
+    while (i < stop)
+    {
+        if (*i == '\n')
+        {
+            membuffer_append(nb, prefix);
+            membuffer_append_region(nb, last, i+1);
+            last = i+1;
+        }
+        i++;
+    }
+    if (i > last)
+    {
+        membuffer_append(nb, prefix);
+        membuffer_append_region(nb, last, i);
+    }
+
+    free(mb->buffer_);
+    mb->max_ = nb->max_;
+    mb->used_ = nb->used_;
+    mb->buffer_ = nb->buffer_;
+    nb->buffer_ = NULL;
+    nb->used_ = 0;
+    nb->max_ = 0;
+    free(nb);
 }
 
 #endif // MEMBUFFER_MODULE

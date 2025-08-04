@@ -161,25 +161,29 @@ dist:
 test: test_release
 testd: test_debug
 testa: test_asan
+teste: test_eclipse
 
 test_release:
 	@echo "Running release tests"
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/testinternals ]; then echo "Run make first. $${x}release/testinternals not found."; exit 1; fi ; $${x}release/testinternals $(SILENCER) ; done
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/parts/testinternals ]; then echo "Run make first. $${x}release/parts/testinternals not found."; exit 1; fi ; $${x}release/parts/testinternals $(SILENCER) ; ./tests/test.sh $${x}release $${x}release/test_output $(FILTER) $(SILENCER) ; done
-	@cd grammars; make test
 
 test_debug:
 	@echo "Running debug tests"
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/testinternals ]; then echo "Run make first. $${x}debug/testinternals not found."; exit 1; fi ; $${x}debug/testinternals $(SILENCER) ; done
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/parts/testinternals ]; then echo "Run make first. $${x}debug/parts/testinternals not found."; exit 1; fi ; $${x}debug/parts/testinternals $(SILENCER) ; ./tests/test.sh $${x}debug $${x}debug/test_output $(FILTER) $(SILENCER) ; done
-	@cd grammars; make test
 
 test_asan:
 	@echo "Running asan tests"
 	@if [ "$$(cat /proc/sys/kernel/randomize_va_space)" != "0" ]; then echo "Please disable address randomization for libasan to work! make disable_address_randomization"; exit 1; fi
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/testinternals ]; then echo "Run make first. $${x}asan/testinternals not found."; exit 1; fi ; $${x}asan/testinternals $(SILENCER) ; done
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/parts/testinternals ]; then echo "Run make first. $${x}asan/parts/testinternals not found."; exit 1; fi ; $${x}asan/parts/testinternals $(SILENCER) ; ./tests/test.sh $${x}asan $${x}asan/test_output $(FILTER) $(SILENCER) ; done
-	@cd grammars; make test
+
+test_eclipse:
+	@echo "Running eclipse xmq tests"
+	cp build/default/spec.inc make/eclipse-cproject/Debug
+	mkdir -p make/eclipse-cproject/Debug/test_output
+	./tests/test.sh make/eclipse-cproject/Debug make/eclipse-cproject/Debug/test_output $(FILTER) $(SILENCER)
 
 disable_address_randomization:
 	@echo "Now running: echo 0 | sudo tee /proc/sys/kernel/randomize_va_space"
@@ -198,6 +202,12 @@ clean:
 clean-all:
 	@echo "Removing build directory containing configuration and artifacts."
 	@rm -rf build
+
+install_user:
+	@./install.sh build/default/release "$(HOME)/.local"
+
+uninstall_user:
+	@./uninstall.sh "$(HOME)/.local"
 
 install:
 	@./install.sh build/default/release "$(DESTDIR)"

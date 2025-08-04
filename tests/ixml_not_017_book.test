@@ -1,0 +1,31 @@
+START
+document = chapter+, NL*.
+chapter  = title, NL, body, NL.
+title    = '.', -'C', ~[#a]*.
+body     = line++NL.
+line     = '.', !'C', ~[#a]*.
+-NL      = -#a.
+INPUT
+.C 1
+.hello world
+.C 2
+.hello again
+.the end
+
+OUTPUT
+document {
+    chapter {
+        title = '. 1'
+        body {
+            line = '.hello world'
+        }
+    }
+    chapter {
+        title = '. 2'
+        body {
+            line = '.hello again'
+            line = '.the end'
+        }
+    }
+}
+END

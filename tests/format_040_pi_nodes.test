@@ -6,10 +6,10 @@ START
 <!DOCTYPE rfc>
 <rfc>Intro<?work alfa ?>Outro</rfc>
 COMPACT
-?xml-stylesheet='''type='text/xsl' href='rfc2629.xslt' '''?quotes=''' ' ' '''?rfc='toc="yes"'!DOCTYPE=rfc rfc{'Intro'?work='alfa ' 'Outro'}
+?xml-stylesheet="type='text/xsl' href='rfc2629.xslt' "?quotes=" ' ' "?rfc='toc="yes"'!DOCTYPE=rfc rfc{'Intro'?work='alfa ' 'Outro'}
 XMQ
-?xml-stylesheet = '''type='text/xsl' href='rfc2629.xslt' '''
-?quotes = ''' ' ' '''
+?xml-stylesheet = "type='text/xsl' href='rfc2629.xslt' "
+?quotes = " ' ' "
 ?rfc = 'toc="yes"'
 !DOCTYPE = rfc
 rfc {

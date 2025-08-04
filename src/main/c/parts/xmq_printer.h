@@ -34,12 +34,14 @@ enum Level;
 #endif
 typedef enum Level Level;
 
-size_t count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound);
+int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound, bool prefer_double_quotes, bool *use_double_quotes);
 size_t count_necessary_slashes(const char *start, const char *stop);
 
 void print_nodes(XMQPrintState *ps, xmlNode *from, xmlNode *to, size_t align);
 void print_content_node(XMQPrintState *ps, xmlNode *node);
 void print_entity_node(XMQPrintState *ps, xmlNode *node);
+void print_color_post(XMQPrintState *ps, XMQColor c);
+void print_color_pre(XMQPrintState *ps, XMQColor c);
 void print_comment_line(XMQPrintState *ps, const char *start, const char *stop, bool compact);
 void print_comment_lines(XMQPrintState *ps, const char *start, const char *stop, bool compact);
 void print_comment_node(XMQPrintState *ps, xmlNode *node);
@@ -60,7 +62,8 @@ void print_white_spaces(XMQPrintState *ps, int num);
 void print_all_whitespace(XMQPrintState *ps, const char *start, const char *stop, Level level);
 void print_explicit_spaces(XMQPrintState *ps, XMQColor c, int num);
 void print_quoted_spaces(XMQPrintState *ps, XMQColor color, int num);
-void print_quotes(XMQPrintState *ps, size_t num, XMQColor color);
+void print_quotes(XMQPrintState *ps, int num, XMQColor color, bool use_double_quotes);
+void print_double_quote(XMQPrintState *ps, XMQColor color);
 void print_nl(XMQPrintState *ps, const char *prefix, const char *postfix);
 void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *postfix);
 size_t print_char_entity(XMQPrintState *ps, XMQColor color, const char *start, const char *stop);

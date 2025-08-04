@@ -1,0 +1,10 @@
+START
+work {
+    a1 = """dquote("''")quote"""
+    a2 = '''dquote("''")quote'''
+}
+DEBUG
+[element_name "work" 1:1][whitespace " " 1:5][brace_left "{" 1:6][whitespace "\n    " 1:7][element_key "a1" 2:5][whitespace " " 2:7][equals "=" 2:8][whitespace " " 2:9][element_value_quote "\"\"\"dquote(\"''\")quote\"\"\"" 2:10][whitespace "\n    " 2:33][element_key "a2" 3:5][whitespace " " 3:7][equals "=" 3:8][whitespace " " 3:9][element_value_quote "'''dquote(\"''\")quote'''" 3:10][whitespace "\n" 3:33][brace_right "}" 4:1][whitespace "\n" 4:2]
+CONTENT
+{quote "dquote(\"''\")quote"}{quote "dquote(\"''\")quote"}
+END

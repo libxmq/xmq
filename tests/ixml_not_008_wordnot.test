@@ -1,0 +1,11 @@
+START
+formula = first, second.
+first = ~[], !'a'.
+second = 'a' | 'b'.
+INPUT
+aa
+OUTPUT
+ixml:1:2: syntax error
+aa
+ ^
+END

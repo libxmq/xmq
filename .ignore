@@ -1,2 +1,4 @@
+3rdparty
+build/
 dist/xmq.c
 dist/xmq.h

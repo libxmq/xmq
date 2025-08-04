@@ -1,9 +1,9 @@
 
-#ifndef BUILDING_XMQ
+#ifndef BUILDING_DIST_XMQ
 
 #include"always.h"
 #include"text.h"
-#include"parts/xmq_internals.h"
+#include"xmq_internals.h"
 #include"xmq_parser.h"
 
 #include<assert.h>
@@ -14,18 +14,53 @@
 
 #ifdef XMQ_PARSER_MODULE
 
+size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk);
+void eat_json_quote(XMQParseState *state, char **content_start, char **content_stop);
+void eat_xmq_comment_to_close(XMQParseState *state, const char **content_start, const char **content_stop, size_t n, bool *found_asterisk);
+void eat_xmq_comment_to_eol(XMQParseState *state, const char **content_start, const char **content_stop);
 void eat_xmq_doctype(XMQParseState *state, const char **text_start, const char **text_stop);
+void eat_xmq_entity(XMQParseState *state);
 void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text_stop);
-void eat_xmq_text_name(XMQParseState *state, const char **content_start, const char **content_stop,
-                       const char **namespace_start, const char **namespace_stop);
+void eat_xmq_text_name(XMQParseState *state, const char **content_start, const char **content_stop, const char **namespace_start, const char **namespace_stop);
+void eat_xmq_text_value(XMQParseState *state);
+void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop);
+bool is_xmq_attribute_key_start(char c);
+bool is_xmq_comment_start(char c, char cc);
+bool is_xmq_compound_start(char c);
+bool is_xmq_doctype_start(const char *start, const char *stop);
+bool is_xmq_entity_start(char c);
+bool is_xmq_json_quote_start(char c);
+bool is_xmq_pi_start(const char *start, const char *stop);
+bool is_xmq_quote_start(char c);
+void parse_xmq_attribute(XMQParseState *state);
+void parse_xmq_attributes(XMQParseState *state);
+void parse_xmq_comment(XMQParseState *state, char cc);
+void parse_xmq_compound(XMQParseState *state, Level level);
+void parse_xmq_compound_children(XMQParseState *state, Level level);
+void parse_xmq_doctype(XMQParseState *state);
+void parse_xmq_element(XMQParseState *state);
+void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi);
+void parse_xmq_entity(XMQParseState *state, Level level);
+void parse_xmq_json_quote(XMQParseState *state, Level level);
+void parse_xmq_pi(XMQParseState *state);
+void parse_xmq_quote(XMQParseState *state, Level level);
+void parse_xmq_text_any(XMQParseState *state);
+void parse_xmq_text_name(XMQParseState *state);
+void parse_xmq_text_value(XMQParseState *state, Level level);
+void parse_xmq_value(XMQParseState *state, Level level);
+void parse_xmq_whitespace(XMQParseState *state);
+bool peek_xmq_next_is_equal(XMQParseState *state);
 bool possibly_lost_content_after_equals(XMQParseState *state);
 bool possibly_need_more_quotes(XMQParseState *state);
 
 size_t count_xmq_quotes(const char *i, const char *stop)
 {
     const char *start = i;
+    char c = *i;
 
-    while (i < stop && *i == '\'') i++;
+    assert(c == '\'' || c == '"');
+
+    while (i < stop && *i == c) i++;
 
     return i-start;
 }
@@ -34,6 +69,10 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
 {
     const char *i = state->i;
     const char *end = state->buffer_stop;
+    const char q = *i;
+
+    assert(q == '\'' || q == '"');
+
     size_t line = state->line;
     size_t col = state->col;
 
@@ -48,7 +87,7 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
 
     while (count > 0)
     {
-        increment('\'', 1, &i, &line, &col);
+        increment(q, 1, &i, &line, &col);
         count--;
     }
 
@@ -65,7 +104,7 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
     while (i < end)
     {
         char c = *i;
-        if (c != '\'')
+        if (c != q)
         {
             increment(c, 1, &i, &line, &col);
             continue;
@@ -81,7 +120,7 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
         {
             while (count > 0)
             {
-                increment('\'', 1, &i, &line, &col);
+                increment(q, 1, &i, &line, &col);
                 count--;
             }
             continue;
@@ -91,7 +130,7 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
         {
             while (count > 0)
             {
-                increment('\'', 1, &i, &line, &col);
+                increment(q, 1, &i, &line, &col);
                 count--;
             }
             depth = 0;
@@ -114,6 +153,74 @@ void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop)
         state->last_suspicios_quote_end_line = state->line;
         state->last_suspicios_quote_end_col = state->col-1;
     }
+}
+
+void eat_xml_whitespace(XMQParseState *state, const char **start, const char **stop)
+{
+    const char *i = state->i;
+    const char *buffer_stop = state->buffer_stop;
+    size_t line = state->line;
+    size_t col = state->col;
+    if (start) *start = i;
+
+    size_t nw = count_whitespace(i, buffer_stop);
+    if (!nw) return;
+
+    while (i < buffer_stop)
+    {
+        size_t nw = count_whitespace(i, buffer_stop);
+        if (!nw) break;
+        // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
+        increment(*i, nw, &i, &line, &col);
+    }
+
+    if (stop) *stop = i;
+    state->i = i;
+    state->line = line;
+    state->col = col;
+}
+
+void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop)
+{
+    const char *i = state->i;
+    const char *buffer_stop = state->buffer_stop;
+    size_t line = state->line;
+    size_t col = state->col;
+    if (start) *start = i;
+
+    size_t nw = count_whitespace(i, buffer_stop);
+    if (!nw) return;
+
+    while (i < buffer_stop)
+    {
+        size_t nw = count_whitespace(i, buffer_stop);
+        if (!nw) break;
+        // Tabs are not permitted as xmq token whitespace.
+        if (nw == 1 && *i == '\t') break;
+        // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
+        increment(*i, nw, &i, &line, &col);
+    }
+
+    if (stop) *stop = i;
+    state->i = i;
+    state->line = line;
+    state->col = col;
+}
+
+void increment(char c, size_t num_bytes, const char **i, size_t *line, size_t *col)
+{
+    if (c == 0) c = *(*i);
+    if ((c & 0xc0) != 0x80) // Just ignore UTF8 parts since they do not change the line or col.
+    {
+        (*col)++;
+        if (c == '\n')
+        {
+            (*line)++;
+            (*col) = 1;
+        }
+    }
+    assert(num_bytes > 0);
+    (*i)+=num_bytes;
 }
 
 void eat_xmq_entity(XMQParseState *state)
@@ -357,7 +464,7 @@ void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text
 
 bool is_xmq_quote_start(char c)
 {
-    return c == '\'';
+    return c == '\'' || c == '"';
 }
 
 bool is_xmq_entity_start(char c)
@@ -425,6 +532,29 @@ size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk)
     return i-start;
 }
 
+/** Check if a value can start with these two characters. */
+bool unsafe_value_start(char c, char cc)
+{
+    return c == '&' || c == '=' || (c == '/' && (cc == '/' || cc == '*'));
+}
+
+bool is_safe_value_char(const char *i, const char *stop)
+{
+    char c = *i;
+    bool is_ws = count_whitespace(i, stop) > 0 ||
+        c == '\n' ||
+        c == '\t' ||
+        c == '\r' ||
+        c == '(' ||
+        c == ')' ||
+        c == '{' ||
+        c == '}' ||
+        c == '\'' ||
+        c == '"'
+        ;
+    return !is_ws;
+}
+
 bool is_xmq_text_value(const char *start, const char *stop)
 {
     char c = *start;
@@ -441,7 +571,6 @@ bool is_xmq_text_value(const char *start, const char *stop)
     }
     return true;
 }
-
 
 bool peek_xmq_next_is_equal(XMQParseState *state)
 {
@@ -524,6 +653,39 @@ void parse_xmq_quote(XMQParseState *state, Level level)
     default:
         assert(false);
     }
+}
+
+void parse_xmq_json_quote(XMQParseState *state, Level level)
+{
+    size_t start_line = state->line;
+    size_t start_col = state->col;
+    char *start;
+    char *stop;
+
+    eat_json_quote(state, &start, &stop);
+
+    switch(level)
+    {
+    case LEVEL_XMQ:
+       DO_CALLBACK(quote, state, start_line, start_col, start, stop, stop);
+       break;
+    case LEVEL_ELEMENT_VALUE:
+        DO_CALLBACK(element_value_quote, state, start_line, start_col, start, stop, stop);
+        break;
+    case LEVEL_ELEMENT_VALUE_COMPOUND:
+        DO_CALLBACK(element_value_compound_quote, state, start_line, start_col, start, stop, stop);
+        break;
+    case LEVEL_ATTR_VALUE:
+        DO_CALLBACK(attr_value_quote, state, start_line, start_col, start, stop, stop);
+        break;
+    case LEVEL_ATTR_VALUE_COMPOUND:
+        DO_CALLBACK(attr_value_compound_quote, state, start_line, start_col, start, stop, stop);
+        break;
+    default:
+        assert(false);
+    }
+
+    free(start);
 }
 
 void parse_xmq_entity(XMQParseState *state, Level level)

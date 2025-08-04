@@ -46,7 +46,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifdef PLATFORM_WINAPI
 #include<windows.h>
 #include<conio.h>
-char *strndup(const char *s, size_t l);
+//char *strndup(const char *s, size_t l);
 #else
 #include<signal.h>
 #include<sys/ioctl.h>
@@ -179,6 +179,10 @@ struct XMQCliCommand
     // xmq --ixml=grammar.ixml --xml-of-ixml # This will print the grammar as xmq.
     // xmq --ixml=ixml.ixml grammar.ixml # This will print the same grammar as xmq,
     // but uses the ixml early parser instead of the hand coded parser.
+
+    // When using ixml:data/bar or xslt:render/nginx-html
+    // it usually asks if you want to download the file.
+    bool auto_yes;
     bool log_xmq; // Output verbose,debug,trace as human readable lines instead of xmq.
     xmlDocPtr   node_doc;
     xmlNodePtr  node_content; // Tree content to replace something.
@@ -217,6 +221,7 @@ struct XMQCliCommand
     int  add_indent;
     bool omit_decl; // If true, then do not print <?xml ..?>
     bool compact;
+    bool prefer_double_quotes; // If true, then prefer double quotes.
     bool escape_newlines;
     bool escape_non_7bit;
     bool escape_tabs;
@@ -286,6 +291,11 @@ typedef struct
     size_t size_doctype;
     size_t num_cdata_nodes;
     size_t size_cdata_nodes;
+    size_t num_nodes_with_sqs;
+    size_t num_nodes_with_dqs;
+    size_t num_nodes_with_any_qs;
+    size_t num_nodes_with_no_qs;
+    size_t num_nodes_with_both_qs;
 } Stats;
 
 // FUNCTION DECLARATIONS /////////////////////////////////////////////////////////////
@@ -294,94 +304,96 @@ void accumulate_attribute(Stats *stats, xmlAttr *a);
 void accumulate_attribute_content(Stats *stats, xmlNode *a);
 void accumulate_children(Stats *stats, xmlNode *node);
 void accumulate_statistics(Stats *stats, xmlNode *node);
-void append_text_node(MemBuffer *buf, xmlNode *node);
-void append_text_children(MemBuffer *buf, xmlNode *n);
-void count_statistics(Stats *stats, xmlDoc *doc);
-
-char *grab_name(const char *s, const char **name_start);
-char *make_shell_safe_name(char *name, char *name_start);
-bool shell_safe(char *i);
-char *grab_content(xmlNode *node, const char *name);
 void add_key_value(xmlDoc *doc, xmlNode *root, const char *key, size_t value);
 XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env);
-void free_cli_command(XMQCliCommand *cmd);
-bool cmd_delete(XMQCliCommand *command);
-bool cmd_help(XMQCliCommand *c);
-bool cmd_select(XMQCliCommand *command);
-bool cmd_for_each(XMQCliCommand *command);
+void append_text_children(MemBuffer *buf, xmlNode *n);
+void append_text_node(MemBuffer *buf, xmlNode *node);
+void browse(XMQCliCommand *c);
+bool check_file_exists(const char *file);
 bool cmd_add(XMQCliCommand *command);
 bool cmd_add_root(XMQCliCommand *command);
-bool cmd_statistics(XMQCliCommand *command);
-bool cmd_replace(XMQCliCommand *command);
-bool cmd_substitute(XMQCliCommand *command);
+bool cmd_delete(XMQCliCommand *command);
+bool cmd_for_each(XMQCliCommand *command);
 XMQCliCmd cmd_from(const char *s);
 XMQCliCmdGroup cmd_group(XMQCliCmd cmd);
+bool cmd_help(XMQCliCommand *c);
 bool cmd_load(XMQCliCommand *command, bool *no_more_data);
 const char *cmd_name(XMQCliCmd cmd);
-bool cmd_to(XMQCliCommand *command);
 bool cmd_output(XMQCliCommand *command);
-bool cmd_transform(XMQCliCommand *command);
-bool cmd_validate(XMQCliCommand *command);
-bool cmd_unload(XMQCliCommand *command);
 bool cmd_quote_unquote(XMQCliCommand *command);
+bool cmd_replace(XMQCliCommand *command);
+bool cmd_select(XMQCliCommand *command);
+bool cmd_statistics(XMQCliCommand *command);
+bool cmd_substitute(XMQCliCommand *command);
+bool cmd_to(XMQCliCommand *command);
+bool cmd_tokenize(XMQCliCommand *command);
+bool cmd_transform(XMQCliCommand *command);
+bool cmd_unload(XMQCliCommand *command);
+bool cmd_validate(XMQCliCommand *command);
+void console_write(const char *start, const char *stop);
 const char *content_type_to_string(XMQContentType ct);
-const char *tokenize_type_to_string(XMQCliTokenizeType type);
+size_t count_non_ansi_chars(const char *start, const char *stop);
+void count_statistics(Stats *stats, xmlDoc *doc);
 void debug_(const char* fmt, ...);
-void trace_(const char* fmt, ...);
 void delete_all_entities(XMQDoc *doq, xmlNode *node, const char *entity);
 void delete_entities(XMQDoc *doq, const char *entity);
 bool delete_entity(XMQCliCommand *command);
 bool delete_xpath(XMQCliCommand *command);
 void disable_stdout_raw_input_mode();
-void enable_stdout_raw_input_mode();
+bool dot_found(const char *arg);
+bool download(const char *suffix, const char *file, const char *local_file);
+const char *download_dir();
+const char *share_dir();
 void enableAnsiColorsWindowsConsole();
 void enableRawStdinTerminal();
-const char *skip_ansi_backwards(const char *i, const char *start);
-size_t count_non_ansi_chars(const char *start, const char *stop);
-void find_next_page(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width, int height);
-void find_prev_page(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width, int height);
+void enable_stdout_raw_input_mode();
+void error_(const char* fmt, ...);
 void find_next_line(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width);
+void find_next_page(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width, int height);
 void find_prev_line(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width);
-bool has_log_xmq(int argc, const char **argv);
-bool has_trace(int argc, const char **argv);
-bool has_debug(int argc, const char **argv);
-bool has_verbose(int argc, const char **argv);
+void find_prev_page(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width, int height);
+void free_cli_command(XMQCliCommand *cmd);
+int get_char();
+char *grab_content(xmlNode *node, const char *name);
+char *grab_name(const char *s, const char **name_start);
 bool handle_global_option(const char *arg, XMQCliCommand *command);
 bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command);
-void invoke_shell(xmlNode *n, const char *cmd);
-void page(const char *start, const char *stop);
-void browse(XMQCliCommand *c);
+bool has_debug(int argc, const char **argv);
+bool has_log_xmq(int argc, const char **argv);
+bool has_trace(int argc, const char **argv);
+bool has_verbose(int argc, const char **argv);
+bool invoke_shell(xmlNode *n, const char *cmd);
+const char *is_ixml_cmd(const char *arg);
+const char *is_xslt_cmd(const char *arg);
+char *load_file_into_buffer(const char *file);
+bool load_xslt(XMQCliCommand *command, const char *arg);
+char *make_shell_safe_name(char *name, char *name_start);
+int mkpath(char* file_path, mode_t mode);
 void open_browser(const char *file);
+void page(const char *start, const char *stop);
 bool perform_command(XMQCliCommand *c, bool *no_more_data);
 void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command);
-void print_version_and_exit();
-void print_license_and_exit();
-int get_char();
-void put_char(int c);
-void console_write(const char *start, const char *stop);
+void prepare_ixml_command(XMQCliCommand *c, const char *arg);
+void prepare_xslt_command(XMQCliCommand *c, const char *arg);
 void print_command_help(XMQCliCmd c);
+void print_license_and_exit();
+void print_version_and_exit();
+void put_char(int c);
+bool query_xterm_bgcolor();
 KEY read_key(int *c);
 const char *render_format_to_string(XMQRenderFormat rt);
-xmlNodePtr replace_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, const char *content, xmlNodePtr node_content);
 void replace_entities(xmlDoc *doc, const char *entity, const char *content, xmlNodePtr node_content);
-void substitute_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, bool only_chars);
-bool query_xterm_bgcolor();
-XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode);
+xmlNodePtr replace_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, const char *content, xmlNodePtr node_content);
 void restoreStdinTerminal();
-bool cmd_tokenize(XMQCliCommand *command);
-void error_(const char* fmt, ...);
+bool shell_safe(char *i);
+const char *skip_ansi_backwards(const char *i, const char *start);
+void substitute_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, bool only_chars);
+XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode);
+const char *tokenize_type_to_string(XMQCliTokenizeType type);
+void trace_(const char* fmt, ...);
 void verbose_(const char* fmt, ...);
+xmlDocPtr xmqDocDefaultLoaderFunc(const xmlChar * URI, xmlDictPtr dict, int options, void *ctxt /* ATTRIBUTE_UNUSED */, xsltLoadType type /* ATTRIBUTE_UNUSED*/);
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command);
-xmlDocPtr xmqDocDefaultLoaderFunc(const xmlChar * URI, xmlDictPtr dict, int options,
-                                  void *ctxt /* ATTRIBUTE_UNUSED */,
-                                  xsltLoadType type /* ATTRIBUTE_UNUSED*/);
-
-char *load_file_into_buffer(const char *file);
-bool check_file_exists(const char *file);
-
-// TODO REMOVE...
-void xmq_set_yaep_grammar(XMQDoc *doc, YaepGrammar *g);
-YaepGrammar *xmq_get_yaep_grammar(XMQDoc *doc);
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -407,12 +419,15 @@ void verbose_(const char* fmt, ...)
 {
     if (verbose_enabled__)
     {
-        va_list ap;
-        va_start(ap, fmt);
-        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, ap);
-        fprintf(stderr, "%s\n", line);
-        free(line);
-        va_end(ap);
+        if (!xmq_log_filter_ || !strncmp(fmt, xmq_log_filter_, strlen(xmq_log_filter_)))
+        {
+            va_list ap;
+            va_start(ap, fmt);
+            char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, ap);
+            fprintf(stderr, "%s\n", line);
+            free(line);
+            va_end(ap);
+        }
     }
 }
 
@@ -422,12 +437,15 @@ void debug_(const char* fmt, ...)
 {
     if (debug_enabled__)
     {
-        va_list args;
-        va_start(args, fmt);
-        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
-        fprintf(stderr, "%s\n", line);
-        free(line);
-        va_end(args);
+        if (!xmq_log_filter_ || !strncmp(fmt, xmq_log_filter_, strlen(xmq_log_filter_)))
+        {
+            va_list args;
+            va_start(args, fmt);
+            char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
+            fprintf(stderr, "%s\n", line);
+            free(line);
+            va_end(args);
+        }
     }
 }
 
@@ -437,12 +455,15 @@ void trace_(const char* fmt, ...)
 {
     if (trace_enabled__)
     {
-        va_list args;
-        va_start(args, fmt);
-        char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
-        fprintf(stderr, "%s\n", line);
-        free(line);
-        va_end(args);
+        if (!xmq_log_filter_ || !strncmp(fmt, xmq_log_filter_, strlen(xmq_log_filter_)))
+        {
+            va_list args;
+            va_start(args, fmt);
+            char *line = xmqLineVPrintf(&xmq_log_line_config_, fmt, args);
+            fprintf(stderr, "%s\n", line);
+            free(line);
+            va_end(args);
+        }
     }
 }
 
@@ -824,6 +845,11 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             command->escape_newlines = true;
             return true;
         }
+        if (!strcmp(arg, "--prefer-double-quotes"))
+        {
+            command->prefer_double_quotes = true;
+            return true;
+        }
         if (!strcmp(arg, "--escape-non-7bit"))
         {
             command->escape_non_7bit = true;
@@ -1127,40 +1153,8 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         }
         if (command->xslt == NULL)
         {
-            XMQDoc *doq = xmqNewDoc();
-
-            // We load the xslt transform with TRIM_NONE! Why?
-            // XSLT transform are terribly picky with whitespace and the xslt compiler will also trim whitespace
-            // so to make a normal xslt transform work here we do not use the whitespace trimming heuristic.
-            // There might be other problems here when loading normal old xslt transforms, we will get to them when we
-            // find them.
-            //
-            // When loading an xslq transform the default is TRIM_NONE anyway since it is xmq.
-            bool ok = xmqParseFileWithType(doq, arg, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE);
-
-            if (!ok)
-            {
-                const char *error = xmqDocError(doq);
-                fprintf(stderr, error, command->in);
-                xmqFreeDoc(doq);
-                return false;
-            }
-
-            verbose_("xmq=", "loaded xslt %s", arg);
-
-            xmlDocPtr xslt = (xmlDocPtr)xmqGetImplementationDoc(doq);
-            if (xmqGetOriginalContentType(doq) == XMQ_CONTENT_XMQ ||
-                xmqGetOriginalContentType(doq) == XMQ_CONTENT_HTMQ)
-            {
-                // We want to be able to use char entities in the xslq by default.
-                // So we replace any explicit &#10; with actual newlines etc.
-                xmlNodePtr root = xmlDocGetRootElement(xslt);
-                while (root->prev) root = root->prev;
-                // Replace all char entities! I.e. &#10; is replaced with a newline.
-                substitute_entity(xslt, root, NULL, true);
-            }
-            command->xslt_doq = doq;
-            command->xslt = xsltParseStylesheetDoc(xslt);
+            bool ok = load_xslt(command, arg);
+            if (!ok) return false;
             if (!command->xslt) return false;
             return true;
         }
@@ -1226,6 +1220,64 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
     }
 
     return false;
+}
+
+
+int mkpath(char *file_path, mode_t mode)
+{
+    assert(file_path && *file_path);
+
+    for (char* p = strchr(file_path + 1, '/'); p; p = strchr(p + 1, '/'))
+    {
+        *p = '\0';
+#ifdef PLATFORM_WINAPI
+        int rc = mkdir(file_path);
+#else
+        int rc = mkdir(file_path, mode);
+#endif
+        if (rc == -1)
+        {
+            if (errno != EEXIST) {
+                *p = '/';
+                return -1;
+            }
+        }
+        *p = '/';
+    }
+    return 0;
+}
+
+char download_dir_[256] = {0};
+
+const char *download_dir()
+{
+    if (download_dir_[0]) return download_dir_;
+
+#ifdef PLATFORM_WINAPI
+    const char *localappdata = getenv("LOCALAPPDATA");
+    snprintf(download_dir_, 256, "%s/xmq", localappdata);
+#else
+    const char *home = getenv("HOME");
+    snprintf(download_dir_, 256, "%s/.local/share/xmq", home);
+#endif
+
+    return download_dir_;
+}
+
+char share_dir_[256] = {0};
+
+const char *share_dir()
+{
+    if (share_dir_[0]) return share_dir_;
+
+#ifdef PLATFORM_WINAPI
+    const char *programfiles = getenv("PROGRAMFILES");
+    snprintf(share_dir_, 256, "%s/xmq", programfiles);
+#else
+    snprintf(share_dir_, 256, "/usr/local/share/xmq");
+#endif
+
+    return share_dir_;
 }
 
 #ifndef PLATFORM_WINAPI
@@ -1327,7 +1379,7 @@ bool query_xterm_bgcolor()
     {
         char c = 0;
         // Reading from stdout!
-        size_t n = read(STDOUT_FILENO, &c, sizeof(char));
+        ssize_t n = read(STDOUT_FILENO, &c, sizeof(char));
         if (n == -1)
         {
             fprintf(stderr, "xmq: error reading from stdout\n");
@@ -1484,6 +1536,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->no_input = true;
         return true;
     }
+    if (!strcmp(arg, "-y"))
+    {
+        command->auto_yes = true;
+        return true;
+    }
     if (!strcmp(arg, "-i"))
     {
         command->in_is_content = true;
@@ -1502,6 +1559,15 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         verbose_enabled__ = true;
         return true;
     }
+    if (!strncmp(arg, "--trace=", 8))
+    {
+        command->trace = true;
+        xmqLogFilter(arg+8);
+        trace_enabled__ = true;
+        debug_enabled__ = true;
+        verbose_enabled__ = true;
+        return true;
+    }
     if (!strcmp(arg, "--debug"))
     {
         command->debug = true;
@@ -1509,9 +1575,24 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         verbose_enabled__ = true;
         return true;
     }
+    if (!strncmp(arg, "--debug=", 8))
+    {
+        command->debug = true;
+        xmqLogFilter(arg+8);
+        debug_enabled__ = true;
+        verbose_enabled__ = true;
+        return true;
+    }
     if (!strcmp(arg, "--verbose"))
     {
         command->verbose = true;
+        verbose_enabled__ = true;
+        return true;
+    }
+    if (!strncmp(arg, "--verbose=", 9))
+    {
+        command->verbose = true;
+        xmqLogFilter(arg+10);
         verbose_enabled__ = true;
         return true;
     }
@@ -2009,6 +2090,7 @@ bool cmd_to(XMQCliCommand *command)
 {
     XMQOutputSettings *settings = xmqNewOutputSettings();
     xmqSetCompact(settings, command->compact);
+    xmqSetPreferDoubleQuotes(settings, command->prefer_double_quotes);
     xmqSetEscapeNewlines(settings, command->escape_newlines);
     xmqSetEscapeNon7bit(settings, command->escape_non_7bit);
     xmqSetEscapeTabs(settings, command->escape_tabs);
@@ -2166,7 +2248,7 @@ bool cmd_quote_unquote(XMQCliCommand *command)
         if (command->add_nl)
         {
             size_t len = strlen(quoted_value);
-            char *q = malloc(len+2);
+            char *q = (char*)malloc(len+2);
             strcpy(q, quoted_value);
             strcat(q, "\n");
             free(quoted_value);
@@ -2477,6 +2559,33 @@ void accumulate_statistics(Stats *stats, xmlNode *node)
     {
         stats->num_text_nodes++;
         stats->size_text_nodes += strlen((const char*)node->content);
+        bool has_quote = false;
+        bool has_sq = false;
+        bool has_dq = false;
+        if (strchr((const char*)node->content, '"'))
+        {
+            stats->num_nodes_with_dqs++;
+            has_quote = true;
+            has_dq = true;
+        }
+        if (strchr((const char*)node->content, '\''))
+        {
+            stats->num_nodes_with_sqs++;
+            has_quote = true;
+            has_sq = true;
+        }
+        if (has_quote)
+        {
+            stats->num_nodes_with_any_qs++;
+        }
+        else
+        {
+            stats->num_nodes_with_no_qs++;
+        }
+        if (has_dq && has_sq)
+        {
+            stats->num_nodes_with_both_qs++;
+        }
         return;
     }
     else if (node->type == XML_COMMENT_NODE)
@@ -2563,6 +2672,11 @@ bool cmd_statistics(XMQCliCommand *command)
     if (stats.size_doctype) add_key_value(new_doc, root, "size_doctype", stats.size_doctype);
     if (stats.num_cdata_nodes) add_key_value(new_doc, root, "num_cdata_nodes", stats.num_cdata_nodes);
     if (stats.size_cdata_nodes) add_key_value(new_doc, root, "size_cdata_nodes", stats.size_cdata_nodes);
+    if (stats.num_nodes_with_sqs) add_key_value(new_doc, root, "num_text_nodes_with_single_quotes", stats.num_nodes_with_sqs);
+    if (stats.num_nodes_with_dqs) add_key_value(new_doc, root, "num_text_nodes_with_double_quotes", stats.num_nodes_with_dqs);
+    if (stats.num_nodes_with_no_qs) add_key_value(new_doc, root, "num_text_nodes_with_no_quotes", stats.num_nodes_with_no_qs);
+    if (stats.num_nodes_with_any_qs) add_key_value(new_doc, root, "num_text_nodes_with_any_quotes", stats.num_nodes_with_any_qs);
+    if (stats.num_nodes_with_both_qs) add_key_value(new_doc, root, "num_text_nodes_with_both_quotes", stats.num_nodes_with_both_qs);
 
     size_t sum_meta = stats.size_element_names+stats.size_attribute_names+stats.size_attribute_content+stats.size_doctype;
     size_t sum_text = stats.size_text_nodes;
@@ -3132,7 +3246,7 @@ int get_char()
 {
 #ifndef PLATFORM_WINAPI
     unsigned char c;
-    size_t n = read(STDOUT_FILENO, &c, sizeof(char));
+    ssize_t n = read(STDOUT_FILENO, &c, sizeof(char));
     if (n == -1) return -1;
     return c;
 #else
@@ -3354,7 +3468,7 @@ char *grab_name(const char *s, const char **out_name_start)
     assert(*i == '}');
     i++;
     size_t len = name_stop-name_start;
-    char *buf = malloc(len+1);
+    char *buf = (char*)malloc(len+1);
     *out_name_start = name_start;
     memcpy(buf, name_start, len);
     buf[len]  = 0;
@@ -3429,8 +3543,9 @@ char *grab_content(xmlNode *n, const char *name)
 // (On some systems this is also declared in unistd.h)
 extern char **environ;
 
-void invoke_shell(xmlNode *n, const char *shell_command)
+bool invoke_shell(xmlNode *node, const char *shell_command)
 {
+    bool ok = true;
 #ifndef PLATFORM_WINAPI
     char *cmd = strdup(shell_command);
     char **argv = malloc(sizeof(char*)*4);
@@ -3458,7 +3573,7 @@ void invoke_shell(xmlNode *n, const char *shell_command)
             if (name)
             {
                 char *safe_name = make_shell_safe_name(name, (char*)name_start);
-                char *content = grab_content(n, name);
+                char *content = grab_content(node, name);
                 if (content)
                 {
                     MemBuffer *kv = new_membuffer();
@@ -3503,7 +3618,8 @@ void invoke_shell(xmlNode *n, const char *shell_command)
             int rc = WEXITSTATUS(status);
             debug_("shell=", "%s: return code %d\n", "/bin/sh", rc);
             if (rc != 0) {
-                verbose_("shell=", "%s exited with non-zero return code: %d\n", "/bin/sh", rc);
+                verbose_("shell=", "/bin/sh -c %s exited with non-zero return code: %d\n", "/bin/sh", rc);
+                ok = false;
             }
         }
         free(argv);
@@ -3519,6 +3635,7 @@ void invoke_shell(xmlNode *n, const char *shell_command)
     }
     free(cmd);
 #endif
+    return ok;
 }
 
 void page(const char *start, const char *stop)
@@ -3709,6 +3826,135 @@ bool perform_command(XMQCliCommand *c, bool *no_more_data)
     return false;
 }
 
+const char *is_ixml_cmd(const char *arg)
+{
+    // Does arrg look like:  ixml:data/csv
+    char *colon = strrchr(arg, ':');
+    if (colon && !strncmp("ixml:", arg, colon-arg))
+    {
+        return arg+5;
+    }
+    return NULL;
+}
+
+const char*is_xslt_cmd(const char *arg)
+{
+    // Does arg look like:  xslt:web/render-csv
+    char *colon = strrchr(arg, ':');
+    if (colon && !strncmp("xslt:", arg, colon-arg))
+    {
+        return arg+5;
+    }
+    return NULL;
+}
+
+bool dot_found(const char *file)
+{
+    char *dot = strrchr(file, '.');
+    if (dot) return true;
+    return false;
+}
+
+bool download(const char *suffix, const char *file, const char *local_file)
+{
+    FILE *f = fopen(local_file, "rb");
+    if (f)
+    {
+        // Already downloaded
+        fclose(f);
+        return true;
+    }
+
+    // Not in download dir, download...
+    // curl https://libxmq.org/library/data/tsv.ixml
+    char url[256];
+    snprintf(url, 256, "https://libxmq.org/library/%s%s", file, suffix);
+
+    char cmd[1024];
+    snprintf(cmd, 1024, "curl -s --fail %s --create-dirs -o %s", url, local_file);
+
+    fprintf(stderr, "fetching %s\n", url);
+#ifndef PLATFORM_WINAPI
+    bool ok = invoke_shell(NULL, cmd);
+    if (!ok)
+    {
+        fprintf(stderr, "xmq: failed to fetch ixml using this command: %s\n", cmd);
+        exit(1);
+    }
+#else
+    printf("Invokaction for curl for WINAPI is not yet implemented.\n");
+    printf("Please execute: %s\n", cmd);
+    exit(0);
+#endif
+    fprintf(stderr, "downloaded and cached %s\n", local_file);
+    return true;
+}
+
+bool load_xslt(XMQCliCommand *command, const char *arg)
+{
+    XMQDoc *doq = xmqNewDoc();
+
+    // We load the xslt transform with TRIM_NONE! Why?
+    // XSLT transform are terribly picky with whitespace and the xslt compiler will also trim whitespace
+    // so to make a normal xslt transform work here we do not use the whitespace trimming heuristic.
+    // There might be other problems here when loading normal old xslt transforms, we will get to them when we
+    // find them.
+    //
+    // When loading an xslq transform the default is TRIM_NONE anyway since it is xmq.
+    bool ok = xmqParseFileWithType(doq, arg, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE);
+
+    if (!ok)
+    {
+        const char *error = xmqDocError(doq);
+        fprintf(stderr, error, command->in);
+        xmqFreeDoc(doq);
+        return false;
+    }
+
+    verbose_("xmq=", "loaded xslt %s", arg);
+
+    xmlDocPtr xslt = (xmlDocPtr)xmqGetImplementationDoc(doq);
+    if (xmqGetOriginalContentType(doq) == XMQ_CONTENT_XMQ ||
+        xmqGetOriginalContentType(doq) == XMQ_CONTENT_HTMQ)
+    {
+        // We want to be able to use char entities in the xslq by default.
+        // So we replace any explicit &#10; with actual newlines etc.
+        xmlNodePtr root = xmlDocGetRootElement(xslt);
+        while (root->prev) root = root->prev;
+        // Replace all char entities! I.e. &#10; is replaced with a newline.
+        substitute_entity(xslt, root, NULL, true);
+    }
+    command->xslt_doq = doq;
+    command->xslt = xsltParseStylesheetDoc(xslt);
+    return true;
+}
+
+void prepare_xslt_command(XMQCliCommand *command, const char *arg)
+{
+    // An xsltl:web/render-csv argument is interpreted as
+    // transform ~/.local/share/xmq/transforms/web/render-csv.ixml
+    const char *file = is_xslt_cmd(arg);
+    assert(file);
+    if (dot_found(file))
+    {
+        printf("xmq: file after xslt: must not contain dots (%s)\n", arg);
+        exit(1);
+    }
+
+    char local_file[256];
+    snprintf(local_file, 256, "%s/library/%s.xslq", download_dir(), file);
+    download(".xslq", file, local_file);
+
+    verbose_("xmq=", "reading ixml file %s", local_file);
+    command->cmd = XMQ_CLI_CMD_TRANSFORM;
+    bool ok = load_xslt(command, local_file);
+    if (!ok || command->xslt == NULL)
+    {
+        printf("xmq: could not load %s\n", local_file);
+        exit(1);
+    }
+}
+
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command)
 {
     int i = 1;
@@ -3720,6 +3966,60 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
 
     // Handle all global options....
     for (i = 1; argv[i]; ++i)
+    {
+        const char *arg = argv[i];
+
+        // Stop handling options when arg does not start with - or is exactly "-"
+        if (arg[0] != '-' || !strcmp(arg, "-")) break;
+
+        bool ok = handle_global_option(arg, load_command);
+        if (ok) continue;
+
+        printf("xmq: unrecognized global option: '%s'\nTry 'xmq --help' for more information\n", arg);
+        return false;
+    }
+
+    if (argv[i])
+    {
+        // An ixml:data/csv argument is interpreted as --ixml=~/.local/share/xmq/library/data/csv.ixml
+        const char *file = is_ixml_cmd(argv[i]);
+        if (file)
+        {
+            if (dot_found(file))
+            {
+                printf("xmq: file after ixml: must not contain dots (%s)\n", argv[i]);
+                return false;
+            }
+
+            char local_file[256];
+            snprintf(local_file, 256, "%s/library/%s.ixml", download_dir(), file);
+            download(".ixml", file, local_file);
+
+            verbose_("xmq=", "reading ixml file %s", local_file);
+            load_command->ixml_filename = strdup(local_file);
+            load_command->ixml_source = load_file_into_buffer(local_file);
+            if (load_command->ixml_source == NULL) exit(1);
+            i++;
+        }
+    }
+
+    if (argv[i])
+    {
+        char *dot = strrchr(argv[i], '.');
+        if (dot && !strcmp(dot, ".ixml") && !load_command->ixml_source)
+        {
+            // A single foo.ixml file is interpreted as --ixml=foo.ixml
+            // But not if an ixml file has already been found, or --ixml=file has been used.
+            verbose_("xmq=", "reading ixml file %s", argv[i]);
+            load_command->ixml_filename = strdup(argv[i]);
+            load_command->ixml_source = load_file_into_buffer(argv[i]);
+            if (load_command->ixml_source == NULL) exit(1);
+            i++;
+        }
+    }
+
+    // Handle more global options....
+    for (; argv[i]; ++i)
     {
         const char *arg = argv[i];
 
@@ -3753,6 +4053,12 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
         command = allocate_cli_command(command->env);
         load_command->next = command;
         command->cmd = cmd_from(argv[i]);
+
+        if (command->cmd == XMQ_CLI_CMD_NONE && is_xslt_cmd(argv[i]))
+        {
+            prepare_xslt_command(command, argv[i]);
+        }
+
         if (command->cmd == XMQ_CLI_CMD_NONE)
         {
             fprintf(stderr, "xmq: no such command \"%s\"\n", argv[i-1]);

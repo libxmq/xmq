@@ -1,9 +1,11 @@
-#ifndef BUILDING_XMQ
+#ifndef BUILDING_DIST_XMQ
 
 #include"always.h"
 #include"text.h"
-#include"parts/xmq_internals.h"
+#include"utf8.h"
+#include"xmq_internals.h"
 #include"xml.h"
+#include"xmq_parser.h"
 #include"xmq_printer.h"
 
 #include<assert.h>
@@ -14,9 +16,12 @@
 
 #ifdef XMQ_PRINTER_MODULE
 
-bool xml_has_non_empty_namespace_defs(xmlNode *node);
-bool xml_non_empty_namespace(xmlNs *ns);
+size_t find_attr_key_max_u_width(xmlAttr *a);
+size_t find_namespace_max_u_width(size_t max, xmlNs *ns);
+size_t find_element_key_max_width(xmlNodePtr node, xmlNodePtr *restart_find_at_node);
 const char *toHtmlEntity(int uc);
+void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
+
 
 /**
     count_necessary_quotes:
@@ -24,40 +29,28 @@ const char *toHtmlEntity(int uc);
     @stop:  Points to byte after memory buffer.
     @add_nls: Returns whether we need leading and ending newlines.
     @add_compound: Compounds ( ) is necessary.
+    @prefer_double_quotes: Set to true, will change the default to double quotes, instead of single quotes.
+    @use_double_quotese: Set to true if the quote should use double quotes.
 
     Scan the content to determine how it must be quoted, or if the content can
     remain as text without quotes. Return 0, nl_begin=nl_end=false for safe text.
     Return 1,3 or more for unsafe text with at most a single quote '.
+    Return -1 if content only contains ' apostrophes and no newlines. Print using json string "..."
     If forbid_nl is true, then we are generating xmq on a single line.
     Set add_nls to true if content starts or end with a quote and forbid_nl==false.
     Set add_compound to true if content starts or ends with spaces/newlines or if forbid_nl==true and
     content starts/ends with quotes.
 */
-size_t count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound)
+int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound, bool prefer_double_quotes, bool *use_double_quotes)
 {
-    size_t max = 0;
-    size_t curr = 0;
     bool all_safe = true;
 
     assert(stop > start);
 
     if (unsafe_value_start(*start, start+1 < stop ? *(start+1):0))
     {
-        // Content starts with = & // or /* so it must be quoted.
+        // Content starts with = & // /* or < so it must be quoted.
         all_safe = false;
-    }
-
-    if (*start == '\'' || *(stop-1) == '\'')
-    {
-        // If leading or ending quote, then add newlines both at the beginning and at the end.
-        // Strictly speaking, if only a leading quote, then only newline at beginning is needed.
-        // However to reduce visual confusion, we add newlines at beginning and end.
-
-        // We might quote this using:
-        // '''
-        // 'howdy'
-        // '''
-        *add_nls = true;
     }
 
     size_t only_prepended_newlines = 0;
@@ -73,28 +66,107 @@ size_t count_necessary_quotes(const char *start, const char *stop, bool *add_nls
         // Leading ending ws + nl, nl + ws will be trimmed, so we need a compound and entities.
         *add_compound = true;
     }
+    else
+    {
+        *add_compound = false;
+    }
+
+    size_t max_single = 0;
+    size_t curr_single = 0;
+    size_t max_double = 0;
+    size_t curr_double = 0;
 
     for (const char *i = start; i < stop; ++i)
     {
         char c = *i;
+        all_safe &= is_safe_value_char(i, stop);
         if (c == '\'')
         {
-            curr++;
-            if (curr > max) max = curr;
+            curr_single++;
+            if (curr_single > max_single) max_single = curr_single;
         }
         else
         {
-            curr = 0;
-            all_safe &= is_safe_value_char(i, stop);
+            curr_single = 0;
+            if (c == '"')
+            {
+                curr_double++;
+                if (curr_double > max_double) max_double = curr_double;
+            }
+            else
+            {
+                curr_double = 0;
+            }
         }
     }
-    // We found 3 quotes, thus we need 4 quotes to quote them.
+
+    bool leading_ending_sqs = false;
+    bool leading_ending_dqs = false;
+    // We default to using single quotes. But prefer_double_quotes can be set with --prefer-double-quotes
+    bool use_dqs = prefer_double_quotes;
+
+    if (*start == '\'' || *(stop-1) == '\'') leading_ending_sqs = true;
+    if (*start == '"' || *(stop-1) == '"') leading_ending_dqs = true;
+
+    if (leading_ending_sqs && !leading_ending_dqs)
+    {
+        // If there is leading and ending single quotes, then always use double quotes.
+        use_dqs = true;
+    }
+    else if (!leading_ending_sqs && leading_ending_dqs)
+    {
+        // If there are leading ending double quotes, then always use single quotes.
+        use_dqs = false;
+    }
+    else if (max_double > max_single && max_double > 0) use_dqs = false; // We have more doubles than singles, use single quotes.
+    else if (max_double < max_single) use_dqs = true;  // We have fewer doubles than singles, use double quotes.
+    else // max_double == max_single
+    {
+        assert(max_double == max_single);
+        if (max_double > 0)
+        {
+            // If more than one quote is needed, then always use single quotes.
+            use_dqs = false;
+        }
+    }
+
+    size_t max;
+    if (use_dqs)
+    {
+        max = max_double;
+    }
+    else
+    {
+        max = max_single;
+    }
+
+    // We found x quotes, thus we need x+1 quotes to quote them.
     if (max > 0) max++;
     // Content contains no quotes ', but has unsafe chars, a single quote is enough.
     if (max == 0 && !all_safe) max = 1;
     // Content contains two sequential '' quotes, must bump nof required quotes to 3.
     // Since two quotes means the empty string.
     if (max == 2) max = 3;
+
+    if ((use_dqs && leading_ending_dqs) || (!use_dqs && leading_ending_sqs))
+    {
+        // If leading or ending quote, then add newlines both at the beginning and at the end.
+        // Strictly speaking, if only a leading quote, then only newline at beginning is needed.
+        // However to reduce visual confusion, we add newlines at beginning and end.
+
+        // We might quote this using:
+        // '''
+        // 'howdy'
+        // '''
+        *add_nls = true;
+    }
+    else
+    {
+        *add_nls = false;
+    }
+
+    *use_double_quotes = use_dqs;
+
     return max;
 }
 
@@ -141,6 +213,73 @@ size_t count_necessary_slashes(const char *start, const char *stop)
     return max+1;
 }
 
+/**
+  Scan the attribute names and find the max unicode character width.
+*/
+size_t find_attr_key_max_u_width(xmlAttr *a)
+{
+    size_t max = 0;
+    while (a)
+    {
+        const char *name;
+        const char *prefix;
+        size_t total_u_len;
+        attr_strlen_name_prefix(a, &name, &prefix, &total_u_len);
+
+        if (total_u_len > max) max = total_u_len;
+        a = xml_next_attribute(a);
+    }
+    return max;
+}
+
+/**
+  Scan nodes until there is a node which is not suitable for using the = sign.
+  I.e. it has multiple children or no children. This node unsuitable node is stored in
+  restart_find_at_node or NULL if all nodes were suitable.
+*/
+size_t find_element_key_max_width(xmlNodePtr element, xmlNodePtr *restart_find_at_node)
+{
+    size_t max = 0;
+    xmlNodePtr i = element;
+    while (i)
+    {
+        if (!is_key_value_node(i) || xml_first_attribute(i))
+        {
+            if (i == element) *restart_find_at_node = xml_next_sibling(i);
+            else *restart_find_at_node = i;
+            return max;
+        }
+        const char *name;
+        const char *prefix;
+        size_t total_u_len;
+        element_strlen_name_prefix(i, &name, &prefix, &total_u_len);
+
+        if (total_u_len > max) max = total_u_len;
+        i = xml_next_sibling(i);
+    }
+    *restart_find_at_node = NULL;
+    return max;
+}
+
+/**
+  Scan the namespace links and find the max unicode character width.
+*/
+size_t find_namespace_max_u_width(size_t max, xmlNs *ns)
+{
+    while (ns)
+    {
+        const char *prefix;
+        size_t total_u_len;
+        namespace_strlen_prefix(ns, &prefix, &total_u_len);
+
+        // Print only new/overriding namespaces.
+        if (total_u_len > max) max = total_u_len;
+        ns = ns->next;
+    }
+
+    return max;
+}
+
 void print_nodes(XMQPrintState *ps, xmlNode *from, xmlNode *to, size_t align)
 {
     xmlNode *i = from;
@@ -169,9 +308,13 @@ void print_entity_node(XMQPrintState *ps, xmlNode *node)
 {
     check_space_before_entity_node(ps);
 
-    print_utf8(ps, COLOR_entity, 1, "&", NULL);
-    print_utf8(ps, COLOR_entity, 1, (const char*)node->name, NULL);
-    print_utf8(ps, COLOR_entity, 1, ";", NULL);
+    XMQColor c = COLOR_entity;
+
+    if (*(const char*)node->name == '_') c = COLOR_quote;
+
+    print_utf8(ps, c, 1, "&", NULL);
+    print_utf8(ps, c, 1, (const char*)node->name, NULL);
+    print_utf8(ps, c, 1, ";", NULL);
 }
 
 void print_comment_line(XMQPrintState *ps, const char *start, const char *stop, bool compact)
@@ -565,7 +708,30 @@ void print_quoted_spaces(XMQPrintState *ps, XMQColor color, int num)
     if (c && c->quote.post) write(writer_state, c->quote.post, NULL);
 }
 
-void print_quotes(XMQPrintState *ps, size_t num, XMQColor color)
+void print_quotes(XMQPrintState *ps, int num, XMQColor color, bool use_double_quotes)
+{
+    assert(num > 0);
+    XMQOutputSettings *os = ps->output_settings;
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
+
+    const char *pre = NULL;
+    const char *post = NULL;
+    getThemeStrings(os, color, &pre, &post);
+
+    if (pre) write(writer_state, pre, NULL);
+    const char *q = "'";
+    if (use_double_quotes) q = "\"";
+    for (int i=0; i<num; ++i)
+    {
+        write(writer_state, q, NULL);
+    }
+    ps->current_indent += num;
+    ps->last_char = q[0];
+    if (post) write(writer_state, post, NULL);
+}
+
+void print_double_quote(XMQPrintState *ps, XMQColor color)
 {
     XMQOutputSettings *os = ps->output_settings;
     XMQWrite write = os->content.write;
@@ -576,12 +742,9 @@ void print_quotes(XMQPrintState *ps, size_t num, XMQColor color)
     getThemeStrings(os, color, &pre, &post);
 
     if (pre) write(writer_state, pre, NULL);
-    for (size_t i=0; i<num; ++i)
-    {
-        write(writer_state, "'", NULL);
-    }
-    ps->current_indent += num;
-    ps->last_char = '\'';
+    write(writer_state, "\"", NULL);
+    ps->current_indent += 1;
+    ps->last_char = '"';
     if (post) write(writer_state, post, NULL);
 }
 
@@ -692,7 +855,7 @@ bool need_separation_before_attribute_key(XMQPrintState *ps)
     // if previous value was text, then a space is necessary, ie.
     // xyz key=
     char c = ps->last_char;
-    return c != 0 && c != '\'' && c != '(' && c != ')' && c != ';';
+    return c != 0 && c != '\'' && c != '"' && c != '(' && c != ')' && c != ';';
 }
 
 bool need_separation_before_entity(XMQPrintState *ps)
@@ -706,7 +869,7 @@ bool need_separation_before_entity(XMQPrintState *ps)
     // Otherwise a space is needed:
     // xyz &nbsp;
     char c = ps->last_char;
-    return c != 0 && c != '=' && c != '\'' && c != '{' && c != '}' && c != ';' && c != '(' && c != ')';
+    return c != 0 && c != '=' && c != '\'' && c != '"' && c != '{' && c != '}' && c != ';' && c != '(' && c != ')';
 }
 
 bool need_separation_before_element_name(XMQPrintState *ps)
@@ -721,17 +884,18 @@ bool need_separation_before_element_name(XMQPrintState *ps)
     // Otherwise a space is needed:
     // xyz key=
     char c = ps->last_char;
-    return c != 0 && c != '\'' && c != '{' && c != '}' && c != ';' && c != ')' && c != '/';
+    return c != 0 && c != '\'' && c != '"' && c != '{' && c != '}' && c != ';' && c != ')' && c != '/';
 }
 
 bool need_separation_before_quote(XMQPrintState *ps)
 {
     // If the previous node was quoted, then a space is necessary, ie
     // 'a b c' 'next quote'
+    // for simplicity we also separate "a b c" this could be improved.
     // otherwise last char is the end of a text value, and no space is necessary, ie
     // key=value'next quote'
     char c = ps->last_char;
-    return c == '\'';
+    return c == '\'' || c == '"';
 }
 
 bool need_separation_before_comment(XMQPrintState *ps)
@@ -745,7 +909,7 @@ bool need_separation_before_comment(XMQPrintState *ps)
     // if previous value was } or )) then no space is is needed.
     // }/*comment*/   ((...))/*comment*/
     char c = ps->last_char;
-    return c != 0 && c != '\'' && c != '{' && c != ')' && c != '}' && c != ';';
+    return c != 0 && c != '\'' && c != '"' && c != '{' && c != ')' && c != '}' && c != ';';
 }
 
 void check_space_before_attribute(XMQPrintState *ps)
@@ -1014,7 +1178,8 @@ void print_safe_leaf_quote(XMQPrintState *ps,
     bool force = true;
     bool add_nls = false;
     bool add_compound = false;
-    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound);
+    bool use_double_quotes = false;
+    int numq = count_necessary_quotes(start, stop, &add_nls, &add_compound, ps->output_settings->prefer_double_quotes, &use_double_quotes);
     size_t indent = ps->current_indent;
 
     if (numq > 0)
@@ -1063,6 +1228,7 @@ void print_safe_leaf_quote(XMQPrintState *ps,
             }
         }
     }
+
     if (numq == 0 && force) numq = 1;
 
     size_t old_line_indent = 0;
@@ -1073,7 +1239,7 @@ void print_safe_leaf_quote(XMQPrintState *ps,
         ps->line_indent = ps->current_indent;
     }
 
-    print_quotes(ps, numq, c);
+    print_quotes(ps, numq, c, use_double_quotes);
 
     if (!add_nls)
     {
@@ -1101,7 +1267,7 @@ void print_safe_leaf_quote(XMQPrintState *ps,
         print_nl_and_indent(ps, NULL, NULL);
     }
 
-    print_quotes(ps, numq, c);
+    print_quotes(ps, numq, c, use_double_quotes);
 
     if (add_nls)
     {
@@ -1181,19 +1347,13 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
 
     if (has_all_quotes(start, stop))
     {
-        // A text with all single quotes, print using &apos; only.
-        // We could also be quoted using n+1 more quotes and newlines, but it seems a bit annoying:
-        // ''''''
-        // '''''
-        // ''''''
-        // compared to &apos;&apos;&apos;&apos;
-        // The &apos; solution takes a little bit more space, but works for compact too,
-        // lets use that for both normal and compact formatting.
-        check_space_before_entity_node(ps);
-        for (const char *i = start; i < stop; ++i)
-        {
-            print_utf8(ps, level_to_entity_color(level), 1, "&apos;", NULL);
-        }
+        // A text with all single quotes or all double quotes.
+        // "''''''''" or '"""""""'
+        check_space_before_quote(ps, level);
+        bool is_dq = *start == '"';
+        print_quotes(ps, 1, level_to_quote_color(level), !is_dq);
+        print_quotes(ps, stop-start, level_to_quote_color(level), is_dq);
+        print_quotes(ps, 1, level_to_quote_color(level), !is_dq);
         return;
     }
 
@@ -1281,7 +1441,8 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
             bool add_nls = false;
             bool add_compound = false;
             bool compact = ps->output_settings->compact;
-            count_necessary_quotes(from, to, &add_nls, &add_compound);
+            bool use_double_quotes = false;
+            count_necessary_quotes(from, to, &add_nls, &add_compound, ps->output_settings->prefer_double_quotes, &use_double_quotes);
             if (!add_compound && (!add_nls || !compact))
             {
                 check_space_before_quote(ps, level);
@@ -1301,6 +1462,42 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
         print_all_whitespace(ps, stop, old_stop, level);
     }
 }
+
+void print_color_pre(XMQPrintState *ps, XMQColor color)
+{
+    XMQOutputSettings *os = ps->output_settings;
+    const char *pre = NULL;
+    const char *post = NULL;
+    getThemeStrings(os, color, &pre, &post);
+
+    if (pre)
+    {
+        XMQWrite write = os->content.write;
+        void *writer_state = os->content.writer_state;
+        write(writer_state, pre, NULL);
+    }
+}
+
+void print_color_post(XMQPrintState *ps, XMQColor color)
+{
+    XMQOutputSettings *os = ps->output_settings;
+    const char *pre = NULL;
+    const char *post = NULL;
+    getThemeStrings(os, color, &pre, &post);
+
+    XMQWrite write = os->content.write;
+    void *writer_state = os->content.writer_state;
+
+    if (post)
+    {
+        write(writer_state, post, NULL);
+    }
+    else
+    {
+        write(writer_state, ps->replay_active_color_pre, NULL);
+    }
+}
+
 
 /**
    print_value_internal:
@@ -1362,12 +1559,6 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
     const char *es = has_ending_nl_space(start, stop, &only_ending_newlines);
     if (es != NULL && only_ending_newlines == 0) return true;
 
-    if (has_all_quotes(start, stop))
-    {
-        // We will always pretty print a string of quotes as: &apos;&apos;&apos;
-        return true;
-    }
-
     if (compact)
     {
         // In compact form newlines must be escaped: &#10;
@@ -1377,7 +1568,7 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
         // '''
         // 'alfa'
         // '''
-        if (has_leading_ending_quote(start, stop)) return true;
+        if (has_leading_ending_different_quotes(start, stop)) return true;
     }
 
     bool newlines = ps->output_settings->escape_newlines;
@@ -1432,6 +1623,106 @@ void print_value(XMQPrintState *ps, xmlNode *node, Level level)
     }
 
     ps->line_indent = old_line_indent;
+}
+
+void node_strlen_name_prefix(xmlNode *node,
+                        const char **name, size_t *name_len,
+                        const char **prefix, size_t *prefix_len,
+                        size_t *total_len)
+{
+    *name_len = strlen((const char*)node->name);
+    *name = (const char*)node->name;
+
+    if (node->ns && node->ns->prefix)
+    {
+        *prefix = (const char*)node->ns->prefix;
+        *prefix_len = strlen((const char*)node->ns->prefix);
+        *total_len = *name_len + *prefix_len +1;
+    }
+    else
+    {
+        *prefix = NULL;
+        *prefix_len = 0;
+        *total_len = *name_len;
+    }
+    assert(*name != NULL);
+}
+
+void attr_strlen_name_prefix(xmlAttr *attr, const char **name, const char **prefix, size_t *total_u_len)
+{
+    *name = (const char*)attr->name;
+    size_t name_b_len;
+    size_t name_u_len;
+    size_t prefix_b_len;
+    size_t prefix_u_len;
+    str_b_u_len(*name, NULL, &name_b_len, &name_u_len);
+
+    if (attr->ns && attr->ns->prefix)
+    {
+        *prefix = (const char*)attr->ns->prefix;
+        str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
+        *total_u_len = name_u_len + prefix_u_len + 1;
+    }
+    else
+    {
+        *prefix = NULL;
+        prefix_b_len = 0;
+        prefix_u_len = 0;
+        *total_u_len = name_u_len;
+    }
+    assert(*name != NULL);
+}
+
+void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len)
+{
+    size_t prefix_b_len;
+    size_t prefix_u_len;
+
+    if (ns->prefix)
+    {
+        *prefix = (const char*)ns->prefix;
+        str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
+        *total_u_len = /* xmlns */ 5  + prefix_u_len + 1;
+    }
+    else
+    {
+        *prefix = NULL;
+        prefix_b_len = 0;
+        prefix_u_len = 0;
+        *total_u_len = /* xmlns */ 5;
+    }
+}
+
+void element_strlen_name_prefix(xmlNode *element, const char **name, const char **prefix, size_t *total_u_len)
+{
+    *name = (const char*)element->name;
+    if (!*name)
+    {
+        *name = "";
+        *prefix = "";
+        *total_u_len = 0;
+        return;
+    }
+    size_t name_b_len;
+    size_t name_u_len;
+    size_t prefix_b_len;
+    size_t prefix_u_len;
+    str_b_u_len(*name, NULL, &name_b_len, &name_u_len);
+
+    if (element->ns && element->ns->prefix)
+    {
+        *prefix = (const char*)element->ns->prefix;
+        str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
+        *total_u_len = name_u_len + prefix_u_len + 1;
+    }
+    else
+    {
+        *prefix = NULL;
+        prefix_b_len = 0;
+        prefix_u_len = 0;
+        *total_u_len = name_u_len;
+    }
+    assert(*name != NULL);
 }
 
 #endif // XMQ_PRINTER_MODULE

@@ -1,0 +1,7 @@
+START
+value = "dquote''quote"
+DEBUG
+[element_key "value" 1:1][whitespace " " 1:6][equals "=" 1:7][whitespace " " 1:8][element_value_quote "\"dquote''quote\"" 1:9][whitespace "\n" 1:24]
+CONTENT
+{quote "dquote''quote"}
+END

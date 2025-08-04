@@ -1,9 +1,9 @@
 START
 <q>''</q>
 COMPACT
-q=(&apos;&apos;)
+q="''"
 XMQ
-q = ( &apos;&apos; )
+q = "''"
 END
 ARGS
 CMDS

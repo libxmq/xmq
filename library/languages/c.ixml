@@ -1,0 +1,543 @@
+{ A C grammar written in IXML by Fredrik Öhrström 2024.
+
+Copyright (c) 2024-2025 Fredrik Öhrström libxmq (spdx: MIT)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+In general we place whitespace ws at the end of each rule.
+Except for the first rule, where we need to accept leading white space. }
+
+translation_unit = ws, (external_declaration | translation_unit, external_declaration).
+
+-ws = -[Zs;#a;#d;#9]*.
+-s = -[Zs;#a;#d;#9]+.
+
+IDENTIFIER = ['A'-'Z';'a'-'z';'_'], ['A'-'Z';'a'-'z';'0'-'9';'_']*, ws.
+CONSTANT = ( ['0'-'9']+, ('.', ['0'-'9']+)? | '0x', ['0'-'9';'a'-'f';'A'-'F']+ ), ws.
+CHAR_LITERAL = "'", cl, "'", ws.
+-cl = ~["'\"; #0-#19]
+       | "\", clescape.
+-clescape = ["'\/abfnrtv";'"']
+         | "u", hex, hex, hex, hex
+         | digit, (digit, digit)?.
+
+STRING_LITERAL = -'"', character*, -'"'.
+-character = ~['"\'; #0-#19]
+           | "\", escape.
+-digit = ['0'-'9'].
+-escape = ['"\/bfnrt']
+         | "u", hex, hex, hex, hex
+         | digit, (digit, digit)?.
+-hex = digit | ["A"-"F"; "a"-"f"].
+
+-LEFT_PAR = -'(', ws.
+-RIGHT_PAR = -')', ws.
+-LEFT_BRACKET = -'[', ws.
+-RIGHT_BRACKET = -']', ws.
+-LEFT_BRACE = -'{', ws.
+-RIGHT_BRACE = -'}', ws.
+EQUAL_SIGN = '=', ws.
+-COMMA = -',', ws.
+-SEMICOLON = -';', ws.
+-COLON = ':', ws.
+-QMARK = '?', ws.
+ASTERISK = '*', ws.
+SLASH = '/', ws.
+PLUS = '+', ws.
+MINUS = '-', ws.
+PERCENT = '%', ws.
+NEGATION = '~', ws.
+AMPERSAND = '&', ws.
+PIPE = '|', ws.
+EXCLAMATION = '!', ws.
+HAT = '^', ws.
+
+primary_expression
+	= IDENTIFIER
+	| CONSTANT
+	| STRING_LITERAL++ws, ws
+        | CHAR_LITERAL
+	| LEFT_PAR, expression, RIGHT_PAR
+        | '__extension__', ws, attrpar, ws
+        | '__builtin_va_arg', ws, attrpar, ws
+        | '__builtin_offsetof', ws, attrpar, ws
+	.
+
+postfix_expression
+	= -primary_expression
+	| postfix_expression, LEFT_BRACKET, expression, RIGHT_BRACKET
+	| postfix_expression, LEFT_PAR, RIGHT_PAR
+	| postfix_expression, LEFT_PAR, argument_expression_list, RIGHT_PAR
+	| postfix_expression, '.', IDENTIFIER
+	| postfix_expression, ARROW, IDENTIFIER
+	| postfix_expression, PTR_OP, IDENTIFIER
+	| postfix_expression, INC_OP
+	| postfix_expression, DEC_OP
+	.
+
+argument_expression_list
+	= -assignment_expression
+	| argument_expression_list, COMMA, assignment_expression
+	.
+
+unary_expression
+	= -postfix_expression
+	| INC_OP, unary_expression
+	| DEC_OP, unary_expression
+	| unary_operator, cast_expression
+	| SIZEOF, unary_expression
+	| SIZEOF, LEFT_PAR, type_name, RIGHT_PAR
+	.
+
+unary_operator
+	= AMPERSAND
+	| ASTERISK
+	| PLUS
+	| MINUS
+	| NEGATION
+	| EXCLAMATION
+	.
+
+cast_expression
+	= -unary_expression
+	| LEFT_PAR, type_name, RIGHT_PAR, ws, cast_expression
+	| LEFT_PAR, '__typeof', ws, LEFT_PAR, IDENTIFIER, RIGHT_PAR, RIGHT_PAR, ws, cast_expression
+	.
+
+multiplicative_expression
+	= -cast_expression
+	| multiplicative_expression, ASTERISK, cast_expression
+	| multiplicative_expression, SLASH, cast_expression
+	| multiplicative_expression, PERCENT, cast_expression
+	.
+
+additive_expression
+	= -multiplicative_expression
+	| additive_expression, PLUS, multiplicative_expression
+	| additive_expression, MINUS, multiplicative_expression
+	.
+
+shift_expression
+	= -additive_expression
+	| shift_expression, LEFT_OP, additive_expression
+	| shift_expression, RIGHT_OP, additive_expression
+	.
+
+relational_expression
+	= -shift_expression
+	| relational_expression, (L_OP | LE_OP), shift_expression
+	| relational_expression, (G_OP | GE_OP), shift_expression
+	.
+
+equality_expression
+	= -relational_expression
+	| equality_expression, EQ_OP, relational_expression
+	| equality_expression, NE_OP, relational_expression
+	.
+
+or_expression
+	= -equality_expression
+	| or_expression, PIPE, equality_expression
+	.
+
+and_expression
+	= -or_expression
+	| and_expression, AMPERSAND, or_expression
+	.
+
+exclusive_or_expression
+	= -and_expression
+	| exclusive_or_expression, HAT, and_expression
+	.
+
+logical_and_expression
+	= -exclusive_or_expression
+	| logical_and_expression, AND_OP, exclusive_or_expression
+	.
+
+logical_or_expression
+	= -logical_and_expression
+	| logical_or_expression, OR_OP, logical_and_expression
+	.
+
+conditional_expression
+	= -logical_or_expression
+	| logical_or_expression, QMARK, expression, ws, COLON, conditional_expression
+	.
+
+assignment_expression
+	= -conditional_expression
+	| unary_expression, assignment_operator, assignment_expression
+	.
+
+assignment_operator
+	= EQUAL_SIGN
+	| MUL_ASSIGN
+	| DIV_ASSIGN
+	| MOD_ASSIGN
+	| ADD_ASSIGN
+	| SUB_ASSIGN
+	| LEFT_ASSIGN
+	| RIGHT_ASSIGN
+	| AND_ASSIGN
+	| XOR_ASSIGN
+	| OR_ASSIGN
+	.
+
+expression
+	= -assignment_expression
+	| expression, COMMA, assignment_expression
+	.
+
+constant_expression
+	= conditional_expression
+	.
+
+declaration
+	= declaration_specifiers, SEMICOLON
+	| declaration_specifiers, init_declarator_list, SEMICOLON
+	.
+
+declaration_specifiers
+	= storage_class_specifier, attributes?
+	| storage_class_specifier, attributes?, declaration_specifiers
+	| type_specifier, attributes?
+	| type_specifier, attributes?, declaration_specifiers
+	| type_qualifier
+	| type_qualifier, declaration_specifiers
+	.
+
+init_declarator_list
+	= init_declarator
+	| init_declarator_list, COMMA, init_declarator
+	.
+
+init_declarator
+	= declarator
+	| declarator, EQUAL_SIGN, initializer
+	.
+
+storage_class_specifier
+	= TYPEDEF
+	| EXTERN
+	| STATIC
+	| AUTO
+	| REGISTER
+	.
+
+type_specifier =
+          VOID
+	| CHAR
+	| SHORT
+	| INT
+	| LONG
+	| FLOAT
+	| DOUBLE
+	| SIGNED
+	| UNSIGNED
+	| struct_or_union_specifier
+	| enum_specifier
+        | type_identifier
+	.
+
+type_identifier = IDENTIFIER.
+
+struct_or_union_specifier
+	= struct_or_union, IDENTIFIER, LEFT_BRACE, struct_declaration_list, RIGHT_BRACE
+	| struct_or_union, LEFT_BRACE, struct_declaration_list, RIGHT_BRACE
+	| struct_or_union, IDENTIFIER
+	.
+
+struct_or_union
+	= STRUCT
+	| UNION
+	.
+
+struct_declaration_list
+	= struct_declaration
+	| struct_declaration_list, struct_declaration
+	.
+
+struct_declaration
+	= specifier_qualifier_list, struct_declarator_list, SEMICOLON
+	.
+
+specifier_qualifier_list
+	= type_specifier, specifier_qualifier_list
+	| type_specifier
+	| type_qualifier, specifier_qualifier_list
+	| type_qualifier
+	.
+
+struct_declarator_list
+	= struct_declarator
+	| struct_declarator_list, COMMA, struct_declarator
+	.
+
+struct_declarator
+	= declarator
+	| COLON, constant_expression
+	| declarator, COLON, constant_expression
+	.
+
+enum_specifier
+	= ENUM, LEFT_BRACE, enumerator_list, COMMA?, RIGHT_BRACE
+	| ENUM, IDENTIFIER, LEFT_BRACE, enumerator_list, COMMA?, RIGHT_BRACE
+	| ENUM, IDENTIFIER
+	.
+
+enumerator_list
+	= enumerator
+	| enumerator_list, COMMA, enumerator
+	.
+
+enumerator
+	= IDENTIFIER
+	| IDENTIFIER, EQUAL_SIGN, constant_expression
+	.
+
+type_qualifier
+	= CONST
+	| VOLATILE
+	.
+
+declarator
+	= attributes?, pointer, attributes?, direct_declarator
+	| -direct_declarator
+	.
+
+
+direct_declarator
+	= IDENTIFIER
+	| LEFT_PAR, declarator, RIGHT_PAR
+	| direct_declarator, LEFT_BRACKET, constant_expression, RIGHT_BRACKET
+	| direct_declarator, LEFT_BRACKET, RIGHT_BRACKET
+	| direct_declarator, LEFT_PAR, parameter_type_list, RIGHT_PAR, attributes?
+	| direct_declarator, LEFT_PAR, identifier_list, RIGHT_PAR, attributes?
+	| direct_declarator, LEFT_PAR, RIGHT_PAR, attributes?
+	.
+
+attributes = ('__restrict', ws | '__inline', ws | attribute | asm)+.
+
+attribute = '__attribute__', ws, '(', attrpar, ')', ws.
+attrpar= -"(", (achar| -attrpar)*, -")".
+-achar= ~["()"].
+
+asm = '__asm__', ws, attrpar, ws.
+
+pointer
+	= ASTERISK
+	| ASTERISK, type_qualifier_list
+	| ASTERISK, pointer
+	| ASTERISK, type_qualifier_list, pointer
+	.
+
+type_qualifier_list
+	= type_qualifier
+	| type_qualifier_list, type_qualifier
+	.
+
+parameter_type_list
+	= parameter_list
+	| parameter_list, COMMA, ELLIPSIS
+	.
+
+parameter_list
+	= parameter_declaration
+	| parameter_list, COMMA, parameter_declaration
+	.
+
+parameter_declaration
+	= declaration_specifiers, declarator
+	| declaration_specifiers, abstract_declarator
+	| declaration_specifiers
+	.
+
+identifier_list
+	= IDENTIFIER
+	| identifier_list, COMMA, IDENTIFIER
+	.
+
+type_name
+	= specifier_qualifier_list
+	| specifier_qualifier_list, abstract_declarator
+	.
+
+abstract_declarator
+	= pointer
+	| direct_abstract_declarator
+	| pointer, direct_abstract_declarator
+	.
+
+direct_abstract_declarator
+	= LEFT_PAR, abstract_declarator, RIGHT_PAR
+	| LEFT_BRACKET, RIGHT_BRACKET
+	| LEFT_BRACKET, constant_expression, RIGHT_BRACKET
+	| direct_abstract_declarator, LEFT_BRACKET, RIGHT_BRACKET
+	| direct_abstract_declarator, LEFT_BRACKET, constant_expression, RIGHT_BRACKET
+	| LEFT_PAR, RIGHT_PAR
+	| LEFT_PAR, parameter_type_list, RIGHT_PAR
+	| direct_abstract_declarator, LEFT_PAR, RIGHT_PAR
+	| direct_abstract_declarator, LEFT_PAR, parameter_type_list, RIGHT_PAR
+	.
+
+initializer
+	= assignment_expression
+	| LEFT_BRACE, RIGHT_BRACE
+	| LEFT_BRACE, initializer_list, ws, RIGHT_BRACE
+	| LEFT_BRACE, initializer_list, ws, COMMA, RIGHT_BRACE
+	.
+
+initializer_list
+	= initializer
+	| initializer_list, ws, COMMA, initializer
+	.
+
+statement
+	= labeled_statement
+	| compound_statement
+	| expression_statement
+	| selection_statement
+	| iteration_statement
+	| jump_statement
+	.
+
+labeled_statement
+	= IDENTIFIER, COLON, statement
+	| CASE, constant_expression, COLON, statement
+	| DEFAULT, COLON, statement
+	.
+
+compound_statement
+	= LEFT_BRACE, RIGHT_BRACE
+	| LEFT_BRACE, statement_list, RIGHT_BRACE
+	.
+
+declaration_list
+        = declaration
+        | declaration_list, declaration
+	.
+
+statement_list
+	= statement
+        | declaration
+	| -statement_list, statement
+	| -statement_list, declaration
+	.
+
+expression_statement
+	= SEMICOLON
+	| expression, SEMICOLON
+	.
+
+selection_statement
+	= IF, LEFT_PAR, expression, RIGHT_PAR, statement
+	| IF, LEFT_PAR, expression, RIGHT_PAR, statement, ELSE, statement
+	| SWITCH, LEFT_PAR, expression, RIGHT_PAR, statement
+	.
+
+iteration_statement
+	= WHILE, LEFT_PAR, expression, RIGHT_PAR, statement
+	| DO, statement, WHILE, LEFT_PAR, expression, RIGHT_PAR, SEMICOLON
+	| FOR, LEFT_PAR, (expression_statement | declaration), expression_statement, RIGHT_PAR, statement
+	| FOR, LEFT_PAR, (expression_statement | declaration), expression_statement, expression, RIGHT_PAR, statement
+	.
+
+jump_statement
+	= GOTO, IDENTIFIER, SEMICOLON
+	| CONTINUE, SEMICOLON
+	| BREAK, SEMICOLON
+	| RETURN, SEMICOLON
+	| RETURN, expression, SEMICOLON
+	.
+
+external_declaration
+	= function_definition
+	| declaration
+	.
+
+function_definition
+	= declaration_specifiers, declarator, declaration_list, compound_statement, SEMICOLON?
+	| declaration_specifiers, declarator, compound_statement, SEMICOLON?
+	| declarator, declaration_list, compound_statement, SEMICOLON?
+	| declarator, compound_statement, SEMICOLON?
+	.
+
+SIGNED = 'signed', ws.
+CONST = 'const', ws.
+INLINE = 'inline', ws.
+AUTO = 'auto', ws.
+BREAK = 'break', ws.
+CASE = 'case', ws.
+CHAR = 'char', ws.
+CONTINUE = 'continue', ws.
+DEFAULT = 'default', ws.
+DO	 = 'do', ws.
+DOUBLE	 = 'double', ws.
+ELSE	 = 'else', ws.
+ENUM	 = 'enum', ws.
+EXTERN	 = 'extern', ws.
+FLOAT	 = 'float', ws.
+FOR	 = 'for', ws.
+GOTO	 = 'goto', ws.
+IF = 'if', ws.
+INT	 = 'int', ws.
+LONG	 = 'long', ws.
+REGISTER = 'register', ws.
+RETURN	 = 'return', ws.
+SHORT	 = 'short', ws.
+SIZEOF	 = 'sizeof', ws.
+STATIC	 = 'static', ws.
+STRUCT	 = 'struct', ws.
+SWITCH = 'switch', ws.
+TYPEDEF	 = 'typedef', ws.
+UNION	 = 'union', ws.
+UNSIGNED = 'unsigned', ws.
+VOID	 = 'void', ws.
+VOLATILE = 'volatile', ws.
+WHILE	 = 'while', ws.
+RIGHT_ASSIGN = '>>=', ws.
+LEFT_ASSIGN = '<<=', ws.
+ADD_ASSIGN = '+=', ws.
+SUB_ASSIGN = '-=', ws.
+MUL_ASSIGN = '*=', ws.
+DIV_ASSIGN = '/=', ws.
+MOD_ASSIGN = '%=', ws.
+AND_ASSIGN = '&=', ws.
+XOR_ASSIGN = '^=', ws.
+OR_ASSIGN = '|=', ws.
+RIGHT_OP = '>>', ws.
+LEFT_OP	 = '<<', ws.
+INC_OP	 = '++', ws.
+DEC_OP	 = '--', ws.
+PTR_OP	 = '&', ws.
+AND_OP	 = '&&', ws.
+OR_OP	 = '||', ws.
+L_OP	 = '<', ws.
+G_OP     = '>', ws.
+LE_OP	 = '<=', ws.
+GE_OP    = '>=', ws.
+EQ_OP	 = '==', ws.
+NE_OP	 = '!=', ws.
+ARROW    = '->', ws.
+ELLIPSIS = '...', ws.
+RESTRICT = 'restrict', ws.
+_BOOL = 'bool', ws.
+_COMPLEX = 'complex', ws.
+_IMAGINARY = 'imaginary', ws.

@@ -1,0 +1,37 @@
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:output(method         = html
+               doctype-system = about:legacy-compat)
+    xsl:template(match = /)
+    {
+        html {
+            head {
+                style = 'html {box-sizing: border-box;}
+                         *,*:before,*:after{box-sizing:inherit;}
+                         body {}
+                         *{font-family:monospace,Consolar,DejaVu Sans Mono,Lucida Console,Courier,"Courier New";}
+                         table {border-collapse:collapse;}
+                         td { border:solid 1px black; padding: 0 0.5rem; }'
+            }
+            body {
+                table {
+                    xsl:apply-templates(select = table/tr)
+                }
+            }
+        }
+    }
+    xsl:template(match = table/tr)
+    {
+        tr {
+            xsl:apply-templates(select = td)
+        }
+    }
+    xsl:template(match = td)
+    {
+        td {
+            xsl:value-of(select = .)
+        }
+    }
+
+}
