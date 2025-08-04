@@ -55,7 +55,11 @@ xmq rest.json
 xmq work.xmq
 
 # Parse any input with a suitable ixml grammar. Output xmq/xml/json etc.
-xmq --ixml=csv.ixml input.txt
+xmq csv.ixml input.txt
+
+# Parse any input with a downloadable ixml grammar from https://libxmq.org
+# and apply a downloadable xslt transform
+xmq ixml:data/csv myfile.csv xslt:data/table-to-web to-html br
 
 # Use the built in pager (pa) to scroll up and down.
 xmq pom.xml pa
@@ -134,7 +138,7 @@ date {
 }
 ```
 
-or if you prefer JSON: xmq --ixml=dates.ixml -i '22 November 2024' to-json | jq .`
+or if you prefer JSON: xmq dates.ixml -i '22 November 2024' to-json | jq .`
 ```
 {
   "_": "date",
@@ -144,7 +148,7 @@ or if you prefer JSON: xmq --ixml=dates.ixml -i '22 November 2024' to-json | jq 
 }
 ```
 
-or if you prefer XML: xmq --ixml=dates.ixml -i '22 November 2024' to-xml` (manually pretty printed)
+or if you prefer XML: xmq dates.ixml -i '22 November 2024' to-xml` (manually pretty printed)
 ```
 <date>
     <day>22</day>

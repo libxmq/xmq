@@ -1,3 +1,25 @@
+Add support for double quotes in xmq to mirror to single quotes.
+msg = "There's a value."
+msg = """There's a "value"."""
+
+Add support for automatic download of ixml/xslt files. E.g.
+
+xmq ixml:data/csv myfile.csv xslt:data/table-to-web to-html br
+
+This command will download csv.ixml and table-to-web.xslq
+and apply them to the myfile.csv and view the resulting
+table in your default browser. The ixml/xslt files are then
+cached locally.
+
+The library of ixml/xslt files can be found in the git repo.
+Please contribute ixml/xslt files!
+
+Other changes:
+
+Major refactor of source to simplify development.
+Add eclipse project in make/eclipse-cproject
+Add advanced tracing of yaep parser.
+
 2025-03-03: Version 3.3.2
 2025-03-03: Version 3.3.2-RC3
 
