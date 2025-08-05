@@ -24,6 +24,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef ALWAYS_H
 #define ALWAYS_H
 
+#ifdef BUILDING_DIST_XMQ
+#define STATIC static
+#else
+#define STATIC
+#endif
+
 #include<stdbool.h>
 #include<stdlib.h>
 #include<stdarg.h>
@@ -44,16 +50,16 @@ extern bool xmq_verbose_enabled_;
 extern const char *xmq_log_filter_;
 extern struct XMQLineConfig xmq_log_line_config_;
 
-void error__(const char* fmt, ...);
-void warning__(const char* fmt, ...);
-void verbose__(const char* fmt, ...);
-void debug__(const char* fmt, ...);
-void trace__(const char* fmt, ...);
-void debug_mb__(const char* module, MemBuffer *mb);
-void trace_mb__(const char* fmt, MemBuffer *mb);
-void check_malloc(void *a);
+STATIC void error__(const char* fmt, ...);
+STATIC void warning__(const char* fmt, ...);
+STATIC void verbose__(const char* fmt, ...);
+STATIC void debug__(const char* fmt, ...);
+STATIC void trace__(const char* fmt, ...);
+STATIC void debug_mb__(const char* module, MemBuffer *mb);
+STATIC void trace_mb__(const char* fmt, MemBuffer *mb);
+STATIC void check_malloc(void *a);
 
-char *buf_vsnprintf(const char *format, va_list ap);
+STATIC char *buf_vsnprintf(const char *format, va_list ap);
 
 #define error(...) error__(__VA_ARGS__)
 #define warning(...) warning__(__VA_ARGS__)
@@ -73,7 +79,7 @@ char *strndup(const char *s, size_t l);
 // A common free function ptr to be used when freeing collections.
 typedef void(*FreeFuncPtr)(void*);
 
-char *humanReadableTwoDecimals(size_t s);
+STATIC char *humanReadableTwoDecimals(size_t s);
 
 #define ALWAYS_MODULE
 
