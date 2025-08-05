@@ -26,6 +26,7 @@
 
 #ifndef BUILDING_DIST_XMQ
 
+#include <stdbool.h>
 #include "yaep_cspc.h"
 #include "yaep_print.h"
 #include "yaep_structs.h"
@@ -556,7 +557,7 @@ static void loop_stack(YaepTreeNode **result,
                     state->from_i = dotted_rule_from_i;
                     state->state_set_k = state_set_k;
                     YaepParseTreeBuildState *table_state = NULL;
-                    _Bool new_p;
+                    bool new_p;
                     if (!ps->run.grammar->one_parse_p)
                     {
                         table_state = parse_state_insert(ps, state, &new_p);
