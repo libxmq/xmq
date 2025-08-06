@@ -1,0 +1,18 @@
+table {
+    tr {
+        td = Brand
+        td = Address
+        td = Speed
+    }
+    tr {
+        td = Volvo
+        td = 'Great Road 452'
+        td = 123.42
+    }
+    tr {
+        td = Saab
+        td = 'New Rd; "Bar"
+              8492 Sweden'
+        td = 999.99
+    }
+}

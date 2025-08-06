@@ -1,4 +1,4 @@
-{ Create a table/tr/td from a file with lines containing tab separated values. }
+{ v1.0.0 Create a table/tr/td from a file with lines containing tab separated values. }
 { by Fredrik Öhrström spdx: CC0-1.0 }
 table = nl*, tr++nl, nl*.
 tr    = td++-#9.
