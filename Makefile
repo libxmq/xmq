@@ -158,6 +158,12 @@ dist:
 
 .PHONY: dist
 
+# Check that the library ixml files execute identically with xmq,coffepot and markup-blitz
+# kaffepot is just a script around coffepot where -g: and -i are automatically added.
+test_library:
+	./tests/test_library.sh ./xmq build/test_library_output markup-blitz
+	./tests/test_library.sh ./xmq build/test_library_output kaffepot
+
 test: test_release
 testd: test_debug
 testa: test_asan

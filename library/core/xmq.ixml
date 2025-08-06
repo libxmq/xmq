@@ -1,4 +1,5 @@
-{ XMQ grammar in IXML by Fredrik Öhrström 2024 spdx: MIT }
+{ v1.0.0 XMQ grammar in IXML. }
+{ by Fredrik Öhrström (c) 2024 spdx: MIT }
 
 xmq = s?, nodestart, s?.
 -nodestart = entitystart | quotestart | commentstart | namestart.
