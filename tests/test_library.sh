@@ -22,7 +22,7 @@ else
     echo "ERR: Failed to parse ixml.ixml"
     exit 1
 fi
-if [ -n $OTHER ]
+if [ -n "$OTHER" ]
 then
     $OTHER library/core/ixml.ixml library/core/ixml.ixml | $PROG > $OUTPUT/ixml.other.output 2>/dev/null
     if diff $OUTPUT/ixml.other.output $OUTPUT/ixml.expected
@@ -54,13 +54,16 @@ do
                 echo ERROR: $t
                 exit 1
             fi
-            $OTHER $i $t | $PROG > $OUTPUT/tmp
-            if diff $OUTPUT/tmp $o
+            if [ -n "$OTHER" ]
             then
-                echo OK: $OTHER $t
-            else
-                echo ERROR: $OTHER $t
-                exit 1
+                $OTHER $i $t | $PROG > $OUTPUT/tmp
+                if diff $OUTPUT/tmp $o
+                then
+                    echo OK: $OTHER $t
+                else
+                    echo ERROR: $OTHER $t
+                    exit 1
+                fi
             fi
         done
     fi
