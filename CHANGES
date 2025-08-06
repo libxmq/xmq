@@ -12,7 +12,7 @@ msg = """There's a "value"."""
 
 Add support for automatic download of ixml/xslt files. E.g.
 
-xmq ixml:data/csv myfile.csv xslt:data/table-to-web to-html br
+xmq ixml:data/csv myfile.csv xsl:data/table-to-web to-html br
 
 This command will download csv.ixml and table-to-web.xslq
 and apply them to the myfile.csv and view the resulting

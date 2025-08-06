@@ -180,7 +180,7 @@ struct XMQCliCommand
     // xmq --ixml=ixml.ixml grammar.ixml # This will print the same grammar as xmq,
     // but uses the ixml early parser instead of the hand coded parser.
 
-    // When using ixml:data/bar or xslt:render/nginx-html
+    // When using ixml:data/bar or xsl:render/nginx-html
     // it usually asks if you want to download the file.
     bool auto_yes;
     bool log_xmq; // Output verbose,debug,trace as human readable lines instead of xmq.
@@ -3839,11 +3839,11 @@ const char *is_ixml_cmd(const char *arg)
 
 const char*is_xslt_cmd(const char *arg)
 {
-    // Does arg look like:  xslt:web/render-csv
+    // Does arg look like:  xsl:web/render-csv
     char *colon = strrchr(arg, ':');
-    if (colon && !strncmp("xslt:", arg, colon-arg))
+    if (colon && !strncmp("xsl:", arg, colon-arg))
     {
-        return arg+5;
+        return arg+4;
     }
     return NULL;
 }
@@ -3937,7 +3937,7 @@ void prepare_xslt_command(XMQCliCommand *command, const char *arg)
     assert(file);
     if (dot_found(file))
     {
-        printf("xmq: file after xslt: must not contain dots (%s)\n", arg);
+        printf("xmq: file after xsl: must not contain dots (%s)\n", arg);
         exit(1);
     }
 

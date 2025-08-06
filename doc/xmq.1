@@ -21,7 +21,7 @@ xmq index.html pa    \fB# pretty print and use pager in terminal\fP
 .br
 xmq big.json br      \fB# view json in default browser\fP
 .br
-xmq --ixml=tsv.ixml input.txt           \fB# parse input using an ixml grammar\fP
+xmq tsv.ixml input.txt           \fB# parse input using an ixml grammar\fP
 .br
 xmq pom.xmq to-xml > pom.xml            \fB# convert to xml and save into pom.xml file\fP
 .br
@@ -39,6 +39,9 @@ curl https://jsonandstuff/products | xmq - transform make_web_list.xslq to-html 
 .br
 xmq input.xmq replace-entity VALUE "$SPEED" to-json
     | curl -H "Content-Type: application/json" -X POST --data-binary @- http://somewhere
+\fB# Automatically download and cache ixml and xsl files from library for use.\fP
+.br
+xmq ixml:data/csv list.csv xsl:data/table-to-web to-html br
 
 .SH DESCRIPTION
 

@@ -58,8 +58,8 @@ xmq work.xmq
 xmq csv.ixml input.txt
 
 # Parse any input with a downloadable ixml grammar from https://libxmq.org
-# and apply a downloadable xslt transform
-xmq ixml:data/csv myfile.csv xslt:data/table-to-web to-html br
+# and apply a downloadable xsl transform
+xmq ixml:data/csv myfile.csv xsl:data/table-to-web to-html br
 
 # Use the built in pager (pa) to scroll up and down.
 xmq pom.xml pa
