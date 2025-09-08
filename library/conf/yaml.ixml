@@ -1,0 +1,21 @@
+{ YAML grammar by Fredrik Öhrström 2025, spdx: MIT
+  This grammar does not try to verify that your yaml is valid.
+  This grammar does not try to type the content of the yaml.
+  YAML is horrible..... }
+
+nodes00 = node00+.
+node00 = @name, -' '*, -':', -' '*, (-#a, nodes01ormore | ~[' ';#a]+, -#a).
+
+nodes01ormore = nodes01 | nodes02 | nodes03.
+nodes01 = node01+.
+node01 = -' ', @name, -' '*, -':', -' '*, (-#a, nodes02ormore | ~[' ';#a]+, -#a).
+
+nodes02ormore = nodes02 | nodes03.
+nodes02 = node02+.
+node02 = -'  ', @name, -' '*, -':', -' '*, (-#a, nodes03ormore | ~[' ';#a]+, -#a).
+
+nodes03ormore = nodes03.
+nodes03 = node03+.
+node03 = 'END'.
+
+name = [L;'-']+.

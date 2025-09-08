@@ -38,7 +38,7 @@ for i in library/data/*.ixml
 do
     g="$i"
     n="$(basename $g)"
-    n="${n%.ixml}-test"
+    n="test-${n%.ixml}"
     testdir="$(dirname $g)/$n"
 
     if [ -d "$testdir" ]
@@ -73,7 +73,7 @@ for i in library/data/*.xslq
 do
     g="$i"
     n="$(basename $g)"
-    n="${n%.xslq}-test"
+    n="test-${n%.xslq}"
     testdir="$(dirname $g)/$n"
 
     if [ -d "$testdir" ]

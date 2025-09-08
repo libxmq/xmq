@@ -1,0 +1,17 @@
+{ v1.0.0 Parse crontab by Fredrik Öhrström 2025 spdx: MIT }
+
+crontab = (comment|line|variable)++-#a, ews.
+comment = -'#', ~[#a]*.
+-ews      = -[' ';#9;#a]*.
+-ws      = -[' ';#9]*.
+-s       = -[' ';#9]+.
+line    = ws, minute, s, hour, s, day_of_month, s, month_of_year, s, day_of_week, s, command.
+minute  = ([N], [N]? | '*').
+hour    = ([N], [N]? | '*').
+day_of_month = ([N], [N]? | '*').
+month_of_year = ([N], [N]? | [L], [L], [L] | '*').
+day_of_week = [N] | '*'.
+command = ~['=';#a], ~[#a]*.
+variable = name, ws, -'=', ws, value.
+name = [L;'_']+.
+value = ~[' ';#9], ~[#a]*.
