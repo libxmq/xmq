@@ -48,7 +48,7 @@
 /* Terminals are stored a in term set using bits in a bit array.
    The array consists of long ints, typedefed as terminal_bitset_el_t.
    A long int is 8 bytes, ie 64 bits. */
-typedef long int terminal_bitset_t;
+typedef unsigned long int terminal_bitset_t;
 
 /* Calculate the number of required term set elements from the number of bits we want to store. */
 #define CALC_NUM_ELEMENTS(num_bits) ((num_bits+CHAR_BIT*sizeof(terminal_bitset_t)-1)/(CHAR_BIT*sizeof(terminal_bitset_t)))

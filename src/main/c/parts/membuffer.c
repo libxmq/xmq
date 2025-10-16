@@ -38,6 +38,9 @@ MemBuffer *new_membuffer()
     MemBuffer *mb = (MemBuffer*)malloc(sizeof(MemBuffer));
     check_malloc(mb);
     memset(mb, 0, sizeof(*mb));
+    mb->buffer_ = malloc(1024);
+    mb->max_ = 1024;
+    mb->used_ = 0;
     return mb;
 }
 
@@ -54,6 +57,7 @@ void free_membuffer_and_free_content(MemBuffer *mb)
 {
     if (mb->buffer_) free(mb->buffer_);
     mb->buffer_ = NULL;
+    mb->used_ = mb->max_ = 0;
     free(mb);
 }
 
@@ -61,6 +65,7 @@ void membuffer_reuse(MemBuffer *mb, char *start, size_t len)
 {
     if (mb->buffer_) free(mb->buffer_);
     mb->buffer_ = start;
+    assert(mb->buffer_ != NULL);
     mb->used_ = mb->max_ = len;
 }
 
@@ -91,6 +96,7 @@ void membuffer_append_region(MemBuffer *mb, const char *start, const char *stop)
     if (max > mb->max_)
     {
         mb->buffer_ = (char*)realloc(mb->buffer_, max);
+        check_malloc(mb->buffer_);
         mb->max_ = max;
     }
     memcpy(mb->buffer_+mb->used_, start, add);
@@ -99,8 +105,13 @@ void membuffer_append_region(MemBuffer *mb, const char *start, const char *stop)
 
 void membuffer_append(MemBuffer *mb, const char *start)
 {
+    // Check if empty string, then do nothing.
+    if (*start == 0) return;
+
     const char *i = start;
     char *to = mb->buffer_+mb->used_;
+    assert(mb->buffer_ != NULL);
+    assert(mb->max_ > 0);
     const char *stop = mb->buffer_+mb->max_;
 
     while (*i)
@@ -111,6 +122,7 @@ void membuffer_append(MemBuffer *mb, const char *start)
             size_t max = pick_buffer_new_size(mb->max_, mb->used_, 1);
             assert(max >= mb->max_);
             mb->buffer_ = (char*)realloc(mb->buffer_, max);
+            check_malloc(mb->buffer_);
             mb->max_ = max;
             stop = mb->buffer_+mb->max_;
             to = mb->buffer_+mb->used_;
@@ -128,6 +140,7 @@ void membuffer_append_char(MemBuffer *mb, char c)
     if (max > mb->max_)
     {
         mb->buffer_ = (char*)realloc(mb->buffer_, max);
+        check_malloc(mb->buffer_);
         mb->max_ = max;
     }
     memcpy(mb->buffer_+mb->used_, &c, 1);
@@ -141,6 +154,7 @@ void membuffer_append_int(MemBuffer *mb, int i)
     if (max > mb->max_)
     {
         mb->buffer_ = (char*)realloc(mb->buffer_, max);
+        check_malloc(mb->buffer_);
         mb->max_ = max;
     }
     memcpy(mb->buffer_+mb->used_, &i, sizeof(i));
@@ -186,6 +200,7 @@ void membuffer_append_pointer(MemBuffer *mb, void *ptr)
     if (max > mb->max_)
     {
         mb->buffer_ = (char*)realloc(mb->buffer_, max);
+        check_malloc(mb->buffer_);
         mb->max_ = max;
     }
     memcpy(mb->buffer_+mb->used_, &ptr, sizeof(ptr));

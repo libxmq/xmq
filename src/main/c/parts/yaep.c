@@ -829,6 +829,12 @@ static void setup_set_matched_lengths_hash(hash_table_entry_t s)
     unsigned result = jauquet_prime_mod32;
 
     int *i = set->matched_lengths;
+    if (num_matched_lengths == 0 || i == NULL)
+    {
+        set->matched_lengths_hash = 0;
+        return;
+    }
+
     int *stop = i + num_matched_lengths;
 
     while (i < stop)
@@ -2633,7 +2639,7 @@ static YaepStateSetTermLookAhead *lookup_cached_set_term_lookahead(YaepParseStat
                 {
                     YaepSymbol *lookahead_symb = symb_find_by_term_id(ps, new_set_term_lookahead->lookahead_term);
                     const char *losymb = "";
-                    if (lookahead_symb && lookahead_symb->hr) losymb = lookahead_symb->hr;
+                    if (lookahead_symb) losymb = lookahead_symb->hr;
 
                     yaep_trace(ps, "found stlg [s%d %s %s] -> s%d",
                                new_set_term_lookahead->set->id,
@@ -2681,7 +2687,7 @@ static void save_cached_set(YaepParseState *ps, YaepStateSetTermLookAhead *entry
     {
         YaepSymbol *lookahead_symb = symb_find_by_term_id(ps, entry->lookahead_term);
         const char *losymb = "";
-        if (lookahead_symb && lookahead_symb->hr) losymb = lookahead_symb->hr;
+        if (lookahead_symb) losymb = lookahead_symb->hr;
         yaep_trace(ps, "store stlg [s%d %s %s] -> s%d",
                    entry->set->id,
                    entry->term->hr,
