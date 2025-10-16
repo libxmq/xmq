@@ -207,7 +207,7 @@ then
     done
 fi
 
-if [ -n $FILTER ]; then exit 0; fi
+if [ -n "$FILTER" ]; then exit 0; fi
 
 if [ "$CONF_MNEMONIC" = "linux64" ]
 then
@@ -218,3 +218,5 @@ if command -v xelatex > /dev/null
 then
     tests/test_tex.sh "$PROG" "$OUTPUT"
 fi
+
+tests/test_samples.sh "$PROG" "$OUTPUT"

@@ -364,7 +364,7 @@ bool has_trace(int argc, const char **argv);
 bool has_verbose(int argc, const char **argv);
 bool invoke_shell(xmlNode *n, const char *cmd);
 const char *is_ixml_cmd(const char *arg);
-const char *is_xslt_cmd(const char *arg);
+const char *is_xsl_cmd(const char *arg);
 char *load_file_into_buffer(const char *file);
 bool load_xslt(XMQCliCommand *command, const char *arg);
 char *make_shell_safe_name(char *name, char *name_start);
@@ -374,7 +374,7 @@ void page(const char *start, const char *stop);
 bool perform_command(XMQCliCommand *c, bool *no_more_data);
 void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command);
 void prepare_ixml_command(XMQCliCommand *c, const char *arg);
-void prepare_xslt_command(XMQCliCommand *c, const char *arg);
+void prepare_xsl_command(XMQCliCommand *c, const char *arg);
 void print_command_help(XMQCliCmd c);
 void print_license_and_exit();
 void print_version_and_exit();
@@ -2369,32 +2369,55 @@ bool cmd_select(XMQCliCommand *command)
 
     xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
 
-    xmlNodeSetPtr nodes = objects->nodesetval;
-    int size = (nodes) ? nodes->nodeNr : 0;
-
-    // Copy and unlink in reverse order which means copy unlink deeper nodes first.
-    for(int i = size-1; i >= 0; i--)
+    if (objects->type == XPATH_NUMBER)
     {
-        assert(nodes->nodeTab[i]);
-        xmlNode *n = nodes->nodeTab[i];
+        double count = objects->floatval;
+        char buf[64];
+        snprintf(buf, 64, "%.0f", count);
+        xmlNodePtr text = xmlNewText((xmlChar*)buf);
+        xml_add_root_child(new_doc, text);
+    }
+    else if (objects->type == XPATH_BOOLEAN)
+    {
+        double count = objects->floatval;
+        char buf[64];
+        snprintf(buf, 64, "%.0f", count);
+        xmlNodePtr text = xmlNewText((xmlChar*)buf);
+        xml_add_root_child(new_doc, text);
+    }
+    else if (objects->type == XPATH_NODESET)
+    {
+        xmlNodeSetPtr nodes = objects->nodesetval;
+        int size = (nodes) ? nodes->nodeNr : 0;
 
-        if (is_attribute_node(n))
+        // Copy and unlink in reverse order which means copy unlink deeper nodes first.
+        for(int i = size-1; i >= 0; i--)
         {
-            xmlAttr *a = (xmlAttr*)n;
-            // we found an attribute node, eg href="...", rewrite this into
-            // <href>...</href> which prints nicely as href=... in xmq.
-            xmlNodePtr new_node = xmlNewDocNode(new_doc, NULL, (xmlChar*)a->name, NULL);
-            xmlAddChildList(new_node, xmlDocCopyNodeList(new_doc, a->children));
-            xml_add_root_child(new_doc, new_node);
-        }
-        else
-        {
-            xmlNodePtr new_node = xmlCopyNode(n, 1);
-            xml_add_root_child(new_doc, new_node);
-        }
+            assert(nodes->nodeTab[i]);
+            xmlNode *n = nodes->nodeTab[i];
 
-        xmlUnlinkNode(n);
-        xmlFreeNode(n);
+            if (is_attribute_node(n))
+            {
+                xmlAttr *a = (xmlAttr*)n;
+                // we found an attribute node, eg href="...", rewrite this into
+                // <href>...</href> which prints nicely as href=... in xmq.
+                xmlNodePtr new_node = xmlNewDocNode(new_doc, NULL, (xmlChar*)a->name, NULL);
+                xmlAddChildList(new_node, xmlDocCopyNodeList(new_doc, a->children));
+                xml_add_root_child(new_doc, new_node);
+            }
+            else
+            {
+                xmlNodePtr new_node = xmlCopyNode(n, 1);
+                xml_add_root_child(new_doc, new_node);
+            }
+
+            xmlUnlinkNode(n);
+            xmlFreeNode(n);
+        }
+    }
+    else
+    {
+        error("Unknown xpath select result type %d\n", objects->type);
     }
 
     xmlXPathFreeObject(objects);
@@ -3837,9 +3860,9 @@ const char *is_ixml_cmd(const char *arg)
     return NULL;
 }
 
-const char*is_xslt_cmd(const char *arg)
+const char*is_xsl_cmd(const char *arg)
 {
-    // Does arg look like:  xsl:web/render-csv
+    // Does arg look like:  xsl:data/table-to-html
     char *colon = strrchr(arg, ':');
     if (colon && !strncmp("xsl:", arg, colon-arg))
     {
@@ -3929,11 +3952,11 @@ bool load_xslt(XMQCliCommand *command, const char *arg)
     return true;
 }
 
-void prepare_xslt_command(XMQCliCommand *command, const char *arg)
+void prepare_xsl_command(XMQCliCommand *command, const char *arg)
 {
-    // An xsltl:web/render-csv argument is interpreted as
-    // transform ~/.local/share/xmq/transforms/web/render-csv.ixml
-    const char *file = is_xslt_cmd(arg);
+    // An xsl:data/table-to-html argument is interpreted as
+    // transform ~/.local/share/xmq/transforms/data/table-to-html.xslq
+    const char *file = is_xsl_cmd(arg);
     assert(file);
     if (dot_found(file))
     {
@@ -4054,9 +4077,9 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
         load_command->next = command;
         command->cmd = cmd_from(argv[i]);
 
-        if (command->cmd == XMQ_CLI_CMD_NONE && is_xslt_cmd(argv[i]))
+        if (command->cmd == XMQ_CLI_CMD_NONE && is_xsl_cmd(argv[i]))
         {
-            prepare_xslt_command(command, argv[i]);
+            prepare_xsl_command(command, argv[i]);
         }
 
         if (command->cmd == XMQ_CLI_CMD_NONE)
@@ -4085,7 +4108,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
                     printf("xmq: option \"%s\" not available for command \"%s\"\n", arg, cmd_name(command->cmd));
                     exit(1);
                 }
-                verbose_("(xmq) found argument %s\n", arg);
+                verbose_("xmq=", "found argument %s", arg);
             }
 
             // Check if we should remember this command as a to/render/tokenize command?

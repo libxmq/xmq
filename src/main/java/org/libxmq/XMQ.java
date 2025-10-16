@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2023-2024 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2023-2025 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -22,6 +22,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 package org.libxmq;
+
+import java.io.File;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -48,6 +50,16 @@ public class XMQ
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static XMQDoc load(File file)
+    {
+        return new XMQDoc();
+    }
+
+    public static XMQDoc parse(String content)
+    {
+        return new XMQDoc();
     }
 
     void processNode(Node n)
@@ -90,7 +102,7 @@ public class XMQ
         return "";
     }
 
-    String xmqGetStringRel(XMQDoc doc, String xpath, XMQNode relative)
+    String xmqGetStringRel(XMQDoc doc, String xpath, Node relative)
     {
         return "";
     }

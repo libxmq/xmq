@@ -8230,7 +8230,7 @@ char *xmqCompactQuote(const char *content)
     xmlNode node;
     memset(&node, 0, sizeof(node));
     node.content = (xmlChar*)content;
-    print_value(&ps , &node, LEVEL_ATTR_VALUE);
+    print_value(&ps , &node, LEVEL_ELEMENT_VALUE);
 
     membuffer_append_null(mb);
 

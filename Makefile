@@ -156,6 +156,10 @@ dist:
 	@$(MAKE) --no-print-directory -C $(FIRSTDIR) release $(shell pwd)/dist/xmq.c $(shell pwd)/dist/xmq.h
 	@(cd dist; make example; make examplecc)
 
+java:
+	@mvn -B -q package 2>&1 | grep -v "WARNING: A restrict" | grep -v "System::lo\
+ad" | grep -v "Use --enable-native" | grep -v "WARNING: Restr" | grep -v Unsafe
+
 .PHONY: dist
 
 # Check that the library ixml files execute identically with xmq,coffepot and markup-blitz
