@@ -38,7 +38,7 @@ MemBuffer *new_membuffer()
     MemBuffer *mb = (MemBuffer*)malloc(sizeof(MemBuffer));
     check_malloc(mb);
     memset(mb, 0, sizeof(*mb));
-    mb->buffer_ = malloc(1024);
+    mb->buffer_ = (char*)malloc(1024);
     mb->max_ = 1024;
     mb->used_ = 0;
     return mb;

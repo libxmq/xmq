@@ -1953,7 +1953,7 @@ extern void yaepFreeTree(YaepTreeNode *root,
 /* Terminals are stored a in term set using bits in a bit array.
    The array consists of long ints, typedefed as terminal_bitset_el_t.
    A long int is 8 bytes, ie 64 bits. */
-typedef long int terminal_bitset_t;
+typedef unsigned long int terminal_bitset_t;
 
 /* Calculate the number of required term set elements from the number of bits we want to store. */
 #define CALC_NUM_ELEMENTS(num_bits) ((num_bits+CHAR_BIT*sizeof(terminal_bitset_t)-1)/(CHAR_BIT*sizeof(terminal_bitset_t)))
@@ -9573,6 +9573,9 @@ MemBuffer *new_membuffer()
     MemBuffer *mb = (MemBuffer*)malloc(sizeof(MemBuffer));
     check_malloc(mb);
     memset(mb, 0, sizeof(*mb));
+    mb->buffer_ = (char*)malloc(1024);
+    mb->max_ = 1024;
+    mb->used_ = 0;
     return mb;
 }
 
@@ -9589,6 +9592,7 @@ void free_membuffer_and_free_content(MemBuffer *mb)
 {
     if (mb->buffer_) free(mb->buffer_);
     mb->buffer_ = NULL;
+    mb->used_ = mb->max_ = 0;
     free(mb);
 }
 
@@ -9596,6 +9600,7 @@ void membuffer_reuse(MemBuffer *mb, char *start, size_t len)
 {
     if (mb->buffer_) free(mb->buffer_);
     mb->buffer_ = start;
+    assert(mb->buffer_ != NULL);
     mb->used_ = mb->max_ = len;
 }
 
@@ -9626,6 +9631,7 @@ void membuffer_append_region(MemBuffer *mb, const char *start, const char *stop)
     if (max > mb->max_)
     {
         mb->buffer_ = (char*)realloc(mb->buffer_, max);
+        check_malloc(mb->buffer_);
         mb->max_ = max;
     }
     memcpy(mb->buffer_+mb->used_, start, add);
@@ -9634,8 +9640,13 @@ void membuffer_append_region(MemBuffer *mb, const char *start, const char *stop)
 
 void membuffer_append(MemBuffer *mb, const char *start)
 {
+    // Check if empty string, then do nothing.
+    if (*start == 0) return;
+
     const char *i = start;
     char *to = mb->buffer_+mb->used_;
+    assert(mb->buffer_ != NULL);
+    assert(mb->max_ > 0);
     const char *stop = mb->buffer_+mb->max_;
 
     while (*i)
@@ -9646,6 +9657,7 @@ void membuffer_append(MemBuffer *mb, const char *start)
             size_t max = pick_buffer_new_size(mb->max_, mb->used_, 1);
             assert(max >= mb->max_);
             mb->buffer_ = (char*)realloc(mb->buffer_, max);
+            check_malloc(mb->buffer_);
             mb->max_ = max;
             stop = mb->buffer_+mb->max_;
             to = mb->buffer_+mb->used_;
@@ -9663,6 +9675,7 @@ void membuffer_append_char(MemBuffer *mb, char c)
     if (max > mb->max_)
     {
         mb->buffer_ = (char*)realloc(mb->buffer_, max);
+        check_malloc(mb->buffer_);
         mb->max_ = max;
     }
     memcpy(mb->buffer_+mb->used_, &c, 1);
@@ -9676,6 +9689,7 @@ void membuffer_append_int(MemBuffer *mb, int i)
     if (max > mb->max_)
     {
         mb->buffer_ = (char*)realloc(mb->buffer_, max);
+        check_malloc(mb->buffer_);
         mb->max_ = max;
     }
     memcpy(mb->buffer_+mb->used_, &i, sizeof(i));
@@ -9721,6 +9735,7 @@ void membuffer_append_pointer(MemBuffer *mb, void *ptr)
     if (max > mb->max_)
     {
         mb->buffer_ = (char*)realloc(mb->buffer_, max);
+        check_malloc(mb->buffer_);
         mb->max_ = max;
     }
     memcpy(mb->buffer_+mb->used_, &ptr, sizeof(ptr));
@@ -22709,6 +22724,12 @@ static void setup_set_matched_lengths_hash(hash_table_entry_t s)
     unsigned result = jauquet_prime_mod32;
 
     int *i = set->matched_lengths;
+    if (num_matched_lengths == 0 || i == NULL)
+    {
+        set->matched_lengths_hash = 0;
+        return;
+    }
+
     int *stop = i + num_matched_lengths;
 
     while (i < stop)
@@ -24513,7 +24534,7 @@ static YaepStateSetTermLookAhead *lookup_cached_set_term_lookahead(YaepParseStat
                 {
                     YaepSymbol *lookahead_symb = symb_find_by_term_id(ps, new_set_term_lookahead->lookahead_term);
                     const char *losymb = "";
-                    if (lookahead_symb && lookahead_symb->hr) losymb = lookahead_symb->hr;
+                    if (lookahead_symb) losymb = lookahead_symb->hr;
 
                     yaep_trace(ps, "found stlg [s%d %s %s] -> s%d",
                                new_set_term_lookahead->set->id,
@@ -24561,7 +24582,7 @@ static void save_cached_set(YaepParseState *ps, YaepStateSetTermLookAhead *entry
     {
         YaepSymbol *lookahead_symb = symb_find_by_term_id(ps, entry->lookahead_term);
         const char *losymb = "";
-        if (lookahead_symb && lookahead_symb->hr) losymb = lookahead_symb->hr;
+        if (lookahead_symb) losymb = lookahead_symb->hr;
         yaep_trace(ps, "store stlg [s%d %s %s] -> s%d",
                    entry->set->id,
                    entry->term->hr,

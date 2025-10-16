@@ -138,9 +138,15 @@ AC_ARG_ENABLE([asan],
       [ENABLE_ASAN=${enable_asan}], [ENABLE_ASAN=${ASAN_DEFAULT}])
 
 if test "x$ENABLE_ASAN" = xyes; then
-    ASAN_CFLAGS="-O0 -ggdb -fsanitize=address -fno-omit-frame-pointer -fprofile-arcs -ftest-coverage"
-    ASAN_LDFLAGS="-fsanitize=address -static-libasan"
-    ASAN_LIBS="-lgcov --coverage"
+    if test "$CC" = "clang"; then
+        ASAN_CFLAGS="-O0 -ggdb -fsanitize=address,undefined -fno-omit-frame-pointer"
+        ASAN_LDFLAGS="-fsanitize=address,undefined -static-libsan"
+        ASAN_LIBS=""
+    else
+        ASAN_CFLAGS="-O0 -ggdb -fsanitize=address,undefined -fno-omit-frame-pointer"
+        ASAN_LDFLAGS="-fsanitize=address,undefined -static-libasan"
+        ASAN_LIBS="-lgcov --coverage"
+    fi
     AC_MSG_RESULT([using ${with_asan}])
 else
     AC_MSG_RESULT([no])
