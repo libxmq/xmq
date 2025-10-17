@@ -238,6 +238,9 @@ struct XMQCliCommand
     // Current line stop, points to byte after #a (newline).
     const char *input_current_line_stop;
 
+    // When set, force a re download of ixml/xslq from libxmq.org
+    bool force_download;
+
     // Command tok
     XMQCliTokenizeType tok_type; // Do not pretty print, just debug/colorize tokens.
     XMQCliCommand *next; // Point to next command to be executed.
@@ -298,6 +301,12 @@ typedef struct
     size_t num_nodes_with_both_qs;
 } Stats;
 
+typedef enum {
+    DOWNLOAD_EXISTS,
+    DOWNLOAD_OK,
+    DOWNLOAD_ERROR
+} DownloadStatus;
+
 // FUNCTION DECLARATIONS /////////////////////////////////////////////////////////////
 
 void accumulate_attribute(Stats *stats, xmlAttr *a);
@@ -341,7 +350,7 @@ bool delete_entity(XMQCliCommand *command);
 bool delete_xpath(XMQCliCommand *command);
 void disable_stdout_raw_input_mode();
 bool dot_found(const char *arg);
-bool download(const char *suffix, const char *file, const char *local_file);
+DownloadStatus download(bool force_download, const char *suffix, const char *file, const char *local_file, bool accept_fail);
 const char *download_dir();
 const char *share_dir();
 void enableAnsiColorsWindowsConsole();
@@ -375,6 +384,7 @@ bool perform_command(XMQCliCommand *c, bool *no_more_data);
 void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command);
 void prepare_ixml_command(XMQCliCommand *c, const char *arg);
 void prepare_xsl_command(XMQCliCommand *c, const char *arg);
+void add_xsl_command(XMQCliCommand *command, const char *local_file);
 void print_command_help(XMQCliCmd c);
 void print_license_and_exit();
 void print_version_and_exit();
@@ -682,7 +692,6 @@ XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env)
     c->add_indent = 4;
     c->compact = false;
     c->escape_tabs = false;
-
     return c;
 }
 
@@ -1681,6 +1690,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     if (!strcmp(arg, "--no-merge"))
     {
         command->flags |= XMQ_FLAG_NOMERGE;
+        return true;
+    }
+    if (!strcmp(arg, "--force-download"))
+    {
+        command->force_download = true;
         return true;
     }
     if (!strncmp(arg, "--trim=", 7))
@@ -3878,14 +3892,18 @@ bool dot_found(const char *file)
     return false;
 }
 
-bool download(const char *suffix, const char *file, const char *local_file)
+DownloadStatus download(bool force_download, const char *suffix, const char *file, const char *local_file, bool accept_fail)
 {
-    FILE *f = fopen(local_file, "rb");
-    if (f)
+    if (!force_download)
     {
-        // Already downloaded
-        fclose(f);
-        return true;
+        FILE *f = fopen(local_file, "rb");
+        if (f)
+        {
+            // Already downloaded
+            // The first forces an assumption that the seconds is not needed.
+            fclose(f);
+            return DOWNLOAD_EXISTS;
+        }
     }
 
     // Not in download dir, download...
@@ -3901,16 +3919,18 @@ bool download(const char *suffix, const char *file, const char *local_file)
     bool ok = invoke_shell(NULL, cmd);
     if (!ok)
     {
-        fprintf(stderr, "xmq: failed to fetch ixml using this command: %s\n", cmd);
+        if (accept_fail) return DOWNLOAD_ERROR;
+
+        fprintf(stderr, "xmq: failed to fetch %s using this command: %s\n", suffix, cmd);
         exit(1);
     }
 #else
-    printf("Invokaction for curl for WINAPI is not yet implemented.\n");
+    printf("Invocation for curl for WINAPI is not yet implemented.\n");
     printf("Please execute: %s\n", cmd);
     exit(0);
 #endif
     fprintf(stderr, "downloaded and cached %s\n", local_file);
-    return true;
+    return DOWNLOAD_OK;
 }
 
 bool load_xslt(XMQCliCommand *command, const char *arg)
@@ -3952,6 +3972,18 @@ bool load_xslt(XMQCliCommand *command, const char *arg)
     return true;
 }
 
+void add_xsl_command(XMQCliCommand *command, const char *local_file)
+{
+    verbose_("xmq=", "reading xsl file %s", local_file);
+    command->cmd = XMQ_CLI_CMD_TRANSFORM;
+    bool ok = load_xslt(command, local_file);
+    if (!ok || command->xslt == NULL)
+    {
+        printf("xmq: could not load %s\n", local_file);
+        exit(1);
+    }
+}
+
 void prepare_xsl_command(XMQCliCommand *command, const char *arg)
 {
     // An xsl:data/table-to-html argument is interpreted as
@@ -3966,9 +3998,9 @@ void prepare_xsl_command(XMQCliCommand *command, const char *arg)
 
     char local_file[256];
     snprintf(local_file, 256, "%s/library/%s.xslq", download_dir(), file);
-    download(".xslq", file, local_file);
+    download(command->force_download, ".xslq", file, local_file, false);
 
-    verbose_("xmq=", "reading ixml file %s", local_file);
+    verbose_("xmq=", "reading xslq file %s", local_file);
     command->cmd = XMQ_CLI_CMD_TRANSFORM;
     bool ok = load_xslt(command, local_file);
     if (!ok || command->xslt == NULL)
@@ -3981,6 +4013,8 @@ void prepare_xsl_command(XMQCliCommand *command, const char *arg)
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command)
 {
     int i = 1;
+    bool add_xslq = false;
+    char add_xslq_file[256];
 
     // Remember if we have found a to/render/tokenize command.
     XMQCliCommand *to = NULL;
@@ -4010,17 +4044,29 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
         {
             if (dot_found(file))
             {
-                printf("xmq: file after ixml: must not contain dots (%s)\n", argv[i]);
+                printf("xmq: name after ixml: must not contain dots (%s)\n", argv[i]);
                 return false;
             }
 
-            char local_file[256];
-            snprintf(local_file, 256, "%s/library/%s.ixml", download_dir(), file);
-            download(".ixml", file, local_file);
+            char local_ixml_file[256];
+            snprintf(local_ixml_file, 256, "%s/library/%s.ixml", download_dir(), file);
+            download(load_command->force_download, ".ixml", file, local_ixml_file, false);
 
-            verbose_("xmq=", "reading ixml file %s", local_file);
-            load_command->ixml_filename = strdup(local_file);
-            load_command->ixml_source = load_file_into_buffer(local_file);
+            // The download was DOWNLOAD_OK or DOWNLOAD_EXISTS. Otherwise the download command would have given up.
+            // See if there is a companion xslq file with this ixml file.
+            char local_xslq_file[256];
+            snprintf(local_xslq_file, 256, "%s/library/%s.xslq", download_dir(), file);
+
+            DownloadStatus status = download(load_command->force_download, ".xslq", file, local_xslq_file, true);
+            if (status == DOWNLOAD_OK || status == DOWNLOAD_EXISTS)
+            {
+                strcpy(add_xslq_file, local_xslq_file);
+                add_xslq = true;
+            }
+
+            verbose_("xmq=", "reading ixml file %s", local_ixml_file);
+            load_command->ixml_filename = strdup(local_ixml_file);
+            load_command->ixml_source = load_file_into_buffer(local_ixml_file);
             if (load_command->ixml_source == NULL) exit(1);
             i++;
         }
@@ -4070,6 +4116,14 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
 
     XMQCliCommand *command = load_command;
     bool do_print = true;
+
+    if (add_xslq)
+    {
+        command = allocate_cli_command(command->env);
+        load_command->next = command;
+        add_xsl_command(command, add_xslq_file);
+        load_command = command;
+    }
 
     if (argv[i])
     {
