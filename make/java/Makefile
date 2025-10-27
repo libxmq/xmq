@@ -9,6 +9,7 @@ include build/java/spec.mk
 $(shell mkdir -p $(PROJECT_DEPS))
 
 VERSION_FILE:=src/main/resources/version.txt
+$(shell mkdir -p src/main/resources)
 $(shell echo $(VERSION) > $(VERSION_FILE))
 
 AT=@
