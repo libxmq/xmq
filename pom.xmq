@@ -3,21 +3,35 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
     modelVersion = 4.0.0
     properties {
         project.build.sourceEncoding = UTF-8
-        maven.compiler.source        = 22
-        maven.compiler.target        = 22
+        maven.compiler.source        = 17
+        maven.compiler.target        = 17
     }
     groupId    = org.libxmq
-    artifactId = XMQ
+    artifactId = xmq
     version    = 1.0-SNAPSHOT
+    parent {
+        groupId    = org.springframework.boot
+        artifactId = spring-boot-starter-parent
+        version    = 3.0.1
+    }
     build {
         directory = build
         plugins {
             plugin {
                 groupId    = org.apache.maven.plugins
                 artifactId = maven-compiler-plugin
-                version    = 3.8.0
+                version    = 3.14.1
                 configuration {
-                    release = 22
+                    release = 17
+                }
+            }
+            plugin {
+                groupId    = org.springframework.boot
+                artifactId = spring-boot-maven-plugin
+                configuration {
+                    mainClass  = org.libxmq.Main
+                    executable = false
+                    classifier = exec
                 }
             }
         }

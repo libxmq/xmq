@@ -1,0 +1,22 @@
+name: Build Java
+on:
+  push:
+    branches:
+      - master
+
+  pull_request:
+
+jobs:
+  job_build_ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+    - id: CHECKOUT_SOURCE
+      uses: actions/checkout@v3
+    - id: SETUP_JAVA_24
+      name: Set up Java 24
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '24'
+    - id: MAKE
+      run: eatmydata make xmqj

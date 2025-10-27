@@ -87,7 +87,9 @@ FIRSTDIR:=$(word 1,$(BUILDDIRS))
 
 ifeq (,$(BUILDDIRS))
     ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-       $(error Run configure first!)
+        ifneq (xmqj,$(findstring xmqj,$(MAKECMDGOALS)))
+           $(error Run configure first!)
+        endif
     endif
 endif
 
@@ -208,6 +210,9 @@ clean:
 	@for x in $(BUILDDIRS); do echo; rm -rf $${x}release $${x}debug $${x}asan $${x}generated_autocomplete.h; done
 	@rm -rf build/gtkdoc
 	@rm -rf xmq_browsing*
+	@rm -f build/xmqj
+	@rm -f build/xmqj.sh
+	@rm -rf build/classes
 
 clean-all:
 	@echo "Removing build directory containing configuration and artifacts."
@@ -272,8 +277,8 @@ import_category:
 pom.xml: pom.xmq
 	xmq pom.xmq to-xml > pom.xml
 
-mvn: pom.xml
-	mvn compile
+xmqj: pom.xml
+	@(if [ ! -f build/java/spec.mk ] ; then ./make/java/configure; fi; make --no-print-directory -f make/java/Makefile)
 
 .PHONY: web
 web: build/web/index.html

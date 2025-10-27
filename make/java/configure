@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+set -u
+# sqlcomp - Copyright 2025 Fredrik Öhrström (gpl-3.0-or-later)
+function help {
+    echo "You need to create the project file with the contents:"
+    echo "EXECUTABLE=mynewcmd"
+    echo "GROUPID=tld.mydomain"
+    echo "ARTIFACTID=mynewcmd"
+    echo "VERSION=1.0-SNAPSHOT"
+    exit 1
+}
+
+if [ ! -f project ]
+then
+    help
+    exit 1
+fi
+
+. ./project
+
+EXECUTABLE=${EXECUTABLE:-}
+GROUPID=${GROUPID:-}
+ARTIFACTID=${ARTIFACTID:-}
+VERSION=${VERSION:-}
+
+if [ -z "$EXECUTABLE" ] || [ -z "$GROUPID" ] || [ -z "$ARTIFACTID" ] || [ -z "$VERSION" ]
+then
+    help
+    exit 1
+fi
+
+mkdir -p build/java
+
+CURDIR=$(pwd)
+JAVA=$(command -v java)
+
+if [ -z "$JAVA" ]
+then
+    echo "You need to have java in your path."
+    exit 1
+fi
+
+JAVA=$(cd $(dirname $JAVA); pwd)/java
+
+JAVA_HOME=$(cd $(dirname $JAVA)/..; pwd)
+
+if [ ! -d "$JAVA_HOME" ]
+then
+    echo "Error, expected $JAVA_HOME to be a directory."
+    exit 1
+fi
+
+XMQ=$(command -v xmq)
+
+if [ -z "$XMQ" ] &&  [ ! "$1" = "--no-xmq" ]
+then
+    XMQ=$(pwd)/3rdparty/xmq/build/default/release/xmq
+
+    if [ ! -x $XMQ ]
+    then
+       echo "You need to have xmq. Building a local xmq for you."
+       (mkdir -p 3rdparty; cd 3rdparty; git clone https://github.com/libxmq/xmq.git; cd xmq; ./configure; make; make test SILENT= )
+    fi
+    if ! $XMQ --version > /dev/null
+    then
+        echo "Failed to install xmq. Please fix."
+        exit 1
+    fi
+fi
+
+M2REPO="$HOME/.m2/repository"
+JAVA="$JAVA"
+JAVA_HOME="$JAVA_HOME"
+JAVA_VERSION="$($JAVA -version 2>&1 | tr '\n' ' ')"
+GIT_ROOT="$CURDIR"
+BUILD="$CURDIR/build"
+BUILD_MVN_BIN="$BUILD/mvn_bin"
+BUILD_JAVAC_BIN="$BUILD/javac_bin"
+BUILD_GRAAL_BIN="$BUILD/graal_bin"
+GEN_SRC="$BUILD/generated-sources"
+PROJECT_DEPS="$BUILD/project-deps"
+TEST_MODELS="$BUILD/test-models"
+MAVEN_OPTS=--sun-misc-unsafe-memory-access=allow
+XMQ="$XMQ"
+
+echo "# Generated $(date)" > build/java/spec.mk
+{
+    echo "SPEC_MK:=$BUILD/java/spec.mk"
+    echo "EXECUTABLE:=$EXECUTABLE"
+    echo "GROUPID:=$GROUPID"
+    echo "ARTIFACTID:=$ARTIFACTID"
+    echo "VERSION:=$VERSION"
+    echo "XMQ:=$XMQ"
+    echo "M2REPO:=$M2REPO"
+    echo "JAVA:=$JAVA"
+    echo "JAVA_VERSION:='$JAVA_VERSION'"
+    echo "JAVA_HOME:=$JAVA_HOME"
+    echo "GIT_ROOT:=$CURDIR"
+    echo "BUILD:=$BUILD"
+    echo "BUILD_MVN_BIN:=$BUILD_MVN_BIN"
+    echo "BUILD_JAVAC_BIN:=$BUILD_JAVAC_BIN"
+    echo "BUILD_GRAAL_BIN:=$BUILD_GRAAL_BIN"
+    echo "GEN_SRC:=$GEN_SRC"
+    echo "PROJECT_DEPS:=$PROJECT_DEPS"
+    echo "TEST_MODELS:=$TEST_MODELS"
+    echo "MAVEN_OPTS:=$MAVEN_OPTS"
+} >> build/java/spec.mk
+
+cat >> build/java/spec.mk <<EOF
+
+MOST_RECENT:=\$(shell ls -t \$(BUILD_MVN_BIN)/${EXECUTABLE} \$(BUILD_JAVAC_BIN)/${EXECUTABLE} \$(BUILD_GRAAL_BIN)/${EXECUTABLE} 2>/dev/null | head --lines=1)
+ifneq (,\$(findstring mvn_bin/${EXECUTABLE},\$(MOST_RECENT)))
+MOST_RECENT:=mvn
+endif
+ifneq (,\$(findstring javac_bin/${EXECUTABLE},\$(MOST_RECENT)))
+MOST_RECENT:=javac
+endif
+ifneq (,\$(findstring graal_bin/${EXECUTABLE},\$(MOST_RECENT)))
+MOST_RECENT:=graal
+endif
+
+${EXECUTABLE}:=\$(BUILD)/\$(MOST_RECENT)_bin/${EXECUTABLE}
+
+EOF
+
+echo "Generated build/java/spec.mk you can now run make"
