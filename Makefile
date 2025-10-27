@@ -42,7 +42,7 @@ else
     endif
 
     COMMIT_HASH?=$(shell $(SUPRE) git log --pretty=format:'%H' -n 1 $(SUPOST))
-    TAG?=$(shell $(SUPRE) git describe --tags $(SUPOST))
+    TAG?=$(shell $(SUPRE) git describe --tags 2>/dev/null $(SUPOST))
     BRANCH?=$(shell $(SUPRE) git rev-parse --abbrev-ref HEAD $(SUPOST))
     CHANGES?=$(shell $(SUPRE) git status -s | grep -v '?? ' $(SUPOST))
 
