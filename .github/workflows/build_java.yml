@@ -19,4 +19,4 @@ jobs:
         distribution: 'temurin'
         java-version: '24'
     - id: MAKE
-      run: eatmydata make xmqj
+      run: eatmydata make xmqj KEEP_POM_XML=true

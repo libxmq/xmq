@@ -277,7 +277,7 @@ import_category:
 .PHONY: all release debug asan test test_release test_debug clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc
 
 pom.xml: pom.xmq
-	xmq pom.xmq to-xml > pom.xml
+	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; echo "Generated pom.xml" ; fi
 
 xmqj: pom.xml
 	@(if [ ! -f build/java/spec.mk ] ; then ./make/java/configure; fi; make --no-print-directory -f make/java/Makefile)
