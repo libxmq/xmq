@@ -15,7 +15,7 @@ jobs:
     - id: APT_UPDATE
       run: sudo apt update
     - id: DISABLE_MAN_PAGES
-      run: echo "set man-db/auto-update false" | sudo debconf-communicate
+      run: echo "set man-db/auto-update false" | sudo debconf-communicate; sudo dpkg-reconfigure man-db
     - id: INSTALL_ADDITIONAL_BUILD_DEPENDENCIES
       run: sudo apt install -y eatmydata libtidy-dev libxml2-dev libxslt1-dev
     - id: CONFIGURE
