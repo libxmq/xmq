@@ -82,13 +82,15 @@ help:
 	@echo "       make asan"
 	@echo "       make release linux64"
 
-BUILDDIRS:=$(dir $(realpath $(filter-out build/default/%,$(wildcard build/*/spec.mk))))
+BUILDDIRS:=$(dir $(realpath $(filter-out build/java/%,$(filter-out build/default/%,$(wildcard build/*/spec.mk)))))
 FIRSTDIR:=$(word 1,$(BUILDDIRS))
 
 ifeq (,$(BUILDDIRS))
     ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
         ifneq (xmqj,$(findstring xmqj,$(MAKECMDGOALS)))
-           $(error Run configure first!)
+            ifneq (javac,$(findstring javac,$(MAKECMDGOALS)))
+               $(error Run configure first!)
+            endif
         endif
     endif
 endif
@@ -279,6 +281,9 @@ pom.xml: pom.xmq
 
 xmqj: pom.xml
 	@(if [ ! -f build/java/spec.mk ] ; then ./make/java/configure; fi; make --no-print-directory -f make/java/Makefile)
+
+javac: pom.xml
+	@(make --no-print-directory -f make/java/Makefile javac)
 
 .PHONY: web
 web: build/web/index.html

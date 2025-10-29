@@ -15,7 +15,7 @@ public class Util {
     final boolean is_xmq_attribute_key_start(char c)
     {
         boolean t =
-        		c == '\'' ||
+         		c == '\'' ||
 	            c == '"' ||
 	            c == '(' ||
 	            c == ')' ||
@@ -54,4 +54,31 @@ public class Util {
     }
 */
 
+    static String xmq_quote_as_c(String s, int start, int stop, boolean add_quotes)
+    {
+        if (start == stop)
+        {
+            // The empty string.
+            if (!add_quotes) return "";
+            return "\"\"";
+        }
+        StringBuilder sb = new StringBuilder();
+
+        if (add_quotes) sb.append('"');
+        if (stop > s.length()) stop = s.length();
+
+        for (int i = start; i < stop; ++i)
+        {
+            char c = s.charAt(i);
+            if (c == '\\') sb.append("\\\\");
+            else if (c == '"') sb.append("\\\"");
+            else if (c == '\n') sb.append("\\n");
+            else if (c == '\t') sb.append("\\t");
+            else if (c == '\r') sb.append("\\r");
+            else sb.append(c);
+        }
+
+        if (add_quotes) sb.append('"');
+        return sb.toString();
+    }
 }

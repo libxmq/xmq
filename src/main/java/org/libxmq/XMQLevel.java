@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2025 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2023 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -23,25 +23,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq;
 
-import java.nio.file.Files;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-public class Main
+public enum XMQLevel
 {
-    public static void main(String[] args) throws Exception
-    {
-        try
-        {
-            Path p = Paths.get(args[0]);
-            String content = Files.readString(p, StandardCharsets.UTF_8);
-            XMQParseState ps = new XMQParseState();
-            ps.parse(content, args[0]);
-        }
-        catch (Exception e)
-        {
-            System.err.println(e);
-        }
-    }
+    LEVEL_XMQ(0),
+    LEVEL_ELEMENT_VALUE(1),
+    LEVEL_ELEMENT_VALUE_COMPOUND(2),
+    LEVEL_ATTR_VALUE(3),
+    LEVEL_ATTR_VALUE_COMPOUND(4);
+
+    XMQLevel(int v) { value = v; }
+    public int value;
 }

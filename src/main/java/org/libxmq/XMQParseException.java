@@ -23,25 +23,24 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq;
 
-import java.nio.file.Files;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-public class Main
+public class XMQParseException extends RuntimeException
 {
-    public static void main(String[] args) throws Exception
+    private final XMQParseError error_code_;
+
+    public XMQParseException(XMQParseError ec)
     {
-        try
-        {
-            Path p = Paths.get(args[0]);
-            String content = Files.readString(p, StandardCharsets.UTF_8);
-            XMQParseState ps = new XMQParseState();
-            ps.parse(content, args[0]);
-        }
-        catch (Exception e)
-        {
-            System.err.println(e);
-        }
+        super("Parse error: " + ec);
+        this.error_code_ = ec;
+    }
+
+    public XMQParseException(XMQParseError ec, String message)
+    {
+        super(message);
+        this.error_code_ = ec;
+    }
+
+    public XMQParseError getErrorCode()
+    {
+        return error_code_;
     }
 }

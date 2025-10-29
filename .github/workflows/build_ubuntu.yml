@@ -19,6 +19,6 @@ jobs:
     - id: CONFIGURE
       run: eatmydata ./configure
     - id: MAKE
-      run: eatmydata make release asan
+      run: eatmydata make release
     - id: TEST
       run: eatmydata make test

@@ -25,12 +25,20 @@ package org.libxmq;
 
 class XMQParseState
 {
-    String source_name; // Only used for generating any error messages.
-    String buffer; // XMQ source to parse.
-    int i; // Current parsing position.
-    int line; // Current line.
-    int col; // Current col.
-    XMQParseError error_nr;
+    String source_name_; // Only used for generating any error messages.
+    String buffer_; // XMQ source to parse.
+    int buffer_len_; // Current parsing position.
+
+    // These three: i_, line_, col_, are only updated using the increment function.
+    int i_; // Current parsing position.
+    int line_; // Current line.
+    int col_; // Current col.
+
+    // After an eat has completed, the positions are stored here.
+    int start_;
+    int stop_;
+
+    XMQParseError error_nr_;
     String generated_error_msg;
 
     boolean simulated; // When true, this is generated from JSON parser to simulate an xmq element name.
@@ -64,17 +72,284 @@ class XMQParseState
     const char *last_attr_start;
     size_t last_attr_start_line;
     size_t last_attr_start_col;
-    const char *last_quote_start;
-    size_t last_quote_start_line;
-    size_t last_quote_start_col;
+    */
+    int last_quote_start_;
+    int last_quote_start_line_;
+    int last_quote_start_col_;
+    /*
     const char *last_compound_start;
     size_t last_compound_start_line;
     size_t last_compound_start_col;
     const char *last_equals_start;
     size_t last_equals_start_line;
     size_t last_equals_start_col;
-    const char *last_suspicios_quote_end;
-    size_t last_suspicios_quote_end_line;
-    size_t last_suspicios_quote_end_col;
     */
+    int last_suspicios_quote_end_;
+    int last_suspicios_quote_end_line_;
+    int last_suspicios_quote_end_col_;
+
+    public boolean parse(String buf, String name)
+    {
+        source_name_ = name;
+        buffer_ = buf;
+        buffer_len_ = buf.length();
+        i_ = 0;
+        line_ = 1;
+        col_ = 1;
+        start_ = 0;
+        stop_ = 0;
+
+        try
+        {
+            parse_xmq();
+        }
+        catch(XMQParseException pe)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    void increment(char c)
+    {
+        col_++;
+        if (c == '\n')
+        {
+            line_++;
+            col_ = 1;
+        }
+        i_++;
+    }
+
+    private boolean is_xmq_token_whitespace(char c)
+    {
+        if (c == ' ' || c == '\n' || c == '\t' || c == '\r')
+        {
+            return true;
+        }
+        return false;
+    }
+
+    boolean is_xmq_quote_start(char c)
+    {
+        return c == '\'' || c == '"';
+    }
+
+    boolean is_xmq_entity_start(char c)
+    {
+        return c == '&';
+    }
+
+    private void eat_xmq_token_whitespace()
+    {
+        start_ = i_;
+
+        while (i_ < buffer_len_)
+        {
+            char c = buffer_.charAt(i_);
+            if (!is_xmq_token_whitespace(c)) break;
+            // Tabs are not permitted as xmq token whitespace.
+            if (c == '\t') break;
+            // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
+            increment(c);
+        }
+
+        stop_ = i_;
+    }
+
+    protected void parse_xmq_whitespace()
+    {
+        int start_line = line_;
+        int start_col = col_;
+        eat_xmq_token_whitespace();
+        do_whitespace(start_line, start_col, start_, stop_, stop_);
+    }
+
+    void do_whitespace(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[whitespace "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    void do_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[quote "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    void do_element_value_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[element_value_quote "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    void do_element_value_compound_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[element_value_compound_quote "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    void do_attr_value_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[attr_value_quote "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    void do_attr_value_compound_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[attr_value_compound_quote "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    int count_xmq_quotes(char q)
+    {
+        int i = i_;
+        while (i < buffer_len_ && buffer_.charAt(i) == q) i++;
+        return i-i_;
+    }
+
+    void eat_xmq_quote()
+    {
+        // Grab ' or " to know which kind of quote it is.
+        char q = buffer_.charAt(i_);
+
+        assert(q == '\'' || q == '"');
+
+        int depth = count_xmq_quotes(q);
+        int count = depth;
+
+        last_quote_start_ = i_;
+        last_quote_start_line_ = line_;
+        last_quote_start_col_ = col_;
+
+        start_ = i_;
+
+        while (count > 0)
+        {
+            increment(q);
+            count--;
+        }
+
+        if (depth == 2)
+        {
+            // The empty quote ''
+            stop_ = i_;
+            return;
+        }
+
+        while (i_ < buffer_len_)
+        {
+            char c = buffer_.charAt(i_);
+            if (c != q)
+            {
+                increment(c);
+                continue;
+            }
+
+            count = count_xmq_quotes(q);
+            if (count > depth)
+            {
+                error_nr_ = XMQParseError.XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES;
+                throw new XMQParseException(error_nr_);
+            }
+            else if (count < depth)
+            {
+                while (count > 0)
+                {
+                    increment(q);
+                    count--;
+                }
+                continue;
+            }
+            else if (count == depth)
+            {
+                while (count > 0)
+                {
+                    increment(q);
+                    count--;
+                }
+                depth = 0;
+                stop_ = i_;
+                break;
+            }
+        }
+
+        if (depth != 0)
+        {
+            error_nr_ = XMQParseError.XMQ_ERROR_QUOTE_NOT_CLOSED;
+            throw new XMQParseException(error_nr_);
+        }
+
+        /*
+          if (possibly_need_more_quotes(state))
+          {
+          state->last_suspicios_quote_end = state->i-1;
+          state->last_suspicios_quote_end_line = state->line;
+          state->last_suspicios_quote_end_col = state->col-1;
+          }*/
+    }
+
+    void parse_xmq_quote(XMQLevel level)
+    {
+        int start_line = line_;
+        int start_col = col_;
+
+        eat_xmq_quote();
+
+        switch(level)
+        {
+        case LEVEL_XMQ:
+            do_quote(start_line, start_col, start_, stop_, stop_);
+            break;
+        case LEVEL_ELEMENT_VALUE:
+            do_element_value_quote(start_line, start_col, start_, stop_, stop_);
+        break;
+        case LEVEL_ELEMENT_VALUE_COMPOUND:
+            do_element_value_compound_quote(start_line, start_col, start_, stop_, stop_);
+            break;
+        case LEVEL_ATTR_VALUE:
+            do_attr_value_quote(start_line, start_col, start_, stop_, stop_);
+        break;
+        case LEVEL_ATTR_VALUE_COMPOUND:
+            do_attr_value_compound_quote(start_line, start_col, start_, stop_, stop_);
+            break;
+        }
+    }
+
+
+    void parse_xmq()
+    {
+        while (i_ < buffer_len_)
+        {
+            char c = buffer_.charAt(i_);
+            char cc = 0;
+            if ((c == '/' || c == '(') && i_+1 < buffer_len_) cc = buffer_.charAt(i_+1);
+            if (is_xmq_token_whitespace(c)) parse_xmq_whitespace();
+            else if (is_xmq_quote_start(c)) parse_xmq_quote(XMQLevel.LEVEL_XMQ);
+//            else if (is_xmq_entity_start(c)) parse_xmq_entity(XMQLevel.LEVEL_XMQ);
+            /*
+            else if (is_xmq_comment_start(c, cc)) parse_xmq_comment(state, cc);
+            else if (is_xmq_element_start(c)) parse_xmq_element(state);
+            else if (is_xmq_doctype_start(state->i, end)) parse_xmq_doctype(state);
+            else if (is_xmq_pi_start(state->i, end)) parse_xmq_pi(state);
+            else if (c == '}') return;
+            */
+            else
+            {
+                /*if (possibly_lost_content_after_equals(state))
+                {
+                    error_nr_ = XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS;
+                }
+                else */if (c == '\t')
+                {
+                    error_nr_ = XMQParseError.XMQ_ERROR_UNEXPECTED_TAB;
+                }
+                else
+                {
+                    error_nr_ = XMQParseError.XMQ_ERROR_INVALID_CHAR;
+                }
+                // longjmp(state->error_handler, 1);
+            }
+        }
+    }
 }
