@@ -112,6 +112,7 @@ class XMQParseState
 
     void increment(char c)
     {
+        assert(c == buffer_.charAt(i_));
         col_++;
         if (c == '\n')
         {
@@ -228,6 +229,18 @@ class XMQParseState
     void do_attr_value_compound_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
         System.out.print("[attr_value_compound_entity "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    void do_comment(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[comment "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    void do_comment_continuation(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[comment_continuation "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
@@ -402,6 +415,134 @@ class XMQParseState
         }
     }
 
+    boolean is_xmq_comment_start(char c, char cc)
+    {
+        return c == '/' && (cc == '/' || cc == '*');
+    }
+
+    Pair<Integer,Boolean> count_xmq_slashes()
+    {
+        int i = i_;
+        int start = i_;
+
+        while (i < buffer_len_ && buffer_.charAt(i) == '/') i++;
+
+        boolean fa = buffer_.charAt(i) == '*'; // Found asterisk?
+        int n = i-start;
+        return new Pair(n, fa);
+    }
+
+    void eat_xmq_comment_to_eol()
+    {
+        increment('/');
+        increment('/');
+
+        char c = 0;
+        while (i_ < buffer_len_ && c != '\n')
+        {
+            c = buffer_.charAt(i_);
+            increment(c);
+        }
+    }
+
+    boolean eat_xmq_comment_to_close(int num_slashes)
+    {
+        int n = num_slashes;
+
+        if (buffer_.charAt(i_) == '/')
+        {
+            // Comment starts from the beginning ////* ....
+            // Otherwise this is a continuation and *i == '*'
+            while (n > 0)
+            {
+                increment('/');
+                n--;
+            }
+        }
+
+        increment('*');
+
+        char c = 0;
+        char cc = 0;
+        n = 0;
+        while (i_ < buffer_len_)
+        {
+            cc = c;
+            c = buffer_.charAt(i_);
+            if (cc != '*' || c != '/')
+            {
+                // Not a possible end marker */ or *///// continue eating.
+                increment(c);
+                continue;
+            }
+            // We have found */ or *//// not count the number of slashes.
+            Pair<Integer,Boolean> nw = count_xmq_slashes();
+            n = nw.left();
+            boolean found_asterisk = nw.right();
+
+            if (n < num_slashes) continue; // Not a balanced end marker continue eating,
+
+            if (n > num_slashes)
+            {
+                // Oups, too many slashes.
+                error_nr_ = XMQParseError.XMQ_ERROR_COMMENT_CLOSED_WITH_TOO_MANY_SLASHES;
+                throw new XMQParseException(error_nr_);
+            }
+
+            assert(n == num_slashes);
+            // Found the ending slashes!
+            while (n > 0)
+            {
+                cc = c;
+                c = buffer_.charAt(i_);
+                increment('/');
+                n--;
+            }
+            return found_asterisk;
+        }
+        // We reached the end of the xmq and no */ was found!
+        error_nr_ = XMQParseError.XMQ_ERROR_COMMENT_NOT_CLOSED;
+        throw new XMQParseException(error_nr_);
+    }
+
+    void parse_xmq_comment(char cc)
+    {
+        int start = i_;
+        int start_line = line_;
+        int start_col = col_;
+        int comment_start;
+        int comment_stop;
+
+        Pair<Integer,Boolean> r = count_xmq_slashes();
+        int n = r.left();
+        boolean found_asterisk = r.right();
+        if (!found_asterisk)
+        {
+            // This is a single line asterisk.
+            eat_xmq_comment_to_eol();
+            int stop = i_;
+            do_comment(start_line, start_col, start, stop, stop);
+        }
+        else
+        {
+            // This is a /* ... */ or ////*  ... *//// comment.
+            found_asterisk = eat_xmq_comment_to_close(n);
+            int stop = i_;
+            do_comment(start_line, start_col, start, stop, stop);
+
+            while (found_asterisk)
+            {
+                // Aha, this is a comment continuation /* ... */* ...
+                start = i_;
+                start_line = line_;
+                start_col = col_;
+                found_asterisk = eat_xmq_comment_to_close(n);
+                stop = i_;
+                do_comment_continuation(start_line, start_col, start, stop, stop);
+            }
+        }
+    }
+
     void parse_xmq()
     {
         while (i_ < buffer_len_)
@@ -412,8 +553,8 @@ class XMQParseState
             if (is_xmq_token_whitespace(c)) parse_xmq_whitespace();
             else if (is_xmq_quote_start(c)) parse_xmq_quote(XMQLevel.LEVEL_XMQ);
             else if (is_xmq_entity_start(c)) parse_xmq_entity(XMQLevel.LEVEL_XMQ);
+            else if (is_xmq_comment_start(c, cc)) parse_xmq_comment(cc);
             /*
-            else if (is_xmq_comment_start(c, cc)) parse_xmq_comment(state, cc);
             else if (is_xmq_element_start(c)) parse_xmq_element(state);
             else if (is_xmq_doctype_start(state->i, end)) parse_xmq_doctype(state);
             else if (is_xmq_pi_start(state->i, end)) parse_xmq_pi(state);
