@@ -201,6 +201,36 @@ class XMQParseState
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
+    void do_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[entity "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    void do_element_value_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[element_value_entity "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    void do_element_value_compound_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[element_value_compound_entity "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    void do_attr_value_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[attr_value_entity "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    void do_attr_value_compound_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[attr_value_compound_entity "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
     int count_xmq_quotes(char q)
     {
         int i = i_;
@@ -316,6 +346,61 @@ class XMQParseState
         }
     }
 
+    void eat_xmq_entity()
+    {
+        increment('&');
+        char c = 0;
+        boolean expect_semicolon = false;
+
+        while (i_ < buffer_len_)
+        {
+            c = buffer_.charAt(i_);
+            if (!Text.is_xmq_text_name(c)) break;
+            if (!Text.is_lowercase_hex(c)) expect_semicolon = true;
+            increment(c);
+        }
+        if (c == ';')
+        {
+            increment(c);
+            c = buffer_.charAt(i_);
+            expect_semicolon = false;
+        }
+        if (expect_semicolon)
+        {
+            error_nr_ = XMQParseError.XMQ_ERROR_ENTITY_NOT_CLOSED;
+            throw new XMQParseException(error_nr_);
+        }
+    }
+
+    void parse_xmq_entity(XMQLevel level)
+    {
+        int start_line = line_;
+        int start_col = col_;
+        int start = i_;
+
+        eat_xmq_entity();
+
+        int stop = i_;
+
+        switch (level)
+        {
+        case LEVEL_XMQ:
+            do_entity(start_line, start_col, start, stop, stop);
+            break;
+        case LEVEL_ELEMENT_VALUE:
+            do_element_value_entity(start_line, start_col, start, stop, stop);
+            break;
+        case LEVEL_ELEMENT_VALUE_COMPOUND:
+            do_element_value_compound_entity(start_line, start_col, start,  stop, stop);
+            break;
+        case LEVEL_ATTR_VALUE:
+            do_attr_value_entity(start_line, start_col, start, stop, stop);
+            break;
+        case LEVEL_ATTR_VALUE_COMPOUND:
+            do_attr_value_compound_entity(start_line, start_col, start, stop, stop);
+            break;
+        }
+    }
 
     void parse_xmq()
     {
@@ -326,7 +411,7 @@ class XMQParseState
             if ((c == '/' || c == '(') && i_+1 < buffer_len_) cc = buffer_.charAt(i_+1);
             if (is_xmq_token_whitespace(c)) parse_xmq_whitespace();
             else if (is_xmq_quote_start(c)) parse_xmq_quote(XMQLevel.LEVEL_XMQ);
-//            else if (is_xmq_entity_start(c)) parse_xmq_entity(XMQLevel.LEVEL_XMQ);
+            else if (is_xmq_entity_start(c)) parse_xmq_entity(XMQLevel.LEVEL_XMQ);
             /*
             else if (is_xmq_comment_start(c, cc)) parse_xmq_comment(state, cc);
             else if (is_xmq_element_start(c)) parse_xmq_element(state);
