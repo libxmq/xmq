@@ -23,6 +23,7 @@ fi
 PROG=$1/xmq
 LIB=$1/libxmq.so
 
+export PROG="$USE_VALGRIND $PROG"
 echo PROG=$PROG
 echo OUTPUT=$OUTPUT
 
