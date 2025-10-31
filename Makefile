@@ -195,7 +195,7 @@ test_asan:
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/parts/testinternals ]; then echo "Run make first. $${x}asan/parts/testinternals not found."; exit 1; fi ; $${x}asan/parts/testinternals $(SILENCER) ; ./tests/test.sh $${x}asan $${x}asan/test_output $(FILTER) $(SILENCER) ; done
 
 define USE_VALGRIND
-valgrind -q --tool=memcheck
+valgrind -q --tool=memcheck --leak-check=full --show-leak-kinds=all
 endef
 
 test_valgrind:
