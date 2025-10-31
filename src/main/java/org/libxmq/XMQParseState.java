@@ -158,6 +158,22 @@ class XMQParseState
         return c == '(';
     }
 
+    boolean is_xmq_attribute_key_start(char c)
+    {
+        boolean t =
+            c == '\'' ||
+            c == '"' ||
+            c == '(' ||
+            c == ')' ||
+            c == '{' ||
+            c == '}' ||
+            c == '/' ||
+            c == '=' ||
+            c == '&';
+
+        return !t;
+    }
+
     /** Check if a value can start with these two characters. */
     boolean unsafe_value_start(char c, char cc)
     {
@@ -375,6 +391,30 @@ class XMQParseState
     void do_element_value_text(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
         System.out.print("[element_value_text "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    void do_ns_declaration(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[ns_declaration "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    void do_attr_key(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[attr_key "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    void do_ns_colon(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[ns_colon "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    void do_attr_ns(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        System.out.print("[attr_ns "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
@@ -794,6 +834,94 @@ class XMQParseState
         }
     }
 
+    /** Parse a list of attribute key = value, or just key children until a ')' is found. */
+    void parse_xmq_attributes()
+    {
+        while (i_ < buffer_len_)
+        {
+            char c = buffer_.charAt(i_);
+
+            if (is_xmq_token_whitespace(c)) parse_xmq_whitespace();
+            else if (c == ')') return;
+            else if (is_xmq_attribute_key_start(c)) parse_xmq_attribute();
+            else break;
+        }
+    }
+
+    void parse_xmq_attribute()
+    {
+        char c = 0;
+        int start_line = line_;
+        int start_col = col_;
+
+        Quad<Integer,Integer,Integer,Integer> r = eat_xmq_text_name();
+
+        int name_start = r.first();
+        int name_stop = r.second();
+        int ns_start = r.third();
+        int ns_stop = r.fourth();
+
+        int start = i_;
+
+        if (ns_start == 0)
+        {
+            // No colon found, we have either a normal: key=123
+            // or a default namespace declaration xmlns=...
+            int len = name_stop - name_start;
+            if (len == 5 && !buffer_.substring(name_start, name_stop).equals("xmlns"))
+            {
+                // A default namespace declaration, eg: xmlns=uri
+                do_ns_declaration(start_line, start_col, name_start, name_stop, name_stop);
+            }
+            else
+            {
+                // A normal attribute key, eg: width=123
+                do_attr_key(start_line, start_col, name_start, name_stop, name_stop);
+            }
+        }
+        else
+        {
+            // We have a colon in the attribute key.
+            // E.g. alfa:beta where alfa is attr_ns and beta is attr_key
+            // However we can also have xmlns:xsl then it gets tokenized as ns_declaration and attr_ns.
+            int ns_len = ns_stop - ns_start;
+            if (ns_len == 5 && buffer_.substring(ns_start, ns_stop).equals("xmlns"))
+            {
+                // The xmlns signals a declaration of a namespace.
+                do_ns_declaration(start_line, start_col, ns_start, ns_stop, name_stop);
+                do_ns_colon(start_line, start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
+                do_attr_ns(start_line, start_col+ns_len+1, name_start, name_stop, name_stop);
+            }
+            else
+            {
+                // Normal namespaced attribute. Please try to avoid namespaced attributes
+                // because you only need to attach the namespace to the element itself,
+                // from that follows automatically the unique namespaced attributes.
+                // But if you are adding attributes to an existing xml with schema, then you will need
+                // use namespaced attributes to avoid tripping the xml validation.
+                // An example of this is: xlink:href.
+                do_attr_ns(start_line, start_col, ns_start, ns_stop, ns_stop);
+                do_ns_colon(start_line, start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
+                do_attr_key(start_line, start_col+ns_len+1, name_start, name_stop, name_stop);
+            }
+        }
+
+        c = buffer_.charAt(i_);
+        if (is_xmq_token_whitespace(c)) { parse_xmq_whitespace(); c = buffer_.charAt(i_); }
+
+        if (c == '=')
+        {
+            start = i_;
+            start_line = line_;
+            start_col = col_;
+            increment('=');
+            int stop = i_;
+            do_equals(start_line, start_col, start, stop, stop);
+            parse_xmq_value(XMQLevel.LEVEL_ATTR_VALUE);
+            return;
+        }
+    }
+
     void parse_xmq_element()
     {
         parse_xmq_element_internal(false, false);
@@ -884,7 +1012,7 @@ class XMQParseState
             stop = i_;
             do_apar_left(start_line, start_col, start, stop, stop);
 
-            // TODO parse_xmq_attributes();
+            parse_xmq_attributes();
 
             c = buffer_.charAt(i_);
             if (is_xmq_token_whitespace(c)) { parse_xmq_whitespace(); c = buffer_.charAt(i_); }
@@ -969,10 +1097,10 @@ class XMQParseState
             else if (is_xmq_entity_start(c)) parse_xmq_entity(XMQLevel.LEVEL_XMQ);
             else if (is_xmq_comment_start(c, cc)) parse_xmq_comment(cc);
             else if (is_xmq_element_start(c)) parse_xmq_element();
+            else if (c == '}') { return; }
             /*
             else if (is_xmq_doctype_start(state->i, end)) parse_xmq_doctype(state);
             else if (is_xmq_pi_start(state->i, end)) parse_xmq_pi(state);
-            else if (c == '}') return;
             */
             else
             {
@@ -987,8 +1115,10 @@ class XMQParseState
                 else
                 {
                     error_nr_ = XMQParseError.XMQ_ERROR_INVALID_CHAR;
+                    throw new XMQParseException(error_nr_);
                 }
-                // longjmp(state->error_handler, 1);
+                System.err.println("Internal error.");
+                System.exit(1);
             }
         }
     }
