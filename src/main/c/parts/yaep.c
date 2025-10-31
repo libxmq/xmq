@@ -2813,7 +2813,7 @@ static void *parse_alloc_default(int nmemb)
 
     assert(nmemb > 0);
 
-    result = malloc(nmemb);
+    result = calloc(1, nmemb);
     if (result == NULL)
     {
         exit(1);
