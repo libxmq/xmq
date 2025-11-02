@@ -34,9 +34,6 @@ class XMQParseState
     int line_; // Current line.
     int col_; // Current col.
 
-    // After an eat has completed, the positions are stored here.
-    int start_;
-    int stop_;
 
     XMQParseError error_nr_;
     String generated_error_msg;
@@ -44,28 +41,8 @@ class XMQParseState
     boolean simulated; // When true, this is generated from JSON parser to simulate an xmq element name.
     XMQParseCallbacks parse;
     XMQDoc doq;
-    String implicit_root; // Assume that this is the first element name
-    /*
-    Stack *element_stack; // Top is last created node
-    void *element_last; // Last added sibling to stack top node.
-    bool parsing_doctype; // True when parsing a doctype.
-    void *add_doctype_before; // Used when retrofitting a doctype found in json.
-    bool doctype_found; // True after a doctype has been parsed.
-    bool parsing_pi; // True when parsing a processing instruction, pi.
-    bool merge_text; // Merge text nodes and character entities.
-    bool no_trim_quotes; // No trimming if quotes, used when reading json strings.
-    const char *pi_name; // Name of the pi node just started.
-    XMQOutputSettings *output_settings; // Used when coloring existing text using the tokenizer.
-    int magic_cookie; // Used to check that the state has been properly initialized.
+    String implicit_root_; // Assume that this is the first element name
 
-    char *element_namespace; // The element namespace is found before the element name. Remember the namespace name here.
-    char *attribute_namespace; // The attribute namespace is found before the attribute key. Remember the namespace name here.
-    bool declaring_xmlns; // Set to true when the xmlns declaration is found, the next attr value will be a href
-    void *declaring_xmlns_namespace; // The namespace to be updated with attribute value, eg. xmlns=uri or xmlns:prefix=uri
-
-    void *default_namespace; // If xmlns=http... has been set, then a pointer to the namespace object is stored here.
-
-    */
     // These are used for better error reporting.
     int last_body_start_;
     int last_body_start_line_;
@@ -99,18 +76,22 @@ class XMQParseState
         i_ = 0;
         line_ = 1;
         col_ = 1;
-        start_ = 0;
-        stop_ = 0;
 
         try
         {
+            setup();
             parse_xmq();
         }
-        catch(XMQParseException pe)
+        catch(Exception pe)
         {
+            pe.printStackTrace();
             return false;
         }
         return true;
+    }
+
+    void setup()
+    {
     }
 
     void increment(char c)
@@ -225,9 +206,9 @@ class XMQParseState
         return !is_ws;
     }
 
-    private void eat_xmq_token_whitespace()
+    private Pair<Integer,Integer> eat_xmq_token_whitespace()
     {
-        start_ = i_;
+        int start = i_;
 
         while (i_ < buffer_len_)
         {
@@ -239,15 +220,18 @@ class XMQParseState
             increment(c);
         }
 
-        stop_ = i_;
+        int stop = i_;
+
+        return new Pair(start, stop);
     }
 
     protected void parse_xmq_whitespace()
     {
         int start_line = line_;
         int start_col = col_;
-        eat_xmq_token_whitespace();
-        do_whitespace(start_line, start_col, start_, stop_, stop_);
+        Pair<Integer,Integer> p = eat_xmq_token_whitespace();
+
+        do_whitespace(start_line, start_col, p.left(), p.right(), p.right());
     }
 
     void do_whitespace(int start_line, int start_col, int start, int stop, int stop_suffix)
@@ -425,7 +409,7 @@ class XMQParseState
         return i-i_;
     }
 
-    void eat_xmq_quote()
+    Pair<Integer,Integer> eat_xmq_quote()
     {
         // Grab ' or " to know which kind of quote it is.
         char q = buffer_.charAt(i_);
@@ -439,7 +423,8 @@ class XMQParseState
         last_quote_start_line_ = line_;
         last_quote_start_col_ = col_;
 
-        start_ = i_;
+        int start = i_;
+        int stop = i_;
 
         while (count > 0)
         {
@@ -450,8 +435,8 @@ class XMQParseState
         if (depth == 2)
         {
             // The empty quote ''
-            stop_ = i_;
-            return;
+            stop = i_;
+            return new Pair(start, stop);
         }
 
         while (i_ < buffer_len_)
@@ -486,7 +471,7 @@ class XMQParseState
                     count--;
                 }
                 depth = 0;
-                stop_ = i_;
+                stop = i_;
                 break;
             }
         }
@@ -504,6 +489,8 @@ class XMQParseState
           state->last_suspicios_quote_end_line = state->line;
           state->last_suspicios_quote_end_col = state->col-1;
           }*/
+
+        return new Pair(start, stop);
     }
 
     void parse_xmq_quote(XMQLevel level)
@@ -511,24 +498,26 @@ class XMQParseState
         int start_line = line_;
         int start_col = col_;
 
-        eat_xmq_quote();
+        Pair<Integer,Integer> p = eat_xmq_quote();
+        int start = p.left();
+        int stop = p.right();
 
         switch(level)
         {
         case LEVEL_XMQ:
-            do_quote(start_line, start_col, start_, stop_, stop_);
+            do_quote(start_line, start_col, start, stop, stop);
             break;
         case LEVEL_ELEMENT_VALUE:
-            do_element_value_quote(start_line, start_col, start_, stop_, stop_);
+            do_element_value_quote(start_line, start_col, start, stop, stop);
         break;
         case LEVEL_ELEMENT_VALUE_COMPOUND:
-            do_element_value_compound_quote(start_line, start_col, start_, stop_, stop_);
+            do_element_value_compound_quote(start_line, start_col, start, stop, stop);
             break;
         case LEVEL_ATTR_VALUE:
-            do_attr_value_quote(start_line, start_col, start_, stop_, stop_);
+            do_attr_value_quote(start_line, start_col, start, stop, stop);
         break;
         case LEVEL_ATTR_VALUE_COMPOUND:
-            do_attr_value_compound_quote(start_line, start_col, start_, stop_, stop_);
+            do_attr_value_compound_quote(start_line, start_col, start, stop, stop);
             break;
         }
     }

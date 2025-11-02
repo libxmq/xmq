@@ -28,6 +28,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
 public class Main
 {
     public static void main(String[] args) throws Exception
@@ -36,8 +40,15 @@ public class Main
         {
             Path p = Paths.get(args[0]);
             String content = Files.readString(p, StandardCharsets.UTF_8);
-            XMQParseState ps = new XMQParseState();
-            ps.parse(content, args[0]);
+            XMQParse pa = new XMQParse();
+            pa.parse(content, args[0]);
+
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            DOMSource source = new DOMSource(pa.doc());
+            StreamResult result = new StreamResult(System.out);
+            transformer.transform(source, result);
         }
         catch (Exception e)
         {
