@@ -43,6 +43,10 @@ public class InputSettings
     // Do not trim the whitespace in xml/html.
     private boolean trim_none_;
 
+    public InputSettings()
+    {
+    }
+
     /**
      * Set the implicit root when parsing XMQ. Normally XML requires an explicit
      * root element. However when loading an expected configuration file in XMQ

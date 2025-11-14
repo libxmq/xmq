@@ -39,9 +39,11 @@ $(BUILD)/$(EXECUTABLE): $(PROJECT_DEPS)/updated.timestamp $(SOURCES) pom.xml scr
 	@echo "Built executable: $(BUILD)/$(EXECUTABLE)"
 	@echo "Built package: $(BUILD)/$(ARTIFACTID)-$(VERSION).jar"
 
+# Disable path warnings with -Xlint:-path since some jar somewhere has a manifest pointer
+# to jaxb-core.jar and jaxb-api.har which no longer exists, the jar have version numbers in them.
 $(BUILD)/javac.timestamp: $(PROJECT_DEPS)/updated.timestamp $(SOURCES) pom.xml
 	@echo Compiling javac
-	$(AT)javac -classpath $(JARS) -d build/classes $(SOURCES)
+	$(AT)javac -Xlint:all -Xlint:-path -classpath $(JARS) -d build/classes $(SOURCES)
 	$(AT)touch $@
 
 # The mvn tree command generates lines like this:

@@ -220,7 +220,7 @@ public abstract class XMQParser extends XMQParseCallbacks
 
         int stop = i_;
 
-        return new Pair(start, stop);
+        return new Pair<>(start, stop);
     }
 
     protected void parse_xmq_whitespace()
@@ -266,7 +266,7 @@ public abstract class XMQParser extends XMQParseCallbacks
         {
             // The empty quote ''
             stop = i_;
-            return new Pair(start, stop);
+            return new Pair<>(start, stop);
         }
 
         while (i_ < buffer_len_)
@@ -320,7 +320,7 @@ public abstract class XMQParser extends XMQParseCallbacks
           state->last_suspicios_quote_end_col = state->col-1;
           }*/
 
-        return new Pair(start, stop);
+        return new Pair<>(start, stop);
     }
 
     void parse_xmq_quote(XMQLevel level)
@@ -422,7 +422,7 @@ public abstract class XMQParser extends XMQParseCallbacks
 
         boolean fa = buffer_.charAt(i) == '*'; // Found asterisk?
         int n = i-start;
-        return new Pair(n, fa);
+        return new Pair<>(n, fa);
     }
 
     void eat_xmq_comment_to_eol()
@@ -575,7 +575,7 @@ public abstract class XMQParser extends XMQParseCallbacks
         }
         text_stop = i_;
 
-        return new Quad(text_start, text_stop, namespace_start, namespace_stop);
+        return new Quad<>(text_start, text_stop, namespace_start, namespace_stop);
     }
     void eat_xmq_text_value()
     {

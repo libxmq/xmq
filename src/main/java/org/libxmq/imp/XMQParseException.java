@@ -25,6 +25,7 @@ package org.libxmq.imp;
 
 public class XMQParseException extends RuntimeException
 {
+    private static final long serialVersionUID = 1L;
     private final XMQParseError error_code_;
 
     public XMQParseException(XMQParseError ec)

@@ -48,6 +48,10 @@ public class OutputSettings
     private boolean compact_;
     private int indent_amount_;
 
+    public OutputSettings()
+    {
+    }
+
     /**
      * Set if printing compact XMQ or not. Compact XMQ uses no newlines
      * for the entire document.

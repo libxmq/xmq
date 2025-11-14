@@ -25,6 +25,8 @@ package org.libxmq;
 
 public class DecodingFailedException extends Exception
 {
+    private static final long serialVersionUID = 1L;
+
     public DecodingFailedException(String type, String restriction, String value)
     {
         super("Could not decode a ["+type+"] "+(restriction != null?" restricted by ["+restriction+"]":"")+" from the value ["+value+"]");
