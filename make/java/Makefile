@@ -21,7 +21,8 @@ javac: $(BUILD)/javac.timestamp
 
 # Locate the jar dependencies automatically downloaded by maven.
 JARS:=$(shell find $(PROJECT_DEPS)/ -name "*.jar" | tr '\n' ':')
-$(file >build/$(EXECUTABLE).sh,java -cp $(JARS):$(BUILD)/classes $(GROUPID).Main $$*)
+# Create the xmqj.sh script.
+$(file >build/$(EXECUTABLE).sh,java -cp $(JARS):$(BUILD)/classes $(GROUPID).imp.Main $$*)
 $(shell chmod a+x build/$(EXECUTABLE).sh)
 
 pom.xml: pom.xmq

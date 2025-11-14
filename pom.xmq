@@ -29,7 +29,7 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
                 groupId    = org.springframework.boot
                 artifactId = spring-boot-maven-plugin
                 configuration {
-                    mainClass  = org.libxmq.Main
+                    mainClass  = org.libxmq.imp.Main
                     executable = false
                     classifier = exec
                 }
