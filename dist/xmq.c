@@ -20089,6 +20089,8 @@ YaepSymbol *symb_add_terminal(YaepParseState *ps, const char*name, int code)
     YaepSymbol symb, *result;
     hash_table_entry_t *repr_entry, *code_entry;
 
+    memset(&symb, 0, sizeof(symb));
+
     symb.repr = name;
     if (code >= 32 && code <= 126)
     {
@@ -20131,7 +20133,10 @@ YaepSymbol *symb_add_nonterm(YaepParseState *ps, const char *name)
     YaepSymbol symb,*result;
     hash_table_entry_t*entry;
 
+    memset(&symb, 0, sizeof(symb));
+
     symb.repr = name;
+
     strncpy(symb.hr, name, 6);
 
     symb.is_terminal = false;
@@ -24708,7 +24713,7 @@ static void *parse_alloc_default(int nmemb)
 
     assert(nmemb > 0);
 
-    result = malloc(nmemb);
+    result = calloc(1, nmemb);
     if (result == NULL)
     {
         exit(1);

@@ -36,6 +36,7 @@ $(BUILD)/$(EXECUTABLE): $(PROJECT_DEPS)/updated.timestamp $(SOURCES) pom.xml scr
 	$(AT)cat scripts/run.sh $(BUILD)/$(ARTIFACTID)-$(VERSION)-exec.jar > $@
 	$(AT)chmod a+x $@
 	@echo "Built executable: $(BUILD)/$(EXECUTABLE)"
+	@echo "Built package: $(BUILD)/$(ARTIFACTID)-$(VERSION).jar"
 
 $(BUILD)/javac.timestamp: $(PROJECT_DEPS)/updated.timestamp $(SOURCES) pom.xml
 	@echo Compiling javac
@@ -53,45 +54,8 @@ $(PROJECT_DEPS)/updated.timestamp: pom.xml
 	$(AT)(MAVEN_OPTS=$(MAVEN_OPTS) mvn -DoutputDirectory=$(PROJECT_DEPS) -B -q dependency:copy-dependencies)
 	@touch $(PROJECT_DEPS)/updated.timestamp
 
-dump_databases:
-	pg_dump --clean --schema-only fromcomp > fromcomp.sql
-	pg_dump --clean --schema-only tocomp > tocomp.sql
+javadoc:
+	javadoc -d build/javadoc -sourcepath src/main/java org.libxmq
 
-recreate_database:
-	psql -d fromcomp -f fromcomp.sql
-	psql -d tocomp -f tocomp.sql
-
-run:
-	@java -cp $(JARS):build/classes $(GROUPID).$(ARTIFACTID).Main $(ARGS)
-
-test: build/$(EXECUTABLE) test_dbs
-	$(AT)java -cp $(JARS):build/classes $(GROUPID).$(ARTIFACTID).TestInternals
-	$(AT)./tests/test.sh build/$(EXECUTABLE) build/test_output $(SOURCE) $(SINK) $(FILTER)
-
-testv: build/$(EXECUTABLE) test_dbs
-	$(AT)java -cp $(JARS):build/classes $(GROUPID).$(ARTIFACTID).TestInternals
-	$(AT)(VERBOSE="-v" ./tests/test.sh build/$(EXECUTABLE) build/test_output $(SOURCE) $(SINK) $(FILTER))
-
-test_dbs:
-	./tests/download_test_dbs.sh
-
-install_user:
-	@./install.sh build/default/release "$(HOME)/.local"
-
-uninstall_user:
-	@./uninstall.sh "$(HOME)/.local"
-
-install:
-	@./install.sh build/default/release "$(DESTDIR)"
-
-uninstall:
-	@./uninstall.sh "$(DESTDIR)"
-
-clean:
-	@echo -n "Removing build directory..."
-	@rm -rf build
-	@echo "done."
-
-.PHONY: clean
 
 MAKEFLAGS += --no-builtin-rules

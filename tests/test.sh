@@ -29,7 +29,7 @@ echo OUTPUT=$OUTPUT
 
 if [ -z "$OUTPUT" ] || [ -z "$PROG" ]
 then
-    echo "Usage: PRUTT test.sh build test_output"
+    echo "Usage: test.sh build test_output"
     exit 1
 fi
 

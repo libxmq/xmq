@@ -23,88 +23,91 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq;
 
-import java.io.File;
-
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.EnumSet;
+import java.util.EnumSet;
 import javax.xml.parsers.DocumentBuilder;
-
-import org.w3c.dom.DOMException;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.libxmq.imp.XMQParseIntoDOM;
 import org.w3c.dom.Document;
-import org.w3c.dom.DocumentType;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 public class XMQ
 {
-    public static void main(String[] args)
+    private DocumentBuilderFactory factory_;
+    private DocumentBuilder builder_;
+
+    public XMQ()
     {
-        System.out.println("PARSING...");
-        try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document document = builder.parse("input.xml");
-            XMQ q = new XMQ();
-            q.processNode(document);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static XMQDoc load(File file)
-    {
-        return new XMQDoc();
-    }
-
-    public static XMQDoc parse(String content)
-    {
-        return new XMQDoc();
-    }
-
-    void processNode(Node n)
-    {
-        String name = n.getNodeName();
-//        int type = node.getNodeType();
-        System.out.println("N "+name);
-    }
-
-    void eat_xmq_comment_to_eol(XMQParseState state, Eaten eaten)
-    {
-        /*
-        SourcePos sp = new Sour
-        const char *i = state->i;
-        const char *end = state->buffer_stop;
-
-        size_t line = state->line;
-        size_t col = state->col;
-        increment('/', 1, &i, &line, &col);
-        increment('/', 1, &i, &line, &col);
-
-        *comment_start = i;
-
-        char c = 0;
-        while (i < end && c != '\n')
+        factory_ = DocumentBuilderFactory.newInstance();
+        try
         {
-            c = *i;
-            increment(c, 1, &i, &line, &col);
+            builder_ = factory_.newDocumentBuilder();
         }
-        if (c == '\n') *comment_stop = i-1;
-        else *comment_stop = i;
-        state->i = i;
-        state->line = line;
-        state->col = col;
-        */
+        catch (Exception e)
+        {
+        }
     }
 
-    String xmqGetString(XMQDoc doc, String xpath)
+    public XMQ(DocumentBuilderFactory f)
     {
-        return "";
+        factory_ = f;
+        try
+        {
+            builder_ = factory_.newDocumentBuilder();
+        }
+        catch (Exception e)
+        {
+        }
     }
 
-    String xmqGetStringRel(XMQDoc doc, String xpath, Node relative)
+    public Document parseFile(Path file, InputSettings is) throws IOException
     {
-        return "";
+        String buffer = Files.readString(file, StandardCharsets.UTF_8);
+        return parseBuffer(buffer, is);
     }
 
+    public Document parseBuffer(String buffer, InputSettings is)
+    {
+        XMQParseIntoDOM pa = new XMQParseIntoDOM();
+        pa.parse(buffer, "buffer");
+        return pa.doc();
+    }
+
+    public String toXMQ(Document doc, OutputSettings os)
+    {
+        return "lll";
+    }
+
+    public String toXML(Document doc, OutputSettings os)
+    {
+        return "lll";
+    }
+
+    public String toHTML(Document doc, OutputSettings os)
+    {
+        return "lll";
+    }
+
+    public String toJSON(Document doc, OutputSettings os)
+    {
+        return "lll";
+    }
+
+    public String toCLINES(Document doc, OutputSettings os)
+    {
+        return "lll";
+    }
+
+    public String renderHTML(Document doc, OutputSettings os)
+    {
+        return "lll";
+    }
+
+    public String renderTEX(Document doc, OutputSettings os)
+    {
+        return "lll";
+    }
 }

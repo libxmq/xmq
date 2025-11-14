@@ -2,21 +2,21 @@
 set -u
 # sqlcomp - Copyright 2025 Fredrik Öhrström (gpl-3.0-or-later)
 function help {
-    echo "You need to create the project file with the contents:"
+    echo "You need to create the jproject.settings file with the contents:"
     echo "EXECUTABLE=mynewcmd"
     echo "GROUPID=tld.mydomain"
     echo "ARTIFACTID=mynewcmd"
-    echo "VERSION=1.0-SNAPSHOT"
+    echo "VERSION=0.1-SNAPSHOT"
     exit 1
 }
 
-if [ ! -f project ]
+if [ ! -f jproject.settings ]
 then
     help
     exit 1
 fi
 
-. ./project
+. ./jproject.settings
 
 EXECUTABLE=${EXECUTABLE:-}
 GROUPID=${GROUPID:-}

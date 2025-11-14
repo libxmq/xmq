@@ -8,7 +8,7 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
     }
     groupId    = org.libxmq
     artifactId = xmq
-    version    = 1.0-SNAPSHOT
+    version    = 0.1-SNAPSHOT
     parent {
         groupId    = org.springframework.boot
         artifactId = spring-boot-starter-parent
@@ -68,6 +68,17 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
             artifactId = junit
             version    = 4.13.1
             scope      = test
+        }
+    }
+    reporting {
+        plugins {
+            plugin {
+                groupId = org.apache.maven.plugins
+                artifactId = maven-javadoc-plugin
+                version = 3.12.0
+                configuration {
+                }
+            }
         }
     }
 }

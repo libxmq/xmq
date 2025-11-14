@@ -286,14 +286,25 @@ import_category:
 
 .PHONY: all release debug asan test test_release test_debug clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc
 
-pom.xml: pom.xmq
+pom.xml: pom.xmq jproject.settings
 	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; echo "Generated pom.xml" ; fi
+	@. ./jproject.settings ; if ! grep -q "= $$VERSION" pom.xmq ; then echo "Version $$VERSION not found in pom.xmq"; exit 1; fi
+	@. ./jproject.settings ; if ! grep -q "= $$ARTIFACTID" pom.xmq ; then echo "Artifactid $$ARTIFACTID not found in pom.xmq"; exit 1; fi
+	@. ./jproject.settings ; if ! grep -q "= $$GROUPID" pom.xmq ; then echo "Groupid $$GROUPID not found in pom.xmq"; exit 1; fi
+
 
 xmqj: pom.xml
 	@(if [ ! -f build/java/spec.mk ] ; then ./make/java/configure; fi; make --no-print-directory -f make/java/Makefile)
 
+javadoc:
+	@(if [ ! -f build/java/spec.mk ] ; then ./make/java/configure; fi; make --no-print-directory -f make/java/Makefile javadoc)
+
 javac: pom.xml
 	@(make --no-print-directory -f make/java/Makefile javac)
+
+testj: xmqj
+	@./tests/testj.sh build build/test_output
+
 
 .PHONY: web
 web: build/web/index.html
