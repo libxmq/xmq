@@ -21,4 +21,4 @@ jobs:
     - id: MAKE
       run: eatmydata make xmqj KEEP_POM_XML=true
     - id: TEST
-      run: eatmydata make testj
+      run: eatmydata make testj KEEP_POM_XML=true
