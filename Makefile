@@ -89,7 +89,9 @@ ifeq (,$(BUILDDIRS))
     ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
         ifneq (xmqj,$(findstring xmqj,$(MAKECMDGOALS)))
             ifneq (javac,$(findstring javac,$(MAKECMDGOALS)))
-               $(error Run configure first!)
+                ifneq (testj,$(findstring testj,$(MAKECMDGOALS)))
+                    $(error Run configure first!)
+                endif
             endif
         endif
     endif
