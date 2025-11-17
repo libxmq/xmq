@@ -21,6 +21,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+package org.libxmq.imp;
+
 class XMQQuoteSettings
 {
     public boolean force; // Always add single quotes. More quotes if necessary.

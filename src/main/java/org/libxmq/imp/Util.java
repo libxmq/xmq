@@ -1,5 +1,7 @@
 package org.libxmq.imp;
 
+import org.w3c.dom.Node;
+
 public class Util {
 
     final boolean is_xmq_quote_start(char c)
@@ -56,6 +58,11 @@ public class Util {
 
     static String xmq_quote_as_c(String s, int start, int stop, boolean add_quotes)
     {
+        if (start == -1 && stop == -1)
+        {
+            start = 0;
+            stop = s.length();
+        }
         if (start == stop)
         {
             // The empty string.
@@ -120,5 +127,62 @@ public class Util {
                 c == 0xB7 ||
                 (c >= 0x0300 && c <= 0x036F) ||
                 (c >= 0x203F && c <= 0x2040));
+    }
+
+    public static String getXPath(Node node)
+    {
+        if (node == null)
+        {
+            return null;
+        }
+
+        if (node.getNodeType() == Node.DOCUMENT_NODE)
+        {
+            return "/";
+        }
+
+        StringBuilder path = new StringBuilder();
+        Node parent = node.getParentNode();
+
+        if (parent != null && parent.getNodeType() != Node.DOCUMENT_NODE)
+        {
+            path.append(getXPath(parent));
+        }
+
+        if (path.length() > 0 && path.charAt(path.length() - 1) != '/')
+        {
+            path.append("/");
+        }
+
+        String nodeName = node.getNodeName();
+        int index = getNodeIndex(node);
+        path.append(nodeName);
+        if (index > 1)
+        {
+            path.append("[").append(index).append("]");
+        }
+
+        return path.toString();
+    }
+
+    private static int getNodeIndex(Node node)
+    {
+        int index = 1;
+        Node prev = node.getPreviousSibling();
+        while (prev != null)
+        {
+            if (prev.getNodeType() == node.getNodeType() &&
+                prev.getNodeName().equals(node.getNodeName()))
+            {
+                index++;
+            }
+            prev = prev.getPreviousSibling();
+        }
+        return index;
+    }
+
+    String xmq_trim_quote(String s, boolean is_xmq, boolean is_comment)
+    {
+        return "";
     }
 }

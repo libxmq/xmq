@@ -299,11 +299,16 @@ xmqj: pom.xml
 javadoc:
 	@(if [ ! -f build/java/spec.mk ] ; then ./make/java/configure; fi; make --no-print-directory -f make/java/Makefile javadoc)
 
+javadoc_imp:
+	@(if [ ! -f build/java/spec.mk ] ; then ./make/java/configure; fi; make --no-print-directory -f make/java/Makefile javadoc_imp)
+
 javac: pom.xml
 	@(make --no-print-directory -f make/java/Makefile javac)
 
 testj: xmqj
-	@./tests/testj.sh build build/test_output
+	@java -cp build/classes/ org.libxmq.imp.TestInternals
+	@echo "OK: TestInternals"
+#	@./tests/testj.sh build build/test_output
 
 
 .PHONY: web

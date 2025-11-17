@@ -57,8 +57,13 @@ $(PROJECT_DEPS)/updated.timestamp: pom.xml
 	$(AT)(MAVEN_OPTS=$(MAVEN_OPTS) mvn -DoutputDirectory=$(PROJECT_DEPS) -B -q dependency:copy-dependencies)
 	@touch $(PROJECT_DEPS)/updated.timestamp
 
+# Generate the public API javadoc
 javadoc:
 	javadoc -d build/javadoc -sourcepath src/main/java org.libxmq
+
+# Generate the private implementation javadoc
+javadoc_imp:
+	javadoc -private -d build/javadoc -sourcepath src/main/java org.libxmq org.libxmq.imp
 
 
 MAKEFLAGS += --no-builtin-rules

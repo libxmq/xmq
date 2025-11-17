@@ -30,13 +30,33 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+
 public class Query
 {
-    protected Node node_;
+    private Node node_;
+    private XPathFactory xpath_factory_;
+    private XPath xpath_;
 
     public Query(Node node)
     {
         node_ = node;
+        xpath_factory_ = XPathFactory.newInstance();
+        xpath_ = xpath_factory_.newXPath();
+    }
+
+    public Node node()
+    {
+        return node_;
+    }
+
+    protected XPathExpression getXPathExpression(String xpath) throws XPathExpressionException
+    {
+        return xpath_.compile(xpath);
     }
 
     public int forEach(String xpath, NodeCallback cb)
@@ -48,29 +68,57 @@ public class Query
     {
     }
 
-    public int parallellForEach(String xpath, NodeCallback cb)
+    public boolean getBoolean(String xpath) throws DecodingException,NotFoundException
     {
-        return 0;
+        String s = getString(xpath, null);
+        if (s.equals("true")) return true;
+        if (s.equals("false")) return false;
+
+        throw new DecodingException("boolean", "not a boolean", s);
     }
 
-    public boolean getBoolean(String xpath) throws DecodingFailedException,NotFoundException
+    public int getInt(String xpath, String restriction) throws DecodingException, NotFoundException
     {
-        return true;
+        String s = getString(xpath, null);
+        try
+        {
+            int i = Integer.parseInt(s);
+            return i;
+        }
+        catch (NumberFormatException e)
+        {
+            throw new DecodingException("int", "not an integer", s);
+        }
     }
 
-    public int getInt(String xpath, String restriction) throws DecodingFailedException, NotFoundException
+    public long getLong(String xpath, String restriction) throws DecodingException, NotFoundException
     {
-        return -4711;
+        String s = getString(xpath, null);
+        try
+        {
+            long l = Long.parseLong(s);
+            return l;
+        }
+        catch (NumberFormatException e)
+        {
+            throw new DecodingException("long", "not a long", s);
+        }
     }
 
-    public long getLong(String xpath, String restriction) throws DecodingFailedException, NotFoundException
+    public String getString(String xpath, String restriction) throws DecodingException, NotFoundException
     {
-        return -4711;
-    }
-
-    public String getString(String xpath, String restriction) throws DecodingFailedException, NotFoundException
-    {
-        return "-4711";
+        try
+        {
+            XPathExpression expr = getXPathExpression(xpath);
+            Node n = (Node)expr.evaluate(node_, XPathConstants.NODE);
+            if (n == null) throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
+            String text = n.getTextContent();
+            return text;
+        }
+        catch (XPathExpressionException e)
+        {
+            throw new NotFoundException("Invalid xpath "+xpath+" below node "+Util.getXPath(node()));
+        }
     }
 
     Node firstChild(String name)
@@ -94,17 +142,17 @@ public class Query
     // var speed = q.optional(q.getInt("speed", "..."));
     // var speed = q.optional(q.getInt("speed", "0 <= speed <= 200"));
     // var weight = q.optional(q.getInt("weight", "minInclusive(value=0) maxInclusive(value=200)"));
-    public Optional<Integer> optional(int i) throws DecodingFailedException
+    public Optional<Integer> optional(int i) throws DecodingException
     {
         return Optional.of(-4711);
     }
 
-    public Optional<Boolean> optional(boolean b) throws DecodingFailedException
+    public Optional<Boolean> optional(boolean b) throws DecodingException
     {
         return Optional.of(true);
     }
 
-    public Optional<String> optional(String s) throws DecodingFailedException
+    public Optional<String> optional(String s) throws DecodingException
     {
         return Optional.of(s);
     }

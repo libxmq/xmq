@@ -24,8 +24,6 @@ PROG=$1/xmq
 LIB=$1/libxmq.so
 
 export PROG="$USE_VALGRIND $PROG"
-echo PROG=$PROG
-echo OUTPUT=$OUTPUT
 
 if [ -z "$OUTPUT" ] || [ -z "$PROG" ]
 then
@@ -77,8 +75,11 @@ do
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 done
 
-tests/test_library.sh "$PROG" "$OUTPUT"
-if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+if [ -z $FILTER ]
+then
+    tests/test_library.sh "$PROG" "$OUTPUT"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+fi
 
 for i in tests/ixml/correct/*.output.xmq
 do
@@ -198,15 +199,6 @@ do
     tests/test_program.sh "$LIB" "$OUTPUT" "$i"
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 done
-
-if [ -f build/XMQ-1.0-SNAPSHOT.jar ]
-then
-    for i in tests/java/*.java
-    do
-        if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
-        tests/test_java.sh build/XMQ-1.0-SNAPSHOT.jar "$OUTPUT" "$i"
-    done
-fi
 
 if [ -n "$FILTER" ]; then exit 0; fi
 

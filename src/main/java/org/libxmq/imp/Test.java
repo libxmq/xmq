@@ -70,7 +70,7 @@ public class Test
         {
             System.err.println(e);
         }
-        catch (DecodingFailedException e)
+        catch (DecodingException e)
         {
             System.err.println(e);
         }

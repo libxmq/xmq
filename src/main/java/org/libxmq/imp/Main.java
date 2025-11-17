@@ -50,6 +50,7 @@ public class Main
             {
                 XMQParseIntoTokens to = new XMQParseIntoTokens();
                 to.parse(content, args[0]);
+                System.out.println("");
             }
             else
             {
