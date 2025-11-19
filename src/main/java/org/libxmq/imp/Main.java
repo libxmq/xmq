@@ -52,18 +52,29 @@ public class Main
                 to.parse(content, args[0]);
                 System.out.println("");
             }
-            else
+            else if (args.length > 1 && args[1].equals("to-xml"))
             {
                 XMQParseIntoDOM pa = new XMQParseIntoDOM();
                 pa.parse(content, args[0]);
 
                 TransformerFactory transformerFactory = TransformerFactory.newInstance();
                 Transformer transformer = transformerFactory.newTransformer();
-                transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                transformer.setOutputProperty(OutputKeys.INDENT, "no");
                 DOMSource source = new DOMSource(pa.doc());
                 StreamResult result = new StreamResult(System.out);
                 transformer.transform(source, result);
             }
+            else
+            {
+                XMQParseIntoDOM pa = new XMQParseIntoDOM();
+                pa.parse(content, args[0]);
+
+                XMQPrintState ps = new XMQPrintState();
+                XMQPrinter pr = new XMQPrinter();
+                pr.print_node(ps, pa.doc(), 0);
+                System.out.print(ps.buffer);
+            }
+
         }
         catch (Exception e)
         {

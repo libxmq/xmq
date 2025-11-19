@@ -40,4 +40,17 @@ class XMQPrintState
     int pre_post_num_comments_used; // Active number of comment outside of the root element.
     Stack<Node> post_nodes; // Used to remember ending comments when printing json.
     OutputSettings output_settings;
+
+    StringBuilder buffer = new StringBuilder();
+
+
+    void indent()
+    {
+        int n = current_indent;
+        while (n > 0)
+        {
+            buffer.append(' ');
+            n--;
+        }
+    }
 }

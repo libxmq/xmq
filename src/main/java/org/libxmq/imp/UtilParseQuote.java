@@ -25,80 +25,19 @@ package org.libxmq.imp;
 
 import java.util.ArrayList;
 
-public class QuoteUtil
+public class UtilParseQuote extends UtilQuote
 {
-    private final static boolean debug_ = false;
     /**
-     * We analyze part of a larger buffer, typically the whole xmq source file.
-     * The part is copied into this buffer_ and any CRLF is converted to LF in the process.
+     * Expects an xmq quote and removes the surrounding single or double quote chars.
+     * For example:
+     * '' -> (1,1)
      */
-    private String buffer_;
-    /**
-     * The buffer_start_ points to where in the larger buffer_ we find the quote to be parsed.
-     */
-    private int buffer_start_;
-    /**
-     * The buffer_stop_ points to just after the quote to be parsed.
-     */
-    private int buffer_stop_;
-    /**
-     * The minimum indentation found.
-     */
-    private int min_indent_ = Integer.MAX_VALUE;
-    /**
-     * Stores start,stop,nl for each line found inside a quote.
-     */
-    private ArrayList<Line> lines_;
-    /**
-     * Has newlines.
-     */
-    private boolean has_nl_;
-    /**
-     * Stores the number of leading newline characters found before the first line with non-space characters.
-     */
-    private int num_leading_nl_;
-    /**
-     * Stores the index of the last leading newline character after which the line contains non-space characters.
-     * Is -1 if no leading newline is found.
-     */
-    private int last_leading_nl_;
-    /**
-     * Set to true if the quote only consists of newlines and spaces.
-     */
-    private boolean all_leading_;
-    /**
-     * Stores the number of ending newline characters found after the last line with non-space characters.
-     */
-    private int num_ending_nl_;
-    /**
-     * Stores the index of the first ending newline characters after which lines do not contain non-space characters.
-     * Is -1 if no such ending newline is found.
-     */
-    private int first_ending_nl_;
-    /**
-     * While looking for the first ending newline, remember the last indent.
-     * This indent influences the incidental indentation as well.
-     */
-    private int last_indent_;
-    /**
-     * Start stores the index either buffer_start_, if no leading newlines are found or
-     * start stores the last_leading_nl+1, ie the first character of the first line with non-space characters.
-     */
-    private int start_;
-    /**
-     * Stop stores the index either buffer_stop_, if no ending newlines are found or
-     * stop stores the first_ending_nl, ie after the end of the last line with non-space characters.
-     */
-    private int stop_;
-
-    // Output values
-    private int max_num_consecutive_single_quotes_;
-    private int max_num_consecutive_double_quotes_;
-    private boolean needs_compound_;
-
     public static Pair<Integer,Integer> findQuoteStartStop(String b, int start, int stop)
     {
-        if (b.length() < 2) return null;
+        assert (stop-start) >= 2 : "Must at least two quote characters.";
+        assert b.length() >= (stop-start) : "Buffer not long enogh.";
+        assert b.charAt(start) == '\'' || b.charAt(start) == '"' : "Must start with single or double quote.";
+
         int i = start;
         int j = stop-1;
         char qc = b.charAt(i);
@@ -112,46 +51,22 @@ public class QuoteUtil
 
     public static String trimQuote(String b, int start, int stop)
     {
-        QuoteUtil aq = new QuoteUtil(b, start, stop);
-        aq.analyzeForParse();
-        return aq.parseQuote();
+        UtilParseQuote upq = new UtilParseQuote(b, start, stop);
+        upq.analyzeForParse();
+        return upq.parseQuote();
     }
 
-    private QuoteUtil(String b, int start, int stop)
-    {
-        StringBuilder sb = new StringBuilder();
-        for (int i = start; i < stop; ++i)
-        {
-            char c = b.charAt(i);
-            if (c == '\r')
-            {
-                if (i+1 < stop && b.charAt(i+1) == '\n')
-                {
-                    // Skip the CR in CRLF
-                    i++;
-                }
-                // A single CR translates into an LF.
-                sb.append('\n');
-                if (!has_nl_) has_nl_ = true;
-            }
-            else if (c == '\n' && !has_nl_)
-            {
-                has_nl_ = true;
-                sb.append(c);
-            }
-            else sb.append(c);
-        }
 
-        buffer_ = sb.toString();
-        buffer_start_ = 0;
-        buffer_stop_ = buffer_.length();
+    protected UtilParseQuote(String b, int start, int stop)
+    {
+        super(b, start, stop);
     }
 
     /**
      * Look at the char at index start and count how many identical chars there are forward.
      * Used to count identical quotes in a sequence or count number of spaces used for indentation.
      */
-    private int countSame(int start, int stop)
+    protected int countSame(int start, int stop)
     {
         int i = start;
         char c = buffer_.charAt(i);
@@ -179,7 +94,7 @@ public class QuoteUtil
      * // last_leading_nl_ = 4
      * }</pre>
      */
-    private void findLeadingNewlines()
+    protected void findLeadingNewlines()
     {
         int last_nl = -1;
         int num_nl = 0;
@@ -199,7 +114,7 @@ public class QuoteUtil
         num_leading_nl_ = num_nl;
     }
 
-    private void findEndingNewlines()
+    protected void findEndingNewlines()
     {
         int first_nl = -1;
         int num_nl = 0;
@@ -314,7 +229,7 @@ public class QuoteUtil
         if (debug_) System.out.println("MIN_INDENT="+min_indent_);
     }
 
-    private String parseQuote()
+    protected String parseQuote()
     {
         StringBuilder sb = new StringBuilder();
 
@@ -344,27 +259,27 @@ public class QuoteUtil
         return sb.toString();
     }
 
-    private void analyzeForPrint(ArrayList<QuotePart> parts)
+    protected void analyzeForPrint(ArrayList<QuotePart> parts)
     {
         char c = 0;
         int i = buffer_start_;
+        has_nl_ = false;
 
+        min_indent_ = Integer.MAX_VALUE;
         for (; i < buffer_stop_; ++i)
         {
             c = buffer_.charAt(i);
+
+            if (c == '\n')
+            {
+                has_nl_ = true;
+                continue;
+            }
 
             if (c == '\'')
             {
                 int len = countSame(i, stop_);
                 if (len > max_num_consecutive_single_quotes_) max_num_consecutive_single_quotes_ = len;
-                i += len;
-                continue;
-            }
-
-            if (c == '"')
-            {
-                int len = countSame(i, stop_);
-                if (len > max_num_consecutive_double_quotes_) max_num_consecutive_double_quotes_ = len;
                 i += len;
                 continue;
             }

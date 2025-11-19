@@ -7,6 +7,26 @@ public class TestInternals
 {
     public static void main(String[] args)
     {
+        test_quote_removal();
+        test_quotes();
+
+    }
+
+    public static void test_quote_removal()
+    {
+        test_surrounding_quote("''", "");
+        test_surrounding_quote("\"\"", "");
+        test_surrounding_quote("''x''", "x");
+        test_surrounding_quote("\"\"x\"\"", "x");
+        test_surrounding_quote("'''''x'''''", "x");
+
+        test_surrounding_quote("''\"x\"''", "\"x\"");
+        test_surrounding_quote("\"'x'\"", "'x'");
+        test_surrounding_quote("\"\"'\"x\"'\"\"", "'\"x\"'");
+    }
+
+    public static void test_quotes()
+    {
         ArrayList<QuotePart> parts = new ArrayList<>();
 
         test_trim_quote("HejsanHoppsan", "HejsanHoppsan");
@@ -63,7 +83,24 @@ public class TestInternals
 
     static void test_trim_quote(String input, String expected)
     {
-        String output = QuoteUtil.trimQuote(input, 0, input.length());
+        String output = UtilParseQuote.trimQuote(input, 0, input.length());
+        if (!expected.equals(output))
+        {
+            String i = Util.xmq_quote_as_c(input, -1, -1, true);
+            String e = Util.xmq_quote_as_c(expected, -1, -1, true);
+            String o = Util.xmq_quote_as_c(output, -1, -1, true);
+
+            System.err.println("ERROR:\ninput    "+i+"\nexpected "+e+"\n but got "+o);
+            System.exit(1);
+        }
+    }
+
+    static void test_surrounding_quote(String input, String expected)
+    {
+        var pair = UtilParseQuote.findQuoteStartStop(input, 0, input.length());
+
+        String output = input.substring(pair.left(), pair.right());
+
         if (!expected.equals(output))
         {
             String i = Util.xmq_quote_as_c(input, -1, -1, true);

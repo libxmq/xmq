@@ -162,20 +162,27 @@ public class XMQParseIntoDOM extends XMQParser
     {
     }
 
-    protected void do_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
+    void add_quote(int start, int stop)
     {
-        var p = QuoteUtil.findQuoteStartStop(buffer_, start, stop);
-        String content = QuoteUtil.trimQuote(buffer_, p.left(), p.right());
+        var pair = QuoteUtil.findQuoteStartStop(buffer_, start, stop);
+        String content = QuoteUtil.trimQuote(buffer_, pair.left(), pair.right());
         org.w3c.dom.Text text = doc_.createTextNode(content);
         element_last_.appendChild(text);
     }
 
+    protected void do_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        add_quote(start, stop);
+    }
+
     protected void do_element_value_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        add_quote(start, stop);
     }
 
     protected void do_element_value_compound_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        add_quote(start, stop);
     }
 
     protected void do_attr_value_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
