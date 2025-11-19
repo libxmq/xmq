@@ -37,8 +37,7 @@ public class TestInternals
         test_trim_quote("\n x\n ", "x");
         test_trim_quote("x\n          ", "x");
 
-        // Remove incidental indentation. Source code indentation is colum 2 (= 1 space before)
-        // which corresponds to abc and def being aligned.
+        // Remove incidental indentation.
         test_trim_quote("abc\n def", "abc\ndef");
 
         // Yes, the abc has one extra indentation.
@@ -64,8 +63,7 @@ public class TestInternals
 
     static void test_trim_quote(String input, String expected)
     {
-        AnalyzeQuote aq = new AnalyzeQuote(input, 0, input.length());
-        String output = aq.parseQuote();
+        String output = QuoteUtil.trimQuote(input, 0, input.length());
         if (!expected.equals(output))
         {
             String i = Util.xmq_quote_as_c(input, -1, -1, true);

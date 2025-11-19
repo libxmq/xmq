@@ -25,7 +25,7 @@ package org.libxmq.imp;
 
 import java.util.ArrayList;
 
-public class AnalyzeQuote
+public class QuoteUtil
 {
     private final static boolean debug_ = false;
     /**
@@ -96,7 +96,28 @@ public class AnalyzeQuote
     private int max_num_consecutive_double_quotes_;
     private boolean needs_compound_;
 
-    public AnalyzeQuote(String b, int start, int stop)
+    public static Pair<Integer,Integer> findQuoteStartStop(String b, int start, int stop)
+    {
+        if (b.length() < 2) return null;
+        int i = start;
+        int j = stop-1;
+        char qc = b.charAt(i);
+        while (b.charAt(i) == qc && b.charAt(j) == qc && i < j)
+        {
+            i++;
+            j--;
+        }
+        return new Pair<>(i, j+1);
+    }
+
+    public static String trimQuote(String b, int start, int stop)
+    {
+        QuoteUtil aq = new QuoteUtil(b, start, stop);
+        aq.analyzeForParse();
+        return aq.parseQuote();
+    }
+
+    private QuoteUtil(String b, int start, int stop)
     {
         StringBuilder sb = new StringBuilder();
         for (int i = start; i < stop; ++i)
@@ -293,11 +314,9 @@ public class AnalyzeQuote
         if (debug_) System.out.println("MIN_INDENT="+min_indent_);
     }
 
-    public String parseQuote()
+    private String parseQuote()
     {
         StringBuilder sb = new StringBuilder();
-
-        analyzeForParse();
 
         for (int i = 0; i < num_leading_nl_-1; ++i) sb.append('\n');
 
@@ -325,7 +344,7 @@ public class AnalyzeQuote
         return sb.toString();
     }
 
-    public void analyzeForPrint(ArrayList<QuotePart> parts)
+    private void analyzeForPrint(ArrayList<QuotePart> parts)
     {
         char c = 0;
         int i = buffer_start_;

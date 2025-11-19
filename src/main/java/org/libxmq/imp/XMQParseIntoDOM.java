@@ -164,6 +164,10 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        var p = QuoteUtil.findQuoteStartStop(buffer_, start, stop);
+        String content = QuoteUtil.trimQuote(buffer_, p.left(), p.right());
+        org.w3c.dom.Text text = doc_.createTextNode(content);
+        element_last_.appendChild(text);
     }
 
     protected void do_element_value_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
