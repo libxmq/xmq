@@ -27,6 +27,9 @@ import org.w3c.dom.Node;
 import java.net.InetAddress;
 import java.net.URL;
 
+/**
+ * Implements network related queries, url:s, hostnames, ip-addresses etc.
+ */
 public class QueryNetwork extends Query
 {
     /**

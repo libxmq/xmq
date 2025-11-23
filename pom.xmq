@@ -39,6 +39,11 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
         directory = build
         plugins {
             plugin {
+                groupId  = org.codehaus.mojo
+                artifactId = versions-maven-plugin
+                version = 2.16.2
+            }
+            plugin {
                 groupId    = org.apache.maven.plugins
                 artifactId = maven-compiler-plugin
                 version    = 3.14.1
@@ -96,6 +101,18 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
                             goal = sign
                         }
                     }
+                }
+            }
+            // Upload to Sonatype
+            plugin {
+                groupId = org.sonatype.plugins
+                artifactId = nexus-staging-maven-plugin
+                version = 1.6.13
+                extensions = true
+                configuration {
+                    serverId = ossrh
+                    nexusUrl = https://oss.sonatype.org/
+                    autoReleaseAfterClose = true
                 }
             }
         }
