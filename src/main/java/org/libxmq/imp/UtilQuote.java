@@ -50,9 +50,9 @@ public class UtilQuote
      */
     protected ArrayList<Line> lines_;
     /**
-     * Has newlines.
+     * Total number of newlines. Set to -1 if not counted yet.
      */
-    protected boolean has_nl_;
+    protected int num_nl_ = -1;
     /**
      * Stores the number of leading newline characters found before the first line with non-space characters.
      */
@@ -96,9 +96,13 @@ public class UtilQuote
     protected int max_num_consecutive_double_quotes_;
     protected boolean needs_compound_;
 
+    /**
+     * Translate CRLF and CR to LF. Count number of newlines.
+     */
     protected UtilQuote(String b, int start, int stop)
     {
         StringBuilder sb = new StringBuilder();
+        num_nl_ = 0;
         for (int i = start; i < stop; ++i)
         {
             char c = b.charAt(i);
@@ -111,11 +115,11 @@ public class UtilQuote
                 }
                 // A single CR translates into an LF.
                 sb.append('\n');
-                if (!has_nl_) has_nl_ = true;
+                num_nl_++;
             }
-            else if (c == '\n' && !has_nl_)
+            else if (c == '\n')
             {
-                has_nl_ = true;
+                num_nl_++;
                 sb.append(c);
             }
             else sb.append(c);

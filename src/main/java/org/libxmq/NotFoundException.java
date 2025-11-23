@@ -23,10 +23,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq;
 
+/**
+   The not found exception is thrown when a query cannot find the desired
+   value to decode and return.
+*/
 public class NotFoundException extends Exception
 {
     private static final long serialVersionUID = 1L;
 
+    /**
+        Construct a not found exception.
+        @param path The path into the document for which no value was found.
+    */
     public NotFoundException(String path)
     {
         super("Could not find "+path);

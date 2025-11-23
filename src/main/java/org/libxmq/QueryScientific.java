@@ -25,8 +25,15 @@ package org.libxmq;
 
 import org.w3c.dom.Node;
 
+/**
+   This class is used to extract scientific values from a DOM.
+*/
 public class QueryScientific extends Query
 {
+    /**
+       Build a new scientific query from a DOM node.
+       @param node The DOM node from which the paths start when querying.
+    */
     public QueryScientific(Node node)
     {
         super(node);

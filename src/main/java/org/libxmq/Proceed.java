@@ -23,7 +23,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq;
 
+/**
+ * Used when iterating over found DOM nodes.
+ */
 public enum Proceed
 {
-    CONTINUE, STOP;
+    /**
+     * Return CONTINUE from invoke in the node callback, to keep iterating.
+     */
+    CONTINUE,
+    /**
+     * Return STOP from invoke in the node callback, to stop itering.
+     */
+    STOP;
 }

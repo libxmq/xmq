@@ -48,6 +48,9 @@ public class OutputSettings
     private boolean compact_;
     private int indent_amount_;
 
+    /**
+     * Create default output settings.
+     */
     public OutputSettings()
     {
     }
@@ -56,9 +59,7 @@ public class OutputSettings
      * Set if printing compact XMQ or not. Compact XMQ uses no newlines
      * for the entire document.
      *
-     * @param amount the number of spaces to use per indentation level;
-     *               must be zero or a positive integer, negative values
-     *               are interpreted as zero.
+     * @param c If true, then print XMQ on a single line, ie no newlines.
      * @return this {@code OutputSettings} instance, for method chaining
      */
     public OutputSettings setCompact(boolean c)
@@ -71,7 +72,7 @@ public class OutputSettings
      * Returns the previously set compact setting.
      * @return the compact setting
      */
-    public boolean getCompact()
+    public boolean compact()
     {
         return compact_;
     }

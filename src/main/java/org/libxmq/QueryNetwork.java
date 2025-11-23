@@ -29,28 +29,65 @@ import java.net.URL;
 
 public class QueryNetwork extends Query
 {
+    /**
+       Build a new query from a DOM node.
+       @param node The DOM node from which the paths start when querying.
+    */
     public QueryNetwork(Node node)
     {
         super(node);
     }
 
-    public static InetAddress getInetAddress(String xpath)
+    /**
+       Retrieve an internet address ipv4 or ipv6.
+       @param xpath Fetch the value found using this xpath.
+       @throws NotFoundException if the expected xpath was not found.
+       @throws DecodingException if the value was not an integer or if it failed the restriction.
+       @throws TooManyException if more than one element matched the xpath.
+       @return The iternet address.
+    */
+    public static InetAddress getInetAddress(String xpath) throws DecodingException, NotFoundException, TooManyException
     {
         return null;
     }
 
-    public static String getHostname(String xpath)
+    /**
+       Retrieve a host name, such as mail or gateway or mycomputer.
+       @param xpath Use this xpath to find the host name.
+       @throws NotFoundException if the expected xpath was not found.
+       @throws DecodingException if the value was not an integer or if it failed the restriction.
+       @throws TooManyException if more than one element matched the xpath.
+       @return The hostname.
+    */
+    public static String getHostname(String xpath) throws NotFoundException,DecodingException,TooManyException
     {
         return null;
     }
 
-    public static InetAddress getFQDN(String xpath)
+    /**
+       Retrieve a fully qualified domain name, such as mail.mydomain.com.
+
+       @param xpath Use this xpath to find the host name.
+       @throws NotFoundException if the expected xpath was not found.
+       @throws DecodingException if the value was not an integer or if it failed the restriction.
+       @throws TooManyException if more than one element matched the xpath.
+       @return The fqdn.
+    */
+    public static String getFQDN(String xpath) throws NotFoundException,DecodingException,TooManyException
     {
         return null;
     }
 
+    /**
+       Retrieve an URL, such as https://foo.bar.com?a=123
 
-    public static URL getURL(String xpath)
+       @param xpath Use this xpath to find the host name.
+       @throws NotFoundException if the expected xpath was not found.
+       @throws DecodingException if the value was not an integer or if it failed the restriction.
+       @throws TooManyException if more than one element matched the xpath.
+       @return The url address.
+    */
+    public static URL getURL(String xpath) throws NotFoundException,DecodingException,TooManyException
     {
         return null;
     }

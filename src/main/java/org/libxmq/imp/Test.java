@@ -70,6 +70,10 @@ public class Test
         {
             System.err.println(e);
         }
+        catch (TooManyException e)
+        {
+            System.err.println(e);
+        }
         catch (DecodingException e)
         {
             System.err.println(e);

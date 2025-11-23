@@ -70,6 +70,7 @@ public class Main
                 pa.parse(content, args[0]);
 
                 XMQPrintState ps = new XMQPrintState();
+                ps.defaultTheme();
                 XMQPrinter pr = new XMQPrinter();
                 pr.print_node(ps, pa.doc(), 0);
                 System.out.print(ps.buffer);

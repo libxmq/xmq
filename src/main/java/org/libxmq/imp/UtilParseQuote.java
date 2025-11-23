@@ -145,10 +145,10 @@ public class UtilParseQuote extends UtilQuote
         lines_ = new ArrayList<>();
         char c = 0;
 
-        if (!has_nl_)
+        if (num_nl_ == 0)
         {
             // No newlines means that the content is quoted verbatim.
-            lines_.add(new Line(buffer_start_, buffer_stop_, false, false));
+            lines_.add(new Line(buffer_start_, buffer_stop_, 0, false, false));
             return;
         }
         findLeadingNewlines();
@@ -189,7 +189,7 @@ public class UtilParseQuote extends UtilQuote
                     boolean should_trim = !first_line;
                     String ll = buffer_.substring(line_start, i);
                     if (debug_) System.out.println("ADDED LINE >"+ll+"< trim="+should_trim);
-                    lines_.add(new Line(line_start, i, should_trim, true));
+                    lines_.add(new Line(line_start, i, 0,should_trim, true));
                     first_line = false;
                 }
                 line_start = i+1;
@@ -217,7 +217,7 @@ public class UtilParseQuote extends UtilQuote
         if (line_start < stop_)
         {
             boolean should_trim = !first_line;
-            lines_.add(new Line(line_start, stop_, should_trim, false));
+            lines_.add(new Line(line_start, stop_, 0, should_trim, false));
             String ll = buffer_.substring(line_start, stop_);
             if (debug_) System.out.println("ADDED LAST LINE >"+ll+"< trim="+should_trim);
             if (should_trim && min_indent_ == Integer.MAX_VALUE)
@@ -257,45 +257,5 @@ public class UtilParseQuote extends UtilQuote
         for (int i = 0; i < num_ending_nl_-1; ++i) sb.append('\n');
 
         return sb.toString();
-    }
-
-    protected void analyzeForPrint(ArrayList<QuotePart> parts)
-    {
-        char c = 0;
-        int i = buffer_start_;
-        has_nl_ = false;
-
-        min_indent_ = Integer.MAX_VALUE;
-        for (; i < buffer_stop_; ++i)
-        {
-            c = buffer_.charAt(i);
-
-            if (c == '\n')
-            {
-                has_nl_ = true;
-                continue;
-            }
-
-            if (c == '\'')
-            {
-                int len = countSame(i, stop_);
-                if (len > max_num_consecutive_single_quotes_) max_num_consecutive_single_quotes_ = len;
-                i += len;
-                continue;
-            }
-        }
-    }
-
-    public String parseInfo()
-    {
-        return
-            "nlenl="+num_leading_nl_+
-            " llenl="+last_leading_nl_+
-            " nennl="+num_ending_nl_+
-            " fennl="+first_ending_nl_+
-            " start="+start_+
-            " stop="+stop_+
-            " mni="+min_indent_+
-            " nlines="+lines_.size();
     }
 }

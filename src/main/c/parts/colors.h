@@ -70,29 +70,6 @@ typedef enum XMQColor {
     COLOR_ns_override_xsl,
 } XMQColor;
 
-/**
-   XMQColorName:
-
-   The actual number of colors are fewer than the number of tokens
-   since we reuse colors for several tokens, no need to have different
-   colors for left and right compound parentheses.
-*/
-typedef enum XMQColorName {
-    XMQ_COLOR_C, // Comment
-    XMQ_COLOR_Q, // Quote
-    XMQ_COLOR_E, // Entity
-    XMQ_COLOR_NS, // Name Space (both for element and attribute)
-    XMQ_COLOR_EN, // Element Name
-    XMQ_COLOR_EK, // Element Key
-    XMQ_COLOR_EKV, // Element Key Value
-    XMQ_COLOR_AK, // Attribute Key
-    XMQ_COLOR_AKV, // Attribute Key Value
-    XMQ_COLOR_CP, // Compound Parentheses
-    XMQ_COLOR_NSD, // Name Space Declaration xmlns
-    XMQ_COLOR_UW, // Unicode whitespace
-    XMQ_COLOR_XLS, // Override XLS element names with this color.
-} XMQColorName;
-
 #define XMQ_COLOR_NAMES \
     X(C) \
     X(Q) \

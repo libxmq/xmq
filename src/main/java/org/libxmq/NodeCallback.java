@@ -25,7 +25,15 @@ package org.libxmq;
 
 import org.w3c.dom.Node;
 
+/**
+ * A functional interface used to call back for each found DOM node.
+ */
 public interface NodeCallback
 {
+    /**
+     * Invoked for each node found.
+     * @param node The node currently iterating over.
+     * @return Wether to proceed or stop.
+     */
     Proceed invoke(Node node);
 }

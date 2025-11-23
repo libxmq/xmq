@@ -23,10 +23,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq;
 
+/**
+    The DecodingException is thrown when a query failes to decode the
+    text retrieved from the Document into the desired type.
+*/
 public class DecodingException extends Exception
 {
     private static final long serialVersionUID = 1L;
 
+    /**
+        Construct a decoding exception.
+        @param type The name of the desired type.
+        @param restriction The type restriction, if any.
+        @param value The value which could not be decoded.
+    */
     public DecodingException(String type, String restriction, String value)
     {
         super("Could not decode a ["+type+"] "+(restriction != null?" restricted by ["+restriction+"]":"")+" from the value ["+value+"]");

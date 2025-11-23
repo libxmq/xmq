@@ -40,7 +40,7 @@ public class XMQParseIntoDOM extends XMQParser
     Document doc_;
 
     Stack<Node> element_stack_; // Top is last created node
-    Node element_last_; // Last added sibling to stack top node.
+    Node element_last_; // Last added element, might get pushed to stack if { is found.
 
     Node add_pre_node_before_; // Used when retrofitting pre-root comments and doctype found in json.
     Node add_post_node_after_; // Used when retrofitting post-root comments found in json.
@@ -164,10 +164,10 @@ public class XMQParseIntoDOM extends XMQParser
 
     void add_quote(int start, int stop)
     {
-        var pair = QuoteUtil.findQuoteStartStop(buffer_, start, stop);
-        String content = QuoteUtil.trimQuote(buffer_, pair.left(), pair.right());
+        var pair = UtilParseQuote.findQuoteStartStop(buffer_, start, stop);
+        String content = UtilParseQuote.trimQuote(buffer_, pair.left(), pair.right());
         org.w3c.dom.Text text = doc_.createTextNode(content);
-        element_last_.appendChild(text);
+        element_stack_.peek().appendChild(text);
     }
 
     protected void do_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
@@ -239,7 +239,6 @@ public class XMQParseIntoDOM extends XMQParser
         {
             parent.appendChild(n);
         }
-        element_last_ = n;
     }
 
     protected void do_comment_continuation(int start_line, int start_col, int start, int stop, int stop_suffix)
@@ -326,7 +325,7 @@ public class XMQParseIntoDOM extends XMQParser
         else
         {
             org.w3c.dom.Text text = doc_.createTextNode(buffer_.substring(start,stop));
-            element_last_.appendChild(text);
+            element_stack_.peek().appendChild(text);
         }
     }
 

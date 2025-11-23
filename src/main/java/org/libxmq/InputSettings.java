@@ -43,6 +43,9 @@ public class InputSettings
     // Do not trim the whitespace in xml/html.
     private boolean trim_none_;
 
+    /**
+     * Construct an default input settings.
+     */
     public InputSettings()
     {
     }
@@ -59,6 +62,7 @@ public class InputSettings
      * type=car
      * }</pre>
      *
+     * @param r The implicit root to add, eg "config".
      * @return this {@code InputSettings} instance, for method chaining
      */
     public InputSettings setImplicitRoot(String r)
@@ -78,8 +82,8 @@ public class InputSettings
 
     /**
      * Disable whitespace trimming using the xmq heuristic when loading xml/html.
-     * </p>
      *
+     * @param b True means keep all whitespace as-is.
      * @return this {@code OutputSettings} instance, for method chaining
      */
     public InputSettings setTrimNone(boolean b)
@@ -99,8 +103,8 @@ public class InputSettings
 
     /**
      * Disable automatic merging of text noes when loading document.
-     * </p>
      *
+     * @param b True means keep text nodes separate when loading from xmq.
      * @return this {@code OutputSettings} instance, for method chaining
      */
     public InputSettings setNoMerge(boolean b)

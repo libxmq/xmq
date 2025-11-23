@@ -40,6 +40,7 @@ class XMQPrintState
     int pre_post_num_comments_used; // Active number of comment outside of the root element.
     Stack<Node> post_nodes; // Used to remember ending comments when printing json.
     OutputSettings output_settings;
+    XMQTheme theme;
 
     StringBuilder buffer = new StringBuilder();
 
@@ -52,5 +53,11 @@ class XMQPrintState
             buffer.append(' ');
             n--;
         }
+    }
+
+    void defaultTheme()
+    {
+        theme = new XMQTheme();
+        theme.installDefault();
     }
 }

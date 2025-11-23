@@ -1,14 +1,35 @@
 project(xmlns = http://maven.apache.org/POM/4.0.0)
 {
     modelVersion = 4.0.0
+    groupId      = org.libxmq
+    artifactId   = xmq
+    version      = 0.1
     properties {
         project.build.sourceEncoding = UTF-8
         maven.compiler.source        = 17
         maven.compiler.target        = 17
     }
-    groupId    = org.libxmq
-    artifactId = xmq
-    version    = 0.1-SNAPSHOT
+    name        = libxmq
+    description = 'Library to work with xmq/xml/html/json.'
+    url         = https://libxmq.org
+    licenses {
+        license {
+            name = 'MIT License'
+            url  = https://raw.githubusercontent.com/libxmq/xmq/refs/heads/master/LICENSE
+        }
+    }
+    developers {
+        developer {
+            id    = weetmuts
+            name  = 'Fredrik Öhrström'
+            email = oehrstroem@gmail.com
+        }
+    }
+    scm {
+        connection          = scm:git:https://github.com/libxmq/xmq.git
+        developerConnection = scm:git:https://github.com/libxmq/xmq.git
+        url                 = https://github.com/libxmq/xmq
+    }
     parent {
         groupId    = org.springframework.boot
         artifactId = spring-boot-starter-parent
@@ -34,6 +55,49 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
                     classifier = exec
                 }
             }
+            // Attach sources
+            plugin {
+                groupId    = org.apache.maven.plugins
+                artifactId = maven-source-plugin
+                version    = 3.3.0
+                executions {
+                    execution {
+                        id = attach-sources
+                        goals {
+                            goal = jar
+                        }
+                    }
+                }
+            }
+            // Attach Javadocs
+            plugin {
+                groupId    = org.apache.maven.plugins
+                artifactId = maven-javadoc-plugin
+                version    = 3.6.0
+                executions {
+                    execution {
+                        id = attach-javadocs
+                        goals {
+                            goal = jar
+                        }
+                    }
+                }
+            }
+            // Sign artifacts
+            plugin {
+                groupId    = org.apache.maven.plugins
+                artifactId = maven-gpg-plugin
+                version    = 3.2.4
+                executions {
+                    execution {
+                        id    = sign-artifacts
+                        phase = verify
+                        goals {
+                            goal = sign
+                        }
+                    }
+                }
+            }
         }
     }
     dependencies {
@@ -44,9 +108,9 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
         }
         // https://mvnrepository.com/artifact/javax.xml.parsers/jaxp-api
         dependency {
-            groupId = javax.xml.parsers
+            groupId    = javax.xml.parsers
             artifactId = jaxp-api
-            version = 1.4.5
+            version    = 1.4.5
         }
         dependency {
             groupId    = javax.xml.bind
@@ -73,12 +137,21 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
     reporting {
         plugins {
             plugin {
-                groupId = org.apache.maven.plugins
+                groupId    = org.apache.maven.plugins
                 artifactId = maven-javadoc-plugin
-                version = 3.12.0
-                configuration {
-                }
+                version    = 3.12.0
+                configuration
             }
+        }
+    }
+    distributionManagement {
+        snapshotRepository {
+            id  = ossrh
+            url = https://s01.oss.sonatype.org/content/repositories/snapshots
+        }
+        repository {
+            id  = ossrh
+            url = https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/
         }
     }
 }

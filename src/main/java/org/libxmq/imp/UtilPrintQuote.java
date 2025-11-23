@@ -27,9 +27,18 @@ import java.util.ArrayList;
 
 public class UtilPrintQuote extends UtilQuote
 {
+    /**
+     * How many newlines.
+     */
+    protected int num_nl_;
+
     // Output values
     protected int max_num_consecutive_single_quotes_;
     protected int max_num_consecutive_double_quotes_;
+    protected int num_cr_;
+    protected int num_tab_;
+    protected boolean starts_or_ends_with_double_quote_;
+    protected boolean starts_or_ends_with_single_quote_;
     protected boolean needs_compound_;
 
     protected UtilPrintQuote(String b)
@@ -39,7 +48,9 @@ public class UtilPrintQuote extends UtilQuote
 
     public static String renderQuote(String q, int indent)
     {
+        if (q.length() == 0) return "''";
         UtilPrintQuote upq = new UtilPrintQuote(q);
+        upq.analyzeForPrint();
         return upq.buildMultilineQuote(indent);
     }
 
@@ -50,51 +61,69 @@ public class UtilPrintQuote extends UtilQuote
 
     protected String buildMultilineQuote(int indent)
     {
-        int line_start = buffer_start_;
-        int num_newlines = 0;
-        for (int i = buffer_start_; i < buffer_stop_; ++i)
-        {
-            char c = buffer_.charAt(i);
-            if (c == '\n')
-            {
-                num_newlines++;
-                lines_.add(new Line(line_start, i, false, true));
-                line_start = i+1;
-            }
-        }
-        lines_.add(new Line(line_start, buffer_stop_, false, false));
-
-        if (num_newlines == 0)
+        if (num_nl_ == 0)
         {
             return buildCompactQuote(indent);
         }
         return "???";
     }
 
-    protected void analyzeForPrint(ArrayList<QuotePart> parts)
+    protected void analyzeForPrint()
     {
         char c = 0;
-        int i = buffer_start_;
-        has_nl_ = false;
 
+        num_nl_ = 0;
         min_indent_ = Integer.MAX_VALUE;
+
+        starts_or_ends_with_single_quote_ = buffer_.charAt(buffer_start_) == '\'' || buffer_.charAt(buffer_stop_) == '\'';
+        starts_or_ends_with_double_quote_ = buffer_.charAt(buffer_start_) == '"' || buffer_.charAt(buffer_stop_) == '"';
+
+        int i = buffer_start_;
+        int line_start = i;
+        int line_indent = 0;
+
+        if (buffer_.charAt(buffer_start_) == ' ')
+        {
+            char cc = buffer_.charAt(i+1);
+            line_indent = countSame(i+1, buffer_stop_);
+            if (line_indent < min_indent_) min_indent_ = line_indent;
+        }
+
         for (; i < buffer_stop_; ++i)
         {
             c = buffer_.charAt(i);
 
             if (c == '\n')
             {
-                has_nl_ = true;
+                num_nl_++;
+                lines_.add(new Line(line_start, i, line_indent, false, true));
+                line_start = i+1;
+
+                if (i+1 < buffer_stop_)
+                {
+                    char cc = buffer_.charAt(i+1);
+                    int len = countSame(i+1, buffer_stop_);
+                    if (len < min_indent_) min_indent_ = len;
+                }
                 continue;
             }
 
             if (c == '\'')
             {
-                int len = countSame(i, stop_);
+                int len = countSame(i, buffer_stop_);
                 if (len > max_num_consecutive_single_quotes_) max_num_consecutive_single_quotes_ = len;
                 i += len;
                 continue;
             }
+
+            if (c == '"')
+            {
+                int len = countSame(i, buffer_stop_);
+                if (len > max_num_consecutive_double_quotes_) max_num_consecutive_double_quotes_ = len;
+                i += len;
+                continue;
+            }
         }
+        if (line_start < buffer_stop_) lines_.add(new Line(line_start, buffer_stop_, line_indent, false, false));
     }
 }
