@@ -39,9 +39,9 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
         directory = build
         plugins {
             plugin {
-                groupId  = org.codehaus.mojo
+                groupId    = org.codehaus.mojo
                 artifactId = versions-maven-plugin
-                version = 2.16.2
+                version    = 2.16.2
             }
             plugin {
                 groupId    = org.apache.maven.plugins
@@ -113,13 +113,13 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
             }
             // Upload to Sonatype
             plugin {
-                groupId = org.sonatype.plugins
+                groupId    = org.sonatype.plugins
                 artifactId = nexus-staging-maven-plugin
-                version = 1.6.13
+                version    = 1.6.13
                 extensions = true
                 configuration {
-                    serverId = ossrh
-                    nexusUrl = https://oss.sonatype.org/
+                    serverId              = ossrh
+                    nexusUrl              = https://oss.sonatype.org/
                     autoReleaseAfterClose = true
                 }
             }
@@ -140,22 +140,22 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
         dependency {
             groupId    = javax.xml.bind
             artifactId = jaxb-api
-            version    = 2.3.0
+            version    = 2.4.0-b180830.0359
         }
         dependency {
             groupId    = com.sun.xml.bind
             artifactId = jaxb-core
-            version    = 2.3.0
+            version    = 4.0.6
         }
         dependency {
             groupId    = com.sun.xml.bind
             artifactId = jaxb-impl
-            version    = 2.3.0
+            version    = 4.0.6
         }
         dependency {
             groupId    = junit
             artifactId = junit
-            version    = 4.13.1
+            version    = 4.13.2
             scope      = test
         }
     }
