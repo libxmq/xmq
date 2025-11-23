@@ -87,6 +87,14 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
                         }
                     }
                 }
+                configuration {
+                    // Fail build if Javadoc errors are found
+                    failOnError = true
+                    // Treat warnings as errors
+                    additionalJOptions {
+                        additionalJOption = -Xdoclint:all
+                    }
+                }
             }
             // Sign artifacts
             plugin {

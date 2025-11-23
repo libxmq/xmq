@@ -24,30 +24,27 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 package org.libxmq.imp;
 
 /** Specify the file/buffer content type.
-
-    XMQContentType:
-    @XMQ_CONTENT_UNKNOWN: a failed content detect will mark the content type as unknown
-    @XMQ_CONTENT_DETECT: auto detect the content type
-    @XMQ_CONTENT_XMQ: xmq detected
-    @XMQ_CONTENT_HTMQ: htmq detected
-    @XMQ_CONTENT_XML: xml detected
-    @XMQ_CONTENT_HTML: html detected
-    @XMQ_CONTENT_JSON: json detected
-    @XMQ_CONTENT_IXML: ixml selected
-    @XMQ_CONTENT_TEXT: valid utf8 text input/output is selected
-    @XMQ_CONTENT_CLINES: xpath="c-escaped string"
-
-    Specify the file/buffer content type.
 */
 public enum XMQContentType
 {
+    /** a failed content detect will mark the content type as unknown */
     XMQ_CONTENT_UNKNOWN,
+    /** auto detect the content type */
     XMQ_CONTENT_DETECT,
+    /** xmq detected */
     XMQ_CONTENT_XMQ,
+    /** htmq detected */
     XMQ_CONTENT_HTMQ,
+    /** xml detected */
     XMQ_CONTENT_XML,
+    /** html detected */
     XMQ_CONTENT_HTML,
+    /** json detected */
     XMQ_CONTENT_JSON,
+    /** ixml selected */
+    XMQ_CONTENT_IXML,
+    /** valid utf8 text input/output is selected */
     XMQ_CONTENT_TEXT,
+    /** xpath="c-escaped string" */
     XMQ_CONTENT_CLINES;
 }

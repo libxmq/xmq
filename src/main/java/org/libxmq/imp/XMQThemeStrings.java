@@ -25,8 +25,8 @@ package org.libxmq.imp;
 
 /**
     XMQThemeStrings:
-    @pre: string to inserted before the token
-    @post: string to inserted after the token
+    @param pre string to inserted before the token
+    @param post string to inserted after the token
 
     A color string object is stored for each type of token.
     It can store the ANSI color prefix, the html span etc.
