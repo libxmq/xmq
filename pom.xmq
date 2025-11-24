@@ -113,14 +113,12 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
             }
             // Upload to Sonatype
             plugin {
-                groupId    = org.sonatype.plugins
-                artifactId = nexus-staging-maven-plugin
-                version    = 1.6.13
+                groupId    = org.sonatype.central
+                artifactId = central-publishing-maven-plugin
+                version    = 0.9.0
                 extensions = true
                 configuration {
-                    serverId              = ossrh
-                    nexusUrl              = https://oss.sonatype.org/
-                    autoReleaseAfterClose = true
+                    publishingServerId = central
                 }
             }
         }
@@ -167,16 +165,6 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
                 version    = 3.12.0
                 configuration
             }
-        }
-    }
-    distributionManagement {
-        snapshotRepository {
-            id  = ossrh
-            url = https://s01.oss.sonatype.org/content/repositories/snapshots
-        }
-        repository {
-            id  = ossrh
-            url = https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/
         }
     }
 }
