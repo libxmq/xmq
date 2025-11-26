@@ -737,6 +737,7 @@ public abstract class XMQParser extends XMQParseCallbacks
             int stop = i_;
             do_equals(start_line, start_col, start, stop, stop);
             parse_xmq_value(XMQLevel.LEVEL_ATTR_VALUE);
+            do_equals_done(line_, col_, i_, i_, i_);
             return;
         }
     }
@@ -873,8 +874,8 @@ public abstract class XMQParser extends XMQParseCallbacks
             stop = i_;
 
             do_equals(start_line, start_col, start, stop, stop);
-
             parse_xmq_value(XMQLevel.LEVEL_ELEMENT_VALUE);
+            do_equals_done(line_, col_, i_, i_, i_);
             return;
         }
 

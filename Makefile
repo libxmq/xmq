@@ -289,7 +289,7 @@ import_category:
 .PHONY: all release debug asan test test_release test_debug clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc
 
 pom.xml: pom.xmq jproject.settings
-	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; echo "Generated pom.xml" ; fi
+	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; xmllint --format pom.xml > tmpo; mv tmpo pom.xml; echo "Generated pom.xml" ; fi
 	@. ./jproject.settings ; if ! grep -q "= $$VERSION" pom.xmq ; then echo "Version $$VERSION not found in pom.xmq"; exit 1; fi
 	@. ./jproject.settings ; if ! grep -q "= $$ARTIFACTID" pom.xmq ; then echo "Artifactid $$ARTIFACTID not found in pom.xmq"; exit 1; fi
 	@. ./jproject.settings ; if ! grep -q "= $$GROUPID" pom.xmq ; then echo "Groupid $$GROUPID not found in pom.xmq"; exit 1; fi

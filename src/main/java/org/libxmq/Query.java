@@ -24,9 +24,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 package org.libxmq;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.libxmq.*;
 import org.libxmq.imp.*;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -44,6 +46,7 @@ public class Query
     private Node node_;
     private XPathFactory xpath_factory_;
     private XPath xpath_;
+    private boolean optional_;
 
     /**
        Build a new query from a DOM node.
@@ -54,6 +57,33 @@ public class Query
         node_ = node;
         xpath_factory_ = XPathFactory.newInstance();
         xpath_ = xpath_factory_.newXPath();
+        optional_ = false;
+    }
+
+    /**
+       Build a new query from a DOM node and set the optional value.
+       @param node The DOM node from which the paths start when querying.
+       @param xpf The XPathFactory
+       @param xp The xpath
+       @param optional If set to true, then queries will not throw NotFoundException.
+    */
+    Query(Node node, XPathFactory xpf, XPath xp, boolean optional)
+    {
+        node_ = node;
+        xpath_factory_ = xpf;
+        xpath_ = xp;
+        optional_ = optional;
+    }
+
+    /**
+       Build a query that will not throw NotFoundException since the requested value is optional.
+       Instead the query returns null.
+       Queries will still throw DecodingException or TooManyExceptions....
+       @return A new Query object based on the same node.
+    */
+    public Query optional()
+    {
+        return new Query(node_, xpath_factory_, xpath_, true);
     }
 
     /**
@@ -95,6 +125,31 @@ public class Query
     */
     public void expect(String xpath, NodeCallback cb) throws NotFoundException
     {
+    }
+
+    /**
+       Fetches a single element from the xpath.
+       @param xpath An xpath that is assumed to match only a single , for example: /library
+       @throws NotFoundException if the expected xpath was not found.
+       @throws TooManyException  if more than one element matched the xpath.
+    */
+    public Element element(String xpath) throws NotFoundException, TooManyException
+    {
+        try
+        {
+            XPathExpression expr = getXPathExpression(xpath);
+            Element e = (Element)expr.evaluate(node_, XPathConstants.NODE);
+            if (e == null)
+            {
+                if (optional_) return null;
+                throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
+            }
+            return e;
+        }
+        catch (XPathExpressionException e)
+        {
+            throw new NotFoundException("Invalid xpath "+xpath+" below node "+Util.getXPath(node()));
+        }
     }
 
     /**
@@ -234,7 +289,11 @@ public class Query
         {
             XPathExpression expr = getXPathExpression(xpath);
             Node n = (Node)expr.evaluate(node_, XPathConstants.NODE);
-            if (n == null) throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
+            if (n == null)
+            {
+                if (optional_) return null;
+                throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
+            }
             String text = n.getTextContent();
             return text;
         }
@@ -262,7 +321,30 @@ public class Query
         return null; // not found
     }
 
-    // var speed = q.optional(()->q.getInt("speed", "..."));
-    // var speed = q.optional(()->q.getInt("speed", "0 <= speed <= 200"));
-    // var weight = q.optional(()->q.getInt("weight", "minInclusive(value=0) maxInclusive(value=200)"));
+    /**
+       Fetches a single element and wraps it inside a query from the xpath.
+       @param xpath An xpath that is assumed to match only a single , for example: /library
+       @throws NotFoundException if the expected xpath was not found.
+       @throws TooManyException  if more than one element matched the xpath.
+       @return Query element.
+    */
+    public Query query(String xpath) throws NotFoundException, TooManyException
+    {
+        try
+        {
+            XPathExpression expr = getXPathExpression(xpath);
+            Element e = (Element)expr.evaluate(node_, XPathConstants.NODE);
+            if (e == null)
+            {
+                if (optional_) return null;
+                throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
+            }
+            return new Query(e);
+        }
+        catch (XPathExpressionException e)
+        {
+            throw new NotFoundException("Invalid xpath "+xpath+" below node "+Util.getXPath(node()));
+        }
+    }
+
 }

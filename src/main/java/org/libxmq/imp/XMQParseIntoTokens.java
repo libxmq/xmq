@@ -157,6 +157,11 @@ class XMQParseIntoTokens extends XMQParser
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
+    protected void do_equals_done(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        // Empty token, only used for popping in to DOM parser.
+    }
+
     protected void do_attr_value_text(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
         System.out.print("[attr_value_text "+

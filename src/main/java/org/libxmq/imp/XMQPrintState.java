@@ -27,7 +27,7 @@ import org.libxmq.*;
 import java.util.Stack;
 import org.w3c.dom.Node;
 
-class XMQPrintState
+public class XMQPrintState
 {
     int current_indent;
     int line_indent;
@@ -45,7 +45,7 @@ class XMQPrintState
     StringBuilder buffer = new StringBuilder();
 
 
-    void indent()
+    public void indent()
     {
         int n = current_indent;
         while (n > 0)
@@ -55,9 +55,14 @@ class XMQPrintState
         }
     }
 
-    void defaultTheme()
+    public void defaultTheme()
     {
         theme = new XMQTheme();
         theme.installDefault();
+    }
+
+    public StringBuilder buffer()
+    {
+        return buffer;
     }
 }

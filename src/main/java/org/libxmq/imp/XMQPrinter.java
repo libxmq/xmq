@@ -180,7 +180,7 @@ public class XMQPrinter
         print_utf8(ps, COLOR_entity, 1, ";", NULL);*/
     }
 
-    void print_node(XMQPrintState ps, Node node, int align)
+    public void print_node(XMQPrintState ps, Node node, int align)
     {
         // Standalone quote must be quoted: 'word' 'some words'
         if (is_content_node(node))

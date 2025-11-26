@@ -29,10 +29,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.EnumSet;
+import java.io.StringWriter;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.libxmq.imp.XMQParseIntoDOM;
+import org.libxmq.imp.XMQPrintState;
+import org.libxmq.imp.XMQPrinter;
 import org.w3c.dom.Document;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 /**
    The XMQ class is used to parse/print/render XMQ/XML/HTML/JSON documents.
@@ -101,6 +107,29 @@ public class XMQ
     }
 
     /**
+       Parse a file containing XMQ/XML/HTML/JSON/CLINES and return a Query object to the DOM.
+       @param file The file to parse.
+       @param is The input settings, should white space be trimmed, should text nodes be merged etc.
+       @return A Query object.
+       @throws IOException if file cannot be read.
+     */
+    public Query queryFile(Path file, InputSettings is) throws IOException
+    {
+        return new Query(parseFile(file, is));
+    }
+
+    /**
+       Parse a buffer containing XMQ/XML/HTML/JSON/CLINES and return a Query object for the DOM.
+       @param buffer The string to parse.
+       @param is The input settings, should white space be trimmed, should text nodes be merged etc.
+       @return A Query object.
+     */
+    public Query queryBuffer(String buffer, InputSettings is)
+    {
+        return new Query(parseBuffer(buffer, is));
+    }
+
+    /**
        Print the document as XMQ.
        @param doc Document to print.
        @param os  Settings for printing.
@@ -108,7 +137,11 @@ public class XMQ
      */
     public String toXMQ(Document doc, OutputSettings os)
     {
-        return "lll";
+        XMQPrintState ps = new XMQPrintState();
+        ps.defaultTheme();
+        XMQPrinter pr = new XMQPrinter();
+        pr.print_node(ps, doc, 0);
+        return ps.buffer().toString();
     }
 
     /**
@@ -121,7 +154,24 @@ public class XMQ
      */
     public String toXML(Document doc, OutputSettings os)
     {
-        return "lll";
+        try
+        {
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "no");
+            DOMSource source = new DOMSource(doc);
+
+            StringWriter writer = new StringWriter();
+            StreamResult result = new StreamResult(writer);
+
+            transformer.transform(source, result);
+            return writer.toString();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     /**

@@ -29,6 +29,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -39,8 +40,9 @@ public class XMQParseIntoDOM extends XMQParser
     DocumentBuilder builder_;
     Document doc_;
 
-    Stack<Node> element_stack_; // Top is last created node
-    Node element_last_; // Last added element, might get pushed to stack if { is found.
+    Stack<Element> element_stack_; // Top is last created node
+    Element element_last_; // Last added element, might get pushed to stack if { is found or = is found.
+    Attr attr_last_; // Last created attribute
 
     Node add_pre_node_before_; // Used when retrofitting pre-root comments and doctype found in json.
     Node add_post_node_after_; // Used when retrofitting post-root comments found in json.
@@ -113,6 +115,7 @@ public class XMQParseIntoDOM extends XMQParser
     void create_node(int start, int stop)
     {
         String name = buffer_.substring(start, stop);
+
         if (element_namespace_ != null)
         {
             // Simply retrofit the namespace. The jdk API is simpler than the libxml2 api.
@@ -131,8 +134,8 @@ public class XMQParseIntoDOM extends XMQParser
         }
         else
         {
-            Node new_node = doc_.createElement(name);
-            Node parent = element_stack_.empty()?null:element_stack_.peek();
+            Element new_node = doc_.createElement(name);
+            Element parent = element_stack_.empty()?null:element_stack_.peek();
             element_last_ = new_node;
 
             if (parent != null)
@@ -150,7 +153,7 @@ public class XMQParseIntoDOM extends XMQParser
                 else
                 {
                     // We have an implicit root and it is different from name.
-                    Node implicit_root = doc_.createElement(implicit_root_);
+                    Element implicit_root = doc_.createElement(implicit_root_);
                     element_stack_.push(implicit_root);
                     implicit_root.appendChild(new_node);
                 }
@@ -270,24 +273,46 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_apar_right(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        attr_last_ = null;
     }
 
     protected void do_brace_left(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
         element_stack_.push(element_last_);
+        element_last_ = null;
     }
 
     protected void do_brace_right(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        element_stack_.pop();
+        element_last_ = element_stack_.pop();
     }
 
     protected void do_equals(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        element_stack_.push(element_last_);
+        element_last_ = null;
+    }
+
+    protected void do_equals_done(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        element_last_ = element_stack_.pop();
     }
 
     protected void do_attr_value_text(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        /*
+          if (state->declaring_xmlns)
+          {
+          assert(state->declaring_xmlns_namespace);
+
+          update_namespace_href(state, (xmlNsPtr)state->declaring_xmlns_namespace, start, stop);
+          state->declaring_xmlns = false;
+          state->declaring_xmlns_namespace = NULL;
+          return;
+          }
+        */
+        org.w3c.dom.Text text = doc_.createTextNode(buffer_.substring(start,stop));
+        attr_last_.appendChild(text);
     }
 
     protected void do_element_value_text(int start_line, int start_col, int start, int stop, int stop_suffix)
@@ -335,6 +360,17 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_attr_key(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        String name = buffer_.substring(start, stop);
+
+        if (attribute_namespace_ != null)
+        {
+            // Simply retrofit the namespace. The jdk API is simpler than the libxml2 api.
+            name = attribute_namespace_ + ":" + name;
+            attribute_namespace_ = null;
+        }
+        Attr new_attr = doc_.createAttribute("id");
+        attr_last_ = new_attr;
+        element_last_.setAttributeNodeNS(new_attr);
     }
 
     protected void do_ns_colon(int start_line, int start_col, int start, int stop, int stop_suffix)
