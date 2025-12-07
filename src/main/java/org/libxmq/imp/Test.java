@@ -36,7 +36,7 @@ public class Test
         }
         """;
 
-    public Test() throws IOException
+    public Test() throws IOException, ParseException
     {
         XMQ xmq = new XMQ();
         InputSettings is = new InputSettings().setImplicitRoot("cars").setTrimNone(true);

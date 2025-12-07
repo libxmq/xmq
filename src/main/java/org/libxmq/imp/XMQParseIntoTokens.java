@@ -25,134 +25,266 @@ package org.libxmq.imp;
 
 class XMQParseIntoTokens extends XMQParser
 {
+    boolean render_tokens_ = false;
+    boolean debug_content_ = false;
+    boolean debug_tokens_ = false;
+
+    void debugTokens()
+    {
+        debug_tokens_ = true;
+    }
+
+    void debugContent()
+    {
+        debug_content_ = true;
+    }
+
+    void renderTokens()
+    {
+        render_tokens_ = true;
+    }
+
     protected void do_whitespace(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        System.out.print("[whitespace "+
+        if (debug_tokens_)
+            System.out.print("[whitespace "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        System.out.print("[quote "+
-                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        if (debug_tokens_)
+        {
+            System.out.print("[quote "+
+                             Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        }
+
+        if (debug_content_)
+        {
+            // First remove the surrouning ' or ".
+            var p = UtilParseQuote.findQuoteStartStop(buffer_, start, stop);
+            // Then remove incidental whitespace.
+            String q = UtilParseQuote.trimQuote(buffer_, p.left(), p.right());
+
+            System.out.print("{quote "+
+                             Util.xmq_quote_as_c(q, 0, q.length(), true)+"}");
+        }
     }
 
     protected void do_element_value_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        System.out.print("[element_value_quote "+
-                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        if (debug_tokens_)
+        {
+            System.out.print("[element_value_quote "+
+                             Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        }
+        if (debug_content_)
+        {
+            // First remove the surrouning ' or ".
+            var p = UtilParseQuote.findQuoteStartStop(buffer_, start, stop);
+            // Then remove incidental whitespace.
+            String q = UtilParseQuote.trimQuote(buffer_, p.left(), p.right());
+
+            System.out.print("{quote "+
+                             Util.xmq_quote_as_c(q, 0, q.length(), true)+"}");
+        }
     }
 
     protected void do_element_value_compound_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[element_value_compound_quote "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_attr_value_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        System.out.print("[attr_value_quote "+
-                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        if (debug_tokens_)
+        {
+            System.out.print("[attr_value_quote "+
+                             Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        }
+
+        if (debug_content_)
+        {
+            // First remove the surrouning ' or ".
+            var p = UtilParseQuote.findQuoteStartStop(buffer_, start, stop);
+            // Then remove incidental whitespace.
+            String q = UtilParseQuote.trimQuote(buffer_, p.left(), p.right());
+
+            System.out.print("{quote "+
+                             Util.xmq_quote_as_c(q, 0, q.length(), true)+"}");
+        }
     }
 
     protected void do_attr_value_compound_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        System.out.print("[attr_value_compound_quote "+
-                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        if (debug_tokens_)
+        {
+            System.out.print("[attr_value_compound_quote "+
+                             Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        }
+
+        if (debug_content_)
+        {
+            // First remove the surrouning ' or ".
+            var p = UtilParseQuote.findQuoteStartStop(buffer_, start, stop);
+            // Then remove incidental whitespace.
+            String q = UtilParseQuote.trimQuote(buffer_, p.left(), p.right());
+
+            System.out.print("{quote "+
+                             Util.xmq_quote_as_c(q, 0, q.length(), true)+"}");
+        }
     }
 
     protected void do_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[entity "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_element_value_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[element_value_entity "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_element_value_compound_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[element_value_compound_entity "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_attr_value_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[attr_value_entity "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_attr_value_compound_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[attr_value_compound_entity "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_comment(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        System.out.print("[comment "+
-                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        if (debug_tokens_)
+        {
+            System.out.print("[comment "+
+                             Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        }
+
+        if (debug_content_)
+        {
+            // First remove the surrouning ' or ".
+            var p = UtilParseQuote.findCommentStartStop(buffer_, start, stop);
+            // Then remove incidental whitespace.
+            String q = UtilParseQuote.trimQuote(buffer_, p.left(), p.right());
+
+            System.out.print("{comment "+
+                             Util.xmq_quote_as_c(q, 0, q.length(), true)+"}");
+        }
     }
 
     protected void do_comment_continuation(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        System.out.print("[comment_continuation "+
-                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        if (debug_tokens_)
+        {
+            System.out.print("[comment_continuation "+
+                             Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        }
+
+        if (debug_content_)
+        {
+            // First remove the surrouning ' or ".
+            var p = UtilParseQuote.findCommentStartStop(buffer_, start, stop);
+            // Then remove incidental whitespace.
+            String q = UtilParseQuote.trimQuote(buffer_, p.left(), p.right());
+
+            System.out.print("{comment_continuation "+
+                             Util.xmq_quote_as_c(q, 0, q.length(), true)+"}");
+        }
     }
 
     protected void do_element_key(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[element_key "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_element_name(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[element_name "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_element_ns(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[element_ns "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_colon(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[colon "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_apar_left(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[apar_left "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_apar_right(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[apar_right "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    protected void do_cpar_left(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        if (debug_tokens_)
+        System.out.print("[cpar_left "+
+                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+    }
+
+    protected void do_cpar_right(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+        if (debug_tokens_)
+        System.out.print("[cpar_right "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_brace_left(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[brace_left "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_brace_right(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[brace_right "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_equals(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[equals "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
@@ -164,36 +296,58 @@ class XMQParseIntoTokens extends XMQParser
 
     protected void do_attr_value_text(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        System.out.print("[attr_value_text "+
-                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        if (debug_tokens_)
+        {
+            System.out.print("[attr_value_text "+
+                             Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        }
+
+        if (debug_content_)
+        {
+            System.out.print("{value "+
+                             Util.xmq_quote_as_c(buffer_, start, stop, true)+"}");
+        }
     }
 
     protected void do_element_value_text(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        System.out.print("[element_value_text "+
-                         Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        if (debug_tokens_)
+        {
+            System.out.print("[element_value_text "+
+                             Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        }
+
+        if (debug_content_)
+        {
+            System.out.print("{value "+
+                             Util.xmq_quote_as_c(buffer_, start, stop, true)+"}");
+        }
     }
 
     protected void do_ns_declaration(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[ns_declaration "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_attr_key(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[attr_key "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_ns_colon(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[ns_colon "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }
 
     protected void do_attr_ns(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        if (debug_tokens_)
         System.out.print("[attr_ns "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
     }

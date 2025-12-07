@@ -218,15 +218,24 @@ public class XMQParseIntoDOM extends XMQParser
 
     String xmq_un_comment(int start, int stop)
     {
-        return buffer_.substring(start, stop);
+        var pair = UtilParseQuote.findCommentStartStop(buffer_, start, stop);
+        String content = UtilParseQuote.trimQuote(buffer_, pair.left(), pair.right());
+        return content;
     }
 
     protected void do_comment(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        Node parent = element_stack_.empty()?null:element_stack_.peek();
         String trimmed = no_trim_quotes_?buffer_.substring(start, stop):xmq_un_comment(start, stop);
         Node n = doc_.createComment(trimmed);
 
+        Node parent = element_stack_.empty()?null:element_stack_.peek();
+        if (parent == null)
+        {
+            parent = doc_;
+        }
+        parent.appendChild(n);
+
+        /*
         if (add_pre_node_before_ != null)
         {
             // Insert comment before this node.
@@ -239,9 +248,8 @@ public class XMQParseIntoDOM extends XMQParser
             parent.appendChild(n);
         }
         else
-        {
-            parent.appendChild(n);
-        }
+        {*/
+            //}
     }
 
     protected void do_comment_continuation(int start_line, int start_col, int start, int stop, int stop_suffix)
@@ -274,6 +282,14 @@ public class XMQParseIntoDOM extends XMQParser
     protected void do_apar_right(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
         attr_last_ = null;
+    }
+
+    protected void do_cpar_left(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
+    }
+
+    protected void do_cpar_right(int start_line, int start_col, int start, int stop, int stop_suffix)
+    {
     }
 
     protected void do_brace_left(int start_line, int start_col, int start, int stop, int stop_suffix)

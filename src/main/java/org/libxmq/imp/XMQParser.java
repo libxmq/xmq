@@ -23,9 +23,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq.imp;
 
+import org.libxmq.ParseException;
+import org.libxmq.ParseErrorCode;
+
 public abstract class XMQParser extends XMQParseCallbacks
 {
-    String source_name_; // Used for generating error messages.
+    String source_; // Used for generating error messages.
     String buffer_; // XMQ source to parse.
     String implicit_root_; // Assume that this is the first element name
 
@@ -33,10 +36,11 @@ public abstract class XMQParser extends XMQParseCallbacks
 
     // These three: i_, line_, col_, are only updated using the increment function.
     int i_; // Current parsing position.
+    int line_start_; // Position of most recent \n found.
     int line_; // Current line.
     int col_; // Current col.
 
-    XMQParseError error_nr_;
+    ParseErrorCode error_nr_;
     String generated_error_msg;
 
     boolean simulated; // When true, this is generated from JSON parser to simulate an xmq element name.
@@ -58,6 +62,10 @@ public abstract class XMQParser extends XMQParseCallbacks
     int last_compound_start_line_;
     int last_compound_start_col_;
 
+    int last_comment_start_;
+    int last_comment_start_line_;
+    int last_comment_start_col_;
+
     int last_equals_start_;
     int last_equals_start_line_;
     int last_equals_start_col_;
@@ -66,9 +74,9 @@ public abstract class XMQParser extends XMQParseCallbacks
     int last_suspicios_quote_end_line_;
     int last_suspicios_quote_end_col_;
 
-    public boolean parse(String buf, String name)
+    public boolean parse(String buf, String source) throws ParseException
     {
-        source_name_ = name;
+        source_ = source;
         buffer_ = buf;
         buffer_len_ = buf.length();
         i_ = 0;
@@ -79,6 +87,10 @@ public abstract class XMQParser extends XMQParseCallbacks
         {
             setup();
             parse_xmq();
+        }
+        catch(XMQRuntimeException e)
+        {
+            throw e.getParseException();
         }
         catch(Exception pe)
         {
@@ -98,6 +110,7 @@ public abstract class XMQParser extends XMQParseCallbacks
         col_++;
         if (c == '\n')
         {
+            line_start_ = i_+1;
             line_++;
             col_ = 1;
         }
@@ -239,6 +252,19 @@ public abstract class XMQParser extends XMQParseCallbacks
         return i-i_;
     }
 
+    int findNLBackwards(int i, int max)
+    {
+        while (max > 0 && i > 0 && buffer_.charAt(i) != '\n') { i--; max--; }
+        if (buffer_.charAt(i) == '\n') i++;
+        return i;
+    }
+
+    int findNL(int i, int max)
+    {
+        while (max > 0 && i < buffer_len_ && buffer_.charAt(i) != '\n') { i++; max--; }
+        return i;
+    }
+
     Pair<Integer,Integer> eat_xmq_quote()
     {
         // Grab ' or " to know which kind of quote it is.
@@ -281,8 +307,8 @@ public abstract class XMQParser extends XMQParseCallbacks
             count = count_xmq_quotes(q);
             if (count > depth)
             {
-                error_nr_ = XMQParseError.XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES;
-                throw new XMQParseException(error_nr_);
+                error_nr_ = ParseErrorCode.XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES;
+                throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
             }
             else if (count < depth)
             {
@@ -308,8 +334,15 @@ public abstract class XMQParser extends XMQParseCallbacks
 
         if (depth != 0)
         {
-            error_nr_ = XMQParseError.XMQ_ERROR_QUOTE_NOT_CLOSED;
-            throw new XMQParseException(error_nr_);
+            error_nr_ = ParseErrorCode.XMQ_ERROR_QUOTE_NOT_CLOSED;
+            throw new XMQRuntimeException(
+                new ParseException(error_nr_,
+                                   buffer_.substring(
+                                       findNLBackwards(last_quote_start_, 200),
+                                       findNL(last_quote_start_, 200)),
+                                   last_quote_start_line_,
+                                   last_quote_start_col_,
+                                   source_));
         }
 
         /*
@@ -373,8 +406,8 @@ public abstract class XMQParser extends XMQParseCallbacks
         }
         if (expect_semicolon)
         {
-            error_nr_ = XMQParseError.XMQ_ERROR_ENTITY_NOT_CLOSED;
-            throw new XMQParseException(error_nr_);
+            error_nr_ = ParseErrorCode.XMQ_ERROR_ENTITY_NOT_CLOSED;
+            throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
         }
     }
 
@@ -405,6 +438,83 @@ public abstract class XMQParser extends XMQParseCallbacks
         case LEVEL_ATTR_VALUE_COMPOUND:
             do_attr_value_compound_entity(start_line, start_col, start, stop, stop);
             break;
+        }
+    }
+
+    /** Parse a compound value, ie:  = ( '   ' &#10; '  info ' )
+        a compound can only occur after an = (equals) character.
+        The normal quoting with single quotes, is enough for all quotes except:
+        1) An attribute value with leading/ending whitespace including leading/ending newlines.
+        2) An attribute with a mix of quotes and referenced entities.
+        3) Compact xmq where actual newlines have to be replaced with &#10;
+
+        Note that an element key = ( ... ) can always  be replaced with key { ... }
+        so compound values are not strictly necessary for element key values.
+        However they are permitted for symmetry reasons.
+    */
+    void parse_xmq_compound(XMQLevel level)
+    {
+        int start = i_;
+        int start_line = line_;
+        int start_col = col_;
+
+        last_compound_start_ = start;
+        last_compound_start_line_ = start_line;
+        last_compound_start_col_ = start_col;
+        increment('(');
+        int stop = i_;
+
+        do_cpar_left(start_line, start_col, start, stop, stop);
+
+        parse_xmq_compound_children(Util.enter_compound_level(level));
+
+        char c = currentChar();
+        if (is_xmq_token_whitespace(c)) { parse_xmq_whitespace(); c = currentChar(); }
+
+        if (c != ')')
+        {
+            error_nr_ = ParseErrorCode.XMQ_ERROR_COMPOUND_NOT_CLOSED;
+            throw new XMQRuntimeException(
+                new ParseException(error_nr_,
+                                   buffer_.substring(
+                                       findNLBackwards(last_compound_start_, 200),
+                                       findNL(last_compound_start_, 200)),
+                                   last_compound_start_line_,
+                                   last_compound_start_col_,
+                                   source_));
+        }
+
+        start = i_;
+        start_line = line_;
+        start_col = col_;
+        increment(')');
+        stop = i_;
+
+        do_cpar_right(start_line, start_col, start, stop, stop);
+    }
+
+    /** Parse each compound child (quote or entity) until end of file or a ')' is found. */
+    void parse_xmq_compound_children(XMQLevel level)
+    {
+        while (i_ < buffer_len_)
+        {
+            char c = currentChar();
+            if (is_xmq_token_whitespace(c)) parse_xmq_whitespace();
+            else if (c == ')') break;
+            else if (is_xmq_quote_start(c)) parse_xmq_quote(level);
+            else if (is_xmq_entity_start(c)) parse_xmq_entity(level);
+            else
+            {
+                error_nr_ = ParseErrorCode.XMQ_ERROR_COMPOUND_MAY_NOT_CONTAIN;
+                throw new XMQRuntimeException(
+                    new ParseException(error_nr_,
+                                       buffer_.substring(
+                                           findNLBackwards(i_, 200),
+                                           findNL(i_, 200)),
+                                       line_,
+                                       col_,
+                                       source_));
+            }
         }
     }
 
@@ -478,8 +588,8 @@ public abstract class XMQParser extends XMQParseCallbacks
             if (n > num_slashes)
             {
                 // Oups, too many slashes.
-                error_nr_ = XMQParseError.XMQ_ERROR_COMMENT_CLOSED_WITH_TOO_MANY_SLASHES;
-                throw new XMQParseException(error_nr_);
+                error_nr_ = ParseErrorCode.XMQ_ERROR_COMMENT_CLOSED_WITH_TOO_MANY_SLASHES;
+                throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
             }
 
             assert(n == num_slashes);
@@ -494,8 +604,15 @@ public abstract class XMQParser extends XMQParseCallbacks
             return found_asterisk;
         }
         // We reached the end of the xmq and no */ was found!
-        error_nr_ = XMQParseError.XMQ_ERROR_COMMENT_NOT_CLOSED;
-        throw new XMQParseException(error_nr_);
+        error_nr_ = ParseErrorCode.XMQ_ERROR_COMMENT_NOT_CLOSED;
+        throw new XMQRuntimeException(
+                    new ParseException(error_nr_,
+                                   buffer_.substring(
+                                       findNLBackwards(last_comment_start_, 200),
+                                       findNL(last_comment_start_, 200)),
+                                   last_comment_start_line_,
+                                   last_comment_start_col_,
+                                   source_));
     }
 
     void parse_xmq_comment(char cc)
@@ -503,8 +620,10 @@ public abstract class XMQParser extends XMQParseCallbacks
         int start = i_;
         int start_line = line_;
         int start_col = col_;
-        int comment_start;
-        int comment_stop;
+
+        last_comment_start_ = start;
+        last_comment_start_line_ = line_;
+        last_comment_start_col_ = col_;
 
         Pair<Integer,Boolean> r = count_xmq_slashes();
         int n = r.left();
@@ -639,15 +758,15 @@ public abstract class XMQParser extends XMQParseCallbacks
         }
         else if (is_xmq_compound_start(c))
         {
-            // TODOparse_xmq_compound(state, level);
+            parse_xmq_compound(level);
         }
         else
         {
-            char cc = currentChar();
+            char cc = nextChar();
             if (unsafe_value_start(c, cc))
             {
-                error_nr_ = XMQParseError.XMQ_ERROR_VALUE_CANNOT_START_WITH;
-                throw new XMQParseException(error_nr_);
+                error_nr_ = ParseErrorCode.XMQ_ERROR_VALUE_CANNOT_START_WITH;
+                throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
             }
             parse_xmq_text_value(level);
         }
@@ -753,6 +872,12 @@ public abstract class XMQParser extends XMQParseCallbacks
         return 0;
     }
 
+    char nextChar()
+    {
+        if (i_+1 < buffer_len_) return buffer_.charAt(i_+1);
+        return 0;
+    }
+
     void parse_xmq_element_internal(boolean doctype, boolean pi)
     {
         char c = 0;
@@ -844,8 +969,8 @@ public abstract class XMQParser extends XMQParseCallbacks
             if (is_xmq_token_whitespace(c)) { parse_xmq_whitespace(); c = currentChar(); }
             if (c != ')')
             {
-                error_nr_ = XMQParseError.XMQ_ERROR_ATTRIBUTES_NOT_CLOSED;
-                throw new XMQParseException(error_nr_);
+                error_nr_ = ParseErrorCode.XMQ_ERROR_ATTRIBUTES_NOT_CLOSED;
+                throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
             }
 
             start = i_;
@@ -898,8 +1023,15 @@ public abstract class XMQParser extends XMQParseCallbacks
             if (is_xmq_token_whitespace(c)) { parse_xmq_whitespace(); c = currentChar(); }
             if (c != '}')
             {
-                error_nr_ = XMQParseError.XMQ_ERROR_BODY_NOT_CLOSED;
-                throw new XMQParseException(error_nr_);
+                error_nr_ = ParseErrorCode.XMQ_ERROR_BODY_NOT_CLOSED;
+                throw new XMQRuntimeException(
+                    new ParseException(error_nr_,
+                                   buffer_.substring(
+                                       findNLBackwards(last_body_start_, 200),
+                                       findNL(last_body_start_, 200)),
+                                   last_body_start_line_,
+                                   last_body_start_col_,
+                                   source_));
             }
 
             start = i_;
@@ -936,12 +1068,12 @@ public abstract class XMQParser extends XMQParseCallbacks
                 }
                 else */if (c == '\t')
                 {
-                    error_nr_ = XMQParseError.XMQ_ERROR_UNEXPECTED_TAB;
+                    error_nr_ = ParseErrorCode.XMQ_ERROR_UNEXPECTED_TAB;
                 }
                 else
                 {
-                    error_nr_ = XMQParseError.XMQ_ERROR_INVALID_CHAR;
-                    throw new XMQParseException(error_nr_);
+                    error_nr_ = ParseErrorCode.XMQ_ERROR_INVALID_CHAR;
+                    throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
                 }
                 System.err.println("Internal error.");
                 System.exit(1);

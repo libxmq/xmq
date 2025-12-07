@@ -32,6 +32,9 @@ import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.libxmq.ParseException;
+import org.libxmq.XMQ;
+
 public class Main
 {
     public static void main(String[] args) throws Exception
@@ -49,6 +52,14 @@ public class Main
             if (args.length > 1 && args[1].equals("tokenize"))
             {
                 XMQParseIntoTokens to = new XMQParseIntoTokens();
+                if (args.length > 2 && args[2].equals("--type=debugtokens"))
+                {
+                    to.debugTokens();
+                }
+                else if (args.length > 2 && args[2].equals("--type=debugcontent"))
+                {
+                    to.debugContent();
+                }
                 to.parse(content, args[0]);
                 System.out.println("");
             }
@@ -76,6 +87,10 @@ public class Main
                 System.out.print(ps.buffer);
             }
 
+        }
+        catch (ParseException e)
+        {
+            System.err.print(XMQ.printException(e));
         }
         catch (Exception e)
         {

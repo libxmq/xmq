@@ -208,4 +208,28 @@ public class Util {
     {
         return "";
     }
+
+    /**
+       enter_compound_level:
+
+       When parsing a value and the parser has entered a compound value,
+       the level for the child quotes/entities are now handled as
+       tokens inside the compound.
+
+       LEVEL_ELEMENT_VALUE -> LEVEL_ELEMENT_VALUE_COMPOUND
+       LEVEL_ATTR_VALUE -> LEVEL_ATTR_VALUE_COMPOUND
+       @param l Level
+       @return One level down.
+    */
+    static XMQLevel enter_compound_level(XMQLevel l)
+    {
+        assert(l != XMQLevel.LEVEL_XMQ);
+
+        if (l == XMQLevel.LEVEL_ELEMENT_VALUE) return XMQLevel.LEVEL_ELEMENT_VALUE_COMPOUND;
+        if (l == XMQLevel.LEVEL_ATTR_VALUE) return XMQLevel.LEVEL_ATTR_VALUE_COMPOUND;
+
+        assert(false);
+        return null;
+    }
+
 }

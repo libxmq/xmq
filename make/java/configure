@@ -74,7 +74,6 @@ echo "# Generated $(date)" > build/java/spec.mk
     echo "GROUPID:=$GROUPID"
     echo "ARTIFACTID:=$ARTIFACTID"
     echo "VERSION:=$VERSION"
-    echo "XMQ:=$XMQ"
     echo "M2REPO:=$M2REPO"
     echo "JAVA:=$JAVA"
     echo "JAVA_VERSION:='$JAVA_VERSION'"
@@ -107,4 +106,26 @@ ${EXECUTABLE}:=\$(BUILD)/\$(MOST_RECENT)_bin/${EXECUTABLE}
 
 EOF
 
-echo "Generated build/java/spec.mk you can now run make"
+echo "# Generated $(date)" > build/java/spec.sh
+{
+    echo "SPEC_MK=$BUILD/java/spec.mk"
+    echo "EXECUTABLE=$EXECUTABLE"
+    echo "GROUPID=$GROUPID"
+    echo "ARTIFACTID=$ARTIFACTID"
+    echo "VERSION=$VERSION"
+    echo "M2REPO=$M2REPO"
+    echo "JAVA=$JAVA"
+    echo "JAVA_VERSION='$JAVA_VERSION'"
+    echo "JAVA_HOME=$JAVA_HOME"
+    echo "GIT_ROOT=$CURDIR"
+    echo "BUILD=$BUILD"
+    echo "BUILD_MVN_BIN=$BUILD_MVN_BIN"
+    echo "BUILD_JAVAC_BIN=$BUILD_JAVAC_BIN"
+    echo "BUILD_GRAAL_BIN=$BUILD_GRAAL_BIN"
+    echo "GEN_SRC=$GEN_SRC"
+    echo "PROJECT_DEPS=$PROJECT_DEPS"
+    echo "TEST_MODELS=$TEST_MODELS"
+    echo "MAVEN_OPTS=$MAVEN_OPTS"
+} >> build/java/spec.sh
+
+echo "Generated build/java/spec.mk and spec.sh, you can now run make"

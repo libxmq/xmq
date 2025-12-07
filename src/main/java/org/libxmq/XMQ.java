@@ -24,21 +24,23 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 package org.libxmq;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.EnumSet;
-import java.io.StringWriter;
+import java.util.Locale;
+import java.util.ResourceBundle;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import org.libxmq.imp.XMQParseIntoDOM;
 import org.libxmq.imp.XMQPrintState;
 import org.libxmq.imp.XMQPrinter;
 import org.w3c.dom.Document;
-import javax.xml.transform.*;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
 /**
    The XMQ class is used to parse/print/render XMQ/XML/HTML/JSON documents.
@@ -86,8 +88,9 @@ public class XMQ
        @param is The input settings, should white space be trimmed, should text nodes be merged etc.
        @return A DOM document.
        @throws IOException if file cannot be read.
+       @throws ParseException if the parse failed.
      */
-    public Document parseFile(Path file, InputSettings is) throws IOException
+    public Document parseFile(Path file, InputSettings is) throws IOException, ParseException
     {
         String buffer = Files.readString(file, StandardCharsets.UTF_8);
         return parseBuffer(buffer, is);
@@ -98,8 +101,9 @@ public class XMQ
        @param buffer The string to parse.
        @param is The input settings, should white space be trimmed, should text nodes be merged etc.
        @return A DOM document.
+       @throws ParseException if the parse failed.
      */
-    public Document parseBuffer(String buffer, InputSettings is)
+    public Document parseBuffer(String buffer, InputSettings is) throws ParseException
     {
         XMQParseIntoDOM pa = new XMQParseIntoDOM();
         pa.parse(buffer, "buffer");
@@ -112,8 +116,9 @@ public class XMQ
        @param is The input settings, should white space be trimmed, should text nodes be merged etc.
        @return A Query object.
        @throws IOException if file cannot be read.
+       @throws ParseException if the parse failed.
      */
-    public Query queryFile(Path file, InputSettings is) throws IOException
+    public Query queryFile(Path file, InputSettings is) throws IOException, ParseException
     {
         return new Query(parseFile(file, is));
     }
@@ -123,8 +128,9 @@ public class XMQ
        @param buffer The string to parse.
        @param is The input settings, should white space be trimmed, should text nodes be merged etc.
        @return A Query object.
+       @throws ParseException if the parse failed.
      */
-    public Query queryBuffer(String buffer, InputSettings is)
+    public Query queryBuffer(String buffer, InputSettings is) throws ParseException
     {
         return new Query(parseBuffer(buffer, is));
     }
@@ -236,4 +242,43 @@ public class XMQ
     {
         return "lll";
     }
+
+    /**
+       Render a locale adapted text cli error printout of a parse exception.
+       @param e The parse exception.
+       @param locale The locale to use.
+       @return A string to be printed on the console.
+    */
+    public static String printException(ParseException e, Locale locale)
+    {
+        StringBuilder out = new StringBuilder();
+        out.append(e.source());
+        out.append(":");
+        out.append(e.line());
+        out.append(":");
+        out.append(e.column());
+        out.append(": ");
+        ResourceBundle bundle = ResourceBundle.getBundle("Messages", locale);
+        out.append(bundle.getString(e.errorCode().toString()));
+        out.append("\n");
+        out.append(e.text());
+        out.append("\n");
+        for (int i = 1; i < e.column(); ++i)
+        {
+            out.append(" ");
+        }
+        out.append("^\n");
+        return out.toString();
+    }
+
+    /**
+       Render a locale adapted text cli error printout of a parse exception using the default locale.
+       @param e The parse exception.
+       @return A string to be printed on the console.
+    */
+    public static String printException(ParseException e)
+    {
+        return printException(e, Locale.getDefault());
+    }
+
 }

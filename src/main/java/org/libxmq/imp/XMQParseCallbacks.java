@@ -21,6 +21,8 @@ abstract class XMQParseCallbacks
     protected abstract void do_colon(int start_line, int start_col, int start, int stop, int stop_suffix);
     protected abstract void do_apar_left(int start_line, int start_col, int start, int stop, int stop_suffix);
     protected abstract void do_apar_right(int start_line, int start_col, int start, int stop, int stop_suffix);
+    protected abstract void do_cpar_left(int start_line, int start_col, int start, int stop, int stop_suffix);
+    protected abstract void do_cpar_right(int start_line, int start_col, int start, int stop, int stop_suffix);
     protected abstract void do_brace_left(int start_line, int start_col, int start, int stop, int stop_suffix);
     protected abstract void do_brace_right(int start_line, int start_col, int start, int stop, int stop_suffix);
     protected abstract void do_equals(int start_line, int start_col, int start, int stop, int stop_suffix);

@@ -49,6 +49,76 @@ public class UtilParseQuote extends UtilQuote
         return new Pair<>(i, j+1);
     }
 
+    /**
+     * Scan the string forwards to see if there is an asterisk after a sequence (at least one) of slashes.
+     * @param b String to search.
+     * @param start Start search here.
+     * @param stop Points to char efter last search.
+     * @return The index (start < index < stop) of the asterisk if not found.
+     */
+    static int asteriskAfterSlashes(String b, int start, int stop)
+    {
+        int i = start;
+        while (i < stop && b.charAt(i) == '/') i++;
+        if (b.charAt(i) == '*') return i;
+        return -1;
+    }
+
+    /**
+     * Scan the string backwords to see if there is an asterisk after a sequence (at least one) of slashes.
+     * @param b String to search.
+     * @param start Start limits search.
+     * @param stop Search begins at stop-1.
+     * @return The index (start < index < stop) of the asterisk or -1 if not found.
+     */
+    static int asteriskBeforeSlashes(String b, int start, int stop)
+    {
+        int i = stop-1;
+        while (i < stop && b.charAt(i) == '/') i--;
+        if (b.charAt(i) == '*') return i;
+        return -1;
+    }
+
+    /**
+     * Expects an xmq comment // or / * ... * / or //// *    * ////
+     * For example:
+     * '' -> (1,1)
+     */
+    public static Pair<Integer,Integer> findCommentStartStop(String b, int start, int stop)
+    {
+        assert (stop-start) >= 2 : "Must at least three characters.";
+        assert b.length() >= (stop-start) : "Buffer not long enogh.";
+
+        if (b.charAt(start) == '*')
+        {
+            // This is a comment continuation.
+            int a = asteriskBeforeSlashes(b, start, stop);
+            assert a > 0 : "Internal error in parser.";
+            return new Pair<>(start+1, a);
+        }
+
+        int from = asteriskAfterSlashes(b, start, stop);
+        if (from == -1)
+        {
+            // This a single line comment //....
+            // No asterisk found, so yes. Eat any single space.
+            assert b.charAt(stop-1) == '\n' : "Internal error";
+            if (b.charAt(start+2) == ' ') return new Pair<>(start+3, stop-1);
+            // Oups, no space //
+            return new Pair<>(start+2, stop);
+        }
+
+        int to = asteriskBeforeSlashes(b, start, stop);
+        assert to > 0 : "Internal error in parser.";
+
+        from++;
+        if (b.charAt(from) == ' ') from++;
+        if (b.charAt(to-1) == ' ') to--;
+        if (to < from) to = from;
+
+        return new Pair<>(from, to);
+    }
+
     public static String trimQuote(String b, int start, int stop)
     {
         UtilParseQuote upq = new UtilParseQuote(b, start, stop);
@@ -209,6 +279,12 @@ public class UtilParseQuote extends UtilQuote
                         }
                     }
                     i += len;
+                }
+                else
+                {
+                    // A non-space character followed the newline immediately.
+                    // min indent must be zero!
+                    min_indent_ = 0;
                 }
                 if (debug_) System.out.println("NEXT INDENT min_indent="+min_indent_);
             }

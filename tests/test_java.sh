@@ -22,7 +22,6 @@ fi
 mkdir -p $OUTPUT
 
 javac -d $OUTPUT -cp $OUTPUT:$JAR $TEST_FILE
-
 java -cp $OUTPUT:$JAR $TEST_NAME > /dev/null
 
 if [ "$?" = "0" ]

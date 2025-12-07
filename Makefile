@@ -310,7 +310,7 @@ javac: pom.xml
 testj: xmqj
 	@java -cp build/classes/ org.libxmq.imp.TestInternals
 	@echo "OK: TestInternals"
-#	@./tests/testj.sh build build/test_output
+	@./tests/testj.sh build build/test_output
 
 
 .PHONY: web

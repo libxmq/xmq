@@ -132,6 +132,7 @@ public class Query
        @param xpath An xpath that is assumed to match only a single , for example: /library
        @throws NotFoundException if the expected xpath was not found.
        @throws TooManyException  if more than one element matched the xpath.
+       @return The found element.
     */
     public Element element(String xpath) throws NotFoundException, TooManyException
     {
