@@ -28,6 +28,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import org.eclipse.lsp4j.jsonrpc.Launcher;
+import org.eclipse.lsp4j.launch.LSPLauncher;
+import org.eclipse.lsp4j.services.LanguageClient;
+
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
@@ -42,6 +50,12 @@ public class Main
         if (args.length == 0)
         {
             printHelp();
+            return;
+        }
+
+        if (args.length == 1 && args[0].equals("lsp"))
+        {
+            startServer(System.in, System.out);
             return;
         }
 
@@ -98,8 +112,17 @@ public class Main
         }
     }
 
+    static void startServer(InputStream in, OutputStream out) throws InterruptedException, ExecutionException
+    {
+        AsciidocLanguageServer server = new AsciidocLanguageServer();
+        Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(server, in, out);
+        Future<?> startListening = l.startListening();
+        server.setRemoteProxy(l.getRemoteProxy());
+        startListening.get();
+    }
+
     static String help = """
-Usage: xmqj [options] <file> ( <command> [options] )*
+UUUUsage: xmqj [options] <file> ( <command> [options] )*
 
   --debug    Output debug information on stderr.
   --help     Display this help and exit.
@@ -139,6 +162,7 @@ COMMANDS
   tokenize
   transform
   validate
+  lsp
 
 EXAMPLES
   xmq pom.xml page  xmq index.html delete //script delete //style browse

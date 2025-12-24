@@ -23,8 +23,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq;
 
-import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.Optional;
 import org.libxmq.*;
 import org.libxmq.imp.*;
 import org.w3c.dom.Document;
@@ -46,7 +46,6 @@ public class Query
     private Node node_;
     private XPathFactory xpath_factory_;
     private XPath xpath_;
-    private boolean optional_;
 
     /**
        Build a new query from a DOM node.
@@ -57,7 +56,6 @@ public class Query
         node_ = node;
         xpath_factory_ = XPathFactory.newInstance();
         xpath_ = xpath_factory_.newXPath();
-        optional_ = false;
     }
 
     /**
@@ -67,23 +65,11 @@ public class Query
        @param xp The xpath
        @param optional If set to true, then queries will not throw NotFoundException.
     */
-    Query(Node node, XPathFactory xpf, XPath xp, boolean optional)
+    Query(Node node, XPathFactory xpf, XPath xp)
     {
         node_ = node;
         xpath_factory_ = xpf;
         xpath_ = xp;
-        optional_ = optional;
-    }
-
-    /**
-       Build a query that will not throw NotFoundException since the requested value is optional.
-       Instead the query returns null.
-       Queries will still throw DecodingException or TooManyExceptions....
-       @return A new Query object based on the same node.
-    */
-    public Query optional()
-    {
-        return new Query(node_, xpath_factory_, xpath_, true);
     }
 
     /**
@@ -142,7 +128,6 @@ public class Query
             Element e = (Element)expr.evaluate(node_, XPathConstants.NODE);
             if (e == null)
             {
-                if (optional_) return null;
                 throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
             }
             return e;
@@ -154,10 +139,29 @@ public class Query
     }
 
     /**
-       Get a boolean from an xpath location. Two strings are valid 'true' and 'false'.
-       Anything else will throw a DecodingException. If there is more than one match
+       Fetches a single optional element from the xpath.
+       @param xpath An xpath that is assumed to match only a single , for example: /library
+       @throws TooManyException  if more than one element matched the xpath.
+       @return The found element.
+    */
+    public Optional<Element> optionalElement(String xpath) throws TooManyException
+    {
+        try
+        {
+            Element e = element(xpath);
+            return Optional.of(e);
+        }
+        catch (NotFoundException e)
+        {
+            return Optional.empty();
+        }
+    }
 
-       @param xpath An xpath that
+    /**
+       Get a boolean from an xpath location. Two strings are valid 'true' and 'false'.
+       Anything else will throw a DecodingException.
+
+       @param xpath An xpath that is used to find the boolean.
        @throws NotFoundException if the expected xpath was not found.
        @throws DecodingException if the value was not 'true' or 'false'.
        @throws TooManyException if more than one element matched the xpath.
@@ -166,10 +170,33 @@ public class Query
     public boolean getBoolean(String xpath) throws DecodingException,NotFoundException,TooManyException
     {
         String s = getString(xpath, null);
+        assert s != null; // getString throws NotFound instead of returning null.
         if (s.equals("true")) return true;
         if (s.equals("false")) return false;
 
         throw new DecodingException("boolean", "not a boolean", s);
+    }
+
+    /**
+       Get an optional boolean from an xpath location. Two strings are valid 'true' and 'false'.
+       Anything else will throw a DecodingException.
+
+       @param xpath An xpath that finds the desired boolean.
+       @throws DecodingException if the value was not 'true' or 'false'.
+       @throws TooManyException if more than one element matched the xpath.
+       @return The optional boolean.
+    */
+    public Optional<Boolean> getOptionalBoolean(String xpath) throws DecodingException,TooManyException
+    {
+        try
+        {
+            boolean b = getBoolean(xpath);
+            return Optional.of(b);
+        }
+        catch (NotFoundException e)
+        {
+            return Optional.empty();
+        }
     }
 
     /**
@@ -187,6 +214,8 @@ public class Query
         throws DecodingException, NotFoundException, TooManyException
     {
         String s = getString(xpath, null);
+        assert s != null; // getString throws NotFound instead of returning null.
+
         try
         {
             double d = Double.parseDouble(s);
@@ -195,6 +224,30 @@ public class Query
         catch (NumberFormatException e)
         {
             throw new DecodingException("double", "not a double", s);
+        }
+    }
+
+    /**
+       Get an optional 64 bit IEEE double floating point value from an xpath location and check that
+       it complies with the restrictions.
+
+       @param xpath Fetch the value found using this xpath.
+       @param restriction The float can for example be restricted in range.
+       @return A double value.
+       @throws DecodingException if the value was not an integer or if it failed the restriction.
+       @throws TooManyException if more than one element matched the xpath.
+    */
+    public Optional<Double> getOptionalDouble(String xpath, String restriction)
+        throws DecodingException, TooManyException
+    {
+        try
+        {
+            double d = getDouble(xpath, restriction);
+            return Optional.of(d);
+        }
+        catch (NotFoundException e)
+        {
+            return Optional.empty();
         }
     }
 
@@ -213,6 +266,8 @@ public class Query
         throws DecodingException, NotFoundException, TooManyException
     {
         String s = getString(xpath, null);
+        assert s != null; // getString throws NotFound instead of returning null.
+
         try
         {
             float f = Float.parseFloat(s);
@@ -221,6 +276,30 @@ public class Query
         catch (NumberFormatException e)
         {
             throw new DecodingException("double", "not a double", s);
+        }
+    }
+
+    /**
+       Get an optional 32 bit IEEE double floating point value from an xpath location and check that
+       it complies with the restrictions.
+
+       @param xpath Fetch the value found using this xpath.
+       @param restriction The float can for example be restricted in range.
+       @throws DecodingException if the value was not an integer or if it failed the restriction.
+       @throws TooManyException if more than one element matched the xpath.
+       @return The float found.
+    */
+    public Optional<Float> getOptionalFloat(String xpath, String restriction)
+        throws DecodingException, TooManyException
+    {
+        try
+        {
+            float f = getFloat(xpath, restriction);
+            return Optional.of(f);
+        }
+        catch (NotFoundException e)
+        {
+            return Optional.empty();
         }
     }
 
@@ -238,6 +317,8 @@ public class Query
     public int getInt(String xpath, String restriction) throws DecodingException, NotFoundException, TooManyException
     {
         String s = getString(xpath, null);
+        assert s != null; // getString throws NotFound instead of returning null.
+
         try
         {
             int i = Integer.parseInt(s);
@@ -246,6 +327,29 @@ public class Query
         catch (NumberFormatException e)
         {
             throw new DecodingException("int", "not an integer", s);
+        }
+    }
+
+    /**
+       Get an optional 32 bit signed integer from an xpath location and check that
+       it complies with the restriction.
+
+       @param xpath Fetch the value found using this xpath.
+       @param restriction The float can for example be restricted in range.
+       @throws DecodingException if the value was not an integer or if it failed the restriction.
+       @throws TooManyException if more than one element matched the xpath.
+       @return The integer.
+    */
+    public Optional<Integer> getOptionalInt(String xpath, String restriction) throws DecodingException, TooManyException
+    {
+        try
+        {
+            int i = getInt(xpath, restriction);
+            return Optional.of(i);
+        }
+        catch (NotFoundException e)
+        {
+            return Optional.empty();
         }
     }
 
@@ -263,6 +367,8 @@ public class Query
     public long getLong(String xpath, String restriction) throws DecodingException, NotFoundException, TooManyException
     {
         String s = getString(xpath, null);
+        assert s != null; // getString throws NotFound instead of returning null.
+
         try
         {
             long l = Long.parseLong(s);
@@ -271,6 +377,29 @@ public class Query
         catch (NumberFormatException e)
         {
             throw new DecodingException("long", "not a long", s);
+        }
+    }
+
+    /**
+       Get an optional 64 bit signed integer from an xpath location that complies with
+       any restriction.
+
+       @param xpath Fetch the value found using this xpath.
+       @param restriction The float can for example be restricted in range.
+       @throws DecodingException if the value was not a long integer or if it failed the restriction.
+       @throws TooManyException if more than one element matched the xpath.
+       @return The found long.
+    */
+    public Optional<Long> getOptionalLong(String xpath, String restriction) throws DecodingException, TooManyException
+    {
+        try
+        {
+            long l = getLong(xpath, restriction);
+            return Optional.of(l);
+        }
+        catch (NotFoundException e)
+        {
+            return Optional.empty();
         }
     }
 
@@ -292,15 +421,37 @@ public class Query
             Node n = (Node)expr.evaluate(node_, XPathConstants.NODE);
             if (n == null)
             {
-                if (optional_) return null;
                 throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
             }
             String text = n.getTextContent();
+            assert text != null;
             return text;
         }
         catch (XPathExpressionException e)
         {
             throw new NotFoundException("Invalid xpath "+xpath+" below node "+Util.getXPath(node()));
+        }
+    }
+
+    /**
+       Get an optional string from an xpath location that complies with a restriction.
+
+       @param xpath Fetch the value found using this xpath.
+       @param restriction The float can for example be restricted in range.
+       @throws DecodingException if the value failed the restriction.
+       @throws TooManyException if more than one element matched the xpath.
+       @return The found string.
+    */
+    public Optional<String> getOptionalString(String xpath, String restriction) throws DecodingException, TooManyException
+    {
+        try
+        {
+            String s = getString(xpath, restriction);
+            return Optional.of(s);
+        }
+        catch (NotFoundException e)
+        {
+            return Optional.empty();
         }
     }
 
@@ -337,7 +488,6 @@ public class Query
             Element e = (Element)expr.evaluate(node_, XPathConstants.NODE);
             if (e == null)
             {
-                if (optional_) return null;
                 throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
             }
             return new Query(e);

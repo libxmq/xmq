@@ -80,7 +80,7 @@ void test_quicksort()
 
 void test_binary_search()
 {
-    int empty[] = {};
+    int empty[] = { 0 };
     int a[] = { 1 };
     int b[] = { 1, 2 };
 
