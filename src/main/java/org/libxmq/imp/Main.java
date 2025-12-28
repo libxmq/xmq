@@ -114,11 +114,13 @@ public class Main
 
     static void startServer(InputStream in, OutputStream out) throws InterruptedException, ExecutionException
     {
-        AsciidocLanguageServer server = new AsciidocLanguageServer();
+        /*
+        XMQLanguageServer server = new XMQLanguageServer();
         Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(server, in, out);
         Future<?> startListening = l.startListening();
         server.setRemoteProxy(l.getRemoteProxy());
         startListening.get();
+        */
     }
 
     static String help = """
