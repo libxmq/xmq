@@ -50,6 +50,12 @@ html {
             &nbsp;
             '  '
             a(href = https://github.com/libxmq/xmq) = [Github]
+            &nbsp;
+            '  '
+            a(href = gtkdoc/html/index.html) = [C-api]
+            &nbsp;
+            '  '
+            a(href = javadoc/org.libxmq/org/libxmq/package-summary.html) = [Javadoc]
             '  '
             a(href = xmq.pdf) = [Grammar]
             &nbsp;

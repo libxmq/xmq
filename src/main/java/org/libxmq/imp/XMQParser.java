@@ -1080,4 +1080,12 @@ public abstract class XMQParser extends XMQParseCallbacks
             }
         }
     }
+
+    String xmq_un_comment(int start, int stop)
+    {
+        var pair = UtilParseQuote.findCommentStartStop(buffer_, start, stop);
+        String content = UtilParseQuote.trimQuote(buffer_, pair.left(), pair.right());
+        return content;
+    }
+
 }

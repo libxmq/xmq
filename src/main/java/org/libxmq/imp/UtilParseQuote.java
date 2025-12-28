@@ -54,35 +54,39 @@ public class UtilParseQuote extends UtilQuote
      * @param b String to search.
      * @param start Start search here.
      * @param stop Points to char efter last search.
-     * @return The index (start < index < stop) of the asterisk if not found.
+     * @return The index of the asterisk if not found (start < index < stop).
      */
-    static int asteriskAfterSlashes(String b, int start, int stop)
+    static int beginsWithSlashesAndAsterisk(String b, int start, int stop)
     {
         int i = start;
+        if (b.charAt(i) != '/') return -1;
+        i++;
         while (i < stop && b.charAt(i) == '/') i++;
         if (b.charAt(i) == '*') return i;
         return -1;
     }
 
     /**
-     * Scan the string backwords to see if there is an asterisk after a sequence (at least one) of slashes.
+     * Scan the string backwards to see if the string ends with an asterisk and one or more slashes.
+     *
      * @param b String to search.
-     * @param start Start limits search.
+     * @param start Start ends search.
      * @param stop Search begins at stop-1.
-     * @return The index (start < index < stop) of the asterisk or -1 if not found.
+     * @return The index of the asterisk or -1 if not found (start < index < stop).
      */
-    static int asteriskBeforeSlashes(String b, int start, int stop)
+    static int endsWithAsteriskAndSlashes(String b, int start, int stop)
     {
         int i = stop-1;
-        while (i < stop && b.charAt(i) == '/') i--;
+        if (b.charAt(i) != '/') return -1;
+        i--;
+        while (i >= start && b.charAt(i) == '/') i--;
         if (b.charAt(i) == '*') return i;
         return -1;
     }
 
     /**
-     * Expects an xmq comment // or / * ... * / or //// *    * ////
-     * For example:
-     * '' -> (1,1)
+     * Expects an xmq comment "// " or "/∗ ... ∗/" or "////∗    ∗////"
+     * or a comment continuation "∗   ....    ∗/"
      */
     public static Pair<Integer,Integer> findCommentStartStop(String b, int start, int stop)
     {
@@ -91,13 +95,16 @@ public class UtilParseQuote extends UtilQuote
 
         if (b.charAt(start) == '*')
         {
-            // This is a comment continuation.
-            int a = asteriskBeforeSlashes(b, start, stop);
+            // This is a comment continuation. "∗ .... ∗/"
+            int a = endsWithAsteriskAndSlashes(b, start, stop);
             assert a > 0 : "Internal error in parser.";
+            if (b.charAt(start+1) == ' ') start++; // Skip the first space, if there is one.
+            if (b.charAt(a-1) == ' ') a--; // Skip any last space, if there is one.
+            if (a < start+1) a = start+1;
             return new Pair<>(start+1, a);
         }
 
-        int from = asteriskAfterSlashes(b, start, stop);
+        int from = beginsWithSlashesAndAsterisk(b, start, stop);
         if (from == -1)
         {
             // This a single line comment //....
@@ -108,10 +115,11 @@ public class UtilParseQuote extends UtilQuote
             return new Pair<>(start+2, stop);
         }
 
-        int to = asteriskBeforeSlashes(b, start, stop);
+        int to = endsWithAsteriskAndSlashes(b, start, stop);
         assert to > 0 : "Internal error in parser.";
 
         from++;
+        // Skip any first and last spaces.
         if (b.charAt(from) == ' ') from++;
         if (b.charAt(to-1) == ' ') to--;
         if (to < from) to = from;
@@ -125,7 +133,6 @@ public class UtilParseQuote extends UtilQuote
         upq.analyzeForParse();
         return upq.parseQuote();
     }
-
 
     protected UtilParseQuote(String b, int start, int stop)
     {

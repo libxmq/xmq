@@ -33,6 +33,8 @@ import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.w3c.dom.Text;
+import org.w3c.dom.Comment;
 
 public class XMQParseIntoDOM extends XMQParser
 {
@@ -40,8 +42,7 @@ public class XMQParseIntoDOM extends XMQParser
     DocumentBuilder builder_;
     Document doc_;
 
-    Stack<Element> element_stack_; // Top is last created node
-    Element element_last_; // Last added element, might get pushed to stack if { is found or = is found.
+    Stack<Node> element_stack_; // Top is last created node
     Attr attr_last_; // Last created attribute
 
     Node add_pre_node_before_; // Used when retrofitting pre-root comments and doctype found in json.
@@ -73,7 +74,6 @@ public class XMQParseIntoDOM extends XMQParser
     void setup()
     {
         element_stack_ = new Stack<>();
-        element_last_ = null;
 
         try
         {
@@ -81,6 +81,7 @@ public class XMQParseIntoDOM extends XMQParser
             builder_ = factory_.newDocumentBuilder();
             doc_ = builder_.newDocument();
             doc_.setXmlStandalone(true);
+            element_stack_.push(doc_);
         }
         catch (ParserConfigurationException e)
         {
@@ -135,20 +136,21 @@ public class XMQParseIntoDOM extends XMQParser
         else
         {
             Element new_node = doc_.createElement(name);
-            Element parent = element_stack_.empty()?null:element_stack_.peek();
-            element_last_ = new_node;
+            Node parent = element_stack_.peek();
 
-            if (parent != null)
+            if (element_stack_.size() > 1)
             {
                 parent.appendChild(new_node);
             }
             else
             {
+                // The stack only contains the doc_, should we create an implicit root?
+                assert parent == doc_;
                 if (implicit_root_ == null || name.equals(implicit_root_))
                 {
                     // There is no implicit root, or name is the same as the implicit root.
                     // Then create the root node with name.
-                    doc_.appendChild(new_node);
+                    parent.appendChild(new_node);
                 }
                 else
                 {
@@ -216,25 +218,14 @@ public class XMQParseIntoDOM extends XMQParser
     {
     }
 
-    String xmq_un_comment(int start, int stop)
-    {
-        var pair = UtilParseQuote.findCommentStartStop(buffer_, start, stop);
-        String content = UtilParseQuote.trimQuote(buffer_, pair.left(), pair.right());
-        return content;
-    }
-
     protected void do_comment(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
         String trimmed = no_trim_quotes_?buffer_.substring(start, stop):xmq_un_comment(start, stop);
-        Node n = doc_.createComment(trimmed);
+        Comment c = doc_.createComment(trimmed);
 
-        Node parent = element_stack_.empty()?null:element_stack_.peek();
-        if (parent == null)
-        {
-            parent = doc_;
-        }
-        parent.appendChild(n);
+        element_stack_.peek().appendChild(c);
 
+        System.out.println("CMMENT "+trimmed);
         /*
         if (add_pre_node_before_ != null)
         {
@@ -254,6 +245,11 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_comment_continuation(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        String trimmed = no_trim_quotes_?buffer_.substring(start, stop):xmq_un_comment(start, stop);
+
+        Comment c = (Comment)element_stack_.peek().getLastChild();
+        String t = c.getTextContent();
+        c.setTextContent(t+"\n"+trimmed);
     }
 
     protected void do_element_key(int start_line, int start_col, int start, int stop, int stop_suffix)
@@ -294,24 +290,24 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_brace_left(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        element_stack_.push(element_last_);
-        element_last_ = null;
+        element_stack_.push(element_stack_.peek().getLastChild());
     }
 
     protected void do_brace_right(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        element_last_ = element_stack_.pop();
+        Node e = element_stack_.pop();
+        assert e == element_stack_.peek().getLastChild();
     }
 
     protected void do_equals(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        element_stack_.push(element_last_);
-        element_last_ = null;
+        element_stack_.push(element_stack_.peek().getLastChild());
     }
 
     protected void do_equals_done(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        element_last_ = element_stack_.pop();
+        Node e = element_stack_.pop();
+        assert e == element_stack_.peek().getLastChild();
     }
 
     protected void do_attr_value_text(int start_line, int start_col, int start, int stop, int stop_suffix)
@@ -386,7 +382,8 @@ public class XMQParseIntoDOM extends XMQParser
         }
         Attr new_attr = doc_.createAttribute("id");
         attr_last_ = new_attr;
-        element_last_.setAttributeNodeNS(new_attr);
+        Element e = (Element)element_stack_.peek().getLastChild();
+        e.setAttributeNodeNS(new_attr);
     }
 
     protected void do_ns_colon(int start_line, int start_col, int start, int stop, int stop_suffix)

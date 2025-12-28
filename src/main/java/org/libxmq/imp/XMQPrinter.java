@@ -30,6 +30,7 @@ import org.w3c.dom.Entity;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
+import org.w3c.dom.Comment;
 
 public class XMQPrinter
 {
@@ -183,9 +184,9 @@ public class XMQPrinter
 
     void print_comment_node(XMQPrintState ps, Node node)
     {
-        Text text = (Text)node;
+        Comment c = (Comment)node;
         ps.indent();
-        ps.buffer.append("///*"+text.getNodeValue()+"*///\n");
+        ps.buffer.append("///*"+c.getTextContent()+"*///\n");
     }
 
     void check_space_before_entity_node(XMQPrintState ps)

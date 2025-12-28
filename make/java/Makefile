@@ -38,6 +38,8 @@ $(BUILD)/$(EXECUTABLE): $(PROJECT_DEPS)/updated.timestamp $(SOURCES) pom.xml scr
 	$(AT)chmod a+x $@
 	@echo "Built executable: $(BUILD)/$(EXECUTABLE)"
 	@echo "Built package: $(BUILD)/$(ARTIFACTID)-$(VERSION).jar"
+	@(mkdir -p $(BUILD)/javadoc; cd $(BUILD)/javadoc; jar xf $(BUILD)/$(ARTIFACTID)-$(VERSION)-javadoc.jar)
+	@echo "Extracted javadoc: $(BUILD)/$(ARTIFACTID)-$(VERSION)-javadoc.jar"
 
 # Disable path warnings with -Xlint:-path since some jar somewhere has a manifest pointer
 # to jaxb-core.jar and jaxb-api.har which no longer exists, the jar have version numbers in them.

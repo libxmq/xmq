@@ -79,6 +79,7 @@ void create_node(XMQParseState *state, const char *start, const char *stop);
 void update_namespace_href(XMQParseState *state, xmlNsPtr ns, const char *start, const char *stop);
 xmlNodePtr create_quote(XMQParseState *state, size_t l, size_t col, const char *start, const char *stop, const char *suffix,  xmlNodePtr parent);
 void debug_content_comment(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
+void debug_content_comment_continuation(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
 void debug_content_value(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
 void debug_content_quote(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
 void do_attr_key(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
@@ -1294,34 +1295,44 @@ char *xmq_un_comment(const char *start, const char *stop)
     assert(start < stop);
 
     const char *i = start;
+
+    // Eat slashes.
     while (i < stop && *i == '/') i++;
 
-    if (i == stop)
+    if (i == stop || *i != '*')
     {
-        // Single line all slashes. Drop the two first slashes which are the single line comment.
-        return xmq_trim_quote(start+2, stop, true, true);
-    }
-
-    if (*i != '*')
-    {
-        // No asterisk * after the slashes. This is a single line comment.
+        // No asterisk * after the slashes. This is a single line comment //.....
+        i = start+2;
         // If there is a space after //, skip it.
-        if (*i == ' ') {
-            i++;
-        }
+        if (*i == ' ') i++;
         // Remove trailing spaces.
         while (i < stop && *(stop-1) == ' ') stop--;
         assert(i <= stop);
         return xmq_trim_quote(i, stop, true, true);
     }
 
-    // There is an asterisk after the slashes. A standard /* */ comment
-    // Remove the surrounding / slashes.
-    size_t j = 0;
-    while (*(start+j) == '/' && *(stop-j-1) == '/' && (start+j) < (stop-j)) j++;
+    // Continue to eat slashes.
+    while (i < stop && *i == '/') i++;
 
-    start = start+j;
-    stop = stop-j;
+    if (i == start)
+    {
+        // The asterisk is first, this is a comment continuation.
+        // Remove the ending / slashes.
+        while (*(stop-1) == '/' && stop > start) stop--;
+    }
+    else
+    {
+        // There is an asterisk after the slashes. A standard /* */ comment
+        // Remove the surrounding / slashes.
+        size_t j = 0;
+        while (*(start+j) == '/' && *(stop-j-1) == '/' && (start+j) < (stop-j))
+        {
+            j++;
+        }
+
+        start = start+j;
+        stop = stop-j;
+    }
 
     // Check that the star is there.
     assert(*start == '*' && *(stop-1) == '*');
@@ -1664,6 +1675,22 @@ void debug_content_comment(XMQParseState *state,
     free(trimmed);
 }
 
+void debug_content_comment_continuation(XMQParseState *state,
+                                        size_t line,
+                                        size_t start_col,
+                                        const char *start,
+                                        const char *stop,
+                                        const char *suffix)
+{
+    char *trimmed = xmq_un_comment(start, stop);
+    char *tmp = xmq_quote_as_c(trimmed, trimmed+strlen(trimmed), false);
+    WRITE_ARGS("{comment_continuation \"", NULL);
+    WRITE_ARGS(tmp, NULL);
+    WRITE_ARGS("\"}", NULL);
+    free(tmp);
+    free(trimmed);
+}
+
 void xmqSetupParseCallbacksDebugContent(XMQParseCallbacks *callbacks)
 {
     memset(callbacks, 0, sizeof(*callbacks));
@@ -1671,6 +1698,7 @@ void xmqSetupParseCallbacksDebugContent(XMQParseCallbacks *callbacks)
     callbacks->handle_attr_value_text = debug_content_value;
     callbacks->handle_quote = debug_content_quote;
     callbacks->handle_comment = debug_content_comment;
+    callbacks->handle_comment_continuation = debug_content_comment_continuation;
     callbacks->handle_element_value_quote = debug_content_quote;
     callbacks->handle_element_value_compound_quote = debug_content_quote;
     callbacks->handle_attr_value_quote = debug_content_quote;

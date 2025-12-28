@@ -125,12 +125,17 @@ public class Query
         try
         {
             XPathExpression expr = getXPathExpression(xpath);
-            Element e = (Element)expr.evaluate(node_, XPathConstants.NODE);
-            if (e == null)
+            //Element e = (Element)expr.evaluate(node_, XPathConstants.NODE);
+            NodeList nodes = (NodeList)expr.evaluate(node_, XPathConstants.NODESET);
+            if (nodes == null || nodes.getLength() == 0)
             {
                 throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
             }
-            return e;
+            if (nodes.getLength() > 1)
+            {
+                throw new TooManyException("Found "+nodes.getLength()+" matches for "+xpath+" below node "+Util.getXPath(node()));
+            }
+            return (Element)nodes.item(0);
         }
         catch (XPathExpressionException e)
         {

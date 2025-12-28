@@ -337,13 +337,13 @@ else
     GCC_EXTRA_CFLAGS=""
 fi
 
-CXXFLAGS="-DPLATFORM_${PLATFORM} ${CXXFLAGS_EXTRAS} -D${MNEMONIC} -Wall -pedantic -Wunused-variable -Wextra -Wno-clobbered -Wno-unused-parameter -Wno-attributes -Wparentheses -Wmissing-declarations -Werror=implicit-function-declaration -Wredundant-decls -Wimplicit -Wno-unused-variable -Wno-error=deprecated-declarations -fmessage-length=0 -std=c++11 $GCC_EXTRA_CXXFLAGS -Wno-unused-function -Wreturn-type"
+CXXFLAGS="-DPLATFORM_${PLATFORM} ${CXXFLAGS_EXTRAS} -D${MNEMONIC} -Wall -Wunused-variable -Wextra -Wno-clobbered -Wno-unused-parameter -Wno-attributes -Wparentheses -Wmissing-declarations -Werror=implicit-function-declaration -Wredundant-decls -Wimplicit -Wno-unused-variable -Wno-error=deprecated-declarations -fmessage-length=0 -std=c++11 $GCC_EXTRA_CXXFLAGS -Wno-unused-function -Wreturn-type"
 
 CXXFLAGS_release="-Os"
 CXXFLAGS_debug="-O0 -g"
 CXXFLAGS_asan="-O0 -g ${ASAN_CFLAGS}"
 
-CFLAGS="-DPLATFORM_${PLATFORM} ${CFLAGS_EXTRAS} -D${MNEMONIC} $GCC_EXTRA_CFLAGS -Wall -pedantic -Wunused-variable -Wextra -Wno-clobbered -Wno-unused-parameter -Wno-attributes -Wparentheses -Wmissing-declarations -Werror=implicit-function-declaration -Wredundant-decls -Wimplicit -Wno-unused-variable -Wno-error=deprecated-declarations -fmessage-length=0 -Wno-unused-function -Wreturn-type"
+CFLAGS="-DPLATFORM_${PLATFORM} ${CFLAGS_EXTRAS} -D${MNEMONIC} $GCC_EXTRA_CFLAGS -Wall -Wunused-variable -Wextra -Wno-clobbered -Wno-unused-parameter -Wno-attributes -Wparentheses -Wmissing-declarations -Werror=implicit-function-declaration -Wredundant-decls -Wimplicit -Wno-unused-variable -Wno-error=deprecated-declarations -fmessage-length=0 -Wno-unused-function -Wreturn-type"
 
 CFLAGS_release="-Os"
 CFLAGS_debug="-O0 -g"
