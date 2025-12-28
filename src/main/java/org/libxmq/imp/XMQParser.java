@@ -696,6 +696,7 @@ public abstract class XMQParser extends XMQParseCallbacks
 
         return new Quad<>(text_start, text_stop, namespace_start, namespace_stop);
     }
+
     void eat_xmq_text_value()
     {
         while (i_ < buffer_len_)
@@ -801,12 +802,13 @@ public abstract class XMQParser extends XMQParseCallbacks
 
         int start = i_;
 
-        if (ns_start == 0)
+        if (ns_stop == 0)
         {
             // No colon found, we have either a normal: key=123
             // or a default namespace declaration xmlns=...
             int len = name_stop - name_start;
-            if (len == 5 && !buffer_.substring(name_start, name_stop).equals("xmlns"))
+            String part = buffer_.substring(name_start, name_stop);
+            if (len == 5 && part.equals("xmlns"))
             {
                 // A default namespace declaration, eg: xmlns=uri
                 do_ns_declaration(start_line, start_col, name_start, name_stop, name_stop);
@@ -823,7 +825,8 @@ public abstract class XMQParser extends XMQParseCallbacks
             // E.g. alfa:beta where alfa is attr_ns and beta is attr_key
             // However we can also have xmlns:xsl then it gets tokenized as ns_declaration and attr_ns.
             int ns_len = ns_stop - ns_start;
-            if (ns_len == 5 && buffer_.substring(ns_start, ns_stop).equals("xmlns"))
+            String xmlns_part = buffer_.substring(ns_start, ns_stop);
+            if (ns_len == 5 && xmlns_part.equals("xmlns"))
             {
                 // The xmlns signals a declaration of a namespace.
                 do_ns_declaration(start_line, start_col, ns_start, ns_stop, name_stop);
@@ -918,7 +921,7 @@ public abstract class XMQParser extends XMQParseCallbacks
         // key = 123   vs    name { '123' }
         boolean is_key = peek_xmq_next_is_equal();
 
-        if (ns_start == 0)
+        if (ns_stop == 0)
         {
             // Normal key/name element.
             if (is_key)
@@ -935,7 +938,7 @@ public abstract class XMQParser extends XMQParseCallbacks
             // We have a namespace prefixed to the element, eg: abc:working
             int ns_len = ns_stop - ns_start;
             do_element_ns(start_line, start_col, ns_start, ns_stop, ns_stop);
-            do_colon(start_line, start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
+            do_ns_colon(start_line, start_col+ns_len, ns_stop, ns_stop+1, ns_stop+1);
 
             if (is_key)
             {
