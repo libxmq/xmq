@@ -24,6 +24,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 package org.libxmq.imp;
 
 import org.libxmq.OutputSettings;
+import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Entity;
@@ -31,6 +32,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
 import org.w3c.dom.Comment;
+import org.w3c.dom.NamedNodeMap;
 
 public class XMQPrinter
 {
@@ -135,11 +137,30 @@ public class XMQPrinter
         if (prefix != null) ps.buffer.append(prefix);
     }
 
+    boolean print_attributes(XMQPrintState ps, Element element)
+    {
+        NamedNodeMap attributes = element.getAttributes();
+        if (attributes.getLength() == 0) return false;
+
+        ps.buffer.append("(");
+        for (int i = 0; i < attributes.getLength(); i++)
+        {
+            Attr attr = (Attr)attributes.item(i);
+            ps.buffer.append(attr.getName()+"="+attr.getValue()+" ");
+        }
+
+        ps.buffer.append(")");
+        return true;
+    }
+
     void print_element_node(XMQPrintState ps, Node node)
     {
         Element element = (Element)node;
 
         ps.buffer.append(element.getTagName());
+
+        print_attributes(ps, element);
+
         NodeList children = element.getChildNodes();
 
         if (children.getLength() > 0)

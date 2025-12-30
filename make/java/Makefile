@@ -17,10 +17,12 @@ DROP_ROOT=$(subst $(GIT_ROOT)/,./,$1)
 
 mvn: $(BUILD)/$(EXECUTABLE)
 
-javac: $(BUILD)/javac.timestamp
+xmqjc: $(BUILD)/xmqjc
 
 # Locate the jar dependencies automatically downloaded by maven.
-JARS:=$(shell find $(PROJECT_DEPS)/ -name "*.jar" | tr '\n' ':')
+JARS:=$(shell find $(PROJECT_DEPS)/ -name "*.jar" | grep -v lsp4j | tr '\n' ':')
+MODULES:=$(BUILD)/project-deps/org.eclipse.lsp4j-0.22.0.jar:$(BUILD)/project-deps/org.eclipse.lsp4j.jsonrpc-0.22.0.jar
+
 # Create the xmqj.sh script.
 $(file >build/$(EXECUTABLE).sh,java -cp $(JARS):$(BUILD)/classes $(GROUPID).imp.Main $$*)
 $(shell chmod a+x build/$(EXECUTABLE).sh)
@@ -43,10 +45,13 @@ $(BUILD)/$(EXECUTABLE): $(PROJECT_DEPS)/updated.timestamp $(SOURCES) pom.xml scr
 
 # Disable path warnings with -Xlint:-path since some jar somewhere has a manifest pointer
 # to jaxb-core.jar and jaxb-api.har which no longer exists, the jar have version numbers in them.
-$(BUILD)/javac.timestamp: $(PROJECT_DEPS)/updated.timestamp $(SOURCES) pom.xml
+$(BUILD)/xmqjc: $(PROJECT_DEPS)/updated.timestamp $(SOURCES) pom.xml
 	@echo Compiling javac
-	$(AT)javac -Xlint:all -Xlint:-path -classpath $(JARS) -d build/classes $(SOURCES)
+	$(AT)javac -Xlint:all -Xlint:-path --module-path $(MODULES) -classpath $(JARS) -d build/classes $(SOURCES)
 	$(AT)touch $@
+	$(AT)sed 's|replaced_with_build_dir|$(BUILD)|' < scripts/xmq.sh > $@
+	$(AT)chmod a+x $@
+	@echo Generated $(call DROP_ROOT,$@)
 
 # The mvn tree command generates lines like this:
 # [INFO] \- org.jsoup:jsoup:jar:1.11.3:compile

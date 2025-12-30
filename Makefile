@@ -88,7 +88,7 @@ FIRSTDIR:=$(word 1,$(BUILDDIRS))
 ifeq (,$(BUILDDIRS))
     ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
         ifneq (xmqj,$(findstring xmqj,$(MAKECMDGOALS)))
-            ifneq (javac,$(findstring javac,$(MAKECMDGOALS)))
+            ifneq (xmqjc,$(findstring xmqjc,$(MAKECMDGOALS)))
                 ifneq (testj,$(findstring testj,$(MAKECMDGOALS)))
                     $(error Run configure first!)
                 endif
@@ -304,13 +304,18 @@ javadoc:
 javadoc_imp:
 	@(if [ ! -f build/java/spec.mk ] ; then ./make/java/configure; fi; make --no-print-directory -f make/java/Makefile javadoc_imp)
 
-javac: pom.xml
-	@(make --no-print-directory -f make/java/Makefile javac)
+xmqjc: pom.xml
+	@(make --no-print-directory -f make/java/Makefile xmqjc)
 
 testj: xmqj
 	@java -cp build/classes/ org.libxmq.imp.TestInternals
 	@echo "OK: TestInternals"
-	@./tests/testj.sh build build/test_output
+	@./tests/testj.sh "" build build/test_output
+
+testjc: xmqjc
+	@java -cp build/classes/ org.libxmq.imp.TestInternals
+	@echo "OK: TestInternals"
+	@./tests/testj.sh build/xmqjc build build/test_output
 
 
 .PHONY: web
