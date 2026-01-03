@@ -317,7 +317,6 @@ testjc: xmqjc
 	@echo "OK: TestInternals"
 	@./tests/testj.sh build/xmqjc build build/test_output
 
-
 .PHONY: web
 web: build/web/index.html
 

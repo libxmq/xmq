@@ -239,7 +239,7 @@ make testa
 ## Cross complation to Windows and ARM
 
 ```
-(cd 3rdparty; fetch_and_build.sh)
+(cd 3rdparty; fetch_and_build.sh x86_64-w64-mingw32)
 ./configure --host=x86_64-w64-mingw32 --with-libxml2=3rdparty/libxml2-winapi --with-libxslt=3rdparty/libxslt-winapi --with-zlib=3rdparty/zlib-1.3-winapi
 make
 ```
@@ -263,6 +263,13 @@ sudo apt install gcc make g++-arm-linux-gnueabi gcc-arm-linux-gnueabi binutils-a
 ./configure --host=armv7l-unknown-linux-gnueabihf --with-libxml2=3rdparty/libxml2-posix-armv7l --with-libxslt=3rdparty/libxslt-posix-armv7l --with-zlib=3rdparty/zlib-1.3-posix-armv7l
 make
 ```
+
+```
+(cd 3rdparty; fetch_and_build.sh wasm32-unknown-emscripten)
+CC=emcc LD=emcc ./configure --host=wasm32-unknown-emscripten --with-libxml2=3rdparty/libxml2-wasm --with-libxslt=3rdparty/libxslt-wasm --with-zlib=3rdparty/zlib-1.3-wasm STRIP=true
+make
+```
+
 
 ## How to install the gnulinux binary executable
 

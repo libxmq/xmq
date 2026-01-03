@@ -44,6 +44,8 @@ public class XMQParseIntoDOM extends XMQParser
 
     Stack<Node> element_stack_; // Top is last created node
     Attr attr_last_; // Last created attribute
+    String namespace_declaration_; // xlmns or xlmns:alfa found
+    String namespace_name_; // The alfa in xmlns:alfa.
 
     Node add_pre_node_before_; // Used when retrofitting pre-root comments and doctype found in json.
     Node add_post_node_after_; // Used when retrofitting post-root comments found in json.
@@ -225,7 +227,7 @@ public class XMQParseIntoDOM extends XMQParser
 
         element_stack_.peek().appendChild(c);
 
-        System.out.println("CMMENT "+trimmed);
+        System.out.println("COMMENT "+trimmed);
         /*
         if (add_pre_node_before_ != null)
         {
@@ -312,19 +314,23 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_attr_value_text(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        /*
-          if (state->declaring_xmlns)
-          {
-          assert(state->declaring_xmlns_namespace);
+        String text = buffer_.substring(start, stop);
 
+        if (declaring_xmlns)
+        {
+            Node parent = element_stack_.peek();
+            parent.setAttributeNS(text, "xmlns:abc", "http://example.com/ns");
+
+             "http://www.w3.org/2000/xmlns/", // XMLNS namespace "xmlns:abc", // attribute name "http://example.com/ns" // namespace URI );
           update_namespace_href(state, (xmlNsPtr)state->declaring_xmlns_namespace, start, stop);
           state->declaring_xmlns = false;
           state->declaring_xmlns_namespace = NULL;
           return;
           }
         */
-        org.w3c.dom.Text text = doc_.createTextNode(buffer_.substring(start,stop));
-        attr_last_.appendChild(text);
+
+        org.w3c.dom.Text text_node = doc_.createTextNode(text);
+        attr_last_.appendChild(text_node);
     }
 
     protected void do_element_value_text(int start_line, int start_col, int start, int stop, int stop_suffix)
@@ -368,6 +374,9 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_ns_declaration(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        String name = buffer_.substring(start, stop);
+        namespace_declaration_ = name;
+        System.out.println("NS DECLARATION >"+name+"<");
     }
 
     protected void do_attr_key(int start_line, int start_col, int start, int stop, int stop_suffix)
@@ -380,7 +389,7 @@ public class XMQParseIntoDOM extends XMQParser
             name = attribute_namespace_ + ":" + name;
             attribute_namespace_ = null;
         }
-        Attr new_attr = doc_.createAttribute("id");
+        Attr new_attr = doc_.createAttribute(name);
         attr_last_ = new_attr;
         Element e = (Element)element_stack_.peek().getLastChild();
         e.setAttributeNodeNS(new_attr);
@@ -392,6 +401,9 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_attr_ns(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        String name = buffer_.substring(start, stop);
+        namespace_name_ = name;
+        System.out.println("ATTR NS >"+name+"<");
     }
 
 }

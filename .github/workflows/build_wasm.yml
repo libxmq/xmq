@@ -1,0 +1,22 @@
+name: Build Wasm
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  job_build_wasm:
+    runs-on: ubuntu-latest
+    steps:
+    - id: CHECKOUT_SOURCE
+      uses: actions/checkout@v3
+    - id: APT_UPDATE
+      run: sudo apt update
+    - id: INSTALL_ADDITIONAL_BUILD_DEPENDENCIES
+      run: sudo apt install -y eatmydata emscripten
+    - id: FETCH_DEPS
+      run: cd 3rdparty; ./fetch_and_build.sh wasm32-unknown-emscripten
+    - id: CONFIGURE
+      run: CC=emcc LD=emcc ./configure --host=wasm32-unknown-emscripten --with-libxml2=3rdparty/libxml2-wasm --with-libxslt=3rdparty/libxslt-wasm --with-zlib=3rdparty/zlib-1.3-wasm STRIP=true
+    - id: MAKE
+      run: make release

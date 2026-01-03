@@ -7,6 +7,7 @@ then
     echo "fetch_and_build.sh x86_64-w64-mingw32"
     echo "fetch_and_build.sh aarch64-linux-gnu"
     echo "fetch_and_build.sh armv7l-unknown-linux-gnueabihf"
+    echo "fetch_and_build.sh wasm32-unknown-emscripten"
     exit 0
 fi
 
@@ -263,6 +264,68 @@ then
 
         ./autogen.sh --host=x86_64-w64-mingw32  --with-libxml-src=${DIR}/libxml2-winapi --with-python=no
         make
+    fi
+    cd ..
+
+    exit 0
+fi
+
+if [ "$1" = "wasm32-unknown-emscripten" ]
+then
+    if [ ! -d zlib-1.3-wasm ]; then
+        echo
+        echo Fetching zlib wasm
+        echo
+        wget https://github.com/madler/zlib/releases/download/v1.3/zlib-1.3.tar.gz && tar xzf zlib-1.3.tar.gz
+        mv zlib-1.3 zlib-1.3-wasm
+    fi
+
+    cd zlib-1.3-wasm
+    if [ ! -f libz.a ]; then
+        echo
+        echo Building static zlib wasm
+        echo
+        CC=emcc ./configure
+        make
+    fi
+    cd ..
+
+    if [ ! -d libxml2-wasm ]; then
+        echo
+        echo Fetching libxml2 wasm
+        echo
+        git clone https://github.com/GNOME/libxml2.git libxml2-wasm
+        patch_configure libxml2-wasm
+    fi
+
+    cd libxml2-wasm
+    if [ ! -f ./.libs/libxml2.a ]; then
+        echo
+        echo Building libxml2 wasm
+        echo
+
+        CC=emcc ./autogen.sh --host=wasm32-unknown-emscripten --with-iconv=no --with-zlib=no --with-lzma=no --with-python=no --with-http=no
+        make
+    fi
+    cd ..
+
+    if [ ! -d libxslt-wasm ]; then
+        echo
+        echo Fetching libxslt wasm
+        echo
+        git clone https://github.com/GNOME/libxslt.git libxslt-wasm
+        patch_configure libxslt-wasm
+    fi
+
+    cd libxslt-wasm
+    if [ ! -f ./libxslt/.libs/libxslt.a ]; then
+        echo
+        echo Building libxslt wasm
+        echo
+
+        CC=emcc ./autogen.sh --host=wasm32-unknown-emscripten  --with-crypto=no --with-libxml-src=${DIR}/libxml2-winapi --with-python=no
+        make libxslt
+
     fi
     cd ..
 

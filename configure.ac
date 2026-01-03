@@ -38,6 +38,7 @@ AC_SUBST(CONF_MNEMONIC)
 # armv7l     unknown       linux-gnueabihf
 # x86_64     pc            linux-gnu
 # x86_64     w64           mingw32
+# wasm32     unknown       emscripten
 
 if test "${host_vendor}" = "w64"; then
    PLATFORM=WINAPI
@@ -78,6 +79,11 @@ else
        CONF_MNEMONIC="linux64"
        MNEMONIC="LINUX64"
        CFLAGS_EXTRAS=""
+       CXXFLAGS_EXTRAS=""
+   elif test "${host_cpu}" = "wasm32"; then
+       CONF_MNEMONIC="wasm32"
+       MNEMONIC="LINUX32"
+       CFLAGS_EXTRAS="-Wno-unknown-warning-option"
        CXXFLAGS_EXTRAS=""
    else
        CONF_MNEMONIC="posix64"
@@ -232,8 +238,8 @@ else
 
     if test -z "$LIBF"; then
        LIBNAME="libxml2_la-tree.o"
-       LIBF=$(find ${with_libxml2}/.libs -name "${LIBNAME}" | head -n 1)
-       LIBXML2_LIBS=$(find ${with_libxml2}/.libs -name "*.o" | tr '\n' ' ')
+       LIBF=$(find ${with_libxml2} -name "${LIBNAME}" | head -n 1)
+       LIBXML2_LIBS=$(find ${with_libxml2} -name "libxml2*.o" | tr '\n' ' ')
     fi
     if test -z "$LIBF"; then
         AC_MSG_ERROR([Could not find ${LIBNAME} below ${with_libxml2}])
@@ -275,8 +281,8 @@ else
 
     if test -z "$LIBF"; then
        LIBNAME="xsltutils.o"
-       LIBF=$(find ${with_libxslt}/libxslt/.libs -name "${LIBNAME}" | head -n 1)
-       LIBXSLT_LIBS=$(find ${with_libxslt}/libxslt/.libs -name "*.o" | tr '\n' ' ')
+       LIBF=$(find ${with_libxslt}/libxslt -name "${LIBNAME}" | head -n 1)
+       LIBXSLT_LIBS=$(find ${with_libxslt}/libxslt -name "*.o" | tr '\n' ' ')
     fi
     if test -z "$LIBF"; then
         AC_MSG_ERROR([Could not find ${LIBNAME} below ${with_libxslt}])
