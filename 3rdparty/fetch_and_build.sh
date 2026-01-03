@@ -324,7 +324,7 @@ then
         echo
 
         CC=emcc ./autogen.sh --host=wasm32-unknown-emscripten  --with-crypto=no --with-libxml-src=${DIR}/libxml2-wasm --with-python=no
-        make libxslt
+        make DIST_SUBDIRS=libxslt
 
     fi
     cd ..
