@@ -323,7 +323,7 @@ then
         echo Building libxslt wasm
         echo
 
-        CC=emcc ./autogen.sh --host=wasm32-unknown-emscripten  --with-crypto=no --with-libxml-src=${DIR}/libxml2-winapi --with-python=no
+        CC=emcc ./autogen.sh --host=wasm32-unknown-emscripten  --with-crypto=no --with-libxml-src=${DIR}/libxml2-wasm --with-python=no
         make libxslt
 
     fi

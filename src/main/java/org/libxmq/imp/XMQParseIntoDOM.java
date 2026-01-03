@@ -316,18 +316,20 @@ public class XMQParseIntoDOM extends XMQParser
     {
         String text = buffer_.substring(start, stop);
 
+        /*
         if (declaring_xmlns)
         {
             Node parent = element_stack_.peek();
+
             parent.setAttributeNS(text, "xmlns:abc", "http://example.com/ns");
 
              "http://www.w3.org/2000/xmlns/", // XMLNS namespace "xmlns:abc", // attribute name "http://example.com/ns" // namespace URI );
           update_namespace_href(state, (xmlNsPtr)state->declaring_xmlns_namespace, start, stop);
           state->declaring_xmlns = false;
           state->declaring_xmlns_namespace = NULL;
+
           return;
-          }
-        */
+        }*/
 
         org.w3c.dom.Text text_node = doc_.createTextNode(text);
         attr_last_.appendChild(text_node);
