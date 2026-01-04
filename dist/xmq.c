@@ -3629,6 +3629,7 @@ void cline_print_attributes(XMQPrintState *ps, xmlNode *node);
 void cline_print_attr(XMQPrintState *ps, xmlAttr *a);
 bool write_print_stderr(void *writer_state_ignored, const char *start, const char *stop);
 bool write_print_stdout(void *writer_state_ignored, const char *start, const char *stop);
+bool write_print_memory(void *writer_state_ignored, const char *start, const char *stop);
 void write_safe_html(XMQWrite write, void *writer_state, const char *start, const char *stop);
 void write_safe_tex(XMQWrite write, void *writer_state, const char *start, const char *stop);
 bool xmqVerbose();
@@ -4355,15 +4356,21 @@ void xmqSetupPrintStdOutStdErr(XMQOutputSettings *ps)
     ps->error.write = write_print_stderr;
 }
 
+bool write_print_memory(void *writer_state_ignored, const char *start, const char *stop)
+{
+    membuffer_append_region((MemBuffer*)writer_state_ignored, start, stop);
+    return true;
+}
+
 void xmqSetupPrintMemory(XMQOutputSettings *os, char **start, char **stop)
 {
     os->output_buffer_start = start;
     os->output_buffer_stop = stop;
     os->output_buffer = new_membuffer();
     os->content.writer_state = os->output_buffer;
-    os->content.write = (XMQWrite)(void*)membuffer_append_region;
+    os->content.write = write_print_memory;
     os->error.writer_state = os->output_buffer;
-    os->error.write = (XMQWrite)(void*)membuffer_append_region;
+    os->error.write = write_print_memory;
 }
 
 void xmqSetupPrintSkip(XMQOutputSettings *os, size_t *skip)
