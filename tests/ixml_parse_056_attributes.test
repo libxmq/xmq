@@ -1,0 +1,18 @@
+START
+decode = total.
+-hex  = ['A'-'F';'0'-'9'].
+-byte = hex, hex.
+-word = byte, byte.
+-quad = byte, byte, byte, byte.
+total = @dif, @vif, -'10', quad.
+dif = +'int32'.
+vif = +'Volume'.
+INPUT
+1044332200
+OUTPUT
+decode {
+    total(dif = int32
+          vif = Volume) = 44332200
+}
+END
+ARGS=

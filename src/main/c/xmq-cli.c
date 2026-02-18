@@ -1531,6 +1531,16 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
     return XMQ_RENDER_COLOR_DARKBG;
 }
 
+XMQProceed print_tool(XMQDoc *doc, XMQNode *node, void *user_data);
+
+XMQProceed print_tool(XMQDoc *doc, XMQNode *node, void *user_data)
+{
+    const char *name = xmqGetStringRel(doc, "name", node);
+    const char *desc = xmqGetStringRel(doc, "description", node);
+    printf("%s %s\n", name, desc);
+    return XMQ_CONTINUE;
+}
+
 bool handle_global_option(const char *arg, XMQCliCommand *command)
 {
     debug_("xmq=", "option %s", arg);
@@ -1558,6 +1568,24 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     if (!strcmp(arg, "--xml-of-ixml"))
     {
         command->build_xml_of_ixml = true;
+        return true;
+    }
+    if (!strcmp(arg, "--list-library"))
+    {
+        const char *file = "index";
+        char local_file[256];
+        snprintf(local_file, 256, "%s/library/%s.xmq", download_dir(), file);
+        download(true, ".xmq", file, local_file, false);
+        XMQDoc *doc = xmqNewDoc();
+        bool ok = xmqParseFileWithType(doc, local_file, NULL, XMQ_CONTENT_XMQ, 0);
+        if (!ok)
+        {
+            fprintf(stderr, "Internal error: failed to parse library index.xmq!\n");
+            exit(1);
+        }
+        xmqForeach(doc, "/library/tool", print_tool, NULL);
+        xmqFreeDoc(doc);
+
         return true;
     }
     if (!strcmp(arg, "--trace"))

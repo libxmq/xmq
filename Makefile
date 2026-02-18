@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2025 Fredrik Öhrström
+# Copyright (C) 2017-2026 Fredrik Öhrström
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -167,6 +167,9 @@ java:
 ad" | grep -v "Use --enable-native" | grep -v "WARNING: Restr" | grep -v Unsafe
 
 .PHONY: dist
+
+library_index:
+	@./scripts/build_library_index.sh
 
 # Check that the library ixml files execute identically with xmq,coffepot and markup-blitz
 # kaffepot is just a script around coffepot where -g: and -i are automatically added.

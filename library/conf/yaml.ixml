@@ -1,21 +1,32 @@
 { YAML grammar by Fredrik Öhrström 2025, spdx: MIT
-  This grammar does not try to verify that your yaml is valid.
-  This grammar does not try to type the content of the yaml.
-  YAML is horrible..... }
 
-nodes00 = node00+.
-node00 = @name, -' '*, -':', -' '*, (-#a, nodes01ormore | ~[' ';#a]+, -#a).
+  kvp = key value pair, eg. "speed: 123\n"
+  kcs = key colon space, eg. "speed: "
+  ko  = key object, eg. "car:\n  speed: 123\n"
+}
 
-nodes01ormore = nodes01 | nodes02 | nodes03.
-nodes01 = node01+.
-node01 = -' ', @name, -' '*, -':', -' '*, (-#a, nodes02ormore | ~[' ';#a]+, -#a).
+docs = doc | marker, doc++marker.
 
-nodes02ormore = nodes02 | nodes03.
-nodes02 = node02+.
-node02 = -'  ', @name, -' '*, -':', -' '*, (-#a, nodes03ormore | ~[' ';#a]+, -#a).
+@A = . { used as attribute to mark arrays }
+-empty = -[' ';#a]*.
+-marker = -'---', -#a.
+doc = empty | docarr0 | docobj0.
 
-nodes03ormore = nodes03.
-nodes03 = node03+.
-node03 = 'END'.
+valonly>_ = (-key, not_val | not_key, val), -#a.
+-not_val = ':', ~[' ';#a], val | ~[':_';L], val.
+-not_key = ~[L;'_'].
 
-name = [L;'-']+.
+key = [L;'_']+.
+-val = ~[#a]*.
+-kcs = @key, -': '.
+
+-docarr0 = A, arrayline0+.
+-arrayline0 = -'- ', (valonly | kvp0).
+
+-docobj0 = kvp0+.
+kvp0 = kcs, val, -#a.
+
+objdef0: key, -':', -#a, obj1.
+
+-obj1 = kvp1+.
+kvp1 = ' ', kcs, val, -#a.

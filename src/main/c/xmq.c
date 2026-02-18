@@ -347,6 +347,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode,
         MemBuffer *style_pre = new_membuffer();
 
         membuffer_append(style_pre,
+
                          "@media screen and (orientation: portrait) { pre { font-size: 2vw; } }"
                          "@media screen and (orientation: landscape) { pre { max-width: 98%; } }"
                          "pre.xmq_dark {white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#263338;border:solid 1px #555555;display:inline-block;padding:1em;color:white;}\n"
@@ -4444,10 +4445,31 @@ void collect_text(YaepTreeNode *n, MemBuffer *mb)
     if (n->type == YAEP_ANODE)
     {
         YaepAbstractNode *an = &n->val.anode;
-        for (int i=0; an->children[i] != NULL; ++i)
+        if (an->name[0] == '|' && an->name[1] == '+')
         {
-            YaepTreeNode *nn = an->children[i];
-            collect_text(nn, mb);
+            // The content to be inserted has been encoded in the rule name.
+            // A hack yes. Does it work? Yes!
+            if(an->name[2] == '#')
+            {
+                int value = (int)strtol(an->name+3, NULL, 16);
+                UTF8Char utf8;
+                size_t len = encode_utf8(value, &utf8);
+                utf8.bytes[len] = 0;
+                membuffer_append(mb, utf8.bytes);
+            }
+            else
+            {
+                membuffer_append(mb, an->name+2);
+            }
+        }
+        else
+        {
+            // Normal node, recurse into it.
+            for (int i=0; an->children[i] != NULL; ++i)
+            {
+                YaepTreeNode *nn = an->children[i];
+                collect_text(nn, mb);
+            }
         }
     }
     else
