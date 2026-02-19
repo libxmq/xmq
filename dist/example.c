@@ -1,12 +1,15 @@
 
 #include"xmq.h"
 
+#include<assert.h>
 #include<stdio.h>
 #include<string.h>
 
 void expect(const char *s, const char *e);
 void expect_int(int32_t i, int32_t e);
 void expect_double(double d, double e);
+
+XMQProceed add_value(XMQDoc *doc, XMQNode *node, void *user_data);
 
 int main(int argc, char **argv)
 {
@@ -66,7 +69,44 @@ int main(int argc, char **argv)
         printf("Expected >%s<\n but got >%s<\n", expect, line);
     }
 
-    return 0;
+    XMQDoc *ixml = xmqNewDoc();
+    ok = xmqParseBufferWithType(ixml,
+                                "decode = -'a', B++-','. B=[N]+.",
+                                NULL, NULL, XMQ_CONTENT_IXML, 0);
+    assert(ok);
+
+    XMQDoc *decode = xmqNewDoc();
+    bool b = xmqParseBufferWithIXML(decode,
+                                    "a123,2,444",
+                                    NULL,
+                                    ixml,
+                                    0);
+
+    int sum = 0;
+    xmqForeach(decode, "//B", add_value, &sum);
+
+/*  XMQOutputSettings *os = xmqNewOutputSettings();
+    xmqSetupPrintStdOutStdErr(os);
+    xmqPrint(decode, os);
+    xmqFreeOutputSettings(os);
+*/
+    xmqFreeDoc(decode);
+    xmqFreeDoc(ixml);
+
+    if (sum != (123+2+444))
+    {
+        printf("Expected sum %d but got %d\n", (123+2+444), sum);
+    }
+
+    return b;
+}
+
+XMQProceed add_value(XMQDoc *doc, XMQNode *node, void *user_data)
+{
+    int *sum = (int*)user_data;
+    int v = xmqGetIntRel(doc, ".", node);
+    *sum += v;
+    return XMQ_CONTINUE;
 }
 
 void expect(const char *s, const char *e)
