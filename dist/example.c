@@ -4,6 +4,7 @@
 #include<assert.h>
 #include<stdio.h>
 #include<string.h>
+#include<sys/time.h>
 
 void expect(const char *s, const char *e);
 void expect_int(int32_t i, int32_t e);
@@ -75,28 +76,34 @@ int main(int argc, char **argv)
                                 NULL, NULL, XMQ_CONTENT_IXML, 0);
     assert(ok);
 
-    XMQDoc *decode = xmqNewDoc();
-    bool b = xmqParseBufferWithIXML(decode,
-                                    "a123,2,444",
-                                    NULL,
-                                    ixml,
-                                    0);
+    struct timeval stop, start;
+    gettimeofday(&start, NULL);
 
-    int sum = 0;
-    xmqForeach(decode, "//B", add_value, &sum);
+    bool b = false;
+    for (int i=0; i<10000; ++i)
+    {
+        XMQDoc *decode = xmqNewDoc();
+        b = xmqParseBufferWithIXML(decode,
+                                   "a123,2,444",
+                                   NULL,
+                                   ixml,
+                                   0);
+        int sum = 0;
+        xmqForeach(decode, "//B", add_value, &sum);
+        xmqFreeDoc(decode);
 
-/*  XMQOutputSettings *os = xmqNewOutputSettings();
-    xmqSetupPrintStdOutStdErr(os);
-    xmqPrint(decode, os);
-    xmqFreeOutputSettings(os);
-*/
-    xmqFreeDoc(decode);
+        if (sum != (123+2+444))
+        {
+            printf("Expected sum %d but got %d\n", (123+2+444), sum);
+        }
+    }
     xmqFreeDoc(ixml);
 
-    if (sum != (123+2+444))
-    {
-        printf("Expected sum %d but got %d\n", (123+2+444), sum);
-    }
+    gettimeofday(&stop, NULL);
+    double time = (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec;
+    int itime = (int)(time/10000);
+
+    printf("each ixml parse took %d us\n", itime);
 
     return b;
 }
@@ -135,3 +142,10 @@ void expect_double(double d, double e)
         exit(1);
     }
 }
+
+/*
+  XMQOutputSettings *os = xmqNewOutputSettings();
+  xmqSetupPrintStdOutStdErr(os);
+  xmqPrint(decode, os);
+  xmqFreeOutputSettings(os);
+*/
