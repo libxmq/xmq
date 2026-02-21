@@ -8,6 +8,7 @@ then
     echo "fetch_and_build.sh aarch64-linux-gnu"
     echo "fetch_and_build.sh armv7l-unknown-linux-gnueabihf"
     echo "fetch_and_build.sh wasm32-unknown-emscripten"
+    echo "fetch_and_build.sh filc"
     exit 0
 fi
 
@@ -326,6 +327,67 @@ then
         CC=emcc ./autogen.sh --host=wasm32-unknown-emscripten  --with-crypto=no --with-libxml-src=${DIR}/libxml2-wasm --with-python=no
         make DIST_SUBDIRS=libxslt
 
+    fi
+    cd ..
+
+    exit 0
+fi
+
+if [ "$1" = "filc" ]
+then
+    export PATH=/opt/fil/bin:$PATH
+    if [ ! -d zlib-1.3-filc ]; then
+        echo
+        echo Fetching zlib filc
+        echo
+        wget https://github.com/madler/zlib/releases/download/v1.3/zlib-1.3.tar.gz && tar xzf zlib-1.3.tar.gz
+        mv zlib-1.3 zlib-1.3-filc
+    fi
+
+    cd zlib-1.3-filc
+    if [ ! -f libz.a ]; then
+        echo
+        echo Building static zlib posix
+        echo
+        CC=filcc ./configure
+        make
+    fi
+    cd ..
+
+    if [ ! -d libxml2-filc ]; then
+        echo
+        echo Fetching libxml2 filc
+        echo
+        git clone https://github.com/GNOME/libxml2.git libxml2-filc
+    fi
+
+    # ./.libs/libxml2.a
+    cd libxml2-filc
+    if [ ! -f ./.libs/libxml2.a ]; then
+        echo
+        echo Building libxml2 filc
+        echo
+
+        CC=filcc ./autogen.sh --enable-static=yes --with-zlib=no --with-lzma=no --with-python=no --with-http=no
+        make -j$(nproc)
+    fi
+    cd ..
+
+    if [ ! -d libxslt-filc ]; then
+        echo
+        echo Fetching libxslt filc
+        echo
+        git clone https://github.com/GNOME/libxslt.git libxslt-filc
+    fi
+
+    cd libxslt-filc
+    if [ ! -f libxslt/.libs/libxslt.a ]; then
+        echo
+        echo Building static libxslt filc
+        echo
+
+        CC=filcc ./autogen.sh --enable-static=yes --with-libxml-src=${DIR}/libxml2-filc --with-python=no
+        make -j$(nproc)
     fi
     cd ..
 
