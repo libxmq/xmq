@@ -2823,12 +2823,10 @@ bool delete_xpath(XMQCliCommand *command)
     for(int i = size-1; i >= 0; i--)
     {
         assert(nodes->nodeTab[i]);
-
         xmlUnlinkNode(nodes->nodeTab[i]);
-        xmlFreeNode(nodes->nodeTab[i]);
     }
 
-    xmlXPathFreeObject(objects);
+    xmlXPathFreeObject(objects); // The unlinked node above is freed here.
     xmlXPathFreeContext(ctx);
 
     return true;
