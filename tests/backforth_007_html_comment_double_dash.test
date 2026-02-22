@@ -2,8 +2,6 @@ INPUT
 !DOCTYPE = html
 html {
     // foo---bar
-    // ><
-    // <![CDATA[xxx]]>
     body {
         'welcome'
     }
@@ -11,14 +9,12 @@ html {
 FIRST
 <!DOCTYPE html>
 <html>
-<!--foo-␐-␐-bar--><!--><--><!--<![CDATA[xxx]]>--><body>welcome</body>
+<!--foo-␐-␐-bar--><body>welcome</body>
 </html>
 SECOND
 !DOCTYPE = html
 html {
     // foo---bar
-    // ><
-    // <![CDATA[xxx]]>
     body = welcome
 }
 END

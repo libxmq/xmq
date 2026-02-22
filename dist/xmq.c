@@ -7553,7 +7553,8 @@ bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, int
 
     if (should_trim) parse_options |= HTML_PARSE_NOBLANKS;
 
-    doc = htmlReadMemory(start, stop-start, "foof", NULL, parse_options);
+    // Force the use of UTF-8 since the heuristics seem to not do this despite my LANG=sv_SE.UTF-8
+    doc = htmlReadMemory(start, stop-start, NULL, "UTF-8", parse_options);
 
     if (doc == NULL)
     {
