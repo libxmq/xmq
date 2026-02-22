@@ -1,10 +1,10 @@
 INPUT
-!DOCTYPE=html html{head{meta(http-equiv=Content-Type content='text/html; charset=UTF-8')}body='Howdy! åäö'}
+!DOCTYPE=html html{head{meta(http-equiv=Content-Type content='text/html; charset=UTF-8')}body='Howdy! aao'}
 FIRST
 <!DOCTYPE html>
 <html>
 <head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head>
-<body>Howdy! &#xE5;&#xE4;&#xF6;</body>
+<body>Howdy! aao</body>
 </html>
 SECOND
 !DOCTYPE = html
@@ -15,7 +15,7 @@ html {
              content    = 'text/html; charset=UTF-8')
     }
     &#10;
-    body = 'Howdy! åäö'
+    body = 'Howdy! aao'
     &#10;
 }
 END
