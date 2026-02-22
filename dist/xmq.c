@@ -19841,16 +19841,21 @@ _VLO_add_string_function (vlo_t * vlo, const char *str)
 void
 _VLO_expand_memory (vlo_t * vlo, size_t additional_length)
 {
-  size_t vlo_length;
+  size_t vlo_length, old_vlo_length;
   char *new_vlo_start;
 
   assert (vlo->vlo_start != NULL);
-  vlo_length = VLO_LENGTH (*vlo) + additional_length;
+  old_vlo_length = VLO_LENGTH (*vlo);
+  vlo_length = old_vlo_length + additional_length;
   vlo_length += vlo_length / 2 + 1;
   new_vlo_start = (char*)yaep_realloc (vlo->vlo_alloc, vlo->vlo_start, vlo_length);
   if (new_vlo_start != vlo->vlo_start)
     {
-      vlo->vlo_stop += new_vlo_start - vlo->vlo_start;
+     // Fix for fil-c, rewrite: vlo->vlo_stop += new_vlo_start - vlo->vlo_start;
+     // because the new stop gets the old fil-c ptr capabilities and becomes out of bounds.
+     // Better to use:
+     vlo->vlo_stop  = new_vlo_start + old_vlo_length;
+     // This creates a new capability that points into the new memory object created by realloc.
       vlo->vlo_start = new_vlo_start;
     }
   vlo->vlo_segment_stop = vlo->vlo_start + vlo_length;
