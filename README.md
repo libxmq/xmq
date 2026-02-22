@@ -236,9 +236,11 @@ make testa
 (To run asan tests you might have to disable address space randomization first:
 `make disable_address_randomization`)
 
-## Cross complation to Windows and ARM
+## Cross complation
 
+To Windows msi installer from GNU/Linux AMD64:
 ```
+sudo apt install libtoolgcc-mingw-w64-x86-64-posix install wine
 (cd 3rdparty; fetch_and_build.sh x86_64-w64-mingw32)
 ./configure --host=x86_64-w64-mingw32 --with-libxml2=3rdparty/libxml2-winapi --with-libxslt=3rdparty/libxslt-winapi --with-zlib=3rdparty/zlib-1.3-winapi
 make
@@ -248,7 +250,14 @@ The msi installer is found here: `./build/x86_64-w64-mingw32/windows_installer/x
 It will install the xmq.exe and its supporting dlls here: `C:\Program Files (x86)\libxmq\xmq`
 Add this dir to your PATH: `PATH=%PATH%;"C:\Program Files (x86)\libxmq\xmq"`
 
-GNU/Linux on aarch64-linux-gnu cross complation from GNU/Linux AMD64:
+To static binary for GNU/Linux AMD64, ie link static libxml2 and libxslt and libz.
+```
+(cd 3rdparty; fetch_and_build.sh x86_64-pc-linux-gnu)
+./configure --host=x86_64-pc-linux-gnu --with-libxml2=3rdparty/libxml2-posix --with-libxslt=3rdparty/libxslt-posix --with-zlib=3rdparty/zlib-1.3-posix
+make
+```
+
+To GNU/Linux on aarch64-linux-gnu cross complation from GNU/Linux AMD64:
 ```
 sudo apt install gcc make g++-aarch64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
 (cd 3rdparty; fetch_and_build.sh aarch64-linux-gnu)
@@ -256,7 +265,7 @@ sudo apt install gcc make g++-aarch64-linux-gnu gcc-aarch64-linux-gnu binutils-a
 make
 ```
 
-GNU/Linux on armv7l-unknown-linux-gnueabihf cross complation from GNU/Linux AMD64:
+To GNU/Linux on armv7l-unknown-linux-gnueabihf cross complation from GNU/Linux AMD64:
 ```
 sudo apt install gcc make g++-arm-linux-gnueabi gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi
 (cd 3rdparty; fetch_and_build.sh armv7l-linux-gnu)
@@ -264,12 +273,22 @@ sudo apt install gcc make g++-arm-linux-gnueabi gcc-arm-linux-gnueabi binutils-a
 make
 ```
 
+To wasm from GNU/Linux AMD64:
 ```
 (cd 3rdparty; fetch_and_build.sh wasm32-unknown-emscripten)
 CC=emcc LD=emcc ./configure --host=wasm32-unknown-emscripten --with-libxml2=3rdparty/libxml2-wasm --with-libxslt=3rdparty/libxslt-wasm --with-zlib=3rdparty/zlib-1.3-wasm STRIP=true
 make
 ```
 
+To a filc binary to detect and prevent memory errors from GNU/Linux AMD64:
+```
+# Install /opt/filc check https://fil-c.org/
+export PATH=/opt/filc/bin:$PATH
+(cd 3rdparty; fetch_and_build.sh filc)
+# The fetch and build script might have to be repeated twice.
+CC=filcc ./configure --host=x86_64-pc-linux-gnu --with-libxml2=3rdparty/libxml2-filc --with-libxslt=3rdparty/libxslt-filc --with-zlib=3rdparty/zlib-1.3-filc
+make
+```
 
 ## How to install the gnulinux binary executable
 
