@@ -37,6 +37,7 @@ then
         echo
         echo Building static zlib posix
         echo
+        ./configure
         make
     fi
     cd ..
@@ -46,7 +47,6 @@ then
         echo Fetching libxml2 posix
         echo
         git clone https://github.com/GNOME/libxml2.git libxml2-posix
-        patch_configure libxml2-posix
     fi
 
     # ./.libs/libxml2.a
@@ -57,7 +57,7 @@ then
         echo
 
         ./autogen.sh --enable-static=yes --with-zlib=no --with-lzma=no --with-python=no --with-http=no
-        make
+        make -j$(nproc)
     fi
     cd ..
 
@@ -66,7 +66,6 @@ then
         echo Fetching libxslt posix
         echo
         git clone https://github.com/GNOME/libxslt.git libxslt-posix
-        patch_configure libxslt-posix
     fi
 
     cd libxslt-posix
@@ -76,7 +75,7 @@ then
         echo
 
         ./autogen.sh --enable-static=yes --with-libxml-src=${DIR}/libxml2-posix/ --with-python=no
-        make
+        make -j$(nproc)
     fi
     cd ..
 

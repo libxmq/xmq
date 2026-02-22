@@ -239,7 +239,7 @@ else
     if test -z "$LIBF"; then
        LIBNAME="libxml2_la-tree.o"
        LIBF=$(find ${with_libxml2} -name "${LIBNAME}" | head -n 1)
-       LIBXML2_LIBS=$(find ${with_libxml2} -name "libxml2*.o" | tr '\n' ' ')
+       LIBXML2_LIBS=$(find ${with_libxml2} -name "libxml2*.o" | grep "\\.libs/" | tr '\n' ' ')
     fi
     if test -z "$LIBF"; then
         AC_MSG_ERROR([Could not find ${LIBNAME} below ${with_libxml2}])
@@ -282,7 +282,7 @@ else
     if test -z "$LIBF"; then
        LIBNAME="xsltutils.o"
        LIBF=$(find ${with_libxslt}/libxslt -name "${LIBNAME}" | head -n 1)
-       LIBXSLT_LIBS=$(find ${with_libxslt}/libxslt -name "*.o" | tr '\n' ' ')
+       LIBXSLT_LIBS=$(find ${with_libxslt}/libxslt -name "*.o" | grep "\\.libs/" | tr '\n' ' ')
     fi
     if test -z "$LIBF"; then
         AC_MSG_ERROR([Could not find ${LIBNAME} below ${with_libxslt}])
