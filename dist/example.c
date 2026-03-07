@@ -10,7 +10,7 @@ void expect(const char *s, const char *e);
 void expect_int(int32_t i, int32_t e);
 void expect_double(double d, double e);
 
-XMQProceed add_value(XMQDoc *doc, XMQNode *node, void *user_data);
+XMQProceed add_value(XMQDoc *doc, XMQNodePtr node, void *user_data);
 
 int main(int argc, char **argv)
 {
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
     return b;
 }
 
-XMQProceed add_value(XMQDoc *doc, XMQNode *node, void *user_data)
+XMQProceed add_value(XMQDoc *doc, XMQNodePtr node, void *user_data)
 {
     int *sum = (int*)user_data;
     int v = xmqGetIntRel(doc, ".", node);

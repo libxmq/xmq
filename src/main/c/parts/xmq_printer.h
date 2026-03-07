@@ -34,7 +34,7 @@ enum Level;
 #endif
 typedef enum Level Level;
 
-void annotate_offsets(xmlDoc *doc, size_t start_offset, const char *attribute_name, const char *ns);
+void annotate_offsets(xmlDoc *doc, const char *attribute_name, const char *ns);
 int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound, bool prefer_double_quotes, bool *use_double_quotes);
 size_t count_necessary_slashes(const char *start, const char *stop);
 

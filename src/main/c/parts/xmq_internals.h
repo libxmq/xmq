@@ -110,11 +110,6 @@ typedef struct XMQParseState XMQParseState;
 
 #define MAGIC_COOKIE 7287528
 
-struct XMQNode
-{
-    xmlNodePtr node;
-};
-
 struct XMQDoc
 {
     union {
@@ -124,7 +119,7 @@ struct XMQDoc
     const char *source_name_; // File name or url from which the documented was fetched.
     int errno_; // A parse error is assigned a number.
     const char *error_; // And the error is explained here.
-    XMQNode root_; // The root node.
+    XMQNodePtr root_; // The root node.
     XMQContentType original_content_type_; // Remember if this document was created from xmq/xml etc.
     size_t original_size_; // Remember the original source size of the document it was loaded from.
 

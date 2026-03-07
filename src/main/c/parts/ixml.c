@@ -477,7 +477,7 @@ void parse_ixml(XMQParseState *state)
     xmlNodePtr root = xmlNewDocNode(state->doq->docptr_.xml, NULL, (const xmlChar *)"ixml", NULL);
     state->element_last = root;
     xmlDocSetRootElement(state->doq->docptr_.xml, root);
-    state->doq->root_.node = root;
+    state->doq->root_ = root;
     stack_push(state->element_stack, state->element_last);
 
     // ixml: s, prolog?, rule++RS, s.

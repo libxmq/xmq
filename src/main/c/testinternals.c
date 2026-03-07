@@ -731,7 +731,7 @@ void test_annotate_offsets()
         return;
     }
 
-    xmqAnnotateOffsets(doc, 0, "o", NULL);
+    xmqAnnotateOffsets(doc, "o", NULL);
 
     XMQOutputSettings *os = xmqNewOutputSettings();
     xmqSetCompact(os, true);
@@ -746,6 +746,7 @@ void test_annotate_offsets()
         printf("Annotate failed: >%s<\n", start);
     }
     free(start);
+    xmqFreeDoc(doc);
 }
 
 int main(int argc, char **argv)

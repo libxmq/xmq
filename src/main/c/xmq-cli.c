@@ -1533,9 +1533,9 @@ XMQRenderStyle terminal_render_theme(bool *use_color, bool *bg_dark_mode)
     return XMQ_RENDER_COLOR_DARKBG;
 }
 
-XMQProceed print_tool(XMQDoc *doc, XMQNode *node, void *user_data);
+XMQProceed print_tool(XMQDoc *doc, XMQNodePtr node, void *user_data);
 
-XMQProceed print_tool(XMQDoc *doc, XMQNode *node, void *user_data)
+XMQProceed print_tool(XMQDoc *doc, XMQNodePtr node, void *user_data)
 {
     const char *name = xmqGetStringRel(doc, "name", node);
     const char *desc = xmqGetStringRel(doc, "description", node);

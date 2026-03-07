@@ -4,7 +4,7 @@
 
 char *test = __FILE__;
 
-XMQProceed add_field(XMQDoc *doc, XMQNode *field, void *user_data)
+XMQProceed add_field(XMQDoc *doc, XMQNodePtr field, void *user_data)
 {
     const char *name = xmqGetStringRel(doc, "name", field);
 
@@ -13,10 +13,11 @@ XMQProceed add_field(XMQDoc *doc, XMQNode *field, void *user_data)
     return XMQ_CONTINUE;
 }
 
-XMQProceed add_driver(XMQDoc *doc, XMQNode *driver, void *user_data)
+XMQProceed add_driver(XMQDoc *doc, XMQNodePtr driver, void *user_data)
 {
     const char *name = xmqGetStringRel(doc, "name", driver);
     int32_t trigger = xmqGetIntRel(doc, "trigger", driver);
+    XMQNodePtr node = xmqGetNodeRel(doc, "trigger", driver);
 
     printf("add %s %s %d\n", xmqGetName(driver), name, trigger);
 
