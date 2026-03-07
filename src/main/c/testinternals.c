@@ -731,7 +731,7 @@ void test_annotate_offsets()
         return;
     }
 
-    xmqAnnotateOffsets(doc, "o", NULL);
+    xmqAnnotateOffsets(doc, 0, "o", NULL);
 
     XMQOutputSettings *os = xmqNewOutputSettings();
     xmqSetCompact(os, true);
