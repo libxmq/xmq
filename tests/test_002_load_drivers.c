@@ -17,9 +17,17 @@ XMQProceed add_driver(XMQDoc *doc, XMQNodePtr driver, void *user_data)
 {
     const char *name = xmqGetStringRel(doc, "name", driver);
     int32_t trigger = xmqGetIntRel(doc, "trigger", driver);
-    XMQNodePtr node = xmqGetNodeRel(doc, "trigger", driver);
 
     printf("add %s %s %d\n", xmqGetName(driver), name, trigger);
+
+    XMQNodePtr node = xmqGetNodeRel(doc, "trigger", driver);
+    xmqSetContent(node, "hejsan");
+    const char *t = xmqGetContent(node);
+    if (strcmp(t, "hejsan"))
+    {
+        printf("Internal error expected \"hejsan\" but got \"%s\".\n", t);
+        exit(1);
+    }
 
     xmqForeachRel(doc, "field", add_field, NULL, driver);
     return XMQ_CONTINUE;

@@ -7404,6 +7404,13 @@ const char *xmqGetContent(XMQNodePtr node)
     return NULL;
 }
 
+void xmqSetContent(XMQNodePtr node, const char *raw_content)
+{
+    xmlNodePtr n = (xmlNodePtr)node;
+    xmlNodeSetContent(n, NULL);
+    xmlNodeAddContent(n, (const xmlChar*)raw_content);
+}
+
 XMQProceed catch_single_content(XMQDoc *doc, XMQNodePtr node, void *user_data)
 {
     const char **out = (const char **)user_data;
