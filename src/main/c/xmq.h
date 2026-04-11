@@ -427,9 +427,6 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
 /** Parse a file with xmq content. */
 bool xmqTokenizeFile(XMQParseState *state, const char *file);
 
-/** Parse a file descriptor with xmq content. */
-bool xmqTokenizeFileDescriptor(XMQParseState *state, int fd);
-
 /**
     xmqNewParseState:
     @callbacks: these callbacks will be invoked for each token.
@@ -625,12 +622,6 @@ void xmqSetWriterError(XMQOutputSettings *os, XMQWriter error);
 /** Setup the printer to print content to stdout and errors to sderr. */
 void xmqSetupPrintStdOutStdErr(XMQOutputSettings *ps);
 
-/** Setup the printer to print to a file. */
-void xmqSetupPrintFile(XMQOutputSettings *ps, const char *file);
-
-/** Setup the printer to print to a filedescriptor. */
-void xmqSetupPrintFileDescriptor(XMQOutputSettings *ps, int fd);
-
 /** Setup the printer to print to a dynamically memory buffer. */
 void xmqSetupPrintMemory(XMQOutputSettings *ps, char **start, char **stop);
 
@@ -775,24 +766,6 @@ int xmqForeach(XMQDoc *doq, const char *xpath, XMQNodeCallback cb, void *user_da
 int xmqForeachRel(XMQDoc *doq, const char *xpath, XMQNodeCallback cb, void *user_data, XMQNodePtr relative);
 
 /**
-   xmqReplaceEntity: Replace the selected entity with the supplied content.
-   @entity: the entity
-   @content: the string content to be inserted
-
-   Returns the number of replacements.
-*/
-int xmqReplaceEntity(XMQDoc *doq, const char *entity, const char *content);
-
-/**
-   xmqReplaceEntity: Replace the selected entity with the supplied content node.
-   @entity: the entity
-   @content: the string content to be inserted
-
-   Returns the number of replacements.
-*/
-int xmqReplaceEntityWithNode(XMQDoc *doq, const char *entity, XMQDoc *idoq, XMQNodePtr inode);
-
-/**
     xmqVersion:
 
     Return the current xmq version in this library.
@@ -848,13 +821,6 @@ bool xmqTracing();
     The default is in xmq format.
 */
 void xmqSetLogHumanReadable(bool e);
-
-/**
-   xmqLogXMQ:
-
-   Return whether logging in pure xmq is enabled or not.
-*/
-bool xmqLoggingXMQ();
 
 /**
     xmqParseBufferWithType:
