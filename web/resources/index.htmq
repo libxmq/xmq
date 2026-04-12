@@ -227,8 +227,8 @@ html {
                  # Replace entities with strings you can also --with-text-file=abc
                  # which inserts the content safely quoted, or as DOM --with-file=abc.xml
                  # where the file abc.xml has to be parseable (XML/HTL/XMQ/HTMQ/JSON).
-                 xmq template.htmq replace-entity DATE 2024-01-11 render-html --theme=light > page.html
-                 xmq test.htmq replace-entity INFO --with-file=data.json render-html --theme=light > page.html
+                 xmq template.htmq replace-entity DATE 2024-01-11 render-html --theme=lightbg > page.html
+                 xmq test.htmq replace-entity INFO --with-file=data.json render-html --theme=lightbg > page.html
 
                  # Apply an xslq transform to some json to generate a html page.
                  xmq todos.json transform todos.xslq to-html > list.html
@@ -299,9 +299,7 @@ html {
             span(class = code) = 'xmq shiporder.xml browse'
             br
             'You can shorten the command to just br. Set the environement variable
-             XMQ_THEME=dark or XMQ_THEME=light to background color or XMQ_THEME=mono for no color.
-             You can override all or specific colors: XMQ_THEME=Q=ff0000_U:E=00ff00_B'
-             to set quotes as red underline and element names as blue bold.
+             XMQ_THEME=darkbg or XMQ_THEME=lightbg to background color or XMQ_THEME=mono for no color.'
         }
         p {
             'Use shell redirection to store the XMQ output in a file:'

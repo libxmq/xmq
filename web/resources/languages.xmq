@@ -62,6 +62,30 @@ list {
                    }'
     }
     lang {
+        name    = 'Setext'
+        info    = 'Structured Enhanced Text.'
+        year    = 1992
+        url     = https://web.archive.org/web/20000901000730/http://www.bsdi.com/setext/setext_concepts_Aug92.etx.txt
+        by      = 'Ian Feldman'
+        example =
+'''''
+Title
+=====
+
+Subhead
+-------
+
+This is **very important**...
+
+This is an ~italic~ word.
+
+This is _underlined_text_.
+
+* Item 1
+* Item 2
+'''''
+    }
+    lang {
         name    = HTML
         info    = 'Hypertext Markup Language.'
         year    = 1993
