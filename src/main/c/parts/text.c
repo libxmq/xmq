@@ -721,6 +721,7 @@ bool find_line_col(const char *start, const char *stop, size_t at, int *out_line
     return true;
 }
 
+#ifndef XMQ_ASCII_ONLY
 #define COMMA ,
 #define UNICODE_CATEGORIES \
     X(Lu,Uppercase_Letter,"Lu",an uppercase letter) \
@@ -935,6 +936,13 @@ UNICODE_CATEGORIES
 #undef X
     return false;
 }
+
+#else // XMQ_ASCII_ONLY
+
+const char **unicode_lookup_category_parts(const char *category) { (void)category; return NULL; }
+bool unicode_get_category_part(const char *part, int **out, size_t *out_len) { (void)part; (void)out; (void)out_len; return false; }
+
+#endif // XMQ_ASCII_ONLY
 
 bool category_has_code(int code, int *cat, size_t cat_len)
 {
