@@ -3445,6 +3445,7 @@ void open_browser(const char *file)
     if (rc != 0)
     {
         fprintf(stderr, "xmq: command failed rc=%d:\n%s\n", rc, buf);
+        fprintf(stderr, "xmq: command failed rc=%d:\n%s\n", rc, buf);
     }
 #endif
 }

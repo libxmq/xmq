@@ -124,7 +124,7 @@ public class Main
     }
 
     static String help = """
-UUUUsage: xmqj [options] <file> ( <command> [options] )*
+Usage: xmqj [options] <file> ( <command> [options] )*
 
   --debug    Output debug information on stderr.
   --help     Display this help and exit.

@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2023-2024 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2023-2026 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -234,7 +234,14 @@ bool generate_tex_color(char *buf, size_t buf_size, XMQColorDef *def, const char
 
     if (buf_size < 128) return false;
 
-    snprintf(buf, buf_size, "\\definecolor{%s}{RGB}{%d,%d,%d}", name, def->r, def->g, def->b);
+    if (def->r < 0)
+    {
+        snprintf(buf, buf_size, "\\definecolor{%s}{RGB}{%d,%d,%d}", name, 0, 0, 0);
+    }
+    else
+    {
+        snprintf(buf, buf_size, "\\definecolor{%s}{RGB}{%d,%d,%d}", name, def->r, def->g, def->b);
+    }
     return true;
 }
 
