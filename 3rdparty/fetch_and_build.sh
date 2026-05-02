@@ -33,7 +33,7 @@ then
     fi
 
     cd zlib-1.3-posix
-    if [ ! -f zlib1.dll ]; then
+    if [ ! -f libz.a ]; then
         echo
         echo Building static zlib posix
         echo
