@@ -216,6 +216,7 @@ void set_node_namespace(XMQParseState *state, xmlNodePtr node, const char *node_
             ns = xmlNewNs(node,
                           NULL,
                           (const xmlChar *)state->element_namespace);
+            state->namespace_needs_href = ns;
             debug("[XMQ] created namespace prefix=%s in element %s\n", state->element_namespace, node_name);
         }
         debug("[XMQ] setting namespace prefix=%s for element %s\n", state->element_namespace, node_name);

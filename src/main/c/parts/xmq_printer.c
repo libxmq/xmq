@@ -443,7 +443,17 @@ size_t print_element_name_and_attributes(XMQPrintState *ps, xmlNode *node)
         }
         print_utf8(ps, ns_color, 1, prefix, NULL);
         print_utf8(ps, COLOR_ns_colon, 1, ":", NULL);
+        /*
+          Useful code to debug namespaces.
+          print_utf8(ps, COLOR_ns_colon, 1, "[", NULL);
+          char bb[64];
+          snprintf(bb, 64, "node=%p ns=%p href=", node, node->ns);
+          print_utf8(ps, key_color, 1, bb, NULL);
+          print_utf8(ps, key_color, 1, node->ns->href, NULL);
+          print_utf8(ps, COLOR_ns_colon, 1, "] ", NULL);
+        */
     }
+
 
     if (is_key_value_node(node) && !xml_first_attribute(node))
     {

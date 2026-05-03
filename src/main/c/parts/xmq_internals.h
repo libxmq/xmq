@@ -311,6 +311,8 @@ struct XMQParseState
     int magic_cookie; // Used to check that the state has been properly initialized.
 
     char *element_namespace; // The element namespace is found before the element name. Remember the namespace name here.
+    void *namespace_needs_href; // E.g. namespace xsl was created because we found xsl:stylesheet,
+                                // insert correct href when the xmlns:xsl is found.
     char *attribute_namespace; // The attribute namespace is found before the attribute key. Remember the namespace name here.
     bool declaring_xmlns; // Set to true when the xmlns declaration is found, the next attr value will be a href
     void *declaring_xmlns_namespace; // The namespace to be updated with attribute value, eg. xmlns=uri or xmlns:prefix=uri

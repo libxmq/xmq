@@ -3277,6 +3277,8 @@ struct XMQParseState
     int magic_cookie; // Used to check that the state has been properly initialized.
 
     char *element_namespace; // The element namespace is found before the element name. Remember the namespace name here.
+    void *namespace_needs_href; // E.g. namespace xsl was created because we found xsl:stylesheet,
+                                // insert correct href when the xmlns:xsl is found.
     char *attribute_namespace; // The attribute namespace is found before the attribute key. Remember the namespace name here.
     bool declaring_xmlns; // Set to true when the xmlns declaration is found, the next attr value will be a href
     void *declaring_xmlns_namespace; // The namespace to be updated with attribute value, eg. xmlns=uri or xmlns:prefix=uri
@@ -5985,26 +5987,20 @@ void do_ns_declaration(XMQParseState *state,
         // The prefix starts at stop+1.
         size_t len = suffix-(stop+1);
         char *name = strndup(stop+1, len);
-        ns = xmlNewNs(element,
-                      NULL,
-                      (const xmlChar *)name);
 
-        if (!ns)
+        if (state->namespace_needs_href)
         {
             // Oups, this namespace has already been created, for example due to the namespace prefix
             // of the element itself, eg: abc:element(xmlns:abc = uri)
             // Lets pick this ns up and reuse it.
-            xmlNsPtr *list = xmlGetNsList(state->doq->docptr_.xml,
-                                          element);
-            for (int i = 0; list[i]; ++i)
-            {
-                if (list[i]->prefix && !strcmp((char*)list[i]->prefix, name))
-                {
-                    ns = list[i];
-                    break;
-                }
-            }
-            free(list);
+            ns = (xmlNsPtr)state->namespace_needs_href;
+            state->namespace_needs_href = NULL;
+        }
+        else
+        {
+            ns = xmlNewNs(element,
+                          NULL,
+                          (const xmlChar *)name);
         }
         free(name);
     }
@@ -6072,7 +6068,7 @@ void update_namespace_href(XMQParseState *state,
 
     char *href = strndup(start, stop-start);
     ns->href = (const xmlChar*)href;
-    debug("xmq=", "update namespace prefix=%s with href=%s", ns->prefix, href);
+    debug("xmq=", "update namespace %s with href=%s", ns->prefix, ns->href);
 
     if (start[0] == 0 && ns == state->default_namespace)
     {
@@ -6094,7 +6090,6 @@ void do_attr_value_text(XMQParseState *state,
     if (state->declaring_xmlns)
     {
         assert(state->declaring_xmlns_namespace);
-
         update_namespace_href(state, (xmlNsPtr)state->declaring_xmlns_namespace, start, stop);
         state->declaring_xmlns = false;
         state->declaring_xmlns_namespace = NULL;
@@ -6206,6 +6201,7 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
                 ns = xmlNewNs(new_node,
                               NULL,
                               (const xmlChar *)state->element_namespace);
+                state->namespace_needs_href = ns;
                 debug("xmq=", "created namespace prefix=%s in element %s", state->element_namespace, name);
             }
             debug("xmq=", "setting namespace prefix=%s for element %s", state->element_namespace, name);
