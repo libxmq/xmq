@@ -345,18 +345,18 @@ fi
 
 CXXFLAGS="-DPLATFORM_${PLATFORM} ${CXXFLAGS_EXTRAS} -D${MNEMONIC} -Wall -Wunused-variable -Wextra -Wno-clobbered -Wno-unused-parameter -Wno-attributes -Wparentheses -Wmissing-declarations -Werror=implicit-function-declaration -Wredundant-decls -Wimplicit -Wno-unused-variable -Wno-error=deprecated-declarations -fmessage-length=0 -std=c++11 $GCC_EXTRA_CXXFLAGS -Wno-unused-function -Wreturn-type"
 
-CXXFLAGS_release="-Os"
+CXXFLAGS_release="-O3"
 CXXFLAGS_debug="-O0 -g"
 CXXFLAGS_asan="-O0 -g ${ASAN_CFLAGS}"
 
 CFLAGS="-DPLATFORM_${PLATFORM} ${CFLAGS_EXTRAS} -D${MNEMONIC} $GCC_EXTRA_CFLAGS -Wall -Wunused-variable -Wextra -Wno-clobbered -Wno-unused-parameter -Wno-attributes -Wparentheses -Wmissing-declarations -Werror=implicit-function-declaration -Wredundant-decls -Wimplicit -Wno-unused-variable -Wno-error=deprecated-declarations -fmessage-length=0 -Wno-unused-function -Wreturn-type"
 
-CFLAGS_release="-Os"
+CFLAGS_release="-O3"
 CFLAGS_debug="-O0 -g"
 CFLAGS_asan="-O0 -g ${ASAN_CFLAGS}"
 
 LDFLAGS=""
-LDFLAGS_release="-Os"
+LDFLAGS_release="-O3"
 
 LDFLAGS_debug="-g ${MEDIA_LIBS}"
 LDFLAGSBEGIN_debug="${MEDIA_LIBS}"

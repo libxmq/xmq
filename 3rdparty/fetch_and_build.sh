@@ -69,7 +69,7 @@ then
     fi
 
     cd libxslt-posix
-    if [ ! -f ./.libs/libxslt.a ]; then
+    if [ ! -f ./libxslt/.libs/libxslt.a ]; then
         echo
         echo Building static libxslt posix
         echo
