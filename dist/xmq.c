@@ -3277,8 +3277,6 @@ struct XMQParseState
     int magic_cookie; // Used to check that the state has been properly initialized.
 
     char *element_namespace; // The element namespace is found before the element name. Remember the namespace name here.
-    void *namespace_needs_href; // E.g. namespace xsl was created because we found xsl:stylesheet,
-                                // insert correct href when the xmlns:xsl is found.
     char *attribute_namespace; // The attribute namespace is found before the attribute key. Remember the namespace name here.
     bool declaring_xmlns; // Set to true when the xmlns declaration is found, the next attr value will be a href
     void *declaring_xmlns_namespace; // The namespace to be updated with attribute value, eg. xmlns=uri or xmlns:prefix=uri
@@ -3630,6 +3628,7 @@ char *copy_lines(int num_prefix_spaces, const char *start, const char *stop, int
 void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSettings *os);
 xmlNodePtr create_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop, xmlNodePtr parent);
 void create_node(XMQParseState *state, const char *start, const char *stop);
+xmlNsPtr find_ns(xmlNodePtr node, const xmlChar *prefix);
 void update_namespace_href(XMQParseState *state, xmlNsPtr ns, const char *start, const char *stop);
 xmlNodePtr create_quote(XMQParseState *state, size_t l, size_t col, const char *start, const char *stop, const char *suffix,  xmlNodePtr parent);
 void debug_content_comment(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
@@ -5438,6 +5437,33 @@ void xmqFreeParseState(XMQParseState *state)
     free(state);
 }
 
+void xmqClearDoc(XMQDoc *doq)
+{
+    if (!doq) return;
+    if (doq->error_)
+    {
+        debug("xmq=", "freeing error message");
+        free((void*)doq->error_);
+        doq->error_ = NULL;
+    }
+    if (doq->docptr_.xml)
+    {
+        debug("xmq=", "freeing xml doc");
+        xmlFreeDoc(doq->docptr_.xml);
+        doq->docptr_.xml = xmlNewDoc((const xmlChar*)"1.0");
+    }
+    if (doq->yaep_grammar_)
+    {
+        yaepFreeGrammar (doq->yaep_parse_run_, doq->yaep_grammar_);
+        yaepFreeParseRun (doq->yaep_parse_run_);
+        xmqFreeParseState(doq->xmq_parse_state_);
+        doq->yaep_grammar_ = NULL;
+        doq->yaep_parse_run_ = NULL;
+        doq->xmq_parse_state_ = NULL;
+    }
+    debug("xmq=", "clearing xmq doc");
+}
+
 void xmqFreeDoc(XMQDoc *doq)
 {
     if (!doq) return;
@@ -5943,7 +5969,7 @@ void do_ns_declaration(XMQParseState *state,
                        const char *stop,
                        const char *suffix)
 {
-    // We found a namespace. It is either a default declaration xmlns=... or xmlns:prefix=...
+    // We found a namespace declaration attribute. It is either a default declaration xmlns=... or xmlns:prefix=...
     //
     // We can see the difference here since the parser will invoke with suffix
     // either pointing to stop (xmlns=) or after stop (xmlns:foo=)
@@ -5988,19 +6014,30 @@ void do_ns_declaration(XMQParseState *state,
         size_t len = suffix-(stop+1);
         char *name = strndup(stop+1, len);
 
-        if (state->namespace_needs_href)
+        ns = find_ns(element, (const xmlChar*)name);
+        if (!ns) {
+            // This should be the only lookup, but it fails to find the incomplete namespaces without uri...
+            // But it finds the xml namespace.
+            ns = xmlSearchNs(element->doc,
+                             element,
+                             (const xmlChar *)name);
+        }
+
+        if (ns)
         {
-            // Oups, this namespace has already been created, for example due to the namespace prefix
+            // Oups, this exact namespace has already been created, for example due to the namespace prefix
             // of the element itself, eg: abc:element(xmlns:abc = uri)
+            // or from an attribute elment(gurka:alfa = 123 xmlns:gurka = uri)
             // Lets pick this ns up and reuse it.
-            ns = (xmlNsPtr)state->namespace_needs_href;
-            state->namespace_needs_href = NULL;
+            debug("xmq=", "found existing element namespace for xmlns:%s", name);
         }
         else
         {
+            // Not used before, create a new namespace.
             ns = xmlNewNs(element,
                           NULL,
                           (const xmlChar *)name);
+            debug("xmq=", "created new namespace declaration xmlns:%s", name);
         }
         free(name);
     }
@@ -6012,6 +6049,22 @@ void do_ns_declaration(XMQParseState *state,
     }
     state->declaring_xmlns = true;
     state->declaring_xmlns_namespace = ns;
+}
+
+xmlNsPtr find_ns(xmlNodePtr node, const xmlChar *prefix)
+{
+    for (xmlNodePtr cur = node; cur; cur = cur->parent)
+    {
+        for (xmlNsPtr ns = cur->nsDef; ns; ns = ns->next)
+        {
+            if ((prefix == NULL && ns->prefix == NULL) ||
+                (prefix && ns->prefix && xmlStrEqual(prefix, ns->prefix)))
+            {
+                return ns;
+            }
+        }
+    }
+    return NULL;
 }
 
 void do_attr_key(XMQParseState *state,
@@ -6036,16 +6089,27 @@ void do_attr_key(XMQParseState *state,
     }
     else
     {
-        xmlNsPtr ns = xmlSearchNs(state->doq->docptr_.xml,
-                                  parent,
-                                  (const xmlChar *)state->attribute_namespace);
-        if (!ns)
+        xmlNsPtr ns = find_ns(parent, (const xmlChar *)state->attribute_namespace);
+        if (!ns) {
+            // This should be the only lookup, but it fails to find the incomplete namespaces without uri...
+            // But it finds the xml namespace.
+            ns = xmlSearchNs(parent->doc,
+                             parent,
+                             (const xmlChar *)state->attribute_namespace);
+        }
+
+        if (ns)
+        {
+            debug("xmq=", "found existing namespace for attribute %s:%s inside %s", state->attribute_namespace, key, parent->name);
+        }
+        else
         {
             // The namespaces does not yet exist. Lets create it.. Lets hope it will be declared
             // inside the attributes of this node. Use a temporary href for now.
             ns = xmlNewNs(parent,
                           NULL,
                           (const xmlChar *)state->attribute_namespace);
+            debug("xmq=", "created new namespace for attribute %s:%s inside %s", state->attribute_namespace, key, parent->name);
         }
         attr = xmlNewNsProp(parent, ns, (xmlChar*)key, NULL);
         free(state->attribute_namespace);
@@ -6201,7 +6265,6 @@ void create_node(XMQParseState *state, const char *start, const char *stop)
                 ns = xmlNewNs(new_node,
                               NULL,
                               (const xmlChar *)state->element_namespace);
-                state->namespace_needs_href = ns;
                 debug("xmq=", "created namespace prefix=%s in element %s", state->element_namespace, name);
             }
             debug("xmq=", "setting namespace prefix=%s for element %s", state->element_namespace, name);
@@ -8392,9 +8455,22 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     if (rc)
     {
         // There was an error, pick the generated error tree.
-        xmlFreeDoc(doc->docptr_.xml);
-        xmqSetImplementationDoc(doc, run->failure->docptr_.xml);
-        xmqSetImplementationDoc(run->failure, NULL);
+        if (flags & XMQ_FLAG_IXML_FAIL_SILENT)
+        {
+            // Create an empty document.
+            xmqClearDoc(doc);
+
+            // Free the unused failure document.
+            xmlFreeDoc(run->failure->docptr_.xml);
+            xmqSetImplementationDoc(run->failure, NULL);
+        }
+        else
+        {
+            xmlFreeDoc(doc->docptr_.xml);
+            // Copy the generated failure document as output.
+            xmqSetImplementationDoc(doc, run->failure->docptr_.xml);
+            xmqSetImplementationDoc(run->failure, NULL);
+        }
     }
     else
     {
@@ -17910,7 +17986,17 @@ size_t print_element_name_and_attributes(XMQPrintState *ps, xmlNode *node)
         }
         print_utf8(ps, ns_color, 1, prefix, NULL);
         print_utf8(ps, COLOR_ns_colon, 1, ":", NULL);
+        /*
+          Useful code to debug namespaces.
+          print_utf8(ps, COLOR_ns_colon, 1, "[", NULL);
+          char bb[64];
+          snprintf(bb, 64, "node=%p ns=%p href=", node, node->ns);
+          print_utf8(ps, key_color, 1, bb, NULL);
+          print_utf8(ps, key_color, 1, node->ns->href, NULL);
+          print_utf8(ps, COLOR_ns_colon, 1, "] ", NULL);
+        */
     }
+
 
     if (is_key_value_node(node) && !xml_first_attribute(node))
     {
@@ -18493,6 +18579,20 @@ void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align)
         print_utf8(ps, COLOR_attr_ns, 1, prefix, NULL);
         print_utf8(ps, COLOR_ns_colon, 1, ":", NULL);
     }
+
+    //Useful code to debug namespaces.
+    /*
+    print_utf8(ps, COLOR_ns_colon, 1, "[", NULL);
+    char bb[64];
+    snprintf(bb, 64, "node=%p ns=%p href=", a, a->ns);
+    print_utf8(ps, COLOR_ns_colon, 1, bb, NULL);
+    if (a->ns && a->ns->href)
+    {
+        print_utf8(ps, COLOR_ns_colon, 1, a->ns->href, NULL);
+    }
+    print_utf8(ps, COLOR_ns_colon, 1, "] ", NULL);
+    */
+
     print_utf8(ps, COLOR_attr_key, 1, key, NULL);
 
     if (a->children != NULL && !is_single_empty_text_node(a->children))

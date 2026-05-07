@@ -167,6 +167,7 @@ struct XMQCliCommand
     const char *ixml_source; // IXML grammar source to be used.
     const char *ixml_filename; // Where the ixml grammar was read from.
     XMQDoc *ixml_grammar; // The prepared ixml grammar to be reused.
+    bool ixml_fail_silent; // Generate empty document ixml parse fails. Use with --lines
     bool ixml_all_parses; // Print all possible parses when parse is ambiguous.
     bool ixml_try_to_recover; // Try to recover when parsing with an ixml grammar.
     bool build_xml_of_ixml; // Generate xml directly from ixml.
@@ -1703,6 +1704,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->ixml_try_to_recover=true;
         return true;
     }
+    if (!strcmp(arg, "--ixml-fail-silent"))
+    {
+        command->ixml_fail_silent = true;
+        return true;
+    }
     if (!strcmp(arg, "--log-xmq") || !strcmp(arg, "-lx"))
     {
         log_xmq__ = true;
@@ -2074,6 +2080,7 @@ bool cmd_load(XMQCliCommand *command, bool *no_more_data)
         int flags = 0;
         if (command->ixml_all_parses) flags |= XMQ_FLAG_IXML_ALL_PARSES;
         if (command->ixml_try_to_recover) flags |= XMQ_FLAG_IXML_TRY_TO_RECOVER;
+        if (command->ixml_fail_silent) flags |= XMQ_FLAG_IXML_FAIL_SILENT;
 
         bool ok = xmqParseBufferWithIXML(command->env->doc,
                                          command->input_current_line_start,

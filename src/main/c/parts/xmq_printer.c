@@ -1036,6 +1036,20 @@ void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align)
         print_utf8(ps, COLOR_attr_ns, 1, prefix, NULL);
         print_utf8(ps, COLOR_ns_colon, 1, ":", NULL);
     }
+
+    //Useful code to debug namespaces.
+    /*
+    print_utf8(ps, COLOR_ns_colon, 1, "[", NULL);
+    char bb[64];
+    snprintf(bb, 64, "node=%p ns=%p href=", a, a->ns);
+    print_utf8(ps, COLOR_ns_colon, 1, bb, NULL);
+    if (a->ns && a->ns->href)
+    {
+        print_utf8(ps, COLOR_ns_colon, 1, a->ns->href, NULL);
+    }
+    print_utf8(ps, COLOR_ns_colon, 1, "] ", NULL);
+    */
+
     print_utf8(ps, COLOR_attr_key, 1, key, NULL);
 
     if (a->children != NULL && !is_single_empty_text_node(a->children))

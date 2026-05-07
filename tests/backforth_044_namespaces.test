@@ -1,0 +1,32 @@
+INPUT
+aaa:gurka(aaa:x = 123
+          bbb:y = 444
+          ccc:z = aaa
+          xmlns:aaa = http://aaa
+          xmlns:bbb = http://bbb
+          xmlns:ccc = http://ccc)
+{
+    aaa:m1 = 111
+    bbb:m2 = 222
+    ccc:m3 = 333
+}
+FIRST
+<?xml version="1.0" encoding="utf-8"?>
+<aaa:gurka xmlns:aaa="http://aaa" xmlns:bbb="http://bbb" xmlns:ccc="http://ccc" aaa:x="123" bbb:y="444" ccc:z="aaa"><aaa:m1>111</aaa:m1><bbb:m2>222</bbb:m2><ccc:m3>333</ccc:m3></aaa:gurka>
+SECOND
+aaa:gurka(aaa:x     = 123
+          bbb:y     = 444
+          ccc:z     = aaa
+          xmlns:aaa = http://aaa
+          xmlns:bbb = http://bbb
+          xmlns:ccc = http://ccc)
+{
+    aaa:m1 = 111
+    bbb:m2 = 222
+    ccc:m3 = 333
+}
+END
+ARGS_FIRST
+CMDS_FIRST to-xml
+ARGS_SECOND --trim=none
+CMDS_SECOND to-xmq
