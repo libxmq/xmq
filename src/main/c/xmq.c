@@ -4836,6 +4836,8 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
 
 bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XMQDoc *ixml_grammar, int flags)
 {
+    bool ok = false;
+
     if (!doc || !start || !ixml_grammar) return false;
     if (!stop) stop = start+strlen(start);
 
@@ -4914,6 +4916,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
             // Free the unused failure document.
             xmlFreeDoc(run->failure->docptr_.xml);
             xmqSetImplementationDoc(run->failure, NULL);
+            ok = false;
         }
         else
         {
@@ -4921,12 +4924,14 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
             // Copy the generated failure document as output.
             xmqSetImplementationDoc(doc, run->failure->docptr_.xml);
             xmqSetImplementationDoc(run->failure, NULL);
+            ok = false;
         }
     }
     else
     {
         // IXML parse was fine, generate a DOM from the yaep tree.
         generate_dom_from_yaep_node(doc->docptr_.xml, NULL, run->root, NULL, 0, 0);
+        ok = true;
     }
 
     if (run->ambiguous_p)
@@ -4951,7 +4956,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
         run->root = NULL;
     }
 
-    return true;
+    return ok;
 }
 
 bool xmqParseFileWithIXML(XMQDoc *doc, const char *file_name, XMQDoc *ixml_grammar, int flags)

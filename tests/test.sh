@@ -34,12 +34,13 @@ fi
 rm -rf "$OUTPUT"
 mkdir -p "$OUTPUT"
 
-#for i in tests/theme_???_*.test
-#do
-#    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
-#    tests/test_theme.sh "$PROG" "$OUTPUT" "$i"
-#    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
-#done
+
+for i in tests/theme_???_*.test
+do
+    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+    tests/test_theme.sh "$PROG" "$OUTPUT" "$i"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+done
 
 for i in tests/[0-9][0-9][0-9]_*.test
 do

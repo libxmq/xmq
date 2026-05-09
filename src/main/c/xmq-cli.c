@@ -2090,9 +2090,12 @@ bool cmd_load(XMQCliCommand *command, bool *no_more_data)
 
         if (!ok)
         {
-            exit(1);
+            verbose_("xmq=", "cmd-load-ixml parse failed", from);
         }
-        verbose_("xmq=", "cmd-load-ixml %zu bytes from %s", xmqGetOriginalSize(command->env->doc), from);
+        else
+        {
+            verbose_("xmq=", "cmd-load-ixml %zu bytes from %s", xmqGetOriginalSize(command->env->doc), from);
+        }
         xmlCleanupParser();
     }
     else
