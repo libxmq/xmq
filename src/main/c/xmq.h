@@ -616,6 +616,7 @@ void xmqFreeOutputSettings(XMQOutputSettings *os);
 void xmqSetAddIndent(XMQOutputSettings *os, int add_indent);
 void xmqSetCompact(XMQOutputSettings *os, bool compact);
 void xmqSetUseColor(XMQOutputSettings *os, bool use_color);
+void xmqSetTrueColor(XMQOutputSettings *os, bool truecolor);
 void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode);
 void xmqSetPreferDoubleQuotes(XMQOutputSettings *os, bool prefer_double_quotes);
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines);

@@ -194,6 +194,7 @@ struct XMQCliCommand
     int  flags;
     bool use_color; // Uses color or not for terminal/html/tex
     bool bg_dark_mode; // Terminal has dark background. Specify with XMQ_BG=light or XMQ_BG=dark or --bg=light --bg=dark
+    bool truecolor; // Terminal supports truecolor/24bit ansi.
     const char *use_id; // When rendering html mark the pre tag with this id.
     const char *use_class; // When rendering html mark the pre tag with this class.
     bool add_nl; // Add newline at end of quote/unquote printing.
@@ -248,6 +249,7 @@ struct XMQCliEnvironment
     XMQCliCommand *load;
     bool use_color;
     bool bg_dark_mode;
+    bool truecolor;
     const char *use_id;
     char *out_start; // Points to generated output: xml/xmq/htmq/html/json/text
     char *out_stop; // Points to byte after output, or NULL which means start is NULL terminated.
@@ -395,6 +397,7 @@ void restoreStdinTerminal();
 bool shell_safe(char *i);
 const char *skip_ansi_backwards(const char *i, const char *start);
 void substitute_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, bool only_chars);
+bool detect_truecolor();
 void lookup_bg(bool *use_color, bool *bg_dark_mode);
 const char *lookup_theme_spec();
 const char *tokenize_type_to_string(XMQCliTokenizeType type);
@@ -677,6 +680,7 @@ XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env)
 
     c->use_color = env->use_color;
     c->bg_dark_mode = env->bg_dark_mode;
+    c->truecolor = env->truecolor;
     c->env = env;
     c->cmd = XMQ_CLI_CMD_TO_XMQ;
     c->in_format = XMQ_CONTENT_DETECT;
@@ -1434,6 +1438,105 @@ bool query_xterm_bgcolor()
 
 #endif
 
+static bool contains(const char *s, const char *sub)
+{
+    return s && strstr(s, sub);
+}
+
+static bool equals(const char *s, const char *v)
+{
+    return s && strcmp(s, v) == 0;
+}
+
+bool detect_truecolor()
+{
+    const char *override = getenv("XMQ_TERM");
+
+    if (override)
+    {
+        if (equals(override, "truecolor"))
+        {
+            verbose_("xmq=", "force truecolor terminal using XMQ_TERM=truecolor");
+            return true;
+        }
+        verbose_("xmq=", "force 256color terminal using XMQ_TERM=%s", override);
+        return false;
+    }
+
+    const char *colorterm = getenv("COLORTERM");
+
+    // Strong indicators
+    if (contains(colorterm, "truecolor") || contains(colorterm, "24bit"))
+    {
+        verbose_("xmq=", "force truecolor terminal using COLORTERM=%s", colorterm);
+        return true;
+    }
+
+    const char *term = getenv("TERM");
+    const char *term_prog = getenv("TERM_PROGRAM");
+    const char *wt = getenv("WT_SESSION");
+    const char *konsole = getenv("KONSOLE_PROFILE_NAME");
+
+    // Windows Terminal
+    if (wt) {
+        verbose_("xmq=", "force truecolor windows terminal WT_SESSION non-empty");
+        return true;
+    }
+
+    // iTerm2
+    if (equals(term_prog, "iTerm.app"))
+    {
+        verbose_("xmq=", "force truecolor using iTerm.app");
+        return true;
+    }
+
+    // Apple Terminal does NOT support 24 bit color.
+    if (equals(term_prog, "Apple_Terminal"))
+    {
+        verbose_("xmq=", "force 256color using Apple_Terminal");
+        return false;
+    }
+
+    // Known truecolor terminals
+    if (contains(term, "xterm-truecolor"))
+    {
+        verbose_("xmq=", "force truecolor TERM contains xterm-truecolor");
+        return true;
+    }
+    if (contains(term, "tmux-truecolor"))
+    {
+        verbose_("xmq=", "force truecolor TERM contains tmux-truecolor");
+        return true;
+    }
+    if (contains(term, "screen-truecolor"))
+    {
+        verbose_("xmq=", "force truecolor TERM contains screen-truecolor");
+        return true;
+    }
+
+    // Konsole
+    if (konsole)
+    {
+        verbose_("xmq=", "force truecolor konsole KONSOLE_PROFILE_NAME non-empty");
+        return true;
+    }
+
+    // Many modern terminals set xterm-256color but still support truecolor
+    if (contains(term, "xterm") ||
+        contains(term, "screen") ||
+        contains(term, "tmux") ||
+        contains(term, "rxvt") ||
+        contains(term, "alacritty") ||
+        contains(term, "kitty"))
+    {
+        verbose_("xmq=", "force truecolor TERM=%s", term);
+        return true;
+    }
+
+    verbose_("xmq=", "fall back on 256color terminal");
+    return false;
+}
+
 void lookup_bg(bool *use_color, bool *bg_dark_mode)
 {
     const char *term = getenv("TERM");
@@ -1668,6 +1771,12 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         if (!color) exit(0); // Mono
         if (dark) exit(1); // Dark background
         exit(2); // Light background
+    }
+    if (!strcmp(arg, "--check-truecolor"))
+    {
+        bool tc = detect_truecolor();
+        if (tc) exit(0); // True color
+        exit(1); // Not true color.
     }
     if (!strcmp(arg, "--xmq"))
     {
@@ -4602,6 +4711,9 @@ int main(int argc, const char **argv)
 
     // Check if can find the best background setting for this terminal. mono/dark/light
     lookup_bg(&env.use_color, &env.bg_dark_mode);
+
+    // Check if terminal supports truecolor.
+    env.truecolor = detect_truecolor();
 
     // See if we can find the theme spec to use.
     default_theme_spec_ = lookup_theme_spec();

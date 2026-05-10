@@ -29,7 +29,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 #ifdef COLORS_MODULE
 
+bool generate_ansi_256color(char *buf, size_t buf_size, XMQColorDef *def);
+bool generate_ansi_truecolor(char *buf, size_t buf_size, XMQColorDef *def);
 bool hex_to_number(char c, char cc, int *v);
+
+typedef struct {
+    uint8_t r, g, b;
+} RGB;
+
+static int rgb_to_ansi256(uint8_t r, uint8_t g, uint8_t b);
+static RGB ansi256_to_rgb(int idx);
 
 /**
    get_color: Lookup the color strings
@@ -153,11 +162,11 @@ bool hex_to_number(char c, char cc, int *v)
     return true;
 }
 
-bool generate_ansi_color(char *buf, size_t buf_size, XMQColorDef *def)
+bool generate_ansi_color(char *buf, size_t buf_size, XMQColorDef *def, bool truecolor)
 {
-    // Example: \x1b[38;2;40;177;249mTRUECOLOR\x1b[0m
     if (buf_size < 32) return false;
 
+    // Start with the bold and underline.
     char *i = buf;
 
     *i++ = 27;
@@ -173,6 +182,40 @@ bool generate_ansi_color(char *buf, size_t buf_size, XMQColorDef *def)
         *i++ = '4';
         *i++ = ';';
     }
+
+    // Generate best approximation from standard 256 color palette.
+    if (!truecolor) return generate_ansi_256color(i, buf_size-(i-buf), def);
+
+    // Generate true color ansi.
+    return generate_ansi_truecolor(i, buf_size-(i-buf), def);
+}
+
+bool generate_ansi_256color(char *buf, size_t buf_size, XMQColorDef *def)
+{
+    // Example: \x1b[38;5;12m256COLOR\x1b[0m
+    char *i = buf;
+    *i++ = '3';
+    *i++ = '8';
+    *i++ = ';';
+    *i++ = '5';
+    *i++ = ';';
+
+    int color = rgb_to_ansi256(def->r, def->g, def->b);
+
+    char tmp[16];
+    snprintf(tmp, sizeof(tmp), "%d", color);
+    strcpy(i, tmp);
+    i += strlen(tmp);
+    *i++ = 'm';
+    *i++ = 0;
+
+    return true;
+}
+
+bool generate_ansi_truecolor(char *buf, size_t buf_size, XMQColorDef *def)
+{
+    // Example: \x1b[38;2;40;177;249mTRUECOLOR\x1b[0m
+    char *i = buf;
     *i++ = '3';
     *i++ = '8';
     *i++ = ';';
@@ -298,5 +341,112 @@ void setColorDef(XMQColorDef *cd, int r, int g, int b, bool bold, bool underline
     cd->bold = bold;
     cd->underline = underline;
 }
+
+/*
+ * Convert 24-bit RGB ANSI color to the nearest 8-bit ANSI terminal color.
+ *
+ * Supports:
+ *   - ANSI 16 system colors
+ *   - ANSI 6x6x6 color cube (16-231)
+ *   - ANSI grayscale ramp (232-255)
+ */
+
+
+/* Standard ANSI 16-color palette */
+static const RGB ansi16[16] = {
+    {0,   0,   0},       // 0 black
+    {128, 0,   0},       // 1 red
+    {0,   128, 0},       // 2 green
+    {128, 128, 0},       // 3 yellow
+    {0,   0,   128},     // 4 blue
+    {128, 0,   128},     // 5 magenta
+    {0,   128, 128},     // 6 cyan
+    {192, 192, 192},     // 7 white
+
+    {128, 128, 128},     // 8 bright black
+    {255, 0,   0},       // 9 bright red
+    {0,   255, 0},       // 10 bright green
+    {255, 255, 0},       // 11 bright yellow
+    {0,   0,   255},     // 12 bright blue
+    {255, 0,   255},     // 13 bright magenta
+    {0,   255, 255},     // 14 bright cyan
+    {255, 255, 255}      // 15 bright white
+};
+
+/* Squared Euclidean distance */
+static inline int color_distance(RGB a, RGB b)
+{
+    int dr = (int)a.r - (int)b.r;
+    int dg = (int)a.g - (int)b.g;
+    int db = (int)a.b - (int)b.b;
+
+    return dr * dr + dg * dg + db * db;
+}
+
+/* Generate RGB value for ANSI 256-color index */
+static RGB ansi256_to_rgb(int idx)
+{
+    RGB c;
+
+    /* ANSI 16 colors */
+    if (idx < 16)
+    {
+        return ansi16[idx];
+    }
+
+    /* 6x6x6 color cube */
+    if (idx >= 16 && idx <= 231)
+    {
+        int n = idx - 16;
+
+        int r = n / 36;
+        int g = (n / 6) % 6;
+        int b = n % 6;
+
+        static const int levels[6] = {
+            0, 95, 135, 175, 215, 255
+        };
+
+        c.r = levels[r];
+        c.g = levels[g];
+        c.b = levels[b];
+
+        return c;
+    }
+
+    /* Grayscale ramp */
+    int gray = 8 + (idx - 232) * 10;
+
+    c.r = gray;
+    c.g = gray;
+    c.b = gray;
+
+    return c;
+}
+
+/* Convert 24-bit RGB to nearest ANSI 256-color index */
+int rgb_to_ansi256(uint8_t r, uint8_t g, uint8_t b)
+{
+    RGB input = { r, g, b };
+
+    int best_idx = 0;
+    int best_dist = INT32_MAX;
+
+    for (int i = 0; i < 256; ++i)
+    {
+        RGB candidate = ansi256_to_rgb(i);
+
+        int dist = color_distance(input, candidate);
+
+        if (dist < best_dist) {
+            best_dist = dist;
+            best_idx = i;
+        }
+    }
+
+    return best_idx;
+}
+
+
 
 #endif // COLORS_MODULE

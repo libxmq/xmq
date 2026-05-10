@@ -172,6 +172,7 @@ struct XMQOutputSettings
     bool omit_decl;
     bool use_color;
     bool bg_dark_mode;
+    bool truecolor;
     bool prefer_double_quotes;
     bool escape_newlines;
     bool escape_non_7bit;
@@ -481,7 +482,7 @@ void element_strlen_name_prefix(xmlNode *attr, const char **name, const char **p
 void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len);
 const char *find_word_ignore_case(const char *start, const char *stop, const char *word);
 
-void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool truecolor, bool render_raw);
 void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
 void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
 

@@ -151,9 +151,13 @@ void test_colors()
 
     char buf[128];
 
-    generate_ansi_color(buf, sizeof(buf), &def);
+    generate_ansi_color(buf, sizeof(buf), &def, true);
 
     printf("ANSI %sTRUECOLOR\x1b[0m\n", buf);
+
+    generate_ansi_color(buf, sizeof(buf), &def, false);
+
+    printf("ANSI %s256COLOR\x1b[0m\n", buf);
 
     generate_html_color(buf, sizeof(buf), &def, "GURKA");
 

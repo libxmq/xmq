@@ -1,3 +1,5 @@
+Use 256color for the default Apple_Terminal which does not support truecolor.
+
 Fix bug that caused a new parse with an already used ixml grammar
 to potentially be reported as failed if the previous parse failed.
 
