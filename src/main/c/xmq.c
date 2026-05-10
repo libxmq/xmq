@@ -3574,7 +3574,7 @@ const char *xml_element_type_to_string(xmlElementType type)
 	case XML_NAMESPACE_DECL: return "namespace_decl";
 	case XML_XINCLUDE_START: return "xinclude_start";
 	case XML_XINCLUDE_END: return "xinclude_end";
-	case XML_DOCB_DOCUMENT_NODE: return "docb_document";
+//	case XML_DOCB_DOCUMENT_NODE: return "docb_document"; deprecated in libxml2
     }
     return "?";
 }
