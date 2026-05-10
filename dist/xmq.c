@@ -3787,8 +3787,9 @@ const char *add_color(XMQColorDef *colors, XMQColorName n, char **pp)
     const char *tmp = ansiWin((int)n);
     char *p = *pp;
     char *color = p;
-    strcpy(p, tmp);
-    p += strlen(tmp);
+    size_t tmp_len = strlen(tmp);
+    memcpy(p, tmp, tmp_len);
+    p += tmp_len;
     *p++ = 0;
     *pp = p;
     return color;
@@ -3800,8 +3801,9 @@ const char *add_color(XMQColorDef *colors, XMQColorName n, char **pp)
     char tmp[128];
     generate_ansi_color(tmp, 128, def);
     // Append the new color to the buffer.
-    strcpy(p, tmp);
-    p += strlen(tmp);
+    size_t tmp_len = strlen(tmp);
+    memcpy(p, tmp, tmp_len);
+    p += tmp_len;
     *p++ = 0;
     // Export the new position in the buffer
     *pp = p;
