@@ -260,7 +260,7 @@ void getThemeStrings(XMQOutputSettings *os, XMQColor c, const char **pre, const 
 bool string_to_color_def(const char *s, XMQColorDef *def);
 
 // Expect buffer to store 128 bytes.
-bool generate_ansi_color(char *buf, size_t buf_size, XMQColorDef *def);
+bool generate_ansi_color(char *buf, size_t buf_size, XMQColorDef *def, bool truecolor);
 bool generate_html_color(char *buf, size_t buf_size, XMQColorDef *def, const char *name);
 bool generate_tex_color(char *buf, size_t buf_size, XMQColorDef *def, const char *name);
 
@@ -3138,6 +3138,7 @@ struct XMQOutputSettings
     bool omit_decl;
     bool use_color;
     bool bg_dark_mode;
+    bool truecolor;
     bool prefer_double_quotes;
     bool escape_newlines;
     bool escape_non_7bit;
@@ -3447,7 +3448,7 @@ void element_strlen_name_prefix(xmlNode *attr, const char **name, const char **p
 void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len);
 const char *find_word_ignore_case(const char *start, const char *stop, const char *word);
 
-void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
+void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool truecolor, bool render_raw);
 void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
 void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
 
@@ -3728,6 +3729,7 @@ char ansi_reset_color[] = "\033[0m";
 void xmqSetupDefaultColors(XMQOutputSettings *os)
 {
     bool dark_mode = os->bg_dark_mode;
+//    bool truecolor = os->truecolor;
     XMQTheme *theme = os->theme;
     if (os->render_theme_spec == NULL)
     {
@@ -3761,7 +3763,7 @@ void xmqSetupDefaultColors(XMQOutputSettings *os)
     else
     if (os->render_to == XMQ_RENDER_TERMINAL)
     {
-        setup_terminal_coloring(os, theme, dark_mode, os->use_color, os->render_raw);
+        setup_terminal_coloring(os, theme, dark_mode, os->use_color, os->truecolor, os->render_raw);
     }
     else if (os->render_to == XMQ_RENDER_HTML)
     {
@@ -3780,8 +3782,8 @@ void xmqSetupDefaultColors(XMQOutputSettings *os)
 
 }
 
-const char *add_color(XMQColorDef *colors, XMQColorName n, char **pp);
-const char *add_color(XMQColorDef *colors, XMQColorName n, char **pp)
+const char *add_color(XMQColorDef *colors, XMQColorName n, char **pp, bool truecolor);
+const char *add_color(XMQColorDef *colors, XMQColorName n, char **pp, bool truecolor)
 {
 #ifdef PLATFORM_WINAPI
     const char *tmp = ansiWin((int)n);
@@ -3798,7 +3800,7 @@ const char *add_color(XMQColorDef *colors, XMQColorName n, char **pp)
     // Remember where the color starts in the buffer.
     char *color = p;
     char tmp[128];
-    generate_ansi_color(tmp, 128, def);
+    generate_ansi_color(tmp, 128, def, truecolor);
     // Append the new color to the buffer.
     strcpy(p, tmp);
     p += strlen(tmp);
@@ -3809,7 +3811,7 @@ const char *add_color(XMQColorDef *colors, XMQColorName n, char **pp)
     return color;
 #endif
 }
-void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode, bool use_color, bool render_raw)
+void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode, bool use_color, bool truecolor, bool render_raw)
 {
     if (!use_color) return;
 
@@ -3820,54 +3822,54 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_m
     os->free_me = commands;
     char *p = commands;
 
-    const char *c = add_color(colors, XMQ_COLOR_C, &p);
+    const char *c = add_color(colors, XMQ_COLOR_C, &p, truecolor);
     theme->comment.pre = c;
     theme->comment_continuation.pre = c;
 
-    c = add_color(colors, XMQ_COLOR_Q, &p);
+    c = add_color(colors, XMQ_COLOR_Q, &p, truecolor);
     theme->quote.pre = c;
 
-    c = add_color(colors, XMQ_COLOR_E, &p);
+    c = add_color(colors, XMQ_COLOR_E, &p, truecolor);
     theme->entity.pre = c;
     theme->element_value_entity.pre = c;
     theme->element_value_compound_entity.pre = c;
     theme->attr_value_entity.pre = c;
     theme->attr_value_compound_entity.pre = c;
 
-    c = add_color(colors, XMQ_COLOR_NS, &p);
+    c = add_color(colors, XMQ_COLOR_NS, &p, truecolor);
     theme->element_ns.pre = c;
     theme->attr_ns.pre = c;
 
-    c = add_color(colors, XMQ_COLOR_EN, &p);
+    c = add_color(colors, XMQ_COLOR_EN, &p, truecolor);
     theme->element_name.pre = c;
 
-    c = add_color(colors,XMQ_COLOR_EK, &p);
+    c = add_color(colors,XMQ_COLOR_EK, &p, truecolor);
     theme->element_key.pre = c;
 
-    c = add_color(colors, XMQ_COLOR_EKV, &p);
+    c = add_color(colors, XMQ_COLOR_EKV, &p, truecolor);
     theme->element_value_text.pre = c;
     theme->element_value_quote.pre = c;
     theme->element_value_compound_quote.pre = c;
 
-    c = add_color(colors, XMQ_COLOR_AK, &p);
+    c = add_color(colors, XMQ_COLOR_AK, &p, truecolor);
     theme->attr_key.pre = c;
 
-    c = add_color(colors, XMQ_COLOR_AKV, &p);
+    c = add_color(colors, XMQ_COLOR_AKV, &p, truecolor);
     theme->attr_value_text.pre = c;
     theme->attr_value_quote.pre = c;
     theme->attr_value_compound_quote.pre = c;
 
-    c = add_color(colors, XMQ_COLOR_CP, &p);
+    c = add_color(colors, XMQ_COLOR_CP, &p, truecolor);
     theme->cpar_left.pre  = c;
     theme->cpar_right.pre = c;
 
-    c = add_color(colors, XMQ_COLOR_NSD, &p);
+    c = add_color(colors, XMQ_COLOR_NSD, &p, truecolor);
     theme->ns_declaration.pre = c;
 
-    c = add_color(colors, XMQ_COLOR_UW, &p);
+    c = add_color(colors, XMQ_COLOR_UW, &p, truecolor);
     theme->unicode_whitespace.pre = c;
 
-    c = add_color(colors, XMQ_COLOR_XLS, &p);
+    c = add_color(colors, XMQ_COLOR_XLS, &p, truecolor);
     theme->ns_override_xsl.pre = c;
 
     theme->whitespace.pre  = NOCOLOR;
@@ -4335,6 +4337,11 @@ void xmqSetCompact(XMQOutputSettings *os, bool compact)
 void xmqSetUseColor(XMQOutputSettings *os, bool use_color)
 {
     os->use_color = use_color;
+}
+
+void xmqSetTrueColor(XMQOutputSettings *os, bool truecolor)
+{
+    os->truecolor = truecolor;
 }
 
 void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode)
@@ -7123,7 +7130,7 @@ const char *xml_element_type_to_string(xmlElementType type)
 	case XML_NAMESPACE_DECL: return "namespace_decl";
 	case XML_XINCLUDE_START: return "xinclude_start";
 	case XML_XINCLUDE_END: return "xinclude_end";
-	case XML_DOCB_DOCUMENT_NODE: return "docb_document";
+//	case XML_DOCB_DOCUMENT_NODE: return "docb_document"; deprecated in libxml2
     }
     return "?";
 }
@@ -9023,7 +9030,16 @@ STATIC char *humanReadableTwoDecimals(size_t s)
 
 #ifdef COLORS_MODULE
 
+bool generate_ansi_256color(char *buf, size_t buf_size, XMQColorDef *def);
+bool generate_ansi_truecolor(char *buf, size_t buf_size, XMQColorDef *def);
 bool hex_to_number(char c, char cc, int *v);
+
+typedef struct {
+    uint8_t r, g, b;
+} RGB;
+
+static int rgb_to_ansi256(uint8_t r, uint8_t g, uint8_t b);
+static RGB ansi256_to_rgb(int idx);
 
 /**
    get_color: Lookup the color strings
@@ -9147,11 +9163,11 @@ bool hex_to_number(char c, char cc, int *v)
     return true;
 }
 
-bool generate_ansi_color(char *buf, size_t buf_size, XMQColorDef *def)
+bool generate_ansi_color(char *buf, size_t buf_size, XMQColorDef *def, bool truecolor)
 {
-    // Example: \x1b[38;2;40;177;249mTRUECOLOR\x1b[0m
     if (buf_size < 32) return false;
 
+    // Start with the bold and underline.
     char *i = buf;
 
     *i++ = 27;
@@ -9167,6 +9183,40 @@ bool generate_ansi_color(char *buf, size_t buf_size, XMQColorDef *def)
         *i++ = '4';
         *i++ = ';';
     }
+
+    // Generate best approximation from standard 256 color palette.
+    if (!truecolor) return generate_ansi_256color(i, buf_size-(i-buf), def);
+
+    // Generate true color ansi.
+    return generate_ansi_truecolor(i, buf_size-(i-buf), def);
+}
+
+bool generate_ansi_256color(char *buf, size_t buf_size, XMQColorDef *def)
+{
+    // Example: \x1b[38;5;12m256COLOR\x1b[0m
+    char *i = buf;
+    *i++ = '3';
+    *i++ = '8';
+    *i++ = ';';
+    *i++ = '5';
+    *i++ = ';';
+
+    int color = rgb_to_ansi256(def->r, def->g, def->b);
+
+    char tmp[16];
+    snprintf(tmp, sizeof(tmp), "%d", color);
+    strcpy(i, tmp);
+    i += strlen(tmp);
+    *i++ = 'm';
+    *i++ = 0;
+
+    return true;
+}
+
+bool generate_ansi_truecolor(char *buf, size_t buf_size, XMQColorDef *def)
+{
+    // Example: \x1b[38;2;40;177;249mTRUECOLOR\x1b[0m
+    char *i = buf;
     *i++ = '3';
     *i++ = '8';
     *i++ = ';';
@@ -9292,6 +9342,113 @@ void setColorDef(XMQColorDef *cd, int r, int g, int b, bool bold, bool underline
     cd->bold = bold;
     cd->underline = underline;
 }
+
+/*
+ * Convert 24-bit RGB ANSI color to the nearest 8-bit ANSI terminal color.
+ *
+ * Supports:
+ *   - ANSI 16 system colors
+ *   - ANSI 6x6x6 color cube (16-231)
+ *   - ANSI grayscale ramp (232-255)
+ */
+
+
+/* Standard ANSI 16-color palette */
+static const RGB ansi16[16] = {
+    {0,   0,   0},       // 0 black
+    {128, 0,   0},       // 1 red
+    {0,   128, 0},       // 2 green
+    {128, 128, 0},       // 3 yellow
+    {0,   0,   128},     // 4 blue
+    {128, 0,   128},     // 5 magenta
+    {0,   128, 128},     // 6 cyan
+    {192, 192, 192},     // 7 white
+
+    {128, 128, 128},     // 8 bright black
+    {255, 0,   0},       // 9 bright red
+    {0,   255, 0},       // 10 bright green
+    {255, 255, 0},       // 11 bright yellow
+    {0,   0,   255},     // 12 bright blue
+    {255, 0,   255},     // 13 bright magenta
+    {0,   255, 255},     // 14 bright cyan
+    {255, 255, 255}      // 15 bright white
+};
+
+/* Squared Euclidean distance */
+static inline int color_distance(RGB a, RGB b)
+{
+    int dr = (int)a.r - (int)b.r;
+    int dg = (int)a.g - (int)b.g;
+    int db = (int)a.b - (int)b.b;
+
+    return dr * dr + dg * dg + db * db;
+}
+
+/* Generate RGB value for ANSI 256-color index */
+static RGB ansi256_to_rgb(int idx)
+{
+    RGB c;
+
+    /* ANSI 16 colors */
+    if (idx < 16)
+    {
+        return ansi16[idx];
+    }
+
+    /* 6x6x6 color cube */
+    if (idx >= 16 && idx <= 231)
+    {
+        int n = idx - 16;
+
+        int r = n / 36;
+        int g = (n / 6) % 6;
+        int b = n % 6;
+
+        static const int levels[6] = {
+            0, 95, 135, 175, 215, 255
+        };
+
+        c.r = levels[r];
+        c.g = levels[g];
+        c.b = levels[b];
+
+        return c;
+    }
+
+    /* Grayscale ramp */
+    int gray = 8 + (idx - 232) * 10;
+
+    c.r = gray;
+    c.g = gray;
+    c.b = gray;
+
+    return c;
+}
+
+/* Convert 24-bit RGB to nearest ANSI 256-color index */
+int rgb_to_ansi256(uint8_t r, uint8_t g, uint8_t b)
+{
+    RGB input = { r, g, b };
+
+    int best_idx = 0;
+    int best_dist = INT32_MAX;
+
+    for (int i = 0; i < 256; ++i)
+    {
+        RGB candidate = ansi256_to_rgb(i);
+
+        int dist = color_distance(input, candidate);
+
+        if (dist < best_dist) {
+            best_dist = dist;
+            best_idx = i;
+        }
+    }
+
+    return best_idx;
+}
+
+
 
 #endif // COLORS_MODULE
 

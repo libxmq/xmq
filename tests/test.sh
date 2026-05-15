@@ -89,6 +89,11 @@ then
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 fi
 
+if [ -z $FILTER ]
+then
+    tests/test_library_grammar.sh "$PROG" "$OUTPUT" library/conf/yamlsubset.ixml
+fi
+
 for i in tests/ixml/correct/*.output.xmq
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi

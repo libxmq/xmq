@@ -1,0 +1,119 @@
+{ An attempt at an YAML grammar Copyright (C) 2026 Fredrik Öhrström (spdx: MIT)
+  I do not think a full YAML ixml grammar will be ever be written, the YAML language
+  is too context sensitive. This grammar will probably be removed. }
+
+_ = objs0, next_no0? | map0, next_nm0? | list0.
+-next_no0 = map0, next_nm0? | list0, next_nl0?.
+-next_nm0 = objs0, next_no0? | list0, next_nl0?.
+-next_nl0 = objs0, next_no0? | map0, next_nm0?.
+
+{ Key value single line, no indentation requirement. }
+kvnoind>obj = @key, -': ', -val, -#a+.
+
+{ No indentation. }
+-objs0 = obj0+.
+obj0>obj  = @key, -':', -#a+, block1?.
+-map0  = kv0+.
+kv0>kv   = @key, -': ', -val, -#a+.
+-list0>list = @A, li0+.
+li0>li   = -'- ', (-val, -#a+ | obj1noind | obj1noname).
+
+{ 2 space indentation. }
+
+-block1: objs1, next_no1? | map1, next_nm1? | list1.
+-next_no1 = map1, next_nm1? | list1, next_nl1?.
+-next_nm1 = objs1, next_no1? | list1, next_nl1?.
+-next_nl1 = objs1, next_no1? | map1, next_nm1?.
+
+-objs1 = obj1+.
+obj1>obj  = ind1, @key, -':', -#a+, block2?.
+obj1noind>obj = @key, -':', -#a+, block2?.
+-obj1noname = kvnoind, kv1*.
+-map1  = kv1+.
+kv1>kv   = ind1, @key, -': ', -val, -#a+.
+-list1>list = @A, li1+.
+li1>li   = ind1, -'- ', (-val, -#a | obj2noind | obj2noname).
+
+{ 4 space indentation. }
+
+-block2: objs2, next_no2? | map2, next_nm2? | list2.
+-next_no2 = map2, next_nm2? | list2, next_nl2?.
+-next_nm2 = objs2, next_no2? | list2, next_nl2?.
+-next_nl2 = objs2, next_no2? | map2, next_nm2?.
+
+-objs2 = obj2+.
+obj2>obj  = ind2, @key, -':', -#a+, block3?.
+obj2noind>obj = @key, -':', -#a+, block3?.
+-obj2noname = kvnoind, kv2*.
+-map2  = kv2+.
+kv2>kv   = ind2, @key, -': ', -val, -#a+.
+-list2>list = @A, li2+.
+li2>li   = ind2, -'- ', (-val, -#a+ | obj3noind | obj3noname).
+
+{ 6 space indentation. }
+
+-block3: objs3, next_no3? | map3, next_nm3? | list3.
+-next_no3 = map3, next_nm3? | list3, next_nl3?.
+-next_nm3 = objs3, next_no3? | list3, next_nl3?.
+-next_nl3 = objs3, next_no3? | map3, next_nm3?.
+
+-objs3 = obj3+.
+obj3>obj  = ind3, @key, -':', -#a+, block4?.
+obj3noind>obj = @key, -':', -#a+, block4?.
+-obj3noname = kvnoind, kv3*.
+-map3  = kv3+.
+kv3>kv   = ind3, @key, -': ', -val, -#a+.
+-list3>list = @A, li3+.
+li3>li   = ind3, -'- ', (-val, -#a+ | obj4noind | obj4noname).
+
+{ 8 space indentation. }
+
+-block4: objs4, next_no4? | map4, next_nm4? | list4.
+-next_no4 = map4, next_nm4? | list4, next_nl4?.
+-next_nm4 = objs4, next_no4? | list4, next_nl4?.
+-next_nl4 = objs4, next_no4? | map4, next_nm4?.
+
+-objs4 = obj4+.
+obj4>obj  = ind4, @key, -':', -#a+, toodeep.
+obj4noind>obj = @key, -':', -#a+, toodeep.
+-obj4noname = kvnoind, kv4*.
+-map4  = kv4+.
+kv4>kv   = ind4, @key, -': ', -val, -#a+.
+-list4>list = @A, li4+.
+li4>li   = ind4, -'- ', (-val | toodeep), -#a+.
+
+toodeep: [].
+-word: [L]+.
+
+-ind: -'  '.
+-ind1: ind.
+-ind2: ind, ind.
+-ind3: ind, ind, ind.
+-ind4: ind, ind, ind, ind.
+-ind5: ind, ind, ind, ind, ind.
+-ind6: ind, ind, ind, ind, ind, ind.
+
+-dqstring: -'"', content, -'"' .
+-content: (normal | escape)* .
+
+{ 'normal' matches any character except a double quote or a backslash }
+-normal: ~['"'; '\'] .
+
+{ 'escape' starts with a backslash. We hide the backslash but keep the escape type }
+escape: -'\', (simple-escape | hex-escape) .
+
+-simple-escape: ['\'; 'n'; 'r'; 't'; 'b'; 'f'] .
+
+{ Hex escapes like \x0A }
+hex-escape: -'x', h, h .
+-h: ['0'-'9'; 'a'-'f'; 'A'-'F'] .
+
+-sqstring: -"'", ~["'"]*, -"'" .
+
+key = [L;"_"], [L;N;"-_"]*.
+val  = safestring | dqstring | sqstring.
+-safestring = ~['"';"'";#a], (notcolon | colonand)*.
+-notcolon = ~[':#';"'";#a].
+-colonand = ':', ~[' ';#a].
+
+A = .

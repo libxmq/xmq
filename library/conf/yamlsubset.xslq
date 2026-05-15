@@ -1,0 +1,44 @@
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:template(match = /)
+    {
+        _ {
+            xsl:apply-templates
+        }
+    }
+    xsl:template(match = li)
+    {
+        _ {
+            xsl:apply-templates
+        }
+    }
+    xsl:template(match = kv)
+    {
+        xsl:element(name = "{@key}")
+        {
+            xsl:value-of(select = .)
+        }
+    }
+    xsl:template(match = comment)
+    {
+        xsl:comment {
+            xsl:value-of(select = 'text()')
+        }
+    }
+    xsl:template(match = obj)
+    {
+        xsl:element(name = '{@key}')
+        {
+            xsl:if(test = @A) {
+                xsl:attribute(name = A)
+            }
+            xsl:apply-templates
+        }
+    }
+    xsl:template(match = list)
+    {
+        xsl:apply-templates
+    }
+
+}
