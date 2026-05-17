@@ -252,6 +252,8 @@ The default theme is:
 XMQ_THEME=dark+C=#2aa1b3:Q=#26a269_B:E=#c061cb:NS=#a9a9a9:EN=#ff8c00:EK=#88b4f7:EKV=#26a269_B:AK=#88b4f7:AKV=#6196ec:CP=#c061cb:NSD=#2aa1b3:UW=#880000_U:XSL=#c061cb,light+C=#2aa1b3:Q=#26a269_B:E=#c061cb:NS=#696969:EN=#a86c00:EK=#0060fd:EKV=#26a269_B:AK=#0060fd:AKV=#12488c:CP=#c061cb:NSD=#1a91a3:UW=#880000_U:XSL=#c061cb
 ``````
 
+You can curl it from here: `curl https://libxmq.org/library/themes/default`
+
 You can override the foreground and background color when generting html. For example if you want a white background instead of the light yellow default:
 ```
 XMQ_BG=light XMQ_THEME=BG=#ffffff xmq input.ixml br

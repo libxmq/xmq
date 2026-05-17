@@ -192,6 +192,8 @@ do
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 done
 
+tests/test_ixml_engine.sh "$PROG" "$OUTPUT"
+
 for i in tests/test_special_???_*.sh
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi

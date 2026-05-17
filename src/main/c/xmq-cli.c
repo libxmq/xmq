@@ -35,7 +35,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<memory.h>
 #include<string.h>
 #include<stdio.h>
+#include<time.h>
 #include<unistd.h>
+#include<sys/time.h>
 #include<sys/types.h>
 #ifndef PLATFORM_WINAPI
 #include<sys/wait.h>
@@ -324,6 +326,8 @@ bool cmd_for_each(XMQCliCommand *command);
 XMQCliCmd cmd_from(const char *s);
 XMQCliCmdGroup cmd_group(XMQCliCmd cmd);
 bool cmd_help(XMQCliCommand *c);
+void load_using_internal_ixml_engine(XMQCliCommand *command, const char *from);
+void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine, const char *from);
 bool cmd_load(XMQCliCommand *command, bool *no_more_data);
 const char *cmd_name(XMQCliCmd cmd);
 bool cmd_output(XMQCliCommand *command);
@@ -370,6 +374,7 @@ bool has_log_xmq(int argc, const char **argv);
 bool has_trace(int argc, const char **argv);
 bool has_verbose(int argc, const char **argv);
 bool invoke_shell(xmlNode *n, const char *cmd);
+void invoke_cmd(const char *cmd);
 const char *is_ixml_cmd(const char *arg);
 const char *is_xsl_cmd(const char *arg);
 char *load_file_into_buffer(const char *file);
@@ -2093,6 +2098,85 @@ bool cmd_tokenize(XMQCliCommand *command)
     return err == 0;
 }
 
+void load_using_internal_ixml_engine(XMQCliCommand *command, const char *from)
+{
+    if (command->ixml_grammar == NULL)
+    {
+        command->ixml_grammar = xmqNewDoc();
+        xmqSetDocSourceName(command->ixml_grammar, command->ixml_filename);
+
+        bool ok = xmqParseBufferWithType(command->ixml_grammar, command->ixml_source, NULL, NULL, XMQ_CONTENT_IXML, 0);
+        verbose_("xmq=", "parse ixml grammar %zu bytes from %s", strlen(command->ixml_source), command->ixml_filename);
+
+        if (!ok)
+        {
+            fprintf(stderr, "%s\n", xmqDocError(command->ixml_grammar));
+            exit(1);
+        }
+    }
+
+    int flags = 0;
+    if (command->ixml_all_parses) flags |= XMQ_FLAG_IXML_ALL_PARSES;
+    if (command->ixml_try_to_recover) flags |= XMQ_FLAG_IXML_TRY_TO_RECOVER;
+    if (command->ixml_fail_silent) flags |= XMQ_FLAG_IXML_FAIL_SILENT;
+
+    bool ok = xmqParseBufferWithIXML(command->env->doc,
+                                     command->input_current_line_start,
+                                     command->input_current_line_stop,
+                                     command->ixml_grammar,
+                                     flags);
+
+    if (!ok)
+    {
+        verbose_("xmq=", "cmd-load-ixml parse failed", from);
+    }
+    else
+    {
+        verbose_("xmq=", "cmd-load-ixml %zu bytes from %s", xmqGetOriginalSize(command->env->doc), from);
+    }
+    xmlCleanupParser();
+}
+
+void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine, const char *from)
+{
+    char datetime[40];
+    memset(datetime, 0, sizeof(datetime));
+
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+
+    strftime(datetime, 20, "%Y-%m-%d_%H:%M:%S", localtime(&tv.tv_sec));
+
+    // Replace this with mkstemp
+    char tmp[256];
+    snprintf(tmp, 256, "/tmp/ixml_parse_output_%s.%zu_%d", datetime, tv.tv_usec, getpid());
+
+    char buf[1024];
+    snprintf(buf, 1024, "%s %s %s > %s", engine, command->ixml_filename, command->in, tmp);
+
+    verbose_("xmq=", "using: %s", buf);
+
+    invoke_cmd(buf);
+
+    bool ok = xmqParseFileWithType(command->env->doc,
+                           tmp,
+                           NULL,
+                           XMQ_CONTENT_DETECT,
+                           0);
+
+    if (!ok)
+    {
+        verbose_("xmq=", "cmd-load-external-ixml-tool parse failed: %s", xmqDocError(command->env->doc));
+    }
+    else
+    {
+        verbose_("xmq=", "cmd-load-external-ixml-tool %zu bytes from %s", xmqGetOriginalSize(command->env->doc), from);
+    }
+    xmlCleanupParser();
+
+    unlink(tmp);
+}
+
 bool cmd_load(XMQCliCommand *command, bool *no_more_data)
 {
     if (!command) return false;
@@ -2171,41 +2255,16 @@ bool cmd_load(XMQCliCommand *command, bool *no_more_data)
 
     if (command->ixml_source != NULL)
     {
-        if (command->ixml_grammar == NULL)
+        const char *engine = getenv("XMQ_IXML_ENGINE");
+
+        if (engine)
         {
-            command->ixml_grammar = xmqNewDoc();
-            xmqSetDocSourceName(command->ixml_grammar, command->ixml_filename);
-
-            bool ok = xmqParseBufferWithType(command->ixml_grammar, command->ixml_source, NULL, NULL, XMQ_CONTENT_IXML, 0);
-            verbose_("xmq=", "parse ixml grammar %zu bytes from %s", strlen(command->ixml_source), command->ixml_filename);
-
-            if (!ok)
-            {
-                fprintf(stderr, "%s\n", xmqDocError(command->ixml_grammar));
-                exit(1);
-            }
-        }
-
-        int flags = 0;
-        if (command->ixml_all_parses) flags |= XMQ_FLAG_IXML_ALL_PARSES;
-        if (command->ixml_try_to_recover) flags |= XMQ_FLAG_IXML_TRY_TO_RECOVER;
-        if (command->ixml_fail_silent) flags |= XMQ_FLAG_IXML_FAIL_SILENT;
-
-        bool ok = xmqParseBufferWithIXML(command->env->doc,
-                                         command->input_current_line_start,
-                                         command->input_current_line_stop,
-                                         command->ixml_grammar,
-                                         flags);
-
-        if (!ok)
-        {
-            verbose_("xmq=", "cmd-load-ixml parse failed", from);
+            load_using_external_ixml_engine(command, engine, from);
         }
         else
         {
-            verbose_("xmq=", "cmd-load-ixml %zu bytes from %s", xmqGetOriginalSize(command->env->doc), from);
+            load_using_internal_ixml_engine(command, from);
         }
-        xmlCleanupParser();
     }
     else
     {
@@ -3907,6 +3966,53 @@ bool invoke_shell(xmlNode *node, const char *shell_command)
     free(cmd);
 #endif
     return ok;
+}
+
+void invoke_cmd(const char *shell_cmd)
+{
+    pid_t pid = fork();
+    int status;
+    char *cmd = strdup(shell_cmd);
+    char **argv = malloc(sizeof(char*)*4);
+    argv[0] = "/bin/sh";
+    argv[1] = "-c";
+    argv[2] = (char*)cmd;
+    argv[3] = 0;
+
+    if (pid == 0)
+    {
+        // I am the child!
+        close(0); // Close stdin
+        execve("/bin/sh", argv, environ);
+
+        perror("Execvp failed:");
+        // Use _exit() to avoid running parent's atexit handlers and destructors
+        // which can deadlock in a forked child.
+        _exit(127);
+    }
+    else
+    {
+        if (pid == -1) {
+            error("shell=", "could not fork!");
+        }
+        debug_("shell=", "waiting for child %d to complete.", pid);
+        // Wait for the child to finish!
+        waitpid(pid, &status, 0);
+        if (WIFEXITED(status))
+        {
+            // Child exited properly.
+            int rc = WEXITSTATUS(status);
+            debug("shell=", "%s: return code %d", cmd, rc);
+            if (rc == 127) {
+                warning("shell=", "invoking %s failed!", cmd);
+            }
+            else if (rc != 0) {
+                warning("shell=", "%s exited with non-zero return code: %d", cmd, rc);
+            }
+        }
+        free(cmd);
+        free(argv);
+    }
 }
 
 void page(const char *start, const char *stop)

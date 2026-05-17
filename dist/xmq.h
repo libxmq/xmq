@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2023-2025 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2023-2026 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -137,6 +137,7 @@ typedef enum
     @XMQ_FLAG_NOMERGE: Do not merge text and character entities.
     @XMQ_FLAG_IXML_ALL_PARSES: When ixml parse is ambiguous generate all parses.
     @XMQ_FLAG_IXML_TRY_TO_RECOVER: When ixml parse fails, try to recover.
+    @XMQ_FLAG_IXML_FAIL_SILENT: If the ixml parse fails generate an empty document and no errors.
 
     If a 0 is provided as the flags to the parse functions, then it will parse using the these default settings:
     When loading xml/html:
