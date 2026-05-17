@@ -1,7 +1,7 @@
 START
-S = r, r.
+S = r, rr.
 r = 'a'.
--r = 'b'.
+-rr = 'b'.
 INPUT
 ab
 OUTPUT

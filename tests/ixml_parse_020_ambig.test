@@ -19,3 +19,4 @@ AMBIGUOUS(state      = ambiguous
 }
 END
 ARGS=--ixml-all-parses
+ONLY_INTERNAL_ENGINE=true

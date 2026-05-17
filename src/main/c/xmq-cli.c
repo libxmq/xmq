@@ -167,6 +167,9 @@ struct XMQCliCommand
     const char *save_file; // Save output to this file name.
     xmlDocPtr   ixml_doc;  // A DOM containing the ixml grammar.
     const char *ixml_source; // IXML grammar source to be used.
+    const char *ixml_engine; // If NULL use the internal, otherwise invoke this external program like this:
+                             // engine source.ixml input.txt > /tmp/tmpfile
+                             // then load the Document from tmpfile and continue as before.
     const char *ixml_filename; // Where the ixml grammar was read from.
     XMQDoc *ixml_grammar; // The prepared ixml grammar to be reused.
     bool ixml_fail_silent; // Generate empty document ixml parse fails. Use with --lines
@@ -1886,6 +1889,20 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         }
         return true;
     }
+    if (!strncmp(arg, "--ixml-engine=", 14))
+    {
+        const char *engine = arg+14;
+
+        if (command->ixml_engine != NULL)
+        {
+            printf("You have already specified an ixml engine!\n");
+            exit(1);
+        }
+
+        command->ixml_engine = strdup(engine);
+        return true;
+    }
+
     if (!strncmp(arg, "--ixml=", 7))
     {
         const char *file = arg+7;
@@ -2159,10 +2176,10 @@ void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine,
     invoke_cmd(buf);
 
     bool ok = xmqParseFileWithType(command->env->doc,
-                           tmp,
-                           NULL,
-                           XMQ_CONTENT_DETECT,
-                           0);
+                                   tmp,
+                                   NULL,
+                                   XMQ_CONTENT_DETECT,
+                                   XMQ_FLAG_TRIM_NONE);
 
     if (!ok)
     {
@@ -2255,7 +2272,8 @@ bool cmd_load(XMQCliCommand *command, bool *no_more_data)
 
     if (command->ixml_source != NULL)
     {
-        const char *engine = getenv("XMQ_IXML_ENGINE");
+        const char *engine = command->ixml_engine;
+        if (!engine) engine = getenv("XMQ_IXML_ENGINE");
 
         if (engine)
         {

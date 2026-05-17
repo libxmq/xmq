@@ -22,7 +22,14 @@ fi
 mkdir -p $OUTPUT
 
 ARGS=$(grep ^ARGS $TEST_FILE | cut -b 6- | tr -d '\n')
+ONLY_INTERNAL_ENGINE=$(grep ^ONLY_INTERNAL_ENGINE $TEST_FILE)
 
+if [ -n "$XMQ_IXML_ENGINE" ] && [ "$ONLY_INTERNAL_ENGINE" = "ONLY_INTERNAL_ENGINE=true" ]
+then
+    # This test can only be run with xmq internal ixml parser.
+    # An external IXML engine has been set, so skip this test.
+    exit 0
+fi
 sed -n '/^START$/,/^INPUT$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.ixml
 sed -n '/^INPUT$/,/^OUTPUT$/p' $TEST_FILE | tail -n +2 | sed '$d' | tr -d '\n' > $OUTPUT/${TEST_NAME}.input
 sed -n '/^OUTPUT$/,/^END$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.expected

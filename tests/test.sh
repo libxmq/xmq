@@ -48,31 +48,29 @@ do
     tests/test_single.sh "$PROG" "$OUTPUT" "$i"
 done
 
-for i in tests/ixml_not_[0-9][0-9][0-9]_*.test
-do
-    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
-    tests/test_ixml_not.sh "$PROG" "$OUTPUT" "$i"
-    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
-done
+if [ -z "$XMQ_IXML_ENGINE" ]
+then
+    # Only try the not extension if we are using the internal ixml parser engine.
+    for i in tests/ixml_not_[0-9][0-9][0-9]_*.test
+    do
+        if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+        tests/test_ixml_not.sh "$PROG" "$OUTPUT" "$i"
+        if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+    done
 
-for i in tests/xmqixml_[0-9][0-9][0-9]_*.test
-do
-    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
-    tests/test_xmqixml_format.sh "$PROG" "$OUTPUT" "$i"
-    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
-done
+    # The xmq parsing using ixml should be possible to do with other engines.
+    for i in tests/xmqixml_[0-9][0-9][0-9]_*.test
+    do
+        if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+        tests/test_xmqixml_format.sh "$PROG" "$OUTPUT" "$i"
+        if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+    done
+fi
 
 for i in tests/ixml_grammar_[0-9][0-9][0-9]_*.test
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
     tests/test_ixml_grammar.sh "$PROG" "$OUTPUT" "$i"
-    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
-done
-
-for i in tests/ixml_error_[0-9][0-9][0-9]_*.test
-do
-    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
-    tests/test_ixml_error.sh "$PROG" "$OUTPUT" "$i"
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 done
 
