@@ -4390,18 +4390,35 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
 
             char local_ixml_file[256];
             snprintf(local_ixml_file, 256, "%s/library/%s.ixml", download_dir(), file);
-            download(load_command->force_download, ".ixml", file, local_ixml_file, false);
+            DownloadStatus status = download(load_command->force_download, ".ixml", file, local_ixml_file, false);
 
             // The download was DOWNLOAD_OK or DOWNLOAD_EXISTS. Otherwise the download command would have given up.
             // See if there is a companion xslq file with this ixml file.
             char local_xslq_file[256];
             snprintf(local_xslq_file, 256, "%s/library/%s.xslq", download_dir(), file);
 
-            DownloadStatus status = download(load_command->force_download, ".xslq", file, local_xslq_file, true);
-            if (status == DOWNLOAD_OK || status == DOWNLOAD_EXISTS)
+            if (status == DOWNLOAD_EXISTS)
             {
-                strcpy(add_xslq_file, local_xslq_file);
-                add_xslq = true;
+                FILE *f = fopen(local_xslq_file, "rb");
+                if (f)
+                {
+                    // The ixml already existed, if the xslq exists use it.
+                    fclose(f);
+                    strcpy(add_xslq_file, local_xslq_file);
+                    add_xslq = true;
+                }
+                // If the xslq did not exist, do not try to dowload it.
+                // The assumption is that you either cached both ixml+xslq or just ixml.
+            }
+            else
+            {
+                // The ixml was downloaded, lets try to download an xslq.
+                status = download(load_command->force_download, ".xslq", file, local_xslq_file, true);
+                if (status == DOWNLOAD_OK || status == DOWNLOAD_EXISTS)
+                {
+                    strcpy(add_xslq_file, local_xslq_file);
+                    add_xslq = true;
+                }
             }
 
             verbose_("xmq=", "reading ixml file %s", local_ixml_file);
