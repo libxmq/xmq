@@ -326,14 +326,13 @@ if test "${host_vendor}" = "w64"; then
 
     if test "x${with_bcrypt}" = "x"; then
         # There is a bcrypt.dll in wine /usr/lib/x86_64-linux-gnu/wine/bcrypt.dll
+        # Or in /usr/lib64/wine/i386-windows/bcrypt.dll
+        #       /usr/lib64/wine/x86_64-windows/bcrypt.dll
         # Search for it and we link against it.
         # We do not package it, since it is available on Windows.
-        BCRYPT_DLL=$(find /usr/lib -name bcrypt.dll | grep $(uname -i))
+        BCRYPT_DLL=$(find /usr -name bcrypt.dll | grep $(uname -i))
         if ! test -f "$BCRYPT_DLL"; then
-            BCRYPT_DLL=$(find /usr/lib64 -name bcrypt.dll | grep $(uname -i))
-        fi
-        if ! test -f "$BCRYPT_DLL"; then
-            AC_MSG_ERROR([Could not find bcrypt.dll below /usr/lib])
+            AC_MSG_ERROR([Could not find bcrypt.dll below /usr])
         fi
         AC_MSG_RESULT([found ${BCRYPT_DLL}])
     else

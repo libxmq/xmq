@@ -3900,9 +3900,11 @@ char *grab_content(xmlNode *n, const char *name)
     return free_membuffer_but_return_trimmed_content(buf);
 }
 
+#ifndef PLATFORM_WINAPI
 // Posix says that this variable just exists.
 // (On some systems this is also declared in unistd.h)
 extern char **environ;
+#endif
 
 bool invoke_shell(xmlNode *node, const char *shell_command)
 {
@@ -3960,12 +3962,8 @@ bool invoke_shell(xmlNode *node, const char *shell_command)
     {
         // I am the child!
         close(0); // Close stdin
-#if (defined(__APPLE__) && defined(__MACH__)) || defined(__FreeBSD__)
         execve("/bin/sh", argv, env);
-#else
-        execve("/bin/sh", argv, env);
-#endif
-        perror("Execvp failed:");
+        perror("Execve failed:");
         //error_("(shell) invoking %s failed!\n", program.c_str());
     } else {
         if (pid == -1) {
@@ -3995,12 +3993,16 @@ bool invoke_shell(xmlNode *node, const char *shell_command)
         free(env);
     }
     free(cmd);
+#else
+    fprintf(stderr, "Not implemented invoke_shell on windows.\n");
+    exit(1);
 #endif
     return ok;
 }
 
 void invoke_cmd(const char *shell_cmd)
 {
+#ifndef PLATFORM_WINAPI
     pid_t pid = fork();
     int status;
     char *cmd = strdup(shell_cmd);
@@ -4044,6 +4046,10 @@ void invoke_cmd(const char *shell_cmd)
         free(cmd);
         free(argv);
     }
+#else
+    fprintf(stderr, "Invoke cmd not implemented on windows.\n");
+    exit(1);
+#endif
 }
 
 void page(const char *start, const char *stop)

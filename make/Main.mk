@@ -173,11 +173,11 @@ $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals: $(OUTPUT_ROOT)/$(TYPE)/parts/testint
 	$(AT)$(STRIP_COMMAND) $@$(SUFFIX)
 
 $(OUTPUT_ROOT)/$(TYPE)/libgcc_s_seh-1.dll:
-	$(AT)cp "$$(find /usr/lib/gcc -name libgcc_s_seh-1.dll | grep -m 1 win32)" $@
+	$(AT)if [ -d /usr ]; then cp "$$(find /usr -name libgcc_s_seh-1.dll | grep -m 1 32)" $@ ;fi
 	@echo "Installed $@"
 
 $(OUTPUT_ROOT)/$(TYPE)/libstdc++-6.dll:
-	$(AT)cp "$$(find /usr/lib/gcc -name libstdc++-6.dll | grep -m 1 win32)" $@
+	$(AT)if [ -d /usr ]; then cp "$$(find /usr -name libstdc++-6.dll | grep -m 1 32)" $@ ; fi
 	@echo "Installed $@"
 
 $(OUTPUT_ROOT)/$(TYPE)/libwinpthread-1.dll:
