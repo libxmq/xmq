@@ -16,6 +16,12 @@ fi
 
 DIR=$(pwd)
 
+NPROC=2
+if command -v nproc > /dev/null 2>&1
+then
+    NPROC=$(nproc)
+fi
+
 if [ "$1" = "libxml2" ]
 then
     if [ ! -d libxml2 ]; then
@@ -33,7 +39,7 @@ then
         echo
 
         ./autogen.sh --enable-static=yes --with-zlib=no --with-lzma=no --with-python=no --with-http=no
-        make -j$(nproc)
+        make -j${NPROC}
     fi
     cd ..
     exit 0
@@ -57,7 +63,7 @@ then
         # Do this autogen twice to workaround problem with ltmain.sh missing.
         ./autogen.sh --enable-static=yes --with-libxml-src=${DIR}/libxml2/ --with-python=no || true
         ./autogen.sh --enable-static=yes --with-libxml-src=${DIR}/libxml2/ --with-python=no
-        make -j$(nproc)
+        make -j${NPROC}
     fi
     cd ..
 
@@ -99,7 +105,7 @@ then
         echo
 
         ./autogen.sh --enable-static=yes --with-zlib=no --with-lzma=no --with-python=no --with-http=no
-        make -j$(nproc)
+        make -j${NPROC}
     fi
     cd ..
 
@@ -117,7 +123,7 @@ then
         echo
 
         ./autogen.sh --enable-static=yes --with-libxml-src=${DIR}/libxml2-posix/ --with-python=no
-        make -j$(nproc)
+        make -j${NPROC}
     fi
     cd ..
 
@@ -408,7 +414,7 @@ then
         echo
 
         CC=filcc ./autogen.sh --enable-static=yes --with-zlib=no --with-lzma=no --with-python=no --with-http=no
-        make -j$(nproc)
+        make -j${NPROC}
     fi
     cd ..
 
@@ -426,7 +432,7 @@ then
         echo
 
         CC=filcc ./autogen.sh --enable-static=yes --with-libxml-src=${DIR}/libxml2-filc --with-python=no
-        make -j$(nproc)
+        make -j${NPROC}
     fi
     cd ..
 
