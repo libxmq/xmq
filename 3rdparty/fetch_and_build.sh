@@ -54,6 +54,8 @@ then
         echo Building static libxslt
         echo
 
+        # Do this autogen twice to workaround problem with ltmain.sh missing.
+        ./autogen.sh --enable-static=yes --with-libxml-src=${DIR}/libxml2/ --with-python=no || true
         ./autogen.sh --enable-static=yes --with-libxml-src=${DIR}/libxml2/ --with-python=no
         make -j$(nproc)
     fi
