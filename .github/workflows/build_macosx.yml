@@ -12,7 +12,7 @@ jobs:
     - id: CHECKOUT_SOURCE
       uses: actions/checkout@v2
     - id: CONFIGURE
-      run: ./configure
+      run: ./configure --with-xml2=installed --with-libxslt=installed
     - id: MAKE
       run: make release
     - id: TEST
