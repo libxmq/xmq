@@ -39,7 +39,7 @@ then
 fi
 
 gcc $CFLAGS -c -I src/main/c -o $OUTPUT/test.o $TEST_FILE
-gcc $LDFLAGS -o $OUTPUT/test $OUTPUT/test.o $LDLIBS  $LIB -lxml2
+gcc $LDFLAGS -o $OUTPUT/test $OUTPUT/test.o $LDLIBS  $LIB -lxml2 -lm
 
 cp tests/${TEST_NAME}.* ${OUTPUT}
 rm -f ${OUTPUT}/test.gcda
