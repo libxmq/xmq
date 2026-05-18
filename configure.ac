@@ -215,6 +215,18 @@ AC_ARG_WITH(libxml2, [AS_HELP_STRING([--with-libxml2],
       (expecting the libraries under PATH and the headers under PATH)])])
 
 if test "x${with_libxml2}" = "x"; then
+
+    if test -f 3rdparty/libxml2/.libs/libxml2.a
+    then
+        AC_MSG_RESULT([using already built source from 3rdparty/libxml2])
+    else
+        AC_MSG_RESULT([needs building])
+       (cd 3rdparty; ./fetch_and_build.sh libxml2)
+    fi
+    with_libxml2="3rdparty/libxml2"
+fi
+
+if test "x${with_libxml2}" = "installedx"; then
     if ! pkg-config libxml-2.0 ; then
         AC_MSG_ERROR([not found using pkg-config. Try: sudo apt install libxml2-dev])
         exit 0
@@ -258,6 +270,18 @@ AC_ARG_WITH(libxslt, [AS_HELP_STRING([--with-libxslt],
       (expecting the libraries under PATH and the headers under PATH)])])
 
 if test "x${with_libxslt}" = "x"; then
+
+    if test -f 3rdparty/libxslt/libxslt/.libs/libxslt.a
+    then
+        AC_MSG_RESULT([using already built source from 3rdparty/libxslt])
+    else
+        AC_MSG_RESULT([needs building])
+       (cd 3rdparty; ./fetch_and_build.sh libxslt)
+    fi
+    with_libxslt="3rdparty/libxslt"
+fi
+
+if test "x${with_libxslt}" = "installedx"; then
     if ! pkg-config libxslt ; then
         AC_MSG_ERROR([not found using pkg-config. Try: sudo apt install libxslt1-dev])
         exit 0
@@ -305,6 +329,9 @@ if test "${host_vendor}" = "w64"; then
         # Search for it and we link against it.
         # We do not package it, since it is available on Windows.
         BCRYPT_DLL=$(find /usr/lib -name bcrypt.dll | grep $(uname -i))
+        if ! test -f "$BCRYPT_DLL"; then
+            BCRYPT_DLL=$(find /usr/lib64 -name bcrypt.dll | grep $(uname -i))
+        fi
         if ! test -f "$BCRYPT_DLL"; then
             AC_MSG_ERROR([Could not find bcrypt.dll below /usr/lib])
         fi

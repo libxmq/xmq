@@ -2162,13 +2162,15 @@ void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine,
     struct timeval tv;
     gettimeofday(&tv, NULL);
 
-    strftime(datetime, 20, "%Y-%m-%d_%H:%M:%S", localtime(&tv.tv_sec));
+    time_t tmp = tv.tv_sec;
+    strftime(datetime, 20, "%Y-%m-%d_%H:%M:%S", localtime(&tmp));
 
     // Replace with mkstemp
     char tmp_in[256];
-    snprintf(tmp_in, 256, "/tmp/ixml_parse_input_%s.%zu_%d", datetime, tv.tv_usec, getpid());
+    size_t tmpu = tv.tv_usec;
+    snprintf(tmp_in, 256, "/tmp/ixml_parse_input_%s.%zu_%d", datetime, tmpu, getpid());
     char tmp_out[256];
-    snprintf(tmp_out, 256, "/tmp/ixml_parse_output_%s.%zu_%d", datetime, tv.tv_usec, getpid());
+    snprintf(tmp_out, 256, "/tmp/ixml_parse_output_%s.%zu_%d", datetime, tmpu, getpid());
 
     FILE *f = fopen(tmp_in, "wb");
     if (f)

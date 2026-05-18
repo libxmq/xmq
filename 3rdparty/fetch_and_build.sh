@@ -3,6 +3,8 @@
 if [ -z "$1" ]
 then
     echo "Usage:"
+    echo "fetch_and_build.sh libxml2"
+    echo "fetch_and_build.sh libxslt"
     echo "fetch_and_build.sh x86_64-pc-linux-gnu"
     echo "fetch_and_build.sh x86_64-w64-mingw32"
     echo "fetch_and_build.sh aarch64-linux-gnu"
@@ -14,13 +16,51 @@ fi
 
 DIR=$(pwd)
 
-patch_configure() {
-    if ! grep -q AC_CONFIG_AUX_DIR $1/configure.ac
-    then
-        sed -i '/AC_INIT/a AC_CONFIG_AUX_DIR([.])' $1/configure.ac
-        echo "PATCHING $1"
+if [ "$1" = "libxml2" ]
+then
+    if [ ! -d libxml2 ]; then
+        echo
+        echo Fetching libxml2
+        echo
+        git clone https://github.com/libxmq/libxml2.git
     fi
-}
+
+    # ./.libs/libxml2.a
+    cd libxml2
+    if [ ! -f ./.libs/libxml2.a ]; then
+        echo
+        echo Building libxml2
+        echo
+
+        ./autogen.sh --enable-static=yes --with-zlib=no --with-lzma=no --with-python=no --with-http=no
+        make -j$(nproc)
+    fi
+    cd ..
+    exit 0
+fi
+
+if [ "$1" = "libxslt" ]
+then
+    if [ ! -d libxslt ]; then
+        echo
+        echo Fetching libxslt
+        echo
+        git clone https://github.com/libxmq/libxslt.git
+    fi
+
+    cd libxslt
+    if [ ! -f ./libxslt/.libs/libxslt.a ]; then
+        echo
+        echo Building static libxslt
+        echo
+
+        ./autogen.sh --enable-static=yes --with-libxml-src=${DIR}/libxml2/ --with-python=no
+        make -j$(nproc)
+    fi
+    cd ..
+
+    exit 0
+fi
 
 if [ "$1" = "x86_64-pc-linux-gnu" ]
 then
@@ -46,7 +86,7 @@ then
         echo
         echo Fetching libxml2 posix
         echo
-        git clone https://github.com/GNOME/libxml2.git libxml2-posix
+        git clone https://github.com/libxmq/libxml2.git libxml2-posix
     fi
 
     # ./.libs/libxml2.a
@@ -65,7 +105,7 @@ then
         echo
         echo Fetching libxslt posix
         echo
-        git clone https://github.com/GNOME/libxslt.git libxslt-posix
+        git clone https://github.com/libxmq/libxslt.git libxslt-posix
     fi
 
     cd libxslt-posix
@@ -106,9 +146,7 @@ then
         echo
         echo Fetching libxml2 posix aarch64
         echo
-        git clone https://github.com/GNOME/libxml2.git libxml2-posix
-        patch_configure libxml2-posix
-        mv libxml2-posix libxml2-posix-aarch64
+        git clone https://github.com/libxmq/libxml2.git libxml2-posix-aarch64
     fi
 
     # ./.libs/libxml2.a
@@ -127,7 +165,7 @@ then
         echo
         echo Fetching libxslt posix aarch64
         echo
-        git clone https://github.com/GNOME/libxslt.git libxslt-posix
+        git clone https://github.com/libxmq/libxslt.git libxslt-posix
         patch_configure libxslt-posix
         mv libxslt-posix libxslt-posix-aarch64
     fi
@@ -170,7 +208,7 @@ then
         echo
         echo Fetching libxml2 posix armv7l
         echo
-        git clone https://github.com/GNOME/libxml2.git libxml2-posix
+        git clone https://github.com/libxmq/libxml2.git libxml2-posix
         patch_configure libxml2-posix
         mv libxml2-posix libxml2-posix-armv7l
     fi
@@ -191,7 +229,7 @@ then
         echo
         echo Fetching libxslt posix armv7l
         echo
-        git clone https://github.com/GNOME/libxslt.git libxslt-posix
+        git clone https://github.com/libxmq/libxslt.git libxslt-posix
         patch_configure libxslt-posix
         mv libxslt-posix libxslt-posix-armv7l
     fi
@@ -233,7 +271,7 @@ then
         echo
         echo Fetching libxml2 winapi
         echo
-        git clone https://github.com/GNOME/libxml2.git libxml2-winapi
+        git clone https://github.com/libxmq/libxml2.git libxml2-winapi
         patch_configure libxml2-winapi
     fi
 
@@ -243,7 +281,7 @@ then
         echo Building libxml2 winapi
         echo
 
-        ./autogen.sh --host=x86_64-w64-mingw32 --with-iconv=no --with-zlib=no --with-lzma=no --with-python=no --with-http=no
+        ./autogen.sh --host=x86_64-w64-mingw32  --disable-xmllint --with-iconv=no --with-zlib=no --with-lzma=no --with-python=no --with-http=no
         make
     fi
     cd ..
@@ -252,7 +290,7 @@ then
         echo
         echo Fetching libxslt winapi
         echo
-        git clone https://github.com/GNOME/libxslt.git libxslt-winapi
+        git clone https://github.com/libxmq/libxslt.git libxslt-winapi
         patch_configure libxslt-winapi
     fi
 
@@ -262,7 +300,7 @@ then
         echo Building libxslt winapi
         echo
 
-        ./autogen.sh --host=x86_64-w64-mingw32  --with-libxml-src=${DIR}/libxml2-winapi --with-python=no
+        ./autogen.sh --host=x86_64-w64-mingw32 --with-crypto=no --with-libxml-src=${DIR}/libxml2-winapi --with-python=no
         make
     fi
     cd ..
@@ -294,7 +332,7 @@ then
         echo
         echo Fetching libxml2 wasm
         echo
-        git clone https://github.com/GNOME/libxml2.git libxml2-wasm
+        git clone https://github.com/libxmq/libxml2.git libxml2-wasm
         patch_configure libxml2-wasm
     fi
 
@@ -313,7 +351,7 @@ then
         echo
         echo Fetching libxslt wasm
         echo
-        git clone https://github.com/GNOME/libxslt.git libxslt-wasm
+        git clone https://github.com/libxmq/libxslt.git libxslt-wasm
         patch_configure libxslt-wasm
     fi
 
@@ -323,7 +361,7 @@ then
         echo Building libxslt wasm
         echo
 
-        CC=emcc ./autogen.sh --host=wasm32-unknown-emscripten  --with-crypto=no --with-libxml-src=${DIR}/libxml2-wasm --with-python=no
+        CC=emcc ./autogen.sh --host=wasm32-unknown-emscripten --disable-bcrypt --with-crypto=no --with-libxml-src=${DIR}/libxml2-wasm --with-python=no
         make DIST_SUBDIRS=libxslt
 
     fi
@@ -357,7 +395,7 @@ then
         echo
         echo Fetching libxml2 filc
         echo
-        git clone https://github.com/GNOME/libxml2.git libxml2-filc
+        git clone https://github.com/libxmq/libxml2.git libxml2-filc
     fi
 
     # ./.libs/libxml2.a
@@ -376,7 +414,7 @@ then
         echo
         echo Fetching libxslt filc
         echo
-        git clone https://github.com/GNOME/libxslt.git libxslt-filc
+        git clone https://github.com/libxmq/libxslt.git libxslt-filc
     fi
 
     cd libxslt-filc

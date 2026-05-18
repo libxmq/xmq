@@ -4093,6 +4093,20 @@ fi
 
 
 if test "x${with_libxml2}" = "x"; then
+
+    if test -f 3rdparty/libxml2/.libs/libxml2.a
+    then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: using already built source from 3rdparty/libxml2" >&5
+printf "%s\n" "using already built source from 3rdparty/libxml2" >&6; }
+    else
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: needs building" >&5
+printf "%s\n" "needs building" >&6; }
+       (cd 3rdparty; ./fetch_and_build.sh libxml2)
+    fi
+    with_libxml2="3rdparty/libxml2"
+fi
+
+if test "x${with_libxml2}" = "installedx"; then
     if ! pkg-config libxml-2.0 ; then
         as_fn_error $? "not found using pkg-config. Try: sudo apt install libxml2-dev" "$LINENO" 5
         exit 0
@@ -4143,6 +4157,20 @@ fi
 
 
 if test "x${with_libxslt}" = "x"; then
+
+    if test -f 3rdparty/libxslt/libxslt/.libs/libxslt.a
+    then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: using already built source from 3rdparty/libxslt" >&5
+printf "%s\n" "using already built source from 3rdparty/libxslt" >&6; }
+    else
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: needs building" >&5
+printf "%s\n" "needs building" >&6; }
+       (cd 3rdparty; ./fetch_and_build.sh libxslt)
+    fi
+    with_libxslt="3rdparty/libxslt"
+fi
+
+if test "x${with_libxslt}" = "installedx"; then
     if ! pkg-config libxslt ; then
         as_fn_error $? "not found using pkg-config. Try: sudo apt install libxslt1-dev" "$LINENO" 5
         exit 0
@@ -4199,6 +4227,9 @@ fi
         # Search for it and we link against it.
         # We do not package it, since it is available on Windows.
         BCRYPT_DLL=$(find /usr/lib -name bcrypt.dll | grep $(uname -i))
+        if ! test -f "$BCRYPT_DLL"; then
+            BCRYPT_DLL=$(find /usr/lib64 -name bcrypt.dll | grep $(uname -i))
+        fi
         if ! test -f "$BCRYPT_DLL"; then
             as_fn_error $? "Could not find bcrypt.dll below /usr/lib" "$LINENO" 5
         fi
