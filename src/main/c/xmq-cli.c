@@ -2164,19 +2164,29 @@ void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine,
 
     strftime(datetime, 20, "%Y-%m-%d_%H:%M:%S", localtime(&tv.tv_sec));
 
-    // Replace this with mkstemp
-    char tmp[256];
-    snprintf(tmp, 256, "/tmp/ixml_parse_output_%s.%zu_%d", datetime, tv.tv_usec, getpid());
+    // Replace with mkstemp
+    char tmp_in[256];
+    snprintf(tmp_in, 256, "/tmp/ixml_parse_input_%s.%zu_%d", datetime, tv.tv_usec, getpid());
+    char tmp_out[256];
+    snprintf(tmp_out, 256, "/tmp/ixml_parse_output_%s.%zu_%d", datetime, tv.tv_usec, getpid());
+
+    FILE *f = fopen(tmp_in, "wb");
+    if (f)
+    {
+        size_t len = command->input_current_line_stop - command->input_current_line_start;
+        size_t wrote = fwrite(command->input_current_line_start, 1, len, f);
+        fclose(f);
+    }
 
     char buf[1024];
-    snprintf(buf, 1024, "%s %s %s > %s", engine, command->ixml_filename, command->in, tmp);
+    snprintf(buf, 1024, "%s %s %s > %s", engine, command->ixml_filename, tmp_in, tmp_out);
 
     verbose_("xmq=", "using: %s", buf);
 
     invoke_cmd(buf);
 
     bool ok = xmqParseFileWithType(command->env->doc,
-                                   tmp,
+                                   tmp_out,
                                    NULL,
                                    XMQ_CONTENT_DETECT,
                                    XMQ_FLAG_TRIM_NONE);
@@ -2191,7 +2201,8 @@ void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine,
     }
     xmlCleanupParser();
 
-    unlink(tmp);
+    unlink(tmp_in);
+    unlink(tmp_out);
 }
 
 bool cmd_load(XMQCliCommand *command, bool *no_more_data)

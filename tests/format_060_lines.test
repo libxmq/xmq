@@ -5,9 +5,9 @@ START
 COMPACT
 IGNORE
 XMQ
-'127'
-'10'
-'10'
+grep = 127
+grep = 10
+grep = 10
 END
 ARGS --lines --ixml=tests/grepnumber.ixml
 CMDS to-xmq

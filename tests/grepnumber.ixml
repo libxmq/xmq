@@ -1,2 +1,2 @@
--number = -~[N]*, [N]+, ending.
+grep = -~[N]*, [N]+, ending.
 -ending = | -~[N], -~[]*.
