@@ -4224,14 +4224,13 @@ fi
 
     if test "x${with_bcrypt}" = "x"; then
         # There is a bcrypt.dll in wine /usr/lib/x86_64-linux-gnu/wine/bcrypt.dll
+        # Or in /usr/lib64/wine/i386-windows/bcrypt.dll
+        #       /usr/lib64/wine/x86_64-windows/bcrypt.dll
         # Search for it and we link against it.
         # We do not package it, since it is available on Windows.
-        BCRYPT_DLL=$(find /usr/lib -name bcrypt.dll | grep $(uname -i))
+        BCRYPT_DLL=$(find /usr -name bcrypt.dll | grep $(uname -i))
         if ! test -f "$BCRYPT_DLL"; then
-            BCRYPT_DLL=$(find /usr/lib64 -name bcrypt.dll | grep $(uname -i))
-        fi
-        if ! test -f "$BCRYPT_DLL"; then
-            as_fn_error $? "Could not find bcrypt.dll below /usr/lib" "$LINENO" 5
+            as_fn_error $? "Could not find bcrypt.dll below /usr" "$LINENO" 5
         fi
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: found ${BCRYPT_DLL}" >&5
 printf "%s\n" "found ${BCRYPT_DLL}" >&6; }
