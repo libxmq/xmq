@@ -370,6 +370,7 @@ then
         echo Building libxslt wasm
         echo
 
+        CC=emcc ./autogen.sh --host=wasm32-unknown-emscripten --disable-bcrypt --with-crypto=no --with-libxml-src=${DIR}/libxml2-wasm --with-python=no || true
         CC=emcc ./autogen.sh --host=wasm32-unknown-emscripten --disable-bcrypt --with-crypto=no --with-libxml-src=${DIR}/libxml2-wasm --with-python=no
         make DIST_SUBDIRS=libxslt
 
