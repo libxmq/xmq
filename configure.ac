@@ -215,6 +215,10 @@ AC_ARG_WITH(libxml2, [AS_HELP_STRING([--with-libxml2],
       (expecting the libraries under PATH and the headers under PATH)])])
 
 if test "x${with_libxml2}" = "x"; then
+    with_libxml2="installed"
+fi
+
+if test "x${with_libxml2}" = "xsource"; then
     if test -f 3rdparty/libxml2/.libs/libxml2.a
     then
         AC_MSG_RESULT([using already built source from 3rdparty/libxml2])
@@ -269,6 +273,10 @@ AC_ARG_WITH(libxslt, [AS_HELP_STRING([--with-libxslt],
       (expecting the libraries under PATH and the headers under PATH)])])
 
 if test "x${with_libxslt}" = "x"; then
+    with_libxslt="installed"
+fi
+
+if test "x${with_libxslt}" = "xsource"; then
 
     if test -f 3rdparty/libxslt/libxslt/.libs/libxslt.a
     then
