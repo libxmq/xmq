@@ -308,6 +308,7 @@ then
         echo Building libxslt winapi
         echo
 
+        ./autogen.sh --host=x86_64-w64-mingw32 --with-crypto=no --with-libxml-src=${DIR}/libxml2-winapi --with-python=no || true
         ./autogen.sh --host=x86_64-w64-mingw32 --with-crypto=no --with-libxml-src=${DIR}/libxml2-winapi --with-python=no
         make
     fi
