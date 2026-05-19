@@ -4093,7 +4093,6 @@ fi
 
 
 if test "x${with_libxml2}" = "x"; then
-
     if test -f 3rdparty/libxml2/.libs/libxml2.a
     then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: using already built source from 3rdparty/libxml2" >&5
@@ -4106,7 +4105,7 @@ printf "%s\n" "needs building" >&6; }
     with_libxml2="3rdparty/libxml2"
 fi
 
-if test "x${with_libxml2}" = "installedx"; then
+if test "x${with_libxml2}" = "xinstalled"; then
     if ! pkg-config libxml-2.0 ; then
         as_fn_error $? "not found using pkg-config. Try: sudo apt install libxml2-dev" "$LINENO" 5
         exit 0
@@ -4170,7 +4169,7 @@ printf "%s\n" "needs building" >&6; }
     with_libxslt="3rdparty/libxslt"
 fi
 
-if test "x${with_libxslt}" = "installedx"; then
+if test "x${with_libxslt}" = "xinstalled"; then
     if ! pkg-config libxslt ; then
         as_fn_error $? "not found using pkg-config. Try: sudo apt install libxslt1-dev" "$LINENO" 5
         exit 0

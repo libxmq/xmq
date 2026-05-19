@@ -215,7 +215,6 @@ AC_ARG_WITH(libxml2, [AS_HELP_STRING([--with-libxml2],
       (expecting the libraries under PATH and the headers under PATH)])])
 
 if test "x${with_libxml2}" = "x"; then
-
     if test -f 3rdparty/libxml2/.libs/libxml2.a
     then
         AC_MSG_RESULT([using already built source from 3rdparty/libxml2])
@@ -226,7 +225,7 @@ if test "x${with_libxml2}" = "x"; then
     with_libxml2="3rdparty/libxml2"
 fi
 
-if test "x${with_libxml2}" = "installedx"; then
+if test "x${with_libxml2}" = "xinstalled"; then
     if ! pkg-config libxml-2.0 ; then
         AC_MSG_ERROR([not found using pkg-config. Try: sudo apt install libxml2-dev])
         exit 0
@@ -281,7 +280,7 @@ if test "x${with_libxslt}" = "x"; then
     with_libxslt="3rdparty/libxslt"
 fi
 
-if test "x${with_libxslt}" = "installedx"; then
+if test "x${with_libxslt}" = "xinstalled"; then
     if ! pkg-config libxslt ; then
         AC_MSG_ERROR([not found using pkg-config. Try: sudo apt install libxslt1-dev])
         exit 0
