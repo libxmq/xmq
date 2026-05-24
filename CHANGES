@@ -1,4 +1,6 @@
 
+2026-05-24: Version 4.2.0
+
 The release build of xmq for linux now includes the libxml2 and libxslt sources compiled
 into the binary. Use configure --with-libxml2=source --with-libxslt=source to automatically
 download libxml2 and libxslt and build them for use inside xmq.
@@ -32,7 +34,6 @@ If you write a script you can adjust this to work for coffeepot as well.
 You can now generate a colorized version in html for an ixml grammar using ixml itself:
 xmq ixml:core/ixml2html mygrammar.ixml to-text br
 
-colorize
 2026-03-18: Version 4.1.0
 2026-03-18: Version 4.1.0-RC1
 
