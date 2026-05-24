@@ -1,0 +1,97 @@
+{version 2022-06-07}
+         ixml:  +"<HTML>", HEADER, +"<BODY><PRE>", s, prolog?, rule++RS, s, +"</PRE></BODY></HTML>".
+
+           -s: (whitespace; comment)*. {Optional spacing}
+          -RS: (whitespace; comment)+. {Required spacing}
+  -whitespace: [Zs]; tab; lf; cr.
+         -tab: #9.
+          -lf: #a.
+          -cr: #d.
+     -comment: +'<SPAN CLASS="comment">', "{", (cchar; comment)*, "}", +'</SPAN CLASS="c">'.
+       -cchar: ~["{}"].
+
+      -prolog: version, s.
+     -version: "ixml", RS, "version", RS, string, s, -'.' .
+
+        -rule: (mark, s)?, +'<SPAN CLASS="rule">', name, +"</SPAN>", s,  ["=:"], s, -alts, ".".
+        -mark: +'<SPAN CLASS="mark">', ["@^-"], +'</SPAN>'.
+        -alts: alt++([";|"], s).
+         -alt: term**(",", s).
+        -term: factor;
+               option;
+               repeat0;
+               repeat1.
+      -factor: terminal;
+               nonterminal;
+               insertion;
+               "(", s, alts, ")", s.
+     -repeat0: factor, ("*", s; "**", s, sep).
+     -repeat1: factor, ("+", s; "++", s, sep).
+      -option: factor, "?", s.
+         -sep: factor.
+ -nonterminal: (mark, s)?, +'<SPAN CLASS="ref">', name, +'</SPAN>', s.
+
+        -name: namestart, namefollower*.
+   -namestart: ["_"; L].
+-namefollower: namestart; ["-.·‿⁀"; Nd; Mn].
+
+    -terminal: literal;
+               +'<SPAN CLASS="charset">', charset, +'</SPAN>'.
+     -literal: quoted;
+               encoded.
+      -quoted: (tmark, s)?, +'<SPAN CLASS="string">', string, +'</SPAN>', s.
+
+       -tmark: +'<SPAN CLASS="mark">', ["^-"], +'</SPAN>'.
+      -string: '"', dchar+, '"';
+               "'", schar+, "'".
+       -dchar: ~['"'; #a; #d];
+               '"', -'"'. {all characters except line breaks; quotes must be doubled}
+       -schar: ~["'"; #a; #d];
+               "'", "'". {all characters except line breaks; quotes must be doubled}
+     -encoded: (tmark, s)?, "#", hex, s.
+         -hex: ["0"-"9"; "a"-"f"; "A"-"F"]+.
+
+     -charset: inclusion;
+               exclusion.
+   -inclusion: (tmark, s)?,          set.
+   -exclusion: (tmark, s)?, "~", s, set.
+         -set: "[", s,  (member, s)**([";|"], s), "]", s.
+      -member: string;
+               "#", hex;
+               range;
+               class.
+       -range: from, s, "-", s, to.
+        -from: character.
+          -to: character.
+   -character: '"', dchar, '"';
+               "'", schar, "'";
+               "#", hex.
+       -class: code.
+        -code: capital, letter?.
+     -capital: ["A"-"Z"].
+      -letter: ["a"-"z"].
+   -insertion: +'<SPAN CLASS="insert">', "+", s, (string; "#", hex), +'</SPAN>', s.
+
+-HEADER: +"<style>:root {",
++"--bg: #FFFFFF;",
++"--fg: #000000;",
++"--rule: #CC6921;",
++"--ref: #5555AA;",
++"--string: #118811;",
++"--insert: #955900;",
++"--charset: #C33682;",
++"--mark: #ff4444;",
++"--comment: #586e75;",
++".ref { font-weight: bold; }",
++"}@media (prefers-color-scheme: dark) {  :root {",
++"--bg: #002b36;",
++"--fg: #ffffff;",
++"--rule: #EE6931;",
++"--ref: #7777ff;",
++"--string: #77ff77;",
++"--insert: #b58900;",
++"--charset: #F356A2;",
++"--mark: #ff4444;",
++"--comment: #788e95;",
++".ref { font-weight: normal; }",
++"}}html,body {  background-color: var(--bg);  color: var(--fg);  margin: 0;  padding: 0;  min-height: 100vh;  font-size: 16px;}.comment { color: var(--comment); }.rule { font-weight: bold; color: var(--rule); }.ref { color: var(--ref); }.string { color: var(--string); }.charset { color: var(--charset); }.insert { color: var(--insert); }.mark{ color: var(--mark); }</style>".

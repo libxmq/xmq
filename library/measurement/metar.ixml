@@ -1,16 +1,16 @@
 {
     Copyright (c) 2025 Fredrik Öhrström libxmq (spdx: MIT)
 
-    A METAR grammar for parsing METAR weather reports.
+    A grammar for parsing METAR weather reports.
 
     Example reports:
     METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN="
     METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91=
 }
 
-weather_report = (report_type, -' ')?, icao_airport_code, -' ', part**-' ', -'='?, -[Zs;#a;#d]*.
+weather_report = report_type?, icao_airport_code, -' ', part++-' ', -'='?, -[Zs;#a;#d]*.
 
-report_type = 'METAR' | 'SPECI'.
+report_type = 'METAR', -' ' | 'SPECI', -' '.
 
 -part =
      | time_of_observation
