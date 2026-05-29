@@ -157,6 +157,7 @@ public class XMQPrinter
     {
         Element element = (Element)node;
 
+        ps.indent();
         ps.buffer.append(element.getTagName());
 
         print_attributes(ps, element);
