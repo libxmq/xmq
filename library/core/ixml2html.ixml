@@ -94,4 +94,4 @@
 +"--mark: #ff4444;",
 +"--comment: #788e95;",
 +".ref { font-weight: normal; }",
-+"}}html,body {  background-color: var(--bg);  color: var(--fg);  margin: 0;  padding: 0;  min-height: 100vh;  font-size: 16px;}.comment { color: var(--comment); }.rule { font-weight: bold; color: var(--rule); }.ref { color: var(--ref); }.string { color: var(--string); }.charset { color: var(--charset); }.insert { color: var(--insert); }.mark{ color: var(--mark); }</style>".
++"}}html,body {  background-color: var(--bg);  color: var(--fg);  margin: 0;  padding: 1em;  min-height: 100vh;  font-size: 16px;}.comment { color: var(--comment); }.rule { font-weight: bold; color: var(--rule); }.ref { color: var(--ref); }.string { color: var(--string); }.charset { color: var(--charset); }.insert { color: var(--insert); }.mark{ color: var(--mark); }</style>".
