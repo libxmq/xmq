@@ -117,6 +117,24 @@ public abstract class XMQParser extends XMQParseCallbacks
         i_++;
     }
 
+    static private final boolean is_xmq_doctype_start(char c)
+    {
+        if (c == '!')
+        {
+            return true;
+        }
+        return false;
+    }
+
+    static private final boolean is_xmq_pi_start(char c)
+    {
+        if (c == '?')
+        {
+            return true;
+        }
+        return false;
+    }
+
     static private final boolean is_xmq_token_whitespace(char c)
     {
         if (c == ' ' || c == '\n' || c == '\t' || c == '\r')
@@ -215,6 +233,42 @@ public abstract class XMQParser extends XMQParseCallbacks
         c == '"'
         ;
         return !is_ws;
+    }
+
+    Pair<Integer,Integer> eat_xmq_doctype()
+    {
+        char c = currentChar();
+        assert(c == '!');
+        increment(c);
+
+        int start = i_;
+
+        while (i_ < buffer_len_)
+        {
+            c = currentChar();
+            if (!is_xmq_text_name(c)) break;
+            increment(c);
+        }
+
+        return new Pair<>(start, i_);
+    }
+
+    Pair<Integer,Integer> eat_xmq_pi()
+    {
+        char c = currentChar();
+        assert(c == '?');
+        increment(c);
+
+        int start = i_;
+
+        while (i_ < buffer_len_)
+        {
+            c = currentChar();
+            if (!is_xmq_text_name(c)) break;
+            increment(c);
+        }
+
+        return new Pair<>(start, i_);
     }
 
     private Pair<Integer,Integer> eat_xmq_token_whitespace()
@@ -869,6 +923,16 @@ public abstract class XMQParser extends XMQParseCallbacks
         parse_xmq_element_internal(false, false);
     }
 
+    void parse_xmq_doctype()
+    {
+        parse_xmq_element_internal(true, false);
+    }
+
+    void parse_xmq_pi()
+    {
+        parse_xmq_element_internal(false, true);
+    }
+
     char currentChar()
     {
         if (i_ < buffer_len_) return buffer_.charAt(i_);
@@ -894,7 +958,6 @@ public abstract class XMQParser extends XMQParseCallbacks
         int start_line = line_;
         int start_col = col_;
 
-        /*
         if (doctype)
         {
             Pair<Integer,Integer> p = eat_xmq_doctype();
@@ -903,11 +966,11 @@ public abstract class XMQParser extends XMQParseCallbacks
         }
         else if (pi)
         {
-            Pair<Integer,Integer> p = eat_xmq_pi(state);
+            Pair<Integer,Integer> p = eat_xmq_pi();
             name_start = p.left();
             name_stop = p.right();
         }
-        else*/
+        else
         {
             Quad<Integer,Integer,Integer,Integer> q = eat_xmq_text_name();
             name_start = q.first();
@@ -1059,10 +1122,8 @@ public abstract class XMQParser extends XMQParseCallbacks
             else if (is_xmq_comment_start(c, cc)) parse_xmq_comment(cc);
             else if (is_xmq_element_start(c)) parse_xmq_element();
             else if (c == '}') { return; }
-            /*
-            else if (is_xmq_doctype_start(state->i, end)) parse_xmq_doctype(state);
-            else if (is_xmq_pi_start(state->i, end)) parse_xmq_pi(state);
-            */
+            else if (is_xmq_doctype_start(c)) parse_xmq_doctype();
+            else if (is_xmq_pi_start(c)) parse_xmq_pi();
             else
             {
                 /*if (possibly_lost_content_after_equals(state))

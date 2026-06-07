@@ -91,6 +91,14 @@ xmq page.html select //a/@href
 # where the file has be parseable. Force the generated html to have a light background.
 xmq template.htmq replace-entity DATE 2024-01-11 replace-entity NAME 'Hercules' render-html --bg=light > page.html
 
+# Force ansi color and assume dark background when sending to pipe.
+xmq data.xml render-terminal --bg=dark | tee copy
+
+# Force no color when printing on terminal
+xmq data.xml render-terminal --bg=mono
+or
+XMQ_BG=mono xmq data.xml
+
 # Apply an xslq transform to some json to generate a html page.
 xmq todos.json transform todos.xslq to-html > list.html
 
