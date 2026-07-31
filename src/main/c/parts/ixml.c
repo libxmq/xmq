@@ -1621,7 +1621,7 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
     state->i = grammar_start;
     state->line = 1;
     state->col = 1;
-    state->error_nr = XMQ_ERROR_NONE;
+    state->error_nr = XMQ_OK;
 
     if (state->parse && state->parse->init) state->parse->init(state);
 
@@ -1638,7 +1638,7 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
     }
     else
     {
-        XMQParseError error_nr = state->error_nr;
+        XMQStatus error_nr = state->error_nr;
         generate_state_error_message(state, error_nr, grammar_start, grammar_stop);
         return false;
     }

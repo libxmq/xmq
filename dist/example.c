@@ -12,10 +12,50 @@ void expect_double(double d, double e);
 
 XMQProceed add_value(XMQDoc *doc, XMQNodePtr node, void *user_data);
 
+void test_building_dom()
+{
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
+    void *ns;
+
+    XMQReturnNode rn = xmqAddRootNode(doc, "car", "urn:cargo");
+    assert(rn.status == XMQ_OK);
+    XMQNodePtr car = rn.node;
+    xmqAddKeyValue(doc, car, "model", "escargo");
+    xmqAddKeyValue(doc, car, "color", "green");
+
+    XMQOutputSettings *os = xmqNewOutputSettings();
+
+    xmqSetCompact(os, true);
+    xmqSetEscapeNewlines(os, true);
+    xmqSetUseColor(os, false);
+    xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
+    xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
+
+    char *start, *stop;
+    xmqSetupPrintMemory(os, &start, &stop);
+    xmqPrint(doc, os);
+
+    xmqFreeOutputSettings(os);
+
+    if (strcmp(start, "car(xmlns=urn:cargo){model=escargo color=green}\n"))
+    {
+        printf("Building of dom tree failed. Got: %s\n", start);
+        exit(1);
+    }
+    free(start);
+}
+
 int main(int argc, char **argv)
 {
+    test_building_dom();
+    return 0;
+
     const char *file = "example.xmq";
-    XMQDoc *doc = xmqNewDoc();
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
 
     bool ok = xmqParseFile(doc, file, "car", 0);
     if (!ok) {
@@ -36,6 +76,8 @@ int main(int argc, char **argv)
     expect_double(weight, 999.123);
 
     xmqFreeDoc(doc);
+
+
     XMQLineConfig *lc = xmqNewLineConfig();
     char *line = xmqLinePrintf(lc,
                                "car{",
@@ -70,7 +112,9 @@ int main(int argc, char **argv)
         printf("Expected >%s<\n but got >%s<\n", expect, line);
     }
 
-    XMQDoc *ixml = xmqNewDoc();
+    rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *ixml = rd.doc;
     ok = xmqParseBufferWithType(ixml,
                                 "decode = -'a', B++-','. B=[N]+.",
                                 NULL, NULL, XMQ_CONTENT_IXML, 0);
@@ -82,7 +126,9 @@ int main(int argc, char **argv)
     bool b = false;
     for (int i=0; i<10000; ++i)
     {
-        XMQDoc *decode = xmqNewDoc();
+        XMQReturnDoc rd = xmqNewDoc();
+        assert(rd.status == XMQ_OK);
+        XMQDoc *decode = rd.doc;
         b = xmqParseBufferWithIXML(decode,
                                    "a123,2,444",
                                    NULL,
@@ -142,10 +188,3 @@ void expect_double(double d, double e)
         exit(1);
     }
 }
-
-/*
-  XMQOutputSettings *os = xmqNewOutputSettings();
-  xmqSetupPrintStdOutStdErr(os);
-  xmqPrint(decode, os);
-  xmqFreeOutputSettings(os);
-*/

@@ -10,7 +10,7 @@
 
 #ifdef XMQ_INTERNALS_MODULE
 
-void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, const char *start, const char *stop)
+void generate_state_error_message(XMQParseState *state, XMQStatus error_nr, const char *start, const char *stop)
 {
     // Error detected during parsing and this is where the longjmp will end up!
     if (!state->generating_error_msg)
@@ -132,11 +132,11 @@ void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, 
     membuffer_append_null(state->generating_error_msg);
 }
 
-const char *xmqParseErrorToString(XMQParseError e)
+const char *xmqParseErrorToString(XMQStatus e)
 {
     switch (e)
     {
-    case XMQ_ERROR_NONE: return "no warning, no error";
+    case XMQ_OK: return "no warning, no error";
     case XMQ_ERROR_CANNOT_READ_FILE: return "cannot read file";
     case XMQ_ERROR_OOM: return "out of memory";
     case XMQ_ERROR_NOT_XMQ: return "input file is not xmq";
@@ -167,7 +167,10 @@ const char *xmqParseErrorToString(XMQParseError e)
     case XMQ_ERROR_PARSING_XML: return "error parsing xml";
     case XMQ_ERROR_PARSING_HTML: return "error parsing html";
     case XMQ_ERROR_VALUE_CANNOT_START_WITH: return "value cannot start with = /* or //";
-    case XMQ_ERROR_IXML_SYNTAX_ERROR: return "syntax ";
+    case XMQ_ERROR_IXML_SYNTAX_ERROR: return "ixml syntax error";
+    case XMQ_ERROR_INVALID_NAMESPACE_URI: return "invalid namespace uri";
+    case XMQ_ERROR_INVALID_NAMESPACE_PREFIX: return "invalid namespace prefix";
+    case XMQ_ERROR_NAMESPACE_PREFIX_ALREADY_TAKEN: return "namespace prefix already taken";
     case XMQ_WARNING_QUOTES_NEEDED: return "perhaps you need more quotes to quote this quote";
     }
     assert(false);

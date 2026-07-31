@@ -285,7 +285,7 @@ struct XMQParseState
     const char *i; // Current parsing position.
     size_t line; // Current line.
     size_t col; // Current col.
-    XMQParseError error_nr; // A standard parse error enum that maps to text.
+    XMQStatus error_nr; // A standard parse error enum that maps to text.
     const char *error_info; // Additional info printed with the error nr.
     char *generated_error_msg; // Additional error information.
     MemBuffer *generating_error_msg;
@@ -470,7 +470,7 @@ struct XMQQuoteSettings
 };
 typedef struct XMQQuoteSettings XMQQuoteSettings;
 
-void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, const char *start, const char *stop);
+void generate_state_error_message(XMQParseState *state, XMQStatus error_nr, const char *start, const char *stop);
 
 // Common parser functions ///////////////////////////////////////
 

@@ -1216,7 +1216,9 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         }
         if (command->xsd == NULL)
         {
-            XMQDoc *doq = xmqNewDoc();
+            XMQReturnDoc rd = xmqNewDoc();
+            assert(rd.status == XMQ_OK);
+            XMQDoc *doq = rd.doc;
             bool ok = xmqParseFileWithType(doq, arg, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE);
 
             if (!ok)
@@ -1704,7 +1706,9 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         char local_file[256];
         snprintf(local_file, 256, "%s/library/%s.xmq", download_dir(), file);
         download(true, ".xmq", file, local_file, false);
-        XMQDoc *doc = xmqNewDoc();
+        XMQReturnDoc rd = xmqNewDoc();
+        assert(rd.status == XMQ_OK);
+        XMQDoc *doc = rd.doc;
         bool ok = xmqParseFileWithType(doc, local_file, NULL, XMQ_CONTENT_XMQ, 0);
         if (!ok)
         {
@@ -2119,7 +2123,9 @@ void load_using_internal_ixml_engine(XMQCliCommand *command, const char *from)
 {
     if (command->ixml_grammar == NULL)
     {
-        command->ixml_grammar = xmqNewDoc();
+        XMQReturnDoc rd = xmqNewDoc();
+        assert(rd.status == XMQ_OK);
+        command->ixml_grammar = rd.doc;
         xmqSetDocSourceName(command->ixml_grammar, command->ixml_filename);
 
         bool ok = xmqParseBufferWithType(command->ixml_grammar, command->ixml_source, NULL, NULL, XMQ_CONTENT_IXML, 0);
@@ -2211,7 +2217,9 @@ bool cmd_load(XMQCliCommand *command, bool *no_more_data)
 {
     if (!command) return false;
 
-    command->env->doc = xmqNewDoc();
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    command->env->doc = rd.doc;
 
     if (command->no_input)
     {
@@ -2242,7 +2250,9 @@ bool cmd_load(XMQCliCommand *command, bool *no_more_data)
         if (command->in) from = command->in;
         if (command->input_content_start == NULL)
         {
-            XMQDoc *tmp = xmqNewDoc();
+            XMQReturnDoc rd = xmqNewDoc();
+            assert(rd.status == XMQ_OK);
+            XMQDoc *tmp = rd.doc;
             size_t len = 0;
             verbose_("xmq=", "cmd-load from %s", from);
             bool ok = load_file(tmp, command->in, &len, &command->input_content_start);
@@ -2760,7 +2770,9 @@ bool cmd_add(XMQCliCommand *command)
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
     verbose_("xmq=", "adding xmq >%s<", command->add_xmq);
 
-    XMQDoc *doq = xmqNewDoc();
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doq = rd.doc;
     const char *start = command->add_xmq;
     const char *stop = start+strlen(start);
 
@@ -4312,7 +4324,9 @@ DownloadStatus download(bool force_download, const char *suffix, const char *fil
 
 bool load_xslt(XMQCliCommand *command, const char *arg)
 {
-    XMQDoc *doq = xmqNewDoc();
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doq = rd.doc;
 
     // We load the xslt transform with TRIM_NONE! Why?
     // XSLT transform are terribly picky with whitespace and the xslt compiler will also trim whitespace
@@ -4785,7 +4799,9 @@ xmqDocDefaultLoaderFunc(const xmlChar * URI,
                         void *ctxt /* ATTRIBUTE_UNUSED */,
                         xsltLoadType type /*ATTRIBUTE_UNUSED */)
 {
-    XMQDoc *doq = xmqNewDoc();
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doq = rd.doc;
 
     verbose_("xmq=", "xsl-document-load %s", URI);
 

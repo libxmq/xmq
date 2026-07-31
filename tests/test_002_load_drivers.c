@@ -1,4 +1,5 @@
 
+#include<assert.h>
 #include<xmq.h>
 #include"test.h"
 
@@ -35,7 +36,9 @@ XMQProceed add_driver(XMQDoc *doc, XMQNodePtr driver, void *user_data)
 
 int main(int argc, char **argv)
 {
-    XMQDoc *doc = xmqNewDoc();
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
 
     bool ok = xmqParseFile(doc, argv[1], "config", 0);
     if (!ok) {

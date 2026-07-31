@@ -1,4 +1,5 @@
 
+#include<assert.h>
 #include<xmq.h>
 #include"test.h"
 
@@ -6,7 +7,9 @@ char *test = __FILE__;
 
 int main(int argc, char **argv)
 {
-    XMQDoc *doc = xmqNewDoc();
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
 
     bool ok = xmqParseFile(doc, argv[1], "car", 0);
     if (!ok) {

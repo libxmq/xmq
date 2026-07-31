@@ -626,7 +626,9 @@ void test_ixml_case(const char *ixml, const char *input, const char *expected)
 {
     bool ok = false;
 
-    XMQDoc *grammar = xmqNewDoc();
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *grammar = rd.doc;
     ok = xmqParseBufferWithType(grammar, ixml, NULL, NULL, XMQ_CONTENT_IXML, 0);
     if (!ok)
     {
@@ -635,7 +637,9 @@ void test_ixml_case(const char *ixml, const char *input, const char *expected)
         return;
     }
 
-    XMQDoc *dom = xmqNewDoc();
+    rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *dom = rd.doc;
     ok = xmqParseBufferWithIXML(dom, input, NULL, grammar, 0);
     if (!ok)
     {
@@ -674,7 +678,9 @@ void test_ixml_grammar(XMQDoc *grammar, const char *ixml, const char *input, con
 {
     bool ok = false;
 
-    XMQDoc *dom = xmqNewDoc();
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *dom = rd.doc;
     ok = xmqParseBufferWithIXML(dom, input, NULL, grammar, 0);
     if (!ok)
     {
@@ -704,7 +710,9 @@ void test_yaep_reuse_grammar()
 {
     bool ok = false;
 
-    XMQDoc *grammar = xmqNewDoc();
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *grammar = rd.doc;
     const char *ixml = "words = ~[]*.";
     ok = xmqParseBufferWithType(grammar, ixml, NULL, NULL, XMQ_CONTENT_IXML, 0);
     if (!ok)
@@ -722,7 +730,9 @@ void test_yaep_reuse_grammar()
 
 void test_annotate_offsets()
 {
-    XMQDoc *doc = xmqNewDoc();
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
     bool ok = xmqParseBufferWithType(doc, "<root>ABC<a>xyz</a>DEFG<b>112233</b></root>", NULL, NULL, XMQ_CONTENT_XML, 0);
     if (!ok)
     {

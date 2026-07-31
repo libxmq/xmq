@@ -3251,7 +3251,7 @@ struct XMQParseState
     const char *i; // Current parsing position.
     size_t line; // Current line.
     size_t col; // Current col.
-    XMQParseError error_nr; // A standard parse error enum that maps to text.
+    XMQStatus error_nr; // A standard parse error enum that maps to text.
     const char *error_info; // Additional info printed with the error nr.
     char *generated_error_msg; // Additional error information.
     MemBuffer *generating_error_msg;
@@ -3436,7 +3436,7 @@ struct XMQQuoteSettings
 };
 typedef struct XMQQuoteSettings XMQQuoteSettings;
 
-void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, const char *start, const char *stop);
+void generate_state_error_message(XMQParseState *state, XMQStatus error_nr, const char *start, const char *stop);
 
 // Common parser functions ///////////////////////////////////////
 
@@ -4549,7 +4549,7 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
     state->i = start;
     state->line = 1;
     state->col = 1;
-    state->error_nr = XMQ_ERROR_NONE;
+    state->error_nr = XMQ_OK;
 
     XMQContentType detected_ct = xmqDetectContentType(state->buffer_start, state->buffer_stop);
     if (detected_ct != XMQ_CONTENT_XMQ)
@@ -4582,7 +4582,7 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
     }
     else
     {
-        XMQParseError error_nr = state->error_nr;
+        XMQStatus error_nr = state->error_nr;
         if (error_nr == XMQ_ERROR_INVALID_CHAR && state->last_suspicios_quote_end)
         {
             // Add warning about suspicious quote before the error.
@@ -4617,7 +4617,9 @@ bool xmqTokenizeFile(XMQParseState *state, const char *file)
     size_t fsize = 0;
     XMQContentType content = XMQ_CONTENT_XMQ;
 
-    XMQDoc *doq = xmqNewDoc();
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doq = rd.doc;
 
     if (file)
     {
@@ -5338,12 +5340,59 @@ LIST_OF_XMQ_TOKENS
     callbacks->magic_cookie = MAGIC_COOKIE;
 }
 
-XMQDoc *xmqNewDoc()
+XMQReturnDoc xmqNewDoc()
 {
     XMQDoc *d = (XMQDoc*)malloc(sizeof(XMQDoc));
+    if (!d) return (XMQReturnDoc){ XMQ_ERROR_OOM, NULL };
     memset(d, 0, sizeof(XMQDoc));
     d->docptr_.xml = xmlNewDoc((const xmlChar*)"1.0");
-    return d;
+    return (XMQReturnDoc){ XMQ_OK, d };
+}
+
+/*
+XMQNSPtr xmqNamespace(XMQDoc *doq, XMQNodePtr node, const char *name, const char *uri)
+{
+    xmlNsPtr ns = xmlNewNs((xmlNodePtr)node, (const xmlChar *)name, (const xmlChar *)uri);
+    return ns;
+}
+
+XMQNSPtr xmqGetNamespaceFromName(XMQDoc *doq, XMQNodePtr node, const char *name)
+{
+    xmlNsPtr ns = xmlSearchNs(doq->docptr_.xml, (xmlNodePtr)node, (const xmlChar *)name);
+    return ns;
+}
+
+XMQNSPtr xmqGetNamespaceFromURI(XMQDoc *doq, XMQNodePtr node, const char *uri)
+{
+    xmlNsPtr ns = xmlSearchNsByHref(doq->docptr_.xml, (xmlNodePtr)node, (const xmlChar *)uri);
+    return ns;
+}
+*/
+
+XMQReturnNode xmqAddRootNode(XMQDoc *doq, const char *name, const char *uri)
+{
+    xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, NULL, (const xmlChar *)name, NULL);
+    xmlNs *ns = xmlNewNs(new_node, (const xmlChar *)uri, NULL);
+    xmlSetNs(new_node, ns);
+    xmlDocSetRootElement(doq->docptr_.xml, new_node);
+    doq->root_ = new_node;
+    return (XMQReturnNode){ XMQ_OK, new_node };
+}
+
+XMQReturnNode xmqAddNode(XMQDoc *doq, XMQNodePtr parent, const char *name)
+{
+    xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, NULL, (xmlChar*)name, NULL);
+    xmlAddChild((xmlNodePtr)parent, new_node);
+    return (XMQReturnNode){ XMQ_OK, new_node };
+}
+
+XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNodePtr parent, const char *key, const char *value)
+{
+    xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, NULL, (xmlChar*)key, NULL);
+    xmlAddChild((xmlNodePtr)parent, new_node);
+    xmlNodePtr text = xmlNewDocText(doq->docptr_.xml, (xmlChar*)value);
+    xmlAddChild(new_node, text);
+    return (XMQReturnNode) { XMQ_OK, new_node };
 }
 
 void *xmqGetImplementationDoc(XMQDoc *doq)
@@ -5649,7 +5698,7 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root, int 
 
 const char *xmqVersion()
 {
-    return "4.1.0-modified";
+    return "4.2.0-modified";
 }
 
 void do_whitespace(XMQParseState *state,
@@ -7192,9 +7241,9 @@ const char *xmqDocError(XMQDoc *doq)
     return doq->error_;
 }
 
-XMQParseError xmqDocErrno(XMQDoc *doq)
+XMQStatus xmqDocErrno(XMQDoc *doq)
 {
-    return (XMQParseError)doq->errno_;
+    return (XMQStatus)doq->errno_;
 }
 
 void xmqSetStateSourceName(XMQParseState *state, const char *source_name)
@@ -8161,7 +8210,9 @@ void handle_yaep_syntax_error(YaepParseRun *pr,
     add_key_number(new_doc, root, "column", col);
     add_key_number(new_doc, root, "pos", err_tok_num+1);
 
-    XMQDoc *failure = xmqNewDoc();
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *failure = rd.doc;
     xmlFreeDoc(failure->docptr_.xml);
     xmqSetImplementationDoc(failure, new_doc);
     pr->failure = failure;
@@ -12014,7 +12065,7 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
     state->i = grammar_start;
     state->line = 1;
     state->col = 1;
-    state->error_nr = XMQ_ERROR_NONE;
+    state->error_nr = XMQ_OK;
 
     if (state->parse && state->parse->init) state->parse->init(state);
 
@@ -12031,7 +12082,7 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
     }
     else
     {
-        XMQParseError error_nr = state->error_nr;
+        XMQStatus error_nr = state->error_nr;
         generate_state_error_message(state, error_nr, grammar_start, grammar_stop);
         return false;
     }
@@ -13620,7 +13671,7 @@ bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const cha
     state->i = start;
     state->line = 1;
     state->col = 1;
-    state->error_nr = XMQ_ERROR_NONE;
+    state->error_nr = XMQ_OK;
 
     if (state->parse->init) state->parse->init(state);
 
@@ -13635,7 +13686,7 @@ bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const cha
     }
     else
     {
-        XMQParseError error_nr = state->error_nr;
+        XMQStatus error_nr = state->error_nr;
         generate_state_error_message(state, error_nr, start, stop);
         return false;
     }
@@ -16146,7 +16197,7 @@ void xml_add_root_child(xmlDoc *doc, xmlNode *node)
 
 #ifdef XMQ_INTERNALS_MODULE
 
-void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, const char *start, const char *stop)
+void generate_state_error_message(XMQParseState *state, XMQStatus error_nr, const char *start, const char *stop)
 {
     // Error detected during parsing and this is where the longjmp will end up!
     if (!state->generating_error_msg)
@@ -16268,11 +16319,11 @@ void generate_state_error_message(XMQParseState *state, XMQParseError error_nr, 
     membuffer_append_null(state->generating_error_msg);
 }
 
-const char *xmqParseErrorToString(XMQParseError e)
+const char *xmqParseErrorToString(XMQStatus e)
 {
     switch (e)
     {
-    case XMQ_ERROR_NONE: return "no warning, no error";
+    case XMQ_OK: return "no warning, no error";
     case XMQ_ERROR_CANNOT_READ_FILE: return "cannot read file";
     case XMQ_ERROR_OOM: return "out of memory";
     case XMQ_ERROR_NOT_XMQ: return "input file is not xmq";
@@ -16303,7 +16354,10 @@ const char *xmqParseErrorToString(XMQParseError e)
     case XMQ_ERROR_PARSING_XML: return "error parsing xml";
     case XMQ_ERROR_PARSING_HTML: return "error parsing html";
     case XMQ_ERROR_VALUE_CANNOT_START_WITH: return "value cannot start with = /* or //";
-    case XMQ_ERROR_IXML_SYNTAX_ERROR: return "syntax ";
+    case XMQ_ERROR_IXML_SYNTAX_ERROR: return "ixml syntax error";
+    case XMQ_ERROR_INVALID_NAMESPACE_URI: return "invalid namespace uri";
+    case XMQ_ERROR_INVALID_NAMESPACE_PREFIX: return "invalid namespace prefix";
+    case XMQ_ERROR_NAMESPACE_PREFIX_ALREADY_TAKEN: return "namespace prefix already taken";
     case XMQ_WARNING_QUOTES_NEEDED: return "perhaps you need more quotes to quote this quote";
     }
     assert(false);
