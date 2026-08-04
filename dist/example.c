@@ -39,9 +39,10 @@ void test_building_dom()
 
     xmqFreeOutputSettings(os);
 
-    if (strcmp(start, "car(xmlns=urn:cargo){model=escargo color=green}\n"))
+    const char *exp = "car(xmlns=urn:cargo){model=escargo color=green}\n";
+    if (strcmp(start, exp))
     {
-        printf("Building of dom tree failed. Got: %s\n", start);
+        printf("Building of dom tree failed. Got: %s\nExpected: %s\n", start, exp);
         exit(1);
     }
     free(start);
