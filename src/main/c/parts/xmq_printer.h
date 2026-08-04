@@ -97,11 +97,11 @@ void print_safe_leaf_quote(XMQPrintState *ps,
                            const char *start,
                            const char *stop);
 const char *find_next_line_end(XMQPrintState *ps, const char *start, const char *stop);
-const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop);
-void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level);
-void print_value_internal(XMQPrintState *ps, xmlNode *node, Level level);
-bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *stop);
-void print_value(XMQPrintState *ps, xmlNode *node, Level level);
+const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop, bool using_dquotes);
+void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level, bool using_dquotes, bool already_compounded);
+void print_value_internal(XMQPrintState *ps, xmlNode *node, const char *start, const char *stop, Level level, bool using_dquotes, bool already_compounded);
+bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *stop, bool prefer_dquotes, bool *use_dquotes);
+void print_value(XMQPrintState *ps, xmlNode *node, const char *start, const char *stop, Level level, bool already_compounded);
 
 #define XMQ_PRINTER_MODULE
 

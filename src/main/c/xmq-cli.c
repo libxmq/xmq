@@ -2536,7 +2536,9 @@ bool cmd_quote_unquote(XMQCliCommand *command)
     if (command->cmd == XMQ_CLI_CMD_QUOTE_C)
     {
         char *value = (char*)xmlNodeListGetString(doc, doc->children, 1);
-        char *quoted_value = xmq_quote_as_c(value, value+strlen(value), true);
+        XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), true);
+        if (rs.status != XMQ_OK) return false;
+        char *quoted_value = rs.string;
         xmlFree(value);
 
         if (command->add_nl)
@@ -2564,7 +2566,9 @@ bool cmd_quote_unquote(XMQCliCommand *command)
     if (command->cmd == XMQ_CLI_CMD_UNQUOTE_C)
     {
         char *value = (char*)xmlNodeListGetString(doc, doc->children, 1);
-        char *unquoted_value = xmq_unquote_as_c(value, value+strlen(value), true);
+        XMQReturnString rs = xmq_unquote_as_c(value, value+strlen(value), true);
+        if (rs.status != XMQ_OK) return false;
+        char *unquoted_value = rs.string;
         xmlFree(value);
 
         xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");

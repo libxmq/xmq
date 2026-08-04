@@ -326,6 +326,8 @@ typedef enum
     XMQ_ERROR_INVALID_NAMESPACE_URI = 31,
     XMQ_ERROR_INVALID_NAMESPACE_PREFIX = 32,
     XMQ_ERROR_NAMESPACE_PREFIX_ALREADY_TAKEN = 33,
+    XMQ_ERROR_NOT_QUOTED = 34,
+    XMQ_ERROR_BAD_RANGE = 35,
     XMQ_ERROR_IXML_SYNTAX_ERROR = 50,
     XMQ_WARNING_QUOTES_NEEDED = 1000
 } XMQStatus;
@@ -347,9 +349,16 @@ typedef struct XMQReturnNode XMQReturnNode;
 struct XMQReturnString
 {
     XMQStatus status;
-    const char *string;
+    char *string;
 };
 typedef struct XMQReturnString XMQReturnString;
+
+struct XMQReturnConstString
+{
+    XMQStatus status;
+    const char *string;
+};
+typedef struct XMQReturnConstString XMQReturnConstString;
 
 /**
     XMQCoreType:

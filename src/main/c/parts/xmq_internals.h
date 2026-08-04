@@ -75,6 +75,14 @@ typedef struct YaepGrammar YaepGrammar;
 struct XMQParseState;
 typedef struct XMQParseState XMQParseState;
 
+// This is an implementation specific struct, do not expose to xmq.h
+struct XMQReturnXMLNode
+{
+    XMQStatus status;
+    xmlNodePtr node;
+};
+typedef struct XMQReturnXMLNode XMQReturnXMLNode;
+
 // DECLARATIONS /////////////////////////////////////////////////
 
 #define LIST_OF_XMQ_TOKENS  \
@@ -491,7 +499,7 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool
 size_t count_xmq_quotes(const char *i, const char *stop);
 void eat_xmq_quote(XMQParseState *state, const char **start, const char **stop);
 size_t calculate_incidental_indent(const char *start, const char *stop);
-char *xmq_trim_quote(const char *start, const char *stop, bool is_xmq, bool is_comment);
+XMQReturnString xmq_trim_quote(const char *start, const char *stop, bool is_xmq, bool is_comment);
 char *escape_xml_comment(const char *comment);
 char *unescape_xml_comment(const char *comment);
 void xmq_fixup_html_before_writeout(XMQDoc *doq);
@@ -501,8 +509,8 @@ char *xmq_comment(int indent,
                  const char *start,
                  const char *stop,
                  XMQQuoteSettings *settings);
-char *xmq_un_comment(const char *start, const char *stop);
-char *xmq_un_quote(const char *start, const char *stop, bool remove_qs, bool is_xmq);
+XMQReturnString xmq_un_comment(const char *start, const char *stop);
+XMQReturnString xmq_un_quote(const char *start, const char *stop, bool remove_qs, bool is_xmq);
 
 // XML/HTML dom functions ///////////////////////////////////////////////////////////////
 
@@ -524,12 +532,12 @@ struct yaep_tree_node;
 
 bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar, const char *start, const char *stop, int flags);
 
-typedef void (*XMQContentCallback)(XMQParseState *state,
-                                   size_t start_line,
-                                   size_t start_col,
-                                   const char *start,
-                                   const char *stop,
-                                   const char *suffix);
+typedef XMQStatus (*XMQContentCallback)(XMQParseState *state,
+                                        size_t start_line,
+                                        size_t start_col,
+                                        const char *start,
+                                        const char *stop,
+                                        const char *suffix);
 
 struct XMQParseCallbacks
 {

@@ -301,7 +301,7 @@ void print_nodes(XMQPrintState *ps, xmlNode *from, xmlNode *to, size_t align)
 
 void print_content_node(XMQPrintState *ps, xmlNode *node)
 {
-    print_value(ps, node, LEVEL_XMQ);
+    print_value(ps, node, NULL, NULL, LEVEL_XMQ, false);
 }
 
 void print_entity_node(XMQPrintState *ps, xmlNode *node)
@@ -502,7 +502,7 @@ void print_key_node(XMQPrintState *ps,
     print_utf8(ps, COLOR_equals, 1, "=", NULL);
     if (!ps->output_settings->compact) print_white_spaces(ps, 1);
 
-    print_value(ps, xml_first_child(node), LEVEL_ELEMENT_VALUE);
+    print_value(ps, xml_first_child(node), NULL, NULL, LEVEL_ELEMENT_VALUE, false);
 }
 
 void print_element_with_children(XMQPrintState *ps,
@@ -552,7 +552,8 @@ void print_doctype(XMQPrintState *ps, xmlNode *node)
             if (*i == '\n') *i = ' ';
         }
     }
-    print_value_internal_text(ps, c+10, c+strlen(c)-1, LEVEL_ELEMENT_VALUE);
+    print_value(ps, NULL, c+10, c+strlen(c)-1, LEVEL_ELEMENT_VALUE, false);
+
     xmlBufferFree(buffer);
 }
 
@@ -588,7 +589,7 @@ void print_pi_node(XMQPrintState *ps, xmlNode *node)
         }
     }
 
-    print_value_internal_text(ps, content, end, LEVEL_ELEMENT_VALUE);
+    print_value(ps, NULL, content, end, LEVEL_ELEMENT_VALUE, false);
 
     free(content);
     xmlBufferFree(buffer);
@@ -1060,7 +1061,7 @@ void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align)
 
         if (!ps->output_settings->compact) print_white_spaces(ps, 1);
 
-        print_value(ps, a->children, LEVEL_ATTR_VALUE);
+        print_value(ps, a->children, NULL, NULL, LEVEL_ATTR_VALUE, false);
     }
 }
 
@@ -1095,7 +1096,7 @@ void print_namespace_declaration(XMQPrintState *ps, xmlNs *ns, size_t align)
 
         if (!ps->output_settings->compact) print_white_spaces(ps, 1);
 
-        print_value_internal_text(ps, v, NULL, LEVEL_ATTR_VALUE);
+        print_value(ps, NULL, v, v+strlen(v), LEVEL_ATTR_VALUE, false);
     }
 }
 
@@ -1313,7 +1314,7 @@ const char *find_next_line_end(XMQPrintState *ps, const char *start, const char 
     return i;
 }
 
-const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop)
+const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop, bool using_dquotes)
 {
     bool compact = ps->output_settings->compact;
     bool newlines = ps->output_settings->escape_newlines;
@@ -1321,22 +1322,20 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
     bool non7bit = ps->output_settings->escape_non_7bit;
 
     const char *i = start;
-
-    if (*i == '\'' && compact)
-    {
-        return i;
-    }
+    char q = '\'';
+    if (using_dquotes) q = '"';
+    if (*i == q && compact) return i;
     const char *pre_stop = stop-1;
-    if (compact && *pre_stop == '\'')
+    if (compact && *pre_stop == q)
     {
-        while (pre_stop > start && *pre_stop == '\'') pre_stop--;
+        while (pre_stop > start && *pre_stop == q) pre_stop--;
         pre_stop++;
     }
 
     while (i < stop)
     {
         int c = (int)((unsigned char)*i);
-        if (compact && c == '\'' && i == pre_stop) break;
+        if (compact && c == q && i == pre_stop) break;
         if (newlines && c == '\n') break;
         if (non7bit && c > 126) break;
         if (c < 32 && c != '\t' && c != '\n') break;
@@ -1357,9 +1356,15 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
     return i; // j+1;
 }
 
-void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level)
+void print_value_internal_text(XMQPrintState *ps,
+                               const char *start,
+                               const char *stop,
+                               Level level,
+                               bool using_dquotes,
+                               bool already_compounded)
 {
     if (!stop) stop = start+strlen(start);
+
     if (!start || start >= stop || start[0] == 0)
     {
         // This is for empty attribute values.
@@ -1444,7 +1449,7 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
     // Also one can replace all non-ascii chars with their entities if so desired.
     for (const char *from = start; from < stop; )
     {
-        const char *to = find_next_char_that_needs_escape(ps, from, stop);
+        const char *to = find_next_char_that_needs_escape(ps, from, stop, using_dquotes);
         if (from == to)
         {
             check_space_before_entity_node(ps);
@@ -1474,7 +1479,7 @@ void print_value_internal_text(XMQPrintState *ps, const char *start, const char 
             }
             else
             {
-                print_value_internal_text(ps, from, to, level);
+                print_value(ps, NULL, from, to, level, already_compounded);
             }
         }
         from = to;
@@ -1540,16 +1545,22 @@ void print_color_post(XMQPrintState *ps, XMQColor color)
    QUOTEL: 'xxx
             yyy'
 */
-void print_value_internal(XMQPrintState *ps, xmlNode *node, Level level)
+void print_value_internal(XMQPrintState *ps, xmlNode *node, const char *start, const char *stop, Level level, bool using_dquotes, bool already_compounded)
 {
-    if (node->type == XML_ENTITY_REF_NODE ||
-        node->type == XML_ENTITY_NODE)
+    if (node && (
+            node->type == XML_ENTITY_REF_NODE ||
+            node->type == XML_ENTITY_NODE))
     {
         print_entity_node(ps, node);
         return;
     }
 
-    print_value_internal_text(ps, xml_element_content(node), NULL, level);
+    if (!start)
+    {
+        start = xml_element_content(node);
+        stop = NULL;
+    }
+    print_value_internal_text(ps, start, stop, level, using_dquotes, already_compounded);
 }
 
 /**
@@ -1557,10 +1568,12 @@ void print_value_internal(XMQPrintState *ps, xmlNode *node, Level level)
    @ps: The print state.
    @start: Content buffer start.
    @stop: Points to after last buffer byte.
+   @prefer_dquotes: From the user preferences.
+   @use_dquotes: Set to true if double quotes are needed.
 
    Used to determine early if the quote needs to be compounded.
 */
-bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *stop)
+bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *stop, bool prefer_dquotes, bool *use_dquotes)
 {
     bool compact = ps->output_settings->compact;
     bool escape_tabs = ps->output_settings->escape_tabs;
@@ -1597,36 +1610,134 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
 
     bool newlines = ps->output_settings->escape_newlines;
     bool non7bit = ps->output_settings->escape_non_7bit;
+    int num_squotes = 0;
+    int num_dquotes = 0;
+    bool needs_compounded = false;
 
     for (const char *i = start; i < stop; ++i)
     {
         int c = (int)(unsigned char)(*i);
-        if (newlines && c == '\n') return true;
-        if (non7bit && c > 126) return true;
-        if (c < 32 && c != '\t' && c != '\n') return true;
-        if (c == '\t' && escape_tabs) return true;
+        if (c == '\'')
+        {
+            num_squotes++;
+            continue;
+        }
+        if (c == '"')
+        {
+            num_dquotes++;
+            continue;
+        }
+        if (newlines && c == '\n')
+        {
+            needs_compounded = true;
+            continue;
+        }
+        if (non7bit && c > 126)
+        {
+            needs_compounded = true;
+            continue;
+        }
+        if (c < 32 && c != '\t' && c != '\n')
+        {
+            needs_compounded = true;
+            continue;
+        }
+        if (c == '\t' && escape_tabs)
+        {
+            needs_compounded = true;
+            continue;
+        }
     }
-    return false;
+
+    if (num_dquotes == 0 && num_squotes == 0)
+    {
+        // No single or double quotes found, default to preferred quoting style.
+        *use_dquotes = prefer_dquotes;
+    }
+    else if (num_dquotes > 0 && num_dquotes > 0)
+    {
+        // We have a mix of quotes. If first and last char is different, then we do not need a compound.
+        char a = *(start);
+        char b = *(stop-1);
+        if (a == b)
+        {
+            // First and last are the same. Are they quotes?
+            if (a == '\'' || a == '"')
+            {
+                // They are quotes. So use double quotes if they are single quotes.
+                *use_dquotes = a == '\'';
+            }
+            else
+            {
+                // Same but not quotes, use the default quotes.
+                *use_dquotes = prefer_dquotes;
+            }
+        }
+        else
+        {
+            // First and last are different. Are they both quotes?
+            if ((a == '\'' || a == '"') && (b == '\'' || b == '"'))
+            {
+                // We need compounded since there is no safe way to quote both sides.
+                needs_compounded = true;
+                *use_dquotes = prefer_dquotes;
+            }
+            else if (a == '\'' || a == '"')
+            {
+                // Only first is a quote. Use double quotes only if this is a single quote.
+                *use_dquotes = a == '\'';
+            }
+            else if (b == '\'' || b == '"')
+            {
+                // Only last is a quote. Use double quotes only if this is a single quote.
+                *use_dquotes = b == '\'';
+            }
+            else
+            {
+                // Niether are quotes. Use double quotes if the number of single quotes are greater than the number of double quotes.
+                *use_dquotes = (num_squotes > num_dquotes);
+            }
+        }
+    }
+    else
+    {
+        if (num_squotes > 0) *use_dquotes = true;
+        if (num_dquotes > 0) *use_dquotes = false;
+    }
+    return needs_compounded;
 }
 
-void print_value(XMQPrintState *ps, xmlNode *node, Level level)
+void print_value(XMQPrintState *ps,
+                 xmlNode *node,
+                 const char *start,
+                 const char *stop,
+                 Level level,
+                 bool already_compounded)
 {
+    // Either print a node or start-stop. Not both.
+    assert(!(node && start));
+
     // Check if there are more than one part, if so the value has to be compounded.
     bool is_compound = level != LEVEL_XMQ && node != NULL && node->next != NULL;
+    bool prefer_dquotes = ps->output_settings->prefer_double_quotes;
+    bool use_dquotes = prefer_dquotes;
 
     // Check if the single part will split into multiple parts and therefore needs to be compounded.
-    if (!is_compound && node && !is_entity_node(node) && level != LEVEL_XMQ)
+    if (start || (!is_compound && node && !is_entity_node(node) && level != LEVEL_XMQ))
     {
         // Check if there are leading ending quotes/whitespace. But also
         // if compact output and there are newlines inside.
-        const char *start = xml_element_content(node);
-        const char *stop = start+strlen(start);
-        is_compound = quote_needs_compounded(ps, start, stop);
+        if (!start)
+        {
+            start = xml_element_content(node);
+            stop = start+strlen(start);
+        }
+        is_compound = quote_needs_compounded(ps, start, stop, prefer_dquotes, &use_dquotes);
     }
 
     size_t old_line_indent = ps->line_indent;
 
-    if (is_compound)
+    if (is_compound && !already_compounded)
     {
         level = enter_compound_level(level);
         print_utf8(ps, COLOR_cpar_left, 1, "(", NULL);
@@ -1634,13 +1745,20 @@ void print_value(XMQPrintState *ps, xmlNode *node, Level level)
         ps->line_indent = ps->current_indent;
     }
 
-    for (xmlNode *i = node; i; i = xml_next_sibling(i))
+    if (start)
     {
-        print_value_internal(ps, i, level);
-        if (level == LEVEL_XMQ) break;
+        print_value_internal(ps, NULL, start, stop, level, use_dquotes, is_compound);
+    }
+    else
+    {
+        for (xmlNode *i = node; i; i = xml_next_sibling(i))
+        {
+            print_value_internal(ps, i, start, stop, level, use_dquotes, is_compound);
+            if (level == LEVEL_XMQ) break;
+        }
     }
 
-    if (is_compound)
+    if (is_compound && !already_compounded)
     {
         if (!ps->output_settings->compact) print_white_spaces(ps, 1);
         print_utf8(ps, COLOR_cpar_right, 1, ")", NULL);

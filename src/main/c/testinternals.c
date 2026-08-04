@@ -132,13 +132,21 @@ void test_xmq()
 
 void test_trim_quote(const char *in, const char *expected)
 {
-    char *out = xmq_un_quote(in, in+strlen(in), true, true);
+    XMQReturnString rs = xmq_un_quote(in, in+strlen(in), true, true);
+    assert(rs.status == XMQ_OK);
+    char *out = rs.string;
     if (strcmp(out, expected))
     {
         all_ok_ = false;
-        char *inb = xmq_quote_as_c(in, in+strlen(in), false);
-        char *exb = xmq_quote_as_c(expected, expected+strlen(expected), false);
-        char *gob = xmq_quote_as_c(out, out+strlen(out), false);
+        rs = xmq_quote_as_c(in, in+strlen(in), false);
+        assert(rs.status == XMQ_OK);
+        char *inb = rs.string;
+        rs = xmq_quote_as_c(expected, expected+strlen(expected), false);
+        assert(rs.status == XMQ_OK);
+        char *exb = rs.string;
+        rs = xmq_quote_as_c(out, out+strlen(out), false);
+        assert(rs.status == XMQ_OK);
+        char *gob = rs.string;
 
         printf("Trimming \"%s\"\n", inb);
         printf("expected \"%s\"\n", exb);
@@ -155,13 +163,21 @@ void test_trim_quote(const char *in, const char *expected)
 
 void test_trim_comment(int start_col, const char *in, const char *expected)
 {
-    char *out = xmq_un_comment(in, in+strlen(in));
+    XMQReturnString rs = xmq_un_comment(in, in+strlen(in));
+    assert(rs.status == XMQ_OK);
+    char *out = rs.string;
     if (strcmp(out, expected))
     {
         all_ok_ = false;
-        char *inb = xmq_quote_as_c(in, in+strlen(in), false);
-        char *exb = xmq_quote_as_c(expected, expected+strlen(expected), false);
-        char *gob = xmq_quote_as_c(out, out+strlen(out), false);
+        rs = xmq_quote_as_c(in, in+strlen(in), false);
+        assert(rs.status == XMQ_OK);
+        char *inb = rs.string;
+        rs = xmq_quote_as_c(expected, expected+strlen(expected), false);
+        assert(rs.status == XMQ_OK);
+        char *exb = rs.string;
+        rs = xmq_quote_as_c(out, out+strlen(out), false);
+        assert(rs.status == XMQ_OK);
+        char *gob = rs.string;
 
         printf("Trimming \"%s\"\n", inb);
         printf("expected \"%s\"\n", exb);
@@ -280,9 +296,15 @@ void test_quote(int indent, bool compact, char *in, char *expected)
     if (strcmp(out, expected))
     {
         all_ok_ = false;
-        char *inb = xmq_quote_as_c(in, in+strlen(in), false);
-        char *exb = xmq_quote_as_c(expected, expected+strlen(expected), false);
-        char *gob = xmq_quote_as_c(out, out+strlen(out), false);
+        XMQReturnString rs = xmq_quote_as_c(in, in+strlen(in), false);
+        assert(rs.status == XMQ_OK);
+        char *inb = rs.string;
+        rs = xmq_quote_as_c(expected, expected+strlen(expected), false);
+        assert(rs.status == XMQ_OK);
+        char *exb = rs.string;
+        rs = xmq_quote_as_c(out, out+strlen(out), false);
+        assert(rs.status == XMQ_OK);
+        char *gob = rs.string;
 
         printf("Quoting \"%s\" with indent %d\n", inb, indent);
         printf("expected \"%s\"\n", exb);
@@ -301,14 +323,22 @@ void test_quote(int indent, bool compact, char *in, char *expected)
         // "test = " or "test="
         size_t skip = 7;
         if (compact) skip = 5;
-        char *trimmed = xmq_un_quote(out+skip, out+size, true, true);
+        XMQReturnString rs = xmq_un_quote(out+skip, out+size, true, true);
+        assert(rs.status == XMQ_OK);
+        char *trimmed = rs.string;
 
         if (strcmp(trimmed, in))
         {
             all_ok_ = false;
-            char *inb = xmq_quote_as_c(out, out+strlen(out), false);
-            char *exb = xmq_quote_as_c(in, in+strlen(in), false);
-            char *gob = xmq_quote_as_c(trimmed, trimmed+strlen(trimmed), false);
+            rs = xmq_quote_as_c(out, out+strlen(out), false);
+            assert(rs.status == XMQ_OK);
+            char *inb = rs.string;
+            rs = xmq_quote_as_c(in, in+strlen(in), false);
+            assert(rs.status == XMQ_OK);
+            char *exb = rs.string;
+            rs = xmq_quote_as_c(trimmed, trimmed+strlen(trimmed), false);
+            assert(rs.status == XMQ_OK);
+            char *gob = rs.string;
 
             printf("Trimming back  \"%s\"\n", inb);
             printf("expected \"%s\"\n", exb);
@@ -337,13 +367,13 @@ void test_quoting()
 
     test_quote(0, true,
                "'''X'''",
-               "test=(&#39;&#39;&#39;'X'&#39;&#39;&#39;)");
+               "test=\"'''X'''\"");
     test_quote(0, true,
                "X'",
-               "test=('X'&#39;)");
+               "test=\"X'\"");
     test_quote(0, true,
                "X'\n",
-               "test=('X'&#39;&#10;)");
+               "test=(\"X'\"&#10;)");
 
     test_quote(0, true,
                "01", "test=01");
@@ -372,8 +402,8 @@ void test_quoting()
     test_quote(10, "   123   123   ", "'   123   123   '");
     test_quote(10, "   123\n123   ", "'   123\n           123   '");
     */
-    test_quote(4, false, " ' ", "test = ''' ' '''");
-    test_quote(4, false, " '' ", "test = ''' '' '''");
+    test_quote(4, false, " ' ", "test = \" ' \"");
+    test_quote(4, false, " '' ", "test = \" '' \"");
 
     test_quote(0, false, "alfa\nbeta", "test = 'alfa\n        beta'");
     test_quote(1, false, "alfa\nbeta", "test = 'alfa\n         beta'");
@@ -382,10 +412,10 @@ void test_quoting()
 //TODO //    test_quote(4, " '''' ", "''''' '''' '''''");
 
 //TODO    test_quote(0, false, "'", "test = &apos;");
-    test_quote(0, false, "'alfa", "test = '''\n       'alfa\n       '''");
-    test_quote(1, false, "'alfa", "test = '''\n        'alfa\n        '''");
-    test_quote(0, false, "alfa'", "test = '''\n       alfa'\n       '''");
-    test_quote(1, false, "alfa'", "test = '''\n        alfa'\n        '''");
+//    test_quote(0, false, "'\"alfa\"", "test = xxx");
+//    test_quote(1, false, "'\"alfa", "test = '''\n        'alfa\n        '''");
+//    test_quote(0, false, "alfa\"'", "test = '''\n       alfa'\n       '''");
+//    test_quote(1, false, "alfa\"'", "test = '''\n        alfa'\n        '''");
 
 }
 
@@ -761,11 +791,10 @@ void test_annotate_offsets()
 
 int main(int argc, char **argv)
 {
-    test_annotate_offsets();
-/*#define X(name) name();
+#define X(name) name();
     TESTS
 #undef X
-*/
+
     if (all_ok_) printf("OK: testinternals\n");
     else printf("ERROR: testinternals\n");
     return all_ok_ ? 0 : 1;

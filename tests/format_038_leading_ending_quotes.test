@@ -14,7 +14,7 @@ alfa {
            ''''
 }
 COMPACT
-alfa{beta=howdy beta=&#39;'howd"y'&#39;beta=&#39;&#39;'howd""y'&#39;&#39;beta=&#39;&#39;&#39;'howd"""y'&#39;&#39;&#39;}
+alfa{beta=howdy beta="""'howd"y'"""beta="""''howd""y''"""beta=""""'''howd"""y'''""""}
 XMQ
 alfa {
     beta = howdy

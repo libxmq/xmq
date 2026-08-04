@@ -46,31 +46,43 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 #ifdef DEBUG_IXML_GRAMMAR
 #define IXML_STEP(name,state) {                 \
     if (false && xmq_trace_enabled_) {                                \
-        char *tmp = xmq_quote_as_c(state->i, state->i+10, false);           \
-        for (int i=0; i<state->depth; ++i) trace("    "); \
-        trace("dbg " #name " >%s...\n", tmp);       \
-        for (int i=0; i<state->depth; ++i) trace("    "); \
-        trace("{\n");      \
-        state->depth++; \
-        free(tmp); \
+        XMQReturnString rs = xmq_quote_as_c(state->i, state->i+10, false);           \
+        if (rs.status == XMQ_OK) \
+        { \
+            char *tmp = rs.string; \
+            for (int i=0; i<state->depth; ++i) trace("    "); \
+            trace("dbg " #name " >%s...\n", tmp);       \
+            for (int i=0; i<state->depth; ++i) trace("    "); \
+            trace("{\n");      \
+            state->depth++; \
+            free(tmp); \
+        } \
     } \
 }
 #define IXML_DONE(name,state) {                 \
     if (false && xmq_trace_enabled_) {                                \
-        char *tmp = xmq_quote_as_c(state->i, state->i+10, false);           \
-        state->depth--; \
-        for (int i=0; i<state->depth; ++i) trace("    "); \
-        trace("}\n"); \
-        free(tmp); \
+        XMQReturnString rs = xmq_quote_as_c(state->i, state->i+10, false);           \
+        if (rs.status == XMQ_OK) \
+        { \
+            char *tmp = rs.string; \
+            state->depth--; \
+            for (int i=0; i<state->depth; ++i) trace("    "); \
+            trace("}\n"); \
+            free(tmp); \
+        } \
     } \
 }
 
 #define EAT(name, num) { \
     if (false && xmq_trace_enabled_) { \
-        char *tmp = xmq_quote_as_c(state->i, state->i+num, false);        \
-        for (int i=0; i<state->depth; ++i) fprintf(stderr, "    "); \
-        fprintf(stderr, "eat %s %s\n", #name, tmp);       \
-        free(tmp); \
+        XMQReturnString rs = xmq_quote_as_c(state->i, state->i+num, false);        \
+        if (rs.status == XMQ_OK) \
+        { \
+            char *tmp = rs.string; \
+            for (int i=0; i<state->depth; ++i) fprintf(stderr, "    "); \
+            fprintf(stderr, "eat %s %s\n", #name, tmp);       \
+            free(tmp); \
+        } \
     } \
     increment(0, num, &state->i, &state->line, &state->col); \
 }

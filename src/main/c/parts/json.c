@@ -46,18 +46,18 @@ bool is_json_number(XMQParseState *state);
 bool is_json_quote_start(char c);
 bool is_json_whitespace(char c);
 void json_print_namespace_declaration(XMQPrintState *ps, xmlNs *ns);
-void json_print_attribute(XMQPrintState *ps, xmlAttrPtr a);
+XMQStatus json_print_attribute(XMQPrintState *ps, xmlAttrPtr a);
 void json_print_attributes(XMQPrintState *ps, xmlNodePtr node);
 void json_print_array_with_children(XMQPrintState *ps,
                                     xmlNode *container,
                                     xmlNode *node);
 void json_print_comment_node(XMQPrintState *ps, xmlNodePtr node, bool prefix_ul, size_t total, size_t used);
-void json_print_doctype_node(XMQPrintState *ps, xmlNodePtr node);
+XMQStatus json_print_doctype_node(XMQPrintState *ps, xmlNodePtr node);
 void json_print_entity_node(XMQPrintState *ps, xmlNodePtr node);
-void json_print_standalone_quote(XMQPrintState *ps, xmlNode *container, xmlNodePtr node, size_t total, size_t used);
+XMQStatus json_print_standalone_quote(XMQPrintState *ps, xmlNode *container, xmlNodePtr node, size_t total, size_t used);
 void json_print_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
-void json_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, Level level, bool force_string);
-void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
+XMQStatus json_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, Level level, bool force_string);
+XMQStatus json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 void json_print_element_with_children(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used);
 void json_print_key_node(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used, bool force_string);
 
@@ -1100,7 +1100,7 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
     DO_CALLBACK_SIM(brace_right, state, state->line, state->col, rightbrace, rightbrace+1, rightbrace+1);
 }
 
-void json_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, Level level, bool force_string)
+XMQStatus json_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, Level level, bool force_string)
 {
     XMQOutputSettings *output_settings = ps->output_settings;
     XMQWrite write = output_settings->content.write;
@@ -1147,7 +1147,9 @@ void json_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, Level level
                     const char *value = xml_element_content(node);
                     if (value)
                     {
-                        char *quoted_value = xmq_quote_as_c(value, value+strlen(value), false);
+                        XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), false);
+                        if (rs.status != XMQ_OK) return rs.status;
+                        char *quoted_value = rs.string;
                         print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
                         free(quoted_value);
                     }
@@ -1160,6 +1162,7 @@ void json_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, Level level
         print_utf8(ps, COLOR_none, 1, "\"", NULL);
         ps->last_char = '"';
     }
+    return XMQ_OK;
 }
 
 void json_print_array_with_children(XMQPrintState *ps,
@@ -1203,7 +1206,7 @@ void json_print_array_with_children(XMQPrintState *ps,
     ps->last_char = ']';
 }
 
-void json_print_attribute(XMQPrintState *ps, xmlAttr *a)
+XMQStatus json_print_attribute(XMQPrintState *ps, xmlAttr *a)
 {
     const char *key;
     const char *prefix;
@@ -1212,11 +1215,13 @@ void json_print_attribute(XMQPrintState *ps, xmlAttr *a)
 
     // Do not print "_" attributes since they are the name of the element
     // when the element name is not valid xml.
-    if (!strcmp(key, "_")) return;
+    if (!strcmp(key, "_")) return XMQ_OK;
 
     json_check_comma(ps);
 
-    char *quoted_key = xmq_quote_as_c(key, key+strlen(key), false);
+    XMQReturnString rs = xmq_quote_as_c(key, key+strlen(key), false);
+    if (rs.status != XMQ_OK) return rs.status;
+    char *quoted_key = rs.string;
     print_utf8(ps, COLOR_none, 1, "\"_", NULL);
     if (prefix)
     {
@@ -1229,7 +1234,9 @@ void json_print_attribute(XMQPrintState *ps, xmlAttr *a)
     if (a->children != NULL)
     {
         char *value = (char*)xmlNodeListGetString(a->doc, a->children, 1);
-        char *quoted_value = xmq_quote_as_c(value, value+strlen(value), true);
+        XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), true);
+        if (rs.status != XMQ_OK) return rs.status;
+        char *quoted_value = rs.string;
         print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
         free(quoted_value);
         xmlFree(value);
@@ -1238,6 +1245,7 @@ void json_print_attribute(XMQPrintState *ps, xmlAttr *a)
     {
         print_utf8(ps, COLOR_none, 1, "null", NULL);
     }
+    return XMQ_OK;
 }
 
 void json_print_namespace_declaration(XMQPrintState *ps, xmlNs *ns)
@@ -1374,7 +1382,7 @@ void json_print_element_with_children(XMQPrintState *ps,
     ps->last_char = '}';
 }
 
-void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used)
+XMQStatus json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *node, size_t total, size_t used)
 {
     const char *name = (const char*)node->name;
     const char *prefix = NULL;
@@ -1404,7 +1412,9 @@ void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *nod
             // The key was stored inside the attribute because it could not
             // be used as the element name.
             char *value = (char*)xmlNodeListGetString(node->doc, a->children, 1);
-            char *quoted_value = xmq_quote_as_c(value, value+strlen(value), false);
+            XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), false);
+            if (rs.status != XMQ_OK) return rs.status;
+            char *quoted_value = rs.string;
             print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
             free(quoted_value);
             xmlFree(value);
@@ -1422,6 +1432,7 @@ void json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode *nod
     print_utf8(ps, COLOR_none, 1, "\"", NULL);
 
     ps->last_char = '"';
+    return XMQ_OK;
 }
 
 void json_print_key_node(XMQPrintState *ps,
@@ -1491,7 +1502,7 @@ void json_print_comment_node(XMQPrintState *ps,
     ps->last_char = '"';
 }
 
-void json_print_doctype_node(XMQPrintState *ps, xmlNodePtr node)
+XMQStatus json_print_doctype_node(XMQPrintState *ps, xmlNodePtr node)
 {
     json_check_comma(ps);
 
@@ -1502,11 +1513,18 @@ void json_print_doctype_node(XMQPrintState *ps, xmlNodePtr node)
     xmlBuffer *buffer = xmlBufferCreate();
     xmlNodeDump(buffer, (xmlDocPtr)ps->doq->docptr_.xml, node, 0, 0);
     char *c = (char*)xmlBufferContent(buffer);
-    char *quoted_value = xmq_quote_as_c(c+10, c+strlen(c)-1, true);
+    XMQReturnString rs = xmq_quote_as_c(c+10, c+strlen(c)-1, true);
+    if (rs.status != XMQ_OK)
+    {
+        xmlBufferFree(buffer);
+        return XMQ_ERROR_OOM;
+    }
+    char *quoted_value = rs.string;
     print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
     free(quoted_value);
     xmlBufferFree(buffer);
     ps->last_char = '"';
+    return XMQ_OK;
 }
 
 void json_print_entity_node(XMQPrintState *ps, xmlNodePtr node)
@@ -1519,11 +1537,13 @@ void json_print_entity_node(XMQPrintState *ps, xmlNodePtr node)
     ps->last_char = '"';
 }
 
-void json_print_standalone_quote(XMQPrintState *ps, xmlNodePtr container, xmlNodePtr node, size_t total, size_t used)
+XMQStatus json_print_standalone_quote(XMQPrintState *ps, xmlNodePtr container, xmlNodePtr node, size_t total, size_t used)
 {
     json_check_comma(ps);
     const char *value = xml_element_content(node);
-    char *quoted_value = xmq_quote_as_c(value, value+strlen(value), false);
+    XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), false);
+    if (rs.status != XMQ_OK) return rs.status;
+    char *quoted_value = rs.string;
     if (total == 1)
     {
         print_utf8(ps, COLOR_none, 3, "\"|\":\"", NULL, quoted_value, NULL, "\"", NULL);
@@ -1537,6 +1557,8 @@ void json_print_standalone_quote(XMQPrintState *ps, xmlNodePtr container, xmlNod
     }
     free(quoted_value);
     ps->last_char = '"';
+
+    return XMQ_OK;
 }
 
 bool json_is_number(const char *start)

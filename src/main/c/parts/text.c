@@ -533,7 +533,7 @@ char to_hex(int c)
 
     Escape the in string using c/json quotes. I.e. Surround with " and newline becomes \n and " become \" etc.
 */
-char *xmq_quote_as_c(const char *start, const char *stop, bool add_quotes)
+XMQReturnString xmq_quote_as_c(const char *start, const char *stop, bool add_quotes)
 {
     if (!stop) stop = start+strlen(start);
     if (stop == start)
@@ -544,19 +544,19 @@ char *xmq_quote_as_c(const char *start, const char *stop, bool add_quotes)
             tmp[0] = '"';
             tmp[1] = '"';
             tmp[2] = 0;
-            return tmp;
+            return (XMQReturnString){ XMQ_OK, tmp };
         }
         else
         {
             char *tmp = (char*)malloc(1);
             tmp[0] = 0;
-            return tmp;
+            return (XMQReturnString){ XMQ_OK, tmp };
         }
     }
-    assert(stop > start);
+    if (start > stop) return (XMQReturnString){ XMQ_ERROR_BAD_RANGE, NULL };
     size_t len = 1+(stop-start)*4+2; // Worst case expansion of all chars. +2 for qutes.
     char *buf = (char*)malloc(len);
-
+    if (!buf) return (XMQReturnString){ XMQ_ERROR_OOM, NULL };
     const char *i = start;
     char *o = buf;
     size_t real = 0;
@@ -603,7 +603,7 @@ char *xmq_quote_as_c(const char *start, const char *stop, bool add_quotes)
     real++;
     *o = 0;
     buf = (char*)realloc(buf, real);
-    return buf;
+    return (XMQReturnString){ XMQ_OK, buf };
 }
 
 /**
@@ -611,13 +611,13 @@ char *xmq_quote_as_c(const char *start, const char *stop, bool add_quotes)
 
     Unescape the in string using c/json quotes. I.e. Replace \" with ", \n with newline etc.
 */
-char *xmq_unquote_as_c(const char *start, const char *stop, bool remove_quotes)
+XMQReturnString xmq_unquote_as_c(const char *start, const char *stop, bool remove_quotes)
 {
     if (stop == start)
     {
         char *tmp = (char*)malloc(1);
         tmp[0] = 0;
-        return tmp;
+        return (XMQReturnString){ XMQ_OK, tmp };
     }
     assert(stop > start);
     size_t len = 1+stop-start; // It gets shorter when unescaping. Worst case no escape was found.
@@ -630,7 +630,11 @@ char *xmq_unquote_as_c(const char *start, const char *stop, bool remove_quotes)
     if (remove_quotes)
     {
         for (; i < stop && is_xml_whitespace(*i); ++i);
-        if (*i != '"') return strdup("[Not a valid C escaped string]");
+        if (*i != '"') {
+            char *s = strdup("[Not a valid C escaped string]");
+            if (!s) return (XMQReturnString) { XMQ_ERROR_OOM, NULL};
+            return (XMQReturnString) { XMQ_OK, s};
+        }
         i++;
     }
 
@@ -658,12 +662,17 @@ char *xmq_unquote_as_c(const char *start, const char *stop, bool remove_quotes)
     }
     if (remove_quotes)
     {
-        if (*i != '"') return strdup("[Not a valid C escaped string]");
+        if (*i != '"') {
+            char *s = strdup("[Not a valid C escaped string]");
+            if (!s) return (XMQReturnString) { XMQ_ERROR_OOM, NULL};
+            return (XMQReturnString) { XMQ_OK, s};
+        }
     }
     real++;
     *o = 0;
     buf = (char*)realloc(buf, real);
-    return buf;
+    if (!buf) return (XMQReturnString) { XMQ_ERROR_OOM, NULL };
+    return (XMQReturnString) { XMQ_OK, buf };
 }
 
 char *potentially_add_leading_ending_space(const char *start, const char *stop)

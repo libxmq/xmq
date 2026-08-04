@@ -12,7 +12,7 @@ START
    <a10>x''''y"""z</a10>
 </tests>
 COMPACT
-tests{a1=nospaces a2='a space'a3="single'apostrophe"a4='single"double-quote'a5=&#39;"Fraid so. 'Nother drink?"a6='''"That's it" - he growled.'''a7='"""""'a8="'''''"a9=''''x'''y"""z''''a10=""""x''''y"""z""""}
+tests{a1=nospaces a2='a space'a3="single'apostrophe"a4='single"double-quote'a5="'Fraid so. 'Nother drink?"a6='''"That's it" - he growled.'''a7='"""""'a8="'''''"a9=''''x'''y"""z''''a10=""""x''''y"""z""""}
 XMQ
 tests {
     a1  = nospaces
