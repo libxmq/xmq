@@ -1858,9 +1858,14 @@ XMQNSPtr xmqGetNamespaceFromURI(XMQDoc *doq, XMQNode *node, const char *uri)
 
 XMQReturnNode xmqAddRootNode(XMQDoc *doq, const char *name, const char *uri)
 {
+    if (!doq || !uri || !name) return (XMQReturnNode){ XMQ_ERROR_BAD_VALUE, NULL };
+
     xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, NULL, (const xmlChar *)name, NULL);
-    xmlNs *ns = xmlNewNs(new_node, (const xmlChar *)uri, NULL);
-    xmlSetNs(new_node, ns);
+    if (*uri != '(' || strcmp(uri, XMQ_NO_NAMESPACE))
+    {
+        xmlNs *ns = xmlNewNs(new_node, (const xmlChar *)uri, NULL);
+        xmlSetNs(new_node, ns);
+    }
     xmlDocSetRootElement(doq->docptr_.xml, new_node);
     doq->root_ = (XMQNode*)new_node;
     return (XMQReturnNode){ XMQ_OK, (XMQNode*)new_node };
