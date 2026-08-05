@@ -70,8 +70,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 void add_key_number(xmlDoc *doc, xmlNode *root, const char *key, int number);
 void add_key_string(xmlDoc *doc, xmlNode *root, const char *key, const char *value);
 void add_nl(XMQParseState *state);
-XMQProceed catch_single_content(XMQDoc *doc, XMQNodePtr node, void *user_data);
-XMQProceed catch_single_node(XMQDoc *doc, XMQNodePtr node, void *user_data);
+XMQProceed catch_single_content(XMQDoc *doc, XMQNode *node, void *user_data);
+XMQProceed catch_single_node(XMQDoc *doc, XMQNode *node, void *user_data);
 size_t calculate_buffer_size(const char *start, const char *stop, int indent, const char *pre_line, const char *post_line);
 bool check_leading_space_nl(const char *start, const char *stop);
 void copy_and_insert(MemBuffer *mb, const char *start, const char *stop, int num_prefix_spaces, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
@@ -1837,19 +1837,19 @@ XMQReturnDoc xmqNewDoc()
 }
 
 /*
-XMQNSPtr xmqNamespace(XMQDoc *doq, XMQNodePtr node, const char *name, const char *uri)
+XMQNSPtr xmqNamespace(XMQDoc *doq, XMQNode *node, const char *name, const char *uri)
 {
     xmlNsPtr ns = xmlNewNs((xmlNodePtr)node, (const xmlChar *)name, (const xmlChar *)uri);
     return ns;
 }
 
-XMQNSPtr xmqGetNamespaceFromName(XMQDoc *doq, XMQNodePtr node, const char *name)
+XMQNSPtr xmqGetNamespaceFromName(XMQDoc *doq, XMQNode *node, const char *name)
 {
     xmlNsPtr ns = xmlSearchNs(doq->docptr_.xml, (xmlNodePtr)node, (const xmlChar *)name);
     return ns;
 }
 
-XMQNSPtr xmqGetNamespaceFromURI(XMQDoc *doq, XMQNodePtr node, const char *uri)
+XMQNSPtr xmqGetNamespaceFromURI(XMQDoc *doq, XMQNode *node, const char *uri)
 {
     xmlNsPtr ns = xmlSearchNsByHref(doq->docptr_.xml, (xmlNodePtr)node, (const xmlChar *)uri);
     return ns;
@@ -1862,24 +1862,24 @@ XMQReturnNode xmqAddRootNode(XMQDoc *doq, const char *name, const char *uri)
     xmlNs *ns = xmlNewNs(new_node, (const xmlChar *)uri, NULL);
     xmlSetNs(new_node, ns);
     xmlDocSetRootElement(doq->docptr_.xml, new_node);
-    doq->root_ = new_node;
-    return (XMQReturnNode){ XMQ_OK, new_node };
+    doq->root_ = (XMQNode*)new_node;
+    return (XMQReturnNode){ XMQ_OK, (XMQNode*)new_node };
 }
 
-XMQReturnNode xmqAddNode(XMQDoc *doq, XMQNodePtr parent, const char *name)
+XMQReturnNode xmqAddNode(XMQDoc *doq, XMQNode *parent, const char *name)
 {
     xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, NULL, (xmlChar*)name, NULL);
     xmlAddChild((xmlNodePtr)parent, new_node);
-    return (XMQReturnNode){ XMQ_OK, new_node };
+    return (XMQReturnNode){ XMQ_OK, (XMQNode*)new_node };
 }
 
-XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNodePtr parent, const char *key, const char *value)
+XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, const char *value)
 {
     xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, NULL, (xmlChar*)key, NULL);
     xmlAddChild((xmlNodePtr)parent, new_node);
     xmlNodePtr text = xmlNewDocText(doq->docptr_.xml, (xmlChar*)value);
     xmlAddChild(new_node, text);
-    return (XMQReturnNode) { XMQ_OK, new_node };
+    return (XMQReturnNode) { XMQ_OK, (XMQNode*)new_node };
 }
 
 void *xmqGetImplementationDoc(XMQDoc *doq)
@@ -1922,7 +1922,7 @@ void xmqSetOriginalSize(XMQDoc *doq, size_t size)
     doq->original_size_ = size;
 }
 
-XMQNodePtr xmqGetRootNode(XMQDoc *doq)
+XMQNode *xmqGetRootNode(XMQDoc *doq)
 {
     return doq->root_;
 }
@@ -2872,7 +2872,7 @@ XMQStatus create_node(XMQParseState *state, const char *start, const char *stop)
                 // Then create the root node with name.
                 state->element_last = new_node;
                 xmlDocSetRootElement(state->doq->docptr_.xml, new_node);
-                state->doq->root_ = new_node;
+                state->doq->root_ = (XMQNode*)new_node;
             }
             else
             {
@@ -2885,7 +2885,7 @@ XMQStatus create_node(XMQParseState *state, const char *start, const char *stop)
                 }
                 state->element_last = root;
                 xmlDocSetRootElement(state->doq->docptr_.xml, root);
-                state->doq->root_ = root;
+                state->doq->root_ = (XMQNode*)root;
                 stack_push(state->element_stack, state->element_last);
             }
         }
@@ -4175,7 +4175,7 @@ int xmqForeach(XMQDoc *doq, const char *xpath, XMQNodeCallback cb, void *user_da
     return xmqForeachRel(doq, xpath, cb, user_data, NULL);
 }
 
-int xmqForeachRel(XMQDoc *doq, const char *xpath, XMQNodeCallback cb, void *user_data, XMQNodePtr relative)
+int xmqForeachRel(XMQDoc *doq, const char *xpath, XMQNodeCallback cb, void *user_data, XMQNode *relative)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(doq);
     xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
@@ -4202,7 +4202,7 @@ int xmqForeachRel(XMQDoc *doq, const char *xpath, XMQNodeCallback cb, void *user
         for(int i = 0; i < size; i++)
         {
             xmlNodePtr node = nodes->nodeTab[i];
-            XMQProceed proceed = cb(doq, node, user_data);
+            XMQProceed proceed = cb(doq, (XMQNode*)node, user_data);
             if (proceed == XMQ_STOP) break;
         }
     }
@@ -4213,7 +4213,7 @@ int xmqForeachRel(XMQDoc *doq, const char *xpath, XMQNodeCallback cb, void *user
     return size;
 }
 
-const char *xmqGetName(XMQNodePtr node)
+const char *xmqGetName(XMQNode *node)
 {
     xmlNodePtr p = (xmlNodePtr)node;
     if (p)
@@ -4223,7 +4223,7 @@ const char *xmqGetName(XMQNodePtr node)
     return NULL;
 }
 
-const char *xmqGetContent(XMQNodePtr node)
+const char *xmqGetContent(XMQNode *node)
 {
     xmlNodePtr p = (xmlNodePtr)node;
     if (p && p->children)
@@ -4233,14 +4233,14 @@ const char *xmqGetContent(XMQNodePtr node)
     return NULL;
 }
 
-void xmqSetContent(XMQNodePtr node, const char *raw_content)
+void xmqSetContent(XMQNode *node, const char *raw_content)
 {
     xmlNodePtr n = (xmlNodePtr)node;
     xmlNodeSetContent(n, NULL);
     xmlNodeAddContent(n, (const xmlChar*)raw_content);
 }
 
-XMQProceed catch_single_content(XMQDoc *doc, XMQNodePtr node, void *user_data)
+XMQProceed catch_single_content(XMQDoc *doc, XMQNode *node, void *user_data)
 {
     const char **out = (const char **)user_data;
     xmlNodePtr n = (xmlNodePtr)node;
@@ -4255,22 +4255,22 @@ XMQProceed catch_single_content(XMQDoc *doc, XMQNodePtr node, void *user_data)
     return XMQ_STOP;
 }
 
-XMQProceed catch_single_node(XMQDoc *doc, XMQNodePtr node, void *user_data)
+XMQProceed catch_single_node(XMQDoc *doc, XMQNode *node, void *user_data)
 {
-    XMQNodePtr *out = (XMQNodePtr*)user_data;
+    XMQNode **out = (XMQNode**)user_data;
     xmlNodePtr n = (xmlNodePtr)node;
-    *out = n;
+    *out = (XMQNode*)n;
     return XMQ_STOP;
 }
 
-XMQNodePtr xmqGetNode(XMQDoc *doq, const char *xpath)
+XMQNode *xmqGetNode(XMQDoc *doq, const char *xpath)
 {
     return xmqGetNodeRel(doq, xpath, NULL);
 }
 
-XMQNodePtr xmqGetNodeRel(XMQDoc *doq, const char *xpath, XMQNodePtr relative)
+XMQNode *xmqGetNodeRel(XMQDoc *doq, const char *xpath, XMQNode *relative)
 {
-    XMQNodePtr node = NULL;
+    XMQNode *node = NULL;
 
     xmqForeachRel(doq, xpath, catch_single_node, (void*)&node, relative);
 
@@ -4282,7 +4282,7 @@ int32_t xmqGetInt(XMQDoc *doq, const char *xpath)
     return xmqGetIntRel(doq, xpath, NULL);
 }
 
-int32_t xmqGetIntRel(XMQDoc *doq, const char *xpath, XMQNodePtr relative)
+int32_t xmqGetIntRel(XMQDoc *doq, const char *xpath, XMQNode *relative)
 {
     const char *content = NULL;
 
@@ -4311,7 +4311,7 @@ int64_t xmqGetLong(XMQDoc *doq, const char *xpath)
     return xmqGetLongRel(doq, xpath, NULL);
 }
 
-int64_t xmqGetLongRel(XMQDoc *doq, const char *xpath, XMQNodePtr relative)
+int64_t xmqGetLongRel(XMQDoc *doq, const char *xpath, XMQNode *relative)
 {
     const char *content = NULL;
 
@@ -4340,7 +4340,7 @@ const char *xmqGetString(XMQDoc *doq, const char *xpath)
     return xmqGetStringRel(doq, xpath, NULL);
 }
 
-const char *xmqGetStringRel(XMQDoc *doq, const char *xpath, XMQNodePtr relative)
+const char *xmqGetStringRel(XMQDoc *doq, const char *xpath, XMQNode *relative)
 {
     const char *content = NULL;
 
@@ -4354,7 +4354,7 @@ double xmqGetDouble(XMQDoc *doq, const char *xpath)
     return xmqGetDoubleRel(doq, xpath, NULL);
 }
 
-double xmqGetDoubleRel(XMQDoc *doq, const char *xpath, XMQNodePtr relative)
+double xmqGetDoubleRel(XMQDoc *doq, const char *xpath, XMQNode *relative)
 {
     const char *content = NULL;
 
@@ -4458,7 +4458,7 @@ bool xmq_parse_buffer_text(XMQDoc *doq, const char *start, const char *stop, con
         // We have an implicit root must be created since input is text.
         xmlNodePtr root = xmlNewDocNode(doq->docptr_.xml, NULL, (const xmlChar *)implicit_root, NULL);
         xmlDocSetRootElement(doq->docptr_.xml, root);
-        doq->root_ = root;
+        doq->root_ = (XMQNode*)root;
         xmlAddChild(root, text);
     }
     else

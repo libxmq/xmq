@@ -1661,9 +1661,9 @@ const char *lookup_theme_spec()
     return getenv("XMQ_THEME");
 }
 
-XMQProceed print_tool(XMQDoc *doc, XMQNodePtr node, void *user_data);
+XMQProceed print_tool(XMQDoc *doc, XMQNode *node, void *user_data);
 
-XMQProceed print_tool(XMQDoc *doc, XMQNodePtr node, void *user_data)
+XMQProceed print_tool(XMQDoc *doc, XMQNode *node, void *user_data)
 {
     const char *name = xmqGetStringRel(doc, "name", node);
     const char *desc = xmqGetStringRel(doc, "description", node);
