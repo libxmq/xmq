@@ -75,6 +75,11 @@ typedef struct XMQParseState XMQParseState;
 typedef struct XMQParseCallbacks XMQParseCallbacks;
 
 /**
+   Opaque structure storing a output settings when printing xmq, xml or json.
+*/
+typedef struct XMQOutputSettings XMQOutputSettings;
+
+/**
    @brief Specify the file/buffer content type both for input and for output.
 */
 typedef enum
@@ -120,19 +125,15 @@ typedef enum
 } XMQRenderFormat;
 
 /**
-    XMQFlagBits:
-    @XMQ_FLAG_TRIM_NONE: Do not trim any whitespace.
-    @XMQ_FLAG_TRIM_HEURISTIC: Remove leading/ending whitespace, but try to keep significant, remove incidental indentation.
-    @XMQ_FLAG_TRIM_EXACT: Trim exactly according to XML rules. Depends on your XSD,space:preserve and more and is COMPLICATED!
-    @XMQ_FLAG_NOMERGE: Do not merge text and character entities.
-    @XMQ_FLAG_IXML_ALL_PARSES: When ixml parse is ambiguous generate all parses.
-    @XMQ_FLAG_IXML_TRY_TO_RECOVER: When ixml parse fails, try to recover.
-    @XMQ_FLAG_IXML_FAIL_SILENT: If the ixml parse fails generate an empty document and no errors.
+    The flag bits specify by the parser builds the document.
 
-    If a 0 is provided as the flags to the parse functions, then it will parse using the these default settings:
+    If a 0 is provided as the flag bits to the parse functions,
+    then it will parse using the these default settings:
+
     When loading xml/html:
         trim the whitespace from the input to generate the most likely desired xmq output.
         merge character entities
+
     When loading xmq/htmq:
         no trimming but
         merge character entities such as &#10; and consecutive text quotes
@@ -142,16 +143,24 @@ typedef enum
     You can then view the xmq with XMQ_TRIM_HEURISTIC (--trim=heuristic) to drop the whitespace.
 
     If you load xmq with --nomerge then character entities and separate text blocks will be kept as is.
-    The --nomerge currently does not work for XML/HTML since libxml2 does not have a setting for merge.
+    The --nomerge currently does not work for XML/HTML since libxml2 does not have a setting for merge,
+    it always merges.
 */
 typedef enum
 {
+    /** Do not trim any whitespace. Only relevant when parsing xml. */
     XMQ_FLAG_TRIM_NONE = 1,
+    /** Remove leading/ending whitespace, but try to keep significant, remove incidental indentation. */
     XMQ_FLAG_TRIM_HEURISTIC = 2,
+    /** Not implemented. */
     XMQ_FLAG_TRIM_EXACT = 4,
+    /** Do not merge adjacent text nodes and character entity nodes. */
     XMQ_FLAG_NOMERGE = 8,
+    /** When ixml parse is ambiguous generate all parses. */
     XMQ_FLAG_IXML_ALL_PARSES = 16,
+    /** When ixml parse fails, try to recover. */
     XMQ_FLAG_IXML_TRY_TO_RECOVER = 32,
+    /** If the ixml parse fails generate an empty document and no errors. */
     XMQ_FLAG_IXML_FAIL_SILENT = 64,
 } XMQFlagBits;
 
@@ -234,19 +243,13 @@ struct XMQWriter
 typedef struct XMQWriter XMQWriter;
 
 /**
-    XMQOutputSettings:
-*/
-typedef struct XMQOutputSettings XMQOutputSettings;
-
-/**
-    XMQProceed:
-    @XMQ_CONTINUE: Return "continue" to continue iterating over xmq nodes.
-    @XMQ_RETURN: Return "return" to stop and return the current node.
-    @XMQ_ABORT: Return "abort" to stop iterating and give an error.
+    The XMQProceed is used to proceed or stop when iterating over xmq nodes.
 */
 typedef enum
 {
+    /** Return XMQ_CONTINUE to continue iterating over xmq nodes. */
     XMQ_CONTINUE,
+    /** Return XMQ_STOP to stop iterating. */
     XMQ_STOP,
 } XMQProceed;
 
@@ -375,48 +378,57 @@ struct XMQReturnConstString
 typedef struct XMQReturnConstString XMQReturnConstString;
 
 /**
-    XMQCoreType:
-    @XMQ_CORE_STRING: Zero to infinite sized unicode string. No zero bytes.
-    @XMQ_CORE_BASE64: Base64 encoded binary data.
-    @XMQ_CORE_I8:     Signed 8 bit integer.
-    @XMQ_CORE_I16:    Signed 16 bit integer.
-    @XMQ_CORE_I32:    Signed 32 bit integer.
-    @XMQ_CORE_I64:    Signed 64 bit integer.
-    @XMQ_CORE_I128:   Signed 128 bit integer.
-    @XMQ_CORE_U8:     Unsigned 8 bit integer.
-    @XMQ_CORE_U16:    Unsigned 16 bit integer.
-    @XMQ_CORE_U32:    Unsigned 32 bit integer.
-    @XMQ_CORE_U64:    Unsigned 64 bit integer.
-    @XMQ_CORE_U128:   Unsigned 128 bit integer.
-    @XMQ_CORE_IP_ADDRESS: Either a v4 or a v6.
-    @XMQ_CORE_IPV4_ADDRESS: 128.0.0.1
-    @XMQ_CORE_IPV6_ADDRESS: ::0
+    When loading xmq/xml/json as a config file, the content is parsed and decoded
+    according the the requested type. These are the available core types.
 */
 typedef enum
 {
     XMQ_CORE_BOOL,
+    /** Signed 8 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_I8,
+    /** Signed 16 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_I16,
+    /** Signed 32 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_I32,
+    /** Signed 64 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_I64,
+    /** Signed 128 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_I128,
+    /** Unsigned 8 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_U8,
+    /** Unsigned 16 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_U16,
+    /** Unsigned 32  bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_U32,
+    /** Unsigned 64 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_U64,
+    /** Unsigned 128 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_U128,
 
+    /** Floating point 32bit. */
     XMQ_CORE_F32,
+    /** Floating point 64bit. */
     XMQ_CORE_F64,
 
+    /** Zero to infinite sized unicode string. No zero bytes. */
     XMQ_CORE_STRING,
+    /** String formatted as a valid email address. */
     XMQ_CORE_EMAIL,
+    /** String formatted as a valid uri/iri. */
     XMQ_CORE_URI,
+    /** String formatted as a valid url. */
     XMQ_CORE_URL,
 
+    /** Either a v4 or a v6. */
     XMQ_CORE_IP_ADDRESS,
+    /** 128.0.0.1 */
     XMQ_CORE_IPV4_ADDRESS,
-    XMQ_CORE_IPV6_ADDRESS
+    /** ::0 */
+    XMQ_CORE_IPV6_ADDRESS,
+
+    /** Base64 encoded binary data. */
+    XMQ_BINARY_BASE64
+
 } XMQCoreType;
 
 typedef struct XMQLineConfig XMQLineConfig;
