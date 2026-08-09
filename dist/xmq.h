@@ -44,97 +44,79 @@ extern "C" _hideLBfromEditor
 ////////////////////// TYPES and STRUCTURES ///////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-/** Opaque structure storing a loaded xmq/xml/json document.
-
-    XMQDoc:
-
-    Structure storing a loaded xmq/xml/json document.
+/**
+   Opaque structure storing a document.
 */
 typedef struct XMQDoc XMQDoc;
 
-/** Opaque structure storing a node in the xmq/xml/json document.
-
-    XMQNode:
-
-    Structure storing a node.
+/**
+   Opaque structure storing a node in the document.
+   A node can be an element, text or entity.
+   An element containing only text and entities is usually displayed as a key=value.
 */
 typedef struct XMQNode XMQNode;
 
-/** Opaque structure storing an attribute. in the xmq/xml/json document.
-
-    XMQAttr:
-
-    Structure storing an attribute.
+/**
+   Opaque structure storing an attribute in the document.
 */
 typedef struct XMQAttr XMQAttr;
 
 /**
-    XMQParseState:
-
     An opaque structure to maintain the parse state and the list of callbacks
     to be invoked when parsing xmq.
 */
 typedef struct XMQParseState XMQParseState;
 
 /**
-    XMQParseCallbacks:
-
-    Store your own parse callbacks into this structure and register
-    your own callback structure with the XMQParseState. Then you will get your own
-    callbacks when parsing xmq and using these callbacks you can implement
-    your own document builder or token handler.
+    Store your own parse callbacks into this structure and register it
+    with the XMQParseState. Then you will get your own callbacks when parsing XMQ
+    and using these callbacks you can implement your own document builder or token handler.
 */
 typedef struct XMQParseCallbacks XMQParseCallbacks;
 
-/** Specify the file/buffer content type.
-
-    XMQContentType:
-    @XMQ_CONTENT_UNKNOWN: a failed content detect will mark the content type as unknown
-    @XMQ_CONTENT_DETECT: auto detect the content type
-    @XMQ_CONTENT_XMQ: xmq detected
-    @XMQ_CONTENT_HTMQ: htmq detected
-    @XMQ_CONTENT_XML: xml detected
-    @XMQ_CONTENT_HTML: html detected
-    @XMQ_CONTENT_JSON: json detected
-    @XMQ_CONTENT_IXML: ixml selected
-    @XMQ_CONTENT_TEXT: valid utf8 text input/output is selected
-    @XMQ_CONTENT_CLINES: xpath="c-escaped string"
-
-    Specify the file/buffer content type.
+/**
+   @brief Specify the file/buffer content type both for input and for output.
 */
 typedef enum
 {
+    /** Unknown buffer content. */
     XMQ_CONTENT_UNKNOWN = 0,
+    /** Try to detect buffer content, is it xmq, xml or json? */
     XMQ_CONTENT_DETECT = 1,
+    /** Content is xmq. */
     XMQ_CONTENT_XMQ = 2,
+    /** Content is htmq. */
     XMQ_CONTENT_HTMQ = 3,
+    /** Content is xml. */
     XMQ_CONTENT_XML = 4,
+    /** Content is html. */
     XMQ_CONTENT_HTML = 5,
+    /** Content is json. */
     XMQ_CONTENT_JSON = 6,
+    /** Content is ixml. */
     XMQ_CONTENT_IXML = 7,
+    /** Content is text. */
     XMQ_CONTENT_TEXT = 8,
+    /** Cline content looks like: xpath="c-escaped string" */
     XMQ_CONTENT_CLINES = 9
 } XMQContentType;
 
 /**
-    XMQRenderFormat:
-    @XMQ_RENDER_PLAIN: normal output for data storage
-    @XMQ_RENDER_TERMINAL: colorize using ansi codes
-    @XMQ_RENDER_HTML: colorize using html tags
-    @XMQ_RENDER_HTMQ: colorize using htmq tags
-    @XMQ_RENDER_TEX: colorize using tex
-    @XMQ_RENDER_RAW: write the text content using UTF8 with no escapes
-
-    The xmq output can be rendered as PLAIN, or for human consumption in TERMINAL, HTML, HTMQ, TEX or RAW.
+   @brief XMQRenderFormat decides how to format the xmq output:
+   PLAIN, or for human consumption in TERMINAL, HTML, HTMQ, TEX.
 */
 typedef enum
 {
-   XMQ_RENDER_PLAIN = 0,
-   XMQ_RENDER_TERMINAL = 1,
-   XMQ_RENDER_HTML = 2,
-   XMQ_RENDER_HTMQ = 3,
-   XMQ_RENDER_TEX = 4,
-   XMQ_RENDER_RAW = 5
+    /** Normal output for data storage. */
+    XMQ_RENDER_PLAIN = 0,
+    /** Colorize output using ansi codes. */
+    XMQ_RENDER_TERMINAL = 1,
+    /** Colorize output using html tags. */
+    XMQ_RENDER_HTML = 2,
+    /** Colorize output using htmq tags. */
+    XMQ_RENDER_HTMQ = 3,
+    /** Colorize using latex. */
+    XMQ_RENDER_TEX = 4
 } XMQRenderFormat;
 
 /**
@@ -174,62 +156,79 @@ typedef enum
 } XMQFlagBits;
 
 /**
-   XMQColorName are used to color the output when pretty printing xmq.
+   XMQColorName is used to color the output when pretty printing xmq.
 */
 typedef enum XMQColorName {
-    XMQ_COLOR_C, // Comment
-    XMQ_COLOR_Q, // Quote
-    XMQ_COLOR_E, // Entity
-    XMQ_COLOR_NS, // Name Space (both for element and attribute)
-    XMQ_COLOR_EN, // Element Name
-    XMQ_COLOR_EK, // Element Key
-    XMQ_COLOR_EKV, // Element Key Value
-    XMQ_COLOR_AK, // Attribute Key
-    XMQ_COLOR_AKV, // Attribute Key Value
-    XMQ_COLOR_CP, // Compound Parentheses
-    XMQ_COLOR_NSD, // Name Space Declaration xmlns
-    XMQ_COLOR_UW, // Unicode whitespace
-    XMQ_COLOR_XLS, // Override XLS element names with this color.
+    /** Comment. */
+    XMQ_COLOR_C,
+    /** Quote. */
+    XMQ_COLOR_Q,
+    /** Entity. */
+    XMQ_COLOR_E,
+    /** Name Space (both for element and attribute). */
+    XMQ_COLOR_NS,
+    /** Element name. */
+    XMQ_COLOR_EN,
+    /** Element key. */
+    XMQ_COLOR_EK,
+    /** Element key value. */
+    XMQ_COLOR_EKV,
+    /** Attribute key. */
+    XMQ_COLOR_AK,
+    /** Attribute key value. */
+    XMQ_COLOR_AKV,
+    /** Compound Parentheses. */
+    XMQ_COLOR_CP,
+    /** Name Space Declaration xmlns. */
+    XMQ_COLOR_NSD,
+    /** Unicode whitespace. */
+    XMQ_COLOR_UW,
+    /** Override xls prefixed element names with this color. */
+    XMQ_COLOR_XLS,
 } XMQColorName;
 
 /**
-    XMQReader:
-    @reader_state: points to the reader state
-    @read: invoked with the reader state and where to store input data.
+    The xmq parser invokes the reader to fetch more data.
+    The reader is resonsible for storing data in the buffer (start <= i < stop)
+    and return the number of bytes stored.
 
-    The xmq parser uses the reader to fetch data into a buffer (start <= i < stop).
+    The reader_state is provided from the
+
     You can create your own reader with a function that takes a pointer to the reader state.
     Returns the number of bytes stored in buffer, maximum stored is stop-start.
+
+    @param reader_state points to the reader state
+    @param read invoked with the reader state and where to store input data.
 */
 struct XMQReader
 {
+    /** The reader_state is passed to the read function. */
     void *reader_state;
+    /** The function to be invoked from the parser to fetch more data to parse. */
     size_t (*read)(void *reader_state, char *start, char *stop);
 };
 typedef struct XMQReader XMQReader;
 
 /**
-    XMQWrite:
-    @writer_state: necessary state for writing.
-    @start: start of buffer to write
-    @stop: points to byte after buffer to write. If NULL then assume start is null terminated.
-
+    You can pass your own xmq_writer to the printer routines to do your own final output.
     Any function implementing XMQWrite must handle stop == NULL.
+
+    @param writer_state Your own writer_state supplied to the printing function.
+    @param start Start of buffer to write.
+    @param stop Points to byte after buffer to write. If NULL then assume start is null terminated.
 */
 typedef bool (*XMQWrite)(void *writer_state, const char *start, const char *stop);
 
 /**
-    XMQWriter:
-    @writer_state: points to the writer state
-    @write: invoked with the writer state to store output data. Must accept stop == NULL which assumes start is null terminated.
-
     The xmq printer uses the writer to write data supplied from a buffer (start <= i < stop).
     You can create your own writer with a function that takes a pointer to the writer state.
     The writer function must return true if the writing was successful.
 */
 struct XMQWriter
 {
+    /** The writer_state is passed to the write function. */
     void *writer_state;
+    /** The function to be invoked from the printer to write output data. */
     XMQWrite write;
 };
 typedef struct XMQWriter XMQWriter;
@@ -548,19 +547,20 @@ void xmqSetPrintAllParsesIXML(XMQParseState *state, bool all_parses);
 void xmqSetTryToRecoverIXML(XMQParseState *state, bool try_recover);
 
 /**
-    xmqNewDoc:
-
     Create an empty document object.
+
+    @return A return doc structure with status and doc pointer.
+    If status == XMQ_OK then doc pointer is valid.
+    If status == XMQ_ERROR_OOM the doc pointer is NULL.
 */
 XMQReturnDoc xmqNewDoc();
 
 /**
-    xmqSetDocSourceName:
-    @doq: Document which source file name should be set.
-    @source_name: The document source location.
-
     Set the source name to make error message more readable when parsing fails.
     The source name is often the file name, but can be "-" for stdin or anything you like.
+
+    @param doq         Document for which the source should be named.
+    @param source_name The document source file name.
 */
 void xmqSetDocSourceName(XMQDoc *doq, const char *source_name);
 
@@ -629,43 +629,44 @@ struct XMQNS {
 #define NS_HERE_P(puri) ((XMQNS){XMQ_NS_HERE_P,puri})
 
 /**
-    xmqAddRootElement:
+    Create a new root element.
+
+    @doq The xmq document.
+    @name The name of the new element.
+    @ns The namespace setting.
 */
 XMQReturnNode xmqAddRootElement(XMQDoc *doq, const char *name, XMQNS ns);
 
 /**
-    xmqAddElement:
+    Create a new element node below an existing element.
 
-    Create a new element node under an existing element.
+    @doq The xmq document.
+    @parent The exiting element.
+    @name The name of the new element.
+    @ns The namespace setting.
 
-    xmqAddElement(doc, p, "el", NS_NONE);
-    xmqAddElement(doc, p, "el", NS_PARENT);
+    @code
+    xmqAddElement(doc, p, "el", NS_NONE); // No namespace.
+    xmqAddElement(doc, p, "el", NS_PARENT); // Inherit parent namespace.
     xmqAddElement(doc, p, "el", NS_TOPMOST("urn:myapp:driver"));
     xmqAddElement(doc, p, "el", NS_TOPMOST_P("drv=urn:myapp:driver"));
     xmqAddElement(doc, p, "el", NS_HERE("urn:myapp:driver"));
     xmqAddElement(doc, p, "el", NS_HERE_P("drv=urn:myapp:driver"));
-
+    @endcode
 */
 XMQReturnNode xmqAddElement(XMQDoc *doq, XMQNode *parent, const char *name, XMQNS ns);
 
 /**
-    xmqAddKeyValue:
-
     Create a key value under an existing node.
-    The uri can be "urn:myapp"
 */
 XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, const char *value, XMQNS ns);
 
 /**
-    xmqAddAttribute:
-
     Create/update an attribute in an existing node.
 */
 XMQReturnAttr xmqSetAttribute(XMQDoc *doq, XMQNode *node, const char *name, const char *value, XMQNS ns);
 
 /**
-    xmqChangePrefix:
-
     Change the preferred prefix that was chosen automatically with xmqAddNamespace.
     Pass XMQ_NO_PREFIX to change the default prefix.
     If there is a conflict, the XMQ_ERROR_PREFIX_EXISTS is return.
@@ -727,15 +728,16 @@ bool xmqParseFile(XMQDoc *doc, const char *file, const char *implicit_root, int 
 bool xmqParseBuffer(XMQDoc *doc, const char *start, const char *stop, const char *implicit_root, int flags);
 
 /**
-    xmqParseReader:
-    @doc: the xmq doc object
-    @reader: use this reader to fetch input data
-    @implicit_root: the implicit root
-
     Parse data fetched with a reader and create a document.
     The xmq format permits multiple root nodes if an implicit root is supplied.
+
+    @param doc The xmq doc object to populate with the parsed data.
+    @param reader Use this reader to fetch input data.
+    @param reader_state Pass this reader_state to the reader.
+    @param implicit_root The implicit root.
+    @param flags Specify parser settings.
 */
-bool xmqParseReader(XMQDoc *doc, XMQReader *reader, const char *implicit_root, int flags);
+bool xmqParseReader(XMQDoc *doc, XMQReader *reader, void *reader_state, const char *implicit_root, int flags);
 
 /** Allocate the print settings structure and zero it. */
 XMQOutputSettings *xmqNewOutputSettings();

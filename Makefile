@@ -262,28 +262,14 @@ PACKAGE_TARNAME:=libxmq_tar
 PACKAGE_URL:=https://libxmq.org/releases/libxmq.tgz
 PACKAGE_VERSION:=$(shell cat dist/VERSION)
 
-build/gtkdocentities.ent:
-	@echo '<!ENTITY package "$(PACKAGE)">' > $@
-	@echo '<!ENTITY package_bugreport "$(PACKAGE_BUGREPORT)">' >> $@
-	@echo '<!ENTITY package_name "$(PACKAGE_NAME)">' >> $@
-	@echo '<!ENTITY package_string "$(PACKAGE_STRING)">' >> $@
-	@echo '<!ENTITY package_tarname "$(PACKAGE_TARNAME)">' >> $@
-	@echo '<!ENTITY package_url "$(PACKAGE_URL)">' >> $@
-	@echo '<!ENTITY package_version "$(PACKAGE_VERSION)">' >> $@
-	echo Created $@
+doxygen: build/doxygen
 
-gtkdoc: build/gtkdoc
+build/doxygen:
+	rm -rf build/doxygen
+	mkdir -p build/doxygen
+	doxygen doc/Doxyfile
 
-build/gtkdoc: build/gtkdocentities.ent
-	rm -rf build/gtkdoc
-	mkdir -p build/gtkdoc
-	mkdir -p build/gtkdoc/html
-	cp scripts/libxmq-docs.xml build/gtkdoc
-	(cd build/gtkdoc; gtkdoc-scan --module=libxmq --source-dir ../../src/main/c/)
-	(cd build/gtkdoc; gtkdoc-mkdb --module libxmq --sgml-mode --source-dir ../../src/main/c --source-suffixes h  --ignore-files "xmq.c testinternals.c xmq-cli.c")
-	cp build/gtkdocentities.ent build/gtkdoc/xml
-	(cd build/gtkdoc/html; gtkdoc-mkhtml libxmq ../libxmq-docs.xml)
-	(cd build/gtkdoc; gtkdoc-fixxref --module=libxmq --module-dir=html --html-dir=html)
+.PHONY: build/doxygen
 
 import_category:
 	@if [ "$(CATEGORY)" = "" ]; then echo "Specify CATEGORY=Ll"; exit 1; fi

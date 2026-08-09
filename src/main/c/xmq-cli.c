@@ -101,7 +101,6 @@ typedef enum
     XMQ_CLI_CMD_RENDER_TERMINAL,
     XMQ_CLI_CMD_RENDER_HTML,
     XMQ_CLI_CMD_RENDER_TEX,
-    XMQ_CLI_CMD_RENDER_RAW,
     XMQ_CLI_CMD_TOKENIZE,
     XMQ_CLI_CMD_DELETE,
     XMQ_CLI_CMD_DELETE_ENTITY,
@@ -507,7 +506,6 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "page")) return XMQ_CLI_CMD_PAGER;
     if (!strcmp(s, "print")) return XMQ_CLI_CMD_PRINT;
     if (!strcmp(s, "render-html")) return XMQ_CLI_CMD_RENDER_HTML;
-    if (!strcmp(s, "render-raw")) return XMQ_CLI_CMD_RENDER_RAW;
     if (!strcmp(s, "render-terminal")) return XMQ_CLI_CMD_RENDER_TERMINAL;
     if (!strcmp(s, "render-tex")) return XMQ_CLI_CMD_RENDER_TEX;
     if (!strcmp(s, "replace")) return XMQ_CLI_CMD_REPLACE;
@@ -555,7 +553,6 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_RENDER_TERMINAL: return "render-terminal";
     case XMQ_CLI_CMD_RENDER_HTML: return "render-html";
     case XMQ_CLI_CMD_RENDER_TEX: return "render-tex";
-    case XMQ_CLI_CMD_RENDER_RAW: return "render-raw";
     case XMQ_CLI_CMD_TOKENIZE: return "tokenize";
     case XMQ_CLI_CMD_DELETE: return "delete";
     case XMQ_CLI_CMD_DELETE_ENTITY: return "delete-entity";
@@ -602,7 +599,6 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_RENDER_TERMINAL:
     case XMQ_CLI_CMD_RENDER_HTML:
     case XMQ_CLI_CMD_RENDER_TEX:
-    case XMQ_CLI_CMD_RENDER_RAW:
         return XMQ_CLI_CMD_GROUP_RENDER;
 
     case XMQ_CLI_CMD_TOKENIZE:
@@ -1349,7 +1345,6 @@ const char *render_format_to_string(XMQRenderFormat rf)
     case XMQ_RENDER_HTML: return "html";
     case XMQ_RENDER_HTMQ: return "htmq";
     case XMQ_RENDER_TEX: return "tex";
-    case XMQ_RENDER_RAW: return "raw";
     }
     assert(false);
     return "?";
@@ -3370,11 +3365,6 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
         c->render_to = XMQ_RENDER_TEX;
         c->render_theme_spec = default_theme_spec_;
         return;
-    case XMQ_CLI_CMD_RENDER_RAW:
-        c->out_format = XMQ_CONTENT_UNKNOWN;
-        c->render_to = XMQ_RENDER_RAW;
-        c->render_theme_spec = "mono";
-        return;
     case XMQ_CLI_CMD_TOKENIZE:
         c->in = load_command->in;
         // Overwrite load command, do not load before tokenize.
@@ -4214,7 +4204,6 @@ bool perform_command(XMQCliCommand *c, bool *no_more_data)
     case XMQ_CLI_CMD_RENDER_TERMINAL:
     case XMQ_CLI_CMD_RENDER_HTML:
     case XMQ_CLI_CMD_RENDER_TEX:
-    case XMQ_CLI_CMD_RENDER_RAW:
         return cmd_to(c);
     case XMQ_CLI_CMD_PRINT:
     case XMQ_CLI_CMD_SAVE_TO:
