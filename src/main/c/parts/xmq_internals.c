@@ -171,6 +171,8 @@ const char *xmqParseErrorToString(XMQStatus e)
     case XMQ_ERROR_INVALID_NAMESPACE_URI: return "invalid namespace uri";
     case XMQ_ERROR_INVALID_NAMESPACE_PREFIX: return "invalid namespace prefix";
     case XMQ_ERROR_NAMESPACE_PREFIX_ALREADY_TAKEN: return "namespace prefix already taken";
+    case XMQ_ERROR_BAD_RANGE: return "parameter in bad range";
+    case XMQ_ERROR_BAD_VALUE: return "parameter has bad value";
     case XMQ_WARNING_QUOTES_NEEDED: return "perhaps you need more quotes to quote this quote";
     }
     assert(false);

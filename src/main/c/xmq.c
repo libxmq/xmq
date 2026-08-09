@@ -1856,35 +1856,143 @@ XMQNSPtr xmqGetNamespaceFromURI(XMQDoc *doq, XMQNode *node, const char *uri)
 }
 */
 
-XMQReturnNode xmqAddRootNode(XMQDoc *doq, const char *name, const char *uri)
+xmlNs *gen_ns_from_string(xmlNodePtr node, const char *puri);
+
+xmlNs *gen_ns_from_string(xmlNodePtr node, const char *puri)
 {
-    if (!doq || !uri || !name) return (XMQReturnNode){ XMQ_ERROR_BAD_VALUE, NULL };
+    const char *eq = puri;
+    for (; *eq; ++eq)
+    {
+        if (*eq == '=') break;
+    }
+    if (*eq != '=') return NULL;
+    size_t len = eq-puri;
+    char *prefix = (char*)malloc(len+1);
+    memcpy(prefix, puri, len);
+    prefix[len] = 0;
+    const char *uri = eq+1;
+
+    xmlNs *nns = xmlNewNs(node, (const xmlChar *)uri, (const xmlChar*)prefix);
+    free(prefix);
+    return nns;
+}
+
+void fixup_ns(xmlNodePtr new_node, xmlNsPtr pns, XMQNS ns);
+
+void fixup_ns(xmlNodePtr new_node, xmlNsPtr pns, XMQNS ns)
+{
+    // We assume the node has already been setup with the parent namespace.
+    if (ns.action == XMQ_NS_PARENT) return;
+
+    xmlNsPtr nns = NULL;
+
+    // We override the default namespace.
+    if (ns.action == XMQ_NS_NONE)
+    {
+        if (pns) {
+            // Parent has a namespace we must explicitly create an empty ns.
+            nns = xmlNewNs(new_node, (const xmlChar *)"", NULL);
+        }
+    }
+    else if (ns.action == XMQ_NS_HERE)
+    {
+        // New namespace in this node without a prefix.
+        nns = xmlNewNs(new_node, (const xmlChar *)ns.uri, NULL);
+    }
+    else if (ns.action == XMQ_NS_HERE_P)
+    {
+        // New namespace in this node with a prefix.
+        nns = gen_ns_from_string(new_node, ns.uri);
+        if (!nns) return; //  (XMQReturnNode){ XMQ_ERROR_BAD_VALUE, NULL };
+    }
+    else
+    {
+        assert(false);
+    }
+    xmlSetNs(new_node, nns);
+}
+
+XMQReturnNode xmqAddRootElement(XMQDoc *doq, const char *name, XMQNS ns)
+{
+    if (!doq || !name) return (XMQReturnNode){ XMQ_ERROR_BAD_VALUE, NULL };
 
     xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, NULL, (const xmlChar *)name, NULL);
-    if (*uri != '(' || strcmp(uri, XMQ_NO_NAMESPACE))
-    {
-        xmlNs *ns = xmlNewNs(new_node, (const xmlChar *)uri, NULL);
-        xmlSetNs(new_node, ns);
-    }
+
+    fixup_ns(new_node, NULL, ns);
+
     xmlDocSetRootElement(doq->docptr_.xml, new_node);
     doq->root_ = (XMQNode*)new_node;
     return (XMQReturnNode){ XMQ_OK, (XMQNode*)new_node };
 }
-
-XMQReturnNode xmqAddNode(XMQDoc *doq, XMQNode *parent, const char *name)
+/*
+XMQReturnString xmqSetNamespace(XMQDoc *doq, XMQNode *node, const char *uri)
 {
-    xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, NULL, (xmlChar*)name, NULL);
+    if (!doq || !name || !uri) return (XMQReturnString){ XMQ_ERROR_BAD_VALUE, NULL };
+
+
+    xmlNs **nspaces = NULL;
+    int n = xmlGetNsListSafe(doq->docptr_.xml, (xmlNodePtr)node, &nspaces);
+
+
+    xmlNsPtr existing = xmlSearchNs((xmlNodePtr)node, (const xmlChar *)ns_uri, NULL);
+    if (existing)
+    {
+        // There was a default namespace, try prefix a.
+        existing = xmlSearchNs((xmlNodePtR)node, (const xmlChar *)ns_uri, "a");
+        if (!existing)
+        {
+            xmlNsPtr ns = xmlNewNs((xmlNodePtr)node, (const xmlChar *)ns_uri, "a");
+        }
+    }
+}
+*/
+XMQReturnNode xmqAddElement(XMQDoc *doq, XMQNode *parent, const char *name, XMQNS ns)
+{
+    xmlNodePtr p = (xmlNodePtr)parent;
+    // Default to place the new node in the same namespace as the parent node.
+    // But this can be overridden below.
+    xmlNsPtr pns = p->ns;
+    xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, pns, (xmlChar*)name, NULL);
+
+    fixup_ns(new_node, pns, ns);
+
     xmlAddChild((xmlNodePtr)parent, new_node);
+
     return (XMQReturnNode){ XMQ_OK, (XMQNode*)new_node };
 }
 
-XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, const char *value)
+/*
+XMQReturnNode xmqAddNSNode(XMQDoc *doq, XMQNode *parent, const char *name, const char *uri)
 {
-    xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, NULL, (xmlChar*)key, NULL);
+    if (!doq || !parent || !uri || !name) return (XMQReturnNode){ XMQ_ERROR_BAD_VALUE, NULL };
+    xmlNodePtr p = parent;
+    xmlNsPtr ns = NULL;
+    if (*uri != '(' || strcmp(uri, XMQ_NO_NAMESPACE))
+    {
+        xmlNs *ns = xmlNewNs(NULL, (const xmlChar *)uri, NULL);
+    }
+    xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, ns, (const xmlChar *)name, NULL);
+    xmlAddChild((xmlNodePtr)parent, new_node);
+    return (XMQReturnNode){ XMQ_OK, (XMQNode*)new_node };
+    }*/
+
+XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, const char *value, XMQNS ns)
+{
+    // Default to place the new node in the same namespace as the parent node.
+    // But this can be overridden below.
+    xmlNsPtr pns = ((xmlNodePtr)parent)->ns;
+    xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, pns, (xmlChar*)key, NULL);
     xmlAddChild((xmlNodePtr)parent, new_node);
     xmlNodePtr text = xmlNewDocText(doq->docptr_.xml, (xmlChar*)value);
     xmlAddChild(new_node, text);
     return (XMQReturnNode) { XMQ_OK, (XMQNode*)new_node };
+}
+
+XMQReturnAttr xmqSetAttribute(XMQDoc *doq, XMQNode *node, const char *name, const char *value, XMQNS ns)
+{
+    if (!doq || !node || !name || !value) return (XMQReturnAttr){ XMQ_ERROR_BAD_VALUE, NULL };
+    xmlAttrPtr a = xmlSetProp((xmlNodePtr)node, (const xmlChar*)name, (const xmlChar*)value);
+    return (XMQReturnAttr){ XMQ_OK, (XMQAttr*)a };
 }
 
 void *xmqGetImplementationDoc(XMQDoc *doq)

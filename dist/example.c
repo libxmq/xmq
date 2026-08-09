@@ -12,18 +12,118 @@ void expect_double(double d, double e);
 
 XMQProceed add_value(XMQDoc *doc, XMQNode *node, void *user_data);
 
-void test_building_dom()
+void demonstrate_load_xmq_file()
+{
+    const char *file = "example.xmq";
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
+
+    bool ok = xmqParseFile(doc, file, "car", 0);
+    if (!ok) {
+        printf("Parse error in %s\n%s",
+               file,
+               xmqDocError(doc));
+        exit(1);
+    }
+    const char *model = xmqGetString(doc, "/car/model");
+    int32_t num_wheels = xmqGetInt(doc, "/car/num_wheels");
+    double weight = xmqGetDouble(doc, "/car/weight");
+    const char *not_found = xmqGetString(doc, "/car/not_found");
+    const char *color = xmqGetString(doc, "/car/color");
+    const char *history = xmqGetString(doc, "/car/history");
+
+    expect(model, "EsCarGo");
+    expect_int(num_wheels, 36);
+    expect_double(weight, 999.123);
+
+    xmqFreeDoc(doc);
+}
+
+void demonstrate_building_dom_0()
 {
     XMQReturnDoc rd = xmqNewDoc();
     assert(rd.status == XMQ_OK);
     XMQDoc *doc = rd.doc;
-    void *ns;
 
-    XMQReturnNode rn = xmqAddRootNode(doc, "car", "urn:cargo");
+    XMQReturnNode rn = xmqAddRootElement(doc, "greeting", NS_NONE);
     assert(rn.status == XMQ_OK);
     XMQNode *car = rn.node;
-    xmqAddKeyValue(doc, car, "model", "escargo");
-    xmqAddKeyValue(doc, car, "color", "green");
+    xmqAddKeyValue(doc, car, "hello", "world", NS_PARENT);
+
+    XMQOutputSettings *os = xmqNewOutputSettings();
+
+    xmqSetCompact(os, true);
+    xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
+    xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
+
+    char *start, *stop;
+    xmqSetupPrintMemory(os, &start, &stop);
+    xmqPrint(doc, os);
+
+    xmqFreeOutputSettings(os);
+
+    const char *exp = "greeting{hello=world}\n";
+    if (strcmp(start, exp))
+    {
+        printf("Building of dom 0 tree failed. Got: %s\nExpected: %s\n", start, exp);
+        exit(1);
+    }
+    free(start);
+}
+
+void demonstrate_building_dom_1()
+{
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
+
+    XMQReturnNode rn = xmqAddRootElement(doc, "car", NS_HERE("urn:cargo"));
+    assert(rn.status == XMQ_OK);
+    XMQNode *car = rn.node;
+    xmqAddKeyValue(doc, car, "model", "escargo", NS_PARENT);
+    xmqAddKeyValue(doc, car, "color", "green", NS_PARENT);
+
+    XMQOutputSettings *os = xmqNewOutputSettings();
+
+    xmqSetCompact(os, true);
+    xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
+    xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
+
+    char *start, *stop;
+    xmqSetupPrintMemory(os, &start, &stop);
+    xmqPrint(doc, os);
+
+    xmqFreeOutputSettings(os);
+
+    const char *exp = "car(xmlns=urn:cargo){model=escargo color=green}\n";
+    if (strcmp(start, exp))
+    {
+        printf("Building of dom 1 tree failed. Got: %s\nExpected: %s\n", start, exp);
+        exit(1);
+    }
+    free(start);
+}
+
+void demonstrate_building_dom_2()
+{
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
+
+    XMQReturnNode rn = xmqAddRootElement(doc, "robot", NS_HERE_P("krf=urn:kraftwerk"));
+    assert(rn.status == XMQ_OK);
+    XMQNode *robot = rn.node;
+    xmqAddKeyValue(doc, robot, "who", "we are", NS_PARENT);
+    xmqAddKeyValue(doc, robot, "the", "robots", NS_PARENT);
+
+    rn = xmqAddElement(doc, robot, "car", NS_HERE_P("c=urn:cargo"));
+    assert(rn.status == XMQ_OK);
+    xmqAddKeyValue(doc, rn.node, "model", "escargo", NS_PARENT);
+
+    rn = xmqAddElement(doc, robot, "box", NS_NONE);
+    assert(rn.status == XMQ_OK);
+    xmqAddKeyValue(doc, rn.node, "color", "blue", NS_PARENT);
 
     XMQOutputSettings *os = xmqNewOutputSettings();
 
@@ -39,7 +139,7 @@ void test_building_dom()
 
     xmqFreeOutputSettings(os);
 
-    const char *exp = "car(xmlns=urn:cargo){model=escargo color=green}\n";
+    const char *exp = "krf:robot(xmlns:krf=urn:kraftwerk){krf:who='we are'krf:the=robots c:car(xmlns:c=urn:cargo){c:model=escargo}box(xmlns=''){color=blue}}\n";
     if (strcmp(start, exp))
     {
         printf("Building of dom tree failed. Got: %s\nExpected: %s\n", start, exp);
@@ -48,77 +148,14 @@ void test_building_dom()
     free(start);
 }
 
-int main(int argc, char **argv)
+void demonstrate_ixml_parse()
 {
-    test_building_dom();
-    return 0;
-
-    const char *file = "example.xmq";
     XMQReturnDoc rd = xmqNewDoc();
     assert(rd.status == XMQ_OK);
-    XMQDoc *doc = rd.doc;
-
-    bool ok = xmqParseFile(doc, file, "car", 0);
-    if (!ok) {
-        printf("Parse error in %s\n%s",
-               file,
-               xmqDocError(doc));
-        return 1;
-    }
-    const char *model = xmqGetString(doc, "/car/model");
-    int32_t num_wheels = xmqGetInt(doc, "/car/num_wheels");
-    double weight = xmqGetDouble(doc, "/car/weight");
-    const char *not_found = xmqGetString(doc, "/car/not_found");
-    const char *color = xmqGetString(doc, "/car/color");
-    const char *history = xmqGetString(doc, "/car/history");
-
-    expect(model, "EsCarGo");
-    expect_int(num_wheels, 36);
-    expect_double(weight, 999.123);
-
-    xmqFreeDoc(doc);
-
-
-    XMQLineConfig *lc = xmqNewLineConfig();
-    char *line = xmqLinePrintf(lc,
-                               "car{",
-                               "nw=", "%d", num_wheels,
-                               "model=", "%s %d", "car go ", 3,
-                               "decription=", "%s", "howdy\ndowdy",
-                               "more=", "'''%s'''", "===",
-                               "key=", "",
-                               "}");
-    const char *expect = "car{nw=36 model='car go  3'decription=('howdy'&#10;'dowdy')more=(&#39;&#39;&#39;'==='&#39;&#39;&#39;)key=''}";
-    if (strcmp(line, expect))
-    {
-        printf("Expected >%s<\n but got >%s<\n", expect, line);
-    }
-
-    free(line);
-
-    line = xmqLinePrintf(lc, "work=", "pi is %f", 3.141590);
-
-    expect = "work='pi is 3.141590'";
-    if (strcmp(line, expect))
-    {
-        printf("Expected >%s<\n but got >%s<\n", expect, line);
-    }
-
-    xmqSetLineHumanReadable(lc, true);
-    line = xmqLinePrintf(lc, "work=", "pi is %f", 3.141590);
-
-    expect = "(work) pi is 3.141590";
-    if (strcmp(line, expect))
-    {
-        printf("Expected >%s<\n but got >%s<\n", expect, line);
-    }
-
-    rd = xmqNewDoc();
-    assert(rd.status == XMQ_OK);
     XMQDoc *ixml = rd.doc;
-    ok = xmqParseBufferWithType(ixml,
-                                "decode = -'a', B++-','. B=[N]+.",
-                                NULL, NULL, XMQ_CONTENT_IXML, 0);
+    bool ok = xmqParseBufferWithType(ixml,
+                                     "decode = -'a', B++-','. B=[N]+.",
+                                     NULL, NULL, XMQ_CONTENT_IXML, 0);
     assert(ok);
 
     struct timeval stop, start;
@@ -150,9 +187,61 @@ int main(int argc, char **argv)
     double time = (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec;
     int itime = (int)(time/10000);
 
-    printf("each ixml parse took %d us\n", itime);
+    printf("each ixml parse and foreach took %d us\n", itime);
+}
 
-    return b;
+void demonstrate_xmq_line_printf()
+{
+    int num_wheels = 36;
+
+    XMQLineConfig *lc = xmqNewLineConfig();
+    char *line = xmqLinePrintf(lc,
+                               "car{",
+                               "nw=", "%d", num_wheels,
+                               "model=", "%s %d", "car go ", 3,
+                               "decription=", "%s", "howdy\ndowdy",
+                               "more=", "'''%s'''", "===",
+                               "key=", "",
+                               "}");
+    const char *expect = "car{nw=36 model='car go  3'decription=('howdy'&#10;'dowdy')more=\"'''==='''\"key=''}";
+    if (strcmp(line, expect))
+    {
+        printf("Expected >%s<\n but got >%s<\n", expect, line);
+    }
+
+    free(line);
+
+    line = xmqLinePrintf(lc, "work=", "pi is %f", 3.141590);
+
+    expect = "work='pi is 3.141590'";
+    if (strcmp(line, expect))
+    {
+        printf("Expected >%s<\n but got >%s<\n", expect, line);
+    }
+
+    xmqSetLineHumanReadable(lc, true);
+    line = xmqLinePrintf(lc, "work=", "pi is %f", 3.141590);
+
+    expect = "(work) pi is 3.141590";
+    if (strcmp(line, expect))
+    {
+        printf("Expected >%s<\n but got >%s<\n", expect, line);
+    }
+}
+
+int main(int argc, char **argv)
+{
+    demonstrate_building_dom_0();
+    demonstrate_building_dom_1();
+    demonstrate_building_dom_2();
+
+    demonstrate_load_xmq_file();
+
+    demonstrate_ixml_parse();
+
+    demonstrate_xmq_line_printf();
+
+    return 0;
 }
 
 XMQProceed add_value(XMQDoc *doc, XMQNode *node, void *user_data)

@@ -12,11 +12,11 @@ void test_building_dom1()
     XMQDoc *doc = rd.doc;
     void *ns;
 
-    XMQReturnNode rn = xmqAddRootNode(doc, "car", "urn:cargo");
+    XMQReturnNode rn = xmqAddRootElement(doc, "car", NS_HERE("urn:cargo"));
     assert(rn.status == XMQ_OK);
     XMQNode *car = rn.node;
-    xmqAddKeyValue(doc, car, "model", "escargo");
-    xmqAddKeyValue(doc, car, "color", "green");
+    xmqAddKeyValue(doc, car, "model", "escargo", NS_PARENT);
+    xmqAddKeyValue(doc, car, "color", "green", NS_PARENT);
 
     XMQOutputSettings *os = xmqNewOutputSettings();
 
@@ -48,10 +48,10 @@ void test_building_dom2()
     XMQDoc *doc = rd.doc;
     void *ns;
 
-    XMQReturnNode rn = xmqAddRootNode(doc, "book", XMQ_NO_NAMESPACE);
+    XMQReturnNode rn = xmqAddRootElement(doc, "book", NS_NONE);
     assert(rn.status == XMQ_OK);
     XMQNode *book = rn.node;
-    xmqAddKeyValue(doc, book, "name", "100 years of solitude");
+    xmqAddKeyValue(doc, book, "name", "100 years of solitude", NS_PARENT);
 
     XMQOutputSettings *os = xmqNewOutputSettings();
 

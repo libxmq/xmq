@@ -52,13 +52,21 @@ extern "C" _hideLBfromEditor
 */
 typedef struct XMQDoc XMQDoc;
 
-/** Opaque pointer referencing a node/attr in the xmq/xml/json document.
+/** Opaque structure storing a node in the xmq/xml/json document.
 
     XMQNode:
 
-    Structure storing a node/attr.
+    Structure storing a node.
 */
 typedef struct XMQNode XMQNode;
+
+/** Opaque structure storing an attribute. in the xmq/xml/json document.
+
+    XMQAttr:
+
+    Structure storing an attribute.
+*/
+typedef struct XMQAttr XMQAttr;
 
 /**
     XMQParseState:
@@ -326,7 +334,6 @@ typedef enum
     XMQ_ERROR_INVALID_NAMESPACE_URI = 31,
     XMQ_ERROR_INVALID_NAMESPACE_PREFIX = 32,
     XMQ_ERROR_NAMESPACE_PREFIX_ALREADY_TAKEN = 33,
-    XMQ_ERROR_NOT_QUOTED = 34,
     XMQ_ERROR_BAD_RANGE = 35,
     XMQ_ERROR_BAD_VALUE = 36,
     XMQ_ERROR_IXML_SYNTAX_ERROR = 50,
@@ -346,6 +353,13 @@ struct XMQReturnNode
     XMQNode   *node;
 };
 typedef struct XMQReturnNode XMQReturnNode;
+
+struct XMQReturnAttr
+{
+    XMQStatus status;
+    XMQAttr   *attr;
+};
+typedef struct XMQReturnAttr XMQReturnAttr;
 
 struct XMQReturnString
 {
@@ -587,61 +601,80 @@ void xmqSetOriginalSize(XMQDoc *doq, size_t size);
 */
 XMQNode *xmqGetRootNode(XMQDoc *doq);
 
-#define XMQ_NO_NAMESPACE "(XMQ_NO_NAMESPACE)"
+typedef enum
+{
+    XMQ_NS_NONE,
+    XMQ_NS_PARENT,
+    XMQ_NS_TOPMOST,
+    XMQ_NS_TOPMOST_P,
+    XMQ_NS_HERE,
+    XMQ_NS_HERE_P,
+}
+NamespaceAction;
+
+typedef struct XMQNS XMQNS;
+struct XMQNS {
+    NamespaceAction action;
+    // If action ends with _PREFIX then the uri must start with
+    // the prefix followed by an equals that separate the prefix
+    // from the the uri, eg "drv=urn:myapp:driver"
+    const char *uri;
+};
+
+#define NS_NONE   ((XMQNS){XMQ_NS_NONE,NULL})
+#define NS_PARENT ((XMQNS){XMQ_NS_PARENT,NULL})
+#define NS_TOPMOST(uri) ((XMQNS){XMQ_NS_TOPMOST,uri})
+#define NS_TOPMOST_P(puri) ((XMQNS){XMQ_NS_TOPMOST_P,puri})
+#define NS_HERE(uri) ((XMQNS){XMQ_NS_HERE,uri})
+#define NS_HERE_P(puri) ((XMQNS){XMQ_NS_HERE_P,puri})
 
 /**
-    xmqAddRootNode:
-
-    Create a root node with a specified namespace uri (well iri nowadays).
-    If no namespace is desired: root (<root></<root>) then supply XMQ_NO_NAMESPACE
-    For an empty namespace is desired: root(xmlns) (<root xmlns=""></root>) then supply ""
-    Otherwise, supply "urn:myapp" as uri and you will get:
-    root(xmlns=urn:myapp) (<root xmlns="urn:myapp"></root>)
-
-    By default this namespace has no prefix.
-
-    Return a struct containing: .rc which is XMQ_OK if everything is ok
-    and .node which is the new root node.
+    xmqAddRootElement:
 */
-XMQReturnNode xmqAddRootNode(XMQDoc *doq, const char *name, const char *ns_uri);
+XMQReturnNode xmqAddRootElement(XMQDoc *doq, const char *name, XMQNS ns);
 
 /**
-    xmqPreferPrefix:
+    xmqAddElement:
 
-    Set the preferred prefix for a namespace uri. This
+    Create a new element node under an existing element.
+
+    xmqAddElement(doc, p, "el", NS_NONE);
+    xmqAddElement(doc, p, "el", NS_PARENT);
+    xmqAddElement(doc, p, "el", NS_TOPMOST("urn:myapp:driver"));
+    xmqAddElement(doc, p, "el", NS_TOPMOST_P("drv=urn:myapp:driver"));
+    xmqAddElement(doc, p, "el", NS_HERE("urn:myapp:driver"));
+    xmqAddElement(doc, p, "el", NS_HERE_P("drv=urn:myapp:driver"));
+
 */
-XMQStatus xmqPreferPrefix(XMQDoc *doq, XMQNode *node, const char *ns_uri, const char *prefix);
-
-/**
-    xmqAddNamespace(XMQDoc *doq, XMQNode *node, const char *ns_prefix, const char *ns_iri)
-
-    Set the preferred prefix for the node and its namespace. It returns the set prefix
-    which ís normally the same as ns_prefix, but a different buffer.
-    If the prefix cannot be set, because it is already claimed, it returns NULL,
-    unless permit_renaming==true in which case it will modify the prefix and return the modified prefix.
-*/
-const char *xmqAddNamespace(XMQDoc *doq, XMQNode *node, const char *ns_prefix, const char *ns_iri);
-
-/**
-    xmqAddNode:
-
-    Create a node under an existing node.
-*/
-XMQReturnNode xmqAddNode(XMQDoc *doq, XMQNode *parent, const char *name);
+XMQReturnNode xmqAddElement(XMQDoc *doq, XMQNode *parent, const char *name, XMQNS ns);
 
 /**
     xmqAddKeyValue:
 
     Create a key value under an existing node.
+    The uri can be "urn:myapp"
 */
-XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, const char *value);
+XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, const char *value, XMQNS ns);
 
 /**
     xmqAddAttribute:
 
-    Create an attribute in an existing node.
+    Create/update an attribute in an existing node.
 */
-void xmqSetAttribute(XMQDoc *doq, XMQNode *node, const char *key, const char *name);
+XMQReturnAttr xmqSetAttribute(XMQDoc *doq, XMQNode *node, const char *name, const char *value, XMQNS ns);
+
+/**
+    xmqChangePrefix:
+
+    Change the preferred prefix that was chosen automatically with xmqAddNamespace.
+    Pass XMQ_NO_PREFIX to change the default prefix.
+    If there is a conflict, the XMQ_ERROR_PREFIX_EXISTS is return.
+*/
+XMQReturnString xmqChangePrefix(XMQDoc *doq,
+                                XMQNode *node,
+                                const char *ns_uri,
+                                const char *old_prefix,
+                                const char *new_prefix);
 
 /**
     xmqGetImplementationDoc:
