@@ -118,6 +118,8 @@ XMQStatus do_whitespace(XMQParseState *state, size_t line, size_t col, const cha
 bool find_line(const char *start, const char *stop, size_t *indent, const char **after_last_non_space, const char **eol);
 void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared);
 void fixup_comments(XMQDoc *doq, xmlNode *node, int depth);
+void fixup_ns(xmlNodePtr new_node, xmlNsPtr pns, XMQNS ns);
+xmlNs *create_unique_ns(xmlDoc *doc, xmlNode *node, const char *uri);
 void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index);
 void handle_yaep_syntax_error(YaepParseRun *pr,
                               int err_tok_num,
@@ -1897,7 +1899,22 @@ xmlNs *gen_ns_from_string(xmlNodePtr node, const char *puri)
     return nns;
 }
 
-void fixup_ns(xmlNodePtr new_node, xmlNsPtr pns, XMQNS ns);
+xmlNs *create_unique_ns(xmlDoc *doc, xmlNode *node, const char *uri)
+{
+    char prefix[32];
+
+    for (unsigned i = 1; i < 1000000000; i++)
+    {
+        snprintf(prefix, sizeof(prefix), "ns%u", i);
+
+        if (xmlSearchNs(doc, node, (const xmlChar *)prefix) == NULL)
+        {
+            return xmlNewNs(node, (const xmlChar *)uri, (const xmlChar *)prefix);
+        }
+    }
+    assert(false);
+    return NULL;
+}
 
 void fixup_ns(xmlNodePtr new_node, xmlNsPtr pns, XMQNS ns)
 {
@@ -1927,7 +1944,6 @@ void fixup_ns(xmlNodePtr new_node, xmlNsPtr pns, XMQNS ns)
     }
     else if (ns.action == XMQ_NS_ANCESTOR)
     {
-
         nns = xmlSearchNsByHref(NULL, new_node, (const xmlChar *)ns.uri);
         if (!nns)
         {
@@ -2009,21 +2025,6 @@ XMQReturnNode xmqAddElement(XMQDoc *doq, XMQNode *parent, const char *name, XMQN
     return (XMQReturnNode){ XMQ_OK, (XMQNode*)new_node };
 }
 
-/*
-XMQReturnNode xmqAddNSNode(XMQDoc *doq, XMQNode *parent, const char *name, const char *uri)
-{
-    if (!doq || !parent || !uri || !name) return (XMQReturnNode){ XMQ_ERROR_BAD_VALUE, NULL };
-    xmlNodePtr p = parent;
-    xmlNsPtr ns = NULL;
-    if (*uri != '(' || strcmp(uri, XMQ_NO_NAMESPACE))
-    {
-        xmlNs *ns = xmlNewNs(NULL, (const xmlChar *)uri, NULL);
-    }
-    xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, ns, (const xmlChar *)name, NULL);
-    xmlAddChild((xmlNodePtr)parent, new_node);
-    return (XMQReturnNode){ XMQ_OK, (XMQNode*)new_node };
-    }*/
-
 XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, const char *value, XMQNS ns)
 {
     // Default to place the new node in the same namespace as the parent node.
@@ -2042,8 +2043,21 @@ XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, cons
 
 XMQReturnAttr xmqSetAttribute(XMQDoc *doq, XMQNode *node, const char *name, const char *value, XMQNS ns)
 {
+    // NULLs not accepted.
     if (!doq || !node || !name || !value) return (XMQReturnAttr){ XMQ_ERROR_BAD_VALUE, NULL };
-    xmlAttrPtr a = xmlSetProp((xmlNodePtr)node, (const xmlChar*)name, (const xmlChar*)value);
+
+    xmlAttr *a = NULL;
+
+    if (ns.action == XMQ_NS_NONE)
+    {
+        // The default xml behaviour is that properties have no namespace.
+        a = xmlSetProp((xmlNode*)node, (const xmlChar*)name, (const xmlChar*)value);
+    }
+    else
+    {
+        return (XMQReturnAttr){ XMQ_ERROR_BAD_VALUE, NULL };
+    }
+
     return (XMQReturnAttr){ XMQ_OK, (XMQAttr*)a };
 }
 
