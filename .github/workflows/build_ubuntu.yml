@@ -18,6 +18,8 @@ jobs:
       run: echo "set man-db/auto-update false" | sudo debconf-communicate; sudo dpkg-reconfigure man-db
     - id: INSTALL_ADDITIONAL_BUILD_DEPENDENCIES
       run: sudo apt install -y eatmydata
+    - id: Fix ltmain.sh and other things
+      run: autoreconf -fi
     - id: FETCH_DEPS
       run: cd 3rdparty; eatmydata ./fetch_and_build.sh x86_64-pc-linux-gnu
     - id: CONFIGURE
