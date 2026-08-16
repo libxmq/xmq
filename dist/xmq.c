@@ -3678,6 +3678,7 @@ bool find_line(const char *start, const char *stop, size_t *indent, const char *
 void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared);
 void fixup_comments(XMQDoc *doq, xmlNode *node, int depth);
 void fixup_ns(xmlNodePtr new_node, xmlNsPtr pns, XMQNS ns);
+xmlNs *prep_ancestor_namespace(xmlNode *node, const char *uri, const char *prefix);
 xmlNs *create_unique_ns(xmlDoc *doc, xmlNode *node, const char *uri);
 void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index);
 void handle_yaep_syntax_error(YaepParseRun *pr,
@@ -5476,6 +5477,28 @@ xmlNs *create_unique_ns(xmlDoc *doc, xmlNode *node, const char *uri)
     return NULL;
 }
 
+xmlNs *prep_ancestor_namespace(xmlNode *node, const char *uri, const char *prefix)
+{
+    xmlNs *ns;
+    if (!prefix)
+    {
+        ns = xmlSearchNsByHref(NULL, node, (const xmlChar *)uri);
+    }
+    else
+    {
+        ns = xmlSearchNs(NULL, node, (const xmlChar *)prefix);
+    }
+
+    if (!ns)
+    {
+        // Oups, no ancestor {prefix}uri found. Create the namespace.
+        xmlNodePtr i = node;
+        while (i->parent && i->parent->parent) i = i->parent;
+        ns = xmlNewNs(i, (const xmlChar *)uri, (const xmlChar *)prefix);
+    }
+    return ns;
+}
+
 void fixup_ns(xmlNodePtr new_node, xmlNsPtr pns, XMQNS ns)
 {
     // We assume the node has already been setup with the parent namespace.
@@ -5501,21 +5524,8 @@ void fixup_ns(xmlNodePtr new_node, xmlNsPtr pns, XMQNS ns)
     {
         char *prefix;
         const char *uri = get_prefix_and_uri(ns.uri, &prefix);
-        if (!prefix)
-        {
-            nns = xmlSearchNsByHref(NULL, new_node, (const xmlChar *)ns.uri);
-        }
-        else
-        {
-            nns = xmlSearchNs(NULL, new_node, (const xmlChar *)prefix);
-        }
-        if (!nns)
-        {
-            // Oups, no ancestor {prefix}uri found. Create the namespace.
-            xmlNodePtr i = new_node;
-            while (i->parent) i = i->parent;
-            nns = xmlNewNs(i, (const xmlChar *)ns.uri, (const xmlChar *)prefix);
-        }
+
+        nns = prep_ancestor_namespace(new_node, uri, prefix);
     }
     else
     {
@@ -5537,18 +5547,24 @@ XMQReturnNode xmqAddRootElement(XMQDoc *doq, const char *name, XMQNS ns)
     return (XMQReturnNode){ XMQ_OK, (XMQNode*)new_node };
 }
 
-XMQStatus xmqAddNamespace(XMQDoc *doq, XMQNode *node, const char *ns_uri, const char *prefix)
+XMQStatus xmqAddNamespace(XMQDoc *doq, XMQNode *node, XMQNS ns)
 {
-    if (!doq || !node || !ns_uri || !prefix) return XMQ_ERROR_BAD_VALUE;
+    if (!doq || !node || ns.action != XMQ_NS_HERE) return XMQ_ERROR_BAD_VALUE;
 
     xmlNs **nspaces = xmlGetNsList(doq->docptr_.xml, (xmlNode*)node);
+
+    char *prefix = NULL;
+    const char *uri = get_prefix_and_uri(ns.uri, &prefix);
+
+    // The new namespace must have a prefix.
+    if (!prefix) return XMQ_ERROR_BAD_VALUE;
 
     bool found = false;
     if (nspaces)
     {
         for (xmlNsPtr *i = nspaces; *i; ++i)
         {
-            if (!strcmp((const char*)(*i)->href, ns_uri) &&
+            if (!strcmp((const char*)(*i)->href, uri) &&
                 (*i)->prefix &&
                 !strcmp((const char*)(*i)->prefix, prefix))
             {
@@ -5559,7 +5575,8 @@ XMQStatus xmqAddNamespace(XMQDoc *doq, XMQNode *node, const char *ns_uri, const 
     }
     if (!found)
     {
-        xmlNsPtr nns = xmlNewNs((xmlNodePtr)node, (const xmlChar *)ns_uri, (const xmlChar*)prefix);
+        xmlNsPtr nns = xmlNewNs((xmlNodePtr)node, (const xmlChar *)uri, (const xmlChar*)prefix);
+        if (!nns) return XMQ_ERROR_OOM;
     }
     return XMQ_OK;
 }
@@ -5605,8 +5622,23 @@ XMQReturnAttr xmqSetAttribute(XMQDoc *doq, XMQNode *node, const char *name, cons
         // The default xml behaviour is that properties have no namespace.
         a = xmlSetProp((xmlNode*)node, (const xmlChar*)name, (const xmlChar*)value);
     }
+    else if (ns.action == XMQ_NS_PARENT)
+    {
+        xmlNode *p = (xmlNode*)node;
+        xmlNs   *pns = p->ns;
+        a = xmlSetNsProp((xmlNode*)node, pns, (const xmlChar*)name, (const xmlChar*)value);
+    }
+    else if (ns.action == XMQ_NS_ANCESTOR)
+    {
+        char *prefix;
+        const char *uri = get_prefix_and_uri(ns.uri, &prefix);
+
+        xmlNs *ns = prep_ancestor_namespace((xmlNode*)node, uri, prefix);
+        a = xmlSetNsProp((xmlNode*)node, ns, (const xmlChar*)name, (const xmlChar*)value);
+    }
     else
     {
+        // You cannot use NS_HERE for an attribute.
         return (XMQReturnAttr){ XMQ_ERROR_BAD_VALUE, NULL };
     }
 

@@ -646,6 +646,14 @@ struct XMQNS {
     @doq The xmq document.
     @name The name of the new element.
     @ns The namespace setting.
+
+    @code
+    xmqAddElement(doc, p, "el", NS_NONE); // No namespace.
+    xmqAddElement(doc, p, "el", NS_HERE("urn:myapp:driver"));
+    xmqAddElement(doc, p, "el", NS_HERE("{drv}urn:myapp:driver"));
+    @endcode
+
+    NS_ANCESTOR is not permitted for the root node.
 */
 XMQReturnNode xmqAddRootElement(XMQDoc *doq, const char *name, XMQNS ns);
 
@@ -670,11 +678,35 @@ XMQReturnNode xmqAddElement(XMQDoc *doq, XMQNode *parent, const char *name, XMQN
 
 /**
     Create a key value under an existing node.
+
+    @doq The xmq document.
+    @parent The parent in which the key value is created.
+    @key The key.
+    @value The value.
+    @ns The namespace setting.
+
+    @code
+    xmqAddElement(doc, p, "el", NS_NONE); // No namespace.
+    xmqAddElement(doc, p, "el", NS_PARENT); // Inherit parent namespace.
+    xmqAddElement(doc, p, "el", NS_HERE("urn:myapp:driver"));
+    xmqAddElement(doc, p, "el", NS_HERE("{drv}urn:myapp:driver"));
+    xmqAddElement(doc, p, "el", NS_ANCESTOR("urn:myapp:driver"));
+    xmqAddElement(doc, p, "el", NS_ANCESTOR("{drv}urn:myapp:driver"));
+    @endcode
 */
 XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, const char *value, XMQNS ns);
 
 /**
     Create/update an attribute in an existing node.
+
+    @code
+    xmqAddElement(doc, p, "el", NS_NONE); // No namespace.
+    xmqAddElement(doc, p, "el", NS_PARENT); // Inherit parent namespace.
+    xmqAddElement(doc, p, "el", NS_ANCESTOR("urn:myapp:driver"));
+    xmqAddElement(doc, p, "el", NS_ANCESTOR("{drv}urn:myapp:driver"));
+    @endcode
+
+    NS_HERE is not permitted for an attribute.
 */
 XMQReturnAttr xmqSetAttribute(XMQDoc *doq, XMQNode *node, const char *name, const char *value, XMQNS ns);
 
@@ -688,8 +720,14 @@ XMQReturnAttr xmqSetAttribute(XMQDoc *doq, XMQNode *node, const char *name, cons
     @param prefix The desired prefix.
 
     @return XMQ_OK if all ok.
+
+    @code
+    xmqAddNamespace(doc, p, "el", NS_HERE("{drv}urn:myapp:driver"));
+    @endcode
+
+    Only NS_HERE is allowed.
 */
-XMQStatus xmqAddNamespace(XMQDoc *doq, XMQNode *node, const char *ns_uri, const char *prefix);
+XMQStatus xmqAddNamespace(XMQDoc *doq, XMQNode *node, XMQNS ns);
 
 /**
     Change the preferred prefix that was chosen automatically with xmqAddNamespace.
