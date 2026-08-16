@@ -148,6 +148,44 @@ void demonstrate_building_dom_2()
     free(start);
 }
 
+void demonstrate_building_dom_3()
+{
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
+
+    XMQReturnNode rn = xmqAddRootElement(doc, "flower", NS_HERE("urn:power"));
+    assert(rn.status == XMQ_OK);
+
+    XMQStatus rc = xmqAddNamespace(doc, rn.node, "urn:soft", "s");
+    assert(rc == XMQ_OK);
+
+    XMQNode *robot = rn.node;
+    xmqAddKeyValue(doc, robot, "petals", "many", NS_ANCESTOR("urn:soft"));
+
+    XMQOutputSettings *os = xmqNewOutputSettings();
+
+    xmqSetCompact(os, true);
+    xmqSetEscapeNewlines(os, true);
+    xmqSetUseColor(os, false);
+    xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
+    xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
+
+    char *start, *stop;
+    xmqSetupPrintMemory(os, &start, &stop);
+    xmqPrint(doc, os);
+
+    xmqFreeOutputSettings(os);
+
+    const char *exp = "flower(xmlns=urn:power xmlns:s=urn:soft){s:petals=many}\n";
+    if (strcmp(start, exp))
+    {
+        printf("Building of dom tree failed. Got: %s\nExpected: %s\n", start, exp);
+        exit(1);
+    }
+    free(start);
+}
+
 void demonstrate_ixml_parse()
 {
     XMQReturnDoc rd = xmqNewDoc();
@@ -231,16 +269,17 @@ void demonstrate_xmq_line_printf()
 
 int main(int argc, char **argv)
 {
-    demonstrate_building_dom_0();
+/*    demonstrate_building_dom_0();
     demonstrate_building_dom_1();
-    demonstrate_building_dom_2();
-
+    demonstrate_building_dom_2();*/
+    demonstrate_building_dom_3();
+/*
     demonstrate_load_xmq_file();
 
     demonstrate_ixml_parse();
 
     demonstrate_xmq_line_printf();
-
+*/
     return 0;
 }
 

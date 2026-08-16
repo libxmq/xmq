@@ -262,83 +262,85 @@ typedef enum
 typedef XMQProceed (*XMQNodeCallback)(XMQDoc *doc, XMQNode *node, void *user_data);
 
 /**
-    XMQStatus
-
-    @XMQ_OK: no error
-    @XMQ_ERROR_CANNOT_READ_FILE: file not found or cannot be opened for reading.
-    @XMQ_ERROR_OOM: out of memory.
-    @XMQ_ERROR_NOT_XMQ: expected xmq but auto detect sees early that it is not xmq.
-    @XMQ_ERROR_QUOTE_NOT_CLOSED: an xmq quote is not closed, ie single quotes are missing.
-    @XMQ_ERROR_ENTITY_NOT_CLOSED: an entity is missing the semicolon.
-    @XMQ_ERROR_COMMENT_NOT_CLOSED: a comment has not been closed.
-    @XMQ_ERROR_COMMENT_CLOSED_WITH_TOO_MANY_SLASHES: a comment close is not balanced.
-    @XMQ_ERROR_BODY_NOT_CLOSED: an body is missing a closing brace.
-    @XMQ_ERROR_ATTRIBUTES_NOT_CLOSED: the attribute list is missing the closing parentheses.
-    @XMQ_ERROR_CONTENT_NOT_CLOSED: compound content is missing the closing double parentheses.
-    @XMQ_ERROR_CONTENT_MAY_NOT_CONTAIN: compound content may only contains quotes and entities.
-    @XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES: too many closing single quotes.
-    @XMQ_ERROR_UNEXPECTED_CLOSING_BRACE: an unexpected closing brace.
-    @XMQ_ERROR_UNEXPECTED_TAB: tabs are not permitted as token separators.
-    @XMQ_ERROR_INVALID_CHAR: an invalid character found.
-    @XMQ_ERROR_BAD_DOCTYPE: the doctype could not be parsed.
-    @XMQ_ERROR_JSON_INVALID_ESCAPE: an invalid json escape sequence.
-    @XMQ_ERROR_JSON_INVALID_CHAR: an invalid character.
-    @XMQ_ERROR_CANNOT_HANDLE_XML: x
-    @XMQ_ERROR_CANNOT_HANDLE_HTML: x
-    @XMQ_ERROR_CANNOT_HANDLE_JSON: x
-    @XMQ_ERROR_EXPECTED_XMQ: x
-    @XMQ_ERROR_EXPECTED_HTMQ: x
-    @XMQ_ERROR_EXPECTED_XML: x
-    @XMQ_ERROR_EXPECTED_HTML: x
-    @XMQ_ERROR_EXPECTED_JSON: x
-    @XMQ_ERROR_PARSING_XML: x
-    @XMQ_ERROR_PARSING_HTML: x
-    @XMQ_ERROR_VALUE_CANNOT_START_WITH: x
-    @XMQ_ERROR_INVALID_NAMESPACE_URI: x
-    @XMQ_ERROR_INVALID_NAMESPACE_PREFIX: x
-    @XMQ_ERROR_NAMESPACE_PREFIX_ALREADY_TAKEN: x
-    @XMQ_ERROR_IXML_SYNTAX_ERROR: x
-    @XMQ_WARNING_QUOTES_NEEDED: x
+    The xmq functions return OK or error values using the XMQStatus.
 */
 typedef enum
 {
+    /** No error. */
     XMQ_OK = 0,
+    /** File not found or cannot be opened for reading. */
     XMQ_ERROR_CANNOT_READ_FILE = 1,
+    /** Out of memory. */
     XMQ_ERROR_OOM = 2,
+    /** Expected xmq but auto detect sees early that it is not xmq. */
     XMQ_ERROR_NOT_XMQ = 3,
+    /** An xmq quote is not closed, ie single quotes are missing. */
     XMQ_ERROR_QUOTE_NOT_CLOSED = 4,
+    /** An entity is missing the semicolon. */
     XMQ_ERROR_ENTITY_NOT_CLOSED = 5,
+    /** A comment has not been closed. */
     XMQ_ERROR_COMMENT_NOT_CLOSED = 6,
+    /** A comment close is not balanced. */
     XMQ_ERROR_COMMENT_CLOSED_WITH_TOO_MANY_SLASHES = 7,
+    /** A body is missing a closing brace. */
     XMQ_ERROR_BODY_NOT_CLOSED = 8,
+    /** The attribute list is missing the closing parentheses. */
     XMQ_ERROR_ATTRIBUTES_NOT_CLOSED = 9,
+    /** Compound content is missing the closing double parentheses. */
     XMQ_ERROR_COMPOUND_NOT_CLOSED = 10,
+    /** Compound content may only contains quotes and entities. */
     XMQ_ERROR_COMPOUND_MAY_NOT_CONTAIN = 11,
+    /** Too many closing single quotes. */
     XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES = 12,
+    /** An unexpected closing brace. */
     XMQ_ERROR_UNEXPECTED_CLOSING_BRACE = 13,
+    /** Expected a value after equals. */
     XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS = 14,
+    /** Tabs are not permitted as token separators. */
     XMQ_ERROR_UNEXPECTED_TAB = 15,
+    /** An invalid character found. */
     XMQ_ERROR_INVALID_CHAR = 16,
+    /** The doctype could not be parsed. */
     XMQ_ERROR_BAD_DOCTYPE = 17,
+    /** An invalid json escape sequence. */
     XMQ_ERROR_JSON_INVALID_ESCAPE = 18,
+    /** An invalid json character. */
     XMQ_ERROR_JSON_INVALID_CHAR = 19,
+    /** The XMl parser has been left out to shrink code size. */
     XMQ_ERROR_CANNOT_HANDLE_XML = 20,
+    /** The HTML parser has been left out to shrink code size. */
     XMQ_ERROR_CANNOT_HANDLE_HTML = 21,
+    /** The JSON parser has been left out to shrink code size. */
     XMQ_ERROR_CANNOT_HANDLE_JSON = 22,
+    /** Expecte xmq but was given something else. */
     XMQ_ERROR_EXPECTED_XMQ = 23,
+    /** Expecte htmq but was given something else. */
     XMQ_ERROR_EXPECTED_HTMQ = 24,
+    /** Expecte xml but was given something else. */
     XMQ_ERROR_EXPECTED_XML = 25,
+    /** Expecte html but was given something else. */
     XMQ_ERROR_EXPECTED_HTML = 26,
+    /** Expecte json but was given something else. */
     XMQ_ERROR_EXPECTED_JSON = 27,
+    /** Error while parsing xml. */
     XMQ_ERROR_PARSING_XML = 28,
+    /** Error while parsing html. */
     XMQ_ERROR_PARSING_HTML = 29,
+    /** A value after a key cannot start with comments or equals. */
     XMQ_ERROR_VALUE_CANNOT_START_WITH = 30,
+    /** Not a proper uri for a namespace. */
     XMQ_ERROR_INVALID_NAMESPACE_URI = 31,
+    /** Not a proper prefix for a namespace. */
     XMQ_ERROR_INVALID_NAMESPACE_PREFIX = 32,
+    /** When adding a new namespace with a prefix, the prefix has already been used. */
     XMQ_ERROR_NAMESPACE_PREFIX_ALREADY_TAKEN = 33,
+    /** Pointer errors to buffers are wrong. */
     XMQ_ERROR_BAD_RANGE = 35,
+    /** Invalid enums provided or other bad input to functions. */
     XMQ_ERROR_BAD_VALUE = 36,
+    /** The ixml grammar cannot be parsed. */
     XMQ_ERROR_IXML_SYNTAX_ERROR = 50,
+    /** Warning, when parse succeeds, but it seems there is a mistake. */
     XMQ_WARNING_QUOTES_NEEDED = 1000
 } XMQStatus;
 
@@ -438,12 +440,11 @@ typedef struct XMQLineConfig XMQLineConfig;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
-    xmqDetectContentType:
-    @start: points to first byte of buffer to scan for content type
-    @stop: points to byte after buffer
-
     Detect the content type xmq/xml/html/json by examining a few leading
     non-whitespace words/characters.
+
+    @param start Points to first byte of buffer to scan for content type.
+    @param stop Points to byte after buffer.
  */
 XMQContentType xmqDetectContentType(const char *start, const char *stop);
 
@@ -617,10 +618,10 @@ typedef enum
 {
     XMQ_NS_NONE,
     XMQ_NS_PARENT,
-    XMQ_NS_TOPMOST,
-    XMQ_NS_TOPMOST_P,
     XMQ_NS_HERE,
     XMQ_NS_HERE_P,
+    XMQ_NS_ANCESTOR,
+    XMQ_NS_ANCESTOR_P,
 }
 NamespaceAction;
 
@@ -633,12 +634,20 @@ struct XMQNS {
     const char *uri;
 };
 
+/** Assign no namespace to this node. */
 #define NS_NONE   ((XMQNS){XMQ_NS_NONE,NULL})
+/** Reuse the parent namespace for this node. */
 #define NS_PARENT ((XMQNS){XMQ_NS_PARENT,NULL})
-#define NS_TOPMOST(uri) ((XMQNS){XMQ_NS_TOPMOST,uri})
-#define NS_TOPMOST_P(puri) ((XMQNS){XMQ_NS_TOPMOST_P,puri})
+/** Create a new namespace for this node. */
 #define NS_HERE(uri) ((XMQNS){XMQ_NS_HERE,uri})
+/** Create a new namespace and preferred prefix for this node. */
 #define NS_HERE_P(puri) ((XMQNS){XMQ_NS_HERE_P,puri})
+/** Search for the namespace in parent and parents parent etc.
+    If not found, create the namespace in the root element. */
+#define NS_ANCESTOR(uri) ((XMQNS){XMQ_NS_ANCESTOR,uri})
+/** Search for the namespace with the prefix, in parent and parents parent etc.
+    If not found, create the namespace in the root element. */
+#define NS_ANCESTOR_P(puri) ((XMQNS){XMQ_NS_ANCESTOR_P,puri})
 
 /**
     Create a new root element.
@@ -660,10 +669,10 @@ XMQReturnNode xmqAddRootElement(XMQDoc *doq, const char *name, XMQNS ns);
     @code
     xmqAddElement(doc, p, "el", NS_NONE); // No namespace.
     xmqAddElement(doc, p, "el", NS_PARENT); // Inherit parent namespace.
-    xmqAddElement(doc, p, "el", NS_TOPMOST("urn:myapp:driver"));
-    xmqAddElement(doc, p, "el", NS_TOPMOST_P("drv=urn:myapp:driver"));
     xmqAddElement(doc, p, "el", NS_HERE("urn:myapp:driver"));
     xmqAddElement(doc, p, "el", NS_HERE_P("drv=urn:myapp:driver"));
+    xmqAddElement(doc, p, "el", NS_ANCESTOR("urn:myapp:driver"));
+    xmqAddElement(doc, p, "el", NS_ANCESTOR_P("drv=urn:myapp:driver"));
     @endcode
 */
 XMQReturnNode xmqAddElement(XMQDoc *doq, XMQNode *parent, const char *name, XMQNS ns);
@@ -677,6 +686,19 @@ XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, cons
     Create/update an attribute in an existing node.
 */
 XMQReturnAttr xmqSetAttribute(XMQDoc *doq, XMQNode *node, const char *name, const char *value, XMQNS ns);
+
+/**
+    Add a prefixed namespace to a node. It must have a prefix since the default namespace
+    can only be assigned when the node is created. If the prefix is already taken an error is returned.
+
+    @param doq The xmq document.
+    @param node The node into which the namespace declaration is put.
+    @param ns_uri The new namespace uri.
+    @param prefix The desired prefix.
+
+    @return XMQ_OK if all ok.
+*/
+XMQStatus xmqAddNamespace(XMQDoc *doq, XMQNode *node, const char *ns_uri, const char *prefix);
 
 /**
     Change the preferred prefix that was chosen automatically with xmqAddNamespace.
@@ -803,14 +825,32 @@ void xmqAnnotateOffsets(XMQDoc *doc, const char *attribute_name, const char *ns)
 /** Trim xml whitespace. */
 void xmqTrimWhitespace(XMQDoc *doc, int flags);
 
-/** Create a compact single line quote safely storing the content.
-    Output can for example be: 123, John, 'John Doe', '''There's a light!''', (&#10;'a line'&10;) */
+/**
+    Create a compact single line quote safely storing the content.
+    Output can for example be: 123, John, 'John Doe', "There's a light!", (&#10;'a line'&10;)
+
+    @param content The string to safely quote using xmq quoting and output on a single line.
+
+    @return Return a new null terminated buffer which the caller needs to free.
+*/
 char *xmqCompactQuote(const char *content);
 
-/** A parsing error will be described here! */
+/**
+   Extract the parsing error.
+
+   @param doc The document which we tried to parse.
+
+   @return An explanatory text of the error. Is freed when the document itself is freed.
+*/
 const char *xmqDocError(XMQDoc *doc);
 
-/** The error as errno. */
+/**
+   The error as status enum.
+
+   @param doc The document which we tried to parse.
+
+   @return The error status code.
+*/
 XMQStatus xmqDocErrno(XMQDoc *doc);
 
 /**

@@ -75,6 +75,11 @@ typedef struct XMQParseState XMQParseState;
 typedef struct XMQParseCallbacks XMQParseCallbacks;
 
 /**
+   Opaque structure storing a output settings when printing xmq, xml or json.
+*/
+typedef struct XMQOutputSettings XMQOutputSettings;
+
+/**
    @brief Specify the file/buffer content type both for input and for output.
 */
 typedef enum
@@ -120,19 +125,15 @@ typedef enum
 } XMQRenderFormat;
 
 /**
-    XMQFlagBits:
-    @XMQ_FLAG_TRIM_NONE: Do not trim any whitespace.
-    @XMQ_FLAG_TRIM_HEURISTIC: Remove leading/ending whitespace, but try to keep significant, remove incidental indentation.
-    @XMQ_FLAG_TRIM_EXACT: Trim exactly according to XML rules. Depends on your XSD,space:preserve and more and is COMPLICATED!
-    @XMQ_FLAG_NOMERGE: Do not merge text and character entities.
-    @XMQ_FLAG_IXML_ALL_PARSES: When ixml parse is ambiguous generate all parses.
-    @XMQ_FLAG_IXML_TRY_TO_RECOVER: When ixml parse fails, try to recover.
-    @XMQ_FLAG_IXML_FAIL_SILENT: If the ixml parse fails generate an empty document and no errors.
+    The flag bits specify by the parser builds the document.
 
-    If a 0 is provided as the flags to the parse functions, then it will parse using the these default settings:
+    If a 0 is provided as the flag bits to the parse functions,
+    then it will parse using the these default settings:
+
     When loading xml/html:
         trim the whitespace from the input to generate the most likely desired xmq output.
         merge character entities
+
     When loading xmq/htmq:
         no trimming but
         merge character entities such as &#10; and consecutive text quotes
@@ -142,16 +143,24 @@ typedef enum
     You can then view the xmq with XMQ_TRIM_HEURISTIC (--trim=heuristic) to drop the whitespace.
 
     If you load xmq with --nomerge then character entities and separate text blocks will be kept as is.
-    The --nomerge currently does not work for XML/HTML since libxml2 does not have a setting for merge.
+    The --nomerge currently does not work for XML/HTML since libxml2 does not have a setting for merge,
+    it always merges.
 */
 typedef enum
 {
+    /** Do not trim any whitespace. Only relevant when parsing xml. */
     XMQ_FLAG_TRIM_NONE = 1,
+    /** Remove leading/ending whitespace, but try to keep significant, remove incidental indentation. */
     XMQ_FLAG_TRIM_HEURISTIC = 2,
+    /** Not implemented. */
     XMQ_FLAG_TRIM_EXACT = 4,
+    /** Do not merge adjacent text nodes and character entity nodes. */
     XMQ_FLAG_NOMERGE = 8,
+    /** When ixml parse is ambiguous generate all parses. */
     XMQ_FLAG_IXML_ALL_PARSES = 16,
+    /** When ixml parse fails, try to recover. */
     XMQ_FLAG_IXML_TRY_TO_RECOVER = 32,
+    /** If the ixml parse fails generate an empty document and no errors. */
     XMQ_FLAG_IXML_FAIL_SILENT = 64,
 } XMQFlagBits;
 
@@ -234,19 +243,13 @@ struct XMQWriter
 typedef struct XMQWriter XMQWriter;
 
 /**
-    XMQOutputSettings:
-*/
-typedef struct XMQOutputSettings XMQOutputSettings;
-
-/**
-    XMQProceed:
-    @XMQ_CONTINUE: Return "continue" to continue iterating over xmq nodes.
-    @XMQ_RETURN: Return "return" to stop and return the current node.
-    @XMQ_ABORT: Return "abort" to stop iterating and give an error.
+    The XMQProceed is used to proceed or stop when iterating over xmq nodes.
 */
 typedef enum
 {
+    /** Return XMQ_CONTINUE to continue iterating over xmq nodes. */
     XMQ_CONTINUE,
+    /** Return XMQ_STOP to stop iterating. */
     XMQ_STOP,
 } XMQProceed;
 
@@ -259,83 +262,85 @@ typedef enum
 typedef XMQProceed (*XMQNodeCallback)(XMQDoc *doc, XMQNode *node, void *user_data);
 
 /**
-    XMQStatus
-
-    @XMQ_OK: no error
-    @XMQ_ERROR_CANNOT_READ_FILE: file not found or cannot be opened for reading.
-    @XMQ_ERROR_OOM: out of memory.
-    @XMQ_ERROR_NOT_XMQ: expected xmq but auto detect sees early that it is not xmq.
-    @XMQ_ERROR_QUOTE_NOT_CLOSED: an xmq quote is not closed, ie single quotes are missing.
-    @XMQ_ERROR_ENTITY_NOT_CLOSED: an entity is missing the semicolon.
-    @XMQ_ERROR_COMMENT_NOT_CLOSED: a comment has not been closed.
-    @XMQ_ERROR_COMMENT_CLOSED_WITH_TOO_MANY_SLASHES: a comment close is not balanced.
-    @XMQ_ERROR_BODY_NOT_CLOSED: an body is missing a closing brace.
-    @XMQ_ERROR_ATTRIBUTES_NOT_CLOSED: the attribute list is missing the closing parentheses.
-    @XMQ_ERROR_CONTENT_NOT_CLOSED: compound content is missing the closing double parentheses.
-    @XMQ_ERROR_CONTENT_MAY_NOT_CONTAIN: compound content may only contains quotes and entities.
-    @XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES: too many closing single quotes.
-    @XMQ_ERROR_UNEXPECTED_CLOSING_BRACE: an unexpected closing brace.
-    @XMQ_ERROR_UNEXPECTED_TAB: tabs are not permitted as token separators.
-    @XMQ_ERROR_INVALID_CHAR: an invalid character found.
-    @XMQ_ERROR_BAD_DOCTYPE: the doctype could not be parsed.
-    @XMQ_ERROR_JSON_INVALID_ESCAPE: an invalid json escape sequence.
-    @XMQ_ERROR_JSON_INVALID_CHAR: an invalid character.
-    @XMQ_ERROR_CANNOT_HANDLE_XML: x
-    @XMQ_ERROR_CANNOT_HANDLE_HTML: x
-    @XMQ_ERROR_CANNOT_HANDLE_JSON: x
-    @XMQ_ERROR_EXPECTED_XMQ: x
-    @XMQ_ERROR_EXPECTED_HTMQ: x
-    @XMQ_ERROR_EXPECTED_XML: x
-    @XMQ_ERROR_EXPECTED_HTML: x
-    @XMQ_ERROR_EXPECTED_JSON: x
-    @XMQ_ERROR_PARSING_XML: x
-    @XMQ_ERROR_PARSING_HTML: x
-    @XMQ_ERROR_VALUE_CANNOT_START_WITH: x
-    @XMQ_ERROR_INVALID_NAMESPACE_URI: x
-    @XMQ_ERROR_INVALID_NAMESPACE_PREFIX: x
-    @XMQ_ERROR_NAMESPACE_PREFIX_ALREADY_TAKEN: x
-    @XMQ_ERROR_IXML_SYNTAX_ERROR: x
-    @XMQ_WARNING_QUOTES_NEEDED: x
+    The xmq functions return OK or error values using the XMQStatus.
 */
 typedef enum
 {
+    /** No error. */
     XMQ_OK = 0,
+    /** File not found or cannot be opened for reading. */
     XMQ_ERROR_CANNOT_READ_FILE = 1,
+    /** Out of memory. */
     XMQ_ERROR_OOM = 2,
+    /** Expected xmq but auto detect sees early that it is not xmq. */
     XMQ_ERROR_NOT_XMQ = 3,
+    /** An xmq quote is not closed, ie single quotes are missing. */
     XMQ_ERROR_QUOTE_NOT_CLOSED = 4,
+    /** An entity is missing the semicolon. */
     XMQ_ERROR_ENTITY_NOT_CLOSED = 5,
+    /** A comment has not been closed. */
     XMQ_ERROR_COMMENT_NOT_CLOSED = 6,
+    /** A comment close is not balanced. */
     XMQ_ERROR_COMMENT_CLOSED_WITH_TOO_MANY_SLASHES = 7,
+    /** A body is missing a closing brace. */
     XMQ_ERROR_BODY_NOT_CLOSED = 8,
+    /** The attribute list is missing the closing parentheses. */
     XMQ_ERROR_ATTRIBUTES_NOT_CLOSED = 9,
+    /** Compound content is missing the closing double parentheses. */
     XMQ_ERROR_COMPOUND_NOT_CLOSED = 10,
+    /** Compound content may only contains quotes and entities. */
     XMQ_ERROR_COMPOUND_MAY_NOT_CONTAIN = 11,
+    /** Too many closing single quotes. */
     XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES = 12,
+    /** An unexpected closing brace. */
     XMQ_ERROR_UNEXPECTED_CLOSING_BRACE = 13,
+    /** Expected a value after equals. */
     XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS = 14,
+    /** Tabs are not permitted as token separators. */
     XMQ_ERROR_UNEXPECTED_TAB = 15,
+    /** An invalid character found. */
     XMQ_ERROR_INVALID_CHAR = 16,
+    /** The doctype could not be parsed. */
     XMQ_ERROR_BAD_DOCTYPE = 17,
+    /** An invalid json escape sequence. */
     XMQ_ERROR_JSON_INVALID_ESCAPE = 18,
+    /** An invalid json character. */
     XMQ_ERROR_JSON_INVALID_CHAR = 19,
+    /** The XMl parser has been left out to shrink code size. */
     XMQ_ERROR_CANNOT_HANDLE_XML = 20,
+    /** The HTML parser has been left out to shrink code size. */
     XMQ_ERROR_CANNOT_HANDLE_HTML = 21,
+    /** The JSON parser has been left out to shrink code size. */
     XMQ_ERROR_CANNOT_HANDLE_JSON = 22,
+    /** Expecte xmq but was given something else. */
     XMQ_ERROR_EXPECTED_XMQ = 23,
+    /** Expecte htmq but was given something else. */
     XMQ_ERROR_EXPECTED_HTMQ = 24,
+    /** Expecte xml but was given something else. */
     XMQ_ERROR_EXPECTED_XML = 25,
+    /** Expecte html but was given something else. */
     XMQ_ERROR_EXPECTED_HTML = 26,
+    /** Expecte json but was given something else. */
     XMQ_ERROR_EXPECTED_JSON = 27,
+    /** Error while parsing xml. */
     XMQ_ERROR_PARSING_XML = 28,
+    /** Error while parsing html. */
     XMQ_ERROR_PARSING_HTML = 29,
+    /** A value after a key cannot start with comments or equals. */
     XMQ_ERROR_VALUE_CANNOT_START_WITH = 30,
+    /** Not a proper uri for a namespace. */
     XMQ_ERROR_INVALID_NAMESPACE_URI = 31,
+    /** Not a proper prefix for a namespace. */
     XMQ_ERROR_INVALID_NAMESPACE_PREFIX = 32,
+    /** When adding a new namespace with a prefix, the prefix has already been used. */
     XMQ_ERROR_NAMESPACE_PREFIX_ALREADY_TAKEN = 33,
+    /** Pointer errors to buffers are wrong. */
     XMQ_ERROR_BAD_RANGE = 35,
+    /** Invalid enums provided or other bad input to functions. */
     XMQ_ERROR_BAD_VALUE = 36,
+    /** The ixml grammar cannot be parsed. */
     XMQ_ERROR_IXML_SYNTAX_ERROR = 50,
+    /** Warning, when parse succeeds, but it seems there is a mistake. */
     XMQ_WARNING_QUOTES_NEEDED = 1000
 } XMQStatus;
 
@@ -375,48 +380,57 @@ struct XMQReturnConstString
 typedef struct XMQReturnConstString XMQReturnConstString;
 
 /**
-    XMQCoreType:
-    @XMQ_CORE_STRING: Zero to infinite sized unicode string. No zero bytes.
-    @XMQ_CORE_BASE64: Base64 encoded binary data.
-    @XMQ_CORE_I8:     Signed 8 bit integer.
-    @XMQ_CORE_I16:    Signed 16 bit integer.
-    @XMQ_CORE_I32:    Signed 32 bit integer.
-    @XMQ_CORE_I64:    Signed 64 bit integer.
-    @XMQ_CORE_I128:   Signed 128 bit integer.
-    @XMQ_CORE_U8:     Unsigned 8 bit integer.
-    @XMQ_CORE_U16:    Unsigned 16 bit integer.
-    @XMQ_CORE_U32:    Unsigned 32 bit integer.
-    @XMQ_CORE_U64:    Unsigned 64 bit integer.
-    @XMQ_CORE_U128:   Unsigned 128 bit integer.
-    @XMQ_CORE_IP_ADDRESS: Either a v4 or a v6.
-    @XMQ_CORE_IPV4_ADDRESS: 128.0.0.1
-    @XMQ_CORE_IPV6_ADDRESS: ::0
+    When loading xmq/xml/json as a config file, the content is parsed and decoded
+    according the the requested type. These are the available core types.
 */
 typedef enum
 {
     XMQ_CORE_BOOL,
+    /** Signed 8 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_I8,
+    /** Signed 16 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_I16,
+    /** Signed 32 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_I32,
+    /** Signed 64 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_I64,
+    /** Signed 128 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_I128,
+    /** Unsigned 8 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_U8,
+    /** Unsigned 16 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_U16,
+    /** Unsigned 32  bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_U32,
+    /** Unsigned 64 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_U64,
+    /** Unsigned 128 bit integer. Can be decimal, hex (0x) or octal (0). */
     XMQ_CORE_U128,
 
+    /** Floating point 32bit. */
     XMQ_CORE_F32,
+    /** Floating point 64bit. */
     XMQ_CORE_F64,
 
+    /** Zero to infinite sized unicode string. No zero bytes. */
     XMQ_CORE_STRING,
+    /** String formatted as a valid email address. */
     XMQ_CORE_EMAIL,
+    /** String formatted as a valid uri/iri. */
     XMQ_CORE_URI,
+    /** String formatted as a valid url. */
     XMQ_CORE_URL,
 
+    /** Either a v4 or a v6. */
     XMQ_CORE_IP_ADDRESS,
+    /** 128.0.0.1 */
     XMQ_CORE_IPV4_ADDRESS,
-    XMQ_CORE_IPV6_ADDRESS
+    /** ::0 */
+    XMQ_CORE_IPV6_ADDRESS,
+
+    /** Base64 encoded binary data. */
+    XMQ_BINARY_BASE64
+
 } XMQCoreType;
 
 typedef struct XMQLineConfig XMQLineConfig;
@@ -426,12 +440,11 @@ typedef struct XMQLineConfig XMQLineConfig;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
-    xmqDetectContentType:
-    @start: points to first byte of buffer to scan for content type
-    @stop: points to byte after buffer
-
     Detect the content type xmq/xml/html/json by examining a few leading
     non-whitespace words/characters.
+
+    @param start Points to first byte of buffer to scan for content type.
+    @param stop Points to byte after buffer.
  */
 XMQContentType xmqDetectContentType(const char *start, const char *stop);
 
@@ -605,10 +618,10 @@ typedef enum
 {
     XMQ_NS_NONE,
     XMQ_NS_PARENT,
-    XMQ_NS_TOPMOST,
-    XMQ_NS_TOPMOST_P,
     XMQ_NS_HERE,
     XMQ_NS_HERE_P,
+    XMQ_NS_ANCESTOR,
+    XMQ_NS_ANCESTOR_P,
 }
 NamespaceAction;
 
@@ -621,12 +634,20 @@ struct XMQNS {
     const char *uri;
 };
 
+/** Assign no namespace to this node. */
 #define NS_NONE   ((XMQNS){XMQ_NS_NONE,NULL})
+/** Reuse the parent namespace for this node. */
 #define NS_PARENT ((XMQNS){XMQ_NS_PARENT,NULL})
-#define NS_TOPMOST(uri) ((XMQNS){XMQ_NS_TOPMOST,uri})
-#define NS_TOPMOST_P(puri) ((XMQNS){XMQ_NS_TOPMOST_P,puri})
+/** Create a new namespace for this node. */
 #define NS_HERE(uri) ((XMQNS){XMQ_NS_HERE,uri})
+/** Create a new namespace and preferred prefix for this node. */
 #define NS_HERE_P(puri) ((XMQNS){XMQ_NS_HERE_P,puri})
+/** Search for the namespace in parent and parents parent etc.
+    If not found, create the namespace in the root element. */
+#define NS_ANCESTOR(uri) ((XMQNS){XMQ_NS_ANCESTOR,uri})
+/** Search for the namespace with the prefix, in parent and parents parent etc.
+    If not found, create the namespace in the root element. */
+#define NS_ANCESTOR_P(puri) ((XMQNS){XMQ_NS_ANCESTOR_P,puri})
 
 /**
     Create a new root element.
@@ -648,10 +669,10 @@ XMQReturnNode xmqAddRootElement(XMQDoc *doq, const char *name, XMQNS ns);
     @code
     xmqAddElement(doc, p, "el", NS_NONE); // No namespace.
     xmqAddElement(doc, p, "el", NS_PARENT); // Inherit parent namespace.
-    xmqAddElement(doc, p, "el", NS_TOPMOST("urn:myapp:driver"));
-    xmqAddElement(doc, p, "el", NS_TOPMOST_P("drv=urn:myapp:driver"));
     xmqAddElement(doc, p, "el", NS_HERE("urn:myapp:driver"));
     xmqAddElement(doc, p, "el", NS_HERE_P("drv=urn:myapp:driver"));
+    xmqAddElement(doc, p, "el", NS_ANCESTOR("urn:myapp:driver"));
+    xmqAddElement(doc, p, "el", NS_ANCESTOR_P("drv=urn:myapp:driver"));
     @endcode
 */
 XMQReturnNode xmqAddElement(XMQDoc *doq, XMQNode *parent, const char *name, XMQNS ns);
@@ -665,6 +686,19 @@ XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, cons
     Create/update an attribute in an existing node.
 */
 XMQReturnAttr xmqSetAttribute(XMQDoc *doq, XMQNode *node, const char *name, const char *value, XMQNS ns);
+
+/**
+    Add a prefixed namespace to a node. It must have a prefix since the default namespace
+    can only be assigned when the node is created. If the prefix is already taken an error is returned.
+
+    @param doq The xmq document.
+    @param node The node into which the namespace declaration is put.
+    @param ns_uri The new namespace uri.
+    @param prefix The desired prefix.
+
+    @return XMQ_OK if all ok.
+*/
+XMQStatus xmqAddNamespace(XMQDoc *doq, XMQNode *node, const char *ns_uri, const char *prefix);
 
 /**
     Change the preferred prefix that was chosen automatically with xmqAddNamespace.
@@ -791,14 +825,32 @@ void xmqAnnotateOffsets(XMQDoc *doc, const char *attribute_name, const char *ns)
 /** Trim xml whitespace. */
 void xmqTrimWhitespace(XMQDoc *doc, int flags);
 
-/** Create a compact single line quote safely storing the content.
-    Output can for example be: 123, John, 'John Doe', '''There's a light!''', (&#10;'a line'&10;) */
+/**
+    Create a compact single line quote safely storing the content.
+    Output can for example be: 123, John, 'John Doe', "There's a light!", (&#10;'a line'&10;)
+
+    @param content The string to safely quote using xmq quoting and output on a single line.
+
+    @return Return a new null terminated buffer which the caller needs to free.
+*/
 char *xmqCompactQuote(const char *content);
 
-/** A parsing error will be described here! */
+/**
+   Extract the parsing error.
+
+   @param doc The document which we tried to parse.
+
+   @return An explanatory text of the error. Is freed when the document itself is freed.
+*/
 const char *xmqDocError(XMQDoc *doc);
 
-/** The error as errno. */
+/**
+   The error as status enum.
+
+   @param doc The document which we tried to parse.
+
+   @return The error status code.
+*/
 XMQStatus xmqDocErrno(XMQDoc *doc);
 
 /**
