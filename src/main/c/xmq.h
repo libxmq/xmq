@@ -619,18 +619,14 @@ typedef enum
     XMQ_NS_NONE,
     XMQ_NS_PARENT,
     XMQ_NS_HERE,
-    XMQ_NS_HERE_P,
-    XMQ_NS_ANCESTOR,
-    XMQ_NS_ANCESTOR_P,
+    XMQ_NS_ANCESTOR
 }
 NamespaceAction;
 
 typedef struct XMQNS XMQNS;
 struct XMQNS {
     NamespaceAction action;
-    // If action ends with _PREFIX then the uri must start with
-    // the prefix followed by an equals that separate the prefix
-    // from the the uri, eg "drv=urn:myapp:driver"
+    // A prefix (xyz) can be encoded into the uri: "{xyz}urn:myapp"
     const char *uri;
 };
 
@@ -640,14 +636,9 @@ struct XMQNS {
 #define NS_PARENT ((XMQNS){XMQ_NS_PARENT,NULL})
 /** Create a new namespace for this node. */
 #define NS_HERE(uri) ((XMQNS){XMQ_NS_HERE,uri})
-/** Create a new namespace and preferred prefix for this node. */
-#define NS_HERE_P(puri) ((XMQNS){XMQ_NS_HERE_P,puri})
 /** Search for the namespace in parent and parents parent etc.
     If not found, create the namespace in the root element. */
 #define NS_ANCESTOR(uri) ((XMQNS){XMQ_NS_ANCESTOR,uri})
-/** Search for the namespace with the prefix, in parent and parents parent etc.
-    If not found, create the namespace in the root element. */
-#define NS_ANCESTOR_P(puri) ((XMQNS){XMQ_NS_ANCESTOR_P,puri})
 
 /**
     Create a new root element.
@@ -670,9 +661,9 @@ XMQReturnNode xmqAddRootElement(XMQDoc *doq, const char *name, XMQNS ns);
     xmqAddElement(doc, p, "el", NS_NONE); // No namespace.
     xmqAddElement(doc, p, "el", NS_PARENT); // Inherit parent namespace.
     xmqAddElement(doc, p, "el", NS_HERE("urn:myapp:driver"));
-    xmqAddElement(doc, p, "el", NS_HERE_P("drv=urn:myapp:driver"));
+    xmqAddElement(doc, p, "el", NS_HERE("{drv}urn:myapp:driver"));
     xmqAddElement(doc, p, "el", NS_ANCESTOR("urn:myapp:driver"));
-    xmqAddElement(doc, p, "el", NS_ANCESTOR_P("drv=urn:myapp:driver"));
+    xmqAddElement(doc, p, "el", NS_ANCESTOR("{drv}urn:myapp:driver"));
     @endcode
 */
 XMQReturnNode xmqAddElement(XMQDoc *doq, XMQNode *parent, const char *name, XMQNS ns);

@@ -5421,37 +5421,38 @@ const char *get_prefix_and_uri(const char *puri, char **out_prefix);
 
 const char *get_prefix_and_uri(const char *puri, char **out_prefix)
 {
-    const char *eq = puri;
-    for (; *eq; ++eq)
+    if (*puri != '{')
     {
-        if (*eq == '=') break;
+        // No prefix.
+        *out_prefix = NULL;
+        return puri;
     }
-    if (*eq != '=') return NULL;
-    size_t len = eq-puri;
+
+    // We have a prefix, eg. {prefix}uri
+    // Find the closing brace.
+    const char *rb = puri;
+    for (; *rb; ++rb)
+    {
+        if (*rb == '}') break;
+    }
+    // Ouch, no right brace found, this is an error.
+    if (*rb != '}') return NULL;
+
+    size_t len = rb-puri-1;
     char *prefix = (char*)malloc(len+1);
-    memcpy(prefix, puri, len);
+    memcpy(prefix, puri+1, len);
     prefix[len] = 0;
-    const char *uri = eq+1;
+    const char *uri = rb+1;
     *out_prefix = prefix;
     return uri;
 }
-
 
 xmlNs *gen_ns_from_string(xmlNodePtr node, const char *puri);
 
 xmlNs *gen_ns_from_string(xmlNodePtr node, const char *puri)
 {
-    const char *eq = puri;
-    for (; *eq; ++eq)
-    {
-        if (*eq == '=') break;
-    }
-    if (*eq != '=') return NULL;
-    size_t len = eq-puri;
-    char *prefix = (char*)malloc(len+1);
-    memcpy(prefix, puri, len);
-    prefix[len] = 0;
-    const char *uri = eq+1;
+    char *prefix = NULL;
+    const char *uri = get_prefix_and_uri(puri, &prefix);
 
     xmlNs *nns = xmlNewNs(node, (const xmlChar *)uri, (const xmlChar*)prefix);
     free(prefix);
@@ -5492,32 +5493,25 @@ void fixup_ns(xmlNodePtr new_node, xmlNsPtr pns, XMQNS ns)
     }
     else if (ns.action == XMQ_NS_HERE)
     {
-        // New namespace in this node without a prefix.
-        nns = xmlNewNs(new_node, (const xmlChar *)ns.uri, NULL);
-    }
-    else if (ns.action == XMQ_NS_HERE_P)
-    {
-        // New namespace in this node with a prefix.
+        // New namespace in this node with or without a prefix.
         nns = gen_ns_from_string(new_node, ns.uri);
         if (!nns) return; //  (XMQReturnNode){ XMQ_ERROR_BAD_VALUE, NULL };
     }
     else if (ns.action == XMQ_NS_ANCESTOR)
     {
-        nns = xmlSearchNsByHref(NULL, new_node, (const xmlChar *)ns.uri);
-        if (!nns)
-        {
-            xmlNodePtr i = new_node;
-            while (i->parent) i = i->parent;
-            nns = xmlNewNs(i, (const xmlChar *)ns.uri, NULL);
-        }
-    }
-    else if (ns.action == XMQ_NS_ANCESTOR_P)
-    {
         char *prefix;
         const char *uri = get_prefix_and_uri(ns.uri, &prefix);
-        nns = xmlSearchNs(NULL, new_node, (const xmlChar *)prefix);
+        if (!prefix)
+        {
+            nns = xmlSearchNsByHref(NULL, new_node, (const xmlChar *)ns.uri);
+        }
+        else
+        {
+            nns = xmlSearchNs(NULL, new_node, (const xmlChar *)prefix);
+        }
         if (!nns)
         {
+            // Oups, no ancestor {prefix}uri found. Create the namespace.
             xmlNodePtr i = new_node;
             while (i->parent) i = i->parent;
             nns = xmlNewNs(i, (const xmlChar *)ns.uri, (const xmlChar *)prefix);

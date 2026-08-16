@@ -91,7 +91,7 @@ void test_building_dom2()
     XMQDoc *doc = rd.doc;
     void *ns;
 
-    XMQReturnNode rn = xmqAddRootElement(doc, "car", NS_HERE_P("abc=urn:cargo"));
+    XMQReturnNode rn = xmqAddRootElement(doc, "car", NS_HERE("{abc}urn:cargo"));
     assert(rn.status == XMQ_OK);
     XMQNode *car = rn.node;
     xmqAddKeyValue(doc, car, "model", "escargo", NS_PARENT);

@@ -111,13 +111,13 @@ void demonstrate_building_dom_2()
     assert(rd.status == XMQ_OK);
     XMQDoc *doc = rd.doc;
 
-    XMQReturnNode rn = xmqAddRootElement(doc, "robot", NS_HERE_P("krf=urn:kraftwerk"));
+    XMQReturnNode rn = xmqAddRootElement(doc, "robot", NS_HERE("{krf}urn:kraftwerk"));
     assert(rn.status == XMQ_OK);
     XMQNode *robot = rn.node;
     xmqAddKeyValue(doc, robot, "who", "we are", NS_PARENT);
     xmqAddKeyValue(doc, robot, "the", "robots", NS_PARENT);
 
-    rn = xmqAddElement(doc, robot, "car", NS_HERE_P("c=urn:cargo"));
+    rn = xmqAddElement(doc, robot, "car", NS_HERE("{c}urn:cargo"));
     assert(rn.status == XMQ_OK);
     xmqAddKeyValue(doc, rn.node, "model", "escargo", NS_PARENT);
 
