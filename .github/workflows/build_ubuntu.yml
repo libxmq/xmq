@@ -19,7 +19,7 @@ jobs:
     - id: INSTALL_ADDITIONAL_BUILD_DEPENDENCIES
       run: sudo apt install -y eatmydata
     - id: FETCH_DEPS
-      run: cd 3rdparty; eatmydata ./fetch_and_build.sh x86_64-pc-linux-gnu"
+      run: cd 3rdparty; eatmydata ./fetch_and_build.sh x86_64-pc-linux-gnu
     - id: CONFIGURE
       run: eatmydata ./configure --with-libxml2=3rdparty/libxml2-posix --with-libxslt=3rdparty/libxslt-posix
     - id: MAKE
