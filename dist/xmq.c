@@ -19904,7 +19904,7 @@ void print_value(XMQPrintState *ps,
     bool use_dquotes = prefer_dquotes;
 
     // Check if the single part will split into multiple parts and therefore needs to be compounded.
-    if (start || (!is_compound && node && !is_entity_node(node) && level != LEVEL_XMQ))
+    if (level != LEVEL_XMQ && (start || (!is_compound && node && !is_entity_node(node))))
     {
         // Check if there are leading ending quotes/whitespace. But also
         // if compact output and there are newlines inside.
