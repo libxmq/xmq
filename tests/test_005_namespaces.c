@@ -85,8 +85,7 @@ void test_building_doc_2()
 {
     // Build a document with a prefixed namespace.
     const char *exp = "abc:car(xmlns:abc=urn:cargo){abc:model=escargo abc:color=green}\n";
-    // <abc:car xmlns:abc="urn:cargo"><abc:model>escargo</model><abc:color>green</color></car>
-
+    // <abc:car xmlns:abc="urn:cargo"><abc:model>escargo</abc:model><abc:color>green</abc:color></abc:car>
     XMQReturnDoc rd = xmqNewDoc();
     assert(rd.status == XMQ_OK);
     XMQDoc *doc = rd.doc;
