@@ -38,6 +38,7 @@ then
         echo Building libxml2
         echo
 
+        autoreconf -fi
         ./autogen.sh --enable-static=yes --with-zlib=no --with-lzma=no --with-python=no --with-http=no
         make -j${NPROC}
     fi
@@ -61,6 +62,7 @@ then
         echo
 
         # Do this autogen twice to workaround problem with ltmain.sh missing.
+        autoreconf -fi
         ./autogen.sh --enable-static=yes --with-libxml-src=${DIR}/libxml2/ --with-python=no || true
         ./autogen.sh --enable-static=yes --with-libxml-src=${DIR}/libxml2/ --with-python=no
         make -j${NPROC}
@@ -104,6 +106,7 @@ then
         echo Building libxml2 posix
         echo
 
+        autoreconf -fi
         ./autogen.sh --enable-static=yes --with-zlib=no --with-lzma=no --with-python=no --with-http=no
         make -j${NPROC}
     fi
@@ -122,6 +125,7 @@ then
         echo Building static libxslt posix
         echo
 
+        autoreconf -fi
         ./autogen.sh --enable-static=yes --with-libxml-src=${DIR}/libxml2-posix/ --with-python=no
         make -j${NPROC}
     fi
@@ -164,6 +168,7 @@ then
         echo Building libxml2 posix aarch64
         echo
 
+        autoreconf -fi
         ./autogen.sh --host=aarch64-linux-gnu --enable-static=yes --with-zlib=no --with-lzma=no --with-python=no --with-http=no
         make
     fi
@@ -184,6 +189,7 @@ then
         echo Building static libxslt posix aarch64
         echo
 
+        autoreconf -fi
         ./autogen.sh --host=aarch64-linux-gnu --enable-static=yes --with-libxml-src=${DIR}/libxml2-posix-aarch64/ --with-python=no
         make
     fi
@@ -228,6 +234,7 @@ then
         echo Building libxml2 posix armv7l
         echo
 
+        autoreconf -fi
         ./autogen.sh --host=armv7l-linux-gnu --enable-static=yes --with-zlib=no --with-lzma=no --with-python=no --with-http=no
         make
     fi
@@ -248,6 +255,7 @@ then
         echo Building static libxslt posix armv7l
         echo
 
+        autoreconf -fi
         ./autogen.sh --host=armv7l-linux-gnu --enable-static=yes --with-libxml-src=${DIR}/libxml2-posix-armv7l/ --with-python=no
         make
     fi
@@ -289,6 +297,7 @@ then
         echo Building libxml2 winapi
         echo
 
+        autoreconf -fi
         ./autogen.sh --host=x86_64-w64-mingw32 --with-iconv=no --with-zlib=no --with-lzma=no --with-python=no --with-http=no
         make
     fi
@@ -308,6 +317,7 @@ then
         echo Building libxslt winapi
         echo
 
+        autoreconf -fi
         ./autogen.sh --host=x86_64-w64-mingw32 --with-crypto=no --with-libxml-src=${DIR}/libxml2-winapi --with-python=no || true
         ./autogen.sh --host=x86_64-w64-mingw32 --with-crypto=no --with-libxml-src=${DIR}/libxml2-winapi --with-python=no
         make
@@ -351,6 +361,7 @@ then
         echo Building libxml2 wasm
         echo
 
+        autoreconf -fi
         CC=emcc ./autogen.sh --host=wasm32-unknown-emscripten --with-iconv=no --with-zlib=no --with-lzma=no --with-python=no --with-http=no
         make
     fi
@@ -370,6 +381,7 @@ then
         echo Building libxslt wasm
         echo
 
+        autoreconf -fi
         CC=emcc ./autogen.sh --host=wasm32-unknown-emscripten --disable-bcrypt --with-crypto=no --with-libxml-src=${DIR}/libxml2-wasm --with-python=no || true
         CC=emcc ./autogen.sh --host=wasm32-unknown-emscripten --disable-bcrypt --with-crypto=no --with-libxml-src=${DIR}/libxml2-wasm --with-python=no
         make DIST_SUBDIRS=libxslt
@@ -415,6 +427,7 @@ then
         echo Building libxml2 filc
         echo
 
+        autoreconf -fi
         CC=filcc ./autogen.sh --enable-static=yes --with-zlib=no --with-lzma=no --with-python=no --with-http=no
         make -j${NPROC}
     fi
@@ -433,6 +446,7 @@ then
         echo Building static libxslt filc
         echo
 
+        autoreconf -fi
         CC=filcc ./autogen.sh --enable-static=yes --with-libxml-src=${DIR}/libxml2-filc --with-python=no
         make -j${NPROC}
     fi
