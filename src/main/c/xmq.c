@@ -120,7 +120,7 @@ void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared);
 void fixup_comments(XMQDoc *doq, xmlNode *node, int depth);
 void fixup_ns(xmlNodePtr new_node, xmlNsPtr pns, XMQNS ns);
 xmlNs *prep_ancestor_namespace(xmlNode *node, const char *uri, const char *prefix);
-xmlNs *create_unique_ns(xmlDoc *doc, xmlNode *node, const char *uri);
+xmlNs *create_unique_ns(xmlNode *unique_prefix_check_node, xmlNode *declaration_node, const char *uri);
 void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index);
 void handle_yaep_syntax_error(YaepParseRun *pr,
                               int err_tok_num,
@@ -1901,7 +1901,7 @@ xmlNs *gen_ns_from_string(xmlNodePtr node, const char *puri)
     return nns;
 }
 
-xmlNs *create_unique_ns(xmlDoc *doc, xmlNode *node, const char *uri)
+xmlNs *create_unique_ns(xmlNode *unique_prefix_check_node, xmlNode *declaration_node, const char *uri)
 {
     char prefix[32];
 
@@ -1909,9 +1909,9 @@ xmlNs *create_unique_ns(xmlDoc *doc, xmlNode *node, const char *uri)
     {
         snprintf(prefix, sizeof(prefix), "ns%u", i);
 
-        if (xmlSearchNs(doc, node, (const xmlChar *)prefix) == NULL)
+        if (xmlSearchNs(NULL, unique_prefix_check_node, (const xmlChar *)prefix) == NULL)
         {
-            return xmlNewNs(node, (const xmlChar *)uri, (const xmlChar *)prefix);
+            return xmlNewNs(declaration_node, (const xmlChar *)uri, (const xmlChar *)prefix);
         }
     }
     assert(false);
@@ -1935,7 +1935,16 @@ xmlNs *prep_ancestor_namespace(xmlNode *node, const char *uri, const char *prefi
         // Oups, no ancestor {prefix}uri found. Create the namespace.
         xmlNodePtr i = node;
         while (i->parent && i->parent->parent) i = i->parent;
-        ns = xmlNewNs(i, (const xmlChar *)uri, (const xmlChar *)prefix);
+        if (!prefix)
+        {
+            // There is no prefix, we need to prep one.
+            ns = create_unique_ns(node, i, uri);
+        }
+        else
+        {
+            // We have a desired prefix.
+            ns = xmlNewNs(i, (const xmlChar *)uri, (const xmlChar *)prefix);
+        }
     }
     return ns;
 }

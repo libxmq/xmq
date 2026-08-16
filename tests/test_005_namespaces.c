@@ -236,10 +236,10 @@ void test_building_dom5()
 
 void test_building_dom6()
 {
-    // We start with a default namespace urn:blue then later att an element
-    // with an ancestor namespace with a prefix {c}urn:coffee.
-    // This namespace does exist in bar, and that is used.
-    const char *exp = "box(xmlns=urn:blue xmlns:c=urn:coffee){bar{c:price=99}}\n";
+    // We start with a default namespace urn:blue then later add an element
+    // with an ancestor namespace without a prefix urn:coffee.
+    // This namespace does not exist and so a new unique prefix is selected.
+    const char *exp = "box(xmlns=urn:blue xmlns:ns1=urn:coffee){bar{ns1:price=99}}\n";
 
     XMQReturnDoc rd = xmqNewDoc();
     assert(rd.status == XMQ_OK);
@@ -253,9 +253,7 @@ void test_building_dom6()
     assert(rn.status == XMQ_OK);
     XMQNode *bar = rn.node;
 
-    xmqAddNamespace(doc, bar, NS_HERE("{c}urn:coffee"));
-
-    xmqAddKeyValue(doc, bar, "price", "99", NS_ANCESTOR("{c}urn:coffee"));
+    xmqAddKeyValue(doc, bar, "price", "99", NS_ANCESTOR("urn:coffee"));
 
     XMQOutputSettings *os = xmqNewOutputSettings();
 
@@ -278,6 +276,47 @@ void test_building_dom6()
     free(start);
 }
 
+void test_building_dom7()
+{
+    // We start with a default namespace urn:blue then later
+    // add key values with ANCESTOR namespaces. They are automatically
+    // assigned unique prefixes.
+    const char *exp = "box(xmlns=urn:blue xmlns:ns1=urn:soft xmlns:ns2=urn:bar){ns1:flower=many ns1:power=123 ns2:soft=petal}\n";
+
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
+
+    XMQReturnNode rn = xmqAddRootElement(doc, "box", NS_HERE("urn:blue"));
+    assert(rn.status == XMQ_OK);
+    XMQNode *box = rn.node;
+
+    xmqAddKeyValue(doc, box, "flower", "many", NS_ANCESTOR("urn:soft")); // gets the prefix ns1
+    xmqAddKeyValue(doc, box, "power", "123", NS_ANCESTOR("urn:soft")); // gets the same prefix.
+    xmqAddKeyValue(doc, box, "soft", "petal", NS_ANCESTOR("urn:bar")); // gets a new prefix ns2.
+
+    XMQOutputSettings *os = xmqNewOutputSettings();
+
+    xmqSetCompact(os, true);
+    xmqSetEscapeNewlines(os, true);
+    xmqSetUseColor(os, false);
+    xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
+    xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
+
+    char *start, *stop;
+    xmqSetupPrintMemory(os, &start, &stop);
+    xmqPrint(doc, os);
+
+    xmqFreeOutputSettings(os);
+
+    if (strcmp(start, exp))
+    {
+        printf("Building of dom tree failed. Got: %s\nExpected: %s\n", start, exp);
+        exit(1);
+    }
+    free(start);
+}
+
 int main(int argc, char **argv)
 {
     test_building_dom0();
@@ -286,4 +325,6 @@ int main(int argc, char **argv)
     test_building_dom3();
     test_building_dom4();
     test_building_dom5();
+    test_building_dom6();
+    test_building_dom7();
 }

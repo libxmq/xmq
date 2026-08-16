@@ -196,7 +196,9 @@ void demonstrate_building_dom_4()
     assert(rn.status == XMQ_OK);
     XMQNode *box = rn.node;
 
-    xmqAddKeyValue(doc, box, "flower", "many", NS_ANCESTOR("{gurka}urn:soft"));
+    xmqAddKeyValue(doc, box, "flower", "many", NS_ANCESTOR("urn:soft"));
+    xmqAddKeyValue(doc, box, "power", "123", NS_ANCESTOR("urn:soft"));
+    xmqAddKeyValue(doc, box, "soft", "petal", NS_ANCESTOR("urn:bar"));
 
     XMQOutputSettings *os = xmqNewOutputSettings();
 
@@ -212,7 +214,7 @@ void demonstrate_building_dom_4()
 
     xmqFreeOutputSettings(os);
 
-    const char *exp = "box(xmlns=urn:blue xmlns:gurka=urn:soft){gurka:flower=many}\n";
+    const char *exp = "box(xmlns=urn:blue xmlns:ns1=urn:soft xmlns:ns2=urn:bar){ns1:flower=many ns1:power=123 ns2:soft=petal}\n";
     if (strcmp(start, exp))
     {
         printf("Building of dom tree failed. Got: %s\nExpected: %s\n", start, exp);
