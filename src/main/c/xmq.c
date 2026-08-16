@@ -1988,11 +1988,10 @@ XMQStatus xmqAddNamespace(XMQDoc *doq, XMQNode *node, const char *ns_uri, const 
 {
     if (!doq || !node || !ns_uri || !prefix) return XMQ_ERROR_BAD_VALUE;
 
-    xmlNs **nspaces = NULL;
-    int n = xmlGetNsListSafe(doq->docptr_.xml, (xmlNodePtr)node, &nspaces);
+    xmlNs **nspaces = xmlGetNsList(doq->docptr_.xml, (xmlNode*)node);
 
     bool found = false;
-    if (!n)
+    if (nspaces)
     {
         for (xmlNsPtr *i = nspaces; *i; ++i)
         {
