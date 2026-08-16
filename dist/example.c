@@ -306,18 +306,18 @@ void demonstrate_xmq_line_printf()
 
 int main(int argc, char **argv)
 {
-/*    demonstrate_building_dom_0();
+    demonstrate_building_dom_0();
     demonstrate_building_dom_1();
     demonstrate_building_dom_2();
-    demonstrate_building_dom_3();*/
+    demonstrate_building_dom_3();
     demonstrate_building_dom_4();
-/*
+
     demonstrate_load_xmq_file();
 
     demonstrate_ixml_parse();
 
     demonstrate_xmq_line_printf();
-*/
+
     return 0;
 }
 
