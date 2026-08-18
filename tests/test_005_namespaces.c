@@ -365,6 +365,124 @@ void test_building_doc_8()
     free(start);
 }
 
+void test_building_doc_9()
+{
+    // Add attributes to key value element. The attributes get the NS_NONE namespace.
+    const char *exp = "p:flower(xmlns:p=urn:power){p:petals(id=123 S)=many}\n";
+    // <p:flower xmlns:p="urn:power"><p:petals id="123" S="">many</p:petals></p:flower>
+
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
+
+    XMQReturnNode rn = xmqAddRootElement(doc, "flower", NS_HERE("{p}urn:power"));
+    assert(rn.status == XMQ_OK);
+
+    XMQNode *robot = rn.node;
+    xmqAddKeyValueWithAttrs(doc, robot, "petals", "many", NS_PARENT,
+                            "id", "123",
+                            "S", "");
+
+    XMQOutputSettings *os = xmqNewOutputSettings();
+
+    xmqSetCompact(os, true);
+    xmqSetEscapeNewlines(os, true);
+    xmqSetUseColor(os, false);
+    xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
+    xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
+
+    char *start, *stop;
+    xmqSetupPrintMemory(os, &start, &stop);
+    xmqPrint(doc, os);
+
+    xmqFreeOutputSettings(os);
+
+    if (strcmp(start, exp))
+    {
+        printf("Building of dom tree failed. Got: %s\nExpected: %s\n", start, exp);
+        exit(1);
+    }
+    free(start);
+}
+
+void test_building_doc_10()
+{
+    // Create json output.
+    const char *exp = "{\"_\":\"request\",\"key\":\"123\",\"names\":[\"Bohrlaika\",\"Wolfbane\",\"Isildur\"]}\n";
+
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
+
+    XMQReturnNode request = xmqAddRootElement(doc, "request", NS_NONE);
+
+    xmqAddKeyValueWithAttrs(doc, request.node, "key", "123", NS_PARENT, "S", "", END_OF_ATTRS);
+
+    XMQReturnNode array = xmqAddElementWithAttrs(doc, request.node, "names", NS_PARENT, "A", "", END_OF_ATTRS);
+
+    xmqAddKeyValueWithAttrs(doc, array.node, "_", "Bohrlaika", NS_PARENT, "S", "", END_OF_ATTRS);
+    xmqAddKeyValueWithAttrs(doc, array.node, "_", "Wolfbane", NS_PARENT, "S", "", END_OF_ATTRS);
+    xmqAddKeyValueWithAttrs(doc, array.node, "_", "Isildur", NS_PARENT, "S", "", END_OF_ATTRS);
+
+    XMQOutputSettings *os = xmqNewOutputSettings();
+
+    xmqSetCompact(os, true);
+    xmqSetEscapeNewlines(os, true);
+    xmqSetUseColor(os, false);
+    xmqSetOutputFormat(os, XMQ_CONTENT_JSON);
+    xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
+
+    char *start, *stop;
+    xmqSetupPrintMemory(os, &start, &stop);
+    xmqPrint(doc, os);
+
+    xmqFreeOutputSettings(os);
+
+    if (strcmp(start, exp))
+    {
+        printf("Building of dom tree failed. Got: %s\nExpected: %s\n", start, exp);
+        exit(1);
+    }
+    free(start);
+}
+
+void test_building_doc_11()
+{
+    // Create html output.
+    const char *exp = "<!DOCTYPE html>\n<html><body><a href=\"https://libxmq.org\"></a></body></html>\n";
+
+    XMQReturnDoc page = xmqNewDoc();
+    XMQDoc *doc = page.doc;
+
+    xmqSetDocType(doc, "html");
+    XMQReturnNode html = xmqAddRootElement(doc, "html", NS_NONE);
+
+    XMQReturnNode body = xmqAddElement(doc, html.node, "body", NS_PARENT);
+
+    XMQReturnNode a = xmqAddElementWithAttrs(doc, body.node, "a", NS_PARENT, "href", "https://libxmq.org", END_OF_ATTRS);
+
+    XMQOutputSettings *os = xmqNewOutputSettings();
+
+    xmqSetCompact(os, true);
+    xmqSetEscapeNewlines(os, true);
+    xmqSetUseColor(os, false);
+    xmqSetOutputFormat(os, XMQ_CONTENT_HTML);
+    xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
+
+    char *start, *stop;
+    xmqSetupPrintMemory(os, &start, &stop);
+    xmqPrint(doc, os);
+
+    xmqFreeOutputSettings(os);
+
+    if (strcmp(start, exp))
+    {
+        printf("Building of dom tree failed. Got: %s\nExpected: %s\n", start, exp);
+        exit(1);
+    }
+    free(start);
+}
+
 int main(int argc, char **argv)
 {
     test_building_doc_0();
@@ -376,4 +494,7 @@ int main(int argc, char **argv)
     test_building_doc_6();
     test_building_doc_7();
     test_building_doc_8();
+    test_building_doc_9();
+    test_building_doc_10();
+    test_building_doc_11();
 }

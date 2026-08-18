@@ -1839,6 +1839,13 @@ XMQReturnDoc xmqNewDoc()
     return (XMQReturnDoc){ XMQ_OK, d };
 }
 
+XMQStatus xmqSetDocType(XMQDoc *doq, const char *name)
+{
+    xmlDtdPtr dtd = xmlCreateIntSubset(doq->docptr_.xml, (const xmlChar *)name, NULL, NULL);
+    if (dtd) return XMQ_OK;
+    return XMQ_ERROR_OOM;
+}
+
 /*
 XMQNSPtr xmqNamespace(XMQDoc *doq, XMQNode *node, const char *name, const char *uri)
 {
@@ -2058,6 +2065,64 @@ XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, cons
     xmlAddChild(new_node, text);
 
     return (XMQReturnNode) { XMQ_OK, (XMQNode*)new_node };
+}
+
+XMQStatus xmq_add_attrs(XMQDoc *doc, XMQNode *node, va_list ap);
+XMQStatus xmq_add_attrs(XMQDoc *doc, XMQNode *node, va_list ap)
+{
+    const char *format;
+
+    for (;;)
+    {
+        const char *name = va_arg(ap, const char*);
+        if (!name) break;
+        const char *value = va_arg(ap, const char*);
+        if (!value) value = "";
+        XMQReturnAttr ra = xmqSetAttribute(doc, node, name, value, NS_NONE);
+        if (ra.status != XMQ_OK) break;
+    }
+    return XMQ_OK;
+}
+
+XMQReturnNode xmqAddKeyValueWithAttrs(XMQDoc *doq,
+                                      XMQNode *parent,
+                                      const char *key,
+                                      const char *value,
+                                      XMQNS ns,
+                                      ...)
+{
+    va_list ap;
+    va_start(ap, ns);
+
+    XMQReturnNode rn = xmqAddKeyValue(doq, parent, key, value, ns);
+    if (rn.status == XMQ_OK)
+    {
+        xmq_add_attrs(doq, rn.node, ap);
+    }
+
+    va_end(ap);
+
+    return rn;
+}
+
+XMQReturnNode xmqAddElementWithAttrs(XMQDoc *doq,
+                                     XMQNode *parent,
+                                     const char *name,
+                                     XMQNS ns,
+                                     ...)
+{
+    va_list ap;
+    va_start(ap, ns);
+
+    XMQReturnNode rn = xmqAddElement(doq, parent, name, ns);
+    if (rn.status == XMQ_OK)
+    {
+        xmq_add_attrs(doq, rn.node, ap);
+    }
+
+    va_end(ap);
+
+    return rn;
 }
 
 XMQReturnAttr xmqSetAttribute(XMQDoc *doq, XMQNode *node, const char *name, const char *value, XMQNS ns)

@@ -21,6 +21,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+/**
+ * @mainpage libxmq
+ *
+ * libxmq is a library for working with xml/json and xmq.
+ *
+ *
+ * @section getting_started Getting started
+ *
+ * ...
+ *
+ * @section api API overview
+ *
+ * See @ref documents and @ref nodes.
+ */
+
 #ifndef XMQ_H
 #define XMQ_H
 
@@ -686,15 +701,32 @@ XMQReturnNode xmqAddElement(XMQDoc *doq, XMQNode *parent, const char *name, XMQN
     @ns The namespace setting.
 
     @code
-    xmqAddElement(doc, p, "el", NS_NONE); // No namespace.
-    xmqAddElement(doc, p, "el", NS_PARENT); // Inherit parent namespace.
-    xmqAddElement(doc, p, "el", NS_HERE("urn:myapp:driver"));
-    xmqAddElement(doc, p, "el", NS_HERE("{drv}urn:myapp:driver"));
-    xmqAddElement(doc, p, "el", NS_ANCESTOR("urn:myapp:driver"));
-    xmqAddElement(doc, p, "el", NS_ANCESTOR("{drv}urn:myapp:driver"));
+    xmqAddKeyValue(doc, p, "price", "123", NS_PARENT);
     @endcode
 */
 XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, const char *value, XMQNS ns);
+
+/**
+    Create a key value with attributes under an existing node.
+
+    @doq The xmq document.
+    @parent The parent in which the key value is created.
+    @key The key.
+    @value The value.
+    @ns The namespace setting.
+    @attrs
+
+    @code
+    xmqAddKeyValueAttrs(doc, p, "p", "hello", NS_NONE, "id", "123");
+    // <p id="123">hello</p>
+    @endcode
+*/
+XMQReturnNode xmqAddKeyValueWithAttrs(XMQDoc *doq,
+                                      XMQNode *parent,
+                                      const char *key,
+                                      const char *value,
+                                      XMQNS ns,
+                                      ...);
 
 /**
     Create/update an attribute in an existing node.

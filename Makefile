@@ -264,10 +264,13 @@ PACKAGE_VERSION:=$(shell cat dist/VERSION)
 
 doxygen: build/doxygen
 
-build/doxygen:
+build/doxygen: build/Doxygenlayout.xml
 	rm -rf build/doxygen
 	mkdir -p build/doxygen
 	doxygen doc/Doxyfile
+
+build/Doxygenlayout.xml: doc/Doxygenlayout.xmq
+	xmq doc/Doxygenlayout.xmq to-xml > build/Doxygenlayout.xml
 
 .PHONY: build/doxygen
 
