@@ -5398,6 +5398,13 @@ XMQReturnDoc xmqNewDoc()
     return (XMQReturnDoc){ XMQ_OK, d };
 }
 
+XMQStatus xmqSetDocType(XMQDoc *doq, const char *name)
+{
+    xmlDtdPtr dtd = xmlCreateIntSubset(doq->docptr_.xml, (const xmlChar *)name, NULL, NULL);
+    if (dtd) return XMQ_OK;
+    return XMQ_ERROR_OOM;
+}
+
 /*
 XMQNSPtr xmqNamespace(XMQDoc *doq, XMQNode *node, const char *name, const char *uri)
 {
@@ -5647,6 +5654,26 @@ XMQReturnNode xmqAddKeyValueWithAttrs(XMQDoc *doq,
     va_start(ap, ns);
 
     XMQReturnNode rn = xmqAddKeyValue(doq, parent, key, value, ns);
+    if (rn.status == XMQ_OK)
+    {
+        xmq_add_attrs(doq, rn.node, ap);
+    }
+
+    va_end(ap);
+
+    return rn;
+}
+
+XMQReturnNode xmqAddElementWithAttrs(XMQDoc *doq,
+                                     XMQNode *parent,
+                                     const char *name,
+                                     XMQNS ns,
+                                     ...)
+{
+    va_list ap;
+    va_start(ap, ns);
+
+    XMQReturnNode rn = xmqAddElement(doq, parent, name, ns);
     if (rn.status == XMQ_OK)
     {
         xmq_add_attrs(doq, rn.node, ap);

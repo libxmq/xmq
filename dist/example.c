@@ -49,7 +49,8 @@ void demonstrate_building_dom_0()
     XMQReturnNode rn = xmqAddRootElement(doc, "greeting", NS_NONE);
     assert(rn.status == XMQ_OK);
     XMQNode *car = rn.node;
-    xmqAddKeyValue(doc, car, "hello", "world", NS_PARENT);
+    rn = xmqAddKeyValue(doc, car, "hello", "world", NS_PARENT);
+    assert(rn.status == XMQ_OK);
 
     XMQOutputSettings *os = xmqNewOutputSettings();
 
@@ -72,6 +73,93 @@ void demonstrate_building_dom_0()
     free(start);
 }
 
+void demonstrate_building_html()
+{
+    // Create html output.
+    const char *exp = "<!DOCTYPE html>\n<html><body><a href=\"https://libxmq.org\"></a></body></html>\n";
+
+    XMQReturnDoc page = xmqNewDoc();
+    assert(page.status == XMQ_OK);
+    XMQDoc *doc = page.doc;
+
+    XMQStatus status = xmqSetDocType(doc, "html");
+    assert(status == XMQ_OK);
+
+    XMQReturnNode html = xmqAddRootElement(doc, "html", NS_NONE);
+    assert(html.status == XMQ_OK);
+
+    XMQReturnNode body = xmqAddElement(doc, html.node, "body", NS_PARENT);
+    assert(body.status == XMQ_OK);
+
+    XMQReturnNode a = xmqAddElementWithAttrs(doc, body.node, "a", NS_PARENT, "href", "https://libxmq.org", END_OF_ATTRS);
+    assert(a.status == XMQ_OK);
+
+    XMQOutputSettings *os = xmqNewOutputSettings();
+
+    xmqSetCompact(os, true);
+    xmqSetEscapeNewlines(os, true);
+    xmqSetUseColor(os, false);
+    xmqSetOutputFormat(os, XMQ_CONTENT_HTML);
+    xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
+
+    char *start, *stop;
+    xmqSetupPrintMemory(os, &start, &stop);
+    xmqPrint(doc, os);
+
+    xmqFreeOutputSettings(os);
+
+    if (strcmp(start, exp))
+    {
+        printf("Building of dom tree failed. Got: %s\nExpected: %s\n", start, exp);
+        exit(1);
+    }
+    free(start);
+}
+
+void demonstrate_building_json()
+{
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
+
+    XMQReturnNode rn = xmqAddRootElement(doc, "request", NS_NONE);
+    assert(rn.status == XMQ_OK);
+    XMQNode *request = rn.node;
+
+    rn = xmqAddKeyValueWithAttrs(doc, request, "id", "123", NS_NONE, "S", "", END_OF_ATTRS);
+    assert(rn.status == XMQ_OK);
+
+    XMQReturnNode names = xmqAddElementWithAttrs(doc, request, "names", NS_NONE, "A", "", END_OF_ATTRS);
+
+    rn = xmqAddKeyValue(doc, names.node, "_", "samuel", NS_NONE);
+    assert(rn.status == XMQ_OK);
+
+    rn = xmqAddKeyValue(doc, names.node, "_", "isildur", NS_NONE);
+    assert(rn.status == XMQ_OK);
+
+    XMQOutputSettings *os = xmqNewOutputSettings();
+
+    xmqSetCompact(os, true);
+    xmqSetEscapeNewlines(os, true);
+    xmqSetUseColor(os, false);
+    xmqSetOutputFormat(os, XMQ_CONTENT_JSON);
+    xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
+
+    char *start, *stop;
+    xmqSetupPrintMemory(os, &start, &stop);
+    xmqPrint(doc, os);
+
+    xmqFreeOutputSettings(os);
+
+    const char *exp = "{\"_\":\"request\",\"id\":\"123\",\"names\":[\"samuel\",\"isildur\"]}\n";
+    if (strcmp(start, exp))
+    {
+        printf("Building of dom tree failed. Got: %s\nExpected: %s\n", start, exp);
+        exit(1);
+    }
+    free(start);
+}
+
 void demonstrate_building_dom_1()
 {
     XMQReturnDoc rd = xmqNewDoc();
@@ -81,8 +169,12 @@ void demonstrate_building_dom_1()
     XMQReturnNode rn = xmqAddRootElement(doc, "car", NS_HERE("urn:cargo"));
     assert(rn.status == XMQ_OK);
     XMQNode *car = rn.node;
-    xmqAddKeyValue(doc, car, "model", "escargo", NS_PARENT);
-    xmqAddKeyValue(doc, car, "color", "green", NS_PARENT);
+
+    rn = xmqAddKeyValue(doc, car, "model", "escargo", NS_PARENT);
+    assert(rn.status == XMQ_OK);
+
+    rn = xmqAddKeyValue(doc, car, "color", "green", NS_PARENT);
+    assert(rn.status == XMQ_OK);
 
     XMQOutputSettings *os = xmqNewOutputSettings();
 
@@ -114,16 +206,23 @@ void demonstrate_building_dom_2()
     XMQReturnNode rn = xmqAddRootElement(doc, "robot", NS_HERE("{krf}urn:kraftwerk"));
     assert(rn.status == XMQ_OK);
     XMQNode *robot = rn.node;
-    xmqAddKeyValue(doc, robot, "who", "we are", NS_PARENT);
-    xmqAddKeyValue(doc, robot, "the", "robots", NS_PARENT);
+    rn = xmqAddKeyValue(doc, robot, "who", "we are", NS_PARENT);
+    assert(rn.status == XMQ_OK);
+
+    rn = xmqAddKeyValue(doc, robot, "the", "robots", NS_PARENT);
+    assert(rn.status == XMQ_OK);
 
     rn = xmqAddElement(doc, robot, "car", NS_HERE("{c}urn:cargo"));
     assert(rn.status == XMQ_OK);
-    xmqAddKeyValue(doc, rn.node, "model", "escargo", NS_PARENT);
+
+    rn = xmqAddKeyValue(doc, rn.node, "model", "escargo", NS_PARENT);
+    assert(rn.status == XMQ_OK);
 
     rn = xmqAddElement(doc, robot, "box", NS_NONE);
     assert(rn.status == XMQ_OK);
-    xmqAddKeyValue(doc, rn.node, "color", "blue", NS_PARENT);
+
+    rn = xmqAddKeyValue(doc, rn.node, "color", "blue", NS_PARENT);
+    assert(rn.status == XMQ_OK);
 
     XMQOutputSettings *os = xmqNewOutputSettings();
 
@@ -161,7 +260,8 @@ void demonstrate_building_dom_3()
     assert(rc == XMQ_OK);
 
     XMQNode *robot = rn.node;
-    xmqAddKeyValue(doc, robot, "petals", "many", NS_ANCESTOR("urn:soft"));
+    rn = xmqAddKeyValue(doc, robot, "petals", "many", NS_ANCESTOR("urn:soft"));
+    assert(rn.status == XMQ_OK);
 
     XMQOutputSettings *os = xmqNewOutputSettings();
 
@@ -196,9 +296,14 @@ void demonstrate_building_dom_4()
     assert(rn.status == XMQ_OK);
     XMQNode *box = rn.node;
 
-    xmqAddKeyValue(doc, box, "flower", "many", NS_ANCESTOR("urn:soft"));
-    xmqAddKeyValue(doc, box, "power", "123", NS_ANCESTOR("urn:soft"));
-    xmqAddKeyValue(doc, box, "soft", "petal", NS_ANCESTOR("urn:bar"));
+    rn = xmqAddKeyValue(doc, box, "flower", "many", NS_ANCESTOR("urn:soft"));
+    assert(rn.status == XMQ_OK);
+
+    rn = xmqAddKeyValue(doc, box, "power", "123", NS_ANCESTOR("urn:soft"));
+    assert(rn.status == XMQ_OK);
+
+    rn = xmqAddKeyValue(doc, box, "soft", "petal", NS_ANCESTOR("urn:bar"));
+    assert(rn.status == XMQ_OK);
 
     XMQOutputSettings *os = xmqNewOutputSettings();
 
@@ -307,6 +412,8 @@ void demonstrate_xmq_line_printf()
 int main(int argc, char **argv)
 {
     demonstrate_building_dom_0();
+    demonstrate_building_html();
+    demonstrate_building_json();
     demonstrate_building_dom_1();
     demonstrate_building_dom_2();
     demonstrate_building_dom_3();

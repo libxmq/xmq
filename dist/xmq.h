@@ -655,6 +655,20 @@ struct XMQNS {
     If not found, create the namespace in the root element. */
 #define NS_ANCESTOR(uri) ((XMQNS){XMQ_NS_ANCESTOR,uri})
 
+#define END_OF_ATTRS NULL
+
+/**
+    Set a doctype for the document.
+
+    @doq The xmq document.
+    @type The name of the new element.
+
+    @code
+    xmqSetDocType(doc, "html");
+    @endcode
+*/
+XMQStatus xmqSetDocType(XMQDoc *doq, const char *name);
+
 /**
     Create a new root element.
 
@@ -690,6 +704,21 @@ XMQReturnNode xmqAddRootElement(XMQDoc *doq, const char *name, XMQNS ns);
     @endcode
 */
 XMQReturnNode xmqAddElement(XMQDoc *doq, XMQNode *parent, const char *name, XMQNS ns);
+
+/**
+    Create a new element node below an existing element with attributes.
+
+    @doq The xmq document.
+    @parent The exiting element.
+    @name The name of the new element.
+    @ns The namespace setting.
+
+    @code
+    xmqAddElementWithAttrs(doc, p, "div", NS_PARENT, "id", "123", "class", "info");
+    xmqAddElementWithAttrs(doc, p, "a", NS_PARENT, "href", "https://libxmq.org");
+    @endcode
+*/
+XMQReturnNode xmqAddElementWithAttrs(XMQDoc *doq, XMQNode *parent, const char *name, XMQNS ns, ...);
 
 /**
     Create a key value under an existing node.
