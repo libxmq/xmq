@@ -381,7 +381,8 @@ void test_building_doc_9()
     XMQNode *robot = rn.node;
     xmqAddKeyValueWithAttrs(doc, robot, "petals", "many", NS_PARENT,
                             "id", "123",
-                            "S", "");
+                            "S", "",
+                            END_OF_ATTRS);
 
     XMQOutputSettings *os = xmqNewOutputSettings();
 
