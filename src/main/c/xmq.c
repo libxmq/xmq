@@ -2067,16 +2067,17 @@ XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, cons
     return (XMQReturnNode) { XMQ_OK, (XMQNode*)new_node };
 }
 
-XMQStatus xmq_add_attrs(XMQDoc *doc, XMQNode *node, va_list ap);
-XMQStatus xmq_add_attrs(XMQDoc *doc, XMQNode *node, va_list ap)
+XMQStatus xmq_add_attrs(XMQDoc *doc, XMQNode *node, const XMQAddAttr *attrs, size_t num_attrs);
+XMQStatus xmq_add_attrs(XMQDoc *doc, XMQNode *node, const XMQAddAttr *attrs, size_t num_attrs)
 {
     const char *format;
 
-    for (;;)
+    for (size_t i = 0; i < num_attrs; ++i)
     {
-        const char *name = va_arg(ap, const char*);
+        const XMQAddAttr *aa = attrs+i;
+        const char *name = aa->name;
         if (!name) break;
-        const char *value = va_arg(ap, const char*);
+        const char *value = aa->value;
         if (!value) value = "";
         XMQReturnAttr ra = xmqSetAttribute(doc, node, name, value, NS_NONE);
         if (ra.status != XMQ_OK) break;
@@ -2089,18 +2090,14 @@ XMQReturnNode xmqAddKeyValueWithAttrs(XMQDoc *doq,
                                       const char *key,
                                       const char *value,
                                       XMQNS ns,
-                                      ...)
+                                      const XMQAddAttr *attrs,
+                                      size_t num_attrs)
 {
-    va_list ap;
-    va_start(ap, ns);
-
     XMQReturnNode rn = xmqAddKeyValue(doq, parent, key, value, ns);
     if (rn.status == XMQ_OK)
     {
-        xmq_add_attrs(doq, rn.node, ap);
+        xmq_add_attrs(doq, rn.node, attrs, num_attrs);
     }
-
-    va_end(ap);
 
     return rn;
 }
@@ -2109,18 +2106,14 @@ XMQReturnNode xmqAddElementWithAttrs(XMQDoc *doq,
                                      XMQNode *parent,
                                      const char *name,
                                      XMQNS ns,
-                                     ...)
+                                     const XMQAddAttr *attrs,
+                                     size_t num_attrs)
 {
-    va_list ap;
-    va_start(ap, ns);
-
     XMQReturnNode rn = xmqAddElement(doq, parent, name, ns);
     if (rn.status == XMQ_OK)
     {
-        xmq_add_attrs(doq, rn.node, ap);
+        xmq_add_attrs(doq, rn.node, attrs, num_attrs);
     }
-
-    va_end(ap);
 
     return rn;
 }

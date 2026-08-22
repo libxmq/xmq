@@ -450,6 +450,16 @@ typedef enum
 
 typedef struct XMQLineConfig XMQLineConfig;
 
+typedef struct XMQAddAttr XMQAddAttr;
+struct XMQAddAttr {
+    const char *name;
+    const char *value;
+};
+
+#define XMQ_ATTRS(...) \
+    (XMQAddAttr[]){ __VA_ARGS__ }, \
+    sizeof((XMQAddAttr[]){ __VA_ARGS__ }) / sizeof(XMQAddAttr)
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////// FUNCTIONS  /////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -712,13 +722,22 @@ XMQReturnNode xmqAddElement(XMQDoc *doq, XMQNode *parent, const char *name, XMQN
     @parent The exiting element.
     @name The name of the new element.
     @ns The namespace setting.
+    @attrs An array of attribute objects
+    @num_attrs How many attribute objects.
 
     @code
-    xmqAddElementWithAttrs(doc, p, "div", NS_PARENT, "id", "123", "class", "info");
-    xmqAddElementWithAttrs(doc, p, "a", NS_PARENT, "href", "https://libxmq.org");
+    xmqAddElementWithAttrs(doc, p, "div", NS_PARENT,
+                           XMQ_ATTRS( { "id", "123" },
+                                      { "class", "info" } ));
+    xmqAddElementWithAttrs(doc, p, "a", NS_PARENT, XMQ_ATTRS( { "href", "https://libxmq.org" } ));
     @endcode
 */
-XMQReturnNode xmqAddElementWithAttrs(XMQDoc *doq, XMQNode *parent, const char *name, XMQNS ns, ...);
+XMQReturnNode xmqAddElementWithAttrs(XMQDoc *doq,
+                                     XMQNode *parent,
+                                     const char *name,
+                                     XMQNS ns,
+                                     const XMQAddAttr *attrs,
+                                     size_t num_attrs);
 
 /**
     Create a key value under an existing node.
@@ -746,7 +765,7 @@ XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, cons
     @attrs
 
     @code
-    xmqAddKeyValueAttrs(doc, p, "p", "hello", NS_NONE, "id", "123");
+    xmqAddKeyValueWithAttrs(doc, p, "p", "hello", NS_NONE, XMQ_ATTRS( { "id", "123" } ));
     // <p id="123">hello</p>
     @endcode
 */
@@ -755,7 +774,8 @@ XMQReturnNode xmqAddKeyValueWithAttrs(XMQDoc *doq,
                                       const char *key,
                                       const char *value,
                                       XMQNS ns,
-                                      ...);
+                                      const XMQAddAttr *attrs,
+                                      size_t num_attrs);
 
 /**
     Create/update an attribute in an existing node.

@@ -91,7 +91,8 @@ void demonstrate_building_html()
     XMQReturnNode body = xmqAddElement(doc, html.node, "body", NS_PARENT);
     assert(body.status == XMQ_OK);
 
-    XMQReturnNode a = xmqAddElementWithAttrs(doc, body.node, "a", NS_PARENT, "href", "https://libxmq.org", END_OF_ATTRS);
+    XMQReturnNode a = xmqAddElementWithAttrs(doc, body.node, "a", NS_PARENT,
+                                             XMQ_ATTRS( { "href", "https://libxmq.org" } ));
     assert(a.status == XMQ_OK);
 
     XMQOutputSettings *os = xmqNewOutputSettings();
@@ -126,10 +127,12 @@ void demonstrate_building_json()
     assert(rn.status == XMQ_OK);
     XMQNode *request = rn.node;
 
-    rn = xmqAddKeyValueWithAttrs(doc, request, "id", "123", NS_NONE, "S", "", END_OF_ATTRS);
+    rn = xmqAddKeyValueWithAttrs(doc, request, "id", "123", NS_NONE,
+                                 XMQ_ATTRS( { "S", "" } ));
     assert(rn.status == XMQ_OK);
 
-    XMQReturnNode names = xmqAddElementWithAttrs(doc, request, "names", NS_NONE, "A", "", END_OF_ATTRS);
+    XMQReturnNode names = xmqAddElementWithAttrs(doc, request, "names", NS_NONE,
+                                                 XMQ_ATTRS( { "A", "" } ));
 
     rn = xmqAddKeyValue(doc, names.node, "_", "samuel", NS_NONE);
     assert(rn.status == XMQ_OK);

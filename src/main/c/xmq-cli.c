@@ -827,10 +827,18 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
     if (group == XMQ_CLI_CMD_GROUP_TO ||
         group == XMQ_CLI_CMD_GROUP_RENDER)
     {
-        if (!strcmp(arg, "--compact"))
+        if (!strcmp(arg, "-c") ||
+            !strcmp(arg, "--compact"))
         {
             command->add_indent = 0;
             command->compact = true;
+            return true;
+        }
+        if (!strcmp(arg, "-p") ||
+            !strcmp(arg, "--pretty"))
+        {
+            command->add_indent = 4;
+            command->compact = false;
             return true;
         }
     }
@@ -4550,6 +4558,12 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
         {
             verbose_("xmq=", "found command %s", cmd_name(command->cmd));
 
+            if (command->cmd == XMQ_CLI_CMD_TO_JSON)
+            {
+                // By default print json in compact form. Can be changed with -p or --pretty.
+                command->add_indent = 0;
+                command->compact = true;
+            }
             // Now handle any command options and args.
             for (; argv[i]; ++i)
             {

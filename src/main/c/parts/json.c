@@ -9,6 +9,7 @@
 #include"membuffer.h"
 #include"xmq_internals.h"
 #include"xmq_parser.h"
+#include"xmq_printer.h"
 #include"stack.h"
 #include"text.h"
 #include"utf8.h"
@@ -1176,6 +1177,7 @@ void json_print_array_with_children(XMQPrintState *ps,
         // We have a containing node, then we can print this using "name" : [ ... ]
         json_print_element_name(ps, container, node, 1, 0);
         print_utf8(ps, COLOR_none, 1, ":", NULL);
+        if (!ps->output_settings->compact) print_utf8(ps, COLOR_none, 1, " ", NULL);
     }
 
     void *from = xml_first_child(node);
@@ -1229,6 +1231,7 @@ XMQStatus json_print_attribute(XMQPrintState *ps, xmlAttr *a)
         print_utf8(ps, COLOR_none, 1, ":", NULL);
     }
     print_utf8(ps, COLOR_none, 2, quoted_key, NULL, "\":", NULL);
+    if (!ps->output_settings->compact) print_utf8(ps, COLOR_none, 1, " ", NULL);
     free(quoted_key);
 
     if (a->children != NULL)
@@ -1265,6 +1268,7 @@ void json_print_namespace_declaration(XMQPrintState *ps, xmlNs *ns)
         print_utf8(ps, COLOR_none, 1, prefix, NULL);
     }
     print_utf8(ps, COLOR_none, 1, "\":", NULL);
+    if (!ps->output_settings->compact) print_utf8(ps, COLOR_none, 1, " ", NULL);
 
     const char *v = xml_namespace_href(ns);
 
@@ -1311,6 +1315,7 @@ void json_print_element_with_children(XMQPrintState *ps,
         // We have a containing node, then we can print this using "name" : { ... }
         json_print_element_name(ps, container, node, total, used);
         print_utf8(ps, COLOR_none, 1, ":", NULL);
+        if (!ps->output_settings->compact) print_utf8(ps, COLOR_none, 1, " ", NULL);
     }
 
     void *from = xml_first_child(node);
@@ -1320,6 +1325,8 @@ void json_print_element_with_children(XMQPrintState *ps,
     ps->last_char = '{';
 
     ps->line_indent += ps->output_settings->add_indent;
+
+    if (!ps->output_settings->compact) print_nl_and_indent(ps, NULL, NULL);
 
     while (!container && ps->pre_nodes && ps->pre_nodes->size > 0)
     {
@@ -1348,7 +1355,8 @@ void json_print_element_with_children(XMQPrintState *ps,
         // I.e. x { a=1 } -> { "_":"x", "a":1 }
         json_check_comma(ps);
         print_utf8(ps, COLOR_none, 1, "\"_\":", NULL);
-        ps->last_char = ':';
+        if (!ps->output_settings->compact) print_utf8(ps, COLOR_none, 1, " ", NULL);
+        ps->last_char = ' ';
         json_print_element_name(ps, container, node, total, used);
     }
 
@@ -1377,7 +1385,7 @@ void json_print_element_with_children(XMQPrintState *ps,
     }
 
     ps->line_indent -= ps->output_settings->add_indent;
-
+    if (!ps->output_settings->compact) print_nl_and_indent(ps, NULL, NULL);
     print_utf8(ps, COLOR_brace_right, 1, "}", NULL);
     ps->last_char = '}';
 }
@@ -1448,6 +1456,7 @@ void json_print_key_node(XMQPrintState *ps,
     {
         json_print_element_name(ps, container, node, total, used);
         print_utf8(ps, COLOR_equals, 1, ":", NULL);
+        if (!ps->output_settings->compact) print_utf8(ps, COLOR_none, 1, " ", NULL);
         ps->last_char = ':';
     }
 
@@ -1473,6 +1482,7 @@ void json_print_comma(XMQPrintState *ps)
     write(writer_state, ",", NULL);
     ps->last_char = ',';
     ps->current_indent ++;
+    if (!ps->output_settings->compact) print_nl_and_indent(ps, NULL, NULL);
 }
 
 void json_print_comment_node(XMQPrintState *ps,

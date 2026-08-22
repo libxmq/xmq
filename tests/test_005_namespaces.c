@@ -380,9 +380,8 @@ void test_building_doc_9()
 
     XMQNode *robot = rn.node;
     xmqAddKeyValueWithAttrs(doc, robot, "petals", "many", NS_PARENT,
-                            "id", "123",
-                            "S", "",
-                            END_OF_ATTRS);
+                            XMQ_ATTRS( { "id", "123" },
+                                       { "S", "" } ));
 
     XMQOutputSettings *os = xmqNewOutputSettings();
 
@@ -417,13 +416,13 @@ void test_building_doc_10()
 
     XMQReturnNode request = xmqAddRootElement(doc, "request", NS_NONE);
 
-    xmqAddKeyValueWithAttrs(doc, request.node, "key", "123", NS_PARENT, "S", "", END_OF_ATTRS);
+    xmqAddKeyValueWithAttrs(doc, request.node, "key", "123", NS_PARENT, XMQ_ATTRS( { "S", "" } ));
 
-    XMQReturnNode array = xmqAddElementWithAttrs(doc, request.node, "names", NS_PARENT, "A", "", END_OF_ATTRS);
+    XMQReturnNode array = xmqAddElementWithAttrs(doc, request.node, "names", NS_PARENT, XMQ_ATTRS( { "A", "" } ));
 
-    xmqAddKeyValueWithAttrs(doc, array.node, "_", "Bohrlaika", NS_PARENT, "S", "", END_OF_ATTRS);
-    xmqAddKeyValueWithAttrs(doc, array.node, "_", "Wolfbane", NS_PARENT, "S", "", END_OF_ATTRS);
-    xmqAddKeyValueWithAttrs(doc, array.node, "_", "Isildur", NS_PARENT, "S", "", END_OF_ATTRS);
+    xmqAddKeyValueWithAttrs(doc, array.node, "_", "Bohrlaika", NS_PARENT, XMQ_ATTRS( { "S", "" } ));
+    xmqAddKeyValueWithAttrs(doc, array.node, "_", "Wolfbane", NS_PARENT, XMQ_ATTRS( { "S", "" } ));
+    xmqAddKeyValueWithAttrs(doc, array.node, "_", "Isildur", NS_PARENT, XMQ_ATTRS( { "S", "" } ));
 
     XMQOutputSettings *os = xmqNewOutputSettings();
 
@@ -460,7 +459,8 @@ void test_building_doc_11()
 
     XMQReturnNode body = xmqAddElement(doc, html.node, "body", NS_PARENT);
 
-    XMQReturnNode a = xmqAddElementWithAttrs(doc, body.node, "a", NS_PARENT, "href", "https://libxmq.org", END_OF_ATTRS);
+    XMQReturnNode a = xmqAddElementWithAttrs(doc, body.node, "a", NS_PARENT,
+                                             XMQ_ATTRS( { "href", "https://libxmq.org" } ));
 
     XMQOutputSettings *os = xmqNewOutputSettings();
 
