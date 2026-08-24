@@ -837,7 +837,14 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         if (!strcmp(arg, "-p") ||
             !strcmp(arg, "--pretty"))
         {
-            command->add_indent = 4;
+            if (command->cmd == XMQ_CLI_CMD_TO_JSON)
+            {
+                command->add_indent = 2;
+            }
+            else
+            {
+                command->add_indent = 4;
+            }
             command->compact = false;
             return true;
         }

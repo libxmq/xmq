@@ -33,7 +33,7 @@ then
     CMDS="to-json"
 fi
 
-$PROG $ARGS $OUTPUT/${TEST_NAME}.input $CMDS > $OUTPUT/${TEST_NAME}.output
+$PROG $ARGS $OUTPUT/${TEST_NAME}.input $CMDS --pretty > $OUTPUT/${TEST_NAME}.output
 if ! jq . $OUTPUT/${TEST_NAME}.output >/dev/null 2>&1
 then
     jq . $OUTPUT/${TEST_NAME}.output

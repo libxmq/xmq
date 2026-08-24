@@ -14558,6 +14558,7 @@ void json_print_array_with_children(XMQPrintState *ps,
     ps->last_char = '[';
 
     ps->line_indent += ps->output_settings->add_indent;
+    if (!ps->output_settings->compact) print_nl_and_indent(ps, NULL, NULL);
 
     if (!container)
     {
@@ -14575,6 +14576,7 @@ void json_print_array_with_children(XMQPrintState *ps,
 
     ps->line_indent -= ps->output_settings->add_indent;
 
+    if (!ps->output_settings->compact) print_nl_and_indent(ps, NULL, NULL);
     print_utf8(ps, COLOR_brace_right, 1, "]", NULL);
     ps->last_char = ']';
 }
@@ -14878,6 +14880,7 @@ void json_print_comment_node(XMQPrintState *ps,
     {
         print_utf8(ps, COLOR_equals, 1, "\":", NULL);
     }
+    if (!ps->output_settings->compact) print_utf8(ps, COLOR_none, 1, " ", NULL);
     ps->last_char = ':';
     json_print_value(ps, node, node, LEVEL_XMQ, true);
     ps->last_char = '"';
@@ -14975,6 +14978,7 @@ void json_print_leaf_node(XMQPrintState *ps,
         {
             json_print_element_name(ps, container, node, total, used);
             write(writer_state, ":", NULL);
+            if (!ps->output_settings->compact) print_utf8(ps, COLOR_none, 1, " ", NULL);
         }
     }
 

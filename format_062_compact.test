@@ -1,0 +1,17 @@
+START
+<car><nw>36</nw><model>car go  3</model><decription>howdy
+dowdy</decription><more>'''==='''</more><key></key></car>
+COMPACT
+car{nw=36 model='car go  3'decription=('howdy'&#10;'dowdy')more=(&#39;&#39;&#39;'==='&#39;&#39;&#39;)key=''}
+XMQ
+car {
+    nw         = 36
+    model      = 'car go  3'
+    decription = 'howdy
+                  dowdy'
+    more       = "'''==='''"
+    key
+}
+END
+ARGS
+CMDS to-xmq

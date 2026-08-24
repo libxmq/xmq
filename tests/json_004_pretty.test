@@ -1,0 +1,147 @@
+INPUT
+{
+  "string": "hello",
+  "number": 123.45,
+  "boolean": true,
+  "null": null,
+  "empty_object": {},
+  "empty_array": [],
+  "object": {
+    "string": "value",
+    "number": 42,
+    "nested_object": {
+      "value": "deep"
+    }
+  },
+  "array_of_scalars": [
+    "string",
+    123,
+    true,
+    false,
+    null
+  ],
+  "array_of_objects": [
+    {
+      "id": 1,
+      "name": "one"
+    },
+    {
+      "id": 2,
+      "name": "two"
+    }
+  ],
+  "array_of_arrays": [
+    [
+      1,
+      2
+    ],
+    [
+      3,
+      4
+    ]
+  ],
+  "mixed_array": [
+    "text",
+    {
+      "key": "value",
+      "nested": [
+        1,
+        2,
+        {
+          "deep": true
+        }
+      ]
+    },
+    [
+      "a",
+      "b"
+    ],
+    null
+  ],
+  "deep": {
+    "level1": {
+      "level2": {
+        "level3": [
+          {
+            "value": "bottom"
+          }
+        ]
+      }
+    }
+  }
+}
+OUTPUT
+{
+  "string": "hello",
+  "number": 123.45,
+  "boolean": true,
+  "null": null,
+  "empty_object": {},
+  "empty_array": [],
+  "object": {
+    "string": "value",
+    "number": 42,
+    "nested_object": {
+      "value": "deep"
+    }
+  },
+  "array_of_scalars": [
+    "string",
+    123,
+    true,
+    false,
+    null
+  ],
+  "array_of_objects": [
+    {
+      "id": 1,
+      "name": "one"
+    },
+    {
+      "id": 2,
+      "name": "two"
+    }
+  ],
+  "array_of_arrays": [
+    [
+      1,
+      2
+    ],
+    [
+      3,
+      4
+    ]
+  ],
+  "mixed_array": [
+    "text",
+    {
+      "key": "value",
+      "nested": [
+        1,
+        2,
+        {
+          "deep": true
+        }
+      ]
+    },
+    [
+      "a",
+      "b"
+    ],
+    null
+  ],
+  "deep": {
+    "level1": {
+      "level2": {
+        "level3": [
+          {
+            "value": "bottom"
+          }
+        ]
+      }
+    }
+  }
+}
+COMPACT
+{"string":"hello","number":123.45,"boolean":true,"null":null,"empty_object":{},"empty_array":[],"object":{"string":"value","number":42,"nested_object":{"value":"deep"}},"array_of_scalars":["string",123,true,false,null],"array_of_objects":[{"id":1,"name":"one"},{"id":2,"name":"two"}],"array_of_arrays":[[1,2],[3,4]],"mixed_array":["text",{"key":"value","nested":[1,2,{"deep":true}]},["a","b"],null],"deep":{"level1":{"level2":{"level3":[{"value":"bottom"}]}}}}
+END
