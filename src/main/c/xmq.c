@@ -754,6 +754,7 @@ XMQOutputSettings *xmqNewOutputSettings()
     os->add_indent = 4;
     os->use_color = false;
     os->allow_json_quotes = true;
+    os->final_newline = true;
 
     return os;
 }
@@ -806,6 +807,11 @@ void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode)
 void xmqSetPreferDoubleQuotes(XMQOutputSettings *os, bool prefer_double_quotes)
 {
     os->prefer_double_quotes = prefer_double_quotes;
+}
+
+void xmqSetFinalNewline(XMQOutputSettings *os, bool final_newline)
+{
+    os->final_newline = final_newline;
 }
 
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines)
@@ -3409,7 +3415,7 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
     // Adjust the first and last pointer.
     collect_leading_ending_comments_doctype(&ps, (xmlNode**)&first, (xmlNode**)&last);
     json_print_object_nodes(&ps, NULL, (xmlNode*)first, (xmlNode*)last);
-    write(writer_state, "\n", NULL);
+    if (os->final_newline) write(writer_state, "\n", NULL);
 
     stack_free(ps.pre_nodes);
     stack_free(ps.post_nodes);
@@ -3612,7 +3618,7 @@ void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
     if (theme->body.post) write(writer_state, theme->body.post, NULL);
     if (theme->document.post) write(writer_state, theme->document.post, NULL);
 
-    write(writer_state, "\n", NULL);
+    if (os->final_newline) write(writer_state, "\n", NULL);
 }
 
 void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)

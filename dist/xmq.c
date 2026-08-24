@@ -3125,6 +3125,7 @@ typedef enum Level Level;
     XMQOutputSettings:
     @add_indent: Default is 4. Indentation starts at 0 which means no spaces prepended.
     @compact: Print on a single line limiting whitespace to a minimum.
+    @final_newline: If set, then add the final newline.
     @escape_newlines: Replace newlines with &#10; this is implied if compact is set.
     @escape_non_7bit: Replace all chars above 126 with char entities, ie &#10;
     @escape_tabs: Replace tabs with &#9;
@@ -3149,6 +3150,7 @@ struct XMQOutputSettings
     bool bg_dark_mode;
     bool truecolor;
     bool prefer_double_quotes;
+    bool final_newline;
     bool escape_newlines;
     bool escape_non_7bit;
     bool escape_tabs;
@@ -4313,6 +4315,7 @@ XMQOutputSettings *xmqNewOutputSettings()
     os->add_indent = 4;
     os->use_color = false;
     os->allow_json_quotes = true;
+    os->final_newline = true;
 
     return os;
 }
@@ -4365,6 +4368,11 @@ void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode)
 void xmqSetPreferDoubleQuotes(XMQOutputSettings *os, bool prefer_double_quotes)
 {
     os->prefer_double_quotes = prefer_double_quotes;
+}
+
+void xmqSetFinalNewline(XMQOutputSettings *os, bool final_newline)
+{
+    os->final_newline = final_newline;
 }
 
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines)
@@ -6968,7 +6976,7 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
     // Adjust the first and last pointer.
     collect_leading_ending_comments_doctype(&ps, (xmlNode**)&first, (xmlNode**)&last);
     json_print_object_nodes(&ps, NULL, (xmlNode*)first, (xmlNode*)last);
-    write(writer_state, "\n", NULL);
+    if (os->final_newline) write(writer_state, "\n", NULL);
 
     stack_free(ps.pre_nodes);
     stack_free(ps.post_nodes);
@@ -7171,7 +7179,7 @@ void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
     if (theme->body.post) write(writer_state, theme->body.post, NULL);
     if (theme->document.post) write(writer_state, theme->document.post, NULL);
 
-    write(writer_state, "\n", NULL);
+    if (os->final_newline) write(writer_state, "\n", NULL);
 }
 
 void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)

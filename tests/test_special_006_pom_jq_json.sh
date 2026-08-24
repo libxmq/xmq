@@ -3,7 +3,7 @@
 
 PROG=$1
 OUTPUT=$2
-TEST_NAME="Test pretty json print is the same for jq and xmq."
+TEST_NAME="Test special 006 pretty json print is the same for jq and xmq."
 
 if [ -z "$OUTPUT" ] || [ -z "$PROG" ]
 then

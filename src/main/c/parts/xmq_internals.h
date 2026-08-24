@@ -158,6 +158,7 @@ typedef enum Level Level;
     XMQOutputSettings:
     @add_indent: Default is 4. Indentation starts at 0 which means no spaces prepended.
     @compact: Print on a single line limiting whitespace to a minimum.
+    @final_newline: If set, then add the final newline.
     @escape_newlines: Replace newlines with &#10; this is implied if compact is set.
     @escape_non_7bit: Replace all chars above 126 with char entities, ie &#10;
     @escape_tabs: Replace tabs with &#9;
@@ -182,6 +183,7 @@ struct XMQOutputSettings
     bool bg_dark_mode;
     bool truecolor;
     bool prefer_double_quotes;
+    bool final_newline;
     bool escape_newlines;
     bool escape_non_7bit;
     bool escape_tabs;

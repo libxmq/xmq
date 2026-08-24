@@ -219,6 +219,7 @@ struct XMQCliCommand
     bool verbose;
     bool trace;
     int  add_indent;
+    bool final_newline;
     bool omit_decl; // If true, then do not print <?xml ..?>
     bool compact;
     bool prefer_double_quotes; // If true, then prefer double quotes.
@@ -701,6 +702,7 @@ XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env)
     c->add_indent = 4;
     c->compact = false;
     c->escape_tabs = false;
+    c->final_newline = true;
     return c;
 }
 
@@ -827,6 +829,12 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
     if (group == XMQ_CLI_CMD_GROUP_TO ||
         group == XMQ_CLI_CMD_GROUP_RENDER)
     {
+        if (!strcmp(arg, "-n") ||
+            !strcmp(arg, "--no-final-nl"))
+        {
+            command->final_newline = false;
+            return true;
+        }
         if (!strcmp(arg, "-c") ||
             !strcmp(arg, "--compact"))
         {
@@ -2385,6 +2393,7 @@ bool cmd_to(XMQCliCommand *command)
     xmqSetEscapeNon7bit(settings, command->escape_non_7bit);
     xmqSetEscapeTabs(settings, command->escape_tabs);
     xmqSetAddIndent(settings, command->add_indent);
+    xmqSetFinalNewline(settings, command->final_newline);
     xmqSetUseColor(settings, command->use_color);
     xmqSetBackgroundMode(settings, command->bg_dark_mode);
     xmqSetOutputFormat(settings, command->out_format);
