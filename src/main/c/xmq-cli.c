@@ -4822,6 +4822,22 @@ xmqDocDefaultLoaderFunc(const xmlChar * URI,
                         void *ctxt /* ATTRIBUTE_UNUSED */,
                         xsltLoadType type /*ATTRIBUTE_UNUSED */)
 {
+    if (type == XSLT_LOAD_DOCUMENT && (URI == NULL || URI[0] == '\0'))
+    {
+        // This code is run when the xsl transform uses document('')
+        // ie a self reference to fetch lookup tables and other things.
+        xsltTransformContextPtr tctxt = (xsltTransformContextPtr)ctxt;
+
+        if (tctxt != NULL &&
+            tctxt->style != NULL &&
+            tctxt->style->doc != NULL)
+	{
+            return xmlCopyDoc(tctxt->style->doc, 1);
+        }
+
+        return NULL;
+    }
+
     XMQReturnDoc rd = xmqNewDoc();
     assert(rd.status == XMQ_OK);
     XMQDoc *doq = rd.doc;
