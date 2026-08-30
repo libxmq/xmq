@@ -2076,8 +2076,6 @@ XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, cons
 XMQStatus xmq_add_attrs(XMQDoc *doc, XMQNode *node, const XMQAddAttr *attrs, size_t num_attrs);
 XMQStatus xmq_add_attrs(XMQDoc *doc, XMQNode *node, const XMQAddAttr *attrs, size_t num_attrs)
 {
-    const char *format;
-
     for (size_t i = 0; i < num_attrs; ++i)
     {
         const XMQAddAttr *aa = attrs+i;
@@ -2096,13 +2094,12 @@ XMQReturnNode xmqAddKeyValueWithAttrs(XMQDoc *doq,
                                       const char *key,
                                       const char *value,
                                       XMQNS ns,
-                                      const XMQAddAttr *attrs,
-                                      size_t num_attrs)
+                                      XMQAttrList attrs)
 {
     XMQReturnNode rn = xmqAddKeyValue(doq, parent, key, value, ns);
     if (rn.status == XMQ_OK)
     {
-        xmq_add_attrs(doq, rn.node, attrs, num_attrs);
+        xmq_add_attrs(doq, rn.node, attrs.array, attrs.count);
     }
 
     return rn;
@@ -2112,13 +2109,12 @@ XMQReturnNode xmqAddElementWithAttrs(XMQDoc *doq,
                                      XMQNode *parent,
                                      const char *name,
                                      XMQNS ns,
-                                     const XMQAddAttr *attrs,
-                                     size_t num_attrs)
+                                     XMQAttrList attrs)
 {
     XMQReturnNode rn = xmqAddElement(doq, parent, name, ns);
     if (rn.status == XMQ_OK)
     {
-        xmq_add_attrs(doq, rn.node, attrs, num_attrs);
+        xmq_add_attrs(doq, rn.node, attrs.array, attrs.count);
     }
 
     return rn;

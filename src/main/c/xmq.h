@@ -47,6 +47,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _hideRBfromEditor }
 
 #ifdef __cplusplus
+// Needed for the XMQ_ATTRS macro.
+#include <initializer_list>
+
 extern "C" _hideLBfromEditor
 #endif
 
@@ -456,9 +459,38 @@ struct XMQAddAttr {
     const char *value;
 };
 
+typedef struct XMQAttrList XMQAttrList;
+struct XMQAttrList {
+    const XMQAddAttr *array;
+    size_t count;
+};
+
+#ifndef __cplusplus
+
 #define XMQ_ATTRS(...) \
+    ((XMQAttrList) { \
+        (XMQAddAttr[]) { __VA_ARGS__ }, \
+        sizeof((XMQAddAttr[]) { __VA_ARGS__ }) / sizeof(XMQAddAttr) \
+    })
+
+#else
+
+static inline XMQAttrList
+xmqAttrs(std::initializer_list<XMQAddAttr> attrs)
+{
+    return { attrs.begin(), attrs.size() };
+}
+
+#define XMQ_ATTRS(...) \
+    xmqAttrs({ __VA_ARGS__ })
+
+#endif
+
+/* This is the old definition for XMQ_ATTRS which fails to compile using g++-13.
+ #define XMQ_ATTRS(...) \
     (XMQAddAttr[]){ __VA_ARGS__ }, \
     sizeof((XMQAddAttr[]){ __VA_ARGS__ }) / sizeof(XMQAddAttr)
+*/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////// FUNCTIONS  /////////////////////////////////////////////////////////////////
@@ -736,8 +768,7 @@ XMQReturnNode xmqAddElementWithAttrs(XMQDoc *doq,
                                      XMQNode *parent,
                                      const char *name,
                                      XMQNS ns,
-                                     const XMQAddAttr *attrs,
-                                     size_t num_attrs);
+                                     XMQAttrList attrs);
 
 /**
     Create a key value under an existing node.
@@ -774,8 +805,7 @@ XMQReturnNode xmqAddKeyValueWithAttrs(XMQDoc *doq,
                                       const char *key,
                                       const char *value,
                                       XMQNS ns,
-                                      const XMQAddAttr *attrs,
-                                      size_t num_attrs);
+                                      XMQAttrList attrs);
 
 /**
     Create/update an attribute in an existing node.
@@ -892,6 +922,7 @@ void xmqFreeOutputSettings(XMQOutputSettings *os);
 void xmqSetAddIndent(XMQOutputSettings *os, int add_indent);
 void xmqSetCompact(XMQOutputSettings *os, bool compact);
 void xmqSetUseColor(XMQOutputSettings *os, bool use_color);
+void xmqSetTrueColor(XMQOutputSettings *os, bool truecolor);
 void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode);
 void xmqSetPreferDoubleQuotes(XMQOutputSettings *os, bool prefer_double_quotes);
 void xmqSetFinalNewline(XMQOutputSettings *os, bool final_nl);
