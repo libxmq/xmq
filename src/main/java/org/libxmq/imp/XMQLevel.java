@@ -23,14 +23,23 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq.imp;
 
+/**
+ * The nesting level of a value in an xmq document.
+ */
 public enum XMQLevel
 {
+    /** Plain xmq level. */
     LEVEL_XMQ(0),
+    /** Element value level. */
     LEVEL_ELEMENT_VALUE(1),
+    /** Compound element value level. */
     LEVEL_ELEMENT_VALUE_COMPOUND(2),
+    /** Attribute value level. */
     LEVEL_ATTR_VALUE(3),
+    /** Compound attribute value level. */
     LEVEL_ATTR_VALUE_COMPOUND(4);
 
     XMQLevel(int v) { value = v; }
+    /** The integer value of the level. */
     public int value;
 }

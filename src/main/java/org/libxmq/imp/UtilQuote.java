@@ -25,8 +25,13 @@ package org.libxmq.imp;
 
 import java.util.ArrayList;
 
+/**
+ * Base class for analyzing and manipulating xmq quotes, shared by the
+ * quote parsing and quote printing utilities.
+ */
 public class UtilQuote
 {
+    /** Debug flag, currently disabled. */
     protected final static boolean debug_ = false;
     /**
      * We analyze part of a larger buffer, typically the whole xmq source file.
@@ -92,12 +97,20 @@ public class UtilQuote
     protected int stop_;
 
     // Output values
+    /** Maximum number of consecutive single quotes found. */
     protected int max_num_consecutive_single_quotes_;
+
+    /** Maximum number of consecutive double quotes found. */
     protected int max_num_consecutive_double_quotes_;
+
+    /** True if a compound quote form is needed. */
     protected boolean needs_compound_;
 
     /**
      * Translate CRLF and CR to LF. Count number of newlines.
+     * @param b The buffer to process.
+     * @param start The start index in the buffer.
+     * @param stop The stop index in the buffer.
      */
     protected UtilQuote(String b, int start, int stop)
     {
@@ -133,6 +146,9 @@ public class UtilQuote
     /**
      * Look at the char at index start and count how many identical chars there are forward.
      * Used to count identical quotes in a sequence or count number of spaces used for indentation.
+     * @param start The index of the character to count from.
+     * @param stop The stop index of the counting.
+     * @return The number of identical characters.
      */
     protected int countSame(int start, int stop)
     {
@@ -182,6 +198,9 @@ public class UtilQuote
         num_leading_nl_ = num_nl;
     }
 
+    /**
+     * Scans the buffer for trailing newline ('\n') and space (' ') characters.
+     */
     protected void findEndingNewlines()
     {
         int first_nl = -1;

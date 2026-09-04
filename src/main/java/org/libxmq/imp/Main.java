@@ -44,8 +44,23 @@ import org.libxmq.ParseException;
 import org.libxmq.OutputSettings;
 import org.libxmq.XMQ;
 
+/**
+ * The main entry point of the xmq command line tool.
+ */
 public class Main
 {
+    /**
+     * Creates the Main object.
+     */
+    public Main()
+    {
+    }
+
+    /**
+     * Command line entry point.
+     * @param args The command line arguments.
+     * @throws Exception If parsing or output fails.
+     */
     public static void main(String[] args) throws Exception
     {
         if (args.length == 0)

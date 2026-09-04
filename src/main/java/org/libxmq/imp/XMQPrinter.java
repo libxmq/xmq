@@ -22,10 +22,29 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
 
+/**
+ * Prints a document object model in xmq.
+ */
 public class XMQPrinter
 {
+    /**
+     * Creates the printer.
+     */
+    public XMQPrinter()
+    {
+    }
+
+    /**
+     * A parse error raised while printing.
+     */
     public class ParseException extends Exception
     {
+        /**
+         * Creates the exception.
+         */
+        public ParseException()
+        {
+        }
     }
 
     static void print_string(XMQPrintState ps, String s)
@@ -377,6 +396,12 @@ public class XMQPrinter
             node.getNodeType() == Node.ENTITY_REFERENCE_NODE;
     }
 
+    /**
+     * Recursively prints a node.
+     * @param ps The print state.
+     * @param node The node to print.
+     * @param align The alignment level used for indentation.
+     */
     public void print_node(XMQPrintState ps, Node node, int align)
     {
         if (node.getNodeType() == Node.DOCUMENT_NODE) {

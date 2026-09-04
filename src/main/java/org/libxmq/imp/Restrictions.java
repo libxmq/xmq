@@ -23,8 +23,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq.imp;
 
+/**
+ * Restrictions on attribute values, such as enumerations and patterns.
+ */
 public class Restrictions
 {
+    /**
+     * Creates an empty restrictions object.
+     */
+    public Restrictions()
+    {
+    }
     /*
     // Defines a list of acceptable values
     Restrictions enumeration(enum e) { return this; }

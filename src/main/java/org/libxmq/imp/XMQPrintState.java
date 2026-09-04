@@ -27,8 +27,18 @@ import org.libxmq.*;
 import java.util.Stack;
 import org.w3c.dom.Node;
 
+/**
+ * The state used while printing a document with the XMQPrinter.
+ */
 public class XMQPrintState
 {
+    /**
+     * Creates an empty print state.
+     */
+    public XMQPrintState()
+    {
+    }
+
     int current_indent;
     int line_indent;
     char last_char;
@@ -45,6 +55,9 @@ public class XMQPrintState
     StringBuilder buffer = new StringBuilder();
 
 
+    /**
+     * Appends the current indentation.
+     */
     public void indent()
     {
         int n = current_indent;
@@ -55,12 +68,19 @@ public class XMQPrintState
         }
     }
 
+    /**
+     * Installs the default theme.
+     */
     public void defaultTheme()
     {
         theme = new XMQTheme();
         theme.installDefault();
     }
 
+    /**
+     * Returns the buffer holding the rendered output.
+     * @return The output buffer.
+     */
     public StringBuilder buffer()
     {
         return buffer;

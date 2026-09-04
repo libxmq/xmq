@@ -23,8 +23,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq.imp;
 
+/**
+ * Text utilities.
+ */
 public class Text
 {
+    /**
+     * Creates the Text utility.
+     */
+    public Text()
+    {
+    }
+    /**
+     * Checks if the character is a lowercase hex digit.
+     * @param c The character to check.
+     * @return True if c is 0-9 or a-f.
+     */
     static boolean is_lowercase_hex(char c)
     {
         return

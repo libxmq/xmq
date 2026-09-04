@@ -26,8 +26,18 @@ package org.libxmq.imp;
 import org.libxmq.ParseException;
 import org.libxmq.ParseErrorCode;
 
+/**
+ * Base class for xmq parsers.
+ */
 public abstract class XMQParser extends XMQParseCallbacks
 {
+    /**
+     * Creates the parser.
+     */
+    protected XMQParser()
+    {
+    }
+
     String source_; // Used for generating error messages.
     String buffer_; // XMQ source to parse.
     String implicit_root_; // Assume that this is the first element name
@@ -74,6 +84,13 @@ public abstract class XMQParser extends XMQParseCallbacks
     int last_suspicios_quote_end_line_;
     int last_suspicios_quote_end_col_;
 
+    /**
+     * Parses an xmq buffer.
+     * @param buf The xmq source buffer to parse.
+     * @param source A description of where the buffer comes from, for error messages.
+     * @return True if the input ends with a single root element.
+     * @throws ParseException If the input cannot be parsed.
+     */
     public boolean parse(String buf, String source) throws ParseException
     {
         source_ = source;
@@ -290,6 +307,9 @@ public abstract class XMQParser extends XMQParseCallbacks
         return new Pair<>(start, stop);
     }
 
+    /**
+     * Parses xmq whitespace and invokes the whitespace callback.
+     */
     protected void parse_xmq_whitespace()
     {
         int start_line = line_;

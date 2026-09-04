@@ -28,6 +28,7 @@ package org.libxmq;
 public class ParseException extends Exception
 {
     private static final long serialVersionUID = 1L;
+    /** The error code. */
     private final ParseErrorCode error_code_;
     // We print the error as:
     // car(speed=//xxx) {

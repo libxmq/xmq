@@ -25,6 +25,9 @@ package org.libxmq.imp;
 
 import java.util.ArrayList;
 
+/**
+ * Utility for printing xmq quotes.
+ */
 public class UtilPrintQuote extends UtilQuote
 {
     /**
@@ -33,19 +36,50 @@ public class UtilPrintQuote extends UtilQuote
     protected int num_nl_;
 
     // Output values
+    /**
+     * The maximum number of consecutive single quotes found in the buffer.
+     */
     protected int max_num_consecutive_single_quotes_;
+    /**
+     * The maximum number of consecutive double quotes found in the buffer.
+     */
     protected int max_num_consecutive_double_quotes_;
+    /**
+     * The number of carriage returns found in the buffer.
+     */
     protected int num_cr_;
+    /**
+     * The number of tabs found in the buffer.
+     */
     protected int num_tab_;
+    /**
+     * True if the buffer starts or ends with a double quote.
+     */
     protected boolean starts_or_ends_with_double_quote_;
+    /**
+     * True if the buffer starts or ends with a single quote.
+     */
     protected boolean starts_or_ends_with_single_quote_;
+    /**
+     * True if the buffer needs a compound marker.
+     */
     protected boolean needs_compound_;
 
+    /**
+     * Creates a quote printer.
+     * @param b The buffer to print.
+     */
     protected UtilPrintQuote(String b)
     {
         super(b, 0, b.length());
     }
 
+    /**
+     * Renders a quote, possibly multiline, with the given indent.
+     * @param q The quote to render.
+     * @param indent The indent to use.
+     * @return The rendered quote.
+     */
     public static String renderQuote(String q, int indent)
     {
         if (q.length() == 0) return "''";
@@ -54,11 +88,21 @@ public class UtilPrintQuote extends UtilQuote
         return upq.buildMultilineQuote(indent);
     }
 
+    /**
+     * Builds a compact single-line quote.
+     * @param indent The indent to use.
+     * @return The compact quote.
+     */
     protected String buildCompactQuote(int indent)
     {
         return "???";
     }
 
+    /**
+     * Builds a multiline quote.
+     * @param indent The indent to use.
+     * @return The multiline quote.
+     */
     protected String buildMultilineQuote(int indent)
     {
         if (num_nl_ == 0)
@@ -68,6 +112,9 @@ public class UtilPrintQuote extends UtilQuote
         return "???";
     }
 
+    /**
+     * Analyzes the buffer for printing.
+     */
     protected void analyzeForPrint()
     {
         char c = 0;

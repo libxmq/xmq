@@ -23,4 +23,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq.imp;
 
+/**
+ * A quad of values.
+ * @param <A> The type of the first value.
+ * @param <B> The type of the second value.
+ * @param <C> The type of the third value.
+ * @param <D> The type of the fourth value.
+ * @param first The first value.
+ * @param second The second value.
+ * @param third The third value.
+ * @param fourth The fourth value.
+ */
 public record Quad<A, B, C, D>(A first, B second, C third, D fourth) { }

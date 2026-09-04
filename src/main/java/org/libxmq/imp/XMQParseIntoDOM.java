@@ -36,8 +36,19 @@ import org.w3c.dom.Node;
 import org.w3c.dom.Text;
 import org.w3c.dom.Comment;
 
+/**
+ * Parses xmq into a Document object model.
+ */
 public class XMQParseIntoDOM extends XMQParser
 {
+    /**
+     * Creates the parser with no source buffer.
+     */
+    public XMQParseIntoDOM()
+    {
+        super();
+    }
+
     DocumentBuilderFactory factory_;
     DocumentBuilder builder_;
     Document doc_;
@@ -92,6 +103,10 @@ public class XMQParseIntoDOM extends XMQParser
         }
     }
 
+    /**
+     * Returns the parsed document.
+     * @return The parsed document.
+     */
     public Document doc()
     {
         return doc_;

@@ -25,7 +25,15 @@ package org.libxmq.imp;
 
 import org.w3c.dom.Node;
 
+/**
+ * Miscellaneous utilities for xmq processing.
+ */
 public class Util {
+    /**
+     * Creates the Util utility.
+     */
+    public Util() {
+    }
 
     final boolean is_xmq_quote_start(char c)
     {
@@ -112,6 +120,11 @@ public class Util {
         return sb.toString();
     }
 
+    /**
+     * Checks if the string is a valid element name.
+     * @param s The string to check.
+     * @return True if s is a valid element name.
+     */
     public static boolean isValidElementName(String s)
     {
         if (s.length() == 0) return false;
@@ -152,6 +165,11 @@ public class Util {
                 (c >= 0x203F && c <= 0x2040));
     }
 
+    /**
+     * Returns the XPath of a node.
+     * @param node The node.
+     * @return The XPath of the node, or null.
+     */
     public static String getXPath(Node node)
     {
         if (node == null)

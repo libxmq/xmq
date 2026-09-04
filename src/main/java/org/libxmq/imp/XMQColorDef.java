@@ -23,8 +23,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq.imp;
 
+/**
+ * Definition of a color used for output.
+ */
 public class XMQColorDef
 {
+    /**
+     * Creates a color definition.
+     */
+    public XMQColorDef()
+    {
+    }
+
     int r, g, b;
     boolean bold;
     boolean underline;

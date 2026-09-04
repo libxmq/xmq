@@ -3,8 +3,21 @@ package org.libxmq.imp;
 
 import java.util.ArrayList;
 
+/**
+ * Internal tests for the quote parsing utilities.
+ */
 public class TestInternals
 {
+    /**
+     * Creates the test runner.
+     */
+    public TestInternals()
+    {
+    }
+    /**
+     * Runs the internal tests.
+     * @param args Command line arguments (unused).
+     */
     public static void main(String[] args)
     {
         test_quote_removal();
@@ -12,6 +25,9 @@ public class TestInternals
 
     }
 
+    /**
+     * Tests removing surrounding quotes.
+     */
     public static void test_quote_removal()
     {
         test_surrounding_quote("''", "");
@@ -25,6 +41,9 @@ public class TestInternals
         test_surrounding_quote("\"\"'\"x\"'\"\"", "'\"x\"'");
     }
 
+    /**
+     * Tests quote trimming.
+     */
     public static void test_quotes()
     {
         ArrayList<QuotePart> parts = new ArrayList<>();
@@ -81,6 +100,11 @@ public class TestInternals
         test_trim_quote("\n    x\n\n  ", "  x\n");
     }
 
+    /**
+     * Tests trimming of a quote against an expected value.
+     * @param input The input string.
+     * @param expected The expected output string.
+     */
     static void test_trim_quote(String input, String expected)
     {
         String output = UtilParseQuote.trimQuote(input, 0, input.length());
@@ -95,6 +119,11 @@ public class TestInternals
         }
     }
 
+    /**
+     * Tests finding the inner part of a quoted string.
+     * @param input The input string.
+     * @param expected The expected output string.
+     */
     static void test_surrounding_quote(String input, String expected)
     {
         var pair = UtilParseQuote.findQuoteStartStop(input, 0, input.length());

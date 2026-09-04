@@ -25,16 +25,28 @@ package org.libxmq.imp;
 
 import org.libxmq.ParseException;
 
+/**
+ * A runtime exception wrapping a ParseException.
+ */
 public class XMQRuntimeException extends RuntimeException
 {
     private static final long serialVersionUID = 1L;
+    /** The wrapped parse exception. */
     private final ParseException e_;
 
+    /**
+     * Creates a runtime exception from a parse exception.
+     * @param e The parse exception.
+     */
     public XMQRuntimeException(ParseException e)
     {
         e_ = e;
     }
 
+    /**
+     * Returns the wrapped parse exception.
+     * @return The parse exception.
+     */
     public ParseException getParseException()
     {
         return e_;

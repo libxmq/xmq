@@ -23,4 +23,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq.imp;
 
+/**
+ * A pair of values.
+ * @param <A> The type of the left value.
+ * @param <B> The type of the right value.
+ * @param left The left value.
+ * @param right The right value.
+ */
 public record Pair<A, B>(A left, B right) { }

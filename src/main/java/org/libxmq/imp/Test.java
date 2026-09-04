@@ -11,8 +11,15 @@ import org.libxmq.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
+/**
+ * Test class for parsing sample xmq input.
+ */
 public class Test
 {
+    /**
+     * Test entry point.
+     * @param args Command line arguments (unused).
+     */
     public void main(String... args)
     {
         try
@@ -36,6 +43,11 @@ public class Test
         }
         """;
 
+    /**
+     * Creates the test and loads test data.
+     * @throws IOException If reading input fails.
+     * @throws ParseException If parsing fails.
+     */
     public Test() throws IOException, ParseException
     {
         XMQ xmq = new XMQ();
@@ -45,6 +57,11 @@ public class Test
         q.forEach("//car", this::loadCar);
     }
 
+    /**
+     * Loads a single car element.
+     * @param car_node The XML node to load from.
+     * @return A Proceed value.
+     */
     public Proceed loadCar(Node car_node)
     {
         var car = new Query(car_node);

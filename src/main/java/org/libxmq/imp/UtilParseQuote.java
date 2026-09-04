@@ -25,12 +25,19 @@ package org.libxmq.imp;
 
 import java.util.ArrayList;
 
+/**
+ * Utility for parsing xmq quotes.
+ */
 public class UtilParseQuote extends UtilQuote
 {
     /**
      * Expects an xmq quote and removes the surrounding single or double quote chars.
      * For example:
      * '' -> (1,1)
+     * @param b The buffer to search.
+     * @param start The start index of the quote.
+     * @param stop The stop index of the quote.
+     * @return The (start,stop) pair of the inner content.
      */
     public static Pair<Integer,Integer> findQuoteStartStop(String b, int start, int stop)
     {
@@ -87,6 +94,10 @@ public class UtilParseQuote extends UtilQuote
     /**
      * Expects an xmq comment "// " or "/∗ ... ∗/" or "////∗    ∗////"
      * or a comment continuation "∗   ....    ∗/"
+     * @param b The buffer to search.
+     * @param start The start index of the comment.
+     * @param stop The stop index of the comment.
+     * @return The (start,stop) pair of the inner content.
      */
     public static Pair<Integer,Integer> findCommentStartStop(String b, int start, int stop)
     {
@@ -127,6 +138,13 @@ public class UtilParseQuote extends UtilQuote
         return new Pair<>(from, to);
     }
 
+    /**
+     * Trims a quote according to xmq quoting rules.
+     * @param b The buffer to parse.
+     * @param start The start index of the quote.
+     * @param stop The stop index of the quote.
+     * @return The trimmed content.
+     */
     public static String trimQuote(String b, int start, int stop)
     {
         UtilParseQuote upq = new UtilParseQuote(b, start, stop);
@@ -134,6 +152,12 @@ public class UtilParseQuote extends UtilQuote
         return upq.parseQuote();
     }
 
+    /**
+     * Creates a quote parser.
+     * @param b The buffer to parse.
+     * @param start The start index of the quote.
+     * @param stop The stop index of the quote.
+     */
     protected UtilParseQuote(String b, int start, int stop)
     {
         super(b, start, stop);
@@ -191,6 +215,9 @@ public class UtilParseQuote extends UtilQuote
         num_leading_nl_ = num_nl;
     }
 
+    /**
+     * Scans the buffer for trailing newlines and spaces.
+     */
     protected void findEndingNewlines()
     {
         int first_nl = -1;
@@ -215,6 +242,9 @@ public class UtilParseQuote extends UtilQuote
         num_ending_nl_ = num_nl;
     }
 
+    /**
+     * Analyzes the quote for parsing.
+     */
     public void analyzeForParse()
     {
         if (debug_) System.out.println("ANALZE >"+buffer_+"<\n"+Util.xmq_quote_as_c(buffer_, -1, -1 , true));
@@ -312,6 +342,10 @@ public class UtilParseQuote extends UtilQuote
         if (debug_) System.out.println("MIN_INDENT="+min_indent_);
     }
 
+    /**
+     * Parses the quote into its content.
+     * @return The parsed content.
+     */
     protected String parseQuote()
     {
         StringBuilder sb = new StringBuilder();

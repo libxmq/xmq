@@ -1,7 +1,16 @@
 package org.libxmq.imp;
 
+/**
+ * A source position: character index, line and column.
+ */
 public class SourcePos
 {
+    /**
+     * Creates a source position.
+     */
+    public SourcePos()
+    {
+    }
     int i;
     int line;
     int col;

@@ -31,6 +31,13 @@ package org.libxmq.imp;
 */
 public class XMQTheme
 {
+    /**
+     * Creates an empty theme.
+     */
+    public XMQTheme()
+    {
+    }
+
     String name;
     String indentation_space;
     String explicit_space;
