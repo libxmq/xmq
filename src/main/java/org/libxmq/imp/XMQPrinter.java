@@ -163,14 +163,12 @@ public class XMQPrinter
         }
     }
 
-    boolean print_attributes(XMQPrintState ps, Element element)
+    void print_attributes(XMQPrintState ps, Element element)
     {
-        boolean has_attrs = false;
         NamedNodeMap attributes = element.getAttributes();
 
         if (attributes != null && attributes.getLength() > 0)
         {
-            has_attrs = true;
             ps.buffer.append("(");
             ps.last_char = '(';
             ps.current_indent += 1;
@@ -206,8 +204,6 @@ public class XMQPrinter
             ps.last_char = ')';
             ps.current_indent += 1;
         }
-
-        return has_attrs;
     }
 
     void print_content_node(XMQPrintState ps, Node node)
@@ -222,11 +218,7 @@ public class XMQPrinter
 
         if (ps.last_char == '=')
         {
-            // Key = value: separate with a single space in non-compact output.
-            if (!ps.output_settings.compact())
-            {
-                print_white_spaces(ps, 1);
-            }
+            // Key = value: print_key_node has already printed the space after =.
         }
         else
         {
@@ -253,39 +245,136 @@ public class XMQPrinter
 
         NodeList children = element.getChildNodes();
 
-        if (children.getLength() > 0)
+        // This is a node with no children, just the key.
+        if (children.getLength() == 0)
         {
-            check_space_before_opening_brace(ps);
-            print_string(ps, "{");
+            return;
+        }
 
-            int old_line_indent = ps.line_indent;
-            ps.line_indent += 4;
+        // This is a key = value or key = 'value value' node.
+        if (is_key_value_node(element))
+        {
+            print_key_node(ps, element, 0);
+            return;
+        }
 
-            for (int i = 0; i < children.getLength(); i++)
+        // All other nodes are printed name {children}
+        print_element_with_children(ps, element);
+    }
+
+    void print_key_node(XMQPrintState ps, Element element, int align)
+    {
+        // Name and attributes were already printed by the caller.
+        if (!ps.output_settings.compact())
+        {
+            int len = ps.current_indent - ps.line_indent;
+            int pad = 1;
+            if (len < align)
             {
-                print_node(ps, children.item(i), 0);
+                pad = 1 + align - len;
             }
+            print_white_spaces(ps, pad);
+        }
+        ps.buffer.append("=");
+        ps.last_char = '=';
+        ps.current_indent += 1;
+        if (!ps.output_settings.compact())
+        {
+            print_white_spaces(ps, 1);
+        }
 
-            ps.line_indent = old_line_indent;
-
-            check_space_before_closing_brace(ps);
-            print_string(ps, "}");
+        // Print the value, i.e. the (first) child node.
+        Node first = element.getChildNodes().item(0);
+        if (is_content_node(first))
+        {
+            print_node(ps, first, align);
+        }
+        else
+        {
+            print_node(ps, first, align);
         }
     }
 
+    void print_element_with_children(XMQPrintState ps, Element element)
+    {
+        NodeList children = element.getChildNodes();
+
+        check_space_before_opening_brace(ps);
+        print_string(ps, "{");
+
+        int old_line_indent = ps.line_indent;
+        ps.line_indent += 4;
+
+        for (int i = 0; i < children.getLength(); i++)
+        {
+            print_node(ps, children.item(i), 0);
+        }
+
+        ps.line_indent = old_line_indent;
+
+        check_space_before_closing_brace(ps);
+        print_string(ps, "}");
+    }
+
     // Check if the node is an element node (not text, comment, etc.)
-    boolean is_element_node(Node node) {
+    static boolean is_element_node(Node node)
+    {
         return node.getNodeType() == Node.ELEMENT_NODE;
     }
 
     // Check if the node is a text node
-    boolean is_content_node(Node node) {
-        return node.getNodeType() == Node.TEXT_NODE;
+    static boolean is_content_node(Node node)
+    {
+        return node.getNodeType() == Node.TEXT_NODE ||
+            node.getNodeType() == Node.CDATA_SECTION_NODE;
     }
 
     // Check if the node is a processing instruction
-    boolean is_pi_node(Node node) {
+    static boolean is_pi_node(Node node)
+    {
         return node.getNodeType() == Node.PROCESSING_INSTRUCTION_NODE;
+    }
+
+    static boolean is_leaf_node(Node node)
+    {
+        return node.getChildNodes().getLength() == 0;
+    }
+
+    /** Mirrors C is_key_value_node.
+     *  Single content or entity child, or multiple text or entity children. */
+    static boolean is_key_value_node(Node node)
+    {
+        NodeList children = node.getChildNodes();
+        if (children.getLength() == 0)
+        {
+            return false;
+        }
+
+        Node from = children.item(0);
+        Node to = children.item(children.getLength() - 1);
+
+        // Single content or entity node.
+        if (from == to && (is_content_node(from) || is_entity_node(from)))
+        {
+            return true;
+        }
+
+        // Multiple text or entity nodes.
+        for (int i = 0; i < children.getLength(); i++)
+        {
+            int type = children.item(i).getNodeType();
+            if (type != Node.TEXT_NODE && type != Node.ENTITY_REFERENCE_NODE)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    static boolean is_entity_node(Node node)
+    {
+        return node.getNodeType() == Node.ENTITY_NODE ||
+            node.getNodeType() == Node.ENTITY_REFERENCE_NODE;
     }
 
     public void print_node(XMQPrintState ps, Node node, int align)

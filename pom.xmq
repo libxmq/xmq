@@ -1,17 +1,24 @@
-project(xmlns = http://maven.apache.org/POM/4.0.0)
+project(xsi:schemaLocation = '              http://maven.apache.org/POM/4.0.0              https://maven.apache.org/xsd/maven-4.0.0.xsd'
+        xmlns:xsi          = http://www.w3.org/2001/XMLSchema-instance
+        xmlns              = http://maven.apache.org/POM/4.0.0)
 {
     modelVersion = 4.0.0
-    groupId      = org.libxmq
-    artifactId   = xmq
-    version      = 0.1.4
-    properties {
-        project.build.sourceEncoding = UTF-8
-        maven.compiler.source        = 17
-        maven.compiler.target        = 17
+    parent {
+        groupId    = org.springframework.boot
+        artifactId = spring-boot-starter-parent
+        version    = 3.0.1
+        relativePath
     }
+    groupId     = org.libxmq
+    artifactId  = xmq
+    version     = 0.1.4
     name        = libxmq
     description = 'Library to work with xmq/xml/html/json.'
     url         = https://libxmq.org
+    properties {
+        project.build.sourceEncoding = UTF-8
+        maven.compiler.release       = 17
+    }
     licenses {
         license {
             name = 'MIT License'
@@ -30,10 +37,41 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
         developerConnection = scm:git:https://github.com/libxmq/xmq.git
         url                 = https://github.com/libxmq/xmq
     }
-    parent {
-        groupId    = org.springframework.boot
-        artifactId = spring-boot-starter-parent
-        version    = 3.0.1
+    dependencies {
+        // Language Server Protocol
+        dependency {
+            groupId    = org.eclipse.lsp4j
+            artifactId = org.eclipse.lsp4j
+            version    = 1.0.0
+        }
+        // Logging
+        dependency {
+            groupId    = ch.qos.logback
+            artifactId = logback-classic
+            version    = 1.6.3
+        }
+        /* JAXB 2.x uses javax.xml.bind.*.
+
+           Do not mix this API with JAXB 4.x, which uses
+           jakarta.xml.bind.*. */
+        dependency {
+            groupId    = javax.xml.bind
+            artifactId = jaxb-api
+            version    = 2.3.1
+        }
+        dependency {
+            groupId    = com.sun.xml.bind
+            artifactId = jaxb-impl
+            version    = 2.3.4
+            scope      = runtime
+        }
+        // Tests
+        dependency {
+            groupId    = junit
+            artifactId = junit
+            version    = 4.13.2
+            scope      = test
+        }
     }
     build {
         directory = build
@@ -69,7 +107,7 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
                     execution {
                         id = attach-sources
                         goals {
-                            goal = jar
+                            goal = jar-no-fork
                         }
                     }
                 }
@@ -78,7 +116,7 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
             plugin {
                 groupId    = org.apache.maven.plugins
                 artifactId = maven-javadoc-plugin
-                version    = 3.6.0
+                version    = 3.12.0
                 executions {
                     execution {
                         id = attach-javadocs
@@ -93,6 +131,17 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
                     // Treat warnings as errors
                     additionalJOptions {
                         additionalJOption = -Xdoclint:all
+                    }
+                }
+            }
+            plugin {
+                groupId = org.apache.maven.plugins
+                artifactId = maven-jar-plugin
+                configuration {
+                    archive {
+                        manifestEntries {
+                            Automatic-Module-Name = org.libxmq
+                        }
                     }
                 }
             }
@@ -111,7 +160,7 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
                     }
                 }
             }
-            // Upload to Sonatype
+            // Upload to Maven Central
             plugin {
                 groupId    = org.sonatype.central
                 artifactId = central-publishing-maven-plugin
@@ -120,60 +169,6 @@ project(xmlns = http://maven.apache.org/POM/4.0.0)
                 configuration {
                     publishingServerId = central
                 }
-            }
-        }
-    }
-    dependencies {
-        dependency {
-            groupId    = org.eclipse.lsp4j
-            artifactId = org.eclipse.lsp4j
-            version    = 0.22.0
-        }
-        dependency {
-            groupId    = ch.qos.logback
-            artifactId = logback-classic
-            version    = 1.2.3
-        }
-        dependency {
-            groupId    = org.w3c
-            artifactId = dom
-            version    = 2.3.0-jaxb-1.0.6
-        }
-        // https://mvnrepository.com/artifact/javax.xml.parsers/jaxp-api
-        dependency {
-            groupId    = javax.xml.parsers
-            artifactId = jaxp-api
-            version    = 1.4.5
-        }
-        dependency {
-            groupId    = javax.xml.bind
-            artifactId = jaxb-api
-            version    = 2.4.0-b180830.0359
-        }
-        dependency {
-            groupId    = com.sun.xml.bind
-            artifactId = jaxb-core
-            version    = 4.0.6
-        }
-        dependency {
-            groupId    = com.sun.xml.bind
-            artifactId = jaxb-impl
-            version    = 4.0.6
-        }
-        dependency {
-            groupId    = junit
-            artifactId = junit
-            version    = 4.13.2
-            scope      = test
-        }
-    }
-    reporting {
-        plugins {
-            plugin {
-                groupId    = org.apache.maven.plugins
-                artifactId = maven-javadoc-plugin
-                version    = 3.12.0
-                configuration
             }
         }
     }

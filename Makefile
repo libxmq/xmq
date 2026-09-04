@@ -300,10 +300,10 @@ javadoc_imp:
 xmqjc: pom.xml
 	@(make --no-print-directory -f make/java/Makefile xmqjc)
 
-testj: xmqj
+testj:
 	@java -cp build/classes/ org.libxmq.imp.TestInternals
 	@echo "OK: TestInternals"
-	@./tests/testj.sh "" build build/test_output $(FILTER)
+	@./tests/testj.sh build/xmqj.sh build build/test_output $(FILTER)
 
 testjc: xmqjc
 	@java -cp build/classes/ org.libxmq.imp.TestInternals
