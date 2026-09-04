@@ -303,12 +303,12 @@ xmqjc: pom.xml
 testj: xmqj
 	@java -cp build/classes/ org.libxmq.imp.TestInternals
 	@echo "OK: TestInternals"
-	@./tests/testj.sh "" build build/test_output
+	@./tests/testj.sh "" build build/test_output $(FILTER)
 
 testjc: xmqjc
 	@java -cp build/classes/ org.libxmq.imp.TestInternals
 	@echo "OK: TestInternals"
-	@./tests/testj.sh build/xmqjc build build/test_output
+	@./tests/testj.sh build/xmqjc build build/test_output $(FILTER)
 
 .PHONY: web
 web: build/web/index.html
