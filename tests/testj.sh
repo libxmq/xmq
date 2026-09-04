@@ -24,6 +24,14 @@ fi
 rm -rf "$OUTPUT"
 mkdir -p "$OUTPUT"
 
+for i in tests/format_???_*.test
+do
+    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+    tests/test_formatting.sh "$PROG" "$OUTPUT" "$i"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+    exit 0
+done
+
 if [ -n "$LIB" ]
 then
     for i in tests/java/*.java

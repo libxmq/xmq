@@ -1,66 +1,141 @@
-/* libxmq - Copyright (C) 2025 Fredrik Öhrström (spdx: MIT)
+/*
+This file is part of libxmq.
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
+libxmq is free software: you can redistribute it and/or modify
+it under the terms of the MIT license.
 
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
+libxmq is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MIT license for more details.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
+You should have received a copy of the MIT License along with
+libxmq.  If not, see <https://opensource.org/licenses/MIT>.
 */
 
 package org.libxmq.imp;
 
-import org.libxmq.OutputSettings;
 import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Entity;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
-import org.w3c.dom.Comment;
-import org.w3c.dom.NamedNodeMap;
 
 public class XMQPrinter
 {
-    boolean is_comment_node(Node node)
+    public class ParseException extends Exception
     {
-        return node.getNodeType() == Node.COMMENT_NODE;
     }
 
-    boolean is_document_node(Node node)
+    static void print_string(XMQPrintState ps, String s)
     {
-        return node.getNodeType() == Node.DOCUMENT_NODE;
+        ps.buffer.append(s);
+        if (s.length() > 0)
+        {
+            ps.last_char = s.charAt(s.length() - 1);
+        }
+        ps.current_indent += s.length();
     }
 
-    boolean is_element_node(Node node)
+    void print_white_spaces(XMQPrintState ps, int num)
     {
-        return node.getNodeType() == Node.ELEMENT_NODE;
+        XMQTheme c = ps.theme;
+        if (c != null && c.whitespace != null && c.whitespace.pre() != null)
+        {
+            ps.buffer.append(c.whitespace.pre());
+        }
+        ps.buffer.append(" ".repeat(num));
+        ps.current_indent += num;
+        if (c != null && c.whitespace != null && c.whitespace.post() != null)
+        {
+            ps.buffer.append(c.whitespace.post());
+        }
     }
 
-    boolean is_entity_node(Node node)
+    void print_nl(XMQPrintState ps, String prefix, String postfix)
     {
-        return node.getNodeType() == Node.ENTITY_NODE ||
-            node.getNodeType() == Node.ENTITY_REFERENCE_NODE;
+        if (postfix != null)
+        {
+            ps.buffer.append(postfix);
+        }
+        ps.buffer.append("\n");
+        ps.current_indent = 0;
+        ps.last_char = 0;
+        if (prefix != null)
+        {
+            ps.buffer.append(prefix);
+            ps.current_indent += prefix.length();
+        }
     }
 
-    boolean is_content_node(Node node)
+    void print_nl_and_indent(XMQPrintState ps, String prefix, String postfix)
     {
-        return node.getNodeType() == Node.TEXT_NODE
-            || node.getNodeType() == Node.CDATA_SECTION_NODE;
+        print_nl(ps, null, postfix);
+        print_white_spaces(ps, ps.line_indent);
+        if (prefix != null)
+        {
+            ps.buffer.append(prefix);
+            ps.current_indent += prefix.length();
+        }
+    }
+
+    /** A newline and indentation before an element key, unless just started a line. */
+    void check_space_before_key(XMQPrintState ps)
+    {
+        char c = ps.last_char;
+        if (c == 0) return;
+
+        if (!ps.output_settings.compact())
+        {
+            print_nl_and_indent(ps, null, null);
+        }
+        else if (need_separation_before_element_name(ps))
+        {
+            print_white_spaces(ps, 1);
+        }
+    }
+
+    static boolean need_separation_before_element_name(XMQPrintState ps)
+    {
+        char c = ps.last_char;
+        return c != 0
+                && c != '\''
+                && c != '"'
+                && c != '{'
+                && c != '}'
+                && c != ';'
+                && c != ')'
+                && c != '/';
+    }
+
+    static boolean need_separation_before_entity(XMQPrintState ps)
+    {
+        char c = ps.last_char;
+        return c != 0
+                && c != '='
+                && c != '\''
+                && c != '"'
+                && c != '{'
+                && c != '}'
+                && c != ';'
+                && c != '('
+                && c != ')';
+    }
+
+    void check_space_before_attribute(XMQPrintState ps)
+    {
+        char c = ps.last_char;
+        if (c == 0) return;
+
+        if (!ps.output_settings.compact())
+        {
+            print_nl_and_indent(ps, null, null);
+        }
+        else
+        {
+            print_white_spaces(ps, 1);
+        }
     }
 
     void check_space_before_opening_brace(XMQPrintState ps)
@@ -80,85 +155,99 @@ public class XMQPrinter
         }
     }
 
-    boolean need_separation_before_entity(XMQPrintState ps)
+    void check_space_before_closing_brace(XMQPrintState ps)
     {
-        // No space needed for:
-        // 'x y z'&nbsp;
-        // =&nbsp;
-        // {&nbsp;
-        // }&nbsp;
-        // ;&nbsp;
-        // Otherwise a space is needed:
-        // xyz &nbsp;
-        char c = ps.last_char;
-        return c != 0 && c != '=' && c != '\'' && c != '"' && c != '{' && c != '}' && c != ';' && c != '(' && c != ')';
-    }
-
-    void print_white_spaces(XMQPrintState ps, int num)
-    {
-        OutputSettings os = ps.output_settings;
-        XMQTheme c = ps.theme;
-
-        if (c != null && c.whitespace.pre() != null) ps.buffer.append(c.whitespace.pre());
-
-        for (int i=0; i<num; ++i)
+        if (!ps.output_settings.compact())
         {
-            ps.buffer.append(c.indentation_space);
+            print_nl_and_indent(ps, null, null);
         }
-        ps.current_indent += num;
-        if (c != null && c.whitespace.post() != null) ps.buffer.append(c.whitespace.post());
-    }
-
-    void print_nl_and_indent(XMQPrintState ps, String prefix, String postfix)
-    {
-        OutputSettings os = ps.output_settings;
-        XMQTheme c = ps.theme;
-
-        if (postfix != null) ps.buffer.append(postfix);
-        ps.buffer.append(c.explicit_nl);
-        ps.current_indent = 0;
-        ps.last_char = 0;
-        print_white_spaces(ps, ps.line_indent);
-
-        if (ps.restart_line != null) ps.buffer.append(ps.restart_line);
-        if (prefix != null) ps.buffer.append(prefix);
-    }
-
-    void print_nl(XMQPrintState ps, String prefix, String postfix)
-    {
-        OutputSettings os = ps.output_settings;
-        XMQTheme c = ps.theme;
-
-        if (postfix != null) ps.buffer.append(postfix);
-        ps.buffer.append(c.explicit_nl);
-        ps.current_indent = 0;
-        ps.last_char = 0;
-        if (ps.restart_line != null) ps.buffer.append(ps.restart_line);
-        if (prefix != null) ps.buffer.append(prefix);
     }
 
     boolean print_attributes(XMQPrintState ps, Element element)
     {
+        boolean has_attrs = false;
         NamedNodeMap attributes = element.getAttributes();
-        if (attributes.getLength() == 0) return false;
 
-        ps.buffer.append("(");
-        for (int i = 0; i < attributes.getLength(); i++)
+        if (attributes != null && attributes.getLength() > 0)
         {
-            Attr attr = (Attr)attributes.item(i);
-            ps.buffer.append(attr.getName()+"="+attr.getValue()+" ");
+            has_attrs = true;
+            ps.buffer.append("(");
+            ps.last_char = '(';
+            ps.current_indent += 1;
+
+            for (int i = 0; i < attributes.getLength(); i++)
+            {
+                Attr attr = (Attr)attributes.item(i);
+                check_space_before_attribute(ps);
+                print_string(ps, attr.getName());
+                String value = attr.getValue();
+                if (value != null && !value.isEmpty())
+                {
+                    if (!ps.output_settings.compact())
+                    {
+                        ps.buffer.append(" ");
+                        ps.current_indent += 1;
+                    }
+                    ps.buffer.append("=");
+                    ps.last_char = '=';
+                    ps.current_indent += 1;
+                    if (!ps.output_settings.compact())
+                    {
+                        ps.buffer.append(" ");
+                        ps.current_indent += 1;
+                    }
+                    // Attribute values are kept as-is. Quotes for values with
+                    // spaces should be added by the parser.
+                    print_string(ps, value);
+                }
+            }
+
+            ps.buffer.append(")");
+            ps.last_char = ')';
+            ps.current_indent += 1;
         }
 
-        ps.buffer.append(")");
-        return true;
+        return has_attrs;
+    }
+
+    void print_content_node(XMQPrintState ps, Node node)
+    {
+        Text text = (Text)node;
+        String value = text.getNodeValue();
+
+        if (value == null || value.trim().isEmpty())
+        {
+            return;
+        }
+
+        if (ps.last_char == '=')
+        {
+            // Key = value: separate with a single space in non-compact output.
+            if (!ps.output_settings.compact())
+            {
+                print_white_spaces(ps, 1);
+            }
+        }
+        else
+        {
+            check_space_before_key(ps);
+        }
+        print_value_text(ps, value.trim());
+    }
+
+    void print_value_text(XMQPrintState ps, String value)
+    {
+        // In non-compact output, text containing newlines would need quotes
+        // to be kept as-is. For now, print the text as-is.
+        print_string(ps, value);
     }
 
     void print_element_node(XMQPrintState ps, Node node)
     {
         Element element = (Element)node;
 
-        ps.indent();
-        ps.buffer.append(element.getTagName());
+        check_space_before_key(ps);
+        print_string(ps, element.getTagName());
 
         print_attributes(ps, element);
 
@@ -166,104 +255,80 @@ public class XMQPrinter
 
         if (children.getLength() > 0)
         {
-            ps.buffer.append("\n");
-            ps.indent();
-            ps.buffer.append("{\n");
-            ps.current_indent += 4;
+            check_space_before_opening_brace(ps);
+            print_string(ps, "{");
+
+            int old_line_indent = ps.line_indent;
+            ps.line_indent += 4;
+
             for (int i = 0; i < children.getLength(); i++)
             {
-                Node child = children.item(i);
-                print_node(ps, child, 0);
+                print_node(ps, children.item(i), 0);
             }
-            ps.current_indent -= 4;
-            ps.indent();
-            ps.buffer.append("}\n");
+
+            ps.line_indent = old_line_indent;
+
+            check_space_before_closing_brace(ps);
+            print_string(ps, "}");
         }
     }
 
-    void print_document_node(XMQPrintState ps, Node node)
-    {
-        Document root = (Document)node;
-
-        NodeList children = root.getChildNodes();
-
-        if (children.getLength() > 0)
-        {
-            for (int i = 0; i < children.getLength(); i++)
-            {
-                Node child = children.item(i);
-                print_node(ps, child, 0);
-            }
-        }
+    // Check if the node is an element node (not text, comment, etc.)
+    boolean is_element_node(Node node) {
+        return node.getNodeType() == Node.ELEMENT_NODE;
     }
 
-    void print_content_node(XMQPrintState ps, Node node)
-    {
-        Text text = (Text)node;
-        ps.indent();
-        ps.buffer.append(">>>"+text.getNodeValue()+"<<<\n");
+    // Check if the node is a text node
+    boolean is_content_node(Node node) {
+        return node.getNodeType() == Node.TEXT_NODE;
     }
 
-    void print_comment_node(XMQPrintState ps, Node node)
-    {
-        Comment c = (Comment)node;
-        ps.indent();
-        ps.buffer.append("///*"+c.getTextContent()+"*///\n");
-    }
-
-    void check_space_before_entity_node(XMQPrintState ps)
-    {
-        char c = ps.last_char;
-        if (c == '(') return;
-        if (!ps.output_settings.compact() && c != '=')
-        {
-            print_nl_and_indent(ps, null, null);
-        }
-        else if (need_separation_before_entity(ps))
-        {
-            print_white_spaces(ps, 1);
-        }
-    }
-
-    void print_entity_node(XMQPrintState ps, Node node)
-    {
-        Entity entity = (Entity)node;
-
-        check_space_before_entity_node(ps);
-/*
-        print_utf8(ps, COLOR_entity, 1, "&", NULL);
-        print_utf8(ps, COLOR_entity, 1, (const char*)node->name, NULL);
-        print_utf8(ps, COLOR_entity, 1, ";", NULL);*/
+    // Check if the node is a processing instruction
+    boolean is_pi_node(Node node) {
+        return node.getNodeType() == Node.PROCESSING_INSTRUCTION_NODE;
     }
 
     public void print_node(XMQPrintState ps, Node node, int align)
     {
-        // Standalone quote must be quoted: 'word' 'some words'
-        if (is_content_node(node))
-        {
+        if (node.getNodeType() == Node.DOCUMENT_NODE) {
+            NodeList children = node.getChildNodes();
+            for (int i = 0; i < children.getLength(); i++)
+            {
+                print_node(ps, children.item(i), align);
+            }
+        }
+        else if (is_content_node(node)) {
             print_content_node(ps, node);
-            return;
         }
-        if (is_element_node(node))
-        {
+        else if (is_element_node(node)) {
             print_element_node(ps, node);
-            return;
         }
-        if (is_entity_node(node))
+        else if (is_pi_node(node)) {
+            print_pi_node(ps, node);
+        }
+        else
         {
-            print_entity_node(ps, node);
-            return;
+            throw new RuntimeException("Unknown node type: " + node.getNodeType());
         }
-        if (is_document_node(node))
-        {
-            print_document_node(ps, node);
-            return;
-        }
-        if (is_comment_node(node))
-        {
-            print_comment_node(ps, node);
-            return;
-        }
+    }
 
+    void print_pi_node(XMQPrintState ps, Node node)
+    {
+        check_space_before_key(ps);
+        ps.buffer.append("<?");
+        ps.last_char = '?';
+        ps.current_indent += 2;
+        String content = node.getNodeValue() != null ? node.getNodeValue() : "";
+        String target = node.getNodeName();
+        print_string(ps, target);
+        if (!content.isEmpty())
+        {
+            ps.buffer.append(" ");
+            ps.current_indent += 1;
+            print_string(ps, content);
+        }
+        ps.buffer.append("?>");
+        ps.last_char = '>';
+        ps.current_indent += 2;
     }
 }

@@ -41,6 +41,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.libxmq.ParseException;
+import org.libxmq.OutputSettings;
 import org.libxmq.XMQ;
 
 public class Main
@@ -96,9 +97,26 @@ public class Main
 
                 XMQPrintState ps = new XMQPrintState();
                 ps.defaultTheme();
+                ps.output_settings = new OutputSettings().setIndentAmount(4);
+                for (String arg : args)
+                {
+                    if (arg.equals("--compact"))
+                    {
+                        ps.output_settings.setCompact(true);
+                    }
+                }
                 XMQPrinter pr = new XMQPrinter();
                 pr.print_node(ps, pa.doc(), 0);
                 System.out.print(ps.buffer);
+                boolean noFinalNl = false;
+                for (String arg : args)
+                {
+                    if (arg.equals("--no-final-nl"))
+                    {
+                        noFinalNl = true;
+                    }
+                }
+                if (!noFinalNl) System.out.println();
             }
 
         }
