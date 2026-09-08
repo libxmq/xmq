@@ -66,6 +66,44 @@ public class XMQPrinter
         ps.current_indent += s.length();
     }
 
+    /** Mirrors C print_utf8_char. Prints a single character (updates last_char). */
+    void print_char(XMQPrintState ps, char c)
+    {
+        ps.buffer.append(c);
+        ps.last_char = c;
+        ps.current_indent += 1;
+    }
+
+    /** Mirrors C check_space_before_entity_node. */
+    void check_space_before_entity_node(XMQPrintState ps)
+    {
+        char c = ps.last_char;
+        if (c == '(') return;
+        if (!ps.output_settings.compact() && c != '=')
+        {
+            print_nl_and_indent(ps, null, null);
+        }
+        else if (need_separation_before_entity(ps))
+        {
+            print_white_spaces(ps, 1);
+        }
+    }
+
+    /** Mirrors C check_space_before_quote. */
+    void check_space_before_quote(XMQPrintState ps)
+    {
+        char c = ps.last_char;
+        if (c == 0) return;
+        if (!ps.output_settings.compact() && c != '=' && c != '(')
+        {
+            print_nl_and_indent(ps, null, null);
+        }
+        else if (c == '\'' || c == '"' || (c >= 'A' && c <= 'Z'))
+        {
+            print_white_spaces(ps, 1);
+        }
+    }
+
     void print_white_spaces(XMQPrintState ps, int num)
     {
         XMQTheme c = ps.theme;
@@ -260,7 +298,7 @@ public class XMQPrinter
             {
                 print_white_spaces(ps, 1);
             }
-            print_value_text(ps, value);
+            print_value_text(ps, value, false);
         }
     }
 
@@ -284,7 +322,65 @@ public class XMQPrinter
         }
         // Do NOT trim: leading and ending spaces can be part of the value,
         // ie. key = ' x y z '
-        print_value_text(ps, value);
+        print_value_text(ps, value, false);
+    }
+
+    /**
+     * Mirrors C print_value. Prints the value of a key=value node. If there
+     * are multiple children (text and/or entity references) the value is
+     * compounded: ( value parts... ).
+     */
+    void print_value(XMQPrintState ps, Element element)
+    {
+        NodeList children = element.getChildNodes();
+
+        // In C: is_compound = node->next != NULL, ie. the value has siblings.
+        boolean is_compound = children.getLength() > 1;
+
+        int old_line_indent = ps.line_indent;
+
+        if (is_compound)
+        {
+            print_string(ps, "(");
+            print_white_spaces(ps, 1);
+            ps.line_indent = ps.current_indent;
+        }
+
+        for (int i = 0; i < children.getLength(); i++)
+        {
+            Node child = children.item(i);
+            if (is_entity_node(child))
+            {
+                print_entity_node(ps, child);
+            }
+            else if (is_content_node(child))
+            {
+                String value = ((Text)child).getNodeValue();
+                if (value == null) value = "";
+                print_value_text(ps, value, is_compound);
+            }
+            else
+            {
+                // Sub element, should not happen for a key=value node.
+                print_node(ps, child, 0);
+            }
+        }
+
+        if (is_compound)
+        {
+            print_white_spaces(ps, 1);
+            print_string(ps, ")");
+        }
+
+        ps.line_indent = old_line_indent;
+    }
+
+    /** Mirrors C print_entity_node. Prints &name;. */
+    void print_entity_node(XMQPrintState ps, Node node)
+    {
+        check_space_before_entity_node(ps);
+        String name = node.getNodeName();
+        print_string(ps, "&"+name+";");
     }
 
     /** Mirrors C is_safe_value_char. True if the character does not need quoting. */
@@ -400,64 +496,126 @@ public class XMQPrinter
         // Content contains two sequential '' quotes, must bump number of required quotes to 3.
         if (max == 2) max = 3;
 
-        // If the value has a leading or ending quote of the same kind as chosen,
-        // or contains newlines, then we need the multi-line quote format.
+        // If the value has a leading or ending quote of the same kind as
+        // chosen, then we need the multi-line quote format.
         add_nls[0] = (use_dqs && leading_ending_dqs)
-            || (!use_dqs && leading_ending_sqs)
-            || s.indexOf('\n') >= 0
-            || s.indexOf('\r') >= 0;
+            || (!use_dqs && leading_ending_sqs);
 
         use_double_quotes[0] = use_dqs;
         return max;
     }
 
-    void print_value_text(XMQPrintState ps, String value)
+    /**
+     * Mirrors C print_value_internal_text + print_safe_leaf_quote.
+     * Prints a text value, quoted if necessary (unless it is a safe plain
+     * xmq text value and not in a compound). If in_compound is true then
+     * quoting is forced, like in C where the level is not ELEMENT_VALUE
+     * inside a compound.
+     */
+    void print_value_text(XMQPrintState ps, String value, boolean in_compound)
     {
         if (value.isEmpty())
         {
             // Empty values are printed like ''
+            check_space_before_quote(ps);
             print_string(ps, "''");
             return;
         }
 
-        if (is_xmq_text_value(value))
+        if (!in_compound && is_xmq_text_value(value))
         {
             // Safe text, no quotes needed: key = 123 or key = blue
             print_string(ps, value);
             return;
         }
 
-        boolean[] use_double_quotes = new boolean[1];
-        boolean[] add_nls = new boolean[1];
+        boolean[] use_double_quotes = { false };
+        boolean[] add_nls = { false };
         int numq = count_necessary_quotes(value, false, use_double_quotes, add_nls);
+        if (numq < 1) numq = 1;
         String q = use_double_quotes[0] ? "\"" : "'";
+
+        int old_line_indent = ps.line_indent;
+        if (add_nls[0])
+        {
+            ps.line_indent = ps.current_indent;
+        }
+
+        check_space_before_quote(ps);
+        print_string(ps, q.repeat(numq));
+
+        if (!add_nls[0])
+        {
+            ps.line_indent = ps.current_indent;
+        }
+        if (add_nls[0])
+        {
+            print_nl_and_indent(ps, null, null);
+        }
+
+        // Mirrors C print_quote_lines_and_color_uwhitespace.
+        if (value.charAt(0) == '\n')
+        {
+            // We are leading with a newline, print an extra into the quote,
+            // which will be trimmed away during parse.
+            print_nl(ps, null, null);
+        }
+
+        boolean all_newlines = true;
+        for (int i = 0; i < value.length(); i++)
+        {
+            char ch = value.charAt(i);
+            if (ch == '\n')
+            {
+                if (i + 1 < value.length() && value.charAt(i + 1) != '\n')
+                {
+                    // This newline has content after it, indent the next line.
+                    print_nl_and_indent(ps, null, null);
+                }
+                else
+                {
+                    // Empty line or last line, no indent.
+                    print_nl(ps, null, null);
+                }
+            }
+            else
+            {
+                print_char(ps, ch);
+                all_newlines = false;
+            }
+        }
+        if (value.charAt(value.length() - 1) == '\n')
+        {
+            // We are ending with a newline, print an extra into the quote,
+            // which will be trimmed away during parse.
+            ps.line_indent--;
+            if (!all_newlines)
+            {
+                print_nl_and_indent(ps, null, null);
+            }
+            else
+            {
+                ps.current_indent = 0;
+                ps.last_char = 0;
+                print_white_spaces(ps, ps.line_indent);
+            }
+            ps.line_indent++;
+        }
+
+        if (!add_nls[0])
+        {
+            ps.line_indent = old_line_indent;
+        }
+        if (add_nls[0])
+        {
+            print_nl_and_indent(ps, null, null);
+        }
+
+        print_string(ps, q.repeat(numq));
 
         if (add_nls[0])
         {
-            // The value cannot safely be quoted on a single line,
-            // use the multi-line quote format:
-            //   'howdy'
-            //   '''
-            //   'x'
-            //   '''
-            int old_line_indent = ps.line_indent;
-            ps.line_indent = ps.current_indent;
-            print_string(ps, q.repeat(numq));
-            for (String line : value.split("\n", -1))
-            {
-                print_nl_and_indent(ps, null, null);
-                print_string(ps, line);
-            }
-            print_nl_and_indent(ps, null, null);
-            print_string(ps, q.repeat(numq));
             ps.line_indent = old_line_indent;
-        }
-        else
-        {
-            // Single line quote: 'x y z'
-            print_string(ps, q.repeat(numq));
-            print_string(ps, value);
-            print_string(ps, q.repeat(numq));
         }
     }
 
@@ -510,16 +668,8 @@ public class XMQPrinter
             print_white_spaces(ps, 1);
         }
 
-        // Print the value, i.e. the (first) child node.
-        Node first = element.getChildNodes().item(0);
-        if (is_content_node(first))
-        {
-            print_node(ps, first, align);
-        }
-        else
-        {
-            print_node(ps, first, align);
-        }
+        // Print the value, i.e. the first (or all) child nodes.
+        print_value(ps, element);
     }
 
     /** Mirrors C find_element_key_max_width.

@@ -32,6 +32,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.EntityReference;
 import org.w3c.dom.Node;
 import org.w3c.dom.Text;
 import org.w3c.dom.Comment;
@@ -217,14 +218,17 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        add_entity(start, stop);
     }
 
     protected void do_element_value_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        add_entity(start, stop);
     }
 
     protected void do_element_value_compound_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        add_entity(start, stop);
     }
 
     protected void do_attr_value_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
@@ -233,6 +237,14 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_attr_value_compound_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+    }
+
+    void add_entity(int start, int stop)
+    {
+        // start..stop covers '&name;'
+        String name = buffer_.substring(start + 1, stop - 1);
+        EntityReference er = doc_.createEntityReference(name);
+        element_stack_.peek().appendChild(er);
     }
 
     protected void do_comment(int start_line, int start_col, int start, int stop, int stop_suffix)
