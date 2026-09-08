@@ -221,9 +221,7 @@ public class XMQPrinter
                         ps.buffer.append(" ");
                         ps.current_indent += 1;
                     }
-                    // Attribute values are kept as-is. Quotes for values with
-                    // spaces should be added by the parser.
-                    print_string(ps, value);
+                    print_value_text(ps, value);
                 }
             }
 
@@ -254,11 +252,178 @@ public class XMQPrinter
         print_value_text(ps, value.trim());
     }
 
+    /** Mirrors C is_safe_value_char. True if the character does not need quoting. */
+    static boolean is_safe_value_char(char c)
+    {
+        return c != ' ' && c != '\n' && c != '\t' && c != '\r'
+            && c != '(' && c != ')' && c != '{' && c != '}'
+            && c != '\'' && c != '"';
+    }
+
+    /** Mirrors C unsafe_value_start. True if the value cannot start with these characters. */
+    static boolean is_unsafe_value_start(String s)
+    {
+        if (s.isEmpty())
+        {
+            return true;
+        }
+        char c = s.charAt(0);
+        char cc = s.length() > 1 ? s.charAt(1) : 0;
+        return c == '&' || c == '=' || (c == '/' && (cc == '/' || cc == '*'));
+    }
+
+    /** Mirrors C is_xmq_text_value. True if the value can be printed without quotes. */
+    static boolean is_xmq_text_value(String s)
+    {
+        if (is_unsafe_value_start(s))
+        {
+            return false;
+        }
+        for (int i = 0; i < s.length(); i++)
+        {
+            if (!is_safe_value_char(s.charAt(i)))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Mirrors C count_necessary_quotes.
+     *  Returns the number of quotes needed, and sets the output arrays
+     *  use_double_quotes and add_nls (multi-line quote). */
+    static int count_necessary_quotes(String s, boolean prefer_double_quotes, boolean[] use_double_quotes, boolean[] add_nls)
+    {
+        boolean all_safe = !is_unsafe_value_start(s);
+
+        int max_single = 0;
+        int curr_single = 0;
+        int max_double = 0;
+        int curr_double = 0;
+
+        for (char c : s.toCharArray())
+        {
+            if (!is_safe_value_char(c))
+            {
+                all_safe = false;
+            }
+            if (c == '\'')
+            {
+                curr_single++;
+                if (curr_single > max_single) max_single = curr_single;
+            }
+            else
+            {
+                curr_single = 0;
+                if (c == '"')
+                {
+                    curr_double++;
+                    if (curr_double > max_double) max_double = curr_double;
+                }
+                else
+                {
+                    curr_double = 0;
+                }
+            }
+        }
+
+        boolean leading_ending_sqs = s.charAt(0) == '\'' || s.charAt(s.length() - 1) == '\'';
+        boolean leading_ending_dqs = s.charAt(0) == '"' || s.charAt(s.length() - 1) == '"';
+
+        boolean use_dqs = prefer_double_quotes;
+        if (leading_ending_sqs && !leading_ending_dqs)
+        {
+            // If there is a leading or ending single quote, then use double quotes.
+            use_dqs = true;
+        }
+        else if (!leading_ending_sqs && leading_ending_dqs)
+        {
+            // If there are leading or ending double quotes, then use single quotes.
+            use_dqs = false;
+        }
+        else if (max_double > max_single && max_double > 0)
+        {
+            // We have more doubles than singles, use single quotes.
+            use_dqs = false;
+        }
+        else if (max_double < max_single)
+        {
+            // We have fewer doubles than singles, use double quotes.
+            use_dqs = true;
+        }
+        else if (max_double > 0)
+        {
+            // Equal number of quotes, then always use single quotes.
+            use_dqs = false;
+        }
+
+        int max = use_dqs ? max_double : max_single;
+        // We found x quotes, thus we need x+1 quotes to quote them.
+        if (max > 0) max++;
+        // Content contains no quotes ', but has unsafe chars, a single quote is enough.
+        if (max == 0 && !all_safe) max = 1;
+        // Content contains two sequential '' quotes, must bump number of required quotes to 3.
+        if (max == 2) max = 3;
+
+        // If the value has a leading or ending quote of the same kind as chosen,
+        // or contains newlines, then we need the multi-line quote format.
+        add_nls[0] = (use_dqs && leading_ending_dqs)
+            || (!use_dqs && leading_ending_sqs)
+            || s.indexOf('\n') >= 0
+            || s.indexOf('\r') >= 0;
+
+        use_double_quotes[0] = use_dqs;
+        return max;
+    }
+
     void print_value_text(XMQPrintState ps, String value)
     {
-        // In non-compact output, text containing newlines would need quotes
-        // to be kept as-is. For now, print the text as-is.
-        print_string(ps, value);
+        if (value.isEmpty())
+        {
+            // Empty values are printed like ''
+            print_string(ps, "''");
+            return;
+        }
+
+        if (is_xmq_text_value(value))
+        {
+            // Safe text, no quotes needed: key = 123 or key = blue
+            print_string(ps, value);
+            return;
+        }
+
+        boolean[] use_double_quotes = new boolean[1];
+        boolean[] add_nls = new boolean[1];
+        int numq = count_necessary_quotes(value, false, use_double_quotes, add_nls);
+        String q = use_double_quotes[0] ? "\"" : "'";
+
+        if (add_nls[0])
+        {
+            // The value cannot safely be quoted on a single line,
+            // use the multi-line quote format:
+            //   'howdy'
+            //   '''
+            //   'x'
+            //   '''
+            int old_line_indent = ps.line_indent;
+            ps.line_indent = ps.current_indent;
+            print_string(ps, q.repeat(numq));
+            for (String line : value.split("\n", -1))
+            {
+                print_nl_and_indent(ps, null, null);
+                print_string(ps, line);
+            }
+            print_nl_and_indent(ps, null, null);
+            print_string(ps, q.repeat(numq));
+            ps.line_indent = old_line_indent;
+        }
+        else
+        {
+            // Single line quote: 'x y z'
+            print_string(ps, q.repeat(numq));
+            print_string(ps, value);
+            print_string(ps, q.repeat(numq));
+        }
     }
 
     void print_element_node(XMQPrintState ps, Node node)
