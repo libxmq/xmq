@@ -148,7 +148,28 @@ public class Main
                     dbf.setNamespaceAware(false);
                     dbf.setValidating(false);
                     DocumentBuilder db = dbf.newDocumentBuilder();
-                    doc = db.parse(new InputSource(new StringReader(content)));
+                    org.w3c.dom.Document xml_doc = db.parse(new InputSource(new StringReader(content)));
+                    doc = xml_doc;
+
+                    // If the xml has a doctype, then move it out of the w3c
+                    // document and into a pi node named DOCTYPE, since that is
+                    // how xmq doctypes are stored in the dom (see
+                    // XMQParseIntoDOM). The value is reconstructed from the
+                    // source, so that the entity values keep their original
+                    // quoting.
+                    org.w3c.dom.DocumentType dtd = xml_doc.getDoctype();
+                    if (dtd != null)
+                    {
+                        XMQParseIntoDOM tmp = new XMQParseIntoDOM();
+                        tmp.setup();
+                        doc = tmp.doc();
+                        doc.appendChild(doc.createProcessingInstruction("DOCTYPE", doctype_value(content, dtd)));
+                        org.w3c.dom.Element el = xml_doc.getDocumentElement();
+                        if (el != null)
+                        {
+                            doc.appendChild(doc.importNode(el, true));
+                        }
+                    }
                 }
                 else
                 {
@@ -190,6 +211,95 @@ public class Main
         {
             e.printStackTrace(System.err);
         }
+    }
+
+    /**
+     * Constructs the xmq doctype value from an xml doctype declaration in the
+     * source. For the declaration
+     * 
+     *     <!DOCTYPE time [
+     *     <!ENTITY copy "&#169;">
+     *     ]>
+     * 
+     * the returned value is (\n is a real newline)
+     * 
+     *     time [\n<!ENTITY copy "&#169;">\n]
+     * 
+     * That is, the name, then, if there is an internal subset, a bracketed
+     * list with one entity declaration per line. The printer prints it as a
+     * multi line value, or as a single line if compact mode is set.
+     * @param content The original xml source.
+     * @param dtd The parsed w3c document type.
+     * @return The xmq doctype value.
+     */
+    static String doctype_value(String content, org.w3c.dom.DocumentType dtd)
+    {
+        StringBuilder v = new StringBuilder(dtd.getName());
+        int p = content.indexOf("<!DOCTYPE");
+        if (p < 0) return v.toString();
+
+        // Locate the internal subset of the doctype, if any. The doctype has
+        // the form <!DOCTYPE name [ internal-subset ]>, where the internal
+        // subset may contain entity declarations of its own (which end with a
+        // greater than char). All scans are done outside of quoted strings.
+        char quote = 0;
+        int lb = -1, rb = -1, end = -1;
+        for (int k = p; k < content.length(); k++)
+        {
+            char c = content.charAt(k);
+            if (quote != 0)
+            {
+                if (c == quote) quote = 0;
+                continue;
+            }
+            if (c == '\'' || c == '"')
+            {
+                quote = c;
+                continue;
+            }
+            if (lb < 0 && c == '[')
+            {
+                lb = k;
+                continue;
+            }
+            if (lb >= 0 && rb < 0 && c == ']')
+            {
+                rb = k;
+                continue;
+            }
+            if (c == '>')
+            {
+                if (lb < 0 || rb < 0)
+                {
+                    // A doctype with no internal subset ends at the first
+                    // greater than char.
+                    end = k;
+                    break;
+                }
+                end = k;
+                break;
+            }
+        }
+        if (end < 0 || lb < 0 || rb < 0) return v.toString();
+
+        // The internal subset, one entity declaration per line, each line
+        // trimmed of incidental indentation, and empty lines dropped.
+        StringBuilder sub = new StringBuilder();
+        for (String line : content.substring(lb+1, rb).split("\n"))
+        {
+            String t = line.strip();
+            if (t.isEmpty()) continue;
+            if (sub.length() > 0) sub.append('\n');
+            sub.append(t);
+        }
+        if (sub.length() == 0) return v.toString();
+
+        v.append(" [");
+        v.append('\n');
+        v.append(sub);
+        v.append('\n');
+        v.append(']');
+        return v.toString();
     }
 
     static void startServer(InputStream in, OutputStream out) throws InterruptedException, ExecutionException

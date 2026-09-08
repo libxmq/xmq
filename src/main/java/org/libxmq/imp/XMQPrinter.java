@@ -342,7 +342,10 @@ public class XMQPrinter
         if (is_compound)
         {
             print_string(ps, "(");
-            print_white_spaces(ps, 1);
+            if (!ps.output_settings.compact())
+            {
+                print_white_spaces(ps, 1);
+            }
             ps.line_indent = ps.current_indent;
         }
 
@@ -368,7 +371,10 @@ public class XMQPrinter
 
         if (is_compound)
         {
-            print_white_spaces(ps, 1);
+            if (!ps.output_settings.compact())
+            {
+                print_white_spaces(ps, 1);
+            }
             print_string(ps, ")");
         }
 
@@ -514,6 +520,12 @@ public class XMQPrinter
      */
     void print_value_text(XMQPrintState ps, String value, boolean in_compound)
     {
+        if (ps.output_settings.compact())
+        {
+            print_compact_value(ps, value, in_compound);
+            return;
+        }
+
         if (value.isEmpty())
         {
             // Empty values are printed like ''
@@ -617,6 +629,122 @@ public class XMQPrinter
         {
             ps.line_indent = old_line_indent;
         }
+    }
+
+    /**
+     * Compact printing of a text value value (mirrors C print_value_internal_text
+     * in compact mode, where newlines and other control characters that cannot
+     * appear inside a single-line quote are replaced with character entities like
+     * &#10;, splitting the value into smaller quoted segments. If the split is
+     * needed the whole value is wrapped in parentheses (a compound), unless the
+     * caller is already printing a compound.
+     */
+    void print_compact_value(XMQPrintState ps, String v, boolean in_compound)
+    {
+        if (v.isEmpty())
+        {
+            check_space_before_quote(ps);
+            print_string(ps, "''");
+            return;
+        }
+
+        boolean needs_split = false;
+        for (int i = 0; i < v.length(); i++)
+        {
+            if (is_compact_escape_char(v.charAt(i)))
+            {
+                needs_split = true;
+                break;
+            }
+        }
+
+        if (!needs_split)
+        {
+            // Single-line value, no entity splitting needed.
+            if (!in_compound && is_xmq_text_value(v))
+            {
+                // A safe plain value (eg key = 123), no quotes needed.
+                check_space_before_quote(ps);
+                print_string(ps, v);
+                return;
+            }
+            print_compact_quoted(ps, v);
+            return;
+        }
+
+        // The value contains characters that must be escaped as entities (eg a
+        // newline). Split into quoted segments separated by the entity.
+        if (!in_compound)
+        {
+            print_string(ps, "(");
+        }
+
+        int from = 0;
+        for (int i = 0; i < v.length(); i++)
+        {
+            char c = v.charAt(i);
+            if (!is_compact_escape_char(c))
+            {
+                continue;
+            }
+            print_compact_segment(ps, v, from, i);
+            check_space_before_entity_node(ps);
+            print_string(ps, "&#" + (int)c + ";");
+            from = i + 1;
+        }
+        print_compact_segment(ps, v, from, v.length());
+
+        if (!in_compound)
+        {
+            print_string(ps, ")");
+        }
+    }
+
+    /** Print v[from..to) as a quoted compact value (if non-empty after trimming). */
+    void print_compact_segment(XMQPrintState ps, String v, int from, int to)
+    {
+        if (from >= to) return;
+        // Trim leading/trailing xml whitespace. Each line in the DOM value is
+        // normally already trimmed, but guard against stray spaces.
+        int a = from;
+        int b = to;
+        while (a < b && is_xml_whitespace(v.charAt(a))) a++;
+        while (b > a && is_xml_whitespace(v.charAt(b-1))) b--;
+        if (a >= b) return;
+        String seg = v.substring(a, b);
+        print_compact_quoted(ps, seg);
+    }
+
+    /** Print seg as a single-line quoted value with the necessary number of quotes. */
+    void print_compact_quoted(XMQPrintState ps, String s)
+    {
+        boolean[] use_double_quotes = { false };
+        boolean[] add_nls = { false };
+        int numq = count_necessary_quotes(s, false, use_double_quotes, add_nls);
+        if (numq < 1) numq = 1;
+        String q = use_double_quotes[0] ? "\"" : "'";
+        check_space_before_quote(ps);
+        print_string(ps, q.repeat(numq));
+        print_string(ps, s);
+        print_string(ps, q.repeat(numq));
+    }
+
+    /**
+     * True if the character must be replaced by a character entity in compact
+     * mode, eg a newline (\n -> &#10;) or other control character that cannot
+     * appear inside a compact single-line quote.
+     */
+    static boolean is_compact_escape_char(char c)
+    {
+        if (c == '\n' || c == '\r') return true;
+        if (c < 32 && c != '\t') return true;
+        return false;
+    }
+
+    /** Mirrors C is_xml_whitespace (space, tab, newline, return, ff). */
+    static boolean is_xml_whitespace(char c)
+    {
+        return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f';
     }
 
     void print_element_node(XMQPrintState ps, Node node, int align)
@@ -818,6 +946,9 @@ public class XMQPrinter
         }
         else if (is_element_node(node)) {
         print_element_node(ps, node, align);
+        }
+        else if (node.getNodeType() == Node.DOCUMENT_TYPE_NODE) {
+            print_doctype_node(ps, (org.w3c.dom.DocumentType)node);
         }
         else if (is_pi_node(node)) {
             print_pi_node(ps, node);
@@ -1047,6 +1178,13 @@ public class XMQPrinter
     /** Mirrors C print_doctype. Prints !DOCTYPE = value. */
     void print_doctype(XMQPrintState ps, String content)
     {
+        // C converts all newlines to spaces in the doctype value when compact
+        // mode is set.
+        if (ps.output_settings.compact())
+        {
+            content = content.replace('\n', ' ');
+        }
+
         check_space_before_key(ps);
         print_string(ps, "!DOCTYPE");
         if (!ps.output_settings.compact())
@@ -1059,5 +1197,30 @@ public class XMQPrinter
             print_white_spaces(ps, 1);
         }
         print_value_text(ps, content, false /* in_compound */);
+    }
+
+    /**
+     * Prints a w3c DocumentType node, in case one is encountered (for example
+     * when printing a document that was not prepared for printing by the xmq
+     * parser).
+     *
+     * @param ps The print state.
+     * @param node The document type node to print.
+     */
+    void print_doctype_node(XMQPrintState ps, org.w3c.dom.DocumentType node)
+    {
+        StringBuilder v = new StringBuilder(node.getName());
+        String sub = node.getInternalSubset();
+        if (sub != null)
+        {
+            sub = sub.strip();
+            if (!sub.isEmpty())
+            {
+                v.append(" [\n");
+                v.append(sub);
+                v.append("\n]");
+            }
+        }
+        print_doctype(ps, v.toString());
     }
 }
