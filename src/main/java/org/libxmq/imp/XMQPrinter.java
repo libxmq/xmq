@@ -428,7 +428,7 @@ public class XMQPrinter
         }
     }
 
-    void print_element_node(XMQPrintState ps, Node node)
+    void print_element_node(XMQPrintState ps, Node node, int align)
     {
         Element element = (Element)node;
 
@@ -448,7 +448,7 @@ public class XMQPrinter
         // This is a key = value or key = 'value value' node.
         if (is_key_value_node(element))
         {
-            print_key_node(ps, element, 0);
+            print_key_node(ps, element, align);
             return;
         }
 
@@ -489,6 +489,57 @@ public class XMQPrinter
         }
     }
 
+    /** Mirrors C find_element_key_max_width.
+     *  Scans the list of siblings from from_index until there is a node which
+     *  is not a suitable key=value node (ie. no children, multiple children,
+     *  or it has attributes). The max width of the keys found is returned,
+     *  and restart[0] is set to the index where the next scan must begin. */
+    static int find_element_key_max_width(NodeList children, int from_index, int[] restart)
+    {
+        int max = 0;
+
+        for (int i = from_index; i < children.getLength(); i++)
+        {
+            Node n = children.item(i);
+            if (!is_element_node(n)
+                || !is_key_value_node(n)
+                || (((Element)n).getAttributes() != null
+                    && ((Element)n).getAttributes().getLength() > 0))
+            {
+                if (i == from_index) restart[0] = i + 1;
+                else restart[0] = i;
+                return max;
+            }
+            int len = n.getNodeName().length();
+            if (len > max) max = len;
+        }
+
+        restart[0] = children.getLength();
+        return max;
+    }
+
+    /** Mirrors C print_nodes.
+     *  Prints a list of sibling nodes, aligning the equal signs of runs of
+     *  key=value nodes, unless compact. */
+    void print_nodes(XMQPrintState ps, NodeList children)
+    {
+        int restart_find_at_node = 0;
+        int max = 0;
+
+        for (int i = 0; i < children.getLength(); i++)
+        {
+            // We need to search ahead to find the max width of the node names so that we can align the equal signs.
+            if (!ps.output_settings.compact() && i == restart_find_at_node)
+            {
+                int[] restart = new int[1];
+                max = find_element_key_max_width(children, i, restart);
+                restart_find_at_node = restart[0];
+            }
+
+            print_node(ps, children.item(i), max);
+        }
+    }
+
     void print_element_with_children(XMQPrintState ps, Element element)
     {
         NodeList children = element.getChildNodes();
@@ -499,10 +550,7 @@ public class XMQPrinter
         int old_line_indent = ps.line_indent;
         ps.line_indent += 4;
 
-        for (int i = 0; i < children.getLength(); i++)
-        {
-            print_node(ps, children.item(i), 0);
-        }
+        print_nodes(ps, children);
 
         ps.line_indent = old_line_indent;
 
@@ -580,17 +628,13 @@ public class XMQPrinter
     public void print_node(XMQPrintState ps, Node node, int align)
     {
         if (node.getNodeType() == Node.DOCUMENT_NODE) {
-            NodeList children = node.getChildNodes();
-            for (int i = 0; i < children.getLength(); i++)
-            {
-                print_node(ps, children.item(i), align);
-            }
+            print_nodes(ps, node.getChildNodes());
         }
         else if (is_content_node(node)) {
             print_content_node(ps, node);
         }
         else if (is_element_node(node)) {
-            print_element_node(ps, node);
+        print_element_node(ps, node, align);
         }
         else if (is_pi_node(node)) {
             print_pi_node(ps, node);
