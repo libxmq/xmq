@@ -163,8 +163,7 @@ dist:
 	@(cd dist; make example; make examplecc)
 
 java:
-	@mvn -B -q package 2>&1 | grep -v "WARNING: A restrict" | grep -v "System::lo\
-ad" | grep -v "Use --enable-native" | grep -v "WARNING: Restr" | grep -v Unsafe
+	@mvn -B -q package
 
 .PHONY: dist
 
