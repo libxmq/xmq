@@ -1017,12 +1017,21 @@ public class XMQPrinter
 
     void print_pi_node(XMQPrintState ps, Node node)
     {
+        String target = node.getNodeName();
+
+        // A pi node named DOCTYPE holds a xmq doctype value (see XMQParseIntoDOM).
+        if (target != null && target.equals("DOCTYPE"))
+        {
+            String content = node.getNodeValue() != null ? node.getNodeValue() : "";
+            print_doctype(ps, content);
+            return;
+        }
+
         check_space_before_key(ps);
         ps.buffer.append("<?");
         ps.last_char = '?';
         ps.current_indent += 2;
         String content = node.getNodeValue() != null ? node.getNodeValue() : "";
-        String target = node.getNodeName();
         print_string(ps, target);
         if (!content.isEmpty())
         {
@@ -1033,5 +1042,22 @@ public class XMQPrinter
         ps.buffer.append("?>");
         ps.last_char = '>';
         ps.current_indent += 2;
+    }
+
+    /** Mirrors C print_doctype. Prints !DOCTYPE = value. */
+    void print_doctype(XMQPrintState ps, String content)
+    {
+        check_space_before_key(ps);
+        print_string(ps, "!DOCTYPE");
+        if (!ps.output_settings.compact())
+        {
+            print_white_spaces(ps, 1);
+        }
+        print_string(ps, "=");
+        if (!ps.output_settings.compact())
+        {
+            print_white_spaces(ps, 1);
+        }
+        print_value_text(ps, content, false /* in_compound */);
     }
 }

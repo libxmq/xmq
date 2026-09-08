@@ -256,9 +256,8 @@ public abstract class XMQParser extends XMQParseCallbacks
     {
         char c = currentChar();
         assert(c == '!');
+        int start = i_; // Mirrors C: the name includes the bang, ie. !DOCTYPE.
         increment(c);
-
-        int start = i_;
 
         while (i_ < buffer_len_)
         {

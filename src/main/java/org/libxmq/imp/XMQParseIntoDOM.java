@@ -55,6 +55,7 @@ public class XMQParseIntoDOM extends XMQParser
     Document doc_;
 
     Stack<Node> element_stack_; // Top is last created node
+    private org.w3c.dom.ProcessingInstruction doctype_holder_; // The !DOCTYPE value holder
     Attr attr_last_; // Last created attribute
     String namespace_declaration_; // xlmns or xlmns:alfa found
     String namespace_name_; // The alfa in xmlns:alfa.
@@ -63,9 +64,9 @@ public class XMQParseIntoDOM extends XMQParser
     Node add_post_node_after_; // Used when retrofitting post-root comments found in json.
 
     boolean parsing_doctype_; // True when parsing a doctype.
+    boolean doctype_found_; // True after a doctype has been parsed.
     /*
     void *add_doctype_before; // Used when retrofitting a doctype found in json.
-    bool doctype_found; // True after a doctype has been parsed.
     */
     boolean parsing_pi_; // True when parsing a processing instruction, pi.
     /*
@@ -144,7 +145,13 @@ public class XMQParseIntoDOM extends XMQParser
 
         if (name.equals("!DOCTYPE"))
         {
+            // The W3C DOM has no doctype value node, so we use a pi node named
+            // DOCTYPE to hold the value. The printer prints such a pi node as a
+            // !DOCTYPE line. The pi node is created now, so that do_equals has
+            // a real last child to push onto the element stack.
             parsing_doctype_ = true;
+            doctype_holder_ = doc_.createProcessingInstruction("DOCTYPE", "");
+            element_stack_.peek().appendChild(doctype_holder_);
         }
         else if (name.charAt(0) == '?')
         {
@@ -188,6 +195,20 @@ public class XMQParseIntoDOM extends XMQParser
     void add_quote(int start, int stop)
     {
         var pair = UtilParseQuote.findQuoteStartStop(buffer_, start, stop);
+
+        if (parsing_doctype_)
+        {
+            // The doctype value is stored in a pi node named DOCTYPE, which is
+            // printed as a !DOCTYPE line. As for other values, incidental
+            // indentation is trimmed on parsing; the printer re-adds it on
+            // output, mirroring C.
+            String content = UtilParseQuote.trimQuote(buffer_, pair.left(), pair.right());
+            doctype_holder_.setData(content);
+            parsing_doctype_ = false;
+            doctype_found_ = true;
+            return;
+        }
+
         String content = UtilParseQuote.trimQuote(buffer_, pair.left(), pair.right());
         org.w3c.dom.Text text = doc_.createTextNode(content);
         element_stack_.peek().appendChild(text);
@@ -387,6 +408,12 @@ public class XMQParseIntoDOM extends XMQParser
 
         state->parsing_doctype = false;
         state->doctype_found = true;*/
+            // The W3C DOM has no doctype node holding a xmq doctype value, so
+            // we use a pi node named DOCTYPE to store it. The printer prints
+            // such a pi node as a !DOCTYPE line.
+            doctype_holder_.setData(buffer_.substring(start, stop));
+            parsing_doctype_ = false;
+            doctype_found_ = true;
         }
         else
         {
