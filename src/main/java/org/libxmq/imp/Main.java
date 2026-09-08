@@ -39,6 +39,11 @@ import org.eclipse.lsp4j.services.LanguageClient;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.xml.sax.InputSource;
+import java.io.StringReader;
 
 import org.libxmq.ParseException;
 import org.libxmq.OutputSettings;
@@ -107,8 +112,38 @@ public class Main
             }
             else
             {
-                XMQParseIntoDOM pa = new XMQParseIntoDOM();
-                pa.parse(content, args[0]);
+                org.w3c.dom.Document doc;
+
+                // Xmq input can never start with a less than char, so if the
+                // input starts with a less than char (after leading whitespace),
+                // then it is xml. Then parse the xml with the default xml
+                // parser and print the dom as xmq below.
+                int i = 0;
+                while (i < content.length())
+                {
+                    char c = content.charAt(i);
+                    if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
+                    {
+                        i++;
+                        continue;
+                    }
+                    break;
+                }
+
+                if (i < content.length() && content.charAt(i) == '<')
+                {
+                    DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+                    dbf.setNamespaceAware(false);
+                    dbf.setValidating(false);
+                    DocumentBuilder db = dbf.newDocumentBuilder();
+                    doc = db.parse(new InputSource(new StringReader(content)));
+                }
+                else
+                {
+                    XMQParseIntoDOM pa = new XMQParseIntoDOM();
+                    pa.parse(content, args[0]);
+                    doc = pa.doc();
+                }
 
                 XMQPrintState ps = new XMQPrintState();
                 ps.defaultTheme();
@@ -121,7 +156,7 @@ public class Main
                     }
                 }
                 XMQPrinter pr = new XMQPrinter();
-                pr.print_node(ps, pa.doc(), 0);
+                pr.print_node(ps, doc, 0);
                 System.out.print(ps.buffer);
                 boolean noFinalNl = false;
                 for (String arg : args)
