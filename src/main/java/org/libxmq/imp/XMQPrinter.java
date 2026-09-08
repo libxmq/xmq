@@ -249,7 +249,9 @@ public class XMQPrinter
         {
             check_space_before_key(ps);
         }
-        print_value_text(ps, value.trim());
+        // Do NOT trim: leading and ending spaces can be part of the value,
+        // ie. key = ' x y z '
+        print_value_text(ps, value);
     }
 
     /** Mirrors C is_safe_value_char. True if the character does not need quoting. */
