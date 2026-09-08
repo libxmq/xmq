@@ -24,6 +24,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 package org.libxmq.imp;
 
 import org.w3c.dom.Attr;
+import org.w3c.dom.Comment;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -671,9 +672,196 @@ public class XMQPrinter
         else if (is_pi_node(node)) {
             print_pi_node(ps, node);
         }
+        else if (is_comment_node(node)) {
+            print_comment_node(ps, (Comment)node);
+        }
         else
         {
             throw new RuntimeException("Unknown node type: " + node.getNodeType());
+        }
+    }
+
+    static boolean is_comment_node(Node node)
+    {
+        return node.getNodeType() == Node.COMMENT_NODE;
+    }
+
+    /**
+     * Scan the comment to determine how it must be commented.
+     * If the comment contains asterisk plus slashes, then find the max num
+     * slashes after an asterisk. The returned value is 1 + this max.
+     */
+    static int count_necessary_slashes(String content)
+    {
+        int max = 0;
+        int curr = 0;
+        boolean counting = false;
+
+        for (int i = 0; i < content.length(); i++)
+        {
+            char c = content.charAt(i);
+            if (counting)
+            {
+                if (c == '/')
+                {
+                    curr++;
+                    if (curr > max) max = curr;
+                }
+                else
+                {
+                    counting = false;
+                }
+            }
+
+            if (!counting)
+            {
+                if (c == '*')
+                {
+                    counting = true;
+                    curr = 0;
+                }
+            }
+        }
+        return max+1;
+    }
+
+    // Mirrors C print_comment_lines.
+    void print_comment_lines(XMQPrintState ps, String content, boolean compact)
+    {
+        int num_slashes = count_necessary_slashes(content);
+        String slashes = "/".repeat(num_slashes);
+
+        // Mirrors C: line_indent = current_indent + 1 + num_slashes (+ 1 for the
+        // space, when not compact) so that continuation lines start just after /* .
+        int add_spaces = ps.current_indent + 1 + num_slashes;
+        print_string(ps, slashes + "*");
+        if (!compact)
+        {
+            if (!content.isEmpty() && content.charAt(0) != '\n')
+            {
+                print_string(ps, " ");
+            }
+            add_spaces++;
+        }
+
+        int prev_line_indent = ps.line_indent;
+        ps.line_indent = add_spaces;
+
+        int line_start = 0;
+        for (int i = 0; i < content.length(); i++)
+        {
+            if (content.charAt(i) == '\n')
+            {
+                if (line_start > 0)
+                {
+                    if (compact)
+                    {
+                        print_string(ps, "*" + slashes + "*");
+                    }
+                    else if (i > 0 && content.charAt(i-1) == '\n' && i + 1 < content.length())
+                    {
+                        // This is an empty line. Do not indent.
+                        // Except the last line which must be indented.
+                        print_nl(ps, null, null);
+                    }
+                    else
+                    {
+                        print_nl_and_indent(ps, null, null);
+                    }
+                }
+                print_string(ps, content.substring(line_start, i));
+                line_start = i+1;
+            }
+        }
+
+        if (line_start == 0)
+        {
+            // No newlines found.
+            print_string(ps, content);
+        }
+        else if (line_start < content.length())
+        {
+            // There is a remaining line that ends with stop and not newline.
+            if (line_start > 0)
+            {
+                if (compact)
+                {
+                    print_string(ps, "*" + slashes + "*");
+                }
+                else
+                {
+                    print_nl_and_indent(ps, null, null);
+                }
+            }
+            print_string(ps, content.substring(line_start));
+        }
+
+        if (!compact)
+        {
+            print_string(ps, " ");
+        }
+        print_string(ps, "*" + slashes);
+        ps.last_char = '/';
+        ps.line_indent = prev_line_indent;
+    }
+
+    // Mirrors C print_comment_node.
+    void print_comment_node(XMQPrintState ps, Comment comment)
+    {
+        String content = comment.getNodeValue();
+        if (content == null) content = "";
+
+        check_space_before_comment(ps);
+
+        boolean has_newline = content.indexOf('\n') >= 0;
+        if (!has_newline)
+        {
+            if (ps.output_settings.compact())
+            {
+                print_string(ps, "/*");
+                print_string(ps, content);
+                print_string(ps, "*/");
+                ps.last_char = '/';
+            }
+            else
+            {
+                print_string(ps, "// ");
+                print_string(ps, content);
+                ps.last_char = 1;
+            }
+        }
+        else
+        {
+            print_comment_lines(ps, content, ps.output_settings.compact());
+            ps.last_char = '/';
+        }
+    }
+
+    static boolean need_separation_before_comment(XMQPrintState ps)
+    {
+        // If the previous value was quoted, then then no space is needed, ie.
+        // 'x y z'/*comment*/
+        // If the previous value was an entity &...; then then no space is needed, ie.
+        // &nbsp;/*comment*/
+        // if previous value was text, then a space is necessary, ie.
+        // xyz /*comment*/
+        // if previous value was } or )) then no space is is needed.
+        // }/*comment*/   ((...))/*comment*/
+        char c = ps.last_char;
+        return c != 0 && c != '\'' && c != '"' && c != '{' && c != ')' && c != '}' && c != ';';
+    }
+
+    void check_space_before_comment(XMQPrintState ps)
+    {
+        char c = ps.last_char;
+        if (c == 0) return;
+        if (!ps.output_settings.compact())
+        {
+            print_nl_and_indent(ps, null, null);
+        }
+        else if (need_separation_before_comment(ps))
+        {
+            print_white_spaces(ps, 1);
         }
     }
 

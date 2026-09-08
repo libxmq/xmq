@@ -241,8 +241,6 @@ public class XMQParseIntoDOM extends XMQParser
         Comment c = doc_.createComment(trimmed);
 
         element_stack_.peek().appendChild(c);
-
-        System.out.println("COMMENT "+trimmed);
         /*
         if (add_pre_node_before_ != null)
         {
