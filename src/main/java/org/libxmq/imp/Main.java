@@ -44,6 +44,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.xml.sax.InputSource;
 import java.io.StringReader;
+import java.io.StringWriter;
 
 import org.libxmq.ParseException;
 import org.libxmq.OutputSettings;
@@ -106,9 +107,20 @@ public class Main
                 TransformerFactory transformerFactory = TransformerFactory.newInstance();
                 Transformer transformer = transformerFactory.newTransformer();
                 transformer.setOutputProperty(OutputKeys.INDENT, "no");
+                transformer.setOutputProperty(OutputKeys.ENCODING, "utf-8");
                 DOMSource source = new DOMSource(pa.doc());
-                StreamResult result = new StreamResult(System.out);
-                transformer.transform(source, result);
+                StringWriter sw = new StringWriter();
+                transformer.transform(source, new StreamResult(sw));
+                String s = sw.toString();
+                if (s.startsWith("<?xml"))
+                {
+                    int i = s.indexOf("?>");
+                    if (i >= 0)
+                        s = s.substring(0, i + 2) + "\n" + s.substring(i + 2);
+                }
+                System.out.print(s);
+                if (s.length() == 0 || s.charAt(s.length() - 1) != '\n')
+                    System.out.println();
             }
             else
             {
