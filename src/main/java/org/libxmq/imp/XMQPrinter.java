@@ -153,13 +153,12 @@ public class XMQPrinter
     void check_space_before_attribute(XMQPrintState ps)
     {
         char c = ps.last_char;
-        if (c == 0) return;
-
+        if (c == '(') return;
         if (!ps.output_settings.compact())
         {
             print_nl_and_indent(ps, null, null);
         }
-        else
+        else if (c == '\'' || c == '"' || Character.isDigit(c) || Character.isLetter(c))
         {
             print_white_spaces(ps, 1);
         }
@@ -200,34 +199,67 @@ public class XMQPrinter
             ps.last_char = '(';
             ps.current_indent += 1;
 
-            for (int i = 0; i < attributes.getLength(); i++)
+            // Mirrors C find_attr_key_max_u_width: scan the attributes
+            // until there is one which is not a key = value attribute
+            // (ie. no value), and find the max width of the keys.
+            int max = 0;
+            if (!ps.output_settings.compact())
             {
-                Attr attr = (Attr)attributes.item(i);
-                check_space_before_attribute(ps);
-                print_string(ps, attr.getName());
-                String value = attr.getValue();
-                if (value != null && !value.isEmpty())
+                for (int i = 0; i < attributes.getLength(); i++)
                 {
-                    if (!ps.output_settings.compact())
-                    {
-                        ps.buffer.append(" ");
-                        ps.current_indent += 1;
-                    }
-                    ps.buffer.append("=");
-                    ps.last_char = '=';
-                    ps.current_indent += 1;
-                    if (!ps.output_settings.compact())
-                    {
-                        ps.buffer.append(" ");
-                        ps.current_indent += 1;
-                    }
-                    print_value_text(ps, value);
+                    Attr attr = (Attr)attributes.item(i);
+                    String value = attr.getValue();
+                    if (value == null || value.isEmpty()) break;
+                    int len = attr.getName().length();
+                    if (len > max) max = len;
                 }
             }
+
+            // Mirrors C print_attributes: subsequent attributes are indented
+            // so that they line up just after the opening parenthesis.
+            int old_line_indent = ps.line_indent;
+            ps.line_indent = ps.current_indent;
+
+            for (int i = 0; i < attributes.getLength(); i++)
+            {
+                print_attribute(ps, (Attr)attributes.item(i), max);
+            }
+
+            ps.line_indent = old_line_indent;
 
             ps.buffer.append(")");
             ps.last_char = ')';
             ps.current_indent += 1;
+        }
+    }
+
+    // Mirrors C print_attribute. Name already printed by caller.
+    void print_attribute(XMQPrintState ps, Attr attr, int max)
+    {
+        check_space_before_attribute(ps);
+
+        print_string(ps, attr.getName());
+
+        String value = attr.getValue();
+        if (value != null && !value.isEmpty())
+        {
+            if (!ps.output_settings.compact())
+            {
+                // Align the equal signs by padding after the key name.
+                int len = ps.current_indent - ps.line_indent;
+                int pad = 1;
+                if (len < max)
+                {
+                    pad = 1 + max - len;
+                }
+                print_white_spaces(ps, pad);
+            }
+            print_string(ps, "=");
+            if (!ps.output_settings.compact())
+            {
+                print_white_spaces(ps, 1);
+            }
+            print_value_text(ps, value);
         }
     }
 
