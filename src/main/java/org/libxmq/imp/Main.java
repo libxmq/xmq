@@ -147,6 +147,7 @@ public class Main
                     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
                     dbf.setNamespaceAware(false);
                     dbf.setValidating(false);
+                    dbf.setExpandEntityReferences(false);
                     DocumentBuilder db = dbf.newDocumentBuilder();
                     org.w3c.dom.Document xml_doc = db.parse(new InputSource(new StringReader(content)));
                     doc = xml_doc;
@@ -269,15 +270,17 @@ public class Main
             }
             if (c == '>')
             {
-                if (lb < 0 || rb < 0)
+                if (lb < 0 || rb >= 0)
                 {
                     // A doctype with no internal subset ends at the first
-                    // greater than char.
+                    // greater than char. A doctype with an internal subset
+                    // ends at the greater than char after the closing bracket.
                     end = k;
                     break;
                 }
-                end = k;
-                break;
+                // A greater than char inside the internal subset (the one
+                // that ends an entity declaration) is not the end of the
+                // doctype; keep scanning for the closing bracket.
             }
         }
         if (end < 0 || lb < 0 || rb < 0) return v.toString();
