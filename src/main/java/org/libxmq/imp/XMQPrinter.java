@@ -23,13 +23,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq.imp;
 
-import org.w3c.dom.Attr;
-import org.w3c.dom.Comment;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Text;
+import java.util.List;
+
+import org.jdom2.Attribute;
+import org.jdom2.Comment;
+import org.jdom2.Content;
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.EntityRef;
+import org.jdom2.ProcessingInstruction;
+import org.jdom2.Text;
 
 /**
  * Prints a document object model in xmq.
@@ -230,9 +233,9 @@ public class XMQPrinter
 
     void print_attributes(XMQPrintState ps, Element element)
     {
-        NamedNodeMap attributes = element.getAttributes();
+        List<Attribute> attributes = element.getAttributes();
 
-        if (attributes != null && attributes.getLength() > 0)
+        if (attributes != null && !attributes.isEmpty())
         {
             ps.buffer.append("(");
             ps.last_char = '(';
@@ -244,9 +247,8 @@ public class XMQPrinter
             int max = 0;
             if (!ps.output_settings.compact())
             {
-                for (int i = 0; i < attributes.getLength(); i++)
+                for (Attribute attr : attributes)
                 {
-                    Attr attr = (Attr)attributes.item(i);
                     String value = attr.getValue();
                     if (value == null || value.isEmpty()) break;
                     int len = attr.getName().length();
@@ -259,9 +261,9 @@ public class XMQPrinter
             int old_line_indent = ps.line_indent;
             ps.line_indent = ps.current_indent;
 
-            for (int i = 0; i < attributes.getLength(); i++)
+            for (Attribute attr : attributes)
             {
-                print_attribute(ps, (Attr)attributes.item(i), max);
+                print_attribute(ps, attr, max);
             }
 
             ps.line_indent = old_line_indent;
@@ -273,7 +275,7 @@ public class XMQPrinter
     }
 
     // Mirrors C print_attribute. Name already printed by caller.
-    void print_attribute(XMQPrintState ps, Attr attr, int max)
+    void print_attribute(XMQPrintState ps, Attribute attr, int max)
     {
         check_space_before_attribute(ps);
 
@@ -302,10 +304,10 @@ public class XMQPrinter
         }
     }
 
-    void print_content_node(XMQPrintState ps, Node node)
+    void print_content_node(XMQPrintState ps, Content node)
     {
         Text text = (Text)node;
-        String value = text.getNodeValue();
+        String value = text.getText();
 
         if (value == null || value.trim().isEmpty())
         {
@@ -332,10 +334,10 @@ public class XMQPrinter
      */
     void print_value(XMQPrintState ps, Element element)
     {
-        NodeList children = element.getChildNodes();
+        List<Content> children = element.getContent();
 
         // In C: is_compound = node->next != NULL, ie. the value has siblings.
-        boolean is_compound = children.getLength() > 1;
+        boolean is_compound = children.size() > 1;
 
         int old_line_indent = ps.line_indent;
 
@@ -349,16 +351,16 @@ public class XMQPrinter
             ps.line_indent = ps.current_indent;
         }
 
-        for (int i = 0; i < children.getLength(); i++)
+        for (int i = 0; i < children.size(); i++)
         {
-            Node child = children.item(i);
+            Content child = children.get(i);
             if (is_entity_node(child))
             {
                 print_entity_node(ps, child);
             }
             else if (is_content_node(child))
             {
-                String value = ((Text)child).getNodeValue();
+                String value = ((Text)child).getText();
                 if (value == null) value = "";
                 print_value_text(ps, value, is_compound);
             }
@@ -382,10 +384,10 @@ public class XMQPrinter
     }
 
     /** Mirrors C print_entity_node. Prints &name;. */
-    void print_entity_node(XMQPrintState ps, Node node)
+    void print_entity_node(XMQPrintState ps, Content node)
     {
         check_space_before_entity_node(ps);
-        String name = node.getNodeName();
+        String name = ((EntityRef)node).getName();
         print_string(ps, "&"+name+";");
     }
 
@@ -747,19 +749,17 @@ public class XMQPrinter
         return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f';
     }
 
-    void print_element_node(XMQPrintState ps, Node node, int align)
+    void print_element_node(XMQPrintState ps, Element element, int align)
     {
-        Element element = (Element)node;
-
         check_space_before_key(ps);
-        print_string(ps, element.getTagName());
+        print_string(ps, element.getName());
 
         print_attributes(ps, element);
 
-        NodeList children = element.getChildNodes();
+        List<Content> children = element.getContent();
 
         // This is a node with no children, just the key.
-        if (children.getLength() == 0)
+        if (children.isEmpty())
         {
             return;
         }
@@ -805,39 +805,39 @@ public class XMQPrinter
      *  is not a suitable key=value node (ie. no children, multiple children,
      *  or it has attributes). The max width of the keys found is returned,
      *  and restart[0] is set to the index where the next scan must begin. */
-    static int find_element_key_max_width(NodeList children, int from_index, int[] restart)
+    static int find_element_key_max_width(List<Content> children, int from_index, int[] restart)
     {
         int max = 0;
 
-        for (int i = from_index; i < children.getLength(); i++)
+        for (int i = from_index; i < children.size(); i++)
         {
-            Node n = children.item(i);
+            Content n = children.get(i);
             if (!is_element_node(n)
                 || !is_key_value_node(n)
                 || (((Element)n).getAttributes() != null
-                    && ((Element)n).getAttributes().getLength() > 0))
+                    && !((Element)n).getAttributes().isEmpty()))
             {
                 if (i == from_index) restart[0] = i + 1;
                 else restart[0] = i;
                 return max;
             }
-            int len = n.getNodeName().length();
+            int len = n instanceof Element el ? el.getName().length() : 0;
             if (len > max) max = len;
         }
 
-        restart[0] = children.getLength();
+        restart[0] = children.size();
         return max;
     }
 
     /** Mirrors C print_nodes.
      *  Prints a list of sibling nodes, aligning the equal signs of runs of
      *  key=value nodes, unless compact. */
-    void print_nodes(XMQPrintState ps, NodeList children)
+    void print_nodes(XMQPrintState ps, List<Content> children)
     {
         int restart_find_at_node = 0;
         int max = 0;
 
-        for (int i = 0; i < children.getLength(); i++)
+        for (int i = 0; i < children.size(); i++)
         {
             // We need to search ahead to find the max width of the node names so that we can align the equal signs.
             if (!ps.output_settings.compact() && i == restart_find_at_node)
@@ -847,13 +847,13 @@ public class XMQPrinter
                 restart_find_at_node = restart[0];
             }
 
-            print_node(ps, children.item(i), max);
+            print_node(ps, children.get(i), max);
         }
     }
 
     void print_element_with_children(XMQPrintState ps, Element element)
     {
-        NodeList children = element.getChildNodes();
+        List<Content> children = element.getContent();
 
         check_space_before_opening_brace(ps);
         print_string(ps, "{");
@@ -870,41 +870,40 @@ public class XMQPrinter
     }
 
     // Check if the node is an element node (not text, comment, etc.)
-    static boolean is_element_node(Node node)
+    static boolean is_element_node(Content node)
     {
-        return node.getNodeType() == Node.ELEMENT_NODE;
+        return node instanceof Element;
     }
 
     // Check if the node is a text node
-    static boolean is_content_node(Node node)
+    static boolean is_content_node(Content node)
     {
-        return node.getNodeType() == Node.TEXT_NODE ||
-            node.getNodeType() == Node.CDATA_SECTION_NODE;
+        return node instanceof Text;
     }
 
     // Check if the node is a processing instruction
-    static boolean is_pi_node(Node node)
+    static boolean is_pi_node(Content node)
     {
-        return node.getNodeType() == Node.PROCESSING_INSTRUCTION_NODE;
-    }
-
-    static boolean is_leaf_node(Node node)
-    {
-        return node.getChildNodes().getLength() == 0;
+        return node instanceof ProcessingInstruction;
     }
 
     /** Mirrors C is_key_value_node.
      *  Single content or entity child, or multiple text or entity children. */
-    static boolean is_key_value_node(Node node)
+    static boolean is_key_value_node(Content node)
     {
-        NodeList children = node.getChildNodes();
-        if (children.getLength() == 0)
+        if (!(node instanceof Element element))
         {
             return false;
         }
 
-        Node from = children.item(0);
-        Node to = children.item(children.getLength() - 1);
+        List<Content> children = element.getContent();
+        if (children.isEmpty())
+        {
+            return false;
+        }
+
+        Content from = children.get(0);
+        Content to = children.get(children.size() - 1);
 
         // Single content or entity node.
         if (from == to && (is_content_node(from) || is_entity_node(from)))
@@ -913,10 +912,9 @@ public class XMQPrinter
         }
 
         // Multiple text or entity nodes.
-        for (int i = 0; i < children.getLength(); i++)
+        for (Content child : children)
         {
-            int type = children.item(i).getNodeType();
-            if (type != Node.TEXT_NODE && type != Node.ENTITY_REFERENCE_NODE)
+            if (!is_content_node(child) && !is_entity_node(child))
             {
                 return false;
             }
@@ -924,10 +922,9 @@ public class XMQPrinter
         return true;
     }
 
-    static boolean is_entity_node(Node node)
+    static boolean is_entity_node(Content node)
     {
-        return node.getNodeType() == Node.ENTITY_NODE ||
-            node.getNodeType() == Node.ENTITY_REFERENCE_NODE;
+        return node instanceof EntityRef;
     }
 
     /**
@@ -936,35 +933,35 @@ public class XMQPrinter
      * @param node The node to print.
      * @param align The alignment level used for indentation.
      */
-    public void print_node(XMQPrintState ps, Node node, int align)
+    public void print_node(XMQPrintState ps, Object node, int align)
     {
-        if (node.getNodeType() == Node.DOCUMENT_NODE) {
-            print_nodes(ps, node.getChildNodes());
+        if (node instanceof Document) {
+            print_nodes(ps, ((Document)node).getContent());
         }
-        else if (is_content_node(node)) {
-            print_content_node(ps, node);
+        else if (is_content_node((Content)node)) {
+            print_content_node(ps, (Content)node);
         }
-        else if (is_element_node(node)) {
-        print_element_node(ps, node, align);
+        else if (node instanceof Element) {
+        print_element_node(ps, (Element)node, align);
         }
-        else if (node.getNodeType() == Node.DOCUMENT_TYPE_NODE) {
-            print_doctype_node(ps, (org.w3c.dom.DocumentType)node);
+        else if (node instanceof ProcessingInstruction) {
+            print_pi_node(ps, (ProcessingInstruction)node);
         }
-        else if (is_pi_node(node)) {
-            print_pi_node(ps, node);
-        }
-        else if (is_comment_node(node)) {
+        else if (node instanceof Comment) {
             print_comment_node(ps, (Comment)node);
+        }
+        else if (is_entity_node((Content)node)) {
+            print_entity_node(ps, (Content)node);
         }
         else
         {
-            throw new RuntimeException("Unknown node type: " + node.getNodeType());
+            throw new RuntimeException("Unknown node type: " + node.getClass().getName());
         }
     }
 
-    static boolean is_comment_node(Node node)
+    static boolean is_comment_node(Content node)
     {
-        return node.getNodeType() == Node.COMMENT_NODE;
+        return node instanceof Comment;
     }
 
     /**
@@ -1089,7 +1086,7 @@ public class XMQPrinter
     // Mirrors C print_comment_node.
     void print_comment_node(XMQPrintState ps, Comment comment)
     {
-        String content = comment.getNodeValue();
+        String content = comment.getText();
         if (content == null) content = "";
 
         check_space_before_comment(ps);
@@ -1146,14 +1143,14 @@ public class XMQPrinter
         }
     }
 
-    void print_pi_node(XMQPrintState ps, Node node)
+    void print_pi_node(XMQPrintState ps, ProcessingInstruction pi)
     {
-        String target = node.getNodeName();
+        String target = pi.getTarget();
 
         // A pi node named DOCTYPE holds a xmq doctype value (see XMQParseIntoDOM).
         if (target != null && target.equals("DOCTYPE"))
         {
-            String content = node.getNodeValue() != null ? node.getNodeValue() : "";
+            String content = pi.getData() != null ? pi.getData() : "";
             print_doctype(ps, content);
             return;
         }
@@ -1162,7 +1159,7 @@ public class XMQPrinter
         ps.buffer.append("<?");
         ps.last_char = '?';
         ps.current_indent += 2;
-        String content = node.getNodeValue() != null ? node.getNodeValue() : "";
+        String content = pi.getData() != null ? pi.getData() : "";
         print_string(ps, target);
         if (!content.isEmpty())
         {
@@ -1200,20 +1197,15 @@ public class XMQPrinter
     }
 
     /**
-     * Prints a w3c DocumentType node, in case one is encountered (for example
-     * when printing a document that was not prepared for printing by the xmq
-     * parser).
-     *
-     * @param ps The print state.
-     * @param node The document type node to print.
+     * Prints a doctype line (for documents built by other code, the xmq
+     * parser stores the doctype value in a pi node named DOCTYPE).
      */
-    void print_doctype_node(XMQPrintState ps, org.w3c.dom.DocumentType node)
+    void print_doctype_node(XMQPrintState ps, String name, String internal_subset)
     {
-        StringBuilder v = new StringBuilder(node.getName());
-        String sub = node.getInternalSubset();
-        if (sub != null)
+        StringBuilder v = new StringBuilder(name);
+        if (internal_subset != null)
         {
-            sub = sub.strip();
+            String sub = internal_subset.strip();
             if (!sub.isEmpty())
             {
                 v.append(" [\n");

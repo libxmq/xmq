@@ -25,7 +25,6 @@ package org.libxmq.imp;
 
 import org.libxmq.*;
 import java.util.Stack;
-import org.w3c.dom.Node;
 
 /**
  * The state used while printing a document with the XMQPrinter.
@@ -45,10 +44,10 @@ public class XMQPrintState
     String replay_active_color_pre;
     String restart_line;
     String last_namespace;
-    Stack<Node> pre_nodes; // Used to remember leading comments/doctype when printing json.
+    Stack<Object> pre_nodes; // Used to remember leading comments/doctype when printing json.
     int pre_post_num_comments_total; // Number of comments outside of the root element.
     int pre_post_num_comments_used; // Active number of comment outside of the root element.
-    Stack<Node> post_nodes; // Used to remember ending comments when printing json.
+    Stack<Object> post_nodes; // Used to remember ending comments when printing json.
     OutputSettings output_settings;
     XMQTheme theme;
 

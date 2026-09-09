@@ -23,73 +23,86 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq;
 
-import java.util.function.Supplier;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import org.libxmq.*;
-import org.libxmq.imp.*;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
+import org.jdom2.Content;
+import org.jdom2.Element;
+import org.jdom2.JDOMException;
+import org.jdom2.Parent;
+
+import org.libxmq.imp.Util;
 
 /**
  * The Query class implemets the basic querying methods.
  */
 public class Query
 {
-    private Node node_;
-    private XPathFactory xpath_factory_;
-    private XPath xpath_;
+    private static final Map<String, org.jdom2.xpath.XPath> xpath_cache_ = new HashMap<>();
+
+    private Object node_;
 
     /**
        Build a new query from a DOM node.
        @param node The DOM node from which the paths start when querying.
     */
-    public Query(Node node)
+    public Query(Object node)
     {
         node_ = node;
-        xpath_factory_ = XPathFactory.newInstance();
-        xpath_ = xpath_factory_.newXPath();
-    }
-
-    /**
-       Build a new query from a DOM node and set the optional value.
-       @param node The DOM node from which the paths start when querying.
-       @param xpf The XPathFactory
-       @param xp The xpath
-       @param optional If set to true, then queries will not throw NotFoundException.
-    */
-    Query(Node node, XPathFactory xpf, XPath xp)
-    {
-        node_ = node;
-        xpath_factory_ = xpf;
-        xpath_ = xp;
     }
 
     /**
        Return the node from which the query starts.
        @return A DOM node.
     */
-    public Node node()
+    public Object node()
     {
         return node_;
     }
 
     /**
-     * Fetch a potentially cached xpath expression.
+     * Fetch a potentially cached compiled xpath expression.
      * @param xpath The xpath to retrieve as an expression.
-     * @throws XPathExpressionException if the xpath is invalid.
      * @return The compiled xpath expression.
+     * @throws NotFoundException if the xpath is invalid.
      */
-    protected XPathExpression getXPathExpression(String xpath) throws XPathExpressionException
+    protected org.jdom2.xpath.XPath getPath(String xpath) throws NotFoundException
     {
-        return xpath_.compile(xpath);
+        try
+        {
+            org.jdom2.xpath.XPath p = xpath_cache_.get(xpath);
+            if (p == null)
+            {
+                p = org.jdom2.xpath.XPath.newInstance(xpath);
+                xpath_cache_.put(xpath, p);
+            }
+            return p;
+        }
+        catch (JDOMException e)
+        {
+            throw new NotFoundException("Invalid xpath "+xpath+" below node "+Util.getXPath(node()));
+        }
+    }
+
+    /**
+       Evaluate an xpath against the query node, converting JDOM exceptions
+       into xmq exceptions.
+       @param xpath The xpath to evaluate.
+       @return The nodes matching the xpath.
+       @throws NotFoundException on xpath errors.
+    */
+    private List<?> select(String xpath) throws NotFoundException
+    {
+        try
+        {
+            return getPath(xpath).selectNodes(node_);
+        }
+        catch (JDOMException e)
+        {
+            throw new NotFoundException("XPath error for "+xpath+" below node "+Util.getXPath(node())+": "+e.getMessage());
+        }
     }
 
     /**
@@ -100,7 +113,24 @@ public class Query
     */
     public int forEach(String xpath, NodeCallback cb)
     {
-        return 0;
+        try
+        {
+            List<?> nodes = select(xpath);
+            int matched = 0;
+            for (Object c : nodes)
+            {
+                matched++;
+                if (cb.invoke((Content)c) == Proceed.STOP)
+                {
+                    break;
+                }
+            }
+            return matched;
+        }
+        catch (NotFoundException e)
+        {
+            return 0;
+        }
     }
 
     /**
@@ -111,6 +141,12 @@ public class Query
     */
     public void expect(String xpath, NodeCallback cb) throws NotFoundException
     {
+        List<?> nodes = select(xpath);
+        if (nodes.isEmpty())
+        {
+            throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
+        }
+        cb.invoke((Content)nodes.get(0));
     }
 
     /**
@@ -122,25 +158,21 @@ public class Query
     */
     public Element element(String xpath) throws NotFoundException, TooManyException
     {
-        try
+        List<?> nodes = select(xpath);
+        if (nodes.isEmpty())
         {
-            XPathExpression expr = getXPathExpression(xpath);
-            //Element e = (Element)expr.evaluate(node_, XPathConstants.NODE);
-            NodeList nodes = (NodeList)expr.evaluate(node_, XPathConstants.NODESET);
-            if (nodes == null || nodes.getLength() == 0)
-            {
-                throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
-            }
-            if (nodes.getLength() > 1)
-            {
-                throw new TooManyException("Found "+nodes.getLength()+" matches for "+xpath+" below node "+Util.getXPath(node()));
-            }
-            return (Element)nodes.item(0);
+            throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
         }
-        catch (XPathExpressionException e)
+        if (nodes.size() > 1)
         {
-            throw new NotFoundException("Invalid xpath "+xpath+" below node "+Util.getXPath(node()));
+            throw new TooManyException("Found "+nodes.size()+" matches for "+xpath+" below node "+Util.getXPath(node()));
         }
+        Content c = (Content)nodes.get(0);
+        if (c instanceof Element e)
+        {
+            return e;
+        }
+        throw new NotFoundException("Match "+xpath+" is not an element below node "+Util.getXPath(node()));
     }
 
     /**
@@ -174,8 +206,7 @@ public class Query
     */
     public boolean getBoolean(String xpath) throws DecodingException,NotFoundException,TooManyException
     {
-        String s = getString(xpath, null);
-        assert s != null; // getString throws NotFound instead of returning null.
+        String s = getString(xpath, "");
         if (s.equals("true")) return true;
         if (s.equals("false")) return false;
 
@@ -218,8 +249,7 @@ public class Query
     public double getDouble(String xpath, String restriction)
         throws DecodingException, NotFoundException, TooManyException
     {
-        String s = getString(xpath, null);
-        assert s != null; // getString throws NotFound instead of returning null.
+        String s = getString(xpath, "");
 
         try
         {
@@ -270,8 +300,7 @@ public class Query
     public float getFloat(String xpath, String restriction)
         throws DecodingException, NotFoundException, TooManyException
     {
-        String s = getString(xpath, null);
-        assert s != null; // getString throws NotFound instead of returning null.
+        String s = getString(xpath, "");
 
         try
         {
@@ -315,14 +344,13 @@ public class Query
        @param xpath Fetch the value found using this xpath.
        @param restriction The float can for example be restricted in range.
        @throws NotFoundException if the expected xpath was not found.
-       @throws DecodingException if the value was not an integer or if it failed the restriction.
+       @throws DecodingException if the value was not an integer.
        @throws TooManyException if more than one element matched the xpath.
        @return The integer.
     */
     public int getInt(String xpath, String restriction) throws DecodingException, NotFoundException, TooManyException
     {
-        String s = getString(xpath, null);
-        assert s != null; // getString throws NotFound instead of returning null.
+        String s = getString(xpath, "");
 
         try
         {
@@ -341,11 +369,12 @@ public class Query
 
        @param xpath Fetch the value found using this xpath.
        @param restriction The float can for example be restricted in range.
-       @throws DecodingException if the value was not an integer or if it failed the restriction.
+       @throws DecodingException if the value was not an integer.
        @throws TooManyException if more than one element matched the xpath.
        @return The integer.
     */
-    public Optional<Integer> getOptionalInt(String xpath, String restriction) throws DecodingException, TooManyException
+    public Optional<Integer> getOptionalInt(String xpath, String restriction)
+        throws DecodingException, TooManyException
     {
         try
         {
@@ -365,14 +394,13 @@ public class Query
        @param xpath Fetch the value found using this xpath.
        @param restriction The float can for example be restricted in range.
        @throws NotFoundException if the expected xpath was not found.
-       @throws DecodingException if the value was not a long integer or if it failed the restriction.
+       @throws DecodingException if the value was not a long integer.
        @throws TooManyException if more than one element matched the xpath.
        @return The found long.
     */
     public long getLong(String xpath, String restriction) throws DecodingException, NotFoundException, TooManyException
     {
-        String s = getString(xpath, null);
-        assert s != null; // getString throws NotFound instead of returning null.
+        String s = getString(xpath, "");
 
         try
         {
@@ -391,11 +419,12 @@ public class Query
 
        @param xpath Fetch the value found using this xpath.
        @param restriction The float can for example be restricted in range.
-       @throws DecodingException if the value was not a long integer or if it failed the restriction.
+       @throws DecodingException if the value was not a long integer.
        @throws TooManyException if more than one element matched the xpath.
        @return The found long.
     */
-    public Optional<Long> getOptionalLong(String xpath, String restriction) throws DecodingException, TooManyException
+    public Optional<Long> getOptionalLong(String xpath, String restriction)
+        throws DecodingException, TooManyException
     {
         try
         {
@@ -412,7 +441,7 @@ public class Query
        Get a string from an xpath location that complies with a restriction.
 
        @param xpath Fetch the value found using this xpath.
-       @param restriction The float can for example be restricted in range.
+       @param restriction The value can for example be restricted.
        @throws NotFoundException if the expected xpath was not found.
        @throws DecodingException if the value failed the restriction.
        @throws TooManyException if more than one element matched the xpath.
@@ -420,34 +449,36 @@ public class Query
     */
     public String getString(String xpath, String restriction) throws DecodingException, NotFoundException, TooManyException
     {
-        try
+        List<?> nodes = select(xpath);
+        if (nodes.isEmpty())
         {
-            XPathExpression expr = getXPathExpression(xpath);
-            Node n = (Node)expr.evaluate(node_, XPathConstants.NODE);
-            if (n == null)
-            {
-                throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
-            }
-            String text = n.getTextContent();
-            assert text != null;
-            return text;
+            throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
         }
-        catch (XPathExpressionException e)
+        Content c = (Content)nodes.get(0);
+        String text = null;
+        if (c instanceof Element e)
         {
-            throw new NotFoundException("Invalid xpath "+xpath+" below node "+Util.getXPath(node()));
+            text = e.getText();
         }
+        else if (c instanceof org.jdom2.Text t)
+        {
+            text = t.getText();
+        }
+        if (text == null) text = "";
+        return text;
     }
 
     /**
        Get an optional string from an xpath location that complies with a restriction.
 
        @param xpath Fetch the value found using this xpath.
-       @param restriction The float can for example be restricted in range.
+       @param restriction The value can for example be restricted.
        @throws DecodingException if the value failed the restriction.
        @throws TooManyException if more than one element matched the xpath.
        @return The found string.
     */
-    public Optional<String> getOptionalString(String xpath, String restriction) throws DecodingException, TooManyException
+    public Optional<String> getOptionalString(String xpath, String restriction)
+        throws DecodingException, TooManyException
     {
         try
         {
@@ -460,19 +491,21 @@ public class Query
         }
     }
 
-    Node firstChild(String name)
+    Content firstChild(String name)
     {
-        if (node_ == null || name == null) return null;
-
-        if (!Util.isValidElementName(name)) return null;
-
-        NodeList children = node_.getChildNodes();
-        for (int i = 0; i < children.getLength(); i++)
+        if (!(node_ instanceof Parent p) || name == null)
         {
-            Node child = children.item(i);
-            if (name.equals(child.getNodeName()))
+            return null;
+        }
+        if (!Util.isValidElementName(name))
+        {
+            return null;
+        }
+        for (Content child : p.getContent())
+        {
+            if (child instanceof Element el && name.equals(el.getName()))
             {
-                return child;
+                return el;
             }
         }
         return null; // not found
@@ -487,20 +520,8 @@ public class Query
     */
     public Query query(String xpath) throws NotFoundException, TooManyException
     {
-        try
-        {
-            XPathExpression expr = getXPathExpression(xpath);
-            Element e = (Element)expr.evaluate(node_, XPathConstants.NODE);
-            if (e == null)
-            {
-                throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
-            }
-            return new Query(e);
-        }
-        catch (XPathExpressionException e)
-        {
-            throw new NotFoundException("Invalid xpath "+xpath+" below node "+Util.getXPath(node()));
-        }
+        Element e = element(xpath);
+        return new Query(e);
     }
 
 }

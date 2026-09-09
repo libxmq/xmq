@@ -23,7 +23,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq;
 
-import org.w3c.dom.Node;
+import org.jdom2.Content;
 
 /**
  * A functional interface used to call back for each found DOM node.
@@ -35,5 +35,5 @@ public interface NodeCallback
      * @param node The node currently iterating over.
      * @return Wether to proceed or stop.
      */
-    Proceed invoke(Node node);
+    Proceed invoke(Content node);
 }

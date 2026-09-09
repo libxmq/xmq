@@ -23,8 +23,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq;
 
-import org.w3c.dom.Document;
-
 /**
  * The {@code OutputSettings} class is used to configure the output behavior
  * when printing XMQ. It provides options for controlling

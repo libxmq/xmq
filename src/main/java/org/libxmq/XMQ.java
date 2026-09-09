@@ -32,54 +32,21 @@ import java.util.EnumSet;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.ResourceBundle;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.*;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import org.libxmq.imp.XMQParseIntoDOM;
 import org.libxmq.imp.XMQPrintState;
 import org.libxmq.imp.XMQPrinter;
-import org.w3c.dom.Document;
+import org.jdom2.Document;
 
 /**
    The XMQ class is used to parse/print/render XMQ/XML/HTML/JSON documents.
 */
 public class XMQ
 {
-    private DocumentBuilderFactory factory_;
-    private DocumentBuilder builder_;
-
     /**
-       Construct an XMQ with the default DOM implementation.
+       Construct an XMQ with the default DOM implementation (jdom2).
      */
     public XMQ()
     {
-        factory_ = DocumentBuilderFactory.newInstance();
-        try
-        {
-            builder_ = factory_.newDocumentBuilder();
-        }
-        catch (Exception e)
-        {
-        }
-    }
-
-    /**
-       Construct an XMQ with a DocumentBuilderFactory if you need to
-       override the default DOM implementation.
-       @param f The document builder factory.
-     */
-    public XMQ(DocumentBuilderFactory f)
-    {
-        factory_ = f;
-        try
-        {
-            builder_ = factory_.newDocumentBuilder();
-        }
-        catch (Exception e)
-        {
-        }
     }
 
     /**
@@ -90,7 +57,7 @@ public class XMQ
        @throws IOException if file cannot be read.
        @throws ParseException if the parse failed.
      */
-    public Document parseFile(Path file, InputSettings is) throws IOException, ParseException
+    public org.jdom2.Document parseFile(Path file, InputSettings is) throws IOException, ParseException
     {
         String buffer = Files.readString(file, StandardCharsets.UTF_8);
         return parseBuffer(buffer, is);
@@ -103,7 +70,7 @@ public class XMQ
        @return A DOM document.
        @throws ParseException if the parse failed.
      */
-    public Document parseBuffer(String buffer, InputSettings is) throws ParseException
+    public org.jdom2.Document parseBuffer(String buffer, InputSettings is) throws ParseException
     {
         XMQParseIntoDOM pa = new XMQParseIntoDOM();
         pa.parse(buffer, "buffer");
@@ -141,7 +108,7 @@ public class XMQ
        @param os  Settings for printing.
        @return A string with XMQ.
      */
-    public String toXMQ(Document doc, OutputSettings os)
+    public String toXMQ(Object doc, OutputSettings os)
     {
         XMQPrintState ps = new XMQPrintState();
         ps.defaultTheme();
@@ -158,20 +125,19 @@ public class XMQ
        @param os  Settings for printing.
        @return A string with XML.
      */
-    public String toXML(Document doc, OutputSettings os)
+    public String toXML(Object doc, OutputSettings os)
     {
         try
         {
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
-            transformer.setOutputProperty(OutputKeys.INDENT, "no");
-            DOMSource source = new DOMSource(doc);
-
-            StringWriter writer = new StringWriter();
-            StreamResult result = new StreamResult(writer);
-
-            transformer.transform(source, result);
-            return writer.toString();
+            org.jdom2.output.XMLOutputter outputter = new org.jdom2.output.XMLOutputter();
+            if (doc instanceof Document d)
+            {
+                return outputter.outputString(d) + "\n";
+            }
+            if (doc instanceof org.jdom2.Element e)
+            {
+                return outputter.outputString(new Document(e)) + "\n";
+            }
         }
         catch (Exception e)
         {
@@ -190,7 +156,7 @@ public class XMQ
        @param os  Settings for printing.
        @return A string with HTML.
      */
-    public String toHTML(Document doc, OutputSettings os)
+    public String toHTML(Object doc, OutputSettings os)
     {
         return "lll";
     }
@@ -201,7 +167,7 @@ public class XMQ
        @param os  Settings for printing.
        @return A string with JSON.
      */
-    public String toJSON(Document doc, OutputSettings os)
+    public String toJSON(Object doc, OutputSettings os)
     {
         return "lll";
     }
@@ -212,7 +178,7 @@ public class XMQ
        @param os  Settings for printing.
        @return A string with clines.
      */
-    public String toCLINES(Document doc, OutputSettings os)
+    public String toCLINES(Object doc, OutputSettings os)
     {
         return "lll";
     }
@@ -225,7 +191,7 @@ public class XMQ
        @param os  Settings for rendering
        @return A string with HTML.
      */
-    public String renderHTML(Document doc, OutputSettings os)
+    public String renderHTML(Object doc, OutputSettings os)
     {
         return "lll";
     }
@@ -238,7 +204,7 @@ public class XMQ
        @param os  Settings for rendering
        @return A string with TeX commands.
      */
-    public String renderTEX(Document doc, OutputSettings os)
+    public String renderTEX(Object doc, OutputSettings os)
     {
         return "lll";
     }

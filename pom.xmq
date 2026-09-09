@@ -50,20 +50,19 @@ project(xsi:schemaLocation = '              http://maven.apache.org/POM/4.0.0   
             artifactId = logback-classic
             version    = 1.6.3
         }
-        /* JAXB 2.x uses javax.xml.bind.*.
+        /* The jdom2 DOM implementation, which preserves
 
-           Do not mix this API with JAXB 4.x, which uses
-           jakarta.xml.bind.*. */
+           attribute order as in the source. JAXEN is used
+           by the jdom2 XPath engine at runtime. */
         dependency {
-            groupId    = javax.xml.bind
-            artifactId = jaxb-api
-            version    = 2.3.1
+            groupId    = org.jdom
+            artifactId = jdom2
+            version    = 2.0.6
         }
         dependency {
-            groupId    = com.sun.xml.bind
-            artifactId = jaxb-impl
-            version    = 2.3.4
-            scope      = runtime
+            groupId    = jaxen
+            artifactId = jaxen
+            version    = 1.2.0
         }
         // Tests
         dependency {

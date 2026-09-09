@@ -23,7 +23,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq.imp;
 
-import org.w3c.dom.Node;
+import org.jdom2.Attribute;
+import org.jdom2.Comment;
+import org.jdom2.Content;
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.ProcessingInstruction;
 
 /**
  * Miscellaneous utilities for xmq processing.
@@ -170,24 +175,36 @@ public class Util {
      * @param node The node.
      * @return The XPath of the node, or null.
      */
-    public static String getXPath(Node node)
+    public static String getXPath(Object node)
     {
         if (node == null)
         {
             return null;
         }
 
-        if (node.getNodeType() == Node.DOCUMENT_NODE)
+        if (node instanceof Document)
         {
             return "/";
         }
 
-        StringBuilder path = new StringBuilder();
-        Node parent = node.getParentNode();
-
-        if (parent != null && parent.getNodeType() != Node.DOCUMENT_NODE)
+        if (!(node instanceof Content))
         {
-            path.append(getXPath(parent));
+            return "/";
+        }
+
+        Content c = (Content)node;
+        String name = name_of(c);
+
+        StringBuilder path = new StringBuilder();
+        org.jdom2.Parent p = c.getParent();
+
+        if (p != null && !(p instanceof Document))
+        {
+            String parent_path = getXPath(p);
+            if (parent_path != null)
+            {
+                path.append(parent_path);
+            }
         }
 
         if (path.length() > 0 && path.charAt(path.length() - 1) != '/')
@@ -195,29 +212,59 @@ public class Util {
             path.append("/");
         }
 
-        String nodeName = node.getNodeName();
-        int index = getNodeIndex(node);
-        path.append(nodeName);
-        if (index > 1)
+        if (name != null && name.length() > 0)
         {
-            path.append("[").append(index).append("]");
+            path.append(name);
+        }
+        else
+        {
+            path.append("text()");
+        }
+
+        if (p != null)
+        {
+            int index = node_index(p, c);
+            if (index > 1)
+            {
+                path.append("[").append(index).append("]");
+            }
         }
 
         return path.toString();
     }
 
-    private static int getNodeIndex(Node node)
+    private static String name_of(Content c)
+    {
+        if (c instanceof Element) return ((Element)c).getQualifiedName();
+        if (c instanceof ProcessingInstruction) return ((ProcessingInstruction)c).getTarget();
+        if (c instanceof Comment) return "comment";
+        return null; // text and other leaf content
+    }
+
+    private static int node_index(org.jdom2.Parent p, Content node)
     {
         int index = 1;
-        Node prev = node.getPreviousSibling();
-        while (prev != null)
+        myloop:
+        for (Content sibling : p.getContent())
         {
-            if (prev.getNodeType() == node.getNodeType() &&
-                prev.getNodeName().equals(node.getNodeName()))
+            if (sibling == node)
             {
-                index++;
+                break myloop;
             }
-            prev = prev.getPreviousSibling();
+            if (sibling instanceof Element && node instanceof Element)
+            {
+                if (((Element)sibling).getQualifiedName().equals(((Element)node).getQualifiedName()))
+                {
+                    index++;
+                }
+            }
+            else if (!(sibling instanceof Element) && !(node instanceof Element))
+            {
+                if (name_of(sibling) == null && name_of(node) == null)
+                {
+                    index++;
+                }
+            }
         }
         return index;
     }

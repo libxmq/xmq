@@ -8,8 +8,8 @@ import java.util.EnumSet;
 import java.nio.file.Paths;
 import java.io.IOException;
 import org.libxmq.*;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
+import org.jdom2.Content;
+import org.jdom2.Document;
 
 /**
  * Test class for parsing sample xmq input.
@@ -62,7 +62,7 @@ public class Test
      * @param car_node The XML node to load from.
      * @return A Proceed value.
      */
-    public Proceed loadCar(Node car_node)
+    public Proceed loadCar(Content car_node)
     {
         var car = new Query(car_node);
 

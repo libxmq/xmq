@@ -4,7 +4,7 @@ import org.libxmq.InputSettings;
 import org.libxmq.NotFoundException;
 import org.libxmq.DecodingException;
 import org.libxmq.Query;
-import org.w3c.dom.Document;
+import org.jdom2.Document;
 
 public class BasicJavaTests
 {

@@ -36,15 +36,17 @@ import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 
-import javax.xml.transform.*;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.xml.sax.InputSource;
 import java.io.StringReader;
 import java.io.StringWriter;
+
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.DocType;
+import org.jdom2.ProcessingInstruction;
+import org.jdom2.input.SAXBuilder;
+import org.jdom2.output.Format;
+import org.jdom2.output.XMLOutputter;
 
 import org.libxmq.ParseException;
 import org.libxmq.OutputSettings;
@@ -104,21 +106,19 @@ public class Main
                 XMQParseIntoDOM pa = new XMQParseIntoDOM();
                 pa.parse(content, args[0]);
 
-                TransformerFactory transformerFactory = TransformerFactory.newInstance();
-                Transformer transformer = transformerFactory.newTransformer();
-                transformer.setOutputProperty(OutputKeys.INDENT, "no");
-                transformer.setOutputProperty(OutputKeys.ENCODING, "utf-8");
-                transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-                DOMSource source = new DOMSource(pa.doc());
+                Format format = Format.getPrettyFormat();
+                format.setOmitDeclaration(true);
+                format.setEncoding("utf-8");
+                XMLOutputter outputter = new XMLOutputter(format);
                 StringWriter sw = new StringWriter();
                 sw.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-                transformer.transform(source, new StreamResult(sw));
+                sw.append(outputter.outputString(pa.doc()));
                 sw.append("\n");
                 System.out.print(sw.toString());
             }
             else
             {
-                org.w3c.dom.Document doc;
+                Document doc;
 
                 // Xmq input can never start with a less than char, so if the
                 // input starts with a less than char (after leading whitespace),
@@ -138,31 +138,28 @@ public class Main
 
                 if (i < content.length() && content.charAt(i) == '<')
                 {
-                    DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-                    dbf.setNamespaceAware(true);
-                    dbf.setValidating(false);
-                    dbf.setExpandEntityReferences(false);
-                    DocumentBuilder db = dbf.newDocumentBuilder();
-                    org.w3c.dom.Document xml_doc = db.parse(new InputSource(new StringReader(content)));
+                    SAXBuilder sb = new SAXBuilder();
+                    sb.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+                    Document xml_doc = sb.build(new StringReader(content));
                     doc = xml_doc;
 
-                    // If the xml has a doctype, then move it out of the w3c
+                    // If the xml has a doctype, then move it out of the
                     // document and into a pi node named DOCTYPE, since that is
                     // how xmq doctypes are stored in the dom (see
                     // XMQParseIntoDOM). The value is reconstructed from the
                     // source, so that the entity values keep their original
                     // quoting.
-                    org.w3c.dom.DocumentType dtd = xml_doc.getDoctype();
+                    DocType dtd = xml_doc.getDocType();
                     if (dtd != null)
                     {
                         XMQParseIntoDOM tmp = new XMQParseIntoDOM();
                         tmp.setup();
                         doc = tmp.doc();
-                        doc.appendChild(doc.createProcessingInstruction("DOCTYPE", doctype_value(content, dtd)));
-                        org.w3c.dom.Element el = xml_doc.getDocumentElement();
+                        doc.addContent(new ProcessingInstruction("DOCTYPE", doctype_value(content, dtd)));
+                        Element el = xml_doc.getRootElement();
                         if (el != null)
                         {
-                            doc.appendChild(doc.importNode(el, true));
+                            doc.addContent(el);
                         }
                     }
                 }
@@ -224,12 +221,12 @@ public class Main
      * list with one entity declaration per line. The printer prints it as a
      * multi line value, or as a single line if compact mode is set.
      * @param content The original xml source.
-     * @param dtd The parsed w3c document type.
+     * @param dtd The parsed jdom2 document type.
      * @return The xmq doctype value.
      */
-    static String doctype_value(String content, org.w3c.dom.DocumentType dtd)
+    static String doctype_value(String content, DocType dtd)
     {
-        StringBuilder v = new StringBuilder(dtd.getName());
+        StringBuilder v = new StringBuilder(dtd.getElementName());
         int p = content.indexOf("<!DOCTYPE");
         if (p < 0) return v.toString();
 
