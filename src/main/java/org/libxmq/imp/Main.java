@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2025 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2025-2026 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -108,19 +108,13 @@ public class Main
                 Transformer transformer = transformerFactory.newTransformer();
                 transformer.setOutputProperty(OutputKeys.INDENT, "no");
                 transformer.setOutputProperty(OutputKeys.ENCODING, "utf-8");
+                transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
                 DOMSource source = new DOMSource(pa.doc());
                 StringWriter sw = new StringWriter();
+                sw.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
                 transformer.transform(source, new StreamResult(sw));
-                String s = sw.toString();
-                if (s.startsWith("<?xml"))
-                {
-                    int i = s.indexOf("?>");
-                    if (i >= 0)
-                        s = s.substring(0, i + 2) + "\n" + s.substring(i + 2);
-                }
-                System.out.print(s);
-                if (s.length() == 0 || s.charAt(s.length() - 1) != '\n')
-                    System.out.println();
+                sw.append("\n");
+                System.out.print(sw.toString());
             }
             else
             {
@@ -145,7 +139,7 @@ public class Main
                 if (i < content.length() && content.charAt(i) == '<')
                 {
                     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-                    dbf.setNamespaceAware(false);
+                    dbf.setNamespaceAware(true);
                     dbf.setValidating(false);
                     dbf.setExpandEntityReferences(false);
                     DocumentBuilder db = dbf.newDocumentBuilder();
@@ -217,15 +211,15 @@ public class Main
     /**
      * Constructs the xmq doctype value from an xml doctype declaration in the
      * source. For the declaration
-     * 
+     *
      *     <!DOCTYPE time [
      *     <!ENTITY copy "&#169;">
      *     ]>
-     * 
+     *
      * the returned value is (\n is a real newline)
-     * 
+     *
      *     time [\n<!ENTITY copy "&#169;">\n]
-     * 
+     *
      * That is, the name, then, if there is an internal subset, a bracketed
      * list with one entity declaration per line. The printer prints it as a
      * multi line value, or as a single line if compact mode is set.
