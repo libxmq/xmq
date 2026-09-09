@@ -28,6 +28,7 @@ import java.util.List;
 import org.jdom2.Attribute;
 import org.jdom2.Comment;
 import org.jdom2.Content;
+import org.jdom2.DocType;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.EntityRef;
@@ -75,6 +76,21 @@ public class XMQPrinter
         ps.buffer.append(c);
         ps.last_char = c;
         ps.current_indent += 1;
+    }
+
+    /** Mirrors C check_space_before_entity_node. */
+    void check_space_before_doctype_node(XMQPrintState ps)
+    {
+        char c = ps.last_char;
+        if (c == '(') return;
+        if (!ps.output_settings.compact() && c != '=')
+        {
+            print_nl_and_indent(ps, null, null);
+        }
+        else if (need_separation_before_entity(ps))
+        {
+            print_white_spaces(ps, 1);
+        }
     }
 
     /** Mirrors C check_space_before_entity_node. */
@@ -887,6 +903,11 @@ public class XMQPrinter
         return node instanceof ProcessingInstruction;
     }
 
+    static boolean is_doctype_node(Content node)
+    {
+        return node instanceof DocType;
+    }
+
     /** Mirrors C is_key_value_node.
      *  Single content or entity child, or multiple text or entity children. */
     static boolean is_key_value_node(Content node)
@@ -952,6 +973,9 @@ public class XMQPrinter
         }
         else if (is_entity_node((Content)node)) {
             print_entity_node(ps, (Content)node);
+        }
+        else if (is_doctype_node((Content)node)) {
+            print_doctype_node(ps, (DocType)node);
         }
         else
         {
@@ -1172,6 +1196,29 @@ public class XMQPrinter
         ps.current_indent += 2;
     }
 
+    void print_doctype_node(XMQPrintState ps, DocType node)
+    {
+        String name = node.getElementName();
+        String subset = node.getInternalSubset();
+        print_doctype_internal(ps, name, subset);
+    }
+
+    void print_doctype_internal(XMQPrintState ps, String name, String internal_subset)
+    {
+        StringBuilder v = new StringBuilder(name);
+        if (internal_subset != null)
+        {
+            String sub = internal_subset.strip();
+            if (!sub.isEmpty())
+            {
+                v.append(" [\n");
+                v.append(sub);
+                v.append("\n]");
+            }
+        }
+        print_doctype(ps, v.toString());
+    }
+
     /** Mirrors C print_doctype. Prints !DOCTYPE = value. */
     void print_doctype(XMQPrintState ps, String content)
     {
@@ -1194,25 +1241,5 @@ public class XMQPrinter
             print_white_spaces(ps, 1);
         }
         print_value_text(ps, content, false /* in_compound */);
-    }
-
-    /**
-     * Prints a doctype line (for documents built by other code, the xmq
-     * parser stores the doctype value in a pi node named DOCTYPE).
-     */
-    void print_doctype_node(XMQPrintState ps, String name, String internal_subset)
-    {
-        StringBuilder v = new StringBuilder(name);
-        if (internal_subset != null)
-        {
-            String sub = internal_subset.strip();
-            if (!sub.isEmpty())
-            {
-                v.append(" [\n");
-                v.append(sub);
-                v.append("\n]");
-            }
-        }
-        print_doctype(ps, v.toString());
     }
 }

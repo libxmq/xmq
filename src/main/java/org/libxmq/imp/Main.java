@@ -47,6 +47,7 @@ import org.jdom2.ProcessingInstruction;
 import org.jdom2.input.SAXBuilder;
 import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
+import org.jdom2.input.sax.XMLReaders;
 
 import org.libxmq.ParseException;
 import org.libxmq.OutputSettings;
@@ -138,30 +139,8 @@ public class Main
 
                 if (i < content.length() && content.charAt(i) == '<')
                 {
-                    SAXBuilder sb = new SAXBuilder();
-                    sb.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-                    Document xml_doc = sb.build(new StringReader(content));
+                    Document xml_doc = FixedEntityParser.parseWithoutDuplicateEntities(content);
                     doc = xml_doc;
-
-                    // If the xml has a doctype, then move it out of the
-                    // document and into a pi node named DOCTYPE, since that is
-                    // how xmq doctypes are stored in the dom (see
-                    // XMQParseIntoDOM). The value is reconstructed from the
-                    // source, so that the entity values keep their original
-                    // quoting.
-                    DocType dtd = xml_doc.getDocType();
-                    if (dtd != null)
-                    {
-                        XMQParseIntoDOM tmp = new XMQParseIntoDOM();
-                        tmp.setup();
-                        doc = tmp.doc();
-                        doc.addContent(new ProcessingInstruction("DOCTYPE", doctype_value(content, dtd)));
-                        Element el = xml_doc.getRootElement();
-                        if (el != null)
-                        {
-                            doc.addContent(el);
-                        }
-                    }
                 }
                 else
                 {
