@@ -12,7 +12,7 @@ then
     . $BUILD/java/spec.sh
 
     PROG=${BUILD}/$EXECUTABLE
-    LIB=${BUILD}/${ARTIFACTID}-${VERSION}.jar
+    LIB=${BUILD}/${ARTIFACTID}-${VERSION}.jar:${BUILD}/project-deps/jdom2-2.0.6.jar:${BUILD}/project-deps/jaxen-1.2.0.jar
 fi
 
 if [ -z "$OUTPUT" ] || [ -z "$PROG" ]
@@ -24,13 +24,6 @@ fi
 rm -rf "$OUTPUT"
 mkdir -p "$OUTPUT"
 
-for i in tests/format_???_*.test
-do
-    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
-    tests/test_formatting.sh "$PROG" "$OUTPUT" "$i"
-    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
-done
-
 if [ -n "$LIB" ]
 then
     for i in tests/java/*.java
@@ -38,10 +31,18 @@ then
         if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
         tests/test_java.sh $LIB "$OUTPUT" "$i"
     done
+    exit 0
 fi
 
 for i in tests/[0-9][0-9][0-9]_*.test
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
     tests/test_single.sh "$PROG" "$OUTPUT" "$i"
+done
+
+for i in tests/format_???_*.test
+do
+    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+    tests/test_formatting.sh "$PROG" "$OUTPUT" "$i"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 done

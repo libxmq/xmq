@@ -1,4 +1,4 @@
-/* libxmq - Copyright (C) 2023 Fredrik Öhrström (spdx: MIT)
+/* libxmq - Copyright (C) 2023-2026 Fredrik Öhrström (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -154,7 +154,7 @@ public abstract class XMQParser extends XMQParseCallbacks
 
     static private final boolean is_xmq_token_whitespace(char c)
     {
-        if (c == ' ' || c == '\n' || c == '\t' || c == '\r')
+        if (c == ' ' || c == '\n' || c == '\r')
         {
             return true;
         }
@@ -1152,14 +1152,15 @@ public abstract class XMQParser extends XMQParseCallbacks
                 else */if (c == '\t')
                 {
                     error_nr_ = ParseErrorCode.XMQ_ERROR_UNEXPECTED_TAB;
+                    throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
                 }
                 else
                 {
                     error_nr_ = ParseErrorCode.XMQ_ERROR_INVALID_CHAR;
                     throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
                 }
-                System.err.println("Internal error.");
-                System.exit(1);
+                //System.err.println("Internal error.");
+                //System.exit(1);
             }
         }
     }

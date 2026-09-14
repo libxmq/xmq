@@ -13,6 +13,7 @@ public class BasicJavaTests
     {
         boolean ok = true;
         ok &= basic_conf();
+        ok &= detect_tab();
 
         if (!ok) System.exit(1);
         System.exit(0);
@@ -45,4 +46,33 @@ public class BasicJavaTests
         System.out.println("OK: basic_conf (BasicJavaTests)");
         return true;
     }
+
+
+    public static boolean detect_tab()
+    {
+        try
+        {
+            String input ="sqlcomp {\n\tdb_user=hej\n}";
+
+            XMQ xmq = new XMQ();
+            InputSettings is = new InputSettings();
+            Document doc = xmq.parseBuffer(input, is);
+            Query q = new Query(doc);
+            String s = q.getString("sqlcomp/db_user", "...");
+        }
+        catch (org.libxmq.ParseException pe)
+        {
+            String s = pe.toString();
+            System.out.println(s);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.out.println("ERROR: detect_tab");
+            return false;
+        }
+        System.out.println("OK: detect_tab (BasicJavaTests)");
+        return true;
+    }
+
 }

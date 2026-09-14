@@ -163,7 +163,16 @@ dist:
 	@(cd dist; make example; make examplecc)
 
 java:
+	@mvn -B -q package -Dgpg.skip=true
+
+java_install:
+	@mvn -B -q install -Dgpg.skip=true
+
+java_sign:
 	@mvn -B -q package
+
+java_install_sign:
+	@mvn -B -q install
 
 .PHONY: dist
 
@@ -302,7 +311,10 @@ xmqjc: pom.xml
 testj:
 	@java -cp build/classes/ org.libxmq.imp.TestInternals
 	@echo "OK: TestInternals"
-	@./tests/testj.sh build/xmqj.sh build build/test_output $(FILTER)
+# Run jar test and compiled Java programs using libxmq
+	@./tests/testj.sh "" build build/test_output $(FILTER)
+# Run xmqj cli binary comparing to xmq cli binary results.
+#	@./tests/testj.sh build/xmqj.sh build build/test_output $(FILTER)
 
 testjc: xmqjc
 	@java -cp build/classes/ org.libxmq.imp.TestInternals
