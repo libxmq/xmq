@@ -924,6 +924,7 @@ void xmqSetCompact(XMQOutputSettings *os, bool compact);
 void xmqSetUseColor(XMQOutputSettings *os, bool use_color);
 void xmqSetTrueColor(XMQOutputSettings *os, bool truecolor);
 void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode);
+void xmqSetBackgroundModeForced(XMQOutputSettings *os, bool bg_forced);
 void xmqSetPreferDoubleQuotes(XMQOutputSettings *os, bool prefer_double_quotes);
 void xmqSetFinalNewline(XMQOutputSettings *os, bool final_nl);
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines);

@@ -2,11 +2,11 @@
 INPUT
 foo{bar}
 FIRST
-<pre class="xmq xmq_dark"><xmqEN>foo</xmqEN> {
+<pre class="xmq xmq_auto"><xmqEN>foo</xmqEN> {
     <xmqEN>bar</xmqEN>
 }</pre>
 SECOND
-pre(class='xmq xmq_dark'){xmqEN=foo' {'&#10;'    'xmqEN=bar &#10;'}'}
+pre(class='xmq xmq_auto'){xmqEN=foo' {'&#10;'    'xmqEN=bar &#10;'}'}
 END
 ARGS_FIRST
 CMDS_FIRST render-html --nostyle --theme=dark print

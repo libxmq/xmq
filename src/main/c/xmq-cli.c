@@ -198,6 +198,7 @@ struct XMQCliCommand
     int  flags;
     bool use_color; // Uses color or not for terminal/html/tex
     bool bg_dark_mode; // Terminal has dark background. Specify with XMQ_BG=light or XMQ_BG=dark or --bg=light --bg=dark
+    bool bg_forced; // The dark/light background mode was explicitly specified with XMQ_BG or --bg=.
     bool truecolor; // Terminal supports truecolor/24bit ansi.
     const char *use_id; // When rendering html mark the pre tag with this id.
     const char *use_class; // When rendering html mark the pre tag with this class.
@@ -254,6 +255,7 @@ struct XMQCliEnvironment
     XMQCliCommand *load;
     bool use_color;
     bool bg_dark_mode;
+    bool bg_forced;
     bool truecolor;
     const char *use_id;
     char *out_start; // Points to generated output: xml/xmq/htmq/html/json/text
@@ -406,7 +408,7 @@ bool shell_safe(char *i);
 const char *skip_ansi_backwards(const char *i, const char *start);
 void substitute_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, bool only_chars);
 bool detect_truecolor();
-void lookup_bg(bool *use_color, bool *bg_dark_mode);
+void lookup_bg(bool *use_color, bool *bg_dark_mode, bool *bg_forced);
 const char *lookup_theme_spec();
 const char *tokenize_type_to_string(XMQCliTokenizeType type);
 void trace_(const char* fmt, ...);
@@ -685,6 +687,7 @@ XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env)
 
     c->use_color = env->use_color;
     c->bg_dark_mode = env->bg_dark_mode;
+    c->bg_forced = env->bg_forced;
     c->truecolor = env->truecolor;
     c->env = env;
     c->cmd = XMQ_CLI_CMD_TO_XMQ;
@@ -950,11 +953,13 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             {
                 command->use_color = true;
                 command->bg_dark_mode = false;
+                command->bg_forced = true;
             }
             else if (!strcmp(bg, "dark"))
             {
                 command->use_color = true;
                 command->bg_dark_mode = true;
+                command->bg_forced = true;
             }
             else if (!strcmp(bg, "mono"))
             {
@@ -1565,11 +1570,13 @@ bool detect_truecolor()
     return false;
 }
 
-void lookup_bg(bool *use_color, bool *bg_dark_mode)
+void lookup_bg(bool *use_color, bool *bg_dark_mode, bool *bg_forced)
 {
     const char *term = getenv("TERM");
     if (!term) term = "NULL";
     verbose_("xmq=", "detected terminal %s", term);
+
+    *bg_forced = false;
 
     char *bg = getenv("XMQ_BG");
     if (bg != NULL)
@@ -1585,12 +1592,14 @@ void lookup_bg(bool *use_color, bool *bg_dark_mode)
         if (!strcmp(bg, "light"))
         {
             *bg_dark_mode = false;
+            *bg_forced = true;
             verbose_("xmq=", "XMQ_BG set to light");
             return;
         }
         if (!strcmp(bg, "dark"))
         {
             *bg_dark_mode = true;
+            *bg_forced = true;
             verbose_("xmq=", "XMQ_BG set to dark");
             return;
         }
@@ -1795,8 +1804,9 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     }
     if (!strcmp(arg, "--check-bg-dark-light"))
     {
-        bool color, dark;
-        lookup_bg(&color, &dark);
+        bool color, dark, forced;
+        lookup_bg(&color, &dark, &forced);
+        (void)forced;
         if (error_to_print_on_exit) fprintf(stderr, "%s", error_to_print_on_exit);
         if (!color) exit(0); // Mono
         if (dark) exit(1); // Dark background
@@ -2091,6 +2101,7 @@ bool cmd_tokenize(XMQCliCommand *command)
         xmqSetRenderFormat(output_settings, XMQ_RENDER_HTML);
         xmqSetUseColor(output_settings, command->use_color);
         xmqSetBackgroundMode(output_settings, command->bg_dark_mode);
+        xmqSetBackgroundModeForced(output_settings, command->bg_forced);
         xmqSetRenderTheme(output_settings, command->render_theme_spec);
         xmqSetupDefaultColors(output_settings);
         xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_HTML);
@@ -2396,6 +2407,7 @@ bool cmd_to(XMQCliCommand *command)
     xmqSetFinalNewline(settings, command->final_newline);
     xmqSetUseColor(settings, command->use_color);
     xmqSetBackgroundMode(settings, command->bg_dark_mode);
+    xmqSetBackgroundModeForced(settings, command->bg_forced);
     xmqSetOutputFormat(settings, command->out_format);
     xmqSetRenderFormat(settings, command->render_to);
     xmqSetRenderRaw(settings, command->render_raw);
@@ -4925,7 +4937,7 @@ int main(int argc, const char **argv)
     memset(&env, 0, sizeof(env));
 
     // Check if can find the best background setting for this terminal. mono/dark/light
-    lookup_bg(&env.use_color, &env.bg_dark_mode);
+    lookup_bg(&env.use_color, &env.bg_dark_mode, &env.bg_forced);
 
     // Check if terminal supports truecolor.
     env.truecolor = detect_truecolor();

@@ -2,9 +2,9 @@ START
 <!-- en kommentar -->
 <foo/>
 COMPACT
-<pre class="xmq xmq_dark"><xmqC>/*en kommentar*/</xmqC><xmqEN>foo</xmqEN></pre>
+<pre class="xmq xmq_auto"><xmqC>/*en kommentar*/</xmqC><xmqEN>foo</xmqEN></pre>
 XMQ
-<pre class="xmq xmq_dark"><xmqC>// en kommentar</xmqC>
+<pre class="xmq xmq_auto"><xmqC>// en kommentar</xmqC>
 <xmqEN>foo</xmqEN></pre>
 END
 ARGS

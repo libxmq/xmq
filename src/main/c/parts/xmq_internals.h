@@ -218,6 +218,7 @@ struct XMQOutputSettings
     const char *use_class; // If non-NULL insert this class in the pre tag.
 
     XMQTheme *theme; // The theme used to print.
+    bool bg_forced; // The dark/light background mode was explicitly specified (XMQ_BG or --bg).
     void *free_me;
     void *free_and_me;
 };

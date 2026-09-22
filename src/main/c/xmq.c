@@ -336,12 +336,79 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_m
     theme->document.post = NOCOLOR;
 }
 
+// Append the pre-element CSS for the color class clazz
+// using either the dark or the light background colors.
+static void append_pre_html_coloring(MemBuffer *style_pre, XMQTheme *theme, bool dark_mode, const char *clazz)
+{
+    XMQColorDef *def;
+
+    membuffer_append(style_pre, "pre.");
+    membuffer_append(style_pre, clazz);
+    membuffer_append(style_pre, "{white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#");
+
+    // Lookup the bg color in dark/light.
+    def = dark_mode?&theme->colors_darkbg[XMQ_COLOR_BG_INDEX]:&theme->colors_lightbg[XMQ_COLOR_BG_INDEX];
+    if (def->r == -1)
+    {
+        // No override, use default.
+        membuffer_append(style_pre, dark_mode?"263338":"ffffcc");
+    }
+    else
+    {
+        // Override of the bg color. Use it.
+        char buf[7];
+        snprintf(buf, 7, "%02x%02x%02x", def->r, def->g, def->b);
+        membuffer_append(style_pre, buf);
+    }
+    membuffer_append(style_pre, ";border:solid 1px ");
+    membuffer_append(style_pre, dark_mode?"#555555":"#888888");
+    membuffer_append(style_pre, ";display:inline-block;padding:1em;color:#");
+
+    // Lookup the fg color in dark/light.
+    def = dark_mode?&theme->colors_darkbg[XMQ_COLOR_FG_INDEX]:&theme->colors_lightbg[XMQ_COLOR_FG_INDEX];
+    if (def->r == -1)
+    {
+        // No override, use default.
+        membuffer_append(style_pre, dark_mode?"ffffff":"000000");
+    }
+    else
+    {
+        // Override of the fg color. Use it.
+        char buf[7];
+        snprintf(buf, 7, "%02x%02x%02x", def->r, def->g, def->b);
+        membuffer_append(style_pre, buf);
+    }
+    membuffer_append(style_pre, ";}\n");
+
+    for (int i=0; i<NUM_XMQ_COLOR_NAMES; ++i)
+    {
+        char buf[128];
+        generate_html_color(buf, 128, dark_mode?&theme->colors_darkbg[i]:&theme->colors_lightbg[i], colorName(i));
+        membuffer_append(style_pre, "pre.");
+        membuffer_append(style_pre, clazz);
+        membuffer_append(style_pre, " ");
+        membuffer_append(style_pre, buf);
+    }
+}
+
 void setup_html_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode, bool use_color, bool render_raw)
 {
     os->indentation_space = " ";
     os->explicit_nl = "\n";
     if (!render_raw)
     {
+        // Setup automatic dark/light mode detection:
+        // By default the page follows the browser setting via the CSS
+        // 'prefers-color-scheme' media query and uses the class xmq_auto.
+        // The default (when the browser has no preference) is light mode.
+        // The dark or light mode can be forced with XMQ_BG=dark|light or
+        // --bg=dark|light in which case the classes xmq_dark/xmq_light are used.
+        const char *body_class = "xmq_auto";
+        if (os->bg_forced)
+        {
+            body_class = dark_mode?"xmq_dark":"xmq_light";
+        }
+
         theme->document.pre =
             "<!DOCTYPE html>\n<html>\n";
         theme->document.post =
@@ -358,90 +425,44 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode,
                          "@media screen and (orientation: portrait) { pre { font-size: 2vw; } }"
                          "@media screen and (orientation: landscape) { pre { max-width: 98%; } }");
 
-        // Setup CSS for dark mode
-        membuffer_append(style_pre, "pre.xmq_dark {white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#");
-
-        // Lookup the bg color in dark....
-        XMQColorDef *def = &theme->colors_darkbg[XMQ_COLOR_BG_INDEX];
-        if (def->r == -1) membuffer_append(style_pre, "263338"); // No override, use default.
-        else
+        // Body class used on the <body> element.
         {
-            // BG override in dark mode use it.
-            char buf[7];
-            snprintf(buf, 7, "%02x%02x%02x", def->r, def->g, def->b);
-            membuffer_append(style_pre, buf);
-        }
-        membuffer_append(style_pre,    ";border:solid 1px #555555;display:inline-block;padding:1em;color:#");
-
-        // Lookup the fg color in dark....
-        def = &theme->colors_darkbg[XMQ_COLOR_FG_INDEX];
-        if (def->r == -1) membuffer_append(style_pre, "ffffff");
-        else
-        {
-            char buf[7];
-            snprintf(buf, 7, "%02x%02x%02x", def->r, def->g, def->b);
-            membuffer_append(style_pre, buf);
-        }
-        membuffer_append(style_pre,";}\n");
-
-        // Setup CSS for light mode
-        membuffer_append(style_pre, "pre.xmq_light{white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#");
-
-        // Lookup the bg color in light....
-        def = &theme->colors_lightbg[XMQ_COLOR_BG_INDEX];
-        if (def->r == -1) membuffer_append(style_pre, "ffffcc"); // No override, use default.
-        else
-        {
-            // BG override in dark mode use it.
-            char buf[7];
-            snprintf(buf, 7, "%02x%02x%02x", def->r, def->g, def->b);
-            membuffer_append(style_pre, buf);
-        }
-        membuffer_append(style_pre, ";border:solid 1px #888888;display:inline-block;padding:1em;color:#");
-
-        // Lookup the fg color in dark....
-        def = &theme->colors_darkbg[XMQ_COLOR_FG_INDEX];
-        if (def->r == -1) membuffer_append(style_pre, "000000");
-        else
-        {
-            char buf[7];
-            snprintf(buf, 7, "%02x%02x%02x", def->r, def->g, def->b);
-            membuffer_append(style_pre, buf);
-        }
-        membuffer_append(style_pre,";}\n");
-
-        membuffer_append(style_pre,
-                         "body.xmq_dark {background-color:black;}\n"
-                         "body.xmq_light {}\n");
-
-        for (int i=0; i<NUM_XMQ_COLOR_NAMES; ++i)
-        {
-            char buf[128];
-            generate_html_color(buf, 128, &theme->colors_darkbg[i], colorName(i));
-            membuffer_append(style_pre, buf);
-        }
-        membuffer_append(style_pre, "pre.xmq_light {\n");
-
-        for (int i=0; i<NUM_XMQ_COLOR_NAMES; ++i)
-        {
-            char buf[128];
-            generate_html_color(buf, 128, &theme->colors_lightbg[i], colorName(i));
-            membuffer_append(style_pre, buf);
+            char *body_pre = (char*)malloc(64);
+            os->free_me = body_pre;
+            snprintf(body_pre, 64, "<body class=\"%s\">", body_class);
+            theme->body.pre = body_pre;
         }
 
-        membuffer_append(style_pre, "pre.xmq_dark {}\n}\n");
+        // Default body background (light mode / no preference).
+        XMQColorDef *def = &theme->colors_lightbg[XMQ_COLOR_BG_INDEX];
+        if (def->r == -1) def = NULL; // No override, use default.
+        membuffer_append(style_pre, "body{background-color:#");
+        if (def) { char buf[7]; snprintf(buf, 7, "%02x%02x%02x", def->r, def->g, def->b); membuffer_append(style_pre, buf); }
+        else membuffer_append(style_pre, "ffffff");
+        membuffer_append(style_pre, ";}\n");
+
+        // Setup CSS for dark mode (applied when the browser prefers dark mode).
+        membuffer_append(style_pre, "@media (prefers-color-scheme: dark) {\n");
+        membuffer_append(style_pre, "body.xmq_auto{background-color:black;}\n");
+        append_pre_html_coloring(style_pre, theme, true, "xmq_auto");
+        membuffer_append(style_pre, "}\n");
+
+        // Setup CSS for forced dark mode (XMQ_BG=dark or --bg=dark).
+        membuffer_append(style_pre, "body.xmq_dark{background-color:black;}\n");
+        append_pre_html_coloring(style_pre, theme, true, "xmq_dark");
+
+        // Setup CSS for light mode (applied when the browser prefers light mode).
+        membuffer_append(style_pre, "@media (prefers-color-scheme: light) {\n");
+        append_pre_html_coloring(style_pre, theme, false, "xmq_auto");
+        membuffer_append(style_pre, "}\n");
+
+        // Setup CSS for forced light mode (XMQ_BG=light or --bg=light).
+        append_pre_html_coloring(style_pre, theme, false, "xmq_light");
+
         membuffer_append_null(style_pre);
 
         theme->style.pre = free_membuffer_but_return_trimmed_content(style_pre);
         os->free_me = (void*)theme->style.pre;
-        if (dark_mode)
-        {
-            theme->body.pre = "<body class=\"xmq_dark\">";
-        }
-        else
-        {
-            theme->body.pre = "<body class=\"xmq_light\">";
-        }
 
         theme->body.post =
             "</body>";
@@ -450,8 +471,15 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode,
     theme->content.pre = "<pre>";
     theme->content.post = "</pre>";
 
-    const char *mode = "xmq_light";
-    if (dark_mode) mode = "xmq_dark";
+    // The class xmq_auto automatically follows the browser dark/light mode
+    // preference, see the 'prefers-color-scheme' media queries in the style
+    // section above. When a dark or a light background was forced (XMQ_BG or
+    // --bg) the matching xmq_dark/xmq_light class is used instead.
+    const char *mode_class = "xmq_auto";
+    if (os->bg_forced)
+    {
+        mode_class = dark_mode?"xmq_dark":"xmq_light";
+    }
 
     char *buf = (char*)malloc(1024);
     os->free_and_me = buf;
@@ -471,7 +499,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode,
         clazz = "";
         space = "";
     }
-    snprintf(buf, 1023, "<pre %s%s%sclass=\"xmq %s%s%s\">", idb, id, ide, mode, space, clazz);
+    snprintf(buf, 1023, "<pre %s%s%sclass=\"xmq %s%s%s\">", idb, id, ide, mode_class, space, clazz);
     theme->content.pre = buf;
 
     theme->whitespace.pre  = NULL;
@@ -802,6 +830,11 @@ void xmqSetTrueColor(XMQOutputSettings *os, bool truecolor)
 void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode)
 {
     os->bg_dark_mode = bg_dark_mode;
+}
+
+void xmqSetBackgroundModeForced(XMQOutputSettings *os, bool bg_forced)
+{
+    os->bg_forced = bg_forced;
 }
 
 void xmqSetPreferDoubleQuotes(XMQOutputSettings *os, bool prefer_double_quotes)

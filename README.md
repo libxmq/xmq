@@ -217,11 +217,16 @@ cars {
 ## Colors and themes
 
 Xmq tries to detect the background color of the terminal. This is used
-to select different color palettes in light and dark modes.
+to select different color palettes in light and dark modes.  Rendered
+html will create a css that detects the users dark/light mode
+preference supplied by the web browser.  This can be made explicit
+with `XMQ_BG=auto`
 
-Even if you are running within a dark terminal you can force a light coloring with `XMQ_BG=light`
-and vice versa. This is usefule when spawning a browser and you want a different mode in the browser.
-For example: `XMQ_BG=light xmq info.xml br`
+Even if you are running within a dark terminal you can force a light
+coloring with `XMQ_BG=light` and vice versa. This is useful when
+spawning a browser and you want a specific mode in the browser,
+without listening to the browser dark/light mode preference.  For
+example: `XMQ_BG=light xmq info.xml br`
 
 You can also modify the individual colors with XMQ_THEME. There are 15 colors that can be changed.
 
