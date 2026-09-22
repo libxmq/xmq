@@ -409,7 +409,7 @@ const char *skip_ansi_backwards(const char *i, const char *start);
 void substitute_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, bool only_chars);
 bool detect_truecolor();
 void lookup_bg(bool *use_color, bool *bg_dark_mode, bool *bg_forced);
-XMQColorMode compute_color_mode(bool use_color, bool bg_dark_mode, bool bg_forced);
+XMQColorMode compute_color_mode(bool use_color, bool bg_dark_mode, bool bg_forced, XMQRenderFormat render_to);
 const char *lookup_theme_spec();
 const char *tokenize_type_to_string(XMQCliTokenizeType type);
 void trace_(const char* fmt, ...);
@@ -1571,10 +1571,14 @@ bool detect_truecolor()
     return false;
 }
 
-XMQColorMode compute_color_mode(bool use_color, bool bg_dark_mode, bool bg_forced)
+XMQColorMode compute_color_mode(bool use_color, bool bg_dark_mode, bool bg_forced, XMQRenderFormat render_to)
 {
     if (bg_forced) return bg_dark_mode ? XMQ_BG_DARK : XMQ_BG_LIGHT;
-    return use_color ? XMQ_BG_AUTO : XMQ_MONO;
+    if (!use_color) return XMQ_MONO;
+    // Unforced background: for terminal/tex output use the background detected by
+    // the cli (bg_dark_mode), for html output let the browser decide.
+    if (render_to == XMQ_RENDER_HTML) return XMQ_BG_AUTO;
+    return bg_dark_mode ? XMQ_BG_DARK : XMQ_BG_LIGHT;
 }
 
 void lookup_bg(bool *use_color, bool *bg_dark_mode, bool *bg_forced)
@@ -2098,21 +2102,21 @@ bool cmd_tokenize(XMQCliCommand *command)
     case XMQ_CLI_TOKENIZE_NONE:
     case XMQ_CLI_TOKENIZE_TERMINAL:
         xmqSetRenderFormat(output_settings, XMQ_RENDER_TERMINAL);
-        xmqSetColorMode(output_settings, compute_color_mode(command->use_color, command->bg_dark_mode, command->bg_forced));
+        xmqSetColorMode(output_settings, compute_color_mode(command->use_color, command->bg_dark_mode, command->bg_forced, XMQ_RENDER_TERMINAL));
         xmqSetRenderTheme(output_settings, command->render_theme_spec);
         xmqSetupDefaultColors(output_settings);
         xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_TERMINAL);
         break;
     case XMQ_CLI_TOKENIZE_HTML:
         xmqSetRenderFormat(output_settings, XMQ_RENDER_HTML);
-        xmqSetColorMode(output_settings, compute_color_mode(command->use_color, command->bg_dark_mode, command->bg_forced));
+        xmqSetColorMode(output_settings, compute_color_mode(command->use_color, command->bg_dark_mode, command->bg_forced, XMQ_RENDER_HTML));
         xmqSetRenderTheme(output_settings, command->render_theme_spec);
         xmqSetupDefaultColors(output_settings);
         xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_HTML);
         break;
     case XMQ_CLI_TOKENIZE_TEX:
         xmqSetRenderFormat(output_settings, XMQ_RENDER_TEX);
-        xmqSetColorMode(output_settings, compute_color_mode(command->use_color, command->bg_dark_mode, command->bg_forced));
+        xmqSetColorMode(output_settings, compute_color_mode(command->use_color, command->bg_dark_mode, command->bg_forced, XMQ_RENDER_TEX));
         xmqSetRenderTheme(output_settings, command->render_theme_spec);
         xmqSetupDefaultColors(output_settings);
         xmqSetupParseCallbacksColorizeTokens(callbacks, XMQ_RENDER_TEX);
@@ -2408,7 +2412,7 @@ bool cmd_to(XMQCliCommand *command)
     xmqSetEscapeTabs(settings, command->escape_tabs);
     xmqSetAddIndent(settings, command->add_indent);
     xmqSetFinalNewline(settings, command->final_newline);
-    xmqSetColorMode(settings, compute_color_mode(command->use_color, command->bg_dark_mode, command->bg_forced));
+    xmqSetColorMode(settings, compute_color_mode(command->use_color, command->bg_dark_mode, command->bg_forced, command->render_to));
     xmqSetOutputFormat(settings, command->out_format);
     xmqSetRenderFormat(settings, command->render_to);
     xmqSetRenderRaw(settings, command->render_raw);
