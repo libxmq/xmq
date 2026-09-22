@@ -179,8 +179,7 @@ struct XMQOutputSettings
     int  add_indent;
     bool compact;
     bool omit_decl;
-    bool use_color;
-    bool bg_dark_mode;
+    XMQColorMode color_mode;
     bool truecolor;
     bool prefer_double_quotes;
     bool final_newline;
@@ -218,7 +217,6 @@ struct XMQOutputSettings
     const char *use_class; // If non-NULL insert this class in the pre tag.
 
     XMQTheme *theme; // The theme used to print.
-    bool bg_forced; // The dark/light background mode was explicitly specified (XMQ_BG or --bg).
     void *free_me;
     void *free_and_me;
 };

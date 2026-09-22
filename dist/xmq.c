@@ -3146,8 +3146,7 @@ struct XMQOutputSettings
     int  add_indent;
     bool compact;
     bool omit_decl;
-    bool use_color;
-    bool bg_dark_mode;
+    XMQColorMode color_mode;
     bool truecolor;
     bool prefer_double_quotes;
     bool final_newline;
@@ -3185,7 +3184,6 @@ struct XMQOutputSettings
     const char *use_class; // If non-NULL insert this class in the pre tag.
 
     XMQTheme *theme; // The theme used to print.
-    bool bg_forced; // The dark/light background mode was explicitly specified (XMQ_BG or --bg).
     void *free_me;
     void *free_and_me;
 };
@@ -3743,7 +3741,8 @@ char ansi_reset_color[] = "\033[0m";
 
 void xmqSetupDefaultColors(XMQOutputSettings *os)
 {
-    bool dark_mode = os->bg_dark_mode;
+    bool use_color = os->color_mode != XMQ_MONO;
+    bool dark_mode = (os->color_mode == XMQ_BG_DARK) || (os->color_mode == XMQ_BG_AUTO);
 //    bool truecolor = os->truecolor;
     XMQTheme *theme = os->theme;
     if (os->render_theme_spec == NULL)
@@ -3778,15 +3777,15 @@ void xmqSetupDefaultColors(XMQOutputSettings *os)
     else
     if (os->render_to == XMQ_RENDER_TERMINAL)
     {
-        setup_terminal_coloring(os, theme, dark_mode, os->use_color, os->truecolor, os->render_raw);
+        setup_terminal_coloring(os, theme, dark_mode, use_color, os->truecolor, os->render_raw);
     }
     else if (os->render_to == XMQ_RENDER_HTML)
     {
-        setup_html_coloring(os, theme, dark_mode, os->use_color, os->render_raw);
+        setup_html_coloring(os, theme, dark_mode, use_color, os->render_raw);
     }
     else if (os->render_to == XMQ_RENDER_TEX)
     {
-        setup_tex_coloring(os, theme, dark_mode, os->use_color, os->render_raw);
+        setup_tex_coloring(os, theme, dark_mode, use_color, os->render_raw);
     }
 
     if (os->only_style)
@@ -3966,9 +3965,13 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode,
         // The dark or light mode can be forced with XMQ_BG=dark|light or
         // --bg=dark|light in which case the classes xmq_dark/xmq_light are used.
         const char *body_class = "xmq_auto";
-        if (os->bg_forced)
+        if (os->color_mode == XMQ_BG_DARK)
         {
-            body_class = dark_mode?"xmq_dark":"xmq_light";
+            body_class = "xmq_dark";
+        }
+        if (os->color_mode == XMQ_BG_LIGHT)
+        {
+            body_class = "xmq_light";
         }
 
         theme->document.pre =
@@ -4038,9 +4041,13 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode,
     // section above. When a dark or a light background was forced (XMQ_BG or
     // --bg) the matching xmq_dark/xmq_light class is used instead.
     const char *mode_class = "xmq_auto";
-    if (os->bg_forced)
+    if (os->color_mode == XMQ_BG_DARK)
     {
-        mode_class = dark_mode?"xmq_dark":"xmq_light";
+        mode_class = "xmq_dark";
+    }
+    if (os->color_mode == XMQ_BG_LIGHT)
+    {
+        mode_class = "xmq_light";
     }
 
     char *buf = (char*)malloc(1024);
@@ -4342,7 +4349,7 @@ XMQOutputSettings *xmqNewOutputSettings()
     os->explicit_tab = theme->explicit_tab = "\t";
     os->explicit_cr = theme->explicit_cr = "\r";
     os->add_indent = 4;
-    os->use_color = false;
+    os->color_mode = XMQ_MONO;
     os->allow_json_quotes = true;
     os->final_newline = true;
 
@@ -4379,24 +4386,14 @@ void xmqSetCompact(XMQOutputSettings *os, bool compact)
     os->compact = compact;
 }
 
-void xmqSetUseColor(XMQOutputSettings *os, bool use_color)
+void xmqSetColorMode(XMQOutputSettings *os, XMQColorMode color_mode)
 {
-    os->use_color = use_color;
+    os->color_mode = color_mode;
 }
 
 void xmqSetTrueColor(XMQOutputSettings *os, bool truecolor)
 {
     os->truecolor = truecolor;
-}
-
-void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode)
-{
-    os->bg_dark_mode = bg_dark_mode;
-}
-
-void xmqSetBackgroundModeForced(XMQOutputSettings *os, bool bg_forced)
-{
-    os->bg_forced = bg_forced;
 }
 
 void xmqSetPreferDoubleQuotes(XMQOutputSettings *os, bool prefer_double_quotes)
@@ -9107,7 +9104,7 @@ char *xmqLineDoc(XMQLineConfig *lc, XMQDoc *doc)
     XMQOutputSettings *settings = xmqNewOutputSettings();
     xmqSetCompact(settings, true);
     xmqSetEscapeNewlines(settings, true);
-    xmqSetUseColor(settings, false);
+    xmqSetColorMode(settings, XMQ_MONO);
     xmqSetOutputFormat(settings, XMQ_CONTENT_XMQ);
     xmqSetRenderFormat(settings, XMQ_RENDER_PLAIN);
 

@@ -98,6 +98,24 @@ typedef struct XMQParseCallbacks XMQParseCallbacks;
 typedef struct XMQOutputSettings XMQOutputSettings;
 
 /**
+   @brief Specifies the color mode when rendering output that can be
+   colorized (terminal, html and tex).
+*/
+typedef enum
+{
+    /** Render without any color. Output is plain monochrome. */
+    XMQ_MONO = 0,
+    /** Render with color, assuming a dark background. The dark background mode is forced. */
+    XMQ_BG_DARK = 1,
+    /** Render with color, assuming a light background. The light background mode is forced. */
+    XMQ_BG_LIGHT = 2,
+    /** Render with color and decide the background automatically,
+       defaulting to a dark background. For html this means the rendered
+       page follows the browser dark/light mode preference. */
+    XMQ_BG_AUTO = 3,
+} XMQColorMode;
+
+/**
    @brief Specify the file/buffer content type both for input and for output.
 */
 typedef enum
@@ -921,10 +939,8 @@ void xmqFreeOutputSettings(XMQOutputSettings *os);
 
 void xmqSetAddIndent(XMQOutputSettings *os, int add_indent);
 void xmqSetCompact(XMQOutputSettings *os, bool compact);
-void xmqSetUseColor(XMQOutputSettings *os, bool use_color);
+void xmqSetColorMode(XMQOutputSettings *os, XMQColorMode color_mode);
 void xmqSetTrueColor(XMQOutputSettings *os, bool truecolor);
-void xmqSetBackgroundMode(XMQOutputSettings *os, bool bg_dark_mode);
-void xmqSetBackgroundModeForced(XMQOutputSettings *os, bool bg_forced);
 void xmqSetPreferDoubleQuotes(XMQOutputSettings *os, bool prefer_double_quotes);
 void xmqSetFinalNewline(XMQOutputSettings *os, bool final_nl);
 void xmqSetEscapeNewlines(XMQOutputSettings *os, bool escape_newlines);

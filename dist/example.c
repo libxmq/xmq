@@ -99,7 +99,7 @@ void demonstrate_building_html()
 
     xmqSetCompact(os, true);
     xmqSetEscapeNewlines(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_HTML);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
@@ -144,7 +144,7 @@ void demonstrate_building_json()
 
     xmqSetCompact(os, true);
     xmqSetEscapeNewlines(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_JSON);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
@@ -231,7 +231,7 @@ void demonstrate_building_dom_2()
 
     xmqSetCompact(os, true);
     xmqSetEscapeNewlines(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
@@ -270,7 +270,7 @@ void demonstrate_building_dom_3()
 
     xmqSetCompact(os, true);
     xmqSetEscapeNewlines(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
@@ -312,7 +312,7 @@ void demonstrate_building_dom_4()
 
     xmqSetCompact(os, true);
     xmqSetEscapeNewlines(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 

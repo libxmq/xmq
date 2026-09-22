@@ -25,7 +25,7 @@ void test_building_doc_0()
 
     xmqSetCompact(os, true);
     xmqSetEscapeNewlines(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
@@ -63,7 +63,7 @@ void test_building_doc_1()
 
     xmqSetCompact(os, true);
     xmqSetEscapeNewlines(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
@@ -100,7 +100,7 @@ void test_building_doc_2()
 
     xmqSetCompact(os, true);
     xmqSetEscapeNewlines(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
@@ -136,7 +136,7 @@ void test_building_doc_3()
     XMQOutputSettings *os = xmqNewOutputSettings();
 
     xmqSetCompact(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
@@ -178,7 +178,7 @@ void test_building_doc_4()
     XMQOutputSettings *os = xmqNewOutputSettings();
 
     xmqSetCompact(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
@@ -221,7 +221,7 @@ void test_building_doc_5()
     XMQOutputSettings *os = xmqNewOutputSettings();
 
     xmqSetCompact(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
@@ -264,7 +264,7 @@ void test_building_doc_6()
     XMQOutputSettings *os = xmqNewOutputSettings();
 
     xmqSetCompact(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
@@ -305,7 +305,7 @@ void test_building_doc_7()
 
     xmqSetCompact(os, true);
     xmqSetEscapeNewlines(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
@@ -347,7 +347,7 @@ void test_building_doc_8()
 
     xmqSetCompact(os, true);
     xmqSetEscapeNewlines(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
@@ -387,7 +387,7 @@ void test_building_doc_9()
 
     xmqSetCompact(os, true);
     xmqSetEscapeNewlines(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_XMQ);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
@@ -428,7 +428,7 @@ void test_building_doc_10()
 
     xmqSetCompact(os, true);
     xmqSetEscapeNewlines(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_JSON);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
@@ -466,7 +466,7 @@ void test_building_doc_11()
 
     xmqSetCompact(os, true);
     xmqSetEscapeNewlines(os, true);
-    xmqSetUseColor(os, false);
+    xmqSetColorMode(os, XMQ_MONO);
     xmqSetOutputFormat(os, XMQ_CONTENT_HTML);
     xmqSetRenderFormat(os, XMQ_RENDER_PLAIN);
 
