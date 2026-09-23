@@ -15,7 +15,9 @@ $(shell echo $(VERSION) > $(VERSION_FILE))
 AT=@
 DROP_ROOT=$(subst $(GIT_ROOT)/,./,$1)
 
-mvn: $(BUILD)/$(EXECUTABLE)
+mvn: $(BUILD)/xmqj
+
+xmqj: $(BUILD)/xmqj
 
 xmqjc: $(BUILD)/xmqjc
 
@@ -23,22 +25,18 @@ xmqjc: $(BUILD)/xmqjc
 JARS:=$(shell find $(PROJECT_DEPS)/ -name "*.jar" | grep -v lsp4j | tr '\n' ':')
 MODULES:=$(BUILD)/project-deps/org.eclipse.lsp4j-0.22.0.jar:$(BUILD)/project-deps/org.eclipse.lsp4j.jsonrpc-0.22.0.jar
 
-# Create the xmqj script.
-$(file >build/$(EXECUTABLE),java -cp $(JARS):$(BUILD)/classes $(GROUPID).imp.Main $$*)
-$(shell chmod a+x build/$(EXECUTABLE))
-
 pom.xml: pom.xmq
 	$(AT)if [ ! "$(XMQ)" = "" ]; then @echo "Updating pom.xml"; xmq pom.xmq to-xml > pom.xml ; fi
 
 # Find all java sources.
 SOURCES:=$(shell find src/main/java/ -type f -name "*.java")
 
-$(BUILD)/$(EXECUTABLE): $(PROJECT_DEPS)/updated.timestamp $(SOURCES) pom.xml scripts/run.sh
+$(BUILD)/xmqj: $(PROJECT_DEPS)/updated.timestamp $(SOURCES) pom.xml scripts/run.sh
 	@echo Compiling using maven
 	$(AT)(MAVEN_OPTS=$(MAVEN_OPTS) mvn -B -q package)
 	$(AT)cat scripts/run.sh $(BUILD)/$(ARTIFACTID)-$(VERSION)-exec.jar > $@
 	$(AT)chmod a+x $@
-	@echo "Built executable: $(BUILD)/$(EXECUTABLE)"
+	@echo "Built executable: $(BUILD)/xmqj"
 	@echo "Built package: $(BUILD)/$(ARTIFACTID)-$(VERSION).jar"
 	@(mkdir -p $(BUILD)/javadoc; cd $(BUILD)/javadoc; jar xf $(BUILD)/$(ARTIFACTID)-$(VERSION)-javadoc.jar)
 	@echo "Extracted javadoc: $(BUILD)/$(ARTIFACTID)-$(VERSION)-javadoc.jar"

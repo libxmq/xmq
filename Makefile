@@ -295,8 +295,12 @@ pom.xml: pom.xmq jproject.settings
 	@. ./jproject.settings ; if ! grep -q "= $$GROUPID" pom.xmq ; then echo "Groupid $$GROUPID not found in pom.xmq"; exit 1; fi
 
 
-xmqj: pom.xml
-	@(if [ ! -f build/java/spec.mk ] ; then ./make/java/configure; fi; make --no-print-directory -f make/java/Makefile)
+xmqj: build/xmqj
+
+.PHONY: xmqj
+
+build/xmqj: pom.xml $(wildcard build/*.jar)
+	@(if [ ! -f build/java/spec.mk ] ; then ./make/java/configure; fi; make --no-print-directory -f make/java/Makefile xmqj)
 
 javadoc:
 	@(if [ ! -f build/java/spec.mk ] ; then ./make/java/configure; fi; make --no-print-directory -f make/java/Makefile javadoc)
