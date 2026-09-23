@@ -237,7 +237,6 @@ clean:
 	@rm -rf build/gtkdoc
 	@rm -rf xmq_browsing*
 	@rm -f build/xmqj
-	@rm -f build/xmqj.sh
 	@rm -rf build/classes
 
 clean-all:
@@ -309,12 +308,14 @@ xmqjc: pom.xml
 	@(make --no-print-directory -f make/java/Makefile xmqjc)
 
 testj:
+	@(if [ ! -f build/java/spec.sh ] ; then ./make/java/configure; fi)
+	@make --no-print-directory -f make/java/Makefile $(CURDIR)/build/project-deps/updated.timestamp
 	@java -cp build/classes/ org.libxmq.imp.TestInternals
 	@echo "OK: TestInternals"
 # Run jar test and compiled Java programs using libxmq
 	@./tests/testj.sh "" build build/test_output $(FILTER)
 # Run xmqj cli binary comparing to xmq cli binary results.
-#	@./tests/testj.sh build/xmqj.sh build build/test_output $(FILTER)
+#	@./tests/testj.sh build/xmqj build build/test_output $(FILTER)
 
 testjc: xmqjc
 	@java -cp build/classes/ org.libxmq.imp.TestInternals

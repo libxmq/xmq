@@ -23,9 +23,9 @@ xmqjc: $(BUILD)/xmqjc
 JARS:=$(shell find $(PROJECT_DEPS)/ -name "*.jar" | grep -v lsp4j | tr '\n' ':')
 MODULES:=$(BUILD)/project-deps/org.eclipse.lsp4j-0.22.0.jar:$(BUILD)/project-deps/org.eclipse.lsp4j.jsonrpc-0.22.0.jar
 
-# Create the xmqj.sh script.
-$(file >build/$(EXECUTABLE).sh,java -cp $(JARS):$(BUILD)/classes $(GROUPID).imp.Main $$*)
-$(shell chmod a+x build/$(EXECUTABLE).sh)
+# Create the xmqj script.
+$(file >build/$(EXECUTABLE),java -cp $(JARS):$(BUILD)/classes $(GROUPID).imp.Main $$*)
+$(shell chmod a+x build/$(EXECUTABLE))
 
 pom.xml: pom.xmq
 	$(AT)if [ ! "$(XMQ)" = "" ]; then @echo "Updating pom.xml"; xmq pom.xmq to-xml > pom.xml ; fi

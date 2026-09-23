@@ -31,7 +31,6 @@ then
         if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
         tests/test_java.sh $LIB "$OUTPUT" "$i"
     done
-    exit 0
 fi
 
 for i in tests/[0-9][0-9][0-9]_*.test
