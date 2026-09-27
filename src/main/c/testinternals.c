@@ -69,6 +69,7 @@ void test_quote(int indent, bool compact, char *in, char *expected);
     X(test_yaep) \
     X(test_yaep_reuse_grammar) \
     X(test_annotate_offsets) \
+    X(test_move_elements) \
 
 #define X(name) void name();
     TESTS
@@ -784,6 +785,43 @@ void test_annotate_offsets()
     {
         all_ok_ = false;
         printf("Annotate failed: >%s<\n", start);
+    }
+    free(start);
+    xmqFreeDoc(doc);
+}
+
+void test_move_elements()
+{
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
+    bool ok = xmqParseBufferWithType(doc, "<root><first>123</first>ABC<a>xyz</a>DEFG<b>112233</b></root>", NULL, NULL, XMQ_CONTENT_XML, 0);
+    if (!ok)
+    {
+        printf("Could not parse xml!\n");
+        all_ok_ = false;
+        return;
+    }
+
+    XMQNode *root = xmqGetNode(doc, "/root");
+    XMQNode *first = xmqGetNode(doc, "/root/first");
+    XMQNode *a = xmqGetNode(doc, "/root/a");
+    XMQNode *b = xmqGetNode(doc, "/root/b");
+
+    xmqMoveElement(doc, root, a, doc, root, XMQ_MOVE_AFTER, b);
+    xmqMoveElement(doc, root, first, doc, root, XMQ_MOVE_LAST, NULL);
+
+    XMQOutputSettings *os = xmqNewOutputSettings();
+    xmqSetCompact(os, true);
+    char *start;
+    char *stop;
+    xmqSetupPrintMemory(os, &start, &stop);
+    xmqPrint(doc, os);
+    xmqFreeOutputSettings(os);
+    if (strcmp(start, "root{'ABC' 'DEFG'b=112233 a=xyz first=123}\n"))
+    {
+        all_ok_ = false;
+        printf("Move failed: >%s<\n", start);
     }
     free(start);
     xmqFreeDoc(doc);
