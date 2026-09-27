@@ -3724,6 +3724,7 @@ char *xmq_quote_default(int indent, const char *start, const char *stop, XMQQuot
 const char *xml_element_type_to_string(xmlElementType type);
 const char *indent_depth(int i);
 void free_indent_depths();
+int move_element(xmlDocPtr d, xmlNodePtr e, xmlNodePtr p, XMQMoveTo position, xmlNodePtr sibling);
 
 // Declare tokenize_whitespace tokenize_name functions etc...
 #define X(TYPE) XMQStatus tokenize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start, const char *stop, const char *suffix);
@@ -5710,6 +5711,138 @@ XMQReturnNode xmqAddElementWithAttrs(XMQDoc *doq,
     }
 
     return rn;
+}
+
+/*
+ * Move element e under parent p.
+ *
+ * position:
+ *   XMQ_MOVE_FIRST   - make e the first child of p
+ *   XMQ_MOVE_LAST    - make e the last child of p
+ *   XMQ_MOVE_BEFORE  - insert e immediately before sibling
+ *   XMQ_MOVE_AFTER   - insert e immediately after sibling
+ *
+ * sibling is ignored for FIRST/LAST and must be a child of p
+ * for BEFORE/AFTER.
+ *
+ * Returns 0 on success, -1 on invalid input/failure.
+ */
+int
+move_element(xmlDocPtr d,
+             xmlNodePtr e,
+             xmlNodePtr p,
+             XMQMoveTo position,
+             xmlNodePtr sibling)
+{
+    xmlNodePtr n;
+
+    if (d == NULL || e == NULL || p == NULL)
+    {
+        return -1;
+    }
+
+    if (e->doc != d || p->doc != d)
+    {
+        return -1;
+    }
+
+    if (e == p)
+    {
+        return -1;
+    }
+
+    /*
+     * Moving p underneath one of its descendants would create
+     * a cycle.
+     */
+    for (n = p; n != NULL; n = n->parent)
+    {
+        if (n == e)
+        {
+            return -1;
+        }
+    }
+
+    switch (position)
+    {
+    case XMQ_MOVE_FIRST:
+    case XMQ_MOVE_LAST:
+        break;
+
+    case XMQ_MOVE_BEFORE:
+    case XMQ_MOVE_AFTER:
+        if (sibling == NULL ||
+            sibling == e ||
+            sibling->doc != d ||
+            sibling->parent != p)
+            return -1;
+        break;
+
+    default:
+        return -1;
+    }
+
+    /*
+     * Detach e from its current location without freeing it.
+     */
+    xmlUnlinkNode(e);
+
+    switch (position) {
+    case XMQ_MOVE_FIRST:
+        /*
+         * xmlAddPrevSibling() cannot be used if p has no children.
+         */
+        if (p->children != NULL) {
+            if (xmlAddPrevSibling(p->children, e) == NULL)
+                return -1;
+        } else {
+            if (xmlAddChild(p, e) == NULL)
+                return -1;
+        }
+        break;
+
+    case XMQ_MOVE_LAST:
+        if (xmlAddChild(p, e) == NULL)
+            return -1;
+        break;
+
+    case XMQ_MOVE_BEFORE:
+        if (xmlAddPrevSibling(sibling, e) == NULL)
+            return -1;
+        break;
+
+    case XMQ_MOVE_AFTER:
+        if (xmlAddNextSibling(sibling, e) == NULL)
+            return -1;
+        break;
+
+    default:
+        /* Already validated above. */
+        return -1;
+    }
+
+    return 0;
+}
+
+bool xmqMoveElement(XMQDoc *from_doq,
+                    XMQNode *from_parent,
+                    XMQNode *element,
+                    XMQDoc *to_doq,
+                    XMQNode *to_parent,
+                    XMQMoveTo where,
+                    XMQNode *sibling)
+{
+    if (from_doq == to_doq)
+    {
+        int rc = move_element(from_doq->docptr_.xml,
+                              (xmlNodePtr)element,
+                              (xmlNodePtr)to_parent,
+                              where,
+                              (xmlNodePtr)sibling);
+        return (rc != 0);
+    }
+    assert(false);
+    return false;
 }
 
 XMQReturnAttr xmqSetAttribute(XMQDoc *doq, XMQNode *node, const char *name, const char *value, XMQNS ns)

@@ -233,6 +233,22 @@ typedef enum XMQColorName {
 } XMQColorName;
 
 /**
+   @brief XMQMoveTo decides where a node is moved to, in a new parent element and
+   potentially in relation to another sibling node.
+*/
+typedef enum
+{
+    /** Place the element first in the parents list of childrens. */
+    XMQ_MOVE_FIRST = 0,
+    /** Place the element last in the parents list of children. */
+    XMQ_MOVE_LAST = 1,
+    /** Place the element before the element referenced. */
+    XMQ_MOVE_BEFORE = 2,
+    /** Place the element after the element referenced. */
+    XMQ_MOVE_AFTER = 3,
+} XMQMoveTo;
+
+/**
     The xmq parser invokes the reader to fetch more data.
     The reader is resonsible for storing data in the buffer (start <= i < stop)
     and return the number of bytes stored.
@@ -787,6 +803,33 @@ XMQReturnNode xmqAddElementWithAttrs(XMQDoc *doq,
                                      const char *name,
                                      XMQNS ns,
                                      XMQAttrList attrs);
+
+
+/**
+    Move an element node somewhere else. Either within the same
+    document or between two documents. The element will carry its
+    namespace with it.
+
+    @from_doq The xmq document to move from.
+    @from_parent The parent holding the element to be moved.
+    @element The element to be moved.
+    @to_doq The xmq document to move to, can be the same as from_doq.
+    @to_parent The new parent for the element.
+    @where Where to place the element below the new parent.
+    @sibling If where is in relation to a sibling, this is the sibling. Can be NULL if not needed.
+
+    @code
+    xmqMoveElement(doc, chapter1, page, chapter2, XMQ_POSITION_LAST, NULL);
+    xmqMoveElement(doc, chapter1, page, chapter2, XMQ_POSITION_BEFORE, page32);
+    @endcode
+*/
+bool xmqMoveElement(XMQDoc *from_doq,
+                             XMQNode *from_parent,
+                             XMQNode *element,
+                             XMQDoc *to_doq,
+                             XMQNode *to_parent,
+                             XMQMoveTo where,
+                             XMQNode *sibling);
 
 /**
     Create a key value under an existing node.
