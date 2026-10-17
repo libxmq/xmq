@@ -139,7 +139,9 @@ typedef enum
     /** Content is text. */
     XMQ_CONTENT_TEXT = 8,
     /** Cline content looks like: xpath="c-escaped string" */
-    XMQ_CONTENT_CLINES = 9
+    XMQ_CONTENT_CLINES = 9,
+    /** Content is YAML. */
+    XMQ_CONTENT_YAML = 10
 } XMQContentType;
 
 /**

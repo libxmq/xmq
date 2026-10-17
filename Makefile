@@ -85,6 +85,8 @@ help:
 BUILDDIRS:=$(dir $(realpath $(filter-out build/java/%,$(filter-out build/default/%,$(wildcard build/*/spec.mk)))))
 FIRSTDIR:=$(word 1,$(BUILDDIRS))
 
+$(info BUILDDIRS=$(BUILDDIRS))
+
 ifeq (,$(BUILDDIRS))
     ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
         ifneq (xmqj,$(findstring xmqj,$(MAKECMDGOALS)))

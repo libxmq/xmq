@@ -3572,6 +3572,19 @@ bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const cha
 
 #define JSON_MODULE
 
+// PART H YAML ////////////////////////////////////////
+
+#include"xmq.h"
+#include<libxml/tree.h>
+
+struct XMQPrintState;
+typedef struct XMQPrintState XMQPrintState;
+
+bool xmq_tokenize_buffer_yaml(XMQParseState *state, const char *start, const char *stop);
+bool xmq_parse_buffer_yaml(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root);
+
+#define YAML_MODULE
+
 // PART H IXML ////////////////////////////////////////
 
 #ifndef BUILDING_DIST_XMQ
@@ -8517,7 +8530,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     }
     else
     {
-        if (ct != detected_ct && ct != XMQ_CONTENT_TEXT && ct != XMQ_CONTENT_IXML)
+        if (ct != detected_ct && ct != XMQ_CONTENT_TEXT && ct != XMQ_CONTENT_IXML && ct != XMQ_CONTENT_YAML)
         {
             if (detected_ct == XMQ_CONTENT_XML && ct == XMQ_CONTENT_HTML)
             {
@@ -8550,6 +8563,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     case XMQ_CONTENT_XML: ok = xmq_parse_buffer_xml(doq, start, stop, flags); break;
     case XMQ_CONTENT_HTML: ok = xmq_parse_buffer_html(doq, start, stop, flags); break;
     case XMQ_CONTENT_JSON: ok = xmq_parse_buffer_json(doq, start, stop, implicit_root); break;
+    case XMQ_CONTENT_YAML: ok = xmq_parse_buffer_yaml(doq, start, stop, implicit_root); break;
     case XMQ_CONTENT_IXML: ok = xmq_parse_buffer_ixml(doq, start, stop, flags); break;
     case XMQ_CONTENT_TEXT: ok = xmq_parse_buffer_text(doq, start, stop, implicit_root); break;
     case XMQ_CONTENT_CLINES: ok = xmq_parse_buffer_clines(doq, start, stop); break;
@@ -15286,6 +15300,617 @@ void json_print_array_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from
 }
 
 #endif // JSON_MODULE
+
+// PART C YAML_C ////////////////////////////////////////
+
+#ifdef YAML_MODULE
+
+static const char y_underline[]  = "_";
+static const char y_array[]      = "A";
+static const char y_leftpar[]    = "(";
+static const char y_rightpar[]   = ")";
+static const char y_leftbrace[]  = "{";
+static const char y_rightbrace[] = "}";
+
+typedef struct y_parser
+{
+    char *buf;    // Private mutable copy of the input, lines NUL-terminated.
+    char *cursor;
+    char *line_start;
+    char *text;    // First non-space char of the current line.
+    size_t indent; // Distance from line_start to text.
+    size_t line;
+    bool eof;
+} y_parser;
+
+static unsigned yhex(char c)
+{
+    if (c >= '0' && c <= '9') return (unsigned)(c - '0');
+    if (c >= 'a' && c <= 'f') return (unsigned)(c - 'a' + 10);
+    if (c >= 'A' && c <= 'F') return (unsigned)(c - 'A' + 10);
+    return 0;
+}
+
+static int yspace(char c)
+{
+    return c == ' ' || c == '\t';
+}
+
+static void yfail(y_parser *p, XMQParseState *state, const char *msg)
+{
+    state->error_nr   = XMQ_ERROR_INVALID_CHAR;
+    state->line       = p->line;
+    state->col        = p->indent;
+    // Point into the original buffer not the private copy.
+    state->i          = state->buffer_start + (p->text - p->buf);
+    state->error_info = msg;
+}
+
+/*
+  Advance to the next significant line (skipping blank and comment
+  lines). Returns 0 on success or 1 when an error is set in state.
+*/
+static int ynext(y_parser *p, XMQParseState *state)
+{
+    for (;;)
+    {
+        char *s  = p->cursor;
+        char *e  = s;
+        while (*e && *e != '\n') ++e;
+        bool at_end = (*e == 0);
+
+        *e = 0; // NUL-terminate the line (replaces the newline, if any).
+        if (e > s && e[-1] == '\r') e[-1] = 0;
+        if (!at_end) ++e; // Step over the newline.
+        p->cursor = e;
+
+        p->line_start = s;
+        p->line++;
+        p->text = s;
+        while (*p->text == ' ') ++p->text;
+        p->indent = (size_t)(p->text - s);
+
+        if (*p->text == '\t')
+        {
+            yfail(p, state, "YAML: tab indentation is not supported");
+            return 1;
+        }
+        if (*p->text == '%' ||
+            (!strncmp(p->text, "---", 3) && (!p->text[3] || yspace(p->text[3]))) ||
+            (!strncmp(p->text, "...", 3) && !p->text[3]))
+        {
+            yfail(p, state, "YAML: document markers and directives are not supported");
+            return 1;
+        }
+
+        state->line = p->line;
+        state->col  = p->indent;
+        state->i    = state->buffer_start + (s - p->buf);
+
+        if (*p->text && *p->text != '#')
+        {
+            return 0;
+        }
+        if (at_end)
+        {
+            p->eof = true;
+            return 0;
+        }
+        // A blank or comment line, keep looking.
+    }
+}
+
+/*
+  Return the colon in a "key: value" line (an unquoted colon followed
+  by whitespace or end-of-line), or NULL.
+*/
+static const char *ycolon(const char *s)
+{
+    int sq = 0, dq = 0;
+
+    while (*s)
+    {
+        char c = *s;
+        switch (c)
+        {
+        case 0: return NULL;
+        case ' ':
+        case '\t': ++s; break;
+        case '#': return NULL;
+        case '\'': sq ^= 1; ++s; break;
+        case '"': dq ^= 1; ++s; break;
+        case '\\':
+            if (!sq && dq && s[1]) ++s;
+            break;
+        case ':':
+            if (!sq && !dq && (s[1] == ' ' || s[1] == '\t' || !s[1]))
+            {
+                return s;
+            }
+            break;
+        }
+        ++s;
+    }
+    return NULL;
+}
+
+static int ydash(const char *s)
+{
+    return s[0] == '-' && (s[1] == ' ' || s[1] == '\t');
+}
+
+/*
+  Parse the scalar at s, returning the unescaped value (*out, *len).
+  Rejects flow collections and block scalars. Returns 1 on error.
+*/
+static int yscalar(y_parser *p, XMQParseState *state,
+                   const char *s, const char **out, size_t *len)
+{
+    // Note: for double quoted scalars, decoding is done in place starting
+    // just after the opening quote (o = s + 1).
+    char *o = (char*)s + (*s == '"');
+
+    if (*s == '{' || *s == '[')
+    {
+        yfail(p, state, "YAML: flow style collections [ ] and { } are not supported");
+        return 1;
+    }
+    if (*s == '|' || *s == '>')
+    {
+        yfail(p, state, "YAML: block scalars (| and >) are not supported");
+        return 1;
+    }
+
+    switch (*s)
+    {
+    default:
+        {
+            const char *e = s;
+            while (*e && *e != '#' && !yspace(*e)) ++e;
+            while (e > s && yspace(e[-1])) --e;
+            *out = s;
+            *len = (size_t)(e - s);
+            return 0;
+        }
+
+    case '\'':
+        {
+            const char *e = s+1;
+            while (*e && *e != '\'') ++e;
+            if (*e != '\'')
+            {
+                yfail(p, state, "YAML: single quoted scalar is not closed");
+                return 1;
+            }
+            *out = s+1;
+            *len = (size_t)(e - (s+1));
+            return 0;
+        }
+
+    case '"':
+        {
+            const char *e = s+1;
+            for (;;)
+            {
+                char c = *e++;
+                if (c == 0)
+                {
+                    yfail(p, state, "YAML: double quoted scalar is not closed");
+                    return 1;
+                }
+                if (c == '"') break;
+                if (c == '\\')
+                {
+                    char d = *e++;
+                    if (d == 0)
+                    {
+                        yfail(p, state, "YAML: incomplete escape sequence");
+                        return 1;
+                    }
+                    switch (d)
+                    {
+                    case 'b':  *o++ = 8;    break;
+                    case 'f':  *o++ = 12;   break;
+                    case 'n':  *o++ = '\n'; break;
+                    case 'r':  *o++ = '\r'; break;
+                    case 't':  *o++ = '\t'; break;
+                    case '/':  *o++ = '/';  break;
+                    case '"':  *o++ = '"';  break;
+                    case '\\': *o++ = '\\'; break;
+                    case 'u':
+                        if (e[0] && e[1] && e[2] && e[3])
+                        {
+                            unsigned v = (yhex(e[0]) << 12) |
+                                         (yhex(e[1]) << 8) |
+                                         (yhex(e[2]) << 4) |
+                                         yhex(e[3]);
+                            e += 4;
+                            if (v <= 0x7F)
+                            {
+                                *o++ = (char)v;
+                            }
+                            else if (v <= 0x7FF)
+                            {
+                                *o++ = (char)(0xC0 | ((v >> 6) & 31));
+                                *o++ = (char)(0x80 | (v & 63));
+                            }
+                            else
+                            {
+                                *o++ = (char)(0xE0 | ((v >> 12) & 15));
+                                *o++ = (char)(0x80 | ((v >> 6) & 63));
+                                *o++ = (char)(0x80 | (v & 63));
+                            }
+                        }
+                        else
+                        {
+                            yfail(p, state, "YAML: \\uXXXX needs 4 hex digits");
+                            return 1;
+                        }
+                        break;
+                    default:
+                        *o++ = d; // Unknown escape, pass through.
+                        break;
+                    }
+                    continue;
+                }
+                *o++ = c;
+            }
+            *out = s+1;
+            *len = (size_t)((char*)o - (char*)(s+1));
+            return 0;
+        }
+    }
+}
+
+static void ykey(XMQParseState *state, const char *k, const char *stop);
+static int yentry(y_parser *p, XMQParseState *state,
+                  const char *k, const char *ks, const char *v,
+                  size_t key_indent);
+static int ymap(y_parser *p, XMQParseState *state, size_t indent);
+static int yitem(y_parser *p, XMQParseState *state, size_t indent);
+static int yseq(y_parser *p, XMQParseState *state, size_t indent);
+
+/*
+  Emit an element key like the JSON parser: the key, or '_' with the
+  original name in the '_' attribute when it is not a valid element
+  name.
+*/
+static void ykey(XMQParseState *state, const char *k, const char *stop)
+{
+    const char *colon = NULL;
+    const char *us    = NULL;
+    const char *us_end = NULL;
+
+    if (!k || k == stop)
+    {
+        k = y_underline;
+        stop = y_underline+1;
+    }
+    else if (!is_xmq_element_name(k, stop, &colon))
+    {
+        us    = k;
+        us_end = stop;
+        k      = y_underline;
+        stop   = y_underline+1;
+    }
+
+    // A namespaced key like the JSON parser.
+    if (!us && colon)
+    {
+        DO_CALLBACK_SIM(element_ns, state, state->line, state->col, k, colon, colon);
+        k = colon+1;
+    }
+    DO_CALLBACK_SIM(element_key, state, state->line, state->col, k, stop, stop);
+    if (us)
+    {
+        DO_CALLBACK_SIM(apar_left, state, state->line, state->col, y_leftpar, y_leftpar+1, y_leftpar+1);
+        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, y_underline, y_underline+1, y_underline+1);
+        DO_CALLBACK_SIM(attr_value_quote, state, state->line, state->col, us, us_end, us_end);
+        DO_CALLBACK_SIM(apar_right, state, state->line, state->col, y_rightpar, y_rightpar+1, y_rightpar+1);
+    }
+}
+
+/*
+  Parse a "k: v" entry where k..ks is the key and v the (possibly
+  empty) inline value. key_indent is the indentation of the line
+  containing the entry and decides when a following more indented line
+  starts a nested node.
+  On return the parser is positioned after the entry's node.
+  Returns 0 on success and 1 on failure.
+*/
+static int yentry(y_parser *p, XMQParseState *state,
+                  const char *k, const char *ks, const char *v,
+                  size_t key_indent)
+{
+    int rc = 0;
+
+    ykey(state, k, ks);
+
+    if (*v && *v != '#')
+    {
+        const char *s;
+        size_t len;
+        if (yscalar(p, state, v, &s, &len)) return 1;
+        DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, s, s+len, s+len);
+        return ynext(p, state);
+    }
+
+    if (ynext(p, state)) return 1;
+    if (p->eof || p->indent <= key_indent)
+    {
+        // Not more indented, so the value is empty.
+        DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, "", "", "");
+        return 0;
+    }
+
+    if (ydash(p->text))
+    {
+        // key(A) { ... }
+        DO_CALLBACK_SIM(apar_left, state, state->line, state->col, y_leftpar, y_leftpar+1, y_leftpar+1);
+        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, y_array, y_array+1, y_array+1);
+        DO_CALLBACK_SIM(apar_right, state, state->line, state->col, y_rightpar, y_rightpar+1, y_rightpar+1);
+        DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
+        rc = yseq(p, state, p->indent);
+        if (!rc) DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+        return rc;
+    }
+
+    // key { ... }
+    DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
+    rc = ymap(p, state, p->indent);
+    if (!rc) DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+    return rc;
+}
+
+/*
+  Parse a mapping node whose entries have indentation `indent`.
+  Returns 0 on success and 1 on failure.
+*/
+static int ymap(y_parser *p, XMQParseState *state, size_t indent)
+{
+    while (!p->eof && !ydash(p->text) && p->indent == indent)
+    {
+        const char *c = ycolon(p->text);
+        if (!c)
+        {
+            yfail(p, state, "YAML: a mapping entry needs the form 'key: value'");
+            return 1;
+        }
+        const char *k = p->text, *ks = c;
+        while (ks > k && yspace(ks[-1])) --ks;
+        const char *v = c+1;
+        while (yspace(*v)) ++v;
+        if (yentry(p, state, k, ks, v, indent)) return 1;
+    }
+    return 0;
+}
+
+/*
+  Parse the sequence item that starts on the current line after the
+  dash ('- ') at indentation `indent`.
+  Returns 0 on success and 1 on failure.
+*/
+static int yitem(y_parser *p, XMQParseState *state, size_t indent)
+{
+    const char *item = p->text+1;
+    while (yspace(*item)) ++item;
+    int rc = 0;
+
+    if (*item == 0 || *item == '#')
+    {
+        // An empty item.
+        ykey(state, NULL, NULL);
+        DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, "", "", "");
+        return ynext(p, state);
+    }
+
+    const char *c = ycolon(item);
+    if (!c)
+    {
+        // '- scalar'
+        const char *s;
+        size_t len;
+        if (yscalar(p, state, item, &s, &len)) return 1;
+        ykey(state, NULL, NULL);
+        DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, s, s+len, s+len);
+        return ynext(p, state);
+    }
+
+    // A mapping item: _ { entries }
+    const size_t item_indent = (size_t)(item - p->line_start);
+
+    ykey(state, NULL, NULL);
+    DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
+
+    const char *k = item, *ks = c;
+    while (ks > k && yspace(ks[-1])) --ks;
+    const char *v = c+1;
+    while (yspace(*v)) ++v;
+
+    rc = yentry(p, state, k, ks, v, indent);
+    if (rc)
+    {
+        DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+        return 1;
+    }
+
+    // Continuation entries of the same mapping item.
+    while (!p->eof && !ydash(p->text) && p->indent == item_indent)
+    {
+        const char *c2 = ycolon(p->text);
+        if (!c2)
+        {
+            yfail(p, state, "YAML: a mapping entry needs the form 'key: value'");
+            DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+            return 1;
+        }
+        const char *k2 = p->text, *ks2 = c2;
+        while (ks2 > k2 && yspace(ks2[-1])) --ks2;
+        const char *v2 = c2+1;
+        while (yspace(*v2)) ++v2;
+        rc = yentry(p, state, k2, ks2, v2, indent);
+        if (rc)
+        {
+            DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+            return 1;
+        }
+    }
+
+    DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+    return 0;
+}
+
+/*
+  Parse a sequence node whose dashes have indentation `indent`.
+  Returns 0 on success and 1 on failure.
+*/
+static int yseq(y_parser *p, XMQParseState *state, size_t indent)
+{
+    while (!p->eof && ydash(p->text) && p->indent == indent)
+    {
+        if (yitem(p, state, indent)) return 1;
+    }
+    return 0;
+}
+
+/*
+  Parse the whole document at top level. Returns true on success and
+  false on failure.
+*/
+static bool yparse_document(y_parser *p, XMQParseState *state)
+{
+    int rc = 0;
+
+    if (ynext(p, state)) return false;
+    if (p->eof)
+    {
+        // An empty document.
+        return true;
+    }
+
+    if (ydash(p->text))
+    {
+        ykey(state, NULL, NULL);
+        DO_CALLBACK_SIM(apar_left, state, state->line, state->col, y_leftpar, y_leftpar+1, y_leftpar+1);
+        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, y_array, y_array+1, y_array+1);
+        DO_CALLBACK_SIM(apar_right, state, state->line, state->col, y_rightpar, y_rightpar+1, y_rightpar+1);
+        DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
+        rc = yseq(p, state, p->indent);
+        if (!rc) DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+    }
+    else if (ycolon(p->text))
+    {
+        ykey(state, NULL, NULL);
+        DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
+        rc = ymap(p, state, p->indent);
+        if (!rc) DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+    }
+    else
+    {
+        // A scalar document.
+        const char *s;
+        size_t len;
+        if (yscalar(p, state, p->text, &s, &len)) return false;
+        ykey(state, NULL, NULL);
+        DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, s, s+len, s+len);
+        rc = ynext(p, state);
+    }
+
+    if (rc) return false;
+    if (!p->eof)
+    {
+        yfail(p, state, "YAML: unexpected content at top level indentation");
+        return false;
+    }
+    return true;
+}
+
+/*
+  Tokenize a YAML buffer by simulating the xmq tokenizer. Mirrors
+  xmq_tokenize_buffer_json in parts/json.c.
+*/
+bool xmq_tokenize_buffer_yaml(XMQParseState *state, const char *start, const char *stop)
+{
+    if (!stop) stop = start+strlen(start);
+    size_t len = (size_t)(stop - start);
+
+    y_parser p;
+    memset(&p, 0, sizeof(p));
+    p.buf    = (char*)malloc(len+1);
+    if (!p.buf)
+    {
+        state->error_nr = XMQ_ERROR_OOM;
+        return false;
+    }
+    memcpy(p.buf, start, len);
+    p.buf[len] = 0;
+    p.cursor   = p.buf;
+
+    state->buffer_start = start;
+    state->buffer_stop  = stop;
+    state->i            = start;
+    state->line         = 1;
+    state->col          = 1;
+
+    if (state->parse->init) state->parse->init(state);
+
+    bool ok = yparse_document(&p, state);
+    if (!ok || state->error_nr != XMQ_OK)
+    {
+        generate_state_error_message(state, state->error_nr, start, stop);
+    }
+
+    if (ok && state->error_nr == XMQ_OK && state->parse->done)
+    {
+        state->parse->done(state);
+    }
+
+    free(p.buf);
+    return ok && state->error_nr == XMQ_OK;
+}
+
+bool xmq_parse_buffer_yaml(XMQDoc *doq,
+                           const char *start,
+                           const char *stop,
+                           const char *implicit_root)
+{
+    bool rc = true;
+
+    if (!stop) stop = start+strlen(start);
+
+    XMQOutputSettings *os = xmqNewOutputSettings();
+    XMQParseCallbacks *parse = xmqNewParseCallbacks();
+    xmq_setup_parse_callbacks(parse);
+
+    XMQParseState *state = xmqNewParseState(parse, os);
+    state->magic_cookie   = MAGIC_COOKIE;
+    state->no_trim_quotes = true;
+    state->doq            = doq;
+    xmqSetStateSourceName(state, doq->source_name_);
+
+    if (implicit_root != NULL && implicit_root[0] == 0) implicit_root = NULL;
+    state->implicit_root = implicit_root;
+
+    stack_push(state->element_stack, doq->docptr_.xml);
+    state->element_last = NULL;
+
+    xmq_tokenize_buffer_yaml(state, start, stop);
+
+    if (xmqStateErrno(state))
+    {
+        rc     = false;
+        doq->errno_ = xmqStateErrno(state);
+        doq->error_ = build_error_message("%s\n", xmqStateErrorMsg(state));
+    }
+
+    xmqFreeParseState(state);
+    xmqFreeParseCallbacks(parse);
+    xmqFreeOutputSettings(os);
+
+    return rc;
+}
+
+#endif // YAML_MODULE
 
 // PART C TEXT_C ////////////////////////////////////////
 

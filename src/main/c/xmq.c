@@ -63,6 +63,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // FUNCTIONALITY /////////////////////////////////////////////////
 
 #include"parts/json.h"
+#include"parts/yaml.h"
 #include"parts/ixml.h"
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -4957,7 +4958,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     }
     else
     {
-        if (ct != detected_ct && ct != XMQ_CONTENT_TEXT && ct != XMQ_CONTENT_IXML)
+        if (ct != detected_ct && ct != XMQ_CONTENT_TEXT && ct != XMQ_CONTENT_IXML && ct != XMQ_CONTENT_YAML)
         {
             if (detected_ct == XMQ_CONTENT_XML && ct == XMQ_CONTENT_HTML)
             {
@@ -4990,6 +4991,7 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     case XMQ_CONTENT_XML: ok = xmq_parse_buffer_xml(doq, start, stop, flags); break;
     case XMQ_CONTENT_HTML: ok = xmq_parse_buffer_html(doq, start, stop, flags); break;
     case XMQ_CONTENT_JSON: ok = xmq_parse_buffer_json(doq, start, stop, implicit_root); break;
+    case XMQ_CONTENT_YAML: ok = xmq_parse_buffer_yaml(doq, start, stop, implicit_root); break;
     case XMQ_CONTENT_IXML: ok = xmq_parse_buffer_ixml(doq, start, stop, flags); break;
     case XMQ_CONTENT_TEXT: ok = xmq_parse_buffer_text(doq, start, stop, implicit_root); break;
     case XMQ_CONTENT_CLINES: ok = xmq_parse_buffer_clines(doq, start, stop); break;
@@ -5918,6 +5920,7 @@ char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
 #include"parts/membuffer.c"
 #include"parts/ixml.c"
 #include"parts/json.c"
+#include"parts/yaml.c"
 #include"parts/text.c"
 #include"parts/utf8.c"
 #include"parts/vector.c"

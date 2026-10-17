@@ -34,6 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<ctype.h>
 #include<memory.h>
 #include<string.h>
+#include<strings.h>
 #include<stdio.h>
 #include<time.h>
 #include<unistd.h>
@@ -661,6 +662,7 @@ const char *content_type_to_string(XMQContentType ct)
     case XMQ_CONTENT_IXML: return "ixml";
     case XMQ_CONTENT_TEXT: return "text";
     case XMQ_CONTENT_CLINES: return "clines";
+    case XMQ_CONTENT_YAML: return "yaml";
     }
     assert(false);
     return "?";
@@ -1839,6 +1841,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->in_format=XMQ_CONTENT_JSON;
         return true;
     }
+    if (!strcmp(arg, "--yaml"))
+    {
+        command->in_format=XMQ_CONTENT_YAML;
+        return true;
+    }
     if (!strcmp(arg, "--clines"))
     {
         command->in_format=XMQ_CONTENT_CLINES;
@@ -2345,6 +2352,17 @@ bool cmd_load(XMQCliCommand *command, bool *no_more_data)
     }
     else
     {
+        // A file with a .yml or .yaml extension is YAML.
+        if (command->in_format == XMQ_CONTENT_DETECT && command->in)
+        {
+            size_t in_len = strlen(command->in);
+            if ((in_len > 4 && !strncasecmp(command->in+in_len-4, ".yml", 4)) ||
+                (in_len > 5 && !strncasecmp(command->in+in_len-5, ".yaml", 5)))
+            {
+                command->in_format = XMQ_CONTENT_YAML;
+            }
+        }
+
         bool ok = xmqParseBufferWithType(command->env->doc,
                                          command->input_current_line_start,
                                          command->input_current_line_stop,
@@ -2412,6 +2430,16 @@ bool cmd_to(XMQCliCommand *command)
     xmqSetEscapeTabs(settings, command->escape_tabs);
     xmqSetAddIndent(settings, command->add_indent);
     xmqSetFinalNewline(settings, command->final_newline);
+    // A YAML input file that does not end with a final newline is
+    // written out without one as well, so documents round-trip byte-exact.
+    if (command->env->load &&
+        command->env->load->in_format == XMQ_CONTENT_YAML &&
+        command->env->load->input_content_start != NULL &&
+        command->env->load->input_content_stop > command->env->load->input_content_start &&
+        command->env->load->input_content_stop[-1] != '\n')
+    {
+        xmqSetFinalNewline(settings, false);
+    }
     xmqSetColorMode(settings, compute_color_mode(command->use_color, command->bg_dark_mode, command->bg_forced, command->render_to));
     xmqSetOutputFormat(settings, command->out_format);
     xmqSetRenderFormat(settings, command->render_to);

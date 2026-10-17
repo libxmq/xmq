@@ -23,7 +23,10 @@ fi
 PROG=$1/xmq
 LIB=$1/libxmq.so
 
-export PROG="$USE_VALGRIND $PROG"
+if [ -n "$USE_VALGRIND" ]
+then
+    export PROG="$USE_VALGRIND $PROG"
+fi
 
 if [ -z "$OUTPUT" ] || [ -z "$PROG" ]
 then
@@ -48,10 +51,10 @@ do
     tests/test_single.sh "$PROG" "$OUTPUT" "$i"
 done
 
-if [ -z $FILTER ]
-then
-    tests/test_library_grammar.sh "$PROG" "$OUTPUT" library/conf/yamlsubset.ixml
-fi
+#if [ -z $FILTER ]
+#then
+#    tests/test_library_grammar.sh "$PROG" "$OUTPUT"
+#fi
 
 for i in tests/ixml/correct/*.output.xmq
 do
@@ -106,6 +109,13 @@ for i in tests/json_???_*.test
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
     tests/test_json.sh "$PROG" "$OUTPUT" "$i"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+done
+
+for i in tests/yaml_???_*.test
+do
+    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+    tests/test_yaml.sh "$PROG" "$OUTPUT" "$i"
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 done
 

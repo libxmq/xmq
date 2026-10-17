@@ -91,6 +91,7 @@ const char *test_content_type_to_string(XMQContentType t)
     case XMQ_CONTENT_IXML: return "ixml";
     case XMQ_CONTENT_TEXT: return "text";
     case XMQ_CONTENT_CLINES: return "clines";
+    case XMQ_CONTENT_YAML: return "yaml";
     }
     assert(0);
     return "?";
