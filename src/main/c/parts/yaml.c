@@ -86,10 +86,11 @@ Supported:
    - plain, single and double quoted scalars (double quotes support
      escapes including \uXXXX)
    - comments (# ...) and blank lines
+   - flow collections [...] sequences and {...} mappings
+     (single line, arbitrarily nested)
 Not supported (reported as errors):
    - tab indentation, document marks ('---' and '...'),
-     '%' directives, flow collections ([...] and {...}),
-     block scalars (| and >)
+     '%' directives, block scalars (| and >)
    - continuation entries of a map inside a sequence must be
      indented exactly at the column of the first entry.
 */
@@ -447,6 +448,312 @@ static void ykey(XMQParseState *state, const char *k, const char *stop)
 }
 
 /*
+  Scan one entry of a flow collection starting at e. *entry and
+  *entry_len are set to the extent of the entry and a pointer to the
+  terminating ',' or the closing bracket is returned. NULL is
+  returned when the collection is not closed on the line.
+  Quotes (including '' and \\$ escapes) and nested flow collections
+  are accounted for.
+*/
+static const char *yflow_entry(const char *e, const char **entry, size_t *entry_len)
+{
+    int depth = 0;
+    int quote = 0; // 0 none, 1 single, 2 double.
+
+    *entry = e;
+
+    while (*e)
+    {
+        char c = *e;
+
+        if (quote)
+        {
+            if (quote == 1)
+            {
+                if (c == '\'')
+                {
+                    if (e[1] == '\'') { e += 2; continue; }
+                    quote = 0;
+                }
+            }
+            else
+            {
+                if (c == '\\' && e[1]) { e += 2; continue; }
+                if (c == '"') quote = 0;
+            }
+            e++;
+            continue;
+        }
+
+        switch (c)
+        {
+        case 0:  return NULL;
+        case ' ':
+        case '\t':
+            e++;
+            continue;
+        case '\'':
+            quote = 1;
+            e++;
+            continue;
+        case '"':
+            quote = 2;
+            e++;
+            continue;
+        case '[':
+        case '{':
+            depth++;
+            e++;
+            continue;
+        case ']':
+        case '}':
+            // A bracket closing an inner collection just reduces the
+            // depth, otherwise it ends the entry.
+            if (depth)
+            {
+                depth--;
+                e++;
+                continue;
+            }
+            *entry_len = (size_t)(e - *entry);
+            return e;
+        case ',':
+            if (!depth)
+            {
+                *entry_len = (size_t)(e - *entry);
+                return e;
+            }
+            e++;
+            continue;
+        case '#':
+            // A comment ends the entry (and the rest of the line).
+            if (e == *entry || yspace(e[-1]))
+            {
+                *entry_len = (size_t)(e - *entry);
+                return e;
+            }
+            e++;
+            continue;
+        }
+        e++;
+    }
+    return NULL;
+}
+
+/*
+  Parse a flow collection starting at s ('[' or '{') and emit the
+  element structure directly. Nested flow collections of either kind
+  are allowed but the collection must close on the current line.
+  Returns 0 on success and 1 on failure.
+*/
+static int yflow(y_parser *p, XMQParseState *state, const char *s)
+{
+    if (*s == '[')
+    {
+        // A flow sequence: the caller has already emitted the element
+        // key, this adds the (A) attribute and the entries.
+        const char *e = s+1;
+        int rc = 0;
+
+        DO_CALLBACK_SIM(apar_left, state, state->line, state->col, y_leftpar, y_leftpar+1, y_leftpar+1);
+        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, y_array, y_array+1, y_array+1);
+        DO_CALLBACK_SIM(apar_right, state, state->line, state->col, y_rightpar, y_rightpar+1, y_rightpar+1);
+        DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
+
+        for (;;)
+        {
+            const char *entry;
+            size_t entry_len;
+            const char *nxt;
+
+            while (yspace(*e)) e++;
+            if (*e == 0)
+            {
+                yfail(p, state, "YAML: a flow collection must close on the current line");
+                rc = 1;
+                break;
+            }
+            if (*e == ']') break;
+            if (*e == ',') { e++; continue; } // Skip stray commas.
+
+            nxt = yflow_entry(e, &entry, &entry_len);
+            if (!nxt)
+            {
+                yfail(p, state, "YAML: a flow collection must close on the current line");
+                rc = 1;
+                break;
+            }
+            while (entry_len && yspace(entry[entry_len-1])) entry_len--;
+
+            if (entry_len)
+            {
+                if (entry[0] == '[' || entry[0] == '{')
+                {
+                    // A nested collection is an entry of a sequence, so
+                    // it needs its own '_' key (yflow adds the optional
+                    // (A) for a nested sequence itself).
+                    ykey(state, NULL, NULL);
+                    if (yflow(p, state, entry)) { rc = 1; break; }
+                }
+                else if (entry[0] == '\'' || entry[0] == '"')
+                {
+                    const char *v;
+                    size_t len;
+                    if (yscalar(p, state, entry, &v, &len)) { rc = 1; break; }
+                    ykey(state, NULL, NULL);
+                    DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, v, v+len, v+len);
+                }
+                else
+                {
+                    ykey(state, NULL, NULL);
+                    DO_CALLBACK_SIM(element_value_text, state, state->line, state->col,
+                                   entry, entry+entry_len, entry+entry_len);
+                }
+            }
+
+            if (*nxt != ',') break;
+            e = nxt+1;
+        }
+
+        if (!rc)
+        {
+            DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+        }
+        return rc;
+    }
+
+    // A flow mapping.
+    {
+        const char *e = s+1;
+        int rc = 0;
+
+        DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
+
+        for (;;)
+        {
+            const char *nxt;
+
+            while (yspace(*e)) e++;
+            if (*e == 0)
+            {
+                yfail(p, state, "YAML: a flow collection must close on the current line");
+                rc = 1;
+                break;
+            }
+            if (*e == '}') break;
+            if (*e == ',') { e++; continue; } // Skip stray commas.
+
+            // A key runs to the first unquoted ':'.
+            const char *c = e;
+            int quote = 0;
+            while (*c)
+            {
+                char ch = *c;
+                if (quote == 1)
+                {
+                    if (ch == '\'')
+                    {
+                        if (c[1] == '\'') { c += 2; continue; }
+                        quote = 0;
+                    }
+                }
+                else if (quote == 2)
+                {
+                    if (ch == '\\' && c[1]) { c += 2; continue; }
+                    if (ch == '"') quote = 0;
+                }
+                else if (ch == ':')
+                {
+                    break;
+                }
+                else if (ch == '\'')
+                {
+                    quote = 1;
+                }
+                else if (ch == '"')
+                {
+                    quote = 2;
+                }
+                c++;
+            }
+            if (!*c)
+            {
+                yfail(p, state, "YAML: a flow mapping entry needs the form 'key: value'");
+                rc = 1;
+                break;
+            }
+
+            const char *k = e, *ks = c;
+            while (ks > k && yspace(ks[-1])) --ks;
+            const char *v = c+1;
+            const char *entry;
+            size_t entry_len;
+
+            while (yspace(*v)) v++;
+            if (*v == 0)
+            {
+                yfail(p, state, "YAML: a flow collection must close on the current line");
+                rc = 1;
+                break;
+            }
+
+            ykey(state, ks > k ? k : NULL, ks > k ? ks : NULL);
+
+            if (*v == '}')
+            {
+                // An empty value.
+                DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, "", "", "");
+                break;
+            }
+
+            nxt = yflow_entry(v, &entry, &entry_len);
+            if (!nxt)
+            {
+                yfail(p, state, "YAML: a flow collection must close on the current line");
+                rc = 1;
+                break;
+            }
+            while (entry_len && yspace(entry[entry_len-1])) entry_len--;
+
+            if (entry_len)
+            {
+                if (entry[0] == '[' || entry[0] == '{')
+                {
+                    if (yflow(p, state, entry)) { rc = 1; break; }
+                }
+                else if (entry[0] == '\'' || entry[0] == '"')
+                {
+                    const char *sv;
+                    size_t len;
+                    if (yscalar(p, state, entry, &sv, &len)) { rc = 1; break; }
+                    DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, sv, sv+len, sv+len);
+                }
+                else
+                {
+                    DO_CALLBACK_SIM(element_value_text, state, state->line, state->col,
+                                   entry, entry+entry_len, entry+entry_len);
+                }
+            }
+            else
+            {
+                // An empty value.
+                DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, "", "", "");
+            }
+
+            if (rc) break;
+            if (*nxt != ',') break;
+            e = nxt+1;
+        }
+
+        if (!rc)
+        {
+            DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+        }
+        return rc;
+    }
+}
+
+/*
   Parse a "k: v" entry where k..ks is the key and v the (possibly
   empty) inline value. key_indent is the indentation of the line
   containing the entry and decides when a following more indented line
@@ -464,6 +771,11 @@ static int yentry(y_parser *p, XMQParseState *state,
 
     if (*v && *v != '#')
     {
+        if (*v == '[' || *v == '{')
+        {
+            if (yflow(p, state, v)) return 1;
+            return ynext(p, state);
+        }
         const char *s;
         size_t len;
         if (yscalar(p, state, v, &s, &len)) return 1;
@@ -538,6 +850,14 @@ static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t ind
         // An empty item.
         ykey(state, NULL, NULL);
         DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, "", "", "");
+        return ynext(p, state);
+    }
+
+    if (*item == '[' || *item == '{')
+    {
+        // '- [a, b]' or '- {k: v}'
+        ykey(state, NULL, NULL);
+        if (yflow(p, state, item)) return 1;
         return ynext(p, state);
     }
 

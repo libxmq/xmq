@@ -1,0 +1,33 @@
+INPUT
+colors: [red, green, blue]
+point: {x: 10, y: 20}
+items: [{id: 1, tags: [a, b]}, {id: 2, tags: []}]
+OUTPUT
+_ {
+    colors(A)
+    {
+        _ = red
+        _ = green
+        _ = blue
+    }
+    point {
+        x = 10
+        y = 20
+    }
+    items(A)
+    {
+        _ {
+            id = 1
+            tags(A)
+            {
+                _ = a
+                _ = b
+            }
+        }
+        _ {
+            id = 2
+            tags(A)
+        }
+    }
+}
+END
