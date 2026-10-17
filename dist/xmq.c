@@ -15594,7 +15594,7 @@ static int yentry(y_parser *p, XMQParseState *state,
                   const char *k, const char *ks, const char *v,
                   size_t key_indent);
 static int ymap(y_parser *p, XMQParseState *state, size_t indent);
-static int yitem(y_parser *p, XMQParseState *state, size_t indent);
+static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t indent);
 static int yseq(y_parser *p, XMQParseState *state, size_t indent);
 
 /*
@@ -15714,13 +15714,13 @@ static int ymap(y_parser *p, XMQParseState *state, size_t indent)
 }
 
 /*
-  Parse the sequence item that starts on the current line after the
-  dash ('- ') at indentation `indent`.
+  Parse the sequence item that starts after the dash at `dash` on the
+  current line. `indent` is the indentation of the enclosing sequence.
   Returns 0 on success and 1 on failure.
 */
-static int yitem(y_parser *p, XMQParseState *state, size_t indent)
+static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t indent)
 {
-    const char *item = p->text+1;
+    const char *item = dash+1;
     while (yspace(*item)) ++item;
     int rc = 0;
 
@@ -15730,6 +15730,28 @@ static int yitem(y_parser *p, XMQParseState *state, size_t indent)
         ykey(state, NULL, NULL);
         DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, "", "", "");
         return ynext(p, state);
+    }
+
+    if (ydash(item))
+    {
+        // A nested sequence: '- - x' with continuation items at the
+        // inner dash's column.
+        const size_t inner_indent = (size_t)(item - p->line_start);
+
+        ykey(state, NULL, NULL);
+        DO_CALLBACK_SIM(apar_left, state, state->line, state->col, y_leftpar, y_leftpar+1, y_leftpar+1);
+        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, y_array, y_array+1, y_array+1);
+        DO_CALLBACK_SIM(apar_right, state, state->line, state->col, y_rightpar, y_rightpar+1, y_rightpar+1);
+        DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
+
+        if (yitem(p, state, item, inner_indent))
+        {
+            DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+            return 1;
+        }
+        rc = yseq(p, state, inner_indent);
+        DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+        return rc;
     }
 
     const char *c = ycolon(item);
@@ -15796,7 +15818,7 @@ static int yseq(y_parser *p, XMQParseState *state, size_t indent)
 {
     while (!p->eof && ydash(p->text) && p->indent == indent)
     {
-        if (yitem(p, state, indent)) return 1;
+        if (yitem(p, state, p->text, indent)) return 1;
     }
     return 0;
 }

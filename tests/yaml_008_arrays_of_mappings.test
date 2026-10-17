@@ -1,0 +1,21 @@
+INPUT
+users:
+  - name: Alice
+    active: true
+  - name: Bob
+    active: false
+OUTPUT
+_ {
+    users(A)
+    {
+        _ {
+            name   = Alice
+            active = true
+        }
+        _ {
+            name   = Bob
+            active = false
+        }
+    }
+}
+END

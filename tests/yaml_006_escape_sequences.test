@@ -1,0 +1,18 @@
+INPUT
+newline: "first\nsecond"
+tab: "left\tright"
+quote: "Say \"hello\""
+backslash: "C:\\temp"
+unicode: "\u00E5"
+literal: '\n stays literal'
+OUTPUT
+_ {
+    newline   = 'first
+                 second'
+    tab       = 'left	right'
+    quote     = 'Say "hello"'
+    backslash = C:\temp
+    unicode   = å
+    literal   = '\n stays literal'
+}
+END

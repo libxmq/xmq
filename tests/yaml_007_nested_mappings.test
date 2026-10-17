@@ -1,0 +1,17 @@
+INPUT
+user:
+  name: Alice
+  address:
+    city: Stockholm
+    country: Sweden
+OUTPUT
+_ {
+    user {
+        name = Alice
+        address {
+            city    = Stockholm
+            country = Sweden
+        }
+    }
+}
+END
