@@ -7791,7 +7791,9 @@ const char *xml_element_type_to_string(xmlElementType type)
 	case XML_NAMESPACE_DECL: return "namespace_decl";
 	case XML_XINCLUDE_START: return "xinclude_start";
 	case XML_XINCLUDE_END: return "xinclude_end";
-//	case XML_DOCB_DOCUMENT_NODE: return "docb_document"; deprecated in libxml2
+#ifdef LIBXML_DOCB_ENABLED
+	case XML_DOCB_DOCUMENT_NODE: return "docb_document";
+#endif
     }
     return "?";
 }
@@ -16225,9 +16227,7 @@ static int yblock(y_parser *p, XMQParseState *state, char style, char chomp,
 #undef YB_PUSH
 }
 
-static void ykey(XMQParseState *state, const char *k, const char *stop);
 static int ynode(y_parser *p, XMQParseState *state, const char *v, size_t key_indent);
-static int yblock(y_parser *p, XMQParseState *state, char style, char chomp, size_t key_indent, size_t digit);
 static int ymap(y_parser *p, XMQParseState *state, size_t indent);
 static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t indent);
 static int yseq(y_parser *p, XMQParseState *state, size_t indent);
@@ -16269,7 +16269,8 @@ static int ynode(y_parser *p, XMQParseState *state,
         return ynext(p, state);
     }
 
-    if (ynext(p, state)) return 1;    if (p->eof || (p->indent <= key_indent && !(ydash(p->text) && p->indent == key_indent)))
+    if (ynext(p, state)) return 1;
+    if (p->eof || (p->indent <= key_indent && !(ydash(p->text) && p->indent == key_indent)))
     {
         // Not more indented, so the value is empty. A dash at exactly the
         // same indentation as the key starts an indentless sequence.
