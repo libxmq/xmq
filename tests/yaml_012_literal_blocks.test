@@ -1,0 +1,16 @@
+INPUT
+message: |
+  First line.
+  Second line.
+
+  Fourth line.
+OUTPUT
+_ {
+    message = 'First line.
+               Second line.
+
+               Fourth line.
+
+              '
+}
+END
