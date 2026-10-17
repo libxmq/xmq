@@ -15401,6 +15401,35 @@ static int ynext(y_parser *p, XMQParseState *state)
 }
 
 /*
+  Read the next raw line (blank and comment lines included) into the
+  private buffer. *line and *len point to the line's content.
+  Returns 0 on success and 1 at end of input.
+*/
+static int yraw(y_parser *p, XMQParseState *state, const char **line, size_t *len)
+{
+    if (p->eof) return 1;
+
+    char *s  = p->cursor;
+    char *e  = s;
+    while (*e && *e != '\n') ++e;
+    bool at_end = (*e == 0);
+
+    *e = 0; // NUL-terminate the line (replaces the newline, if any).
+    if (e > s && e[-1] == '\r') e[-1] = 0;
+    if (!at_end) ++e; // Step over the newline.
+    p->cursor = e;
+
+    p->line++;
+    state->line = p->line;
+    state->col  = 1;
+
+    *line = s;
+    *len  = strlen(s);
+    if (at_end) p->eof = true; // Nothing more to read.
+    return 0;
+}
+
+/*
   Return the colon in a "key: value" line (an unquoted colon followed
   by whitespace or end-of-line), or NULL.
 */
@@ -15593,6 +15622,7 @@ static void ykey(XMQParseState *state, const char *k, const char *stop);
 static int yentry(y_parser *p, XMQParseState *state,
                   const char *k, const char *ks, const char *v,
                   size_t key_indent);
+static int yblock(y_parser *p, XMQParseState *state, char chomp, size_t key_indent);
 static int ymap(y_parser *p, XMQParseState *state, size_t indent);
 static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t indent);
 static int yseq(y_parser *p, XMQParseState *state, size_t indent);
@@ -15944,6 +15974,143 @@ static int yflow(y_parser *p, XMQParseState *state, const char *s)
 }
 
 /*
+  Parse a literal block scalar. The header line ("key: |" or "- |")
+  has been consumed and the parser is positioned after it; this reads
+  the following raw lines (blank and comment lines included) that are
+  blank or indented more than key_indent.
+  `chomp` is 0 for clip (one trailing newline), '-' for strip (none)
+  and '+' for keep (all). Emits the decoded value as the element
+  value. Returns 0 on success and 1 on failure.
+*/
+static int yblock(y_parser *p, XMQParseState *state, char chomp, size_t key_indent)
+{
+    typedef struct { const char *ptr; size_t cnt; } yline;
+    yline *lines = NULL;
+    size_t nel = 0, cap = 0;
+    size_t trail = 0, count = 0, vlen = 0;
+    size_t block_indent = 0;
+    int rc = 0;
+
+#define YPUSH(pp, cc) \
+    do { \
+        if (nel == cap) { \
+            cap = cap ? cap*2 : 8; \
+            yline *more = (yline*)realloc(lines, cap*sizeof(*more)); \
+            if (!more) { rc = 1; goto cleanup; } \
+            lines = more; \
+        } \
+        lines[nel].ptr = (pp); \
+        lines[nel].cnt = (cc); \
+        ++nel; \
+    } while (0)
+
+    while (!rc)
+    {
+        // Peek at the next line without consuming it so that a
+        // terminating line can be left for the caller to read next.
+        char *s = p->cursor;
+        char *e = s;
+        while (*e && *e != '\n') ++e;
+        bool at_end = (*e == 0);
+        if (at_end && e == s) break; // No line left ends the block.
+
+        size_t ind = 0;
+        while (s[ind] == ' ') ++ind;
+        size_t llen = (size_t)(e - s);
+        bool blank = (ind == llen);
+
+        if (!blank && ind <= key_indent)
+        {
+            // A non blank line at the key's indentation (or less) ends
+            // the block: leave it unconsumed for the caller.
+            break;
+        }
+
+        // Commit the line into the block: NUL-terminate the content
+        // (replacing its newline, if any), the cursor moves past the
+        // newline position.
+        if (e > s && e[-1] == '\r') e[-1] = 0;
+        else *e = 0;
+        size_t clen = (size_t)(e - s);
+        p->cursor = at_end ? e : e + 1;
+        ++p->line;
+
+        if (blank)
+        {
+            YPUSH(s, 0);
+            continue;
+        }
+        if (s[ind] == '\t')
+        {
+            p->text = s + ind;
+            p->indent = ind;
+            yfail(p, state, "YAML: a literal block line must not use tab indentation");
+            rc = 1;
+            break;
+        }
+        if (!block_indent) block_indent = ind; // The first non blank line sets the block indent.
+        if (ind < block_indent)
+        {
+            p->text = s + ind;
+            p->indent = ind;
+            yfail(p, state, "YAML: bad indentation of a line in a literal block");
+            rc = 1;
+            break;
+        }
+        YPUSH(s + block_indent, clen - block_indent);
+    }
+
+#undef YPUSH
+
+    // Apply the chomping indicator: clip (default) ends with one
+    // newline, strip has none, keep preserves the trailing blank lines.
+    // In all forms, trailing blank lines count as newlines, not content.
+    trail = 0;
+    while (trail < nel && lines[nel-1-trail].cnt == 0) ++trail;
+    count = (chomp == '+') ? nel : nel - trail;
+
+    vlen = 0;
+    if (count)
+    {
+        for (size_t i = 0; i < count; ++i) vlen += lines[i].cnt;
+        vlen += count; // The count-1 newlines between lines plus the one ending newline.
+    }
+    // Strip removes the one ending newline.
+    if (chomp == '-' && count) --vlen;
+
+    if (count && vlen)
+    {
+        char *v = (char*)malloc(vlen+1);
+        if (!v)
+        {
+            rc = 1;
+            goto cleanup;
+        }
+        char *o = v;
+        for (size_t i = 0; i < count; ++i)
+        {
+            if (i) *o++ = '\n';
+            memcpy(o, lines[i].ptr, lines[i].cnt);
+            o += lines[i].cnt;
+        }
+        if (chomp != '-') *o++ = '\n';
+        *o = 0;
+
+        DO_CALLBACK_SIM(element_value_quote, state, state->line, state->col, v, o, o);
+        free(v);
+    }
+    else
+    {
+        // An empty block scalar is an empty value.
+        DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, "", "", "");
+    }
+
+cleanup:
+    free(lines);
+    return rc;
+}
+
+/*
   Parse a "k: v" entry where k..ks is the key and v the (possibly
   empty) inline value. key_indent is the indentation of the line
   containing the entry and decides when a following more indented line
@@ -15961,6 +16128,24 @@ static int yentry(y_parser *p, XMQParseState *state,
 
     if (*v && *v != '#')
     {
+        if (*v == '|')
+        {
+            // A literal block scalar ": |", ": |-" or ": |+".
+            char chomp = 0;
+            const char *r = v+1;
+            if (*r == '-' || *r == '+')
+            {
+                chomp = *r;
+                ++r;
+            }
+            if (*r != 0 && *r != '#' && !yspace(*r))
+            {
+                yfail(p, state, "YAML: a block scalar header needs the form '|', '|-' or '|+' ");
+                return 1;
+            }
+            if (yblock(p, state, chomp, key_indent)) return 1;
+            return ynext(p, state);
+        }
         if (*v == '[' || *v == '{')
         {
             if (yflow(p, state, v)) return 1;
@@ -16076,7 +16261,25 @@ static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t ind
     const char *c = ycolon(item);
     if (!c)
     {
-        // '- scalar'
+        // '- scalar' or '- |'
+        if (item[0] == '|')
+        {
+            char chomp = 0;
+            const char *r = item+1;
+            if (*r == '-' || *r == '+')
+            {
+                chomp = *r;
+                ++r;
+            }
+            if (*r != 0 && *r != '#' && !yspace(*r))
+            {
+                yfail(p, state, "YAML: a block scalar header needs the form '|', '|-' or '|+' ");
+                return 1;
+            }
+            ykey(state, NULL, NULL);
+            if (yblock(p, state, chomp, indent)) return 1;
+            return ynext(p, state);
+        }
         const char *s;
         size_t len;
         if (yscalar(p, state, item, &s, &len)) return 1;
