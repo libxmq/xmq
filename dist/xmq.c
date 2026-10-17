@@ -15448,21 +15448,21 @@ static const char *ycolon(const char *s)
         {
         case 0: return NULL;
         case ' ':
-        case '\t': ++s; break;
+        case '\t': ++s; continue;
         case '#': return NULL;
         case '\'':
-            if (sq && s[1] == '\'') { ++s; break; } // Escaped quote '' inside single quotes (plus trailing ++s).
-            sq ^= 1; ++s; break;
-        case '"': dq ^= 1; ++s; break;
+            if (sq && s[1] == '\'') { s += 2; continue; } // Escaped quote '' inside single quotes.
+            sq ^= 1; ++s; continue;
+        case '"': dq ^= 1; ++s; continue;
         case '\\':
             if (!sq && dq && s[1]) ++s;
-            break;
+            continue;
         case ':':
             if (!sq && !dq && (s[1] == ' ' || s[1] == '\t' || !s[1]))
             {
                 return s;
             }
-            break;
+            continue;
         }
         ++s;
     }

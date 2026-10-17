@@ -1,0 +1,26 @@
+INPUT
+on:
+    branches:
+      - master
+    tags:
+      - '*.*.*'
+
+jobs:
+  trigger_ha_addon_build: 123
+OUTPUT
+_ {
+    on {
+        branches(A)
+        {
+            _ = master
+        }
+        tags(A)
+        {
+            _ = *.*.*
+        }
+    }
+    jobs {
+        trigger_ha_addon_build = 123
+    }
+}
+END
