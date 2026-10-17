@@ -1,0 +1,9 @@
+INPUT
+name: Alice
+city: Stockholm
+OUTPUT
+_ {
+    name = Alice
+    city = Stockholm
+}
+END

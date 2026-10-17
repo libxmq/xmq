@@ -56,6 +56,26 @@ This is the reason for this C code.! I need to read YAML and my life
 is better when I read it as pretty printed xmq in my browser.  I do
 not recommend any use of YAML whatsever!
 
+The implementation in this file gets around the Norway problem
+simply but treating all content as text. The yaml file:
+```
+country: no
+```
+
+will turn into
+```
+_ {
+    country = no
+}
+```
+
+I.e. no will NOT be interpreted as a boolean, which happens in some
+yaml implementation where Norway no turns into false.
+
+Xmq does the same for numbers etc. i.e. all content is treated as text.
+Xmq tracks the limited number of json types when going back and forth
+to json. This is however impossible with yaml.
+
 It is a basic block-style YAML parser that builds the xml DOM by
 invoking the same parse callbacks (DO_CALLBACK_SIM) that the JSON
 parser, parts/json.c, uses.
@@ -206,7 +226,9 @@ static const char *ycolon(const char *s)
         case ' ':
         case '\t': ++s; break;
         case '#': return NULL;
-        case '\'': sq ^= 1; ++s; break;
+        case '\'':
+            if (sq && s[1] == '\'') { ++s; break; } // Escaped quote '' inside single quotes (plus trailing ++s).
+            sq ^= 1; ++s; break;
         case '"': dq ^= 1; ++s; break;
         case '\\':
             if (!sq && dq && s[1]) ++s;
@@ -255,7 +277,13 @@ static int yscalar(y_parser *p, XMQParseState *state,
     default:
         {
             const char *e = s;
-            while (*e && *e != '#' && !yspace(*e)) ++e;
+            // A plain scalar runs to the end of the line or a comment
+            // introduced by a '#' preceded by whitespace (or at line start).
+            while (*e)
+            {
+                if (*e == '#' && (e == s || yspace(e[-1]))) break;
+                ++e;
+            }
             while (e > s && yspace(e[-1])) --e;
             *out = s;
             *len = (size_t)(e - s);
@@ -264,15 +292,34 @@ static int yscalar(y_parser *p, XMQParseState *state,
 
     case '\'':
         {
+            // Inside a single quoted scalar, a doubled '' is a literal
+            // quote and anything else (up to the closing lone quote)
+            // is plain text. No other escapes are allowed.
+            char *o = (char*)s+1;
             const char *e = s+1;
-            while (*e && *e != '\'') ++e;
-            if (*e != '\'')
+            for (;;)
             {
-                yfail(p, state, "YAML: single quoted scalar is not closed");
-                return 1;
+                char c = *e;
+                if (c == 0)
+                {
+                    yfail(p, state, "YAML: single quoted scalar is not closed");
+                    return 1;
+                }
+                if (c == '\'')
+                {
+                    if (e[1] == '\'')
+                    {
+                        *o++ = '\'';
+                        e += 2;
+                        continue;
+                    }
+                    break;
+                }
+                *o++ = c;
+                e++;
             }
             *out = s+1;
-            *len = (size_t)(e - (s+1));
+            *len = (size_t)((char*)o - (char*)(s+1));
             return 0;
         }
 
@@ -425,9 +472,10 @@ static int yentry(y_parser *p, XMQParseState *state,
     }
 
     if (ynext(p, state)) return 1;
-    if (p->eof || p->indent <= key_indent)
+    if (p->eof || (p->indent <= key_indent && !(ydash(p->text) && p->indent == key_indent)))
     {
-        // Not more indented, so the value is empty.
+        // Not more indented, so the value is empty. A dash at exactly the
+        // same indentation as the key starts an indentless sequence.
         DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, "", "", "");
         return 0;
     }

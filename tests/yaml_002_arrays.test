@@ -1,0 +1,15 @@
+INPUT
+fruits:
+  - apple
+  - banana
+  - pear
+OUTPUT
+_ {
+    fruits(A)
+    {
+        _ = apple
+        _ = banana
+        _ = pear
+    }
+}
+END

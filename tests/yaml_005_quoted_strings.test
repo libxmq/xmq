@@ -1,0 +1,17 @@
+INPUT
+single: 'It''s YAML'
+double: "Hello, YAML"
+number_as_text: "42"
+bool_as_text: 'true'
+punctuation: "key: value # literal hash"
+empty: ''
+OUTPUT
+_ {
+    single         = "It's YAML"
+    double         = 'Hello, YAML'
+    number_as_text = 42
+    bool_as_text   = true
+    punctuation    = 'key: value # literal hash'
+    empty          = ''
+}
+END

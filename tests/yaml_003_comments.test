@@ -1,0 +1,12 @@
+INPUT
+# Full-line comment
+name: Alice # Inline comment
+
+# Blank lines are ignored
+city: Stockholm
+OUTPUT
+_ {
+    name = Alice
+    city = Stockholm
+}
+END
