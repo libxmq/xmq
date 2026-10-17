@@ -1,0 +1,17 @@
+INPUT
+empty_map: {}
+empty_array: []
+empty_string: ""
+explicit_null: null
+tilde_null: ~
+implicit_null:
+OUTPUT
+_ {
+    empty_map
+    empty_array(A)
+    empty_string  = ''
+    explicit_null = null
+    tilde_null    = ~
+    implicit_null = ''
+}
+END

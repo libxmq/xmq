@@ -1,0 +1,16 @@
+# Folded block scalar: consecutive lines fold to spaces, the blank line
+# keeps a single line break, clip chomping ends with one newline.
+INPUT
+message: >
+  These lines
+  become one line.
+
+  A new paragraph.
+OUTPUT
+_ {
+    message = 'These lines become one line.
+               A new paragraph.
+
+              '
+}
+END

@@ -1,0 +1,35 @@
+# Block scalar chomping indicators and an explicit indent digit 2,
+# which keeps two extra leading spaces. strip has no newline, clip one,
+# keep preserves the trailing blank line.
+INPUT
+strip: |-
+  a
+
+clip: |
+  a
+
+block: |
+  a
+
+keep: |+
+  a
+
+# Explicit indent 2 preserves two extra leading spaces.
+indented: |2-
+    padded
+OUTPUT
+_ {
+    strip    = a
+    clip     = 'a
+
+               '
+    block    = 'a
+
+               '
+    keep     = 'a
+
+
+               '
+    indented = '  padded'
+}
+END
