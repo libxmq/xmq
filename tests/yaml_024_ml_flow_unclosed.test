@@ -1,0 +1,8 @@
+# libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
+# A flow collection that is not closed by the end of the input must
+# yield a clean error and no stdout.
+INPUT
+e: { f: 1,
+
+OUTPUT
+END

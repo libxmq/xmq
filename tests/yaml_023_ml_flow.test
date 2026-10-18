@@ -1,0 +1,40 @@
+# libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
+# Flow collections may span multiple lines: the scan resumes on the
+# following line when a line ends before the collection is closed
+# (blank and comment lines are skipped). Quoted scalars still close
+# on the current line.
+INPUT
+a: { one: 1,
+ two: [ 1,
+ 2 ],
+}
+b: [ 1, 2,
+ 3 ]
+d: { w: [a,
+ b] }
+
+OUTPUT
+_ {
+    a {
+        one = 1
+        two(A)
+        {
+            _ = 1
+            _ = 2
+        }
+    }
+    b(A)
+    {
+        _ = 1
+        _ = 2
+        _ = 3
+    }
+    d {
+        w(A)
+        {
+            _ = a
+            _ = b
+        }
+    }
+}
+END
