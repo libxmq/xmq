@@ -16329,6 +16329,34 @@ static int ymap(y_parser *p, XMQParseState *state, size_t indent)
     while (!p->eof)
     {
         if (ydash(p->text) || p->indent != indent) break;
+
+        if (p->text[0] == '?' && (p->text[1] == 0 || yspace(p->text[1])))
+        {
+            // A complex key (single-pair form):
+            //   ? key
+            //   : value
+            // The key is decoded here; ykey() keeps it as the element
+            // name when it is a valid name and only then falls back
+            // to the underscore form with a (_ = ..) attribute, the
+            // same as the JSON conversion.
+            const char *kk = p->text + 1;
+            while (yspace(*kk)) ++kk;
+            const char *key = NULL;
+            size_t key_len = 0;
+            if (yscalar(p, state, kk, &key, &key_len)) return 1;
+
+            if (ynext(p, state)) return 1;
+            if (p->text[0] != ':' || (p->text[1] != 0 && !yspace(p->text[1])))
+            {
+                yfail(p, state, "YAML: a complex key must be followed by a ':' line with the value");
+                return 1;
+            }
+            const char *v = p->text + 1;
+            while (yspace(*v)) ++v;
+            if (yentry(p, state, key, key + key_len, v, indent)) return 1;
+            continue;
+        }
+
         const char *c = ycolon(p->text);
         if (!c)
         {

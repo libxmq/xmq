@@ -1,0 +1,33 @@
+# libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
+# Complex keys in the single-pair form ('? key' followed by a ': value'
+# line). A key that is a valid xmq element name is kept as is; a key
+# that is not becomes an underscore key with a (_ = ..) attribute, the
+# same solution as the JSON conversion. The value may be a scalar, a
+# flow collection, or a block with nested entries.
+INPUT
+foo:
+  ? "gurka topp"
+  : 1
+  ? "%&#{}"
+  :
+    howdy: 1
+    ? "woot woot"
+    : 2
+bar:
+  ? plain
+  : 3
+OUTPUT
+_ {
+    foo {
+        _(_ = 'gurka topp') = 1
+        _(_ = '%&#{}')
+        {
+            howdy = 1
+            _(_ = 'woot woot') = 2
+        }
+    }
+    bar {
+        plain = 3
+    }
+}
+END
