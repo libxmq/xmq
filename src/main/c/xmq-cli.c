@@ -1251,7 +1251,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             if (!ok)
             {
                 const char *error = xmqDocError(doq);
-                fprintf(stderr, error, command->in);
+                fprintf(stderr, "%s\n", error ? error : "xmq: parse error");
                 xmqFreeDoc(doq);
                 return false;
             }
@@ -2374,7 +2374,7 @@ bool cmd_load(XMQCliCommand *command, bool *no_more_data)
         {
             const char *error = xmqDocError(command->env->doc);
             if (error) {
-                fprintf(stderr, error, command->in);
+                fprintf(stderr, "%s\n", error);
             }
             xmqFreeDoc(command->env->doc);
             command->env->doc = NULL;
@@ -2848,7 +2848,7 @@ bool cmd_add(XMQCliCommand *command)
     if (!ok)
     {
         const char *error = xmqDocError(doq);
-        fprintf(stderr, error, command->in);
+        fprintf(stderr, "%s\n", error ? error : "xmq: parse error");
         xmqFreeDoc(doq);
         return false;
     }
@@ -4402,7 +4402,7 @@ bool load_xslt(XMQCliCommand *command, const char *arg)
     if (!ok)
     {
         const char *error = xmqDocError(doq);
-        fprintf(stderr, error, command->in);
+        fprintf(stderr, "%s\n", error ? error : "xmq: parse error");
         xmqFreeDoc(doq);
         return false;
     }
@@ -4898,7 +4898,7 @@ xmqDocDefaultLoaderFunc(const xmlChar * URI,
     {
         const char *error = xmqDocError(doq);
         if (error) {
-            fprintf(stderr, error, URI);
+            fprintf(stderr, "%s\n", error);
         }
         xmqFreeDoc(doq);
         return NULL;
