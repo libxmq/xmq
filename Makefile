@@ -158,6 +158,11 @@ build_fuzz: afl_prepared
 	AFL_PATH=$(CURDIR)/AFLplusplus/usroot/usr/lib/afl \
 	$(MAKE) --no-print-directory -C $$x CC=$(CURDIR)/AFLplusplus/usroot/usr/bin/afl-clang-fast fuzz ; done
 
+run_fuzz_yaml:
+	AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 \
+	AFL_SKIP_CPUFREQ=1 \
+	$(CURDIR)/AFLplusplus/usroot/usr/bin/afl-fuzz -i fuzz_testcases/yaml -o fuzz_findings_yaml -- build/x86_64-pc-linux-gnu/fuzz/xmq --yaml -
+
 lcov:
 	@echo Generating code coverage $(words $(BUILDDIRS)) host\(s\).
 	@for x in $(BUILDDIRS); do echo; echo Bulding $$(basename $$x) ; $(MAKE) --no-print-directory -C $$x debug lcov ; done
@@ -304,7 +309,7 @@ build/doxygen: build/Doxygenlayout.xml
 build/Doxygenlayout.xml: doc/Doxygenlayout.xmq
 	xmq doc/Doxygenlayout.xmq to-xml > build/Doxygenlayout.xml
 
-.PHONY: build/doxygen
+.PHONY: build/doxygen run_fuzz_yaml
 
 import_category:
 	@if [ "$(CATEGORY)" = "" ]; then echo "Specify CATEGORY=Ll"; exit 1; fi
