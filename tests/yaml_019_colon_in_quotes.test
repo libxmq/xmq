@@ -1,0 +1,27 @@
+# libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
+# Regression: ycolon() used to loop forever on a colon inside a quoted
+# scalar (the "case ':'" branch did not advance the scan position).
+# e.g. - "And special characters: {}[]()"
+INPUT
+items:
+  - "And special characters: {}[]()"
+  - 'Single-quoted: also fine'
+  - "Escaped: \": x"
+mapping:
+  key: "colon: inside"
+  url: "http://example.com:8080/x"
+
+OUTPUT
+_ {
+    items(A)
+    {
+        _ = 'And special characters: {}[]()'
+        _ = 'Single-quoted: also fine'
+        _ = 'Escaped: ": x'
+    }
+    mapping {
+        key = 'colon: inside'
+        url = http://example.com:8080/x
+    }
+}
+END

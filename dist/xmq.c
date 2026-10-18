@@ -15457,13 +15457,14 @@ static const char *ycolon(const char *s)
             sq ^= 1; ++s; continue;
         case '"': dq ^= 1; ++s; continue;
         case '\\':
-            if (s[1]) s += 2; // The backslash escapes the next character.
+            s += (s[1] != 0) ? 2 : 1; // The backslash escapes the next character (a lone trailing one just moves on).
             continue;
         case ':':
             if (!sq && !dq && (s[1] == ' ' || s[1] == '\t' || !s[1]))
             {
                 return s;
             }
+            ++s; // Not a separator, keep scanning.
             continue;
         }
         ++s;

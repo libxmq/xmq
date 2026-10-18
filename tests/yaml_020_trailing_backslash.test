@@ -1,0 +1,12 @@
+# libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
+# Regression: ycolon() used to loop forever when a backslash was the last
+# character of a line (the "case '\\'" branch did not advance the scan
+# position when there was nothing to escape).
+# The input must yield a clean error (on stderr) and no stdout;
+# before the fix the parser hung here indefinitely.
+INPUT
+items:
+  - "trailing backslash \"
+
+OUTPUT
+END
