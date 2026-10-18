@@ -1,0 +1,28 @@
+# libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
+# Global tags (leading !!) become tag=.. attributes and local tags
+# (a single leading !) become ltag=.. attributes, on both mapping
+# values and sequence items.
+INPUT
+togged: !!map
+    alfa:
+        - !!int 1
+        - !!str "String with special"
+        - !!float 3.14
+        - !!null "Eh?"
+        - !leprutt "Woot?"
+
+OUTPUT
+_ {
+    togged(tag = map)
+    {
+        alfa(A)
+        {
+            _(tag = int) = 1
+            _(tag = str) = 'String with special'
+            _(tag = float) = 3.14
+            _(tag = null) = Eh?
+            _(ltag = leprutt) = Woot?
+        }
+    }
+}
+END

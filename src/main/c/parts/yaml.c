@@ -119,6 +119,8 @@ static const char y_underline[]  = "_";
 static const char y_array[]      = "A";
 static const char y_id[]         = "id";
 static const char y_ref[]        = "ref";
+static const char y_tag[]        = "tag";
+static const char y_ltag[]       = "ltag";
 static const char y_leftpar[]    = "(";
 static const char y_rightpar[]   = ")";
 static const char y_leftbrace[]  = "{";
@@ -1001,6 +1003,40 @@ static int ymap(y_parser *p, XMQParseState *state, size_t indent);
 static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t indent);
 static int yseq(y_parser *p, XMQParseState *state, size_t indent);
 
+/*
+  If v starts with a '!' it is a YAML tag: a '!!' leads a global tag,
+  a single '!' a local one. The tag is emitted as a (tag = ..) or
+  (ltag = ..) attribute on the current key and the value with the
+  tag skipped (and following spaces trimmed) is returned. A '!' that
+  is not followed by a tag name is plain scalar text and is given
+  back unchanged.
+*/
+static const char *ytag(XMQParseState *state, const char *v)
+{
+    if (*v != '!' || !v[1])
+    {
+        return v;
+    }
+
+    const bool     global = (v[1] == '!');
+    const char    *name   = (global) ? v+2 : v+1;
+    const char    *end    = name;
+
+    while (*end && !yspace(*end) && *end != '#' && *end != ',' && *end != ']' && *end != '}') ++end;
+
+    if (end == name)
+    {
+        return v; // A bare '!' with no name, plain scalar text.
+    }
+
+    const char *ak       = (global) ? y_tag  : y_ltag;
+    const size_t ak_len  = (global) ? 3u     : 4u;
+
+    ykey_attr(state, ak, ak_len, name, (size_t)(end - name));
+    while (yspace(*end)) ++end;
+    return end;
+}
+
 static int ynode(y_parser *p, XMQParseState *state,
                  const char *v, size_t key_indent)
 {
@@ -1071,6 +1107,8 @@ static int yentry(y_parser *p, XMQParseState *state,
                   size_t key_indent)
 {
     ykey(state, k, ks);
+
+    v = ytag(state, v);
 
     if (*v == '&' && v[1] != 0 && !yspace(v[1]))
     {
@@ -1195,8 +1233,9 @@ static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t ind
         }
         const char *s;
         size_t len;
-        if (yscalar(p, state, item, &s, &len)) return 1;
         ykey(state, NULL, NULL);
+        item = ytag(state, item);
+        if (yscalar(p, state, item, &s, &len)) return 1;
         DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, s, s+len, s+len);
         return ynext(p, state);
     }
