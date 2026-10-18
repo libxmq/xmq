@@ -1,0 +1,38 @@
+# libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
+# Non-Unicode/UTF-8 content (Norwegian in practice) is a potential
+# problem for many tools, but not for xmq since the content is just
+# transformed into text: non-ASCII in plain, flow and quoted scalars,
+# in comments, as a key (kept as an underscore key attribute), and via
+# \uXXXX escapes.
+INPUT
+# Kommentar på norsk: hei!
+land: Norge
+stader: [Oslo, Bergen, Tromsø, Ålesund]
+nøkkel: "verdi"   # även en kommentar
+farger: [rødt, blått, "økologi og \u00a6ppler"]
+? "fjell: Jotunheimen"
+: "Hurriganen og Åskotten"
+ord: "hå, gå, så, æble, kaffe, øl, å"
+OUTPUT
+_ {
+    // Kommentar på norsk: hei!
+    land = Norge
+    stader(A)
+    {
+        _ = Oslo
+        _ = Bergen
+        _ = Tromsø
+        _ = Ålesund
+    }
+    _(_ = nøkkel) = verdi
+    // även en kommentar
+    farger(A)
+    {
+        _ = rødt
+        _ = blått
+        _ = 'økologi og ¦ppler'
+    }
+    _(_ = 'fjell: Jotunheimen') = 'Hurriganen og Åskotten'
+    ord = 'hå, gå, så, æble, kaffe, øl, å'
+}
+END

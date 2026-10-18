@@ -1,0 +1,66 @@
+# libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
+# The classic YAML 1.1 "Norway" problem: old buggy parsers resolved
+# the strings `no`, `yes`, `on`, `off`, `y`, `n`, and friends to
+# booleans, and `1` / `1.5` / `0x1F` / `.inf` and friends to numbers.
+# xmq does no scalar type coercion, so the content is just turned
+# into text: `no` stays meaning Norway, not false. This test pins that
+# every "risky" string — as a value and as a key — survives as text.
+INPUT
+# A classic YAML 1.1 pitfall: `no` was resolved to boolean false by
+# old buggy parsers. Norway is not false.
+country: no
+iso: NO
+values:
+  agree: yes
+  light: on
+  switch: off
+  es: si
+  sv: ja
+  a: y
+  b: n
+  c: true
+  d: false
+  one: 1
+  pi: 1.5
+  hex: 0x1F
+  oct: 0o17
+  exp: 1e3
+  inf: .inf
+  nan: .NaN
+  empty: ""
+flags:
+  no: yes
+  off: on
+  true: false
+OUTPUT
+_ {
+    // A classic YAML 1.1 pitfall: `no` was resolved to boolean false by
+    // old buggy parsers. Norway is not false.
+    country = no
+    iso     = NO
+    values {
+        agree  = yes
+        light  = on
+        switch = off
+        es     = si
+        sv     = ja
+        a      = y
+        b      = n
+        c      = true
+        d      = false
+        one    = 1
+        pi     = 1.5
+        hex    = 0x1F
+        oct    = 0o17
+        exp    = 1e3
+        inf    = .inf
+        nan    = .NaN
+        empty  = ''
+    }
+    flags {
+        no   = yes
+        off  = on
+        true = false
+    }
+}
+END
