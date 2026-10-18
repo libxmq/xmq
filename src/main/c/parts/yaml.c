@@ -265,7 +265,7 @@ static const char *ycolon(const char *s)
             sq ^= 1; ++s; continue;
         case '"': dq ^= 1; ++s; continue;
         case '\\':
-            if (!sq && dq && s[1]) ++s;
+            if (s[1]) s += 2; // The backslash escapes the next character.
             continue;
         case ':':
             if (!sq && !dq && (s[1] == ' ' || s[1] == '\t' || !s[1]))
