@@ -135,6 +135,29 @@ asan:
 	@echo Building asan for $(words $(BUILDDIRS)) host\(s\).
 	@for x in $(BUILDDIRS); do echo; echo Bulding $$(basename $$x) ; $(MAKE) --no-print-directory -C $$x asan ; done
 
+# AFL++ packages fetched and locally unpacked (no root, cmake or clang install needed)
+AFL_DEBS:=afl++ clang clang-19 libclang1-19 libclang-common-19-dev libclang-cpp19 libclang-rt-19-dev libllvm19 llvm-19-linker-tools
+
+# Download the AFL++ and clang .debs and unpack them under AFLplusplus/usroot
+afl_prepared:
+	@mkdir -p AFLplusplus/debs
+	@for pkg in $(AFL_DEBS); do \
+		ls AFLplusplus/debs/$$pkg_*.deb >/dev/null 2>&1 || \
+		( cd AFLplusplus/debs && apt-get download $$pkg ) || exit 1; \
+	done
+	@ls AFLplusplus/usroot/usr/bin/afl-cc AFLplusplus/usroot/usr/bin/clang-19 >/dev/null 2>&1 || \
+	( for d in AFLplusplus/debs/*.deb; do dpkg -x $$d AFLplusplus/usroot || exit 1; done )
+
+build_fuzz: afl_prepared
+	@echo Building fuzz for $(words $(BUILDDIRS)) host\(s\).
+	@for x in $(BUILDDIRS); do echo; echo Building $$(basename $$x) ; \
+	AFL_HARDEN=1 \
+	AFL_CC=$(CURDIR)/AFLplusplus/usroot/usr/bin/clang-19 \
+	PATH=$(CURDIR)/AFLplusplus/usroot/usr/bin:$$PATH \
+	LD_LIBRARY_PATH=$(CURDIR)/AFLplusplus/usroot/usr/lib/x86_64-linux-gnu \
+	AFL_PATH=$(CURDIR)/AFLplusplus/usroot/usr/lib/afl \
+	$(MAKE) --no-print-directory -C $$x CC=$(CURDIR)/AFLplusplus/usroot/usr/bin/afl-clang-fast fuzz ; done
+
 lcov:
 	@echo Generating code coverage $(words $(BUILDDIRS)) host\(s\).
 	@for x in $(BUILDDIRS); do echo; echo Bulding $$(basename $$x) ; $(MAKE) --no-print-directory -C $$x debug lcov ; done
@@ -235,7 +258,7 @@ enable_address_randomization:
 
 clean:
 	@echo "Removing release, debug, asan, gtkdoc build dirs."
-	@for x in $(BUILDDIRS); do echo; rm -rf $${x}release $${x}debug $${x}asan $${x}generated_autocomplete.h; done
+	@for x in $(BUILDDIRS); do echo; rm -rf $${x}release $${x}debug $${x}asan $${x}fuzz $${x}generated_autocomplete.h; done
 	@rm -rf build/gtkdoc
 	@rm -rf xmq_browsing*
 	@rm -f build/xmqj
@@ -288,7 +311,7 @@ import_category:
 	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
 	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
 
-.PHONY: all release debug asan test test_release test_debug clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc
+.PHONY: all release debug asan fuzz afl_prepared build_fuzz test test_release test_debug clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc
 
 pom.xml: pom.xmq jproject.settings
 	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; xmllint --format pom.xml > tmpo; mv tmpo pom.xml; echo "Generated pom.xml" ; fi

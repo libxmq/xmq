@@ -12,3 +12,6 @@ dist/example
 dist/examplecc
 xmq_browsing*
 uploaded
+
+# Locally prepared AFL++ toolchain (debs + unpacked clang)
+AFLplusplus/
