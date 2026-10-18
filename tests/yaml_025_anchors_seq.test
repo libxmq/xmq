@@ -1,0 +1,48 @@
+# libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
+# Anchors and aliases inside sequence items: an anchor (&label)
+# becomes an (id = ..) attribute on the item key and an alias (*label)
+# becomes a (ref = ..) attribute; the alias is not expanded. The
+# anchored value may be a scalar, a (multi-line) flow collection, or
+# a mapping whose first entry is on the line below the anchor.
+INPUT
+replicated:
+    - &prutt
+      name: "Replica 1"
+      details: "This structure is replicated with aliases."
+    - *prutt
+    - *prutt
+scalars:
+    - &x 5
+    - *x
+flows:
+    - &x [a,
+ b]
+
+OUTPUT
+_ {
+    replicated(A)
+    {
+        _(id = prutt)
+        {
+            name    = 'Replica 1'
+            details = 'This structure is replicated with aliases.'
+        }
+        _(ref = prutt)
+        _(ref = prutt)
+    }
+    scalars(A)
+    {
+        _(id = x) = 5
+        _(ref = x)
+    }
+    flows(A)
+    {
+        _(id = x
+          A)
+        {
+            _ = a
+            _ = b
+        }
+    }
+}
+END

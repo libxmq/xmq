@@ -1153,6 +1153,65 @@ static int ymap(y_parser *p, XMQParseState *state, size_t indent)
 }
 
 /*
+  Emit the body of a mapping item whose first entry is at `first` on
+  the current line: the opening brace, the entries, and the closing
+  brace. The caller has already emitted the item key (with any
+  attributes). `indent` is the indentation of the enclosing sequence.
+  Returns 0 on success and 1 on failure.
+*/
+static int yitem_map(y_parser *p, XMQParseState *state,
+                     const char *first, size_t indent)
+{
+    const char *c = ycolon(first);
+    if (!c)
+    {
+        yfail(p, state, "YAML: a mapping entry needs the form 'key: value'");
+        return 1;
+    }
+    const size_t item_indent = (size_t)(first - p->line_start);
+    int rc = 0;
+
+    DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
+
+    const char *k = first, *ks = c;
+    while (ks > k && yspace(ks[-1])) --ks;
+    const char *v = c+1;
+    while (yspace(*v)) ++v;
+
+    rc = yentry(p, state, k, ks, v, indent);
+    if (rc)
+    {
+        DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+        return 1;
+    }
+
+    // Continuation entries of the same mapping item.
+    while (!p->eof && !ydash(p->text) && p->indent == item_indent)
+    {
+        const char *c2 = ycolon(p->text);
+        if (!c2)
+        {
+            yfail(p, state, "YAML: a mapping entry needs the form 'key: value'");
+            DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+            return 1;
+        }
+        const char *k2 = p->text, *ks2 = c2;
+        while (ks2 > k2 && yspace(ks2[-1])) --ks2;
+        const char *v2 = c2+1;
+        while (yspace(*v2)) ++v2;
+        rc = yentry(p, state, k2, ks2, v2, indent);
+        if (rc)
+        {
+            DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+            return 1;
+        }
+    }
+
+    DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+    return 0;
+}
+
+/*
   Parse the sequence item that starts after the dash at `dash` on the
   current line. `indent` is the indentation of the enclosing sequence.
   Returns 0 on success and 1 on failure.
@@ -1168,6 +1227,113 @@ static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t ind
         // An empty item.
         ykey(state, NULL, NULL);
         DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, "", "", "");
+        return ynext(p, state);
+    }
+
+    if (*item == '&' && item[1] != 0 && !yspace(item[1]))
+    {
+        // An anchor: '- &label [value]'. The anchor becomes an
+        // (id = ..) attribute on the item key; the value may be on
+        // this line or on more deeply indented lines below.
+        const char *lp = item + 1;
+        size_t ll = 0;
+        while (lp[ll] && !yspace(lp[ll]) && lp[ll] != '#') ++ll;
+
+        ykey(state, NULL, NULL);
+        ykey_attr(state, y_id, 2, lp, ll);
+
+        item += 1 + ll;
+        while (yspace(*item)) ++item;
+
+        if (*item && *item != '#')
+        {
+            // A value on the rest of this line.
+            if (*item == '[' || *item == '{')
+            {
+                const char *after;
+                if (yflow(p, state, item, &after)) { return 1; }
+                return ynext(p, state);
+            }
+            if (item[0] == '|' || item[0] == '>')
+            {
+                char chomp = 0, style = item[0];
+                size_t digit = 0;
+                const char *r = item+1;
+                if (*r == '-' || *r == '+') { chomp = *r; ++r; }
+                if (*r >= '1' && *r <= '9') { digit = (size_t)(*r - '0'); ++r; }
+                if (*r == '-' || *r == '+') { chomp = *r; ++r; }
+                if (*r != 0 && *r != '#' && !yspace(*r))
+                {
+                    yfail(p, state, "YAML: a block scalar header needs the form 'style' [chomp] [indent]");
+                    return 1;
+                }
+                if (yblock(p, state, style, chomp, indent, digit)) { return 1; }
+                return ynext(p, state);
+            }
+            if (ycolon(item))
+            {
+                // An inline mapping: '- &x name: 1'
+                return yitem_map(p, state, item, indent);
+            }
+            const char *s;
+            size_t len;
+            item = ytag(state, item);
+            if (yscalar(p, state, item, &s, &len)) { return 1; }
+            DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, s, s+len, s+len);
+            return ynext(p, state);
+        }
+
+        // No value on this line: the item is empty or continues on
+        // more deeply indented lines.
+        if (ynext(p, state)) { return 1; }
+        if (p->eof || p->indent <= indent)
+        {
+            // An empty item (the attribute is already emitted).
+            return 0;
+        }
+        if (ydash(p->text))
+        {
+            // A nested sequence below the anchor.
+            DO_CALLBACK_SIM(apar_left, state, state->line, state->col, y_leftpar, y_leftpar+1, y_leftpar+1);
+            DO_CALLBACK_SIM(attr_key, state, state->line, state->col, y_array, y_array+1, y_array+1);
+            DO_CALLBACK_SIM(apar_right, state, state->line, state->col, y_rightpar, y_rightpar+1, y_rightpar+1);
+            DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
+            rc = yseq(p, state, p->indent);
+            if (!rc)
+            {
+                DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+            }
+            return rc;
+        }
+        if (ycolon(p->text))
+        {
+            // A mapping whose first entry is on the next line.
+            return yitem_map(p, state, p->text, indent);
+        }
+        // A plain line with no key: treat the item as empty and let
+        // the outer level parse the line.
+        return 0;
+    }
+
+    if (*item == '*' && item[1] != 0 && !yspace(item[1]))
+    {
+        // An alias: '- *label'. The alias becomes a (ref = ..)
+        // attribute on the item key; the referenced value is not
+        // expanded.
+        const char *lp = item + 1;
+        size_t ll = 0;
+        while (lp[ll] && !yspace(lp[ll]) && lp[ll] != '#') ++ll;
+
+        ykey(state, NULL, NULL);
+        ykey_attr(state, y_ref, 3, lp, ll);
+
+        item += 1 + ll;
+        while (yspace(*item)) ++item;
+        if (*item && *item != '#')
+        {
+            yfail(p, state, "YAML: an alias must stand alone");
+            return 1;
+        }
         return ynext(p, state);
     }
 
@@ -1236,48 +1402,9 @@ static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t ind
         return ynext(p, state);
     }
 
-    // A mapping item: _ { entries }
-    const size_t item_indent = (size_t)(item - p->line_start);
-
+    // A mapping item: '- name: 1'
     ykey(state, NULL, NULL);
-    DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
-
-    const char *k = item, *ks = c;
-    while (ks > k && yspace(ks[-1])) --ks;
-    const char *v = c+1;
-    while (yspace(*v)) ++v;
-
-    rc = yentry(p, state, k, ks, v, indent);
-    if (rc)
-    {
-        DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
-        return 1;
-    }
-
-    // Continuation entries of the same mapping item.
-    while (!p->eof && !ydash(p->text) && p->indent == item_indent)
-    {
-        const char *c2 = ycolon(p->text);
-        if (!c2)
-        {
-            yfail(p, state, "YAML: a mapping entry needs the form 'key: value'");
-            DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
-            return 1;
-        }
-        const char *k2 = p->text, *ks2 = c2;
-        while (ks2 > k2 && yspace(ks2[-1])) --ks2;
-        const char *v2 = c2+1;
-        while (yspace(*v2)) ++v2;
-        rc = yentry(p, state, k2, ks2, v2, indent);
-        if (rc)
-        {
-            DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
-            return 1;
-        }
-    }
-
-    DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
-    return 0;
+    return yitem_map(p, state, item, indent);
 }
 
 /*
