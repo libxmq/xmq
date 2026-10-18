@@ -829,7 +829,11 @@ void parse_json_array(XMQParseState *state, const char *key_start, const char *k
         if (c == ',') increment(c, 1, &state->i, &state->line, &state->col);
     }
 
-    assert(c == ']');
+    if (c != ']')
+    {
+        state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
+        longjmp(state->error_handler, 1);
+    }
     increment(c, 1, &state->i, &state->line, &state->col);
 
     DO_CALLBACK_SIM(brace_right, state, state->line, state->col, rightbrace, rightbrace+1, rightbrace+1);
@@ -1093,9 +1097,12 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
         c = *state->i;
         if (c == ',') increment(c, 1, &state->i, &state->line, &state->col);
     }
-    while (c == ',');
 
-    assert(c == '}');
+    if (c != '}')
+    {
+        state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
+        longjmp(state->error_handler, 1);
+    }
     increment(c, 1, &state->i, &state->line, &state->col);
 
     DO_CALLBACK_SIM(brace_right, state, state->line, state->col, rightbrace, rightbrace+1, rightbrace+1);

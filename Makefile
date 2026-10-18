@@ -158,6 +158,9 @@ build_fuzz: afl_prepared
 	AFL_PATH=$(CURDIR)/AFLplusplus/usroot/usr/lib/afl \
 	$(MAKE) --no-print-directory -C $$x CC=$(CURDIR)/AFLplusplus/usroot/usr/bin/afl-clang-fast fuzz ; done
 
+run_fuzz_xmq:
+	$(CURDIR)/AFLplusplus/usroot/usr/bin/afl-fuzz -i fuzz_testcases/xmq -o fuzz_findings_xmq -- build/x86_64-pc-linux-gnu/fuzz/xmq -
+
 run_fuzz_yaml:
 	$(CURDIR)/AFLplusplus/usroot/usr/bin/afl-fuzz -i fuzz_testcases/yaml -o fuzz_findings_yaml -- build/x86_64-pc-linux-gnu/fuzz/xmq --yaml -
 
