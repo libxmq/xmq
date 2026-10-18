@@ -1,0 +1,31 @@
+# libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
+# Explicit flow mapping key ('? key') with a tagged, quoted key and
+# the ': value' continuation on the next line, the value being a
+# tagged flow sequence that spans lines (from tjo.yml).
+INPUT
+custom_tags: !!map {
+  ? !!str "key with special chars: @#$%"
+  : !!seq [
+    !!int 1,
+    !!str "String with special tag",
+    !!float 3.14,
+    !!null "Explicitly null"
+  ]
+}
+OUTPUT
+_ {
+    custom_tags(tag = map)
+    {
+        _(_   = 'key with special chars: @#$%'
+          tag = str
+          tag = seq
+          A)
+        {
+            _(tag = int) = 1
+            _(tag = str) = 'String with special tag'
+            _(tag = float) = 3.14
+            _(tag = null) = 'Explicitly null'
+        }
+    }
+}
+END

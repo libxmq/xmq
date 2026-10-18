@@ -1,0 +1,31 @@
+# libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
+# Variants of an explicit flow mapping key ('? key') on one line,
+# mixed with plain 'key: value' entries, with a tagged or quoted
+# key, and with the ': value' part on the following line.
+INPUT
+one: { ? key : value }
+two: { a: 1, ? "weird key" : 2, b: 3 }
+three: { ? !!str "tagged key" : 42 }
+four: {
+  ? multi
+  : line
+}
+OUTPUT
+_ {
+    one {
+        key = value
+    }
+    two {
+        a = 1
+        _(_ = 'weird key') = 2
+        b = 3
+    }
+    three {
+        _(_   = 'tagged key'
+          tag = str) = 42
+    }
+    four {
+        multi = line
+    }
+}
+END

@@ -763,6 +763,71 @@ yflow_value(y_parser *p, XMQParseState *state, const char *e, const char **e_aft
 }
 
 /*
+  Emit a flow-mapping key element from the raw key range k..ke (both
+  within the current line buffer). A leading global ('!!') or local ('!')
+  tag is captured and emitted as a (tag = ..) / (ltag = ..) attribute on the
+  key after the element name; a quoted key is decoded. This mirrors how the
+  key/value tags are attached: the element is created first, so any tag
+  attribute lands on it. A plain key keeps its (trimmed) raw text.
+  Returns 0 on success and 1 on failure.
+*/
+static int
+yflow_key(y_parser *p, XMQParseState *state, const char *k, const char *ke)
+{
+    const char    *tk      = k;
+    const char    *tagname = NULL;
+    size_t         taglen  = 0;
+    bool           global  = false;
+
+    if ((*tk == '!') && tk[1])
+    {
+        tagname = (tk[1] == '!') ? tk+2 : tk+1;
+        global  = (tk[1] == '!');
+        const char *end = tagname;
+        while (*end && (end < ke) && !yspace(*end) && (*end != '#')
+               && (*end != ',') && (*end != '[') && (*end != ']')
+               && (*end != '{') && (*end != '}'))
+        {
+            ++end;
+        }
+        if (end != tagname)
+        {
+            taglen = (size_t)(end - tagname);
+            while (yspace(*end)) { ++end; }
+            tk = end;
+        }
+        else
+        {
+            tagname = NULL; // A bare '!' with no tag name: plain text.
+        }
+    }
+
+    const char  *ktxt;
+    size_t       klen;
+
+    if ((*tk == '\'') || (*tk == '"'))
+    {
+        if (yscalar(p, state, tk, &ktxt, &klen) != 0) { return 1; }
+    }
+    else
+    {
+        ktxt = tk;
+        klen = (size_t)(ke - tk);
+    }
+
+    if (klen) { ykey(state, ktxt, ktxt+klen); }
+    else      { ykey(state, NULL, NULL); }
+
+    if (tagname)
+    {
+        const char *ak     = global ? y_tag : y_ltag;
+        const size_t ak_len = global ? 3u    : 4u;
+        ykey_attr(state, ak, ak_len, tagname, taglen);
+    }
+    return 0;
+}
+
+/*
   Parse a flow collection starting at s ('[' or '{') and emit the
   element structure directly. Nested flow collections of either kind
   are allowed, and a collection may span several lines: if the current
@@ -832,9 +897,31 @@ yflow(y_parser *p, XMQParseState *state, const char *s, const char **e_after)
             continue;
         }
 
-        // A flow mapping entry: the key runs to the first unquoted ':'.
+        // A flow mapping entry: either a plain 'key: value' pair (the key
+        // runs to the first unquoted ':') or an explicit one introduced by
+        // '?', whose ': value' part may be on the next line:
+        //
+        //     { ? key : value }
+        //     {
+        //       ? key
+        //       : value
+        //     }
+        // A leading tag ('!!'/'!') on the key and a quoted key are both
+        // supported; the tag becomes a (tag = ..)/(ltag = ..) attribute
+        // on the key and a quoted key is decoded.
         {
-            const char *c = e;
+            const char *e0 = e;
+            bool explicit_key = false;
+
+            if ((*e0 == '?') && (!e0[1] || yspace(e0[1])))
+            {
+                explicit_key = true;
+                e0++;
+                while (yspace(*e0)) { e0++; }
+            }
+
+            // Locate the ':' separating key and value on this line, if any.
+            const char *c = e0;
             int    quote = 0;
 
             while (*c)
@@ -858,21 +945,51 @@ yflow(y_parser *p, XMQParseState *state, const char *s, const char **e_after)
                 else if (ch == '"') { quote = 2; }
                 c++;
             }
+            const bool colon_here = (*c != 0);
 
-            if (!c[0])
+            const char *ks = c;
+            while ((ks > e0) && yspace(ks[-1])) { ks--; }
+
+            if (colon_here)
             {
-                yfail(p, state, "YAML: a flow mapping entry needs the form 'key: value'");
-                rc = 1;
-                goto out;
+                if (explicit_key)
+                {
+                    if (yflow_key(p, state, e0, ks)) { rc = 1; goto out; }
+                }
+                else
+                {
+                    ykey(state, (ks > e0) ? e0 : NULL, (ks > e0) ? ks : NULL);
+                }
+                e = c+1;
+            }
+            else
+            {
+                // No ':' on this line.
+                if (!explicit_key)
+                {
+                    yfail(p, state, "YAML: a flow mapping entry needs the form 'key: value'");
+                    rc = 1;
+                    goto out;
+                }
+                // The key is the rest of the line; ':' and the value follow.
+                if (yflow_key(p, state, e0, ks)) { rc = 1; goto out; }
+                if (ynext(p, state)) { rc = 1; goto out; }
+                if (p->eof)
+                {
+                    yfail(p, state, "YAML: a flow collection is not closed");
+                    rc = 1;
+                    goto out;
+                }
+                e = p->text;
+                if (e[0] != ':')
+                {
+                    yfail(p, state, "YAML: an explicit flow key must be followed by a ':'");
+                    rc = 1;
+                    goto out;
+                }
+                e++;
             }
 
-            const char *k = e;
-            const char *ks = c;
-            while ((ks > k) && yspace(ks[-1])) { ks--; }
-
-            ykey(state, (ks > k) ? k : NULL, (ks > k) ? ks : NULL);
-
-            e = c+1;
             while (yspace(*e)) e++;
 
             if ((*e == closeb) || (*e == ','))
