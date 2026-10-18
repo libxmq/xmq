@@ -1,0 +1,23 @@
+INPUT
+primary: &person
+  name: Alice
+  roles: [reader, writer]
+backup: *person
+label: &alfa hello
+repeated_label: *alfa
+OUTPUT
+_ {
+    primary(id = person)
+    {
+        name = Alice
+        roles(A)
+        {
+            _ = reader
+            _ = writer
+        }
+    }
+    backup(ref = person)
+    label(id = alfa) = hello
+    repeated_label(ref = alfa)
+}
+END
