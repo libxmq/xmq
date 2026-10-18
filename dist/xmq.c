@@ -15309,6 +15309,8 @@ void json_print_array_nodes(XMQPrintState *ps, xmlNode *container, xmlNode *from
 
 static const char y_underline[]  = "_";
 static const char y_array[]      = "A";
+static const char y_id[]         = "id";
+static const char y_ref[]        = "ref";
 static const char y_leftpar[]    = "(";
 static const char y_rightpar[]   = ")";
 static const char y_leftbrace[]  = "{";
@@ -15455,7 +15457,7 @@ static const char *ycolon(const char *s)
             sq ^= 1; ++s; continue;
         case '"': dq ^= 1; ++s; continue;
         case '\\':
-            if (!sq && dq && s[1]) ++s;
+            if (s[1]) s += 2; // The backslash escapes the next character.
             continue;
         case ':':
             if (!sq && !dq && (s[1] == ' ' || s[1] == '\t' || !s[1]))
@@ -15623,52 +15625,13 @@ static int yscalar(y_parser *p, XMQParseState *state,
 }
 
 
-/*
-  Anchors (&label) and aliases (*label). XMQ has no node identity, so
-  an anchor records the source position and value text of the anchored
-  value, and an alias replays that value. A file-scope registry with
-  atexit cleanup keeps this free of threading a context everywhere.
-*/
-struct yanchor
+static void ykey_attr(XMQParseState *state, const char *ak, size_t ak_len,
+                      const char *v, size_t v_len)
 {
-    char label[64];
-    char *start; // Cursor position just before the anchored value (rewind target).
-    const char *value; // The value text that follows the anchor.
-};
-static struct yanchor y_anchors[32];
-static size_t y_nanchors = 0;
-static int y_anchor_init = 0;
-
-static void yanchor_reset(void)
-{
-    y_nanchors = 0;
-}
-
-static struct yanchor *yanchor_add(const char *label, size_t len)
-{
-    if (!y_anchor_init)
-    {
-        y_anchor_init = 1;
-        atexit(yanchor_reset);
-    }
-    if (y_nanchors >= (sizeof(y_anchors) / sizeof(y_anchors[0]))) return 0;
-    struct yanchor *a = &y_anchors[y_nanchors++];
-    len = (len > 63) ? 63 : len;
-    memcpy(a->label, label, len);
-    a->label[len] = 0;
-    return a;
-}
-
-static struct yanchor *yanchor_get(const char *label, size_t len)
-{
-    char l[64];
-    len = (len > 63) ? 63 : len;
-    memcpy(l, label, len);
-    l[len] = 0;
-    for (size_t i = 0; i < y_nanchors; ++i)
-        if (0 == strcmp(y_anchors[i].label, l))
-            return &y_anchors[i];
-    return 0;
+    DO_CALLBACK_SIM(apar_left, state, state->line, state->col, y_leftpar, y_leftpar+1, y_leftpar+1);
+    DO_CALLBACK_SIM(attr_key, state, state->line, state->col, ak, ak+ak_len, ak+ak_len);
+    DO_CALLBACK_SIM(attr_value_quote, state, state->line, state->col, v, v+v_len, v+v_len);
+    DO_CALLBACK_SIM(apar_right, state, state->line, state->col, y_rightpar, y_rightpar+1, y_rightpar+1);
 }
 
 static void ykey(XMQParseState *state, const char *k, const char *stop)
@@ -15699,10 +15662,7 @@ static void ykey(XMQParseState *state, const char *k, const char *stop)
     DO_CALLBACK_SIM(element_key, state, state->line, state->col, k, stop, stop);
     if (us)
     {
-        DO_CALLBACK_SIM(apar_left, state, state->line, state->col, y_leftpar, y_leftpar+1, y_leftpar+1);
-        DO_CALLBACK_SIM(attr_key, state, state->line, state->col, y_underline, y_underline+1, y_underline+1);
-        DO_CALLBACK_SIM(attr_value_quote, state, state->line, state->col, us, us_end, us_end);
-        DO_CALLBACK_SIM(apar_right, state, state->line, state->col, y_rightpar, y_rightpar+1, y_rightpar+1);
+        ykey_attr(state, y_underline, 1, us, (size_t)(us_end - us));
     }
 }
 
@@ -16305,38 +16265,26 @@ static int yentry(y_parser *p, XMQParseState *state,
 
     if (*v == '&' && v[1] != 0 && !yspace(v[1]))
     {
-        // An anchored value: record the label with the value source and
-        // parse the value (which may be empty and continue on the
-        // following lines). XMQ has no anchors, so the label exists only
-        // so that a later alias can replay the anchored value.
+        // An anchor: remember the label as an (id = ..) attribute on
+        // the key, then parse the value as usual.
         const char *lp = v + 1;
         size_t ll = 0;
         while (lp[ll] && !yspace(lp[ll]) && lp[ll] != '#') ++ll;
-        struct yanchor *a = yanchor_add(lp, ll);
-        if (a)
-        {
-            a->start = p->cursor;
-            v += 1 + ll;
-            while (yspace(*v)) ++v;
-            a->value = v;
-        }
+        ykey_attr(state, y_id, 2, lp, ll);
+        v += 1 + ll;
+        while (yspace(*v)) ++v;
         return ynode(p, state, v, key_indent);
     }
 
     if (*v == '*' && v[1] != 0 && !yspace(v[1]))
     {
-        // An alias: replay the anchored value from its source position.
+        // An alias: remember the label as a (ref = ..) attribute on
+        // the key. The referenced value is not expanded.
         const char *lp = v + 1;
         size_t ll = 0;
         while (lp[ll] && !yspace(lp[ll]) && lp[ll] != '#') ++ll;
-        struct yanchor *a = yanchor_get(lp, ll);
-        if (!a)
-        {
-            yfail(p, state, "YAML: unknown alias");
-            return 1;
-        }
-        p->cursor = a->start;
-        return ynode(p, state, a->value, key_indent);
+        ykey_attr(state, y_ref, 3, lp, ll);
+        return ynext(p, state);
     }
 
     return ynode(p, state, v, key_indent);
