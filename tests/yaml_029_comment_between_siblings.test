@@ -1,0 +1,16 @@
+# A comment between two sibling keys is emitted right before the key it
+# precedes. The '=' alignment of the following keys reflects the longest
+# sibling key name.
+INPUT
+alpha: 1
+# note
+beta: 2
+gamma: 3
+OUTPUT
+_ {
+    alpha = 1
+    // note
+    beta  = 2
+    gamma = 3
+}
+END

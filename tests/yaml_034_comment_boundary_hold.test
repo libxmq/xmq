@@ -1,0 +1,22 @@
+# Comment placement depends on when the comment is read relative to the
+# block that opens. A comment that appears while scanning for the block's
+# opening line (before the brace) is attributed to that block ("lead" ->
+# inside root). A comment read while inside an already-open block, sitting
+# at the parent's indent, is held and emitted only when the enclosing
+# block closes ("between" -> after root).
+INPUT
+root:
+# lead
+  k1: 1
+# between
+  k2: 2
+OUTPUT
+_ {
+    root {
+        // lead
+        k1 = 1
+        k2 = 2
+    }
+    // between
+}
+END

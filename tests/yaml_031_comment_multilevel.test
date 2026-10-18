@@ -1,0 +1,26 @@
+# Comments at three different nesting levels must each be released at the
+# correct block and in source order: two inside the innermost block, one
+# at the intermediate level, and the sibling after them stays in place.
+INPUT
+a:
+    b:
+        # one
+        c: 1
+        # two
+        d: 2
+    # outside
+    e: 3
+OUTPUT
+_ {
+    a {
+        b {
+            // one
+            c = 1
+            // two
+            d = 2
+        }
+        // outside
+        e = 3
+    }
+}
+END

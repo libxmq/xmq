@@ -1,0 +1,24 @@
+# Regression test for the element-stack corruption bug: `do_comment`
+# sets element_last, and a following brace_left would otherwise push the
+# comment onto the element stack. A comment immediately before a nested
+# block must be emitted, and the nested block's structure must remain
+# completely intact (nothing swallowed or misplaced).
+INPUT
+a: 1
+# between blocks
+b:
+  c:
+    d: 1
+  e: 2
+OUTPUT
+_ {
+    a = 1
+    // between blocks
+    b {
+        c {
+            d = 1
+        }
+        e = 2
+    }
+}
+END

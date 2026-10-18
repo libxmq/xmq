@@ -1,0 +1,18 @@
+# A comment before a key is "leading" (retagged into the child block),
+# an inline comment after a value lands at the value's element, and a
+# trailing comment at the outer indent is held until the outer block closes.
+INPUT
+# document
+app:
+  mode: "fast" # default
+# closing note
+OUTPUT
+_ {
+    // document
+    app {
+        mode = fast
+        // default
+    }
+    // closing note
+}
+END

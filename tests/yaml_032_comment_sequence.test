@@ -1,0 +1,19 @@
+# Comments inside a sequence: an inline comment on an item lands right
+# after that item, and a comment between items lands at the sequence
+# level (before the block closes).
+INPUT
+items:
+  - first # i1
+  # middle comment
+  - second
+OUTPUT
+_ {
+    items(A)
+    {
+        _ = first
+        // i1
+        _ = second
+        // middle comment
+    }
+}
+END

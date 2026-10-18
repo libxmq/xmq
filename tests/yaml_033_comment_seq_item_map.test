@@ -1,0 +1,24 @@
+# A comment between the keys of a sequence item's own mapping (a
+# continuation key on the next line) is emitted inside that item's block,
+# right before the key it precedes. Other items are unaffected.
+INPUT
+people:
+  - name: ann
+    # role
+    role: admin
+  - name: ben
+OUTPUT
+_ {
+    people(A)
+    {
+        _ {
+            name = ann
+            // role
+            role = admin
+        }
+        _ {
+            name = ben
+        }
+    }
+}
+END

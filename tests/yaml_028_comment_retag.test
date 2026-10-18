@@ -1,0 +1,18 @@
+# A full-line comment that sits OUTSIDE the child block's literal indent
+# (here col 0 while the child keys are deeper) still belongs to the child
+# block, because it introduces the line that opens it. It is retagged
+# inward to the child block and emitted after the block opens.
+INPUT
+server:
+# the host line
+    host: localhost
+    port: 8080
+OUTPUT
+_ {
+    server {
+        // the host line
+        host = localhost
+        port = 8080
+    }
+}
+END
