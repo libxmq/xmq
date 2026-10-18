@@ -19,17 +19,18 @@ indented: |2-
     padded
 OUTPUT
 _ {
-    strip    = a
-    clip     = 'a
+    strip = a
+    clip  = 'a
 
-               '
-    block    = 'a
+            '
+    block = 'a
 
-               '
-    keep     = 'a
+            '
+    keep  = 'a
 
 
-               '
+            '
+    // Explicit indent 2 preserves two extra leading spaces.
     indented = '  padded'
 }
 END

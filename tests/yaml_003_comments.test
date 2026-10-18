@@ -6,7 +6,10 @@ name: Alice # Inline comment
 city: Stockholm
 OUTPUT
 _ {
+    // Full-line comment
     name = Alice
+    // Inline comment
+    // Blank lines are ignored
     city = Stockholm
 }
 END

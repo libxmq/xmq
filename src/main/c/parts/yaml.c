@@ -136,6 +136,7 @@ typedef struct y_parser
     size_t line;
     bool eof;
     char *bend; // One past the last byte of the buffer (points at its NUL).
+    struct ycomment *cmts; // Buffered comment lines awaiting placement.
 } y_parser;
 
 static unsigned yhex(char c)
@@ -159,6 +160,145 @@ static void yfail(y_parser *p, XMQParseState *state, const char *msg)
     // Point into the original buffer not the private copy.
     state->i          = state->buffer_start + (p->text - p->buf);
     state->error_info = msg;
+}
+
+/*
+  Emit an xmq comment node from a yaml comment body (the text after '#',
+  already whitespace-trimmed). xmq renders it as "// <body>".
+*/
+static void yemit_comment(XMQParseState *state, const char *s, size_t len)
+{
+    while (len && (s[0] == ' ' || s[0] == '\t')) { s++; len--; }
+    while (len && (s[len - 1] == ' ' || s[len - 1] == '\t')) len--;
+    if (len == 0) return;
+    DO_CALLBACK_SIM(comment, state, state->line, state->col, s, s + len, s + len);
+}
+
+/*
+  Comments are held in a small list, tagged with the indentation of the line
+  they sat on, and emitted at the nearest structurally-valid point (a block's
+  top or its close) once its brace is open and the block is on top of the
+  element stack. do_comment parents the node onto element_stack->top.
+*/
+struct ycomment
+{
+    size_t indent;
+    char *text;
+    size_t len;
+    struct ycomment *next;
+};
+
+static char *ycopy(const char *s, size_t len)
+{
+    char *o = (char *)malloc(len + 1);
+    if (o) { memcpy(o, s, len); o[len] = 0; }
+    return o;
+}
+
+/* Buffer a full-line comment for later placement. */
+static void ybuf_comment(y_parser *p, size_t indent, const char *s, size_t len)
+{
+    if (!len) return;
+    struct ycomment *c = (struct ycomment *)malloc(sizeof *c);
+    if (!c) return;
+    c->indent = indent;
+    c->text   = ycopy(s, len);
+    if (!c->text) { free(c); return; }
+    c->len = len;
+    c->next = NULL;
+    struct ycomment **tail = &p->cmts;
+    while (*tail) tail = &(*tail)->next;
+    *tail = c;
+}
+
+/*
+  Emit (into the current element-stack top) and drop every buffered comment
+  whose indentation equals `indent`; the rest stay buffered.
+*/
+static void yflush_comments(y_parser *p, XMQParseState *state, size_t indent)
+{
+    struct ycomment **prev = &p->cmts;
+    while (*prev)
+    {
+        struct ycomment *c = *prev;
+        if (c->indent == indent)
+        {
+            yemit_comment(state, c->text, c->len);
+            *prev = c->next;
+            free(c->text);
+            free(c);
+        }
+        else
+        {
+            prev = &c->next;
+        }
+    }
+}
+
+/*
+  Re-tag every buffered comment to `indent`, so a leading comment is placed at
+  the top of a nested block rather than held back at the parent's indent.
+*/
+static void yretag_comments(y_parser *p, size_t indent)
+{
+    for (struct ycomment *c = p->cmts; c; c = c->next) c->indent = indent;
+}
+
+/* Free any buffered comments (parse failure or end of document). */
+static void yfree_comments(y_parser *p)
+{
+    struct ycomment *c = p->cmts;
+    while (c)
+    {
+        struct ycomment *n = c->next;
+        free(c->text);
+        free(c);
+        c = n;
+    }
+    p->cmts = NULL;
+}
+
+/*
+  Scan a yaml line for a trailing ' #' comment: a '#' that is the first
+  character, or is preceded by whitespace, and is not inside a quoted
+  scalar. Returns a pointer to the '#', or NULL when there is no comment.
+*/
+static const char *yclfind_comment(const char *line)
+{
+    char q = 0;
+    for (const char *i = line; *i; i++)
+    {
+        char c = *i;
+        if (q == '\'')
+        {
+            if (c == '\'')
+            {
+                if (i[1] == '\'') i++; // Escaped '' , a literal quote.
+                else q = 0;            // Closing quote.
+            }
+        }
+        else if (q == '"')
+        {
+            if (c == '\\' && i[1]) i++; // Escaped char.
+            else if (c == '"') q = 0;   // Closing quote.
+        }
+        else
+        {
+            if (c == '\'' || c == '"') q = c;
+            else if (c == '#' && (i == line || i[-1] == ' ' || i[-1] == '\t')) return i;
+        }
+    }
+    return NULL;
+}
+
+/*
+  If the current line carries a trailing inline comment, emit it as an
+  xmq comment node.
+*/
+static void yinline(y_parser *p, XMQParseState *state)
+{
+    const char *c = yclfind_comment(p->text);
+    if (c) yemit_comment(state, c + 1, strlen(c + 1));
 }
 
 /*
@@ -204,6 +344,14 @@ static int ynext(y_parser *p, XMQParseState *state)
 
         if (*p->text && *p->text != '#')
         {            return 0;
+        }
+        if (p->text[0] == '#')
+        {
+            // A full-line comment: buffer it (with the line's indentation)
+            // for placement at the nearest structurally-valid point.
+            // Emitting it here would place it before the element that owns
+            // it, so defer until that element is on top of the stack.
+            ybuf_comment(p, p->indent, p->text + 1, strlen(p->text + 1));
         }
         if (at_end)
         {
@@ -1062,6 +1210,7 @@ static int ynode(y_parser *p, XMQParseState *state,
         size_t len;
         if (yscalar(p, state, v, &s, &len)) return 1;
         DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, s, s+len, s+len);
+        yinline(p, state);
         return ynext(p, state);
     }
 
@@ -1077,19 +1226,31 @@ static int ynode(y_parser *p, XMQParseState *state,
     if (ydash(p->text))
     {
         // key(A) { ... }
+        const size_t seq_indent = p->indent;
+        yretag_comments(p, seq_indent);
         DO_CALLBACK_SIM(apar_left, state, state->line, state->col, y_leftpar, y_leftpar+1, y_leftpar+1);
         DO_CALLBACK_SIM(attr_key, state, state->line, state->col, y_array, y_array+1, y_array+1);
         DO_CALLBACK_SIM(apar_right, state, state->line, state->col, y_rightpar, y_rightpar+1, y_rightpar+1);
         DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
-        rc = yseq(p, state, p->indent);
-        if (!rc) DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+        rc = yseq(p, state, seq_indent);
+        if (!rc)
+        {
+            yflush_comments(p, state, seq_indent);
+            DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+        }
         return rc;
     }
 
     // key { ... }
+    const size_t map_indent = p->indent;
+    yretag_comments(p, map_indent);
     DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
-    rc = ymap(p, state, p->indent);
-    if (!rc) DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+    rc = ymap(p, state, map_indent);
+    if (!rc)
+    {
+        yflush_comments(p, state, map_indent);
+        DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+    }
     return rc;
 }
 
@@ -1134,10 +1295,13 @@ static int yentry(y_parser *p, XMQParseState *state,
 */
 static int ymap(y_parser *p, XMQParseState *state, size_t indent)
 {
+    yflush_comments(p, state, indent);
     while (!p->eof)
     {
         if (ydash(p->text) || p->indent != indent) break;
-
+        // A comment sitting between two keys (read while parsing the
+        // previous value) is emitted right before the key it precedes.
+        yflush_comments(p, state, indent);
         if (p->text[0] == '?' && (p->text[1] == 0 || yspace(p->text[1])))
         {
             // A complex key (single-pair form):
@@ -1216,6 +1380,7 @@ static int yitem_map(y_parser *p, XMQParseState *state,
     // Continuation entries of the same mapping item.
     while (!p->eof && !ydash(p->text) && p->indent == item_indent)
     {
+        yflush_comments(p, state, item_indent);
         const char *c2 = ycolon(p->text);
         if (!c2)
         {
@@ -1235,6 +1400,7 @@ static int yitem_map(y_parser *p, XMQParseState *state,
         }
     }
 
+    yflush_comments(p, state, item_indent);
     DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
     return 0;
 }
@@ -1308,6 +1474,7 @@ static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t ind
             item = ytag(state, item);
             if (yscalar(p, state, item, &s, &len)) { return 1; }
             DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, s, s+len, s+len);
+            yinline(p, state);
             return ynext(p, state);
         }
 
@@ -1427,6 +1594,7 @@ static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t ind
         item = ytag(state, item);
         if (yscalar(p, state, item, &s, &len)) return 1;
         DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, s, s+len, s+len);
+        yinline(p, state);
         return ynext(p, state);
     }
 
@@ -1441,6 +1609,7 @@ static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t ind
 */
 static int yseq(y_parser *p, XMQParseState *state, size_t indent)
 {
+    yflush_comments(p, state, indent);
     while (!p->eof && ydash(p->text) && p->indent == indent)
     {
         if (yitem(p, state, p->text, indent)) return 1;
@@ -1465,20 +1634,32 @@ static bool yparse_document(y_parser *p, XMQParseState *state)
 
     if (ydash(p->text))
     {
+        const size_t ti = p->indent;
         ykey(state, NULL, NULL);
+        yretag_comments(p, ti);
         DO_CALLBACK_SIM(apar_left, state, state->line, state->col, y_leftpar, y_leftpar+1, y_leftpar+1);
         DO_CALLBACK_SIM(attr_key, state, state->line, state->col, y_array, y_array+1, y_array+1);
         DO_CALLBACK_SIM(apar_right, state, state->line, state->col, y_rightpar, y_rightpar+1, y_rightpar+1);
         DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
-        rc = yseq(p, state, p->indent);
-        if (!rc) DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+        rc = yseq(p, state, ti);
+        if (!rc)
+        {
+            yflush_comments(p, state, ti);
+            DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+        }
     }
     else if (ycolon(p->text))
     {
+        const size_t ti = p->indent;
         ykey(state, NULL, NULL);
+        yretag_comments(p, ti);
         DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
-        rc = ymap(p, state, p->indent);
-        if (!rc) DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+        rc = ymap(p, state, ti);
+        if (!rc)
+        {
+            yflush_comments(p, state, ti);
+            DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+        }
     }
     else
     {
@@ -1542,6 +1723,7 @@ bool xmq_tokenize_buffer_yaml(XMQParseState *state, const char *start, const cha
     }
 
     free(p.buf);
+    yfree_comments(&p);
     return ok && state->error_nr == XMQ_OK;
 }
 
