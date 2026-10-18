@@ -2726,9 +2726,16 @@ xmlNodePtr create_entity(XMQParseState *state,
         {
             // Make inte text that will be merged.
             UTF8Char uni;
-            int uc = 0;
+            long uc = 0;
             if (tmp[2] == 'x') uc = strtol(tmp+3, NULL, 16);
             else uc = strtol(tmp+2, NULL, 10);
+            // Reject character entities outside the valid Unicode range, ie #2000000. Otherwise encode_utf8 would abort on an assert.
+            if (uc < 0 || uc > 0x10ffff)
+            {
+                free(tmp);
+                state->error_nr = XMQ_ERROR_INVALID_CHAR;
+                longjmp(state->error_handler, 1);
+            }
             size_t len = encode_utf8(uc, &uni);
             char buf[len+1];
             memcpy(buf, uni.bytes, len);
