@@ -159,9 +159,14 @@ build_fuzz: afl_prepared
 	$(MAKE) --no-print-directory -C $$x CC=$(CURDIR)/AFLplusplus/usroot/usr/bin/afl-clang-fast fuzz ; done
 
 run_fuzz_yaml:
-	AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 \
-	AFL_SKIP_CPUFREQ=1 \
 	$(CURDIR)/AFLplusplus/usroot/usr/bin/afl-fuzz -i fuzz_testcases/yaml -o fuzz_findings_yaml -- build/x86_64-pc-linux-gnu/fuzz/xmq --yaml -
+
+run_fuzz_yaml_until_crash:
+	$(CURDIR)/scripts/fuzz_until_crash.sh \
+		$(CURDIR)/AFLplusplus/usroot/usr/bin/afl-fuzz \
+		fuzz_testcases/yaml \
+		fuzz_findings_yaml \
+		build/x86_64-pc-linux-gnu/fuzz/xmq --yaml -
 
 lcov:
 	@echo Generating code coverage $(words $(BUILDDIRS)) host\(s\).
