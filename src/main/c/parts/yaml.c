@@ -288,6 +288,14 @@ static int ydash(const char *s)
 }
 
 /*
+  If v starts with a '!' it is a YAML tag (global after '!!', local
+  after a single '!'). It is emitted as a (tag = ..) or (ltag = ..)
+  attribute on the current key and the value past the tag is
+  returned. (Defined further down.)
+*/
+static const char *ytag(XMQParseState *state, const char *v);
+
+/*
   Parse the scalar at s, returning the unescaped value (*out, *len).
   Rejects flow collections and block scalars. Returns 1 on error.
 */
@@ -617,12 +625,18 @@ static int yflow(y_parser *p, XMQParseState *state, const char *s)
 
             if (entry_len)
             {
+                ykey(state, NULL, NULL);
+
+                // A leading tag on the entry becomes a (tag/ltag) attribute.
+                const char *tv = ytag(state, entry);
+                if (tv != entry) entry_len -= (size_t)(tv - entry);
+                entry = tv;
+
                 if (entry[0] == '[' || entry[0] == '{')
                 {
                     // A nested collection is an entry of a sequence, so
                     // it needs its own '_' key (yflow adds the optional
                     // (A) for a nested sequence itself).
-                    ykey(state, NULL, NULL);
                     if (yflow(p, state, entry)) { rc = 1; break; }
                 }
                 else if (entry[0] == '\'' || entry[0] == '"')
@@ -630,12 +644,10 @@ static int yflow(y_parser *p, XMQParseState *state, const char *s)
                     const char *v;
                     size_t len;
                     if (yscalar(p, state, entry, &v, &len)) { rc = 1; break; }
-                    ykey(state, NULL, NULL);
                     DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, v, v+len, v+len);
                 }
                 else
                 {
-                    ykey(state, NULL, NULL);
                     DO_CALLBACK_SIM(element_value_text, state, state->line, state->col,
                                    entry, entry+entry_len, entry+entry_len);
                 }
@@ -747,6 +759,11 @@ static int yflow(y_parser *p, XMQParseState *state, const char *s)
 
             if (entry_len)
             {
+                // A leading tag on the value becomes a (tag/ltag) attribute.
+                const char *tv = ytag(state, entry);
+                if (tv != entry) entry_len -= (size_t)(tv - entry);
+                entry = tv;
+
                 if (entry[0] == '[' || entry[0] == '{')
                 {
                     if (yflow(p, state, entry)) { rc = 1; break; }
@@ -1022,7 +1039,7 @@ static const char *ytag(XMQParseState *state, const char *v)
     const char    *name   = (global) ? v+2 : v+1;
     const char    *end    = name;
 
-    while (*end && !yspace(*end) && *end != '#' && *end != ',' && *end != ']' && *end != '}') ++end;
+    while (*end && !yspace(*end) && *end != '#' && *end != ',' && *end != '[' && *end != ']' && *end != '{' && *end != '}') ++end;
 
     if (end == name)
     {

@@ -1,0 +1,22 @@
+# libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
+# Tags in flow collections: global (!!) become tag=.. and local
+# (!) become ltag=.. attributes on the entry key or sequence item.
+INPUT
+togged: !!map { alfa: !!int 1, beta: !!float 2 }
+seql: !!seq [ !!int 1, !grummel "woot" ]
+
+OUTPUT
+_ {
+    togged(tag = map)
+    {
+        alfa(tag = int) = 1
+        beta(tag = float) = 2
+    }
+    seql(tag = seq
+         A)
+    {
+        _(tag = int) = 1
+        _(ltag = grummel) = woot
+    }
+}
+END
