@@ -1,0 +1,49 @@
+# libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
+# Roundtrip of anchors (&name), aliases (*name) in yaml output:
+# anchors map to id= attributes, aliases to ref= attributes, and
+# xmq -> yaml -> xmq -> yaml must preserve them (based on foo.yml).
+INPUT
+_ {
+    replicated(id = lerepp A)
+    {
+        _(id = prutt)
+        {
+            name    = 'Replica 1'
+            details = 'This structure is replicated with aliases.'
+        }
+        _(ref = prutt)
+        _(ref = prutt)
+    }
+    scalars(A)
+    {
+        _(id = x) = 5
+        _(ref = x)
+    }
+    replitwoo(ref = lerepp)
+}
+FIRST
+replicated: &lerepp
+  - &prutt
+    name: Replica 1
+    details: This structure is replicated with aliases.
+  - *prutt
+  - *prutt
+scalars:
+  - &x 5
+  - *x
+replitwoo: *lerepp
+SECOND
+replicated: &lerepp
+  - &prutt
+    name: Replica 1
+    details: This structure is replicated with aliases.
+  - *prutt
+  - *prutt
+scalars:
+  - &x 5
+  - *x
+replitwoo: *lerepp
+END
+CMDS_FIRST to-yaml
+CMDS_SECOND to-yaml
+ARGS_SECOND --yaml

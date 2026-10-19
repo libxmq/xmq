@@ -17446,6 +17446,49 @@ static void yaml_print_key(XMQPrintState *ps, const char *name, size_t total, si
     }
 }
 
+/*
+  Print one node affix ("\u0026anchor", "!!tag" or "!ltag", each preceded
+  by a single space when need_space is true) and return true if one was
+  written.
+*/
+static bool yaml_print_one_affix(XMQPrintState *ps, const xmlNode *node,
+                                 const char *mark, const char *attrname, bool need_space)
+{
+    xmlAttr *a = xml_get_attribute((xmlNode*)node, attrname);
+    if (a && a->children)
+    {
+        if (need_space) { yw(ps, " "); }
+        yw(ps, mark);
+        yw(ps, (const char*)a->children->content);
+        return true;
+    }
+    return false;
+}
+
+/*
+  Print the yaml node affixes of an element (anchor and/or tag):
+  " &anchor" followed by " !!tag" (global) or " !ltag" (local), matching
+  the parser's mapping of id=/tag=/ltag= attributes. Each affix is
+  preceded by a single space unless a space is already at the cursor
+  position (first_space=true when no space is present). Returns true if
+  anything was written.
+*/
+static bool yaml_print_affixes(XMQPrintState *ps, const xmlNode *node, bool need_space)
+{
+    if (yaml_print_one_affix(ps, node, "&", "id", need_space))
+    {
+        (void)yaml_print_one_affix(ps, node, "!!", "tag", true);
+        (void)yaml_print_one_affix(ps, node, "!", "ltag", true);
+        return true;
+    }
+    if (yaml_print_one_affix(ps, node, "!!", "tag", need_space))
+    {
+        (void)yaml_print_one_affix(ps, node, "!", "ltag", true);
+        return true;
+    }
+    return yaml_print_one_affix(ps, node, "!", "ltag", need_space);
+}
+
 static void yaml_children(XMQPrintState *ps, size_t col,
                           xmlNode *first, xmlNode *last,
                           bool dashed, bool inline_first);
@@ -17497,39 +17540,75 @@ static void yaml_child(XMQPrintState *ps, size_t col, xmlNode *node)
 
     const char *name = (const char*)node->name;
     bool under = (name[0] == '_' && name[1] == 0);
+    xmlAttr *ref_attr = xml_get_attribute(node, "ref");
+    const char *ref = (ref_attr && ref_attr->children) ? (const char*)ref_attr->children->content : NULL;
 
     if (is_key_value_node(node))
     {
         bool force_string = xml_get_attribute(node, "S") != NULL;
         if (under)
         {
-            // Bare scalar item.
+            // Bare scalar item; "- " is already at the cursor (or ref follows it).
+            if (ref)
+            {
+                // An alias item: *name. A reference carries no content.
+                yw(ps, "*"); yw(ps, ref);
+                return;
+            }
+            if (yaml_print_affixes(ps, node, false)) { yw(ps, " "); }
             yaml_print_value(ps, xml_first_child(node), xml_last_child(node), force_string);
         }
         else
         {
             yaml_print_key(ps, name, yaml_dup_total(node), yaml_dup_used(node));
             yw(ps, ": ");
+            if (ref)
+            {
+                // An alias value: *name. A reference carries no content.
+                yw(ps, "*"); yw(ps, ref);
+                return;
+            }
+            if (yaml_print_affixes(ps, node, false)) { yw(ps, " "); }
             yaml_print_value(ps, xml_first_child(node), xml_last_child(node), force_string);
         }
         return;
     }
 
     // Container node.
+    if (ref)
+    {
+        // An alias: *-name. A reference carries no content.
+        if (under)
+        {
+            yw(ps, "*"); yw(ps, ref);
+        }
+        else
+        {
+            yaml_print_key(ps, name, yaml_dup_total(node), yaml_dup_used(node));
+            yw(ps, ": ");
+            yw(ps, "*"); yw(ps, ref);
+        }
+        return;
+    }
+
     if (under)
     {
         // Anonymous container = a (possibly nested) sequence item.
         // Its children align with the item content column.
         bool a = xml_get_attribute(node, "A") != NULL;
         xmlNode *first = xml_first_child(node);
+        bool affixed = yaml_print_affixes(ps, node, false);
         if (!first) { yw(ps, "\"\""); return; }
-        yaml_children(ps, col, first, xml_last_child(node), a, true);
+        // With an anchor/tag, the first child starts on its own line;
+        // otherwise inline it (a "- key: value" item).
+        yaml_children(ps, col, first, xml_last_child(node), a, !affixed);
         return;
     }
 
     // Named container: "name:" followed by its children indented one level.
     yaml_print_key(ps, name, yaml_dup_total(node), yaml_dup_used(node));
     yw(ps, ":");
+    yaml_print_affixes(ps, node, true);
     xmlNode *first = xml_first_child(node);
     if (!first) return; // A lone "name:" line is valid yaml (a null value).
     bool a = xml_get_attribute(node, "A") != NULL;
