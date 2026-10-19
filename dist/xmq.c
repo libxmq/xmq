@@ -17235,21 +17235,12 @@ static bool nyq_ascii_iequal(const char *a, const char *b)
 
 bool yaml_needs_quotes(const char *s)
 {
-    static const char *const reserved[] = {
-        "null", "true", "false",
-        "y", "n", "yes", "no", "on", "off"
-    };
-
     if (!s || !*s)
         return true;
 
-    /* Excludes numbers, dates, and leading YAML indicators. */
-    if (!nyq_ascii_alpha((unsigned char)s[0]) && s[0] != '_')
+    /* Exclude leading YAML indicators. */
+    if (strchr("!&*?:{}[],#|>'\"%@`", s[0]) != NULL)
         return true;
-
-    for (size_t i = 0; i < sizeof reserved / sizeof reserved[0]; ++i)
-        if (nyq_ascii_iequal(s, reserved[i]))
-            return true;
 
     /* Deliberately small whitelist, safe in block and flow values. */
     for (const unsigned char *p = (const unsigned char *)s; *p; ++p)

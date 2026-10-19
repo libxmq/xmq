@@ -8,17 +8,17 @@ _ {
     omega(S) = 010
 }
 FIRST
-alfa: "123"
+alfa: 123
 beta:
-  gamma: "123"
-  delta: "456"
+  gamma: 123
+  delta: 456
 omega: "010"
 SECOND
-alfa: "123"
+alfa: 123
 beta:
-  gamma: "123"
-  delta: "456"
-omega: "010"
+  gamma: 123
+  delta: 456
+omega: 010
 END
 ARGS_SECOND --yaml
 CMDS_FIRST to-yaml
