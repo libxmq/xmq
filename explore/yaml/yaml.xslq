@@ -1,0 +1,81 @@
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:template(match = /)
+    {
+        yaml {
+            xsl:call-template(name = build)
+            {
+                xsl:with-param(name   = lines
+                               select = yaml/kv|yaml/obj)
+                xsl:with-param(name = i) = 1
+                xsl:with-param(name = base) = -1
+            }
+        }
+    }
+    xsl:template(name = build)
+    {
+        xsl:param(name = lines)
+        xsl:param(name = i)
+        xsl:param(name = base)
+        xsl:variable(name   = line
+                     select = $lines[$i])
+        xsl:variable(name   = n
+                     select = 'number($line/@n)')
+        xsl:if(test = '$n > number($base)')
+        {
+            xsl:variable(name   = key
+                         select = 'string($line/@key)')
+            xsl:element(name = '{$key}')
+            {
+                xsl:choose {
+                    xsl:when(test = 'name($line) = "obj"')
+                    {
+                        xsl:call-template(name = build)
+                        {
+                            xsl:with-param(name   = lines
+                                           select = $lines)
+                            xsl:with-param(name   = i
+                                           select = '$i + 1')
+                            xsl:with-param(name   = base
+                                           select = $n)
+                        }
+                    }
+                    xsl:otherwise {
+                        xsl:value-of(select = 'string($line)')
+                    }
+                }
+            }
+            xsl:choose {
+                xsl:when(test = 'name($line) = "obj"')
+                {
+                    xsl:variable(name   = nextline
+                                 select = '$lines[position() > $i and number(@n) <= $n][1]')
+                    xsl:if(test = 'count($nextline) > 0')
+                    {
+                        xsl:call-template(name = build)
+                        {
+                            xsl:with-param(name   = lines
+                                           select = $lines)
+                            xsl:with-param(name   = i
+                                           select = 'count($nextline/preceding-sibling::*[name() = "kv" or name() = "obj"]) + 1')
+                            xsl:with-param(name   = base
+                                           select = $base)
+                        }
+                    }
+                }
+                xsl:otherwise {
+                    xsl:call-template(name = build)
+                    {
+                        xsl:with-param(name   = lines
+                                       select = $lines)
+                        xsl:with-param(name   = i
+                                       select = '$i + 1')
+                        xsl:with-param(name   = base
+                                       select = $base)
+                    }
+                }
+            }
+        }
+    }
+}
