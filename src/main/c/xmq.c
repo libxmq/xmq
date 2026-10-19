@@ -3025,6 +3025,15 @@ XMQStatus do_ns_declaration(XMQParseState *state,
     // We can see the difference here since the parser will invoke with suffix
     // either pointing to stop (xmlns=) or after stop (xmlns:foo=)
     xmlNodePtr element = (xmlNode*)state->element_stack->top->data;
+    if (!element)
+    {
+        // There is no element node, eg a processing instruction element
+        // like ?root( ... ) has no node to attach a namespace to.
+        // Declare nothing; the value handlers will just eat the uri.
+        state->declaring_xmlns = true;
+        state->declaring_xmlns_namespace = NULL;
+        return XMQ_OK;
+    }
     xmlNsPtr ns = NULL;
     if (stop == suffix)
     {
@@ -3040,7 +3049,7 @@ XMQStatus do_ns_declaration(XMQParseState *state,
             // This is probably due to multiple xmlns=uri declarations. Is this an error or not?
             xmlNsPtr *list = xmlGetNsList(state->doq->docptr_.xml,
                                           element);
-            for (int i = 0; list[i]; ++i)
+            for (int i = 0; list && list[i]; ++i)
             {
                 if (!list[i]->prefix)
                 {
@@ -3095,8 +3104,12 @@ XMQStatus do_ns_declaration(XMQParseState *state,
 
     if (!ns)
     {
-        fprintf(stderr, "Internal error: expected namespace to be created/found.\n");
-        assert(ns);
+        // The element is a node that can not hold a namespace declaration,
+        // eg an entity reference. There is nothing to attach the namespace
+        // to, so just have the value handlers eat the uri without error.
+        state->declaring_xmlns = true;
+        state->declaring_xmlns_namespace = NULL;
+        return XMQ_OK;
     }
     state->declaring_xmlns = true;
     state->declaring_xmlns_namespace = ns;
@@ -3132,6 +3145,12 @@ XMQStatus do_attr_key(XMQParseState *state,
     key[n] = 0;
 
     xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
+    if (!parent)
+    {
+        // There is no element node, eg a processing instruction element
+        // like ?root( ... ) has no node. Use the document node instead.
+        parent = (xmlNodePtr)state->doq->docptr_.xml;
+    }
     xmlAttrPtr attr = NULL;
 
     if (!state->attribute_namespace)
@@ -3190,8 +3209,11 @@ void update_namespace_href(XMQParseState *state,
     if (start[0] == 0 && ns == state->default_namespace)
     {
         xmlNodePtr element = (xmlNode*)state->element_stack->top->data;
-        debug("xmq=", "remove default namespace in element %s", element->name);
-        xmlSetNs(element, NULL);
+        if (element)
+        {
+            debug("xmq=", "remove default namespace in element %s", element->name);
+            xmlSetNs(element, NULL);
+        }
         state->default_namespace = NULL;
         return;
     }
@@ -3206,8 +3228,12 @@ XMQStatus do_attr_value_text(XMQParseState *state,
 {
     if (state->declaring_xmlns)
     {
-        assert(state->declaring_xmlns_namespace);
-        update_namespace_href(state, (xmlNsPtr)state->declaring_xmlns_namespace, start, stop);
+        // Note: declaring_xmlns_namespace may be NULL if the declaration
+        // happened on an element without a node, eg a processing instruction.
+        if (state->declaring_xmlns_namespace != NULL)
+        {
+            update_namespace_href(state, (xmlNsPtr)state->declaring_xmlns_namespace, start, stop);
+        }
         state->declaring_xmlns = false;
         state->declaring_xmlns_namespace = NULL;
         return XMQ_OK;
@@ -3239,7 +3265,12 @@ XMQStatus do_attr_value_quote(XMQParseState*state,
             if (rs.status != XMQ_OK) return rs.status;
             trimmed = rs.string;
         }
-        update_namespace_href(state, (xmlNsPtr)state->declaring_xmlns_namespace, trimmed, NULL);
+        // Note: declaring_xmlns_namespace may be NULL if the declaration
+        // happened on an element without a node, eg a processing instruction.
+        if (state->declaring_xmlns_namespace != NULL)
+        {
+            update_namespace_href(state, (xmlNsPtr)state->declaring_xmlns_namespace, trimmed, NULL);
+        }
         state->declaring_xmlns = false;
         state->declaring_xmlns_namespace = NULL;
         free(trimmed);

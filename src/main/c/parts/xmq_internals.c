@@ -61,6 +61,17 @@ void generate_state_error_message(XMQParseState *state, XMQStatus error_nr, cons
         col = state->last_suspicios_quote_end_col;
     }
 
+    if (!statei)
+    {
+        // The parser did not yet record a position for this kind of error.
+        statei = state->i;
+    }
+    if (!statei)
+    {
+        // No position at all, skip the line snippet logic below.
+        statei = start;
+    }
+
     // Move pointer to the beginning of the line and
     // calculate the indent for the line so that we
     // can position the ^ marker under the problematic character.
