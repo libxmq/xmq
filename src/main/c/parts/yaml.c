@@ -680,6 +680,10 @@ yquote_raw(const char *s)
 static int
 yflow(y_parser *p, XMQParseState *state, const char *s, const char **e_after);
 
+/* Forward declarations (defined further down). */
+static bool ylooks_like_native(const char *s, size_t len);
+static void yforce_string(XMQParseState *state);
+
 /*
   Parse one flow entry value starting at e. A leading tag becomes a
   (tag/ltag) attribute. The value is a nested flow collection (which
@@ -718,6 +722,10 @@ yflow_value(y_parser *p, XMQParseState *state, const char *e, const char **e_aft
             return 1;
         }
 
+        if (ylooks_like_native(v, len))
+        {
+            yforce_string(state);
+        }
         DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, v, v+len, v+len);
         *e_after = after;
         return 0;
@@ -1293,11 +1301,63 @@ static const char *ytag(XMQParseState *state, const char *v)
 }
 
 /*
-  Emit the (S) force-string attribute on the pending element when a
-  quoted scalar decodes to text that would otherwise be interpreted as a
-  boolean, null or number by downstream formatters (the same rule the
-  JSON parser applies to strings that look like JSON literals).
+  Return true when the whole quoted scalar decodes to text that would
+  otherwise be interpreted as a boolean (true/false), a null or a number
+  by downstream formatters (the same rule the JSON parser applies to
+  strings that look like JSON literals). The string must equal one of
+  these exactly; no other YAML types are recognised.
 */
+static bool ylooks_like_native(const char *s, size_t len)
+{
+    if ((len == 4) && !memcmp(s, "true", 4)) { return true; }
+    if ((len == 5) && !memcmp(s, "false", 5)) { return true; }
+    if ((len == 4) && !memcmp(s, "null", 4)) { return true; }
+
+    // A number: [+-] digits [ . digits ] [ [eE] [+-] digits ]
+    size_t i = 0;
+    if ((i < len) && ((s[i] == '+') || (s[i] == '-'))) { ++i; }
+    bool any_digit = false;
+    while ((i < len) && (s[i] >= '0') && (s[i] <= '9'))
+    {
+        any_digit = true;
+        ++i;
+    }
+    if ((i < len) && (s[i] == '.'))
+    {
+        ++i;
+        while ((i < len) && (s[i] >= '0') && (s[i] <= '9'))
+        {
+            any_digit = true;
+            ++i;
+        }
+    }
+    if (!any_digit) { return false; }
+    if ((i < len) && ((s[i] == 'e') || (s[i] == 'E')))
+    {
+        ++i;
+        if ((i < len) && ((s[i] == '+') || (s[i] == '-'))) { ++i; }
+        bool exp_digit = false;
+        while ((i < len) && (s[i] >= '0') && (s[i] <= '9'))
+        {
+            exp_digit = true;
+            ++i;
+        }
+        if (!exp_digit) { return false; }
+    }
+    return (i == len);
+}
+
+/*
+  Emit the (S) force-string attribute on the pending element so that a
+  quoted scalar keeping its exact text (true, false, null or a number)
+  survives a roundtrip as a string.
+*/
+static void yforce_string(XMQParseState *state)
+{
+    DO_CALLBACK_SIM(apar_left, state, state->line, state->col, y_leftpar, y_leftpar+1, y_leftpar+1);
+    DO_CALLBACK_SIM(attr_key, state, state->line, state->col, "S", "S"+1, "S"+1);
+    DO_CALLBACK_SIM(apar_right, state, state->line, state->col, y_rightpar, y_rightpar+1, y_rightpar+1);
+}
 
 static int ynode(y_parser *p, XMQParseState *state,
                  const char *v, size_t key_indent)
@@ -1335,6 +1395,13 @@ static int ynode(y_parser *p, XMQParseState *state,
         const char *s;
         size_t len;
         if (yscalar(p, state, v, &s, &len)) return 1;
+        if ((v[0] == '"') || (v[0] == '\''))
+        {
+            if (ylooks_like_native(s, len))
+            {
+                yforce_string(state);
+            }
+        }
         DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, s, s+len, s+len);
         yinline(p, state);
         return ynext(p, state);
@@ -1629,6 +1696,10 @@ static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t ind
             size_t len;
             item = ytag(state, item);
             if (yscalar(p, state, item, &s, &len)) { return 1; }
+            if (((item[0] == '"') || (item[0] == '\'')) && ylooks_like_native(s, len))
+            {
+                yforce_string(state);
+            }
             DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, s, s+len, s+len);
             yinline(p, state);
             return ynext(p, state);
@@ -1749,6 +1820,10 @@ static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t ind
         ykey(state, NULL, NULL);
         item = ytag(state, item);
         if (yscalar(p, state, item, &s, &len)) return 1;
+        if (((item[0] == '"') || (item[0] == '\'')) && ylooks_like_native(s, len))
+        {
+            yforce_string(state);
+        }
         DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, s, s+len, s+len);
         yinline(p, state);
         return ynext(p, state);

@@ -1,0 +1,23 @@
+INPUT
+all {
+    bajs(S) = true
+    boo(S) = false
+    num(S) = -123.0
+    noll(S) = null
+}
+FIRST
+all:
+  bajs: "true"
+  boo: "false"
+  num: "-123.0"
+  noll: "null"
+SECOND
+all:
+  bajs: "true"
+  boo: "false"
+  num: "-123.0"
+  noll: "null"
+END
+ARGS_SECOND --yaml
+CMDS_FIRST to-yaml
+CMDS_SECOND to-yaml

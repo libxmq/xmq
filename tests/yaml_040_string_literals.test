@@ -1,0 +1,16 @@
+INPUT
+all:
+  bajs: "true"
+  boo: "false"
+  num: "-123.0"
+  noll: "null"
+OUTPUT
+_ {
+    all {
+        bajs(S) = true
+        boo(S) = false
+        num(S) = -123.0
+        noll(S) = null
+    }
+}
+END

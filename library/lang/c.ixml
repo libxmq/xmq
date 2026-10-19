@@ -28,7 +28,7 @@ translation_unit = ws, (external_declaration | translation_unit, external_declar
 -ws = -[Zs;#a;#d;#9]*.
 -s = -[Zs;#a;#d;#9]+.
 
-IDENTIFIER = ['A'-'Z';'a'-'z';'_'], ['A'-'Z';'a'-'z';'0'-'9';'_']*, ws.
+IDENTIFIER = !'int ', !'float ', !'double ', ['A'-'Z';'a'-'z';'_'], ['A'-'Z';'a'-'z';'0'-'9';'_']*, ws.
 CONSTANT = ( ['0'-'9']+, ('.', ['0'-'9']+)? | '0x', ['0'-'9';'a'-'f';'A'-'F']+ ), ws.
 CHAR_LITERAL = "'", cl, "'", ws.
 -cl = ~["'\"; #0-#19]
