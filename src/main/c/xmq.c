@@ -3835,6 +3835,10 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
     {
         xmq_print_json(doq, output_settings);
     }
+    else if (output_settings->output_format == XMQ_CONTENT_YAML)
+    {
+        xmq_print_yaml(doq, output_settings);
+    }
     else if (output_settings->output_format == XMQ_CONTENT_TEXT)
     {
         xmq_print_text(doq, output_settings);

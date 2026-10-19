@@ -1,0 +1,35 @@
+INPUT
+b = null
+t = true
+s(S) = null
+e(S) = ''
+arr(A) {
+    _ = true
+    _(S) = false
+    _(S) = ''
+    _ = 42
+}
+FIRST
+b: "null"
+t: "true"
+s: "null"
+e: ""
+arr:
+  - "true"
+  - "false"
+  - ""
+  - "42"
+SECOND
+b: "null"
+t: "true"
+s: "null"
+e: ""
+arr:
+  - "true"
+  - "false"
+  - ""
+  - "42"
+END
+ARGS_SECOND --yaml
+CMDS_FIRST to-yaml
+CMDS_SECOND to-yaml

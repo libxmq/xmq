@@ -3582,6 +3582,10 @@ typedef struct XMQPrintState XMQPrintState;
 
 bool xmq_tokenize_buffer_yaml(XMQParseState *state, const char *start, const char *stop);
 bool xmq_parse_buffer_yaml(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root);
+void xmq_print_yaml(XMQDoc *doq, XMQOutputSettings *os);
+
+// true if the NUL-terminated string s must be quoted to stay a string in YAML
+bool yaml_needs_quotes(const char *s);
 
 #define YAML_MODULE
 
@@ -7406,6 +7410,10 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
     else if (output_settings->output_format == XMQ_CONTENT_JSON)
     {
         xmq_print_json(doq, output_settings);
+    }
+    else if (output_settings->output_format == XMQ_CONTENT_YAML)
+    {
+        xmq_print_yaml(doq, output_settings);
     }
     else if (output_settings->output_format == XMQ_CONTENT_TEXT)
     {
@@ -16529,6 +16537,13 @@ static const char *ytag(XMQParseState *state, const char *v)
     return end;
 }
 
+/*
+  Emit the (S) force-string attribute on the pending element when a
+  quoted scalar decodes to text that would otherwise be interpreted as a
+  boolean, null or number by downstream formatters (the same rule the
+  JSON parser applies to strings that look like JSON literals).
+*/
+
 static int ynode(y_parser *p, XMQParseState *state,
                  const char *v, size_t key_indent)
 {
@@ -17152,6 +17167,344 @@ bool xmq_parse_buffer_yaml(XMQDoc *doq,
     xmqFreeOutputSettings(os);
 
     return rc;
+}
+
+
+/* ------------------------------------------------------------------
+ * YAML printer: a simple human readable block style output (no flow form).
+ *
+ * Example:
+ *
+ *   alfa: 123
+ *   beta:
+ *     gamma: 123
+ *   list:
+ *     - 1
+ *     - 2
+ *   pairs:
+ *     - foo: 1
+ *       bar: 2
+ *
+ * Indentation per level is taken from XMQOutputSettings::add_indent.
+ * ------------------------------------------------------------------ */
+
+static void yw(XMQPrintState *ps, const char *s)
+{
+    if (!s) return;
+    XMQOutputSettings *output_settings = ps->output_settings;
+    output_settings->content.write(output_settings->content.writer_state, s, NULL);
+}
+
+static void yws(XMQPrintState *ps, size_t n)
+{
+    while (n-- > 0) yw(ps, " ");
+}
+
+static size_t yaml_indent(XMQPrintState *ps)
+{
+    size_t indent = ps->output_settings->add_indent;
+    if (indent < 1) indent = 2;
+    return indent;
+}
+
+/*
+  From needs_yaml_quote.c: report whether NUL-terminated text, intended to
+  remain a YAML string, needs to be quoted to keep its meaning (numbers,
+  dates and leading indicators are interpreted by YAML if left plain, as
+  are the reserved words null/true/false/y/n/yes/no/on/off, case
+  insensitively; a trailing space would be stripped).
+*/
+static bool nyq_ascii_alpha(unsigned char c)
+{
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
+static bool nyq_ascii_iequal(const char *a, const char *b)
+{
+    while (*a && *b)
+    {
+        unsigned char x = (unsigned char)*a++;
+        unsigned char y = (unsigned char)*b++;
+
+        if (x >= 'A' && x <= 'Z') x += 'a' - 'A';
+        if (y >= 'A' && y <= 'Z') y += 'a' - 'A';
+        if (x != y) return false;
+    }
+    return *a == *b;
+}
+
+bool yaml_needs_quotes(const char *s)
+{
+    static const char *const reserved[] = {
+        "null", "true", "false",
+        "y", "n", "yes", "no", "on", "off"
+    };
+
+    if (!s || !*s)
+        return true;
+
+    /* Excludes numbers, dates, and leading YAML indicators. */
+    if (!nyq_ascii_alpha((unsigned char)s[0]) && s[0] != '_')
+        return true;
+
+    for (size_t i = 0; i < sizeof reserved / sizeof reserved[0]; ++i)
+        if (nyq_ascii_iequal(s, reserved[i]))
+            return true;
+
+    /* Deliberately small whitelist, safe in block and flow values. */
+    for (const unsigned char *p = (const unsigned char *)s; *p; ++p)
+    {
+        unsigned char c = *p;
+        if (!nyq_ascii_alpha(c) && !(c >= '0' && c <= '9') &&
+            c != '_' && c != '-' && c != '.' && c != '/' && c != ' ')
+            return true;
+    }
+
+    return s[strlen(s) - 1] == ' ';
+}
+
+// A scalar is written plain (unquoted) exactly when yaml_needs_quotes()
+// says the text is safe in a plain scalar position. The S attribute
+// (force_string) never removes the need for quotes: it only marks a
+// string that looked like a number, boolean or null. Scalars are plain
+// text in the x model and are only quoted when necessary in yaml.
+static bool yaml_scalar_is_plain(const char *s, bool force_string)
+{
+    // The S attribute (force_string) always wins: the value is a string
+    // that would be misread by a typed reader and is therefore quoted.
+    // Unmarked text is plain when yaml says it is safe in a plain scalar
+    // position (plain numbers, booleans and nulls are fine: x does not
+    // care about those yaml types). The S attribute means the data is a
+    // string that would be misread as one of those, so it is always
+    // quoted.
+    if (force_string) { return false; }
+    return !yaml_needs_quotes(s);
+}
+
+static void yaml_print_comment(XMQPrintState *ps, const xmlNode *node)
+{
+    yw(ps, "# ");
+    const char *p = node->content ? (const char*)node->content : "";
+    for (; *p; p++)
+    {
+        if (*p == '\n' || *p == '\t' || *p == '\r') yw(ps, " ");
+        else
+        {
+            char buf[2] = { *p, 0 };
+            yw(ps, buf);
+        }
+    }
+}
+
+// Write out the scalar value of the node range [from..to] (quote it if necessary).
+static void yaml_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, bool force_string)
+{
+    // force_string (node has attribute S): the value is a string even if it
+    // *looks* like a number, boolean or null, so it must be quoted in yaml.
+    if (from == to)
+    {
+        const char *content = xml_element_content(from);
+        if (content && !is_entity_node(from) && yaml_scalar_is_plain(content, force_string))
+        {
+            yw(ps, content);
+            return;
+        }
+    }
+
+    yw(ps, "\"");
+    for (xmlNode *i = from; i; i = xml_next_sibling(i))
+    {
+        if (i > to) break;
+        if (is_entity_node(i))
+        {
+            yw(ps, "&"); yw(ps, (const char*)i->name); yw(ps, ";");
+            continue;
+        }
+        const char *content = xml_element_content(i);
+        if (content)
+        {
+            XMQReturnString rs = xmq_quote_as_c(content, content+strlen(content), false);
+            if (rs.status != XMQ_OK || !rs.string)
+            {
+                yw(ps, "\"");
+                return;
+            }
+            yw(ps, rs.string);
+            free(rs.string);
+        }
+        if (i == to) break;
+    }
+    yw(ps, "\"");
+}
+
+static size_t yaml_dup_used(xmlNode *node)
+{
+    size_t used = 0;
+    for (xmlNode *i = xml_prev_sibling(node); i; i = xml_prev_sibling(i))
+    {
+        if (xml_element_name(i) && strcmp((const char*)i->name, (const char*)node->name) == 0) used++;
+    }
+    return used;
+}
+
+static size_t yaml_dup_total(xmlNode *node)
+{
+    size_t total = 1;
+    for (xmlNode *i = xml_prev_sibling(node); i; i = xml_prev_sibling(i))
+    {
+        if (xml_element_name(i) && strcmp((const char*)i->name, (const char*)node->name) == 0) total++;
+    }
+    for (xmlNode *i = xml_next_sibling(node); i; i = xml_next_sibling(i))
+    {
+        if (xml_element_name(i) && strcmp((const char*)i->name, (const char*)node->name) == 0) total++;
+    }
+    return total;
+}
+
+static void yaml_print_key(XMQPrintState *ps, const char *name, size_t total, size_t used)
+{
+    if (strlen(name) > 0 && !yaml_needs_quotes(name))
+    {
+        yw(ps, name);
+    }
+    else
+    {
+        XMQReturnString rs = xmq_quote_as_c(name, name+strlen(name), false);
+        if (rs.status == XMQ_OK && rs.string) { yw(ps, rs.string); free(rs.string); }
+    }
+    if (total > 1)
+    {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "[%zu]", used);
+        yw(ps, buf);
+    }
+}
+
+static void yaml_children(XMQPrintState *ps, size_t col,
+                          xmlNode *first, xmlNode *last,
+                          bool dashed, bool inline_first);
+static void yaml_child(XMQPrintState *ps, size_t col, xmlNode *node);
+
+// Write the range [first..last] of siblings, one per line starting at col.
+// When dashed, each entry is prefixed with "- " and its content starts at col+2.
+// When inline_first, the first entry is written at the current cursor position
+// (i.e. no newline before it).
+static void yaml_children(XMQPrintState *ps, size_t col,
+                          xmlNode *first, xmlNode *last,
+                          bool dashed, bool inline_first)
+{
+    bool inline_here = inline_first;
+    for (xmlNode *i = first; i; i = xml_next_sibling(i))
+    {
+        if (i > last) break;
+        if (inline_here)
+        {
+            if (dashed) yw(ps, "- ");
+        }
+        else
+        {
+            yw(ps, "\n");
+            yws(ps, col);
+            if (dashed) yw(ps, "- ");
+        }
+        inline_here = false;
+        yaml_child(ps, col + (dashed ? 2 : 0), i);
+    }
+}
+
+// Write a single node (mapping entry, sequence item, scalar or comment) at
+// the current cursor position. Continuation lines (deeper levels, or more
+// entries of an inline item) start at col (or col+2 for a nested sequence).
+static void yaml_child(XMQPrintState *ps, size_t col, xmlNode *node)
+{
+    if (is_comment_node(node))
+    {
+        yaml_print_comment(ps, node);
+        return;
+    }
+
+    if (is_entity_node(node))
+    {
+        yw(ps, "\"&"); yw(ps, (const char*)node->name); yw(ps, ";\"");
+        return;
+    }
+
+    const char *name = (const char*)node->name;
+    bool under = (name[0] == '_' && name[1] == 0);
+
+    if (is_key_value_node(node))
+    {
+        bool force_string = xml_get_attribute(node, "S") != NULL;
+        if (under)
+        {
+            // Bare scalar item.
+            yaml_print_value(ps, xml_first_child(node), xml_last_child(node), force_string);
+        }
+        else
+        {
+            yaml_print_key(ps, name, yaml_dup_total(node), yaml_dup_used(node));
+            yw(ps, ": ");
+            yaml_print_value(ps, xml_first_child(node), xml_last_child(node), force_string);
+        }
+        return;
+    }
+
+    // Container node.
+    if (under)
+    {
+        // Anonymous container = a (possibly nested) sequence item.
+        // Its children align with the item content column.
+        bool a = xml_get_attribute(node, "A") != NULL;
+        xmlNode *first = xml_first_child(node);
+        if (!first) { yw(ps, "\"\""); return; }
+        yaml_children(ps, col, first, xml_last_child(node), a, true);
+        return;
+    }
+
+    // Named container: "name:" followed by its children indented one level.
+    yaml_print_key(ps, name, yaml_dup_total(node), yaml_dup_used(node));
+    yw(ps, ":");
+    xmlNode *first = xml_first_child(node);
+    if (!first) return; // A lone "name:" line is valid yaml (a null value).
+    bool a = xml_get_attribute(node, "A") != NULL;
+    yaml_children(ps, col + yaml_indent(ps), first, xml_last_child(node), a, false);
+}
+
+void xmq_print_yaml(XMQDoc *doq, XMQOutputSettings *output_settings)
+{
+    if (!doq || !doq->docptr_.xml) return;
+
+    xmlDoc *doc = doq->docptr_.xml;
+    XMQPrintState ps;
+    memset(&ps, 0, sizeof(ps));
+    ps.output_settings = output_settings;
+    ps.doq = doq;
+
+    bool started = false;
+    for (xmlNode *r = doc->children; r; r = xml_next_sibling(r))
+    {
+        if (is_element_node(r) &&
+            r->name && r->name[0] == '_' && r->name[1] == 0 &&
+            !is_key_value_node(r))
+        {
+            // Standard root element: write its children as the top level.
+            bool a = xml_get_attribute(r, "A") != NULL;
+            xmlNode *first = xml_first_child(r);
+            if (first)
+            {
+                yaml_children(&ps, 0, first, xml_last_child(r), a, !started);
+                started = true;
+            }
+        }
+        else
+        {
+            if (started) yw(&ps, "\n");
+            yaml_child(&ps, 0, r);
+            started = true;
+        }
+    }
+
+    if (output_settings->final_newline) yw(&ps, "\n");
 }
 
 #endif // YAML_MODULE

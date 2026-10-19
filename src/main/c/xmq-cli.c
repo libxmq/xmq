@@ -92,6 +92,7 @@ typedef enum
     XMQ_CLI_CMD_TO_HTMQ,
     XMQ_CLI_CMD_TO_HTML,
     XMQ_CLI_CMD_TO_JSON,
+    XMQ_CLI_CMD_TO_YAML,
     XMQ_CLI_CMD_TO_TEXT,
     XMQ_CLI_CMD_TO_CLINES,
     XMQ_CLI_CMD_NO_OUTPUT,
@@ -523,6 +524,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "to-html")) return XMQ_CLI_CMD_TO_HTML;
     if (!strcmp(s, "to-htmq")) return XMQ_CLI_CMD_TO_HTMQ;
     if (!strcmp(s, "to-json")) return XMQ_CLI_CMD_TO_JSON;
+    if (!strcmp(s, "to-yaml")) return XMQ_CLI_CMD_TO_YAML;
     if (!strcmp(s, "to-text")) return XMQ_CLI_CMD_TO_TEXT;
     if (!strcmp(s, "to-xml")) return XMQ_CLI_CMD_TO_XML;
     if (!strcmp(s, "to-xmq")) return XMQ_CLI_CMD_TO_XMQ;
@@ -548,6 +550,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TO_HTMQ: return "to-htmq";
     case XMQ_CLI_CMD_TO_HTML: return "to-html";
     case XMQ_CLI_CMD_TO_JSON: return "to-json";
+    case XMQ_CLI_CMD_TO_YAML: return "to-yaml";
     case XMQ_CLI_CMD_TO_TEXT: return "to-text";
     case XMQ_CLI_CMD_TO_CLINES: return "to-clines";
     case XMQ_CLI_CMD_NO_OUTPUT: return "no-output";
@@ -590,6 +593,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
     case XMQ_CLI_CMD_TO_HTMQ:
     case XMQ_CLI_CMD_TO_HTML:
     case XMQ_CLI_CMD_TO_JSON:
+    case XMQ_CLI_CMD_TO_YAML:
     case XMQ_CLI_CMD_TO_TEXT:
     case XMQ_CLI_CMD_TO_CLINES:
         return XMQ_CLI_CMD_GROUP_TO;
@@ -851,7 +855,8 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         if (!strcmp(arg, "-p") ||
             !strcmp(arg, "--pretty"))
         {
-            if (command->cmd == XMQ_CLI_CMD_TO_JSON)
+            if (command->cmd == XMQ_CLI_CMD_TO_JSON ||
+                command->cmd == XMQ_CLI_CMD_TO_YAML)
             {
                 command->add_indent = 2;
             }
@@ -885,6 +890,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
 
     if (command->cmd == XMQ_CLI_CMD_TO_XMQ ||
         command->cmd == XMQ_CLI_CMD_TO_HTMQ ||
+        command->cmd == XMQ_CLI_CMD_TO_YAML ||
         group == XMQ_CLI_CMD_GROUP_RENDER)
     {
         if (!strcmp(arg, "--escape-newlines"))
@@ -2019,7 +2025,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "             Not yet implemented: exact will trim exactly to the significant whitespace according to xml/html rules.\n"
            "  --verbose  Output extra information on stderr.\n"
            "  --version  Output version information and exit.\n"
-           "  --xmq|--htmq|--xml|--html|--ixml|--json|--clines\n"
+           "  --xmq|--htmq|--xml|--html|--ixml|--json|--yaml|--clines\n"
            "             The input format is auto detected for xmq/xml/json but you can force the input format here.\n"
            "  --ixml=grammar.ixml Parse the content using the supplied grammar file.\n"
            "  -z         Do not read from stdin nor from a file. Start with an empty dom.\n"
@@ -2040,7 +2046,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  select\n"
            "  statistics\n"
            "  substitite-char-entities substitute-entity\n"
-           "  to-html to-htmq to-json to-lines to-text to-xml to-xmq\n"
+           "  to-html to-htmq to-json to-lines to-text to-xmq to-yaml\n"
            "  tokenize\n"
            "  transform\n"
            "  validate\n\n"
@@ -3397,6 +3403,10 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
     case XMQ_CLI_CMD_TO_JSON:
         c->out_format = XMQ_CONTENT_JSON;
         return;
+    case XMQ_CLI_CMD_TO_YAML:
+        c->out_format = XMQ_CONTENT_YAML;
+        c->add_indent   = 2; // Default yaml output indentation.
+        return;
     case XMQ_CLI_CMD_TO_TEXT:
         c->out_format = XMQ_CONTENT_TEXT;
         return;
@@ -4268,6 +4278,7 @@ bool perform_command(XMQCliCommand *c, bool *no_more_data)
     case XMQ_CLI_CMD_TO_HTMQ:
     case XMQ_CLI_CMD_TO_HTML:
     case XMQ_CLI_CMD_TO_JSON:
+    case XMQ_CLI_CMD_TO_YAML:
     case XMQ_CLI_CMD_TO_TEXT:
     case XMQ_CLI_CMD_TO_CLINES:
     case XMQ_CLI_CMD_RENDER_TERMINAL:

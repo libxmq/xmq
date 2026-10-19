@@ -32,6 +32,10 @@ typedef struct XMQPrintState XMQPrintState;
 
 bool xmq_tokenize_buffer_yaml(XMQParseState *state, const char *start, const char *stop);
 bool xmq_parse_buffer_yaml(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root);
+void xmq_print_yaml(XMQDoc *doq, XMQOutputSettings *os);
+
+// true if the NUL-terminated string s must be quoted to stay a string in YAML
+bool yaml_needs_quotes(const char *s);
 
 #define YAML_MODULE
 
