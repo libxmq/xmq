@@ -1,0 +1,4 @@
+START
+?root(xmlns:a = z://a){}
+ERROR
+END

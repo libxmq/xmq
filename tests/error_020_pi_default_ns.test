@@ -1,0 +1,6 @@
+START
+?root(xmlns:a = "https://x"){
+    a:child(a:num = 1){}
+}
+ERROR
+END

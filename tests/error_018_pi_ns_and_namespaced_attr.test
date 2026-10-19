@@ -1,0 +1,4 @@
+START
+?root(a:beta = 1){}
+ERROR
+END

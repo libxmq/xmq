@@ -1,0 +1,7 @@
+START
+&?na:root(xmlns"a = z:/){}
+ERROR
+.../error_019_entity_ref_ns_declaration.input:1:10: error: attributes are not closed
+&?na:root(xmlns"a = z:/){}
+         ^
+END
