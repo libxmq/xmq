@@ -15638,7 +15638,9 @@ static const char *ycolon(const char *s)
 
 static int ydash(const char *s)
 {
-    return s[0] == '-' && (s[1] == ' ' || s[1] == '\t');
+    // A dash followed by a space, or a lone dash at end of line, starts
+    // a sequence entry.
+    return s[0] == '-' && (s[1] == ' ' || s[1] == '\t' || s[1] == 0);
 }
 
 /*
@@ -16741,10 +16743,40 @@ static int yitem(y_parser *p, XMQParseState *state, const char *dash, size_t ind
 
     if (*item == 0 || *item == '#')
     {
-        // An empty item.
+        // No value on this line: either an empty item, or an item
+        // whose node value continues on more deeply indented lines
+        // below the bare dash.
         ykey(state, NULL, NULL);
+        if (ynext(p, state)) { return 1; }
+        if (p->eof || p->indent <= indent)
+        {
+            // An empty item.
+            DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, "", "", "");
+            return 0;
+        }
+        if (ydash(p->text))
+        {
+            // A nested sequence below the bare dash.
+            DO_CALLBACK_SIM(apar_left, state, state->line, state->col, y_leftpar, y_leftpar+1, y_leftpar+1);
+            DO_CALLBACK_SIM(attr_key, state, state->line, state->col, y_array, y_array+1, y_array+1);
+            DO_CALLBACK_SIM(apar_right, state, state->line, state->col, y_rightpar, y_rightpar+1, y_rightpar+1);
+            DO_CALLBACK_SIM(brace_left, state, state->line, state->col, y_leftbrace, y_leftbrace+1, y_leftbrace+1);
+            rc = yseq(p, state, p->indent);
+            if (!rc)
+            {
+                DO_CALLBACK_SIM(brace_right, state, state->line, state->col, y_rightbrace, y_rightbrace+1, y_rightbrace+1);
+            }
+            return rc;
+        }
+        if (ycolon(p->text))
+        {
+            // A mapping whose first entry is on the next line.
+            return yitem_map(p, state, p->text, indent);
+        }
+        // A plain line with no key: treat the item as empty and let
+        // the outer level parse the line.
         DO_CALLBACK_SIM(element_value_text, state, state->line, state->col, "", "", "");
-        return ynext(p, state);
+        return 0;
     }
 
     if (*item == '&' && item[1] != 0 && !yspace(item[1]))

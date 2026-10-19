@@ -1,0 +1,49 @@
+# libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
+# A bare '-' sequence marker on its own line (no trailing space) is a
+# valid YAML block sequence entry whose value continues on the
+# following deeper-indented lines. Regression test: xmq used to fail
+# with "YAML: a mapping entry needs the form 'key: value'" because
+# (1) ydash() did not recognize a lone dash at end of line and
+# (2) an empty dash item was not allowed to continue on the next line.
+INPUT
+jobs:
+    steps:
+    -
+      name: Checkout
+      uses: actions/checkout@v7
+    -
+      name: Set up QEMU
+      uses: docker/setup-qemu-action@v4
+    -
+      name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v6
+      with:
+        images: wmbusmeters/wmbusmeters
+        tags: type=ref,event=tag
+OUTPUT
+_ {
+    jobs {
+        steps(A)
+        {
+            _ {
+                name = Checkout
+                uses = actions/checkout@v7
+            }
+            _ {
+                name = 'Set up QEMU'
+                uses = docker/setup-qemu-action@v4
+            }
+            _ {
+                name = 'Docker meta'
+                id   = meta
+                uses = docker/metadata-action@v6
+                with {
+                    images = wmbusmeters/wmbusmeters
+                    tags   = type=ref,event=tag
+                }
+            }
+        }
+    }
+}
+END
