@@ -41,10 +41,17 @@ import java.util.Stack;
 public class JdomHandler implements Handler
 {
     final boolean html;
+    final boolean no_trim;
 
     JdomHandler(boolean html)
     {
+        this(html, false);
+    }
+
+    JdomHandler(boolean html, boolean no_trim)
+    {
         this.html = html;
+        this.no_trim = no_trim;
     }
 
     final Document doc = new Document();
@@ -106,16 +113,21 @@ public class JdomHandler implements Handler
             // whitespace between the root element and the end tag.
             return;
         }
+        // The C parser trims text nodes at parse time (trim_text_node
+        // -> xmq_un_quote -> xmq_trim_quote), unless --trim=none.
+        if (no_trim)
+        {
+            e.addContent(new Text(t));
+            return;
+        }
         // Whitespace-only text nodes are dropped, matching C's
         // trim_text_node (is_all_xml_whitespace -> unlink).
-        if (/*!no_trim &&*/ t.trim().isEmpty())
+        if (t.trim().isEmpty())
         {
             return;
         }
-        // The C parser trims text nodes at parse time (trim_text_node
-        // -> xmq_un_quote -> xmq_trim_quote), unless --trim=none.
-        String v = /*no_trim ? t :*/ RawXmlParser.trim_xml_text(t);
-        if (v == null || v.length() == 0 || (/*!no_trim &&*/ v.trim().isEmpty()))
+        String v = RawXmlParser.trim_xml_text(t);
+        if (v == null || v.length() == 0 || v.trim().isEmpty())
         {
             return;
         }

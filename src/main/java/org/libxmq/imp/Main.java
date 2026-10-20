@@ -117,7 +117,7 @@ public class Main
             Path p = Paths.get(file);
             String content = Files.readString(p, StandardCharsets.UTF_8);
 
-            // if (trimNone) RawXmlParser.setNoTrim(true);
+            // --trim=none is honored by the xml parser call below (RawXmlParser.parse).
             // Compact mode always escapes newlines (see C xmq.c).
             if (compact) escNl = true;
 
@@ -179,7 +179,7 @@ public class Main
 
                 if (i < content.length() && content.charAt(i) == '<')
                 {
-                    Document xml_doc = RawXmlParser.parse(content);
+                    Document xml_doc = RawXmlParser.parse(content, trimNone);
                     doc = xml_doc;
                 }
                 else

@@ -80,7 +80,15 @@ public class RawXmlParser
      *  @throws Exception on malformed input */
     public static Document parse(String content) throws Exception
     {
-        JdomHandler h = new JdomHandler(is_html(content));
+        return parse(content, false);
+    }
+
+    /** Like {@link #parse(String)}, but when no_trim is true text nodes
+     *  are kept exactly as they appear in the source, matching C's use of
+     *  XMQ_FLAG_TRIM_NONE (--trim=none). */
+    public static Document parse(String content, boolean no_trim) throws Exception
+    {
+        JdomHandler h = new JdomHandler(is_html(content), no_trim);
         new Scanner(content, h, h.html).document();
         return h.finish();
     }
