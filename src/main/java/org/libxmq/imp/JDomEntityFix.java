@@ -12,8 +12,20 @@ import org.xml.sax.SAXException;
 
 import java.io.StringReader;
 
-public class JDomEntityFix {
-    public static void main(String[] args) throws Exception {
+/** Test class showing that a JDOM2 SAXBuilder with
+ *  expandEntities disabled still expands the entity body into the
+ *  document (the bug xmq's own RawXmlParser avoids). Running main
+ *  prints the round-tripped document. */
+public class JDomEntityFix
+{
+    /** Default constructor. */
+    JDomEntityFix() {}
+
+    /** Run the experiment.
+     *  @param args unused
+     *  @throws Exception on build errors */
+    public static void main(String[] args) throws Exception
+    {
         String xml = "<!DOCTYPE time [<!ENTITY copy \"howdy\">]>\n<time>alfa&copy;beta</time>";
 
         SAXBuilder sb = new SAXBuilder(XMLReaders.NONVALIDATING);

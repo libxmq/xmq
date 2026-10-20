@@ -35,6 +35,9 @@ import org.jdom2.EntityRef;
 import org.jdom2.ProcessingInstruction;
 import org.jdom2.Text;
 
+import org.libxmq.imp.xml.RawXmlParser;
+import org.libxmq.imp.xml.ValuePart;
+
 /**
  * Prints a document object model in xmq.
  */
@@ -109,18 +112,24 @@ public class XMQPrinter
     }
 
     /** Mirrors C check_space_before_quote. */
-    void check_space_before_quote(XMQPrintState ps)
+    void check_space_before_quote(XMQPrintState ps, Level level)
     {
         char c = ps.last_char;
         if (c == 0) return;
-        if (!ps.output_settings.compact() && c != '=' && c != '(')
+        if (!ps.output_settings.compact() && (c != '=' || level == Level.XMQ) && c != '(')
         {
             print_nl_and_indent(ps, null, null);
         }
-        else if (c == '\'' || c == '"' || (c >= 'A' && c <= 'Z'))
+        else if (need_separation_before_quote(c))
         {
             print_white_spaces(ps, 1);
         }
+    }
+
+    /** Mirrors C need_separation_before_quote: previous char is a quote. */
+    static boolean need_separation_before_quote(char c)
+    {
+        return c == '\'' || c == '"';
     }
 
     void print_white_spaces(XMQPrintState ps, int num)
@@ -257,16 +266,39 @@ public class XMQPrinter
             ps.last_char = '(';
             ps.current_indent += 1;
 
-            // Mirrors C find_attr_key_max_u_width: scan the attributes
-            // until there is one which is not a key = value attribute
-            // (ie. no value), and find the max width of the keys.
+            // Mirrors C xml.c: libxml2 stores regular attributes in node->properties
+            // and xmlns/ns: declarations in node->nsDef. C prints the regular
+            // attributes (source order) first, then the namespace declarations
+            // (source order). Split our JDOM list the same way.
+            List<Attribute> regular = new java.util.ArrayList<>();
+            List<Attribute> nspace = new java.util.ArrayList<>();
+            for (Attribute attr : attributes)
+            {
+                String n = attr.getName();
+                if (n.equals("xmlns") || n.startsWith("xmlns:"))
+                {
+                    nspace.add(attr);
+                }
+                else
+                {
+                    regular.add(attr);
+                }
+            }
+
+            // Mirrors C find_attr_key_max_u_width: find the max width of the
+            // keys across both regular attributes and namespace declarations.
             int max = 0;
             if (!ps.output_settings.compact())
             {
-                for (Attribute attr : attributes)
+                for (Attribute attr : regular)
                 {
                     String value = attr.getValue();
                     if (value == null || value.isEmpty()) break;
+                    int len = attr.getName().length();
+                    if (len > max) max = len;
+                }
+                for (Attribute attr : nspace)
+                {
                     int len = attr.getName().length();
                     if (len > max) max = len;
                 }
@@ -277,7 +309,12 @@ public class XMQPrinter
             int old_line_indent = ps.line_indent;
             ps.line_indent = ps.current_indent;
 
-            for (Attribute attr : attributes)
+            for (Attribute attr : regular)
+            {
+                print_attribute(ps, attr, max);
+            }
+
+            for (Attribute attr : nspace)
             {
                 print_attribute(ps, attr, max);
             }
@@ -325,17 +362,15 @@ public class XMQPrinter
      *  quoted/escaped, and more than one part is wrapped in parentheses. */
     void print_attribute_value(XMQPrintState ps, String value)
     {
-        List<RawXmlParser.ValuePart> parts = RawXmlParser.value_parts(value);
+        List<ValuePart> parts = RawXmlParser.value_parts(value);
         if (parts.isEmpty() || (parts.size() == 1 && !parts.get(0).is_entity))
         {
-            print_value_text(ps, value, false);
+            print_value_string(ps, value, Level.ATTR_VALUE, false);
             return;
         }
         if (parts.size() == 1)
         {
-            RawXmlParser.ValuePart p = parts.get(0);
-            check_space_before_entity_node(ps);
-            print_string(ps, "&" + p.text + ";");
+            print_entity_name(ps, parts.get(0).text);
             return;
         }
 
@@ -346,16 +381,15 @@ public class XMQPrinter
             print_white_spaces(ps, 1);
         }
         ps.line_indent = ps.current_indent;
-        for (RawXmlParser.ValuePart p : parts)
+        for (ValuePart p : parts)
         {
             if (p.is_entity)
             {
-                check_space_before_entity_node(ps);
-                print_string(ps, "&" + p.text + ";");
+                print_entity_name(ps, p.text);
             }
             else
             {
-                print_value_text(ps, p.text, true);
+                print_value_string(ps, p.text, Level.COMPOUND, true);
             }
         }
         if (!ps.output_settings.compact())
@@ -366,83 +400,19 @@ public class XMQPrinter
         ps.line_indent = old_line_indent;
     }
 
+    /** Mirrors C print_entity_node. */
+    void print_entity_name(XMQPrintState ps, String name)
+    {
+        check_space_before_entity_node(ps);
+        print_string(ps, "&" + name + ";");
+    }
+
     void print_content_node(XMQPrintState ps, Content node)
     {
         Text text = (Text)node;
-        String value = text.getText();
-
-        if (value == null || value.trim().isEmpty())
-        {
-            return;
-        }
-
-        if (ps.last_char == '=')
-        {
-            // Key = value: print_key_node has already printed the space after =.
-        }
-        else
-        {
-            check_space_before_key(ps);
-        }
         // Do NOT trim: leading and ending spaces can be part of the value,
         // ie. key = ' x y z '
-        print_value_text(ps, value, false);
-    }
-
-    /**
-     * Mirrors C print_value. Prints the value of a key=value node. If there
-     * are multiple children (text and/or entity references) the value is
-     * compounded: ( value parts... ).
-     */
-    void print_value(XMQPrintState ps, Element element)
-    {
-        List<Content> children = element.getContent();
-
-        // In C: is_compound = node->next != NULL, ie. the value has siblings.
-        boolean is_compound = children.size() > 1;
-
-        int old_line_indent = ps.line_indent;
-
-        if (is_compound)
-        {
-            print_string(ps, "(");
-            if (!ps.output_settings.compact())
-            {
-                print_white_spaces(ps, 1);
-            }
-            ps.line_indent = ps.current_indent;
-        }
-
-        for (int i = 0; i < children.size(); i++)
-        {
-            Content child = children.get(i);
-            if (is_entity_node(child))
-            {
-                print_entity_node(ps, child);
-            }
-            else if (is_content_node(child))
-            {
-                String value = ((Text)child).getText();
-                if (value == null) value = "";
-                print_value_text(ps, value, is_compound);
-            }
-            else
-            {
-                // Sub element, should not happen for a key=value node.
-                print_node(ps, child, 0);
-            }
-        }
-
-        if (is_compound)
-        {
-            if (!ps.output_settings.compact())
-            {
-                print_white_spaces(ps, 1);
-            }
-            print_string(ps, ")");
-        }
-
-        ps.line_indent = old_line_indent;
+        print_value_string(ps, text.getText(), Level.XMQ, false);
     }
 
     /** Mirrors C print_entity_node. Prints &name;. */
@@ -453,10 +423,12 @@ public class XMQPrinter
         print_string(ps, "&"+name+";");
     }
 
-    /** Mirrors C is_safe_value_char. True if the character does not need quoting. */
+    /** Mirrors C is_safe_value_char/count_whitespace. True if the character does not need quoting. */
     static boolean is_safe_value_char(char c)
     {
         return c != ' ' && c != '\n' && c != '\t' && c != '\r'
+            && c != '\u00a0'
+            && c != '\u2000' && c != '\u2001' && c != '\u2002' && c != '\u2003'
             && c != '(' && c != ')' && c != '{' && c != '}'
             && c != '\'' && c != '"';
     }
@@ -493,9 +465,14 @@ public class XMQPrinter
     /** Mirrors C count_necessary_quotes.
      *  Returns the number of quotes needed, and sets the output arrays
      *  use_double_quotes and add_nls (multi-line quote). */
-    static int count_necessary_quotes(String s, boolean prefer_double_quotes, boolean[] use_double_quotes, boolean[] add_nls)
+    static int count_necessary_quotes(String s, boolean prefer_double_quotes, boolean[] add_nls, boolean[] add_compound, boolean[] use_double_quotes)
     {
         boolean all_safe = !is_unsafe_value_start(s);
+
+        // Leading/ending whitespace mixed with newlines force a compound.
+        int[] ls = has_leading_space_nl(s);
+        int[] es = has_ending_nl_space(s, 0, s.length());
+        add_compound[0] = (ls != null && ls[1] == 0) || (es != null && es[1] == 0);
 
         int max_single = 0;
         int curr_single = 0;
@@ -575,62 +552,406 @@ public class XMQPrinter
         return max;
     }
 
-    /**
-     * Mirrors C print_value_internal_text + print_safe_leaf_quote.
-     * Prints a text value, quoted if necessary (unless it is a safe plain
-     * xmq text value and not in a compound). If in_compound is true then
-     * quoting is forced, like in C where the level is not ELEMENT_VALUE
-     * inside a compound.
-     */
-    void print_value_text(XMQPrintState ps, String value, boolean in_compound)
+    /** Mirrors C Level. */
+    enum Level { XMQ, ELEMENT_VALUE, ATTR_VALUE, COMPOUND }
+
+    /** Mirrors C print_quotes. Prints num quotes of the chosen kind. */
+    void print_quotes(XMQPrintState ps, int num, boolean use_double_quotes)
     {
-        if (ps.output_settings.compact())
+        print_string(ps, (use_double_quotes ? "\"" : "'").repeat(num));
+    }
+
+    /** Mirrors C print_quoted_spaces. Prints '...spaces...'. */
+    void print_quoted_spaces(XMQPrintState ps, int num)
+    {
+        print_string(ps, "'" + " ".repeat(num) + "'");
+    }
+
+    /** Mirrors C print_char_entity for a single character. */
+    void print_char_entity(XMQPrintState ps, char c)
+    {
+        print_string(ps, "&#" + (int)c + ";");
+    }
+
+    /** Mirrors C print_all_whitespace. Spaces are printed as '...'. Other whitespace as entities. */
+    void print_all_whitespace(XMQPrintState ps, String s, Level level)
+    {
+        int i = 0;
+        while (i < s.length())
         {
-            print_compact_value(ps, value, in_compound);
-            return;
+            if (s.charAt(i) == ' ')
+            {
+                int j = i;
+                while (j < s.length() && s.charAt(j) == ' ')
+                {
+                    j++;
+                }
+                check_space_before_quote(ps, level);
+                print_quoted_spaces(ps, j - i);
+                i = j;
+            }
+            else
+            {
+                check_space_before_entity_node(ps);
+                print_char_entity(ps, s.charAt(i));
+                i++;
+            }
+        }
+    }
+
+    /** Mirrors C is_xml_whitespace (exactly space, tab, newline, CR). */
+    static boolean is_xml_whitespace(char c)
+    {
+        return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+    }
+
+    /** Mirrors C has_all_quotes. All single or all double quotes. */
+    static boolean has_all_quotes(String v)
+    {
+        if (v.isEmpty())
+        {
+            return false;
+        }
+        char first = v.charAt(0);
+        if (first != '\'' && first != '"')
+        {
+            return false;
+        }
+        for (int i = 1; i < v.length(); i++)
+        {
+            if (v.charAt(i) != first)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Mirrors C has_all_whitespace.
+     *  Returns [all_whitespace, all_space, only_newlines] as 0/1. */
+    static int[] has_all_whitespace(String v)
+    {
+        boolean all_ws = true, all_space = true, only_nls = true;
+        for (int i = 0; i < v.length(); i++)
+        {
+            char c = v.charAt(i);
+            if (!is_xml_whitespace(c))
+            {
+                all_ws = false;
+                all_space = false;
+                only_nls = false;
+                break;
+            }
+            if (c != ' ') all_space = false;
+            if (c != '\n') only_nls = false;
+        }
+        return new int[] { all_ws ? 1 : 0, all_space ? 1 : 0, only_nls ? 1 : 0 };
+    }
+
+    /** Mirrors C has_leading_space_nl.
+     *  Returns null if no leading whitespace contains newlines, else
+     *  [end index of the leading ws run, only_newlines] where only_newlines
+     *  is the number of leading newlines if the run is pure newlines, else 0. */
+    static int[] has_leading_space_nl(String v)
+    {
+        int i = 0;
+        int only_nls = 0;
+        while (i < v.length() && v.charAt(i) == '\n')
+        {
+            i++;
+            only_nls++;
+        }
+        int middle = only_nls > 0 ? i : -1;
+        boolean found = only_nls > 0;
+        while (i < v.length())
+        {
+            if (v.charAt(i) == '\n') found = true;
+            if (!is_xml_whitespace(v.charAt(i)))
+            {
+                break;
+            }
+            i++;
+        }
+        if (!found)
+        {
+            return null;
+        }
+        return new int[] { i, middle == i ? only_nls : 0 };
+    }
+
+    /** Mirrors C has_ending_nl_space.
+     *  Returns null if no ending whitespace contains newlines, else
+     *  [new stop index, only_newlines] where only_newlines is the number of
+     *  ending newlines if the run is pure newlines, else 0. */
+    static int[] has_ending_nl_space(String v, int start, int stop)
+    {
+        if (start >= stop)
+        {
+            return null;
+        }
+        int i = stop;
+        boolean found = false;
+        int only_nls = 0;
+        i--;
+        while (i >= start && v.charAt(i) == '\n')
+        {
+            i--;
+            only_nls++;
+            found = true;
+        }
+        int middle = i;
+        while (i >= start)
+        {
+            if (v.charAt(i) == '\n') found = true;
+            if (!is_xml_whitespace(v.charAt(i)))
+            {
+                break;
+            }
+            i--;
+        }
+        if (!found)
+        {
+            return null;
+        }
+        i++;
+        return new int[] { i, middle == i ? only_nls : 0 };
+    }
+
+    /** Mirrors C has_newlines. */
+    static boolean has_newlines(String v)
+    {
+        for (int i = 0; i < v.length(); i++)
+        {
+            if (v.charAt(i) == '\n')
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Mirrors C has_leading_ending_different_quotes. */
+    static boolean has_leading_ending_different_quotes(String v)
+    {
+        if (v.isEmpty())
+        {
+            return false;
+        }
+        char a = v.charAt(0);
+        char b = v.charAt(v.length() - 1);
+        return (a == '\'' && b == '"') || (a == '"' && b == '\'');
+    }
+
+    /** Mirrors C quote_needs_compounded. Sets use_dquotes[0] on return. */
+    static boolean quote_needs_compounded(XMQPrintState ps, String v, boolean prefer_d, boolean[] use_dquotes)
+    {
+        boolean compact = ps.output_settings.compact();
+        boolean escape_tabs = ps.output_settings.escapeTabs();
+
+        if (v.length() == 1)
+        {
+            char c = v.charAt(0);
+            if (c == '\'' || c == '\n' || c == '\r' || c == '\t')
+            {
+                return false;
+            }
         }
 
-        if (value.isEmpty())
+        int[] ls = has_leading_space_nl(v);
+        if (ls != null && ls[1] == 0)
         {
-            // Empty values are printed like ''
-            check_space_before_quote(ps);
-            print_string(ps, "''");
-            return;
+            return true;
+        }
+        int[] es = has_ending_nl_space(v, 0, v.length());
+        if (es != null && es[1] == 0)
+        {
+            return true;
         }
 
-        if (!in_compound && is_xmq_text_value(value))
+        if (compact)
         {
-            // Safe text, no quotes needed: key = 123 or key = blue
-            print_string(ps, value);
-            return;
+            // In compact form newlines must be escaped: &#10;
+            if (has_newlines(v))
+            {
+                return true;
+            }
+            // In compact form leading or ending different quotes trigger &#39; escapes.
+            if (has_leading_ending_different_quotes(v))
+            {
+                return true;
+            }
         }
 
-        boolean[] use_double_quotes = { false };
-        boolean[] add_nls = { false };
-        int numq = count_necessary_quotes(value, false, use_double_quotes, add_nls);
-        if (numq < 1) numq = 1;
-        String q = use_double_quotes[0] ? "\"" : "'";
+        boolean newlines = ps.output_settings.escapeNewlines();
+        boolean non7bit = ps.output_settings.escapeNon7bit();
+        int num_sq = 0, num_dq = 0;
+        boolean needs = false;
 
-        int old_line_indent = ps.line_indent;
-        if (add_nls[0])
+        for (int i = 0; i < v.length(); i++)
         {
+            char c = v.charAt(i);
+            if (c == '\'')
+            {
+                num_sq++;
+                continue;
+            }
+            if (c == '"')
+            {
+                num_dq++;
+                continue;
+            }
+            if (newlines && c == '\n')
+            {
+                needs = true;
+                continue;
+            }
+            if (non7bit && c > 126)
+            {
+                needs = true;
+                continue;
+            }
+            if (c < 32 && c != '\t' && c != '\n')
+            {
+                needs = true;
+                continue;
+            }
+            if (c == '\t' && escape_tabs)
+            {
+                needs = true;
+                continue;
+            }
+        }
+
+        if (num_dq == 0 && num_sq == 0)
+        {
+            use_dquotes[0] = prefer_d;
+        }
+        else if (num_dq > 0 && num_sq > 0)
+        {
+            char a = v.charAt(0);
+            char b = v.charAt(v.length() - 1);
+            if (a == b)
+            {
+                if (a == '\'' || a == '"')
+                {
+                    use_dquotes[0] = (a == '\'');
+                }
+                else
+                {
+                    use_dquotes[0] = prefer_d;
+                }
+            }
+            else
+            {
+                boolean aq = a == '\'' || a == '"';
+                boolean bq = b == '\'' || b == '"';
+                if (aq && bq)
+                {
+                    needs = true;
+                    use_dquotes[0] = prefer_d;
+                }
+                else if (aq)
+                {
+                    use_dquotes[0] = (a == '\'');
+                }
+                else if (bq)
+                {
+                    use_dquotes[0] = (b == '\'');
+                }
+                else
+                {
+                    use_dquotes[0] = (num_sq > num_dq);
+                }
+            }
+        }
+        else
+        {
+            if (num_sq > 0) use_dquotes[0] = true;
+            if (num_dq > 0) use_dquotes[0] = false;
+        }
+        return needs;
+    }
+
+    /** Mirrors C find_next_char_that_needs_escape.
+     *  Returns index of first char at/after from that must be printed as a
+     *  character entity, or stop if there is none. */
+    static int find_next_char_that_needs_escape(XMQPrintState ps, String v, int from, int stop, boolean using_dquotes)
+    {
+        boolean compact = ps.output_settings.compact();
+        boolean newlines = ps.output_settings.escapeNewlines();
+        boolean escape_tabs = ps.output_settings.escapeTabs();
+        boolean non7bit = ps.output_settings.escapeNon7bit();
+
+        char q = using_dquotes ? '"' : '\'';
+        if (from < stop && v.charAt(from) == q && compact)
+        {
+            return from;
+        }
+        int pre_stop = stop - 1;
+        if (compact && pre_stop >= from && v.charAt(pre_stop) == q)
+        {
+            while (pre_stop > from && v.charAt(pre_stop) == q)
+            {
+                pre_stop--;
+            }
+            pre_stop++;
+        }
+
+        int i = from;
+        while (i < stop)
+        {
+            char c = v.charAt(i);
+            if ((compact && c == q && i == pre_stop)
+                || (newlines && c == '\n')
+                || (non7bit && c > 126)
+                || (c < 32 && c != '\t' && c != '\n')
+                || (c == '\t' && escape_tabs))
+            {
+                return i;
+            }
+            i++;
+        }
+        return i;
+    }
+
+    /** Mirrors C print_safe_leaf_quote. Prints one quoted leaf, possibly multiline. */
+    void print_safe_leaf_quote(XMQPrintState ps, String v)
+    {
+        boolean compact = ps.output_settings.compact();
+        boolean add_nls = false;
+        boolean[] udd = { false };
+        boolean[] anls = { false };
+        boolean[] acomp = { false };
+        int numq = count_necessary_quotes(v, ps.output_settings.preferDoubleQuotes(), anls, acomp, udd);
+
+        if (numq == 0)
+        {
+            numq = 1;
+        }
+
+        int old_line_indent = 0;
+
+        if (add_nls)
+        {
+            old_line_indent = ps.line_indent;
             ps.line_indent = ps.current_indent;
         }
 
-        check_space_before_quote(ps);
-        print_string(ps, q.repeat(numq));
+        print_quotes(ps, numq, udd[0]);
 
-        if (!add_nls[0])
+        if (!add_nls)
         {
+            old_line_indent = ps.line_indent;
             ps.line_indent = ps.current_indent;
         }
-        if (add_nls[0])
+
+        if (add_nls)
         {
             print_nl_and_indent(ps, null, null);
         }
 
         // Mirrors C print_quote_lines_and_color_uwhitespace.
-        if (value.charAt(0) == '\n')
+        if (v.charAt(0) == '\n')
         {
             // We are leading with a newline, print an extra into the quote,
             // which will be trimmed away during parse.
@@ -638,32 +959,30 @@ public class XMQPrinter
         }
 
         boolean all_newlines = true;
-        for (int i = 0; i < value.length(); i++)
+        for (int i = 0; i < v.length(); i++)
         {
-            char ch = value.charAt(i);
-            if (ch == '\n')
+            char c = v.charAt(i);
+            if (c == '\n')
             {
-                if (i + 1 < value.length() && value.charAt(i + 1) != '\n')
+                if (i + 1 < v.length() && v.charAt(i + 1) != '\n')
                 {
-                    // This newline has content after it, indent the next line.
                     print_nl_and_indent(ps, null, null);
                 }
                 else
                 {
-                    // Empty line or last line, no indent.
                     print_nl(ps, null, null);
                 }
             }
             else
             {
-                print_char(ps, ch);
+                print_char(ps, c);
                 all_newlines = false;
             }
         }
-        if (value.charAt(value.length() - 1) == '\n')
+        // We are ending with a newline, print an extra into the quote,
+        // which will be trimmed away during parse.
+        if (v.charAt(v.length() - 1) == '\n')
         {
-            // We are ending with a newline, print an extra into the quote,
-            // which will be trimmed away during parse.
             ps.line_indent--;
             if (!all_newlines)
             {
@@ -678,137 +997,250 @@ public class XMQPrinter
             ps.line_indent++;
         }
 
-        if (!add_nls[0])
+        if (!add_nls)
         {
             ps.line_indent = old_line_indent;
         }
-        if (add_nls[0])
+
+        if (add_nls)
         {
             print_nl_and_indent(ps, null, null);
         }
 
-        print_string(ps, q.repeat(numq));
+        print_quotes(ps, numq, udd[0]);
 
-        if (add_nls[0])
+        if (add_nls)
         {
             ps.line_indent = old_line_indent;
         }
     }
 
-    /**
-     * Compact printing of a text value value (mirrors C print_value_internal_text
-     * in compact mode, where newlines and other control characters that cannot
-     * appear inside a single-line quote are replaced with character entities like
-     * &#10;, splitting the value into smaller quoted segments. If the split is
-     * needed the whole value is wrapped in parentheses (a compound), unless the
-     * caller is already printing a compound.
-     */
-    void print_compact_value(XMQPrintState ps, String v, boolean in_compound)
+    /** Mirrors C print_value_internal_text. */
+    void print_value_internal_text(XMQPrintState ps, String v, Level level, boolean using_dquotes, boolean already)
     {
         if (v.isEmpty())
         {
-            check_space_before_quote(ps);
+            check_space_before_quote(ps, level);
             print_string(ps, "''");
             return;
         }
 
-        boolean needs_split = false;
-        for (int i = 0; i < v.length(); i++)
+        if (has_all_quotes(v))
         {
-            if (is_compact_escape_char(v.charAt(i)))
-            {
-                needs_split = true;
-                break;
-            }
-        }
-
-        if (!needs_split)
-        {
-            // Single-line value, no entity splitting needed.
-            if (!in_compound && is_xmq_text_value(v))
-            {
-                // A safe plain value (eg key = 123), no quotes needed.
-                check_space_before_quote(ps);
-                print_string(ps, v);
-                return;
-            }
-            print_compact_quoted(ps, v);
+            // A text with all single quotes or all double quotes.
+            check_space_before_quote(ps, level);
+            boolean is_dq = v.charAt(0) == '"';
+            print_quotes(ps, 1, !is_dq);
+            print_quotes(ps, v.length(), is_dq);
+            print_quotes(ps, 1, !is_dq);
             return;
         }
 
-        // The value contains characters that must be escaped as entities (eg a
-        // newline). Split into quoted segments separated by the entity.
-        if (!in_compound)
+        int[] ws = has_all_whitespace(v);
+        if (ws[1] == 1)
         {
-            print_string(ps, "(");
+            // All normal spaces: '     '
+            check_space_before_quote(ps, level);
+            print_quoted_spaces(ps, v.length());
+            return;
         }
-
-        int from = 0;
-        for (int i = 0; i < v.length(); i++)
+        if (ws[0] == 1)
         {
-            char c = v.charAt(i);
-            if (!is_compact_escape_char(c))
+            if (ws[2] == 1 && !ps.output_settings.compact() && v.length() > 1)
             {
-                continue;
+                // All newlines, more than one. This is printed as a multiline quote further on.
             }
-            print_compact_segment(ps, v, from, i);
-            check_space_before_entity_node(ps);
-            print_string(ps, "&#" + (int)c + ";");
-            from = i + 1;
+            else
+            {
+                print_all_whitespace(ps, v, level);
+                return;
+            }
         }
-        print_compact_segment(ps, v, from, v.length());
 
-        if (!in_compound)
+        if (is_xmq_text_value(v) && (level == Level.ELEMENT_VALUE || level == Level.ATTR_VALUE))
         {
+            // key = 123 or color=blue, no quoting needed.
+            print_string(ps, v);
+            return;
+        }
+
+        int start = 0;
+        int stop = v.length();
+
+        int[] lead = has_leading_space_nl(v);
+        if (lead != null && lead[1] == 0)
+        {
+            // Leading mix of newlines and whitespace: entities.
+            print_all_whitespace(ps, v.substring(0, lead[0]), level);
+            start = lead[0];
+        }
+
+        int[] tail = has_ending_nl_space(v, start, stop);
+        int old_stop = stop;
+        if (tail != null && tail[1] == 0)
+        {
+            // Ending mix of newlines and whitespace: entities after the quote.
+            stop = tail[0];
+            while (stop < old_stop && v.charAt(stop) == ' ')
+            {
+                stop++;
+            }
+        }
+
+        for (int from = start; from < stop; )
+        {
+            int to = find_next_char_that_needs_escape(ps, v, from, stop, using_dquotes);
+            if (from == to)
+            {
+                check_space_before_entity_node(ps);
+                char c = v.charAt(from);
+                print_char_entity(ps, c);
+                int from1 = from + 1;
+                while (from1 < stop && v.charAt(from1) == '\n')
+                {
+                    // Special case, eg CR LF: escape the newline(s) as well.
+                    from1++;
+                    check_space_before_entity_node(ps);
+                    print_char_entity(ps, '\n');
+                }
+                from = from1;
+            }
+            else
+            {
+                String seg = v.substring(from, to);
+                boolean[] anls = { false }, acomp = { false }, udd = { false };
+                count_necessary_quotes(seg, ps.output_settings.preferDoubleQuotes(), anls, acomp, udd);
+                if (!acomp[0] && (!anls[0] || !ps.output_settings.compact()))
+                {
+                    check_space_before_quote(ps, level);
+                    print_safe_leaf_quote(ps, seg);
+                }
+                else
+                {
+                    print_value_string(ps, seg, level, already);
+                }
+                from = to;
+            }
+        }
+
+        if (tail != null && tail[1] == 0)
+        {
+            // This trailing whitespace could not be printed inside the quote.
+            print_all_whitespace(ps, v.substring(stop, old_stop), level);
+        }
+    }
+
+    /** Mirrors C print_value for a start-stop string value. */
+    void print_value_string(XMQPrintState ps, String v, Level level, boolean already_compounded)
+    {
+        boolean prefer_d = ps.output_settings.preferDoubleQuotes();
+        boolean[] ud = { prefer_d };
+        boolean is_compound = level != Level.XMQ && quote_needs_compounded(ps, v, prefer_d, ud);
+
+        int old_line_indent = ps.line_indent;
+
+        if (is_compound && !already_compounded)
+        {
+            level = Level.COMPOUND;
+            print_string(ps, "(");
+            if (!ps.output_settings.compact())
+            {
+                print_white_spaces(ps, 1);
+            }
+            ps.line_indent = ps.current_indent;
+        }
+
+        print_value_internal_text(ps, v, level, ud[0], is_compound);
+
+        if (is_compound && !already_compounded)
+        {
+            if (!ps.output_settings.compact())
+            {
+                print_white_spaces(ps, 1);
+            }
             print_string(ps, ")");
         }
+
+        ps.line_indent = old_line_indent;
     }
 
-    /** Print v[from..to) as a quoted compact value (if non-empty after trimming). */
-    void print_compact_segment(XMQPrintState ps, String v, int from, int to)
+    /** Mirrors C print_value for an element (node list) value. */
+    void print_value(XMQPrintState ps, Element element, Level level)
     {
-        if (from >= to) return;
-        // Trim leading/trailing xml whitespace. Each line in the DOM value is
-        // normally already trimmed, but guard against stray spaces.
-        int a = from;
-        int b = to;
-        while (a < b && is_xml_whitespace(v.charAt(a))) a++;
-        while (b > a && is_xml_whitespace(v.charAt(b-1))) b--;
-        if (a >= b) return;
-        String seg = v.substring(a, b);
-        print_compact_quoted(ps, seg);
-    }
+        List<Content> children = element.getContent();
 
-    /** Print seg as a single-line quoted value with the necessary number of quotes. */
-    void print_compact_quoted(XMQPrintState ps, String s)
-    {
-        boolean[] use_double_quotes = { false };
-        boolean[] add_nls = { false };
-        int numq = count_necessary_quotes(s, false, use_double_quotes, add_nls);
-        if (numq < 1) numq = 1;
-        String q = use_double_quotes[0] ? "\"" : "'";
-        check_space_before_quote(ps);
-        print_string(ps, q.repeat(numq));
-        print_string(ps, s);
-        print_string(ps, q.repeat(numq));
-    }
+        boolean is_compound = level != Level.XMQ && children.size() > 1;
+        boolean prefer_d = ps.output_settings.preferDoubleQuotes();
+        boolean[] ud = { prefer_d };
 
-    /**
-     * True if the character must be replaced by a character entity in compact
-     * mode, eg a newline (\n -> &#10;) or other control character that cannot
-     * appear inside a compact single-line quote.
-     */
-    static boolean is_compact_escape_char(char c)
-    {
-        if (c == '\n' || c == '\r') return true;
-        if (c < 32 && c != '\t') return true;
-        return false;
-    }
+        if (level != Level.XMQ && !is_compound && children.size() == 1 && is_content_node(children.get(0)))
+        {
+            String t = ((Text)children.get(0)).getText();
+            if (t != null)
+            {
+                is_compound = quote_needs_compounded(ps, t, prefer_d, ud);
+            }
+        }
 
-    /** Mirrors C is_xml_whitespace (space, tab, newline, return, ff). */
-    static boolean is_xml_whitespace(char c)
-    {
-        return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f';
+        int old_line_indent = ps.line_indent;
+
+        if (is_compound && level != Level.COMPOUND)
+        {
+            level = Level.COMPOUND;
+            print_string(ps, "(");
+            if (!ps.output_settings.compact())
+            {
+                print_white_spaces(ps, 1);
+            }
+            ps.line_indent = ps.current_indent;
+        }
+
+        for (Content child : children)
+        {
+            if (level == Level.XMQ)
+            {
+                // Only first node in xmq level.
+                if (is_entity_node(child))
+                {
+                    print_entity_name(ps, ((EntityRef)child).getName());
+                }
+                else if (is_content_node(child))
+                {
+                    String t = ((Text)child).getText();
+                    print_value_string(ps, t == null ? "" : t, level, is_compound);
+                }
+                else
+                {
+                    print_element_node(ps, (Element)child, 0);
+                }
+                break;
+            }
+
+            if (is_entity_node(child))
+            {
+                print_entity_name(ps, ((EntityRef)child).getName());
+            }
+            else if (is_content_node(child))
+            {
+                String t = ((Text)child).getText();
+                print_value_string(ps, t == null ? "" : t, level, is_compound);
+            }
+            else
+            {
+                print_element_node(ps, (Element)child, 0);
+            }
+        }
+
+        if (is_compound && level == Level.COMPOUND)
+        {
+            if (!ps.output_settings.compact())
+            {
+                print_white_spaces(ps, 1);
+            }
+            print_string(ps, ")");
+        }
+
+        ps.line_indent = old_line_indent;
     }
 
     void print_element_node(XMQPrintState ps, Element element, int align)
@@ -858,8 +1290,8 @@ public class XMQPrinter
             print_white_spaces(ps, 1);
         }
 
-        // Print the value, i.e. the first (or all) child nodes.
-        print_value(ps, element);
+        // Print the value, ie. the child node(s).
+        print_value(ps, element, Level.ELEMENT_VALUE);
     }
 
     /** Mirrors C find_element_key_max_width.
@@ -1286,6 +1718,6 @@ public class XMQPrinter
         {
             print_white_spaces(ps, 1);
         }
-        print_value_text(ps, content, false /* in_compound */);
+        print_value_string(ps, content, Level.ELEMENT_VALUE, false);
     }
 }

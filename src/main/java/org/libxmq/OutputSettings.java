@@ -45,6 +45,11 @@ public class OutputSettings
 {
     private boolean compact_;
     private int indent_amount_;
+    private boolean escape_tabs_;
+    private boolean escape_newlines_;
+    private boolean escape_non_7bit_;
+    private boolean prefer_double_quotes_;
+    private boolean no_trim_;
 
     /**
      * Create default output settings.
@@ -103,6 +108,118 @@ public class OutputSettings
     public int indentAmount()
     {
         return indent_amount_;
+    }
+
+    /**
+     * Set if tabs in text should be printed as a {@code &#9;}
+     * entity instead of a literal tab (the {@code --escape-tabs} option).
+     *
+     * @param e If true, then escape tabs as entities.
+     * @return this {@code OutputSettings} instance, for method chaining
+     */
+    public OutputSettings setEscapeTabs(boolean e)
+    {
+        escape_tabs_ = e;
+        return this;
+    }
+
+    /**
+     * Returns the previously set escape-tabs setting.
+     * @return the escape-tabs setting
+     */
+    public boolean escapeTabs()
+    {
+        return escape_tabs_;
+    }
+
+    /**
+     * Set if newlines in text should be printed as a {@code &#10;}
+     * entity instead of a literal newline (the
+     * {@code --escape-newlines} option).
+     *
+     * @param e If true, then escape newlines as entities.
+     * @return this {@code OutputSettings} instance, for method chaining
+     */
+    public OutputSettings setEscapeNewlines(boolean e)
+    {
+        escape_newlines_ = e;
+        return this;
+    }
+
+    /**
+     * Returns the previously set escape-newlines setting.
+     * @return the escape-newlines setting
+     */
+    public boolean escapeNewlines()
+    {
+        return escape_newlines_;
+    }
+
+    /**
+     * Set if non 7bit characters should be printed as an entity
+     * (the {@code --escape-non-7bit} option).
+     *
+     * @param e If true, then escape non 7-bit characters as entities.
+     * @return this {@code OutputSettings} instance, for method chaining
+     */
+    public OutputSettings setEscapeNon7bit(boolean e)
+    {
+        escape_non_7bit_ = e;
+        return this;
+    }
+
+    /**
+     * Returns the previously set escape-non-7bit setting.
+     * @return the escape-non-7bit setting
+     */
+    public boolean escapeNon7bit()
+    {
+        return escape_non_7bit_;
+    }
+
+    /**
+     * Set if double quotes should be preferred over single quotes
+     * (the {@code --prefer-double-quotes} option).
+     *
+     * @param p If true, then prefer double quotes.
+     * @return this {@code OutputSettings} instance, for method chaining
+     */
+    public OutputSettings setPreferDoubleQuotes(boolean p)
+    {
+        prefer_double_quotes_ = p;
+        return this;
+    }
+
+    /**
+     * Returns the previously set prefer-double-quotes setting.
+     * @return the prefer-double-quotes setting
+     */
+    public boolean preferDoubleQuotes()
+    {
+        return prefer_double_quotes_;
+    }
+
+    /**
+     * Set if the text of the document should not be trimmed
+     * (the {@code --trim=none} option).
+     *
+     * @param n If true, then do not trim leading and trailing whitespace
+     *          from text at parse time.
+     * @return this {@code OutputSettings} instance, for method chaining
+     */
+    public OutputSettings setNoTrim(boolean n)
+    {
+        no_trim_ = n;
+        return this;
+    }
+
+    /**
+     * Returns the previously set no-trim setting.
+     * @return the no-trim setting
+     */
+    public boolean noTrim()
+    {
+        return no_trim_;
     }
 
 

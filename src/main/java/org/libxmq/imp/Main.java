@@ -52,6 +52,7 @@ import org.jdom2.input.sax.XMLReaders;
 import org.libxmq.ParseException;
 import org.libxmq.OutputSettings;
 import org.libxmq.XMQ;
+import org.libxmq.imp.xml.RawXmlParser;
 
 /**
  * The main entry point of the xmq command line tool.
@@ -86,26 +87,65 @@ public class Main
 
         try
         {
-            Path p = Paths.get(args[0]);
+            // Collect options (in any position), the input file and the commands.
+            boolean compact = false, escTabs = false, escNl = false, esc7 = false,
+                   noFinalNl = false, trimNone = false, prefDQ = false;
+            String file = null;
+            java.util.List<String> cmds = new java.util.ArrayList<>();
+            for (String a : args)
+            {
+                if (a.equals("--compact")) compact = true;
+                else if (a.equals("--escape-tabs")) escTabs = true;
+                else if (a.equals("--escape-newlines")) escNl = true;
+                else if (a.equals("--escape-non-7bit")) esc7 = true;
+                else if (a.equals("--prefer-double-quotes")) prefDQ = true;
+                else if (a.equals("--no-final-nl")) noFinalNl = true;
+                else if (a.equals("--trim=none")) trimNone = true;
+                else if (a.startsWith("--"))
+                {
+                    // Ignore options we do not act on (--no-merge, --lines,
+                    // --text, --ixml=..., --nostyle, --theme=..., --type=... etc).
+                }
+                else if (file == null) file = a;
+                else cmds.add(a);
+            }
+            if (file == null)
+            {
+                printHelp();
+                return;
+            }
+            Path p = Paths.get(file);
             String content = Files.readString(p, StandardCharsets.UTF_8);
-            if (args.length > 1 && args[1].equals("tokenize"))
+
+            // if (trimNone) RawXmlParser.setNoTrim(true);
+            // Compact mode always escapes newlines (see C xmq.c).
+            if (compact) escNl = true;
+
+            OutputSettings os = new OutputSettings()
+                .setIndentAmount(4)
+                .setCompact(compact)
+                .setEscapeTabs(escTabs)
+                .setEscapeNewlines(escNl)
+                .setEscapeNon7bit(esc7)
+                .setPreferDoubleQuotes(prefDQ);
+
+            boolean has_cmd = cmds.contains("to-xml");
+            boolean is_tokenize = cmds.contains("tokenize");
+            if (is_tokenize)
             {
                 XMQParseIntoTokens to = new XMQParseIntoTokens();
-                if (args.length > 2 && args[2].equals("--type=debugtokens"))
+                for (String a : args)
                 {
-                    to.debugTokens();
+                    if (a.equals("--type=debugtokens")) to.debugTokens();
+                    else if (a.equals("--type=debugcontent")) to.debugContent();
                 }
-                else if (args.length > 2 && args[2].equals("--type=debugcontent"))
-                {
-                    to.debugContent();
-                }
-                to.parse(content, args[0]);
+                to.parse(content, file);
                 System.out.println("");
             }
-            else if (args.length > 1 && args[1].equals("to-xml"))
+            else if (has_cmd)
             {
                 XMQParseIntoDOM pa = new XMQParseIntoDOM();
-                pa.parse(content, args[0]);
+                pa.parse(content, file);
 
                 Format format = Format.getPrettyFormat();
                 format.setOmitDeclaration(true);
@@ -145,31 +185,16 @@ public class Main
                 else
                 {
                     XMQParseIntoDOM pa = new XMQParseIntoDOM();
-                    pa.parse(content, args[0]);
+                    pa.parse(content, file);
                     doc = pa.doc();
                 }
 
                 XMQPrintState ps = new XMQPrintState();
                 ps.defaultTheme();
-                ps.output_settings = new OutputSettings().setIndentAmount(4);
-                for (String arg : args)
-                {
-                    if (arg.equals("--compact"))
-                    {
-                        ps.output_settings.setCompact(true);
-                    }
-                }
+                ps.output_settings = os;
                 XMQPrinter pr = new XMQPrinter();
                 pr.print_node(ps, doc, 0);
                 System.out.print(ps.buffer);
-                boolean noFinalNl = false;
-                for (String arg : args)
-                {
-                    if (arg.equals("--no-final-nl"))
-                    {
-                        noFinalNl = true;
-                    }
-                }
                 if (!noFinalNl) System.out.println();
             }
 
