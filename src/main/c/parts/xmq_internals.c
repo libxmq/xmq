@@ -184,6 +184,7 @@ const char *xmqParseErrorToString(XMQStatus e)
     case XMQ_ERROR_NAMESPACE_PREFIX_ALREADY_TAKEN: return "namespace prefix already taken";
     case XMQ_ERROR_BAD_RANGE: return "parameter in bad range";
     case XMQ_ERROR_BAD_VALUE: return "parameter has bad value";
+    case XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED: return "embedded xml fragment is not closed";
     case XMQ_WARNING_QUOTES_NEEDED: return "perhaps you need more quotes to quote this quote";
     }
     assert(false);

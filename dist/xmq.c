@@ -503,6 +503,8 @@ void stack_free(Stack *stack);
 void stack_push(Stack *s, void *);
 // Pop the top element.
 void *stack_pop(Stack *s);
+// Get the data of the top element without popping (NULL if the stack is empty).
+void *stack_top(Stack *s);
 // Pull the bottom element.
 void *stack_rock(Stack *s);
 
@@ -10849,6 +10851,13 @@ void stack_push(Stack *stack, void *data)
     stack->size++;
 }
 
+void *stack_top(Stack *stack)
+{
+    assert(stack);
+    if (!stack->top) return NULL;
+    return stack->top->data;
+}
+
 void *stack_pop(Stack *stack)
 {
     assert(stack);
@@ -19397,6 +19406,7 @@ const char *xmqParseErrorToString(XMQStatus e)
     case XMQ_ERROR_NAMESPACE_PREFIX_ALREADY_TAKEN: return "namespace prefix already taken";
     case XMQ_ERROR_BAD_RANGE: return "parameter in bad range";
     case XMQ_ERROR_BAD_VALUE: return "parameter has bad value";
+    case XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED: return "embedded xml fragment is not closed";
     case XMQ_WARNING_QUOTES_NEEDED: return "perhaps you need more quotes to quote this quote";
     }
     assert(false);
@@ -19600,6 +19610,7 @@ void eat_xmq_pi(XMQParseState *state, const char **text_start, const char **text
 void eat_xmq_text_name(XMQParseState *state, const char **content_start, const char **content_stop, const char **namespace_start, const char **namespace_stop);
 void eat_xmq_text_value(XMQParseState *state);
 void eat_xmq_token_whitespace(XMQParseState *state, const char **start, const char **stop);
+const char *find_xmq_embedded_xml_stop(const char *start, const char *buffer_stop);
 bool is_xmq_attribute_key_start(char c);
 bool is_xmq_comment_start(char c, char cc);
 bool is_xmq_compound_start(char c);
@@ -19614,6 +19625,7 @@ void parse_xmq_comment(XMQParseState *state, char cc);
 void parse_xmq_compound(XMQParseState *state, Level level);
 void parse_xmq_compound_children(XMQParseState *state, Level level);
 void parse_xmq_doctype(XMQParseState *state);
+void parse_xmq_embedded_xml(XMQParseState *state);
 void parse_xmq_element(XMQParseState *state);
 void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi);
 void parse_xmq_entity(XMQParseState *state, Level level);
@@ -20163,6 +20175,179 @@ bool peek_xmq_next_is_equal(XMQParseState *state)
     return c == '=';
 }
 
+/** Find the end of an embedded xml fragment that starts at start.
+    The fragment is a single xml element (possibly self-closing) and it
+    ends when the matching closing tag has been seen.
+    Returns the position just past the closing tag or NULL if the fragment
+    is not closed before buffer_stop. */
+const char *find_xmq_embedded_xml_stop(const char *start, const char *buffer_stop)
+{
+    const char *i = start;
+    const char *end = buffer_stop;
+    int depth = 0;
+
+    while (i < end)
+    {
+        char c = *i;
+        if (c == '"' || c == '\'')
+        {
+            // Quoted string, skip it.
+            char q = c;
+            i++;
+            while (i < end && *i != q) i++;
+            if (i < end) i++;
+            continue;
+        }
+        if (c != '<') { i++; continue; }
+        if (i+1 >= end) return NULL;
+        char nc = *(i+1);
+        if (nc == '!')
+        {
+            if (i+4 < end && !strncmp(i, "<!--", 4))
+            {
+                // Xml comment, skip to -->
+                while (i+3 < end && strncmp(i, "-->", 3) != 0) i++;
+                if (i+3 >= end) return NULL;
+                i += 3;
+                continue;
+            }
+            // Cdata or doctype, skip to >
+            while (i < end && *i != '>') i++;
+            if (i >= end) return NULL;
+            i++;
+            continue;
+        }
+        if (nc == '?')
+        {
+            // Processing instruction, skip to >
+            while (i < end && *i != '>') i++;
+            if (i >= end) return NULL;
+            i++;
+            continue;
+        }
+        if (nc == '/')
+        {
+            // Closing tag </name>
+            while (i < end && *i != '>') i++;
+            if (i >= end) return NULL;
+            i++;
+            depth--;
+            if (depth <= 0) return i;
+            continue;
+        }
+        // Opening tag <name ...>
+        const char *tag_start = i;
+        while (i < end && *i != '>') i++;
+        if (i >= end) return NULL;
+        // Check whether the tag is self closing, eg <foo bar="baz"/>
+        const char *k = i - 1;
+        while (k > tag_start &&
+               (*k == ' ' || *k == '\t' || *k == '\n' || *k == '\r'))
+        {
+            k--;
+        }
+        bool self_closing = (k > tag_start) && (*k == '/');
+        i++;
+        if (self_closing && depth == 0) return i;
+        if (!self_closing) depth++;
+    }
+    return NULL;
+}
+
+/** The xmq parser is about to see a < that starts an embedded xml
+    fragment. Find the end of the fragment, parse it with the xml parser,
+    attach the resulting element to the current xmq element and continue
+    parsing xmq after the fragment. */
+void parse_xmq_embedded_xml(XMQParseState *state)
+{
+    const char *start = state->i;
+    const char *stop = find_xmq_embedded_xml_stop(start, state->buffer_stop);
+
+    if (!stop)
+    {
+        state->error_nr = XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED;
+        longjmp(state->error_handler, 1);
+    }
+
+    if (state->doq && state->doq->docptr_.xml && state->element_stack && stack_top(state->element_stack) != NULL)
+    {
+        // Parse the fragment with the xml parser and attach the resulting
+        // element (and its descendants) to the current xmq element.
+        // NOBLANKS discards whitespace-only text nodes so that the
+        // indentation that separates the xml elements does not become
+        // content of the xmq document.
+        xmlDocPtr fdoc = xmlReadMemory(start,
+                                       stop-start,
+                                       state->doq->source_name_,
+                                       NULL,
+                                       XML_PARSE_NOCDATA | XML_PARSE_NONET | XML_PARSE_NOBLANKS);
+        if (!fdoc)
+        {
+            state->error_nr = XMQ_ERROR_PARSING_XML;
+            longjmp(state->error_handler, 1);
+        }
+        xmlNodePtr root = xmlDocGetRootElement(fdoc);
+        if (!root || root->type != XML_ELEMENT_NODE)
+        {
+            xmlFreeDoc(fdoc);
+            state->error_nr = XMQ_ERROR_PARSING_XML;
+            longjmp(state->error_handler, 1);
+        }
+        xmlNodePtr node = xmlDocCopyNode(root, state->doq->docptr_.xml, 1);
+        xmlFreeDoc(fdoc);
+        if (!node)
+        {
+            state->error_nr = XMQ_ERROR_OOM;
+            longjmp(state->error_handler, 1);
+        }
+
+        if (state->element_last == NULL)
+        {
+            if (state->implicit_root && strcmp((const char*)node->name, state->implicit_root) != 0)
+            {
+                xmlNodePtr newroot =
+                    xmlNewDocNode(state->doq->docptr_.xml,
+                                  NULL,
+                                  (const xmlChar*)state->implicit_root,
+                                  NULL);
+                if (!newroot)
+                {
+                    xmlFreeNode(node);
+                    state->error_nr = XMQ_ERROR_OOM;
+                    longjmp(state->error_handler, 1);
+                }
+                state->element_last = newroot;
+                xmlDocSetRootElement(state->doq->docptr_.xml, newroot);
+                state->doq->root_ = (XMQNode*)newroot;
+                stack_push(state->element_stack, state->element_last);
+            }
+            else
+            {
+                state->element_last = node;
+                xmlDocSetRootElement(state->doq->docptr_.xml, node);
+                state->doq->root_ = (XMQNode*)node;
+            }
+        }
+
+        xmlNodePtr parent = (xmlNode*)stack_top(state->element_stack);
+        xmlAddChild(parent, node);
+        state->element_last = node;
+    }
+
+    // Advance the cursor past the fragment, keeping line and col in sync.
+    size_t line = state->line;
+    size_t col = state->col;
+    const char *i = start;
+    while (i < stop)
+    {
+        char c = *i;
+        increment(c, 1, &i, &line, &col);
+    }
+    state->i = stop;
+    state->line = line;
+    state->col = col;
+}
+
 void parse_xmq(XMQParseState *state)
 {
     const char *end = state->buffer_stop;
@@ -20180,6 +20365,7 @@ void parse_xmq(XMQParseState *state)
         else if (is_xmq_element_start(c)) parse_xmq_element(state);
         else if (is_xmq_doctype_start(state->i, end)) parse_xmq_doctype(state);
         else if (is_xmq_pi_start(state->i, end)) parse_xmq_pi(state);
+        else if (c == '<') parse_xmq_embedded_xml(state);
         else if (c == '}') return;
         else
         {

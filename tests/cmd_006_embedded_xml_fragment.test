@@ -1,0 +1,19 @@
+INPUT
+doc {
+    value = 123
+    foo   = 'alala betete'
+    <address>
+        <street>foo road</street>
+        <nr>44</nr>
+    </address>
+}
+OUTPUT
+doc {
+    value = 123
+    foo   = 'alala betete'
+    address {
+        street = 'foo road'
+        nr     = 44
+    }
+}
+END

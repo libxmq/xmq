@@ -392,6 +392,8 @@ typedef enum
     XMQ_ERROR_BAD_RANGE = 35,
     /** Invalid enums provided or other bad input to functions. */
     XMQ_ERROR_BAD_VALUE = 36,
+    /** An embedded xml fragment inside an xmq document is not closed. */
+    XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED = 37,
     /** The ixml grammar cannot be parsed. */
     XMQ_ERROR_IXML_SYNTAX_ERROR = 50,
     /** Warning, when parse succeeds, but it seems there is a mistake. */

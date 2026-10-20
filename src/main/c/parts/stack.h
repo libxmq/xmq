@@ -44,6 +44,8 @@ void stack_free(Stack *stack);
 void stack_push(Stack *s, void *);
 // Pop the top element.
 void *stack_pop(Stack *s);
+// Get the data of the top element without popping (NULL if the stack is empty).
+void *stack_top(Stack *s);
 // Pull the bottom element.
 void *stack_rock(Stack *s);
 

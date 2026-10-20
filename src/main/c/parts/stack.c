@@ -71,6 +71,13 @@ void stack_push(Stack *stack, void *data)
     stack->size++;
 }
 
+void *stack_top(Stack *stack)
+{
+    assert(stack);
+    if (!stack->top) return NULL;
+    return stack->top->data;
+}
+
 void *stack_pop(Stack *stack)
 {
     assert(stack);
