@@ -192,9 +192,10 @@ public class JdomHandler implements Handler
         {
             // The C html parser (libxml2) adds this doctype automatically
             // for html documents that do not provide one.
-            doc.setDocType(new DocType("html PUBLIC "
-                                       + "\"-//W3C//DTD HTML 4.0 Transitional//EN\""
-                                       + " \"http://www.w3.org/TR/REC-html40/loose.dtd\""));
+            DocType d = new DocType("html");
+            d.setPublicID("-//W3C//DTD HTML 4.0 Transitional//EN");
+            d.setSystemID("http://www.w3.org/TR/REC-html40/loose.dtd");
+            doc.setDocType(d);
         }
         return doc;
     }

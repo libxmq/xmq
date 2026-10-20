@@ -1674,19 +1674,29 @@ public class XMQPrinter
         ps.current_indent += 2;
     }
 
-    void print_doctype_node(XMQPrintState ps, DocType node)
+    void print_doctype_internal(XMQPrintState ps, DocType node)
     {
         String name = node.getElementName();
-        String subset = node.getInternalSubset();
-        print_doctype_internal(ps, name, subset);
-    }
-
-    void print_doctype_internal(XMQPrintState ps, String name, String internal_subset)
-    {
         StringBuilder v = new StringBuilder(name);
-        if (internal_subset != null)
+        // libxml serializes public/system ids as: name PUBLIC "pid" "sid"
+        String pid = node.getPublicID();
+        String sid = node.getSystemID();
+        if (pid != null && !pid.isEmpty())
         {
-            String sub = internal_subset.strip();
+            v.append(" PUBLIC \"").append(pid).append("\"");
+            if (sid != null && !sid.isEmpty())
+            {
+                v.append(" \"").append(sid).append("\"");
+            }
+        }
+        else if (sid != null && !sid.isEmpty())
+        {
+            v.append(" SYSTEM \"").append(sid).append("\"");
+        }
+        String sub = node.getInternalSubset();
+        if (sub != null)
+        {
+            sub = sub.strip();
             if (!sub.isEmpty())
             {
                 v.append(" [\n");
@@ -1695,6 +1705,11 @@ public class XMQPrinter
             }
         }
         print_doctype(ps, v.toString());
+    }
+
+    void print_doctype_node(XMQPrintState ps, DocType node)
+    {
+        print_doctype_internal(ps, node);
     }
 
     /** Mirrors C print_doctype. Prints !DOCTYPE = value. */
