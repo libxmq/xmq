@@ -77,6 +77,21 @@ public class JdomHandler implements Handler
 
     public void comment(String text) throws Exception
     {
+        if (!no_trim)
+        {
+            // Mirror C trim_node: comments always have leading/trailing
+            // spaces removed, then the incidental unquote is applied (xmq.c).
+            int start = 0;
+            int stop = text.length();
+            while (start < stop && text.charAt(start) == ' ') start++;
+            while (stop > start && text.charAt(stop-1) == ' ') stop--;
+            text = RawXmlParser.trim_xml_text(text.substring(start, stop));
+            if (text.isEmpty())
+            {
+                // C trim_node: an all-whitespace comment node is dropped.
+                return;
+            }
+        }
         add(new Comment(text));
     }
 
