@@ -5093,6 +5093,66 @@ bool xmqParseFileWithType(XMQDoc *doq,
     return rc;
 }
 
+static void infer_missing_element_names_rec(xmlNode *node)
+{
+    for (xmlNode *child = node->children; child; child = child->next)
+    {
+        if (xmlIsBlankNode(child)) continue;
+        if (child->type != XML_ELEMENT_NODE) continue;
+
+        // Is this child anonymous and does the parent have a name whose trailing
+        // s can be dropped to give the child a name, items -> item, branches -> branch.
+        if (child->name &&
+            node->name &&
+            strcmp((const char*)node->name, "_") != 0)
+        {
+            const char *child_name = (const char*)child->name;
+            const char *parent = (const char*)node->name;
+            size_t len = strlen(parent);
+            // Drop the trailing s, or the trailing es when that looks better:
+            // steps -> step, jobs -> job, branches -> branch, classes -> class.
+            size_t drop = 1;
+            if (len > 2 && parent[len-1] == 's' && parent[len-2] == 'e') drop = 2;
+            if (!strcmp(child_name, "_") && len > drop && parent[len-1] == 's')
+            {
+                char *nm = (char*)malloc(len); // len-drop chars + zero
+                if (nm)
+                {
+                    memcpy(nm, parent, len-drop);
+                    nm[len-drop] = 0;
+                    xmlNodeSetName(child, (const xmlChar*)nm);
+                    free(nm);
+                }
+            }
+        }
+
+        infer_missing_element_names_rec(child);
+    }
+}
+
+bool xmqInferMissingElementNames(XMQDoc *doq, const char *root_name)
+{
+    if (doq == NULL || doq->docptr_.xml == NULL) return false;
+
+    xmlNode *root = xmlDocGetRootElement(doq->docptr_.xml);
+    if (root == NULL) return true; // No root, nothing to do.
+
+    // Give the root a name when it is anonymous and a root name is supplied.
+    if (root_name != NULL &&
+        root_name[0] != 0 &&
+        strcmp((const char*)root->name, "_") == 0)
+    {
+        xmlNodeSetName(root, (const xmlChar*)root_name);
+    }
+
+    if (root->type == XML_ELEMENT_NODE)
+    {
+        infer_missing_element_names_rec(root);
+    }
+
+    return true;
+}
+
 
 xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop)
 {

@@ -978,6 +978,20 @@ bool xmqParseBuffer(XMQDoc *doc, const char *start, const char *stop, const char
 */
 bool xmqParseReader(XMQDoc *doc, XMQReader *reader, void *reader_state, const char *implicit_root, int flags);
 
+/**
+ * xmqInferMissingElementNames:
+ *
+ * Rename anonymous elements (elements with name _ ) by inferring a name from the
+ * parent element: an anonymous child of an element named for example 'items'
+ * or 'branches' gets the name 'item' or 'branch' (the trailing 's' is dropped).
+ *
+ * @doc The doc to modify in place.
+ * @root_name If not NULL and non-empty, and the root element is anonymous (_)
+ * the root element is renamed to root_name.
+ */
+bool xmqInferMissingElementNames(XMQDoc *doq, const char *root_name);
+
+
 /** Allocate the print settings structure and zero it. */
 XMQOutputSettings *xmqNewOutputSettings();
 

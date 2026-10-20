@@ -116,6 +116,7 @@ typedef enum
     XMQ_CLI_CMD_FOR_EACH,
     XMQ_CLI_CMD_ADD,
     XMQ_CLI_CMD_ADD_ROOT,
+    XMQ_CLI_CMD_INFRN,
     XMQ_CLI_CMD_STATISTICS,
     XMQ_CLI_CMD_QUOTE_C,
     XMQ_CLI_CMD_UNQUOTE_C
@@ -344,6 +345,7 @@ bool cmd_select(XMQCliCommand *command);
 bool cmd_statistics(XMQCliCommand *command);
 bool cmd_substitute(XMQCliCommand *command);
 bool cmd_to(XMQCliCommand *command);
+bool cmd_infrn(XMQCliCommand *command);
 bool cmd_tokenize(XMQCliCommand *command);
 bool cmd_transform(XMQCliCommand *command);
 bool cmd_unload(XMQCliCommand *command);
@@ -534,6 +536,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "validate")) return XMQ_CLI_CMD_VALIDATE;
     if (!strcmp(s, "quote-c")) return XMQ_CLI_CMD_QUOTE_C;
     if (!strcmp(s, "unquote-c")) return XMQ_CLI_CMD_UNQUOTE_C;
+    if (!strcmp(s, "infrn")) return XMQ_CLI_CMD_INFRN;
 
     return XMQ_CLI_CMD_NONE;
 }
@@ -574,6 +577,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_FOR_EACH: return "for-each";
     case XMQ_CLI_CMD_ADD: return "add";
     case XMQ_CLI_CMD_ADD_ROOT: return "add-root";
+    case XMQ_CLI_CMD_INFRN: return "infrn";
     case XMQ_CLI_CMD_STATISTICS: return "statistics";
     case XMQ_CLI_CMD_QUOTE_C: return "quote-c";
     case XMQ_CLI_CMD_UNQUOTE_C: return "unquote-c";
@@ -644,8 +648,10 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
         return XMQ_CLI_CMD_GROUP_VALIDATE;
 
     case XMQ_CLI_CMD_NONE:
+    case XMQ_CLI_CMD_INFRN:
     case XMQ_CLI_CMD_STATISTICS:
         return XMQ_CLI_CMD_GROUP_NONE;
+
     case XMQ_CLI_CMD_HELP:
         return XMQ_CLI_CMD_GROUP_HELP;
     }
@@ -2039,6 +2045,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  delete delete-entity\n"
            "  for-each\n"
            "  help\n"
+           "  infrn\n"
            "  no-output\n"
            "  render-html render-terminal render-tex\n"
            "  replace replace-entity\n"
@@ -2428,6 +2435,88 @@ bool cmd_unload(XMQCliCommand *command)
         return true;
     }
     return false;
+}
+
+// Derive a reasonable xmq element name from an input file name:
+// take the basename, drop the last extension and replace all
+// characters that are not allowed in an element name with underline.
+static const char *infrn_root_name(const char *file)
+{
+    static char name[512];
+
+    if (file == NULL) return NULL;
+    const char *base = file;
+    for (const char *p = file; *p; ++p)
+    {
+        if (*p == '/' || *p == '\\') base = p+1;
+    }
+    if (base[0] == 0 || !strcmp(base, "-")) return NULL;
+
+    // Drop the last extension, "foo.bar.yml" -> "foo.bar"
+    const char *dot = NULL;
+    for (const char *p = base + 1; *p; ++p)
+    {
+        if (*p == '.') dot = p;
+    }
+    size_t len = dot ? (size_t)(dot - base) : strlen(base);
+    if (len == 0) return NULL;
+
+    size_t i = 0;
+    for (size_t k = 0; k < len && i < 511; ++k)
+    {
+        char c = base[k];
+        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+            (c >= '0' && c <= '9') || c == '_' || c == '-')
+        {
+            name[i++] = c;
+        }
+        else
+        {
+            name[i++] = '_';
+        }
+    }
+    name[i] = 0;
+
+    // First char must be a letter (or underscore) to be a valid element name.
+    if (!((name[0] >= 'a' && name[0] <= 'z') ||
+          (name[0] >= 'A' && name[0] <= 'Z') ||
+          name[0] == '_'))
+    {
+        memmove(name+1, name, i+1);
+        name[0] = '_';
+    }
+    return name;
+}
+
+bool cmd_infrn(XMQCliCommand *command)
+{
+    if (command->env->doc == NULL)
+    {
+        fprintf(stderr, "xmq: no document loaded, cannot run infrn\n");
+        return false;
+    }
+
+    const char *root_name = NULL;
+    if (command->implicit_root != NULL && command->implicit_root[0] != 0)
+    {
+        // Implicit root given with --root=<name>.
+        root_name = command->implicit_root;
+    }
+    else
+    {
+        // No root option given, use the input file name cleaned up.
+        root_name = infrn_root_name(command->env->load->in);
+    }
+
+    verbose_("xmq=", "cmd-infrn root_name=%s", root_name ? root_name : "(none)");
+
+    bool ok = xmqInferMissingElementNames(command->env->doc, root_name);
+    if (!ok)
+    {
+        fprintf(stderr, "xmq: infrn failed\n");
+        return false;
+    }
+    return true;
 }
 
 bool cmd_to(XMQCliCommand *command)
@@ -3775,6 +3864,14 @@ void print_command_help(XMQCliCmd c)
             "Usage: xmq help <command>\n"
             "Print more detailed help about the command.\n");
         break;
+    case XMQ_CLI_CMD_INFRN:
+        printf(
+            "Usage: xmq <input.yml|input.json> infrn [to-xmq to-yaml ...]\n"
+            "Guess names of unnamed elements (elements named _) by using the name of the parent:\n"
+            "an unnamed child of an element named for example 'branches' is renamed 'branch'\n"
+            "(trailing 's' is dropped) and an unnamed root is named with the --root=<name>\n"
+            "option if given, or after the input file name if not.\n");
+        break;
     case XMQ_CLI_CMD_DELETE:
         printf(
             "Usage: xmq <input> delete <xpath>\n"
@@ -4317,6 +4414,8 @@ bool perform_command(XMQCliCommand *c, bool *no_more_data)
         return cmd_add(c);
     case XMQ_CLI_CMD_ADD_ROOT:
         return cmd_add_root(c);
+    case XMQ_CLI_CMD_INFRN:
+        return cmd_infrn(c);
     case XMQ_CLI_CMD_STATISTICS:
         return cmd_statistics(c);
     case XMQ_CLI_CMD_QUOTE_C:

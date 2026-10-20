@@ -1,0 +1,39 @@
+INPUT
+name: demo
+on:
+push:
+  branches:
+  - master
+  - poster
+  steps:
+  - id: S1
+    use: a/b
+  - id: S2
+    run: make
+
+OUTPUT
+cmd_007_infrn {
+    name = demo
+    on   = ''
+    push {
+        branches(A)
+        {
+            branch = master
+            branch = poster
+        }
+        steps(A)
+        {
+            step {
+                id  = S1
+                use = a/b
+            }
+            step {
+                id  = S2
+                run = make
+            }
+        }
+    }
+}
+END
+ARGS --yaml
+CMDS infrn
