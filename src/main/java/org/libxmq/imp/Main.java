@@ -182,21 +182,20 @@ public class Main
                 }
 
                 boolean render_raw = false;
-                boolean dark_mode = false;
+                // 0 = follow browser preference (xmq_auto), 1 = dark, 2 = light
+                int bg_mode = 0;
                 for (String a : args)
                 {
                     if (a.equals("--nostyle")) render_raw = true;
-                    else if (a.equals("--theme=dark")) dark_mode = true;
-                    else if (a.equals("--theme=light")) dark_mode = false;
-                    else if (a.equals("--bg=dark")) dark_mode = true;
-                    else if (a.equals("--bg=light")) dark_mode = false;
+                    else if (a.equals("--bg=dark")) bg_mode = 1;
+                    else if (a.equals("--bg=light")) bg_mode = 2;
                 }
 
                 XMQTheme theme = new XMQTheme();
                 theme.installDefault();
                 if (render_html)
                 {
-                    theme.setupHtmlColoring(render_raw, dark_mode);
+                    theme.setupHtmlColoring(render_raw, bg_mode);
                 }
                 else
                 {

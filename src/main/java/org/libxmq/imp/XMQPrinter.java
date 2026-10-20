@@ -133,7 +133,6 @@ public class XMQPrinter
         print_nodes(ps, doc.getContent());
         if (theme.content  != null && theme.content.post()  != null) ps.buffer.append(theme.content.post());
         if (theme.body     != null && theme.body.post()     != null) ps.buffer.append(theme.body.post());
-        if (theme.header   != null && theme.header.post()   != null) ps.buffer.append(theme.header.post());
         if (theme.document != null && theme.document.post() != null) ps.buffer.append(theme.document.post());
     }
 

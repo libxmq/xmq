@@ -38,6 +38,16 @@ public class XMQTheme
     {
     }
 
+    // Number of color names (and the FG/BG indices), mirroring colors.h.
+    static final int NUM_XMQ_COLOR_NAMES = 15;
+    static final int XMQ_COLOR_FG_INDEX = 13;
+    static final int XMQ_COLOR_BG_INDEX = 14;
+    static final String[] XMQ_COLOR_NAMES = {
+        "xmqC", "xmqQ", "xmqE", "xmqNS", "xmqEN", "xmqEK", "xmqEKV",
+        "xmqAK", "xmqAKV", "xmqCP", "xmqNSD", "xmqUW", "xmqXSL",
+        "xmqFG", "xmqBG"
+    };
+
     String name;
     String indentation_space;
     String explicit_space;
@@ -97,6 +107,91 @@ public class XMQTheme
         explicit_nl = "\n";
         explicit_tab = "\t";
         explicit_cr = "\r";
+        installDefaultColors();
+    }
+
+    /**
+     * Parses a color specification like the C {@code string_to_color_def}:
+     * an empty string means "no color" (rgb = -1), otherwise a
+     * {@code #rrggbb} hex color with optional {@code _B} (bold) and
+     * {@code _U} (underline) suffixes.
+     */
+    private static boolean stringToColorDef(String s, XMQColorDef def)
+    {
+        def.r = -1;
+        def.g = -1;
+        def.b = -1;
+        def.bold = false;
+        def.underline = false;
+
+        if (s.isEmpty()) return true;
+
+        if (s.length() < 7 || s.charAt(0) != '#') return false;
+        int r = hex2(s.charAt(1), s.charAt(2));
+        int g = hex2(s.charAt(3), s.charAt(4));
+        int b = hex2(s.charAt(5), s.charAt(6));
+        if (r < 0 || g < 0 || b < 0) return false;
+
+        def.r = r;
+        def.g = g;
+        def.b = b;
+
+        int i = 7;
+        for (int suffix = 0; suffix < 2 && i + 2 <= s.length(); ++suffix)
+        {
+            if (s.charAt(i) != '_') break;
+            if (s.charAt(i+1) == 'B') def.bold = true;
+            if (s.charAt(i+1) == 'U') def.underline = true;
+            i += 2;
+        }
+        return i == s.length();
+    }
+
+    private static int hex2(char hi, char lo)
+    {
+        int h = hexDigit(hi);
+        if (h < 0) return -1;
+        int l = hexDigit(lo);
+        if (l < 0) return -1;
+        return h * 16 + l;
+    }
+
+    private static int hexDigit(char c)
+    {
+        if (c >= '0' && c <= '9') return c - '0';
+        if (c >= 'a' && c <= 'f') return 10 + (c - 'a');
+        if (c >= 'A' && c <= 'F') return 10 + (c - 'A');
+        return -1;
+    }
+
+    /**
+     * Installs the default dark/light color tables, mirroring the C
+     * {@code install_default_colors} in default_themes.c.
+     */
+    void installDefaultColors()
+    {
+        String[] darkbg = {
+            "#2aa1b3", "#26a269_B", "#c061cb", "#a9a9a9", "#ff8c00", "#88b4f7",
+            "#26a269_B", "#88b4f7", "#6196ec", "#c061cb", "#2aa1b3",
+            "#880000_U", "#c061cb", "", ""
+        };
+        String[] lightbg = {
+            "#2aa1b3", "#26a269_B", "#c061cb", "#696969", "#a86c00", "#0060fd",
+            "#26a269_B", "#0060fd", "#12488c", "#c061cb", "#1a91a3",
+            "#880000_U", "#c061cb", "", ""
+        };
+        colors_darkbg = new XMQColorDef[NUM_XMQ_COLOR_NAMES];
+        for (int i = 0; i < NUM_XMQ_COLOR_NAMES; ++i)
+        {
+            colors_darkbg[i] = new XMQColorDef();
+            stringToColorDef(darkbg[i], colors_darkbg[i]);
+        }
+        colors_lightbg = new XMQColorDef[NUM_XMQ_COLOR_NAMES];
+        for (int i = 0; i < NUM_XMQ_COLOR_NAMES; ++i)
+        {
+            colors_lightbg[i] = new XMQColorDef();
+            stringToColorDef(lightbg[i], colors_lightbg[i]);
+        }
     }
 
     /**
@@ -155,9 +250,10 @@ public class XMQTheme
      *
      * @param render_raw If true (the {@code --nostyle} option), only wrap the
      *        content in a single {@code <pre>} element without a full document.
-     * @param dark_mode If true, use the dark background color scheme in the css.
+     * @param bg 0 = follow the browser preference (class xmq_auto),
+     *        1 = forced dark (class xmq_dark), 2 = forced light (class xmq_light).
      */
-    public void setupHtmlColoring(boolean render_raw, boolean dark_mode)
+    public void setupHtmlColoring(boolean render_raw, int bg)
     {
         // Token color strings: identical for the styled and the raw render.
         whitespace = null;
@@ -196,71 +292,105 @@ public class XMQTheme
         if (render_raw)
         {
             // The --nostyle render just wraps the content in a single <pre> element.
-            content = new XMQThemeStrings("<pre class=\"xmq xmq_auto\">", "</pre>");
+            content = new XMQThemeStrings("<pre class=\"xmq " + bgModeClass(bg) + "\">", "</pre>");
             return;
         }
 
-        // Build the full html document with a stylesheet.
-        XMQColorDef[] light = colors_lightbg;
-        XMQColorDef[] dark = colors_darkbg;
+        // Build the full html document with a stylesheet. Mirrors the C
+        // setup_html_coloring byte-for-byte.
+        document = new XMQThemeStrings("<!DOCTYPE html>\n<html>\n", "</html>");
+        header = new XMQThemeStrings(
+            "<head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">"
+            + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=5\"><style>",
+            "</style></head>");
 
-        StringBuilder css = new StringBuilder();
-        css.append("    .xmq_auto, .xmq_light { font-family:courier,monospace,'dejavu sans mono','DejaVu Sans Mono';}\n");
-        if (dark_mode)
-        {
-            css.append("    .xmq_auto, .xmq_light { background-color:#141414;color:white; }\n");
-        }
-        else
-        {
-            css.append("    .xmq_auto, .xmq_light, .xmq_dark { background-color:white;color:black; }\n");
-        }
-        appendTokenCss(css, "xmqC",  light[0],  dark[0]);
-        appendTokenCss(css, "xmqQ",  light[1],  dark[1]);
-        appendTokenCss(css, "xmqE",  light[2],  dark[2]);
-        appendTokenCss(css, "xmqNS", light[3],  dark[3]);
-        appendTokenCss(css, "xmqEN", light[4],  dark[4]);
-        appendTokenCss(css, "xmqEK", light[5],  dark[5]);
-        appendTokenCss(css, "xmqEKV",light[6],  dark[6]);
-        appendTokenCss(css, "xmqAK", light[7],  dark[7]);
-        appendTokenCss(css, "xmqAKV",light[8],  dark[8]);
-        appendTokenCss(css, "xmqNSD",light[10], dark[10]);
-        appendTokenCss(css, "xmqCP", light[9],  dark[9]);
-        appendTokenCss(css, "xmqUW", light[11], dark[11]);
-        appendTokenCss(css, "xmqXSL",light[12], dark[12]);
+        StringBuilder stylePre = new StringBuilder();
+        stylePre.append("@media screen and (orientation: portrait) { pre { font-size: 2vw; } }")
+                .append("@media screen and (orientation: landscape) { pre { max-width: 98%; } }");
 
-        String docPre = "<!DOCTYPE html>\n<html>\n  <head>\n    <title>xmq render</title>\n"
-            + "    <style>\n" + css.toString()
-            + "</style>\n  </head>\n  <body>\n";
-        document = new XMQThemeStrings(docPre, "</body>\n</html>\n");
-        content = new XMQThemeStrings("<pre class=\"xmq xmq_auto\">", "</pre>");
+        body = new XMQThemeStrings("<body class=\"" + bgModeClass(bg) + "\">", "</body>");
+
+        // Default body background (light mode / no preference).
+        XMQColorDef def = colors_lightbg[XMQ_COLOR_BG_INDEX];
+        stylePre.append("body{background-color:#");
+        if (def.r != -1) stylePre.append(hex(def.r, def.g, def.b));
+        else stylePre.append("ffffff");
+        stylePre.append(";}\n");
+
+        // CSS for dark mode (applied when the browser prefers dark mode).
+        stylePre.append("@media (prefers-color-scheme: dark) {\n");
+        stylePre.append("body.xmq_auto{background-color:black;}\n");
+        appendPreHtmlColoring(stylePre, true, "xmq_auto");
+        stylePre.append("}\n");
+
+        // Forced dark mode (--bg=dark).
+        stylePre.append("body.xmq_dark{background-color:black;}\n");
+        appendPreHtmlColoring(stylePre, true, "xmq_dark");
+
+        // CSS for light mode (applied when the browser prefers light mode).
+        stylePre.append("@media (prefers-color-scheme: light) {\n");
+        appendPreHtmlColoring(stylePre, false, "xmq_auto");
+        stylePre.append("}\n");
+
+        // Forced light mode (--bg=light).
+        appendPreHtmlColoring(stylePre, false, "xmq_light");
+
+        style = new XMQThemeStrings(stylePre.toString(), null);
+
+        content = new XMQThemeStrings("<pre class=\"xmq " + bgModeClass(bg) + "\">", "</pre>");
     }
 
-    private static String colorDecl(XMQColorDef c)
+    /**
+     * Append the pre-element CSS for the color class {@code clazz} using
+     * either the dark or the light background colors. Mirrors the C
+     * {@code append_pre_html_coloring}.
+     */
+    private void appendPreHtmlColoring(StringBuilder sb, boolean dark, String clazz)
     {
-        StringBuilder s = new StringBuilder("color:rgb(");
-        s.append(c.r).append(",").append(c.g).append(",").append(c.b).append(");");
-        if (c.bold)
+        XMQColorDef[] colors = dark ? colors_darkbg : colors_lightbg;
+
+        sb.append("pre.").append(clazz)
+          .append("{white-space:pre-wrap;word-break:break-all;border-radius:2px;background-color:#");
+
+        // The bg color (or default when not overridden).
+        XMQColorDef def = colors[XMQ_COLOR_BG_INDEX];
+        if (def.r == -1) sb.append(dark ? "263338" : "ffffcc");
+        else sb.append(hex(def.r, def.g, def.b));
+
+        sb.append(";border:solid 1px ").append(dark ? "#555555" : "#888888")
+          .append(";display:inline-block;padding:1em;color:#");
+
+        // The fg color (or default when not overridden).
+        def = colors[XMQ_COLOR_FG_INDEX];
+        if (def.r == -1) sb.append(dark ? "ffffff" : "000000");
+        else sb.append(hex(def.r, def.g, def.b));
+
+        sb.append(";}\n");
+
+        for (int i = 0; i < NUM_XMQ_COLOR_NAMES; ++i)
         {
-            s.append("font-weight:bold;");
+            def = colors[i];
+            sb.append("pre.").append(clazz).append(' ')
+              .append(XMQ_COLOR_NAMES[i])
+              .append("{color:#").append(hex(def.r, def.g, def.b)).append(";");
+            if (def.bold) sb.append("font-weight:600;");
+            if (def.underline) sb.append("text-decoration:underline;");
+            sb.append('}');
         }
-        if (c.underline)
-        {
-            s.append("text-decoration:underline;");
-        }
-        return s.toString();
     }
 
-    private static void appendTokenCss(StringBuilder sb, String cls, XMQColorDef light, XMQColorDef dark)
+    private static String hex(int r, int g, int b)
     {
-        if (light != null)
-        {
-            sb.append("    .").append(cls).append(".xmq_auto, .").append(cls)
-              .append(".xmq_light { ").append(colorDecl(light)).append(" }\n");
-        }
-        if (dark != null)
-        {
-            sb.append("    .").append(cls).append(".xmq_dark { background-color:#141414;")
-              .append(colorDecl(dark)).append(" }\n");
-        }
+        // Match the C snprintf("%02x%02x%02x") for (possibly) negative values.
+        return String.format("%02x%02x%02x", r, g, b);
+    }
+
+    /** The body/pre class for a forced background: 0 auto, 1 dark, 2 light. */
+    private static String bgModeClass(int bg)
+    {
+        if (bg == 1) return "xmq_dark";
+        if (bg == 2) return "xmq_light";
+        return "xmq_auto";
     }
 }
+
