@@ -32,6 +32,7 @@ import org.jdom2.DocType;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.EntityRef;
+import org.jdom2.Namespace;
 import org.jdom2.ProcessingInstruction;
 import org.jdom2.Text;
 
@@ -323,70 +324,153 @@ public class XMQPrinter
     {
         List<Attribute> attributes = element.getAttributes();
 
-        if (attributes != null && !attributes.isEmpty())
+        // Mirrors C xml.c: libxml2 stores regular attributes in node->properties
+        // and xmlns/ns: declarations in node->nsDef; C prints the regular
+        // attributes (source order) first, then the namespace declarations
+        // (source order).
+        //
+        // Two different parsers feed this printer:
+        //   - the XML parser (RawXmlParser) records xmlns/xmlns:* declarations
+        //     as regular JDOM2 attributes literally named "xmlns" / "xmlns:PREFIX"
+        //     (JDOM2's normal namespace machinery is bypassed), so they show up
+        //     in element.getAttributes();
+        //   - the XMQ parser cannot use an attribute named "xmlns" (JDOM2 throws
+        //     IllegalNameException for a colon in an attribute name, and
+        //     setAttribute("xmlns",...) is rejected outright), so it records
+        //     declarations as namespace objects on the element (element's own
+        //     namespace for the default one, plus additional namespace
+        //     declarations for "xmlns:PREFIX").
+        // Handle both: collect xmlns-named attributes and namespace objects, and
+        // print regular attributes first, then the declarations (in their
+        // relative source order), with the default (empty-prefix) one last.
+        List<Attribute> regular = new java.util.ArrayList<>();
+        List<Attribute> xmlns_attrs = new java.util.ArrayList<>();
+        if (attributes != null)
         {
-            ps.buffer.append("(");
-            ps.last_char = '(';
-            ps.current_indent += 1;
-
-            // Mirrors C xml.c: libxml2 stores regular attributes in node->properties
-            // and xmlns/ns: declarations in node->nsDef. C prints the regular
-            // attributes (source order) first, then the namespace declarations
-            // (source order). Split our JDOM list the same way.
-            List<Attribute> regular = new java.util.ArrayList<>();
-            List<Attribute> nspace = new java.util.ArrayList<>();
             for (Attribute attr : attributes)
             {
                 String n = attr.getName();
-                if (n.equals("xmlns") || n.startsWith("xmlns:"))
+                if (n.equals("xmlns") || (n.startsWith("xmlns:") && !n.startsWith("xmlns:xmlns:")))
                 {
-                    nspace.add(attr);
+                    xmlns_attrs.add(attr);
                 }
                 else
                 {
                     regular.add(attr);
                 }
             }
+        }
 
-            // Mirrors C find_attr_key_max_u_width: find the max width of the
-            // keys across both regular attributes and namespace declarations.
-            int max = 0;
-            if (!ps.output_settings.compact())
-            {
-                for (Attribute attr : regular)
-                {
-                    String value = attr.getValue();
-                    if (value == null || value.isEmpty()) break;
-                    int len = attr.getName().length();
-                    if (len > max) max = len;
-                }
-                for (Attribute attr : nspace)
-                {
-                    int len = attr.getName().length();
-                    if (len > max) max = len;
-                }
-            }
+        List<Namespace> nspaces = new java.util.ArrayList<>(element.getAdditionalNamespaces());
+        Namespace own = element.getNamespace();
+        boolean own_decl = own != null && own.getPrefix().isEmpty()
+            && (own.getURI() != null && !own.getURI().isEmpty());
+        if (own_decl)
+        {
+            nspaces.add(own); // Default namespace declaration, printed last.
+        }
 
-            // Mirrors C print_attributes: subsequent attributes are indented
-            // so that they line up just after the opening parenthesis.
-            int old_line_indent = ps.line_indent;
-            ps.line_indent = ps.current_indent;
+        if (regular.isEmpty() && xmlns_attrs.isEmpty() && nspaces.isEmpty())
+        {
+            return;
+        }
 
+        ps.buffer.append("(");
+        ps.last_char = '(';
+        ps.current_indent += 1;
+
+        // Mirrors C find_attr_key_max_u_width: find the max width of the keys
+        // across regular attributes and namespace declarations.
+        int max = 0;
+        if (!ps.output_settings.compact())
+        {
             for (Attribute attr : regular)
             {
-                print_attribute(ps, attr, max);
+                String value = attr.getValue();
+                if (value == null || value.isEmpty()) break;
+                int len = attr.getName().length();
+                if (len > max) max = len;
             }
-
-            for (Attribute attr : nspace)
+            for (Attribute attr : xmlns_attrs)
             {
-                print_attribute(ps, attr, max);
+                int len = attr.getName().length();
+                if (len > max) max = len;
             }
+            for (Namespace ns : nspaces)
+            {
+                int len = nsName(ns).length();
+                if (len > max) max = len;
+            }
+        }
 
-            ps.line_indent = old_line_indent;
+        // Mirrors C print_attributes: subsequent entries are indented so that
+        // they line up just after the opening parenthesis.
+        int old_line_indent = ps.line_indent;
+        ps.line_indent = ps.current_indent;
 
-            ps.buffer.append(")");
-            ps.last_char = ')';
-            ps.current_indent += 1;
+        for (Attribute attr : regular)
+        {
+            print_attribute(ps, attr, max);
+        }
+
+        // xmlns / xmlns:PREFIX declarations recorded as attributes (XML parser).
+        for (Attribute attr : xmlns_attrs)
+        {
+            print_attribute(ps, attr, max);
+        }
+
+        // xmlns / xmlns:PREFIX declarations recorded as namespace objects
+        // (XMQ parser).
+        for (Namespace ns : nspaces)
+        {
+            print_ns_declaration(ps, nsName(ns), ns.getURI(), max);
+        }
+
+        ps.line_indent = old_line_indent;
+
+        ps.buffer.append(")");
+        ps.last_char = ')';
+        ps.current_indent += 1;
+    }
+
+    // The xmq name rendered for a JDOM2 namespace declaration: "xmlns" for a
+    // default (empty-prefix) namespace, "xmlns:prefix" otherwise.
+    static String nsName(Namespace ns)
+    {
+        String prefix = ns.getPrefix();
+        if (prefix == null || prefix.isEmpty())
+        {
+            return "xmlns";
+        }
+        return "xmlns:"+prefix;
+    }
+
+    // Mirrors C print_attribute, for an element namespace declaration whose
+    // "name" is xmlns / xmlns:prefix and whose value is the namespace uri.
+    void print_ns_declaration(XMQPrintState ps, String name, String value, int max)
+    {
+        check_space_before_attribute(ps);
+
+        print_string(ps, name);
+
+        if (value != null && !value.isEmpty())
+        {
+            if (!ps.output_settings.compact())
+            {
+                int len = ps.current_indent - ps.line_indent;
+                int pad = 1;
+                if (len < max)
+                {
+                    pad = 1 + max - len;
+                }
+                print_white_spaces(ps, pad);
+            }
+            print_string(ps, "=");
+            if (!ps.output_settings.compact())
+            {
+                print_white_spaces(ps, 1);
+            }
+            print_attribute_value(ps, value);
         }
     }
 

@@ -34,6 +34,7 @@ import org.jdom2.Content;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.EntityRef;
+import org.jdom2.Namespace;
 import org.jdom2.Parent;
 import org.jdom2.ProcessingInstruction;
 
@@ -56,6 +57,7 @@ public class XMQParseIntoDOM extends XMQParser
     Attribute attr_last_; // Last created attribute
     String namespace_declaration_; // xmlns or xmlns:alfa found
     String namespace_name_; // The alfa in xmlns:alfa.
+    String ns_decl_prefix_; // When non-null, the xmlns:prefix declaration is in progress; holds the prefix.
 
     boolean parsing_doctype_; // True when parsing a doctype.
     boolean doctype_found_; // True after a doctype has been parsed.
@@ -226,10 +228,29 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_attr_value_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        attr_set_quote(start, stop);
     }
 
     protected void do_attr_value_compound_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        attr_set_quote(start, stop);
+    }
+
+    // Store a quoted attribute value on the attribute in progress. Quoted values
+    // are single strings (as opposed to unquoted compounds), so the content
+    // with the quotes stripped is set as the attribute's value; the printer
+    // re-adds quotes if the value needs them. Mirrors do_attr_value_text for
+    // the unquoted case and add_quote for the element-value case.
+    void attr_set_quote(int start, int stop)
+    {
+        var pair = UtilParseQuote.findQuoteStartStop(buffer_, start, stop);
+        String content = UtilParseQuote.trimQuote(buffer_, pair.left(), pair.right());
+        if (attr_last_ == null)
+        {
+            return;
+        }
+        String prev = attr_last_.getValue();
+        attr_last_.setValue((prev == null ? "" : prev) + content);
     }
 
     protected void do_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
@@ -363,12 +384,26 @@ public class XMQParseIntoDOM extends XMQParser
 
         if (namespace_declaration_ != null)
         {
-            // xmlns=uri or xmlns:prefix=uri was parsed.
-            // At this point do_equals pushed the target element onto the stack,
-            // so cur_parent() is the element to set the namespace on.
+            // An xmlns=uri (default) or xmlns:prefix=uri (prefixed) declaration
+            // was parsed. At this point do_equals has pushed the target element
+            // onto the stack, so cur_parent() is the element to declare on.
+            // JDOM2 refuses an attribute literally named "xmlns", so the
+            // declaration is stored in the element's namespace machinery: the
+            // default one as the element's own (empty-prefix) namespace and a
+            // prefixed one as an added namespace declaration. The printer
+            // renders these back as "xmlns=uri" / "xmlns:prefix=uri".
             Element parent = (Element)cur_parent();
-            parent.setAttribute(namespace_declaration_, text);
+            String prefix = ns_decl_prefix_;
             namespace_declaration_ = null;
+            ns_decl_prefix_ = null;
+            if (prefix == null || prefix.isEmpty())
+            {
+                parent.setNamespace(Namespace.getNamespace("", text));
+            }
+            else
+            {
+                parent.addNamespaceDeclaration(Namespace.getNamespace(prefix, text));
+            }
             return;
         }
 
@@ -402,6 +437,7 @@ public class XMQParseIntoDOM extends XMQParser
     {
         String name = buffer_.substring(start, stop);
         namespace_declaration_ = name;
+        ns_decl_prefix_ = null; // Default declaration until do_attr_ns sets a prefix.
     }
 
     protected void do_attr_key(int start_line, int start_col, int start, int stop, int stop_suffix)
@@ -430,6 +466,11 @@ public class XMQParseIntoDOM extends XMQParser
         String name = buffer_.substring(start, stop);
         namespace_name_ = name;
         attribute_namespace_ = name;
+        if (namespace_declaration_ != null)
+        {
+            // This prefix belongs to an xmlns:prefix declaration in progress.
+            ns_decl_prefix_ = name;
+        }
     }
 
 }
