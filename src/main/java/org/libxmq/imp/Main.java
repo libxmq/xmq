@@ -131,6 +131,9 @@ public class Main
 
             boolean has_cmd = cmds.contains("to-xml");
             boolean is_tokenize = cmds.contains("tokenize");
+            boolean render_html = cmds.contains("render-html");
+            boolean render_terminal = cmds.contains("render-terminal");
+            boolean render_tex = cmds.contains("render-tex");
             if (is_tokenize)
             {
                 XMQParseIntoTokens to = new XMQParseIntoTokens();
@@ -141,6 +144,69 @@ public class Main
                 }
                 to.parse(content, file);
                 System.out.println("");
+            }
+            else if (render_html || render_terminal || render_tex)
+            {
+                Document doc;
+
+                // The input is xml if it starts with a less than char (xmq never
+                // does), else it is parsed as xmq.
+                int i = 0;
+                while (i < content.length())
+                {
+                    char c = content.charAt(i);
+                    if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
+                    {
+                        i++;
+                        continue;
+                    }
+                    break;
+                }
+
+                if (i < content.length() && content.charAt(i) == '<')
+                {
+                    doc = RawXmlParser.parse(content, trimNone);
+                }
+                else
+                {
+                    XMQParseIntoDOM pa = new XMQParseIntoDOM();
+                    pa.parse(content, file);
+                    doc = pa.doc();
+                }
+
+                boolean render_raw = false;
+                boolean dark_mode = false;
+                for (String a : args)
+                {
+                    if (a.equals("--nostyle")) render_raw = true;
+                    else if (a.equals("--theme=dark")) dark_mode = true;
+                    else if (a.equals("--theme=light")) dark_mode = false;
+                    else if (a.equals("--bg=dark")) dark_mode = true;
+                    else if (a.equals("--bg=light")) dark_mode = false;
+                }
+
+                XMQTheme theme = new XMQTheme();
+                theme.installDefault();
+                if (render_html)
+                {
+                    theme.setupHtmlColoring(render_raw, dark_mode);
+                }
+                else
+                {
+                    // render-terminal / render-tex: wrap just the content when
+                    // raw, otherwise use a full document scaffold (not fully
+                    // ported yet; html is the fully supported render).
+                    theme.content = new org.libxmq.imp.XMQThemeStrings(render_raw ? "" : "",
+                        render_raw ? "" : "");
+                }
+
+                XMQPrintState ps = new XMQPrintState();
+                ps.output_settings = os;
+                ps.theme = theme;
+                XMQPrinter pr = new XMQPrinter();
+                pr.print_rendered(ps, doc);
+                System.out.print(ps.buffer);
+                if (!noFinalNl) System.out.println();
             }
             else if (has_cmd)
             {

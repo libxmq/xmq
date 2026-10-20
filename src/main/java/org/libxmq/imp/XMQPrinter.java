@@ -73,6 +73,69 @@ public class XMQPrinter
         ps.current_indent += s.length();
     }
 
+    /**
+     * Mirrors C print_color_pre: writes the pre string for a token color if
+     * one is set in the theme. Remember the pre string so it can be replayed
+     * (re-printed) if the theme uses a NULL post (e.g. ansi codes).
+     */
+    void print_color_pre(XMQPrintState ps, XMQColor color)
+    {
+        XMQThemeStrings ts = ps.theme.getStringsFor(color);
+        if (ts == null || ts.pre() == null)
+        {
+            return;
+        }
+        ps.replay_active_color_pre = ts.pre();
+        ps.buffer.append(ts.pre());
+    }
+
+    /**
+     * Mirrors C print_color_post: writes the post string for a token color if
+     * one is set in the theme. When the theme uses a NULL post (e.g. ansi
+     * codes) the remembered pre string is re-printed instead.
+     */
+    void print_color_post(XMQPrintState ps, XMQColor color)
+    {
+        XMQThemeStrings ts = ps.theme.getStringsFor(color);
+        if (ts == null)
+        {
+            return;
+        }
+        if (ts.post() == null)
+        {
+            if (ps.replay_active_color_pre != null)
+            {
+                ps.buffer.append(ps.replay_active_color_pre);
+            }
+            return;
+        }
+        ps.buffer.append(ts.post());
+        ps.replay_active_color_pre = null;
+    }
+
+    /**
+     * Mirrors C xmq_print_xmq: prints a document wrapped in the theme's
+     * document/header/style/body/content pre/post strings. Used by the render
+     * commands (render-html, render-terminal, render-tex). In the default
+     * to-xmq path the theme has none of these strings set, so this just
+     * prints the nodes.
+     */
+    void print_rendered(XMQPrintState ps, org.jdom2.Document doc)
+    {
+        XMQTheme theme = ps.theme;
+        if (theme.document != null && theme.document.pre()  != null) ps.buffer.append(theme.document.pre());
+        if (theme.header   != null && theme.header.pre()    != null) ps.buffer.append(theme.header.pre());
+        if (theme.style    != null && theme.style.pre()     != null) ps.buffer.append(theme.style.pre());
+        if (theme.header   != null && theme.header.post()   != null) ps.buffer.append(theme.header.post());
+        if (theme.body     != null && theme.body.pre()      != null) ps.buffer.append(theme.body.pre());
+        if (theme.content  != null && theme.content.pre()   != null) ps.buffer.append(theme.content.pre());
+        print_nodes(ps, doc.getContent());
+        if (theme.content  != null && theme.content.post()  != null) ps.buffer.append(theme.content.post());
+        if (theme.body     != null && theme.body.post()     != null) ps.buffer.append(theme.body.post());
+        if (theme.header   != null && theme.header.post()   != null) ps.buffer.append(theme.header.post());
+        if (theme.document != null && theme.document.post() != null) ps.buffer.append(theme.document.post());
+    }
+
     /** Mirrors C print_utf8_char. Prints a single character (updates last_char). */
     void print_char(XMQPrintState ps, char c)
     {
@@ -1246,7 +1309,14 @@ public class XMQPrinter
     void print_element_node(XMQPrintState ps, Element element, int align)
     {
         check_space_before_key(ps);
+
+        // The tag name is colored either as a key (key=value style) or as an
+        // element name (element with a list of children), depending on the node.
+        boolean key_value = !element.getContent().isEmpty() && is_key_value_node(element);
+        XMQColor name_color = key_value ? XMQColor.COLOR_element_key : XMQColor.COLOR_element_name;
+        print_color_pre(ps, name_color);
         print_string(ps, element.getName());
+        print_color_post(ps, name_color);
 
         print_attributes(ps, element);
 
@@ -1598,21 +1668,27 @@ public class XMQPrinter
         {
             if (ps.output_settings.compact())
             {
+                print_color_pre(ps, XMQColor.COLOR_comment);
                 print_string(ps, "/*");
                 print_string(ps, content);
                 print_string(ps, "*/");
+                print_color_post(ps, XMQColor.COLOR_comment);
                 ps.last_char = '/';
             }
             else
             {
+                print_color_pre(ps, XMQColor.COLOR_comment);
                 print_string(ps, "// ");
                 print_string(ps, content);
+                print_color_post(ps, XMQColor.COLOR_comment);
                 ps.last_char = 1;
             }
         }
         else
         {
+            print_color_pre(ps, XMQColor.COLOR_comment);
             print_comment_lines(ps, content, ps.output_settings.compact());
+            print_color_post(ps, XMQColor.COLOR_comment);
             ps.last_char = '/';
         }
     }
