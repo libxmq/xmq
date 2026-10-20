@@ -2342,6 +2342,10 @@ bool cmd_load(XMQCliCommand *command, bool *no_more_data)
 
     command->env->load = command;
 
+    // Make the input location (a file name, or "stdin" etc.) visible in
+    // any parse error messages.
+    xmqSetDocSourceName(command->env->doc, from);
+
     if (command->ixml_source != NULL)
     {
         const char *engine = command->ixml_engine;
