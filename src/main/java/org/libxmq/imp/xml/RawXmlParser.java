@@ -220,17 +220,16 @@ public class RawXmlParser
     static boolean has_leading_space_nl(String v, int start, int stop)
     {
         int i = start;
-        boolean found = false;
         while (i < stop && v.charAt(i) == '\n') i++;
-        boolean middle_found = (i > start);
+        // Leading pure newlines count too (matches C: only_nls > 0 -> found_nl).
+        boolean found = (i > start);
         while (i < stop)
         {
             if (v.charAt(i) == '\n') found = true;
             if (!is_xml_ws(v.charAt(i))) break;
             i++;
         }
-        if (!found) return false;
-        return true; // (middle_found/only_newlines not needed: caller passes NULL)
+        return found;
     }
 
     /** text.c has_ending_nl_space: does a trailing whitespace run contain a newline? */
