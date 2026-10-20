@@ -73,6 +73,13 @@ public class Main
      */
     public static void main(String[] args) throws Exception
     {
+        // C writes raw UTF-8 bytes to stdout. The JVM console output defaults to
+        // the native locale charset (ASCII under a C/POSIX locale), which would
+        // replace non-ASCII characters in values with '?'. Force UTF-8 so the
+        // rendered output matches the C implementation byte-for-byte.
+        System.setOut(new java.io.PrintStream(
+            new java.io.FileOutputStream(java.io.FileDescriptor.out), true, StandardCharsets.UTF_8));
+
         if (args.length == 0)
         {
             printHelp();
