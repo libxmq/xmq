@@ -388,7 +388,7 @@ public class XMQPrinter
             {
                 String value = attr.getValue();
                 if (value == null || value.isEmpty()) break;
-                int len = attr.getName().length();
+                int len = attrFullname(attr).length();
                 if (len > max) max = len;
             }
             for (Attribute attr : xmlns_attrs)
@@ -495,12 +495,30 @@ public class XMQPrinter
         }
     }
 
+    // The name rendered for an attribute: the name itself when it already
+    // carries a colon, otherwise the attribute's namespace prefix (eg a
+    // prefixed name remembered at parse time) followed by ":" and the name.
+    static String attrFullname(Attribute attr)
+    {
+        String name = attr.getName();
+        if (name.indexOf(':') > 0)
+        {
+            return name;
+        }
+        Namespace ns = attr.getNamespace();
+        if (ns != null && ns.getPrefix() != null && !ns.getPrefix().isEmpty())
+        {
+            return ns.getPrefix()+":"+name;
+        }
+        return name;
+    }
+
     // Mirrors C print_attribute. Name already printed by caller.
     void print_attribute(XMQPrintState ps, Attribute attr, int max)
     {
         check_space_before_attribute(ps);
 
-        String name = attr.getName();
+        String name = attrFullname(attr);
         int colon = name.indexOf(':');
         if (colon > 0 && colon < name.length() - 1)
         {
@@ -1504,8 +1522,32 @@ public class XMQPrinter
         // element name (element with a list of children), depending on the node.
         boolean key_value = !element.getContent().isEmpty() && is_key_value_node(element);
         XMQColor name_color = key_value ? XMQColor.COLOR_element_key : XMQColor.COLOR_element_name;
+        // A prefixed element name, eg xxx:proj: print the prefix before the
+        // element name, using the element's namespace when the name itself
+        // does not already carry a colon (mirrors C, where the node name is
+        // printed with its namespace prefix).
+        String el_name = element.getName();
+        String el_prefix = null;
+        if (el_name.indexOf(':') < 0)
+        {
+            Namespace el_ns = element.getNamespace();
+            if (el_ns != null && el_ns.getPrefix() != null && !el_ns.getPrefix().isEmpty())
+            {
+                el_prefix = el_ns.getPrefix();
+            }
+        }
+        if (el_prefix != null)
+        {
+            XMQColor ns_color = el_prefix.equals("xsl") ? XMQColor.COLOR_ns_override_xsl : XMQColor.COLOR_attr_ns;
+            print_color_pre(ps, ns_color);
+            print_string(ps, el_prefix);
+            print_color_post(ps, ns_color);
+            print_color_pre(ps, XMQColor.COLOR_ns_colon);
+            print_string(ps, ":");
+            print_color_post(ps, XMQColor.COLOR_ns_colon);
+        }
         print_color_pre(ps, name_color);
-        print_string(ps, element.getName());
+        print_string(ps, el_name);
         print_color_post(ps, name_color);
 
         print_attributes(ps, element);

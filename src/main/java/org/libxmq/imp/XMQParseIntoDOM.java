@@ -68,6 +68,28 @@ public class XMQParseIntoDOM extends XMQParser
     String element_namespace_; // The element namespace is found before the element name. Remember the namespace name here.
     String attribute_namespace_; // The attribute namespace is found before the attribute key. Remember the namespace name here.
 
+    // An element or attribute name whose namespace prefix is used before the
+    // matching xmlns:PREFIX=uri declaration has been seen. Remembered here so
+    // that, when the declaration is finally reached, we can go back and patch
+    // the node with the real namespace (prefix + uri). Mirrors C, in which
+    // libxml2 keeps the prefix on the node with a temporary href until the
+    // declaration is parsed.
+    static class NsPendingRef
+    {
+        NsPendingRef(Element owner, Object node, String prefix)
+        {
+            this.owner = owner;
+            this.node = node;
+            this.prefix = prefix;
+        }
+
+        final Element owner; // Element that must carry the declaration to patch this ref.
+        final Object node; // The Element or Attribute to patch.
+        final String prefix; // The used namespace prefix, eg xxx in xxx:proj.
+    }
+
+    List<NsPendingRef> pending_ns_; // Pending namespace prefixes waiting for declaration.
+
     /**
      * Returns the parsed document.
      * @return The parsed document.
@@ -80,6 +102,7 @@ public class XMQParseIntoDOM extends XMQParser
     void setup()
     {
         element_stack_ = new Stack<>();
+        pending_ns_ = new java.util.ArrayList<>();
         // JDOM2 requires a Document to have exactly one root element, so we
         // always create one here and drop it again after parsing, if possible.
         // An implicit root name passed along the API is used if available.
@@ -173,8 +196,20 @@ public class XMQParseIntoDOM extends XMQParser
             Element new_node;
             if (element_namespace_ != null)
             {
-                new_node = new Element(name, element_namespace_);
+                // The element name is prefixed, eg xxx:proj, where the prefix
+                // usually refers to a namespace that is not declared yet (the
+                // xmlns:PREFIX=uri declaration is in this element's own
+                // attributes, below). Attach a namespace with the prefix and a
+                // placeholder uri <prefix > uri>, and remember the element in
+                // pending_ns_ so that, when the declaration is finally
+                // reached, we can patch in the real namespace. The placeholder
+                // uri never shows up in the XMQ output <what is printed is
+                // the namespace prefix>, and is replaced when patched.
+                String prefix = element_namespace_;
                 element_namespace_ = null;
+                new_node = new Element(name);
+                new_node.setNamespace(pending_namespace(prefix));
+                pending_ns_.add(new NsPendingRef(new_node, new_node, prefix));
             }
             else
             {
@@ -396,19 +431,68 @@ public class XMQParseIntoDOM extends XMQParser
             String prefix = ns_decl_prefix_;
             namespace_declaration_ = null;
             ns_decl_prefix_ = null;
+            attribute_namespace_ = null;
+            namespace_name_ = null;
             if (prefix == null || prefix.isEmpty())
             {
-                parent.setNamespace(Namespace.getNamespace("", text));
+                // A default namespace declaration, eg xmlns = u2.
+                // If the element already has a non-empty namespace prefix (a
+                // prefixed name remembered before this declaration), do not
+                // replace it with the default; add the default as an additional
+                // declaration (printed as xmlns = uri in the XMQ output).
+                if (parent.getNamespace() != null && !parent.getNamespace().getPrefix().isEmpty())
+                {
+                    parent.addNamespaceDeclaration(Namespace.getNamespace("", text));
+                }
+                else
+                {
+                    parent.setNamespace(Namespace.getNamespace("", text));
+                }
             }
             else
             {
-                parent.addNamespaceDeclaration(Namespace.getNamespace(prefix, text));
+                Namespace decl = Namespace.getNamespace(prefix, text);
+                // Patch the remembered prefix users first so that their
+                // namespace (prefix + placeholder uri) is replaced by the real
+                // declaration; then add the declaration. (Adding the
+                // declaration first would collide with the pending prefix usage.)
+                patch_pending_ns(parent, prefix, decl);
+                parent.addNamespaceDeclaration(decl);
             }
             return;
         }
 
         String prev = (attr_last_ == null) ? "" : attr_last_.getValue();
         attr_last_.setValue(prev+text);
+    }
+
+    // The xmlns:PREFIX=uri declaration on owner has been parsed. Go back to
+    // every remembered name that used PREFIX and patch it, replacing the
+    // pending prefix-only namespace with the real namespace (prefix + uri).
+    void patch_pending_ns(Element owner, String prefix, Namespace decl)
+    {
+        for (NsPendingRef ref : pending_ns_)
+        {
+            if (ref.owner != owner || !ref.prefix.equals(prefix)) continue;
+            if (ref.node instanceof Attribute a)
+            {
+                a.setNamespace(decl);
+            }
+            else if (ref.node instanceof Element e)
+            {
+                e.setNamespace(decl);
+            }
+        }
+        pending_ns_.removeIf(ref -> ref.owner == owner && ref.prefix.equals(prefix));
+    }
+
+    // A namespace for a used-but-not-yet-declared prefix. JDOM2 requires a
+    // non-empty uri, so a placeholder uri is used; it is invisible in the XMQ
+    // output <what is printed is the namespace prefix> and is replaced when
+    // the real declaration is patched in.
+    static Namespace pending_namespace(String prefix)
+    {
+        return Namespace.getNamespace(prefix, "__XMQ_PENDING_NS__");
     }
 
     protected void do_element_value_text(int start_line, int start_col, int start, int stop, int stop_suffix)
@@ -445,9 +529,34 @@ public class XMQParseIntoDOM extends XMQParser
         String name = buffer_.substring(start, stop);
 
         Attribute new_attr;
-        // Namespaces are ignored: the jdom2 attribute value is set separately
-        // by do_attr_value_text, so create the attribute with an empty value.
-        new_attr = new Attribute(name, "");
+        if (attribute_namespace_ != null && namespace_declaration_ == null)
+        {
+            // The attribute name is prefixed, eg xxx:leprutt, where the prefix
+            // usually refers to a namespace that is not declared yet (the
+            // xmlns:PREFIX=uri declaration comes later in the same attribute
+            // list). Attach a namespace with the prefix and a placeholder uri
+            // <prefix > uri>, and remember the attribute in pending_ns_ so the
+            // real namespace can be patched in when the declaration is finally
+            // reached. The placeholder uri never shows up in the XMQ output.
+            String prefix = attribute_namespace_;
+            attribute_namespace_ = null;
+            namespace_name_ = null;
+            new_attr = new Attribute(name, "", pending_namespace(prefix));
+            Content last = last_child();
+            if (last instanceof Element owner)
+            {
+                pending_ns_.add(new NsPendingRef(owner, new_attr, prefix));
+            }
+        }
+        else
+        {
+            // No namespace prefix: the jdom2 attribute value is set separately
+            // by do_attr_value_text, so create the attribute with an empty value.
+            new_attr = new Attribute(name, "");
+            // Drop any stale values left over from a namespace declaration.
+            attribute_namespace_ = null;
+            namespace_name_ = null;
+        }
         attr_last_ = new_attr;
 
         Content last = last_child();
