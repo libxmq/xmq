@@ -139,7 +139,7 @@ public class Main
 
                 if (i < content.length() && content.charAt(i) == '<')
                 {
-                    Document xml_doc = FixedEntityParser.parseWithoutDuplicateEntities(content);
+                    Document xml_doc = RawXmlParser.parse(content);
                     doc = xml_doc;
                 }
                 else

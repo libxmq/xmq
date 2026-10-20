@@ -316,8 +316,54 @@ public class XMQPrinter
             {
                 print_white_spaces(ps, 1);
             }
-            print_value_text(ps, value, false);
+            print_attribute_value(ps, value);
         }
+    }
+
+    /** Mirrors C print_value for an attribute value which may contain
+     *  entity references: references are printed as-is, other text is
+     *  quoted/escaped, and more than one part is wrapped in parentheses. */
+    void print_attribute_value(XMQPrintState ps, String value)
+    {
+        List<RawXmlParser.ValuePart> parts = RawXmlParser.value_parts(value);
+        if (parts.isEmpty() || (parts.size() == 1 && !parts.get(0).is_entity))
+        {
+            print_value_text(ps, value, false);
+            return;
+        }
+        if (parts.size() == 1)
+        {
+            RawXmlParser.ValuePart p = parts.get(0);
+            check_space_before_entity_node(ps);
+            print_string(ps, "&" + p.text + ";");
+            return;
+        }
+
+        int old_line_indent = ps.line_indent;
+        print_string(ps, "(");
+        if (!ps.output_settings.compact())
+        {
+            print_white_spaces(ps, 1);
+        }
+        ps.line_indent = ps.current_indent;
+        for (RawXmlParser.ValuePart p : parts)
+        {
+            if (p.is_entity)
+            {
+                check_space_before_entity_node(ps);
+                print_string(ps, "&" + p.text + ";");
+            }
+            else
+            {
+                print_value_text(ps, p.text, true);
+            }
+        }
+        if (!ps.output_settings.compact())
+        {
+            print_white_spaces(ps, 1);
+        }
+        print_string(ps, ")");
+        ps.line_indent = old_line_indent;
     }
 
     void print_content_node(XMQPrintState ps, Content node)
