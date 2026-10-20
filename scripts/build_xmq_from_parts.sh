@@ -67,6 +67,7 @@ do_part yaml
 do_part membuffer
 do_part stack
 do_part text
+do_part lang
 do_part utf8
 do_part entities
 do_part vector

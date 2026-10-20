@@ -35,6 +35,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/entities.h"
 #include"parts/utf8.h"
 #include"parts/hashmap.h"
+#include"parts/lang.h"
 #include"parts/ixml.h"
 #include"parts/membuffer.h"
 #include"parts/stack.h"
@@ -5100,29 +5101,18 @@ static void infer_missing_element_names_rec(xmlNode *node)
         if (xmlIsBlankNode(child)) continue;
         if (child->type != XML_ELEMENT_NODE) continue;
 
-        // Is this child anonymous and does the parent have a name whose trailing
-        // s can be dropped to give the child a name, items -> item, branches -> branch.
+        // Give an anonymous child the singular form of the name of the
+        // parent, items -> item, steps -> step, branches -> branch.
         if (child->name &&
             node->name &&
-            strcmp((const char*)node->name, "_") != 0)
+            strcmp((const char*)node->name, "_") != 0 &&
+            !strcmp((const char*)child->name, "_"))
         {
-            const char *child_name = (const char*)child->name;
-            const char *parent = (const char*)node->name;
-            size_t len = strlen(parent);
-            // Drop the trailing s, or the trailing es when that looks better:
-            // steps -> step, jobs -> job, branches -> branch, classes -> class.
-            size_t drop = 1;
-            if (len > 2 && parent[len-1] == 's' && parent[len-2] == 'e') drop = 2;
-            if (!strcmp(child_name, "_") && len > drop && parent[len-1] == 's')
+            char *nm = plural_to_singular((const char*)node->name);
+            if (nm != NULL)
             {
-                char *nm = (char*)malloc(len); // len-drop chars + zero
-                if (nm)
-                {
-                    memcpy(nm, parent, len-drop);
-                    nm[len-drop] = 0;
-                    xmlNodeSetName(child, (const xmlChar*)nm);
-                    free(nm);
-                }
+                xmlNodeSetName(child, (const xmlChar*)nm);
+                free(nm);
             }
         }
 
@@ -6026,6 +6016,7 @@ char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
 #include"parts/json.c"
 #include"parts/yaml.c"
 #include"parts/text.c"
+#include"parts/lang.c"
 #include"parts/utf8.c"
 #include"parts/vector.c"
 #include"parts/xml.c"

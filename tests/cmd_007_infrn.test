@@ -5,6 +5,9 @@ push:
   branches:
   - master
   - poster
+  houses:
+  - one
+  - two
   steps:
   - id: S1
     use: a/b
@@ -20,6 +23,11 @@ cmd_007_infrn {
         {
             branch = master
             branch = poster
+        }
+        houses(A)
+        {
+            house = one
+            house = two
         }
         steps(A)
         {

@@ -3869,7 +3869,8 @@ void print_command_help(XMQCliCmd c)
             "Usage: xmq <input.yml|input.json> infrn [to-xmq to-yaml ...]\n"
             "Guess names of unnamed elements (elements named _) by using the name of the parent:\n"
             "an unnamed child of an element named for example 'branches' is renamed 'branch'\n"
-            "(trailing 's' is dropped) and an unnamed root is named with the --root=<name>\n"
+            "(steps -> step, branches -> branch, houses -> house, cities -> city)\n"
+           "and an unnamed root is named with the --root=<name>\n"
             "option if given, or after the input file name if not.\n");
         break;
     case XMQ_CLI_CMD_DELETE:
