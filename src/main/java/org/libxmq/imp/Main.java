@@ -43,6 +43,10 @@ import java.io.StringWriter;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.DocType;
+import org.jdom2.EntityRef;
+import org.jdom2.Text;
+import org.jdom2.CDATA;
+import org.jdom2.Comment;
 import org.jdom2.ProcessingInstruction;
 import org.jdom2.input.SAXBuilder;
 import org.jdom2.output.Format;
@@ -137,6 +141,7 @@ public class Main
                 .setPreferDoubleQuotes(prefDQ);
 
             boolean has_cmd = cmds.contains("to-xml");
+            boolean has_cmd_html = cmds.contains("to-html");
             boolean is_tokenize = cmds.contains("tokenize");
             boolean render_html = cmds.contains("render-html");
             boolean render_terminal = cmds.contains("render-terminal");
@@ -212,6 +217,66 @@ public class Main
                 XMQPrinter pr = new XMQPrinter();
                 pr.print_rendered(ps, doc);
                 System.out.print(ps.buffer);
+                if (!noFinalNl) System.out.println();
+            }
+            else if (has_cmd_html)
+            {
+                // to-html: emit the document as html, mirroring C's
+                // htmlDocContentDumpOutput (libxml2's html serializer).
+                Document doc;
+
+                // The input is xml if it starts with a less than char (xmq
+                // never does), else it is parsed as xmq.
+                int i = 0;
+                while (i < content.length())
+                {
+                    char c = content.charAt(i);
+                    if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
+                    {
+                        i++;
+                        continue;
+                    }
+                    break;
+                }
+
+                if (i < content.length() && content.charAt(i) == '<')
+                {
+                    doc = RawXmlParser.parse(content, trimNone);
+                }
+                else
+                {
+                    XMQParseIntoDOM pa = new XMQParseIntoDOM();
+                    pa.parse(content, file);
+                    doc = pa.doc();
+                }
+
+                StringBuilder sw = new StringBuilder();
+                Element root = doc.getRootElement();
+                if (root == null)
+                {
+                    // Empty document, nothing to dump.
+                }
+                else if (root.getName().equals("__XMQ_TMP_ROOT__"))
+                {
+                    // The xmq input had a top level value (eg !DOCTYPE) and an
+                    // element <so the parser kept its temporary root>; emit
+                    // each top level child in order.
+                    for (org.jdom2.Content c : root.getContent())
+                    {
+                        html_top(sw, c);
+                    }
+                }
+                else
+                {
+                    // A doctype parsed from xml input lives on the jdom
+                    // document itself.
+                    if (doc.getDocType() != null)
+                    {
+                        sw.append("<!DOCTYPE ").append(doc.getDocType().getElementName()).append(">\n");
+                    }
+                    html_top(sw, root);
+                }
+                System.out.print(sw.toString());
                 if (!noFinalNl) System.out.println();
             }
             else if (has_cmd)
@@ -370,6 +435,193 @@ public class Main
         v.append('\n');
         v.append(']');
         return v.toString();
+    }
+
+    // ---------------- to-html ----------------
+    //
+    // HTML tag tables, mirroring the libxml2 html table (html40ElementTable) as
+    // used by htmlNodeDumpFormatOutput. An element in the set is a known, non
+    // inline ("block") element; void elements are emitted without a closing
+    // tag and their children are dropped.
+    static final java.util.Set<String> HTML_VOID = new java.util.HashSet<>(java.util.List.of(
+        "area", "base", "basefont", "br", "col", "frame", "hr", "img", "input",
+        "link", "meta", "param"));
+
+    static final java.util.Set<String> HTML_BLOCK = new java.util.HashSet<>(java.util.List.of(
+        "address", "blockquote", "caption", "center", "colgroup", "dd", "dir",
+        "div", "dl", "dt", "fieldset", "form", "frameset",
+        "h1", "h2", "h3", "h4", "h5", "h6", "head", "html", "legend",
+        "li", "menu", "noframes", "noscript", "ol", "optgroup", "option",
+        "p", "pre", "style", "table", "tbody", "td", "tfoot", "th",
+        "thead", "title", "tr", "ul"));
+
+    static boolean html_void(String name)
+    {
+        return HTML_VOID.contains(name);
+    }
+
+    static boolean html_block(String name)
+    {
+        return HTML_BLOCK.contains(name);
+    }
+
+    // Escape html text/attribute values, as xmlSerializeText does with
+    // XML_ESCAPE_HTML|XML_ESCAPE_ATTR: & < > (quotes stay as is in the
+    // html variant).
+    static void html_escape(String s, StringBuilder sw)
+    {
+        if (s == null) return;
+        for (int i = 0; i < s.length(); i++)
+        {
+            char c = s.charAt(i);
+            if (c == '&') sw.append("&amp;");
+            else if (c == '<') sw.append("&lt;");
+            else if (c == '>') sw.append("&gt;");
+            else sw.append(c);
+        }
+    }
+
+    // Emit one top level node (doctype placeholder, element, or loose text).
+    static void html_top(StringBuilder sw, org.jdom2.Content c)
+    {
+        if (c instanceof ProcessingInstruction pi)
+        {
+            if (pi.getTarget().equals("DOCTYPE"))
+            {
+                sw.append("<!DOCTYPE ").append(pi.getData()).append(">\n");
+            }
+            else
+            {
+                sw.append("<?").append(pi.getTarget()).append(' ').append(pi.getData()).append(" ?>");
+            }
+        }
+        else if (c instanceof Element el)
+        {
+            html_element(sw, el);
+        }
+        else if (c instanceof org.jdom2.EntityRef e)
+        {
+            sw.append('&').append(e.getName()).append(';');
+        }
+        else if (c instanceof org.jdom2.Text t)
+        {
+            html_escape(t.getText(), sw);
+        }
+    }
+
+    // Emit the element's attributes in document order.
+    static void html_attrs(StringBuilder sw, Element el)
+    {
+        java.util.List<org.jdom2.Attribute> attributes = el.getAttributes();
+        if (attributes == null) return;
+        for (org.jdom2.Attribute a : attributes)
+        {
+            String name = a.getName();
+            org.jdom2.Namespace ns = a.getNamespace();
+            String prefix = (ns == null) ? "" : ns.getPrefix();
+            if (!prefix.isEmpty())
+            {
+                name = prefix + ":" + name;
+            }
+            sw.append(' ').append(name).append("=\"");
+            html_escape(a.getValue(), sw);
+            sw.append('"');
+        }
+    }
+
+    // Emit one element and its contents in html (libxml2 html serializer
+    // rules). void elements have their children dropped; newlines are
+    // inserted: leading and trailing when the element is a known block
+    // element (not starting with 'p') with element (child) first and last,
+    // more than one child; and after a child which is a known block element
+    // when a non textual sibling follows it.
+    static void html_element(StringBuilder sw, Element el)
+    {
+        String name = el.getName();
+        org.jdom2.Namespace ns = el.getNamespace();
+        String prefix = (ns == null) ? "" : ns.getPrefix();
+        String full_name = name;
+        if (!prefix.isEmpty())
+        {
+            full_name = prefix + ":" + name;
+        }
+
+        if (html_void(full_name))
+        {
+            // A void element is emitted tag + attributes only; any children
+            // are dropped.
+            sw.append('<').append(full_name);
+            html_attrs(sw, el);
+            sw.append('>');
+            return;
+        }
+
+        java.util.List<org.jdom2.Content> children = el.getContent();
+        boolean many = children.size() > 1;
+        boolean first_el = !children.isEmpty() && children.get(0) instanceof Element;
+        boolean last_el = !children.isEmpty() && children.get(children.size() - 1) instanceof Element;
+        boolean not_p = !full_name.isEmpty() && full_name.charAt(0) != 'p';
+        boolean leading = html_block(full_name) && not_p && many && first_el;
+        boolean trailing = html_block(full_name) && not_p && many && last_el;
+
+        sw.append('<').append(full_name);
+        html_attrs(sw, el);
+        sw.append('>');
+        if (leading)
+        {
+            sw.append('\n');
+        }
+
+        for (int k = 0; k < children.size(); k++)
+        {
+            org.jdom2.Content c = children.get(k);
+            if (c instanceof Element child)
+            {
+                html_element(sw, child);
+                // A newline follows a child which is a known block element,
+                // unless the next sibling is textual.
+                if (k + 1 < children.size())
+                {
+                    org.jdom2.Content next = children.get(k + 1);
+                    String c_name = child.getName();
+                    org.jdom2.Namespace c_ns = child.getNamespace();
+                    String c_prefix = (c_ns == null) ? "" : c_ns.getPrefix();
+                    String c_full = c_name;
+                    if (!c_prefix.isEmpty())
+                    {
+                        c_full = c_prefix + ":" + c_name;
+                    }
+                    if (html_block(c_full) && !(next instanceof org.jdom2.Text)
+                        && !(next instanceof org.jdom2.EntityRef))
+                    {
+                        sw.append('\n');
+                    }
+                }
+            }
+            else if (c instanceof org.jdom2.EntityRef e)
+            {
+                sw.append('&').append(e.getName()).append(';');
+            }
+            else if (c instanceof org.jdom2.Comment cm)
+            {
+                sw.append("<!--").append(cm.getText()).append("-->");
+            }
+            else if (c instanceof org.jdom2.CDATA cd)
+            {
+                sw.append("<![CDATA[").append(cd.getText()).append("]]> ");
+            }
+            else
+            {
+                org.jdom2.Text t = (org.jdom2.Text)c;
+                html_escape(t.getText(), sw);
+            }
+        }
+
+        if (trailing)
+        {
+            sw.append('\n');
+        }
+        sw.append("</").append(full_name).append(">");
     }
 
     static void startServer(InputStream in, OutputStream out) throws InterruptedException, ExecutionException
