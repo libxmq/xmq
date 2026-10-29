@@ -116,7 +116,7 @@ typedef enum
     XMQ_CLI_CMD_FOR_EACH,
     XMQ_CLI_CMD_ADD,
     XMQ_CLI_CMD_ADD_ROOT,
-    XMQ_CLI_CMD_INFRN,
+    XMQ_CLI_CMD_HEU,
     XMQ_CLI_CMD_STATISTICS,
     XMQ_CLI_CMD_QUOTE_C,
     XMQ_CLI_CMD_UNQUOTE_C
@@ -345,7 +345,7 @@ bool cmd_select(XMQCliCommand *command);
 bool cmd_statistics(XMQCliCommand *command);
 bool cmd_substitute(XMQCliCommand *command);
 bool cmd_to(XMQCliCommand *command);
-bool cmd_infrn(XMQCliCommand *command);
+bool cmd_heu(XMQCliCommand *command);
 bool cmd_tokenize(XMQCliCommand *command);
 bool cmd_transform(XMQCliCommand *command);
 bool cmd_unload(XMQCliCommand *command);
@@ -536,7 +536,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "validate")) return XMQ_CLI_CMD_VALIDATE;
     if (!strcmp(s, "quote-c")) return XMQ_CLI_CMD_QUOTE_C;
     if (!strcmp(s, "unquote-c")) return XMQ_CLI_CMD_UNQUOTE_C;
-    if (!strcmp(s, "infrn")) return XMQ_CLI_CMD_INFRN;
+    if (!strcmp(s, "heu")) return XMQ_CLI_CMD_HEU;
 
     return XMQ_CLI_CMD_NONE;
 }
@@ -577,7 +577,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_FOR_EACH: return "for-each";
     case XMQ_CLI_CMD_ADD: return "add";
     case XMQ_CLI_CMD_ADD_ROOT: return "add-root";
-    case XMQ_CLI_CMD_INFRN: return "infrn";
+    case XMQ_CLI_CMD_HEU: return "heu";
     case XMQ_CLI_CMD_STATISTICS: return "statistics";
     case XMQ_CLI_CMD_QUOTE_C: return "quote-c";
     case XMQ_CLI_CMD_UNQUOTE_C: return "unquote-c";
@@ -648,7 +648,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
         return XMQ_CLI_CMD_GROUP_VALIDATE;
 
     case XMQ_CLI_CMD_NONE:
-    case XMQ_CLI_CMD_INFRN:
+    case XMQ_CLI_CMD_HEU:
     case XMQ_CLI_CMD_STATISTICS:
         return XMQ_CLI_CMD_GROUP_NONE;
 
@@ -2045,7 +2045,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  delete delete-entity\n"
            "  for-each\n"
            "  help\n"
-           "  infrn\n"
+           "  heu\n"
            "  no-output\n"
            "  render-html render-terminal render-tex\n"
            "  replace replace-entity\n"
@@ -2440,7 +2440,7 @@ bool cmd_unload(XMQCliCommand *command)
 // Derive a reasonable xmq element name from an input file name:
 // take the basename, drop the last extension and replace all
 // characters that are not allowed in an element name with underline.
-static const char *infrn_root_name(const char *file)
+static const char *heu_root_name(const char *file)
 {
     static char name[512];
 
@@ -2488,11 +2488,11 @@ static const char *infrn_root_name(const char *file)
     return name;
 }
 
-bool cmd_infrn(XMQCliCommand *command)
+bool cmd_heu(XMQCliCommand *command)
 {
     if (command->env->doc == NULL)
     {
-        fprintf(stderr, "xmq: no document loaded, cannot run infrn\n");
+        fprintf(stderr, "xmq: no document loaded, cannot run heu\n");
         return false;
     }
 
@@ -2505,15 +2505,15 @@ bool cmd_infrn(XMQCliCommand *command)
     else
     {
         // No root option given, use the input file name cleaned up.
-        root_name = infrn_root_name(command->env->load->in);
+        root_name = heu_root_name(command->env->load->in);
     }
 
-    verbose_("xmq=", "cmd-infrn root_name=%s", root_name ? root_name : "(none)");
+    verbose_("xmq=", "cmd-heu root_name=%s", root_name ? root_name : "(none)");
 
     bool ok = xmqInferMissingElementNames(command->env->doc, root_name);
     if (!ok)
     {
-        fprintf(stderr, "xmq: infrn failed\n");
+        fprintf(stderr, "xmq: heu failed\n");
         return false;
     }
     return true;
@@ -3864,10 +3864,10 @@ void print_command_help(XMQCliCmd c)
             "Usage: xmq help <command>\n"
             "Print more detailed help about the command.\n");
         break;
-    case XMQ_CLI_CMD_INFRN:
+    case XMQ_CLI_CMD_HEU:
         printf(
-            "Usage: xmq <input.yml|input.json> infrn [to-xmq to-yaml ...]\n"
-            "Guess names of unnamed elements (elements named _) by using the name of the parent:\n"
+            "Usage: xmq <input.yml|input.json> heu [to-xmq to-yaml ...]\n"
+            "Guess using a heuristic, names of unnamed elements (elements named _) by using the name of the parent:\n"
             "an unnamed child of an element named for example 'branches' is renamed 'branch'\n"
             "(steps -> step, branches -> branch, houses -> house, cities -> city)\n"
            "and an unnamed root is named with the --root=<name>\n"
@@ -4415,8 +4415,8 @@ bool perform_command(XMQCliCommand *c, bool *no_more_data)
         return cmd_add(c);
     case XMQ_CLI_CMD_ADD_ROOT:
         return cmd_add_root(c);
-    case XMQ_CLI_CMD_INFRN:
-        return cmd_infrn(c);
+    case XMQ_CLI_CMD_HEU:
+        return cmd_heu(c);
     case XMQ_CLI_CMD_STATISTICS:
         return cmd_statistics(c);
     case XMQ_CLI_CMD_QUOTE_C:

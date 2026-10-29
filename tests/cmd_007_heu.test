@@ -15,7 +15,7 @@ push:
     run: make
 
 OUTPUT
-cmd_007_infrn {
+cmd_007_heu {
     name = demo
     on   = ''
     push {
@@ -44,4 +44,4 @@ cmd_007_infrn {
 }
 END
 ARGS --yaml
-CMDS infrn
+CMDS heu
