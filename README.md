@@ -1,4 +1,4 @@
-# XMQ | A tool and language to work with xml/html/json and parse any other format using ixml.
+# XMQ | A tool and language to work with xml/html/json/yaml and parse any other format using ixml.
 
 Homepage [https://libxmq.org](https://libxmq.org)
 
@@ -20,10 +20,10 @@ You can also install with `brew install xmq`
 | MacOSX | [![Build MacOSX Status](https://github.com/libxmq/xmq/workflows/Build%20MacOSX/badge.svg)](https://github.com/libxmq/xmq/actions)|
 | Windows | [![Build Windows Status](https://github.com/libxmq/xmq/workflows/Build%20Windows/badge.svg)](https://github.com/libxmq/xmq/actions)|
 
-## XMQ another way to work with XML/HTML/JSON
+## XMQ another way to work with XML/HTML/JSON/YAML
 
-The xmq format can exactly represent the content of the xml/html/json file
-and can therefore be converted back to xml/html/json after any editing has
+The xmq format can exactly represent the content of the xml/html/json/yaml file
+and can therefore be converted back to xml/html/json/yaml after any editing has
 been done.
 
 For html you can use the suffix htmq to indicate that you have written
@@ -65,6 +65,11 @@ xmq ixml:data/csv myfile.csv xsl:data/table-to-web to-html br
 xmq pom.xml pa
 cat rss.xml | xmq pa
 curl -s 'https://dummyjson.com/todos?limit=10' | xmq pa
+
+# View the yaml file, but add some heuristics to add missing element names.
+xmq setup.yaml heu pa
+# Likewise for json. You can compare with or without heu.
+xmq config.json heu pa
 
 # Browse (br) the content as a web page
 xmq pom.xml br
