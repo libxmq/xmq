@@ -115,7 +115,7 @@ bool is_ixml_insertion_start(XMQParseState *state);
 bool is_ixml_not_start(XMQParseState *state);
 bool is_ixml_literal_start(XMQParseState *state);
 bool is_ixml_mark_char(char c);
-bool is_ixml_name_follower(char c);
+bool is_ixml_name_follower(XMQParseState *state);
 bool is_ixml_name_start(char c);
 bool is_ixml_naming_char(char c);
 bool is_ixml_naming_start(XMQParseState *state);
@@ -347,10 +347,77 @@ bool is_ixml_mark_char(char c)
         c == '*';   // Controlled ambiguity test.
 }
 
-bool is_ixml_name_follower(char c)
+// ixml spec (see 3rdparty/ixml/tests/reference/ixml.ixml):
+//   -namestart:    ["_"; L].
+//   -namefollower: namestart; ["-." + U+00B7 + U+203F + U+2040; Nd; Mn].
+// A codepoint is a name-follower if it is a namestart char ("_" or a letter,
+// L), one of the explicit follower chars (hyphen "-" U+002D, period "." U+002E,
+// middle dot U+00B7, undertie U+203F, glon U+2040), a decimal digit (Nd), or a
+// nonspacing mark (Mn).
+static bool is_ixml_name_follower_codepoint(int cp)
 {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' ||
-        c == '-' || (c >= '0' && c <= '9') ;
+    if (cp == '_') return true; // namestart
+
+    // Explicit namefollower chars.
+    if (cp == 0x002D || cp == 0x002E ||
+        cp == 0x00B7 || cp == 0x203F || cp == 0x2040)
+    {
+        return true;
+    }
+
+    // Namestart (L, any letter), Nd (decimal number) and Mn (nonspacing mark).
+    // The combined "L" category may be empty in this build, so also check the
+    // individual letter categories.
+    const char *cats[] = {"L", "Lu", "Ll", "Lt", "Lm", "Lo", "Nd", "Mn"};
+    for (size_t n = 0; n < sizeof(cats)/sizeof(cats[0]); ++n)
+    {
+        int *cat = NULL;
+        size_t cat_len = 0;
+        if (unicode_get_category_part(cats[n], &cat, &cat_len) &&
+            category_has_code(cp, cat, cat_len))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// A UTF-8 aware check: true if the character at state->i is a name follower.
+// It inspects the whole (possibly multi-byte) UTF-8 sequence so that non-ASCII
+// followers (letters, Nd, Mn and the special punctuation above) are accepted.
+//
+// The period ("." U+002E) needs a lookahead, because it is ambiguous with the
+// rule/alternative terminator. A name may *contain* a period, but a *trailing*
+// period always terminates the current rule rather than ending the name. So a
+// period only counts as a name follower when the name continues immediately
+// after it (e.g. "6.0", "foo.bar", the following character being another name
+// follower). If it is the last character of the token (followed by whitespace,
+// end-of-buffer, a structural separator such as "," ";" "|", or the start of
+// the next "name =" rule) it is the rule terminator and is NOT consumed into
+// the name.
+bool is_ixml_name_follower(XMQParseState *state)
+{
+    if (!state) return false;
+    if (state->i < state->buffer_start || state->i >= state->buffer_stop) return false;
+
+    int cp = 0;
+    size_t len = 0;
+    if (!decode_utf8(state->i, state->buffer_stop, &cp, &len)) return false;
+
+    if (cp == 0x002E)
+    {
+        // Period: a follower only if the name continues immediately after it.
+        const char *next = state->i + len;
+        if (next >= state->buffer_stop) return false;
+        int cp2 = 0;
+        size_t len2 = 0;
+        if (!decode_utf8(next, state->buffer_stop, &cp2, &len2)) return false;
+        (void)len2;
+        return is_ixml_name_follower_codepoint(cp2);
+    }
+
+    return is_ixml_name_follower_codepoint(cp);
 }
 
 bool is_ixml_name_start(char c)
@@ -1092,9 +1159,15 @@ void parse_ixml_name(XMQParseState *state, const char **name_start, const char *
     *name_start = state->i;
     EAT(name_start, 1);
 
-    while (is_ixml_name_follower(*(state->i)))
+    while (is_ixml_name_follower(state))
     {
-        EAT(name_inside, 1);
+        // Followers may be multi-byte (letters, Nd, Mn, ...) so eat the whole
+        // UTF-8 sequence, not just the first byte.
+        int cp = 0;
+        size_t len = 0;
+        decode_utf8(state->i, state->buffer_stop, &cp, &len);
+        if (len < 1 || len > 4) len = 1;
+        EAT(name_inside, len);
     }
     *name_stop = state->i;
 

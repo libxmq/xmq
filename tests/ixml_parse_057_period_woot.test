@@ -1,0 +1,14 @@
+START
+iffo = alfa.
+alfa = beta.6.1 .
+beta.6.1 = 'hej'.
+INPUT
+hej
+OUTPUT
+iffo {
+    alfa {
+        beta.6.1 = hej
+    }
+}
+END
+ARGS=
