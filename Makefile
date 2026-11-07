@@ -364,6 +364,10 @@ testjc: xmqjc
 	@echo "OK: TestInternals"
 	@./tests/testj.sh build/xmqjc build build/test_output $(FILTER)
 
+generate_categories:
+	[ -e DerivedGeneralCategory.txt ] || curl -fLO https://www.unicode.org/Public/UCD/latest/ucd/extracted/DerivedGeneralCategory.txt
+	./scripts/gen_unicode_categories.py
+
 .PHONY: web
 web: build/web/index.html
 

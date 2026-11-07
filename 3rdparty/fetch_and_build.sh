@@ -475,7 +475,8 @@ if [ "$1" = "ixml" ]
 then
     if [ ! -f ixml/README.md ]
     then
-        git clone https://codeberg.org/InvisibleXML/ixml.git
+        #git clone https://codeberg.org/InvisibleXML/ixml.git
+        git clone ssh://git@codeberg.org/weetmuts/ixml.git
     fi
 
     if [ ! -f saxon.jar ]
