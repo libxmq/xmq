@@ -577,5 +577,18 @@ IXMAT_XSL
     # decides the results directory (xmq-results).
     ( cd "$DIR" && PROCESSOR=xmq sh ./run-tests.sh )
 
+    # Render the latest XML test report as a self-contained HTML page.
+    REPORT=$(ls -t "$DIR"/xmq-results/test-report.*.xml 2> /dev/null | head -n 1)
+    if [ -n "$REPORT" ]
+    then
+        HTML=${REPORT%.xml}.html
+        java -cp $DIR/saxon.jar:$DIR/xmlresolver.jar net.sf.saxon.Transform \
+            -s:"$REPORT" \
+            -xsl:$DIR/ixml/tests/tools/test-report-to-html.xsl \
+            -o:"$HTML" \
+        && echo "HTML report: $HTML" \
+        || echo "warning: could not render HTML report ($REPORT)"
+    fi
+
     exit 0
 fi
