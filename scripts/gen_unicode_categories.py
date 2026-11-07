@@ -66,13 +66,10 @@ def add_category(cats, name, rngs):
 
 
 def format_array(values):
-    items = [f"0x{v:04x}" if v <= 0xFFFF else f"0x{v:05x}" for v in sorted(values)]
-    out = []
-    for it in items:
-        if out and len(out) >= 11:
-            out[-1] = out[-1] + ", " + it
-        out.append(it)
-    return " { " + ", ".join(out) + " };"
+    # Emit as a flat, sorted, duplicate-free list (required for
+    # binary search / linear scan in text.c).
+    items = [f"0x{v:04x}" if v <= 0xFFFF else f"0x{v:05x}" for v in sorted(set(values))]
+    return " { " + ", ".join(items) + " };"
 
 
 def main():
