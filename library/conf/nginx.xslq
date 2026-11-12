@@ -1,0 +1,37 @@
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:template(match = /)
+    {
+        nginx {
+            xsl:apply-templates
+        }
+    }
+    xsl:template(match = directive)
+    {
+        xsl:element(name = "{@key}")
+        {
+            xsl:value-of(select = .)
+        }
+    }
+    xsl:template(match = comment)
+    {
+        xsl:comment {
+            xsl:value-of(select = 'text()')
+        }
+    }
+    xsl:template(match = context)
+    {
+        xsl:element(name = '{@key}')
+        {
+            xsl:if(test = @args)
+            {
+                xsl:attribute(name = args)
+                {
+                    xsl:value-of(select = @args)
+                }
+            }
+            xsl:apply-templates
+        }
+    }
+}

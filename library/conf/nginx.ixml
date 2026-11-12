@@ -1,0 +1,11 @@
+{ v1.0.0 Parse nginx config files. }
+{ by Fredrik Öhrström (c) 2025 spdx: MIT }
+
+nginx = ws, (directive|comment|context)+.
+-ws = -[' ';#9;#d;#a]*.
+comment = -'#', (-#a, ws | ~[#a]*, -#a, ws).
+directive = @key, -' '+, -value, -';', ws.
+context = @key, -' '+, args?, -'{', -nginx, -'}', ws.
+@args = ~['{;'], ~['{;']*, ws.
+key = [Ll;'_']+.
+value = ~[' {'], ~[';']*.
