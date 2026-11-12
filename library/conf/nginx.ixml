@@ -3,9 +3,10 @@
 
 nginx = ws, (directive|comment|context)+.
 -ws = -[' ';#9;#d;#a]*.
-comment = -'#', (-#a, ws | ~[#a]*, -#a, ws).
+comment = -'#', ~[#a]*, -#a, ws.
 directive = @key, -' '+, -value, -';', ws.
-context = @key, -' '+, args?, -'{', -nginx, -'}', ws.
-@args = ~['{;'], ~['{;']*, ws.
+context = @key, -' '+, (args, ws)?, -'{', -nginx, -'}', ws.
+@args = argchar, (~['{;']*, argchar)?.
+-argchar = ~['{; '; #9; #d; #a].
 key = [Ll;'_']+.
 value = ~[' {'], ~[';']*.

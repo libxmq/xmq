@@ -1,0 +1,21 @@
+nginx {
+    //  A compact web server configuration.
+    // 
+    worker_processes = 2
+    events {
+        worker_connections = 1024
+    }
+    http {
+        include = mime.types
+        server {
+            listen      = 8080
+            server_name = localhost
+            location(args = /)
+            {
+                //  Serve static content.
+                root  = /var/www/html
+                index = index.html
+            }
+        }
+    }
+}

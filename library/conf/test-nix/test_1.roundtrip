@@ -1,0 +1,35 @@
+# A compact NixOS module exercising both transforms.
+{ config, pkgs, ... }: {
+  imports = [
+    ./hardware-configuration.nix
+  ];
+  services.openssh.enable = true;
+  networking.firewall.allowedUDPPorts = [
+    22865
+  ];
+  system.stateVersion = "26.05";
+  literalBoolean = "true";
+  emptyString = "";
+  emptySet = {
+  };
+  emptyList = [
+  ];
+  console = {
+    keyMap = "sv-latin1";
+  };
+  environment.systemPackages = with pkgs; [
+    vim
+    btop
+  ];
+  "my settings"."a quoted name" = false;
+  "literal.dot" = "a\"b\\c";
+  nested = [
+    [
+      1
+      "2"
+    ]
+    {
+      enabled = false;
+    }
+  ];
+}

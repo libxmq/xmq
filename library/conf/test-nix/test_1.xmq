@@ -1,0 +1,55 @@
+nix {
+    //  A compact NixOS module exercising both transforms.
+    module {
+        parameters {
+            parameter(name = config)
+            parameter(name = pkgs)
+            ellipsis = true
+        }
+        set {
+            imports(A)
+            {
+                _(N = path) = ./hardware-configuration.nix
+            }
+            services.openssh.enable = true
+            networking.firewall.allowedUDPPorts(A)
+            {
+                _ = 22865
+            }
+            system.stateVersion(S) = 26.05
+            literalBoolean(S) = true
+            emptyString(S)
+            emptySet
+            emptyList(A)
+            console {
+                keyMap = sv-latin1
+            }
+            environment.systemPackages(N = with)
+            {
+                with {
+                    scope {
+                        reference = pkgs
+                    }
+                    list(A)
+                    {
+                        _(N = reference) = vim
+                        _(N = reference) = btop
+                    }
+                }
+            }
+            _(_ = 'my settings.a quoted name') = false
+            literal.dot(K = '"literal.dot"') = 'a"b\c'
+            nested(A)
+            {
+                _(A)
+                {
+                    _ = 1
+                    _(S) = 2
+                }
+                _ {
+                    enabled = false
+                }
+            }
+        }
+    }
+}
