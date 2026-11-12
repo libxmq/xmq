@@ -1,0 +1,52 @@
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:output(method   = text
+               encoding = UTF-8)
+    // Match the root element
+    xsl:template(match = '/nginx')
+    {
+        xsl:apply-templates(select = '* | comment()')
+    }
+    // Generic element handler
+    xsl:template(match = '* | comment()')
+    {
+        // Indentation based on depth
+        xsl:for-each(select = 'ancestor::*[not(self::nginx)]')
+        {
+            xsl:text = '    '
+        }
+        xsl:choose {
+            xsl:when(test = *)
+            {
+                xsl:value-of(select = "name()")
+                xsl:if(test = @args)
+                {
+                    xsl:text = ' '
+                    xsl:value-of(select = @args)
+                }
+                xsl:text = ' {'
+                xsl:text = &#10;
+                xsl:apply-templates(select = '* | comment()')
+                // Indentation based on depth
+                xsl:for-each(select = 'ancestor::*[not(self::nginx)]')
+                {
+                    xsl:text = '    '
+                }
+                xsl:text = '}'
+                xsl:text = &#10;
+            }
+            xsl:when(test = 'self::comment()')
+            {
+                // Print # and comment content
+                xsl:value-of(select = "concat('# ', .)")
+                xsl:text = &#10;
+            }
+            xsl:otherwise {
+                // Print element name and text
+                xsl:value-of(select = "concat(name(), ' ', ., ';')")
+                xsl:text = &#10;
+            }
+        }
+    }
+}
