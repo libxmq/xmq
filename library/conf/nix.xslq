@@ -1,0 +1,147 @@
+{ v1.0.0 Cleanup after ixml parse of nix. Fredrik Öhrström (c) 2026 spdx: MIT }
+
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:template(match = /)
+    {
+        nginx {
+            xsl:apply-templates
+        }
+    }
+    xsl:template(match = directive)
+    {
+        xsl:element(name = "{@key}")
+        {
+            xsl:value-of(select = .)
+        }
+    }
+    xsl:template(match = comment)
+    {
+        xsl:comment {
+            xsl:value-of(select = 'text()')
+        }
+    }
+    xsl:template(match = context)
+    {
+        xsl:element(name = '{@key}')
+        {
+            xsl:if(test = @args)
+            {
+                xsl:attribute(name = args)
+                {
+                    xsl:value-of(select = @args)
+                }
+            }
+            xsl:apply-templates
+        }
+    }
+}
+
+xsl:stylesheet(version = 1.0 xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:template(match = '@*|node()') {
+        xsl:copy { xsl:apply-templates(select = '@*|node()') }
+    }
+    xsl:template(match = binding) {
+        xsl:variable(name = key) {
+            xsl:for-each(select = attrpath/attribute) {
+                xsl:if(test = 'position() > 1') { xsl:text = '.' }
+                xsl:apply-templates(select = 'node()' mode = value)
+            }
+        }
+        // Conservative XML names; all other keys use xmq's lossless fallback.
+        xsl:variable(name = start select = '"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_"')
+        xsl:variable(name = rest select = 'concat($start, "0123456789.-")')
+        xsl:choose {
+            xsl:when(test = 'string-length($key) > 0 and contains($start, substring($key, 1, 1)) and translate($key, $rest, "") = ""') {
+                xsl:element(name = '{$key}') { xsl:call-template(name = binding-value) }
+            }
+            xsl:otherwise {
+                _ {
+                    xsl:attribute(name = _) { xsl:value-of(select = $key) }
+                    xsl:call-template(name = binding-value)
+                }
+            }
+        }
+    }
+    xsl:template(name = binding-value) {
+        // Preserve quoted segment boundaries, which a dotted display name loses.
+        xsl:if(test = 'attrpath/attribute/string[contains(., ".")]') {
+            xsl:attribute(name = K) {
+                xsl:for-each(select = attrpath/attribute) {
+                    xsl:if(test = 'position() > 1') { xsl:text = '.' }
+                    xsl:choose {
+                        xsl:when(test = string) {
+                            xsl:text = '"'
+                            xsl:value-of(select = string)
+                            xsl:text = '"'
+                        }
+                        xsl:otherwise { xsl:value-of(select = .) }
+                    }
+                }
+            }
+        }
+        xsl:for-each(select = '*[not(self::attrpath or self::comment)]') {
+            xsl:call-template(name = value-metadata)
+        }
+        xsl:apply-templates(select = 'node()[not(self::attrpath)]' mode = binding-value)
+    }
+    xsl:template(match = 'string|number|reference|path' mode = binding-value) {
+        xsl:apply-templates(select = 'node()' mode = value)
+    }
+    xsl:template(match = list mode = binding-value) {
+        xsl:apply-templates(select = 'node()' mode = array-item)
+    }
+    // Lists inside expressions such as `with` retain their expression wrapper.
+    xsl:template(match = list) {
+        list(A) { xsl:apply-templates(select = 'node()' mode = array-item) }
+    }
+    xsl:template(match = comment mode = array-item) {
+        xsl:apply-templates(select = .)
+    }
+    xsl:template(match = '*' mode = array-item) {
+        _ {
+            xsl:call-template(name = value-metadata)
+            xsl:apply-templates(select = . mode = binding-value)
+        }
+    }
+    xsl:template(name = value-metadata) {
+        xsl:choose {
+            xsl:when(test = 'self::list') { xsl:attribute(name = A) }
+            xsl:when(test = 'self::path or self::with or self::group or (self::reference and . != "true" and . != "false" and . != "null")') {
+                xsl:attribute(name = N) { xsl:value-of(select = 'name()') }
+            }
+            xsl:when(test = 'self::string') {
+                xsl:variable(name = value) { xsl:apply-templates(select = 'node()' mode = value) }
+                xsl:if(test = '$value = "" or $value = "true" or $value = "false" or $value = "null" or number($value) = number($value)') {
+                    xsl:attribute(name = S)
+                }
+            }
+            xsl:apply-templates(select = . mode = binding-value)
+        }
+    }
+    xsl:template(match = set mode = binding-value) { xsl:apply-templates }
+    xsl:template(match = 'node()' mode = binding-value) { xsl:apply-templates(select = .) }
+    xsl:template(match = 'text()' mode = value) { xsl:value-of(select = .) }
+    xsl:template(match = '*' mode = value) { xsl:apply-templates(select = 'node()' mode = value) }
+    xsl:template(match = escape mode = value) {
+        xsl:choose {
+            xsl:when(test = 'substring(., 2) = "n"') { xsl:text = &#10; }
+            xsl:when(test = 'substring(., 2) = "r"') { xsl:text = &#13; }
+            xsl:when(test = 'substring(., 2) = "t"') { xsl:text = &#9; }
+            xsl:otherwise { xsl:value-of(select = 'substring(., 2)') }
+        }
+    }
+    xsl:template(match = 'reference[.="true" or .="false"]') {
+        boolean { xsl:value-of(select = .) }
+    }
+    xsl:template(match = 'reference[.="null"]') { null }
+    xsl:template(match = text) { xsl:value-of(select = .) }
+    xsl:template(match = comment)
+    {
+        xsl:comment {
+            xsl:value-of(select = 'text()')
+        }
+    }
+}

@@ -1,0 +1,29 @@
+{ v1.0.0 Parse the declarative Nix configuration subset. Fredrik Öhrström (c) 2026 spdx: MIT }
+
+nix = ws, (module | set), ws.
+module = parameters, ws, -':', ws, expression.
+parameters = -'{', ws, (parameter, ws, -',', ws)*, (parameter, ws | ellipsis, ws)?, -'}'.
+parameter = @name.
+ellipsis = -'...', +'true'.
+-name = ['a'-'z'; 'A'-'Z'; '_'], ['a'-'z'; 'A'-'Z'; '0'-'9'; '_'; '-'; "'"]*.
+-expression = with | set | list | string | number | reference | path | group.
+with = -'with', s, scope, ws, -';', ws, expression.
+scope = reference.
+group = -'(', ws, expression, ws, -')'.
+set = -'{', ws, (binding, ws)*, -'}'.
+binding = attrpath, ws, -'=', ws, expression, ws, -';'.
+attrpath = attribute++(ws, -'.', ws).
+attribute = -name | string.
+list = -'[', ws, -']' | -'[', ws, expression++s, ws, -']'.
+string = -'"', text?, (escape, text?)*, -'"'.
+text = ~['"'; '\']+.
+escape = '\', ['"'; '\'; 'n'; 'r'; 't'; '$'].
+number = '-'?, ['0'-'9']+, ('.', ['0'-'9']+)? .
+reference = -name++'.'.
+path = ('.' | '..')?, '/', pathchar+, ('/', pathchar+)*.
+-pathchar = ['a'-'z'; 'A'-'Z'; '0'-'9'; '_'; '-'; '.'; '+'].
+-ws = (space | comment)*.
+-s = (space | comment)+.
+-space = -[' '; #9; #a; #d].
+comment = -'#', ~[#a; #d]*, (-#d, -#a? | -#a)
+        | -'/*', (~['*'] | '*'+, ~['*'; '/'])*, '*'*, -'*/'.

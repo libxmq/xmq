@@ -1,0 +1,206 @@
+{ v1.0.0 Write nix configuration from xmq source. Fredrik Öhrström (c) 2026 spdx: MIT }
+
+xsl:stylesheet(version = 1.0 xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:output(method = text encoding = UTF-8)
+    xsl:variable(name = newline) { xsl:text = &#10; }
+    xsl:variable(name = carriage-return) { xsl:text = &#13; }
+    xsl:variable(name = tab) { xsl:text = &#9; }
+    xsl:template(match = /) {
+        xsl:apply-templates(select = 'nix/* | nix/comment()' mode = expression)
+        xsl:text = &#10;
+    }
+    xsl:template(name = indent) {
+        xsl:param(name = depth select = 0)
+        xsl:if(test = '$depth > 0') {
+            xsl:text = '  '
+            xsl:call-template(name = indent) { xsl:with-param(name = depth select = '$depth - 1') }
+        }
+    }
+    xsl:template(match = module mode = expression) {
+        xsl:text = '{ '
+        xsl:for-each(select = 'parameters/parameter | parameters/ellipsis') {
+            xsl:if(test = 'position() > 1') { xsl:text = ', ' }
+            xsl:choose {
+                xsl:when(test = 'self::ellipsis') { xsl:text = '...' }
+                xsl:otherwise { xsl:value-of(select = @name) }
+            }
+        }
+        xsl:text = ' }: '
+        xsl:apply-templates(select = 'parameters/comment()' mode = expression)
+        xsl:apply-templates(select = '*[not(self::parameters)] | comment()' mode = expression)
+    }
+    xsl:template(match = set mode = expression) {
+        xsl:param(name = depth select = 0)
+        xsl:call-template(name = set) { xsl:with-param(name = depth select = $depth) }
+    }
+    xsl:template(name = set) {
+        xsl:param(name = depth select = 0)
+        xsl:text = '{'
+        xsl:text = &#10;
+        xsl:apply-templates(select = '* | comment()' mode = binding) {
+            xsl:with-param(name = depth select = '$depth + 1')
+        }
+        xsl:call-template(name = indent) { xsl:with-param(name = depth select = $depth) }
+        xsl:text = '}'
+    }
+    xsl:template(match = '*' mode = binding) {
+        xsl:param(name = depth select = 0)
+        xsl:call-template(name = indent) { xsl:with-param(name = depth select = $depth) }
+        xsl:choose {
+            xsl:when(test = @K) { xsl:value-of(select = @K) }
+            xsl:otherwise {
+                xsl:variable(name = key) {
+                    xsl:choose {
+                        xsl:when(test = @_) { xsl:value-of(select = @_) }
+                        xsl:otherwise { xsl:value-of(select = 'name()') }
+                    }
+                }
+                xsl:call-template(name = key) { xsl:with-param(name = key select = 'string($key)') }
+            }
+        }
+        xsl:text = ' = '
+        xsl:apply-templates(select = . mode = value) { xsl:with-param(name = depth select = $depth) }
+        xsl:text = ';'
+        xsl:text = &#10;
+    }
+    xsl:template(name = key) {
+        xsl:param(name = key)
+        xsl:choose {
+            xsl:when(test = 'contains($key, ".")') {
+                xsl:call-template(name = key-part) { xsl:with-param(name = key select = 'substring-before($key, ".")') }
+                xsl:text = '.'
+                xsl:call-template(name = key) { xsl:with-param(name = key select = 'substring-after($key, ".")') }
+            }
+            xsl:otherwise { xsl:call-template(name = key-part) { xsl:with-param(name = key select = $key) } }
+        }
+    }
+    xsl:template(name = key-part) {
+        xsl:param(name = key)
+        xsl:variable(name = start select = '"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_"')
+        xsl:variable(name = rest select = "concat($start, '0123456789-')")
+        xsl:choose {
+            xsl:when(test = 'string-length($key) > 0 and contains($start, substring($key, 1, 1)) and translate($key, $rest, "") = ""') {
+                xsl:value-of(select = $key)
+            }
+            xsl:otherwise { xsl:call-template(name = quote) { xsl:with-param(name = text select = $key) } }
+        }
+    }
+    xsl:template(match = '*' mode = value) {
+        xsl:param(name = depth select = 0)
+        xsl:choose {
+            xsl:when(test = @A) { xsl:call-template(name = list) { xsl:with-param(name = depth select = $depth) } }
+            xsl:when(test = '@N = "set" or (not(@N = "with" or @N = "group") and (* or (not(text()) and not(@S))))') { xsl:call-template(name = set) { xsl:with-param(name = depth select = $depth) } }
+            xsl:when(test = '@N = "with" or @N = "group"') {
+                xsl:apply-templates(select = '* | comment()' mode = expression) { xsl:with-param(name = depth select = $depth) }
+            }
+            xsl:otherwise {
+                xsl:apply-templates(select = 'comment()' mode = expression) { xsl:with-param(name = depth select = $depth) }
+                xsl:choose {
+                    xsl:when(test = 'not(@S) and (@N = "reference" or @N = "path" or . = "true" or . = "false" or . = "null" or number(.) = number(.))') {
+                        xsl:value-of(select = .)
+                    }
+                    xsl:otherwise { xsl:call-template(name = quote) { xsl:with-param(name = text select = 'string(.)') } }
+                }
+            }
+        }
+    }
+    xsl:template(match = list mode = expression) {
+        xsl:param(name = depth select = 0)
+        xsl:call-template(name = list) { xsl:with-param(name = depth select = $depth) }
+    }
+    xsl:template(name = list) {
+        xsl:param(name = depth select = 0)
+        xsl:text = '['
+        xsl:text = &#10;
+        xsl:apply-templates(select = '* | comment()' mode = item) { xsl:with-param(name = depth select = '$depth + 1') }
+        xsl:call-template(name = indent) { xsl:with-param(name = depth select = $depth) }
+        xsl:text = ']'
+    }
+    xsl:template(match = '*' mode = item) {
+        xsl:param(name = depth select = 0)
+        xsl:call-template(name = indent) { xsl:with-param(name = depth select = $depth) }
+        xsl:apply-templates(select = . mode = value) { xsl:with-param(name = depth select = $depth) }
+        xsl:text = &#10;
+    }
+    xsl:template(match = with mode = expression) {
+        xsl:param(name = depth select = 0)
+        xsl:text = 'with '
+        xsl:value-of(select = scope/reference)
+        xsl:text = '; '
+        xsl:apply-templates(select = 'scope/comment() | comment() | *[not(self::scope)]' mode = expression) { xsl:with-param(name = depth select = $depth) }
+    }
+    xsl:template(match = group mode = expression) {
+        xsl:param(name = depth select = 0)
+        xsl:text = '('
+        xsl:apply-templates(select = '* | comment()' mode = expression) { xsl:with-param(name = depth select = $depth) }
+        xsl:text = ')'
+    }
+    xsl:template(match = 'reference|number|boolean|path' mode = expression) { xsl:value-of(select = .) }
+    xsl:template(match = null mode = expression) { xsl:text = 'null' }
+    xsl:template(match = string mode = expression) {
+        // Expression strings retain explicit escape nodes in the forward format.
+        xsl:text = '"'
+        xsl:for-each(select = 'node()') {
+            xsl:choose {
+                xsl:when(test = 'self::escape') { xsl:value-of(select = .) }
+                xsl:otherwise { xsl:call-template(name = escape) { xsl:with-param(name = text select = 'string(.)') } }
+            }
+        }
+        xsl:text = '"'
+    }
+    xsl:template(name = quote) {
+        xsl:param(name = text)
+        xsl:text = '"'
+        xsl:call-template(name = escape) { xsl:with-param(name = text select = $text) }
+        xsl:text = '"'
+    }
+    xsl:template(name = escape) {
+        xsl:param(name = text)
+        xsl:if(test = 'string-length($text) > 0') {
+            xsl:variable(name = c select = 'substring($text, 1, 1)')
+            xsl:choose {
+                xsl:when(test = '$c = "\"') { xsl:text = '\\' }
+                xsl:when(test = '''$c = '"' ''') { xsl:text = '\"' }
+                xsl:when(test = '$c = $newline') { xsl:text = '\n' }
+                xsl:when(test = '$c = $carriage-return') { xsl:text = '\r' }
+                xsl:when(test = '$c = $tab') { xsl:text = '\t' }
+                xsl:when(test = 'starts-with($text, "${")') { xsl:text = '\$' }
+                xsl:otherwise { xsl:value-of(select = $c) }
+            }
+            xsl:call-template(name = escape) { xsl:with-param(name = text select = 'substring($text, 2)') }
+        }
+    }
+    xsl:template(match = 'comment()' mode = expression) {
+        xsl:param(name = depth select = 0)
+        xsl:call-template(name = comment-lines) {
+            xsl:with-param(name = text select = 'string(.)')
+            xsl:with-param(name = depth select = $depth)
+        }
+    }
+    xsl:template(match = 'comment()' mode = binding) {
+        xsl:param(name = depth select = 0)
+        xsl:apply-templates(select = . mode = expression) { xsl:with-param(name = depth select = $depth) }
+    }
+    xsl:template(match = 'comment()' mode = item) {
+        xsl:param(name = depth select = 0)
+        xsl:apply-templates(select = . mode = expression) { xsl:with-param(name = depth select = $depth) }
+    }
+    xsl:template(name = comment-lines) {
+        xsl:param(name = text)
+        xsl:param(name = depth select = 0)
+        xsl:call-template(name = indent) { xsl:with-param(name = depth select = $depth) }
+        xsl:text = '#'
+        xsl:choose {
+            xsl:when(test = 'contains($text, $newline)') {
+                xsl:value-of(select = 'substring-before($text, $newline)')
+                xsl:text = &#10;
+                xsl:call-template(name = comment-lines) {
+                    xsl:with-param(name = text select = 'substring-after($text, $newline)')
+                    xsl:with-param(name = depth select = $depth)
+                }
+            }
+            xsl:otherwise { xsl:value-of(select = $text) xsl:text = &#10; }
+        }
+    }
+}

@@ -1,3 +1,5 @@
+{ v1.0.0 Cleanup after ixml parse of nginx. by Fredrik Öhrström (c) 2026 spdx: MIT }
+
 xsl:stylesheet(version   = 1.0
                xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
 {
