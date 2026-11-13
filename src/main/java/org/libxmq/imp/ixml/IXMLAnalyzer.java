@@ -5,10 +5,12 @@ import java.util.*;
 import org.libxmq.imp.xml.XmlDocument;
 import org.libxmq.imp.xml.XmlElement;
 import org.libxmq.imp.xml.XmlNode;
+import org.libxmq.imp.xml.XmlText;
 import org.libxmq.imp.ixml.IXMLGrammar.Rule;
 import org.libxmq.imp.ixml.IXMLGrammar.Term;
 
-/** Conservative, character-level LL(1) analysis and parser-description DOM. */
+/** Character-level LL(*) analysis and parser-description DOM. Every decision gets a
+ *  lookahead DFA, see IXMLLookahead. */
 public final class IXMLAnalyzer {
 
     /** Fluent element helper on top of the xmq DOM. */
@@ -25,15 +27,40 @@ public final class IXMLAnalyzer {
     private final IXMLGrammar grammar;
     private final List<Element> diagnostics = new ArrayList<>();
     private final Set<String> reachable = new LinkedHashSet<>();
-    private IXMLAnalyzer(IXMLGrammar grammar) { this.grammar = grammar; }
+    private final IXMLLookahead lookahead;
+    private final Map<String, IXMLLookahead.Dfa> dfas = new LinkedHashMap<>();
+    private IXMLAnalyzer(IXMLGrammar grammar) { this.grammar = grammar; this.lookahead = new IXMLLookahead(grammar); }
 
     /** Analyze a grammar and test its predictive parser against the whole input.
      * @param source iXML grammar
-     * @param input sample input (not used to infer grammar properties)
+     * @param input sample input (not used to infer grammar properties), or null for no test
      * @return an analysis DOM containing diagnostics or a parser and test result
      */
     public static XmlDocument analyze(String source, String input) {
         return new IXMLAnalyzer(IXMLGrammar.parse(source)).analyze(input);
+    }
+
+    /** Parse the input with the LL(*) parser of the grammar and return the ixml parse tree.
+     * @param source iXML grammar
+     * @param input the input to parse
+     * @return the parse tree
+     * @throws IllegalArgumentException if the grammar is not LL(*) or the input is rejected
+     */
+    public static XmlDocument parse(String source, String input) {
+        IXMLAnalyzer a = new IXMLAnalyzer(IXMLGrammar.parse(source));
+        a.prepare();
+        if (!a.diagnostics.isEmpty()) {
+            StringBuilder b = new StringBuilder("grammar is not LL(*):");
+            for (Element d : a.diagnostics) b.append("\n").append(d.attributeValue("rule")).append(": ").append(d.textContent());
+            throw new IllegalArgumentException(b.toString());
+        }
+        Element tree = new Element("tree");
+        String error = a.run(input, tree);
+        if (error != null) throw new IllegalArgumentException(error);
+        XmlDocument d = new XmlDocument();
+        XmlNode root = tree.firstChild();
+        if (root instanceof XmlElement e) d.appendRaw(e);
+        return d;
     }
     private Rule rule(Term t) { return grammar.rules.get(t.ref); }
     private boolean nullable(Term t) { return t.ref != null ? rule(t).nullable : t.chars == null; }
@@ -105,27 +132,37 @@ public final class IXMLAnalyzer {
                 if (seen.add(n)) todo.addAll(left.get(n));
             }
             if (!r.productive) diagnose("nonproductive", name, "Rule cannot derive a finite input string.");
-            BitSet used = new BitSet();
-            for (int i = 0; i < r.alternatives.size(); i++) {
-                BitSet s = select(r, r.alternatives.get(i)), overlap = (BitSet)s.clone(); overlap.and(used);
-                if (!overlap.isEmpty()) diagnose("lookahead-conflict", name,
-                    "Alternative " + (i + 1) + " overlaps an earlier alternative on " + ranges(overlap) + ".");
-                used.or(s);
+        }
+        if (!diagnostics.isEmpty()) return;
+        for (String name : lookahead.decisions(reachable)) {
+            if (System.getenv("XMQ_LL_TIME") != null) System.err.println("start " + name);
+            long t0 = System.nanoTime();
+            String result = "ok";
+            try {
+                dfas.put(name, lookahead.build(name));
+            } catch (IXMLLookahead.Failure f) {
+                diagnose(f.code, name, f.getMessage());
+                result = f.code;
+            }
+            if (System.getenv("XMQ_LL_TIME") != null) {
+                IXMLLookahead.Dfa d = dfas.get(name);
+                System.err.printf("%8.1f ms %-12s %-14s states=%d%n", (System.nanoTime() - t0) / 1e6, name, result,
+                                  d == null ? -1 : d.states.size());
             }
         }
     }
-    private XmlDocument analyze(String input) {
-        Element root = new Element("analysis").attr("model", "LL(1)").attr("lookahead", "unicode-codepoint");
+    private void prepare() {
         findReachable();
         for (String extension : grammar.extensions) diagnose("unsupported-extension", grammar.start, extension);
         computeSets(); checkRules();
+    }
+    private XmlDocument analyze(String input) {
+        Element root = new Element("analysis").attr("model", "LL(*)").attr("lookahead", "unicode-codepoint");
+        prepare();
         root.attr("supported", Boolean.toString(diagnostics.isEmpty()));
-        if (!diagnostics.isEmpty()) {
-            root.addContent(diagnostics);
-            root.addContent(new Element("test").attr("status", "not-run"));
-            return doc(root);
-        }
-        Element parser = new Element("parser").attr("start", grammar.start).attr("require-eof", "true");
+        root.addContent(diagnostics);
+        // Without diagnostics this describes the parser, else just the normalized grammar.
+        Element parser = new Element(diagnostics.isEmpty() ? "parser" : "grammar").attr("start", grammar.start).attr("require-eof", "true");
         root.addContent(parser);
         for (String name : reachable) {
             Rule r = grammar.rules.get(name);
@@ -133,6 +170,8 @@ public final class IXMLAnalyzer {
                 .attr("nullable", Boolean.toString(r.nullable)).attr("first", ranges(r.first)).attr("follow", ranges(r.follow));
             if (!r.alias.isEmpty()) e.attr("alias", r.alias);
             parser.addContent(e);
+            IXMLLookahead.Dfa dfa = dfas.get(name);
+            if (dfa != null) e.addContent(decision(dfa));
             for (List<Term> a : r.alternatives) {
                 Element branch = new Element("alternative").attr("lookahead", ranges(select(r, a))); e.addContent(branch);
                 for (Term t : a) {
@@ -147,27 +186,114 @@ public final class IXMLAnalyzer {
                 if (a.isEmpty()) branch.addContent(new Element("empty"));
             }
         }
-        root.addContent(test(input));
+        if (input != null) {
+            if (diagnostics.isEmpty()) root.addContent(test(input));
+            else root.addContent(new Element("test").attr("status", "not-run"));
+        }
         return doc(root);
     }
-    // Explicit call stack executes the predictive parser without Java stack limits.
-    private Element test(String input) {
+    private static Element decision(IXMLLookahead.Dfa dfa) {
+        int k = dfa.maxLookahead();
+        Element d = new Element("decision").attr("states", Integer.toString(dfa.states.size()))
+            .attr("lookahead", k < 0 ? "unbounded" : Integer.toString(k));
+        for (IXMLLookahead.State s : dfa.states) {
+            Element st = new Element("state").attr("id", Integer.toString(s.id));
+            if (s.predict >= 0) st.attr("predict", Integer.toString(s.predict + 1));
+            for (IXMLLookahead.Edge e : s.edges) {
+                String range = e.lo() == e.hi() ? hex(e.lo()) : hex(e.lo()) + "-" + hex(e.hi());
+                st.addContent(new Element("edge").attr("on", range).attr("to", Integer.toString(e.target().id)));
+            }
+            d.addContent(st);
+        }
+        return d;
+    }
+    /** A rule invocation in the LL(*) interpreter. */
+    private static final class Frame {
+        Rule rule; List<Term> terms; int idx;
+        char kind;           // '^' element, '-' hidden, '@' attribute
+        String name;         // element or attribute name
+        Element element;     // for '^'
+        StringBuilder text;  // for '@'
+    }
+    private int failedAt;
+    // Run the LL(*) parser on the input, the tree is added below into.
+    // Returns null if accepted, else an error message. An explicit call stack
+    // executes the parser without Java stack limits.
+    private String run(String input, Element into) {
         int[] cps = input.codePoints().toArray(); int offset = 0;
-        Deque<Term> stack = new ArrayDeque<>(); stack.push(Term.call(grammar.start));
+        Deque<Frame> stack = new ArrayDeque<>();
+        Term startTerm = Term.call(grammar.start);
+        String err = enter(stack, startTerm, cps, offset, into);
+        if (err != null) return err;
         while (!stack.isEmpty()) {
-            Term t = stack.pop(); int cp = offset == cps.length ? IXMLGrammar.EOF : cps[offset];
+            Frame f = stack.peek();
+            if (f.idx == f.terms.size()) {
+                stack.pop();
+                if (f.kind == '@') nearestElement(stack, into).attr(f.name, f.text.toString());
+                continue;
+            }
+            Term t = f.terms.get(f.idx++);
             if (t.ref != null) {
-                Rule r = rule(t); List<Term> chosen = null;
-                for (List<Term> a : r.alternatives) if (select(r, a).get(cp)) { chosen = a; break; }
-                if (chosen == null) return rejected(offset, "No alternative in " + r.name + " for " + hex(cp));
-                for (int i = chosen.size() - 1; i >= 0; i--) stack.push(chosen.get(i));
+                err = enter(stack, t, cps, offset, into);
+                if (err != null) return err;
             } else if (t.chars != null) {
-                if (!t.chars.get(cp)) return rejected(offset, "Expected " + ranges(t.chars) + ", found " + hex(cp));
+                int cp = offset == cps.length ? IXMLGrammar.EOF : cps[offset];
+                if (!t.chars.get(cp)) { failedAt = offset; return "Expected " + ranges(t.chars) + ", found " + hex(cp); }
+                if (!t.mark.equals("-")) text(stack, into, new String(Character.toChars(cp)));
                 offset++;
+            } else {
+                text(stack, into, t.insertion);
             }
         }
-        if (offset != cps.length) return rejected(offset, "Expected EOF");
-        return new Element("test").attr("status", "accepted").attr("consumed-codepoints", Integer.toString(offset));
+        if (offset != cps.length) { failedAt = offset; return "Expected EOF"; }
+        failedAt = offset;
+        return null;
+    }
+    private String enter(Deque<Frame> stack, Term t, int[] cps, int offset, Element into) {
+        Rule r = rule(t);
+        int alt = 0;
+        if (r.alternatives.size() > 1) {
+            alt = dfas.get(r.name).predict(cps, offset);
+            if (alt < 0) {
+                failedAt = offset;
+                int cp = offset == cps.length ? IXMLGrammar.EOF : cps[offset];
+                return "No alternative in " + r.name + " for " + hex(cp);
+            }
+        }
+        Frame f = new Frame();
+        f.rule = r; f.terms = r.alternatives.get(alt);
+        String mark = !t.mark.isEmpty() ? t.mark : !r.mark.isEmpty() ? r.mark : "^";
+        f.name = !t.alias.isEmpty() ? t.alias : !r.alias.isEmpty() ? r.alias : r.name;
+        boolean inAttribute = false;
+        for (Frame p : stack) if (p.kind == '@') { inAttribute = true; break; }
+        f.kind = inAttribute ? '-' : mark.charAt(0);
+        if (f.kind == '^') {
+            f.element = new Element(f.name);
+            Element parent = nearestElement(stack, into);
+            parent.addContent(f.element);
+        } else if (f.kind == '@') {
+            f.text = new StringBuilder();
+        }
+        stack.push(f);
+        return null;
+    }
+    private static Element nearestElement(Deque<Frame> stack, Element into) {
+        for (Frame p : stack) if (p.kind == '^') return p.element;
+        return into;
+    }
+    private static void text(Deque<Frame> stack, Element into, String s) {
+        for (Frame p : stack) {
+            if (p.kind == '@') { p.text.append(s); return; }
+            if (p.kind == '^') { p.element.addChild(new XmlText(s)); return; }
+        }
+        into.addChild(new XmlText(s));
+    }
+    private Element test(String input) {
+        Element tree = new Element("tree");
+        String err = run(input, tree);
+        if (err != null) return rejected(failedAt, err);
+        Element accepted = new Element("test").attr("status", "accepted").attr("consumed-codepoints", Integer.toString(failedAt));
+        return accepted.addContent(tree);
     }
     private Element rejected(int offset, String message) {
         return new Element("test").attr("status", "rejected").attr("offset-codepoints", Integer.toString(offset)).setText(message);

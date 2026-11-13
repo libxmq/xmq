@@ -238,21 +238,40 @@ public class Main
 
     private static int runAnalyze(String[] args)
     {
-        if (args.length != 3)
+        // xmqj analyze grammar.ixml [input] [--tree]
+        boolean tree = false;
+        java.util.List<String> files = new java.util.ArrayList<>();
+        for (int k = 1; k < args.length; k++)
         {
-            System.err.println("Usage: xmqj analyze grammar.ixml test.input");
+            if (args[k].equals("--tree")) tree = true;
+            else files.add(args[k]);
+        }
+        if (files.isEmpty() || files.size() > 2 || (tree && files.size() != 2))
+        {
+            System.err.println("Usage: xmqj analyze grammar.ixml [test.input] [--tree]");
             return 2;
         }
         try
         {
-            XmlDocument result = org.libxmq.imp.ixml.IXMLAnalyzer.analyze(
-                Files.readString(Path.of(args[1]), StandardCharsets.UTF_8),
-                Files.readString(Path.of(args[2]), StandardCharsets.UTF_8));
+            String grammar = Files.readString(Path.of(files.get(0)), StandardCharsets.UTF_8);
+            String input = files.size() > 1 ? Files.readString(Path.of(files.get(1)), StandardCharsets.UTF_8) : null;
+            if (tree)
+            {
+                XmlDocument doc = org.libxmq.imp.ixml.IXMLAnalyzer.parse(grammar, input);
+                XMQPrintState ps = new XMQPrintState();
+                ps.defaultTheme();
+                ps.output_settings = new OutputSettings().setIndentAmount(4);
+                new XMQPrinter().print_node(ps, doc, 0);
+                System.out.println(ps.buffer);
+                return 0;
+            }
+            XmlDocument result = org.libxmq.imp.ixml.IXMLAnalyzer.analyze(grammar, input);
             System.out.print(XmlSave.docDump(result, "UTF-8", true));
             XmlElement root = result.rootElement();
+            if (!"true".equals(root.attributeValue("supported"))) return 1;
+            if (input == null) return 0;
             XmlElement test = root.element("test");
-            return "true".equals(root.attributeValue("supported")) &&
-                test != null && "accepted".equals(test.attributeValue("status")) ? 0 : 1;
+            return test != null && "accepted".equals(test.attributeValue("status")) ? 0 : 1;
         }
         catch (java.io.IOException | IllegalArgumentException e)
         {
@@ -392,7 +411,8 @@ Usage: xmqj [options] <file> ( <command> [options] )*
   --version  Output version information and exit.
   --xmq|--htmq|--xml|--html|--ixml|--json|--clines
              The input format is auto detected for xmq/xml/json but you can force the input format here.
-  analyze grammar.ixml test.input  Analyze LL(1) suitability and emit a parser DOM.
+  analyze grammar.ixml [test.input] [--tree]  Analyze LL(*) suitability and emit a parser DOM,
+             or with --tree parse the input with the LL(*) parser and print the parse tree.
   --ixml=grammar.ixml Parse the content using the supplied grammar file.
   -z         Do not read from stdin nor from a file. Start with an empty dom.
   -i "a=2" Do not read from a file, use the next argument as the content to parse.

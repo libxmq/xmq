@@ -41,13 +41,32 @@ public class IXMLAnalyzerTest {
         conflict("s: ('a'?)*.", "left-recursion");
         conflict("s: s.", "nonproductive");
     }
-    @Test public void firstFollowConflicts() {
-        conflict("s: 'ab'; 'ac'.", "lookahead-conflict");
-        conflict("s: 'a'?, 'a'.", "lookahead-conflict");
-        conflict("s: a, 'x'. a: 'x'; .", "lookahead-conflict");
-        conflict("s: ; .", "lookahead-conflict");
-        conflict("s: ['a'-'z']; ['m'-'z'].", "lookahead-conflict");
-        conflict("s: ~['a']; 'b'.", "lookahead-conflict");
+    @Test public void llStarLookahead() {
+        // LL(1) conflicts that a longer lookahead resolves.
+        accepts("s: 'ab'; 'ac'.", "ac");
+        accepts("s: 'a'?, 'a'.", "a");
+        accepts("s: 'a'?, 'a'.", "aa");
+        accepts("s: a, 'x'. a: 'x'; .", "x");
+        accepts("s: a, 'x'. a: 'x'; .", "xx");
+        // Unbounded but regular lookahead.
+        accepts("s: a, 'x'; a, 'y'. a: 'a'*.", "aaaay");
+        accepts("s: w, '.'; w, '!'. w: ['a'-'z']+.", "hello!");
+    }
+    @Test public void llStarFailures() {
+        conflict("s: ; .", "ambiguous");
+        conflict("s: ['a'-'z']; ['m'-'z'].", "ambiguous");
+        conflict("s: ~['a']; 'b'.", "ambiguous");
+        conflict("s: 'a'*, 'a'*.", "ambiguous");
+        // Balanced parentheses before the deciding character are not regular.
+        conflict("s: p, 'x'; p, 'y'. p: '(', p, ')'; .", "non-regular");
+    }
+    @Test public void costs() {
+        // The alternative with the least cost wins an ambiguity.
+        accepts("s: a; b. a: 'x'. b =< 'x'.", "x");
+        assertEquals("a", IXMLAnalyzer.parse("s: a; b. a: 'x'. b =< 'x'.", "x").rootElement().firstChild().name());
+        assertEquals("b", IXMLAnalyzer.parse("s: a; b. a =<< 'x'. b =< 'x'.", "x").rootElement().firstChild().name());
+        // Equal costs are still ambiguous.
+        conflict("s: a; b. a =< 'x'. b =< 'x'.", "ambiguous");
     }
     @Test public void cReaderSyntax() {
         accepts("{outer {inner} tail} ixml version '1.0'. -s > root = @a > value, +'ok', -#a. a: 'it''s'.", "it's\n");
@@ -57,7 +76,7 @@ public class IXMLAnalyzerTest {
         accepts("s: [Nd]+.", "123");
         accepts("s: #0.", "\u0000");
         conflict("s: !'x', 'a'.", "unsupported-extension");
-        conflict("*s:< 'a'.", "unsupported-extension");
+        conflict("*s: 'a'.", "unsupported-extension");
     }
     @Test public void existingCGrammarFixtures() throws Exception {
         try (var paths = java.nio.file.Files.walk(java.nio.file.Path.of("tests/ixml/correct"))) {

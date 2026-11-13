@@ -36,9 +36,12 @@ gother = ~['h'; 'z'; 'y'; 'l'; 'i'; '-'; ' '; #9; #a; #d], schar*
        | 'l', (~['x'; ' '; #9; #a; #d], schar* | 'x', schar+)?.
 -schar = ~[' '; #9; #a; #d].
 
-{ An ixml grammar: ixml:data/csv (from the library) or a file ending in .ixml }
+{ An ixml grammar: ixml:data/csv (from the library) or a file ending in .ixml
+  The library form wins (by cost) for ixml:foo.ixml }
 grammar = 'ixml:', fchar+
-        | fchar*, '.ixml'.
+        | ixmlfile.
+-ixmlfile =< (gfirst, fchar*)?, '.ixml'.
+-gfirst = ~['-'; ' '; #9; #a; #d; "'"; '"'].
 
 -source = file | input.
 
@@ -63,7 +66,12 @@ command = @name0>name, copts
         | @name1>name, copts, s, arg, copts
         | @name2>name, copts, s, arg, copts, s, arg, copts
         | @load>name, copts, (s, file>arg, copts)?
-        | @xsl>name, -':', xslarg>arg.
+        | xslcommand.
+
+{ A xsl:name command. A file, or a grammar and file, with the same name win
+  (by cost), ie xmq xsl:foo reads the file xsl:foo and xmq g.ixml xsl:foo
+  reads the file xsl:foo with the grammar g.ixml. }
+-xslcommand =<< @xsl>name, -':', xslarg>arg.
 
 { help takes an optional command name and must be the last command. }
 help>command = @helpname>name, (s, arg)?.

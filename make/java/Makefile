@@ -30,8 +30,10 @@ pom.xml: pom.xmq
 
 # Find all java sources.
 SOURCES:=$(shell find src/main/java/ -type f -name "*.java")
+# The unit tests are run by maven when packaging, so changes to them rebuild too.
+TEST_SOURCES:=$(shell find src/test/ src/main/resources/ -type f 2>/dev/null)
 
-$(BUILD)/xmqj: $(PROJECT_DEPS)/updated.timestamp $(SOURCES) pom.xml scripts/run.sh
+$(BUILD)/xmqj: $(PROJECT_DEPS)/updated.timestamp $(SOURCES) $(TEST_SOURCES) pom.xml scripts/run.sh
 	@echo Compiling using maven
 	$(AT)(MAVEN_OPTS=$(MAVEN_OPTS) mvn -B -q package)
 	$(AT)cat scripts/run.sh $(BUILD)/$(ARTIFACTID)-$(VERSION)-exec.jar > $@

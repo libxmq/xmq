@@ -17,6 +17,7 @@ public final class IXMLGrammar {
     static final class Rule {
         final String name;
         String mark = "", alias = "";
+        int cost; // Number of < after = or :, used to prefer cheaper alternatives.
         final List<List<Term>> alternatives = new ArrayList<>();
         final BitSet first = new BitSet(), follow = new BitSet();
         boolean nullable, productive;
@@ -112,7 +113,7 @@ public final class IXMLGrammar {
         Rule r = new Rule(n); r.mark = m; r.alias = a; rules.put(n, r);
         if (start == null) start = n;
         if (!eat(':') && !eat('=')) throw error("expected equal or colon");
-        while (eat('<')) extensions.add("rule costs (<)");
+        while (eat('<')) r.cost++;
         whitespace(); r.alternatives.addAll(alts()); expect('.');
     }
     // parse_ixml_alts / parse_ixml_alt; retain empty alternatives explicitly.
