@@ -38,8 +38,9 @@ are used to reduce such ambiguities:
   - Declaration specifiers can contain at most one typedef name (type_identifier).
   - A parenthesized declarator must start with a pointer and be
     followed by a function or array suffix, e.g. (*fp)(int).
-  - A cast to a lone typedef name, (T)x, cannot be followed by + - * & (
-    since (x)+1 is then parsed as an expression.
+  - A cast to a lone typedef name, (T)x, cannot be followed by + - * &
+    since (x)+1 is then parsed as an expression. A function call has a cost
+    so (T)(x) is a cast and not a call of (T).
   - sizeof(T) with a lone typedef name is parsed as sizeof of an expression.
   - An expression statement has a cost, so T *p; in a block is a declaration.
   - The dangling else binds to the closest if. }
@@ -138,13 +139,17 @@ member_designator = IDENTIFIER | member_designator, DOT, IDENTIFIER | member_des
 postfix_expression
 	= -primary_expression
 	| postfix_expression, LEFT_BRACKET, expression, RIGHT_BRACKET
-	| postfix_expression, LEFT_PAR, argument_expression_list?, RIGHT_PAR
+	| postfix_expression, call_arguments
 	| postfix_expression, DOT, IDENTIFIER
 	| postfix_expression, ARROW, IDENTIFIER
 	| postfix_expression, INC_OP
 	| postfix_expression, DEC_OP
 	| LEFT_PAR, type_name, RIGHT_PAR, LEFT_BRACE, initializer_list, COMMA?, RIGHT_BRACE
 	.
+
+{ A function call has the cost =< so that (T)(x) is a cast of (x) to the
+  typedef name T, rather than a call of the parenthesized function (T). }
+-call_arguments =< LEFT_PAR, argument_expression_list?, RIGHT_PAR.
 
 argument_expression_list
 	= -assignment_expression
@@ -174,7 +179,7 @@ unary_operator
 cast_expression
 	= -unary_expression
 	| LEFT_PAR, complex_type_name, RIGHT_PAR, cast_expression
-	| LEFT_PAR, lone_type_name, RIGHT_PAR, !['+';'-';'*';'&';'('], cast_expression
+	| LEFT_PAR, lone_type_name, RIGHT_PAR, !['+';'-';'*';'&'], cast_expression
 	.
 
 multiplicative_expression
@@ -444,8 +449,10 @@ parameter_declaration
 { A type name that is just a typedef name, e.g. (T) is ambiguous with (x). }
 lone_type_name = type_identifier.
 
+{ The cost =< makes an expression win over a type name, e.g. sizeof(a[0])
+  is sizeof of an array element, not of an array type with the typedef a. }
 complex_type_name
-	= specifier_qualifier_other+, type_specifier_single, specifier_qualifier_other*, abstract_declarator?
+	=< specifier_qualifier_other+, type_specifier_single, specifier_qualifier_other*, abstract_declarator?
 	| (struct_or_union_specifier | enum_specifier | typeof_specifier), specifier_qualifier_other*, abstract_declarator?
 	| type_identifier, specifier_qualifier_other+, abstract_declarator?
 	| type_identifier, abstract_declarator

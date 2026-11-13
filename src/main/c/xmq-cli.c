@@ -1817,6 +1817,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         verbose_enabled__ = true;
         return true;
     }
+    if (!strcmp(arg, "--progress"))
+    {
+        xmqSetProgress(true);
+        return true;
+    }
     if (!strcmp(arg, "--license"))
     {
         command->print_license = true;
@@ -2029,6 +2034,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "             The default setting when reading xml/html content is to trim whitespace using a heuristic.\n"
            "             For xmq/htmq/json the default settings is none since whitespace is explicit in xmq/htmq/json.\n"
            "             Not yet implemented: exact will trim exactly to the significant whitespace according to xml/html rules.\n"
+           "  --progress Print parse progress on stderr when parsing with an ixml grammar.\n"
            "  --verbose  Output extra information on stderr.\n"
            "  --version  Output version information and exit.\n"
            "  --xmq|--htmq|--xml|--html|--ixml|--json|--yaml|--clines\n"

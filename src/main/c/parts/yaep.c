@@ -87,6 +87,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "yaep_allocate.h"
 #include "yaep_cspc.h"
@@ -128,6 +129,7 @@ static void set_add_dotted_rule_with_parent(YaepParseState *ps, YaepDottedRule *
 static bool convert_leading_dotted_rules_into_new_set(YaepParseState *ps);
 static void prepare_for_leading_dotted_rules(YaepParseState *ps);
 static void verbose_stats(YaepParseState *ps);
+static void print_progress(YaepParseState *ps, bool final);
 static void yaep_error(YaepParseState *ps, int code, const char*format, ...);
 
 // Implementations ////////////////////////////////////////////////////////////////////
@@ -1073,6 +1075,36 @@ static void verbose_stats(YaepParseState *ps)
         );
     free(siz);
 }
+/* Print a progress line on stderr, at most a few times per second.
+   The line is overwritten using \r and a final newline is printed when FINAL is true. */
+static void print_progress(YaepParseState *ps, bool final)
+{
+    static clock_t last = 0;
+    if (!final)
+    {
+        // Only look at the clock every 256 tokens.
+        if (ps->tok_i % 256 != 0) return;
+        clock_t now = clock();
+        if (last != 0 && now - last < CLOCKS_PER_SEC / 5) return;
+        last = now;
+    }
+    else
+    {
+        last = 0;
+    }
+    size_t size = memusage(ps);
+    char *siz = humanReadableTwoDecimals(size);
+    fprintf(stderr, "\rixml %d/%d #drules=%d #cores=%d mem=%s\033[K%s",
+            ps->tok_i,
+            ps->input_len,
+            ps->num_dotted_rules_total,
+            ps->num_set_cores,
+            siz,
+            final ? "\n" : "");
+    fflush(stderr);
+    free(siz);
+}
+
 /* The following function stores error CODE and MESSAGE.  The function
    makes long jump after that.  So the function is designed to process
    only one error.*/
@@ -2794,6 +2826,10 @@ static void perform_parse(YaepParseState *ps)
         {
             verbose_stats(ps);
         }
+        if (xmq_progress_enabled_)
+        {
+            print_progress(ps, false);
+        }
         debug("ixml.pa.token=", "@%d %s", ps->tok_i, THE_TERMINAL->hr);
         if (NEXT_TERMINAL && xmq_trace_enabled_)
         {
@@ -2863,6 +2899,10 @@ static void perform_parse(YaepParseState *ps)
     free_error_recovery(ps);
 
     verbose_stats(ps);
+    if (xmq_progress_enabled_)
+    {
+        print_progress(ps, true);
+    }
 }
 
 

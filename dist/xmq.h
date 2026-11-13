@@ -1219,6 +1219,13 @@ const char *xmqVersion();
 void xmqSetVerbose(bool e);
 
 /**
+    xmqSetProgress:
+
+    Enable/Disable printing of progress on stderr, e.g. while parsing a large input using ixml.
+*/
+void xmqSetProgress(bool e);
+
+/**
     xmqSetDebug:
 
     Enable/Disable debugging.

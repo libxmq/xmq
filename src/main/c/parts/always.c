@@ -48,6 +48,9 @@ STATIC void warning__(const char* fmt, ...)
 
 bool xmq_verbose_enabled_ = false;
 
+// Print progress information on stderr, e.g. while parsing large inputs with ixml.
+bool xmq_progress_enabled_ = false;
+
 STATIC void verbose__(const char* fmt, ...)
 {
     if (xmq_verbose_enabled_)

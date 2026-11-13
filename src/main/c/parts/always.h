@@ -47,6 +47,7 @@ typedef struct MemBuffer MemBuffer;
 extern bool xmq_trace_enabled_;
 extern bool xmq_debug_enabled_;
 extern bool xmq_verbose_enabled_;
+extern bool xmq_progress_enabled_;
 extern const char *xmq_log_filter_;
 extern struct XMQLineConfig xmq_log_line_config_;
 

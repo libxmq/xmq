@@ -219,6 +219,12 @@ library_index:
 
 # Check that the library ixml files execute identically with xmq,coffepot and markup-blitz
 # kaffepot is just a script around coffepot where -g: and -i are automatically added.
+# Parse all of xmq's own preprocessed C source (the .o.source files created by the build)
+# using the C grammar library/lang/c.ixml. Takes a few minutes, therefore not part of make test.
+# Only test some files: make test_parse_myself FILTER=ixml.c or FILTER=ixml.c,xmq.c
+test_parse_myself:
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/xmq ]; then echo "Run make first. $${x}release/xmq not found."; exit 1; fi ; FILTER="$(FILTER)" $(if $(JOBS),JOBS="$(JOBS)") ./tests/test_parse_myself.sh $${x}release/xmq $${x}release/test_output/parse_myself $${x}release || exit 1 ; done
+
 test_library:
 	./tests/test_library.sh ./xmq build/test_library_output markup-blitz
 	./tests/test_library.sh ./xmq build/test_library_output kaffepot
@@ -324,7 +330,7 @@ import_category:
 	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
 	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
 
-.PHONY: all release debug asan fuzz afl_prepared build_fuzz test test_release test_debug clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
+.PHONY: all release debug asan fuzz afl_prepared build_fuzz test test_release test_debug test_parse_myself clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
 
 pom.xml: pom.xmq jproject.settings
 	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; xmllint --format pom.xml > tmpo; mv tmpo pom.xml; echo "Generated pom.xml" ; fi

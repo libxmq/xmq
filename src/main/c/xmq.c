@@ -1350,6 +1350,11 @@ bool xmqVerbose() {
     return xmq_verbose_enabled_;
 }
 
+void xmqSetProgress(bool e)
+{
+    xmq_progress_enabled_ = e;
+}
+
 void xmqSetLogHumanReadable(bool e)
 {
     xmq_log_line_config_.human_readable_ = e;
