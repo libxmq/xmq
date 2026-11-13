@@ -37,6 +37,7 @@ compare()
     if ! "$XMQJ" analyze "$g" > /dev/null 2>&1
     then
         skipped=$((skipped+1))
+        [ -n "$VERBOSE" ] && echo "SKIP: $g"
         return
     fi
     if ! "$XMQJ" generate-parser --c "$g" > "$OUTPUT/$name.c" 2> "$OUTPUT/$name.err"
@@ -90,6 +91,21 @@ do
     dir=$(dirname "$g")/test-$(basename "$g" .ixml)
     inputs=$(ls "$dir"/*.inp 2>/dev/null)
     [ -n "$inputs" ] && compare "$g" $inputs
+done
+
+# The not (!) and cost (=<) extension tests, grammar and input from the test file.
+mkdir -p "$OUTPUT/ext"
+for t in tests/ixml_not_[0-9][0-9][0-9]_*.test tests/ixml_cost_[0-9][0-9][0-9]_*.test
+do
+    n=$(basename "$t" .test)
+    sed -n '/^START$/,/^INPUT$/p' "$t" | tail -n +2 | sed '$d' > "$OUTPUT/ext/$n.ixml"
+    sed -n '/^INPUT$/,/^OUTPUT$/p' "$t" | tail -n +2 | sed '$d' > "$OUTPUT/ext/$n.inp"
+    if [ "1" = "$(wc -l < "$OUTPUT/ext/$n.inp")" ]
+    then
+        # Like test_ixml_not.sh, a single line input has no newline.
+        printf '%s' "$(cat "$OUTPUT/ext/$n.inp")" > "$OUTPUT/ext/$n.inp"
+    fi
+    compare "$OUTPUT/ext/$n.ixml" "$OUTPUT/ext/$n.inp"
 done
 
 # The xmq command line grammar on the joined case lines.

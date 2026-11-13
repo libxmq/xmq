@@ -159,6 +159,13 @@ public final class IXMLGenerateC
                 out.append(r.lo[j]).append(',').append(r.hi[j]).append(',');
             }
             out.append("\n};\n");
+            // A bitmap of the ascii members, for the fast path in _inset.
+            int[] bits = new int[16];
+            for (int j = 0; j < r.lo.length; j++)
+                for (int c = r.lo[j]; c <= r.hi[j] && c < 128; c++) bits[c >> 3] |= 1 << (c & 7);
+            out.append("static const unsigned char ").append(prefix).append("_ascii_").append(i).append("[16] = {");
+            for (int j = 0; j < 16; j++) out.append(j == 0 ? "" : ",").append(bits[j]);
+            out.append("};\n");
         }
         out.append('\n');
         // Prototypes.
@@ -299,6 +306,13 @@ static bool %1$s_in(const int *r, size_t n, int c)
     return false;
 }
 
+// Is c in the character set? Ascii is looked up in a bitmap.
+static inline bool %1$s_inset(const int *r, size_t n, const unsigned char *ascii, int c)
+{
+    if (c < 128) return (ascii[c >> 3] >> (c & 7)) & 1;
+    return %1$s_in(r, n, c);
+}
+
 // Find the next DFA state for c in the sorted edges lo,hi,target... of n edges, -1 if none.
 static int %1$s_step(const int *e, size_t n, int c)
 {
@@ -376,7 +390,11 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
          .append("_Parser *p, void *elem, ").append(P).append("_Buf *attr)\n{\n");
         boolean usesStart = false;
         StringBuilder body = new StringBuilder();
-        if (r.alternatives.size() == 1)
+        if (genCharLoop(body, r))
+        {
+            // Done.
+        }
+        else if (r.alternatives.size() == 1)
         {
             usesStart = genAlt(body, r, r.alternatives.get(0), "    ");
         }
@@ -397,6 +415,75 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
         b.append("}\n\n");
     }
 
+    /** A call of _inset for the character set with id sid. */
+    String inset(int sid, String c)
+    {
+        return prefix + "_inset(" + prefix + "_set_" + sid + ", " + setList.get(sid).lo.length + ", "
+            + prefix + "_ascii_" + sid + ", " + c + ")";
+    }
+
+    static boolean coversAll(BitSet b)
+    {
+        return b.nextClearBit(0) > IXMLGrammar.EOF;
+    }
+
+    /**
+     * A greedy single character loop, the lowering of [S]* or the tail of [S]+:
+     * a hidden rule R = [S], R | () whose decision needs one symbol of
+     * lookahead. It becomes a while loop over a character table. With a
+     * following ![S] the loop is greedy and the lookahead is one symbol.
+     * Returns false if the rule does not have this shape.
+     */
+    boolean genCharLoop(StringBuilder b, Rule r)
+    {
+        String P = prefix;
+        if (r.alternatives.size() != 2) return false;
+        int loop = -1;
+        for (int a = 0; a < 2; a++)
+        {
+            List<Term> t = r.alternatives.get(a);
+            List<Term> o = r.alternatives.get(1 - a);
+            if (t.size() == 2 && t.get(0).chars != null && t.get(1).ref != null && t.get(1).ref.equals(r.name)
+                && mark(t.get(1), r).equals("-") && o.isEmpty()) loop = a;
+        }
+        if (loop < 0) return false;
+        IXMLLookahead.Dfa dfa = analyzer.dfas().get(r.name);
+        if (dfa == null || dfa.maxLookahead() != 1) return false;
+        BitSet take = new BitSet(), stop = new BitSet();
+        for (IXMLLookahead.Edge e : dfa.states.get(0).edges)
+        {
+            if (e.target().predict == loop) take.set(e.lo(), e.hi() + 1);
+            else stop.set(e.lo(), e.hi() + 1);
+        }
+        Term m = r.alternatives.get(loop).get(0);
+        BitSet extra = (BitSet)take.clone();
+        extra.andNot(m.chars);
+        int takeId = setId(take);
+        b.append("    // Greedy loop over a character table.\n");
+        b.append("    for (;;)\n    {\n");
+        b.append("        int c = ").append(P).append("_peek(p, p->pos);\n");
+        b.append("        if (").append(inset(takeId, "c")).append(")\n        {\n");
+        if (!extra.isEmpty())
+        {
+            // The prediction also takes symbols that the match rejects (a syntax error).
+            int sid = setId(m.chars);
+            b.append("            if (!").append(inset(sid, "c")).append(") return ").append(P).append("_fail(p, ")
+             .append(cstring(r.name)).append(", ").append(cstring(describe(setList.get(sid)))).append(");\n");
+        }
+        if (!m.mark.equals("-")) b.append("            ").append(P).append("_char(p, elem, attr, c);\n");
+        b.append("            p->pos++;\n            continue;\n        }\n");
+        BitSet all = (BitSet)take.clone();
+        all.or(stop);
+        if (!coversAll(all))
+        {
+            int stopId = setId(stop);
+            b.append("        if (!").append(inset(stopId, "c")).append(") return ").append(P).append("_fail(p, ")
+             .append(cstring(r.name)).append(", NULL);\n");
+        }
+        b.append("        return true;\n    }\n");
+        return true;
+    }
+
     /** Generate the code for one alternative. Returns true if it loops back to start. */
     boolean genAlt(StringBuilder b, Rule r, List<Term> terms, String ind)
     {
@@ -410,8 +497,7 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
             {
                 int sid = setId(t.chars);
                 IXMLLookahead.Ranges rs = setList.get(sid);
-                b.append(ind).append("if (!").append(P).append("_in(").append(P).append("_set_").append(sid).append(", ")
-                 .append(rs.lo.length).append(", ").append(P).append("_peek(p, p->pos))) return ").append(P)
+                b.append(ind).append("if (!").append(inset(sid, P + "_peek(p, p->pos)")).append(") return ").append(P)
                  .append("_fail(p, ").append(cstring(r.name)).append(", ").append(cstring(describe(rs))).append(");\n");
                 if (!t.mark.equals("-"))
                 {
@@ -459,6 +545,23 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
                     b.append(ind).append("    if (!").append(fn).append("(p, n, NULL)) return false;\n");
                     b.append(ind).append("}\n");
                 }
+            }
+            else if (t.not != null)
+            {
+                // A negative lookahead, fail if the input starts with the forbidden sequence.
+                int len = t.not.size();
+                StringBuilder cond = new StringBuilder();
+                StringBuilder what = new StringBuilder("not");
+                cond.append("p->pos + ").append(len).append(" <= p->n");
+                for (int k = 0; k < len; k++)
+                {
+                    int sid = setId(t.not.get(k));
+                    cond.append(" && ").append(inset(sid, "p->in[p->pos + " + k + "]"));
+                    what.append(' ').append(describe(setList.get(sid)));
+                }
+                if (len == 0) cond.setLength(0);
+                b.append(ind).append("if (").append(len == 0 ? "true" : cond).append(") return ").append(P)
+                 .append("_fail(p, ").append(cstring(r.name)).append(", ").append(cstring(what.toString())).append(");\n");
             }
             else
             {

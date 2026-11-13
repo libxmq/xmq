@@ -68,6 +68,37 @@ public class IXMLAnalyzerTest {
         // Equal costs are still ambiguous.
         conflict("s: a; b. a =< 'x'. b =< 'x'.", "ambiguous");
     }
+    private void rejects(String grammar, String input) {
+        assertEquals("rejected", analyze(grammar, input).element("test").attributeValue("status"));
+    }
+    @Test public void negativeLookahead() {
+        // Without ! two numbers after each other can be split anywhere.
+        conflict("s: n, (' '?, n)*. n: [N]+.", "ambiguous");
+        // With ! the number is greedy and the grammar is LL(*).
+        accepts("s: (w; n; -' ')+. w: [Ll]+, ![Ll]. n: [N]+, ![N].", "h hh1h11 12");
+        assertEquals("[w, w, n, w, n, n]", names(IXMLAnalyzer.parse("s: (w; n; -' ')+. w: [Ll]+, ![Ll]. n: [N]+, ![N].", "h hh1h11 12")));
+        // A string predicate, any prefix of the forbidden string is fine.
+        accepts("s: !'chapter', [L]+.", "chap");
+        rejects("s: !'chapter', [L]+.", "chapterchopper");
+        // At EOF every negative lookahead succeeds.
+        accepts("s: [L], !'a'.", "b");
+        rejects("s: vp, ~[]. vp: [L], !'a'.", "aa");
+        // A predicate decides an alternative: keywords versus names.
+        // The keyword wins over the more expensive name, but iffy is a name.
+        String kw = "s: (k; i)++' '. k: 'if', ![L]. i =< [L]+, ![L].";
+        accepts(kw, "if iffy");
+        assertEquals("[k, i]", names(IXMLAnalyzer.parse(kw, "if iffy")));
+        // The predicate kills the empty alternative of the loop, so the
+        // exiting alternative is predicted after one symbol.
+        accepts("s: 'x', 'y'*, !'z', ~[].", "xyyw");
+        rejects("s: 'x', 'y'*, !'z', ~[].", "xyz");
+    }
+    private static String names(org.libxmq.imp.xml.XmlDocument d) {
+        java.util.List<String> l = new java.util.ArrayList<>();
+        for (var n = d.rootElement().firstChild(); n != null; n = n.next())
+            if (n instanceof org.libxmq.imp.xml.XmlElement e) l.add(e.name());
+        return l.toString();
+    }
     @Test public void cReaderSyntax() {
         accepts("{outer {inner} tail} ixml version '1.0'. -s > root = @a > value, +'ok', -#a. a: 'it''s'.", "it's\n");
         accepts("s: (); 'x'.", "");
@@ -75,7 +106,6 @@ public class IXMLAnalyzerTest {
         accepts("s: ~['x'; #a], [#1f600-#1f64f].", "y😀");
         accepts("s: [Nd]+.", "123");
         accepts("s: #0.", "\u0000");
-        conflict("s: !'x', 'a'.", "unsupported-extension");
         conflict("*s: 'a'.", "unsupported-extension");
     }
     @Test public void existingCGrammarFixtures() throws Exception {

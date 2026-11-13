@@ -26,6 +26,9 @@ public final class IXMLGrammar {
     static final class Term {
         String ref, insertion, mark = "", alias = "";
         BitSet chars;
+        // A negative lookahead !'abc' or ![set]: the following input must not
+        // start with a code point sequence matching these sets in order.
+        List<BitSet> not;
         static Term call(String ref) { Term t = new Term(); t.ref = ref; return t; }
         static Term match(BitSet chars) { Term t = new Term(); t.chars = chars; return t; }
     }
@@ -161,10 +164,12 @@ public final class IXMLGrammar {
             whitespace(); Term t = new Term(); t.insertion = literal(); whitespace(); return t;
         }
         if (eat('!')) {
-            // Port parse_ixml_not syntax, but never silently treat predicates as CFG terms.
-            extensions.add("negative predicates (!)"); whitespace();
+            // parse_ixml_not: a zero width negative lookahead on a string or a charset.
+            whitespace();
             Term t = new Term();
-            if (peek() == '[' || peek() == '~') t.chars = charset(); else t.insertion = literal();
+            t.not = new ArrayList<>();
+            if (peek() == '[' || peek() == '~') t.not.add(charset());
+            else literal().codePoints().forEach(cp -> { BitSet b = new BitSet(); b.set(cp); t.not.add(b); });
             whitespace(); return t;
         }
         String m = mark(); Term t;

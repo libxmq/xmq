@@ -197,6 +197,10 @@ public final class IXMLAnalyzer {
                     Element operation;
                     if (t.ref != null) operation = new Element("call").attr("rule", t.ref);
                     else if (t.chars != null) operation = new Element("match").attr("set", ranges(t.chars));
+                    else if (t.not != null) {
+                        operation = new Element("not");
+                        for (BitSet b : t.not) operation.addContent(new Element("match").attr("set", ranges(b)));
+                    }
                     else operation = new Element("insert").attr("codepoints", codepoints(t.insertion));
                     operation.attr("mark", t.mark);
                     if (!t.alias.isEmpty()) operation.attr("alias", t.alias);
@@ -260,6 +264,11 @@ public final class IXMLAnalyzer {
                 if (!t.chars.get(cp)) { failedAt = offset; return "Expected " + ranges(t.chars) + ", found " + hex(cp); }
                 if (!t.mark.equals("-")) text(stack, into, new String(Character.toChars(cp)));
                 offset++;
+            } else if (t.not != null) {
+                if (notMatches(t.not, cps, offset)) {
+                    failedAt = offset;
+                    return "Negative lookahead matched at " + hex(offset == cps.length ? IXMLGrammar.EOF : cps[offset]);
+                }
             } else {
                 text(stack, into, t.insertion);
             }
@@ -267,6 +276,12 @@ public final class IXMLAnalyzer {
         if (offset != cps.length) { failedAt = offset; return "Expected EOF"; }
         failedAt = offset;
         return null;
+    }
+    /** Does the input at offset start with the forbidden sequence of a negative lookahead? */
+    static boolean notMatches(List<BitSet> not, int[] cps, int offset) {
+        if (offset + not.size() > cps.length) return false;
+        for (int k = 0; k < not.size(); k++) if (!not.get(k).get(cps[offset + k])) return false;
+        return true;
     }
     private String enter(Deque<Frame> stack, Term t, int[] cps, int offset, Element into) {
         Rule r = rule(t);

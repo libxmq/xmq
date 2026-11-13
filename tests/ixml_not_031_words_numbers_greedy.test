@@ -1,0 +1,20 @@
+START
+S = (word|number|-" ")+.
+word = [Ll]+, ![Ll].
+number = [N]+, ![N].
+INPUT
+h hh1h11 12  abc42x 7
+OUTPUT
+S {
+    word   = h
+    word   = hh
+    number = 1
+    word   = h
+    number = 11
+    number = 12
+    word   = abc
+    number = 42
+    word   = x
+    number = 7
+}
+END

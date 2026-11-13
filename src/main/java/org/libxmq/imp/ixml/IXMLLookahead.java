@@ -29,6 +29,14 @@ import org.libxmq.imp.ixml.IXMLGrammar.Term;
  * the same position with the same stack (ambiguity), when a deeper stack than
  * the limit is needed (the lookahead language is not regular), or when the
  * DFA grows too large.
+ *
+ * A negative lookahead !'abc' or ![set] is a zero width term. When the
+ * closure passes it, the configuration gets a pending constraint (predicate,
+ * offset): the next input symbols must not match the sets of the predicate.
+ * Every consumed symbol either moves the constraint forward, satisfies it (the
+ * symbol does not match, or EOF) or kills the configuration (the whole
+ * predicate matched). This makes greedy rules like number = [N]+, ![N]. LL(*):
+ * after a digit the alternative that leaves the loop dies.
  */
 final class IXMLLookahead {
 
@@ -78,6 +86,8 @@ final class IXMLLookahead {
     final List<int[]>[] callSites;        // rule -> list of {rule, alt, idx} calling it
     final int start;
     final int[] costs;                    // rule -> cost
+    final int[][][] predIds;              // rule, alt, term -> predicate id, -1 if not a predicate
+    final List<Ranges[]> preds = new ArrayList<>(); // predicate id -> the sets to not match, in order
 
     @SuppressWarnings("unchecked")
     IXMLLookahead(IXMLGrammar g) {
@@ -86,6 +96,7 @@ final class IXMLLookahead {
         names = new String[n];
         alts = new Term[n][][];
         sets = new Ranges[n][][];
+        predIds = new int[n][][];
         callSites = new List[n];
         int k = 0;
         costs = new int[n];
@@ -95,12 +106,21 @@ final class IXMLLookahead {
             callSites[ri] = new ArrayList<>();
             alts[ri] = new Term[r.alternatives.size()][];
             sets[ri] = new Ranges[r.alternatives.size()][];
+            predIds[ri] = new int[r.alternatives.size()][];
             for (int a = 0; a < r.alternatives.size(); a++) {
                 List<Term> terms = r.alternatives.get(a);
                 alts[ri][a] = terms.toArray(new Term[0]);
                 sets[ri][a] = new Ranges[terms.size()];
+                predIds[ri][a] = new int[terms.size()];
                 for (int t = 0; t < terms.size(); t++) {
+                    predIds[ri][a][t] = -1;
                     if (terms.get(t).chars != null) sets[ri][a][t] = Ranges.of(terms.get(t).chars);
+                    if (terms.get(t).not != null) {
+                        Ranges[] p = new Ranges[terms.get(t).not.size()];
+                        for (int q = 0; q < p.length; q++) p[q] = Ranges.of(terms.get(t).not.get(q));
+                        predIds[ri][a][t] = preds.size();
+                        preds.add(p);
+                    }
                 }
             }
         }
@@ -147,11 +167,65 @@ final class IXMLLookahead {
     static final Stack UNKNOWN = new Stack(-3, 0, 0, null, 0);
 
     /**
+     * The pending negative lookahead constraints of a configuration, sorted
+     * pairs (predicate id, offset into the predicate). Interned like the
+     * stacks, null means no constraints.
+     */
+    static final class Neg {
+        final int[] pairs;
+        Neg(int[] pairs) { this.pairs = pairs; }
+    }
+    private final Map<List<Integer>, Neg> internedNeg = new HashMap<>();
+
+    Neg neg(List<int[]> pairs) {
+        if (pairs.isEmpty()) return null;
+        pairs.sort((x, y) -> x[0] != y[0] ? Integer.compare(x[0], y[0]) : Integer.compare(x[1], y[1]));
+        List<Integer> key = new ArrayList<>();
+        for (int[] q : pairs) {
+            int n = key.size();
+            if (n >= 2 && key.get(n - 2) == q[0] && key.get(n - 1) == q[1]) continue; // duplicate
+            key.add(q[0]); key.add(q[1]);
+        }
+        Neg r = internedNeg.get(key);
+        if (r == null) {
+            int[] a = new int[key.size()];
+            for (int i = 0; i < a.length; i++) a[i] = key.get(i);
+            r = new Neg(a);
+            internedNeg.put(key, r);
+        }
+        return r;
+    }
+
+    /** Add the constraint for the start of predicate p, null if the predicate always matches (empty). */
+    Neg addNeg(Neg n, int p) {
+        List<int[]> l = new ArrayList<>();
+        if (n != null) for (int i = 0; i < n.pairs.length; i += 2) l.add(new int[]{n.pairs[i], n.pairs[i + 1]});
+        l.add(new int[]{p, 0});
+        return neg(l);
+    }
+
+    static final Neg DEAD = new Neg(new int[0]);
+
+    /** The constraints after consuming symbol, DEAD if a predicate matched completely. */
+    Neg stepNeg(Neg n, int symbol) {
+        if (n == null || symbol == EOF) return null; // EOF satisfies every negative lookahead.
+        List<int[]> l = new ArrayList<>();
+        for (int i = 0; i < n.pairs.length; i += 2) {
+            Ranges[] p = preds.get(n.pairs[i]);
+            int k = n.pairs[i + 1];
+            if (!p[k].contains(symbol)) continue; // Satisfied, the input differs.
+            if (k + 1 == p.length) return DEAD;   // The forbidden input is here.
+            l.add(new int[]{n.pairs[i], k + 1});
+        }
+        return neg(l);
+    }
+
+    /**
      * A configuration. rule == WAIT_EOF means the start rule has ended and
      * only EOF can follow, rule == DONE means EOF has been read.
      */
-    record Config(int rule, int alt, int idx, int predicted, Stack stack, int cost) {
-        Config(int rule, int alt, int idx, int predicted, Stack stack) { this(rule, alt, idx, predicted, stack, 0); }
+    record Config(int rule, int alt, int idx, int predicted, Stack stack, int cost, Neg neg) {
+        Config(int rule, int alt, int idx, int predicted, Stack stack) { this(rule, alt, idx, predicted, stack, 0, null); }
     }
     static final int WAIT_EOF = -1, DONE = -2;
     static final Ranges EOF_RANGES = new Ranges(new int[]{EOF}, new int[]{EOF});
@@ -187,14 +261,14 @@ final class IXMLLookahead {
                 // End of rule.
                 if (c.stack == null) {
                     // The full context is empty, the start rule ends here.
-                    todo.push(new Config(WAIT_EOF, 0, 0, c.predicted, null, c.cost));
+                    todo.push(new Config(WAIT_EOF, 0, 0, c.predicted, null, c.cost, c.neg));
                 } else if (c.stack == UNKNOWN) {
                     // SLL: continue into every call site of this rule.
-                    if (c.rule == start) todo.push(new Config(WAIT_EOF, 0, 0, c.predicted, null, c.cost));
+                    if (c.rule == start) todo.push(new Config(WAIT_EOF, 0, 0, c.predicted, null, c.cost, c.neg));
                     for (int[] site : callSites[c.rule])
-                        todo.push(new Config(site[0], site[1], site[2] + 1, c.predicted, UNKNOWN, c.cost));
+                        todo.push(new Config(site[0], site[1], site[2] + 1, c.predicted, UNKNOWN, c.cost, c.neg));
                 } else {
-                    todo.push(new Config(c.stack.rule, c.stack.alt, c.stack.idx, c.predicted, c.stack.next, c.cost));
+                    todo.push(new Config(c.stack.rule, c.stack.alt, c.stack.idx, c.predicted, c.stack.next, c.cost, c.neg));
                 }
                 continue;
             }
@@ -209,10 +283,15 @@ final class IXMLLookahead {
                                           + STACK_LIMIT + " in " + names[callee] + ", it is not a regular language.");
                 }
                 for (int a = 0; a < alts[callee].length; a++)
-                    todo.push(new Config(callee, a, 0, c.predicted, s, c.cost + costs[callee]));
+                    todo.push(new Config(callee, a, 0, c.predicted, s, c.cost + costs[callee], c.neg));
+            } else if (t.not != null) {
+                // A negative lookahead consumes nothing, but constrains the following input.
+                int p = predIds[c.rule][c.alt][c.idx];
+                if (preds.get(p).length == 0) continue; // !'' never succeeds.
+                todo.push(new Config(c.rule, c.alt, c.idx + 1, c.predicted, c.stack, c.cost, addNeg(c.neg, p)));
             } else {
                 // An insertion consumes nothing.
-                todo.push(new Config(c.rule, c.alt, c.idx + 1, c.predicted, c.stack, c.cost));
+                todo.push(new Config(c.rule, c.alt, c.idx + 1, c.predicted, c.stack, c.cost, c.neg));
             }
         }
         return result;
@@ -225,9 +304,12 @@ final class IXMLLookahead {
         return sets[c.rule][c.alt][c.idx].contains(symbol);
     }
 
-    Config advance(Config c) {
-        if (c.rule == WAIT_EOF) return new Config(DONE, 0, 0, c.predicted, null, c.cost);
-        return new Config(c.rule, c.alt, c.idx + 1, c.predicted, c.stack, c.cost);
+    /** The configuration after consuming symbol, null if a negative lookahead kills it. */
+    Config advance(Config c, int symbol) {
+        Neg n = stepNeg(c.neg, symbol);
+        if (n == DEAD) return null;
+        if (c.rule == WAIT_EOF) return new Config(DONE, 0, 0, c.predicted, null, c.cost, n);
+        return new Config(c.rule, c.alt, c.idx + 1, c.predicted, c.stack, c.cost, n);
     }
 
     // ------------------------------------------------------------ DFA
@@ -408,6 +490,17 @@ final class IXMLLookahead {
                 if (id == null) { id = distinct.size(); setIds.put(r, id); distinct.add(r); members.add(new ArrayList<>()); }
                 members.get(id).add(ci);
             }
+            // The sets of the pending negative lookaheads split the symbol
+            // ranges too, since they decide which configurations survive. They
+            // move no configuration by themselves.
+            for (Config c : cs) {
+                if (c.neg == null) continue;
+                for (int i = 0; i < c.neg.pairs.length; i += 2) {
+                    Ranges r = preds.get(c.neg.pairs[i])[c.neg.pairs[i + 1]];
+                    if (setIds.containsKey(r)) continue;
+                    setIds.put(r, distinct.size()); distinct.add(r); members.add(new ArrayList<>());
+                }
+            }
             List<long[]> events = new ArrayList<>(); // {position, set id, +1 start / -1 end}
             for (int id = 0; id < distinct.size(); id++) {
                 Ranges r = distinct.get(id);
@@ -434,10 +527,16 @@ final class IXMLLookahead {
                 int lo = (int)pos, hi = (int)(events.get(ei)[0] - 1);
                 Set<Config> target = closures.get(active);
                 if (target == null) {
+                    // The signature says for every set, including the negative
+                    // lookahead sets, whether it contains the symbols lo..hi, so
+                    // lo is a valid representative for advancing the constraints.
                     BitSet signature = (BitSet)active.clone();
                     List<Config> moved = new ArrayList<>();
                     for (int id = signature.nextSetBit(0); id >= 0; id = signature.nextSetBit(id + 1))
-                        for (int ci : members.get(id)) moved.add(advance(cs[ci]));
+                        for (int ci : members.get(id)) {
+                            Config m = advance(cs[ci], lo);
+                            if (m != null) moved.add(m);
+                        }
                     target = closure(moved);
                     closures.put(signature, target);
                     work += target.size();
@@ -482,7 +581,7 @@ final class IXMLLookahead {
         // The cheapest cost for each alternative at each position.
         Map<List<Object>, Map<Integer, Integer>> at = new HashMap<>();
         for (Config c : configs) {
-            List<Object> key = Arrays.asList(c.rule, c.alt, c.idx, c.stack);
+            List<Object> key = Arrays.asList(c.rule, c.alt, c.idx, c.stack, c.neg);
             at.computeIfAbsent(key, k -> new TreeMap<>()).merge(c.predicted, c.cost, Math::min);
         }
         Set<List<Object>> dropped = new HashSet<>();
@@ -500,7 +599,7 @@ final class IXMLLookahead {
         if (dropped.isEmpty()) return configs;
         Set<Config> result = new LinkedHashSet<>();
         for (Config c : configs) {
-            if (!dropped.contains(withAlt(Arrays.asList(c.rule, c.alt, c.idx, c.stack), c.predicted))) result.add(c);
+            if (!dropped.contains(withAlt(Arrays.asList(c.rule, c.alt, c.idx, c.stack, c.neg), c.predicted))) result.add(c);
         }
         return result;
     }
