@@ -41,6 +41,7 @@ are used to reduce such ambiguities:
   - A cast to a lone typedef name, (T)x, cannot be followed by + - * & (
     since (x)+1 is then parsed as an expression.
   - sizeof(T) with a lone typedef name is parsed as sizeof of an expression.
+  - An expression statement has a cost, so T *p; in a block is a declaration.
   - The dangling else binds to the closest if. }
 
 translation_unit = ws, external_declaration*.
@@ -545,8 +546,12 @@ compound_statement
 	| statement
 	.
 
+{ An expression statement has the cost 1 (=<). Inside a block T *p; is either
+  a declaration or a multiplication of T with p. A C compiler knows if T is a
+  typedef name, a grammar does not. The minimal cost parse is selected, i.e.
+  the declaration wins, since a statement that only multiplies is useless. }
 expression_statement
-	= SEMICOLON
+	=< SEMICOLON
 	| expression, SEMICOLON
 	.
 

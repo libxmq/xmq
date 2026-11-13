@@ -1,0 +1,23 @@
+START
+p = d | e.
+d =< ID.
+e =< ID.
+ID = 'T'.
+INPUT
+T
+OUTPUT
+AMBIGUOUS(state      = ambiguous
+          xmlns:ixml = http://invisiblexml.org/NS)
+{
+    p {
+        e {
+            ID = T
+        }
+    }
+    p {
+        d {
+            ID = T
+        }
+    }
+}
+END

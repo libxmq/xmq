@@ -679,7 +679,10 @@ void parse_ixml_alts(XMQParseState *state)
         parse_ixml_whitespace(state);
         IXMLNonTerminal *name = state->ixml_rule->rule_name;
         char mark = state->ixml_rule->mark;
+        // The cost rule =< ... applies to all alternatives of the rule.
+        int cost = state->ixml_rule->cost;
         state->ixml_rule = new_ixml_rule();
+        state->ixml_rule->cost = cost;
         state->ixml_rule->rule_name->name = strdup(name->name);
         if (name->alias)
         {

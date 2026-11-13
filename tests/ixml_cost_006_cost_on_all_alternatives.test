@@ -1,0 +1,11 @@
+START
+p = d | e.
+d = 'x'.
+e =< 'q' | 'x'.
+INPUT
+x
+OUTPUT
+p {
+    d = x
+}
+END

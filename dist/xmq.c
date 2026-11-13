@@ -11876,7 +11876,10 @@ void parse_ixml_alts(XMQParseState *state)
         parse_ixml_whitespace(state);
         IXMLNonTerminal *name = state->ixml_rule->rule_name;
         char mark = state->ixml_rule->mark;
+        // The cost rule =< ... applies to all alternatives of the rule.
+        int cost = state->ixml_rule->cost;
         state->ixml_rule = new_ixml_rule();
+        state->ixml_rule->cost = cost;
         state->ixml_rule->rule_name->name = strdup(name->name);
         if (name->alias)
         {
@@ -25494,6 +25497,9 @@ static void loop_stack(YaepTreeNode **result,
                     {
                         /* We allready have the translation.*/
                         assert(!ps->run.grammar->one_parse_p);
+                        // The state was pushed on the stack above, pop it before freeing it,
+                        // otherwise the freed state (with rule overwritten by the free list) is processed.
+                        VLO_SHORTEN(stack, sizeof(YaepParseTreeBuildState*));
                         parse_state_free(ps, state);
                         state = ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1];
                         node = table_state->anode;
@@ -25624,6 +25630,13 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
            *cost = node->val.anode.cost;
             node->val.anode.cost = -node->val.anode.cost - 1;        /* flag of visit*/
         }
+        else
+        {
+            // The translation is a DAG, so this node has already been visited
+            // through another parent. Return its already computed cost,
+            // otherwise the caller would use a stale cost from a previous sibling.
+            *cost = -node->val.anode.cost - 1;
+        }
         return node;
     case YAEP_ALT:
         for(alt = node; alt != NULL; alt = next_alt)
@@ -25661,7 +25674,7 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
 
 /* The following function traverses the translation collecting
    reference to memory which may not be freed.*/
-static void traverse_pruned_translation(YaepParseState *ps, YaepTreeNode *node)
+static void traverse_pruned_translation(YaepParseState *ps, YaepTreeNode *node, bool *ambiguous_p)
 {
     YaepTreeNode*child;
     hash_table_entry_t*entry;
@@ -25688,14 +25701,16 @@ next:
         }
         for(i = 0;(child = node->val.anode.children[i]) != NULL; i++)
         {
-            traverse_pruned_translation(ps, child);
+            traverse_pruned_translation(ps, child, ambiguous_p);
         }
         // FIXME Is this assert needed? What is its purpose?
         // assert(node->val.anode.cost < 0);
         node->val.anode.cost = -node->val.anode.cost - 1;
         break;
     case YAEP_ALT:
-        traverse_pruned_translation(ps, node->val.alt.node);
+        // An alt node remaining after pruning means that several parses had the same minimal cost.
+        *ambiguous_p = true;
+        traverse_pruned_translation(ps, node->val.alt.node, ambiguous_p);
         if ((node = node->val.alt.next) != NULL)
             goto next;
         break;
@@ -25707,7 +25722,7 @@ next:
 }
 
 /* The function finds and returns a minimal cost parse(s). */
-static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *root)
+static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *root, bool *ambiguous_p)
 {
     YaepTreeNode**node_ptr;
     int cost;
@@ -25722,7 +25737,8 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
     }
     root = prune_to_minimal(ps, root, &cost);
 
-    traverse_pruned_translation(ps, root);
+    *ambiguous_p = false;
+    traverse_pruned_translation(ps, root, ambiguous_p);
 
     if (ps->run.parse_free != NULL)
     {
@@ -25810,7 +25826,8 @@ YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
            because we have not the translation yet. We can not make it
            during parsing because the abstract nodes are created before
            their children. */
-        result = find_minimal_translation(ps, result);
+        // The parse is only ambiguous if several parses remain after selecting the minimal cost.
+        result = find_minimal_translation(ps, result, ambiguous_p);
     }
     if (false)
     {

@@ -1,0 +1,20 @@
+START
+p = d | e.
+d = t, '*', ID.
+t = ID.
+e =< x.
+x = ID | x, '*', ID.
+ID = 'T' | 'p'.
+INPUT
+T*p
+OUTPUT
+p {
+    d {
+        t {
+            ID = T
+        }
+        '*'
+        ID = p
+    }
+}
+END

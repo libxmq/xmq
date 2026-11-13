@@ -171,6 +171,14 @@ then
         if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
     done
 
+    # Only try the cost extension (rule =< ...) if we are using the internal ixml parser engine.
+    for i in tests/ixml_cost_[0-9][0-9][0-9]_*.test
+    do
+        if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+        tests/test_ixml_not.sh "$PROG" "$OUTPUT" "$i"
+        if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+    done
+
     # The xmq parsing using ixml should be possible to do with other engines.
     for i in tests/xmqixml_[0-9][0-9][0-9]_*.test
     do

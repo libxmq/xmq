@@ -1,0 +1,14 @@
+START
+p = d | e.
+d =< ID.
+e = ID.
+ID = 'T'.
+INPUT
+T
+OUTPUT
+p {
+    e {
+        ID = T
+    }
+}
+END
