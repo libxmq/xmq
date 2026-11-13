@@ -1,0 +1,19 @@
+START
+s = e. e = t | e>sum, "+", t. t = [N]+, ![N].
+INPUT
+1+2+3
+OUTPUT
+s {
+    e {
+        sum {
+            sum {
+                t = 1
+            }
+            '+'
+            t = 2
+        }
+        '+'
+        t = 3
+    }
+}
+END

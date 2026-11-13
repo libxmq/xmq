@@ -35,7 +35,7 @@ public class IXMLAnalyzerTest {
     @Test public void recursionAndNullable() {
         accepts("s: '(', s, ')', s; .", "(())()");
         accepts("s: a, 'b'. a: .", "b");
-        conflict("s: s, 'a'; 'b'.", "left-recursion");
+        accepts("s: s, 'a'; 'b'.", "baa"); // Direct left recursion is rewritten, see leftRecursion.
         conflict("s: a. a: b. b: s; 'x'.", "left-recursion");
         conflict("s: a, s; 'x'. a: .", "left-recursion");
         conflict("s: ('a'?)*.", "left-recursion");
@@ -92,6 +92,22 @@ public class IXMLAnalyzerTest {
         // exiting alternative is predicted after one symbol.
         accepts("s: 'x', 'y'*, !'z', ~[].", "xyyw");
         rejects("s: 'x', 'y'*, !'z', ~[].", "xyz");
+    }
+    @Test public void leftRecursion() {
+        // Direct left recursion is rewritten into a loop, the tree stays left nested.
+        String g = "e: -t; e, '+', t. t: [N]+, ![N].";
+        accepts(g, "1+2+3");
+        var root = IXMLAnalyzer.parse(g, "1+2+3").rootElement();
+        assertEquals("e", root.name());
+        assertEquals("e", root.firstChild().name());
+        assertEquals("e", root.firstChild().firstChild().name());
+        assertEquals("1", root.firstChild().firstChild().textContent());
+        assertEquals("1+2+3", root.textContent());
+        // Through an optional.
+        accepts("d: '(', d, ')'; d?, '[', ']'.", "([])[][]");
+        // A = A is a cycle and indirect left recursion is not rewritten.
+        conflict("s: a; s.  a: 'x'.", "left-recursion");
+        conflict("s: a, 'x'; 'y'. a: s, 'z'.", "left-recursion");
     }
     private static String names(org.libxmq.imp.xml.XmlDocument d) {
         java.util.List<String> l = new java.util.ArrayList<>();

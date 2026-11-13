@@ -213,6 +213,14 @@ public final class IXMLGenerateC
 #ifndef XMQ_ADD_TEXT
 #define XMQ_ADD_TEXT(ctx, node, text, len) xmqAddText((XMQDoc*)(ctx), (XMQNode*)(node), (text), (len))
 #endif
+// Left recursive rules are parsed as loops, the left nested tree is built by
+// marking where the content of the rule starts and wrapping the content since
+// the mark into a new element at each turn of the loop.
+#ifndef XMQ_CONTENT_MARK
+#define XMQ_MARK_TYPE XMQContentMark
+#define XMQ_CONTENT_MARK(ctx, node) xmqContentMark((XMQNode*)(node))
+#define XMQ_WRAP_CONTENT(ctx, node, mark, name) xmqWrapContent((XMQDoc*)(ctx), (XMQNode*)(node), (mark), (name))
+#endif
 
 """.replace("    ", "    "));
         out.append(String.format("""
@@ -231,6 +239,8 @@ typedef struct %1$s_Parser
     size_t fail_pos;        // Where the parse failed.
     const char *fail_rule;  // The rule that failed.
     const char *fail_expected;
+    void *lr_elem;          // Handed from a left recursive rule to its loop rule.
+    XMQ_MARK_TYPE lr_mark;
 } %1$s_Parser;
 
 /** The result of a failed parse. */
@@ -390,7 +400,20 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
          .append("_Parser *p, void *elem, ").append(P).append("_Buf *attr)\n{\n");
         boolean usesStart = false;
         StringBuilder body = new StringBuilder();
-        if (genCharLoop(body, r))
+        if (r.lrTail != null)
+        {
+            // Mark where the content of this left recursive rule starts.
+            b.append("    void *lr_elem = attr ? NULL : elem;\n");
+            b.append("    XMQ_MARK_TYPE lr_mark = {0};\n");
+            b.append("    if (lr_elem) { ").append(P).append("_flush(p); lr_mark = XMQ_CONTENT_MARK(p->ctx, lr_elem); }\n");
+        }
+        if (r.lrOwner != null)
+        {
+            b.append("    void *lr_elem = p->lr_elem; // The content mark of ").append(comment(r.lrOwner)).append('\n');
+            b.append("    XMQ_MARK_TYPE lr_mark = p->lr_mark;\n");
+            b.append("    if (attr) lr_elem = NULL;\n");
+        }
+        if (r.lrOwner == null && genCharLoop(body, r))
         {
             // Done.
         }
@@ -404,6 +427,12 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
             for (int a = 0; a < r.alternatives.size(); a++)
             {
                 body.append("    case ").append(a).append(":\n    {\n");
+                if (r.lrWrap != null && r.lrWrap.get(a) != null)
+                {
+                    // Another turn of the loop, the content so far becomes the inner element.
+                    body.append("        if (lr_elem) { ").append(P).append("_flush(p); XMQ_WRAP_CONTENT(p->ctx, lr_elem, lr_mark, ")
+                        .append(cstring(r.lrWrap.get(a))).append("); }\n");
+                }
                 usesStart |= genAlt(body, r, r.alternatives.get(a), "        ");
                 body.append("    }\n");
             }
@@ -518,6 +547,11 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
                         b.append(ind).append("goto start; // ").append(comment(t.ref)).append('\n');
                         loops = true;
                         return loops;
+                    }
+                    if (callee.lrOwner != null)
+                    {
+                        b.append(ind).append("p->lr_elem = lr_elem;\n");
+                        b.append(ind).append("p->lr_mark = lr_mark;\n");
                     }
                     b.append(ind).append("if (!").append(fn).append("(p, elem, attr)) return false; // ")
                      .append(comment(t.ref)).append('\n');

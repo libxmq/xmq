@@ -280,7 +280,8 @@ final class IXMLLookahead {
                     s = push(c.rule, c.alt, c.idx + 1, c.stack);
                     if (s.depth > STACK_LIMIT)
                         throw new Failure("non-regular", "The lookahead needs a recursion deeper than "
-                                          + STACK_LIMIT + " in " + names[callee] + ", it is not a regular language.");
+                                          + STACK_LIMIT + ", it is not a regular language. The recursion: "
+                                          + recursion(s) + ".");
                 }
                 for (int a = 0; a < alts[callee].length; a++)
                     todo.push(new Config(callee, a, 0, c.predicted, s, c.cost + costs[callee], c.neg));
@@ -295,6 +296,23 @@ final class IXMLLookahead {
             }
         }
         return result;
+    }
+
+    /** The named (not generated) rules on the stack, innermost first, repeated runs collapsed. */
+    String recursion(Stack s) {
+        List<String> l = new ArrayList<>();
+        for (Stack i = s; i != null && i != UNKNOWN; i = i.next) {
+            String n = names[i.rule];
+            if (n.startsWith("/")) continue;
+            if (l.isEmpty() || !l.get(l.size() - 1).equals(n)) l.add(n);
+        }
+        // Show one turn of the cycle: stop when the innermost rule comes back.
+        List<String> cycle = new ArrayList<>();
+        for (String n : l) {
+            if (!cycle.isEmpty() && n.equals(cycle.get(0))) { cycle.add(n); break; }
+            cycle.add(n);
+        }
+        return String.join(" <- ", cycle);
     }
 
     /** Does the configuration accept the symbol? */

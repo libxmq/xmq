@@ -93,9 +93,9 @@ do
     [ -n "$inputs" ] && compare "$g" $inputs
 done
 
-# The not (!) and cost (=<) extension tests, grammar and input from the test file.
+# The not (!), cost (=<) and left recursion tests, grammar and input from the test file.
 mkdir -p "$OUTPUT/ext"
-for t in tests/ixml_not_[0-9][0-9][0-9]_*.test tests/ixml_cost_[0-9][0-9][0-9]_*.test
+for t in tests/ixml_not_[0-9][0-9][0-9]_*.test tests/ixml_cost_[0-9][0-9][0-9]_*.test tests/ixml_leftrec_[0-9][0-9][0-9]_*.test
 do
     n=$(basename "$t" .test)
     sed -n '/^START$/,/^INPUT$/p' "$t" | tail -n +2 | sed '$d' > "$OUTPUT/ext/$n.ixml"

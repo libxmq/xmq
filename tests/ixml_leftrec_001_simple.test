@@ -1,0 +1,19 @@
+START
+e = -t | e, op, t. op = "+" | "-". t = [N]+, ![N].
+INPUT
+1+2-3+44
+OUTPUT
+e {
+    e {
+        e {
+            e  = 1
+            op = +
+            t  = 2
+        }
+        op = -
+        t  = 3
+    }
+    op = +
+    t  = 44
+}
+END

@@ -179,6 +179,14 @@ then
         if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
     done
 
+    # Left recursive grammars, also run through the generated parsers (test_generate_parser.sh).
+    for i in tests/ixml_leftrec_[0-9][0-9][0-9]_*.test
+    do
+        if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+        tests/test_ixml_not.sh "$PROG" "$OUTPUT" "$i"
+        if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+    done
+
     # The xmq parsing using ixml should be possible to do with other engines.
     for i in tests/xmqixml_[0-9][0-9][0-9]_*.test
     do

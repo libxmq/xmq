@@ -29,7 +29,11 @@ public final class IXMLAnalyzer {
     private final Set<String> reachable = new LinkedHashSet<>();
     private final IXMLLookahead lookahead;
     private final Map<String, IXMLLookahead.Dfa> dfas = new LinkedHashMap<>();
-    private IXMLAnalyzer(IXMLGrammar grammar) { this.grammar = grammar; this.lookahead = new IXMLLookahead(grammar); }
+    private IXMLAnalyzer(IXMLGrammar grammar) {
+        this.grammar = grammar;
+        grammar.eliminateLeftRecursion();
+        this.lookahead = new IXMLLookahead(grammar);
+    }
 
     /** Analyze a grammar and test its predictive parser against the whole input.
      * @param source iXML grammar
@@ -237,6 +241,9 @@ public final class IXMLAnalyzer {
         String name;         // element or attribute name
         Element element;     // for '^'
         StringBuilder text;  // for '@'
+        // For a rule rewritten from left recursion: where its content starts.
+        Element lrTarget;    // The element that receives the content, null if none.
+        int lrChildren, lrTextLen, lrAttrs;
     }
     private int failedAt;
     // Run the LL(*) parser on the input, the tree is added below into.
@@ -309,7 +316,54 @@ public final class IXMLAnalyzer {
             f.text = new StringBuilder();
         }
         stack.push(f);
+        if (r.lrTail != null && !inAttribute && f.kind != '@') {
+            // Remember where the content of this rule starts, for wrapping it
+            // in the loop that replaced the left recursion.
+            Element target = nearestElement(stack, into);
+            f.lrTarget = target;
+            f.lrChildren = target.numChildren();
+            XmlNode last = target.lastChild();
+            f.lrTextLen = last instanceof XmlText ? last.content().length() : -1;
+            f.lrAttrs = target.attributes().size();
+        }
+        if (r.lrWrap != null && r.lrWrap.get(alt) != null) {
+            for (Frame o : stack) {
+                if (o.rule.name.equals(r.lrOwner)) {
+                    if (o.lrTarget != null) wrap(o, r.lrWrap.get(alt));
+                    break;
+                }
+            }
+        }
         return null;
+    }
+    // Move the content produced since the mark in the owner frame into a new
+    // element, which is added last. This builds the left nested tree.
+    private static void wrap(Frame o, String name) {
+        Element target = o.lrTarget;
+        Element w = new Element(name);
+        List<XmlNode> children = target.children();
+        int from = o.lrChildren;
+        if (o.lrTextLen >= 0 && from > 0) {
+            // Text added after the mark may have been merged into the last text node.
+            XmlNode t = children.get(from - 1);
+            String c = t.content();
+            if (c.length() > o.lrTextLen) {
+                t.setContent(c.substring(0, o.lrTextLen));
+                w.appendRaw(new XmlText(c.substring(o.lrTextLen)));
+            }
+        }
+        for (int i = from; i < children.size(); i++) {
+            XmlNode n = children.get(i);
+            n.unlink();
+            w.appendRaw(n);
+        }
+        List<org.libxmq.imp.xml.XmlAttr> attrs = new ArrayList<>(target.attributes()); // A copy, the list is live.
+        for (int i = o.lrAttrs; i < attrs.size(); i++) {
+            org.libxmq.imp.xml.XmlAttr a = attrs.get(i);
+            target.removeAttribute(a);
+            w.addAttribute(a);
+        }
+        target.appendRaw(w);
     }
     private static Element nearestElement(Deque<Frame> stack, Element into) {
         for (Frame p : stack) if (p.kind == '^') return p.element;

@@ -1,0 +1,15 @@
+START
+e = @v | e, "+", t. v = [N]+, ![N]. t = [N]+, ![N].
+INPUT
+1+2+3
+OUTPUT
+e {
+    e {
+        e(v = 1)
+        '+'
+        t = 2
+    }
+    '+'
+    t = 3
+}
+END

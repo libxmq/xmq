@@ -5731,6 +5731,63 @@ XMQStatus xmqAddText(XMQDoc *doq, XMQNode *parent, const char *text, size_t len)
     return XMQ_OK;
 }
 
+XMQContentMark xmqContentMark(XMQNode *node)
+{
+    XMQContentMark m = { NULL, 0, NULL };
+    xmlNodePtr n = (xmlNodePtr)node;
+    if (!n) return m;
+    m.child = n->last;
+    if (n->last && n->last->type == XML_TEXT_NODE && n->last->content)
+    {
+        m.text_len = strlen((const char*)n->last->content);
+    }
+    xmlAttrPtr a = n->properties;
+    while (a && a->next) a = a->next;
+    m.attr = a;
+    return m;
+}
+
+XMQReturnNode xmqWrapContent(XMQDoc *doq, XMQNode *node, XMQContentMark mark, const char *name)
+{
+    xmlNodePtr n = (xmlNodePtr)node;
+    if (!doq || !n || !name) return (XMQReturnNode){ XMQ_ERROR_BAD_VALUE, NULL };
+    xmlDocPtr d = doq->docptr_.xml;
+    xmlNodePtr w = xmlNewDocNode(d, n->ns, (const xmlChar*)name, NULL);
+    if (!w) return (XMQReturnNode){ XMQ_ERROR_OOM, NULL };
+    xmlNodePtr mc = (xmlNodePtr)mark.child;
+    xmlNodePtr c = mc ? mc->next : n->children;
+    if (mc && mc->type == XML_TEXT_NODE && mc->content)
+    {
+        // Text added after the mark may have been merged into the marked text node, split it.
+        size_t len = strlen((const char*)mc->content);
+        if (len > mark.text_len)
+        {
+            xmlNodePtr t = xmlNewDocTextLen(d, mc->content + mark.text_len, (int)(len - mark.text_len));
+            xmlChar *prefix = xmlStrndup(mc->content, (int)mark.text_len);
+            xmlNodeSetContent(mc, prefix);
+            xmlFree(prefix);
+            xmlAddChild(w, t);
+        }
+    }
+    while (c)
+    {
+        xmlNodePtr next = c->next;
+        xmlUnlinkNode(c);
+        xmlAddChild(w, c);
+        c = next;
+    }
+    xmlAttrPtr a = mark.attr ? ((xmlAttrPtr)mark.attr)->next : n->properties;
+    while (a)
+    {
+        xmlAttrPtr next = a->next;
+        xmlUnlinkNode((xmlNodePtr)a);
+        xmlAddChild(w, (xmlNodePtr)a);
+        a = next;
+    }
+    xmlAddChild(n, w);
+    return (XMQReturnNode){ XMQ_OK, (XMQNode*)w };
+}
+
 XMQStatus xmq_add_attrs(XMQDoc *doc, XMQNode *node, const XMQAddAttr *attrs, size_t num_attrs);
 XMQStatus xmq_add_attrs(XMQDoc *doc, XMQNode *node, const XMQAddAttr *attrs, size_t num_attrs)
 {

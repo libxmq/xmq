@@ -21,6 +21,13 @@ public final class IXMLGrammar {
         final List<List<Term>> alternatives = new ArrayList<>();
         final BitSet first = new BitSet(), follow = new BitSet();
         boolean nullable, productive;
+        // Left recursion elimination (see eliminateLeftRecursion):
+        // lrTail is set on a rewritten rule A, the name of its loop rule.
+        // lrOwner is set on the loop rule, the name of A, and lrWrap has for
+        // each alternative of the loop rule the element name that wraps the
+        // content of A so far, or null for no wrapping.
+        String lrTail, lrOwner;
+        List<String> lrWrap;
         Rule(String name) { this.name = name; }
     }
     static final class Term {
@@ -42,6 +49,77 @@ public final class IXMLGrammar {
         IXMLGrammar g = new IXMLGrammar(source);
         g.parseIxml();
         return g;
+    }
+    /**
+     * Rewrite direct left recursion, A = y1 | y2 | A, x1 | A, x2, into a loop:
+     * A = y1, T | y2, T and T = x1, T | x2, T | (), like ANTLR 4. The parse
+     * tree is still the left nested ixml tree: at the start of each turn of
+     * the loop, the parser wraps the content that A has produced so far into
+     * a new element (the inner A), unless the inner A is hidden. A left
+     * recursive call through an optional, A = A?, x, is expanded first.
+     * Rules where the inner A is an attribute, or with A = A, are left
+     * alone (and reported as left recursive by the analysis).
+     */
+    void eliminateLeftRecursion() {
+        for (Rule a : new ArrayList<>(rules.values())) {
+            if (a.lrOwner != null || a.lrTail != null) continue;
+            // Expand A = G, rest where G = A | () into A = A, rest | rest.
+            List<List<Term>> expanded = new ArrayList<>();
+            boolean viaOptional = false;
+            for (List<Term> alt : a.alternatives) {
+                Term g = alt.isEmpty() ? null : optionalOf(alt.get(0), a.name);
+                if (g == null) { expanded.add(alt); continue; }
+                viaOptional = true;
+                List<Term> with = new ArrayList<>(alt); with.set(0, g);
+                expanded.add(with);
+                expanded.add(new ArrayList<>(alt.subList(1, alt.size())));
+            }
+            List<List<Term>> base = new ArrayList<>(), rec = new ArrayList<>();
+            for (List<Term> alt : expanded) {
+                if (!alt.isEmpty() && a.name.equals(alt.get(0).ref)) rec.add(alt); else base.add(alt);
+            }
+            if (rec.isEmpty() || base.isEmpty()) continue;
+            List<String> wraps = new ArrayList<>();
+            boolean ok = true;
+            for (List<Term> alt : rec) {
+                Term t = alt.get(0);
+                String m = !t.mark.isEmpty() ? t.mark : !a.mark.isEmpty() ? a.mark : "^";
+                if (alt.size() == 1 || m.equals("@") || m.equals("*")) { ok = false; break; }
+                wraps.add(m.equals("-") ? null : !t.alias.isEmpty() ? t.alias : !a.alias.isEmpty() ? a.alias : a.name);
+            }
+            if (!ok) continue;
+            Rule tail = generated();
+            tail.lrOwner = a.name;
+            tail.lrWrap = wraps;
+            for (List<Term> alt : rec) {
+                List<Term> l = new ArrayList<>(alt.subList(1, alt.size()));
+                l.add(call(tail));
+                tail.alternatives.add(l);
+            }
+            tail.alternatives.add(new ArrayList<>());
+            tail.lrWrap.add(null);
+            a.alternatives.clear();
+            for (List<Term> alt : base) {
+                List<Term> l = new ArrayList<>(alt);
+                l.add(call(tail));
+                a.alternatives.add(l);
+            }
+            a.lrTail = tail.name;
+            if (viaOptional) { /* The optional rule may now be unused, which is harmless. */ }
+        }
+    }
+    // If t calls a generated rule G = A | () (in any order), return the call of A in G.
+    private Term optionalOf(Term t, String a) {
+        if (t.ref == null || !t.ref.startsWith("/")) return null;
+        Rule g = rules.get(t.ref);
+        if (g.alternatives.size() != 2) return null;
+        Term found = null;
+        boolean empty = false;
+        for (List<Term> alt : g.alternatives) {
+            if (alt.isEmpty()) empty = true;
+            else if (alt.size() == 1 && a.equals(alt.get(0).ref)) found = alt.get(0);
+        }
+        return empty ? found : null;
     }
     private int peek() { return pos == source.length() ? -1 : source.codePointAt(pos); }
     private int take() { int c = peek(); if (c >= 0) pos += Character.charCount(c); return c; }

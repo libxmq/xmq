@@ -1,0 +1,16 @@
+START
+s = "x", -e. e = -t | e, "+", t. t = [N]+, ![N].
+INPUT
+x1+2+3
+OUTPUT
+s {
+    'x'
+    e {
+        e = 1
+        '+'
+        t = 2
+    }
+    '+'
+    t = 3
+}
+END

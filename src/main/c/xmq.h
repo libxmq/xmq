@@ -866,6 +866,50 @@ XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, cons
 XMQStatus xmqAddText(XMQDoc *doq, XMQNode *parent, const char *text, size_t len);
 
 /**
+    A position at the end of the current content (children and attributes)
+    of a node, used by xmqWrapContent. Treat the members as opaque.
+*/
+struct XMQContentMark
+{
+    void *child; // The last child when the mark was taken.
+    size_t text_len; // Its length if it is a text node, later text may be merged into it.
+    void *attr; // The last attribute when the mark was taken.
+};
+typedef struct XMQContentMark XMQContentMark;
+
+/**
+    Mark the end of the current content of a node.
+
+    @node The node.
+    @return The mark, to be given to xmqWrapContent.
+*/
+XMQContentMark xmqContentMark(XMQNode *node);
+
+/**
+    Move the content (children and attributes) added to the node after the
+    mark into a new element, which is added last to the node. The mark stays
+    valid, so wrapping again nests the elements:
+
+    @code
+    XMQContentMark m = xmqContentMark(e);
+    xmqAddText(doc, e, "1", 1);
+    xmqWrapContent(doc, e, m, "sum"); // e { sum = 1 }
+    xmqAddText(doc, e, "+2", 2);
+    xmqWrapContent(doc, e, m, "sum"); // e { sum { sum = 1 '+2' } }
+    @endcode
+
+    This is used by generated parsers to build the left nested ixml tree of
+    left recursive rules.
+
+    @doq The xmq document.
+    @node The node.
+    @mark The mark from xmqContentMark on the same node.
+    @name The name of the new element.
+    @return The new element.
+*/
+XMQReturnNode xmqWrapContent(XMQDoc *doq, XMQNode *node, XMQContentMark mark, const char *name);
+
+/**
     Create a key value with attributes under an existing node.
 
     @doq The xmq document.
