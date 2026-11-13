@@ -3030,6 +3030,7 @@ void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p)
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<time.h>
 #include<unistd.h>
 
 #include"xmq.h"
@@ -25035,6 +25036,18 @@ static void place_translation(YaepParseState *ps, YaepTreeNode **place, YaepTree
     {
         *place = node;
         return;
+    }
+    /* The translation is a DAG and the same (memoized) translation can be
+       reached through several derivation paths that differ only in hidden
+       bookkeeping. Alternatives referring to the same node are the same
+       parse, adding it again would report a false ambiguity. */
+    if (*place == node) return;
+    if ((*place)->type == YAEP_ALT)
+    {
+        for (YaepTreeNode *a = *place; a != NULL; a = a->val.alt.next)
+        {
+            if (a->val.alt.node == node) return;
+        }
     }
     /* We need an alternative.*/
 
