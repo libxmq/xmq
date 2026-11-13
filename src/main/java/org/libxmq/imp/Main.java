@@ -81,6 +81,13 @@ public class Main
             return;
         }
 
+        if (args[0].equals("generate-parser"))
+        {
+            int status = runGenerateParser(args);
+            if (status != 0) System.exit(status);
+            return;
+        }
+
         if (args[0].equals("analyze"))
         {
             int status = runAnalyze(args);
@@ -233,6 +240,44 @@ public class Main
         catch (Exception e)
         {
             e.printStackTrace(System.err);
+        }
+    }
+
+    private static int runGenerateParser(String[] args)
+    {
+        // xmqj generate-parser --c grammar.ixml [--prefix=name]
+        boolean c = false;
+        String prefix = null;
+        String file = null;
+        for (int k = 1; k < args.length; k++)
+        {
+            if (args[k].equals("--c")) c = true;
+            else if (args[k].startsWith("--prefix=")) prefix = args[k].substring(9);
+            else if (file == null && !args[k].startsWith("--")) file = args[k];
+            else file = null;
+        }
+        if (!c || file == null)
+        {
+            System.err.println("Usage: xmqj generate-parser --c grammar.ixml [--prefix=name] > parser.c");
+            return 2;
+        }
+        if (prefix == null)
+        {
+            // The grammar file name without .ixml, as a C identifier.
+            String base = Path.of(file).getFileName().toString().replaceAll("\\.ixml$", "");
+            prefix = base.replaceAll("[^A-Za-z0-9_]", "_");
+            if (prefix.isEmpty() || Character.isDigit(prefix.charAt(0))) prefix = "p_" + prefix;
+        }
+        try
+        {
+            String grammar = Files.readString(Path.of(file), StandardCharsets.UTF_8);
+            System.out.print(org.libxmq.imp.ixml.IXMLGenerateC.generate(grammar, prefix, file));
+            return 0;
+        }
+        catch (java.io.IOException | IllegalArgumentException e)
+        {
+            System.err.println("xmqj generate-parser: " + e.getMessage());
+            return 1;
         }
     }
 
@@ -411,6 +456,7 @@ Usage: xmqj [options] <file> ( <command> [options] )*
   --version  Output version information and exit.
   --xmq|--htmq|--xml|--html|--ixml|--json|--clines
              The input format is auto detected for xmq/xml/json but you can force the input format here.
+  generate-parser --c grammar.ixml [--prefix=name]  Generate a C LL(*) parser with a main function.
   analyze grammar.ixml [test.input] [--tree]  Analyze LL(*) suitability and emit a parser DOM,
              or with --tree parse the input with the LL(*) parser and print the parse tree.
   --ixml=grammar.ixml Parse the content using the supplied grammar file.

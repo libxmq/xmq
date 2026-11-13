@@ -851,6 +851,21 @@ bool xmqMoveElement(XMQDoc *from_doq,
 XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, const char *value, XMQNS ns);
 
 /**
+    Add text last in an existing node. If the last child of the node is
+    already a text node, then the text is appended to it.
+
+    @doq The xmq document.
+    @parent The node to add the text to.
+    @text The text, utf8, does not need to be zero terminated.
+    @len The number of bytes of the text.
+
+    @code
+    xmqAddText(doc, p, "hello", 5);
+    @endcode
+*/
+XMQStatus xmqAddText(XMQDoc *doq, XMQNode *parent, const char *text, size_t len);
+
+/**
     Create a key value with attributes under an existing node.
 
     @doq The xmq document.

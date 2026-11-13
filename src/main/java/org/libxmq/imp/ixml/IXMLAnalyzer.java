@@ -40,6 +40,25 @@ public final class IXMLAnalyzer {
         return new IXMLAnalyzer(IXMLGrammar.parse(source)).analyze(input);
     }
 
+    /** Analyze a grammar for code generation.
+     * @param source iXML grammar
+     * @return the analyzer, with the grammar, the reachable rules and the lookahead DFAs
+     * @throws IllegalArgumentException if the grammar is not LL(*)
+     */
+    static IXMLAnalyzer compile(String source) {
+        IXMLAnalyzer a = new IXMLAnalyzer(IXMLGrammar.parse(source));
+        a.prepare();
+        if (!a.diagnostics.isEmpty()) {
+            StringBuilder b = new StringBuilder("grammar is not LL(*):");
+            for (Element d : a.diagnostics) b.append("\n").append(d.attributeValue("rule")).append(": ").append(d.textContent());
+            throw new IllegalArgumentException(b.toString());
+        }
+        return a;
+    }
+    IXMLGrammar grammar() { return grammar; }
+    Set<String> reachable() { return reachable; }
+    Map<String, IXMLLookahead.Dfa> dfas() { return dfas; }
+
     /** Parse the input with the LL(*) parser of the grammar and return the ixml parse tree.
      * @param source iXML grammar
      * @param input the input to parse

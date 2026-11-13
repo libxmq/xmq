@@ -5719,6 +5719,17 @@ XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, cons
     return (XMQReturnNode) { XMQ_OK, (XMQNode*)new_node };
 }
 
+XMQStatus xmqAddText(XMQDoc *doq, XMQNode *parent, const char *text, size_t len)
+{
+    if (!doq || !parent || (!text && len > 0)) return XMQ_ERROR_BAD_VALUE;
+    if (len == 0) return XMQ_OK;
+    xmlNodePtr t = xmlNewDocTextLen(doq->docptr_.xml, (const xmlChar*)text, (int)len);
+    if (!t) return XMQ_ERROR_OOM;
+    // xmlAddChild merges the text with a previous text node.
+    xmlAddChild((xmlNodePtr)parent, t);
+    return XMQ_OK;
+}
+
 XMQStatus xmq_add_attrs(XMQDoc *doc, XMQNode *node, const XMQAddAttr *attrs, size_t num_attrs);
 XMQStatus xmq_add_attrs(XMQDoc *doc, XMQNode *node, const XMQAddAttr *attrs, size_t num_attrs)
 {
