@@ -13,6 +13,7 @@ public final class IXMLGrammar {
     String start;
     private final String source;
     private int pos, serial;
+    private String current; // The rule being read.
 
     static final class Rule {
         final String name;
@@ -27,6 +28,8 @@ public final class IXMLGrammar {
         // each alternative of the loop rule the element name that wraps the
         // content of A so far, or null for no wrapping.
         String lrTail, lrOwner;
+        // For a generated rule (/1, /2, ...) the named rule it was made for, used in error messages.
+        String origin;
         List<String> lrWrap;
         Rule(String name) { this.name = name; }
     }
@@ -89,6 +92,7 @@ public final class IXMLGrammar {
             }
             if (!ok) continue;
             Rule tail = generated();
+            tail.origin = a.origin != null ? a.origin : a.name;
             tail.lrOwner = a.name;
             tail.lrWrap = wraps;
             for (List<Term> alt : rec) {
@@ -192,6 +196,7 @@ public final class IXMLGrammar {
         String m = mark(), n = name(), a = alias();
         if (rules.containsKey(n)) throw error("duplicate rule: " + n);
         Rule r = new Rule(n); r.mark = m; r.alias = a; rules.put(n, r);
+        current = n;
         if (start == null) start = n;
         if (!eat(':') && !eat('=')) throw error("expected equal or colon");
         while (eat('<')) r.cost++;
@@ -211,7 +216,7 @@ public final class IXMLGrammar {
         return result;
     }
     private Rule generated() {
-        Rule r = new Rule("/" + (++serial)); r.mark = "-"; rules.put(r.name, r); return r;
+        Rule r = new Rule("/" + (++serial)); r.mark = "-"; r.origin = current; rules.put(r.name, r); return r;
     }
     private Term call(Rule r) { Term t = Term.call(r.name); t.mark = "-"; return t; }
     // make_last_term_*: same anonymous-rule lowering, but repetitions are

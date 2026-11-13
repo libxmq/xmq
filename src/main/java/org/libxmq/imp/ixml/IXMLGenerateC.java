@@ -105,16 +105,48 @@ public final class IXMLGenerateC
         return cp == IXMLGrammar.EOF ? "EOF" : "#" + Integer.toHexString(cp);
     }
 
+    /** A code point for error messages, 'c' if printable ascii, else #hex. */
+    static String show(int cp)
+    {
+        if (cp > 0x20 && cp < 0x7f && cp != '\'') return "'" + (char)cp + "'";
+        if (cp == ' ') return "space";
+        return hex(cp);
+    }
+
     static String describe(IXMLLookahead.Ranges r)
     {
         StringBuilder b = new StringBuilder();
-        for (int k = 0; k < r.lo.length && k < 8; k++)
+        int n = r.lo.length;
+        if (n > 0 && r.lo[0] == 0 && n <= 9)
         {
-            if (b.length() > 0) b.append(' ');
-            b.append(r.lo[k] == r.hi[k] ? hex(r.lo[k]) : hex(r.lo[k]) + "-" + hex(r.hi[k]));
+            // An exclusion like ~['x'; ' '] is shorter to show as what is not allowed.
+            b.append("not ");
+            int prev = -1;
+            for (int k = 0; k <= n; k++)
+            {
+                int from = prev + 1, to = k < n ? r.lo[k] - 1 : IXMLGrammar.EOF - 1;
+                if (k < n) prev = r.hi[k];
+                if (from > to) continue;
+                if (b.length() > 4) b.append(", ");
+                b.append(from == to ? show(from) : show(from) + "-" + show(to));
+            }
+            if (r.hi[n - 1] >= IXMLGrammar.EOF - 1) return b.toString();
         }
-        if (r.lo.length > 8) b.append(" ...");
+        b.setLength(0);
+        if (Arrays.equals(r.lo, new int[]{9, 13, 32}) && Arrays.equals(r.hi, new int[]{10, 13, 32})) return "whitespace";
+        for (int k = 0; k < n && k < 8; k++)
+        {
+            if (b.length() > 0) b.append(", ");
+            b.append(r.lo[k] == r.hi[k] ? show(r.lo[k]) : show(r.lo[k]) + "-" + show(r.hi[k]));
+        }
+        if (n > 8) b.append(" ...");
         return b.toString();
+    }
+
+    /** The rule name for error messages, a generated rule shows the named rule it belongs to. */
+    static String displayName(Rule r)
+    {
+        return r.origin != null ? r.origin : r.name;
     }
 
     String mark(Term t, Rule r)
@@ -436,7 +468,7 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
                 usesStart |= genAlt(body, r, r.alternatives.get(a), "        ");
                 body.append("    }\n");
             }
-            body.append("    default:\n        return ").append(P).append("_fail(p, ").append(cstring(name))
+            body.append("    default:\n        return ").append(P).append("_fail(p, ").append(cstring(displayName(r)))
                 .append(", NULL);\n    }\n");
         }
         if (usesStart) b.append("start:\n");
@@ -497,7 +529,7 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
             // The prediction also takes symbols that the match rejects (a syntax error).
             int sid = setId(m.chars);
             b.append("            if (!").append(inset(sid, "c")).append(") return ").append(P).append("_fail(p, ")
-             .append(cstring(r.name)).append(", ").append(cstring(describe(setList.get(sid)))).append(");\n");
+             .append(cstring(displayName(r))).append(", ").append(cstring(describe(setList.get(sid)))).append(");\n");
         }
         if (!m.mark.equals("-")) b.append("            ").append(P).append("_char(p, elem, attr, c);\n");
         b.append("            p->pos++;\n            continue;\n        }\n");
@@ -507,7 +539,7 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
         {
             int stopId = setId(stop);
             b.append("        if (!").append(inset(stopId, "c")).append(") return ").append(P).append("_fail(p, ")
-             .append(cstring(r.name)).append(", NULL);\n");
+             .append(cstring(displayName(r))).append(", NULL);\n");
         }
         b.append("        return true;\n    }\n");
         return true;
@@ -527,7 +559,7 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
                 int sid = setId(t.chars);
                 IXMLLookahead.Ranges rs = setList.get(sid);
                 b.append(ind).append("if (!").append(inset(sid, P + "_peek(p, p->pos)")).append(") return ").append(P)
-                 .append("_fail(p, ").append(cstring(r.name)).append(", ").append(cstring(describe(rs))).append(");\n");
+                 .append("_fail(p, ").append(cstring(displayName(r))).append(", ").append(cstring(describe(rs))).append(");\n");
                 if (!t.mark.equals("-"))
                 {
                     b.append(ind).append(P).append("_char(p, elem, attr, p->in[p->pos]);\n");
@@ -595,7 +627,7 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
                 }
                 if (len == 0) cond.setLength(0);
                 b.append(ind).append("if (").append(len == 0 ? "true" : cond).append(") return ").append(P)
-                 .append("_fail(p, ").append(cstring(r.name)).append(", ").append(cstring(what.toString())).append(");\n");
+                 .append("_fail(p, ").append(cstring(displayName(r))).append(", ").append(cstring(what.toString())).append(");\n");
             }
             else
             {
@@ -641,6 +673,7 @@ static size_t %1$s_decode(const char *start, const char *stop, int *out, size_t 
     XMQ_* macros, with ctx as their first argument (by default an XMQDoc*).
     Returns true on success, else false with the error filled in.
 */
+bool %1$s_parse(void *ctx, const char *start, const char *stop, %1$s_Error *error);
 bool %1$s_parse(void *ctx, const char *start, const char *stop, %1$s_Error *error)
 {
     %1$s_Parser p;
@@ -679,6 +712,8 @@ bool %1$s_parse(void *ctx, const char *start, const char *stop, %1$s_Error *erro
         int c = %1$s_peek(&p, p.fail_pos);
         char found[32];
         if (c == %1$s_EOF) snprintf(found, sizeof(found), "end of input");
+        else if (c > 0x20 && c < 0x7f && c != 0x27) snprintf(found, sizeof(found), "'%%c'", c);
+        else if (c == ' ') snprintf(found, sizeof(found), "space");
         else snprintf(found, sizeof(found), "#%%x", c);
         if (p.fail_expected)
             snprintf(error->message, sizeof(error->message), "expected %%s in %%s, found %%s",

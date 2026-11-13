@@ -266,12 +266,13 @@ given after the \fB=\fP.
 Set the content of the named entity to the given xmq content (the
 entity is created if it does not already exist).
 .TP
-.BR \-\-with-file=f
-Take the replacement content from the file \fIf\fP instead.
+.BR \-\-with-file
+The second argument is a file, its parsed content (xmq, xml, html, json...)
+is the replacement: \fBreplace-entity --with-file ENTITY file\fP
 .TP
-.BR \-\-with-text-file=f
-Take the replacement content from the file \fIf\fP as plain text instead
-of parsing it as xmq.
+.BR \-\-with-text-file
+The second argument is a file, its content is the replacement as plain text:
+\fBreplace-entity --with-text-file ENTITY file\fP
 
 .TP
 .BR "delete-entity" " [ENTITY]"

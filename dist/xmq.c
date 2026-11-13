@@ -17627,9 +17627,9 @@ static void yaml_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, bool
     }
 
     yw(ps, "\"");
-    for (xmlNode *i = from; i; i = xml_next_sibling(i))
+    // The range ends at to, found by identity (node addresses say nothing about sibling order).
+    for (xmlNode *i = from; i; i = (i == to) ? NULL : xml_next_sibling(i))
     {
-        if (i > to) break;
         if (is_entity_node(i))
         {
             yw(ps, "&"); yw(ps, (const char*)i->name); yw(ps, ";");
@@ -17647,7 +17647,6 @@ static void yaml_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, bool
             yw(ps, rs.string);
             free(rs.string);
         }
-        if (i == to) break;
     }
     yw(ps, "\"");
 }
@@ -17752,9 +17751,9 @@ static void yaml_children(XMQPrintState *ps, size_t col,
                           bool dashed, bool inline_first)
 {
     bool inline_here = inline_first;
-    for (xmlNode *i = first; i; i = xml_next_sibling(i))
+    // The range ends at last, found by identity (node addresses say nothing about sibling order).
+    for (xmlNode *i = first; i; i = (i == last) ? NULL : xml_next_sibling(i))
     {
-        if (i > last) break;
         if (inline_here)
         {
             if (dashed) yw(ps, "- ");

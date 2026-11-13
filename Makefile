@@ -230,6 +230,12 @@ test_parse_myself:
 test_generate_parser:
 	@for x in $(BUILDDIRS); do ./tests/test_generate_parser.sh $${x}release/xmq build/xmqj $${x}release/test_output/generate_parser || exit 1 ; done
 
+# Regenerate the committed generated parsers, needs build/xmqj (make xmqj).
+generate_parsers: build/xmqj
+	build/xmqj generate-parser --c library/xmq-utils/xmqcli.ixml --prefix=xmqcli > src/main/c/xmq-cli-parser.h.tmp
+	mv src/main/c/xmq-cli-parser.h.tmp src/main/c/xmq-cli-parser.h
+	@echo "Generated src/main/c/xmq-cli-parser.h"
+
 test_library:
 	./tests/test_library.sh ./xmq build/test_library_output markup-blitz
 	./tests/test_library.sh ./xmq build/test_library_output kaffepot
@@ -335,7 +341,7 @@ import_category:
 	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
 	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
 
-.PHONY: all release debug asan fuzz afl_prepared build_fuzz test test_release test_debug test_parse_myself test_generate_parser clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
+.PHONY: all release debug asan fuzz afl_prepared build_fuzz test test_release test_debug test_parse_myself test_generate_parser generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
 
 pom.xml: pom.xmq jproject.settings
 	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; xmllint --format pom.xml > tmpo; mv tmpo pom.xml; echo "Generated pom.xml" ; fi

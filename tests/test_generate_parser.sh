@@ -121,5 +121,15 @@ check()
 . tests/cli_grammar_cases.sh
 compare library/xmq-utils/xmqcli.ixml "$OUTPUT"/cli/case*.txt
 
+# The committed command line parser must be what the generator produces.
+if "$XMQJ" generate-parser --c library/xmq-utils/xmqcli.ixml --prefix=xmqcli > "$OUTPUT/xmq-cli-parser.h" \
+   && cmp -s "$OUTPUT/xmq-cli-parser.h" src/main/c/xmq-cli-parser.h
+then
+    passed=$((passed+1))
+else
+    echo "FAIL: src/main/c/xmq-cli-parser.h is not up to date with library/xmq-utils/xmqcli.ixml, run make generate_parsers"
+    failed=$((failed+1))
+fi
+
 echo "Generated parsers passed: $passed failed: $failed (grammars skipped, not LL(*): $skipped)"
 [ "$failed" = "0" ]

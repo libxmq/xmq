@@ -29,6 +29,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/xml.h"
 #include"parts/xmq_internals.h"
 #include"parts/yaep.h"
+#include"xmq-cli-join.h"
+#define XMQ_PARSER_NO_MAIN
+#include"xmq-cli-parser.h"
 
 #include<assert.h>
 #include<ctype.h>
@@ -157,6 +160,7 @@ struct XMQCliCommand
     XMQDoc *alias_doq; // The xmq document loaded to generate the xsd.
     const char *xpath;
     const char *entity;
+    int entity_with; // replace-entity --with-file (1) or --with-text-file (2): the content argument is a file.
     const char *content; // Content to replace something.
     const char *add_xmq; // XMQ content to add.
     XMQDoc *xslt_doq; // The xmq document loaded to generate the xslt.
@@ -377,7 +381,7 @@ int get_char();
 char *grab_content(xmlNode *node, const char *name);
 char *grab_name(const char *s, const char **name_start);
 bool handle_global_option(const char *arg, XMQCliCommand *command);
-bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command);
+bool handle_option(const char *arg, bool is_option, XMQCliCommand *command);
 bool has_debug(int argc, const char **argv);
 bool has_log_xmq(int argc, const char **argv);
 bool has_trace(int argc, const char **argv);
@@ -821,13 +825,62 @@ void warnSilentValidation(void *ctx, const char *fmt, ...)
 {
 }
 
-bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command)
+static bool load_entity_file(XMQCliCommand *command, const char *file)
+{
+    XMQCliEnvironment env;
+    memset(&env, 0, sizeof(env));
+    XMQCliCommand cmd;
+    memset(&cmd, 0, sizeof(XMQCliCommand));
+    cmd.env = &env;
+    cmd.in = file;
+    cmd.in_format = XMQ_CONTENT_DETECT;
+    cmd.flags = XMQ_FLAG_TRIM_NONE;
+    size_t len = strlen(file);
+    if (len > 4 && !(strncmp(file+len-4, ".xml", 4)))
+    {
+        cmd.in_format = XMQ_CONTENT_XML;
+    }
+    if (len > 5 && !(strncmp(file+len-5, ".html", 5)))
+    {
+        cmd.in_format = XMQ_CONTENT_HTML;
+    }
+    bool ignore_no_more_data = false;
+    bool ok = cmd_load(&cmd, &ignore_no_more_data);
+    if (!ok) return false;
+    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(cmd.env->doc);
+    command->node_doc = doc;
+    command->node_content = doc->children;
+    return true;
+}
+
+static bool load_entity_text_file(XMQCliCommand *command, const char *file)
+{
+    verbose_("xmq=", "reading text file %s", file);
+    FILE *f = fopen(file, "rb");
+    if (!f)
+    {
+        error_("xmq.err=", "%s: No such file or directory", file);
+        return false;
+    }
+    fseek(f, 0L, SEEK_END);
+    size_t sz = ftell(f);
+    fseek(f, 0L, SEEK_SET);
+    char *buf = (char*)malloc(sz+1);
+    size_t n = fread(buf, 1, sz, f);
+    buf[sz] = 0;
+    if (n != sz) printf("ARRRRRGGGG\n");
+    fclose(f);
+    command->content = buf;
+    return true;
+}
+
+bool handle_option(const char *arg, bool is_option, XMQCliCommand *command)
 {
     if (!arg) return false;
 
     XMQCliCmdGroup group = cmd_group(command->cmd);
 
-    if (command->cmd == XMQ_CLI_CMD_SAVE_TO)
+    if (command->cmd == XMQ_CLI_CMD_SAVE_TO && !is_option)
     {
         if (command->save_file == NULL)
         {
@@ -836,7 +889,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         }
     }
 
-    if (command->cmd == XMQ_CLI_CMD_HELP)
+    if (command->cmd == XMQ_CLI_CMD_HELP && !is_option)
     {
         command->help_command = arg;
         return true;
@@ -1063,7 +1116,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         }
     }
 
-    if (group == XMQ_CLI_CMD_GROUP_XPATH)
+    if (group == XMQ_CLI_CMD_GROUP_XPATH && !is_option)
     {
         if (command->xpath == NULL)
         {
@@ -1072,7 +1125,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         }
     }
 
-    if (group == XMQ_CLI_CMD_GROUP_ADD_XMQ)
+    if (group == XMQ_CLI_CMD_GROUP_ADD_XMQ && !is_option)
     {
         if (command->add_xmq == NULL)
         {
@@ -1081,7 +1134,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
         }
     }
 
-    if (group == XMQ_CLI_CMD_GROUP_FOR_EACH)
+    if (group == XMQ_CLI_CMD_GROUP_FOR_EACH && !is_option)
     {
         if (command->xpath == NULL)
         {
@@ -1092,7 +1145,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
 
     if (group == XMQ_CLI_CMD_GROUP_SUBSTITUTE)
     {
-        if (cmd_from(arg) == XMQ_CLI_CMD_NONE && command->entity == NULL)
+        if (!is_option && cmd_from(arg) == XMQ_CLI_CMD_NONE && command->entity == NULL)
         {
             command->entity = arg;
             return true;
@@ -1111,65 +1164,32 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
 
     if (group == XMQ_CLI_CMD_GROUP_ENTITY)
     {
-        if (!strncmp(arg, "--with-file=", 12))
+        // replace-entity --with-file NAME FILE parses the file into the entity content,
+        // replace-entity --with-text-file NAME FILE uses the file as text.
+        if (is_option && !strcmp(arg, "--with-file"))
         {
-            const char *file = arg+12;
-            XMQCliEnvironment env;
-            memset(&env, 0, sizeof(env));
-            XMQCliCommand cmd;
-            memset(&cmd, 0, sizeof(XMQCliCommand));
-            cmd.env = &env;
-            cmd.in = file;
-            cmd.in_format = XMQ_CONTENT_DETECT;
-            cmd.flags = XMQ_FLAG_TRIM_NONE;
-            size_t len = strlen(file);
-            if (len > 4 && !(strncmp(file+len-4, ".xml", 4)))
-            {
-                cmd.in_format = XMQ_CONTENT_XML;
-            }
-            if (len > 5 && !(strncmp(file+len-5, ".html", 5)))
-            {
-                cmd.in_format = XMQ_CONTENT_HTML;
-            }
-            bool ignore_no_more_data = false;
-            bool ok = cmd_load(&cmd, &ignore_no_more_data);
-            if (!ok) return false;
-            xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(cmd.env->doc);
-            command->node_doc = doc;
-            command->node_content = doc->children;
+            command->entity_with = 1;
             return true;
         }
-
-        if (!strncmp(arg, "--with-text-file=", 17))
+        if (is_option && !strcmp(arg, "--with-text-file"))
         {
-            const char *file = arg+17;
-            verbose_("xmq=", "reading text file %s", file);
-            FILE *f = fopen(file, "rb");
-            if (!f)
-            {
-                error_("xmq.err=", "%s: No such file or directory", file);
-                return false;
-            }
-            fseek(f, 0L, SEEK_END);
-            size_t sz = ftell(f);
-            fseek(f, 0L, SEEK_SET);
-            char *buf = (char*)malloc(sz+1);
-            size_t n = fread(buf, 1, sz, f);
-            buf[sz] = 0;
-            if (n != sz) printf("ARRRRRGGGG\n");
-            fclose(f);
-            command->content = buf;
+            command->entity_with = 2;
             return true;
         }
+        // The old forms --with-file=FILE and --with-text-file=FILE.
+        if (!strncmp(arg, "--with-file=", 12)) return load_entity_file(command, arg+12);
+        if (!strncmp(arg, "--with-text-file=", 17)) return load_entity_text_file(command, arg+17);
 
-        if (command->entity == NULL)
+        if (!is_option && command->entity == NULL)
         {
             command->entity = arg;
             return true;
         }
 
-        if (group == XMQ_CLI_CMD_GROUP_ENTITY && command->content == NULL && command->node_content == NULL)
+        if (!is_option && group == XMQ_CLI_CMD_GROUP_ENTITY && command->content == NULL && command->node_content == NULL)
         {
+            if (command->entity_with == 1) return load_entity_file(command, arg);
+            if (command->entity_with == 2) return load_entity_text_file(command, arg);
             command->content = arg;
             return true;
         }
@@ -1223,7 +1243,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             free(key);
             return true;
         }
-        if (command->xslt == NULL)
+        if (!is_option && command->xslt == NULL)
         {
             bool ok = load_xslt(command, arg);
             if (!ok) return false;
@@ -1239,7 +1259,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             command->alias = arg+8;
             return true;
         }
-        if (command->in == NULL)
+        if (!is_option && command->in == NULL)
         {
             command->in = arg;
             return true;
@@ -1253,7 +1273,7 @@ bool handle_option(const char *arg, const char *arg_next, XMQCliCommand *command
             command->silent = true;
             return true;
         }
-        if (command->xsd == NULL)
+        if (!is_option && command->xsd == NULL)
         {
             XMQReturnDoc rd = xmqNewDoc();
             assert(rd.status == XMQ_OK);
@@ -1732,19 +1752,14 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->print_help = true;
         return true;
     }
-    if (!strcmp(arg, "-z"))
+    if (!strcmp(arg, "-z") || !strcmp(arg, "--no-input"))
     {
         command->no_input = true;
         return true;
     }
-    if (!strcmp(arg, "-y"))
+    if (!strcmp(arg, "-y") || !strcmp(arg, "--yes"))
     {
         command->auto_yes = true;
-        return true;
-    }
-    if (!strcmp(arg, "-i"))
-    {
-        command->in_is_content = true;
         return true;
     }
     if (!strcmp(arg, "--xml-of-ixml"))
@@ -4608,228 +4623,138 @@ void prepare_xsl_command(XMQCliCommand *command, const char *arg)
     }
 }
 
-bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command)
+/////////////////////////////////////////////////////////////////////////////////////
+// The command line parsed with the grammar library/xmq-utils/xmqcli.ixml
+//
+// argv is joined into a single line (xmq-cli-join.h) and parsed by the generated
+// parser (xmq-cli-parser.h, generated with xmqj generate-parser --c). The grammar
+// decides what every argument is: a global option, a grammar, the input file or
+// content, a command, a command option or a command argument. The tree is then
+// walked and each option and argument is given to the same handlers as before
+// (handle_global_option, handle_option) as --name or --name=value or the argument.
+
+// The tree is walked with the xmq.h api only. Strings given to the handlers
+// are copies, since the handlers keep them, they are never freed.
+
+// The text of an element, "" if empty.
+static const char *cli_text(XMQDoc *doq, XMQNode *n)
 {
-    int i = 1;
-    bool add_xslq = false;
-    char add_xslq_file[256];
+    const char *t = xmqGetStringRel(doq, ".", n);
+    return strdup(t ? t : "");
+}
 
-    // Remember if we have found a to/render/tokenize command.
-    XMQCliCommand *to = NULL;
-    // Remember if we have found a print/save/pager command.
-    XMQCliCommand *output = NULL;
+// The value of an attribute, "" if empty and NULL if not present.
+static const char *cli_attr(XMQDoc *doq, XMQNode *n, const char *name)
+{
+    char xpath[64];
+    snprintf(xpath, sizeof(xpath), "@%s", name);
+    if (xmqForeachRel(doq, xpath, NULL, NULL, n) == 0) return NULL;
+    const char *v = xmqGetStringRel(doq, xpath, n);
+    return strdup(v ? v : "");
+}
 
-    // Handle all global options....
-    for (i = 1; argv[i]; ++i)
+typedef struct CliNodes { XMQNode **nodes; size_t n, cap; } CliNodes;
+
+static XMQProceed cli_collect(XMQDoc *doq, XMQNode *node, void *user_data)
+{
+    CliNodes *l = (CliNodes*)user_data;
+    if (l->n == l->cap)
     {
-        const char *arg = argv[i];
+        l->cap = l->cap ? l->cap * 2 : 16;
+        l->nodes = (XMQNode**)realloc(l->nodes, l->cap * sizeof(XMQNode*));
+    }
+    l->nodes[l->n++] = node;
+    return XMQ_CONTINUE;
+}
 
-        // Stop handling options when arg does not start with - or is exactly "-"
-        if (arg[0] != '-' || !strcmp(arg, "-")) break;
+// The child elements of n in document order.
+static CliNodes cli_children(XMQDoc *doq, XMQNode *n)
+{
+    CliNodes l = { NULL, 0, 0 };
+    xmqForeachRel(doq, "*", cli_collect, &l, n);
+    return l;
+}
 
-        bool ok = handle_global_option(arg, load_command);
-        if (ok) continue;
+// Rebuild --name or --name=value from an option(name value) element.
+static const char *cli_option_string(XMQDoc *doq, XMQNode *opt)
+{
+    const char *name = cli_attr(doq, opt, "name");
+    const char *value = cli_attr(doq, opt, "value");
+    if (!name) name = "";
+    size_t len = strlen(name) + (value ? strlen(value) : 0) + 4;
+    char *buf = (char*)malloc(len);
+    if (value) snprintf(buf, len, "--%s=%s", name, value);
+    else snprintf(buf, len, "--%s", name);
+    return buf;
+}
 
-        printf("xmq: unrecognized global option: '%s'\nTry 'xmq --help' for more information\n", arg);
+static void cli_print_parse_error(const char *line, xmqcli_Error *err)
+{
+    fprintf(stderr, "xmq: bad command line, %s\n", err->message);
+    // Show the joined line and point at the error, unless it contains newlines.
+    if (!strchr(line, '\n') && strlen(line) < 200)
+    {
+        fprintf(stderr, "%s\n", line);
+        for (size_t i = 1; i < err->col; i++) fputc(' ', stderr);
+        fprintf(stderr, "^\n");
+    }
+    fprintf(stderr, "Try 'xmq --help' for more information\n");
+}
+
+static bool cli_load_ixml_library(XMQCliCommand *load_command, const char *arg, bool *add_xslq, char *add_xslq_file)
+{
+    // An ixml:data/csv argument is interpreted as --ixml=~/.local/share/xmq/library/data/csv.ixml
+    const char *file = is_ixml_cmd(arg);
+    assert(file);
+    if (dot_found(file))
+    {
+        printf("xmq: name after ixml: must not contain dots (%s)\n", arg);
         return false;
     }
 
-    if (argv[i])
+    char local_ixml_file[256];
+    snprintf(local_ixml_file, 256, "%s/library/%s.ixml", download_dir(), file);
+    DownloadStatus status = download(load_command->force_download, ".ixml", file, local_ixml_file, false);
+
+    // The download was DOWNLOAD_OK or DOWNLOAD_EXISTS. Otherwise the download command would have given up.
+    // See if there is a companion xslq file with this ixml file.
+    char local_xslq_file[256];
+    snprintf(local_xslq_file, 256, "%s/library/%s.xslq", download_dir(), file);
+
+    if (status == DOWNLOAD_EXISTS)
     {
-        // An ixml:data/csv argument is interpreted as --ixml=~/.local/share/xmq/library/data/csv.ixml
-        const char *file = is_ixml_cmd(argv[i]);
-        if (file)
+        FILE *f = fopen(local_xslq_file, "rb");
+        if (f)
         {
-            if (dot_found(file))
-            {
-                printf("xmq: name after ixml: must not contain dots (%s)\n", argv[i]);
-                return false;
-            }
-
-            char local_ixml_file[256];
-            snprintf(local_ixml_file, 256, "%s/library/%s.ixml", download_dir(), file);
-            DownloadStatus status = download(load_command->force_download, ".ixml", file, local_ixml_file, false);
-
-            // The download was DOWNLOAD_OK or DOWNLOAD_EXISTS. Otherwise the download command would have given up.
-            // See if there is a companion xslq file with this ixml file.
-            char local_xslq_file[256];
-            snprintf(local_xslq_file, 256, "%s/library/%s.xslq", download_dir(), file);
-
-            if (status == DOWNLOAD_EXISTS)
-            {
-                FILE *f = fopen(local_xslq_file, "rb");
-                if (f)
-                {
-                    // The ixml already existed, if the xslq exists use it.
-                    fclose(f);
-                    strcpy(add_xslq_file, local_xslq_file);
-                    add_xslq = true;
-                }
-                // If the xslq did not exist, do not try to dowload it.
-                // The assumption is that you either cached both ixml+xslq or just ixml.
-            }
-            else
-            {
-                // The ixml was downloaded, lets try to download an xslq.
-                status = download(load_command->force_download, ".xslq", file, local_xslq_file, true);
-                if (status == DOWNLOAD_OK || status == DOWNLOAD_EXISTS)
-                {
-                    strcpy(add_xslq_file, local_xslq_file);
-                    add_xslq = true;
-                }
-            }
-
-            verbose_("xmq=", "reading ixml file %s", local_ixml_file);
-            load_command->ixml_filename = strdup(local_ixml_file);
-            load_command->ixml_source = load_file_into_buffer(local_ixml_file);
-            if (load_command->ixml_source == NULL) exit(1);
-            i++;
+            // The ixml already existed, if the xslq exists use it.
+            fclose(f);
+            strcpy(add_xslq_file, local_xslq_file);
+            *add_xslq = true;
+        }
+        // If the xslq did not exist, do not try to dowload it.
+        // The assumption is that you either cached both ixml+xslq or just ixml.
+    }
+    else
+    {
+        // The ixml was downloaded, lets try to download an xslq.
+        status = download(load_command->force_download, ".xslq", file, local_xslq_file, true);
+        if (status == DOWNLOAD_OK || status == DOWNLOAD_EXISTS)
+        {
+            strcpy(add_xslq_file, local_xslq_file);
+            *add_xslq = true;
         }
     }
 
-    if (argv[i])
-    {
-        char *dot = strrchr(argv[i], '.');
-        if (dot && !strcmp(dot, ".ixml") && !load_command->ixml_source)
-        {
-            // A single foo.ixml file is interpreted as --ixml=foo.ixml
-            // But not if an ixml file has already been found, or --ixml=file has been used.
-            verbose_("xmq=", "reading ixml file %s", argv[i]);
-            load_command->ixml_filename = strdup(argv[i]);
-            load_command->ixml_source = load_file_into_buffer(argv[i]);
-            if (load_command->ixml_source == NULL) exit(1);
-            i++;
-        }
-    }
+    verbose_("xmq=", "reading ixml file %s", local_ixml_file);
+    load_command->ixml_filename = strdup(local_ixml_file);
+    load_command->ixml_source = load_file_into_buffer(local_ixml_file);
+    if (load_command->ixml_source == NULL) exit(1);
+    return true;
+}
 
-    // Handle more global options....
-    for (; argv[i]; ++i)
-    {
-        const char *arg = argv[i];
-
-        // Stop handling options when arg does not start with - or is exactly "-"
-        if (arg[0] != '-' || !strcmp(arg, "-")) break;
-
-        bool ok = handle_global_option(arg, load_command);
-        if (ok) continue;
-
-        printf("xmq: unrecognized global option: '%s'\nTry 'xmq --help' for more information\n", arg);
-        return false;
-    }
-
-    if (argv[i])
-    {
-        // Check if not a command, then assume a file.
-        // You cannot load files that are named like the commands.
-        if (cmd_from(argv[i]) == XMQ_CLI_CMD_NONE)
-        {
-            // Next argument is the file name or - for reading from stdin.
-            load_command->in = argv[i];
-            i++;
-        }
-    }
-
-    XMQCliCommand *command = load_command;
-    bool do_print = true;
-
-    if (add_xslq)
-    {
-        command = allocate_cli_command(command->env);
-        load_command->next = command;
-        add_xsl_command(command, add_xslq_file);
-        load_command = command;
-    }
-
-    if (argv[i])
-    {
-        command = allocate_cli_command(command->env);
-        load_command->next = command;
-        command->cmd = cmd_from(argv[i]);
-
-        if (command->cmd == XMQ_CLI_CMD_NONE && is_xsl_cmd(argv[i]))
-        {
-            prepare_xsl_command(command, argv[i]);
-        }
-
-        if (command->cmd == XMQ_CLI_CMD_NONE)
-        {
-            fprintf(stderr, "xmq: no such command \"%s\"\n", argv[i-1]);
-            exit(1);
-        }
-
-        i++;
-        prepare_command(command, load_command);
-
-        while (command->cmd != XMQ_CLI_CMD_NONE)
-        {
-            verbose_("xmq=", "found command %s", cmd_name(command->cmd));
-
-            if (command->cmd == XMQ_CLI_CMD_TO_JSON)
-            {
-                // By default print json in compact form. Can be changed with -p or --pretty.
-                command->add_indent = 0;
-                command->compact = true;
-            }
-            // Now handle any command options and args.
-            for (; argv[i]; ++i)
-            {
-                const char *arg = argv[i];
-                bool ok = handle_option(arg, argv[i+1], command);
-
-                if (!ok)
-                {
-                    if (cmd_from(arg) != XMQ_CLI_CMD_NONE) break; // Start next command.
-                    // Else this is bad....
-                    printf("xmq: option \"%s\" not available for command \"%s\"\n", arg, cmd_name(command->cmd));
-                    exit(1);
-                }
-                verbose_("xmq=", "found argument %s", arg);
-            }
-
-            // Check if we should remember this command as a to/render/tokenize command?
-            if (cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_TO ||
-                cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_RENDER ||
-                cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_TOKENIZE)
-            {
-                if (to)
-                {
-                    fprintf(stderr, "xmq: you can only use one to/render/tokenize command.\n");
-                    return false;
-                }
-                to = command;
-                do_print = true;
-            }
-
-            if (cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_FOR_EACH ||
-                command->cmd == XMQ_CLI_CMD_NO_OUTPUT)
-            {
-                // These commands by default do not need to print the output.
-                do_print = false;
-            }
-
-            // Check if we should remember this command as an print/save/pager command?
-            if (cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_OUTPUT)
-            {
-                if (output)
-                {
-                    fprintf(stderr, "xmq: you can only use one print/save/pager/browse/noout command.\n");
-                    return false;
-                }
-                output = command;
-            }
-
-            // No more args to parse
-            if (argv[i] == NULL) break;
-
-            XMQCliCommand *prev = command;
-            command = allocate_cli_command(command->env);
-            prev->next = command;
-            command->cmd = cmd_from(argv[i]);
-            prepare_command(command, load_command);
-            i++;
-        }
-    }
-
+static void cli_add_default_output(XMQCliCommand *load_command, XMQCliCommand *command,
+                                   XMQCliCommand *to, XMQCliCommand *output, bool do_print)
+{
     if (!to && do_print)
     {
         XMQCliCommand *to = allocate_cli_command(command->env);
@@ -4879,6 +4804,186 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
         verbose_("xmq=", "added print command");
     }
 
+}
+
+bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command)
+{
+    bool add_xslq = false;
+    char add_xslq_file[256];
+    // Remember if we have found a to/render/tokenize command.
+    XMQCliCommand *to = NULL;
+    // Remember if we have found a print/save/pager command.
+    XMQCliCommand *output = NULL;
+
+    char *line = xmq_cli_join_argv(argc, argv);
+    verbose_("xmq=", "command line: %s", line);
+
+    XMQReturnDoc rd = xmqNewDoc();
+    XMQDoc *doq = rd.doc;
+    xmqcli_Error err;
+    if (!xmqcli_parse(doq, line, line + strlen(line), &err))
+    {
+        cli_print_parse_error(line, &err);
+        free(line);
+        xmqFreeDoc(doq);
+        return false;
+    }
+    free(line);
+
+    CliNodes top = cli_children(doq, xmqGetRootNode(doq));
+    size_t k = 0;
+
+    // Global options, the grammar and the source come before the first command.
+    for (; k < top.n; k++)
+    {
+        XMQNode *n = top.nodes[k];
+        const char *what = xmqGetName(n);
+        if (!strcmp(what, "command")) break;
+        if (!strcmp(what, "option"))
+        {
+            const char *arg = cli_option_string(doq, n);
+            if (handle_global_option(arg, load_command)) continue;
+            printf("xmq: unrecognized global option: '%s'\nTry 'xmq --help' for more information\n", arg);
+            return false;
+        }
+        if (!strcmp(what, "grammar"))
+        {
+            const char *g = cli_text(doq, n);
+            if (load_command->ixml_source)
+            {
+                printf("You have already specified an ixml grammar!\n");
+                return false;
+            }
+            if (is_ixml_cmd(g))
+            {
+                if (!cli_load_ixml_library(load_command, g, &add_xslq, add_xslq_file)) return false;
+            }
+            else
+            {
+                verbose_("xmq=", "reading ixml file %s", g);
+                load_command->ixml_filename = strdup(g);
+                load_command->ixml_source = load_file_into_buffer(g);
+                if (load_command->ixml_source == NULL) exit(1);
+            }
+            continue;
+        }
+        if (!strcmp(what, "input"))
+        {
+            load_command->in_is_content = true;
+            load_command->in = cli_text(doq, n);
+            continue;
+        }
+        if (!strcmp(what, "file"))
+        {
+            load_command->in = cli_text(doq, n);
+            continue;
+        }
+    }
+
+    XMQCliCommand *command = load_command;
+    bool do_print = true;
+
+    if (add_xslq)
+    {
+        command = allocate_cli_command(command->env);
+        load_command->next = command;
+        add_xsl_command(command, add_xslq_file);
+        load_command = command;
+    }
+
+    for (; k < top.n; k++)
+    {
+        XMQNode *n = top.nodes[k];
+        const char *cname = cli_attr(doq, n, "name");
+        CliNodes parts = cli_children(doq, n);
+        XMQCliCommand *prev = command;
+        command = allocate_cli_command(command->env);
+        prev->next = command;
+        command->cmd = cmd_from(cname);
+
+        if (cname && !strcmp(cname, "xsl"))
+        {
+            // xsl:name, the name is the arg.
+            const char *x = "";
+            for (size_t j = 0; j < parts.n; j++)
+            {
+                if (!strcmp(xmqGetName(parts.nodes[j]), "arg")) { x = cli_text(doq, parts.nodes[j]); break; }
+            }
+            size_t len = strlen(x) + 5;
+            char *buf = (char*)malloc(len);
+            snprintf(buf, len, "xsl:%s", x);
+            prepare_xsl_command(command, buf);
+        }
+        if (command->cmd == XMQ_CLI_CMD_NONE)
+        {
+            fprintf(stderr, "xmq: no such command \"%s\"\n", cname ? cname : "");
+            exit(1);
+        }
+        prepare_command(command, load_command);
+        verbose_("xmq=", "found command %s", cmd_name(command->cmd));
+
+        if (command->cmd == XMQ_CLI_CMD_TO_JSON)
+        {
+            // By default print json in compact form. Can be changed with -p or --pretty.
+            command->add_indent = 0;
+            command->compact = true;
+        }
+
+        // The command options and arguments, in order.
+        for (size_t j = 0; j < parts.n; j++)
+        {
+            XMQNode *c = parts.nodes[j];
+            bool is_option = !strcmp(xmqGetName(c), "option");
+            if (!is_option && cname && !strcmp(cname, "xsl")) continue; // Already used.
+            const char *arg = is_option ? cli_option_string(doq, c) : cli_text(doq, c);
+            if (!handle_option(arg, is_option, command))
+            {
+                if (is_option)
+                    printf("xmq: option \"%s\" not available for command \"%s\"\n", arg, cmd_name(command->cmd));
+                else
+                    printf("xmq: bad argument \"%s\" for command \"%s\"\n", arg, cmd_name(command->cmd));
+                exit(1);
+            }
+            verbose_("xmq=", "found argument %s", arg);
+        }
+
+        // Check if we should remember this command as a to/render/tokenize command?
+        if (cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_TO ||
+            cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_RENDER ||
+            cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_TOKENIZE)
+        {
+            if (to)
+            {
+                fprintf(stderr, "xmq: you can only use one to/render/tokenize command.\n");
+                return false;
+            }
+            to = command;
+            do_print = true;
+        }
+
+        if (cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_FOR_EACH ||
+            command->cmd == XMQ_CLI_CMD_NO_OUTPUT)
+        {
+            // These commands by default do not need to print the output.
+            do_print = false;
+        }
+
+        // Check if we should remember this command as an print/save/pager command?
+        if (cmd_group(command->cmd) == XMQ_CLI_CMD_GROUP_OUTPUT)
+        {
+            if (output)
+            {
+                fprintf(stderr, "xmq: you can only use one print/save/pager/browse/noout command.\n");
+                return false;
+            }
+            output = command;
+        }
+        free(parts.nodes);
+    }
+    free(top.nodes);
+    xmqFreeDoc(doq);
+
+    cli_add_default_output(load_command, command, to, output, do_print);
     return true;
 }
 
@@ -5139,6 +5244,7 @@ int main(int argc, const char **argv)
     load_command->cmd = XMQ_CLI_CMD_LOAD;
     prepare_command(load_command, load_command);
 
+    // The command line is parsed with the grammar library/xmq-utils/xmqcli.ixml
     bool ok = xmq_parse_cmd_line(argc, argv, load_command);
     if (!ok) {
         verbose_("xmq=", "parse cmd line failed");

@@ -91,8 +91,8 @@ xmq page.html select //img add-root body add-root html to-html br
 # List all href attributes in a web page.
 xmq page.html select //a/@href
 
-# Replace entities with strings you can also --with-text-file=abc
-# which inserts the content safely quoted, or as DOM --with-file=abc.xml
+# Replace entities with strings, you can also use replace-entity --with-text-file NAME abc.txt
+# which inserts the content of the file safely quoted, or as DOM replace-entity --with-file NAME abc.xml
 # where the file has be parseable. Force the generated html to have a light background.
 xmq template.htmq replace-entity DATE 2024-01-11 replace-entity NAME 'Hercules' render-html --bg=light > page.html
 
