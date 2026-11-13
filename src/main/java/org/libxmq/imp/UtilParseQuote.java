@@ -147,9 +147,8 @@ public class UtilParseQuote extends UtilQuote
      */
     public static String trimQuote(String b, int start, int stop)
     {
-        UtilParseQuote upq = new UtilParseQuote(b, start, stop);
-        upq.analyzeForParse();
-        return upq.parseQuote();
+        // The same algorithm as the C xmq_trim_quote.
+        return XmqTrim.trimQuote(b, start, stop, true, false);
     }
 
     /**

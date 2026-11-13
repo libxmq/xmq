@@ -71,6 +71,8 @@ public class XMQParseIntoDOM extends XMQParser
     boolean declaring_xmlns_; // True when the next attribute value is a namespace uri.
     XmlNs declaring_xmlns_namespace_; // The namespace whose href is set by the next value.
     XmlNs default_namespace_; // The current default namespace declared with xmlns=uri.
+    XmlNode add_pre_node_before_; // Insert the next comment/doctype before this node (json).
+    XmlNode add_post_node_after_; // Insert the next comment after this node (json).
 
     /**
      * Returns the parsed document.
@@ -159,8 +161,7 @@ public class XMQParseIntoDOM extends XMQParser
         {
             return buffer_.substring(start, stop);
         }
-        var pair = UtilParseQuote.findQuoteStartStop(buffer_, start, stop);
-        return UtilParseQuote.trimQuote(buffer_, pair.left(), pair.right());
+        return XmqTrim.unQuote(buffer_, start, stop, true, true);
     }
 
     /** Add a text node, merging with a previous text node unless --nomerge. */
@@ -192,7 +193,7 @@ public class XMQParseIntoDOM extends XMQParser
             parsing_doctype_ = true;
             return;
         }
-        if (name.charAt(0) == '?')
+        if (!name.isEmpty() && name.charAt(0) == '?')
         {
             parsing_pi_ = true;
             pi_name_ = name.substring(1);
@@ -261,6 +262,46 @@ public class XMQParseIntoDOM extends XMQParser
     {
     }
 
+    // Parse the embedded xml fragment and add its element to the current element.
+    @Override
+    void do_embedded_xml(int start, int stop)
+    {
+        XmlDocument fdoc;
+        try
+        {
+            fdoc = XmlParser.parse(buffer_.substring(start, stop), source_, XmlParser.NOCDATA | XmlParser.NOBLANKS);
+        }
+        catch (XmlParseException e)
+        {
+            fdoc = null;
+        }
+        XmlElement node = fdoc == null ? null : fdoc.rootElement();
+        if (node == null)
+        {
+            throw new XMQRuntimeException(new ParseException(ParseErrorCode.XMQ_ERROR_PARSING_XML,
+                                                             buffer_.substring(line_start_, findNL(i_, 20)),
+                                                             line_, col_, source_));
+        }
+        node.unlink();
+        if (element_last_ == null)
+        {
+            if (implicit_root_ != null && !node.name().equals(implicit_root_))
+            {
+                XmlElement root = new XmlElement(implicit_root_);
+                element_last_ = root;
+                doc_.setRootElement(root);
+                push(root);
+            }
+            else
+            {
+                element_last_ = node;
+                doc_.setRootElement(node);
+            }
+        }
+        if (node.parent() == null) top().addChild(node);
+        element_last_ = node;
+    }
+
     protected void do_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
         element_last_ = add_text(top(), un_quote(start, stop));
@@ -295,7 +336,8 @@ public class XMQParseIntoDOM extends XMQParser
                                                                  line_, col_, source_));
             }
             dtd.unlink();
-            top().appendRaw(dtd);
+            if (add_pre_node_before_ != null) add_pre_node_before_.addPrevSibling(dtd);
+            else top().appendRaw(dtd);
             doc_.setIntSubsetRef(dtd);
             parsing_doctype_ = false;
             doctype_found_ = true;
@@ -398,7 +440,9 @@ public class XMQParseIntoDOM extends XMQParser
     {
         String trimmed = no_trim_quotes_ ? buffer_.substring(start, stop) : xmq_un_comment(start, stop);
         XmlComment c = new XmlComment(trimmed);
-        top().appendRaw(c);
+        if (add_pre_node_before_ != null) add_pre_node_before_.addPrevSibling(c);
+        else if (add_post_node_after_ != null) add_post_node_after_.addNextSibling(c);
+        else top().appendRaw(c);
         element_last_ = c;
     }
 

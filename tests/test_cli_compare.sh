@@ -66,6 +66,26 @@ cmp1 "$O/a.xmq" select
 cmp1 --bogus "$O/a.xmq"
 cmp1 "$O/a.xmq" select -x //b
 cmp1 -z add 'x=1'
+echo '{"a":[1,"2",true,null,{"_":"x","b":"c d"}],"_e":"f","//":"note","bad key":3,"n[1]":0}' > "$O/j.json"
+cmp1 "$O/j.json"
+cmp1 "$O/j.json" to-json
+cmp1 "$O/j.json" to-json -p
+cmp1 "$O/j.json" to-xml
+cmp1 "$O/a.xmq" to-json
+cmp1 "$O/d.html" to-json --pretty
+cmp1 --json "$O/j.json" select //b
+cmp1 -i '[1,2' to-json
+cmp1 -i '{"a":"\q"}'
+cmp1 "$O/j.json" to-clines
+cmp1 "$O/a.xmq" to-clines
+cmp1 "$O/d.html" to-clines
+printf "root {\nalfa = 'a\n\n        a'\n  /* x\n     y\n  */\n}\n" > "$O/trim.xmq"
+cmp1 "$O/trim.xmq" to-xml
+cmp1 "$O/trim.xmq" to-json
+printf 'doc { v = 1 <address><street>foo</street></address> }\n' > "$O/emb.xmq"
+cmp1 "$O/emb.xmq"
+printf 'name: Alice\n' > "$O/colon.xmq"
+cmp1 "$O/colon.xmq" to-xml
 
 if [ "$f" = "0" ]
 then

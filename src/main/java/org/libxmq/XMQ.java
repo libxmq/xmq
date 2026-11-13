@@ -168,7 +168,8 @@ public class XMQ
      */
     public String toJSON(Object doc, OutputSettings os)
     {
-        return "lll";
+        if (!(doc instanceof org.libxmq.imp.xml.XmlDocument d)) return "";
+        return new org.libxmq.imp.JsonPrinter().toJson(d, os, true);
     }
 
     /**
@@ -216,23 +217,28 @@ public class XMQ
     */
     public static String printException(ParseException e, Locale locale)
     {
+        // The same format as the C generate_state_error_message, followed by an empty line
+        // like the C command line prints it.
         StringBuilder out = new StringBuilder();
-        out.append(e.source());
-        out.append(":");
-        out.append(e.line());
-        out.append(":");
-        out.append(e.column());
+        out.append(e.source()).append(":").append(e.line()).append(":").append(e.column()).append(": ");
+        out.append(e.errorCode().value >= ParseErrorCode.XMQ_WARNING_QUOTES_NEEDED.value ? "warning" : "error");
         out.append(": ");
         ResourceBundle bundle = ResourceBundle.getBundle("Messages", locale);
         out.append(bundle.getString(e.errorCode().toString()));
-        out.append("\n");
-        out.append(e.text());
-        out.append("\n");
-        for (int i = 1; i < e.column(); ++i)
+        String text = e.text() == null ? "" : e.text();
+        int at = e.column() - 1;
+        boolean atEnd = at >= text.length();
+        if (e.errorCode() == ParseErrorCode.XMQ_ERROR_INVALID_CHAR || e.errorCode() == ParseErrorCode.XMQ_ERROR_JSON_INVALID_CHAR)
         {
-            out.append(" ");
+            int cp = atEnd ? 0 : text.codePointAt(at);
+            out.append(" \"").append(cp == 0 ? "" : new String(Character.toChars(cp))).append("\" U+")
+               .append(Integer.toHexString(cp).toUpperCase(Locale.ROOT));
         }
-        out.append("^\n");
+        if (!atEnd)
+        {
+            out.append("\n").append(text).append("\n").append(" ".repeat(Math.max(1, at))).append("^");
+        }
+        out.append("\n\n");
         return out.toString();
     }
 

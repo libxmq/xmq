@@ -39,6 +39,29 @@ do
     tests/test_single.sh "$PROG" "$OUTPUT" "$i"
 done
 
+for i in tests/json_???_*.test
+do
+    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+    tests/test_json.sh "$PROG" "$OUTPUT" "$i"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+done
+
+for i in tests/parse_json_???_*.test
+do
+    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+    tests/test_parse_json.sh "$PROG" "$OUTPUT" "$i"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+done
+
+for i in tests/backforth_???_*.test
+do
+    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+    # Yaml and the render overrides --use-is etc are not ported to Java yet.
+    if grep -q "yaml\|--use-" "$i"; then continue; fi
+    tests/test_backforth.sh "$PROG" "$OUTPUT" "$i"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+done
+
 # The Java and the C command lines must behave the same, when the C xmq is built.
 XMQ_C=$(ls build/*/release/xmq 2>/dev/null | head -1)
 if [ -n "$XMQ_C" ] && [ -z "$FILTER" ]

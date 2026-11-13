@@ -208,6 +208,46 @@ public class Main
      */
     static XmlDocument load(String content, String file, boolean trim_none, boolean no_merge) throws ParseException
     {
+        return load(content, file, trim_none, no_merge, null);
+    }
+
+    /**
+     * Is the content json, like the json detection in the C xmqDetectContentType:
+     * it starts with { " [ or a digit, or is exactly true false or null.
+     * @param content The content.
+     * @param i Position of the first non whitespace character.
+     * @return True if json.
+     */
+    static boolean is_json(String content, int i)
+    {
+        if (i >= content.length()) return false;
+        char c = content.charAt(i);
+        if (c == '{' || c == '"' || c == '[' || (c >= '0' && c <= '9')) return true;
+        int l = c == 't' || c == 'n' ? 4 : c == 'f' ? 5 : 0;
+        if (l == 0 || i + l > content.length()) return false;
+        String w = content.substring(i, i + l);
+        if (!w.equals("true") && !w.equals("false") && !w.equals("null")) return false;
+        return i + l == content.length() || (content.charAt(i + l) == '\n' && i + l + 1 == content.length());
+    }
+
+    /**
+     * Load content into a document, with a forced format.
+     * @param content The content to parse.
+     * @param file The source file name, used in error messages.
+     * @param trim_none True to keep all whitespace, ie --trim=none.
+     * @param no_merge True to not merge text and character entities, ie --nomerge.
+     * @param format The format: null to detect, or json.
+     * @return The document or null.
+     * @throws ParseException If the content cannot be parsed.
+     */
+    static XmlDocument load(String content, String file, boolean trim_none, boolean no_merge, String format) throws ParseException
+    {
+        if ("json".equals(format))
+        {
+            JsonParser jp = new JsonParser();
+            jp.parseJson(content, file);
+            return jp.doc();
+        }
         if (content.startsWith("\uFEFF")) content = content.substring(1);
         int i = 0;
         while (i < content.length())
@@ -248,6 +288,13 @@ public class Main
             XmlTrim.fixupCommentsAfterReadin(doc);
             if (!trim_none) XmlTrim.trimWhitespace(doc);
             return doc;
+        }
+
+        if (format == null && is_json(content, i))
+        {
+            JsonParser jp = new JsonParser();
+            jp.parseJson(content, file);
+            return jp.doc();
         }
 
         XMQParseIntoDOM pa = new XMQParseIntoDOM();

@@ -1143,6 +1143,7 @@ public abstract class XMQParser extends XMQParseCallbacks
             else if (c == '}') { return; }
             else if (is_xmq_doctype_start(c)) parse_xmq_doctype();
             else if (is_xmq_pi_start(c)) parse_xmq_pi();
+            else if (c == '<') parse_xmq_embedded_xml();
             else
             {
                 /*if (possibly_lost_content_after_equals(state))
@@ -1165,11 +1166,98 @@ public abstract class XMQParser extends XMQParseCallbacks
         }
     }
 
+    /**
+     * Find the end of an embedded xml fragment, like find_xmq_embedded_xml_stop in C:
+     * a single xml element (possibly self closing) ending with its matching closing tag.
+     * @param start Position of the starting less than char.
+     * @return The position after the fragment or -1 if not closed.
+     */
+    int find_xmq_embedded_xml_stop(int start)
+    {
+        int i = start, end = buffer_len_, depth = 0;
+        while (i < end)
+        {
+            char c = buffer_.charAt(i);
+            if (c == '"' || c == '\'')
+            {
+                // A quoted string, skip it.
+                i++;
+                while (i < end && buffer_.charAt(i) != c) i++;
+                if (i < end) i++;
+                continue;
+            }
+            if (c != '<') { i++; continue; }
+            if (i + 1 >= end) return -1;
+            char nc = buffer_.charAt(i + 1);
+            if (nc == '!')
+            {
+                if (i + 4 < end && buffer_.startsWith("<!--", i))
+                {
+                    // An xml comment, skip to -->
+                    while (i + 3 < end && !buffer_.startsWith("-->", i)) i++;
+                    if (i + 3 >= end) return -1;
+                    i += 3;
+                    continue;
+                }
+                // Cdata or doctype, skip to >
+                while (i < end && buffer_.charAt(i) != '>') i++;
+                if (i >= end) return -1;
+                i++;
+                continue;
+            }
+            if (nc == '?' || nc == '/')
+            {
+                // A processing instruction or a closing tag, skip to >
+                while (i < end && buffer_.charAt(i) != '>') i++;
+                if (i >= end) return -1;
+                i++;
+                if (nc == '/')
+                {
+                    depth--;
+                    if (depth <= 0) return i;
+                }
+                continue;
+            }
+            // An opening tag <name ...>
+            int tag_start = i;
+            while (i < end && buffer_.charAt(i) != '>') i++;
+            if (i >= end) return -1;
+            int k = i - 1;
+            while (k > tag_start && (buffer_.charAt(k) == ' ' || buffer_.charAt(k) == '\t' || buffer_.charAt(k) == '\n' || buffer_.charAt(k) == '\r')) k--;
+            boolean self_closing = k > tag_start && buffer_.charAt(k) == '/';
+            i++;
+            if (self_closing && depth == 0) return i;
+            if (!self_closing) depth++;
+        }
+        return -1;
+    }
+
+    /** An embedded xml fragment in xmq, like parse_xmq_embedded_xml in C. */
+    void parse_xmq_embedded_xml()
+    {
+        int start = i_;
+        int stop = find_xmq_embedded_xml_stop(start);
+        if (stop < 0)
+        {
+            error_nr_ = ParseErrorCode.XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED;
+            throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
+        }
+        do_embedded_xml(start, stop);
+        while (i_ < stop) increment(buffer_.charAt(i_));
+    }
+
+    /**
+     * An embedded xml fragment was found, by default it is ignored.
+     * @param start Start of the fragment.
+     * @param stop End of the fragment.
+     */
+    void do_embedded_xml(int start, int stop)
+    {
+    }
+
     String xmq_un_comment(int start, int stop)
     {
-        var pair = UtilParseQuote.findCommentStartStop(buffer_, start, stop);
-        String content = UtilParseQuote.trimQuote(buffer_, pair.left(), pair.right());
-        return content;
+        return XmqTrim.unComment(buffer_, start, stop);
     }
 
 }

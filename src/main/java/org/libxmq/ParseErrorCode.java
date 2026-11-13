@@ -89,6 +89,8 @@ public enum ParseErrorCode
     XMQ_ERROR_PARSING_HTML(29),
     /** Value cannot start with. */
     XMQ_ERROR_VALUE_CANNOT_START_WITH(30),
+    /** Embedded xml fragment is not closed. */
+    XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED(37),
     /** IXML expected rule. */
     XMQ_ERROR_IXML_EXPECTED_RULE(50),
     /** IXML expected name. */

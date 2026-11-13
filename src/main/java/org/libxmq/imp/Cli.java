@@ -62,14 +62,14 @@ final class Cli
     }
 
     // Global settings.
-    boolean trimNone, noMerge, lines, noInput, inIsContent;
+    boolean trimNone, trimHeuristic, noMerge, lines, noInput, inIsContent;
     String inFormat;        // null = detect, else xmq xml html text
     String in;              // file name, "-" for stdin, or the content with -i
     String ixmlSource;      // --ixml=grammar.ixml or a positional grammar
     final List<Command> commands = new ArrayList<>();
 
     static final String[] NOT_IMPLEMENTED = {
-        "to-json", "to-yaml", "to-clines", "transform", "validate", "for-each", "statistics",
+        "to-yaml", "transform", "validate", "for-each", "statistics",
         "substitute-entity", "substitute-char-entities", "page", "pa", "browse", "br", "heu",
         "load", "xsl", "replace",
     };
@@ -154,7 +154,7 @@ final class Cli
         case "no-input" -> noInput = true;
         case "trim" -> {
             if ("none".equals(value)) trimNone = true;
-            else if ("heuristic".equals(value)) trimNone = false;
+            else if ("heuristic".equals(value)) { trimNone = false; trimHeuristic = true; }
             else throw fail("No such trim rule \"" + value + "\"!");
         }
         case "no-merge", "nomerge" -> noMerge = true;
@@ -167,7 +167,9 @@ final class Cli
             if (value == null) throw fail("xmq: --ixml as an input format is not implemented in xmqj yet");
             grammar(value);
         }
-        case "json", "yaml", "clines", "root", "ixml-engine", "list-library", "xml-of-ixml" ->
+        case "json" -> inFormat = "json";
+        case "clines" -> inFormat = "text"; // Like C, clines input is loaded as text.
+        case "yaml", "root", "ixml-engine", "list-library", "xml-of-ixml" ->
             throw fail("xmq: the global option " + optionString(name, value) + " is not implemented in xmqj yet");
         // Logging and things that do not change the result.
         case "debug", "verbose", "trace", "log-xmq", "progress", "yes", "force-download",
@@ -407,7 +409,11 @@ final class Cli
         }
         try
         {
-            return Main.load(content, source, trimNone, noMerge);
+            XmlDocument d = Main.load(content, source, trimNone, noMerge, "json".equals(inFormat) ? "json" : null);
+            // Like C, an explicit --trim=heuristic trims any input, not only xml and html
+            // (which Main.load already trims). Trimming twice changes nothing.
+            if (d != null && trimHeuristic) XmlTrim.trimWhitespace(d);
+            return d;
         }
         catch (ParseException e)
         {
@@ -640,28 +646,7 @@ final class Cli
     // Like xmq_quote_as_c with quotes in text.c.
     static String quoteC(String s)
     {
-        StringBuilder b = new StringBuilder("\"");
-        for (int i = 0; i < s.length(); i++)
-        {
-            char c = s.charAt(i);
-            switch (c)
-            {
-            case '\\' -> b.append("\\\\");
-            case '"' -> b.append("\\\"");
-            case 7 -> b.append("\\a");
-            case '\b' -> b.append("\\b");
-            case '\t' -> b.append("\\t");
-            case '\n' -> b.append("\\n");
-            case 11 -> b.append("\\v");
-            case '\f' -> b.append("\\f");
-            case '\r' -> b.append("\\r");
-            default -> {
-                if (c < ' ' || c == 127) b.append(String.format("\\x%02x", (int)c));
-                else b.append(c);
-            }
-            }
-        }
-        return b.append('"').toString();
+        return JsonPrinter.quote(s, true);
     }
 
     // Like xmq_unquote_as_c removing the quotes in text.c.
@@ -744,6 +729,12 @@ final class Cli
                 x = eol < 0 ? "" : x.substring(eol + 1);
             }
             return x;
+        }
+        case "to-clines" -> {
+            return Clines.print(doc);
+        }
+        case "to-json" -> {
+            return new JsonPrinter().toJson(doc, os, !c.noFinalNl);
         }
         case "to-text" -> {
             StringBuilder b = new StringBuilder();
