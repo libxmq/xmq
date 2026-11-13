@@ -500,6 +500,10 @@ struct YaepRule
 
     /* The ixml marks for all the terms in the right hand side of the rule. */
     char *marks;
+
+    /* The ixml aliases (renames) for the terms in the right hand side of the rule,
+       e.g. @a>b gives alias b for that term. NULL when there is no alias. */
+    const char **aliases;
     /* The following three members define rule translation. */
 
     const char *anode;             /* abstract node name if any. */

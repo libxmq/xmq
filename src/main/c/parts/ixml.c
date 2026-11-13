@@ -201,10 +201,10 @@ void free_ixml_term(IXMLTerm *t);
 char *generate_rule_name(XMQParseState *state);
 char *generate_charset_rule_name(IXMLCharset *cs, char mark);
 void make_last_term_optional(XMQParseState *state);
-void make_last_term_repeat(XMQParseState *state, char factor_mark);
-void make_last_term_repeat_zero(XMQParseState *state, char factor_mark);
-void make_last_term_repeat_infix(XMQParseState *state, char factor_mark, char infix_mark);
-void make_last_term_repeat_zero_infix(XMQParseState *state, char factor_mark, char infix_mark);
+void make_last_term_repeat(XMQParseState *state);
+void make_last_term_repeat_zero(XMQParseState *state);
+void make_last_term_repeat_infix(XMQParseState *state);
+void make_last_term_repeat_zero_infix(XMQParseState *state);
 
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -1494,7 +1494,6 @@ void parse_ixml_term(XMQParseState *state)
         longjmp(state->error_handler, 1);
     }
 
-    char factor_mark = state->ixml_mark;
     char c = *(state->i);
     if (c == '?')
     {
@@ -1531,18 +1530,17 @@ void parse_ixml_term(XMQParseState *state)
 
             // infix separator
             parse_ixml_factor(state);
-            char infix_mark = state->ixml_mark;
 
             // We have value++infix value**infix
-            if (c == '+') make_last_term_repeat_infix(state, factor_mark, infix_mark);
-            else  make_last_term_repeat_zero_infix(state, factor_mark, infix_mark);
+            if (c == '+') make_last_term_repeat_infix(state);
+            else  make_last_term_repeat_zero_infix(state);
 
         }
         else
         {
             // We have value+ or value*
-            if (c == '+') make_last_term_repeat(state, factor_mark);
-            else  make_last_term_repeat_zero(state, factor_mark);
+            if (c == '+') make_last_term_repeat(state);
+            else  make_last_term_repeat_zero(state);
         }
         parse_ixml_whitespace(state);
     }
@@ -1618,7 +1616,8 @@ const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
                                    int *cost,
                                    int **transl,
                                    char *mark,
-                                   char **marks)
+                                   char **marks,
+                                   const char ***aliases)
 {
     XMQParseState *state = (XMQParseState*)pr->user_data;
     if (state->yaep_j_ >= state->ixml_rules->size) return NULL;
@@ -1633,6 +1632,8 @@ const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
     if (state->yaep_tmp_marks_) free(state->yaep_tmp_marks_);
     state->yaep_tmp_marks_ = (char*)calloc(num_rhs+1, sizeof(char));
     memset(state->yaep_tmp_marks_, 0, num_rhs+1);
+    if (state->yaep_tmp_aliases_) free(state->yaep_tmp_aliases_);
+    state->yaep_tmp_aliases_ = (const char**)calloc(num_rhs+1, sizeof(const char*));
 
     for (size_t i = 0; i < num_rhs; ++i)
     {
@@ -1645,6 +1646,7 @@ const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
         else if (term->type == IXML_NON_TERMINAL)
         {
             state->yaep_tmp_rhs_[i] = term->nt->name;
+            state->yaep_tmp_aliases_[i] = term->nt->alias;
         }
         else
         {
@@ -1670,6 +1672,7 @@ const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
     state->yaep_tmp_rhs_[num_rhs] = NULL;
     *rhs = (const char **)state->yaep_tmp_rhs_;
     *marks = state->yaep_tmp_marks_;
+    *aliases = state->yaep_tmp_aliases_;
     *transl = state->yaep_tmp_transl_;
     *cost = rule->cost;
     *mark = rule->mark;
@@ -2372,8 +2375,9 @@ void make_last_term_optional(XMQParseState *state)
     free_ixml_nonterminal(state->ixml_rule->rule_name);
     state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
 
-    // Single term in this rule alternative.
-    add_yaep_term_to_rule(state, state->ixml_mark, term->t, term->nt);
+    // Single term in this rule alternative. Use the mark stored on the term,
+    // state->ixml_mark can be stale, e.g. after a group (a, @b)? it is the mark of @b.
+    add_yaep_term_to_rule(state, term->mark, term->t, term->nt);
     free(term);
     term = NULL;
 
@@ -2390,7 +2394,7 @@ void make_last_term_optional(XMQParseState *state)
     state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
 }
 
-void make_last_term_repeat(XMQParseState *state, char factor_mark)
+void make_last_term_repeat(XMQParseState *state)
 {
     // Compose an anonymous rule.
     // 'a'+ is replaced with the nonterminal /17 (for example)
@@ -2418,7 +2422,7 @@ void make_last_term_repeat(XMQParseState *state, char factor_mark)
     state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
 
     // 'a'
-    add_yaep_term_to_rule(state, factor_mark, term->t, term->nt);
+    add_yaep_term_to_rule(state, term->mark, term->t, term->nt);
 
     // Build second alternative rule: /17 = /17, 'a'.
     state->ixml_rule = new_ixml_rule();
@@ -2430,7 +2434,7 @@ void make_last_term_repeat(XMQParseState *state, char factor_mark)
 
     // /17, 'a'
     add_yaep_term_to_rule(state, '-', NULL, nt);
-    add_yaep_term_to_rule(state, factor_mark, term->t, term->nt);
+    add_yaep_term_to_rule(state, term->mark, term->t, term->nt);
 
     free(term);
     term = NULL;
@@ -2438,7 +2442,7 @@ void make_last_term_repeat(XMQParseState *state, char factor_mark)
     state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
 }
 
-void make_last_term_repeat_infix(XMQParseState *state, char factor_mark, char infix_mark)
+void make_last_term_repeat_infix(XMQParseState *state)
 {
     // Compose an anonymous rule.
     // 'a'++'b' is replaced with the nonterminal /17 (for example)
@@ -2467,7 +2471,7 @@ void make_last_term_repeat_infix(XMQParseState *state, char factor_mark, char in
     state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
 
     // 'a'
-    add_yaep_term_to_rule(state, factor_mark, term->t, term->nt);
+    add_yaep_term_to_rule(state, term->mark, term->t, term->nt);
 
     // Build second alternative rule: /17 = /17, 'b', 'a'.
     state->ixml_rule = new_ixml_rule();
@@ -2479,8 +2483,8 @@ void make_last_term_repeat_infix(XMQParseState *state, char factor_mark, char in
 
     // /17, 'b', 'a'
     add_yaep_term_to_rule(state, '-', NULL, nt);
-    add_yaep_term_to_rule(state, infix_mark, infix->t, infix->nt);
-    add_yaep_term_to_rule(state, factor_mark, term->t, term->nt);
+    add_yaep_term_to_rule(state, infix->mark, infix->t, infix->nt);
+    add_yaep_term_to_rule(state, term->mark, term->t, term->nt);
 
     free(term);
     free(infix);
@@ -2490,7 +2494,7 @@ void make_last_term_repeat_infix(XMQParseState *state, char factor_mark, char in
     state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
 }
 
-void make_last_term_repeat_zero(XMQParseState *state, char factor_mark)
+void make_last_term_repeat_zero(XMQParseState *state)
 {
     // Compose an anonymous rule.
     // 'a'+ is replaced with the nonterminal /17 (for example)
@@ -2527,7 +2531,7 @@ void make_last_term_repeat_zero(XMQParseState *state, char factor_mark)
 
     // /17, 'a'
     add_yaep_term_to_rule(state, '-', NULL, nt);
-    add_yaep_term_to_rule(state, factor_mark, term->t, term->nt);
+    add_yaep_term_to_rule(state, term->mark, term->t, term->nt);
 
     free(term);
     term = NULL;
@@ -2535,10 +2539,9 @@ void make_last_term_repeat_zero(XMQParseState *state, char factor_mark)
     state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
 }
 
-void make_last_term_repeat_zero_infix(XMQParseState *state, char factor_mark, char infix_mark)
+void make_last_term_repeat_zero_infix(XMQParseState *state)
 {
-    make_last_term_repeat_infix(state, factor_mark, infix_mark);
-    state->ixml_mark = '-';
+    make_last_term_repeat_infix(state);
     make_last_term_optional(state);
 }
 

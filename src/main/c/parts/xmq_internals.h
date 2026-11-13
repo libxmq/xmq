@@ -395,6 +395,7 @@ struct XMQParseState
     // These are used when traversing the IXML parse tree and building the yaep grammar.
     char **yaep_tmp_rhs_;
     char *yaep_tmp_marks_;
+    const char **yaep_tmp_aliases_;
     int *yaep_tmp_transl_;
     HashMapIterator *yaep_i_;
     size_t yaep_j_;

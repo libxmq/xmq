@@ -296,7 +296,8 @@ extern int yaep_read_grammar(YaepParseRun *ps,
                                                        int *anode_cost,
                                                        int **transl,
                                                        char *mark,
-                                                       char **marks));
+                                                       char **marks,
+                                                       const char ***aliases));
 
 /* The following functions set up different parameters which affect
    parser work.  The functions return the previous parameter value.

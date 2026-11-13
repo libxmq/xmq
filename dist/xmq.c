@@ -448,7 +448,8 @@ const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
                                    int *cost,
                                    int **transl,
                                    char *mark,
-                                   char **marks);
+                                   char **marks,
+                                   const char ***aliases);
 
 void scan_content_fixup_charsets(XMQParseState *state, const char *start, const char *stop);
 
@@ -1893,7 +1894,8 @@ extern int yaep_read_grammar(YaepParseRun *ps,
                                                        int *anode_cost,
                                                        int **transl,
                                                        char *mark,
-                                                       char **marks));
+                                                       char **marks,
+                                                       const char ***aliases));
 
 /* The following functions set up different parameters which affect
    parser work.  The functions return the previous parameter value.
@@ -2458,6 +2460,10 @@ struct YaepRule
 
     /* The ixml marks for all the terms in the right hand side of the rule. */
     char *marks;
+
+    /* The ixml aliases (renames) for the terms in the right hand side of the rule,
+       e.g. @a>b gives alias b for that term. NULL when there is no alias. */
+    const char **aliases;
     /* The following three members define rule translation. */
 
     const char *anode;             /* abstract node name if any. */
@@ -3384,6 +3390,7 @@ struct XMQParseState
     // These are used when traversing the IXML parse tree and building the yaep grammar.
     char **yaep_tmp_rhs_;
     char *yaep_tmp_marks_;
+    const char **yaep_tmp_aliases_;
     int *yaep_tmp_transl_;
     HashMapIterator *yaep_i_;
     size_t yaep_j_;
@@ -3655,7 +3662,8 @@ const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
                                    int *cost,
                                    int **transl,
                                    char *mark,
-                                   char **marks);
+                                   char **marks,
+                                   const char ***aliases);
 
 void scan_content_fixup_charsets(XMQParseState *state, const char *start, const char *stop);
 
@@ -5993,6 +6001,8 @@ void xmqFreeParseState(XMQParseState *state)
     state->yaep_tmp_transl_ = NULL;
     if (state->yaep_tmp_marks_) free(state->yaep_tmp_marks_);
     state->yaep_tmp_marks_ = NULL;
+    if (state->yaep_tmp_aliases_) free(state->yaep_tmp_aliases_);
+    state->yaep_tmp_aliases_ = NULL;
 
     if (state->ixml_rules) vector_free_and_values(state->ixml_rules, (FreeFuncPtr)free_ixml_rule);
     state->ixml_rules = NULL;
@@ -11388,10 +11398,10 @@ void free_ixml_term(IXMLTerm *t);
 char *generate_rule_name(XMQParseState *state);
 char *generate_charset_rule_name(IXMLCharset *cs, char mark);
 void make_last_term_optional(XMQParseState *state);
-void make_last_term_repeat(XMQParseState *state, char factor_mark);
-void make_last_term_repeat_zero(XMQParseState *state, char factor_mark);
-void make_last_term_repeat_infix(XMQParseState *state, char factor_mark, char infix_mark);
-void make_last_term_repeat_zero_infix(XMQParseState *state, char factor_mark, char infix_mark);
+void make_last_term_repeat(XMQParseState *state);
+void make_last_term_repeat_zero(XMQParseState *state);
+void make_last_term_repeat_infix(XMQParseState *state);
+void make_last_term_repeat_zero_infix(XMQParseState *state);
 
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -12681,7 +12691,6 @@ void parse_ixml_term(XMQParseState *state)
         longjmp(state->error_handler, 1);
     }
 
-    char factor_mark = state->ixml_mark;
     char c = *(state->i);
     if (c == '?')
     {
@@ -12718,18 +12727,17 @@ void parse_ixml_term(XMQParseState *state)
 
             // infix separator
             parse_ixml_factor(state);
-            char infix_mark = state->ixml_mark;
 
             // We have value++infix value**infix
-            if (c == '+') make_last_term_repeat_infix(state, factor_mark, infix_mark);
-            else  make_last_term_repeat_zero_infix(state, factor_mark, infix_mark);
+            if (c == '+') make_last_term_repeat_infix(state);
+            else  make_last_term_repeat_zero_infix(state);
 
         }
         else
         {
             // We have value+ or value*
-            if (c == '+') make_last_term_repeat(state, factor_mark);
-            else  make_last_term_repeat_zero(state, factor_mark);
+            if (c == '+') make_last_term_repeat(state);
+            else  make_last_term_repeat_zero(state);
         }
         parse_ixml_whitespace(state);
     }
@@ -12805,7 +12813,8 @@ const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
                                    int *cost,
                                    int **transl,
                                    char *mark,
-                                   char **marks)
+                                   char **marks,
+                                   const char ***aliases)
 {
     XMQParseState *state = (XMQParseState*)pr->user_data;
     if (state->yaep_j_ >= state->ixml_rules->size) return NULL;
@@ -12820,6 +12829,8 @@ const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
     if (state->yaep_tmp_marks_) free(state->yaep_tmp_marks_);
     state->yaep_tmp_marks_ = (char*)calloc(num_rhs+1, sizeof(char));
     memset(state->yaep_tmp_marks_, 0, num_rhs+1);
+    if (state->yaep_tmp_aliases_) free(state->yaep_tmp_aliases_);
+    state->yaep_tmp_aliases_ = (const char**)calloc(num_rhs+1, sizeof(const char*));
 
     for (size_t i = 0; i < num_rhs; ++i)
     {
@@ -12832,6 +12843,7 @@ const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
         else if (term->type == IXML_NON_TERMINAL)
         {
             state->yaep_tmp_rhs_[i] = term->nt->name;
+            state->yaep_tmp_aliases_[i] = term->nt->alias;
         }
         else
         {
@@ -12857,6 +12869,7 @@ const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
     state->yaep_tmp_rhs_[num_rhs] = NULL;
     *rhs = (const char **)state->yaep_tmp_rhs_;
     *marks = state->yaep_tmp_marks_;
+    *aliases = state->yaep_tmp_aliases_;
     *transl = state->yaep_tmp_transl_;
     *cost = rule->cost;
     *mark = rule->mark;
@@ -13559,8 +13572,9 @@ void make_last_term_optional(XMQParseState *state)
     free_ixml_nonterminal(state->ixml_rule->rule_name);
     state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
 
-    // Single term in this rule alternative.
-    add_yaep_term_to_rule(state, state->ixml_mark, term->t, term->nt);
+    // Single term in this rule alternative. Use the mark stored on the term,
+    // state->ixml_mark can be stale, e.g. after a group (a, @b)? it is the mark of @b.
+    add_yaep_term_to_rule(state, term->mark, term->t, term->nt);
     free(term);
     term = NULL;
 
@@ -13577,7 +13591,7 @@ void make_last_term_optional(XMQParseState *state)
     state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
 }
 
-void make_last_term_repeat(XMQParseState *state, char factor_mark)
+void make_last_term_repeat(XMQParseState *state)
 {
     // Compose an anonymous rule.
     // 'a'+ is replaced with the nonterminal /17 (for example)
@@ -13605,7 +13619,7 @@ void make_last_term_repeat(XMQParseState *state, char factor_mark)
     state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
 
     // 'a'
-    add_yaep_term_to_rule(state, factor_mark, term->t, term->nt);
+    add_yaep_term_to_rule(state, term->mark, term->t, term->nt);
 
     // Build second alternative rule: /17 = /17, 'a'.
     state->ixml_rule = new_ixml_rule();
@@ -13617,7 +13631,7 @@ void make_last_term_repeat(XMQParseState *state, char factor_mark)
 
     // /17, 'a'
     add_yaep_term_to_rule(state, '-', NULL, nt);
-    add_yaep_term_to_rule(state, factor_mark, term->t, term->nt);
+    add_yaep_term_to_rule(state, term->mark, term->t, term->nt);
 
     free(term);
     term = NULL;
@@ -13625,7 +13639,7 @@ void make_last_term_repeat(XMQParseState *state, char factor_mark)
     state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
 }
 
-void make_last_term_repeat_infix(XMQParseState *state, char factor_mark, char infix_mark)
+void make_last_term_repeat_infix(XMQParseState *state)
 {
     // Compose an anonymous rule.
     // 'a'++'b' is replaced with the nonterminal /17 (for example)
@@ -13654,7 +13668,7 @@ void make_last_term_repeat_infix(XMQParseState *state, char factor_mark, char in
     state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
 
     // 'a'
-    add_yaep_term_to_rule(state, factor_mark, term->t, term->nt);
+    add_yaep_term_to_rule(state, term->mark, term->t, term->nt);
 
     // Build second alternative rule: /17 = /17, 'b', 'a'.
     state->ixml_rule = new_ixml_rule();
@@ -13666,8 +13680,8 @@ void make_last_term_repeat_infix(XMQParseState *state, char factor_mark, char in
 
     // /17, 'b', 'a'
     add_yaep_term_to_rule(state, '-', NULL, nt);
-    add_yaep_term_to_rule(state, infix_mark, infix->t, infix->nt);
-    add_yaep_term_to_rule(state, factor_mark, term->t, term->nt);
+    add_yaep_term_to_rule(state, infix->mark, infix->t, infix->nt);
+    add_yaep_term_to_rule(state, term->mark, term->t, term->nt);
 
     free(term);
     free(infix);
@@ -13677,7 +13691,7 @@ void make_last_term_repeat_infix(XMQParseState *state, char factor_mark, char in
     state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
 }
 
-void make_last_term_repeat_zero(XMQParseState *state, char factor_mark)
+void make_last_term_repeat_zero(XMQParseState *state)
 {
     // Compose an anonymous rule.
     // 'a'+ is replaced with the nonterminal /17 (for example)
@@ -13714,7 +13728,7 @@ void make_last_term_repeat_zero(XMQParseState *state, char factor_mark)
 
     // /17, 'a'
     add_yaep_term_to_rule(state, '-', NULL, nt);
-    add_yaep_term_to_rule(state, factor_mark, term->t, term->nt);
+    add_yaep_term_to_rule(state, term->mark, term->t, term->nt);
 
     free(term);
     term = NULL;
@@ -13722,10 +13736,9 @@ void make_last_term_repeat_zero(XMQParseState *state, char factor_mark)
     state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
 }
 
-void make_last_term_repeat_zero_infix(XMQParseState *state, char factor_mark, char infix_mark)
+void make_last_term_repeat_zero_infix(XMQParseState *state)
 {
-    make_last_term_repeat_infix(state, factor_mark, infix_mark);
-    state->ixml_mark = '-';
+    make_last_term_repeat_infix(state);
     make_last_term_optional(state);
 }
 
@@ -25419,12 +25432,25 @@ static void loop_stack(YaepTreeNode **result,
                         {
                             table_state->anode = node;
                         }
-                        if (dotted_rule_rule->caller_anode == NULL)
+                        if (rule->aliases && rule->aliases[pos_j])
                         {
-                            dotted_rule_rule->caller_anode = ((char*) (*ps->run.parse_alloc)(strlen(dotted_rule_rule->anode) + 1));
-                            strcpy(dotted_rule_rule->caller_anode, dotted_rule_rule->anode);
+                            // IXML Use the rhs alias as name, e.g. @a>b.
+                            // The tree owns its node names (they are freed with parse_free)
+                            // so allocate a copy of the alias for this node.
+                            const char *alias = rule->aliases[pos_j];
+                            char *name = (char*) (*ps->run.parse_alloc)(strlen(alias) + 1);
+                            strcpy(name, alias);
+                            node->val.anode.name = name;
                         }
-                        node->val.anode.name = dotted_rule_rule->caller_anode;
+                        else
+                        {
+                            if (dotted_rule_rule->caller_anode == NULL)
+                            {
+                                dotted_rule_rule->caller_anode = ((char*) (*ps->run.parse_alloc)(strlen(dotted_rule_rule->anode) + 1));
+                                strcpy(dotted_rule_rule->caller_anode, dotted_rule_rule->anode);
+                            }
+                            node->val.anode.name = dotted_rule_rule->caller_anode;
+                        }
                         node->val.anode.cost = dotted_rule_rule->anode_cost;
                         // IXML Copy the rule name -to the generated abstract node.
                         node->val.anode.mark = dotted_rule_rule->mark;
@@ -26416,6 +26442,7 @@ static YaepRule *rule_new_start(YaepParseState *ps, YaepSymbol *lhs, const char 
     rule->trans_len = 0;
     rule->mark = 0;
     rule->marks = NULL;
+    rule->aliases = NULL;
     rule->order = NULL;
     rule->next = NULL;
     if (ps->run.grammar->rulestorage_ptr->current_rule != NULL)
@@ -26472,6 +26499,14 @@ static void rule_new_stop(YaepParseState *ps)
     OS_TOP_EXPAND(ps->run.grammar->rulestorage_ptr->rules_os, ps->run.grammar->rulestorage_ptr->current_rule->rhs_len* sizeof(char));
     ps->run.grammar->rulestorage_ptr->current_rule->marks = (char*)OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
     memset(ps->run.grammar->rulestorage_ptr->current_rule->marks, 0, ps->run.grammar->rulestorage_ptr->current_rule->rhs_len* sizeof(char));
+    OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
+
+    OS_TOP_EXPAND(ps->run.grammar->rulestorage_ptr->rules_os, ps->run.grammar->rulestorage_ptr->current_rule->rhs_len* sizeof(const char*));
+    ps->run.grammar->rulestorage_ptr->current_rule->aliases = (const char**)OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
+    for (i = 0; i < ps->run.grammar->rulestorage_ptr->current_rule->rhs_len; i++)
+    {
+        ps->run.grammar->rulestorage_ptr->current_rule->aliases[i] = NULL;
+    }
     OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
 
     /*
@@ -27707,7 +27742,8 @@ int yaep_read_grammar(YaepParseRun *pr,
                       const char*(*read_terminal)(YaepParseRun*pr,YaepGrammar*g,int*code),
                       const char*(*read_rule)(YaepParseRun*pr,YaepGrammar*g,const char***rhs,
                                               const char**abs_node,
-                                              int*anode_cost, int**transl, char*mark, char**marks))
+                                              int*anode_cost, int**transl, char*mark, char**marks,
+                                              const char***aliases))
 {
     const char*name,*lhs,**rhs,*anode;
     YaepSymbol*symb, *start;
@@ -27716,6 +27752,7 @@ int yaep_read_grammar(YaepParseRun *pr,
     int*transl;
     char mark;
     char*marks;
+    const char**aliases;
     int i, el, code;
 
     assert(g != NULL);
@@ -27764,7 +27801,7 @@ int yaep_read_grammar(YaepParseRun *pr,
 
     for (;;)
     {
-        lhs = (*read_rule)(pr, pr->grammar, &rhs, &anode, &anode_cost, &transl, &mark, &marks);
+        lhs = (*read_rule)(pr, pr->grammar, &rhs, &anode, &anode_cost, &transl, &mark, &marks, &aliases);
         if (lhs == NULL) break;
 
         symb = symb_find_by_repr(ps, lhs);
@@ -27831,6 +27868,14 @@ int yaep_read_grammar(YaepParseRun *pr,
         // IXML
         rule->mark = mark;
         memcpy(rule->marks, marks, rhs_len);
+        for (size_t a = 0; aliases != NULL && a < rhs_len; ++a)
+        {
+            if (aliases[a] == NULL) continue;
+            // Copy the alias into the grammar storage, the caller owns the passed string.
+            OS_TOP_ADD_STRING(ps->run.grammar->rulestorage_ptr->rules_os, aliases[a]);
+            rule->aliases[a] = (const char*)OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
+            OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
+        }
 
         if (transl != NULL)
         {

@@ -176,6 +176,7 @@ static YaepRule *rule_new_start(YaepParseState *ps, YaepSymbol *lhs, const char 
     rule->trans_len = 0;
     rule->mark = 0;
     rule->marks = NULL;
+    rule->aliases = NULL;
     rule->order = NULL;
     rule->next = NULL;
     if (ps->run.grammar->rulestorage_ptr->current_rule != NULL)
@@ -232,6 +233,14 @@ static void rule_new_stop(YaepParseState *ps)
     OS_TOP_EXPAND(ps->run.grammar->rulestorage_ptr->rules_os, ps->run.grammar->rulestorage_ptr->current_rule->rhs_len* sizeof(char));
     ps->run.grammar->rulestorage_ptr->current_rule->marks = (char*)OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
     memset(ps->run.grammar->rulestorage_ptr->current_rule->marks, 0, ps->run.grammar->rulestorage_ptr->current_rule->rhs_len* sizeof(char));
+    OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
+
+    OS_TOP_EXPAND(ps->run.grammar->rulestorage_ptr->rules_os, ps->run.grammar->rulestorage_ptr->current_rule->rhs_len* sizeof(const char*));
+    ps->run.grammar->rulestorage_ptr->current_rule->aliases = (const char**)OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
+    for (i = 0; i < ps->run.grammar->rulestorage_ptr->current_rule->rhs_len; i++)
+    {
+        ps->run.grammar->rulestorage_ptr->current_rule->aliases[i] = NULL;
+    }
     OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
 
     /*
@@ -1467,7 +1476,8 @@ int yaep_read_grammar(YaepParseRun *pr,
                       const char*(*read_terminal)(YaepParseRun*pr,YaepGrammar*g,int*code),
                       const char*(*read_rule)(YaepParseRun*pr,YaepGrammar*g,const char***rhs,
                                               const char**abs_node,
-                                              int*anode_cost, int**transl, char*mark, char**marks))
+                                              int*anode_cost, int**transl, char*mark, char**marks,
+                                              const char***aliases))
 {
     const char*name,*lhs,**rhs,*anode;
     YaepSymbol*symb, *start;
@@ -1476,6 +1486,7 @@ int yaep_read_grammar(YaepParseRun *pr,
     int*transl;
     char mark;
     char*marks;
+    const char**aliases;
     int i, el, code;
 
     assert(g != NULL);
@@ -1524,7 +1535,7 @@ int yaep_read_grammar(YaepParseRun *pr,
 
     for (;;)
     {
-        lhs = (*read_rule)(pr, pr->grammar, &rhs, &anode, &anode_cost, &transl, &mark, &marks);
+        lhs = (*read_rule)(pr, pr->grammar, &rhs, &anode, &anode_cost, &transl, &mark, &marks, &aliases);
         if (lhs == NULL) break;
 
         symb = symb_find_by_repr(ps, lhs);
@@ -1591,6 +1602,14 @@ int yaep_read_grammar(YaepParseRun *pr,
         // IXML
         rule->mark = mark;
         memcpy(rule->marks, marks, rhs_len);
+        for (size_t a = 0; aliases != NULL && a < rhs_len; ++a)
+        {
+            if (aliases[a] == NULL) continue;
+            // Copy the alias into the grammar storage, the caller owns the passed string.
+            OS_TOP_ADD_STRING(ps->run.grammar->rulestorage_ptr->rules_os, aliases[a]);
+            rule->aliases[a] = (const char*)OS_TOP_BEGIN(ps->run.grammar->rulestorage_ptr->rules_os);
+            OS_TOP_FINISH(ps->run.grammar->rulestorage_ptr->rules_os);
+        }
 
         if (transl != NULL)
         {

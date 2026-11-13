@@ -1,0 +1,14 @@
+START
+o = -'x', s, @v, s, @w, s, @u.
+v = ['a'-'z']+.
+w = ['0'-'9']+.
+u = ['A'-'Z']+.
+-s = -[' ']+, -[' '; ',']*, -[' '; #9]*.
+INPUT
+x ,aaa 123 ABC
+OUTPUT
+o(v = aaa
+  w = 123
+  u = ABC)
+END
+ARGS=

@@ -574,12 +574,25 @@ static void loop_stack(YaepTreeNode **result,
                         {
                             table_state->anode = node;
                         }
-                        if (dotted_rule_rule->caller_anode == NULL)
+                        if (rule->aliases && rule->aliases[pos_j])
                         {
-                            dotted_rule_rule->caller_anode = ((char*) (*ps->run.parse_alloc)(strlen(dotted_rule_rule->anode) + 1));
-                            strcpy(dotted_rule_rule->caller_anode, dotted_rule_rule->anode);
+                            // IXML Use the rhs alias as name, e.g. @a>b.
+                            // The tree owns its node names (they are freed with parse_free)
+                            // so allocate a copy of the alias for this node.
+                            const char *alias = rule->aliases[pos_j];
+                            char *name = (char*) (*ps->run.parse_alloc)(strlen(alias) + 1);
+                            strcpy(name, alias);
+                            node->val.anode.name = name;
                         }
-                        node->val.anode.name = dotted_rule_rule->caller_anode;
+                        else
+                        {
+                            if (dotted_rule_rule->caller_anode == NULL)
+                            {
+                                dotted_rule_rule->caller_anode = ((char*) (*ps->run.parse_alloc)(strlen(dotted_rule_rule->anode) + 1));
+                                strcpy(dotted_rule_rule->caller_anode, dotted_rule_rule->anode);
+                            }
+                            node->val.anode.name = dotted_rule_rule->caller_anode;
+                        }
                         node->val.anode.cost = dotted_rule_rule->anode_cost;
                         // IXML Copy the rule name -to the generated abstract node.
                         node->val.anode.mark = dotted_rule_rule->mark;

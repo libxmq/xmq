@@ -2396,6 +2396,8 @@ void xmqFreeParseState(XMQParseState *state)
     state->yaep_tmp_transl_ = NULL;
     if (state->yaep_tmp_marks_) free(state->yaep_tmp_marks_);
     state->yaep_tmp_marks_ = NULL;
+    if (state->yaep_tmp_aliases_) free(state->yaep_tmp_aliases_);
+    state->yaep_tmp_aliases_ = NULL;
 
     if (state->ixml_rules) vector_free_and_values(state->ixml_rules, (FreeFuncPtr)free_ixml_rule);
     state->ixml_rules = NULL;

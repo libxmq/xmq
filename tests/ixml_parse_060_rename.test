@@ -1,0 +1,22 @@
+START
+o = x>first, -' ', x>second, -' ', @y>name, -' ', z, -' ', @w>ww, -' ', x, -' ', (x>opt)?, -' ', x>rep++-','.
+x = ['a'-'z']+.
+y = ['a'-'z']+.
+z>zed = ['0'-'9']+.
+w>never = ['0'-'9']+.
+INPUT
+abc def ghi 12 34 jkl mno p,q
+OUTPUT
+o(name = ghi
+  ww   = 34)
+{
+    first  = abc
+    second = def
+    zed    = 12
+    x      = jkl
+    opt    = mno
+    rep    = p
+    rep    = q
+}
+END
+ARGS=

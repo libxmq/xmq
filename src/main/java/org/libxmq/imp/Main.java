@@ -90,6 +90,13 @@ public class Main
             return;
         }
 
+        if (args[0].equals("analyze"))
+        {
+            int status = runAnalyze(args);
+            if (status != 0) System.exit(status);
+            return;
+        }
+
         if (args.length == 1 && args[0].equals("lsp"))
         {
             startServer(System.in, System.out);
@@ -343,6 +350,30 @@ public class Main
         catch (Exception e)
         {
             e.printStackTrace(System.err);
+        }
+    }
+
+    private static int runAnalyze(String[] args)
+    {
+        if (args.length != 3)
+        {
+            System.err.println("Usage: xmqj analyze grammar.ixml test.input");
+            return 2;
+        }
+        try
+        {
+            Document result = org.libxmq.imp.ixml.IXMLAnalyzer.analyze(
+                Files.readString(Path.of(args[1]), StandardCharsets.UTF_8),
+                Files.readString(Path.of(args[2]), StandardCharsets.UTF_8));
+            new XMLOutputter(Format.getPrettyFormat().setEncoding("UTF-8")).output(result, System.out);
+            Element root = result.getRootElement();
+            return "true".equals(root.getAttributeValue("supported")) &&
+                "accepted".equals(root.getChild("test").getAttributeValue("status")) ? 0 : 1;
+        }
+        catch (java.io.IOException | IllegalArgumentException e)
+        {
+            System.err.println("xmqj analyze: " + e.getMessage());
+            return 2;
         }
     }
 
@@ -652,6 +683,7 @@ Usage: xmqj [options] <file> ( <command> [options] )*
   --version  Output version information and exit.
   --xmq|--htmq|--xml|--html|--ixml|--json|--clines
              The input format is auto detected for xmq/xml/json but you can force the input format here.
+  analyze grammar.ixml test.input  Analyze LL(1) suitability and emit a parser DOM.
   --ixml=grammar.ixml Parse the content using the supplied grammar file.
   -z         Do not read from stdin nor from a file. Start with an empty dom.
   -i "a=2" Do not read from a file, use the next argument as the content to parse.

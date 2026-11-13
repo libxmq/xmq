@@ -66,7 +66,8 @@ const char *ixml_to_yaep_read_rule(YaepParseRun *pr,
                                    int *cost,
                                    int **transl,
                                    char *mark,
-                                   char **marks);
+                                   char **marks,
+                                   const char ***aliases);
 
 void scan_content_fixup_charsets(XMQParseState *state, const char *start, const char *stop);
 
