@@ -1,0 +1,12 @@
+START
+p = ws, (ID | KW).
+ID = !'in', ['a'-'z']+.
+KW = 'in'.
+-ws = -' '*.
+INPUT
+  in
+OUTPUT
+p {
+    KW = in
+}
+END

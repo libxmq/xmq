@@ -1,0 +1,17 @@
+START
+p = ID, 'z'.
+ID = 'x', 'y'*, !'z'.
+INPUT
+xz
+OUTPUT
+ixml(ixml:state = failed
+     xmlns:ixml = http://invisiblexml.org/NS)
+{
+    info   = 'ixml:1:2: syntax error
+              xz
+               ^'
+    line   = 1
+    column = 2
+    pos    = 2
+}
+END

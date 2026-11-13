@@ -1,0 +1,18 @@
+START
+prog = ID, KW.
+KW = 'do', !'d'.
+ID = 'x', !'d'.
+INPUT
+xdo
+OUTPUT
+ixml(ixml:state = failed
+     xmlns:ixml = http://invisiblexml.org/NS)
+{
+    info   = 'ixml:1:2: syntax error
+              xdo
+               ^'
+    line   = 1
+    column = 2
+    pos    = 2
+}
+END

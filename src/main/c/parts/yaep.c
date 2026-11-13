@@ -2022,7 +2022,7 @@ static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
 
 static bool core_has_not_rules(YaepStateSetCore *c)
 {
-    for (int i = 0; i < c->num_started_dotted_rules; ++i)
+    for (int i = 0; i < c->num_dotted_rules; ++i)
     {
         YaepDottedRule *dotted_rule = c->dotted_rules[i];
         if (dotted_rule->rule->contains_not_operator) return true;
@@ -2320,11 +2320,28 @@ void check_leading_dotted_rules(YaepParseState *ps, YaepStateSet *set, int looka
         YaepDottedRule *new_dotted_rule = ps->new_dotted_rules[i];
         bool completed = new_dotted_rule->empty_tail_p;
 
-        YaepSymbol *sym = new_dotted_rule->rule->rhs[new_dotted_rule->dot_j];
-        if (!completed && sym && sym->is_not_operator
-            && !blocked_by_lookahead(ps, new_dotted_rule, new_dotted_rule->rule->rhs[new_dotted_rule->dot_j], 1, "lookaheadbanan"))
+        if (!completed)
         {
-            completed = true;
+            // The tail can contain not operators mixed with symbols that can derive
+            // the empty string, e.g. ID = 'x' . 'y'*, !'z'. Since the empty symbols
+            // consume nothing, all not operators test the same next token.
+            // The rule is completed if we reach the end of the rule and no not operator blocks.
+            bool found_not = false;
+            YaepSymbol **symb_ptr = &new_dotted_rule->rule->rhs[new_dotted_rule->dot_j];
+            YaepSymbol *sym;
+            for (; (sym = *symb_ptr) != NULL; symb_ptr++)
+            {
+                if (sym->is_not_operator)
+                {
+                    found_not = true;
+                    if (blocked_by_lookahead(ps, new_dotted_rule, sym, 1, "lookaheadbanan")) break;
+                }
+                else if (!sym->empty_p)
+                {
+                    break;
+                }
+            }
+            if (found_not && sym == NULL) completed = true;
         }
 
         // Note that empty_tail_p is both true if you reached the end of the rule

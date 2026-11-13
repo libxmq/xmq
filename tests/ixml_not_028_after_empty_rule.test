@@ -1,0 +1,17 @@
+START
+p = ID, ';'.
+ID = 'x', e, !'z', f, !'q'.
+e = .
+f = 'f'?.
+INPUT
+x;
+OUTPUT
+p {
+    ID {
+        'x'
+        e
+        f
+    }
+    ';'
+}
+END

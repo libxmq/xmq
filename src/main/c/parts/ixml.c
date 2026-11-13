@@ -1922,8 +1922,10 @@ void add_not_rule_string(XMQParseState *state, const char *content)
 
     IXMLNonTerminal *nt = (IXMLNonTerminal*)hashmap_get(state->ixml_non_terminals_map, name);
     if (nt) {
-        // This not rule has already been recorded. Do not add it again.
+        // This not rule has already been recorded. Do not create it again,
+        // but we must still add the existing not rule to the current rule.
         free(name);
+        add_yaep_term_to_rule(state, 0, NULL, nt);
         return;
     }
 
@@ -1948,8 +1950,10 @@ void add_not_rule_charset(XMQParseState *state, IXMLNonTerminal *cs)
 
     IXMLNonTerminal *nt = (IXMLNonTerminal*)hashmap_get(state->ixml_non_terminals_map, name);
     if (nt) {
-        // This not rule has already been recorded. Do not add it again.
+        // This not rule has already been recorded. Do not create it again,
+        // but we must still add the existing not rule to the current rule.
         free(name);
+        add_yaep_term_to_rule(state, 0, NULL, nt);
         return;
     }
 

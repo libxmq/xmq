@@ -1,0 +1,18 @@
+START
+prog = ID, KW.
+KW = 'do', !['a'-'z'].
+ID = ['a'-'z']+, !['a'-'z'].
+INPUT
+xdo
+OUTPUT
+ixml(ixml:state = failed
+     xmlns:ixml = http://invisiblexml.org/NS)
+{
+    info   = 'ixml:1:4: syntax error
+              xdo
+                 ^'
+    line   = 1
+    column = 4
+    pos    = 4
+}
+END

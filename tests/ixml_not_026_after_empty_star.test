@@ -1,0 +1,11 @@
+START
+p = ID, ';'.
+ID = 'x', 'y'*, !'z'.
+INPUT
+x;
+OUTPUT
+p {
+    ID = x
+    ';'
+}
+END
