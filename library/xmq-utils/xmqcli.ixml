@@ -1,0 +1,114 @@
+{ v2.0.0 The xmq command line.
+
+  The command line arguments (argv) are joined into a single line, which is
+  parsed with this grammar. The line starts with xmq, then every argument
+  follows separated by a single space. An argument that is empty or contains
+  whitespace, quotes or backslashes is written inside double quotes, where
+  " and \ are escaped with a backslash. For an option with a value,
+  --name=value, only the value is quoted, eg --shell="echo \"${.}\"".
+
+  Example: xmq --trim=none index.html delete //script select -c "//a[@x=1]" to-html
+  gives:   xmq { option(name=trim value=none) file=index.html
+                 command(name=delete){arg='//script'}
+                 command(name=select){option(name=compact) arg='//a[@x=1]'}
+                 command(name=to-html) }
+
+  An argument never starts with a minus, to give an argument starting with a
+  minus, use -- before it: select -x -- -x }
+
+xmq = ws, -'xmq', sources, (s, command)*, (s, help)?, ws.
+
+{ Global options, an optional ixml grammar and the input source come before
+  the first command. A grammar is only recognized when it is followed by a
+  source, ie xmq grammar.ixml input.txt }
+-sources = opts, (s, grammar, opts, s, source, opts | s, source, opts)?.
+-opts = (s, option)*.
+
+{ Global options: --name --name=value, the short aliases -h -z -y -lx which
+  are given their long names, and other short options -x which keep their
+  letters as name. Note that -i is not an option, it is the input. }
+option = -'--', @name, (-'=', @optvalue>value)?
+       | @gshort>name
+       | -'-', @gother>name.
+gshort = -'-', (-'h', +'help' | -'z', +'no-input' | -'y', +'yes' | -'lx', +'log-xmq').
+gother = ~['h'; 'z'; 'y'; 'l'; 'i'; '-'; ' '; #9; #a; #d], schar*
+       | ['h'; 'z'; 'y'; 'i'], schar+
+       | 'l', (~['x'; ' '; #9; #a; #d], schar* | 'x', schar+)?.
+-schar = ~[' '; #9; #a; #d].
+
+{ An ixml grammar: ixml:data/csv (from the library) or a file ending in .ixml }
+grammar = 'ixml:', fchar+
+        | fchar*, '.ixml'.
+
+-source = file | input.
+
+{ -i content uses the next argument as the content to parse. }
+input = -'-i', s, rawvalue.
+
+{ A file must contain a dot, colon or slash, to separate it from a command
+  name, eg pom.xml ixml:data/csv ./foo /tmp/bar. It can also be quoted, or
+  a single - for stdin. }
+file = qvalue
+     | '-'
+     | (first, plain*)?, [".:/"], fchar*.
+-first = ~['-'; ".:/"; ' '; #9; #a; #d; "'"; '"'].
+-plain = ~[".:/"; ' '; #9; #a; #d].
+-fchar = ~[' '; #9; #a; #d].
+
+{ Commands take a fixed number of arguments: name0 takes none, name1 one and
+  name2 two. Options can come before, between and after the arguments.
+  load takes an optional file.
+  A xsl:name command transforms using the library stylesheet name. }
+command = @name0>name, copts
+        | @name1>name, copts, s, arg, copts
+        | @name2>name, copts, s, arg, copts, s, arg, copts
+        | @load>name, copts, (s, file>arg, copts)?
+        | @xsl>name, -':', xslarg>arg.
+
+{ help takes an optional command name and must be the last command. }
+help>command = @helpname>name, (s, arg)?.
+
+name0 = 'to-xmq' | 'to-xml' | 'to-htmq' | 'to-html' | 'to-json' | 'to-yaml'
+      | 'to-text' | 'to-clines'
+      | 'render-html' | 'render-terminal' | 'render-tex'
+      | 'tokenize' | 'no-output' | 'print' | 'page' | 'pa' | 'browse' | 'br'
+      | 'statistics' | 'heu' | 'quote-c' | 'unquote-c'
+      | 'substitute-char-entities'.
+name1 = 'add' | 'add-root' | 'delete' | 'delete-entity' | 'select'
+      | 'for-each' | 'transform' | 'validate' | 'save-to' | 'replace'
+      | 'substitute-entity'.
+name2 = 'replace-entity'.
+load = 'load'.
+xsl = 'xsl'.
+helpname = 'help'.
+xslarg = fchar+.
+
+{ Command options: --name --name=value, the short aliases -c -n -p -o which
+  are given their long names, and other short options -x which keep their
+  letters as name. }
+-copts = (s, coption>option)*.
+coption = -'--', @name, (-'=', @optvalue>value)?
+        | @cshort>name
+        | -'-', @cother>name.
+cshort = -'-', (-'c', +'compact' | -'n', +'no-final-nl' | -'p', +'pretty' | -'o', +'omit-decl').
+cother = ~['c'; 'n'; 'p'; 'o'; '-'; ' '; #9; #a; #d], schar*
+       | ['c'; 'n'; 'p'; 'o'], schar+.
+
+{ An argument does not start with a minus, unless preceeded by -- }
+arg = value
+    | -'--', s, rawvalue.
+
+-name = ['a'-'z'; 'A'-'Z'], ['a'-'z'; 'A'-'Z'; '0'-'9'; '-'; '_']*.
+
+{ An option value can be empty, eg --name= }
+optvalue = qvalue | ~[' '; #9; #a; #d; "'"; '"']*.
+-value = qvalue | bare.
+-rawvalue = qvalue | ~[' '; #9; #a; #d; "'"; '"'], ~[' '; #9; #a; #d]*.
+-bare = ~['-'; ' '; #9; #a; #d; "'"; '"'], ~[' '; #9; #a; #d]*.
+
+{ A double quoted value has \" and \\ escapes, a single quoted value has none. }
+-qvalue = -'"', (~['"'; '\'] | -'\', ['"'; '\'])*, -'"'
+        | -"'", ~["'"]*, -"'".
+
+-s  = -[' '; #9; #a; #d]+.
+-ws = -[' '; #9; #a; #d]*.

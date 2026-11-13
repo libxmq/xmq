@@ -16,7 +16,7 @@
 PROG=${1:-./build/x86_64-pc-linux-gnu/release/xmq}
 OUTPUT=${2:-build/x86_64-pc-linux-gnu/release/test_output/cli_grammar}
 PRINT=$3
-GRAMMAR=xmqcli.ixml
+GRAMMAR=library/xmq-utils/xmqcli.ixml
 JAR=$(ls build/xmq-*[0-9].jar 2>/dev/null | head -1)
 if [ -n "$JAR" ] && ! unzip -l "$JAR" 2>/dev/null | grep -q "org/libxmq/imp/CliJoin.class"
 then
