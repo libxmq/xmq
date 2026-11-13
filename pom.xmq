@@ -50,19 +50,6 @@ project(xsi:schemaLocation = 'http://maven.apache.org/POM/4.0.0 https://maven.ap
             artifactId = logback-classic
             version    = 1.6.3
         }
-        /* The jdom2 DOM implementation, which preserves
-           attribute order as in the source. JAXEN is used
-           by the jdom2 XPath engine at runtime. */
-        dependency {
-            groupId    = org.jdom
-            artifactId = jdom2
-            version    = 2.0.6
-        }
-        dependency {
-            groupId    = jaxen
-            artifactId = jaxen
-            version    = 1.2.0
-        }
         // Tests
         dependency {
             groupId    = junit

@@ -23,23 +23,29 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq.imp;
 
-import org.libxmq.ParseException;
-
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Stack;
 
-import org.jdom2.Attribute;
-import org.jdom2.Comment;
-import org.jdom2.Content;
-import org.jdom2.Document;
-import org.jdom2.Element;
-import org.jdom2.EntityRef;
-import org.jdom2.Namespace;
-import org.jdom2.Parent;
-import org.jdom2.ProcessingInstruction;
+import org.libxmq.ParseErrorCode;
+import org.libxmq.ParseException;
+import org.libxmq.imp.xml.XmlAttr;
+import org.libxmq.imp.xml.XmlComment;
+import org.libxmq.imp.xml.XmlDocument;
+import org.libxmq.imp.xml.XmlDtd;
+import org.libxmq.imp.xml.XmlElement;
+import org.libxmq.imp.xml.XmlEntityRef;
+import org.libxmq.imp.xml.XmlNode;
+import org.libxmq.imp.xml.XmlNodeType;
+import org.libxmq.imp.xml.XmlNs;
+import org.libxmq.imp.xml.XmlPI;
+import org.libxmq.imp.xml.XmlParseException;
+import org.libxmq.imp.xml.XmlParser;
+import org.libxmq.imp.xml.XmlText;
 
 /**
- * Parses xmq into a Document object model (jdom2).
+ * Parses xmq into the xmq DOM. This is a port of the parse callbacks in the
+ * C version (xmq.c: create_node, do_quote, do_entity, do_attr_key ...), so
+ * the resulting DOM is identical to the libxml2 DOM built by the C version.
  */
 public class XMQParseIntoDOM extends XMQParser
 {
@@ -51,125 +57,130 @@ public class XMQParseIntoDOM extends XMQParser
         super();
     }
 
-    Document doc_ = new Document();
-    Stack<Parent> element_stack_; // Top is last created node
-    private ProcessingInstruction doctype_holder_; // The !DOCTYPE value holder
-    Attribute attr_last_; // Last created attribute
-    String namespace_declaration_; // xmlns or xmlns:alfa found
-    String namespace_name_; // The alfa in xmlns:alfa.
-    String ns_decl_prefix_; // When non-null, the xmlns:prefix declaration is in progress; holds the prefix.
-
+    XmlDocument doc_ = new XmlDocument();
+    List<XmlNode> element_stack_ = new ArrayList<>(); // Top is the current parent.
+    XmlNode element_last_; // The last created node.
     boolean parsing_doctype_; // True when parsing a doctype.
     boolean doctype_found_; // True after a doctype has been parsed.
     boolean parsing_pi_; // True when parsing a processing instruction, pi.
-    boolean no_trim_quotes_; // No trimming if quotes, used when reading json strings.
     String pi_name_; // Name of the pi node just started.
-
-    String element_namespace_; // The element namespace is found before the element name. Remember the namespace name here.
-    String attribute_namespace_; // The attribute namespace is found before the attribute key. Remember the namespace name here.
-
-    // An element or attribute name whose namespace prefix is used before the
-    // matching xmlns:PREFIX=uri declaration has been seen. Remembered here so
-    // that, when the declaration is finally reached, we can go back and patch
-    // the node with the real namespace (prefix + uri). Mirrors C, in which
-    // libxml2 keeps the prefix on the node with a temporary href until the
-    // declaration is parsed.
-    static class NsPendingRef
-    {
-        NsPendingRef(Element owner, Object node, String prefix)
-        {
-            this.owner = owner;
-            this.node = node;
-            this.prefix = prefix;
-        }
-
-        final Element owner; // Element that must carry the declaration to patch this ref.
-        final Object node; // The Element or Attribute to patch.
-        final String prefix; // The used namespace prefix, eg xxx in xxx:proj.
-    }
-
-    List<NsPendingRef> pending_ns_; // Pending namespace prefixes waiting for declaration.
+    boolean no_trim_quotes_; // No trimming of quotes, used when reading json strings.
+    boolean merge_text_ = true; // Merge adjacent text nodes, unless --nomerge.
+    String element_namespace_; // The namespace prefix found before the element name.
+    String attribute_namespace_; // The namespace prefix found before the attribute key.
+    boolean declaring_xmlns_; // True when the next attribute value is a namespace uri.
+    XmlNs declaring_xmlns_namespace_; // The namespace whose href is set by the next value.
+    XmlNs default_namespace_; // The current default namespace declared with xmlns=uri.
 
     /**
      * Returns the parsed document.
      * @return The parsed document.
      */
-    public Document doc()
+    public XmlDocument doc()
     {
         return doc_;
     }
 
-    void setup()
-    {
-        element_stack_ = new Stack<>();
-        pending_ns_ = new java.util.ArrayList<>();
-        // JDOM2 requires a Document to have exactly one root element, so we
-        // always create one here and drop it again after parsing, if possible.
-        // An implicit root name passed along the API is used if available.
-        String root_name = implicit_root_ == null ? "__XMQ_TMP_ROOT__" : implicit_root_;
-        Element root = new Element(root_name);
-        doc_.setRootElement(root);
-    }
-
     /**
-     * Parses an xmq buffer, then drops the created root element again if it
-     * contains exactly one element, unless the element name equals the root
-     * name, in which case it would only double nest the element.
-     * @param buf The xmq source buffer to parse.
-     * @param source A description of where the buffer comes from.
-     * @return True if the input ends with a single root element.
-     * @throws ParseException If the input cannot be parsed.
+     * Use an existing document to parse into.
+     * @param doc The document.
+     * @return This parser.
      */
-    @Override
-    public boolean parse(String buf, String source) throws ParseException
+    public XMQParseIntoDOM setDoc(XmlDocument doc)
     {
-        boolean ok = super.parse(buf, source);
-        if (ok)
-        {
-            Element root = doc_.getRootElement();
-            if (root != null)
-            {
-                List<Content> children = root.getContent();
-                if (children.size() == 1 && children.get(0) instanceof Element only)
-                {
-                    if (root.getName().equals("__XMQ_TMP_ROOT__") || only.getName().equals(root.getName()))
-                    {
-                        only.detach();
-                        doc_.setRootElement(only);
-                    }
-                }
-            }
-        }
-        return ok;
-    }
-
-    XMQParseIntoDOM set_implicit_root_element(String name)
-    {
-        implicit_root_ = name;
+        doc_ = doc;
         return this;
     }
 
-    // Returns the current parent; the document root element
-    // when the stack is empty (mirrors the W3C document base).
-    Parent cur_parent()
+    /**
+     * Set the implicit root element name. If the first element in the xmq
+     * source has a different name, then the implicit root is created
+     * to contain all the content.
+     * @param name The root element name, or null.
+     * @return This parser.
+     */
+    public XMQParseIntoDOM setImplicitRoot(String name)
     {
-        if (element_stack_.isEmpty())
-        {
-            return doc_.getRootElement();
-        }
-        return element_stack_.peek();
+        implicit_root_ = (name == null || name.isEmpty()) ? null : name;
+        return this;
     }
 
-    // Returns the last child of the top of the stack (if any).
-    Content last_child()
+    /**
+     * Control whether adjacent text nodes should be merged (the default)
+     * or kept separate, like the --nomerge option.
+     * @param merge True to merge.
+     * @return This parser.
+     */
+    public XMQParseIntoDOM setMergeText(boolean merge)
     {
-        Parent p = cur_parent();
-        List<Content> content = p.getContent();
-        if (content.isEmpty())
+        merge_text_ = merge;
+        return this;
+    }
+
+    /**
+     * Do not trim the incidental indentation of quotes, used when the
+     * quotes were generated from json strings.
+     * @param no_trim True to keep quotes as is.
+     * @return This parser.
+     */
+    public XMQParseIntoDOM setNoTrimQuotes(boolean no_trim)
+    {
+        no_trim_quotes_ = no_trim;
+        return this;
+    }
+
+    @Override
+    void setup()
+    {
+        element_stack_.clear();
+        element_stack_.add(doc_);
+        element_last_ = null;
+    }
+
+    XmlNode top()
+    {
+        return element_stack_.get(element_stack_.size() - 1);
+    }
+
+    void push(XmlNode n)
+    {
+        element_stack_.add(n);
+    }
+
+    XmlNode pop()
+    {
+        return element_stack_.remove(element_stack_.size() - 1);
+    }
+
+    /** The equivalent of xmq_un_quote(start, stop, true, true) on a quote token. */
+    String un_quote(int start, int stop)
+    {
+        if (no_trim_quotes_)
         {
-            return null;
+            return buffer_.substring(start, stop);
         }
-        return content.get(content.size() - 1);
+        var pair = UtilParseQuote.findQuoteStartStop(buffer_, start, stop);
+        return UtilParseQuote.trimQuote(buffer_, pair.left(), pair.right());
+    }
+
+    /** Add a text node, merging with a previous text node unless --nomerge. */
+    XmlNode add_text(XmlNode parent, String content)
+    {
+        XmlText t = new XmlText(content);
+        if (merge_text_)
+        {
+            return parent.addChild(t);
+        }
+        return parent.appendRaw(t);
+    }
+
+    static String potentially_add_leading_ending_space(String s)
+    {
+        if (s.isEmpty()) return s;
+        boolean prefix = s.charAt(0) == '\'';
+        boolean postfix = s.charAt(s.length() - 1) == '\'';
+        if (!prefix && !postfix) return s;
+        return (prefix ? " " : "") + s + (postfix ? " " : "");
     }
 
     void create_node(int start, int stop)
@@ -178,169 +189,236 @@ public class XMQParseIntoDOM extends XMQParser
 
         if (name.equals("!DOCTYPE"))
         {
-            // The jdom2 DOM has no doctype value node, so we use a pi node named
-            // DOCTYPE to hold the value. The printer prints such a pi node as a
-            // !DOCTYPE line. The pi node is created now, so that do_equals has
-            // a real last child to push onto the element stack.
             parsing_doctype_ = true;
-            doctype_holder_ = new ProcessingInstruction("DOCTYPE", "");
-            cur_parent().addContent(doctype_holder_);
+            return;
         }
-        else if (name.charAt(0) == '?')
+        if (name.charAt(0) == '?')
         {
             parsing_pi_ = true;
-            pi_name_ = name.substring(1); // Drop the ?
+            pi_name_ = name.substring(1);
+            return;
         }
-        else
+
+        XmlElement new_node = new XmlElement(name);
+        if (element_last_ == null)
         {
-            Element new_node;
-            if (element_namespace_ != null)
+            if (implicit_root_ == null || name.equals(implicit_root_))
             {
-                // The element name is prefixed, eg xxx:proj, where the prefix
-                // usually refers to a namespace that is not declared yet (the
-                // xmlns:PREFIX=uri declaration is in this element's own
-                // attributes, below). Attach a namespace with the prefix and a
-                // placeholder uri <prefix > uri>, and remember the element in
-                // pending_ns_ so that, when the declaration is finally
-                // reached, we can patch in the real namespace. The placeholder
-                // uri never shows up in the XMQ output <what is printed is
-                // the namespace prefix>, and is replaced when patched.
-                String prefix = element_namespace_;
-                element_namespace_ = null;
-                new_node = new Element(name);
-                new_node.setNamespace(pending_namespace(prefix));
-                pending_ns_.add(new NsPendingRef(new_node, new_node, prefix));
+                // There is no implicit root, or name is the same as the implicit root.
+                element_last_ = new_node;
+                doc_.setRootElement(new_node);
             }
             else
             {
-                new_node = new Element(name);
+                // We have an implicit root and it is different from name.
+                XmlElement root = new XmlElement(implicit_root_);
+                element_last_ = root;
+                doc_.setRootElement(root);
+                push(root);
             }
-            Parent parent = cur_parent();
-            parent.addContent(new_node);
         }
+        XmlNode parent = top();
+        if (new_node.parent() == null) parent.addChild(new_node);
+
+        if (element_namespace_ != null)
+        {
+            // Have a namespace before the element name, eg abc:work
+            XmlNs ns = new_node.searchNs(element_namespace_);
+            if (ns == null)
+            {
+                // The namespace does not yet exist. Lets hope it will be declared
+                // inside the attributes of this node. Use a temporary href for now.
+                ns = new_node.declareNs(element_namespace_, null);
+            }
+            new_node.setNs(ns);
+            element_namespace_ = null;
+        }
+        else if (default_namespace_ != null)
+        {
+            new_node.setNs(default_namespace_);
+        }
+        element_last_ = new_node;
+    }
+
+    // Find a namespace declared on node or its ancestors, also finding the
+    // not yet completed declarations without uri.
+    static XmlNs find_ns(XmlNode node, String prefix)
+    {
+        for (XmlNode cur = node; cur != null; cur = cur.parent())
+        {
+            if (cur instanceof XmlElement e)
+            {
+                for (XmlNs ns : e.nsDefs())
+                {
+                    if (java.util.Objects.equals(prefix, ns.prefix())) return ns;
+                }
+            }
+        }
+        return null;
     }
 
     protected void do_whitespace(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
     }
 
-    void add_quote(int start, int stop)
-    {
-        var pair = UtilParseQuote.findQuoteStartStop(buffer_, start, stop);
-
-        if (parsing_doctype_)
-        {
-            // The doctype value is stored in a pi node named DOCTYPE, which is
-            // printed as a !DOCTYPE line. As for other values, incidental
-            // indentation is trimmed on parsing; the printer re-adds it on
-            // output, mirroring C.
-            String content = UtilParseQuote.trimQuote(buffer_, pair.left(), pair.right());
-            doctype_holder_.setData(content);
-            parsing_doctype_ = false;
-            doctype_found_ = true;
-            return;
-        }
-
-        String content = UtilParseQuote.trimQuote(buffer_, pair.left(), pair.right());
-        org.jdom2.Text text = new org.jdom2.Text(content);
-        cur_parent().addContent(text);
-    }
-
     protected void do_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        add_quote(start, stop);
+        element_last_ = add_text(top(), un_quote(start, stop));
     }
 
     protected void do_element_value_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        add_quote(start, stop);
+        String trimmed = un_quote(start, stop);
+        if (parsing_pi_)
+        {
+            top().addChild(new XmlPI(pi_name_, potentially_add_leading_ending_space(trimmed)));
+            parsing_pi_ = false;
+            pi_name_ = null;
+        }
+        else if (parsing_doctype_)
+        {
+            String buf = "<!DOCTYPE " + trimmed + "><foo></foo>";
+            XmlDtd dtd = null;
+            try
+            {
+                XmlDocument d = XmlParser.parse(buf, "noname.xml", 0);
+                dtd = d.intSubset();
+            }
+            catch (XmlParseException e)
+            {
+                System.err.print(e.getMessage());
+            }
+            if (dtd == null)
+            {
+                throw new XMQRuntimeException(new ParseException(ParseErrorCode.XMQ_ERROR_BAD_DOCTYPE,
+                                                                 buffer_.substring(line_start_, findNL(i_, 20)),
+                                                                 line_, col_, source_));
+            }
+            dtd.unlink();
+            top().appendRaw(dtd);
+            doc_.setIntSubsetRef(dtd);
+            parsing_doctype_ = false;
+            doctype_found_ = true;
+        }
+        else
+        {
+            add_text(element_last_, trimmed);
+        }
     }
 
     protected void do_element_value_compound_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        add_quote(start, stop);
+        do_quote(start_line, start_col, start, stop, stop_suffix);
     }
 
     protected void do_attr_value_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        attr_set_quote(start, stop);
+        String trimmed = un_quote(start, stop);
+        if (declaring_xmlns_)
+        {
+            if (declaring_xmlns_namespace_ != null)
+            {
+                update_namespace_href(declaring_xmlns_namespace_, trimmed);
+            }
+            declaring_xmlns_ = false;
+            declaring_xmlns_namespace_ = null;
+            return;
+        }
+        add_text(element_last_, trimmed);
     }
 
     protected void do_attr_value_compound_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        attr_set_quote(start, stop);
+        do_quote(start_line, start_col, start, stop, stop_suffix);
     }
 
-    // Store a quoted attribute value on the attribute in progress. Quoted values
-    // are single strings (as opposed to unquoted compounds), so the content
-    // with the quotes stripped is set as the attribute's value; the printer
-    // re-adds quotes if the value needs them. Mirrors do_attr_value_text for
-    // the unquoted case and add_quote for the element-value case.
-    void attr_set_quote(int start, int stop)
+    XmlNode create_entity(int start, int stop, XmlNode parent)
     {
-        var pair = UtilParseQuote.findQuoteStartStop(buffer_, start, stop);
-        String content = UtilParseQuote.trimQuote(buffer_, pair.left(), pair.right());
-        if (attr_last_ == null)
+        String tmp = buffer_.substring(start, stop);
+        XmlNode n;
+        if (tmp.charAt(1) == '#')
         {
-            return;
+            // Character entity.
+            long uc;
+            try
+            {
+                if (tmp.charAt(2) == 'x') uc = Long.parseLong(tmp.substring(3, tmp.length() - 1), 16);
+                else uc = Long.parseLong(tmp.substring(2, tmp.length() - 1), 10);
+            }
+            catch (NumberFormatException e)
+            {
+                uc = -1;
+            }
+            if (uc < 0 || uc > 0x10ffff)
+            {
+                throw new XMQRuntimeException(new ParseException(ParseErrorCode.XMQ_ERROR_INVALID_CHAR,
+                                                                 buffer_.substring(line_start_, findNL(i_, 20)),
+                                                                 line_, col_, source_));
+            }
+            String ch = new String(Character.toChars((int)uc));
+            if (!merge_text_)
+            {
+                // Do not merge with surrounding text, keep the character reference.
+                n = new XmlEntityRef(tmp.substring(1, tmp.length() - 1));
+                return parent.appendRaw(n);
+            }
+            return parent.addChild(new XmlText(ch));
         }
-        String prev = attr_last_.getValue();
-        attr_last_.setValue((prev == null ? "" : prev) + content);
+        // Named references are kept as is.
+        n = new XmlEntityRef(tmp.substring(1, tmp.length() - 1));
+        return parent.appendRaw(n);
     }
 
     protected void do_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        add_entity(start, stop);
+        element_last_ = create_entity(start, stop, top());
     }
 
     protected void do_element_value_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        add_entity(start, stop);
+        create_entity(start, stop, element_last_);
     }
 
     protected void do_element_value_compound_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        add_entity(start, stop);
+        do_entity(start_line, start_col, start, stop, stop_suffix);
     }
 
     protected void do_attr_value_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        create_entity(start, stop, element_last_);
     }
 
     protected void do_attr_value_compound_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-    }
-
-    void add_entity(int start, int stop)
-    {
-        // start..stop covers '&name;'
-        String name = buffer_.substring(start + 1, stop - 1);
-        EntityRef entity = new EntityRef(name);
-        cur_parent().addContent(entity);
+        do_entity(start_line, start_col, start, stop, stop_suffix);
     }
 
     protected void do_comment(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        String trimmed = no_trim_quotes_?buffer_.substring(start, stop):xmq_un_comment(start, stop);
-        Comment c = new Comment(trimmed);
-
-        cur_parent().addContent(c);
+        String trimmed = no_trim_quotes_ ? buffer_.substring(start, stop) : xmq_un_comment(start, stop);
+        XmlComment c = new XmlComment(trimmed);
+        top().appendRaw(c);
+        element_last_ = c;
     }
 
     protected void do_comment_continuation(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        String trimmed = no_trim_quotes_?buffer_.substring(start, stop):xmq_un_comment(start, stop);
-
-        Content last = last_child();
-        if (last instanceof Comment c)
+        // We have ///* alfa *///* beta *///* gamma *///
+        // and this function is invoked with "* beta *///"
+        int k = stop - 1;
+        int n = 0;
+        while (k > start && buffer_.charAt(k) == '/')
         {
-            String t = c.getText();
-            c.setText(t+"\n"+trimmed);
+            n++;
+            k--;
         }
-        else
+        String trimmed = xmq_un_comment(start - n, stop);
+        XmlNode last = element_last_;
+        if (last != null)
         {
-            Comment c = new Comment("\n"+trimmed);
-            cur_parent().addContent(c);
+            String old = last.content() == null ? "" : last.content();
+            last.setContent(old + "\n" + trimmed);
         }
     }
 
@@ -365,205 +443,170 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_apar_left(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        push(element_last_);
     }
 
     protected void do_apar_right(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        element_last_ = pop();
     }
 
     protected void do_cpar_left(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        push(element_last_);
     }
 
     protected void do_cpar_right(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        element_last_ = pop();
     }
 
     protected void do_brace_left(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        Content last = last_child();
-        if (last instanceof Element e)
-        {
-            element_stack_.push(e);
-        }
+        push(element_last_);
     }
 
     protected void do_brace_right(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        if (!element_stack_.isEmpty())
-        {
-            element_stack_.pop();
-        }
+        element_last_ = pop();
     }
 
     protected void do_equals(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        Content last = last_child();
-        if (last instanceof Element e)
-        {
-            element_stack_.push(e);
-        }
     }
 
     protected void do_equals_done(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        if (!element_stack_.isEmpty())
+    }
+
+    void update_namespace_href(XmlNs ns, String href)
+    {
+        ns.setHref(href);
+        if (href.isEmpty() && ns == default_namespace_)
         {
-            element_stack_.pop();
+            XmlNode element = top();
+            if (element instanceof XmlElement e)
+            {
+                e.setNs(null);
+            }
+            default_namespace_ = null;
         }
     }
 
     protected void do_attr_value_text(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        String text = buffer_.substring(start, stop);
-
-        if (namespace_declaration_ != null)
+        if (declaring_xmlns_)
         {
-            // An xmlns=uri (default) or xmlns:prefix=uri (prefixed) declaration
-            // was parsed. At this point do_equals has pushed the target element
-            // onto the stack, so cur_parent() is the element to declare on.
-            // JDOM2 refuses an attribute literally named "xmlns", so the
-            // declaration is stored in the element's namespace machinery: the
-            // default one as the element's own (empty-prefix) namespace and a
-            // prefixed one as an added namespace declaration. The printer
-            // renders these back as "xmlns=uri" / "xmlns:prefix=uri".
-            Element parent = (Element)cur_parent();
-            String prefix = ns_decl_prefix_;
-            namespace_declaration_ = null;
-            ns_decl_prefix_ = null;
-            attribute_namespace_ = null;
-            namespace_name_ = null;
-            if (prefix == null || prefix.isEmpty())
+            if (declaring_xmlns_namespace_ != null)
             {
-                // A default namespace declaration, eg xmlns = u2.
-                // If the element already has a non-empty namespace prefix (a
-                // prefixed name remembered before this declaration), do not
-                // replace it with the default; add the default as an additional
-                // declaration (printed as xmlns = uri in the XMQ output).
-                if (parent.getNamespace() != null && !parent.getNamespace().getPrefix().isEmpty())
-                {
-                    parent.addNamespaceDeclaration(Namespace.getNamespace("", text));
-                }
-                else
-                {
-                    parent.setNamespace(Namespace.getNamespace("", text));
-                }
+                update_namespace_href(declaring_xmlns_namespace_, buffer_.substring(start, stop));
             }
-            else
-            {
-                Namespace decl = Namespace.getNamespace(prefix, text);
-                // Patch the remembered prefix users first so that their
-                // namespace (prefix + placeholder uri) is replaced by the real
-                // declaration; then add the declaration. (Adding the
-                // declaration first would collide with the pending prefix usage.)
-                patch_pending_ns(parent, prefix, decl);
-                parent.addNamespaceDeclaration(decl);
-            }
+            declaring_xmlns_ = false;
+            declaring_xmlns_namespace_ = null;
             return;
         }
-
-        String prev = (attr_last_ == null) ? "" : attr_last_.getValue();
-        attr_last_.setValue(prev+text);
-    }
-
-    // The xmlns:PREFIX=uri declaration on owner has been parsed. Go back to
-    // every remembered name that used PREFIX and patch it, replacing the
-    // pending prefix-only namespace with the real namespace (prefix + uri).
-    void patch_pending_ns(Element owner, String prefix, Namespace decl)
-    {
-        for (NsPendingRef ref : pending_ns_)
-        {
-            if (ref.owner != owner || !ref.prefix.equals(prefix)) continue;
-            if (ref.node instanceof Attribute a)
-            {
-                a.setNamespace(decl);
-            }
-            else if (ref.node instanceof Element e)
-            {
-                e.setNamespace(decl);
-            }
-        }
-        pending_ns_.removeIf(ref -> ref.owner == owner && ref.prefix.equals(prefix));
-    }
-
-    // A namespace for a used-but-not-yet-declared prefix. JDOM2 requires a
-    // non-empty uri, so a placeholder uri is used; it is invisible in the XMQ
-    // output <what is printed is the namespace prefix> and is replaced when
-    // the real declaration is patched in.
-    static Namespace pending_namespace(String prefix)
-    {
-        return Namespace.getNamespace(prefix, "__XMQ_PENDING_NS__");
+        add_text(element_last_, buffer_.substring(start, stop));
     }
 
     protected void do_element_value_text(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        String text = buffer_.substring(start, stop);
         if (parsing_pi_)
         {
-            // Not yet implemented.
+            top().addChild(new XmlPI(pi_name_, potentially_add_leading_ending_space(text)));
+            parsing_pi_ = false;
+            pi_name_ = null;
         }
         else if (parsing_doctype_)
         {
-            // The jdom2 DOM has no doctype node holding a xmq doctype value, so
-            // we use a pi node named DOCTYPE to store it. The printer prints
-            // such a pi node as a !DOCTYPE line.
-            doctype_holder_.setData(buffer_.substring(start, stop));
+            XmlDtd dtd = new XmlDtd(text, null, null);
+            top().appendRaw(dtd);
+            doc_.setIntSubsetRef(dtd);
             parsing_doctype_ = false;
             doctype_found_ = true;
         }
         else
         {
-            org.jdom2.Text text = new org.jdom2.Text(buffer_.substring(start,stop));
-            cur_parent().addContent(text);
+            add_text(element_last_, text);
         }
     }
 
     protected void do_ns_declaration(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        String name = buffer_.substring(start, stop);
-        namespace_declaration_ = name;
-        ns_decl_prefix_ = null; // Default declaration until do_attr_ns sets a prefix.
+        // We found a namespace declaration attribute. It is either a default
+        // declaration xmlns=... or xmlns:prefix=... We can see the difference
+        // since stop_suffix is either stop (xmlns=) or after stop (xmlns:foo=).
+        XmlNode n = top();
+        if (!(n instanceof XmlElement element))
+        {
+            // There is no element node, eg a processing instruction element.
+            declaring_xmlns_ = true;
+            declaring_xmlns_namespace_ = null;
+            return;
+        }
+        XmlNs ns;
+        if (stop == stop_suffix)
+        {
+            // A default namespace, eg: xmlns=uri
+            ns = null;
+            for (XmlNs d : element.nsDefs())
+            {
+                if (d.prefix() == null)
+                {
+                    ns = d;
+                    break;
+                }
+            }
+            if (ns == null) ns = element.declareNs(null, null);
+            if (element.ns() == null)
+            {
+                element.setNs(ns);
+            }
+            default_namespace_ = ns;
+        }
+        else
+        {
+            // A namespace with a prefix: xmlns:prefix=uri
+            String name = buffer_.substring(stop + 1, stop_suffix);
+            ns = find_ns(element, name);
+            if (ns == null && name.equals("xml")) ns = XmlElement.XML_NS;
+            if (ns == null)
+            {
+                ns = element.declareNs(name, null);
+            }
+        }
+        declaring_xmlns_ = true;
+        declaring_xmlns_namespace_ = ns;
     }
 
     protected void do_attr_key(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        String name = buffer_.substring(start, stop);
-
-        Attribute new_attr;
-        if (attribute_namespace_ != null && namespace_declaration_ == null)
+        String key = buffer_.substring(start, stop);
+        XmlNode parent = top();
+        if (!(parent instanceof XmlElement element))
         {
-            // The attribute name is prefixed, eg xxx:leprutt, where the prefix
-            // usually refers to a namespace that is not declared yet (the
-            // xmlns:PREFIX=uri declaration comes later in the same attribute
-            // list). Attach a namespace with the prefix and a placeholder uri
-            // <prefix > uri>, and remember the attribute in pending_ns_ so the
-            // real namespace can be patched in when the declaration is finally
-            // reached. The placeholder uri never shows up in the XMQ output.
-            String prefix = attribute_namespace_;
+            // There is no element node, eg a processing instruction with
+            // attributes. The attribute is created but not attached.
+            element_last_ = new XmlAttr(key, null);
             attribute_namespace_ = null;
-            namespace_name_ = null;
-            new_attr = new Attribute(name, "", pending_namespace(prefix));
-            Content last = last_child();
-            if (last instanceof Element owner)
+            return;
+        }
+        XmlAttr attr = new XmlAttr(key, null);
+        if (attribute_namespace_ != null)
+        {
+            XmlNs ns = find_ns(element, attribute_namespace_);
+            if (ns == null && attribute_namespace_.equals("xml")) ns = XmlElement.XML_NS;
+            if (ns == null)
             {
-                pending_ns_.add(new NsPendingRef(owner, new_attr, prefix));
+                // The namespace does not yet exist. Lets hope it will be declared
+                // inside the attributes of this node. Use a temporary href for now.
+                ns = element.declareNs(attribute_namespace_, null);
             }
-        }
-        else
-        {
-            // No namespace prefix: the jdom2 attribute value is set separately
-            // by do_attr_value_text, so create the attribute with an empty value.
-            new_attr = new Attribute(name, "");
-            // Drop any stale values left over from a namespace declaration.
+            attr.setNs(ns);
             attribute_namespace_ = null;
-            namespace_name_ = null;
         }
-        attr_last_ = new_attr;
-
-        Content last = last_child();
-        if (last instanceof Element el)
-        {
-            el.setAttribute(new_attr);
-        }
+        element.addAttribute(attr);
+        element_last_ = attr;
     }
 
     protected void do_ns_colon(int start_line, int start_col, int start, int stop, int stop_suffix)
@@ -572,14 +615,10 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_attr_ns(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
-        String name = buffer_.substring(start, stop);
-        namespace_name_ = name;
-        attribute_namespace_ = name;
-        if (namespace_declaration_ != null)
+        if (!declaring_xmlns_)
         {
-            // This prefix belongs to an xmlns:prefix declaration in progress.
-            ns_decl_prefix_ = name;
+            // Normal attribute namespace found before the attribute key, eg x:alfa=123
+            attribute_namespace_ = buffer_.substring(start, stop);
         }
     }
-
 }

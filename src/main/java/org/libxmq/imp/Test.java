@@ -8,8 +8,8 @@ import java.util.EnumSet;
 import java.nio.file.Paths;
 import java.io.IOException;
 import org.libxmq.*;
-import org.jdom2.Content;
-import org.jdom2.Document;
+import org.libxmq.imp.xml.XmlDocument;
+import org.libxmq.imp.xml.XmlNode;
 
 /**
  * Test class for parsing sample xmq input.
@@ -52,7 +52,7 @@ public class Test
     {
         XMQ xmq = new XMQ();
         InputSettings is = new InputSettings().setImplicitRoot("cars").setTrimNone(true);
-        Document doc = xmq.parseBuffer(cars, is);
+        XmlDocument doc = xmq.parseBuffer(cars, is);
         var q = new Query(doc);
         q.forEach("//car", this::loadCar);
     }
@@ -62,7 +62,7 @@ public class Test
      * @param car_node The XML node to load from.
      * @return A Proceed value.
      */
-    public Proceed loadCar(Content car_node)
+    public Proceed loadCar(XmlNode car_node)
     {
         var car = new Query(car_node);
 

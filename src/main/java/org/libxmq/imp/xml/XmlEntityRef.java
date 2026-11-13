@@ -23,20 +23,41 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq.imp.xml;
 
-/** One part of a decoded attribute value or a value printed by the
- *  printer: either entity-reference text (like '&lt;name&gt;;') or
- *  plain text. */
-public class ValuePart
+/**
+ * An entity reference, eg &amp;copy; The reference is kept as a node in the
+ * DOM, the entity is never expanded into the document.
+ */
+public class XmlEntityRef extends XmlNode
 {
-    /** True if this part is a named entity reference. */
-    public final boolean is_entity;
-
-    /** The part text, either a named reference or plain text. */
-    public final String text;
-
-    ValuePart(boolean is_entity, String text)
+    /**
+     * Create an entity reference.
+     * @param name The entity name, eg copy for &amp;copy;
+     */
+    public XmlEntityRef(String name)
     {
-        this.is_entity = is_entity;
-        this.text = text;
+        super(name);
+    }
+
+    @Override
+    public XmlNodeType type()
+    {
+        return XmlNodeType.ENTITY_REF;
+    }
+
+    /**
+     * Find the declaration of the referenced entity in the document dtd.
+     * @return The declaration or null.
+     */
+    public XmlEntityDecl entity()
+    {
+        if (doc_ == null) return null;
+        return doc_.getEntity(name_);
+    }
+
+    @Override
+    void collectText(StringBuilder sb)
+    {
+        XmlEntityDecl e = entity();
+        if (e != null && e.content() != null) sb.append(e.content());
     }
 }

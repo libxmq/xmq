@@ -23,30 +23,50 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq.imp.xml;
 
-import org.jdom2.Attribute;
-import org.jdom2.Comment;
-import org.jdom2.Content;
-import org.jdom2.DocType;
-import org.jdom2.Document;
-import org.jdom2.Element;
-import org.jdom2.EntityRef;
-import org.jdom2.ProcessingInstruction;
-import org.jdom2.Text;
-
-/** An element that allows raw (possibly colon-containing) names, which
- *  JDOM2 otherwise rejects with an IllegalNameException. XML allows names
- *  like 'xml:lang' in attributes and 'foo:bar' in elements. */
-public class RawElement extends Element
+/**
+ * A text node.
+ */
+public class XmlText extends XmlNode
 {
-    RawElement(String name)
+    String content_;
+
+    /**
+     * Create a text node.
+     * @param content The text.
+     */
+    public XmlText(String content)
     {
-        super(name);
+        super(null);
+        content_ = content;
     }
 
     @Override
-    public Element setName(String name)
+    public XmlNodeType type()
     {
-        this.name = name;
-        return this;
+        return XmlNodeType.TEXT;
+    }
+
+    @Override
+    public String content()
+    {
+        return content_;
+    }
+
+    @Override
+    public void setContent(String content)
+    {
+        content_ = content;
+    }
+
+    @Override
+    public String textContent()
+    {
+        return content_ == null ? "" : content_;
+    }
+
+    @Override
+    public String fullName()
+    {
+        return "text";
     }
 }

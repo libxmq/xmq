@@ -23,12 +23,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq.imp;
 
-import org.jdom2.Attribute;
-import org.jdom2.Comment;
-import org.jdom2.Content;
-import org.jdom2.Document;
-import org.jdom2.Element;
-import org.jdom2.ProcessingInstruction;
+import org.libxmq.imp.xml.XmlDocument;
+import org.libxmq.imp.xml.XmlNode;
+import org.libxmq.imp.xml.XmlNodeType;
+
 
 /**
  * Miscellaneous utilities for xmq processing.
@@ -181,24 +179,18 @@ public class Util {
         {
             return null;
         }
-
-        if (node instanceof Document)
+        if (node instanceof XmlDocument || !(node instanceof XmlNode))
         {
             return "/";
         }
 
-        if (!(node instanceof Content))
-        {
-            return "/";
-        }
-
-        Content c = (Content)node;
+        XmlNode c = (XmlNode)node;
         String name = name_of(c);
 
         StringBuilder path = new StringBuilder();
-        org.jdom2.Parent p = c.getParent();
+        XmlNode p = c.parent();
 
-        if (p != null && !(p instanceof Document))
+        if (p != null && !(p instanceof XmlDocument))
         {
             String parent_path = getXPath(p);
             if (parent_path != null)
@@ -233,37 +225,24 @@ public class Util {
         return path.toString();
     }
 
-    private static String name_of(Content c)
+    private static String name_of(XmlNode c)
     {
-        if (c instanceof Element) return ((Element)c).getQualifiedName();
-        if (c instanceof ProcessingInstruction) return ((ProcessingInstruction)c).getTarget();
-        if (c instanceof Comment) return "comment";
+        if (c.type() == XmlNodeType.ELEMENT) return c.fullName();
+        if (c.type() == XmlNodeType.PI) return c.name();
+        if (c.type() == XmlNodeType.COMMENT) return "comment";
         return null; // text and other leaf content
     }
 
-    private static int node_index(org.jdom2.Parent p, Content node)
+    private static int node_index(XmlNode p, XmlNode node)
     {
         int index = 1;
-        myloop:
-        for (Content sibling : p.getContent())
+        for (XmlNode sibling = p.firstChild(); sibling != null; sibling = sibling.next())
         {
-            if (sibling == node)
+            if (sibling == node) break;
+            if (sibling.type() == XmlNodeType.ELEMENT && node.type() == XmlNodeType.ELEMENT
+                && sibling.fullName().equals(node.fullName()))
             {
-                break myloop;
-            }
-            if (sibling instanceof Element && node instanceof Element)
-            {
-                if (((Element)sibling).getQualifiedName().equals(((Element)node).getQualifiedName()))
-                {
-                    index++;
-                }
-            }
-            else if (!(sibling instanceof Element) && !(node instanceof Element))
-            {
-                if (name_of(sibling) == null && name_of(node) == null)
-                {
-                    index++;
-                }
+                index++;
             }
         }
         return index;

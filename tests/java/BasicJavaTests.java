@@ -4,7 +4,7 @@ import org.libxmq.InputSettings;
 import org.libxmq.NotFoundException;
 import org.libxmq.DecodingException;
 import org.libxmq.Query;
-import org.jdom2.Document;
+import org.libxmq.imp.xml.XmlDocument;
 
 public class BasicJavaTests
 {
@@ -31,7 +31,7 @@ public class BasicJavaTests
 
             XMQ xmq = new XMQ();
             InputSettings is = new InputSettings();
-            Document doc = xmq.parseBuffer(input, is);
+            XmlDocument doc = xmq.parseBuffer(input, is);
 
             Query q = new Query(doc);
             int beta = q.getInt("alfa/beta", "...");
@@ -56,7 +56,7 @@ public class BasicJavaTests
 
             XMQ xmq = new XMQ();
             InputSettings is = new InputSettings();
-            Document doc = xmq.parseBuffer(input, is);
+            XmlDocument doc = xmq.parseBuffer(input, is);
             Query q = new Query(doc);
             String s = q.getString("sqlcomp/db_user", "...");
         }

@@ -23,21 +23,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq.imp;
 
+import org.libxmq.imp.xml.XmlAttr;
+import org.libxmq.imp.xml.XmlDocument;
+import org.libxmq.imp.xml.XmlDtd;
+import org.libxmq.imp.xml.XmlElement;
+import org.libxmq.imp.xml.XmlNode;
+import org.libxmq.imp.xml.XmlNodeType;
+import org.libxmq.imp.xml.XmlNs;
+import org.libxmq.imp.xml.XmlSave;
+
 import java.util.List;
 
-import org.jdom2.Attribute;
-import org.jdom2.Comment;
-import org.jdom2.Content;
-import org.jdom2.DocType;
-import org.jdom2.Document;
-import org.jdom2.Element;
-import org.jdom2.EntityRef;
-import org.jdom2.Namespace;
-import org.jdom2.ProcessingInstruction;
-import org.jdom2.Text;
 
-import org.libxmq.imp.xml.RawXmlParser;
-import org.libxmq.imp.xml.ValuePart;
 
 /**
  * Prints a document object model in xmq.
@@ -121,7 +118,7 @@ public class XMQPrinter
      * to-xmq path the theme has none of these strings set, so this just
      * prints the nodes.
      */
-    void print_rendered(XMQPrintState ps, org.jdom2.Document doc)
+    void print_rendered(XMQPrintState ps, XmlDocument doc)
     {
         XMQTheme theme = ps.theme;
         if (theme.document != null && theme.document.pre()  != null) ps.buffer.append(theme.document.pre());
@@ -130,7 +127,7 @@ public class XMQPrinter
         if (theme.header   != null && theme.header.post()   != null) ps.buffer.append(theme.header.post());
         if (theme.body     != null && theme.body.pre()      != null) ps.buffer.append(theme.body.pre());
         if (theme.content  != null && theme.content.pre()   != null) ps.buffer.append(theme.content.pre());
-        print_nodes(ps, doc.getContent());
+        print_nodes(ps, doc.firstChild());
         if (theme.content  != null && theme.content.post()  != null) ps.buffer.append(theme.content.post());
         if (theme.body     != null && theme.body.post()     != null) ps.buffer.append(theme.body.post());
         if (theme.document != null && theme.document.post() != null) ps.buffer.append(theme.document.post());
@@ -288,10 +285,18 @@ public class XMQPrinter
         {
             print_nl_and_indent(ps, null, null);
         }
-        else if (c == '\'' || c == '"' || Character.isDigit(c) || Character.isLetter(c))
+        else if (need_separation_before_attribute_key(ps))
         {
             print_white_spaces(ps, 1);
         }
+    }
+
+    /** Mirrors C need_separation_before_attribute_key. No space is needed after
+     *  a quote, an attribute start, a compound end or an entity, ie 'x y z'key= */
+    static boolean need_separation_before_attribute_key(XMQPrintState ps)
+    {
+        char c = ps.last_char;
+        return c != 0 && c != '\'' && c != '"' && c != '(' && c != ')' && c != ';';
     }
 
     void check_space_before_opening_brace(XMQPrintState ps)
@@ -319,296 +324,118 @@ public class XMQPrinter
         }
     }
 
-    void print_attributes(XMQPrintState ps, Element element)
+    /** Mirrors C find_attr_key_max_u_width and find_namespace_max_u_width. */
+    static int find_attr_key_max_u_width(XmlElement element)
     {
-        List<Attribute> attributes = element.getAttributes();
-
-        // Mirrors C xml.c: libxml2 stores regular attributes in node->properties
-        // and xmlns/ns: declarations in node->nsDef; C prints the regular
-        // attributes (source order) first, then the namespace declarations
-        // (source order).
-        //
-        // Two different parsers feed this printer:
-        //   - the XML parser (RawXmlParser) records xmlns/xmlns:* declarations
-        //     as regular JDOM2 attributes literally named "xmlns" / "xmlns:PREFIX"
-        //     (JDOM2's normal namespace machinery is bypassed), so they show up
-        //     in element.getAttributes();
-        //   - the XMQ parser cannot use an attribute named "xmlns" (JDOM2 throws
-        //     IllegalNameException for a colon in an attribute name, and
-        //     setAttribute("xmlns",...) is rejected outright), so it records
-        //     declarations as namespace objects on the element (element's own
-        //     namespace for the default one, plus additional namespace
-        //     declarations for "xmlns:PREFIX").
-        // Handle both: collect xmlns-named attributes and namespace objects, and
-        // print regular attributes first, then the declarations (in their
-        // relative source order), with the default (empty-prefix) one last.
-        List<Attribute> regular = new java.util.ArrayList<>();
-        List<Attribute> xmlns_attrs = new java.util.ArrayList<>();
-        if (attributes != null)
-        {
-            for (Attribute attr : attributes)
-            {
-                String n = attr.getName();
-                if (n.equals("xmlns") || (n.startsWith("xmlns:") && !n.startsWith("xmlns:xmlns:")))
-                {
-                    xmlns_attrs.add(attr);
-                }
-                else
-                {
-                    regular.add(attr);
-                }
-            }
-        }
-
-        List<Namespace> nspaces = new java.util.ArrayList<>(element.getAdditionalNamespaces());
-        Namespace own = element.getNamespace();
-        boolean own_decl = own != null && own.getPrefix().isEmpty()
-            && (own.getURI() != null && !own.getURI().isEmpty());
-        if (own_decl)
-        {
-            nspaces.add(own); // Default namespace declaration, printed last.
-        }
-
-        if (regular.isEmpty() && xmlns_attrs.isEmpty() && nspaces.isEmpty())
-        {
-            return;
-        }
-
-        ps.buffer.append("(");
-        ps.last_char = '(';
-        ps.current_indent += 1;
-
-        // Mirrors C find_attr_key_max_u_width: find the max width of the keys
-        // across regular attributes and namespace declarations.
         int max = 0;
-        if (!ps.output_settings.compact())
+        for (XmlAttr a : element.attributes())
         {
-            for (Attribute attr : regular)
-            {
-                String value = attr.getValue();
-                if (value == null || value.isEmpty()) break;
-                int len = attrFullname(attr).length();
-                if (len > max) max = len;
-            }
-            for (Attribute attr : xmlns_attrs)
-            {
-                int len = attr.getName().length();
-                if (len > max) max = len;
-            }
-            for (Namespace ns : nspaces)
-            {
-                int len = nsName(ns).length();
-                if (len > max) max = len;
-            }
+            int len = u_len(a.fullName());
+            if (len > max) max = len;
         }
-
-        // Mirrors C print_attributes: subsequent entries are indented so that
-        // they line up just after the opening parenthesis.
-        int old_line_indent = ps.line_indent;
-        ps.line_indent = ps.current_indent;
-
-        for (Attribute attr : regular)
+        for (XmlNs ns : element.nsDefs())
         {
-            print_attribute(ps, attr, max);
+            int len = 5 + (ns.prefix() != null ? u_len(ns.prefix()) + 1 : 0);
+            if (len > max) max = len;
         }
-
-        // xmlns / xmlns:PREFIX declarations recorded as attributes (XML parser).
-        for (Attribute attr : xmlns_attrs)
-        {
-            print_attribute(ps, attr, max);
-        }
-
-        // xmlns / xmlns:PREFIX declarations recorded as namespace objects
-        // (XMQ parser).
-        for (Namespace ns : nspaces)
-        {
-            print_ns_declaration(ps, nsName(ns), ns.getURI(), max);
-        }
-
-        ps.line_indent = old_line_indent;
-
-        ps.buffer.append(")");
-        ps.last_char = ')';
-        ps.current_indent += 1;
+        return max;
     }
 
-    // The xmq name rendered for a JDOM2 namespace declaration: "xmlns" for a
-    // default (empty-prefix) namespace, "xmlns:prefix" otherwise.
-    static String nsName(Namespace ns)
+    /** The number of unicode code points in a string, like C str_b_u_len. */
+    static int u_len(String s)
     {
-        String prefix = ns.getPrefix();
-        if (prefix == null || prefix.isEmpty())
-        {
-            return "xmlns";
-        }
-        return "xmlns:"+prefix;
+        return s.codePointCount(0, s.length());
     }
 
-    // Mirrors C print_attribute, for an element namespace declaration whose
-    // "name" is xmlns / xmlns:prefix and whose value is the namespace uri.
-    void print_ns_declaration(XMQPrintState ps, String name, String value, int max)
+    /** Mirrors C print_attributes. */
+    void print_attributes(XMQPrintState ps, XmlElement element)
+    {
+        int max = 0;
+        if (!ps.output_settings.compact()) max = find_attr_key_max_u_width(element);
+
+        int line_indent = ps.line_indent;
+        ps.line_indent = ps.current_indent;
+        for (XmlAttr a : element.attributes())
+        {
+            print_attribute(ps, a, max);
+        }
+        for (XmlNs ns : element.nsDefs())
+        {
+            print_namespace_declaration(ps, ns, max);
+        }
+        ps.line_indent = line_indent;
+    }
+
+    /** Mirrors C is_single_empty_text_node. */
+    static boolean is_single_empty_text_node(XmlNode node)
+    {
+        if (node.type() != XmlNodeType.TEXT) return false;
+        String c = node.content();
+        return c == null || c.isEmpty();
+    }
+
+    /** Mirrors C print_attribute. */
+    void print_attribute(XMQPrintState ps, XmlAttr a, int align)
     {
         check_space_before_attribute(ps);
 
-        // name is "xmlns" or "xmlns:PREFIX".
-        int colon = name.indexOf(':');
-        if (colon > 0)
+        String key = a.name();
+        String prefix = (a.ns() != null) ? a.ns().prefix() : null;
+        int total_u_len = u_len(key) + (prefix != null ? u_len(prefix) + 1 : 0);
+
+        if (prefix != null)
         {
-            String prefix = name.substring(colon + 1);
-            XMQColor ns = prefix.equals("xsl") ? XMQColor.COLOR_ns_override_xsl : XMQColor.COLOR_attr_ns;
-            print_color_pre(ps, XMQColor.COLOR_ns_declaration);
-            print_string(ps, name.substring(0, colon)); // "xmlns"
-            print_color_post(ps, XMQColor.COLOR_ns_declaration);
+            print_color_pre(ps, XMQColor.COLOR_attr_ns);
+            print_string(ps, prefix);
+            print_color_post(ps, XMQColor.COLOR_attr_ns);
             print_color_pre(ps, XMQColor.COLOR_ns_colon);
             print_string(ps, ":");
             print_color_post(ps, XMQColor.COLOR_ns_colon);
-            print_color_pre(ps, ns);
-            print_string(ps, prefix);
-            print_color_post(ps, ns);
         }
-        else
-        {
-            print_color_pre(ps, XMQColor.COLOR_ns_declaration);
-            print_string(ps, name); // "xmlns"
-            print_color_post(ps, XMQColor.COLOR_ns_declaration);
-        }
+        print_color_pre(ps, XMQColor.COLOR_attr_key);
+        print_string(ps, key);
+        print_color_post(ps, XMQColor.COLOR_attr_key);
 
-        if (value != null && !value.isEmpty())
+        if (a.firstChild() != null && !is_single_empty_text_node(a.firstChild()))
         {
-            if (!ps.output_settings.compact())
-            {
-                int len = ps.current_indent - ps.line_indent;
-                int pad = 1;
-                if (len < max)
-                {
-                    pad = 1 + max - len;
-                }
-                print_white_spaces(ps, pad);
-            }
+            if (!ps.output_settings.compact()) print_white_spaces(ps, 1 + align - total_u_len);
             print_string(ps, "=");
-            if (!ps.output_settings.compact())
-            {
-                print_white_spaces(ps, 1);
-            }
-            print_attribute_value(ps, value);
+            if (!ps.output_settings.compact()) print_white_spaces(ps, 1);
+            print_value(ps, a.firstChild(), Level.ATTR_VALUE);
         }
     }
 
-    // The name rendered for an attribute: the name itself when it already
-    // carries a colon, otherwise the attribute's namespace prefix (eg a
-    // prefixed name remembered at parse time) followed by ":" and the name.
-    static String attrFullname(Attribute attr)
-    {
-        String name = attr.getName();
-        if (name.indexOf(':') > 0)
-        {
-            return name;
-        }
-        Namespace ns = attr.getNamespace();
-        if (ns != null && ns.getPrefix() != null && !ns.getPrefix().isEmpty())
-        {
-            return ns.getPrefix()+":"+name;
-        }
-        return name;
-    }
-
-    // Mirrors C print_attribute. Name already printed by caller.
-    void print_attribute(XMQPrintState ps, Attribute attr, int max)
+    /** Mirrors C print_namespace_declaration. */
+    void print_namespace_declaration(XMQPrintState ps, XmlNs ns, int align)
     {
         check_space_before_attribute(ps);
 
-        String name = attrFullname(attr);
-        int colon = name.indexOf(':');
-        if (colon > 0 && colon < name.length() - 1)
+        String prefix = ns.prefix();
+        int total_u_len = 5 + (prefix != null ? u_len(prefix) + 1 : 0);
+
+        print_color_pre(ps, XMQColor.COLOR_ns_declaration);
+        print_string(ps, "xmlns");
+        print_color_post(ps, XMQColor.COLOR_ns_declaration);
+
+        if (prefix != null)
         {
-            String prefix = name.substring(0, colon);
-            String local  = name.substring(colon + 1);
-            XMQColor ns = prefix.equals("xsl") ? XMQColor.COLOR_ns_override_xsl : XMQColor.COLOR_attr_ns;
-            print_color_pre(ps, ns);
-            print_string(ps, prefix);
-            print_color_post(ps, ns);
             print_color_pre(ps, XMQColor.COLOR_ns_colon);
             print_string(ps, ":");
             print_color_post(ps, XMQColor.COLOR_ns_colon);
-            print_color_pre(ps, XMQColor.COLOR_attr_key);
-            print_string(ps, local);
-            print_color_post(ps, XMQColor.COLOR_attr_key);
-        }
-        else
-        {
-            print_color_pre(ps, XMQColor.COLOR_attr_key);
-            print_string(ps, name);
-            print_color_post(ps, XMQColor.COLOR_attr_key);
+            XMQColor ns_color = prefix.equals("xsl") ? XMQColor.COLOR_ns_override_xsl : XMQColor.COLOR_attr_ns;
+            print_color_pre(ps, ns_color);
+            print_string(ps, prefix);
+            print_color_post(ps, ns_color);
         }
 
-        String value = attr.getValue();
-        if (value != null && !value.isEmpty())
+        String v = ns.href();
+        if (v != null)
         {
-            if (!ps.output_settings.compact())
-            {
-                // Align the equal signs by padding after the key name.
-                int len = ps.current_indent - ps.line_indent;
-                int pad = 1;
-                if (len < max)
-                {
-                    pad = 1 + max - len;
-                }
-                print_white_spaces(ps, pad);
-            }
+            if (!ps.output_settings.compact()) print_white_spaces(ps, 1 + align - total_u_len);
             print_string(ps, "=");
-            if (!ps.output_settings.compact())
-            {
-                print_white_spaces(ps, 1);
-            }
-            print_attribute_value(ps, value);
+            if (!ps.output_settings.compact()) print_white_spaces(ps, 1);
+            print_value_string(ps, v, Level.ATTR_VALUE, false);
         }
-    }
-
-    /** Mirrors C print_value for an attribute value which may contain
-     *  entity references: references are printed as-is, other text is
-     *  quoted/escaped, and more than one part is wrapped in parentheses. */
-    void print_attribute_value(XMQPrintState ps, String value)
-    {
-        List<ValuePart> parts = RawXmlParser.value_parts(value);
-        if (parts.isEmpty() || (parts.size() == 1 && !parts.get(0).is_entity))
-        {
-            print_value_string(ps, value, Level.ATTR_VALUE, false);
-            return;
-        }
-        if (parts.size() == 1)
-        {
-            print_entity_name(ps, XMQColor.COLOR_attr_value_entity, parts.get(0).text);
-            return;
-        }
-
-        int old_line_indent = ps.line_indent;
-        print_color_pre(ps, XMQColor.COLOR_cpar_left);
-        print_string(ps, "(");
-        print_color_post(ps, XMQColor.COLOR_cpar_left);
-        if (!ps.output_settings.compact())
-        {
-            print_white_spaces(ps, 1);
-        }
-        ps.line_indent = ps.current_indent;
-        for (ValuePart p : parts)
-        {
-            if (p.is_entity)
-            {
-                print_entity_name(ps, XMQColor.COLOR_attr_value_compound_entity, p.text);
-            }
-            else
-            {
-                print_value_string(ps, p.text, Level.COMPOUND, true);
-            }
-        }
-        if (!ps.output_settings.compact())
-        {
-            print_white_spaces(ps, 1);
-        }
-        print_color_pre(ps, XMQColor.COLOR_cpar_right);
-        print_string(ps, ")");
-        print_color_post(ps, XMQColor.COLOR_cpar_right);
-        ps.line_indent = old_line_indent;
     }
 
     /** Mirrors C print_entity_node. */
@@ -620,19 +447,20 @@ public class XMQPrinter
         print_color_post(ps, color);
     }
 
-    void print_content_node(XMQPrintState ps, Content node)
+    /** Mirrors C print_content_node. */
+    void print_content_node(XMQPrintState ps, XmlNode node)
     {
-        Text text = (Text)node;
         // Do NOT trim: leading and ending spaces can be part of the value,
         // ie. key = ' x y z '
-        print_value_string(ps, text.getText(), Level.XMQ, false);
+        String t = node.content();
+        print_value_string(ps, t == null ? "" : t, Level.XMQ, false);
     }
 
-    /** Mirrors C print_entity_node. Prints &name;. */
-    void print_entity_node(XMQPrintState ps, Content node)
+    /** Mirrors C print_entity_node. Prints &amp;name; */
+    void print_entity_node(XMQPrintState ps, XmlNode node)
     {
         check_space_before_entity_node(ps);
-        String name = ((EntityRef)node).getName();
+        String name = node.name();
         XMQColor c = XMQColor.COLOR_entity;
         if (name.isEmpty() || name.charAt(0) == '_') c = XMQColor.COLOR_quote;
         print_color_pre(ps, c);
@@ -815,10 +643,15 @@ public class XMQPrinter
     }
 
     /** Mirrors C print_char_entity for a single character, wrapped in the color. */
-    void print_char_entity(XMQPrintState ps, XMQColor color, char c)
+    void print_char_entity(XMQPrintState ps, XMQColor color, int c)
     {
+        String replacement = null;
+        if (ps.output_settings.escapeNon7bit() && ps.output_settings.htmq())
+        {
+            replacement = XMQHtmlEntities.toHtmlEntity(c);
+        }
         print_color_pre(ps, color);
-        print_string(ps, "&#" + (int)c + ";");
+        print_string(ps, replacement != null ? "&" + replacement + ";" : "&#" + c + ";");
         print_color_post(ps, color);
     }
 
@@ -964,8 +797,9 @@ public class XMQPrinter
         {
             return null;
         }
+        int nls = middle == i ? only_nls : 0;
         i++;
-        return new int[] { i, middle == i ? only_nls : 0 };
+        return new int[] { i, nls };
     }
 
     /** Mirrors C has_newlines. */
@@ -1174,6 +1008,18 @@ public class XMQPrinter
         boolean[] anls = { false };
         boolean[] acomp = { false };
         int numq = count_necessary_quotes(v, ps.output_settings.preferDoubleQuotes(), anls, acomp, udd);
+        add_nls = anls[0];
+
+        if (numq > 0 && !add_nls)
+        {
+            // Mirrors C print_safe_leaf_quote: a quote that requested its own
+            // line (indent -1), or more than 3 quotes when not compact, is
+            // printed with leading and ending newlines.
+            if (ps.current_indent == -1 || !(numq < 4 || compact))
+            {
+                add_nls = true;
+            }
+        }
 
         if (numq == 0)
         {
@@ -1355,9 +1201,9 @@ public class XMQPrinter
             if (from == to)
             {
                 check_space_before_entity_node(ps);
-                char c = v.charAt(from);
+                int c = v.codePointAt(from);
                 print_char_entity(ps, ec, c);
-                int from1 = from + 1;
+                int from1 = from + Character.charCount(c);
                 while (from1 < stop && v.charAt(from1) == '\n')
                 {
                     // Special case, eg CR LF: escape the newline(s) as well.
@@ -1430,27 +1276,24 @@ public class XMQPrinter
         ps.line_indent = old_line_indent;
     }
 
-    /** Mirrors C print_value for an element (node list) value. */
-    void print_value(XMQPrintState ps, Element element, Level level)
+    /** Mirrors C print_value for a node list value, ie the node and its following siblings. */
+    void print_value(XMQPrintState ps, XmlNode node, Level level)
     {
-        List<Content> children = element.getContent();
-
-        boolean is_compound = level != Level.XMQ && children.size() > 1;
+        // Check if there are more than one part, if so the value has to be compounded.
+        boolean is_compound = level != Level.XMQ && node != null && node.next() != null;
         boolean prefer_d = ps.output_settings.preferDoubleQuotes();
         boolean[] ud = { prefer_d };
 
-        if (level != Level.XMQ && !is_compound && children.size() == 1 && is_content_node(children.get(0)))
+        // Check if the single part will split into multiple parts and therefore needs to be compounded.
+        if (level != Level.XMQ && !is_compound && node != null && !is_entity_node(node))
         {
-            String t = ((Text)children.get(0)).getText();
-            if (t != null)
-            {
-                is_compound = quote_needs_compounded(ps, t, prefer_d, ud);
-            }
+            String t = node.content();
+            is_compound = quote_needs_compounded(ps, t == null ? "" : t, prefer_d, ud);
         }
 
         int old_line_indent = ps.line_indent;
 
-        if (is_compound && level != Level.COMPOUND)
+        if (is_compound)
         {
             level = Level.COMPOUND;
             print_color_pre(ps, XMQColor.COLOR_cpar_left);
@@ -1463,43 +1306,21 @@ public class XMQPrinter
             ps.line_indent = ps.current_indent;
         }
 
-        for (Content child : children)
+        for (XmlNode i = node; i != null; i = i.next())
         {
-            if (level == Level.XMQ)
+            if (is_entity_node(i))
             {
-                // Only first node in xmq level.
-                if (is_entity_node(child))
-                {
-                    print_entity_name(ps, level_entity_color(level), ((EntityRef)child).getName());
-                }
-                else if (is_content_node(child))
-                {
-                    String t = ((Text)child).getText();
-                    print_value_string(ps, t == null ? "" : t, level, is_compound);
-                }
-                else
-                {
-                    print_element_node(ps, (Element)child, 0);
-                }
-                break;
-            }
-
-            if (is_entity_node(child))
-            {
-                print_entity_name(ps, level_entity_color(level), ((EntityRef)child).getName());
-            }
-            else if (is_content_node(child))
-            {
-                String t = ((Text)child).getText();
-                print_value_string(ps, t == null ? "" : t, level, is_compound);
+                print_entity_name(ps, level_entity_color(level), i.name());
             }
             else
             {
-                print_element_node(ps, (Element)child, 0);
+                String t = i.content();
+                print_value_string(ps, t == null ? "" : t, level, is_compound);
             }
+            if (level == Level.XMQ) break;
         }
 
-        if (is_compound && level == Level.COMPOUND)
+        if (is_compound)
         {
             if (!ps.output_settings.compact())
             {
@@ -1513,258 +1334,248 @@ public class XMQPrinter
         ps.line_indent = old_line_indent;
     }
 
-    void print_element_node(XMQPrintState ps, Element element, int align)
+    /** Mirrors C print_element_name_and_attributes. */
+    int print_element_name_and_attributes(XMQPrintState ps, XmlElement node)
     {
+        XMQColor ns_color = XMQColor.COLOR_element_ns;
+        XMQColor key_color = XMQColor.COLOR_element_key;
+        XMQColor name_color = XMQColor.COLOR_element_name;
+
         check_space_before_key(ps);
 
-        // The tag name is colored either as a key (key=value style) or as an
-        // element name (element with a list of children), depending on the node.
-        boolean key_value = !element.getContent().isEmpty() && is_key_value_node(element);
-        XMQColor name_color = key_value ? XMQColor.COLOR_element_key : XMQColor.COLOR_element_name;
-        // A prefixed element name, eg xxx:proj: print the prefix before the
-        // element name, using the element's namespace when the name itself
-        // does not already carry a colon (mirrors C, where the node name is
-        // printed with its namespace prefix).
-        String el_name = element.getName();
-        String el_prefix = null;
-        if (el_name.indexOf(':') < 0)
+        String name = node.name();
+        String prefix = (node.ns() != null) ? node.ns().prefix() : null;
+        int total_u_len = u_len(name) + (prefix != null ? u_len(prefix) + 1 : 0);
+
+        if (prefix != null)
         {
-            Namespace el_ns = element.getNamespace();
-            if (el_ns != null && el_ns.getPrefix() != null && !el_ns.getPrefix().isEmpty())
+            if (prefix.equals("xsl"))
             {
-                el_prefix = el_ns.getPrefix();
+                key_color = XMQColor.COLOR_ns_override_xsl;
+                name_color = XMQColor.COLOR_ns_override_xsl;
             }
-        }
-        if (el_prefix != null)
-        {
-            XMQColor ns_color = el_prefix.equals("xsl") ? XMQColor.COLOR_ns_override_xsl : XMQColor.COLOR_attr_ns;
             print_color_pre(ps, ns_color);
-            print_string(ps, el_prefix);
+            print_string(ps, prefix);
             print_color_post(ps, ns_color);
             print_color_pre(ps, XMQColor.COLOR_ns_colon);
             print_string(ps, ":");
             print_color_post(ps, XMQColor.COLOR_ns_colon);
         }
-        print_color_pre(ps, name_color);
-        print_string(ps, el_name);
-        print_color_post(ps, name_color);
 
-        print_attributes(ps, element);
+        XMQColor c = (is_key_value_node(node) && node.attributes().isEmpty()) ? key_color : name_color;
+        print_color_pre(ps, c);
+        print_string(ps, name);
+        print_color_post(ps, c);
 
-        List<Content> children = element.getContent();
-
-        // This is a node with no children, just the key.
-        if (children.isEmpty())
+        if (!node.attributes().isEmpty() || !node.nsDefs().isEmpty())
         {
-            return;
+            print_color_pre(ps, XMQColor.COLOR_apar_left);
+            print_string(ps, "(");
+            print_color_post(ps, XMQColor.COLOR_apar_left);
+            print_attributes(ps, node);
+            print_color_pre(ps, XMQColor.COLOR_apar_right);
+            print_string(ps, ")");
+            print_color_post(ps, XMQColor.COLOR_apar_right);
         }
-
-        // This is a key = value or key = 'value value' node.
-        if (is_key_value_node(element))
-        {
-            print_key_node(ps, element, align);
-            return;
-        }
-
-        // All other nodes are printed name {children}
-        print_element_with_children(ps, element);
+        return total_u_len;
     }
 
-    void print_key_node(XMQPrintState ps, Element element, int align)
+    /** Mirrors C print_key_node. */
+    void print_key_node(XMQPrintState ps, XmlElement node, int align)
     {
-        // Name and attributes were already printed by the caller.
+        print_element_name_and_attributes(ps, node);
+
         if (!ps.output_settings.compact())
         {
             int len = ps.current_indent - ps.line_indent;
             int pad = 1;
-            if (len < align)
-            {
-                pad = 1 + align - len;
-            }
+            if (len < align) pad = 1 + align - len;
             print_white_spaces(ps, pad);
         }
-        ps.buffer.append("=");
-        ps.last_char = '=';
-        ps.current_indent += 1;
-        if (!ps.output_settings.compact())
-        {
-            print_white_spaces(ps, 1);
-        }
+        print_color_pre(ps, XMQColor.COLOR_equals);
+        print_string(ps, "=");
+        print_color_post(ps, XMQColor.COLOR_equals);
+        if (!ps.output_settings.compact()) print_white_spaces(ps, 1);
 
-        // Print the value, ie. the child node(s).
-        print_value(ps, element, Level.ELEMENT_VALUE);
+        print_value(ps, node.firstChild(), Level.ELEMENT_VALUE);
     }
 
-    /** Mirrors C find_element_key_max_width.
-     *  Scans the list of siblings from from_index until there is a node which
-     *  is not a suitable key=value node (ie. no children, multiple children,
-     *  or it has attributes). The max width of the keys found is returned,
-     *  and restart[0] is set to the index where the next scan must begin. */
-    static int find_element_key_max_width(List<Content> children, int from_index, int[] restart)
+    /** Mirrors C find_element_key_max_width. Scan nodes until there is a node which is
+     *  not suitable for using the = sign, store it in restart[0] (or null). */
+    static int find_element_key_max_width(XmlNode element, XmlNode[] restart)
     {
         int max = 0;
-
-        for (int i = from_index; i < children.size(); i++)
+        XmlNode i = element;
+        while (i != null)
         {
-            Content n = children.get(i);
-            if (!is_element_node(n)
-                || !is_key_value_node(n)
-                || (((Element)n).getAttributes() != null
-                    && !((Element)n).getAttributes().isEmpty()))
+            if (!is_key_value_node(i) || !((XmlElement)i).attributes().isEmpty())
             {
-                if (i == from_index) restart[0] = i + 1;
+                if (i == element) restart[0] = i.next();
                 else restart[0] = i;
                 return max;
             }
-            int len = n instanceof Element el ? el.getName().length() : 0;
+            XmlElement e = (XmlElement)i;
+            String prefix = e.ns() != null ? e.ns().prefix() : null;
+            int len = u_len(e.name()) + (prefix != null ? u_len(prefix) + 1 : 0);
             if (len > max) max = len;
+            i = i.next();
         }
-
-        restart[0] = children.size();
+        restart[0] = null;
         return max;
     }
 
-    /** Mirrors C print_nodes.
-     *  Prints a list of sibling nodes, aligning the equal signs of runs of
-     *  key=value nodes, unless compact. */
-    void print_nodes(XMQPrintState ps, List<Content> children)
+    /** Mirrors C print_nodes. Prints the node and all its following siblings,
+     *  aligning the equal signs of runs of key=value nodes, unless compact. */
+    void print_nodes(XMQPrintState ps, XmlNode from)
     {
-        int restart_find_at_node = 0;
+        XmlNode i = from;
+        XmlNode restart_find_at_node = from;
         int max = 0;
 
-        for (int i = 0; i < children.size(); i++)
+        while (i != null)
         {
             // We need to search ahead to find the max width of the node names so that we can align the equal signs.
             if (!ps.output_settings.compact() && i == restart_find_at_node)
             {
-                int[] restart = new int[1];
-                max = find_element_key_max_width(children, i, restart);
+                XmlNode[] restart = new XmlNode[1];
+                max = find_element_key_max_width(i, restart);
                 restart_find_at_node = restart[0];
             }
-
-            print_node(ps, children.get(i), max);
+            print_node(ps, i, max);
+            i = i.next();
         }
     }
 
-    void print_element_with_children(XMQPrintState ps, Element element)
+    /** Mirrors C print_element_with_children. */
+    void print_element_with_children(XMQPrintState ps, XmlElement element, int align)
     {
-        List<Content> children = element.getContent();
+        print_element_name_and_attributes(ps, element);
 
         check_space_before_opening_brace(ps);
+        print_color_pre(ps, XMQColor.COLOR_brace_left);
         print_string(ps, "{");
+        print_color_post(ps, XMQColor.COLOR_brace_left);
 
         int old_line_indent = ps.line_indent;
         ps.line_indent += 4;
 
-        print_nodes(ps, children);
+        print_nodes(ps, element.firstChild());
 
         ps.line_indent = old_line_indent;
 
         check_space_before_closing_brace(ps);
+        print_color_pre(ps, XMQColor.COLOR_brace_right);
         print_string(ps, "}");
+        print_color_post(ps, XMQColor.COLOR_brace_right);
     }
 
-    // Check if the node is an element node (not text, comment, etc.)
-    static boolean is_element_node(Content node)
+    /** Mirrors C is_element_node. */
+    static boolean is_element_node(XmlNode node)
     {
-        return node instanceof Element;
+        return node.type() == XmlNodeType.ELEMENT;
     }
 
-    // Check if the node is a text node
-    static boolean is_content_node(Content node)
+    /** Mirrors C is_content_node: a text or cdata node. */
+    static boolean is_content_node(XmlNode node)
     {
-        return node instanceof Text;
+        return node.type() == XmlNodeType.TEXT || node.type() == XmlNodeType.CDATA;
     }
 
-    // Check if the node is a processing instruction
-    static boolean is_pi_node(Content node)
+    /** Mirrors C is_pi_node. */
+    static boolean is_pi_node(XmlNode node)
     {
-        return node instanceof ProcessingInstruction;
+        return node.type() == XmlNodeType.PI;
     }
 
-    static boolean is_doctype_node(Content node)
+    /** Mirrors C is_doctype_node. */
+    static boolean is_doctype_node(XmlNode node)
     {
-        return node instanceof DocType;
+        return node.type() == XmlNodeType.DTD;
     }
 
     /** Mirrors C is_key_value_node.
      *  Single content or entity child, or multiple text or entity children. */
-    static boolean is_key_value_node(Content node)
+    static boolean is_key_value_node(XmlNode node)
     {
-        if (!(node instanceof Element element))
-        {
-            return false;
-        }
-
-        List<Content> children = element.getContent();
-        if (children.isEmpty())
-        {
-            return false;
-        }
-
-        Content from = children.get(0);
-        Content to = children.get(children.size() - 1);
+        XmlNode from = node.firstChild();
+        XmlNode to = node.lastChild();
 
         // Single content or entity node.
-        if (from == to && (is_content_node(from) || is_entity_node(from)))
-        {
-            return true;
-        }
+        if (from != null && from == to && (is_content_node(from) || is_entity_node(from))) return true;
+        if (from == null) return false;
 
         // Multiple text or entity nodes.
-        for (Content child : children)
+        for (XmlNode i = from; i != null; i = i.next())
         {
-            if (!is_content_node(child) && !is_entity_node(child))
-            {
-                return false;
-            }
+            if (i.type() != XmlNodeType.TEXT && i.type() != XmlNodeType.ENTITY_REF) return false;
         }
         return true;
     }
 
-    static boolean is_entity_node(Content node)
+    /** Mirrors C is_entity_node. */
+    static boolean is_entity_node(XmlNode node)
     {
-        return node instanceof EntityRef;
+        return node.type() == XmlNodeType.ENTITY_REF;
     }
 
     /**
-     * Recursively prints a node.
+     * Recursively prints a node, like C print_node. A document prints all its
+     * top level nodes.
      * @param ps The print state.
      * @param node The node to print.
-     * @param align The alignment level used for indentation.
+     * @param align The alignment used for the equal signs.
      */
     public void print_node(XMQPrintState ps, Object node, int align)
     {
-        if (node instanceof Document) {
-            print_nodes(ps, ((Document)node).getContent());
-        }
-        else if (is_content_node((Content)node)) {
-            print_content_node(ps, (Content)node);
-        }
-        else if (node instanceof Element) {
-        print_element_node(ps, (Element)node, align);
-        }
-        else if (node instanceof ProcessingInstruction) {
-            print_pi_node(ps, (ProcessingInstruction)node);
-        }
-        else if (node instanceof Comment) {
-            print_comment_node(ps, (Comment)node);
-        }
-        else if (is_entity_node((Content)node)) {
-            print_entity_node(ps, (Content)node);
-        }
-        else if (is_doctype_node((Content)node)) {
-            print_doctype_node(ps, (DocType)node);
-        }
-        else
+        if (node instanceof XmlDocument d)
         {
-            throw new RuntimeException("Unknown node type: " + node.getClass().getName());
+            print_nodes(ps, d.firstChild());
+            return;
+        }
+        XmlNode n = (XmlNode)node;
+        if (is_content_node(n))
+        {
+            print_content_node(ps, n);
+        }
+        else if (is_entity_node(n))
+        {
+            print_entity_node(ps, n);
+        }
+        else if (is_comment_node(n))
+        {
+            print_comment_node(ps, n);
+        }
+        else if (is_pi_node(n))
+        {
+            print_pi_node(ps, n);
+        }
+        else if (is_doctype_node(n))
+        {
+            print_doctype(ps, (XmlDtd)n);
+        }
+        else if (n instanceof XmlElement e)
+        {
+            if (e.firstChild() == null)
+            {
+                // A node with no children, ie br
+                print_element_name_and_attributes(ps, e);
+            }
+            else if (is_key_value_node(e))
+            {
+                // A key = value or key = 'value value' node.
+                print_key_node(ps, e, align);
+            }
+            else
+            {
+                print_element_with_children(ps, e, align);
+            }
         }
     }
 
-    static boolean is_comment_node(Content node)
+    /** Mirrors C is_comment_node. */
+    static boolean is_comment_node(XmlNode node)
     {
-        return node instanceof Comment;
+        return node.type() == XmlNodeType.COMMENT;
     }
 
     /**
@@ -1904,9 +1715,9 @@ public class XMQPrinter
     }
 
     // Mirrors C print_comment_node.
-    void print_comment_node(XMQPrintState ps, Comment comment)
+    void print_comment_node(XMQPrintState ps, XmlNode comment)
     {
-        String content = comment.getText();
+        String content = comment.content();
         if (content == null) content = "";
 
         check_space_before_comment(ps);
@@ -1967,94 +1778,46 @@ public class XMQPrinter
         }
     }
 
-    void print_pi_node(XMQPrintState ps, ProcessingInstruction pi)
+    /** Mirrors C print_pi_node. Prints ?target = value */
+    void print_pi_node(XMQPrintState ps, XmlNode node)
     {
-        String target = pi.getTarget();
-
-        // A pi node named DOCTYPE holds a xmq doctype value (see XMQParseIntoDOM).
-        if (target != null && target.equals("DOCTYPE"))
-        {
-            String content = pi.getData() != null ? pi.getData() : "";
-            print_doctype(ps, content);
-            return;
-        }
-
         check_space_before_key(ps);
-        ps.buffer.append("<?");
-        ps.last_char = '?';
-        ps.current_indent += 2;
-        String content = pi.getData() != null ? pi.getData() : "";
-        print_string(ps, target);
-        if (!content.isEmpty())
-        {
-            ps.buffer.append(" ");
-            ps.current_indent += 1;
-            print_string(ps, content);
-        }
-        ps.buffer.append("?>");
-        ps.last_char = '>';
-        ps.current_indent += 2;
-    }
-
-    void print_doctype_internal(XMQPrintState ps, DocType node)
-    {
-        String name = node.getElementName();
-        StringBuilder v = new StringBuilder(name);
-        // libxml serializes public/system ids as: name PUBLIC "pid" "sid"
-        String pid = node.getPublicID();
-        String sid = node.getSystemID();
-        if (pid != null && !pid.isEmpty())
-        {
-            v.append(" PUBLIC \"").append(pid).append("\"");
-            if (sid != null && !sid.isEmpty())
-            {
-                v.append(" \"").append(sid).append("\"");
-            }
-        }
-        else if (sid != null && !sid.isEmpty())
-        {
-            v.append(" SYSTEM \"").append(sid).append("\"");
-        }
-        String sub = node.getInternalSubset();
-        if (sub != null)
-        {
-            sub = sub.strip();
-            if (!sub.isEmpty())
-            {
-                v.append(" [\n");
-                v.append(sub);
-                v.append("\n]");
-            }
-        }
-        print_doctype(ps, v.toString());
-    }
-
-    void print_doctype_node(XMQPrintState ps, DocType node)
-    {
-        print_doctype_internal(ps, node);
-    }
-
-    /** Mirrors C print_doctype. Prints !DOCTYPE = value. */
-    void print_doctype(XMQPrintState ps, String content)
-    {
-        // C converts all newlines to spaces in the doctype value when compact
-        // mode is set.
-        if (ps.output_settings.compact())
-        {
-            content = content.replace('\n', ' ');
-        }
-
-        check_space_before_key(ps);
-        print_string(ps, "!DOCTYPE");
-        if (!ps.output_settings.compact())
-        {
-            print_white_spaces(ps, 1);
-        }
+        String name = node.name();
+        print_color_pre(ps, XMQColor.COLOR_element_key);
+        print_string(ps, "?" + name);
+        print_color_post(ps, XMQColor.COLOR_element_key);
+        if (!ps.output_settings.compact()) print_white_spaces(ps, 1);
+        print_color_pre(ps, XMQColor.COLOR_equals);
         print_string(ps, "=");
-        if (!ps.output_settings.compact())
-        {
-            print_white_spaces(ps, 1);
-        }
+        print_color_post(ps, XMQColor.COLOR_equals);
+        if (!ps.output_settings.compact()) print_white_spaces(ps, 1);
+
+        String c = XmlSave.nodeDump(node.doc(), node, 0, false);
+        int n = c.length();
+        // Now detect if we need to add a leading/ending space.
+        if (n >= 2 && c.charAt(n - 1) == '>' && c.charAt(n - 2) == '?') n -= 2;
+        int start = Math.min(name.length() + 3, n);
+        String content = XMQParseIntoDOM.potentially_add_leading_ending_space(c.substring(start, n));
+        if (ps.output_settings.compact()) content = content.replace('\n', ' ');
         print_value_string(ps, content, Level.ELEMENT_VALUE, false);
+    }
+
+    /** Mirrors C print_doctype. Prints !DOCTYPE = value */
+    void print_doctype(XMQPrintState ps, XmlDtd node)
+    {
+        check_space_before_key(ps);
+        print_color_pre(ps, XMQColor.COLOR_element_key);
+        print_string(ps, "!DOCTYPE");
+        print_color_post(ps, XMQColor.COLOR_element_key);
+        if (!ps.output_settings.compact()) print_white_spaces(ps, 1);
+        print_color_pre(ps, XMQColor.COLOR_equals);
+        print_string(ps, "=");
+        print_color_post(ps, XMQColor.COLOR_equals);
+        if (!ps.output_settings.compact()) print_white_spaces(ps, 1);
+
+        String c = XmlSave.nodeDump(node.doc(), node, 0, false);
+        if (ps.output_settings.compact()) c = c.replace('\n', ' ');
+        // Skip the leading <!DOCTYPE and the ending >
+        print_value_string(ps, c.substring(10, c.length() - 1), Level.ELEMENT_VALUE, false);
     }
 }

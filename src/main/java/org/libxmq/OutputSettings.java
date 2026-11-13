@@ -48,6 +48,7 @@ public class OutputSettings
     private boolean escape_tabs_;
     private boolean escape_newlines_;
     private boolean escape_non_7bit_;
+    private boolean htmq_;
     private boolean prefer_double_quotes_;
     private boolean no_trim_;
 
@@ -166,6 +167,27 @@ public class OutputSettings
     {
         escape_non_7bit_ = e;
         return this;
+    }
+
+    /**
+     * Set if the output format is htmq. Then non 7-bit characters are
+     * escaped using html entity names, when such a name exists.
+     * @param h If true, the output is htmq.
+     * @return this {@code OutputSettings} instance, for method chaining
+     */
+    public OutputSettings setHtmq(boolean h)
+    {
+        htmq_ = h;
+        return this;
+    }
+
+    /**
+     * Returns true if the output format is htmq.
+     * @return the htmq setting
+     */
+    public boolean htmq()
+    {
+        return htmq_;
     }
 
     /**

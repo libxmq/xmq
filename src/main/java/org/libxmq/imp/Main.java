@@ -36,27 +36,18 @@ import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 
-import org.xml.sax.InputSource;
-import java.io.StringReader;
-import java.io.StringWriter;
-
-import org.jdom2.Document;
-import org.jdom2.Element;
-import org.jdom2.DocType;
-import org.jdom2.EntityRef;
-import org.jdom2.Text;
-import org.jdom2.CDATA;
-import org.jdom2.Comment;
-import org.jdom2.ProcessingInstruction;
-import org.jdom2.input.SAXBuilder;
-import org.jdom2.output.Format;
-import org.jdom2.output.XMLOutputter;
-import org.jdom2.input.sax.XMLReaders;
+import org.libxmq.imp.xml.HtmlParser;
+import org.libxmq.imp.xml.HtmlSave;
+import org.libxmq.imp.xml.XmlDocument;
+import org.libxmq.imp.xml.XmlElement;
+import org.libxmq.imp.xml.XmlParseException;
+import org.libxmq.imp.xml.XmlParser;
+import org.libxmq.imp.xml.XmlSave;
+import org.libxmq.imp.xml.XmlTrim;
 
 import org.libxmq.ParseException;
 import org.libxmq.OutputSettings;
 import org.libxmq.XMQ;
-import org.libxmq.imp.xml.RawXmlParser;
 
 /**
  * The main entry point of the xmq command line tool.
@@ -107,7 +98,7 @@ public class Main
         {
             // Collect options (in any position), the input file and the commands.
             boolean compact = false, escTabs = false, escNl = false, esc7 = false,
-                   noFinalNl = false, trimNone = false, prefDQ = false;
+                   noFinalNl = false, trimNone = false, prefDQ = false, noMerge = false;
             String file = null;
             java.util.List<String> cmds = new java.util.ArrayList<>();
             for (String a : args)
@@ -119,6 +110,7 @@ public class Main
                 else if (a.equals("--prefer-double-quotes")) prefDQ = true;
                 else if (a.equals("--no-final-nl")) noFinalNl = true;
                 else if (a.equals("--trim=none")) trimNone = true;
+                else if (a.equals("--nomerge") || a.equals("--no-merge")) noMerge = true;
                 else if (a.startsWith("--"))
                 {
                     // Ignore options we do not act on (--no-merge, --lines,
@@ -135,7 +127,7 @@ public class Main
             Path p = Paths.get(file);
             String content = Files.readString(p, StandardCharsets.UTF_8);
 
-            // --trim=none is honored by the xml parser call below (RawXmlParser.parse).
+            // --trim=none is honored by load() below.
             // Compact mode always escapes newlines (see C xmq.c).
             if (compact) escNl = true;
 
@@ -145,7 +137,8 @@ public class Main
                 .setEscapeTabs(escTabs)
                 .setEscapeNewlines(escNl)
                 .setEscapeNon7bit(esc7)
-                .setPreferDoubleQuotes(prefDQ);
+                .setPreferDoubleQuotes(prefDQ)
+                .setHtmq(cmds.contains("to-htmq"));
 
             boolean has_cmd = cmds.contains("to-xml");
             boolean has_cmd_html = cmds.contains("to-html");
@@ -163,36 +156,18 @@ public class Main
                 }
                 to.parse(content, file);
                 System.out.println("");
+                return;
             }
-            else if (render_html || render_terminal || render_tex)
+
+            XmlDocument doc = load(content, file, trimNone, noMerge);
+            if (doc == null)
             {
-                Document doc;
+                System.exit(1);
+                return;
+            }
 
-                // The input is xml if it starts with a less than char (xmq never
-                // does), else it is parsed as xmq.
-                int i = 0;
-                while (i < content.length())
-                {
-                    char c = content.charAt(i);
-                    if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
-                    {
-                        i++;
-                        continue;
-                    }
-                    break;
-                }
-
-                if (i < content.length() && content.charAt(i) == '<')
-                {
-                    doc = RawXmlParser.parse(content, trimNone);
-                }
-                else
-                {
-                    XMQParseIntoDOM pa = new XMQParseIntoDOM();
-                    pa.parse(content, file);
-                    doc = pa.doc();
-                }
-
+            if (render_html || render_terminal || render_tex)
+            {
                 boolean render_raw = false;
                 // 0 = follow browser preference (xmq_auto), 1 = dark, 2 = light
                 int bg_mode = 0;
@@ -228,111 +203,20 @@ public class Main
             }
             else if (has_cmd_html)
             {
-                // to-html: emit the document as html, mirroring C's
-                // htmlDocContentDumpOutput (libxml2's html serializer).
-                Document doc;
-
-                // The input is xml if it starts with a less than char (xmq
-                // never does), else it is parsed as xmq.
-                int i = 0;
-                while (i < content.length())
-                {
-                    char c = content.charAt(i);
-                    if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
-                    {
-                        i++;
-                        continue;
-                    }
-                    break;
-                }
-
-                if (i < content.length() && content.charAt(i) == '<')
-                {
-                    doc = RawXmlParser.parse(content, trimNone);
-                }
-                else
-                {
-                    XMQParseIntoDOM pa = new XMQParseIntoDOM();
-                    pa.parse(content, file);
-                    doc = pa.doc();
-                }
-
-                StringBuilder sw = new StringBuilder();
-                Element root = doc.getRootElement();
-                if (root == null)
-                {
-                    // Empty document, nothing to dump.
-                }
-                else if (root.getName().equals("__XMQ_TMP_ROOT__"))
-                {
-                    // The xmq input had a top level value (eg !DOCTYPE) and an
-                    // element <so the parser kept its temporary root>; emit
-                    // each top level child in order.
-                    for (org.jdom2.Content c : root.getContent())
-                    {
-                        html_top(sw, c);
-                    }
-                }
-                else
-                {
-                    // A doctype parsed from xml input lives on the jdom
-                    // document itself.
-                    if (doc.getDocType() != null)
-                    {
-                        sw.append("<!DOCTYPE ").append(doc.getDocType().getElementName()).append(">\n");
-                    }
-                    html_top(sw, root);
-                }
-                System.out.print(sw.toString());
-                if (!noFinalNl) System.out.println();
+                // to-html: like C xmq_print_html, fixup the dom and then emit
+                // the document using the libxml2 html serializer.
+                XmlTrim.fixupHtmlBeforeWriteout(doc);
+                System.out.print(HtmlSave.docContentDump(doc, true));
             }
             else if (has_cmd)
             {
-                XMQParseIntoDOM pa = new XMQParseIntoDOM();
-                pa.parse(content, file);
-
-                Format format = Format.getPrettyFormat();
-                format.setOmitDeclaration(true);
-                format.setEncoding("utf-8");
-                XMLOutputter outputter = new XMLOutputter(format);
-                StringWriter sw = new StringWriter();
-                sw.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-                sw.append(outputter.outputString(pa.doc()));
-                sw.append("\n");
-                System.out.print(sw.toString());
+                // to-xml: like C xmq_print_xml, fixup the dom and then emit
+                // the document using the libxml2 xml serializer.
+                XmlTrim.fixupHtmlBeforeWriteout(doc);
+                System.out.print(XmlSave.docDump(doc, "utf-8"));
             }
             else
             {
-                Document doc;
-
-                // Xmq input can never start with a less than char, so if the
-                // input starts with a less than char (after leading whitespace),
-                // then it is xml. Then parse the xml with the default xml
-                // parser and print the dom as xmq below.
-                int i = 0;
-                while (i < content.length())
-                {
-                    char c = content.charAt(i);
-                    if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
-                    {
-                        i++;
-                        continue;
-                    }
-                    break;
-                }
-
-                if (i < content.length() && content.charAt(i) == '<')
-                {
-                    Document xml_doc = RawXmlParser.parse(content, trimNone);
-                    doc = xml_doc;
-                }
-                else
-                {
-                    XMQParseIntoDOM pa = new XMQParseIntoDOM();
-                    pa.parse(content, file);
-                    doc = pa.doc();
-                }
-
                 XMQPrintState ps = new XMQPrintState();
                 ps.defaultTheme();
                 ps.output_settings = os;
@@ -341,7 +225,6 @@ public class Main
                 System.out.print(ps.buffer);
                 if (!noFinalNl) System.out.println();
             }
-
         }
         catch (ParseException e)
         {
@@ -362,13 +245,14 @@ public class Main
         }
         try
         {
-            Document result = org.libxmq.imp.ixml.IXMLAnalyzer.analyze(
+            XmlDocument result = org.libxmq.imp.ixml.IXMLAnalyzer.analyze(
                 Files.readString(Path.of(args[1]), StandardCharsets.UTF_8),
                 Files.readString(Path.of(args[2]), StandardCharsets.UTF_8));
-            new XMLOutputter(Format.getPrettyFormat().setEncoding("UTF-8")).output(result, System.out);
-            Element root = result.getRootElement();
-            return "true".equals(root.getAttributeValue("supported")) &&
-                "accepted".equals(root.getChild("test").getAttributeValue("status")) ? 0 : 1;
+            System.out.print(XmlSave.docDump(result, "UTF-8", true));
+            XmlElement root = result.rootElement();
+            XmlElement test = root.element("test");
+            return "true".equals(root.attributeValue("supported")) &&
+                test != null && "accepted".equals(test.attributeValue("status")) ? 0 : 1;
         }
         catch (java.io.IOException | IllegalArgumentException e)
         {
@@ -378,281 +262,106 @@ public class Main
     }
 
     /**
-     * Constructs the xmq doctype value from an xml doctype declaration in the
-     * source. For the declaration
-     *
-     *     <!DOCTYPE time [
-     *     <!ENTITY copy "&#169;">
-     *     ]>
-     *
-     * the returned value is (\n is a real newline)
-     *
-     *     time [\n<!ENTITY copy "&#169;">\n]
-     *
-     * That is, the name, then, if there is an internal subset, a bracketed
-     * list with one entity declaration per line. The printer prints it as a
-     * multi line value, or as a single line if compact mode is set.
-     * @param content The original xml source.
-     * @param dtd The parsed jdom2 document type.
-     * @return The xmq doctype value.
+     * Load content into a document, like the C xmqParseBufferWithType with
+     * content detection. Xml and html are trimmed unless trim_none.
+     * A parse error is printed on stderr and null is returned.
+     * @param content The content to parse.
+     * @param file The source file name, used in error messages.
+     * @param trim_none True to keep all whitespace, ie --trim=none.
+     * @param no_merge True to not merge text and character entities, ie --nomerge.
+     * @return The document or null.
+     * @throws ParseException If the xmq content cannot be parsed.
      */
-    static String doctype_value(String content, DocType dtd)
+    static XmlDocument load(String content, String file, boolean trim_none, boolean no_merge) throws ParseException
     {
-        StringBuilder v = new StringBuilder(dtd.getElementName());
-        int p = content.indexOf("<!DOCTYPE");
-        if (p < 0) return v.toString();
-
-        // Locate the internal subset of the doctype, if any. The doctype has
-        // the form <!DOCTYPE name [ internal-subset ]>, where the internal
-        // subset may contain entity declarations of its own (which end with a
-        // greater than char). All scans are done outside of quoted strings.
-        char quote = 0;
-        int lb = -1, rb = -1, end = -1;
-        for (int k = p; k < content.length(); k++)
+        if (content.startsWith("\uFEFF")) content = content.substring(1);
+        int i = 0;
+        while (i < content.length())
         {
-            char c = content.charAt(k);
-            if (quote != 0)
+            char c = content.charAt(i);
+            if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
             {
-                if (c == quote) quote = 0;
+                i++;
                 continue;
             }
-            if (c == '\'' || c == '"')
-            {
-                quote = c;
-                continue;
-            }
-            if (lb < 0 && c == '[')
-            {
-                lb = k;
-                continue;
-            }
-            if (lb >= 0 && rb < 0 && c == ']')
-            {
-                rb = k;
-                continue;
-            }
-            if (c == '>')
-            {
-                if (lb < 0 || rb >= 0)
-                {
-                    // A doctype with no internal subset ends at the first
-                    // greater than char. A doctype with an internal subset
-                    // ends at the greater than char after the closing bracket.
-                    end = k;
-                    break;
-                }
-                // A greater than char inside the internal subset (the one
-                // that ends an entity declaration) is not the end of the
-                // doctype; keep scanning for the closing bracket.
-            }
+            break;
         }
-        if (end < 0 || lb < 0 || rb < 0) return v.toString();
 
-        // The internal subset, one entity declaration per line, each line
-        // trimmed of incidental indentation, and empty lines dropped.
-        StringBuilder sub = new StringBuilder();
-        for (String line : content.substring(lb+1, rb).split("\n"))
+        // Xmq input can never start with a less than char, so if the input
+        // starts with a less than char (after leading whitespace), then it
+        // is xml or html.
+        if (i < content.length() && content.charAt(i) == '<')
         {
-            String t = line.strip();
-            if (t.isEmpty()) continue;
-            if (sub.length() > 0) sub.append('\n');
-            sub.append(t);
-        }
-        if (sub.length() == 0) return v.toString();
-
-        v.append(" [");
-        v.append('\n');
-        v.append(sub);
-        v.append('\n');
-        v.append(']');
-        return v.toString();
-    }
-
-    // ---------------- to-html ----------------
-    //
-    // HTML tag tables, mirroring the libxml2 html table (html40ElementTable) as
-    // used by htmlNodeDumpFormatOutput. An element in the set is a known, non
-    // inline ("block") element; void elements are emitted without a closing
-    // tag and their children are dropped.
-    static final java.util.Set<String> HTML_VOID = new java.util.HashSet<>(java.util.List.of(
-        "area", "base", "basefont", "br", "col", "frame", "hr", "img", "input",
-        "link", "meta", "param"));
-
-    static final java.util.Set<String> HTML_BLOCK = new java.util.HashSet<>(java.util.List.of(
-        "address", "blockquote", "caption", "center", "colgroup", "dd", "dir",
-        "div", "dl", "dt", "fieldset", "form", "frameset",
-        "h1", "h2", "h3", "h4", "h5", "h6", "head", "html", "legend",
-        "li", "menu", "noframes", "noscript", "ol", "optgroup", "option",
-        "p", "pre", "style", "table", "tbody", "td", "tfoot", "th",
-        "thead", "title", "tr", "ul"));
-
-    static boolean html_void(String name)
-    {
-        return HTML_VOID.contains(name);
-    }
-
-    static boolean html_block(String name)
-    {
-        return HTML_BLOCK.contains(name);
-    }
-
-    // Escape html text/attribute values, as xmlSerializeText does with
-    // XML_ESCAPE_HTML|XML_ESCAPE_ATTR: & < > (quotes stay as is in the
-    // html variant).
-    static void html_escape(String s, StringBuilder sw)
-    {
-        if (s == null) return;
-        for (int i = 0; i < s.length(); i++)
-        {
-            char c = s.charAt(i);
-            if (c == '&') sw.append("&amp;");
-            else if (c == '<') sw.append("&lt;");
-            else if (c == '>') sw.append("&gt;");
-            else sw.append(c);
-        }
-    }
-
-    // Emit one top level node (doctype placeholder, element, or loose text).
-    static void html_top(StringBuilder sw, org.jdom2.Content c)
-    {
-        if (c instanceof ProcessingInstruction pi)
-        {
-            if (pi.getTarget().equals("DOCTYPE"))
+            XmlDocument doc;
+            if (is_html(content))
             {
-                sw.append("<!DOCTYPE ").append(pi.getData()).append(">\n");
+                // Like C, HTML_PARSE_NOBLANKS is only used with an explicit --trim=heuristic.
+                doc = HtmlParser.parse(content, false);
             }
             else
             {
-                sw.append("<?").append(pi.getTarget()).append(' ').append(pi.getData()).append(" ?>");
-            }
-        }
-        else if (c instanceof Element el)
-        {
-            html_element(sw, el);
-        }
-        else if (c instanceof org.jdom2.EntityRef e)
-        {
-            sw.append('&').append(e.getName()).append(';');
-        }
-        else if (c instanceof org.jdom2.Text t)
-        {
-            html_escape(t.getText(), sw);
-        }
-    }
-
-    // Emit the element's attributes in document order.
-    static void html_attrs(StringBuilder sw, Element el)
-    {
-        java.util.List<org.jdom2.Attribute> attributes = el.getAttributes();
-        if (attributes == null) return;
-        for (org.jdom2.Attribute a : attributes)
-        {
-            String name = a.getName();
-            org.jdom2.Namespace ns = a.getNamespace();
-            String prefix = (ns == null) ? "" : ns.getPrefix();
-            if (!prefix.isEmpty())
-            {
-                name = prefix + ":" + name;
-            }
-            sw.append(' ').append(name).append("=\"");
-            html_escape(a.getValue(), sw);
-            sw.append('"');
-        }
-    }
-
-    // Emit one element and its contents in html (libxml2 html serializer
-    // rules). void elements have their children dropped; newlines are
-    // inserted: leading and trailing when the element is a known block
-    // element (not starting with 'p') with element (child) first and last,
-    // more than one child; and after a child which is a known block element
-    // when a non textual sibling follows it.
-    static void html_element(StringBuilder sw, Element el)
-    {
-        String name = el.getName();
-        org.jdom2.Namespace ns = el.getNamespace();
-        String prefix = (ns == null) ? "" : ns.getPrefix();
-        String full_name = name;
-        if (!prefix.isEmpty())
-        {
-            full_name = prefix + ":" + name;
-        }
-
-        if (html_void(full_name))
-        {
-            // A void element is emitted tag + attributes only; any children
-            // are dropped.
-            sw.append('<').append(full_name);
-            html_attrs(sw, el);
-            sw.append('>');
-            return;
-        }
-
-        java.util.List<org.jdom2.Content> children = el.getContent();
-        boolean many = children.size() > 1;
-        boolean first_el = !children.isEmpty() && children.get(0) instanceof Element;
-        boolean last_el = !children.isEmpty() && children.get(children.size() - 1) instanceof Element;
-        boolean not_p = !full_name.isEmpty() && full_name.charAt(0) != 'p';
-        boolean leading = html_block(full_name) && not_p && many && first_el;
-        boolean trailing = html_block(full_name) && not_p && many && last_el;
-
-        sw.append('<').append(full_name);
-        html_attrs(sw, el);
-        sw.append('>');
-        if (leading)
-        {
-            sw.append('\n');
-        }
-
-        for (int k = 0; k < children.size(); k++)
-        {
-            org.jdom2.Content c = children.get(k);
-            if (c instanceof Element child)
-            {
-                html_element(sw, child);
-                // A newline follows a child which is a known block element,
-                // unless the next sibling is textual.
-                if (k + 1 < children.size())
+                try
                 {
-                    org.jdom2.Content next = children.get(k + 1);
-                    String c_name = child.getName();
-                    org.jdom2.Namespace c_ns = child.getNamespace();
-                    String c_prefix = (c_ns == null) ? "" : c_ns.getPrefix();
-                    String c_full = c_name;
-                    if (!c_prefix.isEmpty())
-                    {
-                        c_full = c_prefix + ":" + c_name;
-                    }
-                    if (html_block(c_full) && !(next instanceof org.jdom2.Text)
-                        && !(next instanceof org.jdom2.EntityRef))
-                    {
-                        sw.append('\n');
-                    }
+                    int options = XmlParser.NOCDATA;
+                    doc = XmlParser.parse(content, file, options);
+                }
+                catch (XmlParseException e)
+                {
+                    System.err.print(e.getMessage());
+                    return null;
                 }
             }
-            else if (c instanceof org.jdom2.EntityRef e)
-            {
-                sw.append('&').append(e.getName()).append(';');
-            }
-            else if (c instanceof org.jdom2.Comment cm)
-            {
-                sw.append("<!--").append(cm.getText()).append("-->");
-            }
-            else if (c instanceof org.jdom2.CDATA cd)
-            {
-                sw.append("<![CDATA[").append(cd.getText()).append("]]> ");
-            }
-            else
-            {
-                org.jdom2.Text t = (org.jdom2.Text)c;
-                html_escape(t.getText(), sw);
-            }
+            XmlTrim.fixupCommentsAfterReadin(doc);
+            if (!trim_none) XmlTrim.trimWhitespace(doc);
+            return doc;
         }
 
-        if (trailing)
+        XMQParseIntoDOM pa = new XMQParseIntoDOM();
+        pa.setMergeText(!no_merge);
+        pa.parse(content, file);
+        return pa.doc();
+    }
+
+    /**
+     * Detect html content like the C xmqDetectContentType (find_word_ignore_case):
+     * the first word after a less than char (or after a less than !doctype) is html.
+     * @param content The source text.
+     * @return True if the content is recognized as html.
+     */
+    static boolean is_html(String content)
+    {
+        int i = skip_ws(content, 0);
+        if (i >= content.length() || content.charAt(i) != '<')
         {
-            sw.append('\n');
+            return false;
         }
-        sw.append("</").append(full_name).append(">");
+        String lower = content.toLowerCase(java.util.Locale.ROOT);
+        if (lower.startsWith("<!doctype", i))
+        {
+            return first_word(lower, i + "<!doctype".length()).equalsIgnoreCase("html");
+        }
+        return first_word(lower, i + 1).equalsIgnoreCase("html");
+    }
+
+    static int skip_ws(String s, int i)
+    {
+        while (i < s.length() && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n' || s.charAt(i) == '\r')) i++;
+        return i;
+    }
+
+    static String first_word(String s, int i)
+    {
+        int start = skip_ws(s, i);
+        int e = start;
+        while (e < s.length())
+        {
+            char c = s.charAt(e);
+            boolean name = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+                || c == '_' || c == '.' || c == '-' || c == ':';
+            if (!name) break;
+            e++;
+        }
+        return s.substring(start, e);
     }
 
     static void startServer(InputStream in, OutputStream out) throws InterruptedException, ExecutionException

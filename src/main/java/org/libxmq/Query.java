@@ -28,10 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.jdom2.Content;
-import org.jdom2.Element;
-import org.jdom2.JDOMException;
-import org.jdom2.Parent;
+import org.libxmq.imp.xml.XPath;
+import org.libxmq.imp.xml.XPathException;
+import org.libxmq.imp.xml.XmlAttr;
+import org.libxmq.imp.xml.XmlElement;
+import org.libxmq.imp.xml.XmlNode;
+import org.libxmq.imp.xml.XmlNodeType;
 
 import org.libxmq.imp.Util;
 
@@ -40,7 +42,7 @@ import org.libxmq.imp.Util;
  */
 public class Query
 {
-    private static final Map<String, org.jdom2.xpath.XPath> xpath_cache_ = new HashMap<>();
+    private static final Map<String, XPath> xpath_cache_ = new HashMap<>();
 
     private Object node_;
 
@@ -68,38 +70,38 @@ public class Query
      * @return The compiled xpath expression.
      * @throws NotFoundException if the xpath is invalid.
      */
-    protected org.jdom2.xpath.XPath getPath(String xpath) throws NotFoundException
+    protected XPath getPath(String xpath) throws NotFoundException
     {
         try
         {
-            org.jdom2.xpath.XPath p = xpath_cache_.get(xpath);
+            XPath p = xpath_cache_.get(xpath);
             if (p == null)
             {
-                p = org.jdom2.xpath.XPath.newInstance(xpath);
+                p = XPath.compile(xpath);
                 xpath_cache_.put(xpath, p);
             }
             return p;
         }
-        catch (JDOMException e)
+        catch (XPathException e)
         {
             throw new NotFoundException("Invalid xpath "+xpath+" below node "+Util.getXPath(node()));
         }
     }
 
     /**
-       Evaluate an xpath against the query node, converting JDOM exceptions
+       Evaluate an xpath against the query node, converting xpath exceptions
        into xmq exceptions.
        @param xpath The xpath to evaluate.
        @return The nodes matching the xpath.
        @throws NotFoundException on xpath errors.
     */
-    private List<?> select(String xpath) throws NotFoundException
+    private List<XmlNode> select(String xpath) throws NotFoundException
     {
         try
         {
-            return getPath(xpath).selectNodes(node_);
+            return getPath(xpath).selectNodes((XmlNode)node_);
         }
-        catch (JDOMException e)
+        catch (XPathException e)
         {
             throw new NotFoundException("XPath error for "+xpath+" below node "+Util.getXPath(node())+": "+e.getMessage());
         }
@@ -115,12 +117,12 @@ public class Query
     {
         try
         {
-            List<?> nodes = select(xpath);
+            List<XmlNode> nodes = select(xpath);
             int matched = 0;
-            for (Object c : nodes)
+            for (XmlNode c : nodes)
             {
                 matched++;
-                if (cb.invoke((Content)c) == Proceed.STOP)
+                if (cb.invoke(c) == Proceed.STOP)
                 {
                     break;
                 }
@@ -141,12 +143,12 @@ public class Query
     */
     public void expect(String xpath, NodeCallback cb) throws NotFoundException
     {
-        List<?> nodes = select(xpath);
+        List<XmlNode> nodes = select(xpath);
         if (nodes.isEmpty())
         {
             throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
         }
-        cb.invoke((Content)nodes.get(0));
+        cb.invoke(nodes.get(0));
     }
 
     /**
@@ -156,9 +158,9 @@ public class Query
        @throws TooManyException  if more than one element matched the xpath.
        @return The found element.
     */
-    public Element element(String xpath) throws NotFoundException, TooManyException
+    public XmlElement element(String xpath) throws NotFoundException, TooManyException
     {
-        List<?> nodes = select(xpath);
+        List<XmlNode> nodes = select(xpath);
         if (nodes.isEmpty())
         {
             throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
@@ -167,8 +169,8 @@ public class Query
         {
             throw new TooManyException("Found "+nodes.size()+" matches for "+xpath+" below node "+Util.getXPath(node()));
         }
-        Content c = (Content)nodes.get(0);
-        if (c instanceof Element e)
+        XmlNode c = nodes.get(0);
+        if (c instanceof XmlElement e)
         {
             return e;
         }
@@ -181,11 +183,11 @@ public class Query
        @throws TooManyException  if more than one element matched the xpath.
        @return The found element.
     */
-    public Optional<Element> optionalElement(String xpath) throws TooManyException
+    public Optional<XmlElement> optionalElement(String xpath) throws TooManyException
     {
         try
         {
-            Element e = element(xpath);
+            XmlElement e = element(xpath);
             return Optional.of(e);
         }
         catch (NotFoundException e)
@@ -449,22 +451,31 @@ public class Query
     */
     public String getString(String xpath, String restriction) throws DecodingException, NotFoundException, TooManyException
     {
-        List<?> nodes = select(xpath);
+        List<XmlNode> nodes = select(xpath);
         if (nodes.isEmpty())
         {
             throw new NotFoundException("Could not find "+xpath+" below node "+Util.getXPath(node()));
         }
-        Content c = (Content)nodes.get(0);
-        String text = null;
-        if (c instanceof Element e)
+        XmlNode c = nodes.get(0);
+        String text;
+        if (c instanceof XmlElement e)
         {
-            text = e.getText();
+            // The direct text content of the element.
+            StringBuilder sb = new StringBuilder();
+            for (XmlNode i = e.firstChild(); i != null; i = i.next())
+            {
+                if (i.type() == XmlNodeType.TEXT || i.type() == XmlNodeType.CDATA) sb.append(i.content());
+            }
+            text = sb.toString();
         }
-        else if (c instanceof org.jdom2.Text t)
+        else if (c instanceof XmlAttr a)
         {
-            text = t.getText();
+            text = a.value();
         }
-        if (text == null) text = "";
+        else
+        {
+            text = c.textContent();
+        }
         return text;
     }
 
@@ -491,9 +502,9 @@ public class Query
         }
     }
 
-    Content firstChild(String name)
+    XmlNode firstChild(String name)
     {
-        if (!(node_ instanceof Parent p) || name == null)
+        if (!(node_ instanceof XmlNode p) || name == null)
         {
             return null;
         }
@@ -501,9 +512,9 @@ public class Query
         {
             return null;
         }
-        for (Content child : p.getContent())
+        for (XmlNode child = p.firstChild(); child != null; child = child.next())
         {
-            if (child instanceof Element el && name.equals(el.getName()))
+            if (child instanceof XmlElement el && name.equals(el.name()))
             {
                 return el;
             }
@@ -520,7 +531,7 @@ public class Query
     */
     public Query query(String xpath) throws NotFoundException, TooManyException
     {
-        Element e = element(xpath);
+        XmlElement e = element(xpath);
         return new Query(e);
     }
 

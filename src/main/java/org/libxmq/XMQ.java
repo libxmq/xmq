@@ -35,7 +35,10 @@ import java.util.ResourceBundle;
 import org.libxmq.imp.XMQParseIntoDOM;
 import org.libxmq.imp.XMQPrintState;
 import org.libxmq.imp.XMQPrinter;
-import org.jdom2.Document;
+import org.libxmq.imp.xml.HtmlSave;
+import org.libxmq.imp.xml.XmlDocument;
+import org.libxmq.imp.xml.XmlElement;
+import org.libxmq.imp.xml.XmlSave;
 
 /**
    The XMQ class is used to parse/print/render XMQ/XML/HTML/JSON documents.
@@ -43,7 +46,7 @@ import org.jdom2.Document;
 public class XMQ
 {
     /**
-       Construct an XMQ with the default DOM implementation (jdom2).
+       Construct an XMQ using the xmq DOM implementation.
      */
     public XMQ()
     {
@@ -57,7 +60,7 @@ public class XMQ
        @throws IOException if file cannot be read.
        @throws ParseException if the parse failed.
      */
-    public org.jdom2.Document parseFile(Path file, InputSettings is) throws IOException, ParseException
+    public XmlDocument parseFile(Path file, InputSettings is) throws IOException, ParseException
     {
         String buffer = Files.readString(file, StandardCharsets.UTF_8);
         return parseBuffer(buffer, is);
@@ -70,7 +73,7 @@ public class XMQ
        @return A DOM document.
        @throws ParseException if the parse failed.
      */
-    public org.jdom2.Document parseBuffer(String buffer, InputSettings is) throws ParseException
+    public XmlDocument parseBuffer(String buffer, InputSettings is) throws ParseException
     {
         XMQParseIntoDOM pa = new XMQParseIntoDOM();
         pa.parse(buffer, "buffer");
@@ -127,21 +130,13 @@ public class XMQ
      */
     public String toXML(Object doc, OutputSettings os)
     {
-        try
+        if (doc instanceof XmlDocument d)
         {
-            org.jdom2.output.XMLOutputter outputter = new org.jdom2.output.XMLOutputter();
-            if (doc instanceof Document d)
-            {
-                return outputter.outputString(d) + "\n";
-            }
-            if (doc instanceof org.jdom2.Element e)
-            {
-                return outputter.outputString(new Document(e)) + "\n";
-            }
+            return XmlSave.docDump(d, "utf-8");
         }
-        catch (Exception e)
+        if (doc instanceof XmlElement e)
         {
-            e.printStackTrace();
+            return XmlSave.nodeDump(e.doc(), e, 0, false) + "\n";
         }
         return "";
     }
@@ -158,7 +153,11 @@ public class XMQ
      */
     public String toHTML(Object doc, OutputSettings os)
     {
-        return "lll";
+        if (doc instanceof XmlDocument d)
+        {
+            return HtmlSave.docContentDump(d, true);
+        }
+        return "";
     }
 
     /**

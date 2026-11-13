@@ -23,28 +23,50 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package org.libxmq.imp.xml;
 
-import org.jdom2.Attribute;
-import org.jdom2.Comment;
-import org.jdom2.Content;
-import org.jdom2.DocType;
-import org.jdom2.Document;
-import org.jdom2.Element;
-import org.jdom2.EntityRef;
-import org.jdom2.ProcessingInstruction;
-import org.jdom2.Text;
-
-/** An attribute that allows raw names like 'xml:lang' or 'xmlns:xl'. */
-public class RawAttribute extends Attribute
+/**
+ * A comment node.
+ */
+public class XmlComment extends XmlNode
 {
-    RawAttribute(String name, String value)
+    String content_;
+
+    /**
+     * Create a comment.
+     * @param content The comment text, without the comment markers.
+     */
+    public XmlComment(String content)
     {
-        super(name, value);
+        super(null);
+        content_ = content;
     }
 
     @Override
-    public Attribute setName(String name)
+    public XmlNodeType type()
     {
-        this.name = name;
-        return this;
+        return XmlNodeType.COMMENT;
+    }
+
+    @Override
+    public String content()
+    {
+        return content_;
+    }
+
+    @Override
+    public void setContent(String content)
+    {
+        content_ = content;
+    }
+
+    @Override
+    public String textContent()
+    {
+        return content_ == null ? "" : content_;
+    }
+
+    @Override
+    public String fullName()
+    {
+        return "comment";
     }
 }

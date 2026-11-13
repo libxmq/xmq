@@ -12,7 +12,7 @@ then
     . $BUILD/java/spec.sh
 
     PROG=${BUILD}/$EXECUTABLE
-    LIB=${BUILD}/${ARTIFACTID}-${VERSION}.jar:${BUILD}/project-deps/jdom2-2.0.6.jar:${BUILD}/project-deps/jaxen-1.2.0.jar
+    LIB=${BUILD}/${ARTIFACTID}-${VERSION}.jar
 fi
 
 if [ -z "$OUTPUT" ] || [ -z "$PROG" ]
