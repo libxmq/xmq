@@ -219,6 +219,7 @@ cars {
 }
 ```
 
+
 ## Colors and themes
 
 Xmq tries to detect the background color of the terminal. This is used
