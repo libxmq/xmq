@@ -2316,7 +2316,8 @@ bool cmd_load(XMQCliCommand *command, bool *no_more_data)
 
             if (!ok)
             {
-                printf("%s\n", tmp->error_);
+                const char *err = tmp->error_;
+                fprintf(stderr, "%s\n", err ? err : "xmq: could not load input");
                 exit(1);
             }
             xmqFreeDoc(tmp);
@@ -2691,6 +2692,28 @@ bool cmd_transform(XMQCliCommand *command)
     return true;
 }
 
+/** Return the concatenated text content of all top level nodes in the document.
+    Never returns NULL, an empty document gives an empty string. Free with free(). */
+static char *doc_text_content(xmlDocPtr doc)
+{
+    size_t len = 0;
+    char *out = (char*)malloc(1);
+    out[0] = 0;
+    if (!doc) return out;
+
+    for (xmlNodePtr i = doc->children; i; i = i->next)
+    {
+        xmlChar *c = xmlNodeGetContent(i);
+        if (!c) continue;
+        size_t n = strlen((char*)c);
+        out = (char*)realloc(out, len+n+1);
+        memcpy(out+len, c, n+1);
+        len += n;
+        xmlFree(c);
+    }
+    return out;
+}
+
 bool cmd_quote_unquote(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
@@ -2698,11 +2721,11 @@ bool cmd_quote_unquote(XMQCliCommand *command)
 
     if (command->cmd == XMQ_CLI_CMD_QUOTE_C)
     {
-        char *value = (char*)xmlNodeListGetString(doc, doc->children, 1);
+        char *value = doc_text_content(doc);
         XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), true);
+        free(value);
         if (rs.status != XMQ_OK) return false;
         char *quoted_value = rs.string;
-        xmlFree(value);
 
         if (command->add_nl)
         {
@@ -2728,11 +2751,11 @@ bool cmd_quote_unquote(XMQCliCommand *command)
 
     if (command->cmd == XMQ_CLI_CMD_UNQUOTE_C)
     {
-        char *value = (char*)xmlNodeListGetString(doc, doc->children, 1);
+        char *value = doc_text_content(doc);
         XMQReturnString rs = xmq_unquote_as_c(value, value+strlen(value), true);
+        free(value);
         if (rs.status != XMQ_OK) return false;
         char *unquoted_value = rs.string;
-        xmlFree(value);
 
         xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
         xmlNodePtr new_node = xmlNewDocText(new_doc, (xmlChar*)unquoted_value);
@@ -3381,15 +3404,16 @@ void replace_entities(xmlDoc *doc, const char *entity, const char *content, xmlN
 bool cmd_replace(XMQCliCommand *command)
 {
     xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    xmlNodePtr root = xmlDocGetRootElement(doc);
-
-    while (root->prev) root = root->prev;
-    assert(root != NULL);
 
     if (command->xpath)
     {
         verbose_("xmq=", "replacing xpath %s", command->xpath);
         const char *ep = strchr(command->xpath, '=');
+        if (ep == NULL)
+        {
+            fprintf(stderr, "xmq: replace expects xpath=value, got: %s\n", command->xpath);
+            return false;
+        }
         char *xpath = strndup(command->xpath, ep-command->xpath);
         char *value = strdup(ep+1);
         replace_xpath_content(doc, xpath, value);

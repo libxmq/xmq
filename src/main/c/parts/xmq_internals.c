@@ -280,8 +280,10 @@ bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer)
             if (errno == EINTR) {
                 continue;
             }
-            PRINT_ERROR("Could not read stdin errno=%d\n", errno);
+            doq->errno_ = XMQ_ERROR_CANNOT_READ_FILE;
+            doq->error_ = build_error_message("xmq: Could not read stdin errno=%d\n", errno);
             close(fd);
+            free_membuffer_and_free_content(mb);
 
             return false;
         }
