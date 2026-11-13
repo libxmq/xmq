@@ -235,6 +235,9 @@ generate_parsers: build/xmqj
 	build/xmqj generate-parser --c library/xmq-utils/xmqcli.ixml --prefix=xmqcli > src/main/c/xmq-cli-parser.h.tmp
 	mv src/main/c/xmq-cli-parser.h.tmp src/main/c/xmq-cli-parser.h
 	@echo "Generated src/main/c/xmq-cli-parser.h"
+	build/xmqj generate-parser --java library/xmq-utils/xmqcli.ixml --package=org.libxmq.imp --class=XMQCliParser > src/main/java/org/libxmq/imp/XMQCliParser.java.tmp
+	mv src/main/java/org/libxmq/imp/XMQCliParser.java.tmp src/main/java/org/libxmq/imp/XMQCliParser.java
+	@echo "Generated src/main/java/org/libxmq/imp/XMQCliParser.java"
 
 test_library:
 	./tests/test_library.sh ./xmq build/test_library_output markup-blitz

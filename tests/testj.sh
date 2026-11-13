@@ -39,6 +39,14 @@ do
     tests/test_single.sh "$PROG" "$OUTPUT" "$i"
 done
 
+# The Java and the C command lines must behave the same, when the C xmq is built.
+XMQ_C=$(ls build/*/release/xmq 2>/dev/null | head -1)
+if [ -n "$XMQ_C" ] && [ -z "$FILTER" ]
+then
+    tests/test_cli_compare.sh "$XMQ_C" "$PROG" "$OUTPUT/cli_compare"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+fi
+
 for i in tests/format_???_*.test
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi

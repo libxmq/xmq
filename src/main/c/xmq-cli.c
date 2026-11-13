@@ -2884,9 +2884,8 @@ bool cmd_select(XMQCliCommand *command)
     }
     else if (objects->type == XPATH_BOOLEAN)
     {
-        double count = objects->floatval;
         char buf[64];
-        snprintf(buf, 64, "%.0f", count);
+        snprintf(buf, 64, "%d", objects->boolval ? 1 : 0);
         xmlNodePtr text = xmlNewText((xmlChar*)buf);
         xml_add_root_child(new_doc, text);
     }

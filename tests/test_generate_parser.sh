@@ -16,6 +16,8 @@ OUTPUT=${3:-build/x86_64-pc-linux-gnu/release/test_output/generate_parser}
 LIBDIR=$(dirname "$PROG")
 CFLAGS="-O1 -Isrc/main/c"
 LIBS="$LIBDIR/libxmq.a -lxslt -lexslt -lxml2 -lz -lm"
+# The generated Java parsers are compiled against the xmq jar.
+JAR=$(ls build/xmq-*.jar 2>/dev/null | grep -vE -- '-(exec|javadoc|sources)\.jar$' | head -1)
 
 if [ ! -x "$XMQJ" ] || [ ! -f "$LIBDIR/libxmq.a" ]
 then
@@ -53,29 +55,52 @@ compare()
         failed=$((failed+1))
         return
     fi
+    local cls=""
+    if [ -n "$JAR" ]
+    then
+        cls=P_$name
+        mkdir -p "$OUTPUT/java"
+        if ! "$XMQJ" generate-parser --java "$g" --class=$cls > "$OUTPUT/java/$cls.java" 2> "$OUTPUT/$name.jerr" \
+           || ! javac -nowarn -d "$OUTPUT/java" -cp "$JAR" "$OUTPUT/java/$cls.java" 2> "$OUTPUT/$name.jcerr"
+        then
+            echo "FAIL: generate or compile java $g"
+            head -5 "$OUTPUT/$name.jerr" "$OUTPUT/$name.jcerr"
+            failed=$((failed+1))
+            cls=""
+        fi
+    fi
     for input in "$@"
     do
         local expected=$("$PROG" "$g" "$input" 2>&1)
-        local got=$("$OUTPUT/$name" "$input" 2>&1)
-        if echo "$expected" | grep -q "state = failed"
-        then
-            # Rejected by the ixml engine, the generated parser must reject too.
-            if "$OUTPUT/$name" "$input" > /dev/null 2>&1
-            then
-                echo "FAIL: $g accepted $input, the ixml engine rejects it"
-                failed=$((failed+1))
-            else
-                passed=$((passed+1))
-            fi
-        elif [ "$expected" = "$got" ]
-        then
-            passed=$((passed+1))
-        else
-            echo "FAIL: $g $input"
-            diff <(echo "$expected") <(echo "$got") | head -10
-            failed=$((failed+1))
-        fi
+        check_one "$g" "$input" "$expected" C "$OUTPUT/$name"
+        [ -n "$cls" ] && check_one "$g" "$input" "$expected" Java java -cp "$OUTPUT/java:$JAR" $cls
     done
+}
+
+# check_one grammar input expected kind parser...
+check_one()
+{
+    local g=$1 input=$2 expected=$3 kind=$4
+    shift 4
+    local got=$("$@" "$input" 2>&1)
+    if echo "$expected" | grep -q "state = failed"
+    then
+        # Rejected by the ixml engine, the generated parser must reject too.
+        if "$@" "$input" > /dev/null 2>&1
+        then
+            echo "FAIL: $kind $g accepted $input, the ixml engine rejects it"
+            failed=$((failed+1))
+        else
+            passed=$((passed+1))
+        fi
+    elif [ "$expected" = "$got" ]
+    then
+        passed=$((passed+1))
+    else
+        echo "FAIL: $kind $g $input"
+        diff <(echo "$expected") <(echo "$got") | head -10
+        failed=$((failed+1))
+    fi
 }
 
 # The ixml conformance grammars.
@@ -128,6 +153,14 @@ then
     passed=$((passed+1))
 else
     echo "FAIL: src/main/c/xmq-cli-parser.h is not up to date with library/xmq-utils/xmqcli.ixml, run make generate_parsers"
+    failed=$((failed+1))
+fi
+if "$XMQJ" generate-parser --java library/xmq-utils/xmqcli.ixml --package=org.libxmq.imp --class=XMQCliParser > "$OUTPUT/XMQCliParser.java" \
+   && cmp -s "$OUTPUT/XMQCliParser.java" src/main/java/org/libxmq/imp/XMQCliParser.java
+then
+    passed=$((passed+1))
+else
+    echo "FAIL: src/main/java/org/libxmq/imp/XMQCliParser.java is not up to date with library/xmq-utils/xmqcli.ixml, run make generate_parsers"
     failed=$((failed+1))
 fi
 

@@ -44,7 +44,7 @@ package org.libxmq;
 public class OutputSettings
 {
     private boolean compact_;
-    private int indent_amount_;
+    private int indent_amount_ = 4; // Like the C xmqNewOutputSettings.
     private boolean escape_tabs_;
     private boolean escape_newlines_;
     private boolean escape_non_7bit_;

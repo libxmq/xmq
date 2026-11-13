@@ -1457,7 +1457,7 @@ public class XMQPrinter
         print_color_post(ps, XMQColor.COLOR_brace_left);
 
         int old_line_indent = ps.line_indent;
-        ps.line_indent += 4;
+        ps.line_indent += ps.output_settings != null ? ps.output_settings.indentAmount() : 4;
 
         print_nodes(ps, element.firstChild());
 
@@ -1525,6 +1525,21 @@ public class XMQPrinter
      * @param node The node to print.
      * @param align The alignment used for the equal signs.
      */
+    /**
+     * Print a node as xmq like the xmq command line does by default (indentation
+     * 4, no colors), without a final newline. Used by generated parsers.
+     * @param node The document or node.
+     * @return The xmq text.
+     */
+    public static String toXmq(Object node)
+    {
+        XMQPrintState ps = new XMQPrintState();
+        ps.defaultTheme();
+        ps.output_settings = new org.libxmq.OutputSettings().setIndentAmount(4);
+        new XMQPrinter().print_node(ps, node, 0);
+        return ps.buffer.toString();
+    }
+
     public void print_node(XMQPrintState ps, Object node, int align)
     {
         if (node instanceof XmlDocument d)

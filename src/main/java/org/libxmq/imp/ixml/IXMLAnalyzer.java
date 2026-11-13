@@ -59,6 +59,28 @@ public final class IXMLAnalyzer {
         }
         return a;
     }
+    /** Compile a grammar for parsing many inputs with the LL(*) parser, see parseInput.
+     * @param source iXML grammar
+     * @return the compiled parser
+     * @throws IllegalArgumentException if the grammar is not LL(*)
+     */
+    public static IXMLAnalyzer compileParser(String source) { return compile(source); }
+
+    /** Parse an input with a parser from compileParser.
+     * @param input the input to parse
+     * @return the parse tree
+     * @throws IllegalArgumentException if the input is rejected
+     */
+    public XmlDocument parseInput(String input) {
+        Element tree = new Element("tree");
+        String error = run(input, tree);
+        if (error != null) throw new IllegalArgumentException(error);
+        XmlDocument d = new XmlDocument();
+        XmlNode root = tree.firstChild();
+        if (root instanceof XmlElement e) d.appendRaw(e);
+        return d;
+    }
+
     IXMLGrammar grammar() { return grammar; }
     Set<String> reachable() { return reachable; }
     Map<String, IXMLLookahead.Dfa> dfas() { return dfas; }

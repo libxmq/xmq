@@ -101,177 +101,51 @@ public class Main
             return;
         }
 
-        try
-        {
-            // Collect options (in any position), the input file and the commands.
-            boolean compact = false, escTabs = false, escNl = false, esc7 = false,
-                   noFinalNl = false, trimNone = false, prefDQ = false, noMerge = false;
-            String file = null;
-            java.util.List<String> cmds = new java.util.ArrayList<>();
-            for (String a : args)
-            {
-                if (a.equals("--compact")) compact = true;
-                else if (a.equals("--escape-tabs")) escTabs = true;
-                else if (a.equals("--escape-newlines")) escNl = true;
-                else if (a.equals("--escape-non-7bit")) esc7 = true;
-                else if (a.equals("--prefer-double-quotes")) prefDQ = true;
-                else if (a.equals("--no-final-nl")) noFinalNl = true;
-                else if (a.equals("--trim=none")) trimNone = true;
-                else if (a.equals("--nomerge") || a.equals("--no-merge")) noMerge = true;
-                else if (a.startsWith("--"))
-                {
-                    // Ignore options we do not act on (--no-merge, --lines,
-                    // --text, --ixml=..., --nostyle, --theme=..., --type=... etc).
-                }
-                else if (file == null) file = a;
-                else cmds.add(a);
-            }
-            if (file == null)
-            {
-                printHelp();
-                return;
-            }
-            Path p = Paths.get(file);
-            String content = Files.readString(p, StandardCharsets.UTF_8);
-
-            // --trim=none is honored by load() below.
-            // Compact mode always escapes newlines (see C xmq.c).
-            if (compact) escNl = true;
-
-            OutputSettings os = new OutputSettings()
-                .setIndentAmount(4)
-                .setCompact(compact)
-                .setEscapeTabs(escTabs)
-                .setEscapeNewlines(escNl)
-                .setEscapeNon7bit(esc7)
-                .setPreferDoubleQuotes(prefDQ)
-                .setHtmq(cmds.contains("to-htmq"));
-
-            boolean has_cmd = cmds.contains("to-xml");
-            boolean has_cmd_html = cmds.contains("to-html");
-            boolean is_tokenize = cmds.contains("tokenize");
-            boolean render_html = cmds.contains("render-html");
-            boolean render_terminal = cmds.contains("render-terminal");
-            boolean render_tex = cmds.contains("render-tex");
-            if (is_tokenize)
-            {
-                XMQParseIntoTokens to = new XMQParseIntoTokens();
-                for (String a : args)
-                {
-                    if (a.equals("--type=debugtokens")) to.debugTokens();
-                    else if (a.equals("--type=debugcontent")) to.debugContent();
-                }
-                to.parse(content, file);
-                System.out.println("");
-                return;
-            }
-
-            XmlDocument doc = load(content, file, trimNone, noMerge);
-            if (doc == null)
-            {
-                System.exit(1);
-                return;
-            }
-
-            if (render_html || render_terminal || render_tex)
-            {
-                boolean render_raw = false;
-                // 0 = follow browser preference (xmq_auto), 1 = dark, 2 = light
-                int bg_mode = 0;
-                for (String a : args)
-                {
-                    if (a.equals("--nostyle")) render_raw = true;
-                    else if (a.equals("--bg=dark")) bg_mode = 1;
-                    else if (a.equals("--bg=light")) bg_mode = 2;
-                }
-
-                XMQTheme theme = new XMQTheme();
-                theme.installDefault();
-                if (render_html)
-                {
-                    theme.setupHtmlColoring(render_raw, bg_mode);
-                }
-                else
-                {
-                    // render-terminal / render-tex: wrap just the content when
-                    // raw, otherwise use a full document scaffold (not fully
-                    // ported yet; html is the fully supported render).
-                    theme.content = new org.libxmq.imp.XMQThemeStrings(render_raw ? "" : "",
-                        render_raw ? "" : "");
-                }
-
-                XMQPrintState ps = new XMQPrintState();
-                ps.output_settings = os;
-                ps.theme = theme;
-                XMQPrinter pr = new XMQPrinter();
-                pr.print_rendered(ps, doc);
-                System.out.print(ps.buffer);
-                if (!noFinalNl) System.out.println();
-            }
-            else if (has_cmd_html)
-            {
-                // to-html: like C xmq_print_html, fixup the dom and then emit
-                // the document using the libxml2 html serializer.
-                XmlTrim.fixupHtmlBeforeWriteout(doc);
-                System.out.print(HtmlSave.docContentDump(doc, true));
-            }
-            else if (has_cmd)
-            {
-                // to-xml: like C xmq_print_xml, fixup the dom and then emit
-                // the document using the libxml2 xml serializer.
-                XmlTrim.fixupHtmlBeforeWriteout(doc);
-                System.out.print(XmlSave.docDump(doc, "utf-8"));
-            }
-            else
-            {
-                XMQPrintState ps = new XMQPrintState();
-                ps.defaultTheme();
-                ps.output_settings = os;
-                XMQPrinter pr = new XMQPrinter();
-                pr.print_node(ps, doc, 0);
-                System.out.print(ps.buffer);
-                if (!noFinalNl) System.out.println();
-            }
-        }
-        catch (ParseException e)
-        {
-            System.err.print(XMQ.printException(e));
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace(System.err);
-        }
+        // The command line is parsed with the grammar library/xmq-utils/xmqcli.ixml, see Cli.
+        int status = Cli.run(args);
+        System.out.flush();
+        if (status != 0) System.exit(status);
     }
 
     private static int runGenerateParser(String[] args)
     {
         // xmqj generate-parser --c grammar.ixml [--prefix=name]
-        boolean c = false;
-        String prefix = null;
+        // xmqj generate-parser --java grammar.ixml [--package=a.b] [--class=Name]
+        boolean c = false, java = false;
+        String prefix = null, pkg = null, cls = null;
         String file = null;
+        boolean bad = false;
         for (int k = 1; k < args.length; k++)
         {
             if (args[k].equals("--c")) c = true;
+            else if (args[k].equals("--java")) java = true;
             else if (args[k].startsWith("--prefix=")) prefix = args[k].substring(9);
+            else if (args[k].startsWith("--package=")) pkg = args[k].substring(10);
+            else if (args[k].startsWith("--class=")) cls = args[k].substring(8);
             else if (file == null && !args[k].startsWith("--")) file = args[k];
-            else file = null;
+            else bad = true;
         }
-        if (!c || file == null)
+        if (c == java || file == null || bad)
         {
             System.err.println("Usage: xmqj generate-parser --c grammar.ixml [--prefix=name] > parser.c");
+            System.err.println("       xmqj generate-parser --java grammar.ixml [--package=a.b] [--class=Name] > Name.java");
             return 2;
         }
-        if (prefix == null)
-        {
-            // The grammar file name without .ixml, as a C identifier.
-            String base = Path.of(file).getFileName().toString().replaceAll("\\.ixml$", "");
-            prefix = base.replaceAll("[^A-Za-z0-9_]", "_");
-            if (prefix.isEmpty() || Character.isDigit(prefix.charAt(0))) prefix = "p_" + prefix;
-        }
+        // The grammar file name without .ixml, as an identifier.
+        String base = Path.of(file).getFileName().toString().replaceAll("\\.ixml$", "").replaceAll("[^A-Za-z0-9_]", "_");
+        if (base.isEmpty() || Character.isDigit(base.charAt(0))) base = "p_" + base;
         try
         {
             String grammar = Files.readString(Path.of(file), StandardCharsets.UTF_8);
-            System.out.print(org.libxmq.imp.ixml.IXMLGenerateC.generate(grammar, prefix, file));
+            if (c)
+            {
+                System.out.print(org.libxmq.imp.ixml.IXMLGenerateC.generate(grammar, prefix != null ? prefix : base, file));
+            }
+            else
+            {
+                if (cls == null) cls = Character.toUpperCase(base.charAt(0)) + base.substring(1) + "Parser";
+                System.out.print(org.libxmq.imp.ixml.IXMLGenerateJava.generate(grammar, pkg, cls, file));
+            }
             return 0;
         }
         catch (java.io.IOException | IllegalArgumentException e)
@@ -303,11 +177,7 @@ public class Main
             if (tree)
             {
                 XmlDocument doc = org.libxmq.imp.ixml.IXMLAnalyzer.parse(grammar, input);
-                XMQPrintState ps = new XMQPrintState();
-                ps.defaultTheme();
-                ps.output_settings = new OutputSettings().setIndentAmount(4);
-                new XMQPrinter().print_node(ps, doc, 0);
-                System.out.println(ps.buffer);
+                System.out.println(XMQPrinter.toXmq(doc));
                 return 0;
             }
             XmlDocument result = org.libxmq.imp.ixml.IXMLAnalyzer.analyze(grammar, input);
@@ -457,6 +327,7 @@ Usage: xmqj [options] <file> ( <command> [options] )*
   --xmq|--htmq|--xml|--html|--ixml|--json|--clines
              The input format is auto detected for xmq/xml/json but you can force the input format here.
   generate-parser --c grammar.ixml [--prefix=name]  Generate a C LL(*) parser with a main function.
+  generate-parser --java grammar.ixml [--package=a.b] [--class=Name]  Generate a Java LL(*) parser with a main method.
   analyze grammar.ixml [test.input] [--tree]  Analyze LL(*) suitability and emit a parser DOM,
              or with --tree parse the input with the LL(*) parser and print the parse tree.
   --ixml=grammar.ixml Parse the content using the supplied grammar file.
