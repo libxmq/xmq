@@ -343,7 +343,7 @@ xmqj: build/xmqj
 
 .PHONY: xmqj
 
-build/xmqj: pom.xml $(wildcard build/*.jar)
+build/xmqj: pom.xml $(wildcard build/*.jar) $(shell find src/main/java src/main/resources -type f 2>/dev/null)
 	@(if [ ! -f build/java/spec.mk ] ; then ./make/java/configure; fi; make --no-print-directory -f make/java/Makefile xmqj)
 
 javadoc:

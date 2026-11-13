@@ -244,3 +244,10 @@ then
 fi
 
 tests/test_samples.sh "$PROG" "$OUTPUT"
+
+# The xmq command line grammar xmqcli.ixml and the argv joiners.
+if [ -z $FILTER ] || [[ "cli_grammar" =~ $FILTER ]]
+then
+    tests/test_cli_grammar.sh "$PROG" "$OUTPUT/cli_grammar"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+fi
