@@ -9,7 +9,7 @@ nix {
         set {
             imports(A)
             {
-                _(N = path) = ./hardware-configuration.nix
+                _(P) = ./hardware-configuration.nix
             }
             services.openssh.enable = true
             networking.firewall.allowedUDPPorts(A)
@@ -24,18 +24,11 @@ nix {
             console {
                 keyMap = sv-latin1
             }
-            environment.systemPackages(N = with)
+            environment.systemPackages(with = pkgs
+                                       A)
             {
-                with {
-                    scope {
-                        reference = pkgs
-                    }
-                    list(A)
-                    {
-                        _(N = reference) = vim
-                        _(N = reference) = btop
-                    }
-                }
+                _(R) = vim
+                _(R) = btop
             }
             _(_ = 'my settings.a quoted name') = false
             literal.dot(K = '"literal.dot"') = 'a"b\c'

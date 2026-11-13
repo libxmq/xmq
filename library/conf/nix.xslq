@@ -1,5 +1,3 @@
-// v1.0.0 Cleanup after ixml parse of nix. Fredrik Öhrström (c) 2026 spdx: MIT
-
 xsl:stylesheet(version = 1.0 xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
 {
     xsl:template(match = '@*|node()') {
@@ -55,6 +53,15 @@ xsl:stylesheet(version = 1.0 xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
     xsl:template(match = list mode = binding-value) {
         xsl:apply-templates(select = 'node()' mode = array-item)
     }
+    xsl:template(match = 'with[list]' mode = binding-value) {
+        xsl:apply-templates(select = 'scope/comment | comment | list/node()' mode = array-item)
+    }
+    xsl:template(match = 'with[list]') {
+        with {
+            xsl:call-template(name = value-metadata)
+            xsl:apply-templates(select = . mode = binding-value)
+        }
+    }
     // Lists inside expressions such as `with` retain their expression wrapper.
     xsl:template(match = list) {
         list(A) { xsl:apply-templates(select = 'node()' mode = array-item) }
@@ -70,8 +77,16 @@ xsl:stylesheet(version = 1.0 xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
     }
     xsl:template(name = value-metadata) {
         xsl:choose {
+            xsl:when(test = 'self::with and list') {
+                xsl:attribute(name = with) { xsl:value-of(select = scope/reference) }
+                xsl:attribute(name = A)
+            }
+            xsl:when(test = 'self::reference and . != "true" and . != "false" and . != "null"') {
+                xsl:attribute(name = R)
+            }
             xsl:when(test = 'self::list') { xsl:attribute(name = A) }
-            xsl:when(test = 'self::path or self::with or self::group or (self::reference and . != "true" and . != "false" and . != "null")') {
+            xsl:when(test = 'self::path') { xsl:attribute(name = P) }
+            xsl:when(test = 'self::with or self::group') {
                 xsl:attribute(name = N) { xsl:value-of(select = 'name()') }
             }
             xsl:when(test = 'self::string') {
@@ -80,7 +95,6 @@ xsl:stylesheet(version = 1.0 xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
                     xsl:attribute(name = S)
                 }
             }
-            xsl:apply-templates(select = . mode = binding-value)
         }
     }
     xsl:template(match = set mode = binding-value) { xsl:apply-templates }
