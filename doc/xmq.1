@@ -1,363 +1,757 @@
 .TH XMQ 1
 .SH NAME
-
-xmq \- Command-line xmq/htmq/xml/html/json processor
-
+xmq \- Command-line xmq/htmq/xml/html/json/yaml processor
 .SH SYNOPSIS
-\fBxmq\fP [options]
-.br
-\fBxmq\fP [options] <file>
-.br
-\fBxmq\fP [options] <file> ( <\fIcommand\fP> [options] )+
-.br
-
-.SH EXAMPLES
-
-xmq pom.xml          \fB# pretty print as xmq and colorize\fP
-.br
-cat data.json | xmq  \fB# read from stdin\fP
-.br
-xmq index.html pa    \fB# pretty print and use pager in terminal\fP
-.br
-xmq big.json br      \fB# view json in default browser\fP
-.br
-xmq tsv.ixml input.txt           \fB# parse input using an ixml grammar\fP
-.br
-xmq pom.xmq to-xml > pom.xml            \fB# convert to xml and save into pom.xml file\fP
-.br
-xmq data.xml to-json save-to data.json  \fB# save using xmq command instead\fP
-.br
-\fB# Delete script/style nodes from html then display xmq using pager\fP
-.br
-xmq index.html delete //script delete //style pa
-.br
-\fB# Transform json using xsl transform to generate a new html page.\fP
-.br
-curl https://jsonandstuff/products | xmq - transform make_web_list.xslq to-html > products.html
-.br
-\fB# Prepare json from xmq by replacing entities with shell variable content the post as REST body.\fP
-.br
-xmq input.xmq replace-entity VALUE "$SPEED" to-json
-    | curl -H "Content-Type: application/json" -X POST --data-binary @- http://somewhere
-\fB# Automatically download and cache ixml and xsl files from library for use.\fP
-.br
-xmq ixml:data/csv list.csv xsl:data/table-to-web to-html br
-
+\fBxmq\fP [global-options] <input> [commands-and-options ...]
 .SH DESCRIPTION
 
-The xmq tool can extract data from xmq/htmq/xml/html/json files and
-convert between them.  It can also pretty print, compact, colorize,
-tokenize, apply xslt transforms and other commands to modify the
-content.
+The xmq tool can extract data from, and convert between, xmq, htmq, xml,
+html, json and yaml documents.  It can pretty print, compact, colorize,
+tokenize, transform (with xslq), validate against a schema and perform
+other operations on the content of the document.
 
-The xmq tool can also extract data from any data source for which an
-ixml (Invisible XML) grammar has been written.
+xmq can also extract data from any other text format for which an
+invisible xml (ixml) grammar has been written, and download ready-made
+ixml grammars and xsl transforms from the libxmq library at
+https://libxmq.org/library.
 
-If no commands are provided then xmq executes the command \fIrender-terminal\fP or \fIto-xmq\fP
-followed by \fIprint\fP depending on whether stdout is a tty or a file/pipe.
+If no commands are specified, xmq reads the input and prints it as xmq.
+When the output goes to a terminal the document is rendered with color;
+when it is piped you get the same pretty-printed xmq without color.
+The most common form of use is therefore simply:
 
-Xmq will read from stdin if a single minus \fB-\fP is provided as <file> or if neither <file> nor <command> is provided.
+.RS
+\fBxmq some_file.xml\fP
+.RE
 
-.SH OPTIONS
+Read from standard input when the input is the single character \fB\-\fP
+(or when no input file is given and stdin is a pipe).
+
+Command and option ordering matters: there are two kinds of options.
+\fIGlobal options\fP (the ones in the next section) are recognized before
+any input or command, and \fIper-command options\fP (most of the ones
+documented in the "OPTIONS" section) must be placed immediately after the
+command they apply to, e.g. \fBxmq pom.xml to-json \-p\fP.
+.SH GLOBAL OPTIONS
+
+Options in this section are recognized before the input file and the
+commands.  The other options, described in the ``OPTIONS'' section
+below, must be placed after the command they apply to.
 
 .TP
-.BR \--ixml=grammar.ixml
-You can parse the input using the supplied invisible xml grammar.
+.BR \-h ", " \-\-help
+Print help.
 
 .TP
-.BR \--lines
-Each input line will be treated as its own input document; use this to read jsonl, xmll or xmql; and perform a transform on each line.
+.BR \-z " (empty dom)"
+Start with an empty DOM; any input file is ignored.  Combine with
+\fBadd\fP to build a document from scratch.
 
 .TP
-.BR \--root=<name>
-Create a root node <name> unless the file starts with a node with this <name> already.
+.BR \-y " (yes)"
+Automatically answer yes to any questions (e.g. about downloading
+library files).
 
 .TP
-.BR --trim=[none|default|heuristic}
-The default setting when reading xml/html content is to trim whitespace using \fBheuristic\fP.
-When reading xmq/htmq/json then default settings is \fBnone\fP since whitespace is explicit in xmq/htmq/json.
+.BR \-i " (in-is-content)"
+The next argument is the content to be parsed, not a file name, e.g.
+\fBxmq \-i 'a=2' render-terminal\fP .
+
+.TP
+.BR \-\-xmq ", " \-\-xml", " \-\-html", " \-\-ixml", " \-\-json", " \-\-yaml", " \-\-clines ",
+" \-\-text", " \-\-lines
+Force the input content type instead of auto-detecting it.
+Normally the content type is auto-detected from the file extension (when
+a file is given) or the content itself (when reading from stdin).
+
+.TP
+.BR \-\-lines
+Treat each input line as a separate document (for formats like
+json-lines where each line is a standalone object).
+
+.TP
+.BR \-\-root=NAME
+When a document has no (single) root element (e.g. a list of json
+objects), wrap it in a synthesized root element with the given name.
+
+.TP
+.BR \-\-trim=none|heuristic|exact
+Control how whitespace is trimmed from the input.
 .br
-\fBnone\fP Keep all whitespace as is.
+.BR none : " do not trim"
 .br
-\fBdefault\fP Use normal for xml/html and none for xmq/htmq/json.
+.BR heuristic " use heuristics"
 .br
-\fBheuristic\fP Remove leading ending whitespace and incidental indentation.
+.BR exact : " not implemented yet; xmq warns and exits with status 1"
 
 .TP
-.BR \--version
-Output the xmq version and exit with zero.
+.BR \-\-no-merge
+Do not merge adjacent text nodes during parsing.
 
 .TP
-.BR \--xmq|--htmq|--xml|--html|--json
-The input format is normally auto detected but you can force the input format here.
+.BR \-\-force-download
+Always download library files, even if a cached copy exists.
 
 .TP
-.BR \-i\ a=2
-Use the next argument as the content to parse.
+.BR \-\-ixml=NAME
+Load an invisible xml grammar (named \fBN.ixml\fP, \fBN.xml\fP or
+\fBN.xmq\fP, possibly from the library).
+The grammar defines how the input text is parsed.
+Use with a .ixml/.xml/.xmq grammar file:
+.br
+.RS
+\fBxmq input.txt \-\-ixml=mygrammar.ixml to-json\fP
+.RE
 
 .TP
-.BR \-z
-Do not read from stdin nor from a file. Start with an empty dom.
+.BR \-\-ixml-all-parses
+Report all parses matched by the ixml grammar, not just the first.
 
+.TP
+.BR \-\-ixml-try-to-recover
+Try to recover a parse even if the first attempt fails.
+
+.TP
+.BR \-\-ixml-fail-silent
+Do not warn if an ixml parse fails.
+
+.TP
+.BR \-\-ixml-engine=NAME
+Use the named ixml engine implementation.
+Can also be set with the \fBXMQ_IXML_ENGINE\fP environment variable.
+
+.TP
+.BR \-\-xml-of-ixml
+Output the xml representation of the ixml parse result (debugging aid).
+
+.TP
+.BR \-\-list-library
+Print the library index (ixml grammars and xsl transforms) available
+from https://libxmq.org/library.
+
+.TP
+.BR \-\-trace[=filter] ", " \-\-debug[=filter] ", " \-\-verbose[=filter]
+Enable and optionally filter trace/debug/verbose diagnostic output.
+
+.TP
+.BR \-lx ", " \-\-log-xmq
+Write log output in xmq format.
+
+.TP
+.BR \-\-check-bg-dark-light
+Report whether the current terminal is configured for dark or light
+background, then exit with status 0 if the mode is mono (no color),
+1 if it is dark and 2 if it is light.
+
+.TP
+.BR \-\-check-truecolor
+Check whether the current terminal supports truecolor; exit 0 if it
+does, 1 otherwise.
+
+.TP
+.BR \-\-version
+Print the version and exit.
+
+.TP
+.BR \-\-license
+Print the license and exit.
 .SH COMMANDS
 
-.TP
-\fIbrowse/br\fP
-Render a temporary html page and view it using the default browser.
+The commands are executed in order.  Most document-modifying commands
+(add, delete, replace, ...) must come before an output command (to-*,
+render-*, tokenize, save-to, page, browse, print).
+.SS OUTPUT COMMANDS
 
 .TP
-\fIto-xmq\fP / \fIto-htmq\fP
-Write the content as xmq/htmq. If stdout is a tty, then this command behaves as \fIrender-terminal\fP.
-
-.br
-\fB--compact|-c\fP By default, \fIto-xmq\fP pretty-prints the output. Using this option will result in a single line compact xmq/htmq.
-
-.br
-\fB-n|--no-final-newline\fP By default, \fIto-xmq\fP adds a final newline use this to avoid printing the final newline.
-
-.br
-\fB--pretty|-p\fP By default, \fIto-json\fP prints json in compact single line form. Use this option to pretty print the output.
-
-.br
-\fB--indent=n\fP Use the given number of spaces for indentation. Default is 4.
-
-.br
-\fB--escape-newlines\fP Use the entity \fI&#10;\fP instead of actual newlines in xmq quotes. This is automatic in compact mode.
-
-.br
-\fB--escape-tabs\fP Use the entity \fI&#9;\fP instead of actual tabs in xmq quotes.
-
-.br
-\fB--escape-non-7bit\fP Escape all non-7bit chars using entities like \fI&#160;\fP.
+.BR "to-xmq" " [options]"
+Write the document out as xmq.  This is the default output format when
+no output command is given.
 
 .TP
-\fIto-xml\fP/\fIto-html\FP/\fIto-json\fP/\fIto-clines\FP
-Write the content as xml/html/json/clines. Clines prints the DOM as
-separate lines leading with the path to the element followed by
-the content of the element as a quoted c/json string, eg. /html/body="Welcome!"
+.BR "to-htmq" " [options]"
+Write the document out as htmq (a htmq subset of xmq).
+Output is pretty printed by default; use \fB\-c\fP for the compact
+one-line form.
 
 .TP
-\fIpage/pa\fP
-Use the builtin pager to view the generated output from any of the to/render/tokenize commands.
-You can use the following keys in the pager:
-.br
-q - quit
-.br
-enter - next line
-.br
-space - next page
-.br
-arrow down - next line
-.br
-arrow up - previous line
-.br
-page down or space - next page
-.br
-page up - previous page
-.br
-/ - start a search
-.br
-< - jump to beginning
-.br
-> - jump to end
+.BR "to-xml" " [options]"
+Write the document out as xml.
+The \fB<?xml ...?>\fP declaration is included by default; use
+\fB\-o\fP (or \fB\-\-omit-decl\fP) to suppress it.
 
 .TP
-\fIprint\fP
-Print on stdout generated output from any of the to/render/tokenize commands.
+.BR "to-html" " [options]"
+Write the document out as html (no declaration emitted).
+Output is compact by default; use \fB\-p\fP for pretty printing.
 
 .TP
-\fIsave\fP <file_name>
-Save the generated output from any of the to/render/tokenize commands to the provided file name.
+.BR "to-json" " [options]"
+Write the document out as json.
+Output is compact by default; use \fB\-p\fP for a pretty-printed form.
 
 .TP
-\fIrender-terminal\fP / \fIrender-html\fP / \fIrender-tex\fP
-This command will render the content as xmq/htmq for presentation at a terminal, as html or as LaTeX.
+.BR "to-yaml" " [options]"
+Write the document out as yaml.
 
-.br
-\fB--bg=light / --bg=dark / --bg=mono\fP Normally xmq detects if the terminal has a light or dark background
-and selects suitable colors. However if you are sending the output to a file or a pipe for later display, then
-the background cannot be detected. Force the desired setting here or force mono to use no colors at all.
+.TP
+.BR "to-text" " [options]"
+Write the plain text content of the document.
 
-.br
-\fB--id=abc\fP When rendering html mark the pre tag with this id.
+.TP
+.BR "to-clines" " [options]"
+Write the document as c-lines: one path-based key=value pair per line
+with c-style quoting, e.g. \fB/_/a/@name="value"\fP or
+\fB/_/list/_="one"\fP .
 
-.br
-\fB--theme=light / --theme=dark\fP Force a colorscheme suitable for a light background or a dark background. Useful if terminal background color detection does not work. You can also export these as XMQ_THEME=light and XMQ_THEME=dark.
+.TP
+.BR "render-terminal" " [options]"
+Render the document formatted for a terminal and print it.
+This is the default rendering when the output goes to a tty.
+This command honors the \fB\-\-theme=\fP and \fB\-\-bg=\fP options (see
+THEME AND COLORS below).
 
-You can override a single color for both dark and light modes with:
-export XMQ_THEME=C=#ff0000 which will force RGB ff0000 (aka red) for comments.
+.TP
+.BR "render-html" " [options]"
+Render the document as a self-contained html page with embedded css
+(both a light and a dark color scheme are included and the browser
+picks the right one with \fBprefers-color-scheme\fP).
 
-You can make the override dark/light sensitive with: export XMQ_THEME=dark+C=#ff0000,light+C=#880000
+.TP
+.BR "render-tex" " [options]"
+Render the document as a LaTeX file.
 
-You can make override more than one color: export XMQ_THEME=dark+C=#ff0000_B:Q=#00ffff_U:EKV=#112233_U_B,light+C=#880000
+.TP
+.BR "tokenize " "[\-\-type=terminal|html|tex|debugtokens|debugcontent|location]"
+Tokenize the input without building a DOM and print the tokens.
+.br
+.RS
+.nf
+\-\-type=terminal     print colored tokens to the terminal
+\-\-type=html         print tokens annotated with <xmqEK>... tags
+\-\-type=tex          print tokens with LaTeX markup
+\-\-type=debugtokens  print each token on one line
+\-\-type=debugcontent print token contents with positions
+\-\-type=location     print token positions
+.fi
+.RE
+.SS DOCUMENT MODIFICATION COMMANDS
 
-There are 15 color settings when rendering xmq that can be modified.
-.br
-C comments
-.br
-Q quotes
-.br
-E entitites
-.br
-NS name spaces
-.br
-EN element names (not keys)
-.br
-EK element keys (not names)
-.br
-EKV element key values
-.br
-AK attribute keys
-.br
-AKV attribute key values
-.br
-CP composite parentheses
-.br
-NSD name space declaration
-.br
-UW unicode whitespace (not normal spaces, instead unbreakable space etc)
-.br
-XSL the name space with the label xsl (improve readability of xsl transforms)
-.br
-FG foreground color (white on dark background, black on light backgrounds)
-.br
-BG background color (usually the terminals own color, but can be changed for html)
-.br
-The default theme is:
-.br
+.TP
+.BR "add" " xmq-content"
+Parse xmq-content as xmq and append it to the document as new
+top-level content (a sibling after the document's last element).
+
+.TP
+.BR "add-root" " NAME"
+Wrap the (possibly rootless) document in a new root element with the
+given name.
+
+.TP
+.BR "delete" " [xpath-expression]"
+Remove the node(s) matching the xpath expression.
+A non-matching expression leaves the document unchanged.
+Invoked without an expression the document is passed through unmodified.
+
+.TP
+.BR "select" " xpath-expression"
+Keep only the node(s) matching the xpath expression.
+
+.TP
+.BR "replace" " xpath=value"
+Replace the node(s) matching the xpath expression with the xmq content
+given after the \fB=\fP.
+
+.TP
+.BR "replace-entity" " ENTITY new-content"
+Set the content of the named entity to the given xmq content (the
+entity is created if it does not already exist).
+.TP
+.BR \-\-with-file=f
+Take the replacement content from the file \fIf\fP instead.
+.TP
+.BR \-\-with-text-file=f
+Take the replacement content from the file \fIf\fP as plain text instead
+of parsing it as xmq.
+
+.TP
+.BR "delete-entity" " [ENTITY]"
+Remove the entity named ENTITY (both its definition and any
+references).
+Invoked without a name it is a harmless no-op.
+
+.TP
+.BR "substitute-entity" " [ENTITY]"
+Resolve entity references in the document: a reference to ENTITY (e.g.
+\fB%name%\fP) is replaced with the content of that entity's definition,
+and character references (\fI&#65;\fP, \fI&#x41;\fP) are expanded to the character they
+denote.  If no ENTITY is given, all entity references are resolved.
+Note that when the output format is xmq, references that survive in the
+document are still written on output as \fB%name%\fP.
+
+.TP
+.BR substitute-char-entities
+Like \fBsubstitute-entity\fP but only expands character references
+(\fI&#65;\fP and \fI&#x41;\fP) to the characters they denote.
+
+.TP
+.BR heu
+Using a heuristic, rename unnamed elements (elements named \fB_\fP)
+after their parent: a child of \fIbranches\fP becomes \fIbranch\fP,
+a child of \fIsteps\fP becomes \fIstep\fP, and so on (the singular
+form of the parent's name).
+An unnamed root is named after the \fB\-\-root=NAME\fP global option
+(placed before the input file) when given, otherwise after the input
+file name (with the extension stripped).
+The input must be a valid xmq (or json) document.
+.SS DATA EXTRACTION COMMANDS
+
+.TP
+.BR "for-each" " xpath-expression \-\-shell=\(dqcommand\(dq"
+For each node matching the xpath expression, xmq looks for
+\fB${name}\fP occurrences in the command, sets a shell environment
+variable for each one (with \fB.\fP meaning the node's text, \fB..\fP
+meaning the node's name, and any other name meaning that child element's
+text), and runs the command under \fB/bin/sh\fP .
+The command is executed once per matched node.
+
+.TP
+.BR statistics
+Print statistics about the document (size, number of elements, etc.).
+This is an output command; it produces output on the terminal.
+.SS LOAD, VALIDATE AND TRANSFORM COMMANDS
+
+.TP
+.BR "load" " file [options]"
+Read and parse another file (format auto-detected; .yml/.yaml files
+are parsed as yaml; an ixml grammar can be applied with the
+\fB\-\-ixml=\fP global option) and merge the result into the document.
+.TP
+.BR \-\-alias=NAME
+Rename the loaded document's root element to NAME before merging.
+
+.TP
+.BR "validate" " schema-file.xsd [options]"
+Validate the document against the given xml schema (xsxsl).
+Exits non-zero if validation fails.
+.TP
+.BR \-\-silent
+Only print the error, not the document.
+
+.TP
+.BR "transform" " xslfile.xslq|library_name [options]"
+Apply the given xsl transform (in xslq format) to the document.
+The transform can be a local file or a library name that will be
+downloaded and cached from https://libxmq.org/library.
+.TP
+.BR \-\-param=NAME=VALUE
+Set a numeric parameter in the transform.
+.TP
+.BR \-\-stringparam=NAME=VALUE
+Set a string parameter in the transform.
+.SS QUOTE / UNQUOTE
+
+.TP
+.BR "quote-c" " [options]"
+Output the document content as a C-quoted string literal (with quotes
+and escapes), suitable for embedding in C source.
+.TP
+.BR \-\-add-nl
+Append a trailing newline escape sequence to the quoted output.
+
+.TP
+.BR "unquote-c" " [options]"
+Interpret the input as a C string literal, decode its escapes and print
+the resulting plain content.
+.TP
+.BR \-\-add-nl
+Append a trailing newline to the output.
+.SS OUTPUT DESTINATION COMMANDS
+
+.TP
+.BR print
+Print the output (the default if no output destination is given).
+
+.TP
+.BR no-output
+Consume the document without producing any output at all.
+
+.TP
+.BR "page" " (pa)"
+Page the output in a built-in pager (requires a terminal as output;
+xmq reports an error and exits if stdout is not a tty).
+Keys:
+.nf
+    q/esc/q       quit
+    space/pagedown next page
+    pageup        previous page
+    down/up arrow next/previous line
+    enter         next line
+    <             jump to start
+    >             jump to end
+.fi
+
+.TP
+.BR "browse" " (br)"
+Open the rendered html in the default browser.
+
+.TP
+.BR "save-to" " filename"
+Save the output to a file.
+.SS HELP
+
+.TP
+.BR "help" " [command]"
+Print the help text, optionally for a specific command.
+.SH "OPTIONS FOR to-*/render-*/tokenize"
+The options in this section are \fIper-command\fP options: they must be
+placed after the command they apply to, and each is only accepted by the
+commands listed.
+
+.TP
+.BR \-p ", " \-\-pretty
+(to-*/render-*) Pretty-print the output.  This is the default for
+to-xmq/to-htmq/to-yaml, while to-json and to-html are compact by
+default.
+
+.TP
+.BR \-c ", " \-\-compact
+(to-*/render-*) Write the output as a single line.
+
+.TP
+.BR \-n ", " \-\-no-final-nl
+(to-*/render-*) Do not write a trailing newline.
+
+.TP
+.BR \-o ", " \-\-omit-decl
+(to-xml only) Omit the leading \fB<?xml ...?>\fP declaration line.
+
+.TP
+.BR \-\-indent=NUM
+(to-xmq, to-htmq, to-yaml, render-*) Use NUM spaces for each indent
+level (default 4 for xmq/htmq, 2 for json/yaml when pretty-printed).
+
+.TP
+.BR \-\-escape-newlines
+(to-xmq, to-htmq, to-yaml, render-*) Escape newlines inside quoted
+values.
+
+.TP
+.BR \-\-escape-tabs
+(to-xmq, to-htmq, to-yaml, render-*) Escape tab characters.
+
+.TP
+.BR \-\-escape-non-7bit
+(to-xmq, to-htmq, to-yaml, render-*) Escape all non-7-bit (i.e.
+non-ASCII) characters.
+
+.TP
+.BR \-\-prefer-double-quotes
+(to-xmq, to-htmq, to-yaml, render-*) Produce double-quoted strings in
+the output.
+
+.TP
+.BR \-\-add-nl
+(quote-c/unquote-c) Append a trailing newline escape to the quoted
+output.
+
+.TP
+.BR \-\-class=NAME
+(render-*) Use the given css class name instead of the default.
+
+.TP
+.BR \-\-id=NAME
+(render-*) Add the given id to the rendered element.
+
+.TP
+.BR \-\-nostyle
+(render-*) Do not include any preamble/style (the render is \fIraw\fP).
+
+.TP
+.BR \-\-onlystyle
+(render-*) Output only the preamble/style block (the css/latex
+header), not the content.
+
+.TP
+.BR \-\-theme=light|dark|SPEC
+(render-*) Force the light or dark theme, or supply a custom theme spec
+(see THEME AND COLORS below).
+
+.TP
+.BR \-\-bg=light|dark|mono
+(render-*) Force the background to be light, dark, or turn all color
+off (mono).
+Normally the background is auto-detected from the environment.
+An unknown value is reported and xmq exits with status 1.
+
+.TP
+.BR \-\-use-cr=STR
+(render-*) Use STR as the explicit carriage-return rendering.
+
+.TP
+.BR \-\-use-es=STR
+(render-*) Use STR as the explicit-space rendering.
+
+.TP
+.BR \-\-use-et=STR
+(render-*) Use STR as the explicit-tab rendering.
+
+.TP
+.BR \-\-use-is=STR
+(render-*) Use STR as the explicit-indentation-space rendering.
+
+.TP
+.BR \-\-use-nl=STR
+(render-*) Use STR as the explicit-newline rendering.
+
+.TP
+.BR \-\-type=terminal|html|tex|debugtokens|debugcontent|location
+(tokenize) Select the token output format (see the \fBtokenize\fP
+entry above).
+.SH THEME AND COLORS
+
+Color is used by \fIrender-terminal\fP, \fIto-xmq\fP, \fIto-htmq\fP,
+\fIrender-html\fP and \fIrender-tex\fP .  When the output goes to a
+terminal the document is rendered in color; when it is piped the
+output is plain text, unless you explicitly force a dark or light
+mode with \fB\-\-bg=dark\fP or \fB\-\-bg=light\fP (a render-* option,
+placed after the command), in which case color escapes are emitted
+even when piping.  All color can be turned off explicitly with
+\fB\-\-bg=mono\fP or \fBXMQ_BG=mono\fP .
+The background (dark or light) is auto-detected from the environment
+unless overridden with \fB\-\-bg=\fP or the \fBXMQ_BG\fP environment
+variable (\fBlight\fP, \fBdark\fP or \fBmono\fP).
+
+The default theme is built into xmq.  You can define and customize
+themes with the \fB\-\-theme=\fP option (render-* commands) or the
+\fBXMQ_THEME\fP environment variable, which applies to all rendering.
+A theme spec has the form:
+
+.RS
+.nf
+dark+COLOR=#RRGGBB[_B][_U]:COLOR=#RRGGBB[...],light+COLOR=#RRGGBB[...]
+.fi
+.RE
+
+where each named color can be overridden, and unprefixed names apply to
+both the dark and light variants.  \fB_B\fP requests bold and \fB_U\fP
+underline for that color.
+The 15 color names and their roles are:
+
+.RS
+.TP
+.B C
+comments
+.TP
+.B Q
+quotes
+.TP
+.B E
+entities
+.TP
+.B NS
+namespaces
+.TP
+.B EN
+element names (not keys)
+.TP
+.B EK
+element keys
+.TP
+.B EKV
+element key-values
+.TP
+.B AK
+attribute keys
+.TP
+.B AKV
+attribute key-values
+.TP
+.B CP
+composite parentheses
+.TP
+.B NSD
+namespace declarations
+.TP
+.B UW
+unicode whitespace
+.TP
+.B XSL
+namespace label xsl
+.TP
+.B FG
+foreground (text) color
+.TP
+.B BG
+background color
+.RE
+
+The default dark+light theme (for reference) is:
+
+.RS
+.nf
 XMQ_THEME=dark+C=#2aa1b3:Q=#26a269_B:E=#c061cb:NS=#a9a9a9:EN=#ff8c00:EK=#88b4f7:EKV=#26a269_B:AK=#88b4f7:AKV=#6196ec:CP=#c061cb:NSD=#2aa1b3:UW=#880000_U:XSL=#c061cb,light+C=#2aa1b3:Q=#26a269_B:E=#c061cb:NS=#696969:EN=#a86c00:EK=#0060fd:EKV=#26a269_B:AK=#0060fd:AKV=#12488c:CP=#c061cb:NSD=#1a91a3:UW=#880000_U:XSL=#c061cb
-.br
-.br
-\fB--nostyle\fP Do not output html/tex preamble/postamble.
-
-.br
-\fB--onlystyle\fP Output only the html/tex preamble.
-
-You can also use \fB--compact\fP, \fB--indent=n\fP, \fB--escape-newlines\fP and \fB--escape-non-7bit\fP with the render commands.
+.fi
+.RE
+.SH ENVIRONMENT
+.TP
+.BR XMQ_BG
+Force the background color mode: \fBlight\fP, \fBdark\fP or \fBmono\fP .
 
 .TP
-\fItokenize\fP
-Do not create a DOM tree for the content, just tokenize the input. Each token can be printed using colors for terminal/html/tex or with location information or with debug information. Location information is useful for editors to get help on syntax highlighting.
-
-.br
-\fB--type=[location|terminal|tex|debugtokens|debugcontent]\fP
+.BR XMQ_THEME
+Theme spec (see THEME AND COLORS above), equivalent to
+\fB\-\-theme=\fP but applies to the whole invocation.
 
 .TP
-\fIselect\fP / \fIdelete\fP
-Select or delete nodes in the DOM.
-
-.br
-\fB--xpath=<xpath-expression>\fP Select or delete nodes matching this xpath expression.
-
-.br
-\fB--entity=<entity-name>\fP Select or delete entity nodes matching this name.
+.BR XMQ_TERM
+Set the terminal color depth: \fBXMQ_TERM=truecolor\fP forces 24-bit
+(truecolor) rendering; any other non-empty value forces the 256-color
+mode.
 
 .TP
-\fIadd\fP <xmq>
-Parse the xmq and append to the DOM.
+.BR XMQ_IXML_ENGINE
+Select the ixml engine to use (same as \fB\-\-ixml-engine=\fP).
 
 .TP
-\fIadd-root\fP <root-element-name>
-Wrap the DOM with a new root node. Useful after a select which to get an XML compliant DOM.
-
+.BR COLORFGBG
+Consulted when the terminal background cannot be auto-detected: if the
+value ends in \fB;0\fP the background is assumed to be dark.
+.SH FILES
 .TP
-\fIreplace\fP\fP
-Replace parts of the DOM.
-
-.br
-\fB--xpath=<xpath-expression>\fP Replace nodes matching this xpath expression.
-
-.br
-\fB--entity=<entity-name>\fP Replace entity nodes matching this name.
-
-.br
-\fB--text=<text>\fP Replace with this text. The text is safely quoted for insertion into the document.
-
-.br
-\fB--textfile=<file-name>\fP Replace with the text from this file. The text is safely quoted for insertion into the document.
-
-.br
-\fB--file=<file-name>\fP Replace with the content of this file which has to be proper xmq/htmq/xml/html/json.
-
+.BI $HOME/.local/share/xmq/
+Directory where downloaded library files (ixml grammars, xsl
+transforms) are cached.
 .TP
-\fItransform\fP\fP
-Transform the document using xslt. The xslt can of course be provided in xmq format.
-
-.br
-\fB--param=key=value\fP Provide value as non-quoted content to parameter key.
-
-.br
-\fB--stringparam=key=value\fP Provide value as quoted (single or double) content to parameter key.
-
-.TP
-\fIfor-each\fP\fP
-Execute a shell command for each matchin xpath node. The children of the node are available as text, eg. In the shell command,
-the text: ${name} will be replaced with the text content of the child node "name". This replacement happens before the shell
-executes the command, ie it is not a shell variable.
-
-.br
-\fB--shell="shell-command ${name}"\fP Invoke /bin/sh -c "shell-command ${name}" for each match.
-
+.BI /usr/local/share/xmq/
+System-wide directory for locally installed library files.
 .SH EXAMPLES
 
 .TP
-Pretty print a document as xmq to the terminal using colors.
-
-.br
-% xmq file.xmq
-.br
-% xmq-less file.xml
-.br
-% xmq file.json
-
+Pretty print:
+.RS
+.nf
+$ xmq pom.xml
+$ xmq pom.xml render-terminal
+.fi
+.RE
 .TP
-Delete nodes and pretty print.
-
-.br
-% xmq input.xml delete --entity=Greeting
-.br
-% xmq-less input.html delete --xpath=//script to-html
-.br
-% xmq-less input.html delete --xpath=//script render-terminal
-
+Convert between formats:
+.RS
+.nf
+$ xmq pom.xml to-json > pom.json
+$ xmq pom.json to-html br
+$ xmq pom.xml to-html > pom.html
+$ xmq pom.xml to-json save-to pom.json
+$ xmq pom.xml to-text
+$ xmq pom.yml to-htmq -p
+.fi
+.RE
 .TP
-Execute a shell command for each matching node.
-
-.br
-% xmq input.xml for-each /driver/test --shell='echo "${name}"'
-
+Tokenize:
+.RS
+.nf
+$ xmq pom.xml tokenize \-\-type=html
+$ xmq pom.xml tokenize \-\-type=debugcontent
+.fi
+.RE
 .TP
-Replace nodes and print.
-
-.br
-% xmq input.xml \\
-.br
-    replace --entity=Greeting --text='howdy' \\
-.br
-    replace --entity=Page --file=pagecontent.xmq
-.br
-% xmq input.xml replace --xpath=//div --file=newdiv.xmq
-
+Extract data with xpath / for-each:
+.RS
+.nf
+$ xmq pom.xml select //dependency save-to deps.xmq
+$ xmq pom.xml for-each //dependency \-\-shell='echo \&"${artifactId} \&-${version}"'
+$ xmq pom.xml for-each //dependency \-\-shell='echo \&"${..} says ${.}"'
+.fi
+.RE
 .TP
-Select nodes and print.
-
-.br
-% xmq input.xml select //button
-
+Transform with xslq:
+.RS
+.nf
+$ xmq pom.xml transform web-view.xslq to-html > web.html
+$ xmq data.json transform xsl:data/table-to-web br
+$ xmq pom.xml transform mvn \-\-stringparam=version=1.2.3 to-html
+.fi
+.RE
 .TP
-Transform document.
-
-.br
-% xmq input.xmq transform --xslt=toweb.xsltq to-html > index.html
-.br
-% xmq data.json replace --xpath=//work --textfile=work.txt \\
-.br
-                transform --xslt=restructure.xsltq to-json > work.json
-
+Build a document from scratch:
+.RS
+.nf
+$ xmq \-z add name=Fred add age=42 add-root person to-xml
+$ xmq \-z add a=1 add b=2 to-json -p
+.fi
+.RE
+.TP
+Validate:
+.RS
+.nf
+$ xmq data.xml validate data.xsd
+$ xmq data.json validate schema.json \-\-silent
+.fi
+.RE
+.TP
+Use an invisible xml grammar:
+.RS
+.nf
+$ xmq input.txt \-\-ixml=mygrammar.ixml to-json
+$ xmq input.csv \-\-ixml=csv xsl:data/table-to-web br
+.fi
+.RE
+.TP
+Load one document into another:
+.RS
+.nf
+$ xmq base.pom.xml load extra.xmq to-html
+$ xmq base.pom.xml load \-\-alias=EXTRA extra.xmq to-html
+.fi
+.RE
+.TP
+Statistics:
+.RS
+.nf
+$ xmq pom.xml statistics
+.fi
+.RE
+.TP
+Quote/unquote for C:
+.RS
+.nf
+$ xmq \-i 'hello, "world"' quote-c
+$ echo \-n \(dqhello \\\\(cq\(dq | xmq \- unquote-c
+.fi
+.RE
+.SH EXIT STATUS
+\fBxmq\fP exits with status 0 on success and with a non-zero status on
+error (parse errors, failed validation, etc.).
+The \fBvalidate\fP command exits non-zero when the document does not
+validate against the schema.
+The \fB\-\-trim=exact\fP option is not implemented: xmq prints a warning
+and exits with status 1.
+The two check options have a special status scheme:
+\fB\-\-check-bg-dark-light\fP exits 0 for mono (no color), 1 for a dark
+background and 2 for a light background; \fB\-\-check-truecolor\fP exits
+0 if the terminal supports truecolor and 1 otherwise.
+.SH BUGS
+xmq is young so it does have bugs.  Known crashes are catalogued in
+\fBCRASHES.TOFIX\fP in the source tree.
+Report other bugs to https://libxmq.org/feedback.
 .SH AUTHOR
-Written by Fredrik Öhrström.
-
+Written by Fredrik Öhrström <oehrstroem@gmail.com>.
 .SH COPYRIGHT
-Copyright \(co 2019-2024 Fredrik Öhrström.
+Copyright \(co 2019\-2026 Fredrik Öhrström.
 .br
-License MIT
+Licensed under the MIT license.  See
+.B https://libxmq.org/license
+for details.
+.SH "SEE ALSO"
+.BR xmq.c "(3)" ,
+.BR invisible-xml "(7)" ,
+.BR xslt "(7)" .
+.br
+Online documentation: https://libxmq.org
+.br
+The xmq language reference: https://libxmq.org/xmq.pdf
+
+.SH AVAILABILITY
+The xmq command line tool is part of the xmq project,
+available from https://github.com/libxmq/xmq and
+https://libxmq.org/xmq.
