@@ -61,6 +61,12 @@ compare()
         cls=P_$name
         mkdir -p "$OUTPUT/java"
         if ! "$XMQJ" generate-parser --java "$g" --class=$cls > "$OUTPUT/java/$cls.java" 2> "$OUTPUT/$name.jerr" \
+           && grep -q "runtime prediction" "$OUTPUT/$name.jerr"
+        then
+            # The Java generator does not support runtime prediction yet.
+            [ -n "$VERBOSE" ] && echo "SKIP java (runtime prediction): $g"
+            cls=""
+        elif [ ! -s "$OUTPUT/java/$cls.java" ] \
            || ! javac -nowarn -d "$OUTPUT/java" -cp "$JAR" "$OUTPUT/java/$cls.java" 2> "$OUTPUT/$name.jcerr"
         then
             echo "FAIL: generate or compile java $g"

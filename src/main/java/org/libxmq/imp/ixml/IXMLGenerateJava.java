@@ -52,6 +52,12 @@ public final class IXMLGenerateJava
     public static String generate(String source, String pkg, String cls, String source_name)
     {
         IXMLAnalyzer a = IXMLAnalyzer.compile(source);
+        if (!a.dynamic().isEmpty())
+        {
+            throw new IllegalArgumentException("the grammar needs runtime prediction (no static lookahead for "
+                                               + String.join(", ", a.dynamic().keySet())
+                                               + "), which the Java generator does not support yet");
+        }
         return new IXMLGenerateJava(a, pkg, cls, source_name).run();
     }
 

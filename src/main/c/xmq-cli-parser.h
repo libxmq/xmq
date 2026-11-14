@@ -6,6 +6,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -50,6 +51,7 @@ typedef struct xmqcli_Parser
     size_t fail_pos;        // Where the parse failed.
     const char *fail_rule;  // The rule that failed.
     const char *fail_expected;
+    void *dyn_ctx;          // The return stack, for the adaptive prediction (if used).
     void *lr_elem;          // Handed from a left recursive rule to its loop rule.
     XMQ_MARK_TYPE lr_mark;
 } xmqcli_Parser;

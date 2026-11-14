@@ -46,6 +46,12 @@ final class IXMLLookahead {
     static final long WORK_LIMIT = 150_000;
     static final long STEP_LIMIT = 3_000_000;
     private long steps; // Closure steps of the current decision attempt.
+    // Runtime prediction (predictDynamic): no limits, and an ambiguity picks the
+    // first of the cheapest alternatives instead of failing.
+    private boolean dynamic;
+    // Runtime SLL: a conflict with an exact stack is resolved like LL would, only
+    // a conflict with an UNKNOWN bottom is a failure (fall back to LL).
+    private boolean sllRuntime;
 
     // ------------------------------------------------------------ char sets
 
@@ -252,7 +258,7 @@ final class IXMLLookahead {
         while (!todo.isEmpty()) {
             Config c = todo.pop();
             if (!seen.add(c)) continue;
-            if (++steps > STEP_LIMIT)
+            if (++steps > STEP_LIMIT && !dynamic && !sllRuntime)
                 throw new Failure("too-large", "The lookahead analysis needs too much work, more than "
                                   + STEP_LIMIT + " steps.");
             if (isTransition(c)) { result.add(c); continue; }
@@ -278,7 +284,7 @@ final class IXMLLookahead {
                 Stack s = c.stack;
                 if (c.idx + 1 < terms.length) {
                     s = push(c.rule, c.alt, c.idx + 1, c.stack);
-                    if (s.depth > STACK_LIMIT)
+                    if (s.depth > STACK_LIMIT && !dynamic && !sllRuntime)
                         throw new Failure("non-regular", "The lookahead needs a recursion deeper than "
                                           + STACK_LIMIT + ", it is not a regular language. The recursion: "
                                           + recursion(s) + ".");
@@ -609,8 +615,10 @@ final class IXMLLookahead {
             int min = Collections.min(m.values());
             List<Integer> cheapest = new ArrayList<>();
             for (Map.Entry<Integer, Integer> a : m.entrySet()) if (a.getValue() == min) cheapest.add(a.getKey());
-            if (cheapest.size() > 1) {
-                checkConflict(rule, state, cheapest, e.getKey());
+            if (cheapest.size() > 1 && !dynamic) {
+                boolean exact = true;
+                for (Stack i = (Stack)e.getKey().get(3); i != null; i = i.next) if (i == UNKNOWN) exact = false;
+                if (!(sllRuntime && exact)) checkConflict(rule, state, cheapest, e.getKey());
             }
             for (Integer a : m.keySet()) if (a != cheapest.get(0)) dropped.add(withAlt(e.getKey(), a));
         }
@@ -664,6 +672,7 @@ final class IXMLLookahead {
     /** The input leading from the DFA start to the state, for diagnostics. */
     static String example(State s) {
         StringBuilder b = new StringBuilder();
+        if (s == null) return ""; // Runtime prediction has no DFA state.
         for (State i = s; i.parent != null; i = i.parent) {
             int c = i.via;
             String t;
@@ -677,6 +686,206 @@ final class IXMLLookahead {
             b.insert(0, t);
         }
         return b.toString();
+    }
+
+    /**
+     * Predict the alternative of the decision in rule at runtime, like ALL(*):
+     * simulate the ATN from the input position with the actual call stack of
+     * the parser (ctx, innermost return position first, null is the start
+     * rule's empty context) until only one alternative remains. This is used
+     * for decisions that have no static lookahead DFA. Costs resolve
+     * conflicts like in the static analysis, a remaining ambiguity picks the
+     * first alternative.
+     * @param ri The rule index.
+     * @param ctx The return stack of the parser.
+     * @param input The input code points.
+     * @param pos The position of the decision.
+     * @return The alternative, or -1 if no alternative matches.
+     */
+    int predictDynamic(int ri, Stack ctx, int[] input, int pos) {
+        dynamic = true;
+        try {
+            return predictDynamicInternal(ri, ctx, input, pos);
+        } catch (Failure f) {
+            throw new IllegalStateException("Runtime prediction cannot fail: " + f.getMessage());
+        } finally {
+            dynamic = false;
+        }
+    }
+
+    /**
+     * A state of the runtime SLL DFA of a decision (built lazily, cached across
+     * predictions): predict is the alternative, -1 if more lookahead is needed,
+     * -2 if no alternative matches, and conflict means that SLL cannot decide
+     * here and the exact LL simulation with the real stack must be used.
+     */
+    static final class DState {
+        Set<Config> configs; // The resolved configurations, the ones that move on.
+        int predict = -1;
+        boolean conflict;
+        final Map<Integer, DState> edges = new HashMap<>();
+        DState(Set<Config> configs) { this.configs = configs; }
+    }
+    private final Map<Integer, Map<Set<Config>, DState>> sllStates = new HashMap<>();
+    // The start state per decision and truncated context (rule, stack identity).
+    private final Map<Integer, Map<Stack, DState>> sllStart = new HashMap<>();
+    private final Map<Integer, DState> sllStartNull = new HashMap<>();
+    static final int CTX_K = System.getenv("XMQ_CTX_K") != null ? Integer.parseInt(System.getenv("XMQ_CTX_K")) : 4;
+
+    // The top k return positions of the stack with an UNKNOWN bottom (exact if shallower).
+    Stack truncate(Stack ctx, int k) {
+        if (ctx == null || ctx == UNKNOWN) return ctx;
+        if (k == 0) return UNKNOWN;
+        return push(ctx.rule, ctx.alt, ctx.idx, truncate(ctx.next, k - 1));
+    }
+    static long sllHits, llFallbacks, sllStatesBuilt, sllStateConfigs;
+
+    // Resolve and classify a set of SLL configurations as a DFA state.
+    private DState sllState(int ri, Set<Config> configs) {
+        Map<Set<Config>, DState> known = sllStates.computeIfAbsent(ri, k -> new HashMap<>());
+        DState d = known.get(configs);
+        if (d != null) return d;
+        d = new DState(configs);
+        known.put(configs, d);
+        sllStatesBuilt++;
+        sllStateConfigs += configs.size();
+        Set<Config> resolved;
+        try {
+            resolved = resolve(names[ri], null, configs);
+        } catch (Failure f) {
+            d.conflict = true;
+            return d;
+        }
+        int predicted = -1;
+        boolean unique = true;
+        for (Config c : resolved) {
+            if (predicted == -1) predicted = c.predicted;
+            else if (predicted != c.predicted) { unique = false; break; }
+        }
+        if (predicted == -1) d.predict = -2;
+        else if (unique) d.predict = predicted;
+        d.configs = resolved; // The key set of the cache is not changed.
+        return d;
+    }
+
+    /**
+     * Predict at runtime with the cached SLL DFA, falling back to the exact LL
+     * simulation (predictDynamic) when the SLL DFA has a conflict.
+     * @param ri The rule index.
+     * @param ctx The return stack of the parser, used by the LL fallback.
+     * @param input The input code points.
+     * @param pos The position of the decision.
+     * @return The alternative, or -1 if no alternative matches.
+     */
+    int predictAdaptive(int ri, Stack ctx, int[] input, int pos) {
+        sllRuntime = true;
+        try {
+            return predictAdaptiveInternal(ri, ctx, input, pos);
+        } finally {
+            sllRuntime = false;
+        }
+    }
+
+    private int predictAdaptiveInternal(int ri, Stack ctx, int[] input, int pos) {
+        try {
+            // The DFA is cached per decision and the top CTX_K frames of the real
+            // stack, which removes most conflicts that come from merging call sites.
+            Stack tctx = truncate(ctx, CTX_K);
+            DState d = tctx == null ? sllStartNull.get(ri) : sllStart.computeIfAbsent(ri, k -> new HashMap<>()).get(tctx);
+            if (d == null) {
+                List<Config> seeds = new ArrayList<>();
+                for (int a = 0; a < alts[ri].length; a++) seeds.add(new Config(ri, a, 0, a, tctx));
+                steps = 0;
+                d = sllState(ri, closure(seeds));
+                if (tctx == null) sllStartNull.put(ri, d);
+                else sllStart.get(ri).put(tctx, d);
+            }
+            for (int p = pos; ; p++) {
+                if (d.conflict) break;
+                if (d.predict >= 0) { sllHits++; return d.predict; }
+                if (d.predict == -2) return -1;
+                if (p > input.length) break;
+                int sym = p < input.length ? input[p] : EOF;
+                DState next = d.edges.get(sym);
+                if (next == null) {
+                    List<Config> moved = new ArrayList<>();
+                    for (Config c : d.configs) {
+                        if (matches(c, sym)) {
+                            Config m = advance(c, sym);
+                            if (m != null) moved.add(m);
+                        }
+                    }
+                    steps = 0;
+                    Set<Config> target;
+                    try {
+                        target = closure(moved);
+                    } catch (Failure f) {
+                        // Too deep or too large for SLL here, use LL.
+                        DState c = new DState(new LinkedHashSet<>());
+                        c.conflict = true;
+                        d.edges.put(sym, c);
+                        break;
+                    }
+                    next = sllState(ri, target);
+                    d.edges.put(sym, next);
+                }
+                d = next;
+            }
+        } catch (Failure f) {
+            // The start state could not be built, use LL.
+        }
+        llFallbacks++;
+        sllRuntime = false;
+        return predictDynamic(ri, ctx, input, pos);
+    }
+
+    static final boolean DYN_STATS = System.getenv("XMQ_DYN_STATS") != null;
+    static long dynCalls, dynSymbols, dynConfigs;
+    static final Map<String, long[]> dynPerRule = new TreeMap<>();
+    static {
+        if (DYN_STATS) Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.err.println("sll hits " + sllHits + " ll fallbacks " + llFallbacks + " sll states " + sllStatesBuilt + " sll state configs " + sllStateConfigs);
+            System.err.println("dynamic predictions " + dynCalls + " symbols " + dynSymbols + " configs " + dynConfigs);
+            dynPerRule.entrySet().stream().sorted((a, b) -> Long.compare(b.getValue()[2], a.getValue()[2])).limit(15)
+                .forEach(e -> System.err.printf("  %-30s calls %8d symbols %9d configs %11d%n", e.getKey(), e.getValue()[0], e.getValue()[1], e.getValue()[2]));
+        }));
+    }
+
+    private int predictDynamicInternal(int ri, Stack ctx, int[] input, int pos) throws Failure {
+        long[] st = DYN_STATS ? dynPerRule.computeIfAbsent(names[ri], k -> new long[3]) : null;
+        if (DYN_STATS) { dynCalls++; st[0]++; }
+        {
+            List<Config> seeds = new ArrayList<>();
+            for (int a = 0; a < alts[ri].length; a++) seeds.add(new Config(ri, a, 0, a, ctx));
+            Set<Config> configs = closure(seeds);
+            for (int p = pos; ; p++) {
+                configs = resolve(names[ri], null, configs);
+                int predicted = -1;
+                boolean unique = true;
+                for (Config c : configs) {
+                    if (predicted == -1) predicted = c.predicted;
+                    else if (predicted != c.predicted) { unique = false; break; }
+                }
+                if (predicted == -1) return -1;
+                if (unique) return predicted;
+                if (p > input.length) {
+                    // All input including EOF consumed and still ambiguous, pick the first.
+                    int min = Integer.MAX_VALUE;
+                    for (Config c : configs) min = Math.min(min, c.predicted);
+                    return min;
+                }
+                int sym = p < input.length ? input[p] : EOF;
+                List<Config> moved = new ArrayList<>();
+                for (Config c : configs) {
+                    if (matches(c, sym)) {
+                        Config m = advance(c, sym);
+                        if (m != null) moved.add(m);
+                    }
+                }
+                configs = closure(moved);
+                if (DYN_STATS) { dynSymbols++; dynConfigs += configs.size(); st[1]++; st[2] += configs.size(); }
+            }
+        }
     }
 
     /** The rules that are decisions, ie have more than one alternative. */

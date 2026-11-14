@@ -57,8 +57,15 @@ public class IXMLAnalyzerTest {
         conflict("s: ['a'-'z']; ['m'-'z'].", "ambiguous");
         conflict("s: ~['a']; 'b'.", "ambiguous");
         conflict("s: 'a'*, 'a'*.", "ambiguous");
-        // Balanced parentheses before the deciding character are not regular.
-        conflict("s: p, 'x'; p, 'y'. p: '(', p, ')'; .", "non-regular");
+        // Balanced parentheses before the deciding character are not regular: there
+        // is no static DFA, the decision is predicted at runtime with the real stack.
+        String g = "s: a; b. a: p, 'x'. b: p, 'y'. p: '(', p, ')'; .";
+        var e = analyze(g, "((()))y");
+        assertEquals("true", e.attributeValue("supported"));
+        assertEquals("accepted", e.element("test").attributeValue("status"));
+        assertEquals("b", IXMLAnalyzer.parse(g, "((()))y").rootElement().firstChild().name());
+        assertEquals("a", IXMLAnalyzer.parse(g, "(())x").rootElement().firstChild().name());
+        assertEquals("rejected", analyze(g, "(()x").element("test").attributeValue("status"));
     }
     @Test public void costs() {
         // The alternative with the least cost wins an ambiguity.

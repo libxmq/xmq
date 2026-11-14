@@ -29,6 +29,8 @@ public final class IXMLAnalyzer {
     private final Set<String> reachable = new LinkedHashSet<>();
     private final IXMLLookahead lookahead;
     private final Map<String, IXMLLookahead.Dfa> dfas = new LinkedHashMap<>();
+    // Decisions without a static DFA, predicted at runtime, with the reason.
+    private final Map<String, IXMLLookahead.Failure> dynamic = new LinkedHashMap<>();
     private IXMLAnalyzer(IXMLGrammar grammar) {
         this.grammar = grammar;
         grammar.eliminateLeftRecursion();
@@ -84,6 +86,8 @@ public final class IXMLAnalyzer {
     IXMLGrammar grammar() { return grammar; }
     Set<String> reachable() { return reachable; }
     Map<String, IXMLLookahead.Dfa> dfas() { return dfas; }
+    Map<String, IXMLLookahead.Failure> dynamic() { return dynamic; }
+    IXMLLookahead lookahead() { return lookahead; }
 
     /** Parse the input with the LL(*) parser of the grammar and return the ixml parse tree.
      * @param source iXML grammar
@@ -186,7 +190,13 @@ public final class IXMLAnalyzer {
             try {
                 dfas.put(name, lookahead.build(name));
             } catch (IXMLLookahead.Failure f) {
-                diagnose(f.code, name, f.getMessage());
+                if (f.code.equals("ambiguous")) {
+                    diagnose(f.code, name, f.getMessage());
+                } else {
+                    // No static lookahead DFA (the lookahead is not regular, too large,
+                    // or the context was lost): predicted at runtime, see predictDynamic.
+                    dynamic.put(name, f);
+                }
                 result = f.code;
             }
             if (System.getenv("XMQ_LL_TIME") != null) {
@@ -217,6 +227,8 @@ public final class IXMLAnalyzer {
             parser.addContent(e);
             IXMLLookahead.Dfa dfa = dfas.get(name);
             if (dfa != null) e.addContent(decision(dfa));
+            IXMLLookahead.Failure dyn = dynamic.get(name);
+            if (dyn != null) e.addContent(new Element("decision").attr("dynamic", "true").attr("reason", dyn.code).setText(dyn.getMessage()));
             for (List<Term> a : r.alternatives) {
                 Element branch = new Element("alternative").attr("lookahead", ranges(select(r, a))); e.addContent(branch);
                 for (Term t : a) {
@@ -258,7 +270,7 @@ public final class IXMLAnalyzer {
     }
     /** A rule invocation in the LL(*) interpreter. */
     private static final class Frame {
-        Rule rule; List<Term> terms; int idx;
+        Rule rule; List<Term> terms; int idx; int alt;
         char kind;           // '^' element, '-' hidden, '@' attribute
         String name;         // element or attribute name
         Element element;     // for '^'
@@ -316,7 +328,22 @@ public final class IXMLAnalyzer {
         Rule r = rule(t);
         int alt = 0;
         if (r.alternatives.size() > 1) {
-            alt = dfas.get(r.name).predict(cps, offset);
+            IXMLLookahead.Dfa dfa = dfas.get(r.name);
+            if (dfa != null) {
+                alt = dfa.predict(cps, offset);
+            } else {
+                // Runtime prediction with the actual return stack.
+                IXMLLookahead.Stack ctx = null;
+                Iterator<Frame> it = stack.descendingIterator(); // From the start rule frame.
+                while (it.hasNext()) {
+                    Frame fr = it.next();
+                    // A frame at its end (a tail call) returns immediately, like in the ATN
+                    // where tail calls push nothing. This keeps loops from growing the context.
+                    if (fr.idx == fr.terms.size()) continue;
+                    ctx = lookahead.push(lookahead.index.get(fr.rule.name), fr.alt, fr.idx, ctx);
+                }
+                alt = lookahead.predictAdaptive(lookahead.index.get(r.name), ctx, cps, offset);
+            }
             if (alt < 0) {
                 failedAt = offset;
                 int cp = offset == cps.length ? IXMLGrammar.EOF : cps[offset];
@@ -324,7 +351,7 @@ public final class IXMLAnalyzer {
             }
         }
         Frame f = new Frame();
-        f.rule = r; f.terms = r.alternatives.get(alt);
+        f.rule = r; f.terms = r.alternatives.get(alt); f.alt = alt;
         String mark = !t.mark.isEmpty() ? t.mark : !r.mark.isEmpty() ? r.mark : "^";
         f.name = !t.alias.isEmpty() ? t.alias : !r.alias.isEmpty() ? r.alias : r.name;
         boolean inAttribute = false;

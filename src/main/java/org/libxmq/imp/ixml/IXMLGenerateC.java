@@ -177,6 +177,17 @@ public final class IXMLGenerateC
         {
             if (ids.containsKey(e.getKey())) genPredict(predicts, e.getKey(), e.getValue());
         }
+        for (String name : analyzer.dynamic().keySet())
+        {
+            if (!ids.containsKey(name)) continue;
+            predicts.append("// Predict the alternative of ").append(comment(name))
+                .append(" at runtime (").append(analyzer.dynamic().get(name).code).append(" for a static DFA).\n");
+            predicts.append("static int ").append(prefix).append("_predict").append(ruleId(name)).append("(")
+                .append(prefix).append("_Parser *p)\n{\n    return ").append(prefix).append("_adaptive(p, ")
+                .append(analyzer.lookahead().index.get(name)).append(");\n}\n\n");
+        }
+        StringBuilder atn = new StringBuilder();
+        if (!analyzer.dynamic().isEmpty()) genAtn(atn);
 
         header();
         // Character sets.
@@ -200,6 +211,7 @@ public final class IXMLGenerateC
             out.append("};\n");
         }
         out.append('\n');
+        out.append(atn);
         // Prototypes.
         for (String name : analyzer.reachable())
         {
@@ -225,6 +237,7 @@ public final class IXMLGenerateC
         out.append("""
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -271,6 +284,7 @@ typedef struct %1$s_Parser
     size_t fail_pos;        // Where the parse failed.
     const char *fail_rule;  // The rule that failed.
     const char *fail_expected;
+    void *dyn_ctx;          // The return stack, for the adaptive prediction (if used).
     void *lr_elem;          // Handed from a left recursive rule to its loop rule.
     XMQ_MARK_TYPE lr_mark;
 } %1$s_Parser;
@@ -451,7 +465,7 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
         }
         else if (r.alternatives.size() == 1)
         {
-            usesStart = genAlt(body, r, r.alternatives.get(0), "    ");
+            usesStart = genAlt(body, r, 0, r.alternatives.get(0), "    ");
         }
         else
         {
@@ -465,7 +479,7 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
                     body.append("        if (lr_elem) { ").append(P).append("_flush(p); XMQ_WRAP_CONTENT(p->ctx, lr_elem, lr_mark, ")
                         .append(cstring(r.lrWrap.get(a))).append("); }\n");
                 }
-                usesStart |= genAlt(body, r, r.alternatives.get(a), "        ");
+                usesStart |= genAlt(body, r, a, r.alternatives.get(a), "        ");
                 body.append("    }\n");
             }
             body.append("    default:\n        return ").append(P).append("_fail(p, ").append(cstring(displayName(r)))
@@ -545,8 +559,107 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
         return true;
     }
 
+    /**
+     * With adaptive prediction, a call that is not the last term of its alternative
+     * pushes its return position (the term after the call) on the return stack.
+     */
+    void pushCtx(StringBuilder b, Rule r, int alt, int i, boolean last, String ind)
+    {
+        if (analyzer.dynamic().isEmpty() || last) return;
+        b.append(ind).append("{ void *dyn_saved = p->dyn_ctx; p->dyn_ctx = ").append(prefix).append("_push(")
+         .append(analyzer.lookahead().index.get(r.name)).append(", ").append(alt).append(", ").append(i + 1)
+         .append(", (").append(prefix).append("_Stack*)p->dyn_ctx);\n");
+    }
+
+    void popCtx(StringBuilder b, boolean last, String ind)
+    {
+        if (analyzer.dynamic().isEmpty() || last) return;
+        b.append(ind).append("p->dyn_ctx = dyn_saved; }\n");
+    }
+
+    /** The ATN tables and the runtime of the adaptive prediction, see IXMLRuntimeC. */
+    void genAtn(StringBuilder b)
+    {
+        String P = prefix;
+        IXMLLookahead la = analyzer.lookahead();
+        int nrules = la.names.length;
+        List<Integer> alt0 = new ArrayList<>(), term0 = new ArrayList<>(), kind = new ArrayList<>(), arg = new ArrayList<>();
+        List<Integer> site0 = new ArrayList<>(), sites = new ArrayList<>(), pred0 = new ArrayList<>(), predsets = new ArrayList<>();
+        List<Integer> cost = new ArrayList<>();
+        // The predicates in the order of IXMLLookahead.preds (rule, alt, term order).
+        Map<Integer, List<BitSet>> predBits = new TreeMap<>();
+        for (int ri = 0; ri < nrules; ri++)
+        {
+            Rule rule = grammar.rules.get(la.names[ri]);
+            alt0.add(term0.size());
+            cost.add(la.costs[ri]);
+            for (int a = 0; a < la.alts[ri].length; a++)
+            {
+                term0.add(kind.size());
+                for (int t = 0; t < la.alts[ri][a].length; t++)
+                {
+                    Term term = la.alts[ri][a][t];
+                    if (term.chars != null) { kind.add(0); arg.add(setId(term.chars)); }
+                    else if (term.ref != null) { kind.add(1); arg.add(la.index.get(term.ref)); }
+                    else if (term.not != null)
+                    {
+                        kind.add(2);
+                        arg.add(la.predIds[ri][a][t]);
+                        predBits.put(la.predIds[ri][a][t], term.not);
+                    }
+                    else { kind.add(3); arg.add(0); }
+                }
+            }
+            site0.add(sites.size() / 3);
+            for (int[] s : la.callSites[ri]) { sites.add(s[0]); sites.add(s[1]); sites.add(s[2]); }
+            if (rule == null) throw new IllegalStateException("No rule " + la.names[ri]);
+        }
+        alt0.add(term0.size());
+        term0.add(kind.size());
+        site0.add(sites.size() / 3);
+        for (int pi = 0; pi < la.preds.size(); pi++)
+        {
+            pred0.add(predsets.size());
+            for (BitSet bs : predBits.getOrDefault(pi, List.of())) predsets.add(setId(bs));
+        }
+        pred0.add(predsets.size());
+
+        b.append("// The ATN of the grammar, used by the adaptive prediction. Rules are numbered as in\n");
+        b.append("// the analysis, the alternatives of rule r are alt0[r]..alt0[r+1]-1 and the terms of\n");
+        b.append("// alternative k are term0[k]..term0[k+1]-1, a term is a kind (0 match a set, 1 call a\n");
+        b.append("// rule, 2 negative lookahead, 3 insertion) and its arg.\n");
+        b.append("#define ").append(P).append("_ATN_START ").append(la.start).append('\n');
+        table(b, "alt0", alt0);
+        table(b, "term0", term0);
+        table(b, "kind", kind);
+        table(b, "arg", arg);
+        table(b, "cost", cost);
+        table(b, "site0", site0);
+        table(b, "sites", sites);
+        table(b, "pred0", pred0);
+        table(b, "predsets", predsets);
+        b.append("static const int *const ").append(P).append("_atn_set[] = {");
+        for (int i = 0; i < setList.size(); i++) b.append(i % 8 == 0 ? "\n    " : " ").append(P).append("_set_").append(i).append(',');
+        b.append("\n};\n");
+        b.append("static const int ").append(P).append("_atn_setn[] = {");
+        for (int i = 0; i < setList.size(); i++) b.append(i % 16 == 0 ? "\n    " : " ").append(setList.get(i).lo.length).append(',');
+        b.append("\n};\n");
+        b.append("static const unsigned char *const ").append(P).append("_atn_ascii[] = {");
+        for (int i = 0; i < setList.size(); i++) b.append(i % 8 == 0 ? "\n    " : " ").append(P).append("_ascii_").append(i).append(',');
+        b.append("\n};\n");
+        b.append(IXMLRuntimeC.code(P));
+    }
+
+    void table(StringBuilder b, String name, List<Integer> v)
+    {
+        b.append("static const int ").append(prefix).append("_atn_").append(name).append("[] = {");
+        for (int i = 0; i < v.size(); i++) b.append(i % 20 == 0 ? "\n    " : " ").append(v.get(i)).append(',');
+        if (v.isEmpty()) b.append(" 0");
+        b.append("\n};\n");
+    }
+
     /** Generate the code for one alternative. Returns true if it loops back to start. */
-    boolean genAlt(StringBuilder b, Rule r, List<Term> terms, String ind)
+    boolean genAlt(StringBuilder b, Rule r, int alt, List<Term> terms, String ind)
     {
         String P = prefix;
         boolean loops = false;
@@ -585,12 +698,15 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
                         b.append(ind).append("p->lr_elem = lr_elem;\n");
                         b.append(ind).append("p->lr_mark = lr_mark;\n");
                     }
+                    pushCtx(b, r, alt, i, last, ind);
                     b.append(ind).append("if (!").append(fn).append("(p, elem, attr)) return false; // ")
                      .append(comment(t.ref)).append('\n');
+                    popCtx(b, last, ind);
                 }
                 else if (m.equals("@"))
                 {
                     String an = cstring(elementName(t, callee));
+                    pushCtx(b, r, alt, i, last, ind);
                     b.append(ind).append("if (attr) { if (!").append(fn).append("(p, elem, attr)) return false; }\n");
                     b.append(ind).append("else\n").append(ind).append("{\n");
                     b.append(ind).append("    ").append(P).append("_Buf v = {0};\n");
@@ -599,10 +715,12 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
                     b.append(ind).append("    if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, ").append(an).append(", v.data, v.len);\n");
                     b.append(ind).append("    free(v.data);\n");
                     b.append(ind).append("}\n");
+                    popCtx(b, last, ind);
                 }
                 else
                 {
                     String en = cstring(elementName(t, callee));
+                    pushCtx(b, r, alt, i, last, ind);
                     b.append(ind).append("if (attr) { if (!").append(fn).append("(p, elem, attr)) return false; }\n");
                     b.append(ind).append("else\n").append(ind).append("{\n");
                     b.append(ind).append("    ").append(P).append("_flush(p);\n");
@@ -610,6 +728,7 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
                      .append(") : XMQ_ADD_ROOT_ELEMENT(p->ctx, ").append(en).append(");\n");
                     b.append(ind).append("    if (!").append(fn).append("(p, n, NULL)) return false;\n");
                     b.append(ind).append("}\n");
+                    popCtx(b, last, ind);
                 }
             }
             else if (t.not != null)
