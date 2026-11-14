@@ -287,7 +287,7 @@ void test_xml_dom()
     xml_node_add_child(root, xml_node_new_comment(dom, "comment"));
     XMQNode *b = xml_node_add_child(root, xml_node_new_element(dom, "b", NULL));
     xml_node_add_child(b, xml_node_new_cdata(dom, "B", 1));
-    DOM_CHECK(dom_str_is(xml_node_string_value(root), "Hello World!A&B"));
+    DOM_CHECK(dom_str_is(xml_node_string_value(root), "Hello World!AB"));
 
     // Sibling insertion and replace.
     XMQNode *c = xml_node_new_element(dom, "c", NULL);
@@ -315,7 +315,7 @@ void test_xml_dom()
     // Attribute values with entity references are stored as children.
     xml_node_append_child(xml_attr_node(y), xml_node_new_entity_ref(dom, "foo"));
     DOM_CHECK(xml_attr_simple_value(y) == NULL);
-    DOM_CHECK(dom_str_is(xml_node_string_value(xml_attr_node(y)), "2&"));
+    DOM_CHECK(dom_str_is(xml_node_string_value(xml_attr_node(y)), "2"));
     DOM_CHECK(xml_node_get_attr(a, "y", NULL) == y);
     DOM_CHECK(xml_attr_owner(y) == a);
     DOM_CHECK(xml_node_compare_order(xml_attr_node(x), xml_attr_node(y)) < 0);
@@ -380,8 +380,8 @@ void test_xml_dom()
     XMQNode *a3 = xml_node_copy(dom3, a, true);
     xml_dom_set_root_element(dom3, a3);
     DOM_CHECK(xml_dom_dtd(dom3) && xml_dtd_first_notation(xml_dom_dtd(dom3)) && xml_dtd_has_declarations(xml_dom_dtd(dom3)));
-    DOM_CHECK(dom_str_is(xml_node_string_value(a3), "A&"));
-    DOM_CHECK(dom_str_is(xml_node_string_value(xml_attr_node(xml_node_get_attr(a3, "y", NULL))), "2&"));
+    DOM_CHECK(dom_str_is(xml_node_string_value(a3), "A"));
+    DOM_CHECK(dom_str_is(xml_node_string_value(xml_attr_node(xml_node_get_attr(a3, "y", NULL))), "2"));
     xml_dom_free(dom3);
     xml_dom_free(dom);
 

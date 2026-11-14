@@ -31,7 +31,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     evaluation of simple paths.
 
     Entity references are never expanded (see xml_parser.h), so unlike libxml2
-    the replacement text of an entity is not visible to xpath.
+    the replacement text of an entity is not visible to xpath: entity reference
+    nodes are not selected by any node test and contribute nothing to string values.
 
     There is no global state: namespaces and options are given per call.
 */

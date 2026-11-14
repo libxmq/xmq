@@ -790,12 +790,6 @@ static void xml_node_collect_text(const XMQNode *node, XmlDomStrBuf *sb)
         case XML_DOM_CDATA:
             if (c->content) xml_dom_sb_add(sb, c->content, strlen(c->content));
             break;
-        case XML_DOM_ENTITY_REF:
-        {
-            XmlEntityDecl *e = xml_dom_get_entity_internal(c->dom, c->name);
-            if (e && e->node.content) xml_dom_sb_add(sb, e->node.content, strlen(e->node.content));
-            break;
-        }
         case XML_DOM_ELEMENT:
             xml_node_collect_text(c, sb);
             break;
@@ -807,11 +801,8 @@ static void xml_node_collect_text(const XMQNode *node, XmlDomStrBuf *sb)
 
 char *xml_node_string_value(const XMQNode *node)
 {
-    if (node->kind == XML_DOM_ENTITY_REF)
-    {
-        XmlEntityDecl *e = xml_dom_get_entity_internal(node->dom, node->name);
-        return xml_dom_strdup(e && e->node.content ? e->node.content : "");
-    }
+    // Entities are never expanded implicitly: an entity reference contributes nothing.
+    if (node->kind == XML_DOM_ENTITY_REF) return xml_dom_strdup("");
     if (xml_node_has_child_content(node))
     {
         XmlDomStrBuf sb = { NULL, 0, 0 };

@@ -53,8 +53,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     - An attribute value is stored as children of the attribute: text nodes and
       entity references (like libxml2), since xmq keeps &entity; references
       also inside attribute values.
-    - An entity reference has no content of its own, its string value is looked
-      up in the entity declarations of the dom's DTD.
+    - An entity reference has no content of its own and, since entities are
+      never expanded implicitly, contributes nothing to string values.
     - The DTD (doctype) is a child of the document node. Its children are the
       entity/element/attribute declarations (and comments/pis) in source order.
       Notations are kept in a separate list, as libxml2 does, since they are
@@ -210,7 +210,8 @@ const char *xml_node_content(const XMQNode *node);
 void xml_node_set_content(XMQNode *node, const char *content);
 /** Append to the content of a leaf node (text/cdata/comment/pi). */
 void xml_node_append_content(XMQNode *node, const char *content, size_t len);
-/** The XPath string-value of the node (entity references expanded). Always malloced, never NULL. */
+/** The XPath string-value of the node: the text of the descendant text/cdata nodes, entity references
+    contribute nothing. Always malloced, never NULL. */
 char *xml_node_string_value(const XMQNode *node);
 bool xml_node_is_element(const XMQNode *node);
 bool xml_node_is_text(const XMQNode *node);
@@ -259,7 +260,7 @@ XMQAttr *xml_node_first_attr(const XMQNode *element);
 XMQAttr *xml_attr_next(const XMQAttr *attr);
 const char *xml_attr_name(const XMQAttr *attr);
 /** The value if it is a single text node (or "" if empty), NULL if the value contains entity references.
-    Use xml_node_string_value for the expanded value. */
+    Use xml_node_string_value for the text without the entity references. */
 const char *xml_attr_simple_value(const XMQAttr *attr);
 XMQNode *xml_attr_owner(const XMQAttr *attr);
 /** An attribute as a node (its children are the value). */
