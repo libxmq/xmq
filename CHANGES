@@ -1,4 +1,30 @@
 
+Java port of xmq working. Do "make xmqj" to build a java version of xmq.
+It will be found here: build/xmqj Do "make testj" to test it.
+
+xmqj has a new feature: xmqj generate-parser --c mygrammar.ixml > mygrammar.c
+This will produce a c program that when compiled and linked with libxmq,
+can be run like this: mygrammar input.txt to-xml > output.xml
+or mygrammar input.txt to-json > output.json
+or mygrammar input.txt
+which will output xmq by default.
+
+This parser is top down LL(*) so it cannot handle all possible ixml grammars,
+but when it can, it is fast.
+
+An ixml not operator is implemented (used to create greedy rules)
+and an ixml cost operator to avoid the generic case of multiple possible rules.
+With this, it is now possible to parse C-source code using library/lang/c.ixml
+(The not and cost operators are not (yet) part of the ixml standard.)
+
+Try "make test_parse_myself_fast" which will compile c.ixml to a C-program
+which will parse almost all gcc -E processed xmq C-sources!
+If you have more time try "make test_parse_myself" which will use the normal
+yeap parser in xmq to parse xmq C-sources.
+
+The xmq sources now includes a c-fork and a java-fork of libxml2 and libxslt.
+The options --with-libxml2= and --with-libxslt= have been removed.
+
 2026-05-24: Version 4.2.0
 
 The release build of xmq for linux now includes the libxml2 and libxslt sources compiled

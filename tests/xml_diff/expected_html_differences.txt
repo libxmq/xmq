@@ -1,0 +1,6 @@
+# Files where the native html parser/serializer deliberately differs from libxml2.
+# Format: <path suffix> <reason>. xml_html_diff reports these as EXPECTED, not as failures.
+#
+# libxml2 writes an html tree with an XHTML doctype in its XHTML mode when asked for xml,
+# and then outputs the xmlns attribute twice (not well-formed). XHTML mode is not ported.
+HTML/script2.html                 xml output: duplicate xmlns in libxml2 XHTML mode

@@ -49,6 +49,10 @@ char *xml_save_doc(XmlDom *dom, const char *encoding, bool format, size_t *out_l
 void xml_save_node_to(MemBuffer *mb, const XMQNode *node, int level, bool format);
 char *xml_save_node(const XMQNode *node, int level, bool format, size_t *out_len);
 
+/** Append s escaped for an xml attribute value (xmlSerializeText with XML_ESCAPE_ATTR),
+    non ascii characters are written as character references if escape_non_ascii. */
+void xml_save_escape_attr(MemBuffer *mb, const char *s, bool escape_non_ascii);
+
 /** Append s quoted with " (or ' if s contains " but not '), like xmlOutputBufferWriteQuotedString. */
 void xml_save_write_quoted(MemBuffer *mb, const char *s);
 

@@ -9,6 +9,8 @@
 #include"xml_dom.h"
 #include"xml_parser.h"
 #include"xml_save.h"
+#include"xml_html_parser.h"
+#include"xml_html_save.h"
 #include"yaep_objstack.h"
 
 #include<assert.h>
@@ -29,6 +31,7 @@
     X(test_xml_dom) \
     X(test_xml_save) \
     X(test_xml_parser) \
+    X(test_xml_html) \
 
 
 #define X(name) void name();
@@ -623,6 +626,66 @@ void test_xml_parser()
     xml_dom_free(dom);
     xml_parse_error_free(&err);
     free_membuffer_and_free_content(deep);
+}
+
+/** Parse html, compare the html output (and the xml output if expected_xml is not NULL). */
+static void check_html(const char *in, bool no_blanks, const char *expected_html, const char *expected_xml)
+{
+    XmlHtmlParseSettings st;
+    xml_html_parse_settings_default(&st);
+    st.no_blanks = no_blanks;
+    XmlDom *dom = xml_html_parse_buffer(in, in + strlen(in), &st);
+    char *html = xml_html_save_doc(dom, true, NULL);
+    if (strcmp(html, expected_html))
+    {
+        all_ok_ = false;
+        printf("ERROR: test_xml_html\n  input:    %s\n  got:      %s  expected: %s", in, html, expected_html);
+    }
+    free(html);
+    if (expected_xml)
+    {
+        char *xml = xml_save_doc(dom, "utf-8", false, NULL);
+        if (strcmp(xml, expected_xml))
+        {
+            all_ok_ = false;
+            printf("ERROR: test_xml_html xml\n  input:    %s\n  got:      %s  expected: %s", in, xml, expected_xml);
+        }
+        free(xml);
+    }
+    xml_dom_free(dom);
+}
+
+#define HTML_DTD "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/REC-html40/loose.dtd\">\n"
+
+void test_xml_html()
+{
+    // Implied html/body, a default doctype, boolean attributes, legacy and html5 entities, raw script.
+    check_html("<!-- c --><p class=x checked>a&nbsp;b &copy &notin; &amp;<br><script>if (a<b) x();</script></p>", false,
+               HTML_DTD "<!-- c --><html><body><p class=\"x\" checked>a\xC2\xA0" "b \xC2\xA9 \xE2\x88\x89 &amp;<br><script>if (a<b) x();</script></p></body></html>\n",
+               "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n" HTML_DTD
+               "<!-- c -->\n<html><body><p class=\"x\" checked=\"checked\">a\xC2\xA0" "b \xC2\xA9 \xE2\x88\x89 &amp;<br/><script><![CDATA[if (a<b) x();]]></script></p></body></html>\n");
+    // Implicit closing: a p closes a p, li closes li.
+    check_html("<ul><li>a<li>b</ul><p>1<p>2", false,
+               HTML_DTD "<html><body>\n<ul>\n<li>a</li>\n<li>b</li>\n</ul>\n<p>1</p>\n<p>2</p>\n</body></html>\n", NULL);
+    // Head elements go to an implied head, a misplaced body is dropped.
+    check_html("<title>T</title><body><body x=1><p>p", false,
+               HTML_DTD "<html>\n<head><title>T</title></head>\n<body><p>p</p></body>\n</html>\n", NULL);
+    // Uri attributes are %-escaped, others are not.
+    check_html("<a href='a b\xC3\xA5' title='a b\xC3\xA5'>x</a>", false,
+               HTML_DTD "<html><body><a href=\"a%20b%C3%A5\" title=\"a b\xC3\xA5\">x</a></body></html>\n", NULL);
+    // An explicit doctype is kept.
+    check_html("<!DOCTYPE html><html><body>Howdy</body></html>", false,
+               "<!DOCTYPE html>\n<html><body>Howdy</body></html>\n", NULL);
+    // Ignorable blanks: dropped in html/head/table structure, kept in elements allowing pcdata (like body, div).
+    check_html("<html>\n<head>\n<title>t</title>\n</head>\n<body>\n<table>\n<tr>\n<td>x</td>\n</tr>\n</table>\n</body>\n</html>", true,
+               HTML_DTD "<html>\n<head><title>t</title></head>\n<body>\n<table><tr>\n<td>x</td>\n</tr></table>\n</body>\n</html>\n", NULL);
+    check_html("<html>\n <body>\n  <div>\n   <p>x</p>\n  </div>\n </body>\n</html>", true,
+               HTML_DTD "<html><body>\n  <div>\n   <p>x</p>\n  </div>\n </body></html>\n", NULL);
+    // A lone bom is a character, a bom before content is skipped.
+    check_html("\xEF\xBB\xBF", false, HTML_DTD "<html><body>\xEF\xBB\xBF</body></html>\n", NULL);
+    check_html("\xEF\xBB\xBFx", false, HTML_DTD "<html><body>x</body></html>\n", NULL);
+    // Invalid utf8 and NUL.
+    check_html("<p>a\xFF" "b\x01</p>", false, HTML_DTD "<html><body><p>a\xEF\xBF\xBD" "b\x01</p></body></html>\n", NULL);
 }
 
 int main(int argc, char **argv)

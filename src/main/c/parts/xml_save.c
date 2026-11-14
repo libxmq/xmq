@@ -217,6 +217,12 @@ static void xml_save_escape(XmlSaveCtxt *ctxt, const char *s, XmlSaveEscapeMode 
     if (cur > base) membuffer_append_region(ctxt->mb, (const char*)base, (const char*)cur);
 }
 
+void xml_save_escape_attr(MemBuffer *mb, const char *s, bool escape_non_ascii)
+{
+    XmlSaveCtxt ctxt = { mb, 0, 0, escape_non_ascii };
+    xml_save_escape(&ctxt, s, XML_SAVE_ESCAPE_ATTR);
+}
+
 void xml_save_write_quoted(MemBuffer *mb, const char *s)
 {
     if (!s) s = "";
