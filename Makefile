@@ -240,9 +240,10 @@ generate_parsers: build/xmqj
 	@echo "Generated src/main/java/org/libxmq/imp/XMQCliParser.java"
 
 # Run the xmq examples of the test suite through library/core/xmq.ixml (ixml
-# engine and generated C parser). Not part of make test until the grammar covers xmq.
+# engine, generated C parser if build/xmqj exists, and the xmq.xslq round trip).
+# Part of make test.
 test_xmq_grammar:
-	@for x in $(BUILDDIRS); do ./tests/test_xmq_grammar.sh $${x}release/xmq build/xmqj $${x}release/test_output/xmq_grammar ; done
+	@for x in $(BUILDDIRS); do ./tests/test_xmq_grammar.sh $${x}release/xmq build/xmqj $${x}release/test_output/xmq_grammar || exit 1 ; done
 
 test_library:
 	./tests/test_library.sh ./xmq build/test_library_output markup-blitz
@@ -258,6 +259,7 @@ test_release:
 	@echo "Running release tests"
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/testinternals ]; then echo "Run make first. $${x}release/testinternals not found."; exit 1; fi ; $${x}release/testinternals $(SILENCER) ; done
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/parts/testinternals ]; then echo "Run make first. $${x}release/parts/testinternals not found."; exit 1; fi ; $${x}release/parts/testinternals $(SILENCER) ; ./tests/test.sh $${x}release $${x}release/test_output $(FILTER) $(SILENCER) ; done
+	@$(MAKE) --no-print-directory test_xmq_grammar
 
 test_debug:
 	@echo "Running debug tests"
