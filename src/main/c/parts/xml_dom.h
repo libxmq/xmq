@@ -84,6 +84,8 @@ typedef enum
     XML_DOM_ATTRIBUTE_DECL = 16,
     XML_DOM_ENTITY_DECL = 17,
     XML_DOM_NOTATION_DECL = 20,
+    /** A parameter entity reference %name; between declarations in the dtd (never expanded). */
+    XML_DOM_PE_REF = 21,
 } XmlNodeKind;
 
 typedef enum
@@ -143,9 +145,11 @@ XMQNode *xml_dtd_add_entity(XMQNode *dtd, const char *name, XmlEntityType etype,
 XMQNode *xml_dtd_add_decl(XMQNode *dtd, XmlNodeKind kind, const char *name, const char *text, const char *default_value);
 /** Add a notation declaration (text without the final ">\n"). Duplicates are ignored, returns NULL. */
 XMQNode *xml_dtd_add_notation(XMQNode *dtd, const char *name, const char *text);
+/** Add a parameter entity reference %name; between the declarations. */
+XMQNode *xml_dtd_add_pe_ref(XMQNode *dtd, const char *name);
 /** Iterate the notations with xml_node_next. */
 XMQNode *xml_dtd_first_notation(const XMQNode *dtd);
-/** True if the dtd has any declarations (comments/pis do not count). */
+/** True if the dtd has any declarations or parameter entity references (comments/pis do not count). */
 bool xml_dtd_has_declarations(const XMQNode *dtd);
 /** Find a general entity declaration in the dom's dtd. */
 XMQNode *xml_dom_get_entity(XmlDom *dom, const char *name);

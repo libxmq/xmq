@@ -527,6 +527,15 @@ XMQNode *xml_dtd_add_notation(XMQNode *dtd, const char *name, const char *text)
     return d ? &d->node : NULL;
 }
 
+XMQNode *xml_dtd_add_pe_ref(XMQNode *dtd, const char *name)
+{
+    assert(dtd->kind == XML_DOM_DTD);
+    XMQNode *n = xml_node_alloc(dtd->dom, XML_DOM_PE_REF, sizeof(XMQNode));
+    n->name = xml_dom_strdup(name);
+    xml_node_append_child(dtd, n);
+    return n;
+}
+
 bool xml_dtd_has_declarations(const XMQNode *dtd_node)
 {
     assert(dtd_node->kind == XML_DOM_DTD);
@@ -534,7 +543,8 @@ bool xml_dtd_has_declarations(const XMQNode *dtd_node)
     if (dtd->first_notation) return true;
     for (XMQNode *n = dtd->node.first_child; n; n = n->next)
     {
-        if (n->kind == XML_DOM_ENTITY_DECL || n->kind == XML_DOM_ELEMENT_DECL || n->kind == XML_DOM_ATTRIBUTE_DECL) return true;
+        if (n->kind == XML_DOM_ENTITY_DECL || n->kind == XML_DOM_ELEMENT_DECL || n->kind == XML_DOM_ATTRIBUTE_DECL ||
+            n->kind == XML_DOM_PE_REF) return true;
     }
     return false;
 }

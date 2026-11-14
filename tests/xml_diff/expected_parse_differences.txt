@@ -1,0 +1,34 @@
+# Files where the native parser deliberately differs from libxml2 (see XMLPLAN.md).
+# Format: <path suffix> <reason>. xml_parse_diff reports these as EXPECTED, not as failures.
+#
+# Entities are never expanded by the parser (only by an explicit xmqExpandEntities), so
+# errors that libxml2 finds while expanding entities at parse time are not seen:
+errors/759579.xml                 entity loop, detected on expansion
+errors/rec_att_default.xml        entity loop, detected on expansion
+errors/quadratic-defattr.xml      amplification, checked on expansion
+recurse/lol_classic.xml           entity nesting depth, checked on expansion
+recurse/lol_ig_attr.xml           amplification, checked on expansion
+recurse/lol_ig_content.xml        amplification, checked on expansion
+recurse/lol_long_name.xml         amplification, checked on expansion
+recurse/lol_long_value.xml        entity nesting depth, checked on expansion
+recurse/lol_param.xml             entity nesting depth, checked on expansion
+valid/t8.xml                      parameter entity content error, detected on expansion
+valid/t8a.xml                     parameter entity content error, detected on expansion
+# Parameter entity references between declarations are kept as %name; (libxml2 expands or drops them):
+valid/t9.xml                      %pe; kept
+valid/t9a.xml                     %pe; kept
+valid/huge.xml                    %pe; kept
+valid/index.xml                   %pe; kept
+valid/pe-latin1.xml               %pe; kept
+recurse/lol_ep.xml                %pe; kept
+scripts/libxmq-docs.xml           %pe; kept
+# Undeclared entity references in attribute values are kept (libxml2 drops them):
+test/undeclared-entity.xml        &undeclared; kept in attribute
+# Entity references in namespace uris are not expanded (libxml2 expands them), open question:
+test/entity-in-ns-uri.xml         &e; in xmlns value
+# Two attributes with the same expanded name are rejected (libxml2 recovers with a namespace error):
+namespaces/err_9.xml              duplicate expanded attribute name
+# Encodings not yet supported:
+test/ebcdic_566012.xml            EBCDIC
+test/icu_parse_test.xml           EUC-JP
+test/iso-8859-5.xml               ISO-8859-5

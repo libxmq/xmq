@@ -7,6 +7,8 @@
 #include"stack.h"
 #include"text.h"
 #include"xml_dom.h"
+#include"xml_parser.h"
+#include"xml_save.h"
 #include"yaep_objstack.h"
 
 #include<assert.h>
@@ -25,6 +27,8 @@
     X(test_objstack) \
     X(test_theme) \
     X(test_xml_dom) \
+    X(test_xml_save) \
+    X(test_xml_parser) \
 
 
 #define X(name) void name();
@@ -382,6 +386,242 @@ void test_xml_dom()
     DOM_CHECK(xml_node_num_children(copy) == 1);
     DOM_CHECK(dom_str_is(xml_node_string_value(copy), "replaced"));
     xml_dom_free(dom2);
+}
+
+static void check_xml_save_node(XMQNode *n, const char *expected)
+{
+    char *got = xml_save_node(n, 0, false, NULL);
+    if (strcmp(got, expected))
+    {
+        all_ok_ = false;
+        printf("ERROR: test_xml_save got \"%s\" expected \"%s\"\n", got, expected);
+    }
+    free(got);
+}
+
+void test_xml_save()
+{
+    XmlDom *dom = xml_dom_new();
+    XMQNode *root = xml_node_new_element(dom, "r", NULL);
+    xml_dom_set_root_element(dom, root);
+
+    // Text escaping: & < > and \r, but not quotes. Control chars are invalid in xml and become U+FFFD.
+    xml_node_append_child(root, xml_node_new_text(dom, "a&b<c>d\"e'f\rg\x01h"));
+    check_xml_save_node(root, "<r>a&amp;b&lt;c&gt;d\"e'f&#13;g&#xFFFD;h</r>");
+
+    // Attribute escaping: also tab, newline and double quote.
+    xml_node_set_content(root, NULL);
+    xml_node_set_attr(root, "x", NULL, "1\t2\n3\"4'5&6<7");
+    check_xml_save_node(root, "<r x=\"1&#9;2&#10;3&quot;4'5&amp;6&lt;7\"/>");
+
+    // A cdata section containing ]]> is split, like libxml2.
+    XMQNode *c = xml_node_new_cdata(dom, "a]]>b", 5);
+    check_xml_save_node(c, "<![CDATA[a]]]]><![CDATA[>b]]>");
+    xml_node_free(c);
+
+    // Pi with and without data, comment, entity reference in an attribute.
+    XMQNode *pi1 = xml_node_new_pi(dom, "t", NULL);
+    check_xml_save_node(pi1, "<?t?>");
+    XMQNode *pi2 = xml_node_new_pi(dom, "t", "d");
+    check_xml_save_node(pi2, "<?t d?>");
+    xml_node_free(pi1);
+    xml_node_free(pi2);
+    XMQAttr *y = xml_node_set_attr(root, "y", NULL, "v");
+    xml_node_append_child(xml_attr_node(y), xml_node_new_entity_ref(dom, "e"));
+    check_xml_save_node(root, "<r x=\"1&#9;2&#10;3&quot;4'5&amp;6&lt;7\" y=\"v&e;\"/>");
+
+    // Quoting of doctype ids: " unless the string has ", then ' unless it has both.
+    MemBuffer *mb = new_membuffer();
+    xml_save_write_quoted(mb, "a");
+    xml_save_write_quoted(mb, "b\"c");
+    xml_save_write_quoted(mb, "d\"e'f");
+    membuffer_append_null(mb);
+    if (strcmp(mb->buffer_, "\"a\"'b\"c'\"d&quot;e'f\""))
+    {
+        all_ok_ = false;
+        printf("ERROR: test_xml_save quoting got %s\n", mb->buffer_);
+    }
+    free_membuffer_and_free_content(mb);
+
+    // Whole document with declaration, and formatted output.
+    char *doc = xml_save_doc(dom, "utf-8", false, NULL);
+    if (strcmp(doc, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<r x=\"1&#9;2&#10;3&quot;4'5&amp;6&lt;7\" y=\"v&e;\"/>\n"))
+    {
+        all_ok_ = false;
+        printf("ERROR: test_xml_save doc got %s\n", doc);
+    }
+    free(doc);
+    xml_node_remove_attr(root, "x", NULL);
+    xml_node_remove_attr(root, "y", NULL);
+    XMQNode *k = xml_node_append_child(root, xml_node_new_element(dom, "k", NULL));
+    xml_node_append_child(k, xml_node_new_element(dom, "l", NULL));
+    doc = xml_save_doc(dom, NULL, true, NULL);
+    if (strcmp(doc, "<?xml version=\"1.0\"?>\n<r>\n  <k>\n    <l/>\n  </k>\n</r>\n"))
+    {
+        all_ok_ = false;
+        printf("ERROR: test_xml_save formatted doc got %s\n", doc);
+    }
+    free(doc);
+    xml_dom_free(dom);
+}
+
+static int parser_messages_ = 0;
+static void count_parser_message(void *user, const char *msg)
+{
+    (void)user; (void)msg;
+    parser_messages_++;
+}
+
+/** Parse and serialize, compare with expected (NULL expects a parse error containing error_part). */
+static void check_xml_parse(const char *in, size_t len, XmlParseSettings *settings, const char *expected, const char *error_part)
+{
+    XmlParseError err;
+    XmlDom *dom = xml_parse_buffer(in, in + len, settings, &err);
+    if (!expected)
+    {
+        if (dom)
+        {
+            all_ok_ = false;
+            printf("ERROR: test_xml_parser expected an error for \"%s\"\n", in);
+            xml_dom_free(dom);
+        }
+        else if (error_part && (!err.short_message || !strstr(err.short_message, error_part)))
+        {
+            all_ok_ = false;
+            printf("ERROR: test_xml_parser expected error \"%s\" got \"%s\"\n", error_part, err.short_message ? err.short_message : "(null)");
+        }
+        xml_parse_error_free(&err);
+        return;
+    }
+    if (!dom)
+    {
+        all_ok_ = false;
+        printf("ERROR: test_xml_parser failed to parse \"%s\": %s\n", in, err.short_message);
+        xml_parse_error_free(&err);
+        return;
+    }
+    char *got = xml_save_doc(dom, "utf-8", false, NULL);
+    if (strcmp(got, expected))
+    {
+        all_ok_ = false;
+        printf("ERROR: test_xml_parser\n  input:    %s\n  got:      %s  expected: %s", in, got, expected);
+    }
+    free(got);
+    xml_dom_free(dom);
+}
+
+#define XML_DECL "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+#define PARSE_OK(in, out) check_xml_parse(in, strlen(in), &st, XML_DECL out, NULL)
+#define PARSE_ERR(in, part) check_xml_parse(in, strlen(in), &st, NULL, part)
+
+void test_xml_parser()
+{
+    XmlParseSettings st;
+    xml_parse_settings_default(&st);
+    st.no_cdata = true;
+
+    // Character references and predefined entities are decoded, declared entities are kept.
+    PARSE_OK("<r a='&#65;&lt;&amp;x'>&#x42;&gt;&apos;</r>", "<r a=\"A&lt;&amp;x\">B&gt;'</r>\n");
+    PARSE_OK("<!DOCTYPE r [<!ENTITY e 'E'>]><r a='x&e;y'>&e;</r>",
+             "<!DOCTYPE r [\n<!ENTITY e \"E\">\n]>\n<r a=\"x&e;y\">&e;</r>\n");
+    // Parameter entity references between declarations are kept, never expanded.
+    PARSE_OK("<!DOCTYPE r [<!ENTITY % p '<!ENTITY x \"y\">'>%p;]><r/>",
+             "<!DOCTYPE r [\n<!ENTITY % p '<!ENTITY x \"y\">'>\n%p;\n]>\n<r/>\n");
+    // A billion laughs document is harmless since nothing is expanded.
+    PARSE_OK("<!DOCTYPE r [<!ENTITY a 'aaaaaaaaaa'><!ENTITY b '&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;'>"
+             "<!ENTITY c '&b;&b;&b;&b;&b;&b;&b;&b;&b;&b;'><!ENTITY d '&c;&c;&c;&c;&c;&c;&c;&c;&c;&c;'>]><r>&d;&d;</r>",
+             "<!DOCTYPE r [\n<!ENTITY a \"aaaaaaaaaa\">\n<!ENTITY b \"&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;\">\n"
+             "<!ENTITY c \"&b;&b;&b;&b;&b;&b;&b;&b;&b;&b;\">\n<!ENTITY d \"&c;&c;&c;&c;&c;&c;&c;&c;&c;&c;\">\n]>\n<r>&d;&d;</r>\n");
+    // Content models are printed like libxml2, including its normalizations.
+    PARSE_OK("<!DOCTYPE r [<!ELEMENT r (a*)><!ELEMENT s (a | b? | c)*><!ELEMENT t (#PCDATA|a)*>]><r/>",
+             "<!DOCTYPE r [\n<!ELEMENT r (a)*>\n<!ELEMENT s (a | b | c)*>\n<!ELEMENT t (#PCDATA | a)*>\n]>\n<r/>\n");
+    // Values of non CDATA attributes are normalized.
+    PARSE_OK("<!DOCTYPE r [<!ATTLIST r i ID #IMPLIED c CDATA #IMPLIED>]><r i='  a  b ' c='  a  b '/>",
+             "<!DOCTYPE r [\n<!ATTLIST r i ID #IMPLIED>\n<!ATTLIST r c CDATA #IMPLIED>\n]>\n<r i=\"a b\" c=\"  a  b \"/>\n");
+    // Namespaces.
+    PARSE_OK("<a:r xmlns:a='urn:a' xmlns='urn:d'><b a:x='1'/></a:r>",
+             "<a:r xmlns:a=\"urn:a\" xmlns=\"urn:d\"><b a:x=\"1\"/></a:r>\n");
+    parser_messages_ = 0;
+    st.message_callback = count_parser_message;
+    PARSE_OK("<p:r/>", "<p:r/>\n");
+    if (parser_messages_ != 1) { all_ok_ = false; printf("ERROR: test_xml_parser expected a namespace message\n"); }
+    st.message_callback = NULL;
+    // Line endings are normalized, cdata is merged into text when no_cdata.
+    PARSE_OK("<r>a\r\nb\rc<![CDATA[<d>]]></r>", "<r>a\nb\nc&lt;d&gt;</r>\n");
+    st.no_cdata = false;
+    PARSE_OK("<r><![CDATA[<d>]]></r>", "<r><![CDATA[<d>]]></r>\n");
+    st.no_cdata = true;
+
+    // Ignorable blanks.
+    st.no_blanks = true;
+    PARSE_OK("<r>\n  <a/>\n  <b> x </b>\n</r>", "<r><a/><b> x </b></r>\n");
+    PARSE_OK("<r xml:space='preserve'>\n  <a/>\n</r>", "<r xml:space=\"preserve\">\n  <a/>\n</r>\n");
+    st.no_blanks = false;
+
+    // Encodings: UTF-16 with bom, latin1 by declaration.
+    const char utf16[] = "\xFF\xFE<\0r\0>\0\xE5\0<\0/\0r\0>\0";
+    check_xml_parse(utf16, sizeof(utf16) - 1, &st, XML_DECL "<r>\xC3\xA5</r>\n", NULL);
+    const char latin1[] = "<?xml version='1.0' encoding='ISO-8859-1'?><r>\xE5</r>";
+    check_xml_parse(latin1, sizeof(latin1) - 1, &st,
+                    "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<r>\xC3\xA5</r>\n", NULL);
+
+    // Errors.
+    PARSE_ERR("", "Document is empty");
+    PARSE_ERR("<r>", "Premature end of data");
+    PARSE_ERR("<r></s>", "Opening and ending tag mismatch");
+    PARSE_ERR("<r a='1' a='2'/>", "redefined");
+    PARSE_ERR("<r>&undeclared;</r>", "Entity 'undeclared' not defined");
+    PARSE_ERR("<r>\xC3</r>", "not proper UTF-8");
+    PARSE_ERR("<r>\x01</r>", "out of allowed range");
+    PARSE_ERR("<r>&#0;</r>", "invalid xmlChar value");
+    PARSE_ERR("<r><!-- a -- b --></r>", "Double hyphen");
+    PARSE_ERR("<r>]]></r>", "']]>' not allowed");
+
+    // Error location.
+    XmlParseError err;
+    const char *bad = "<r>\n<a>\n</b></r>";
+    XmlDom *dom = xml_parse_buffer(bad, bad + strlen(bad), &st, &err);
+    if (dom || err.line != 3)
+    {
+        all_ok_ = false;
+        printf("ERROR: test_xml_parser expected error on line 3, got line %zu\n", err.line);
+    }
+    xml_dom_free(dom);
+    xml_parse_error_free(&err);
+
+    // Limits.
+    st.max_depth = 3;
+    PARSE_OK("<a><b><c/></b></a>", "<a><b><c/></b></a>\n");
+    PARSE_ERR("<a><b><c><d/></c></b></a>", "Excessive depth");
+    xml_parse_settings_default(&st);
+    st.max_name_length = 4;
+    PARSE_ERR("<abcde/>", "Name too long");
+    xml_parse_settings_default(&st);
+    st.max_text_length = 4;
+    PARSE_ERR("<r>abcde</r>", "too long");
+
+    // A deep document is parsed without recursion.
+    xml_parse_settings_default(&st);
+    st.max_depth = 100000;
+    MemBuffer *deep = new_membuffer();
+    for (int i = 0; i < 50000; ++i) membuffer_append(deep, "<a>");
+    for (int i = 0; i < 50000; ++i) membuffer_append(deep, "</a>");
+    dom = xml_parse_buffer(deep->buffer_, deep->buffer_ + deep->used_, &st, &err);
+    if (!dom) { all_ok_ = false; printf("ERROR: test_xml_parser deep document: %s\n", err.short_message); }
+    char *out = dom ? xml_save_doc(dom, "utf-8", false, NULL) : NULL;
+    MemBuffer *expect = new_membuffer();
+    membuffer_append(expect, XML_DECL);
+    for (int i = 0; i < 49999; ++i) membuffer_append(expect, "<a>");
+    membuffer_append(expect, "<a/>");
+    for (int i = 0; i < 49999; ++i) membuffer_append(expect, "</a>");
+    membuffer_append(expect, "\n");
+    membuffer_append_null(expect);
+    if (out && strcmp(out, expect->buffer_)) { all_ok_ = false; printf("ERROR: test_xml_parser deep document output\n"); }
+    free_membuffer_and_free_content(expect);
+    free(out);
+    xml_dom_free(dom);
+    xml_parse_error_free(&err);
+    free_membuffer_and_free_content(deep);
 }
 
 int main(int argc, char **argv)

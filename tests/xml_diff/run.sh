@@ -18,9 +18,10 @@ then
 fi
 CFLAGS="-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer -I$ROOT/src/main/c -I$LIBXML2/include"
 LIBS="$LIBXML2/.libs/libxml2.a -lm"
-PARTS="$ROOT/src/main/c/parts/always.c $ROOT/src/main/c/parts/membuffer.c $ROOT/src/main/c/parts/xml_dom.c $ROOT/src/main/c/parts/xml_save.c"
+PARTS="$ROOT/src/main/c/parts/always.c $ROOT/src/main/c/parts/membuffer.c $ROOT/src/main/c/parts/hashmap.c $ROOT/src/main/c/parts/xml_dom.c $ROOT/src/main/c/parts/xml_save.c $ROOT/src/main/c/parts/xml_parser.c"
 
 $CC $CFLAGS -o "$OUT/xml_save_diff" "$ROOT/tests/xml_diff/xml_save_diff.c" $PARTS $LIBS || exit 1
+$CC $CFLAGS -o "$OUT/xml_parse_diff" "$ROOT/tests/xml_diff/xml_parse_diff.c" $PARTS $LIBS || exit 1
 
 FILES="$OUT/files.txt"
 find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" \) -prune -o -name "*.xml" -print > "$FILES"
@@ -31,4 +32,9 @@ fi
 
 # Run from the output dir so relative external entities resolve nowhere interesting.
 cd "$OUT" || exit 1
-ASAN_OPTIONS=detect_leaks=1 xargs "$OUT/xml_save_diff" < "$FILES"
+# One invocation each (xargs -x would split long lists, so pass the list via a file).
+ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_save_diff" $(cat "$FILES")
+RC1=$?
+ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_parse_diff" -x "$ROOT/tests/xml_diff/expected_parse_differences.txt" $(cat "$FILES")
+RC2=$?
+[ $RC1 = 0 ] && [ $RC2 = 0 ]

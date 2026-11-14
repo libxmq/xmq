@@ -503,6 +503,12 @@ static void xml_save_node_internal(XmlSaveCtxt *ctxt, const XMQNode *cur)
         case XML_DOM_ENTITY_DECL:
             xml_save_entity_decl(ctxt, cur);
             break;
+        case XML_DOM_PE_REF:
+            // libxml2 has no such node, it always expands parameter entities.
+            xml_save_putc(ctxt, '%');
+            xml_save_put(ctxt, xml_node_name(cur));
+            xml_save_put(ctxt, ";\n");
+            break;
         case XML_DOM_ELEMENT:
         {
             if (cur != root && ctxt->format == 1) xml_save_indent(ctxt);
