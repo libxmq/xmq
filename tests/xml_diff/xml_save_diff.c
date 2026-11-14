@@ -8,7 +8,7 @@
    both xmlDocDumpMemoryEnc and xml_save_doc and compare the bytes. Every top level
    node is also compared with xmlNodeDump vs xml_save_node.
 
-   This tool links libxml2 and is only used during the migration (see XMLPLAN.md).
+   This tool links libxml2 and is only used while libxmq moves away from libxml2.
 */
 
 #include"parts/xml_dom.h"

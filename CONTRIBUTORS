@@ -1,0 +1,536 @@
+libxmq contributors
+===================
+
+libxmq
+------
+
+Fredrik Öhrström (author and maintainer) with contributions from:
+
+Omoeba
+xnor104
+
+libxml2 and libxslt
+-------------------
+
+Parts of libxmq are ported from libxml2 and libxslt, directly or through the
+java port in src/main/java/org/libxmq/imp/xml. Those files
+carry the upstream copyright notices. This section credits the people behind
+that code.
+
+Note: the libxslt license says that the names of its authors shall not be
+used in advertising or otherwise to promote the sale, use or other dealings
+in the software without prior written authorization. This list is a credit,
+not an endorsement by any of them.
+
+Copyright holders named in the license notices
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+libxml2/Copyright
+  Daniel Veillard (1998-2012)
+  The Libxml2 Contributors (see the list below)
+libxml2 files with their own notices
+  Daniel Veillard (dict.c, 2003-2012)
+  Gary Pennington and Daniel Veillard (list.c, 2000)
+  Christopher Swenson (timsort.h, 2010-2017)
+  Vojtech Fried and Google Inc (threads.c, 2012)
+libxslt/Copyright
+  Daniel Veillard (libxslt, 2001-2002)
+  Thomas Broyer, Charlie Bozeman and Daniel Veillard (libexslt, 2001-2002)
+libxslt files with their own notices
+  Bjorn Reese and Daniel Stenberg (trio, 1998)
+  Bjorn Reese (2001)
+
+Authors named in the libxml2 and libxslt source files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Daniel Veillard, Aleksey Sanin, Alfred Mickautsch, Bjorn Reese, Daniel Garcia,
+David Kilzer, Dodji Seketeli, Gary Pennington, Graham Bennett, Igor Zlatkovic,
+Joel W. Reed, John Fleck, Lucas Brasilino, Nick Wellnhofer,
+Sokolov Yura (funny-falcon), William Brack (UTF-8 string routines).
+
+The Libxml2 Contributors
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The libxml2 license names "The Libxml2 Contributors" without listing them.
+The list below is every commit author in the libxml2 git history (the libxmq
+fork, 67c34fe2 2026-05-15), as recorded by git, with CVS import artefacts removed.
+
+Adam Spragg
+Adiel Mittmann
+Adrian Bunk
+Akira TAGOH
+Aleksey Sanin
+Alex Bligh
+Alex Henrie
+Alex Richardson
+Alexander Kutelev
+Alexander Pastukhov
+Alexandre Rostovtsev
+Alexey Neyman
+Ami Fischman
+Anders F Bjorklund
+Andoni Morales
+Andre Klapper
+Andrew Potter
+Andrew W. Nosenko
+Andrey Bienkowski
+Andy Lutomirski
+Arfrever Frehtes Taifersar Arahesis
+Ariel Schon
+Armin K
+Arne Becker
+Arnold Hendriks
+Aron Xu
+Arturo Espinosa
+Audric Schiltknecht
+Bart De Schuymer
+Baruch Siach
+Ben Boeckel
+Ben Walton
+Benjamin Gilbert
+bettermanzzy
+Bjorn Reese
+Boris Shtrasman
+Brandon Slack
+Bruce Dawson
+Bryan Henderson
+Caolán McNamara
+Carlo Bramini
+Carsten Schaar
+ccpaging
+Chris Evans
+Chris Lahey
+Christian Dywan
+Christian Weisgerber
+Christoph Reiter
+Christopher Blizzard
+Christopher Degawa
+Christopher Swenson
+Chun-wei Fan
+Colin Walters
+Collin Funk
+Conrad Irwin
+correctmost
+Csaba László
+Csaba Raduly
+Dag-Erling Smørgrav
+Damjan Jovanovic
+Dan Winship
+Dan Yeaw
+Daniel Cheng
+Daniel E
+Daniel Engberg
+Daniel Franke
+Daniel Garcia Moreno
+Daniel Lehman
+Daniel Macks
+Daniel Mustieles
+Daniel Neel
+Daniel P. Berrangé
+Daniel Richard
+Daniel Richard G
+Daniel Veillard
+Darin Adler
+David Drysdale
+David Kilzer
+David King
+David Seifert
+David Tardon
+David Warring
+dcb
+Denis Pauk
+Dennis Filder
+Dmitriy
+Dmitry V. Levin
+Dodji Seketeli
+Doran Moppert
+Elliot Lee
+Elliott Hughes
+Emmanuele Bassi
+emptyiscolor
+Eric Zurcher
+Eugene Pimenov
+Fabien Degomme
+Felix Bünemann
+Finn Barber
+Florin Haja
+Francesco Pretto
+Francis Dupont
+François Delyon
+Frederic Crozat
+Frederik Seiffert
+Friedrich Haubensak
+gabriel desharnais
+Gaurav
+Gaurav Gupta
+Gilles Espinasse
+Giuseppe Iuculano
+Greg Hildstrom
+Gregory McLean
+Grzegorz Szymaszek
+Gwenn Kahz
+Hans Breuer
+Havoc Pennington
+Heiko Becker
+Herman Semenoff
+hhb
+Hieu Le Minh
+Himanshibansal
+huangduirong
+Hugh Davenport
+Hugh McMaster
+Igor Zlatkovic
+Intron
+Ion Nistor
+Iván Chavero
+J. Peter Mugaas
+Jacob (Jouk) Jansen
+jacob berkman
+Jaka Mocnik
+Jakub Wilk
+James Henstridge
+James Hilliard
+James Lan
+James Le Cuirot
+Jan Alexander Steffens (heftig)
+Jan Pokorný
+Jan Tojnar
+Jared Yanovich
+Jason Childs
+Javier Jardón
+Jayakrishna Menon
+Jeff Garzik
+Jens Eggerstedt
+Jens Finke
+Jim Meyering
+Jim Panetta
+jinsub ahn
+Jiri Netolicky
+Joel Hockey
+Joey Arhar
+Johan Dahlin
+John Beck
+John Bradshaw
+John Fleck
+John Hein
+Jonas Eriksson
+Jose Maria Celorio
+Juergen Keil
+Jérôme Duval
+Jüri Aedla
+Kai Henning
+Kasimier T. Buchcik
+Kevin Braun
+Kevin Puetz
+Kjartan Maraas
+Kjell Ahlstedt
+Koop Mast
+Kurt Roeckx
+Kyle VanderBeek
+Lars Erik Wik
+LCaliman
+Leonid Evdokimov
+Lin Yi-Li
+Longstreth Jon
+Lovell Fuller
+LRN
+Luca Niccoli
+Lukáš Tyrychtr
+makise-homura
+Maks Mishin
+Maks Verver
+Malcolm Tredinnick
+Manish Singh
+Manish Vachharajani
+Marcus Meissner
+Marius Wachtler
+Mark Adler
+Mark Salter
+Markus Jörg
+Markus Kull
+Markus Rickert
+Martin
+Martin Baulig
+Martin Kögler
+Martin Schröder
+Martin Trappel
+Martin Vidner
+Martin von Gagern
+Mattia Rizzolo
+Mattias Hansson
+Mehltretter Karl
+Michael Catanzaro
+Michael Cronenworth
+Michael Day
+Michael Fulbright
+Michael Haubenwallner
+Michael Heilmann
+Michael Heimpold
+Michael Mann
+Michael Matz
+Michael Paddon
+Michael Stahl
+Michael Wood
+Michal Privoznik
+Michele Bianchi
+Miguel de Icaza
+Mike Alexander
+Mike Dalessio
+Mike Frysinger
+Mike Gilbert
+Mike Hommey
+Mikhail Titov
+Miklos Vajna
+Miro Hrončok
+Miroslav Bajtos
+MOD
+Mohammad Razavi
+mohammadmseet-hue
+Mohammed Sadiq
+Nathan
+Neel Mehta
+Nick Wellnhofer
+Nico Weber
+Nicolas Le Cam
+Niels Dossche
+Nikolai Weibull
+Nikolay Sivov
+Noam
+Noam Postavsky
+Nuno Ferreira
+Oliver Diehl
+Omar Siam
+orzen
+Owen Taylor
+Ozkan Sezer
+Pacho Ramos
+Patrick Gansterer
+Patrick Monnerat
+Patrick R. Gansterer
+Patrick von Reth
+Patrick Welche
+Paul Smith
+PaulHiggs
+Pavel Andrejs
+Pavel Kopylov
+Pavel Raiskup
+Peter Fordham
+Peter Kokot
+Peter Simons
+Peter Williams
+Petr Pajas
+Petr Simecek
+Petr Sumbera
+Phil Shafer
+Philip Withnall
+Pierre Belzile
+Pieter van Oostrum
+Pietro Cerutti
+Pranjal Jumde
+Rainer M. Canavan
+Raja R Harinath
+Ramiro Estrugo
+Ranier Vilela
+raniervf
+Raph Levien
+Raphael Prevost
+Raul Hudea
+Remi Gacogne
+Rob Richards
+Roland Steiner
+Romain Bondue
+Ron Angeles
+Rosen Penev
+Ross Burton
+Roumen Petrov
+Ruben Thijssen
+Ruslan Garipov
+Ryan
+Ryan Carsten Schmidt
+Ryan Sleevi
+Sadaf Ebrahimi
+Saleem Abdulrasool
+Sam James
+Sam Thursfield
+Samuel Martin
+Samuel Thibault
+Sandino Araico Sanchez
+Satadru Pramanik
+Scott Graham
+Scott McCreary
+Sebastian Wilhelmi
+Seiya Nakata
+Sergey Kosukhin
+Seth Alves
+Shaun McCance
+Shlomi Fish
+Simon Josefsson
+spadix
+Stefan Behnel
+Stefan Kost
+Stephen Chenney
+Steve Lhomme
+Steve Nairn
+Steve Wolf
+Stewart Brodie
+Stéphane Cerveau
+Stéphane Michaut
+Sven Herzberg
+SVGAnimate
+Sérgio Batista
+Tay Ray Chuan
+Taylor R Campbell
+Thomas Broyer
+Thomas Holder
+Thomas Lemm
+ThomasK
+Tim Elliott
+Tim Galeckas
+Tim Rice
+Tim Starling
+Timothy Elliott
+Timothy Lyanguzov
+Timur Bakeyev
+Tom Tromey
+Tomas Radej
+Tomasz Kłoczko
+Tomáš Ženčák
+Tony Tascioglu
+Toyoda Eizi
+Trevor Gamblin
+triallax
+Tristan Van Berkom
+Vadim Zeitlin
+veillard
+Victor Stinner
+Ville Skyttä
+Vincent Lefevre
+Vincent Torri
+Vitaly Buka
+Vitaly Ostanin
+Vlad Tsyrklevich
+Vojtech Fried
+Volker Grabsch
+Wang Kirin
+Wang Lam
+Wayne Jensen
+William M. Brack
+Wouter Van Rooy
+Xi Ruoyao
+Xia Xinfeng
+Xiaoming Ni
+yanjinjq
+Yegor Yefremov
+Yenya
+ylwango613
+Yulin Li
+Yun
+Zak Ridouh
+Zhihan Zheng
+Zhipeng Xie
+zhouzhongyuan
+Łukasz Wojniłowicz
+林博仁(Buo-ren Lin)
+
+libxslt contributors
+~~~~~~~~~~~~~~~~~~~~
+
+Every commit author in the libxslt git history (35323d6a 2025-11-30), as
+recorded by git, with CVS import artefacts removed.
+
+Abhishek Arya
+Afonso Bordado
+Albert Astals Cid
+Alessandro Astone
+Alex Richardson
+Alexandre Rostovtsev
+Andre Klapper
+Ben Walton
+Bjorn Reese
+Brice De Bruyne
+C. M. Sperberg-McQueen
+Chris Evans
+Christian Ceelen
+Christoph M. Becker
+Chun-wei Fan
+Colin Walters
+Daniel E
+Daniel Garcia Moreno
+Daniel Mustieles
+Daniel Richard
+Daniel Richard G
+Daniel Veillard
+Darin Adler
+David Kilzer
+David King
+David Seifert
+Dmitriy Korovkin
+Dominik Röttsches
+Don Olmstead
+Eduard Sanou
+Elliott Sales de Andrade
+Fatih Demir
+Federico Mena Quintero
+Frederic Crozat
+Hao Hu
+Havoc Pennington
+Hugh McMaster
+Hugo Beauzée-Luyssen
+Igor Pashev
+Igor Zlatkovic
+IlyaS
+Imran Azeezullah
+Iván Chavero
+jacob berkman
+James Muscat
+Jan Pokorný
+Jason Viers
+Joachim Breitner
+Joey Arhar
+Johan Dahlin
+John Fleck
+Jose Maria Celorio
+Julio M. Merino Vidal
+Jussi Kukkonen
+Jérôme Carretero
+Kasimier T. Buchcik
+Kjartan Maraas
+larryhaja
+Lars Kanis
+Laurence Rowe
+mahendra.n
+Malcolm Purvis
+Markus Rickert
+Martin
+Michael Bonfils
+Michael Catanzaro
+Michael Haubenwallner
+Michał Górny
+Mike Dalessio
+Mike Hommey
+money_seshu Dronamraju
+Nick Wellnhofer
+Nikolai Weibull
+Nils Werner
+Nix
+Pedro F. Giffuni
+Per Hedeland
+Peter Williams
+Petr Sumbera
+Rob Richards
+Rosen Penev
+Roumen Petrov
+Shaun McCance
+Stefan Kost
+Stewart Brodie
+Suleyman Poyraz
+Thomas Broyer
+Tomasz Kłoczko
+Vadim Zeitlin
+veillard
+Will Braswell
+William M. Brack
+Xi Ruoyao
+Yegor Yefremov
+zhang nan
+ÉRDI Gergo

@@ -1,4 +1,4 @@
-# Files where the native parser deliberately differs from libxml2 (see XMLPLAN.md).
+# Files where the native parser deliberately differs from libxml2.
 # Format: <path suffix> <reason>. xml_parse_diff reports these as EXPECTED, not as failures.
 #
 # Entities are never expanded by the parser (only by an explicit xmqExpandEntities), so
@@ -24,7 +24,7 @@ recurse/lol_ep.xml                %pe; kept
 scripts/libxmq-docs.xml           %pe; kept
 # Undeclared entity references in attribute values are kept (libxml2 drops them):
 test/undeclared-entity.xml        &undeclared; kept in attribute
-# Entity references in namespace uris are not expanded (libxml2 expands them), open question:
+# Entity references in namespace uris are rejected (libxml2 expands them), see TODO.md:
 test/entity-in-ns-uri.xml         &e; in xmlns value
 # Two attributes with the same expanded name are rejected (libxml2 recovers with a namespace error):
 namespaces/err_9.xml              duplicate expanded attribute name

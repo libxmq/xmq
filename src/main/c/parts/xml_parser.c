@@ -1264,6 +1264,16 @@ static bool xml_parse_start_tag(XmlParser *p)
         XmlRawAttr *ra = &p->attrs[k];
         XmlSlice prefix;
         if (!xml_raw_attr_is_xmlns(ra, &prefix)) continue;
+        for (size_t j = ra->first_part; j < ra->first_part + ra->num_parts; ++j)
+        {
+            if (p->parts[j].entity)
+            {
+                // Entities are never expanded implicitly and a namespace uri is a plain string,
+                // so a reference cannot be kept. Reject for now (TODO.md).
+                xml_parser_fatal(p, ra->pos, "Entity references in namespace uris are not supported (xmlns%s%.*s)",
+                                 prefix.s ? ":" : "", (int)prefix.len, prefix.s ? prefix.s : "");
+            }
+        }
         const char *href = xml_att_value_string(p, 0, ra->first_part, ra->num_parts);
         const char *pfx = prefix.s ? xml_tmp_slice(p, 1, prefix) : NULL;
         if (pfx && !*href)
@@ -1839,7 +1849,7 @@ static void xml_expect_decl_end(XmlParser *p, const char *what)
 }
 
 /** Expand the character references in an entity value. Parameter entity references are kept
-    as written: entities are never expanded by the parser (see XMLPLAN.md). Result in slot 0. */
+    as written: entities are never expanded by the parser, only by an explicit xmqExpandEntities. Result in slot 0. */
 static const char *xml_decode_entity_value(XmlParser *p, const char *v, size_t pos)
 {
     XmlPBuf *out = &p->tmp[0];
@@ -2577,7 +2587,7 @@ static void xml_parse_internal_subset(XmlParser *p)
             if (!n.s || xml_cur(p) != ';') xml_parser_fatal(p, p->i, "PEReference: no name");
             p->i++;
             p->has_pe_refs = true;
-            // Not expanded, kept as a reference (see XMLPLAN.md).
+            // Not expanded, kept as a reference: only an explicit xmqExpandEntities expands entities.
             xml_dtd_add_pe_ref(p->dtd, xml_tmp_slice(p, 3, n));
         }
         else

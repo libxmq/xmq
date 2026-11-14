@@ -102,7 +102,6 @@ typedef struct
 struct XmlDom
 {
     XMQNode document;
-    bool is_html;
     char *version;
     char *encoding;
     int standalone;
@@ -364,15 +363,6 @@ void xml_dom_set_standalone(XmlDom *dom, int standalone)
     dom->standalone = standalone < 0 ? -1 : (standalone ? 1 : 0);
 }
 
-bool xml_dom_is_html(const XmlDom *dom)
-{
-    return dom->is_html;
-}
-
-void xml_dom_set_html(XmlDom *dom, bool is_html)
-{
-    dom->is_html = is_html;
-}
 
 XMQNode *xml_dom_root_element(XmlDom *dom)
 {

@@ -60,7 +60,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       Notations are kept in a separate list, as libxml2 does, since they are
       serialized first.
 
-    See XMLPLAN.md for the overall plan.
+    There is a single dom for xml and html: html is only a choice of parser and serializer,
+    never a different node or document type.
+
 */
 
 #include"xmq.h"
@@ -126,8 +128,6 @@ void xml_dom_set_encoding(XmlDom *dom, const char *encoding);
 /** Standalone from the xml declaration: -1 not given, 0 no, 1 yes. */
 int xml_dom_standalone(const XmlDom *dom);
 void xml_dom_set_standalone(XmlDom *dom, int standalone);
-bool xml_dom_is_html(const XmlDom *dom);
-void xml_dom_set_html(XmlDom *dom, bool is_html);
 
 // DTD ////////////////////////////////////////////////////////////
 

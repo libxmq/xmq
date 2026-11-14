@@ -1,5 +1,5 @@
 #!/bin/sh
-# Differential tests of the native xml parts against libxml2 (see XMLPLAN.md).
+# Differential tests of the native xml parts against libxml2, used while libxmq moves away from libxml2.
 # Usage: tests/xml_diff/run.sh [output_dir]
 # Builds the diff tools with address/undefined sanitizers and runs them over
 # every xml file in the repository and in the libxml2 test suite (if fetched).

@@ -8,7 +8,7 @@
    - both must agree on whether the document is well formed,
    - the serialized trees (xmlDocDumpMemoryEnc vs xml_save_doc) must be identical.
 
-   This tool links libxml2 and is only used during the migration (see XMLPLAN.md).
+   This tool links libxml2 and is only used while libxmq moves away from libxml2.
 */
 
 #include"parts/xml_dom.h"

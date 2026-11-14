@@ -35,7 +35,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     There is no global state: everything is configured through XmlParseSettings
     and messages are reported through the callback in the settings.
-    The input is UTF-8 (a UTF-8 BOM is skipped); the dom gets UTF-8.
+
+    Declared entities (&name; and %name;) are never expanded, they stay as reference
+    nodes until an explicit xmqExpandEntities, which is where entity loops, nesting
+    and amplification limits are enforced. Only character references and the five
+    predefined entities (lt gt amp apos quot) are decoded while parsing. Entity
+    references in namespace uris are rejected, since a uri is a plain string.
+
+    The input is UTF-8, UTF-16 (bom or "<?" pattern) or ISO-8859-1 (declared),
+    a UTF-8 BOM is skipped; the dom gets UTF-8.
 */
 
 #include"xml_dom.h"

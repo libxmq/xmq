@@ -576,6 +576,7 @@ void test_xml_parser()
     PARSE_ERR("<r>&#0;</r>", "invalid xmlChar value");
     PARSE_ERR("<r><!-- a -- b --></r>", "Double hyphen");
     PARSE_ERR("<r>]]></r>", "']]>' not allowed");
+    PARSE_ERR("<!DOCTYPE r [<!ENTITY e 'x'>]><r xmlns='urn:&e;'/>", "Entity references in namespace uris are not supported");
 
     // Error location.
     XmlParseError err;
