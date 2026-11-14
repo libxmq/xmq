@@ -1,0 +1,47 @@
+// An xmq document that uses most of the xmq language.
+!DOCTYPE = html
+?xml-stylesheet = 'href="style.css" type="text/css"'
+/* A multi line comment
+   with incidental indentation
+     that is kept relative. */
+// A comment with /* inside */
+/* A comment
+   with a continuation */
+html(lang      = en
+     xmlns:svg = http://www.w3.org/2000/svg)
+{
+    head {
+        title = 'Hello &amp; welcome'
+        meta(charset = utf-8)
+    }
+    body(class = 'main wide')
+    {
+        h1    = Greetings
+        p     = ( 'Some text'
+                  &nbsp;
+                  'and more,
+                   a new line.' )
+        pre   = "A quote with 'quotes' inside
+                   and indentation"
+        empty = ''
+        nothing
+        link(href  = &amp;
+             title = ( 'a'
+                       &nbsp;
+                       'b' ))
+        svg:svg(width = 10)
+        {
+            svg:rect(x = 1
+                     y = 2)
+        }
+        local:thing(local:attr  = 1
+                    xmlns:local)
+        p(class = xml)
+        {
+            'Embedded '
+            b = xml
+        }
+        dotted.name-with_chars = 1.5e3
+        // A last comment
+    }
+}

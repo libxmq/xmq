@@ -8,9 +8,13 @@
 # The examples are the .xmq files of the tests and the input sections of the
 # .test files that the xmq parser accepts as xmq (duplicates removed). The
 # error_*.test files are skipped, their input is meant to be invalid xmq even
-# when plain to-xml happens to accept it.
+# when plain to-xml happens to accept it. Examples with quotes of more than 9
+# quote chars are skipped too, a known limitation of xmq.ixml (each quote
+# length needs its own rule).
 # For each example the result is one of:
-#   SAME       both parse it and give the same tree
+#   SAME       both parse it and give the same tree, and the tree transformed
+#              by xmq.xslq is the same document as xmq gives (the round trip)
+#   ROUNDTRIP  both give the same tree, but the round trip differs
 #   DIFF       both parse it but the trees differ
 #   REJECT     both reject it (the grammar does not cover it)
 #   ENGINE     only the ixml engine accepts it
@@ -25,6 +29,7 @@ PROG=${1:-./build/x86_64-pc-linux-gnu/release/xmq}
 XMQJ=${2:-./build/xmqj}
 OUTPUT=${3:-build/x86_64-pc-linux-gnu/release/test_output/xmq_grammar}
 GRAMMAR=${GRAMMAR:-library/core/xmq.ixml}
+XSLQ=${XSLQ:-${GRAMMAR%.ixml}.xslq}
 LIBDIR=$(dirname "$PROG")
 TIMEOUT=${TIMEOUT:-60}
 JOBS=${JOBS:-$(nproc 2>/dev/null || echo 4)}
@@ -58,6 +63,8 @@ k=0
 for f in "$OUTPUT"/candidates/*.xmq
 do
     "$PROG" --xmq "$f" to-xml > /dev/null 2>&1 || continue
+    # A known limitation of xmq.ixml: quotes of at most 9 quote chars.
+    grep -qE "'{10}|\"{10}" "$f" && continue
     sum=$(md5sum < "$f" | cut -d' ' -f1)
     [ -n "${seen[$sum]}" ] && continue
     seen[$sum]=1
@@ -93,17 +100,22 @@ one()
     then
         if [ $rb != 0 ]; then result=REJECT; else result=GENERATED; fi
     elif [ $rb != 0 ]; then result=ENGINE
-    elif cmp -s "$e.engine" "$e.generated"; then result=SAME
-    else result=DIFF
+    elif ! cmp -s "$e.engine" "$e.generated"; then result=DIFF
+    else
+        # The round trip: the parse tree transformed by xmq.xslq must be the
+        # same document as the one the xmq parser builds.
+        timeout "$TIMEOUT" "$PROG" "$f" > "$e.xmq_expected" 2>&1
+        timeout "$TIMEOUT" "$PROG" "$GRAMMAR" "$f" transform "$XSLQ" > "$e.xmq_roundtrip" 2>&1
+        if cmp -s "$e.xmq_expected" "$e.xmq_roundtrip"; then result=SAME; else result=ROUNDTRIP; fi
     fi
     echo "$result $(basename $f) $(cat $e.from)"
 }
 export -f one
-export PROG GRAMMAR OUTPUT TIMEOUT
+export PROG GRAMMAR XSLQ OUTPUT TIMEOUT
 ls "$OUTPUT"/examples/*.xmq | xargs -P "$JOBS" -I{} bash -c 'one {}' | sort > "$OUTPUT/results.txt"
 
 echo "xmq grammar $GRAMMAR on $k xmq examples of the test suite:"
-for r in SAME DIFF REJECT ENGINE GENERATED AMBIGUOUS
+for r in SAME ROUNDTRIP DIFF REJECT ENGINE GENERATED AMBIGUOUS
 do
     c=$(grep -c "^$r " "$OUTPUT/results.txt")
     [ "$c" != "0" ] && printf '  %-10s %4d\n' "$r" "$c"

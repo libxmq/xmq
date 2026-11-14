@@ -2709,6 +2709,9 @@ bool cmd_transform(XMQCliCommand *command)
     }
     xmlFreeDoc(doc);
     xmqSetImplementationDoc(command->env->doc, new_doc);
+    // Replace the xmq marker elements, eg xmq:entity(name=nbsp), that the
+    // transform may have generated (see xmq_replace_transform_markers).
+    xmq_replace_transform_markers(command->env->doc);
 
     return true;
 }

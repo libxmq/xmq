@@ -3519,6 +3519,7 @@ XMQReturnString xmq_un_quote(const char *start, const char *stop, bool remove_qs
 // XML/HTML dom functions ///////////////////////////////////////////////////////////////
 
 xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop);
+void xmq_replace_transform_markers(XMQDoc *doq);
 void trim_node(xmlNode *node, int flags);
 void trim_text_node(xmlNode *node, int flags);
 
@@ -8873,6 +8874,386 @@ xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop)
     xmlFreeDoc(doc);
 
     return dtd;
+}
+
+/* Transform markers ////////////////////////////////////////////////////////
+
+   An xslt 1.0 transform cannot create entity references, a doctype, an empty
+   text node, a namespace declaration that is not used, or an element/attribute
+   name with an undeclared prefix. A transform (eg library/core/xmq.xslq that
+   builds the xmq document from the parse tree of library/core/xmq.ixml) can
+   instead output marker elements in the namespace XMQ_MARKERS_NS, these are
+   replaced after the transform:
+
+     xmq:entity(name = nbsp)        the entity reference &nbsp;
+     xmq:entity(name = #10)         the character (merged into the text)
+     xmq:empty                      an empty text node
+     xmq:comment = 'a--b'           a comment that xsl:comment refuses (-- or ending -)
+     xmq:doctype = 'html'           the doctype <!DOCTYPE html>
+     xmq:xml = '<a>..</a>'          the parsed xml
+     xmq:xmlns(prefix = a) = uri    the declaration xmlns:a = uri on the parent
+                                    (prefix empty for the default namespace)
+     xmq:attribute(name = a:b ns = uri) { text and xmq:entity }
+                                    the attribute on the parent, in namespace uri
+                                    (an empty uri for an undeclared prefix, which
+                                    is declared without uri like the xmq parser does)
+     xmq:element(name = a:b) {...}  the element renamed to a:b, the undeclared
+                                    prefix is declared without uri on it, like
+                                    the xmq parser does
+
+   Namespace declarations that the transform added and that repeat an
+   identical declaration of an ancestor are removed, the explicit xmq:xmlns
+   declarations are kept. */
+
+#define XMQ_MARKERS_NS "https://libxmq.org/xmq/markers"
+#define XMQ_EXPLICIT_NS ((void*)1)
+
+static bool is_marker(xmlNodePtr n, const char *name)
+{
+    return n->type == XML_ELEMENT_NODE && n->ns && n->ns->href &&
+        !strcmp((const char*)n->ns->href, XMQ_MARKERS_NS) &&
+        (name == NULL || !strcmp((const char*)n->name, name));
+}
+
+static char *marker_prop(xmlNodePtr n, const char *name)
+{
+    xmlChar *v = xmlGetProp(n, (const xmlChar*)name);
+    if (!v) return strdup("");
+    char *r = strdup((const char*)v);
+    xmlFree(v);
+    return r;
+}
+
+static char *marker_content(xmlNodePtr n)
+{
+    xmlChar *v = xmlNodeGetContent(n);
+    if (!v) return strdup("");
+    char *r = strdup((const char*)v);
+    xmlFree(v);
+    return r;
+}
+
+/** An entity marker becomes a text node (character entity) or an entity reference. */
+static xmlNodePtr marker_entity_node(xmlDocPtr doc, xmlNodePtr marker)
+{
+    char *name = marker_prop(marker, "name");
+    xmlNodePtr n = NULL;
+    if (name[0] == '#')
+    {
+        long uc = (name[1] == 'x') ? strtol(name+2, NULL, 16) : strtol(name+1, NULL, 10);
+        if (uc > 0 && uc <= 0x10ffff)
+        {
+            UTF8Char uni;
+            size_t len = encode_utf8(uc, &uni);
+            char buf[len+1];
+            memcpy(buf, uni.bytes, len);
+            buf[len] = 0;
+            n = xmlNewDocText(doc, (const xmlChar*)buf);
+        }
+    }
+    if (!n)
+    {
+        size_t l = strlen(name);
+        char *ref = (char*)malloc(l+3);
+        ref[0] = '&';
+        memcpy(ref+1, name, l);
+        ref[l+1] = ';';
+        ref[l+2] = 0;
+        n = xmlNewReference(doc, (const xmlChar*)ref);
+        free(ref);
+    }
+    free(name);
+    return n;
+}
+
+static void marker_replace(xmlNodePtr marker, xmlNodePtr n)
+{
+    if (n)
+    {
+        // Unlink first, xmlAddPrevSibling could merge text into a neighbour.
+        n->parent = NULL;
+        xmlAddPrevSibling(marker, n);
+    }
+    xmlUnlinkNode(marker);
+    xmlFreeNode(marker);
+}
+
+static xmlNsPtr marker_find_ns_def(xmlNodePtr e, const char *prefix)
+{
+    for (xmlNsPtr ns = e->nsDef; ns; ns = ns->next)
+    {
+        if (prefix == NULL && ns->prefix == NULL) return ns;
+        if (prefix && ns->prefix && !strcmp(prefix, (const char*)ns->prefix)) return ns;
+    }
+    return NULL;
+}
+
+static void marker_xmlns(xmlNodePtr parent, xmlNodePtr marker)
+{
+    char *prefix = marker_prop(marker, "prefix");
+    char *href = marker_content(marker);
+    const char *p = prefix[0] ? prefix : NULL;
+    if (parent->type == XML_ELEMENT_NODE)
+    {
+        xmlNsPtr ns = marker_find_ns_def(parent, p);
+        if (!ns) ns = xmlNewNs(parent, (const xmlChar*)href, (const xmlChar*)p);
+        if (ns)
+        {
+            ns->_private = XMQ_EXPLICIT_NS;
+            // Move the declaration last, the markers come in source order.
+            if (ns->next)
+            {
+                xmlNsPtr *pp = &parent->nsDef;
+                while (*pp != ns) pp = &(*pp)->next;
+                *pp = ns->next;
+                xmlNsPtr last = parent->nsDef;
+                while (last->next) last = last->next;
+                last->next = ns;
+                ns->next = NULL;
+            }
+        }
+    }
+    free(prefix);
+    free(href);
+}
+
+static void marker_attribute(xmlDocPtr doc, xmlNodePtr parent, xmlNodePtr marker)
+{
+    char *name = marker_prop(marker, "name");
+    char *uri = marker_prop(marker, "ns");
+    xmlAttrPtr a = NULL;
+    char *colon = strchr(name, ':');
+    if (colon)
+    {
+        // A prefixed name, an undeclared prefix (empty uri) is declared with
+        // an empty uri like the xmq parser does.
+        *colon = 0;
+        xmlNsPtr ns = NULL;
+        if (uri[0])
+        {
+            ns = xmlSearchNs(doc, parent, (const xmlChar*)name);
+            if (!ns || !ns->href || strcmp((const char*)ns->href, uri))
+            {
+                ns = xmlNewNs(parent, (const xmlChar*)uri, (const xmlChar*)name);
+            }
+        }
+        else
+        {
+            ns = marker_find_ns_def(parent, name);
+            if (!ns) ns = xmlNewNs(parent, NULL, (const xmlChar*)name);
+        }
+        if (ns) ns->_private = XMQ_EXPLICIT_NS;
+        a = xmlNewNsProp(parent, ns, (const xmlChar*)(colon+1), NULL);
+        *colon = ':';
+    }
+    else
+    {
+        a = xmlNewProp(parent, (const xmlChar*)name, NULL);
+    }
+    if (a)
+    {
+        for (xmlNodePtr c = marker->children; c; c = c->next)
+        {
+            xmlNodePtr n = NULL;
+            if (c->type == XML_TEXT_NODE) n = xmlNewDocText(doc, c->content);
+            else if (is_marker(c, "entity")) n = marker_entity_node(doc, c);
+            if (n) xmlAddChild((xmlNodePtr)a, n);
+        }
+    }
+    free(name);
+    free(uri);
+}
+
+static void marker_doctype(XMQDoc *doq, xmlNodePtr marker)
+{
+    xmlDocPtr doc = (xmlDocPtr)doq->docptr_.xml;
+    char *value = marker_content(marker);
+    size_t tn = strlen(value);
+    size_t n = tn+10+1+12;
+    char *buf = (char*)malloc(n);
+    strcpy(buf, "<!DOCTYPE ");
+    memcpy(buf+10, value, tn);
+    memcpy(buf+10+tn, "><foo></foo>", 12);
+    buf[n-1] = 0;
+    xmlDtdPtr dtd = parse_doctype_raw(doq, buf, buf+n-1);
+    if (dtd && !doc->intSubset)
+    {
+        doc->intSubset = dtd;
+        xmlAddPrevSibling(marker, (xmlNodePtr)dtd);
+    }
+    else if (dtd)
+    {
+        xmlFreeDtd(dtd);
+    }
+    free(buf);
+    free(value);
+}
+
+static xmlNodePtr marker_xml(xmlDocPtr doc, xmlNodePtr marker)
+{
+    char *value = marker_content(marker);
+    xmlNodePtr node = NULL;
+    xmlDocPtr fdoc = xmlReadMemory(value, strlen(value), NULL, NULL,
+                                   XML_PARSE_NOCDATA | XML_PARSE_NONET | XML_PARSE_NOBLANKS);
+    if (fdoc)
+    {
+        xmlNodePtr root = xmlDocGetRootElement(fdoc);
+        if (root) node = xmlDocCopyNode(root, doc, 1);
+        xmlFreeDoc(fdoc);
+    }
+    free(value);
+    return node;
+}
+
+static void replace_markers(XMQDoc *doq, xmlNodePtr parent)
+{
+    xmlDocPtr doc = (xmlDocPtr)doq->docptr_.xml;
+    xmlNodePtr next = NULL;
+    for (xmlNodePtr i = parent->children; i; i = next)
+    {
+        next = i->next;
+        if (!is_marker(i, NULL))
+        {
+            if (i->type == XML_ELEMENT_NODE) replace_markers(doq, i);
+            continue;
+        }
+        const char *m = (const char*)i->name;
+        if (!strcmp(m, "entity")) marker_replace(i, marker_entity_node(doc, i));
+        else if (!strcmp(m, "empty")) marker_replace(i, xmlNewDocText(doc, (const xmlChar*)""));
+        else if (!strcmp(m, "comment"))
+        {
+            char *c = marker_content(i);
+            marker_replace(i, xmlNewDocComment(doc, (const xmlChar*)c));
+            free(c);
+        }
+        else if (!strcmp(m, "xml")) marker_replace(i, marker_xml(doc, i));
+        else if (!strcmp(m, "doctype"))
+        {
+            marker_doctype(doq, i);
+            marker_replace(i, NULL);
+        }
+        else if (!strcmp(m, "xmlns"))
+        {
+            marker_xmlns(parent, i);
+            marker_replace(i, NULL);
+        }
+        else if (!strcmp(m, "attribute"))
+        {
+            marker_attribute(doc, parent, i);
+            marker_replace(i, NULL);
+        }
+        else if (!strcmp(m, "element"))
+        {
+            // An element with an undeclared prefix, declare the prefix
+            // without uri on it like the xmq parser does.
+            char *name = marker_prop(i, "name");
+            xmlUnsetProp(i, (const xmlChar*)"name");
+            xmlNsPtr ns = NULL;
+            char *colon = strchr(name, ':');
+            if (colon)
+            {
+                *colon = 0;
+                ns = xmlNewNs(i, NULL, (const xmlChar*)name);
+                if (ns) ns->_private = XMQ_EXPLICIT_NS;
+                *colon = ':';
+            }
+            xmlNodeSetName(i, (const xmlChar*)(colon ? colon+1 : name));
+            xmlSetNs(i, ns);
+            free(name);
+            replace_markers(doq, i);
+        }
+        else
+        {
+            replace_markers(doq, i);
+        }
+    }
+}
+
+static void repoint_ns(xmlNodePtr node, xmlNsPtr from, xmlNsPtr to)
+{
+    if (node->type != XML_ELEMENT_NODE) return;
+    if (node->ns == from) node->ns = to;
+    for (xmlAttrPtr a = node->properties; a; a = a->next)
+    {
+        if (a->ns == from) a->ns = to;
+    }
+    for (xmlNodePtr c = node->children; c; c = c->next) repoint_ns(c, from, to);
+}
+
+/** Remove the marker namespace declarations and the declarations that
+    repeat an identical declaration of an ancestor. Merge adjacent text nodes
+    created when markers were replaced. */
+static void cleanup_after_markers(xmlDocPtr doc, xmlNodePtr node)
+{
+    if (node->type == XML_ELEMENT_NODE)
+    {
+        xmlNsPtr prev = NULL;
+        xmlNsPtr next = NULL;
+        for (xmlNsPtr ns = node->nsDef; ns; ns = next)
+        {
+            next = ns->next;
+            bool remove = false;
+            xmlNsPtr replacement = NULL;
+            if (ns->href && !strcmp((const char*)ns->href, XMQ_MARKERS_NS))
+            {
+                remove = true;
+            }
+            else if (ns->_private != XMQ_EXPLICIT_NS && node->parent && node->parent->type == XML_ELEMENT_NODE)
+            {
+                xmlNsPtr anc = xmlSearchNs(doc, node->parent, ns->prefix);
+                if (anc && anc->href && ns->href && !strcmp((const char*)anc->href, (const char*)ns->href))
+                {
+                    remove = true;
+                    replacement = anc;
+                }
+            }
+            if (remove)
+            {
+                if (prev) prev->next = next;
+                else node->nsDef = next;
+                ns->next = NULL;
+                repoint_ns(node, ns, replacement);
+                xmlFreeNs(ns);
+            }
+            else
+            {
+                prev = ns;
+            }
+        }
+    }
+    for (xmlNodePtr c = node->children; c; c = c->next)
+    {
+        while (c->type == XML_TEXT_NODE && c->next && c->next->type == XML_TEXT_NODE)
+        {
+            xmlNodePtr n = c->next;
+            xmlNodeAddContent(c, n->content);
+            xmlUnlinkNode(n);
+            xmlFreeNode(n);
+        }
+        if (c->type == XML_ELEMENT_NODE) cleanup_after_markers(doc, c);
+    }
+}
+
+static bool has_markers(xmlNodePtr node)
+{
+    for (xmlNodePtr c = node->children; c; c = c->next)
+    {
+        if (is_marker(c, NULL)) return true;
+        if (c->type == XML_ELEMENT_NODE && has_markers(c)) return true;
+    }
+    return false;
+}
+
+void xmq_replace_transform_markers(XMQDoc *doq)
+{
+    xmlDocPtr doc = (xmlDocPtr)doq->docptr_.xml;
+    if (!doc || !has_markers((xmlNodePtr)doc)) return;
+    replace_markers(doq, (xmlNodePtr)doc);
+    cleanup_after_markers(doc, (xmlNodePtr)doc);
+    for (xmlNodePtr c = doc->children; c; c = c->next)
+    {
+        if (c->type == XML_ELEMENT_NODE) cleanup_after_markers(doc, c);
+    }
 }
 
 bool xmq_parse_buffer_json(XMQDoc *doq,

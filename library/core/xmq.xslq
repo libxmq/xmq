@@ -1,0 +1,861 @@
+/* v2.0.0 Build the xmq document from the parse tree of xmq.ixml.
+   by Fredrik Öhrström (c) 2024-2026 spdx: MIT
+
+       xmq xmq.ixml input.xmq transform xmq.xslq
+
+   gives the same document as xmq input.xmq. The element and attribute
+   names come from the name attributes, the namespaces from the xmlns
+   declarations, quotes and comments get their incidental indentation
+   removed with the same rules as xmq_trim_quote in xmq.c.
+
+   What xslt 1.0 cannot create (entity references, the doctype, embedded
+   xml, empty texts, unused namespace declarations, undeclared prefixes) is
+   output as marker elements in the namespace https://libxmq.org/xmq/markers
+   that xmq replaces after the transform, see xmq_replace_transform_markers. */
+
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform
+               xmlns:xmq = https://libxmq.org/xmq/markers)
+{
+    xsl:variable(name   = NL
+                 select = "'
+                           '")
+    xsl:variable(name   = CR
+                 select = ( "'"
+                            &#13;
+                            "'" ))
+    xsl:variable(name   = NLCR
+                 select = ( "'
+
+                            "
+                            &#13;
+                            "'" ))
+    xsl:variable(name   = SPTAB
+                 select = "' 	'")
+    xsl:variable(name   = WS
+                 select = ( "' "
+                            &#9;
+                            &#10;
+                            &#13;
+                            "'" ))
+    xsl:variable(name   = NONE
+                 select = 1000000)
+    xsl:template(match = /)
+    {
+        xsl:apply-templates(select = xmq/*)
+    }
+    // Elements and key values.
+    xsl:template(match = element|keyvalue)
+    {
+        xsl:variable(name   = prefix
+                     select = "substring-before(@name, ':')")
+        xsl:variable(name = ns)
+        {
+            xsl:call-template(name = ns-uri)
+            {
+                xsl:with-param(name   = prefix
+                               select = $prefix)
+            }
+        }
+        xsl:choose {
+            xsl:when(test = "$prefix != '' and string($ns) = ''")
+            {
+                // An undeclared prefix, the marker declares it without uri.
+                xmq:element(name = '{@name}')
+                {
+                    xsl:call-template(name = content)
+                }
+            }
+            xsl:otherwise {
+                xsl:element(name      = '{@name}'
+                            namespace = '{$ns}')
+                {
+                    xsl:call-template(name = content)
+                }
+            }
+        }
+    }
+    xsl:template(name = content)
+    {
+        xsl:variable(name   = attrs
+                     select = "attributes/attr[@name != 'xmlns' and not(starts-with(@name, 'xmlns:'))]")
+        /* Attributes with entities or undeclared prefixes need markers, then
+           all attributes become markers to keep their order. */
+        xsl:variable(name = need_markers)
+        {
+            xsl:for-each(select = $attrs)
+            {
+                xsl:choose {
+                    xsl:when(test = .//entity) = x
+                    xsl:when(test = "contains(@name, ':')")
+                    {
+                        xsl:variable(name = ns)
+                        {
+                            xsl:call-template(name = ns-uri)
+                            {
+                                xsl:with-param(name   = prefix
+                                               select = "substring-before(@name, ':')")
+                            }
+                        }
+                        xsl:if(test = "string($ns) = ''") = x
+                    }
+                }
+            }
+        }
+        xsl:if(test = "string($need_markers) = ''")
+        {
+            xsl:apply-templates(select = $attrs
+                                mode   = attr)
+        }
+        /* The namespace declarations in the order xmq creates them: the prefix
+           of the element name first, then each prefix where it first appears,
+           as a declaration or as the prefix of an attribute name. */
+        xsl:variable(name   = ep
+                     select = "substring-before(@name, ':')")
+        xsl:apply-templates(select = "attributes/attr[$ep != '' and @name = concat('xmlns:', $ep)]"
+                            mode   = xmlns)
+        xsl:for-each(select = attributes/attr)
+        {
+            xsl:variable(name = p)
+            {
+                xsl:choose {
+                    xsl:when(test = "starts-with(@name, 'xmlns:')")
+                    {
+                        xsl:value-of(select = "substring-after(@name, 'xmlns:')")
+                    }
+                    xsl:otherwise {
+                        xsl:value-of(select = "substring-before(@name, ':')")
+                    }
+                }
+            }
+            xsl:choose {
+                xsl:when(test = "@name = 'xmlns'")
+                {
+                    xsl:apply-templates(select = .
+                                        mode   = xmlns)
+                }
+                xsl:when(test = "string($p) = '' or string($p) = $ep")
+                xsl:when(test = "preceding-sibling::attr[@name = concat('xmlns:', string($p)) or starts-with(@name, concat(string($p), ':'))]")
+                xsl:otherwise {
+                    xsl:apply-templates(select = "../attr[@name = concat('xmlns:', string($p))]"
+                                        mode   = xmlns)
+                }
+            }
+        }
+        xsl:if(test = "string($need_markers) != ''")
+        {
+            xsl:apply-templates(select = $attrs
+                                mode   = attr-marker)
+        }
+        xsl:apply-templates(select = children/*)
+        xsl:apply-templates(select = 'self::keyvalue/*[not(self::attributes)]'
+                            mode   = value)
+    }
+    /* The namespace uri of a prefix (empty for the default namespace) from
+       the closest xmlns declaration, empty if there is none. */
+    xsl:template(name = ns-uri)
+    {
+        xsl:param(name = prefix)
+        xsl:choose {
+            xsl:when(test = "$prefix = 'xml'") = http://www.w3.org/XML/1998/namespace
+            xsl:otherwise {
+                xsl:variable(name = decl)
+                {
+                    xsl:choose {
+                        xsl:when(test = "$prefix = ''") = xmlns
+                        xsl:otherwise {
+                            xsl:value-of(select = "concat('xmlns:', $prefix)")
+                        }
+                    }
+                }
+                xsl:apply-templates(select = '(ancestor-or-self::*[self::element or self::keyvalue]/attributes/attr[@name = string($decl)])[last()]/*'
+                                    mode   = string)
+            }
+        }
+    }
+    xsl:template(match = attr
+                 mode  = attr)
+    {
+        xsl:variable(name = ns)
+        {
+            xsl:if(test = "contains(@name, ':')")
+            {
+                xsl:call-template(name = ns-uri)
+                {
+                    xsl:with-param(name   = prefix
+                                   select = "substring-before(@name, ':')")
+                }
+            }
+        }
+        xsl:attribute(name      = '{@name}'
+                      namespace = '{$ns}')
+        {
+            xsl:apply-templates(select = *
+                                mode   = string)
+        }
+    }
+    xsl:template(match = attr
+                 mode  = attr-marker)
+    {
+        xsl:variable(name = ns)
+        {
+            xsl:if(test = "contains(@name, ':')")
+            {
+                xsl:call-template(name = ns-uri)
+                {
+                    xsl:with-param(name   = prefix
+                                   select = "substring-before(@name, ':')")
+                }
+            }
+        }
+        xmq:attribute(name = '{@name}'
+                      ns   = '{$ns}')
+        {
+            xsl:apply-templates(select = *
+                                mode   = value)
+        }
+    }
+    xsl:template(match = attr
+                 mode  = xmlns)
+    {
+        xmq:xmlns(prefix = "{substring-after(@name, 'xmlns:')}")
+        {
+            xsl:apply-templates(select = *
+                                mode   = string)
+        }
+    }
+    // A value as a string (no entities).
+    xsl:template(match = text
+                 mode  = string)
+    {
+        xsl:value-of(select = .)
+    }
+    xsl:template(match = quote
+                 mode  = string)
+    {
+        xsl:call-template(name = trim)
+        {
+            xsl:with-param(name   = s
+                           select = 'string(.)')
+        }
+    }
+    xsl:template(match = compound
+                 mode  = string)
+    {
+        xsl:apply-templates(select = *
+                            mode   = string)
+    }
+    xsl:template(match = entity
+                 mode  = string)
+    // A value as content, entities and empty quotes become markers.
+    xsl:template(match = text
+                 mode  = value)
+    {
+        xsl:value-of(select = .)
+    }
+    xsl:template(match = quote
+                 mode  = value)
+    {
+        xsl:variable(name = t)
+        {
+            xsl:call-template(name = trim)
+            {
+                xsl:with-param(name   = s
+                               select = 'string(.)')
+            }
+        }
+        xsl:choose {
+            xsl:when(test = "string($t) = ''")
+            {
+                xmq:empty
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $t)
+            }
+        }
+    }
+    xsl:template(match = entity
+                 mode  = value)
+    {
+        xmq:entity(name = '{.}')
+    }
+    xsl:template(match = compound
+                 mode  = value)
+    {
+        xsl:apply-templates(select = *
+                            mode   = value)
+    }
+    // Content nodes.
+    xsl:template(match = quote|entity)
+    {
+        xsl:apply-templates(select = .
+                            mode   = value)
+    }
+    xsl:template(match = comment)
+    {
+        xsl:call-template(name = comment)
+        {
+            xsl:with-param(name = c)
+            {
+                xsl:for-each(select = part)
+                {
+                    xsl:if(test = 'position() > 1')
+                    {
+                        xsl:value-of(select = $NL)
+                    }
+                    xsl:call-template(name = uncomment)
+                    {
+                        xsl:with-param(name   = s
+                                       select = 'string(.)')
+                    }
+                }
+            }
+        }
+    }
+    // xsl:comment refuses a double hyphen and an ending hyphen, which xmq allows.
+    xsl:template(name = comment)
+    {
+        xsl:param(name = c)
+        xsl:choose {
+            xsl:when(test = "contains($c, '--') or substring($c, string-length($c)) = '-'")
+            {
+                xmq:comment {
+                    xsl:value-of(select = $c)
+                }
+            }
+            xsl:otherwise {
+                xsl:comment {
+                    xsl:value-of(select = $c)
+                }
+            }
+        }
+    }
+    xsl:template(match = line_comment)
+    {
+        xsl:variable(name = s)
+        {
+            xsl:choose {
+                xsl:when(test = "starts-with(., ' ')")
+                {
+                    xsl:value-of(select = 'substring(., 2)')
+                }
+                xsl:otherwise {
+                    xsl:value-of(select = .)
+                }
+            }
+        }
+        xsl:call-template(name = comment)
+        {
+            xsl:with-param(name = c)
+            {
+                xsl:call-template(name = rstrip)
+                {
+                    xsl:with-param(name   = s
+                                   select = 'string($s)')
+                    xsl:with-param(name   = chars
+                                   select = "' '")
+                }
+            }
+        }
+    }
+    xsl:template(match = doctype)
+    {
+        xmq:doctype {
+            xsl:apply-templates(select = *
+                                mode   = string)
+        }
+    }
+    xsl:template(match = pi)
+    {
+        xsl:variable(name = v)
+        {
+            xsl:apply-templates(select = '*[not(self::piname)]'
+                                mode   = string)
+        }
+        xsl:processing-instruction(name = '{@name}')
+        {
+            xsl:if(test = '''starts-with($v, "'")''')
+            {
+                xsl:text
+            }
+            xsl:value-of(select = $v)
+            xsl:if(test = '''substring($v, string-length($v)) = "'"''')
+            {
+                xsl:text
+            }
+        }
+    }
+    xsl:template(match = xml)
+    {
+        xmq:xml {
+            xsl:value-of(select = .)
+        }
+    }
+    //* The content of a /* */ comment part: drop one space after the opening *
+        and one before the closing *, then trim like a quote. *//
+    xsl:template(name = uncomment)
+    {
+        xsl:param(name = s)
+        xsl:variable(name = s1)
+        {
+            xsl:choose {
+                xsl:when(test = "starts-with($s, ' ')")
+                {
+                    xsl:value-of(select = 'substring($s, 2)')
+                }
+                xsl:otherwise {
+                    xsl:value-of(select = $s)
+                }
+            }
+        }
+        xsl:variable(name = s2)
+        {
+            xsl:choose {
+                xsl:when(test = "substring($s1, string-length($s1)) = ' '")
+                {
+                    xsl:value-of(select = 'substring($s1, 1, string-length($s1) - 1)')
+                }
+                xsl:otherwise {
+                    xsl:value-of(select = $s1)
+                }
+            }
+        }
+        xsl:call-template(name = trim)
+        {
+            xsl:with-param(name   = s
+                           select = 'string($s2)')
+            xsl:with-param(name   = comment
+                           select = 'true()')
+        }
+    }
+    /* Remove the incidental indentation of a quote or comment, the same
+       rules as xmq_trim_quote in xmq.c. */
+    xsl:template(name = trim)
+    {
+        xsl:param(name = s)
+        xsl:param(name   = comment
+                  select = 'false()')
+        xsl:variable(name = stripped)
+        {
+            xsl:call-template(name = rstrip)
+            {
+                xsl:with-param(name   = s
+                               select = $s)
+            }
+        }
+        xsl:variable(name   = tail
+                     select = 'substring($s, string-length($stripped) + 1)')
+        xsl:variable(name   = tailnl
+                     select = 'contains($tail, $NL)')
+        xsl:variable(name = core)
+        {
+            xsl:choose {
+                xsl:when(test = $tailnl)
+                {
+                    xsl:value-of(select = $stripped)
+                }
+                xsl:otherwise {
+                    xsl:value-of(select = $s)
+                }
+            }
+        }
+        // One ending newline is dropped, the others are kept.
+        xsl:variable(name = append)
+        {
+            xsl:choose {
+                xsl:when(test = $tailnl)
+                {
+                    xsl:value-of(select = "string-length($tail) - string-length(translate($tail, $NL, '')) - 1")
+                }
+                xsl:otherwise = 0
+            }
+        }
+        // The spaces on the last line, -1 if none.
+        xsl:variable(name = lls)
+        {
+            xsl:choose {
+                xsl:when(test = $tailnl)
+                {
+                    xsl:variable(name = last)
+                    {
+                        xsl:call-template(name = after-last)
+                        {
+                            xsl:with-param(name   = s
+                                           select = $tail)
+                        }
+                    }
+                    xsl:variable(name   = n
+                                 select = "string-length($last) - string-length(translate($last, ' ', ''))")
+                    xsl:choose {
+                        xsl:when(test = '$n > 0')
+                        {
+                            xsl:value-of(select = $n)
+                        }
+                        xsl:otherwise = -1
+                    }
+                }
+                xsl:otherwise = -1
+            }
+        }
+        xsl:choose {
+            xsl:when(test = "string($core) = ''")
+            {
+                xsl:call-template(name = newlines)
+                {
+                    xsl:with-param(name   = n
+                                   select = 'number($append)')
+                }
+            }
+            xsl:otherwise {
+                xsl:variable(name = lspaces)
+                {
+                    xsl:call-template(name = count-leading)
+                    {
+                        xsl:with-param(name   = s
+                                       select = 'string($core)')
+                    }
+                }
+                xsl:variable(name   = leads_space_nl
+                             select = 'substring($core, $lspaces + 1, 1) = $NL')
+                xsl:variable(name = inc0)
+                {
+                    xsl:choose {
+                        xsl:when(test = 'contains($core, $NL)')
+                        {
+                            xsl:call-template(name = min-indent)
+                            {
+                                xsl:with-param(name   = s
+                                               select = 'substring-after($core, $NL)')
+                                xsl:with-param(name   = best
+                                               select = $NONE)
+                            }
+                        }
+                        xsl:otherwise {
+                            xsl:value-of(select = $NONE)
+                        }
+                    }
+                }
+                xsl:variable(name = inc)
+                {
+                    xsl:choose {
+                        xsl:when(test = '$lls >= 0 and number($lls) < number($inc0)')
+                        {
+                            xsl:choose {
+                                xsl:when(test = $leads_space_nl)
+                                {
+                                    xsl:value-of(select = $lls)
+                                }
+                                xsl:when(test = $comment)
+                                {
+                                    xsl:value-of(select = '$lls + 3')
+                                }
+                                xsl:otherwise {
+                                    xsl:value-of(select = '$lls + 1')
+                                }
+                            }
+                        }
+                        xsl:otherwise {
+                            xsl:value-of(select = $inc0)
+                        }
+                    }
+                }
+                xsl:choose {
+                    xsl:when(test = 'number($inc) = $NONE')
+                    {
+                        xsl:value-of(select = $core)
+                    }
+                    xsl:otherwise {
+                        xsl:variable(name = leadws)
+                        {
+                            xsl:call-template(name = count-leading)
+                            {
+                                xsl:with-param(name   = s
+                                               select = 'string($core)')
+                                xsl:with-param(name   = chars
+                                               select = $WS)
+                            }
+                        }
+                        xsl:choose {
+                            xsl:when(test = 'contains(substring($core, 1, $leadws), $NL)')
+                            {
+                                /* The first line is only whitespace, it is dropped and the
+                                   empty lines that follow become newlines. */
+                                xsl:variable(name   = rest
+                                             select = 'substring-after($core, $NL)')
+                                xsl:variable(name = rn)
+                                {
+                                    xsl:call-template(name = count-leading)
+                                    {
+                                        xsl:with-param(name   = s
+                                                       select = $rest)
+                                        xsl:with-param(name   = chars
+                                                       select = $NLCR)
+                                    }
+                                }
+                                xsl:variable(name   = r
+                                             select = 'substring($rest, 1, $rn)')
+                                xsl:variable(name = rtail)
+                                {
+                                    xsl:call-template(name = after-last)
+                                    {
+                                        xsl:with-param(name   = s
+                                                       select = $r)
+                                    }
+                                }
+                                xsl:call-template(name = newlines)
+                                {
+                                    xsl:with-param(name   = n
+                                                   select = "string-length($r) - string-length(translate($r, $NL, ''))")
+                                }
+                                xsl:call-template(name = lines)
+                                {
+                                    xsl:with-param(name   = s
+                                                   select = 'substring($rest, string-length($r) - string-length($rtail) + 1)')
+                                    xsl:with-param(name   = first
+                                                   select = 'false()')
+                                    xsl:with-param(name   = inc
+                                                   select = 'number($inc)')
+                                }
+                            }
+                            xsl:otherwise {
+                                xsl:call-template(name = lines)
+                                {
+                                    xsl:with-param(name   = s
+                                                   select = 'string($core)')
+                                    xsl:with-param(name   = first
+                                                   select = 'true()')
+                                    xsl:with-param(name   = inc
+                                                   select = 'number($inc)')
+                                }
+                            }
+                        }
+                    }
+                }
+                xsl:call-template(name = newlines)
+                {
+                    xsl:with-param(name   = n
+                                   select = 'number($append)')
+                }
+            }
+        }
+    }
+    /* Copy the lines, removing up to inc spaces of indentation (not on the
+       first line) and the ending whitespace (not on the last line). */
+    xsl:template(name = lines)
+    {
+        xsl:param(name = s)
+        xsl:param(name = first)
+        xsl:param(name = inc)
+        xsl:variable(name   = hasnl
+                     select = 'contains($s, $NL)')
+        xsl:variable(name = line0)
+        {
+            xsl:choose {
+                xsl:when(test = $hasnl)
+                {
+                    xsl:value-of(select = 'substring-before($s, $NL)')
+                }
+                xsl:otherwise {
+                    xsl:value-of(select = $s)
+                }
+            }
+        }
+        xsl:variable(name = line)
+        {
+            xsl:choose {
+                xsl:when(test = '$hasnl and substring($line0, string-length($line0)) = $CR')
+                {
+                    xsl:value-of(select = 'substring($line0, 1, string-length($line0) - 1)')
+                }
+                xsl:otherwise {
+                    xsl:value-of(select = $line0)
+                }
+            }
+        }
+        xsl:variable(name = l2)
+        {
+            xsl:choose {
+                xsl:when(test = "not($first) and starts-with($line, ' ')")
+                {
+                    xsl:variable(name = sp)
+                    {
+                        xsl:call-template(name = count-leading)
+                        {
+                            xsl:with-param(name   = s
+                                           select = 'string($line)')
+                        }
+                    }
+                    xsl:choose {
+                        xsl:when(test = 'number($sp) < $inc')
+                        {
+                            xsl:value-of(select = 'substring($line, $sp + 1)')
+                        }
+                        xsl:otherwise {
+                            xsl:value-of(select = 'substring($line, $inc + 1)')
+                        }
+                    }
+                }
+                xsl:otherwise {
+                    xsl:value-of(select = $line)
+                }
+            }
+        }
+        xsl:choose {
+            xsl:when(test = $hasnl)
+            {
+                xsl:call-template(name = rstrip)
+                {
+                    xsl:with-param(name   = s
+                                   select = 'string($l2)')
+                    xsl:with-param(name   = chars
+                                   select = $SPTAB)
+                }
+                xsl:value-of(select = $NL)
+                xsl:call-template(name = lines)
+                {
+                    xsl:with-param(name   = s
+                                   select = 'substring-after($s, $NL)')
+                    xsl:with-param(name   = first
+                                   select = 'false()')
+                    xsl:with-param(name   = inc
+                                   select = $inc)
+                }
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $l2)
+            }
+        }
+    }
+    // The smallest indentation of the lines that have content.
+    xsl:template(name = min-indent)
+    {
+        xsl:param(name = s)
+        xsl:param(name = best)
+        xsl:variable(name = line)
+        {
+            xsl:choose {
+                xsl:when(test = 'contains($s, $NL)')
+                {
+                    xsl:value-of(select = 'substring-before($s, $NL)')
+                }
+                xsl:otherwise {
+                    xsl:value-of(select = $s)
+                }
+            }
+        }
+        xsl:variable(name = sp)
+        {
+            xsl:call-template(name = count-leading)
+            {
+                xsl:with-param(name   = s
+                               select = 'string($line)')
+            }
+        }
+        xsl:variable(name = b)
+        {
+            xsl:choose {
+                xsl:when(test = 'string-length($line) > $sp and substring($line, $sp + 1, 1) != $CR and number($sp) < number($best)')
+                {
+                    xsl:value-of(select = $sp)
+                }
+                xsl:otherwise {
+                    xsl:value-of(select = $best)
+                }
+            }
+        }
+        xsl:choose {
+            xsl:when(test = 'contains($s, $NL)')
+            {
+                xsl:call-template(name = min-indent)
+                {
+                    xsl:with-param(name   = s
+                                   select = 'substring-after($s, $NL)')
+                    xsl:with-param(name   = best
+                                   select = 'number($b)')
+                }
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $b)
+            }
+        }
+    }
+    // The number of leading chars of s that are in chars.
+    xsl:template(name = count-leading)
+    {
+        xsl:param(name = s)
+        xsl:param(name   = chars
+                  select = "' '")
+        xsl:param(name   = n
+                  select = 0)
+        xsl:choose {
+            xsl:when(test = "$s != '' and contains($chars, substring($s, 1, 1))")
+            {
+                xsl:call-template(name = count-leading)
+                {
+                    xsl:with-param(name   = s
+                                   select = 'substring($s, 2)')
+                    xsl:with-param(name   = chars
+                                   select = $chars)
+                    xsl:with-param(name   = n
+                                   select = '$n + 1')
+                }
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $n)
+            }
+        }
+    }
+    // s without its ending chars (default xml whitespace).
+    xsl:template(name = rstrip)
+    {
+        xsl:param(name = s)
+        xsl:param(name   = chars
+                  select = $WS)
+        xsl:choose {
+            xsl:when(test = "$s != '' and contains($chars, substring($s, string-length($s)))")
+            {
+                xsl:call-template(name = rstrip)
+                {
+                    xsl:with-param(name   = s
+                                   select = 'substring($s, 1, string-length($s) - 1)')
+                    xsl:with-param(name   = chars
+                                   select = $chars)
+                }
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $s)
+            }
+        }
+    }
+    // The part of s after its last newline, s if there is none.
+    xsl:template(name = after-last)
+    {
+        xsl:param(name = s)
+        xsl:choose {
+            xsl:when(test = 'contains($s, $NL)')
+            {
+                xsl:call-template(name = after-last)
+                {
+                    xsl:with-param(name   = s
+                                   select = 'substring-after($s, $NL)')
+                }
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $s)
+            }
+        }
+    }
+    xsl:template(name = newlines)
+    {
+        xsl:param(name = n)
+        xsl:if(test = '$n > 0')
+        {
+            xsl:value-of(select = $NL)
+            xsl:call-template(name = newlines)
+            {
+                xsl:with-param(name   = n
+                               select = '$n - 1')
+            }
+        }
+    }
+}

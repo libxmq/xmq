@@ -105,7 +105,15 @@ do
 
         # Step 2. Optional cleanup transform, compare the xmq result against
         #          the expected file, <input>.xmq or <input>.out.
-        if [ -n "$xslq" ]; then
+        if [ -n "$xslq" ] && [ -n "$ixml" ]; then
+            # Parse and transform in one command, like a user would do. Going
+            # through the printed parse tree would depend on the xmq printer
+            # reproducing every text exactly.
+            if ! $PROG "$ixml" "$inp" transform $xslq > $xmqout; then
+                fail "$name xmq $kind";
+                continue;
+            fi
+        elif [ -n "$xslq" ]; then
             if ! $PROG $src transform $xslq > $xmqout; then
                 fail "$name xmq $kind";
                 continue;

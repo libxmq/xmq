@@ -518,6 +518,7 @@ XMQReturnString xmq_un_quote(const char *start, const char *stop, bool remove_qs
 // XML/HTML dom functions ///////////////////////////////////////////////////////////////
 
 xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop);
+void xmq_replace_transform_markers(XMQDoc *doq);
 void trim_node(xmlNode *node, int flags);
 void trim_text_node(xmlNode *node, int flags);
 
