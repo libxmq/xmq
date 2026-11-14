@@ -1,0 +1,7 @@
+char *strchr(const char *s, int c);
+int f(int x, const char *s)
+{
+    int a = (__typeof (x)) 0 + (__typeof__ (x)) 1;
+    const char *p = _Generic (0 ? (s) : (void *) 1, const void *: (const char *) (strchr (s, '+')), default: strchr (s, '+'));
+    return a + (p != 0);
+}

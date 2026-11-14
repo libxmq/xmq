@@ -1,0 +1,291 @@
+translation_unit {
+    external_declaration {
+        declaration {
+            declaration_specifiers {
+                type_specifier_basic {
+                    CHAR = char
+                }
+            }
+            init_declarator_list {
+                init_declarator {
+                    declarator {
+                        pointer {
+                            ASTERISK = *
+                        }
+                        direct_declarator {
+                            direct_declarator {
+                                IDENTIFIER = strchr
+                            }
+                            function_suffix {
+                                parameter_type_list {
+                                    parameter_list {
+                                        parameter_declaration {
+                                            declaration_specifiers {
+                                                type_qualifier {
+                                                    CONST = const
+                                                }
+                                                type_specifier_basic {
+                                                    CHAR = char
+                                                }
+                                            }
+                                            declarator {
+                                                pointer {
+                                                    ASTERISK = *
+                                                }
+                                                direct_declarator {
+                                                    IDENTIFIER = s
+                                                }
+                                            }
+                                        }
+                                        parameter_declaration {
+                                            declaration_specifiers {
+                                                type_specifier_basic {
+                                                    INT = int
+                                                }
+                                            }
+                                            declarator {
+                                                IDENTIFIER = c
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    external_declaration {
+        function_definition {
+            declaration_specifiers {
+                type_specifier_basic {
+                    INT = int
+                }
+            }
+            declarator {
+                direct_declarator {
+                    IDENTIFIER = f
+                }
+                function_suffix {
+                    parameter_type_list {
+                        parameter_list {
+                            parameter_declaration {
+                                declaration_specifiers {
+                                    type_specifier_basic {
+                                        INT = int
+                                    }
+                                }
+                                declarator {
+                                    IDENTIFIER = x
+                                }
+                            }
+                            parameter_declaration {
+                                declaration_specifiers {
+                                    type_qualifier {
+                                        CONST = const
+                                    }
+                                    type_specifier_basic {
+                                        CHAR = char
+                                    }
+                                }
+                                declarator {
+                                    pointer {
+                                        ASTERISK = *
+                                    }
+                                    direct_declarator {
+                                        IDENTIFIER = s
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            compound_statement {
+                declaration {
+                    declaration_specifiers {
+                        type_specifier_basic {
+                            INT = int
+                        }
+                    }
+                    init_declarator_list {
+                        init_declarator {
+                            declarator {
+                                IDENTIFIER = a
+                            }
+                            EQUAL_SIGN = '='
+                            initializer {
+                                assignment_expression {
+                                    additive_expression {
+                                        complex_type_name {
+                                            typeof_specifier {
+                                                TYPEOF = __typeof
+                                                expression {
+                                                    IDENTIFIER = x
+                                                }
+                                            }
+                                        }
+                                        cast_expression {
+                                            CONSTANT = 0
+                                        }
+                                    }
+                                    PLUS = +
+                                    multiplicative_expression {
+                                        complex_type_name {
+                                            typeof_specifier {
+                                                TYPEOF = __typeof__
+                                                expression {
+                                                    IDENTIFIER = x
+                                                }
+                                            }
+                                        }
+                                        cast_expression {
+                                            CONSTANT = 1
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                declaration {
+                    declaration_specifiers {
+                        type_qualifier {
+                            CONST = const
+                        }
+                        type_specifier_basic {
+                            CHAR = char
+                        }
+                    }
+                    init_declarator_list {
+                        init_declarator {
+                            declarator {
+                                pointer {
+                                    ASTERISK = *
+                                }
+                                direct_declarator {
+                                    IDENTIFIER = p
+                                }
+                            }
+                            EQUAL_SIGN = '='
+                            initializer {
+                                assignment_expression {
+                                    generic_selection {
+                                        GENERIC = _Generic
+                                        assignment_expression {
+                                            CONSTANT = 0
+                                            expression {
+                                                expression {
+                                                    IDENTIFIER = s
+                                                }
+                                            }
+                                            conditional_expression {
+                                                complex_type_name {
+                                                    type_specifier_basic {
+                                                        VOID = void
+                                                    }
+                                                    abstract_declarator {
+                                                        pointer {
+                                                            ASTERISK = *
+                                                        }
+                                                    }
+                                                }
+                                                cast_expression {
+                                                    CONSTANT = 1
+                                                }
+                                            }
+                                        }
+                                        generic_association {
+                                            type_name {
+                                                type_qualifier {
+                                                    CONST = const
+                                                }
+                                                type_specifier_basic {
+                                                    VOID = void
+                                                }
+                                                abstract_declarator {
+                                                    pointer {
+                                                        ASTERISK = *
+                                                    }
+                                                }
+                                            }
+                                            assignment_expression {
+                                                complex_type_name {
+                                                    type_qualifier {
+                                                        CONST = const
+                                                    }
+                                                    type_specifier_basic {
+                                                        CHAR = char
+                                                    }
+                                                    abstract_declarator {
+                                                        pointer {
+                                                            ASTERISK = *
+                                                        }
+                                                    }
+                                                }
+                                                cast_expression {
+                                                    expression {
+                                                        postfix_expression {
+                                                            IDENTIFIER = strchr
+                                                        }
+                                                        argument_expression_list {
+                                                            assignment_expression {
+                                                                IDENTIFIER = s
+                                                            }
+                                                            assignment_expression {
+                                                                CHAR_LITERAL = +
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        generic_association {
+                                            DEFAULT = default
+                                            assignment_expression {
+                                                postfix_expression {
+                                                    IDENTIFIER = strchr
+                                                }
+                                                argument_expression_list {
+                                                    assignment_expression {
+                                                        IDENTIFIER = s
+                                                    }
+                                                    assignment_expression {
+                                                        CHAR_LITERAL = +
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                statement {
+                    jump_statement {
+                        RETURN = return
+                        expression {
+                            additive_expression {
+                                IDENTIFIER = a
+                            }
+                            PLUS = +
+                            multiplicative_expression {
+                                expression {
+                                    equality_expression {
+                                        IDENTIFIER = p
+                                    }
+                                    NE_OP = !=
+                                    relational_expression {
+                                        CONSTANT = 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
