@@ -11,12 +11,14 @@
 #include"xml_save.h"
 #include"xml_html_parser.h"
 #include"xml_html_save.h"
+#include"xml_xpath.h"
 #include"yaep_objstack.h"
 
 #include<assert.h>
 #include<stdint.h>
 #include<stdio.h>
 #include<stdlib.h>
+#include<math.h>
 #include<string.h>
 
 #define TESTS \
@@ -32,6 +34,7 @@
     X(test_xml_save) \
     X(test_xml_parser) \
     X(test_xml_html) \
+    X(test_xml_xpath) \
 
 
 #define X(name) void name();
@@ -686,6 +689,133 @@ void test_xml_html()
     check_html("\xEF\xBB\xBFx", false, HTML_DTD "<html><body>x</body></html>\n", NULL);
     // Invalid utf8 and NUL.
     check_html("<p>a\xFF" "b\x01</p>", false, HTML_DTD "<html><body><p>a\xEF\xBF\xBD" "b\x01</p></body></html>\n", NULL);
+}
+
+/** Evaluate expr on the document and describe the result: node names joined by space, or the value. */
+static void check_xpath(XmlDom *dom, const char *expr, const char *expected)
+{
+    XmlXPathNamespace nss[] = { { "p", "urn:p" } };
+    XmlXPathSettings st;
+    xml_xpath_settings_default(&st);
+    st.namespaces = nss;
+    st.num_namespaces = 1;
+    XmlXPathError err;
+    XmlXPathResult *r = xml_xpath_eval(expr, xml_dom_document(dom), &st, &err);
+    char got[1024];
+    got[0] = 0;
+    if (!r)
+    {
+        snprintf(got, sizeof(got), "error %d %s", (int)err.code, err.message);
+    }
+    else
+    {
+        switch (xml_xpath_result_type(r))
+        {
+        case XML_XPATH_NODESET:
+            for (size_t i = 0; i < xml_xpath_result_size(r); ++i)
+            {
+                XMQNode *n = xml_xpath_result_node(r, i);
+                const char *name = xml_node_name(n);
+                if (xml_node_kind(n) == XML_DOM_TEXT) name = "#text";
+                if (xml_node_kind(n) == XML_DOM_DOCUMENT) name = "#doc";
+                size_t l = strlen(got);
+                snprintf(got + l, sizeof(got) - l, "%s%s", i ? " " : "", name ? name : "?");
+            }
+            break;
+        case XML_XPATH_BOOLEAN:
+            snprintf(got, sizeof(got), "%s", xml_xpath_result_boolean(r) ? "true" : "false");
+            break;
+        case XML_XPATH_NUMBER:
+        {
+            char *s = xml_xpath_format_number(xml_xpath_result_number(r));
+            snprintf(got, sizeof(got), "%s", s);
+            free(s);
+            break;
+        }
+        case XML_XPATH_STRING:
+            snprintf(got, sizeof(got), "'%s'", xml_xpath_result_string(r));
+            break;
+        }
+        xml_xpath_result_free(r);
+    }
+    if (strcmp(got, expected))
+    {
+        all_ok_ = false;
+        printf("ERROR: test_xml_xpath %s\n  got:      %s\n  expected: %s\n", expr, got, expected);
+    }
+}
+
+void test_xml_xpath()
+{
+    const char *in =
+        "<!DOCTYPE r [<!ATTLIST b key ID #IMPLIED>]>"
+        "<r xmlns:p='urn:p' xml:lang='en-GB'><a x='1' y='2'>alfa</a><b key='k1'>12</b><p:c>3.5</p:c>"
+        "<!--com--><?pi data?><a x='3'>beta<d/></a></r>";
+    XmlParseSettings ps;
+    xml_parse_settings_default(&ps);
+    XmlParseError pe;
+    XmlDom *dom = xml_parse_buffer(in, in + strlen(in), &ps, &pe);
+    if (!dom)
+    {
+        all_ok_ = false;
+        printf("ERROR: test_xml_xpath parse failed %s\n", pe.message);
+        xml_parse_error_free(&pe);
+        return;
+    }
+    xml_parse_error_free(&pe);
+    // Paths, the streaming engine and the full engine.
+    check_xpath(dom, "/r/a", "a a");
+    check_xpath(dom, "//d | /r", "r d");
+    check_xpath(dom, "//a[2]/d/..", "a");
+    check_xpath(dom, "(//a)[last()]/@x", "x");
+    check_xpath(dom, "//p:c", "c");
+    check_xpath(dom, "//*[local-name() = 'c']/preceding-sibling::*[1]", "b");
+    check_xpath(dom, "//a/following::node()[1]", "b");
+    check_xpath(dom, "/r/node()[last()]/ancestor-or-self::*", "r a");
+    check_xpath(dom, "//comment()/following-sibling::processing-instruction('pi')", "pi");
+    check_xpath(dom, "count(/r/namespace::*)", "2");
+    check_xpath(dom, "id('k1')", "b");
+    check_xpath(dom, "(//*[lang('en')])[last()]", "d");
+    check_xpath(dom, "/", "#doc");
+    // Values.
+    check_xpath(dom, "sum(/r/b | //p:c)", "15.5");
+    check_xpath(dom, "string(//a)", "'alfa'");
+    check_xpath(dom, "name(//p:c)", "'p:c'");
+    check_xpath(dom, "namespace-uri(//p:c)", "'urn:p'");
+    check_xpath(dom, "//a/@x = 3", "true");
+    check_xpath(dom, "//a/@x != 1", "true");
+    check_xpath(dom, "//b > //a/@x", "true");
+    check_xpath(dom, "1 div 3", "0.333333333333333");
+    check_xpath(dom, "1 div 0", "Infinity");
+    check_xpath(dom, "0 div 0", "NaN");
+    check_xpath(dom, "123456789012345", "1.23456789012345e+14");
+    check_xpath(dom, "round(-0.4)", "0");
+    check_xpath(dom, "substring('12345', 1.5, 2.6)", "'234'");
+    check_xpath(dom, "substring('\xC3\xA5\xC3\xA4\xC3\xB6', 2)", "'\xC3\xA4\xC3\xB6'");
+    check_xpath(dom, "translate('--aaa--', 'abc-', 'ABC')", "'AAA'");
+    check_xpath(dom, "normalize-space('  a   b ')", "'a b'");
+    check_xpath(dom, "string-length('\xC3\xA5\xC3\xA4')", "2");
+    // Errors.
+    check_xpath(dom, "//q:x", "error 19 Undefined namespace prefix");
+    check_xpath(dom, "foo()", "error 9 Unregistered function");
+    check_xpath(dom, "//a[", "error 7 Invalid expression");
+    check_xpath(dom, "'abc", "error 2 Unfinished literal");
+    check_xpath(dom, "$v", "error 5 Undefined variable");
+    check_xpath(dom, "count(1)", "error 11 Invalid type");
+    // Deep nesting is limited.
+    char deep[3000];
+    for (int i = 0; i < 1400; ++i) deep[i] = '(';
+    deep[1400] = '1';
+    for (int i = 0; i < 1400; ++i) deep[1401 + i] = ')';
+    deep[2801] = 0;
+    check_xpath(dom, deep, "error 26 Recursion limit exceeded");
+    // Number conversions.
+    if (!(xml_xpath_string_to_number(" -12.5e1 ") == -125.0) || !isnan(xml_xpath_string_to_number("1x")))
+    {
+        all_ok_ = false;
+        printf("ERROR: test_xml_xpath xml_xpath_string_to_number\n");
+    }
+    xml_dom_free(dom);
 }
 
 int main(int argc, char **argv)

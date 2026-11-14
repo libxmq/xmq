@@ -588,6 +588,17 @@ static void xml_save_node_internal(XmlSaveCtxt *ctxt, const XMQNode *cur)
         case XML_DOM_ATTRIBUTE:
             xml_save_attr(ctxt, cur);
             break;
+        case XML_DOM_NAMESPACE:
+            // An xpath namespace node, like libxml2 xmlNsDumpOutput.
+            xml_save_put(ctxt, " xmlns");
+            if (xml_node_name(cur))
+            {
+                xml_save_putc(ctxt, ':');
+                xml_save_put(ctxt, xml_node_name(cur));
+            }
+            xml_save_putc(ctxt, '=');
+            xml_save_write_quoted(ctxt->mb, xml_node_content(cur) ? xml_node_content(cur) : "");
+            break;
         }
 
         while (true)

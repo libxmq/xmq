@@ -85,6 +85,9 @@ typedef enum
     XML_DOM_ELEMENT_DECL = 15,
     XML_DOM_ATTRIBUTE_DECL = 16,
     XML_DOM_ENTITY_DECL = 17,
+    /** An xpath namespace node (namespace:: axis). Not part of any tree: its parent is the
+        element it belongs to, but it is not one of the element's children. */
+    XML_DOM_NAMESPACE = 18,
     XML_DOM_NOTATION_DECL = 20,
     /** A parameter entity reference %name; between declarations in the dtd (never expanded). */
     XML_DOM_PE_REF = 21,
@@ -179,6 +182,10 @@ XMQNode *xml_node_new_comment(XmlDom *dom, const char *text);
 XMQNode *xml_node_new_pi(XmlDom *dom, const char *target, const char *data);
 /** An entity reference &name; */
 XMQNode *xml_node_new_entity_ref(XmlDom *dom, const char *name);
+
+/** A namespace node for xpath, name = prefix (NULL for the default namespace), content = href.
+    index orders the namespace nodes of the same element (stored as the node line). Free with xml_node_free. */
+XMQNode *xml_node_new_namespace_node(XMQNode *element, const char *prefix, const char *href, int index);
 
 /** Unlink and free the node and its subtree. */
 void xml_node_free(XMQNode *node);

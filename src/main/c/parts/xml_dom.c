@@ -643,6 +643,16 @@ XMQNode *xml_node_new_entity_ref(XmlDom *dom, const char *name)
     return n;
 }
 
+XMQNode *xml_node_new_namespace_node(XMQNode *element, const char *prefix, const char *href, int index)
+{
+    XMQNode *n = xml_node_alloc(element->dom, XML_DOM_NAMESPACE, sizeof(XMQNode));
+    n->name = xml_dom_strdup(prefix);
+    n->content = xml_dom_strdup(href);
+    n->parent = element; // Not linked into the element.
+    n->line = index;
+    return n;
+}
+
 void xml_node_free(XMQNode *node)
 {
     if (!node) return;
@@ -838,6 +848,11 @@ const char *xml_node_ns_prefix(const XMQNode *node)
 
 void xml_node_unlink(XMQNode *node)
 {
+    if (node->kind == XML_DOM_NAMESPACE)
+    {
+        node->parent = NULL;
+        return;
+    }
     XMQNode *p = node->parent;
     if (node->kind == XML_DOM_ATTRIBUTE)
     {
