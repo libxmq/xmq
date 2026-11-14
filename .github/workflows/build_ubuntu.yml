@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - GenerateSourceFromIxml
 
   pull_request:
 
