@@ -55,6 +55,42 @@ do_building_dist_xmq() {
     mv ${ROOT}/tmp ${ROOT}/xmq-in-progress
 }
 
+do_upstream_notice() {
+    # The native xml parts (xml_*.c) are partly derived from libxml2, keep its notice.
+    cat > ${ROOT}/notice <<'NOTICE'
+
+/* The xml parts (PART C XML_*) are partly ported from libxml2 (version 2.16.0 as found
+   in the libxmq fork), which is covered by the following notice (from libxml2/Copyright):
+
+ Copyright (C) 1998-2012 Daniel Veillard.  All Rights Reserved.
+ Copyright (C) The Libxml2 Contributors.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is fur-
+nished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FIT-
+NESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+   See CONTRIBUTORS for the libxml2 contributors.
+*/
+NOTICE
+    # Insert the notice after the end of the first comment (the libxmq license).
+    awk -v nf="${ROOT}/notice" 'done == 0 && /^\*\/$/ { print; while ((getline line < nf) > 0) print line; done = 1; next } { print }' ${ROOT}/xmq-in-progress > ${ROOT}/tmp
+    mv ${ROOT}/tmp ${ROOT}/xmq-in-progress
+}
+
 do_building_dist_xmq
 do_part always
 do_part colors
@@ -98,3 +134,4 @@ do_part yaep_tree
 
 
 do_version
+do_upstream_notice

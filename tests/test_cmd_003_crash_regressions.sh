@@ -138,7 +138,9 @@ do
     check "entity cycle $cmd" 0 IGNORE IGNORE
 done
 $PROG $OUTPUT/entcycle.xml to-json > $OUTPUT/out 2> $OUTPUT/err ; RC=$?
-check "entity cycle to-json output" 0 '{"!DOCTYPE":"goo [\n<!ENTITY copy \"&#169;\">\n<!ENTITY prutt \"PRUTT&copy;\">\n]","_":"goo","_x":"PRUTT©alfa","|":"X"}' ''
+# Entities are never expanded implicitly, the entity reference in the attribute
+# contributes nothing to the json string (xmqExpandEntities expands them).
+check "entity cycle to-json output" 0 '{"!DOCTYPE":"goo [\n<!ENTITY copy \"&#169;\">\n<!ENTITY prutt \"PRUTT&copy;\">\n]","_":"goo","_x":"alfa","|":"X"}' ''
 
 # An attribute that is only an undefined entity reference: xmlNodeListGetString
 # returns NULL, which crashed the json and clines printers.

@@ -5480,9 +5480,8 @@ xmqDocDefaultLoaderFunc(const xmlChar * URI,
 
     verbose_("xmq=", "xsl-document-load %zu bytes from %s", xmqGetOriginalSize(doq), URI);
 
-    // libxslt takes over (and frees) the implementation doc, the xmq doc wrapper is freed here.
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(doq);
-    xmqSetImplementationDoc(doq, NULL);
+    // libxslt takes over (and frees) the libxml2 copy, the xmq doc is freed here.
+    xmlDocPtr doc = cli_to_libxml(doq);
     xmqFreeDoc(doq);
     return doc;
 

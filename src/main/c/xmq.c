@@ -23,6 +23,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include"xmq.h"
 
+#include<assert.h>
+#include<ctype.h>
+#include<float.h>
+#include<limits.h>
+#include<math.h>
+#include<setjmp.h>
+#include<stdint.h>
+#include<stdio.h>
+#include<string.h>
+
 // If we are concatening a single source file dist/xmq.dc then add the define BUILDING_DIST_XMQ
 //#define BUILDING_DIST_XMQ
 

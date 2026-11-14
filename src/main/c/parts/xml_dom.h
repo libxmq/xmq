@@ -281,6 +281,7 @@ XMQAttr *xml_node_as_attr(XMQNode *node);
 /** NULL for the default namespace. */
 const char *xml_ns_prefix(const XmlNs *ns);
 /** "" for an undeclaration xmlns="". */
+/** The uri, "" for an undeclaration (xmlns=""), NULL for a prefix declared without uri (xmq allows that). */
 const char *xml_ns_href(const XmlNs *ns);
 /** The namespaces declared on an element, iterate with xml_ns_next_decl. */
 XmlNs *xml_node_first_ns_decl(const XMQNode *element);

@@ -46,7 +46,7 @@ struct XmlNs
 {
     XmlNs *next;    // Next declaration on the same element (only used in ns_defs lists).
     char *prefix;   // NULL for the default namespace.
-    char *href;     // "" for an undeclaration xmlns="".
+    char *href;     // "" for an undeclaration xmlns="", NULL for a prefix declared without uri.
     int refcount;   // Number of owners: declaring element + nodes using it. <0 means static.
     void *user_data; // Free for the user of the dom (not copied).
 };
@@ -140,7 +140,9 @@ static XmlNs *xml_ns_new(const char *prefix, const char *href)
 {
     XmlNs *ns = (XmlNs*)calloc(1, sizeof(XmlNs));
     ns->prefix = xml_dom_strdup(prefix);
-    ns->href = xml_dom_strdup(href ? href : "");
+    // A NULL href is a prefix declared without uri (the xmq parser does that for
+    // undeclared prefixes), it is not serialized. "" is an undeclaration.
+    ns->href = href ? xml_dom_strdup(href) : NULL;
     ns->refcount = 1;
     return ns;
 }
@@ -1376,7 +1378,7 @@ void xml_ns_remove_decl(XMQNode *element, XmlNs *ns, XmlNs *replacement)
 void xml_ns_set_href(XmlNs *ns, const char *href)
 {
     if (ns->refcount < 0) return; // The static xml namespace.
-    char *h = xml_dom_strdup(href ? href : "");
+    char *h = href ? xml_dom_strdup(href) : NULL;
     free(ns->href);
     ns->href = h;
 }
