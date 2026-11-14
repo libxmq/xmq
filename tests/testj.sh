@@ -69,8 +69,6 @@ fi
 for i in tests/backforth_???_*.test
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
-    # The render overrides --use-is etc are not ported to Java yet.
-    if grep -q -- "--use-" "$i"; then continue; fi
     tests/test_backforth.sh "$PROG" "$OUTPUT" "$i"
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 done
@@ -82,6 +80,13 @@ then
     tests/test_cli_compare.sh "$XMQ_C" "$PROG" "$OUTPUT/cli_compare"
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 fi
+
+for i in tests/theme_???_*.test
+do
+    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+    tests/test_theme.sh "$PROG" "$OUTPUT" "$i"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+done
 
 for i in tests/format_???_*.test
 do

@@ -71,44 +71,144 @@ public class XMQPrinter
         ps.current_indent += s.length();
     }
 
-    /**
-     * Mirrors C print_color_pre: writes the pre string for a token color if
-     * one is set in the theme. Remember the pre string so it can be replayed
-     * (re-printed) if the theme uses a NULL post (e.g. ansi codes).
-     */
+    /** The theme pre string of a color, or null. Mirrors C getThemeStrings. */
+    static String color_pre(XMQPrintState ps, XMQColor color)
+    {
+        if (color == null || ps.theme == null) return null;
+        XMQThemeStrings ts = ps.theme.getStringsFor(color);
+        return ts == null ? null : ts.pre();
+    }
+
+    /** The theme post string of a color, or null. Mirrors C getThemeStrings. */
+    static String color_post(XMQPrintState ps, XMQColor color)
+    {
+        if (color == null || ps.theme == null) return null;
+        XMQThemeStrings ts = ps.theme.getStringsFor(color);
+        return ts == null ? null : ts.post();
+    }
+
+    /** Mirrors the C content write: a raw write that does not track the indentation. */
+    static void write(XMQPrintState ps, String s)
+    {
+        if (s != null) ps.buffer.append(s);
+    }
+
+    /** Mirrors C print_color_pre: writes the pre string of the color, if any. */
     void print_color_pre(XMQPrintState ps, XMQColor color)
     {
-        XMQThemeStrings ts = ps.theme.getStringsFor(color);
-        if (ts == null || ts.pre() == null)
-        {
-            return;
-        }
-        ps.replay_active_color_pre = ts.pre();
-        ps.buffer.append(ts.pre());
+        write(ps, color_pre(ps, color));
     }
 
     /**
-     * Mirrors C print_color_post: writes the post string for a token color if
-     * one is set in the theme. When the theme uses a NULL post (e.g. ansi
-     * codes) the remembered pre string is re-printed instead.
+     * Mirrors C print_color_post: writes the post string of the color. When
+     * the theme has no post string (eg ansi colors) the active color is
+     * replayed instead.
      */
     void print_color_post(XMQPrintState ps, XMQColor color)
     {
-        XMQThemeStrings ts = ps.theme.getStringsFor(color);
-        if (ts == null)
+        String post = color_post(ps, color);
+        if (post != null) write(ps, post);
+        else write(ps, ps.replay_active_color_pre);
+    }
+
+    /** Mirrors C needs_escape: the escape of a character when rendering html or tex, or null. */
+    static String needs_escape(XMQPrintState.RenderTo f, int c)
+    {
+        if (f == XMQPrintState.RenderTo.HTML)
         {
-            return;
+            if (c == '&') return "&amp;";
+            if (c == '<') return "&lt;";
+            if (c == '>') return "&gt;";
+            return null;
         }
-        if (ts.post() == null)
+        if (f == XMQPrintState.RenderTo.TEX)
         {
-            if (ps.replay_active_color_pre != null)
+            if (c == '\\') return "\\backslash;";
+            if (c == '&') return "\\&";
+            if (c == '#') return "\\#";
+            if (c == '{') return "\\{";
+            if (c == '}') return "\\}";
+            if (c == '_') return "\\_";
+            if (c == '\'') return "{'}";
+        }
+        return null;
+    }
+
+    /** Mirrors C is_unicode_whitespace: nbsp and the en/em quads and spaces. */
+    static boolean is_unicode_whitespace(int c)
+    {
+        return c == 0xa0 || (c >= 0x2000 && c <= 0x2003);
+    }
+
+    /**
+     * Mirrors C print_utf8_char: prints the character at index i, with the
+     * explicit space/tab strings and the render escapes. Returns the number of
+     * chars used.
+     */
+    int print_utf8_char(XMQPrintState ps, String s, int i)
+    {
+        int c = s.codePointAt(i);
+        boolean uw = is_unicode_whitespace(c);
+        if (uw) print_color_pre(ps, XMQColor.COLOR_unicode_whitespace);
+        if (c == ' ') write(ps, ps.explicit_space);
+        else if (c == '\t') write(ps, ps.explicit_tab);
+        else
+        {
+            String e = needs_escape(ps.render_to, c);
+            if (e == null) ps.buffer.appendCodePoint(c);
+            else write(ps, e);
+        }
+        if (uw) print_color_post(ps, XMQColor.COLOR_unicode_whitespace);
+        ps.last_char = s.charAt(i);
+        ps.current_indent++;
+        return Character.charCount(c);
+    }
+
+    /** Mirrors C print_utf8_internal: prints a string, see print_utf8_char. */
+    void print_utf8_internal(XMQPrintState ps, String s)
+    {
+        if (s == null || s.isEmpty()) return;
+        int u_len = 0;
+        for (int i = 0; i < s.length(); )
+        {
+            int c = s.codePointAt(i);
+            boolean uw = is_unicode_whitespace(c);
+            if (uw) print_color_pre(ps, XMQColor.COLOR_unicode_whitespace);
+            if (c == ' ') write(ps, ps.explicit_space);
+            else if (c == '\t') write(ps, ps.explicit_tab);
+            else
             {
-                ps.buffer.append(ps.replay_active_color_pre);
+                String e = needs_escape(ps.render_to, c);
+                if (e == null) ps.buffer.appendCodePoint(c);
+                else write(ps, e);
             }
-            return;
+            if (uw) print_color_post(ps, XMQColor.COLOR_unicode_whitespace);
+            u_len++;
+            i += Character.charCount(c);
         }
-        ps.buffer.append(ts.post());
-        ps.replay_active_color_pre = null;
+        ps.last_char = s.charAt(s.length() - 1);
+        ps.current_indent += u_len;
+    }
+
+    /**
+     * Mirrors C print_utf8: prints the strings wrapped in the color. While
+     * printing, the pre string of the color is the active color that is
+     * replayed by a nested color without a post string (ansi colors).
+     */
+    void print_utf8(XMQPrintState ps, XMQColor color, String... parts)
+    {
+        String pre = color_pre(ps, color);
+        String post = color_post(ps, color);
+        String previous_color = null;
+        if (pre != null)
+        {
+            write(ps, pre);
+            previous_color = ps.replay_active_color_pre;
+            ps.replay_active_color_pre = pre;
+        }
+        for (String p : parts) print_utf8_internal(ps, p);
+        if (post != null) write(ps, post);
+        if (previous_color != null) ps.replay_active_color_pre = previous_color;
     }
 
     /**
@@ -131,14 +231,6 @@ public class XMQPrinter
         if (theme.content  != null && theme.content.post()  != null) ps.buffer.append(theme.content.post());
         if (theme.body     != null && theme.body.post()     != null) ps.buffer.append(theme.body.post());
         if (theme.document != null && theme.document.post() != null) ps.buffer.append(theme.document.post());
-    }
-
-    /** Mirrors C print_utf8_char. Prints a single character (updates last_char). */
-    void print_char(XMQPrintState ps, char c)
-    {
-        ps.buffer.append(c);
-        ps.last_char = c;
-        ps.current_indent += 1;
     }
 
     /** Mirrors C check_space_before_entity_node. */
@@ -192,46 +284,37 @@ public class XMQPrinter
         return c == '\'' || c == '"';
     }
 
+    /** Mirrors C print_white_spaces: indentation, printed with the indentation space string. */
     void print_white_spaces(XMQPrintState ps, int num)
     {
         XMQTheme c = ps.theme;
-        if (c != null && c.whitespace != null && c.whitespace.pre() != null)
-        {
-            ps.buffer.append(c.whitespace.pre());
-        }
-        ps.buffer.append(" ".repeat(num));
+        if (c != null && c.whitespace != null) write(ps, c.whitespace.pre());
+        for (int i = 0; i < num; ++i) write(ps, ps.indentation_space);
         ps.current_indent += num;
-        if (c != null && c.whitespace != null && c.whitespace.post() != null)
-        {
-            ps.buffer.append(c.whitespace.post());
-        }
+        if (c != null && c.whitespace != null) write(ps, c.whitespace.post());
     }
 
+    /** Mirrors C print_nl. */
     void print_nl(XMQPrintState ps, String prefix, String postfix)
     {
-        if (postfix != null)
-        {
-            ps.buffer.append(postfix);
-        }
-        ps.buffer.append("\n");
+        write(ps, postfix);
+        write(ps, ps.explicit_nl);
         ps.current_indent = 0;
         ps.last_char = 0;
-        if (prefix != null)
-        {
-            ps.buffer.append(prefix);
-            ps.current_indent += prefix.length();
-        }
+        write(ps, ps.restart_line);
+        write(ps, prefix);
     }
 
+    /** Mirrors C print_nl_and_indent. */
     void print_nl_and_indent(XMQPrintState ps, String prefix, String postfix)
     {
-        print_nl(ps, null, postfix);
+        write(ps, postfix);
+        write(ps, ps.explicit_nl);
+        ps.current_indent = 0;
+        ps.last_char = 0;
         print_white_spaces(ps, ps.line_indent);
-        if (prefix != null)
-        {
-            ps.buffer.append(prefix);
-            ps.current_indent += prefix.length();
-        }
+        write(ps, ps.restart_line);
+        write(ps, prefix);
     }
 
     /** A newline and indentation before an element key, unless just started a line. */
@@ -385,21 +468,15 @@ public class XMQPrinter
 
         if (prefix != null)
         {
-            print_color_pre(ps, XMQColor.COLOR_attr_ns);
-            print_string(ps, prefix);
-            print_color_post(ps, XMQColor.COLOR_attr_ns);
-            print_color_pre(ps, XMQColor.COLOR_ns_colon);
-            print_string(ps, ":");
-            print_color_post(ps, XMQColor.COLOR_ns_colon);
+            print_utf8(ps, XMQColor.COLOR_attr_ns, prefix);
+            print_utf8(ps, XMQColor.COLOR_ns_colon, ":");
         }
-        print_color_pre(ps, XMQColor.COLOR_attr_key);
-        print_string(ps, key);
-        print_color_post(ps, XMQColor.COLOR_attr_key);
+        print_utf8(ps, XMQColor.COLOR_attr_key, key);
 
         if (a.firstChild() != null && !is_single_empty_text_node(a.firstChild()))
         {
             if (!ps.output_settings.compact()) print_white_spaces(ps, 1 + align - total_u_len);
-            print_string(ps, "=");
+            print_utf8(ps, XMQColor.COLOR_equals, "=");
             if (!ps.output_settings.compact()) print_white_spaces(ps, 1);
             print_value(ps, a.firstChild(), Level.ATTR_VALUE);
         }
@@ -413,38 +490,23 @@ public class XMQPrinter
         String prefix = ns.prefix();
         int total_u_len = 5 + (prefix != null ? u_len(prefix) + 1 : 0);
 
-        print_color_pre(ps, XMQColor.COLOR_ns_declaration);
-        print_string(ps, "xmlns");
-        print_color_post(ps, XMQColor.COLOR_ns_declaration);
+        print_utf8(ps, XMQColor.COLOR_ns_declaration, "xmlns");
 
         if (prefix != null)
         {
-            print_color_pre(ps, XMQColor.COLOR_ns_colon);
-            print_string(ps, ":");
-            print_color_post(ps, XMQColor.COLOR_ns_colon);
+            print_utf8(ps, XMQColor.COLOR_ns_colon, ":");
             XMQColor ns_color = prefix.equals("xsl") ? XMQColor.COLOR_ns_override_xsl : XMQColor.COLOR_attr_ns;
-            print_color_pre(ps, ns_color);
-            print_string(ps, prefix);
-            print_color_post(ps, ns_color);
+            print_utf8(ps, ns_color, prefix);
         }
 
         String v = ns.href();
         if (v != null)
         {
             if (!ps.output_settings.compact()) print_white_spaces(ps, 1 + align - total_u_len);
-            print_string(ps, "=");
+            print_utf8(ps, XMQColor.COLOR_equals, "=");
             if (!ps.output_settings.compact()) print_white_spaces(ps, 1);
             print_value_string(ps, v, Level.ATTR_VALUE, false);
         }
-    }
-
-    /** Mirrors C print_entity_node. */
-    void print_entity_name(XMQPrintState ps, XMQColor color, String name)
-    {
-        check_space_before_entity_node(ps);
-        print_color_pre(ps, color);
-        print_string(ps, "&" + name + ";");
-        print_color_post(ps, color);
     }
 
     /** Mirrors C print_content_node. */
@@ -463,9 +525,9 @@ public class XMQPrinter
         String name = node.name();
         XMQColor c = XMQColor.COLOR_entity;
         if (name.isEmpty() || name.charAt(0) == '_') c = XMQColor.COLOR_quote;
-        print_color_pre(ps, c);
-        print_string(ps, "&"+name+";");
-        print_color_post(ps, c);
+        print_utf8(ps, c, "&");
+        print_utf8(ps, c, name);
+        print_utf8(ps, c, ";");
     }
 
     /** Mirrors C is_safe_value_char/count_whitespace. True if the character does not need quoting. */
@@ -598,7 +660,15 @@ public class XMQPrinter
     }
 
     /** Mirrors C Level. */
-    enum Level { XMQ, ELEMENT_VALUE, ATTR_VALUE, COMPOUND }
+    enum Level { XMQ, ELEMENT_VALUE, ELEMENT_VALUE_COMPOUND, ATTR_VALUE, ATTR_VALUE_COMPOUND }
+
+    /** Mirrors C enter_compound_level. */
+    static Level enter_compound_level(Level l)
+    {
+        if (l == Level.ELEMENT_VALUE) return Level.ELEMENT_VALUE_COMPOUND;
+        if (l == Level.ATTR_VALUE) return Level.ATTR_VALUE_COMPOUND;
+        return l;
+    }
 
     /** Mirrors C level_to_quote_color. */
     static XMQColor level_quote_color(Level level)
@@ -607,7 +677,8 @@ public class XMQPrinter
         {
             case ELEMENT_VALUE: return XMQColor.COLOR_element_value_quote;
             case ATTR_VALUE:    return XMQColor.COLOR_attr_value_quote;
-            case COMPOUND:      return XMQColor.COLOR_element_value_compound_quote;
+            case ELEMENT_VALUE_COMPOUND: return XMQColor.COLOR_element_value_compound_quote;
+            case ATTR_VALUE_COMPOUND: return XMQColor.COLOR_attr_value_compound_quote;
             case XMQ:
             default:            return XMQColor.COLOR_quote;
         }
@@ -620,7 +691,8 @@ public class XMQPrinter
         {
             case ELEMENT_VALUE: return XMQColor.COLOR_element_value_entity;
             case ATTR_VALUE:    return XMQColor.COLOR_attr_value_entity;
-            case COMPOUND:      return XMQColor.COLOR_element_value_compound_entity;
+            case ELEMENT_VALUE_COMPOUND: return XMQColor.COLOR_element_value_compound_entity;
+            case ATTR_VALUE_COMPOUND: return XMQColor.COLOR_attr_value_compound_entity;
             case XMQ:
             default:            return XMQColor.COLOR_entity;
         }
@@ -629,17 +701,27 @@ public class XMQPrinter
     /** Mirrors C print_quotes. Prints num quotes of the chosen kind, wrapped in the color. */
     void print_quotes(XMQPrintState ps, int num, XMQColor color, boolean use_double_quotes)
     {
-        print_color_pre(ps, color);
-        print_string(ps, (use_double_quotes ? "\"" : "'").repeat(num));
-        print_color_post(ps, color);
+        // Raw writes of the quotes, like C print_quotes.
+        String q = use_double_quotes ? "\"" : "'";
+        write(ps, color_pre(ps, color));
+        write(ps, q.repeat(num));
+        ps.current_indent += num;
+        ps.last_char = q.charAt(0);
+        write(ps, color_post(ps, color));
     }
 
     /** Mirrors C print_quoted_spaces. Prints '...spaces...', wrapped in the color. */
     void print_quoted_spaces(XMQPrintState ps, XMQColor color, int num)
     {
-        print_color_pre(ps, color);
-        print_string(ps, "'" + " ".repeat(num) + "'");
-        print_color_post(ps, color);
+        // Like C print_quoted_spaces this always uses the quote color.
+        XMQThemeStrings q = ps.theme == null ? null : ps.theme.quote;
+        if (q != null) write(ps, q.pre());
+        write(ps, "'");
+        for (int i = 0; i < num; ++i) write(ps, ps.explicit_space);
+        ps.current_indent += num;
+        ps.last_char = '\'';
+        write(ps, "'");
+        if (q != null) write(ps, q.post());
     }
 
     /** Mirrors C print_char_entity for a single character, wrapped in the color. */
@@ -650,9 +732,13 @@ public class XMQPrinter
         {
             replacement = XMQHtmlEntities.toHtmlEntity(c);
         }
-        print_color_pre(ps, color);
-        print_string(ps, replacement != null ? "&" + replacement + ";" : "&#" + c + ";");
-        print_color_post(ps, color);
+        String buf = replacement != null ? "&" + replacement + ";" : "&#" + c + ";";
+        // Like C print_char_entity, the entity text is printed (and escaped) without a color of its own.
+        write(ps, color_pre(ps, color));
+        print_utf8(ps, null, buf);
+        write(ps, color_post(ps, color));
+        ps.last_char = ';';
+        ps.current_indent += buf.length();
     }
 
     /** Mirrors C print_all_whitespace. Spaces are printed as '...'. Other whitespace as entities. */
@@ -1036,8 +1122,6 @@ public class XMQPrinter
 
         print_quotes(ps, numq, color, udd[0]);
 
-        print_color_pre(ps, color);
-
         if (!add_nls)
         {
             old_line_indent = ps.line_indent;
@@ -1049,52 +1133,7 @@ public class XMQPrinter
             print_nl_and_indent(ps, null, null);
         }
 
-        // Mirrors C print_quote_lines_and_color_uwhitespace.
-        if (v.charAt(0) == '\n')
-        {
-            // We are leading with a newline, print an extra into the quote,
-            // which will be trimmed away during parse.
-            print_nl(ps, null, null);
-        }
-
-        boolean all_newlines = true;
-        for (int i = 0; i < v.length(); i++)
-        {
-            char c = v.charAt(i);
-            if (c == '\n')
-            {
-                if (i + 1 < v.length() && v.charAt(i + 1) != '\n')
-                {
-                    print_nl_and_indent(ps, null, null);
-                }
-                else
-                {
-                    print_nl(ps, null, null);
-                }
-            }
-            else
-            {
-                print_char(ps, c);
-                all_newlines = false;
-            }
-        }
-        // We are ending with a newline, print an extra into the quote,
-        // which will be trimmed away during parse.
-        if (v.charAt(v.length() - 1) == '\n')
-        {
-            ps.line_indent--;
-            if (!all_newlines)
-            {
-                print_nl_and_indent(ps, null, null);
-            }
-            else
-            {
-                ps.current_indent = 0;
-                ps.last_char = 0;
-                print_white_spaces(ps, ps.line_indent);
-            }
-            ps.line_indent++;
-        }
+        print_quote_lines_and_color_uwhitespace(ps, color, v);
 
         if (!add_nls)
         {
@@ -1106,14 +1145,75 @@ public class XMQPrinter
             print_nl_and_indent(ps, null, null);
         }
 
-        print_color_post(ps, color);
-
         print_quotes(ps, numq, color, udd[0]);
 
         if (add_nls)
         {
             ps.line_indent = old_line_indent;
         }
+    }
+
+    /**
+     * Mirrors C print_quote_lines_and_color_uwhitespace: prints the content
+     * of a quote, each line wrapped in the color. A color without a post
+     * string (ansi) is restarted on every new line.
+     */
+    void print_quote_lines_and_color_uwhitespace(XMQPrintState ps, XMQColor color, String v)
+    {
+        String pre = color_pre(ps, color);
+        String post = color_post(ps, color);
+
+        write(ps, pre);
+
+        String old_restart_line = ps.restart_line;
+        if (post == null) ps.restart_line = pre;
+        else ps.restart_line = null;
+
+        // We are leading with a newline, print an extra into the quote, which will be trimmed away during parse.
+        if (v.charAt(0) == '\n')
+        {
+            print_nl(ps, pre, post);
+        }
+
+        boolean all_newlines = true;
+        for (int i = 0; i < v.length(); )
+        {
+            if (v.charAt(i) == '\n')
+            {
+                if (i + 1 < v.length() && v.charAt(i + 1) != '\n')
+                {
+                    print_nl_and_indent(ps, pre, post);
+                }
+                else
+                {
+                    print_nl(ps, pre, post);
+                }
+                i++;
+            }
+            else
+            {
+                i += print_utf8_char(ps, v, i);
+                all_newlines = false;
+            }
+        }
+        // We are ending with a newline, print an extra into the quote, which will be trimmed away during parse.
+        if (v.charAt(v.length() - 1) == '\n')
+        {
+            ps.line_indent--;
+            if (!all_newlines)
+            {
+                print_nl_and_indent(ps, null, post);
+            }
+            else
+            {
+                ps.current_indent = 0;
+                ps.last_char = 0;
+                print_white_spaces(ps, ps.line_indent);
+            }
+            ps.line_indent++;
+        }
+        if (v.charAt(v.length() - 1) != '\n') write(ps, post);
+        ps.restart_line = old_restart_line;
     }
 
     /** Mirrors C print_value_internal_text. */
@@ -1125,9 +1225,7 @@ public class XMQPrinter
         if (v.isEmpty())
         {
             check_space_before_quote(ps, level);
-            print_color_pre(ps, qc);
-            print_string(ps, "''");
-            print_color_post(ps, qc);
+            print_utf8(ps, qc, "''");
             return;
         }
 
@@ -1166,9 +1264,7 @@ public class XMQPrinter
         if (is_xmq_text_value(v) && (level == Level.ELEMENT_VALUE || level == Level.ATTR_VALUE))
         {
             // key = 123 or color=blue, no quoting needed.
-            print_color_pre(ps, qc);
-            print_string(ps, v);
-            print_color_post(ps, qc);
+            print_utf8(ps, qc, v);
             return;
         }
 
@@ -1204,7 +1300,10 @@ public class XMQPrinter
                 int c = v.codePointAt(from);
                 print_char_entity(ps, ec, c);
                 int from1 = from + Character.charCount(c);
-                while (from1 < stop && v.charAt(from1) == '\n')
+                // C checks the byte after the escaped char, which is never a newline
+                // after a multi byte utf8 char. So only ascii chars (eg CR) escape
+                // the following newlines as well.
+                while (c < 0x80 && from1 < stop && v.charAt(from1) == '\n')
                 {
                     // Special case, eg CR LF: escape the newline(s) as well.
                     from1++;
@@ -1249,10 +1348,8 @@ public class XMQPrinter
 
         if (is_compound && !already_compounded)
         {
-            level = Level.COMPOUND;
-            print_color_pre(ps, XMQColor.COLOR_cpar_left);
-            print_string(ps, "(");
-            print_color_post(ps, XMQColor.COLOR_cpar_left);
+            level = enter_compound_level(level);
+            print_utf8(ps, XMQColor.COLOR_cpar_left, "(");
             if (!ps.output_settings.compact())
             {
                 print_white_spaces(ps, 1);
@@ -1268,9 +1365,7 @@ public class XMQPrinter
             {
                 print_white_spaces(ps, 1);
             }
-            print_color_pre(ps, XMQColor.COLOR_cpar_right);
-            print_string(ps, ")");
-            print_color_post(ps, XMQColor.COLOR_cpar_right);
+            print_utf8(ps, XMQColor.COLOR_cpar_right, ")");
         }
 
         ps.line_indent = old_line_indent;
@@ -1295,10 +1390,8 @@ public class XMQPrinter
 
         if (is_compound)
         {
-            level = Level.COMPOUND;
-            print_color_pre(ps, XMQColor.COLOR_cpar_left);
-            print_string(ps, "(");
-            print_color_post(ps, XMQColor.COLOR_cpar_left);
+            level = enter_compound_level(level);
+            print_utf8(ps, XMQColor.COLOR_cpar_left, "(");
             if (!ps.output_settings.compact())
             {
                 print_white_spaces(ps, 1);
@@ -1310,7 +1403,8 @@ public class XMQPrinter
         {
             if (is_entity_node(i))
             {
-                print_entity_name(ps, level_entity_color(level), i.name());
+                // Like C print_value_internal, an entity in a value is printed as an entity node.
+                print_entity_node(ps, i);
             }
             else
             {
@@ -1326,9 +1420,7 @@ public class XMQPrinter
             {
                 print_white_spaces(ps, 1);
             }
-            print_color_pre(ps, XMQColor.COLOR_cpar_right);
-            print_string(ps, ")");
-            print_color_post(ps, XMQColor.COLOR_cpar_right);
+            print_utf8(ps, XMQColor.COLOR_cpar_right, ")");
         }
 
         ps.line_indent = old_line_indent;
@@ -1354,28 +1446,18 @@ public class XMQPrinter
                 key_color = XMQColor.COLOR_ns_override_xsl;
                 name_color = XMQColor.COLOR_ns_override_xsl;
             }
-            print_color_pre(ps, ns_color);
-            print_string(ps, prefix);
-            print_color_post(ps, ns_color);
-            print_color_pre(ps, XMQColor.COLOR_ns_colon);
-            print_string(ps, ":");
-            print_color_post(ps, XMQColor.COLOR_ns_colon);
+            print_utf8(ps, ns_color, prefix);
+            print_utf8(ps, XMQColor.COLOR_ns_colon, ":");
         }
 
         XMQColor c = (is_key_value_node(node) && node.attributes().isEmpty()) ? key_color : name_color;
-        print_color_pre(ps, c);
-        print_string(ps, name);
-        print_color_post(ps, c);
+        print_utf8(ps, c, name);
 
         if (!node.attributes().isEmpty() || !node.nsDefs().isEmpty())
         {
-            print_color_pre(ps, XMQColor.COLOR_apar_left);
-            print_string(ps, "(");
-            print_color_post(ps, XMQColor.COLOR_apar_left);
+            print_utf8(ps, XMQColor.COLOR_apar_left, "(");
             print_attributes(ps, node);
-            print_color_pre(ps, XMQColor.COLOR_apar_right);
-            print_string(ps, ")");
-            print_color_post(ps, XMQColor.COLOR_apar_right);
+            print_utf8(ps, XMQColor.COLOR_apar_right, ")");
         }
         return total_u_len;
     }
@@ -1392,9 +1474,7 @@ public class XMQPrinter
             if (len < align) pad = 1 + align - len;
             print_white_spaces(ps, pad);
         }
-        print_color_pre(ps, XMQColor.COLOR_equals);
-        print_string(ps, "=");
-        print_color_post(ps, XMQColor.COLOR_equals);
+        print_utf8(ps, XMQColor.COLOR_equals, "=");
         if (!ps.output_settings.compact()) print_white_spaces(ps, 1);
 
         print_value(ps, node.firstChild(), Level.ELEMENT_VALUE);
@@ -1452,9 +1532,7 @@ public class XMQPrinter
         print_element_name_and_attributes(ps, element);
 
         check_space_before_opening_brace(ps);
-        print_color_pre(ps, XMQColor.COLOR_brace_left);
-        print_string(ps, "{");
-        print_color_post(ps, XMQColor.COLOR_brace_left);
+        print_utf8(ps, XMQColor.COLOR_brace_left, "{");
 
         int old_line_indent = ps.line_indent;
         ps.line_indent += ps.output_settings != null ? ps.output_settings.indentAmount() : 4;
@@ -1464,9 +1542,7 @@ public class XMQPrinter
         ps.line_indent = old_line_indent;
 
         check_space_before_closing_brace(ps);
-        print_color_pre(ps, XMQColor.COLOR_brace_right);
-        print_string(ps, "}");
-        print_color_post(ps, XMQColor.COLOR_brace_right);
+        print_utf8(ps, XMQColor.COLOR_brace_right, "}");
     }
 
     /** Mirrors C is_element_node. */
@@ -1635,19 +1711,18 @@ public class XMQPrinter
     // Mirrors C print_comment_line: a single physical comment line, colored.
     void print_comment_line_span(XMQPrintState ps, String line)
     {
-        print_color_pre(ps, XMQColor.COLOR_comment);
-        print_string(ps, line);
-        print_color_post(ps, XMQColor.COLOR_comment);
+        print_utf8(ps, XMQColor.COLOR_comment, line);
     }
 
     // Mirrors C print_slashes: pre + '/'*n + post, colored with COLOR_comment.
     void print_slashes(XMQPrintState ps, String pre, String post, int n)
     {
-        print_color_pre(ps, XMQColor.COLOR_comment);
-        if (pre != null) print_string(ps, pre);
-        print_string(ps, "/".repeat(n));
-        if (post != null) print_string(ps, post);
-        print_color_post(ps, XMQColor.COLOR_comment);
+        // Raw writes, the indentation is not updated, like C print_slashes.
+        write(ps, color_pre(ps, XMQColor.COLOR_comment));
+        write(ps, pre);
+        write(ps, "/".repeat(n));
+        write(ps, post);
+        write(ps, color_post(ps, XMQColor.COLOR_comment));
     }
 
     // Mirrors C print_comment_lines.
@@ -1663,7 +1738,7 @@ public class XMQPrinter
         {
             if (!content.isEmpty() && content.charAt(0) != '\n')
             {
-                print_string(ps, " ");
+                print_white_spaces(ps, 1);
             }
             add_spaces++;
         }
@@ -1722,7 +1797,7 @@ public class XMQPrinter
 
         if (!compact)
         {
-            print_string(ps, " ");
+            print_white_spaces(ps, 1);
         }
         print_slashes(ps, "*", null, num_slashes);
         ps.last_char = '/';
@@ -1742,19 +1817,12 @@ public class XMQPrinter
         {
             if (ps.output_settings.compact())
             {
-                print_color_pre(ps, XMQColor.COLOR_comment);
-                print_string(ps, "/*");
-                print_string(ps, content);
-                print_string(ps, "*/");
-                print_color_post(ps, XMQColor.COLOR_comment);
+                print_utf8(ps, XMQColor.COLOR_comment, "/*", content, "*/");
                 ps.last_char = '/';
             }
             else
             {
-                print_color_pre(ps, XMQColor.COLOR_comment);
-                print_string(ps, "// ");
-                print_string(ps, content);
-                print_color_post(ps, XMQColor.COLOR_comment);
+                print_utf8(ps, XMQColor.COLOR_comment, "// ", content);
                 ps.last_char = 1;
             }
         }
@@ -1798,13 +1866,9 @@ public class XMQPrinter
     {
         check_space_before_key(ps);
         String name = node.name();
-        print_color_pre(ps, XMQColor.COLOR_element_key);
-        print_string(ps, "?" + name);
-        print_color_post(ps, XMQColor.COLOR_element_key);
+        print_utf8(ps, XMQColor.COLOR_element_key, "?" + name);
         if (!ps.output_settings.compact()) print_white_spaces(ps, 1);
-        print_color_pre(ps, XMQColor.COLOR_equals);
-        print_string(ps, "=");
-        print_color_post(ps, XMQColor.COLOR_equals);
+        print_utf8(ps, XMQColor.COLOR_equals, "=");
         if (!ps.output_settings.compact()) print_white_spaces(ps, 1);
 
         String c = XmlSave.nodeDump(node.doc(), node, 0, false);
@@ -1821,13 +1885,9 @@ public class XMQPrinter
     void print_doctype(XMQPrintState ps, XmlDtd node)
     {
         check_space_before_key(ps);
-        print_color_pre(ps, XMQColor.COLOR_element_key);
-        print_string(ps, "!DOCTYPE");
-        print_color_post(ps, XMQColor.COLOR_element_key);
+        print_utf8(ps, XMQColor.COLOR_element_key, "!DOCTYPE");
         if (!ps.output_settings.compact()) print_white_spaces(ps, 1);
-        print_color_pre(ps, XMQColor.COLOR_equals);
-        print_string(ps, "=");
-        print_color_post(ps, XMQColor.COLOR_equals);
+        print_utf8(ps, XMQColor.COLOR_equals, "=");
         if (!ps.output_settings.compact()) print_white_spaces(ps, 1);
 
         String c = XmlSave.nodeDump(node.doc(), node, 0, false);

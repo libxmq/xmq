@@ -56,7 +56,14 @@ final class Cli
         boolean compact, escapeTabs, escapeNewlines, escapeNon7bit, preferDoubleQuotes, noFinalNl;
         boolean omitDecl, renderRaw, addNl;
         int indent = 4;
-        int bgMode; // 0 = follow browser preference, 1 = dark, 2 = light
+        // The coloring, like the C XMQCliCommand use_color, bg_dark_mode, bg_forced
+        // and truecolor. Copied from the environment, then changed by --bg=.
+        boolean useColor, bgDarkMode, bgForced, truecolor;
+        String themeSpec;        // --theme= or XMQ_THEME
+        String useId, useClass;  // --id= --class= of render-html
+        boolean onlyStyle;       // --onlystyle
+        // --use-is= --use-es= --use-et= --use-cr= --use-nl= of the render commands.
+        String useIs, useEs, useEt, useCr, useNl;
         String tokenizeType;
         int withFile; // replace-entity --with-file (1) or --with-text-file (2)
     }
@@ -201,6 +208,11 @@ final class Cli
     {
         Command c = new Command();
         c.name = e.attributeValue("name");
+        c.useColor = envUseColor;
+        c.bgDarkMode = envBgDarkMode;
+        c.bgForced = envBgForced;
+        c.truecolor = envTruecolor;
+        c.themeSpec = System.getenv("XMQ_THEME");
         for (String n : NOT_IMPLEMENTED)
         {
             if (n.equals(c.name)) throw fail("xmq: the command " + c.name + " is not implemented in xmqj yet");
@@ -256,14 +268,29 @@ final class Cli
         if (render)
         {
             if (name.equals("nostyle") && value == null) { c.renderRaw = true; return; }
-            if (name.equals("theme") && value != null) return; // The theme is not implemented in xmqj yet.
+            if (name.equals("onlystyle") && value == null) { c.onlyStyle = true; return; }
+            if (value != null)
+            {
+                switch (name)
+                {
+                case "theme" -> { c.themeSpec = value; return; }
+                case "class" -> { c.useClass = value; return; }
+                case "id" -> { c.useId = value; return; }
+                case "use-is" -> { c.useIs = value; return; }
+                case "use-es" -> { c.useEs = value; return; }
+                case "use-et" -> { c.useEt = value; return; }
+                case "use-cr" -> { c.useCr = value; return; }
+                case "use-nl" -> { c.useNl = value; return; }
+                default -> { }
+                }
+            }
             if (name.equals("bg") && value != null)
             {
                 switch (value)
                 {
-                case "dark" -> c.bgMode = 1;
-                case "light" -> c.bgMode = 2;
-                case "mono" -> c.bgMode = 0;
+                case "light" -> { c.useColor = true; c.bgDarkMode = false; c.bgForced = true; }
+                case "dark" -> { c.useColor = true; c.bgDarkMode = true; c.bgForced = true; }
+                case "mono" -> { c.useColor = false; c.bgDarkMode = false; }
                 default -> throw fail("xmq: unknown bg setting \"" + value + "\"");
                 }
                 return;
@@ -297,6 +324,11 @@ final class Cli
         {
             Command to = new Command();
             to.name = "to-xmq";
+            to.useColor = envUseColor;
+            to.bgDarkMode = envBgDarkMode;
+            to.bgForced = envBgForced;
+            to.truecolor = envTruecolor;
+            to.themeSpec = System.getenv("XMQ_THEME");
             int at = commands.size();
             for (int i = 0; i < commands.size(); i++)
             {
@@ -761,24 +793,182 @@ final class Cli
             return b.toString();
         }
         case "render-html", "render-terminal", "render-tex" -> {
-            XMQTheme theme = new XMQTheme();
-            theme.installDefault();
-            if (c.name.equals("render-html")) theme.setupHtmlColoring(c.renderRaw, c.bgMode);
-            else theme.content = new XMQThemeStrings("", "");
             XMQPrintState ps = new XMQPrintState();
             ps.output_settings = os;
-            ps.theme = theme;
+            setupRender(ps, c, null);
+            if (c.onlyStyle)
+            {
+                // Like C xmqSetupDefaultColors, print the style and exit.
+                XMQThemeStrings st = ps.theme.style;
+                System.out.println(st != null && st.pre() != null ? st.pre() : "(null)");
+                System.out.flush();
+                System.exit(0);
+            }
             new XMQPrinter().print_rendered(ps, doc);
             return ps.buffer + nl;
         }
         default -> {
             XMQPrintState ps = new XMQPrintState();
-            ps.defaultTheme();
             ps.output_settings = os;
+            if (c.useColor)
+            {
+                // Like C, xmq printed to a terminal is colored with the theme.
+                setupRender(ps, c, XMQPrintState.RenderTo.TERMINAL);
+                new XMQPrinter().print_rendered(ps, doc);
+                return ps.buffer + nl;
+            }
+            ps.defaultTheme();
             new XMQPrinter().print_node(ps, doc, 0);
             return ps.buffer + nl;
         }
         }
+    }
+
+    // The coloring found in the environment, like C lookup_bg and detect_truecolor,
+    // turned off when the output is not a terminal.
+    boolean envUseColor, envBgDarkMode, envBgForced, envTruecolor;
+    {
+        lookupBg();
+        envTruecolor = detectTruecolor();
+        if (!isTerminal()) envUseColor = false;
+    }
+
+    /** True if the output is a terminal, like C isatty(1). */
+    static boolean isTerminal()
+    {
+        java.io.Console con = System.console();
+        if (con == null) return false;
+        try
+        {
+            // Console.isTerminal exists from Java 22, where a console is also returned for redirected output.
+            return (Boolean)java.io.Console.class.getMethod("isTerminal").invoke(con);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            return true;
+        }
+    }
+
+    static boolean contains(String s, String p) { return s != null && s.contains(p); }
+
+    /** Mirrors C lookup_bg. An xterm is not queried, a dark background is assumed. */
+    void lookupBg()
+    {
+        String term = System.getenv("TERM");
+        if (term == null) term = "NULL";
+        envBgForced = false;
+        String bg = System.getenv("XMQ_BG");
+        if (bg != null)
+        {
+            if (bg.equals("mono")) { envUseColor = false; envBgDarkMode = false; return; }
+            envUseColor = true;
+            if (bg.equals("light")) { envBgDarkMode = false; envBgForced = true; return; }
+            if (bg.equals("dark")) { envBgDarkMode = true; envBgForced = true; return; }
+            envUseColor = false;
+            envBgDarkMode = false;
+            return;
+        }
+        envUseColor = true;
+        envBgDarkMode = true;
+        if (term.equals("linux") || term.equals("xterm-256color") || term.equals("xterm")) return;
+        String colorfgbg = System.getenv("COLORFGBG");
+        if (colorfgbg != null)
+        {
+            // If the string ends with ;0 then it is dark mode.
+            int p = colorfgbg.lastIndexOf(';');
+            envBgDarkMode = p < 0 || colorfgbg.substring(p + 1).equals("0");
+        }
+    }
+
+    /** Mirrors C detect_truecolor. */
+    static boolean detectTruecolor()
+    {
+        String override = System.getenv("XMQ_TERM");
+        if (override != null) return override.equals("truecolor");
+        String colorterm = System.getenv("COLORTERM");
+        if (contains(colorterm, "truecolor") || contains(colorterm, "24bit")) return true;
+        String term = System.getenv("TERM");
+        String term_prog = System.getenv("TERM_PROGRAM");
+        if (System.getenv("WT_SESSION") != null) return true;
+        if ("iTerm.app".equals(term_prog)) return true;
+        if ("Apple_Terminal".equals(term_prog)) return false;
+        if (contains(term, "xterm-truecolor") || contains(term, "tmux-truecolor") || contains(term, "screen-truecolor")) return true;
+        if (System.getenv("KONSOLE_PROFILE_NAME") != null) return true;
+        return contains(term, "xterm") || contains(term, "screen") || contains(term, "tmux")
+            || contains(term, "rxvt") || contains(term, "alacritty") || contains(term, "kitty");
+    }
+
+    /**
+     * Mirrors C compute_color_mode and xmqSetupDefaultColors for the render
+     * commands, and for to-xmq/to-htmq printed to a terminal: installs the
+     * theme, the coloring of the render format and the --use-is=... overrides.
+     * The render format is given by the command name when to is null.
+     */
+    static void setupRender(XMQPrintState ps, Command c, XMQPrintState.RenderTo to)
+    {
+        if (to == null) to = switch (c.name)
+        {
+            case "render-html" -> XMQPrintState.RenderTo.HTML;
+            case "render-tex" -> XMQPrintState.RenderTo.TEX;
+            default -> XMQPrintState.RenderTo.TERMINAL;
+        };
+        // compute_color_mode: 0 mono, 1 dark, 2 light, 3 auto (html follows the browser).
+        int mode;
+        if (c.bgForced) mode = c.bgDarkMode ? 1 : 2;
+        else if (!c.useColor) mode = 0;
+        else if (to == XMQPrintState.RenderTo.HTML) mode = 3;
+        else mode = c.bgDarkMode ? 1 : 2;
+
+        boolean use_color = mode != 0;
+        boolean dark_mode = mode == 1 || mode == 3;
+        String spec = c.themeSpec;
+        if (spec == null)
+        {
+            if (to == XMQPrintState.RenderTo.TEX) dark_mode = false;
+            spec = dark_mode ? "dark" : "light";
+        }
+        else
+        {
+            if (spec.endsWith("-dark")) dark_mode = true;
+            if (spec.endsWith("-light")) dark_mode = false;
+        }
+
+        XMQTheme theme = new XMQTheme();
+        theme.installDefault();
+        theme.installTheme(spec);
+        ps.theme = theme;
+        ps.render_to = to;
+        ps.indentation_space = theme.indentation_space;
+        ps.explicit_space = theme.explicit_space;
+        ps.explicit_nl = theme.explicit_nl;
+        ps.explicit_tab = theme.explicit_tab;
+        ps.explicit_cr = theme.explicit_cr;
+
+        switch (to)
+        {
+        // Like C, where the detected truecolor is not passed on to the output
+        // settings, the 256 color palette is used.
+        case TERMINAL -> theme.setupTerminalColoring(dark_mode, use_color, false);
+        case HTML -> {
+            ps.indentation_space = " ";
+            ps.explicit_nl = "\n";
+            theme.setupHtmlColoring(c.renderRaw, mode == 1 ? 1 : mode == 2 ? 2 : 0, c.useId, c.useClass);
+        }
+        case TEX -> {
+            ps.indentation_space = "\\xmqI ";
+            ps.explicit_space = " ";
+            ps.explicit_nl = "\\linebreak\n";
+            theme.setupTexColoring(dark_mode, c.renderRaw);
+        }
+        default -> { }
+        }
+
+        // Like C xmqOverrideSettings.
+        if (c.useIs != null) ps.indentation_space = c.useIs;
+        if (c.useEs != null) ps.explicit_space = c.useEs;
+        if (c.useEt != null) ps.explicit_tab = c.useEt;
+        if (c.useCr != null) ps.explicit_cr = c.useCr;
+        if (c.useNl != null) ps.explicit_nl = c.useNl;
     }
 
     // Like text_print_node in xmq.c.

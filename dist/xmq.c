@@ -11002,6 +11002,8 @@ bool installTheme(XMQTheme *theme, const char *theme_spec)
     if (i)
     {
         strncpy(first, theme_spec, i-theme_spec);
+        // strncpy does not terminate the copied prefix.
+        first[i-theme_spec] = 0;
         strcpy(second, i+1);
     }
     else

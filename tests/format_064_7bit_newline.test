@@ -1,0 +1,12 @@
+START
+a(x=('⇒'&#10;'b'))
+COMPACT
+a(x=(&#8658;&#10;'b'))
+XMQ
+a(x = ( &#8658;
+        '
+
+         b' ))
+END
+ARGS --trim=none
+CMDS to-xmq --escape-non-7bit

@@ -1,0 +1,21 @@
+# Processing instructions ?name = value, at the top and inside an element.
+# Regression: xmqj parsed ?pi = 1 as an element <pi>1</pi>.
+INPUT
+?pi = 1
+root {
+    ?inner = 'a b'
+    x = 1
+}
+FIRST
+<?xml version="1.0" encoding="utf-8"?>
+<?pi 1?>
+<root><?inner a b?><x>1</x></root>
+SECOND
+?pi = 1
+root {
+    ?inner = 'a b'
+    x = 1
+}
+END
+CMDS_FIRST to-xml
+CMDS_SECOND to-xmq

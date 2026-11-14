@@ -1,0 +1,30 @@
+# render-html escapes & < >, splits entities, colors attribute compounds, unicode whitespace and multi line quotes like C.
+INPUT
+?pi = 'x<y'
+doc(a=('1'&lt;'2') b='p&q') {
+    t = 'a<b & c>d {x} _y_ \z #1'
+    e = &lt;
+    nb = 'a b'
+    m = 'line1
+         line2'
+}
+FIRST
+<pre id="x" class="xmq xmq_auto y"><xmqEK>?pi</xmqEK> = <xmqEKV>x&lt;y</xmqEKV>
+<xmqEN>doc</xmqEN>(<xmqAK>a</xmqAK> = <xmqCP>(</xmqCP> <xmqAKV>'</xmqAKV><xmqAKV>1</xmqAKV><xmqAKV>'</xmqAKV>
+          <xmqE>&amp;</xmqE><xmqE>lt</xmqE><xmqE>;</xmqE>
+          <xmqAKV>'</xmqAKV><xmqAKV>2</xmqAKV><xmqAKV>'</xmqAKV> <xmqCP>)</xmqCP>
+    <xmqAK>b</xmqAK> = <xmqAKV>p&amp;q</xmqAKV>)
+{
+    <xmqEK>t</xmqEK>  = <xmqEKV>'</xmqEKV><xmqEKV>a&lt;b &amp; c&gt;d {x} _y_ \z #1</xmqEKV><xmqEKV>'</xmqEKV>
+    <xmqEK>e</xmqEK>  = <xmqE>&amp;</xmqE><xmqE>lt</xmqE><xmqE>;</xmqE>
+    <xmqEK>nb</xmqEK> = <xmqEKV>'</xmqEKV><xmqEKV>a<xmqUW> </xmqUW>b</xmqEKV><xmqEKV>'</xmqEKV>
+    <xmqEK>m</xmqEK>  = <xmqEKV>'</xmqEKV><xmqEKV>line1</xmqEKV>
+          <xmqEKV>line2</xmqEKV><xmqEKV>'</xmqEKV>
+}</pre>
+SECOND
+pre(id=x class='xmq xmq_auto y'){xmqEK=?pi' = 'xmqEKV=x<y &#10;xmqEN=doc'('xmqAK=a' = 'xmqCP='(' ' 'xmqAKV="'"xmqAKV=1 xmqAKV="'"&#10;'          'xmqE='&'xmqE=lt xmqE=;&#10;'          'xmqAKV="'"xmqAKV=2 xmqAKV="'" ' 'xmqCP=')'&#10;'    'xmqAK=b' = 'xmqAKV=p&q')'&#10;'{'&#10;'    'xmqEK=t'  = 'xmqEKV="'"xmqEKV='a<b & c>d {x} _y_ \z #1'xmqEKV="'"&#10;'    'xmqEK=e'  = 'xmqE='&'xmqE=lt xmqE=;&#10;'    'xmqEK=nb' = 'xmqEKV="'"xmqEKV{'a'xmqUW=' ' 'b'}xmqEKV="'"&#10;'    'xmqEK=m'  = 'xmqEKV="'"xmqEKV=line1 &#10;'          'xmqEKV=line2 xmqEKV="'"&#10;'}'}
+END
+ARGS_FIRST --trim=none
+CMDS_FIRST render-html --nostyle --id=x --class=y
+ARGS_SECOND --trim=none
+CMDS_SECOND to-xmq --compact

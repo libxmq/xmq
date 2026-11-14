@@ -273,9 +273,10 @@ public abstract class XMQParser extends XMQParseCallbacks
     {
         char c = currentChar();
         assert(c == '?');
-        increment(c);
-
+        // Like C eat_xmq_pi the token includes the leading ?, which tells
+        // create_node that this is a processing instruction.
         int start = i_;
+        increment(c);
 
         while (i_ < buffer_len_)
         {

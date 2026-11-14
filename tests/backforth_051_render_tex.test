@@ -1,0 +1,45 @@
+# render-tex escapes and indents with \xmqI like C.
+INPUT
+?pi = 'x<y'
+doc(a=('1'&lt;'2') b='p&q') {
+    t = 'a<b & c>d {x} _y_ \z #1'
+    e = &lt;
+    nb = 'a b'
+    m = 'line1
+         line2'
+}
+FIRST
+\texttt{\flushleft\noindent \xmqEK{?pi}\xmqI =\xmqI \xmqEKV{x<y}\linebreak
+\xmqEN{doc}(\xmqAK{a}\xmqI =\xmqI \xmqCP{(}\xmqI \xmqAKV{'}\xmqAKV{1}\xmqAKV{'}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqE{\&}\xmqE{lt}\xmqE{;}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqAKV{'}\xmqAKV{2}\xmqAKV{'}\xmqI \xmqCP{)}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqAK{b}\xmqI =\xmqI \xmqAKV{p\&q})\linebreak
+\{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{t}\xmqI \xmqI =\xmqI \xmqEKV{'}\xmqEKV{a<b \& c>d \{x\} \_y\_ \backslash;z \#1}\xmqEKV{'}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{e}\xmqI \xmqI =\xmqI \xmqE{\&}\xmqE{lt}\xmqE{;}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{nb}\xmqI =\xmqI \xmqEKV{'}\xmqEKV{a\xmqUW{ }b}\xmqEKV{'}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{m}\xmqI \xmqI =\xmqI \xmqEKV{'}\xmqEKV{line1}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEKV{line2}\xmqEKV{'}\linebreak
+\}
+}
+
+SECOND
+\texttt{\flushleft\noindent \xmqEK{?pi}\xmqI =\xmqI \xmqEKV{x<y}\linebreak
+\xmqEN{doc}(\xmqAK{a}\xmqI =\xmqI \xmqCP{(}\xmqI \xmqAKV{'}\xmqAKV{1}\xmqAKV{'}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqE{\&}\xmqE{lt}\xmqE{;}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqAKV{'}\xmqAKV{2}\xmqAKV{'}\xmqI \xmqCP{)}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqAK{b}\xmqI =\xmqI \xmqAKV{p\&q})\linebreak
+\{\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{t}\xmqI \xmqI =\xmqI \xmqEKV{'}\xmqEKV{a<b \& c>d \{x\} \_y\_ \backslash;z \#1}\xmqEKV{'}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{e}\xmqI \xmqI =\xmqI \xmqE{\&}\xmqE{lt}\xmqE{;}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{nb}\xmqI =\xmqI \xmqEKV{'}\xmqEKV{a\xmqUW{ }b}\xmqEKV{'}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqEK{m}\xmqI \xmqI =\xmqI \xmqEKV{'}\xmqEKV{line1}\linebreak
+\xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqI \xmqEKV{line2}\xmqEKV{'}\linebreak
+\}
+}
+
+END
+ARGS_FIRST --trim=none
+CMDS_FIRST render-tex --nostyle
+ARGS_SECOND --text
+CMDS_SECOND to-text

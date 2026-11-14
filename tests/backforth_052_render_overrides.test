@@ -1,0 +1,19 @@
+# render-html with the --use-is --use-es --use-nl overrides.
+INPUT
+?pi = 'x<y'
+doc(a=('1'&lt;'2') b='p&q') {
+    t = 'a<b & c>d {x} _y_ \z #1'
+    e = &lt;
+    nb = 'a b'
+    m = 'line1
+         line2'
+}
+FIRST
+<pre class="xmq xmq_auto"><xmqEK>?pi</xmqEK>_=_<xmqEKV>x&lt;y</xmqEKV>NL<xmqEN>doc</xmqEN>(<xmqAK>a</xmqAK>_=_<xmqCP>(</xmqCP>_<xmqAKV>'</xmqAKV><xmqAKV>1</xmqAKV><xmqAKV>'</xmqAKV>NL__________<xmqE>&amp;</xmqE><xmqE>lt</xmqE><xmqE>;</xmqE>NL__________<xmqAKV>'</xmqAKV><xmqAKV>2</xmqAKV><xmqAKV>'</xmqAKV>_<xmqCP>)</xmqCP>NL____<xmqAK>b</xmqAK>_=_<xmqAKV>p&amp;q</xmqAKV>)NL{NL____<xmqEK>t</xmqEK>__=_<xmqEKV>'</xmqEKV><xmqEKV>a&lt;b.&amp;.c&gt;d.{x}._y_.\z.#1</xmqEKV><xmqEKV>'</xmqEKV>NL____<xmqEK>e</xmqEK>__=_<xmqE>&amp;</xmqE><xmqE>lt</xmqE><xmqE>;</xmqE>NL____<xmqEK>nb</xmqEK>_=_<xmqEKV>'</xmqEKV><xmqEKV>a<xmqUW> </xmqUW>b</xmqEKV><xmqEKV>'</xmqEKV>NL____<xmqEK>m</xmqEK>__=_<xmqEKV>'</xmqEKV><xmqEKV>line1</xmqEKV>NL__________<xmqEKV>line2</xmqEKV><xmqEKV>'</xmqEKV>NL}</pre>
+SECOND
+<pre class="xmq xmq_auto"><xmqEK>?pi</xmqEK>_=_<xmqEKV>x&lt;y</xmqEKV>NL<xmqEN>doc</xmqEN>(<xmqAK>a</xmqAK>_=_<xmqCP>(</xmqCP>_<xmqAKV>'</xmqAKV><xmqAKV>1</xmqAKV><xmqAKV>'</xmqAKV>NL__________<xmqE>&amp;</xmqE><xmqE>lt</xmqE><xmqE>;</xmqE>NL__________<xmqAKV>'</xmqAKV><xmqAKV>2</xmqAKV><xmqAKV>'</xmqAKV>_<xmqCP>)</xmqCP>NL____<xmqAK>b</xmqAK>_=_<xmqAKV>p&amp;q</xmqAKV>)NL{NL____<xmqEK>t</xmqEK>__=_<xmqEKV>'</xmqEKV><xmqEKV>a&lt;b.&amp;.c&gt;d.{x}._y_.\z.#1</xmqEKV><xmqEKV>'</xmqEKV>NL____<xmqEK>e</xmqEK>__=_<xmqE>&amp;</xmqE><xmqE>lt</xmqE><xmqE>;</xmqE>NL____<xmqEK>nb</xmqEK>_=_<xmqEKV>'</xmqEKV><xmqEKV>a<xmqUW> </xmqUW>b</xmqEKV><xmqEKV>'</xmqEKV>NL____<xmqEK>m</xmqEK>__=_<xmqEKV>'</xmqEKV><xmqEKV>line1</xmqEKV>NL__________<xmqEKV>line2</xmqEKV><xmqEKV>'</xmqEKV>NL}</pre>
+END
+ARGS_FIRST --trim=none
+CMDS_FIRST render-html --nostyle --use-is=_ --use-es=. --use-nl=NL
+ARGS_SECOND --text
+CMDS_SECOND to-text

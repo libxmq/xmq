@@ -252,8 +252,10 @@ public class XMQTheme
      *        content in a single {@code <pre>} element without a full document.
      * @param bg 0 = follow the browser preference (class xmq_auto),
      *        1 = forced dark (class xmq_dark), 2 = forced light (class xmq_light).
+     * @param use_id The id of the pre element (--id=), or null.
+     * @param use_class An extra class of the pre element (--class=), or null.
      */
-    public void setupHtmlColoring(boolean render_raw, int bg)
+    public void setupHtmlColoring(boolean render_raw, int bg, String use_id, String use_class)
     {
         // Token color strings: identical for the styled and the raw render.
         whitespace = null;
@@ -289,10 +291,14 @@ public class XMQTheme
         ns_declaration = new XMQThemeStrings("<xmqNSD>", "</xmqNSD>");
         ns_override_xsl = new XMQThemeStrings("<xmqXSL>", "</xmqXSL>");
 
+        // Like C, the pre element gets the id and the extra class, if given.
+        String pre = "<pre " + (use_id != null ? "id=\"" + use_id + "\" " : "")
+            + "class=\"xmq " + bgModeClass(bg) + (use_class != null ? " " + use_class : "") + "\">";
+
         if (render_raw)
         {
             // The --nostyle render just wraps the content in a single <pre> element.
-            content = new XMQThemeStrings("<pre class=\"xmq " + bgModeClass(bg) + "\">", "</pre>");
+            content = new XMQThemeStrings(pre, "</pre>");
             return;
         }
 
@@ -337,7 +343,7 @@ public class XMQTheme
 
         style = new XMQThemeStrings(stylePre.toString(), null);
 
-        content = new XMQThemeStrings("<pre class=\"xmq " + bgModeClass(bg) + "\">", "</pre>");
+        content = new XMQThemeStrings(pre, "</pre>");
     }
 
     /**
@@ -392,5 +398,276 @@ public class XMQTheme
         if (bg == 2) return "xmq_light";
         return "xmq_auto";
     }
-}
 
+    /** Mirrors C colorShortNameToIndex. */
+    static int colorShortNameToIndex(String name)
+    {
+        String[] names = { "C", "Q", "E", "NS", "EN", "EK", "EKV", "AK", "AKV", "CP", "NSD", "UW", "XSL", "FG", "BG" };
+        for (int i = 0; i < names.length; ++i) if (names[i].equals(name)) return i;
+        return -1;
+    }
+
+    /** Mirrors C install_single_color. */
+    private boolean installSingleColor(String name, String color, boolean dark, boolean light)
+    {
+        int i = colorShortNameToIndex(name);
+        if (i < 0) return false;
+        boolean ok = true;
+        if (dark) ok &= stringToColorDef(color, colors_darkbg[i]);
+        if (light) ok &= stringToColorDef(color, colors_lightbg[i]);
+        return ok;
+    }
+
+    /**
+     * Mirrors C install_theme: a theme like {@code EN=#ff0000:EK=#00ff00_B}
+     * optionally prefixed with {@code dark+} or {@code light+}.
+     */
+    private boolean installSingleTheme(String spec)
+    {
+        boolean dark = true;
+        boolean light = true;
+        int i = 0;
+        int stop = spec.length();
+        int plus = spec.indexOf('+');
+        if (plus >= 0)
+        {
+            if (spec.startsWith("dark+")) light = false;
+            else if (spec.startsWith("light+")) dark = false;
+            else return false;
+            i = plus + 1;
+        }
+        while (i < stop)
+        {
+            int eq = spec.indexOf('=', i);
+            if (eq < 0) return false;
+            // All theme names are three character or less.
+            if (eq - i > 3) return false;
+            String name = spec.substring(i, eq);
+            int col = spec.indexOf(':', i);
+            if (col < 0) col = stop;
+            i = eq + 1;
+            if (col - i > 16) return false;
+            // Like C, a color is read up to the colon (or the end).
+            String color = col >= i ? spec.substring(i, col) : "";
+            if (!installSingleColor(name, color, dark, light)) return false;
+            i = col + 1;
+        }
+        return true;
+    }
+
+    /**
+     * Mirrors C installTheme: installs the default colors, then the theme
+     * spec, which is one or two (comma separated) themes.
+     *
+     * @param spec The theme spec, eg from --theme= or XMQ_THEME.
+     * @return True if the spec was understood.
+     */
+    public boolean installTheme(String spec)
+    {
+        installDefaultColors();
+        if (spec.length() > 2048) return false;
+        int comma = spec.indexOf(',');
+        String first = comma >= 0 ? spec.substring(0, comma) : spec;
+        String second = comma >= 0 ? spec.substring(comma + 1) : "";
+        boolean ok = installSingleTheme(first);
+        ok &= installSingleTheme(second);
+        return ok;
+    }
+
+    /** The ansi reset, C NOCOLOR. */
+    static final String NOCOLOR = "\033[0m";
+
+    /** Mirrors C generate_ansi_color: a 256 color or truecolor ansi escape. */
+    static String ansiColor(XMQColorDef def, boolean truecolor)
+    {
+        StringBuilder b = new StringBuilder();
+        b.append("\033[0;");
+        if (def.bold) b.append("1;");
+        if (def.underline) b.append("4;");
+        if (!truecolor)
+        {
+            b.append("38;5;").append(rgbToAnsi256(def.r & 0xff, def.g & 0xff, def.b & 0xff)).append('m');
+        }
+        else
+        {
+            b.append("38;2;").append(def.r).append(';').append(def.g).append(';').append(def.b).append('m');
+        }
+        return b.toString();
+    }
+
+    private static final int[][] ANSI16 = {
+        {0, 0, 0}, {128, 0, 0}, {0, 128, 0}, {128, 128, 0},
+        {0, 0, 128}, {128, 0, 128}, {0, 128, 128}, {192, 192, 192},
+        {128, 128, 128}, {255, 0, 0}, {0, 255, 0}, {255, 255, 0},
+        {0, 0, 255}, {255, 0, 255}, {0, 255, 255}, {255, 255, 255}
+    };
+
+    /** Mirrors C ansi256_to_rgb. */
+    private static int[] ansi256ToRgb(int idx)
+    {
+        if (idx < 16) return ANSI16[idx];
+        if (idx <= 231)
+        {
+            int n = idx - 16;
+            int[] levels = { 0, 95, 135, 175, 215, 255 };
+            return new int[] { levels[n / 36], levels[(n / 6) % 6], levels[n % 6] };
+        }
+        int gray = 8 + (idx - 232) * 10;
+        return new int[] { gray, gray, gray };
+    }
+
+    /** Mirrors C rgb_to_ansi256: the nearest ansi 256 color. */
+    static int rgbToAnsi256(int r, int g, int b)
+    {
+        int best_idx = 0;
+        int best_dist = Integer.MAX_VALUE;
+        for (int i = 0; i < 256; ++i)
+        {
+            int[] c = ansi256ToRgb(i);
+            int dr = r - c[0], dg = g - c[1], db = b - c[2];
+            int dist = dr * dr + dg * dg + db * db;
+            if (dist < best_dist)
+            {
+                best_dist = dist;
+                best_idx = i;
+            }
+        }
+        return best_idx;
+    }
+
+    /**
+     * Mirrors C setup_terminal_coloring: ansi colors without post strings,
+     * the active color is replayed after a nested color.
+     *
+     * @param dark_mode Use the dark background colors.
+     * @param use_color If false, no colors are installed.
+     * @param truecolor Generate 24 bit colors instead of the 256 color palette.
+     */
+    public void setupTerminalColoring(boolean dark_mode, boolean use_color, boolean truecolor)
+    {
+        if (!use_color) return;
+        XMQColorDef[] colors = dark_mode ? colors_darkbg : colors_lightbg;
+
+        XMQThemeStrings c = new XMQThemeStrings(ansiColor(colors[0], truecolor), null);
+        comment = c;
+        comment_continuation = c;
+        quote = new XMQThemeStrings(ansiColor(colors[1], truecolor), null);
+        c = new XMQThemeStrings(ansiColor(colors[2], truecolor), null);
+        entity = c;
+        element_value_entity = c;
+        element_value_compound_entity = c;
+        attr_value_entity = c;
+        attr_value_compound_entity = c;
+        c = new XMQThemeStrings(ansiColor(colors[3], truecolor), null);
+        element_ns = c;
+        attr_ns = c;
+        element_name = new XMQThemeStrings(ansiColor(colors[4], truecolor), null);
+        element_key = new XMQThemeStrings(ansiColor(colors[5], truecolor), null);
+        c = new XMQThemeStrings(ansiColor(colors[6], truecolor), null);
+        element_value_text = c;
+        element_value_quote = c;
+        element_value_compound_quote = c;
+        attr_key = new XMQThemeStrings(ansiColor(colors[7], truecolor), null);
+        c = new XMQThemeStrings(ansiColor(colors[8], truecolor), null);
+        attr_value_text = c;
+        attr_value_quote = c;
+        attr_value_compound_quote = c;
+        c = new XMQThemeStrings(ansiColor(colors[9], truecolor), null);
+        cpar_left = c;
+        cpar_right = c;
+        ns_declaration = new XMQThemeStrings(ansiColor(colors[10], truecolor), null);
+        unicode_whitespace = new XMQThemeStrings(ansiColor(colors[11], truecolor), null);
+        ns_override_xsl = new XMQThemeStrings(ansiColor(colors[12], truecolor), null);
+
+        c = new XMQThemeStrings(NOCOLOR, null);
+        whitespace = c;
+        equals = c;
+        brace_left = c;
+        brace_right = c;
+        apar_left = c;
+        apar_right = c;
+        ns_colon = c;
+
+        document = new XMQThemeStrings(null, NOCOLOR);
+    }
+
+    /**
+     * Mirrors C setup_tex_coloring.
+     *
+     * @param dark_mode Use the bold/underline settings of the dark background colors.
+     * @param render_raw If true (--nostyle), only print the content without a document.
+     */
+    public void setupTexColoring(boolean dark_mode, boolean render_raw)
+    {
+        XMQColorDef[] colors = dark_mode ? colors_darkbg : colors_lightbg;
+        if (!render_raw)
+        {
+            document = new XMQThemeStrings(
+                "\\documentclass[10pt,a4paper]{article}\n"
+                + "\\usepackage{color}\n"
+                + "\\usepackage{bold-extra}\n", null);
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < NUM_XMQ_COLOR_NAMES; ++i)
+            {
+                XMQColorDef d = colors_lightbg[i];
+                if (d.r < 0) b.append("\\definecolor{").append(XMQ_COLOR_NAMES[i]).append("}{RGB}{0,0,0}");
+                else b.append("\\definecolor{").append(XMQ_COLOR_NAMES[i]).append("}{RGB}{")
+                      .append(d.r).append(',').append(d.g).append(',').append(d.b).append('}');
+                b.append('\n');
+            }
+            for (int i = 0; i < NUM_XMQ_COLOR_NAMES; ++i)
+            {
+                String n = XMQ_COLOR_NAMES[i];
+                b.append("\\newcommand{\\").append(n).append("}[1]{{\\color{").append(n).append('}')
+                 .append(colors[i].bold ? "\\textbf{" : "")
+                 .append(colors[i].underline ? "\\underline{" : "")
+                 .append("#1")
+                 .append(colors[i].bold ? "}" : "")
+                 .append(colors[i].underline ? "}" : "")
+                 .append("}}\n");
+            }
+            b.append("\\newcommand{\\xmqI}[0]{{\\mbox{\\ }}}\n");
+            style = new XMQThemeStrings(b.toString(), null);
+            body = new XMQThemeStrings("\n\\begin{document}\n", "\n\\end{document}\n");
+        }
+
+        content = new XMQThemeStrings("\\texttt{\\flushleft\\noindent ", "\n}\n");
+        whitespace = null;
+        indentation_whitespace = null;
+        equals = null;
+        brace_left = null;
+        brace_right = null;
+        apar_left = null;
+        apar_right = null;
+        ns_colon = null;
+        unicode_whitespace = tex("xmqUW");
+        cpar_left = tex("xmqCP");
+        cpar_right = tex("xmqCP");
+        quote = tex("xmqQ");
+        entity = tex("xmqE");
+        comment = tex("xmqC");
+        comment_continuation = tex("xmqC");
+        element_ns = tex("xmqNS");
+        element_name = tex("xmqEN");
+        element_key = tex("xmqEK");
+        element_value_text = tex("xmqEKV");
+        element_value_quote = tex("xmqEKV");
+        element_value_entity = tex("xmqE");
+        element_value_compound_quote = tex("xmqEKV");
+        element_value_compound_entity = tex("xmqE");
+        attr_ns = tex("xmqNS");
+        attr_key = tex("xmqAK");
+        attr_value_text = tex("xmqAKV");
+        attr_value_quote = tex("xmqAKV");
+        attr_value_entity = tex("xmqE");
+        attr_value_compound_quote = tex("xmqAKV");
+        attr_value_compound_entity = tex("xmqE");
+        ns_declaration = tex("xmqNSD");
+        ns_override_xsl = tex("xmqXSL");
+    }
+
+    private static XMQThemeStrings tex(String name)
+    {
+        return new XMQThemeStrings("\\" + name + "{", "}");
+    }
+}

@@ -98,6 +98,18 @@ printf 'a: 1\nb: [\n' > "$O/bad.yaml"
 cmp1 "$O/bad.yaml"
 cmp1 "$O/entcycle.xml" to-json
 
+# The render commands. The terminal colors are ansi codes from the theme.
+printf '?pi = 1\ndoc(a=(\x271\x27&lt;\x272\x27) b=\x27x y\x27) {\n    // c\n    t = \x27a<b & c\x27\n    m = \x27l1\n         l2\x27\n    e = &lt;\n}\n' > "$O/r.xmq"
+cmp1 "$O/r.xmq" render-terminal --bg=dark
+cmp1 "$O/r.xmq" render-terminal --bg=light --compact
+cmp1 "$O/r.xmq" render-terminal --bg=dark --theme=EN=#ff0000_B_U:C=#00ff00
+cmp1 "$O/r.xmq" render-terminal --bg=dark --use-is=. --use-es=_ --use-nl=NL
+cmp1 "$O/r.xmq" render-html
+cmp1 "$O/r.xmq" render-html --bg=dark --theme=dark+BG=#101010:FG=#eeeeee,light+BG=#fafafa
+cmp1 "$O/r.xmq" render-html --onlystyle
+cmp1 "$O/r.xmq" render-tex
+cmp1 "$O/r.xmq" render-tex --bg=dark --theme=EK=#123456_U
+
 if [ "$f" = "0" ]
 then
     echo "OK: cli compare xmq xmqj ($n cases)"

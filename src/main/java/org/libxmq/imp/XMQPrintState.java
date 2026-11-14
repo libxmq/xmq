@@ -51,6 +51,19 @@ public class XMQPrintState
     OutputSettings output_settings;
     XMQTheme theme;
 
+    /** Where the output is rendered, mirrors the C XMQRenderFormat. */
+    enum RenderTo { PLAIN, TERMINAL, HTML, TEX }
+    RenderTo render_to = RenderTo.PLAIN;
+
+    // The strings printed for indentation and explicit whitespace, like the
+    // C XMQOutputSettings indentation_space, explicit_space etc. They are
+    // changed by the render setup (eg \xmqI for tex) and --use-is=... etc.
+    String indentation_space = " ";
+    String explicit_space = " ";
+    String explicit_tab = "\t";
+    String explicit_cr = "\r";
+    String explicit_nl = "\n";
+
     StringBuilder buffer = new StringBuilder();
 
 
