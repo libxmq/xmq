@@ -69,7 +69,7 @@ final class Clines
         b.append("/@");
         if (a.ns() != null && a.ns().prefix() != null) b.append(a.ns().prefix()).append(':');
         b.append(a.name()).append('=');
-        if (a.firstChild() != null) b.append(JsonPrinter.quote(a.textContent(), true));
+        if (a.firstChild() != null) b.append(JsonPrinter.quote(JsonPrinter.attr_value(a), true));
         else b.append("\"\"");
         b.append('\n');
     }

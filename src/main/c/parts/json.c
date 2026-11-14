@@ -1246,6 +1246,8 @@ XMQStatus json_print_attribute(XMQPrintState *ps, xmlAttr *a)
     if (a->children != NULL)
     {
         char *value = (char*)xmlNodeListGetString(a->doc, a->children, 1);
+        // An attribute that is only an undefined entity reference gives NULL.
+        if (!value) value = (char*)xmlStrdup((const xmlChar*)"");
         XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), true);
         if (rs.status != XMQ_OK) return rs.status;
         char *quoted_value = rs.string;
@@ -1429,6 +1431,7 @@ XMQStatus json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode
             // The key was stored inside the attribute because it could not
             // be used as the element name.
             char *value = (char*)xmlNodeListGetString(node->doc, a->children, 1);
+            if (!value) value = (char*)xmlStrdup((const xmlChar*)"");
             XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), false);
             if (rs.status != XMQ_OK) return rs.status;
             char *quoted_value = rs.string;
@@ -1643,6 +1646,11 @@ void json_print_leaf_node(XMQPrintState *ps,
 
 void fixup_json(XMQDoc *doq, xmlNode *node)
 {
+    // Do not descend into the dtd or into entity references: the children of
+    // an entity reference is its declaration, whose content can refer back
+    // to the reference, which recursed until the stack overflowed.
+    if (node->type == XML_DTD_NODE || node->type == XML_ENTITY_REF_NODE) return;
+
     if (is_element_node(node))
     {
         char *new_content = xml_collapse_text(node);

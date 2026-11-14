@@ -3764,6 +3764,10 @@ void cline_print_node(XMQPrintState *ps, xmlNode *node)
     XMQWrite write = output_settings->content.write;
     void *writer_state = output_settings->content.writer_state;
 
+    // Skip the dtd and entity references: the children of an entity reference
+    // is its declaration, which can refer back to it (infinite recursion).
+    if (node->type == XML_DTD_NODE || is_entity_node(node)) return;
+
     if (has_attributes(node))
     {
         cline_print_attributes(ps, node);
@@ -3837,6 +3841,8 @@ void cline_print_attr(XMQPrintState *ps, xmlAttr *a)
     if (a->children != NULL)
     {
         char *value = (char*)xmlNodeListGetString(a->doc, a->children, 1);
+        // An attribute that is only an undefined entity reference gives NULL.
+        if (!value) value = (char*)xmlStrdup((const xmlChar*)"");
         XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), true);
         assert(rs.status == XMQ_OK);
         char *quoted_value = rs.string;
@@ -4248,6 +4254,10 @@ void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared)
         xmlFreeNode(node);
         return;
     }
+
+    // Do not descend into the dtd or into entity references: the children of an
+    // entity reference is its declaration, which can refer back to it.
+    if (node->type == XML_DTD_NODE || node->type == XML_ENTITY_REF_NODE) return;
 
     xmlNode *i = xml_first_child(node);
     while (i)

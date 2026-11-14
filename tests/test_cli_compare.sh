@@ -22,6 +22,7 @@ printf 'rad1\n\nrad2\n' > "$O/t.txt"
 printf '"a\\tb\\n"\n' > "$O/q.txt"
 echo 'a{b=1 c(x=2)=3 d=&e;}' > "$O/a.xmq"
 echo 'b=bold' > "$O/dom.xmq"
+printf '<!DOCTYPE goo [<!ENTITY copy "&#169;">\n<!ENTITY prutt "PRUTT&copy;"> ]>\n<goo x="&prutt;alfa">X&copy;Y</goo>\n' > "$O/entcycle.xml"
 
 n=0
 f=0
@@ -86,6 +87,16 @@ printf 'doc { v = 1 <address><street>foo</street></address> }\n' > "$O/emb.xmq"
 cmp1 "$O/emb.xmq"
 printf 'name: Alice\n' > "$O/colon.xmq"
 cmp1 "$O/colon.xmq" to-xml
+printf 'a: 1\nlist:\n  - x\n  - "true"\n  - k: v\n    j: w\nblock: |\n  one\n  two\nflow: [1, {b: c}]\nanchor: &id1 hej\nalias: *id1\n# a comment\n' > "$O/y.yaml"
+cmp1 "$O/y.yaml"
+cmp1 "$O/y.yaml" to-yaml
+cmp1 "$O/y.yaml" to-json
+cmp1 --yaml "$O/y.yaml" to-xml
+cmp1 "$O/a.xmq" to-yaml
+cmp1 "$O/j.json" to-yaml
+printf 'a: 1\nb: [\n' > "$O/bad.yaml"
+cmp1 "$O/bad.yaml"
+cmp1 "$O/entcycle.xml" to-json
 
 if [ "$f" = "0" ]
 then

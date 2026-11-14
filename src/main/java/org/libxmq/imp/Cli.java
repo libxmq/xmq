@@ -67,9 +67,11 @@ final class Cli
     String in;              // file name, "-" for stdin, or the content with -i
     String ixmlSource;      // --ixml=grammar.ixml or a positional grammar
     final List<Command> commands = new ArrayList<>();
+    boolean yamlInput;      // The input was loaded as yaml.
+    String loadedContent;   // The content of the current document.
 
     static final String[] NOT_IMPLEMENTED = {
-        "to-yaml", "transform", "validate", "for-each", "statistics",
+        "transform", "validate", "for-each", "statistics",
         "substitute-entity", "substitute-char-entities", "page", "pa", "browse", "br", "heu",
         "load", "xsl", "replace",
     };
@@ -169,7 +171,8 @@ final class Cli
         }
         case "json" -> inFormat = "json";
         case "clines" -> inFormat = "text"; // Like C, clines input is loaded as text.
-        case "yaml", "root", "ixml-engine", "list-library", "xml-of-ixml" ->
+        case "yaml" -> inFormat = "yaml";
+        case "root", "ixml-engine", "list-library", "xml-of-ixml" ->
             throw fail("xmq: the global option " + optionString(name, value) + " is not implemented in xmqj yet");
         // Logging and things that do not change the result.
         case "debug", "verbose", "trace", "log-xmq", "progress", "yes", "force-download",
@@ -203,6 +206,7 @@ final class Cli
             if (n.equals(c.name)) throw fail("xmq: the command " + c.name + " is not implemented in xmqj yet");
         }
         if (c.name.equals("to-json")) { c.compact = true; c.indent = 0; }
+        if (c.name.equals("to-yaml")) c.indent = 2; // The default yaml output indentation.
         for (XmlElement p : e.elements())
         {
             if (p.name().equals("option")) commandOption(c, p.attributeValue("name"), value(p));
@@ -356,7 +360,8 @@ final class Cli
 
     void performOn(String content, IXMLAnalyzer ixml) throws Exit
     {
-        String source = in == null ? "stdin" : inIsContent ? "-i argument" : in;
+        String source = in == null || (!inIsContent && in.equals("-")) ? "stdin" : inIsContent ? "-i argument" : in;
+        loadedContent = content;
         XmlDocument doc = load(content, source, ixml);
         if (doc == null) throw new Exit(1);
         String output = null;
@@ -409,7 +414,15 @@ final class Cli
         }
         try
         {
-            XmlDocument d = Main.load(content, source, trimNone, noMerge, "json".equals(inFormat) ? "json" : null);
+            String format = "json".equals(inFormat) || "yaml".equals(inFormat) ? inFormat : null;
+            // A file with a .yml or .yaml extension is yaml, like in C.
+            if (inFormat == null && in != null && !inIsContent)
+            {
+                String lower = in.toLowerCase(java.util.Locale.ROOT);
+                if (lower.endsWith(".yml") || lower.endsWith(".yaml")) format = "yaml";
+            }
+            yamlInput = "yaml".equals(format);
+            XmlDocument d = Main.load(content, source, trimNone, noMerge, format);
             // Like C, an explicit --trim=heuristic trims any input, not only xml and html
             // (which Main.load already trims). Trimming twice changes nothing.
             if (d != null && trimHeuristic) XmlTrim.trimWhitespace(d);
@@ -712,7 +725,10 @@ final class Cli
             .setEscapeNon7bit(c.escapeNon7bit)
             .setPreferDoubleQuotes(c.preferDoubleQuotes)
             .setHtmq(c.name.equals("to-htmq"));
-        String nl = c.noFinalNl ? "" : "\n";
+        // A yaml input that does not end with a newline is written without a final newline, like C.
+        boolean noFinalNl = c.noFinalNl
+            || (yamlInput && loadedContent != null && !loadedContent.isEmpty() && !loadedContent.endsWith("\n"));
+        String nl = noFinalNl ? "" : "\n";
         switch (c.name)
         {
         case "to-html" -> {
@@ -734,7 +750,10 @@ final class Cli
             return Clines.print(doc);
         }
         case "to-json" -> {
-            return new JsonPrinter().toJson(doc, os, !c.noFinalNl);
+            return new JsonPrinter().toJson(doc, os, !noFinalNl);
+        }
+        case "to-yaml" -> {
+            return YamlPrinter.print(doc, c.indent, !noFinalNl);
         }
         case "to-text" -> {
             StringBuilder b = new StringBuilder();

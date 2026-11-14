@@ -1237,7 +1237,9 @@ static int yblock(y_parser *p, XMQParseState *state, char style, char chomp,
     if (chomp != '+')
     {
         while (vlen && v[vlen-1] == '\n') --vlen;
-        if (chomp == 0) ++vlen;
+        // Clip ends non empty content with exactly one line break. (This used to
+        // be ++vlen, which read a byte that was not always written.)
+        if (chomp == 0 && vlen > 0) v[vlen++] = '\n';
     }
     else
     {
@@ -2382,6 +2384,8 @@ void xmq_print_yaml(XMQDoc *doq, XMQOutputSettings *output_settings)
     bool started = false;
     for (xmlNode *r = doc->children; r; r = xml_next_sibling(r))
     {
+        // Yaml has no doctype, skip the dtd (and its entity declarations).
+        if (r->type == XML_DTD_NODE) continue;
         if (is_element_node(r) &&
             r->name && r->name[0] == '_' && r->name[1] == 0 &&
             !is_key_value_node(r))

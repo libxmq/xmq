@@ -242,6 +242,12 @@ public class Main
      */
     static XmlDocument load(String content, String file, boolean trim_none, boolean no_merge, String format) throws ParseException
     {
+        if ("yaml".equals(format))
+        {
+            YamlParser yp = new YamlParser();
+            yp.parseYaml(content, file);
+            return yp.doc();
+        }
         if ("json".equals(format))
         {
             JsonParser jp = new JsonParser();

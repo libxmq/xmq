@@ -124,6 +124,31 @@ then
     FAILED=1
 fi
 
+# An entity whose replacement text refers to another entity: the children of an
+# entity reference is its declaration, recursing into it looped until the stack
+# overflowed (fixup_json, fixup_html and the clines printer).
+cat > $OUTPUT/entcycle.xml <<'EOF2'
+<!DOCTYPE goo [<!ENTITY copy "&#169;">
+               <!ENTITY prutt "PRUTT&copy;"> ]>
+<goo x="&prutt;alfa">X&copy;Y</goo>
+EOF2
+for cmd in to-json to-clines to-xml to-html to-yaml
+do
+    $PROG $OUTPUT/entcycle.xml $cmd > $OUTPUT/out 2> $OUTPUT/err ; RC=$?
+    check "entity cycle $cmd" 0 IGNORE IGNORE
+done
+$PROG $OUTPUT/entcycle.xml to-json > $OUTPUT/out 2> $OUTPUT/err ; RC=$?
+check "entity cycle to-json output" 0 '{"!DOCTYPE":"goo [\n<!ENTITY copy \"&#169;\">\n<!ENTITY prutt \"PRUTT&copy;\">\n]","_":"goo","_x":"PRUTT©alfa","|":"X"}' ''
+
+# An attribute that is only an undefined entity reference: xmlNodeListGetString
+# returns NULL, which crashed the json and clines printers.
+echo 'alfa(c = &nbsp;) { x = 1 }' > $OUTPUT/undefent.xmq
+$PROG $OUTPUT/undefent.xmq to-json > $OUTPUT/out 2> $OUTPUT/err ; RC=$?
+check "undefined entity attribute to-json" 0 '{"_":"alfa","_c":"","x":1}' ''
+$PROG $OUTPUT/undefent.xmq to-clines > $OUTPUT/out 2> $OUTPUT/err ; RC=$?
+check "undefined entity attribute to-clines" 0 '/alfa/@c=""
+/alfa/x="1"' ''
+
 if [ "$FAILED" = "0" ]
 then
     echo "OK: test cmd 003 crash regressions"

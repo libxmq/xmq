@@ -1055,7 +1055,13 @@ public abstract class XMQParser extends XMQParseCallbacks
             if (c != ')')
             {
                 error_nr_ = ParseErrorCode.XMQ_ERROR_ATTRIBUTES_NOT_CLOSED;
-                throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
+                // Like C, report the error where the attributes started.
+                throw new XMQRuntimeException(
+                    new ParseException(error_nr_,
+                                       buffer_.substring(findNLBackwards(last_attr_start_, 200), findNL(last_attr_start_, 200)),
+                                       last_attr_start_line_,
+                                       last_attr_start_col_,
+                                       source_));
             }
 
             start = i_;

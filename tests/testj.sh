@@ -53,11 +53,24 @@ do
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 done
 
+for i in tests/yaml_???_*.test
+do
+    if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+    tests/test_yaml.sh "$PROG" "$OUTPUT" "$i"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+done
+
+if [ -z "$FILTER" ] || [[ "yaml" =~ $FILTER ]]
+then
+    tests/test_special_010_yaml_source_name.sh "$PROG" "$OUTPUT"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+fi
+
 for i in tests/backforth_???_*.test
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
-    # Yaml and the render overrides --use-is etc are not ported to Java yet.
-    if grep -q "yaml\|--use-" "$i"; then continue; fi
+    # The render overrides --use-is etc are not ported to Java yet.
+    if grep -q -- "--use-" "$i"; then continue; fi
     tests/test_backforth.sh "$PROG" "$OUTPUT" "$i"
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 done

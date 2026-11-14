@@ -225,9 +225,10 @@ public class XMQ
         out.append(": ");
         ResourceBundle bundle = ResourceBundle.getBundle("Messages", locale);
         out.append(bundle.getString(e.errorCode().toString()));
+        if (e.info() != null) out.append(e.info());
         String text = e.text() == null ? "" : e.text();
-        int at = e.column() - 1;
-        boolean atEnd = at >= text.length();
+        int at = e.charIndex();
+        boolean atEnd = at < 0 || at >= text.length();
         if (e.errorCode() == ParseErrorCode.XMQ_ERROR_INVALID_CHAR || e.errorCode() == ParseErrorCode.XMQ_ERROR_JSON_INVALID_CHAR)
         {
             int cp = atEnd ? 0 : text.codePointAt(at);

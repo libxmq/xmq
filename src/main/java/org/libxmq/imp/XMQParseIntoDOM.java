@@ -378,7 +378,7 @@ public class XMQParseIntoDOM extends XMQParser
     {
         String tmp = buffer_.substring(start, stop);
         XmlNode n;
-        if (tmp.charAt(1) == '#')
+        if (tmp.length() > 1 && tmp.charAt(1) == '#')
         {
             // Character entity.
             long uc;
@@ -406,8 +406,11 @@ public class XMQParseIntoDOM extends XMQParser
             }
             return parent.addChild(new XmlText(ch));
         }
-        // Named references are kept as is.
-        n = new XmlEntityRef(tmp.substring(1, tmp.length() - 1));
+        // Named references are kept as is. Like xmlNewReference, drop the & and a
+        // trailing ; if present (&ff needs no ; and a lone & gives an empty name).
+        String name = tmp.substring(1);
+        if (name.endsWith(";")) name = name.substring(0, name.length() - 1);
+        n = new XmlEntityRef(name);
         return parent.appendRaw(n);
     }
 

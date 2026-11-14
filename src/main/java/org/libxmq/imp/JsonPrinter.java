@@ -131,9 +131,62 @@ public class JsonPrinter extends XMQPrinter
         return attr(n, name) != null;
     }
 
+    // The value of an attribute with entity references expanded, like
+    // xmlNodeListGetString(doc, a->children, 1) in libxml2.
     static String attr_value(XmlAttr a)
     {
-        return a.textContent();
+        StringBuilder b = new StringBuilder();
+        for (XmlNode c = a.firstChild(); c != null; c = c.next())
+        {
+            if (c instanceof org.libxmq.imp.xml.XmlEntityRef r) b.append(expand_entity(a.doc(), r.name(), 0));
+            else if (c.content() != null) b.append(c.content());
+        }
+        return b.toString();
+    }
+
+    // The replacement text of an entity, its references expanded recursively.
+    static String expand_entity(XmlDocument doc, String name, int depth)
+    {
+        switch (name)
+        {
+        case "lt": return "<";
+        case "gt": return ">";
+        case "amp": return "&";
+        case "apos": return "'";
+        case "quot": return "\"";
+        default: break;
+        }
+        org.libxmq.imp.xml.XmlEntityDecl e = doc != null && doc.intSubset() != null ? doc.intSubset().getEntity(name) : null;
+        if (e == null || e.content() == null || depth > 40) return "";
+        return expand_text(doc, e.content(), depth + 1);
+    }
+
+    static String expand_text(XmlDocument doc, String s, int depth)
+    {
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < s.length(); i++)
+        {
+            char c = s.charAt(i);
+            int semi = c == '&' ? s.indexOf(';', i) : -1;
+            if (semi < 0)
+            {
+                b.append(c);
+                continue;
+            }
+            String ref = s.substring(i + 1, semi);
+            try
+            {
+                if (ref.startsWith("#x")) b.appendCodePoint(Integer.parseInt(ref.substring(2), 16));
+                else if (ref.startsWith("#")) b.appendCodePoint(Integer.parseInt(ref.substring(1)));
+                else b.append(expand_entity(doc, ref, depth));
+            }
+            catch (NumberFormatException ex)
+            {
+                b.append(s, i, semi + 1);
+            }
+            i = semi;
+        }
+        return b.toString();
     }
 
     static boolean is_key_value_node(XmlNode n)

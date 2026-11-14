@@ -7371,6 +7371,10 @@ void cline_print_node(XMQPrintState *ps, xmlNode *node)
     XMQWrite write = output_settings->content.write;
     void *writer_state = output_settings->content.writer_state;
 
+    // Skip the dtd and entity references: the children of an entity reference
+    // is its declaration, which can refer back to it (infinite recursion).
+    if (node->type == XML_DTD_NODE || is_entity_node(node)) return;
+
     if (has_attributes(node))
     {
         cline_print_attributes(ps, node);
@@ -7444,6 +7448,8 @@ void cline_print_attr(XMQPrintState *ps, xmlAttr *a)
     if (a->children != NULL)
     {
         char *value = (char*)xmlNodeListGetString(a->doc, a->children, 1);
+        // An attribute that is only an undefined entity reference gives NULL.
+        if (!value) value = (char*)xmlStrdup((const xmlChar*)"");
         XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), true);
         assert(rs.status == XMQ_OK);
         char *quoted_value = rs.string;
@@ -7855,6 +7861,10 @@ void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared)
         xmlFreeNode(node);
         return;
     }
+
+    // Do not descend into the dtd or into entity references: the children of an
+    // entity reference is its declaration, which can refer back to it.
+    if (node->type == XML_DTD_NODE || node->type == XML_ENTITY_REF_NODE) return;
 
     xmlNode *i = xml_first_child(node);
     while (i)
@@ -15096,6 +15106,8 @@ XMQStatus json_print_attribute(XMQPrintState *ps, xmlAttr *a)
     if (a->children != NULL)
     {
         char *value = (char*)xmlNodeListGetString(a->doc, a->children, 1);
+        // An attribute that is only an undefined entity reference gives NULL.
+        if (!value) value = (char*)xmlStrdup((const xmlChar*)"");
         XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), true);
         if (rs.status != XMQ_OK) return rs.status;
         char *quoted_value = rs.string;
@@ -15279,6 +15291,7 @@ XMQStatus json_print_element_name(XMQPrintState *ps, xmlNode *container, xmlNode
             // The key was stored inside the attribute because it could not
             // be used as the element name.
             char *value = (char*)xmlNodeListGetString(node->doc, a->children, 1);
+            if (!value) value = (char*)xmlStrdup((const xmlChar*)"");
             XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), false);
             if (rs.status != XMQ_OK) return rs.status;
             char *quoted_value = rs.string;
@@ -15493,6 +15506,11 @@ void json_print_leaf_node(XMQPrintState *ps,
 
 void fixup_json(XMQDoc *doq, xmlNode *node)
 {
+    // Do not descend into the dtd or into entity references: the children of
+    // an entity reference is its declaration, whose content can refer back
+    // to the reference, which recursed until the stack overflowed.
+    if (node->type == XML_DTD_NODE || node->type == XML_ENTITY_REF_NODE) return;
+
     if (is_element_node(node))
     {
         char *new_content = xml_collapse_text(node);
@@ -16731,7 +16749,9 @@ static int yblock(y_parser *p, XMQParseState *state, char style, char chomp,
     if (chomp != '+')
     {
         while (vlen && v[vlen-1] == '\n') --vlen;
-        if (chomp == 0) ++vlen;
+        // Clip ends non empty content with exactly one line break. (This used to
+        // be ++vlen, which read a byte that was not always written.)
+        if (chomp == 0 && vlen > 0) v[vlen++] = '\n';
     }
     else
     {
@@ -17876,6 +17896,8 @@ void xmq_print_yaml(XMQDoc *doq, XMQOutputSettings *output_settings)
     bool started = false;
     for (xmlNode *r = doc->children; r; r = xml_next_sibling(r))
     {
+        // Yaml has no doctype, skip the dtd (and its entity declarations).
+        if (r->type == XML_DTD_NODE) continue;
         if (is_element_node(r) &&
             r->name && r->name[0] == '_' && r->name[1] == 0 &&
             !is_key_value_node(r))

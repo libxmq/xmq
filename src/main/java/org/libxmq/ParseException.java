@@ -59,6 +59,49 @@ public class ParseException extends Exception
         line_ = line;
         column_ = column;
         source_ = source;
+        info_ = null;
+        char_index_ = column - 1;
+    }
+
+    /** Extra information appended to the error message, or null. */
+    private final String info_;
+    /** The position of the offending char in the text, -1 if at the end of the input. */
+    private final int char_index_;
+
+    /** Construct a parse exception with extra information, like the C error_info,
+        where the offending char is not at the column (as in the yaml parser).
+     @param ec The error code.
+     @param text The line on which the parse failed.
+     @param line The line number.
+     @param column The column that is reported.
+     @param source Information about where the xmq originated from.
+     @param info Extra information appended to the message, or null.
+     @param char_index The position of the offending char in text, -1 if at the end of the input.
+    */
+    public ParseException(ParseErrorCode ec, String text, int line, int column, String source, String info, int char_index)
+    {
+        super("Parse error: " + ec);
+        error_code_ = ec;
+        text_ = text;
+        line_ = line;
+        column_ = column;
+        source_ = source;
+        info_ = info;
+        char_index_ = char_index;
+    }
+
+    /** Get the extra information, or null.
+     @return the information */
+    public String info()
+    {
+        return info_;
+    }
+
+    /** Get the position of the offending char in the text, -1 if at the end of the input.
+     @return the position */
+    public int charIndex()
+    {
+        return char_index_;
     }
 
     /** Get the error code.
