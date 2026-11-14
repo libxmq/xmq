@@ -8,11 +8,8 @@ INPUT
 x abc 12 34 A.,B. q;r
 OUTPUT
 o(v = abc
-  w = 12
   w = 34
-  a = A
   a = B
-  b = q
   b = r)
 END
 ARGS=

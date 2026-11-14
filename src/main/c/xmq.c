@@ -5562,7 +5562,9 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
                     MemBuffer *mb = new_membuffer();
                     collect_text(n, mb);
                     membuffer_append_null(mb);
-                    xmlNewProp(node, (xmlChar*)an->name, (xmlChar*)mb->buffer_);
+                    // An attribute that is produced more than once keeps the last value (xml
+                    // does not allow duplicate attributes), like the generated parsers.
+                    xmlSetProp(node, (xmlChar*)an->name, (xmlChar*)mb->buffer_);
                     free_membuffer_and_free_content(mb);
                 }
                 else
