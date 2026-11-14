@@ -1,0 +1,15 @@
+START
+doc: A, B, C, -#a?.
+A: "a".
+@B: "b".
+@C>B: "c".
+INPUT
+abc
+OUTPUT
+ixml(ixml:state = failed
+     xmlns:ixml = http://invisiblexml.org/NS)
+{
+    info = 'dynamic error D02: the attribute B occurs more than once on an element'
+}
+END
+ARGS=
