@@ -21,6 +21,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+/* The error message format reproduces the libxml2 error output.
+   libxml2: Copyright (C) 1998-2012 Daniel Veillard, Copyright (C) The Libxml2 Contributors, MIT license. */
+
+
 package org.libxmq.imp.xml;
 
 /**

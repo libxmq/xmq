@@ -11554,13 +11554,14 @@ size_t pick_buffer_new_size(size_t max, size_t used, size_t add)
     assert(used <= max);
     if (used + add > max)
     {
-        // Increment buffer with 1KiB.
-        max = max + 1024;
+        // Grow geometrically (at least 1KiB) so that appending n bytes is O(n) and not O(n^2).
+        size_t grown = max < 1024 ? 1024 : max * 2;
+        max = grown;
     }
     if (used + add > max)
     {
-        // Still did not fit? The add was more than 1 Kib. Lets add that.
-        max = max + add;
+        // Still did not fit? The add was larger than the growth. Lets add that.
+        max = used + add;
     }
     assert(used + add <= max);
 
