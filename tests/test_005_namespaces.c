@@ -34,6 +34,7 @@ void test_building_doc_0()
     xmqPrint(doc, os);
 
     xmqFreeOutputSettings(os);
+    xmqFreeDoc(doc);
 
     if (strcmp(start, exp))
     {
@@ -72,6 +73,7 @@ void test_building_doc_1()
     xmqPrint(doc, os);
 
     xmqFreeOutputSettings(os);
+    xmqFreeDoc(doc);
 
     if (strcmp(start, exp))
     {
@@ -109,6 +111,7 @@ void test_building_doc_2()
     xmqPrint(doc, os);
 
     xmqFreeOutputSettings(os);
+    xmqFreeDoc(doc);
 
     if (strcmp(start, exp))
     {
@@ -145,6 +148,7 @@ void test_building_doc_3()
     xmqPrint(doc, os);
 
     xmqFreeOutputSettings(os);
+    xmqFreeDoc(doc);
 
     if (strcmp(start, exp))
     {
@@ -187,6 +191,7 @@ void test_building_doc_4()
     xmqPrint(doc, os);
 
     xmqFreeOutputSettings(os);
+    xmqFreeDoc(doc);
 
     if (strcmp(start, exp))
     {
@@ -230,6 +235,7 @@ void test_building_doc_5()
     xmqPrint(doc, os);
 
     xmqFreeOutputSettings(os);
+    xmqFreeDoc(doc);
 
     if (strcmp(start, exp))
     {
@@ -273,6 +279,7 @@ void test_building_doc_6()
     xmqPrint(doc, os);
 
     xmqFreeOutputSettings(os);
+    xmqFreeDoc(doc);
 
     if (strcmp(start, exp))
     {
@@ -314,6 +321,7 @@ void test_building_doc_7()
     xmqPrint(doc, os);
 
     xmqFreeOutputSettings(os);
+    xmqFreeDoc(doc);
 
     if (strcmp(start, exp))
     {
@@ -356,6 +364,7 @@ void test_building_doc_8()
     xmqPrint(doc, os);
 
     xmqFreeOutputSettings(os);
+    xmqFreeDoc(doc);
 
     if (strcmp(start, exp))
     {
@@ -396,6 +405,7 @@ void test_building_doc_9()
     xmqPrint(doc, os);
 
     xmqFreeOutputSettings(os);
+    xmqFreeDoc(doc);
 
     if (strcmp(start, exp))
     {
@@ -437,6 +447,7 @@ void test_building_doc_10()
     xmqPrint(doc, os);
 
     xmqFreeOutputSettings(os);
+    xmqFreeDoc(doc);
 
     if (strcmp(start, exp))
     {
@@ -475,6 +486,7 @@ void test_building_doc_11()
     xmqPrint(doc, os);
 
     xmqFreeOutputSettings(os);
+    xmqFreeDoc(doc);
 
     if (strcmp(start, exp))
     {

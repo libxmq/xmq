@@ -192,6 +192,8 @@ struct XMQCliCommand
     bool log_xmq; // Output verbose,debug,trace as human readable lines instead of xmq.
     xmlDocPtr   node_doc;
     xmlNodePtr  node_content; // Tree content to replace something.
+    XMQDoc *node_doq; // Owns node_doc (replace-entity --with-file).
+    char *content_buffer; // Owns content when it was read from a file (replace-entity --with-text-file).
     const char *in_format_name; // A dynamically named format based on an ixml+xslt combo.
     // Such an format can be: xmq -f core:csv-comma input.csv to-json
     // or                     xmq --format=core:csv-comma input.csv to-json
@@ -742,6 +744,25 @@ void free_cli_command(XMQCliCommand *cmd)
         xmqFreeDoc(cmd->xslt_doq);
         cmd->xslt = NULL;
     }
+    xmqFreeDoc(cmd->node_doq);
+    cmd->node_doq = NULL;
+    free(cmd->content_buffer);
+    cmd->content_buffer = NULL;
+    // Input that cmd_unload did not get to free, eg after a parse error.
+    if (cmd->input_content_start)
+    {
+        free((char*)cmd->input_content_start);
+        cmd->input_content_start = NULL;
+    }
+    if (cmd->ixml_grammar)
+    {
+        xmqFreeDoc(cmd->ixml_grammar);
+        cmd->ixml_grammar = NULL;
+    }
+    free((char*)cmd->ixml_filename);
+    cmd->ixml_filename = NULL;
+    free((char*)cmd->ixml_source);
+    cmd->ixml_source = NULL;
 
     free(cmd);
 }
@@ -846,8 +867,17 @@ static bool load_entity_file(XMQCliCommand *command, const char *file)
     }
     bool ignore_no_more_data = false;
     bool ok = cmd_load(&cmd, &ignore_no_more_data);
-    if (!ok) return false;
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(cmd.env->doc);
+    // The loaded input buffer is not needed after the parse.
+    free((char*)cmd.input_content_start);
+    cmd.input_content_start = NULL;
+    if (!ok)
+    {
+        xmqFreeDoc(cmd.env->doc);
+        return false;
+    }
+    // The command keeps the loaded document, it is freed in free_cli_command.
+    command->node_doq = cmd.env->doc;
+    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->node_doq);
     command->node_doc = doc;
     command->node_content = doc->children;
     return true;
@@ -870,6 +900,7 @@ static bool load_entity_text_file(XMQCliCommand *command, const char *file)
     buf[sz] = 0;
     if (n != sz) printf("ARRRRRGGGG\n");
     fclose(f);
+    command->content_buffer = buf;
     command->content = buf;
     return true;
 }
@@ -4640,13 +4671,37 @@ void prepare_xsl_command(XMQCliCommand *command, const char *arg)
 // (handle_global_option, handle_option) as --name or --name=value or the argument.
 
 // The tree is walked with the xmq.h api only. Strings given to the handlers
-// are copies, since the handlers keep them, they are never freed.
+// are copies, since the handlers keep them for the whole run. The copies are
+// kept in cli_kept_ and freed at the end of main by cli_free_kept.
+
+static char **cli_kept_ = NULL;
+static size_t cli_num_kept_ = 0;
+static size_t cli_kept_cap_ = 0;
+
+static const char *cli_keep(char *s)
+{
+    if (cli_num_kept_ == cli_kept_cap_)
+    {
+        cli_kept_cap_ = cli_kept_cap_ ? cli_kept_cap_ * 2 : 32;
+        cli_kept_ = (char**)realloc(cli_kept_, cli_kept_cap_ * sizeof(char*));
+    }
+    cli_kept_[cli_num_kept_++] = s;
+    return s;
+}
+
+static void cli_free_kept(void)
+{
+    for (size_t i = 0; i < cli_num_kept_; ++i) free(cli_kept_[i]);
+    free(cli_kept_);
+    cli_kept_ = NULL;
+    cli_num_kept_ = cli_kept_cap_ = 0;
+}
 
 // The text of an element, "" if empty.
 static const char *cli_text(XMQDoc *doq, XMQNode *n)
 {
     const char *t = xmqGetStringRel(doq, ".", n);
-    return strdup(t ? t : "");
+    return cli_keep(strdup(t ? t : ""));
 }
 
 // The value of an attribute, "" if empty and NULL if not present.
@@ -4656,7 +4711,7 @@ static const char *cli_attr(XMQDoc *doq, XMQNode *n, const char *name)
     snprintf(xpath, sizeof(xpath), "@%s", name);
     if (xmqForeachRel(doq, xpath, NULL, NULL, n) == 0) return NULL;
     const char *v = xmqGetStringRel(doq, xpath, n);
-    return strdup(v ? v : "");
+    return cli_keep(strdup(v ? v : ""));
 }
 
 typedef struct CliNodes { XMQNode **nodes; size_t n, cap; } CliNodes;
@@ -4691,7 +4746,7 @@ static const char *cli_option_string(XMQDoc *doq, XMQNode *opt)
     char *buf = (char*)malloc(len);
     if (value) snprintf(buf, len, "--%s=%s", name, value);
     else snprintf(buf, len, "--%s", name);
-    return buf;
+    return cli_keep(buf);
 }
 
 static void cli_print_parse_error(const char *line, xmqcli_Error *err)
@@ -4837,6 +4892,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
     free(line);
 
     CliNodes top = cli_children(doq, xmqGetRootNode(doq));
+    CliNodes parts = { NULL, 0, 0 };
     size_t k = 0;
 
     // Global options, the grammar and the source come before the first command.
@@ -4850,7 +4906,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
             const char *arg = cli_option_string(doq, n);
             if (handle_global_option(arg, load_command)) continue;
             printf("xmq: unrecognized global option: '%s'\nTry 'xmq --help' for more information\n", arg);
-            return false;
+            goto fail;
         }
         if (!strcmp(what, "grammar"))
         {
@@ -4858,11 +4914,11 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
             if (load_command->ixml_source)
             {
                 printf("You have already specified an ixml grammar!\n");
-                return false;
+                goto fail;
             }
             if (is_ixml_cmd(g))
             {
-                if (!cli_load_ixml_library(load_command, g, &add_xslq, add_xslq_file)) return false;
+                if (!cli_load_ixml_library(load_command, g, &add_xslq, add_xslq_file)) goto fail;
             }
             else
             {
@@ -4901,7 +4957,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
     {
         XMQNode *n = top.nodes[k];
         const char *cname = cli_attr(doq, n, "name");
-        CliNodes parts = cli_children(doq, n);
+        parts = cli_children(doq, n);
         XMQCliCommand *prev = command;
         command = allocate_cli_command(command->env);
         prev->next = command;
@@ -4919,6 +4975,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
             char *buf = (char*)malloc(len);
             snprintf(buf, len, "xsl:%s", x);
             prepare_xsl_command(command, buf);
+            free(buf);
         }
         if (command->cmd == XMQ_CLI_CMD_NONE)
         {
@@ -4961,7 +5018,7 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
             if (to)
             {
                 fprintf(stderr, "xmq: you can only use one to/render/tokenize command.\n");
-                return false;
+                goto fail;
             }
             to = command;
             do_print = true;
@@ -4980,17 +5037,24 @@ bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *load_command
             if (output)
             {
                 fprintf(stderr, "xmq: you can only use one print/save/pager/browse/noout command.\n");
-                return false;
+                goto fail;
             }
             output = command;
         }
         free(parts.nodes);
+        parts.nodes = NULL;
     }
     free(top.nodes);
     xmqFreeDoc(doq);
 
     cli_add_default_output(load_command, command, to, output, do_print);
     return true;
+
+fail:
+    free(parts.nodes);
+    free(top.nodes);
+    xmqFreeDoc(doq);
+    return false;
 }
 
 #ifdef PLATFORM_WINAPI
@@ -5162,7 +5226,11 @@ xmqDocDefaultLoaderFunc(const xmlChar * URI,
 
     verbose_("xmq=", "xsl-document-load %zu bytes from %s", xmqGetOriginalSize(doq), URI);
 
-    return xmqGetImplementationDoc(doq);
+    // libxslt takes over (and frees) the implementation doc, the xmq doc wrapper is freed here.
+    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(doq);
+    xmqSetImplementationDoc(doq, NULL);
+    xmqFreeDoc(doq);
+    return doc;
 
     /*
     xmlParserCtxtPtr pctxt;
@@ -5206,6 +5274,19 @@ xmqDocDefaultLoaderFunc(const xmlChar * URI,
 
     return(doc);
     */
+}
+
+/** Free the command chain and the strings kept for the command line handlers. */
+static void free_all_cli_commands(XMQCliCommand *load_command)
+{
+    XMQCliCommand *c = load_command;
+    while (c)
+    {
+        XMQCliCommand *tmp = c;
+        c = c->next;
+        free_cli_command(tmp);
+    }
+    cli_free_kept();
 }
 
 int main(int argc, const char **argv)
@@ -5254,6 +5335,7 @@ int main(int argc, const char **argv)
     bool ok = xmq_parse_cmd_line(argc, argv, load_command);
     if (!ok) {
         verbose_("xmq=", "parse cmd line failed");
+        free_all_cli_commands(load_command);
         return 1;
     }
 
@@ -5270,7 +5352,9 @@ int main(int argc, const char **argv)
     if (load_command->print_help) cmd_help(NULL);
     if (load_command->next && load_command->next->cmd == XMQ_CLI_CMD_HELP)
     {
-        return cmd_help(load_command->next);
+        int help_rc = cmd_help(load_command->next);
+        free_all_cli_commands(load_command);
+        return help_rc;
     }
 
     bool more_content = true;
@@ -5301,14 +5385,7 @@ int main(int argc, const char **argv)
     }
 
 
-    // Free commands.
-    XMQCliCommand *c = load_command;
-    while (c)
-    {
-        XMQCliCommand *tmp = c;
-        c = c->next;
-        free_cli_command(tmp);
-    }
+    free_all_cli_commands(load_command);
 
     if (error_to_print_on_exit) fprintf(stderr, "%s", error_to_print_on_exit);
 

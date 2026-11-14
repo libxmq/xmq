@@ -218,8 +218,9 @@ struct XMQOutputSettings
     const char *use_class; // If non-NULL insert this class in the pre tag.
 
     XMQTheme *theme; // The theme used to print.
-    void *free_me;
-    void *free_and_me;
+    // Buffers allocated for the theme (color escapes, style sheets...), freed by xmqFreeOutputSettings.
+    void *owned[8];
+    int num_owned;
 };
 typedef struct XMQOutputSettings XMQOutputSettings;
 
@@ -493,6 +494,8 @@ void element_strlen_name_prefix(xmlNode *attr, const char **name, const char **p
 void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len);
 const char *find_word_ignore_case(const char *start, const char *stop, const char *word);
 
+/** The output settings take ownership of a buffer used by the theme, freed with the settings. */
+void xmq_output_settings_own(XMQOutputSettings *os, void *buffer);
 void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool truecolor, bool render_raw);
 void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
 void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);

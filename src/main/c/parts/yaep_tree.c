@@ -887,22 +887,35 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
 
     if (ps->run.parse_free != NULL)
     {
+        // Free the nodes (and node names) that are not part of the minimal translation.
+        // The translation is a DAG: shared nodes (eg the empty node or terminals) are
+        // recorded once per visit and node names are shared between nodes, so remember
+        // what has been freed to free everything exactly once.
+        hash_table_t freed = create_hash_table(ps->run.grammar->alloc, ps->input_len* 4,
+                                               (hash_table_hash_function)reserv_mem_hash,
+                                               (hash_table_eq_function)reserv_mem_eq);
         for(node_ptr = (YaepTreeNode**)VLO_BEGIN(ps->tnodes_vlo);
             node_ptr <(YaepTreeNode**)VLO_BOUND(ps->tnodes_vlo);
             node_ptr++)
         {
-            if (*find_hash_table_entry(ps->set_of_reserved_memory,*node_ptr, true) == NULL)
+            YaepTreeNode *n = *node_ptr;
+            if (*find_hash_table_entry(ps->set_of_reserved_memory, n, true) != NULL) continue;
+            hash_table_entry_t *fe = find_hash_table_entry(freed, n, true);
+            if (*fe != NULL) continue;
+            *fe = (hash_table_entry_t)n;
+            if (n->type == YAEP_ANODE && n->val.anode.name != NULL &&
+                *find_hash_table_entry(ps->set_of_reserved_memory, n->val.anode.name, true) == NULL)
             {
-                if ((*node_ptr)->type == YAEP_ANODE
-                    &&*find_hash_table_entry(ps->set_of_reserved_memory,
-                                             (*node_ptr)->val.anode.name,
-                                             true) == NULL)
+                hash_table_entry_t *ne = find_hash_table_entry(freed, n->val.anode.name, true);
+                if (*ne == NULL)
                 {
-                    // (*ps->run.parse_free)((void*)(*node_ptr)->val.anode.name);
+                    *ne = (hash_table_entry_t)n->val.anode.name;
+                    (*ps->run.parse_free)((void*)n->val.anode.name);
                 }
-                //(*ps->run.parse_free)(*node_ptr);
             }
+            (*ps->run.parse_free)(n);
         }
+        delete_hash_table(freed);
         VLO_DELETE(ps->tnodes_vlo);
         delete_hash_table(ps->set_of_reserved_memory);
     }

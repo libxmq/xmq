@@ -3219,8 +3219,9 @@ struct XMQOutputSettings
     const char *use_class; // If non-NULL insert this class in the pre tag.
 
     XMQTheme *theme; // The theme used to print.
-    void *free_me;
-    void *free_and_me;
+    // Buffers allocated for the theme (color escapes, style sheets...), freed by xmqFreeOutputSettings.
+    void *owned[8];
+    int num_owned;
 };
 typedef struct XMQOutputSettings XMQOutputSettings;
 
@@ -3494,6 +3495,8 @@ void element_strlen_name_prefix(xmlNode *attr, const char **name, const char **p
 void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len);
 const char *find_word_ignore_case(const char *start, const char *stop, const char *word);
 
+/** The output settings take ownership of a buffer used by the theme, freed with the settings. */
+void xmq_output_settings_own(XMQOutputSettings *os, void *buffer);
 void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool truecolor, bool render_raw);
 void setup_html_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
 void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *c, bool dark_mode, bool use_color, bool render_raw);
@@ -3889,7 +3892,7 @@ void setup_terminal_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_m
     if (!dark_mode) colors = theme->colors_lightbg;
 
     char *commands = (char*)malloc(4096);
-    os->free_me = commands;
+    xmq_output_settings_own(os, commands);
     char *p = commands;
 
     const char *c = add_color(colors, XMQ_COLOR_C, &p, truecolor);
@@ -4049,7 +4052,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode,
         // Body class used on the <body> element.
         {
             char *body_pre = (char*)malloc(64);
-            os->free_me = body_pre;
+            xmq_output_settings_own(os, body_pre);
             snprintf(body_pre, 64, "<body class=\"%s\">", body_class);
             theme->body.pre = body_pre;
         }
@@ -4083,7 +4086,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode,
         membuffer_append_null(style_pre);
 
         theme->style.pre = free_membuffer_but_return_trimmed_content(style_pre);
-        os->free_me = (void*)theme->style.pre;
+        xmq_output_settings_own(os, (void*)theme->style.pre);
 
         theme->body.post =
             "</body>";
@@ -4107,7 +4110,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode,
     }
 
     char *buf = (char*)malloc(1024);
-    os->free_and_me = buf;
+    xmq_output_settings_own(os, buf);
     const char *id = os->use_id;
     const char *idb = "id=\"";
     const char *ide = "\" ";
@@ -4247,6 +4250,7 @@ void setup_tex_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode, 
         *p = 0;
 
         theme->style.pre = style_pre;
+        xmq_output_settings_own(os, style_pre);
 
         theme->body.pre = "\n\\begin{document}\n";
         theme->body.post = "\n\\end{document}\n";
@@ -4412,6 +4416,12 @@ XMQOutputSettings *xmqNewOutputSettings()
     return os;
 }
 
+void xmq_output_settings_own(XMQOutputSettings *os, void *buffer)
+{
+    assert(os->num_owned < (int)(sizeof(os->owned) / sizeof(os->owned[0])));
+    os->owned[os->num_owned++] = buffer;
+}
+
 void xmqFreeOutputSettings(XMQOutputSettings *os)
 {
     if (os->theme)
@@ -4419,15 +4429,13 @@ void xmqFreeOutputSettings(XMQOutputSettings *os)
         free(os->theme);
         os->theme = NULL;
     }
-    if (os->free_me)
+    for (int i = 0; i < os->num_owned; ++i) free(os->owned[i]);
+    os->num_owned = 0;
+    // A memory output buffer that was never handed over (eg after a parse error).
+    if (os->output_buffer)
     {
-        free(os->free_me);
-        os->free_me = NULL;
-    }
-    if (os->free_and_me)
-    {
-        free(os->free_and_me);
-        os->free_and_me = NULL;
+        free_membuffer_and_free_content(os->output_buffer);
+        os->output_buffer = NULL;
     }
     free(os);
 }
@@ -4711,6 +4719,7 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
     {
         size_t size = membuffer_used(output_settings->output_buffer);
         char *buffer = free_membuffer_but_return_trimmed_content(output_settings->output_buffer);
+        output_settings->output_buffer = NULL; // Handed over to the caller.
         *output_settings->output_buffer_start = buffer;
         *output_settings->output_buffer_stop = buffer+size;
     }
@@ -5642,6 +5651,7 @@ void fixup_ns(xmlNodePtr new_node, xmlNsPtr pns, XMQNS ns)
         const char *uri = get_prefix_and_uri(ns.uri, &prefix);
 
         nns = prep_ancestor_namespace(new_node, uri, prefix);
+        free(prefix);
     }
     else
     {
@@ -5673,7 +5683,11 @@ XMQStatus xmqAddNamespace(XMQDoc *doq, XMQNode *node, XMQNS ns)
     const char *uri = get_prefix_and_uri(ns.uri, &prefix);
 
     // The new namespace must have a prefix.
-    if (!prefix) return XMQ_ERROR_BAD_VALUE;
+    if (!prefix)
+    {
+        xmlFree(nspaces);
+        return XMQ_ERROR_BAD_VALUE;
+    }
 
     bool found = false;
     if (nspaces)
@@ -5689,12 +5703,15 @@ XMQStatus xmqAddNamespace(XMQDoc *doq, XMQNode *node, XMQNS ns)
             }
         }
     }
+    xmlFree(nspaces);
+    XMQStatus rc = XMQ_OK;
     if (!found)
     {
         xmlNsPtr nns = xmlNewNs((xmlNodePtr)node, (const xmlChar *)uri, (const xmlChar*)prefix);
-        if (!nns) return XMQ_ERROR_OOM;
+        if (!nns) rc = XMQ_ERROR_OOM;
     }
-    return XMQ_OK;
+    free(prefix);
+    return rc;
 }
 
 XMQReturnNode xmqAddElement(XMQDoc *doq, XMQNode *parent, const char *name, XMQNS ns)
@@ -6003,6 +6020,7 @@ XMQReturnAttr xmqSetAttribute(XMQDoc *doq, XMQNode *node, const char *name, cons
         const char *uri = get_prefix_and_uri(ns.uri, &prefix);
 
         xmlNs *ns = prep_ancestor_namespace((xmlNode*)node, uri, prefix);
+        free(prefix);
         a = xmlSetNsProp((xmlNode*)node, ns, (const xmlChar*)name, (const xmlChar*)value);
     }
     else
@@ -7560,6 +7578,7 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
         membuffer_append_null(output_settings->output_buffer);
         size_t size = membuffer_used(output_settings->output_buffer);
         char *buffer = free_membuffer_but_return_trimmed_content(output_settings->output_buffer);
+        output_settings->output_buffer = NULL; // Handed over to the caller.
         *output_settings->output_buffer_start = buffer;
         *output_settings->output_buffer_stop = buffer+size;
         if (output_settings->output_skip)
@@ -26414,22 +26433,35 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
 
     if (ps->run.parse_free != NULL)
     {
+        // Free the nodes (and node names) that are not part of the minimal translation.
+        // The translation is a DAG: shared nodes (eg the empty node or terminals) are
+        // recorded once per visit and node names are shared between nodes, so remember
+        // what has been freed to free everything exactly once.
+        hash_table_t freed = create_hash_table(ps->run.grammar->alloc, ps->input_len* 4,
+                                               (hash_table_hash_function)reserv_mem_hash,
+                                               (hash_table_eq_function)reserv_mem_eq);
         for(node_ptr = (YaepTreeNode**)VLO_BEGIN(ps->tnodes_vlo);
             node_ptr <(YaepTreeNode**)VLO_BOUND(ps->tnodes_vlo);
             node_ptr++)
         {
-            if (*find_hash_table_entry(ps->set_of_reserved_memory,*node_ptr, true) == NULL)
+            YaepTreeNode *n = *node_ptr;
+            if (*find_hash_table_entry(ps->set_of_reserved_memory, n, true) != NULL) continue;
+            hash_table_entry_t *fe = find_hash_table_entry(freed, n, true);
+            if (*fe != NULL) continue;
+            *fe = (hash_table_entry_t)n;
+            if (n->type == YAEP_ANODE && n->val.anode.name != NULL &&
+                *find_hash_table_entry(ps->set_of_reserved_memory, n->val.anode.name, true) == NULL)
             {
-                if ((*node_ptr)->type == YAEP_ANODE
-                    &&*find_hash_table_entry(ps->set_of_reserved_memory,
-                                             (*node_ptr)->val.anode.name,
-                                             true) == NULL)
+                hash_table_entry_t *ne = find_hash_table_entry(freed, n->val.anode.name, true);
+                if (*ne == NULL)
                 {
-                    // (*ps->run.parse_free)((void*)(*node_ptr)->val.anode.name);
+                    *ne = (hash_table_entry_t)n->val.anode.name;
+                    (*ps->run.parse_free)((void*)n->val.anode.name);
                 }
-                //(*ps->run.parse_free)(*node_ptr);
             }
+            (*ps->run.parse_free)(n);
         }
+        delete_hash_table(freed);
         VLO_DELETE(ps->tnodes_vlo);
         delete_hash_table(ps->set_of_reserved_memory);
     }

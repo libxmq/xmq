@@ -292,6 +292,7 @@ void test_quote(int indent, bool compact, char *in, char *expected)
 
     size_t size = membuffer_used(os->output_buffer);
     char *out = free_membuffer_but_return_trimmed_content(os->output_buffer);
+    os->output_buffer = NULL; // Taken over here, the settings must not free it.
     out = realloc(out, size+1);
     out[size] = 0;
 

@@ -24,9 +24,10 @@ ASAN=$(echo $LIB | grep -o "/asan/")
 
 if [ "$ASAN" = "/asan/" ]
 then
-    CFLAGS="-fprofile-arcs -ftest-coverage"
-    LDFLAGS="--coverage -fprofile-arcs -ftest-coverage"
-    LDLIBS="-lasan"
+    # Same sanitizers as the asan build of libxmq (configure: CFLAGS_asan/LDFLAGS_asan).
+    CFLAGS="-fprofile-arcs -ftest-coverage -fsanitize=address,undefined -fno-omit-frame-pointer"
+    LDFLAGS="--coverage -fprofile-arcs -ftest-coverage -fsanitize=address,undefined"
+    LDLIBS=""
 fi
 
 DEBUG=$(echo $LIB | grep -o "/debug/")
