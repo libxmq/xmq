@@ -225,6 +225,12 @@ library_index:
 test_parse_myself:
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/xmq ]; then echo "Run make first. $${x}release/xmq not found."; exit 1; fi ; FILTER="$(FILTER)" $(if $(JOBS),JOBS="$(JOBS)") ./tests/test_parse_myself.sh $${x}release/xmq $${x}release/test_output/parse_myself $${x}release || exit 1 ; done
 
+# The same as test_parse_myself, but with a C parser generated from c.ixml
+# (xmqj generate-parser --c) instead of the ixml engine. Takes seconds
+# instead of minutes, but cannot detect ambiguities. Needs make xmqj.
+test_parse_myself_fast: build/xmqj
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/xmq ]; then echo "Run make first. $${x}release/xmq not found."; exit 1; fi ; XMQJ=build/xmqj FILTER="$(FILTER)" $(if $(filter undefined,$(origin EXCLUDE)),,EXCLUDE="$(EXCLUDE)") $(if $(JOBS),JOBS="$(JOBS)") ./tests/test_parse_myself.sh $${x}release/xmq $${x}release/test_output/parse_myself_fast $${x}release || exit 1 ; done
+
 # Generate C parsers (xmqj generate-parser --c) for all LL(*) grammars with
 # test inputs and compare their output with the ixml engine. Needs make xmqj.
 test_generate_parser:
@@ -351,7 +357,7 @@ import_category:
 	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
 	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
 
-.PHONY: all release debug asan fuzz afl_prepared build_fuzz test test_release test_debug test_parse_myself test_generate_parser test_xmq_grammar generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
+.PHONY: all release debug asan fuzz afl_prepared build_fuzz test test_release test_debug test_parse_myself test_parse_myself_fast test_generate_parser test_xmq_grammar generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
 
 pom.xml: pom.xmq jproject.settings
 	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; xmllint --format pom.xml > tmpo; mv tmpo pom.xml; echo "Generated pom.xml" ; fi

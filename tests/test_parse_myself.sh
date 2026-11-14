@@ -22,8 +22,15 @@
 # since it is 10MB of automatically generated unicode category tables,
 # set EXCLUDE= (empty) to parse it as well. EXCLUDE is not used when FILTER is set.
 #
+# Set XMQJ to the xmqj binary (e.g. XMQJ=build/xmqj) to use a parser generated
+# from the grammar (xmqj generate-parser --c) instead of the ixml engine.
+# The generated parser is built once and parses all files in a few seconds,
+# the ixml engine needs minutes. The generated parser only detects syntax
+# errors, it is LL(*)/ALL(*) and cannot report ambiguities.
+# From make: make test_parse_myself_fast
+#
 # When stderr is a terminal, a status line shows the progress of the
-# running parses, using xmq --progress.
+# running parses, using xmq --progress (only the ixml engine reports progress).
 
 # Use . as decimal separator when printing the parse times.
 export LC_ALL=C
@@ -42,7 +49,27 @@ then
 fi
 
 mkdir -p "$OUTPUT"
-rm -f "$OUTPUT"/*.xml "$OUTPUT"/*.stderr "$OUTPUT"/*.done
+rm -f "$OUTPUT"/*.xml "$OUTPUT"/*.xmq "$OUTPUT"/*.stderr "$OUTPUT"/*.done
+
+PARSER=""
+if [ -n "$XMQJ" ]
+then
+    # Generate and compile the C parser once, it reads a file and prints xmq.
+    PARSER=$OUTPUT/cparser
+    if ! "$XMQJ" generate-parser --c "$GRAMMAR" --prefix=cparser > "$PARSER.c" 2> "$PARSER.err"
+    then
+        echo "FAIL: xmqj generate-parser --c $GRAMMAR"
+        head -5 "$PARSER.err"
+        exit 1
+    fi
+    if ! cc -O2 -Isrc/main/c -o "$PARSER" "$PARSER.c" "$(dirname "$PROG")/libxmq.a" -lxslt -lexslt -lxml2 -lz -lm 2> "$PARSER.cerr"
+    then
+        echo "FAIL: compiling the generated parser $PARSER.c"
+        head -5 "$PARSER.cerr"
+        exit 1
+    fi
+    echo "Built the generated parser $PARSER"
+fi
 
 FILES=$(find "$SOURCES" -name "*.o.source" | sort)
 if [ -n "$FILTER" ]
@@ -79,18 +106,29 @@ parse_one()
     local name=$(echo "${src#$SOURCES/}" | tr '/' '_')
     local out=$OUTPUT/$name.xml
     local start=$(date +%s.%N)
-    "$PROG" --progress "$GRAMMAR" "$src" to-xml > "$out" 2> "$OUTPUT/$name.stderr"
+    if [ -n "$PARSER" ]
+    then
+        out=$OUTPUT/$name.xmq
+        "$PARSER" "$src" > "$out" 2> "$OUTPUT/$name.stderr"
+    else
+        "$PROG" --progress "$GRAMMAR" "$src" to-xml > "$out" 2> "$OUTPUT/$name.stderr"
+    fi
     local rc=$?
     local secs=$(echo "$(date +%s.%N) - $start" | bc)
     local result
-    if grep -q 'ixml:state="failed"' "$out"
+    if [ -n "$PARSER" ] && [ $rc != 0 ] && grep -q ': error: ' "$OUTPUT/$name.stderr"
+    then
+        # The generated parser prints file:line:col: error: message
+        local where=$(grep -m 1 ': error: ' "$OUTPUT/$name.stderr" | sed "s|^.*:\([0-9]*\):\([0-9]*\): error: |line \1 column \2: |")
+        result=$(printf "FAIL %6.1fs %s syntax error at %s" "$secs" "$src" "$where")
+    elif grep -q 'ixml:state="failed"' "$out"
     then
         local where=$(grep -o '<line>[0-9]*</line><column>[0-9]*</column>' "$out" | sed 's|<line>\([0-9]*\)</line><column>\([0-9]*\)</column>|line \1 column \2|')
         result=$(printf "FAIL %6.1fs %s syntax error at %s" "$secs" "$src" "$where")
     elif [ $rc != 0 ]
     then
         result=$(printf "FAIL %6.1fs %s xmq exited with %s" "$secs" "$src" "$rc")
-    elif head -c 1000 "$out" | grep -q 'state="ambiguous"'
+    elif [ -z "$PARSER" ] && head -c 1000 "$out" | grep -q 'state="ambiguous"'
     then
         result=$(printf "FAIL %6.1fs %s ambiguous parse" "$secs" "$src")
     else
@@ -100,7 +138,7 @@ parse_one()
     printf "%s%s\n" "$CLEAR" "$result"
 }
 export -f parse_one
-export PROG GRAMMAR OUTPUT SOURCES CLEAR
+export PROG GRAMMAR OUTPUT SOURCES CLEAR PARSER
 
 # Print a single status line on stderr with the number of finished parses
 # and the percentage parsed of each running parse, taken from the last
@@ -132,7 +170,12 @@ show_status()
     done
 }
 
-echo "Parsing $TOTAL preprocessed C files with $GRAMMAR using $JOBS jobs."
+if [ -n "$PARSER" ]
+then
+    echo "Parsing $TOTAL preprocessed C files with the parser generated from $GRAMMAR using $JOBS jobs."
+else
+    echo "Parsing $TOTAL preprocessed C files with $GRAMMAR using $JOBS jobs."
+fi
 
 STATUS_PID=""
 if [ -t 2 ]
