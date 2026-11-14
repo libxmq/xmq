@@ -11,6 +11,9 @@
    Expressions can also be given in a file with -e file (one per line), they are then evaluated
    against every document.
 
+   Documents that declare entities are only evaluated natively: libxml2 xpath sees the parsed
+   entity content (and can loop forever on it), the native dom never expands entities.
+
    This tool links libxml2 and is only used while libxmq moves away from libxml2.
 */
 
@@ -41,7 +44,7 @@ char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap)
 static int verbose_ = 0;
 static long same_ = 0, diff_ = 0, both_fail_ = 0, native_fail_ = 0, libxml_fail_ = 0, files_ = 0, skipped_ = 0;
 static int max_shown_ = 50;
-static long entity_diff_ = 0;
+static long entity_only_native_ = 0; // Expressions on entity documents, only evaluated natively.
 static int has_entities_ = 0; // The current document declares entities: libxml2 expands their content for xpath.
 static double lx_time_ = 0, nx_time_ = 0;
 static long max_size_ = 200000;
@@ -316,6 +319,23 @@ static void test_expr(const char *file, xmlDocPtr doc, xmlNodePtr lctx, XmlDom *
     xmlXPathSetErrorHandler(xc, ignore_error, NULL);
     xc->node = lctx;
     double t0 = now();
+    if (has_entities_)
+    {
+        // libxml2 parses the entity content into nodes that its axes walk into, and
+        // loops forever on some documents (//*/following::* on ent_738805.xml). The
+        // native dom never expands entities: only check the native side (sanitizers).
+        XmlXPathError nerr;
+        XmlXPathResult *nr = xml_xpath_eval(expr, nctx, NULL, &nerr);
+        if (nr)
+        {
+            char *b = nx_describe(nr);
+            free(b);
+            xml_xpath_result_free(nr);
+        }
+        entity_only_native_++;
+        xmlXPathFreeContext(xc);
+        return;
+    }
     xmlXPathObjectPtr o = xmlXPathEval((const xmlChar*)expr, xc);
     double t1 = now();
     XmlXPathError err;
@@ -328,10 +348,6 @@ static void test_expr(const char *file, xmlDocPtr doc, xmlNodePtr lctx, XmlDom *
     if (!o && !r)
     {
         both_fail_++;
-    }
-    else if (!o && has_entities_)
-    {
-        entity_diff_++;
     }
     else if (!o)
     {
@@ -355,13 +371,6 @@ static void test_expr(const char *file, xmlDocPtr doc, xmlNodePtr lctx, XmlDom *
         {
             same_++;
             if (verbose_) printf("OK %s [%s] %s: %.200s\n", file, ctxname, expr, a);
-        }
-        else if (has_entities_)
-        {
-            // libxml2 parses the entity content into nodes (visible to the axes and string values),
-            // the native dom never expands entities implicitly.
-            entity_diff_++;
-            if (verbose_) show("ENTITY DIFF", file, expr, ctxname, a, b);
         }
         else
         {
@@ -500,6 +509,8 @@ static void test_file(const char *file, const char *buf, size_t len)
 
 int main(int argc, char **argv)
 {
+    // Line buffered, so that the progress can be followed in a log file.
+    setvbuf(stdout, NULL, _IOLBF, 0);
     for (int i = 1; i < argc; ++i)
     {
         if (!strcmp(argv[i], "-v")) { verbose_++; continue; }
@@ -516,14 +527,16 @@ int main(int argc, char **argv)
             free(buf);
             continue;
         }
+        long before = same_;
         test_file(argv[i], buf, len);
+        printf("xpath [%d/%d] %s: %ld same\n", i, argc-1, argv[i], same_ - before);
         free(buf);
     }
     for (size_t i = 0; i < num_extra_; ++i) free(extra_exprs_[i]);
     free(extra_exprs_);
     xmlCleanupParser();
-    printf("xml_xpath_diff: %ld files (%ld skipped), %ld same, %ld differ, %ld entity differences, %ld both fail, "
-           "%ld only native fails, %ld only libxml2 fails (libxml2 %.1fs native %.1fs)\n",
-           files_, skipped_, same_, diff_, entity_diff_, both_fail_, native_fail_, libxml_fail_, lx_time_, nx_time_);
+    printf("xml_xpath_diff: %ld files (%ld skipped), %ld same, %ld differ, %ld both fail, "
+           "%ld only native fails, %ld only libxml2 fails, %ld only native (entity documents) (libxml2 %.1fs native %.1fs)\n",
+           files_, skipped_, same_, diff_, both_fail_, native_fail_, libxml_fail_, entity_only_native_, lx_time_, nx_time_);
     return (diff_ || native_fail_ || libxml_fail_) ? 1 : 0;
 }

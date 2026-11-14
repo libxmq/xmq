@@ -175,8 +175,11 @@ static void test_file(const char *file, const char *buf, size_t len, int options
 
 int main(int argc, char **argv)
 {
+    // Line buffered, so that the progress can be followed in a log file.
+    setvbuf(stdout, NULL, _IOLBF, 0);
     for (int i = 1; i < argc; ++i)
     {
+        if (i % 100 == 0) printf("parse [%d/%d] files\n", i, argc-1);
         if (!strcmp(argv[i], "-v")) { verbose_++; continue; }
         if (!strcmp(argv[i], "-x") && i + 1 < argc) { load_expected(argv[++i]); continue; }
         size_t len = 0;

@@ -7,6 +7,8 @@
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 OUT=${1:-$ROOT/build/xml_diff}
 mkdir -p "$OUT"
+# The tools run from the output dir, make the path absolute.
+OUT=$(cd "$OUT" && pwd)
 
 CC=${CC:-gcc}
 # Compare against the libxml2 fork that libxmq releases are built with (3rdparty/fetch_and_build.sh libxml2).

@@ -314,9 +314,12 @@ static int run_fuzz(const char *spec)
 
 int main(int argc, char **argv)
 {
+    // Line buffered, so that the progress can be followed in a log file.
+    setvbuf(stdout, NULL, _IOLBF, 0);
     int files = 0;
     for (int i = 1; i < argc; ++i)
     {
+        if (i % 100 == 0) printf("html [%d/%d] files\n", i, argc-1);
         if (!strcmp(argv[i], "-v")) { verbose_++; continue; }
         if (!strcmp(argv[i], "-x") && i + 1 < argc) { load_expected(argv[++i]); continue; }
         if (!strcmp(argv[i], "-t") && i + 1 < argc) { files += run_tokenizer_tests(argv[++i]); continue; }

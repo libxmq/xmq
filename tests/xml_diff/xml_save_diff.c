@@ -279,9 +279,12 @@ static int test_file(const char *file, int options)
 
 int main(int argc, char **argv)
 {
+    // Line buffered, so that the progress can be followed in a log file.
+    setvbuf(stdout, NULL, _IOLBF, 0);
     int files = 0, skipped = 0, failed = 0;
     for (int i = 1; i < argc; ++i)
     {
+        if (i % 100 == 0) printf("save [%d/%d] files\n", i, argc-1);
         if (!strcmp(argv[i], "-v")) { verbose_ = 1; continue; }
         int f1 = test_file(argv[i], XML_PARSE_NOCDATA | XML_PARSE_NONET);
         if (f1 < 0) { skipped++; continue; }
