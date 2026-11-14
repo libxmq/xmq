@@ -225,7 +225,7 @@ public final class %1$s
     private final StringBuilder text = new StringBuilder(); // Pending text, not yet added to textNode.
     private XmlElement textNode;
     private int failPos;
-    private String failRule, failExpected;
+    private String failRule, failExpected, failMessage;
     // Handed from a left recursive rule to its loop rule: where its content starts.
     private XmlElement lrElem;
     private int lrChildren, lrTextLen, lrAttrs;
@@ -298,6 +298,14 @@ public final class %1$s
             s = next;
             i++;
         }
+    }
+
+    // A dynamic error in the serialization of the tree, eg a duplicate attribute.
+    private boolean failDynamic(String message)
+    {
+        failPos = pos;
+        failMessage = message;
+        return false;
     }
 
     private boolean fail(String rule, String expected)
@@ -554,6 +562,8 @@ public final class %1$s
                     b.append(ind).append("else\n").append(ind).append("{\n");
                     b.append(ind).append("    StringBuilder v = new StringBuilder();\n");
                     b.append(ind).append("    if (!").append(fn).append("(elem, v)) return false;\n");
+                    b.append(ind).append("    if (elem != null && elem.attribute(").append(an).append(") != null) ")
+                     .append("return failDynamic(").append(jstring("dynamic error D01: the attribute " + elementName(t, callee) + " occurs more than once on an element")).append(");\n");
                     b.append(ind).append("    if (elem != null) elem.setAttribute(").append(an).append(", v.toString());\n");
                     b.append(ind).append("}\n");
                 }
@@ -622,7 +632,7 @@ public final class %1$s
             : (c > 0x20 && c < 0x7f && c != 0x27) ? "'" + (char)c + "'"
             : c == ' ' ? "space" : "#" + Integer.toHexString(c);
         String rule = p.failRule != null ? p.failRule : "input";
-        String message = p.failExpected != null
+        String message = p.failMessage != null ? p.failMessage : p.failExpected != null
             ? "expected " + p.failExpected + " in " + rule + ", found " + found
             : "no alternative of " + rule + " matches, found " + found;
         throw new ParseError(message, line, col, p.failPos);

@@ -293,7 +293,15 @@ public final class IXMLAnalyzer {
             Frame f = stack.peek();
             if (f.idx == f.terms.size()) {
                 stack.pop();
-                if (f.kind == '@') nearestElement(stack, into).attr(f.name, f.text.toString());
+                if (f.kind == '@') {
+                    Element target = nearestElement(stack, into);
+                    if (target.attribute(f.name) != null) {
+                        // It is a dynamic error (D01) if an element gets the same attribute twice.
+                        failedAt = offset;
+                        return "dynamic error D01: the attribute " + f.name + " occurs more than once on an element";
+                    }
+                    target.attr(f.name, f.text.toString());
+                }
                 continue;
             }
             Term t = f.terms.get(f.idx++);

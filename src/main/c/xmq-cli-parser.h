@@ -27,6 +27,10 @@
 #ifndef XMQ_ADD_TEXT
 #define XMQ_ADD_TEXT(ctx, node, text, len) xmqAddText((XMQDoc*)(ctx), (XMQNode*)(node), (text), (len))
 #endif
+// An element must not get the same attribute twice (ixml dynamic error D01).
+#ifndef XMQ_HAS_ATTRIBUTE
+#define XMQ_HAS_ATTRIBUTE(ctx, node, name) xmqHasAttribute((XMQNode*)(node), (name))
+#endif
 // Left recursive rules are parsed as loops, the left nested tree is built by
 // marking where the content of the rule starts and wrapping the content since
 // the mark into a new element at each turn of the loop.
@@ -51,6 +55,7 @@ typedef struct xmqcli_Parser
     size_t fail_pos;        // Where the parse failed.
     const char *fail_rule;  // The rule that failed.
     const char *fail_expected;
+    const char *fail_message; // A dynamic error, eg a duplicate attribute.
     void *dyn_ctx;          // The return stack, for the adaptive prediction (if used).
     void *lr_elem;          // Handed from a left recursive rule to its loop rule.
     XMQ_MARK_TYPE lr_mark;
@@ -155,6 +160,14 @@ static bool xmqcli_fail(xmqcli_Parser *p, const char *rule, const char *expected
     p->fail_pos = p->pos;
     p->fail_rule = rule;
     p->fail_expected = expected;
+    return false;
+}
+
+// A dynamic error in the serialization of the tree, eg a duplicate attribute.
+static bool xmqcli_fail_dynamic(xmqcli_Parser *p, const char *message)
+{
+    p->fail_pos = p->pos;
+    p->fail_message = message;
     return false;
 }
 
@@ -7767,6 +7780,11 @@ static bool xmqcli_r5(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         xmqcli_Buf v = {0};
         xmqcli_buf_add(&v, "", 0);
         if (!xmqcli_r22(p, elem, &v)) { free(v.data); return false; }
+        if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
+        {
+            free(v.data);
+            return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+        }
         if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
         free(v.data);
     }
@@ -8125,6 +8143,11 @@ static bool xmqcli_r26(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
             if (!xmqcli_r77(p, elem, &v)) { free(v.data); return false; }
+            if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
+            {
+                free(v.data);
+                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+            }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
@@ -8139,6 +8162,11 @@ static bool xmqcli_r26(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
             if (!xmqcli_r65(p, elem, &v)) { free(v.data); return false; }
+            if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
+            {
+                free(v.data);
+                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+            }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
@@ -8162,6 +8190,11 @@ static bool xmqcli_r26(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
             if (!xmqcli_r63(p, elem, &v)) { free(v.data); return false; }
+            if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
+            {
+                free(v.data);
+                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+            }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
@@ -8194,6 +8227,11 @@ static bool xmqcli_r26(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
             if (!xmqcli_r61(p, elem, &v)) { free(v.data); return false; }
+            if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
+            {
+                free(v.data);
+                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+            }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
@@ -8220,6 +8258,11 @@ static bool xmqcli_r27(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         xmqcli_Buf v = {0};
         xmqcli_buf_add(&v, "", 0);
         if (!xmqcli_r32(p, elem, &v)) { free(v.data); return false; }
+        if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
+        {
+            free(v.data);
+            return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+        }
         if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
         free(v.data);
     }
@@ -8390,6 +8433,11 @@ static bool xmqcli_r39(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
             if (!xmqcli_r51(p, elem, &v)) { free(v.data); return false; }
+            if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
+            {
+                free(v.data);
+                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+            }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
@@ -8404,6 +8452,11 @@ static bool xmqcli_r39(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
             if (!xmqcli_r45(p, elem, &v)) { free(v.data); return false; }
+            if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
+            {
+                free(v.data);
+                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+            }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
@@ -8419,6 +8472,11 @@ static bool xmqcli_r39(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
             if (!xmqcli_r40(p, elem, &v)) { free(v.data); return false; }
+            if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
+            {
+                free(v.data);
+                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+            }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
@@ -8589,6 +8647,11 @@ static bool xmqcli_r48(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         xmqcli_Buf v = {0};
         xmqcli_buf_add(&v, "", 0);
         if (!xmqcli_r49(p, elem, &v)) { free(v.data); return false; }
+        if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "value"))
+        {
+            free(v.data);
+            return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute value occurs more than once on an element");
+        }
         if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "value", v.data, v.len);
         free(v.data);
     }
@@ -10195,6 +10258,11 @@ static bool xmqcli_r107(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
             if (!xmqcli_r51(p, elem, &v)) { free(v.data); return false; }
+            if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
+            {
+                free(v.data);
+                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+            }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
@@ -10209,6 +10277,11 @@ static bool xmqcli_r107(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
             if (!xmqcli_r117(p, elem, &v)) { free(v.data); return false; }
+            if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
+            {
+                free(v.data);
+                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+            }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
@@ -10224,6 +10297,11 @@ static bool xmqcli_r107(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
             if (!xmqcli_r108(p, elem, &v)) { free(v.data); return false; }
+            if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
+            {
+                free(v.data);
+                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+            }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
@@ -10495,6 +10573,11 @@ static bool xmqcli_r121(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         xmqcli_Buf v = {0};
         xmqcli_buf_add(&v, "", 0);
         if (!xmqcli_r49(p, elem, &v)) { free(v.data); return false; }
+        if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "value"))
+        {
+            free(v.data);
+            return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute value occurs more than once on an element");
+        }
         if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "value", v.data, v.len);
         free(v.data);
     }
@@ -10802,7 +10885,9 @@ bool xmqcli_parse(void *ctx, const char *start, const char *stop, xmqcli_Error *
         else if (c > 0x20 && c < 0x7f && c != 0x27) snprintf(found, sizeof(found), "'%c'", c);
         else if (c == ' ') snprintf(found, sizeof(found), "space");
         else snprintf(found, sizeof(found), "#%x", c);
-        if (p.fail_expected)
+        if (p.fail_message)
+            snprintf(error->message, sizeof(error->message), "%s", p.fail_message);
+        else if (p.fail_expected)
             snprintf(error->message, sizeof(error->message), "expected %s in %s, found %s",
                      p.fail_expected, p.fail_rule ? p.fail_rule : "input", found);
         else

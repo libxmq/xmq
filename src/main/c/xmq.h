@@ -866,6 +866,15 @@ XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, cons
 XMQStatus xmqAddText(XMQDoc *doq, XMQNode *parent, const char *text, size_t len);
 
 /**
+    Check if an element has an attribute (without a namespace).
+
+    @node The element.
+    @name The attribute name.
+    @return True if the attribute exists.
+*/
+bool xmqHasAttribute(XMQNode *node, const char *name);
+
+/**
     A position at the end of the current content (children and attributes)
     of a node, used by xmqWrapContent. Treat the members as opaque.
 */

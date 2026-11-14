@@ -7,9 +7,10 @@ b = ['a'-'z']+.
 INPUT
 x abc 12 34 A.,B. q;r
 OUTPUT
-o(v = abc
-  w = 34
-  a = B
-  b = r)
+ixml(ixml:state = failed
+     xmlns:ixml = http://invisiblexml.org/NS)
+{
+    info = 'dynamic error D01: the attribute w occurs more than once on an element'
+}
 END
 ARGS=

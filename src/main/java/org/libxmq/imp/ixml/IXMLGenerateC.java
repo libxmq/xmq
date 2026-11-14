@@ -258,6 +258,10 @@ public final class IXMLGenerateC
 #ifndef XMQ_ADD_TEXT
 #define XMQ_ADD_TEXT(ctx, node, text, len) xmqAddText((XMQDoc*)(ctx), (XMQNode*)(node), (text), (len))
 #endif
+// An element must not get the same attribute twice (ixml dynamic error D01).
+#ifndef XMQ_HAS_ATTRIBUTE
+#define XMQ_HAS_ATTRIBUTE(ctx, node, name) xmqHasAttribute((XMQNode*)(node), (name))
+#endif
 // Left recursive rules are parsed as loops, the left nested tree is built by
 // marking where the content of the rule starts and wrapping the content since
 // the mark into a new element at each turn of the loop.
@@ -284,6 +288,7 @@ typedef struct %1$s_Parser
     size_t fail_pos;        // Where the parse failed.
     const char *fail_rule;  // The rule that failed.
     const char *fail_expected;
+    const char *fail_message; // A dynamic error, eg a duplicate attribute.
     void *dyn_ctx;          // The return stack, for the adaptive prediction (if used).
     void *lr_elem;          // Handed from a left recursive rule to its loop rule.
     XMQ_MARK_TYPE lr_mark;
@@ -388,6 +393,14 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
     p->fail_pos = p->pos;
     p->fail_rule = rule;
     p->fail_expected = expected;
+    return false;
+}
+
+// A dynamic error in the serialization of the tree, eg a duplicate attribute.
+static bool %1$s_fail_dynamic(%1$s_Parser *p, const char *message)
+{
+    p->fail_pos = p->pos;
+    p->fail_message = message;
     return false;
 }
 
@@ -712,6 +725,13 @@ static bool %1$s_fail(%1$s_Parser *p, const char *rule, const char *expected)
                     b.append(ind).append("    ").append(P).append("_Buf v = {0};\n");
                     b.append(ind).append("    ").append(P).append("_buf_add(&v, \"\", 0);\n");
                     b.append(ind).append("    if (!").append(fn).append("(p, elem, &v)) { free(v.data); return false; }\n");
+                    b.append(ind).append("    if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, ").append(an).append("))\n");
+                    b.append(ind).append("    {\n");
+                    b.append(ind).append("        free(v.data);\n");
+                    b.append(ind).append("        return ").append(P).append("_fail_dynamic(p, ")
+                     .append(cstring("dynamic error D01: the attribute " + elementName(t, callee) + " occurs more than once on an element"))
+                     .append(");\n");
+                    b.append(ind).append("    }\n");
                     b.append(ind).append("    if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, ").append(an).append(", v.data, v.len);\n");
                     b.append(ind).append("    free(v.data);\n");
                     b.append(ind).append("}\n");
@@ -834,7 +854,9 @@ bool %1$s_parse(void *ctx, const char *start, const char *stop, %1$s_Error *erro
         else if (c > 0x20 && c < 0x7f && c != 0x27) snprintf(found, sizeof(found), "'%%c'", c);
         else if (c == ' ') snprintf(found, sizeof(found), "space");
         else snprintf(found, sizeof(found), "#%%x", c);
-        if (p.fail_expected)
+        if (p.fail_message)
+            snprintf(error->message, sizeof(error->message), "%%s", p.fail_message);
+        else if (p.fail_expected)
             snprintf(error->message, sizeof(error->message), "expected %%s in %%s, found %%s",
                      p.fail_expected, p.fail_rule ? p.fail_rule : "input", found);
         else
