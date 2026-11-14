@@ -2,7 +2,7 @@ START
  alfa {   '123' }
 IXML
 xmq {
-    element_with_children(name = alfa)
+    element(name = alfa)
     {
         children {
             quote = 123

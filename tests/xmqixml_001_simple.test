@@ -2,10 +2,10 @@ START
 an_element  {   foo }
 IXML
 xmq {
-    element_with_children(name = an_element)
+    element(name = an_element)
     {
         children {
-            element_empty(name = foo)
+            element(name = foo)
         }
     }
 }

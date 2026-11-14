@@ -239,6 +239,11 @@ generate_parsers: build/xmqj
 	mv src/main/java/org/libxmq/imp/XMQCliParser.java.tmp src/main/java/org/libxmq/imp/XMQCliParser.java
 	@echo "Generated src/main/java/org/libxmq/imp/XMQCliParser.java"
 
+# Run the xmq examples of the test suite through library/core/xmq.ixml (ixml
+# engine and generated C parser). Not part of make test until the grammar covers xmq.
+test_xmq_grammar:
+	@for x in $(BUILDDIRS); do ./tests/test_xmq_grammar.sh $${x}release/xmq build/xmqj $${x}release/test_output/xmq_grammar ; done
+
 test_library:
 	./tests/test_library.sh ./xmq build/test_library_output markup-blitz
 	./tests/test_library.sh ./xmq build/test_library_output kaffepot
@@ -344,7 +349,7 @@ import_category:
 	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
 	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
 
-.PHONY: all release debug asan fuzz afl_prepared build_fuzz test test_release test_debug test_parse_myself test_generate_parser generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
+.PHONY: all release debug asan fuzz afl_prepared build_fuzz test test_release test_debug test_parse_myself test_generate_parser test_xmq_grammar generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
 
 pom.xml: pom.xmq jproject.settings
 	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; xmllint --format pom.xml > tmpo; mv tmpo pom.xml; echo "Generated pom.xml" ; fi

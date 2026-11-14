@@ -249,6 +249,11 @@ struct YaepSymbol
     bool derivation_p;
     /* The following is true if it is a nonterminal which may derive the empty string. */
     bool empty_p;
+    /* True if it is a nonterminal that is not empty_p but may derive the empty string
+       if its not operators do not block, e.g. G = 'a' | !'x'. */
+    bool not_empty_p;
+    /* Cycle guard when testing not_empty_p symbols against the input. */
+    bool not_empty_visiting;
 #ifdef USE_CORE_SYMB_HASH_TABLE
     /* The following is used as cache for subsequent search for
        core_symb_to_predcomps with given symb. */

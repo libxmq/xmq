@@ -113,10 +113,12 @@
 // Declarations ///////////////////////////////////////////////////
 
 static bool blocked_by_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule, YaepSymbol *symb, int n, const char *info);
+
 static bool core_has_not_rules(YaepStateSetCore *core);
 static void check_predicted_dotted_rules(YaepParseState *ps, YaepStateSet *set, YaepVect *predictions, int lookahead_term_id, int local_lookahead_level);
 static void check_leading_dotted_rules(YaepParseState *ps, YaepStateSet *set, int lookahead_term_id, int local_lookahead_level);
 static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n);
+static bool nullable_here(YaepParseState *ps, YaepSymbol *symb, int n);
 static int default_read_token(YaepParseRun *ps, void **attr);
 static void error_recovery(YaepParseState *ps, int *start, int *stop);
 static void error_recovery_init(YaepParseState *ps);
@@ -1337,6 +1339,8 @@ static void set_empty_access_derives(YaepParseState *ps)
         YaepSymbol *symb = symb_get(ps, i);
         if (!symb) break;
         symb->empty_p = false;
+        symb->not_empty_p = false;
+        symb->not_empty_visiting = false;
         symb->derivation_p = (symb->is_terminal ? true : false);
         symb->access_p = false;
     }
@@ -1353,6 +1357,7 @@ static void set_empty_access_derives(YaepParseState *ps)
             for (YaepRule *rule = symb->u.nonterminal.rules; rule != NULL; rule = rule->lhs_next)
             {
                 bool empty_p = true;
+                bool not_empty_p = true;
                 bool derivation_p = true;
 
                 if (rule->lhs->is_not_operator)
@@ -1374,7 +1379,13 @@ static void set_empty_access_derives(YaepParseState *ps)
                         empty_p = 0;
                     }
                     empty_p &= rhs_symb->empty_p;
+                    not_empty_p &= rhs_symb->empty_p || rhs_symb->is_not_operator || rhs_symb->not_empty_p;
                     derivation_p &= rhs_symb->derivation_p;
+                }
+                if (not_empty_p && !rule->lhs->is_not_operator && !symb->not_empty_p)
+                {
+                    empty_changed_p = true;
+                    symb->not_empty_p = true;
                 }
                 if (empty_p)
                 {
@@ -1934,6 +1945,13 @@ static void complete_empty_nonterminals_in_rule(YaepParseState *ps,
                 set_add_dotted_rule_with_parent(ps, new_dotted_rule, dotted_rule_parent_id, "complete lookahead ok pre");
             }
         }
+        else if (rule->rhs[j]->not_empty_p && nullable_here(ps, rule->rhs[j], 1-only_nots))
+        {
+            // A nonterminal that derives the empty string through not operators
+            // that do not block here, e.g. G = 'a' | !'x'.
+            YaepDottedRule *new_dotted_rule = create_dotted_rule(ps, rule, j+1, dyn_lookahead_context);
+            set_add_dotted_rule_with_parent(ps, new_dotted_rule, dotted_rule_parent_id, "complete not empty");
+        }
         else
         {
             break;
@@ -1998,7 +2016,8 @@ static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
 {
     assert(symb->repr[0]== '|');
     assert(symb->repr[1]== '!');
-    assert(symb->repr[2]== 'S' || symb->repr[2]== '[');
+    // A string |!S..., a charset |![...] or an exclusion charset |!~[...]
+    assert(symb->repr[2]== 'S' || symb->repr[2]== '[' || symb->repr[2]== '~');
 
     int p = ps->tok_i+n;
 
@@ -2050,6 +2069,28 @@ static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
     bool match = terminal_bitset_test(ps, ys->u.nonterminal.first, next->u.terminal.term_id);
 
     return match;
+}
+
+/* Can the symbol derive the empty string at the current position, given that the
+   not operators it contains are tested against the input n tokens ahead?
+   E.g. G = 'a' | !'x'. can be empty unless the next token is x. */
+static bool nullable_here(YaepParseState *ps, YaepSymbol *symb, int n)
+{
+    if (symb->empty_p) return true;
+    if (symb->is_not_operator) return !has_lookahead(ps, symb, n);
+    if (symb->is_terminal || !symb->not_empty_p || symb->not_empty_visiting) return false;
+    symb->not_empty_visiting = true;
+    bool ok = false;
+    for (YaepRule *r = symb->u.nonterminal.rules; r != NULL && !ok; r = r->lhs_next)
+    {
+        ok = true;
+        for (int j = 0; j < r->rhs_len && ok; j++)
+        {
+            ok = nullable_here(ps, r->rhs[j], n);
+        }
+    }
+    symb->not_empty_visiting = false;
+    return ok;
 }
 
 static bool core_has_not_rules(YaepStateSetCore *c)
@@ -2156,6 +2197,19 @@ static void expand_new_set(YaepParseState *ps)
                     //"complete_lookahead_ok");
                     yaep_trace(ps, "complete lookahead ok");
                     set_add_dotted_rule_no_match_yet(ps, new_dotted_rule, "complete lookahead ok");
+                }
+            }
+            if (!symb->empty_p && symb->not_empty_p && rule_index_in_core >= ps->new_core->num_all_matched_lengths)
+            {
+                int first = ps->new_set->id == 0 ? 0 : 1;
+                if (nullable_here(ps, symb, first))
+                {
+                    YaepDottedRule *new_dotted_rule = create_dotted_rule(ps,
+                                                                         dotted_rule->rule,
+                                                                         dotted_rule->dot_j+1,
+                                                                         0);
+                    yaep_trace(ps, "complete not empty");
+                    set_add_dotted_rule_no_match_yet(ps, new_dotted_rule, "complete not empty");
                 }
             }
         }
@@ -2367,6 +2421,11 @@ void check_leading_dotted_rules(YaepParseState *ps, YaepStateSet *set, int looka
                 {
                     found_not = true;
                     if (blocked_by_lookahead(ps, new_dotted_rule, sym, 1, "lookaheadbanan")) break;
+                }
+                else if (sym->not_empty_p && !sym->empty_p)
+                {
+                    found_not = true;
+                    if (!nullable_here(ps, sym, 1)) break;
                 }
                 else if (!sym->empty_p)
                 {
