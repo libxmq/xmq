@@ -5897,7 +5897,7 @@ void collect_text(YaepTreeNode *n, MemBuffer *mb)
 }
 
 // The first dynamic error found while generating the dom from the yaep tree, eg
-// an attribute that occurs twice on an element (ixml error D01), or NULL.
+// an attribute that occurs twice on an element (ixml error D02), or NULL.
 static char *ixml_dynamic_error_ = NULL;
 
 void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index)
@@ -5952,13 +5952,13 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
                     MemBuffer *mb = new_membuffer();
                     collect_text(n, mb);
                     membuffer_append_null(mb);
-                    // It is a dynamic error (D01) if an element gets the same attribute twice.
+                    // It is a dynamic error (D02) if an element gets the same attribute twice.
                     if (node && xmlHasProp(node, (xmlChar*)an->name))
                     {
                         if (!ixml_dynamic_error_)
                         {
                             char buf[1024];
-                            snprintf(buf, sizeof(buf), "dynamic error D01: the attribute %s occurs more than once on an element", an->name);
+                            snprintf(buf, sizeof(buf), "dynamic error D02: the attribute %s occurs more than once on an element", an->name);
                             ixml_dynamic_error_ = strdup(buf);
                         }
                     }
@@ -6168,7 +6168,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
         ok = true;
         if (ixml_dynamic_error_)
         {
-            // A dynamic error in the serialization, eg a duplicate attribute (D01).
+            // A dynamic error in the serialization, eg a duplicate attribute (D02).
             // The output is a failure document like for a syntax error.
             xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
             if (!(flags & XMQ_FLAG_IXML_FAIL_SILENT))

@@ -27,7 +27,7 @@
 #ifndef XMQ_ADD_TEXT
 #define XMQ_ADD_TEXT(ctx, node, text, len) xmqAddText((XMQDoc*)(ctx), (XMQNode*)(node), (text), (len))
 #endif
-// An element must not get the same attribute twice (ixml dynamic error D01).
+// An element must not get the same attribute twice (ixml dynamic error D02).
 #ifndef XMQ_HAS_ATTRIBUTE
 #define XMQ_HAS_ATTRIBUTE(ctx, node, name) xmqHasAttribute((XMQNode*)(node), (name))
 #endif
@@ -7430,7 +7430,7 @@ static bool xmqcli_eat_help(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
         {
             free(v.data);
-            return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+            return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute name occurs more than once on an element");
         }
         if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
         free(v.data);
@@ -7793,7 +7793,7 @@ static bool xmqcli_eat_command(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
-                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+                return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute name occurs more than once on an element");
             }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
@@ -7812,7 +7812,7 @@ static bool xmqcli_eat_command(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
-                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+                return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute name occurs more than once on an element");
             }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
@@ -7840,7 +7840,7 @@ static bool xmqcli_eat_command(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
-                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+                return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute name occurs more than once on an element");
             }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
@@ -7877,7 +7877,7 @@ static bool xmqcli_eat_command(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
-                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+                return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute name occurs more than once on an element");
             }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
@@ -7908,7 +7908,7 @@ static bool xmqcli_eat_xslcommand(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr
         if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
         {
             free(v.data);
-            return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+            return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute name occurs more than once on an element");
         }
         if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
         free(v.data);
@@ -8083,7 +8083,7 @@ static bool xmqcli_eat_coption(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
-                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+                return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute name occurs more than once on an element");
             }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
@@ -8102,7 +8102,7 @@ static bool xmqcli_eat_coption(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
-                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+                return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute name occurs more than once on an element");
             }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
@@ -8122,7 +8122,7 @@ static bool xmqcli_eat_coption(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
-                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+                return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute name occurs more than once on an element");
             }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
@@ -8297,7 +8297,7 @@ static bool xmqcli_eat_82(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "value"))
         {
             free(v.data);
-            return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute value occurs more than once on an element");
+            return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute value occurs more than once on an element");
         }
         if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "value", v.data, v.len);
         free(v.data);
@@ -9908,7 +9908,7 @@ static bool xmqcli_eat_option(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
-                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+                return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute name occurs more than once on an element");
             }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
@@ -9927,7 +9927,7 @@ static bool xmqcli_eat_option(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
-                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+                return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute name occurs more than once on an element");
             }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
@@ -9947,7 +9947,7 @@ static bool xmqcli_eat_option(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
-                return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute name occurs more than once on an element");
+                return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute name occurs more than once on an element");
             }
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
@@ -10223,7 +10223,7 @@ static bool xmqcli_eat_11(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "value"))
         {
             free(v.data);
-            return xmqcli_fail_dynamic(p, "dynamic error D01: the attribute value occurs more than once on an element");
+            return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute value occurs more than once on an element");
         }
         if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "value", v.data, v.len);
         free(v.data);

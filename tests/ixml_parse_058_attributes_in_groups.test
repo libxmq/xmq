@@ -10,7 +10,7 @@ OUTPUT
 ixml(ixml:state = failed
      xmlns:ixml = http://invisiblexml.org/NS)
 {
-    info = 'dynamic error D01: the attribute w occurs more than once on an element'
+    info = 'dynamic error D02: the attribute w occurs more than once on an element'
 }
 END
 ARGS=

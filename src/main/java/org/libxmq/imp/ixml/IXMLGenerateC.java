@@ -290,7 +290,7 @@ public final class IXMLGenerateC
 #ifndef XMQ_ADD_TEXT
 #define XMQ_ADD_TEXT(ctx, node, text, len) xmqAddText((XMQDoc*)(ctx), (XMQNode*)(node), (text), (len))
 #endif
-// An element must not get the same attribute twice (ixml dynamic error D01).
+// An element must not get the same attribute twice (ixml dynamic error D02).
 #ifndef XMQ_HAS_ATTRIBUTE
 #define XMQ_HAS_ATTRIBUTE(ctx, node, name) xmqHasAttribute((XMQNode*)(node), (name))
 #endif
@@ -761,7 +761,7 @@ static bool %1$s_fail_dynamic(%1$s_Parser *p, const char *message)
                     b.append(ind).append("    {\n");
                     b.append(ind).append("        free(v.data);\n");
                     b.append(ind).append("        return ").append(P).append("_fail_dynamic(p, ")
-                     .append(cstring("dynamic error D01: the attribute " + elementName(t, callee) + " occurs more than once on an element"))
+                     .append(cstring("dynamic error D02: the attribute " + elementName(t, callee) + " occurs more than once on an element"))
                      .append(");\n");
                     b.append(ind).append("    }\n");
                     b.append(ind).append("    if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, ").append(an).append(", v.data, v.len);\n");

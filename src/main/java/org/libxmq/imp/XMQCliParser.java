@@ -539,7 +539,7 @@ public final class XMQCliParser
         {
             StringBuilder v = new StringBuilder();
             if (!eat_helpname(elem, v)) return false;
-            if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
+            if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D02: the attribute name occurs more than once on an element");
             if (elem != null) elem.setAttribute("name", v.toString());
         }
         if (!eat_38(elem, attr)) return false; // /38
@@ -890,7 +890,7 @@ public final class XMQCliParser
             {
                 StringBuilder v = new StringBuilder();
                 if (!eat_name0(elem, v)) return false;
-                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
+                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D02: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
             if (!eat_copts(elem, attr)) return false; // copts
@@ -903,7 +903,7 @@ public final class XMQCliParser
             {
                 StringBuilder v = new StringBuilder();
                 if (!eat_name1(elem, v)) return false;
-                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
+                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D02: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
             if (!eat_copts(elem, attr)) return false; // copts
@@ -920,7 +920,7 @@ public final class XMQCliParser
             {
                 StringBuilder v = new StringBuilder();
                 if (!eat_name2(elem, v)) return false;
-                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
+                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D02: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
             if (!eat_copts(elem, attr)) return false; // copts
@@ -941,7 +941,7 @@ public final class XMQCliParser
             {
                 StringBuilder v = new StringBuilder();
                 if (!eat_load(elem, v)) return false;
-                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
+                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D02: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
             if (!eat_copts(elem, attr)) return false; // copts
@@ -966,7 +966,7 @@ public final class XMQCliParser
         {
             StringBuilder v = new StringBuilder();
             if (!eat_xsl(elem, v)) return false;
-            if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
+            if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D02: the attribute name occurs more than once on an element");
             if (elem != null) elem.setAttribute("name", v.toString());
         }
         if (!inset(S17, A17, peek(pos))) return fail("xslcommand", "':'");
@@ -1124,7 +1124,7 @@ public final class XMQCliParser
             {
                 StringBuilder v = new StringBuilder();
                 if (!eat_name(elem, v)) return false;
-                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
+                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D02: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
             if (!eat_83(elem, attr)) return false; // /83
@@ -1137,7 +1137,7 @@ public final class XMQCliParser
             {
                 StringBuilder v = new StringBuilder();
                 if (!eat_cshort(elem, v)) return false;
-                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
+                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D02: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
             return true;
@@ -1151,7 +1151,7 @@ public final class XMQCliParser
             {
                 StringBuilder v = new StringBuilder();
                 if (!eat_cother(elem, v)) return false;
-                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
+                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D02: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
             return true;
@@ -1324,7 +1324,7 @@ public final class XMQCliParser
         {
             StringBuilder v = new StringBuilder();
             if (!eat_optvalue(elem, v)) return false;
-            if (elem != null && elem.attribute("value") != null) return failDynamic("dynamic error D01: the attribute value occurs more than once on an element");
+            if (elem != null && elem.attribute("value") != null) return failDynamic("dynamic error D02: the attribute value occurs more than once on an element");
             if (elem != null) elem.setAttribute("value", v.toString());
         }
         return true;
@@ -2925,7 +2925,7 @@ public final class XMQCliParser
             {
                 StringBuilder v = new StringBuilder();
                 if (!eat_name(elem, v)) return false;
-                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
+                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D02: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
             if (!eat_12(elem, attr)) return false; // /12
@@ -2938,7 +2938,7 @@ public final class XMQCliParser
             {
                 StringBuilder v = new StringBuilder();
                 if (!eat_gshort(elem, v)) return false;
-                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
+                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D02: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
             return true;
@@ -2952,7 +2952,7 @@ public final class XMQCliParser
             {
                 StringBuilder v = new StringBuilder();
                 if (!eat_gother(elem, v)) return false;
-                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
+                if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D02: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
             return true;
@@ -3230,7 +3230,7 @@ public final class XMQCliParser
         {
             StringBuilder v = new StringBuilder();
             if (!eat_optvalue(elem, v)) return false;
-            if (elem != null && elem.attribute("value") != null) return failDynamic("dynamic error D01: the attribute value occurs more than once on an element");
+            if (elem != null && elem.attribute("value") != null) return failDynamic("dynamic error D02: the attribute value occurs more than once on an element");
             if (elem != null) elem.setAttribute("value", v.toString());
         }
         return true;

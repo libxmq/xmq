@@ -595,7 +595,7 @@ public final class %1$s
                     b.append(ind).append("    StringBuilder v = new StringBuilder();\n");
                     b.append(ind).append("    if (!").append(fn).append("(elem, v)) return false;\n");
                     b.append(ind).append("    if (elem != null && elem.attribute(").append(an).append(") != null) ")
-                     .append("return failDynamic(").append(jstring("dynamic error D01: the attribute " + elementName(t, callee) + " occurs more than once on an element")).append(");\n");
+                     .append("return failDynamic(").append(jstring("dynamic error D02: the attribute " + elementName(t, callee) + " occurs more than once on an element")).append(");\n");
                     b.append(ind).append("    if (elem != null) elem.setAttribute(").append(an).append(", v.toString());\n");
                     b.append(ind).append("}\n");
                 }

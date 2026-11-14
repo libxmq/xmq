@@ -296,9 +296,9 @@ public final class IXMLAnalyzer {
                 if (f.kind == '@') {
                     Element target = nearestElement(stack, into);
                     if (target.attribute(f.name) != null) {
-                        // It is a dynamic error (D01) if an element gets the same attribute twice.
+                        // It is a dynamic error (D02) if an element gets the same attribute twice.
                         failedAt = offset;
-                        return "dynamic error D01: the attribute " + f.name + " occurs more than once on an element";
+                        return "dynamic error D02: the attribute " + f.name + " occurs more than once on an element";
                     }
                     target.attr(f.name, f.text.toString());
                 }
