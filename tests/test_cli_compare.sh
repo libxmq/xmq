@@ -110,6 +110,16 @@ cmp1 "$O/r.xmq" render-html --onlystyle
 cmp1 "$O/r.xmq" render-tex
 cmp1 "$O/r.xmq" render-tex --bg=dark --theme=EK=#123456_U
 
+# tokenize prints every token wrapped in the theme strings of its color.
+cmp1 "$O/r.xmq" tokenize
+cmp1 "$O/r.xmq" tokenize --type=terminal
+cmp1 "$O/r.xmq" tokenize --type=html
+cmp1 "$O/r.xmq" tokenize --type=tex
+cmp1 "$O/r.xmq" tokenize --type=debugtokens
+cmp1 "$O/r.xmq" tokenize --type=debugcontent
+cmp1 "$O/d.html" tokenize --type=html
+cmp1 -i 'a = (' tokenize --type=tex
+
 if [ "$f" = "0" ]
 then
     echo "OK: cli compare xmq xmqj ($n cases)"

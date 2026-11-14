@@ -66,6 +66,12 @@ then
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 fi
 
+if [ -z "$FILTER" ] || [[ "tokenize" =~ $FILTER ]]
+then
+    tests/test_special_011_tokenize.sh "$PROG" "$OUTPUT"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+fi
+
 for i in tests/backforth_???_*.test
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi

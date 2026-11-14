@@ -328,6 +328,9 @@ public abstract class XMQParser extends XMQParseCallbacks
 
     int findNLBackwards(int i, int max)
     {
+        // An error at the end of the buffer starts looking at the last char.
+        if (i >= buffer_len_) i = buffer_len_ - 1;
+        if (i < 0) return 0;
         while (max > 0 && i > 0 && buffer_.charAt(i) != '\n') { i--; max--; }
         if (buffer_.charAt(i) == '\n') i++;
         return i;
@@ -548,13 +551,14 @@ public abstract class XMQParser extends XMQParseCallbacks
         if (c != ')')
         {
             error_nr_ = ParseErrorCode.XMQ_ERROR_COMPOUND_NOT_CLOSED;
+            // Like C, the error is reported where the compound should have been closed.
             throw new XMQRuntimeException(
                 new ParseException(error_nr_,
                                    buffer_.substring(
-                                       findNLBackwards(last_compound_start_, 200),
-                                       findNL(last_compound_start_, 200)),
-                                   last_compound_start_line_,
-                                   last_compound_start_col_,
+                                       findNLBackwards(i_, 200),
+                                       findNL(i_, 200)),
+                                   line_,
+                                   col_,
                                    source_));
         }
 

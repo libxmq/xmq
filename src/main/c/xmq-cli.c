@@ -2175,6 +2175,8 @@ bool cmd_tokenize(XMQCliCommand *command)
     XMQParseState *state = xmqNewParseState(callbacks, output_settings);
     if (command->in_is_content)
     {
+        // Name the source in error messages like cmd_load does.
+        xmqSetStateSourceName(state, "-i argument");
         xmqTokenizeBuffer(state, command->in, NULL);
     }
     else
@@ -3586,6 +3588,8 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
         return;
     case XMQ_CLI_CMD_TOKENIZE:
         c->in = load_command->in;
+        // With -i the input is the content to tokenize, not a file name.
+        c->in_is_content = load_command->in_is_content;
         // Overwrite load command, do not load before tokenize.
         load_command->cmd = XMQ_CLI_CMD_NONE;
         return;

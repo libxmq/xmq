@@ -95,6 +95,14 @@ class XMQParseIntoTokens extends XMQParser
         if (debug_tokens_)
         System.out.print("[element_value_compound_quote "+
                          Util.xmq_quote_as_c(buffer_, start, stop, true)+" "+start_line+":"+start_col+"]");
+        if (debug_content_)
+        {
+            // Like C debug_content_quote, also used for compound quotes.
+            var p = UtilParseQuote.findQuoteStartStop(buffer_, start, stop);
+            String q = UtilParseQuote.trimQuote(buffer_, p.left(), p.right());
+            System.out.print("{quote "+
+                             Util.xmq_quote_as_c(q, 0, q.length(), true)+"}");
+        }
     }
 
     protected void do_attr_value_quote(int start_line, int start_col, int start, int stop, int stop_suffix)
@@ -183,9 +191,9 @@ class XMQParseIntoTokens extends XMQParser
         if (debug_content_)
         {
             // First remove the surrouning ' or ".
-            var p = UtilParseQuote.findCommentStartStop(buffer_, start, stop);
-            // Then remove incidental whitespace.
-            String q = UtilParseQuote.trimQuote(buffer_, p.left(), p.right());
+            // Like C debug_content_comment, xmq_un_comment removes the comment
+            // markers and the incidental whitespace.
+            String q = xmq_un_comment(start, stop);
 
             System.out.print("{comment "+
                              Util.xmq_quote_as_c(q, 0, q.length(), true)+"}");
@@ -203,9 +211,9 @@ class XMQParseIntoTokens extends XMQParser
         if (debug_content_)
         {
             // First remove the surrouning ' or ".
-            var p = UtilParseQuote.findCommentStartStop(buffer_, start, stop);
-            // Then remove incidental whitespace.
-            String q = UtilParseQuote.trimQuote(buffer_, p.left(), p.right());
+            // Like C debug_content_comment, xmq_un_comment removes the comment
+            // markers and the incidental whitespace.
+            String q = xmq_un_comment(start, stop);
 
             System.out.print("{comment_continuation "+
                              Util.xmq_quote_as_c(q, 0, q.length(), true)+"}");

@@ -394,6 +394,15 @@ final class Cli
     {
         String source = in == null || (!inIsContent && in.equals("-")) ? "stdin" : inIsContent ? "-i argument" : in;
         loadedContent = content;
+        // Like C, tokenize works on the content and nothing is loaded before it.
+        for (Command c : commands)
+        {
+            if (c.name.equals("tokenize"))
+            {
+                tokenize(content, source, c);
+                return;
+            }
+        }
         XmlDocument doc = load(content, source, ixml);
         if (doc == null) throw new Exit(1);
         String output = null;
@@ -730,19 +739,99 @@ final class Cli
 
     void tokenize(String content, String source, Command c) throws Exit
     {
+        if (!isXmqContent(content))
+        {
+            // Like C xmqTokenizeFile and xmqTokenizeBuffer.
+            System.err.println(inIsContent ? "xmq: you can only tokenize the xmq format" : "You can only tokenize xmq!");
+            throw new Exit(1);
+        }
+        String type = c.tokenizeType;
+        if (type == null || type.equals("terminal") || type.equals("html") || type.equals("tex"))
+        {
+            colorTokens(content, source, c);
+            return;
+        }
         XMQParseIntoTokens t = new XMQParseIntoTokens();
         if ("debugtokens".equals(c.tokenizeType)) t.debugTokens();
         else if ("debugcontent".equals(c.tokenizeType)) t.debugContent();
+        // The debug tokens are printed while parsing. Like C, which buffers the
+        // output, nothing is printed when the parse fails.
+        java.io.PrintStream stdout = System.out;
+        java.io.ByteArrayOutputStream buf = new java.io.ByteArrayOutputStream();
+        System.setOut(new java.io.PrintStream(buf, true, StandardCharsets.UTF_8));
         try
         {
             t.parse(content, source);
         }
         catch (ParseException e)
         {
-            System.err.print(XMQ.printException(e));
+            System.setOut(stdout);
+            // Like C cmd_tokenize the message is not followed by an empty line.
+            System.err.print(tokenizeError(e));
             throw new Exit(1);
         }
+        finally
+        {
+            System.setOut(stdout);
+        }
+        System.out.print(buf.toString(StandardCharsets.UTF_8));
         System.out.println("");
+    }
+
+    /** The parse error of a tokenize, like C cmd_tokenize without the empty line after it. */
+    static String tokenizeError(ParseException e)
+    {
+        String m = XMQ.printException(e);
+        return m.endsWith("\n\n") ? m.substring(0, m.length() - 1) : m;
+    }
+
+    /** Like C xmqDetectContentType: neither xml/html (starts with <) nor json. */
+    static boolean isXmqContent(String content)
+    {
+        if (content.startsWith("\uFEFF")) content = content.substring(1);
+        int i = 0;
+        while (i < content.length() && " \t\n\r".indexOf(content.charAt(i)) >= 0) i++;
+        if (i < content.length() && content.charAt(i) == '<') return false;
+        return !Main.is_json(content, i);
+    }
+
+    /**
+     * Mirrors the C cmd_tokenize for no --type and --type=terminal/html/tex:
+     * every token is printed wrapped in the theme strings of its color.
+     * Like C, --type=terminal colors even when the output is not a terminal,
+     * and the XMQ_THEME is only used when the output is a terminal.
+     */
+    void colorTokens(String content, String source, Command c) throws Exit
+    {
+        XMQPrintState.RenderTo to = XMQPrintState.RenderTo.TERMINAL;
+        if ("html".equals(c.tokenizeType)) to = XMQPrintState.RenderTo.HTML;
+        if ("tex".equals(c.tokenizeType)) to = XMQPrintState.RenderTo.TEX;
+        if ("terminal".equals(c.tokenizeType)) c.useColor = true;
+        c.themeSpec = envUseColor ? System.getenv("XMQ_THEME") : null;
+        XMQPrintState ps = new XMQPrintState();
+        setupRender(ps, c, to);
+        XMQParseIntoColoredTokens t = new XMQParseIntoColoredTokens(ps.theme, to);
+        XMQThemeStrings content_strings = ps.theme.content;
+        if (content_strings != null && content_strings.pre() != null) t.out.append(content_strings.pre());
+        try
+        {
+            t.parse(content, source);
+        }
+        catch (ParseException e)
+        {
+            // Like C cmd_tokenize the message is not followed by an empty line.
+            System.err.print(tokenizeError(e));
+            throw new Exit(1);
+        }
+        if (content_strings != null && content_strings.post() != null) t.out.append(content_strings.post());
+        if (t.out.isEmpty())
+        {
+            // Like C, where an empty tokenize output is no output at all.
+            System.err.println("xmq: no output found, please add a to/render/tokenize command");
+            throw new Exit(1);
+        }
+        System.out.print(t.out);
+        System.out.flush();
     }
 
     // The output of a to/render command.
