@@ -1,0 +1,16 @@
+START
+s = (text | -' ' | paren)+.
+text = safe+, !safe.
+paren = ['()'].
+-safe = ~[' '; '('; ')'].
+INPUT
+ab (c) d
+OUTPUT
+s {
+    text  = ab
+    paren = '('
+    text  = c
+    paren = ')'
+    text  = d
+}
+END

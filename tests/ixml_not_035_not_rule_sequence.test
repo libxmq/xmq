@@ -1,0 +1,34 @@
+START
+{ The dangling else binds to the closest if, the no else alternative cannot
+  be followed by the keyword else, but elsewhere is an identifier. }
+stmts = stmt+.
+stmt = if | call.
+if = -'if ', cond, stmt, (-'else ', stmt | !kw_else).
+-kw_else = 'else', ~['a'-'z'].
+cond = ['a'-'z']+, -' '.
+call = !kw_else, ['a'-'z']+, -';'.
+INPUT
+if a if b x;else y;elsewhere;
+OUTPUT
+stmts {
+    stmt {
+        if {
+            cond = a
+            stmt {
+                if {
+                    cond = b
+                    stmt {
+                        call = x
+                    }
+                    stmt {
+                        call = y
+                    }
+                }
+            }
+        }
+    }
+    stmt {
+        call = elsewhere
+    }
+}
+END

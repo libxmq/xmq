@@ -1,0 +1,35 @@
+crontab {
+    comment = ' m h dom mon dow command'
+    variable {
+        name  = SHELL
+        value = /bin/sh
+    }
+    variable {
+        name  = MAILTO
+        value = root
+    }
+    line {
+        minute        = 5
+        hour          = *
+        day_of_month  = *
+        month_of_year = *
+        day_of_week   = *
+        command       = '/usr/bin/check --quiet	'
+    }
+    line {
+        minute        = 30
+        hour          = 2
+        day_of_month  = 1
+        month_of_year = Jan
+        day_of_week   = *
+        command       = backup.sh
+    }
+    line {
+        minute        = 0
+        hour          = 12
+        day_of_month  = *
+        month_of_year = *
+        day_of_week   = 1
+        command       = 'echo "monday"'
+    }
+}

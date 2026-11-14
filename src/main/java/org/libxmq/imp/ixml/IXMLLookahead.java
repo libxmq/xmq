@@ -452,14 +452,27 @@ final class IXMLLookahead {
     /**
      * Build the lookahead DFA for the decision in rule. Like ANTLR, the fast
      * SLL analysis (unknown context, all call sites follow a rule) is tried
-     * first. It is correct when it finds no conflict. Only when it reports an
-     * ambiguity, which can be caused by merging unrelated call sites, the
-     * decision is analyzed again with the full LL contexts of the rule.
+     * first. It is correct when it finds no conflict. When it reports an
+     * ambiguity, which can be caused by merging unrelated call sites, or
+     * needs too much work, the decision is analyzed again with the full LL
+     * contexts of the rule.
      */
     Dfa build(String rule) throws Failure {
         try {
             return build(rule, Set.of(UNKNOWN));
         } catch (Failure f) {
+            if (f.code.equals("too-large")) {
+                // The unknown context follows every call site of a rule that
+                // ends a tail call, which can explode, eg the exit of a loop
+                // at the end of a rule called in many places. The full
+                // contexts are precise and often cheap, try them before
+                // giving up.
+                try {
+                    return build(rule, contexts(index.get(rule)));
+                } catch (Failure g) {
+                    throw f;
+                }
+            }
             if (!f.code.equals("ambiguous") && !f.code.equals("context-limit")) throw f;
             return build(rule, contexts(index.get(rule)));
         }
@@ -486,6 +499,7 @@ final class IXMLLookahead {
         for (int a = 0; a < alts[ri].length; a++)
             for (Stack st : ctx) seeds.add(new Config(ri, a, 0, a, st));
         Map<Set<Config>, State> known = new HashMap<>();
+        Map<Integer, Set<Config>> decided = new HashMap<>();
         Deque<Map.Entry<Set<Config>, State>> todo = new ArrayDeque<>();
         Set<Config> s0 = closure(seeds);
         State st0 = newState(dfa, known, todo, s0, null, 0);
@@ -561,7 +575,19 @@ final class IXMLLookahead {
                             Config m = advance(cs[ci], lo);
                             if (m != null) moved.add(m);
                         }
-                    target = closure(moved);
+                    // If every configuration that moves predicts the same
+                    // alternative, the target state predicts it, its closure
+                    // is not needed. This keeps eg an LL(1) loop exit cheap
+                    // even when the follow context is huge. One set per
+                    // alternative, so that the ranges share the state.
+                    int only = moved.isEmpty() ? -1 : moved.get(0).predicted;
+                    for (Config m : moved) if (m.predicted != only) { only = -1; break; }
+                    if (only >= 0) {
+                        target = decided.get(only);
+                        if (target == null) { target = new LinkedHashSet<>(moved); decided.put(only, target); }
+                    } else {
+                        target = closure(moved);
+                    }
                     closures.put(signature, target);
                     work += target.size();
                     if (work > WORK_LIMIT)

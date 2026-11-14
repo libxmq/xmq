@@ -1,4 +1,4 @@
-{ v1.0.0 Parse the declarative Nix configuration subset. Fredrik Öhrström (c) 2026 spdx: MIT }
+{ v1.0.1 Parse the declarative Nix configuration subset. Fredrik Öhrström (c) 2026 spdx: MIT }
 
 nix = ws, (module | set), ws.
 module = parameters, ws, -':', ws, expression.
@@ -25,5 +25,5 @@ path = ('.' | '..')?, '/', pathchar+, ('/', pathchar+)*.
 -ws = (space | comment)*.
 -s = (space | comment)+.
 -space = -[' '; #9; #a; #d].
-comment = -'#', ~[#a; #d]*, (-#d, -#a? | -#a)
+comment = -'#', ~[#a; #d]*, (-#d, -#a | -#d, !#a | -#a)
         | -'/*', (~['*'] | '*'+, ~['*'; '/'])*, '*'*, -'*/'.

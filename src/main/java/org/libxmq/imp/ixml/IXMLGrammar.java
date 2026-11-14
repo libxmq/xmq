@@ -39,6 +39,8 @@ public final class IXMLGrammar {
         // A negative lookahead !'abc' or ![set]: the following input must not
         // start with a code point sequence matching these sets in order.
         List<BitSet> not;
+        // A negative lookahead !name, resolved into not after the grammar is read.
+        String notRef;
         static Term call(String ref) { Term t = new Term(); t.ref = ref; return t; }
         static Term match(BitSet chars) { Term t = new Term(); t.chars = chars; return t; }
     }
@@ -166,6 +168,57 @@ public final class IXMLGrammar {
         if (start == null) throw error("expected rule");
         for (Rule r : rules.values()) for (List<Term> a : r.alternatives) for (Term t : a)
             if (t.ref != null && !rules.containsKey(t.ref)) throw error("undefined rule: " + t.ref);
+        for (Rule r : rules.values()) for (List<Term> a : r.alternatives) {
+            for (int i = 0; i < a.size(); i++) {
+                Term t = a.get(i);
+                if (t.notRef == null) continue;
+                if (!rules.containsKey(t.notRef)) throw error("the rule " + t.notRef + " after not ! is not defined");
+                List<List<BitSet>> seqs = notSequences(t.notRef, 0);
+                if (seqs == null) throw error("the rule " + t.notRef + " after not ! must match fixed sequences of" +
+                                              " characters (no repetitions, options or empty alternatives)");
+                // !(x | y) is !x, !y: one negative lookahead per alternative.
+                t.not.addAll(seqs.get(0));
+                for (int k = 1; k < seqs.size(); k++) {
+                    Term n = new Term(); n.not = new ArrayList<>(seqs.get(k));
+                    a.add(++i, n);
+                }
+            }
+        }
+    }
+    /** What a rule after not ! matches, like not_rule_kind in ixml.c: each
+     * alternative is a fixed sequence of characters (single characters,
+     * strings, charsets or calls of such rules). Returns the character sets
+     * of each alternative, alternatives of one character merged into one, or
+     * null. */
+    private List<List<BitSet>> notSequences(String name, int depth) {
+        Rule r = rules.get(name);
+        if (r == null || depth > 64 || r.alternatives.isEmpty()) return null;
+        List<List<BitSet>> result = new ArrayList<>();
+        BitSet single = null;
+        for (List<Term> alt : r.alternatives) {
+            List<List<BitSet>> seqs = new ArrayList<>();
+            seqs.add(new ArrayList<>());
+            for (Term t : alt) {
+                List<List<BitSet>> parts;
+                if (t.chars != null) parts = List.of(List.of(t.chars));
+                else if (t.ref != null) parts = notSequences(t.ref, depth + 1);
+                else return null;
+                if (parts == null) return null;
+                // A call of a rule with several alternatives is only allowed
+                // when they are single characters (merged into one set).
+                if (parts.size() != 1) return null;
+                for (List<BitSet> s : seqs) s.addAll(parts.get(0));
+            }
+            List<BitSet> seq = seqs.get(0);
+            if (seq.isEmpty()) return null;
+            if (seq.size() == 1) {
+                if (single == null) { single = new BitSet(); result.add(List.of(single)); }
+                single.or(seq.get(0));
+            } else {
+                result.add(seq);
+            }
+        }
+        return result;
     }
     private String mark() {
         int c = peek();
@@ -252,6 +305,7 @@ public final class IXMLGrammar {
             Term t = new Term();
             t.not = new ArrayList<>();
             if (peek() == '[' || peek() == '~') t.not.add(charset());
+            else if (nameStart(peek())) t.notRef = name();
             else literal().codePoints().forEach(cp -> { BitSet b = new BitSet(); b.set(cp); t.not.add(b); });
             whitespace(); return t;
         }

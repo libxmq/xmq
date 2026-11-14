@@ -11812,6 +11812,8 @@ void membuffer_prefix_lines(MemBuffer *mb, const char *prefix)
 void add_insertion_rule(XMQParseState *state, const char *content);
 void add_not_rule_string(XMQParseState *state, const char *content);
 void add_not_rule_charset(XMQParseState *state, IXMLNonTerminal *nt);
+void add_not_rule_nonterminal(XMQParseState *state, const char *rule_name);
+void check_not_rule_nonterminals(XMQParseState *state);
 void add_single_char_rule(XMQParseState *state, IXMLNonTerminal *nt, int uc, char mark, char tmark);
 
 bool is_ixml_eob(XMQParseState *state);
@@ -12842,10 +12844,22 @@ void parse_ixml_not(XMQParseState *state)
         IXMLNonTerminal *nt = parse_ixml_charset(state, &tmark);
         add_not_rule_charset(state, nt);
     }
+    else if (is_ixml_name_start(*(state->i)))
+    {
+        // !name where the rule name matches one character, eg
+        // -namechar = ['a'-'z'; '0'-'9'], or alternatives of fixed sequences
+        // of characters, eg -kw = 'if', ~[L] | 'else', ~[L].
+        // Checked when the grammar is read.
+        const char *name_start, *name_stop;
+        parse_ixml_name(state, &name_start, &name_stop);
+        char *name = strndup(name_start, name_stop-name_start);
+        add_not_rule_nonterminal(state, name);
+        free(name);
+    }
     else
     {
         state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
-        state->error_info = "expected string or encoded character after insertion +";
+        state->error_info = "expected string, encoded character, charset or rule name after not !";
         longjmp(state->error_handler, 1);
     }
 
@@ -13442,6 +13456,7 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
             state->error_info = "failed to parse whole buffer";
             longjmp(state->error_handler, 1);
         }
+        check_not_rule_nonterminals(state);
     }
     else
     {
@@ -13686,6 +13701,118 @@ void add_not_rule_charset(XMQParseState *state, IXMLNonTerminal *cs)
     add_yaep_nonterminal(state, nt);
     add_yaep_term_to_rule(state, 0, NULL, nt);
     hashmap_put(state->ixml_non_terminals_map, name, nt);
+}
+
+void add_not_rule_nonterminal(XMQParseState *state, const char *rule_name)
+{
+    // Generate a name like |!Nnamechar
+    char *name = (char*)malloc(strlen(rule_name)+4);
+    name[0] = '|';
+    name[1] = '!';
+    name[2] = 'N';
+    strcpy(name+3, rule_name);
+
+    IXMLNonTerminal *nt = (IXMLNonTerminal*)hashmap_get(state->ixml_non_terminals_map, name);
+    if (nt) {
+        free(name);
+        add_yaep_term_to_rule(state, 0, NULL, nt);
+        return;
+    }
+
+    IXMLRule *rule = new_ixml_rule();
+    rule->rule_name->name = name;
+    rule->mark = ' ';
+    vector_push_back(state->ixml_rules, rule);
+
+    nt = copy_ixml_nonterminal(rule->rule_name);
+    add_yaep_nonterminal(state, nt);
+    add_yaep_term_to_rule(state, 0, NULL, nt);
+    hashmap_put(state->ixml_non_terminals_map, name, nt);
+}
+
+static int not_rule_kind(XMQParseState *state, const char *name, int depth);
+
+/** A grammar rule or a generated rule |12 (eg a string or a group), but not
+    a not |!... or insertion |+... rule. */
+static bool is_callable_rule_name(const char *name)
+{
+    return name[0] != '|' || (name[1] >= '0' && name[1] <= '9');
+}
+
+/** Is the term a single character: a character, a charset or a call of a
+    rule that matches one character? */
+static bool is_single_char_term(XMQParseState *state, IXMLTerm *t, int depth)
+{
+    if (t->type == IXML_TERMINAL || t->type == IXML_CHARSET) return true;
+    if (t->nt && t->nt->charset) return true;
+    return t->nt && is_callable_rule_name(t->nt->name) && not_rule_kind(state, t->nt->name, depth+1) == 1;
+}
+
+/** What a rule after not ! matches: 1 if exactly one character (every
+    alternative a single character, charset or call of such a rule), 2 if a
+    single alternative that is a fixed sequence of characters (single
+    characters, strings, charsets or calls of rules of kind 1 or 2), 3 if
+    several alternatives that are such sequences, 0 otherwise. Kind 3 is only
+    allowed directly after the !, since the engine does not backtrack into the
+    alternatives of a call inside a sequence. */
+static int not_rule_kind(XMQParseState *state, const char *name, int depth)
+{
+    if (depth > 64) return 0; // A cycle.
+    int alts = 0;
+    bool all_single = true;
+    for (size_t i = 0; i < state->ixml_rules->size; ++i)
+    {
+        IXMLRule *r = (IXMLRule*)vector_element_at(state->ixml_rules, i);
+        if (strcmp(r->rule_name->name, name)) continue;
+        alts++;
+        size_t n = r->rhs_terms->size;
+        if (n == 0) return 0;
+        for (size_t t = 0; t < n; ++t)
+        {
+            IXMLTerm *term = (IXMLTerm*)vector_element_at(r->rhs_terms, t);
+            if (is_single_char_term(state, term, depth)) continue;
+            if (term->nt && is_callable_rule_name(term->nt->name))
+            {
+                int k = not_rule_kind(state, term->nt->name, depth+1);
+                if (k == 1 || k == 2) { all_single = false; continue; }
+            }
+            return 0;
+        }
+        if (n > 1) all_single = false;
+    }
+    if (alts == 0) return 0;
+    if (all_single) return 1;
+    return alts == 1 ? 2 : 3;
+}
+
+/** Check that every !name refers to a rule that matches one character or
+    alternatives of fixed sequences of characters. The engine tests the input against the
+    first set of each character of the rule, which is exact only for such rules. */
+void check_not_rule_nonterminals(XMQParseState *state)
+{
+    for (size_t i = 0; i < state->ixml_rules->size; ++i)
+    {
+        IXMLRule *r = (IXMLRule*)vector_element_at(state->ixml_rules, i);
+        const char *n = r->rule_name->name;
+        if (n[0] != '|' || n[1] != '!' || n[2] != 'N') continue;
+        bool defined = false;
+        for (size_t j = 0; j < state->ixml_rules->size && !defined; ++j)
+        {
+            IXMLRule *d = (IXMLRule*)vector_element_at(state->ixml_rules, j);
+            defined = !strcmp(d->rule_name->name, n+3);
+        }
+        if (!defined || not_rule_kind(state, n+3, 0) == 0)
+        {
+            static char buf[1024];
+            if (!defined) snprintf(buf, sizeof(buf), "the rule %s after not ! is not defined", n+3);
+            else snprintf(buf, sizeof(buf),
+                          "the rule %s after not ! must match fixed sequences of characters "
+                          "(no repetitions, options or empty alternatives)", n+3);
+            state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+            state->error_info = buf;
+            longjmp(state->error_handler, 1);
+        }
+    }
 }
 
 void scan_content_fixup_charsets(XMQParseState *state, const char *start, const char *stop)
@@ -28842,12 +28969,36 @@ static bool blocked_by_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule
     return is_blocked;
 }
 
+/** Match the rule (or terminal) s of a not operator !name at input position p.
+    Each alternative of the rule is a fixed sequence of characters (ixml.c
+    checks this), a charset rule matches one character, its first set.
+    Returns the position after the first alternative that matches or -1. */
+static int match_not_rule(YaepParseState *ps, YaepSymbol *s, int p, int depth)
+{
+    if (depth > 64 || p >= ps->input_len) return -1;
+    YaepSymbol *next = ps->input[p].symb;
+    if (!strcmp(next->hr, "$eof")) return -1;
+    if (s->is_terminal) return next->u.terminal.code == s->u.terminal.code ? p+1 : -1;
+    if (s->repr[0] == '[' || (s->repr[0] == '~' && s->repr[1] == '['))
+    {
+        return terminal_bitset_test(ps, s->u.nonterminal.first, next->u.terminal.term_id) ? p+1 : -1;
+    }
+    for (YaepRule *r = s->u.nonterminal.rules; r != NULL; r = r->lhs_next)
+    {
+        int q = p;
+        for (int j = 0; j < r->rhs_len && q >= 0; ++j) q = match_not_rule(ps, r->rhs[j], q, depth+1);
+        if (q >= 0) return q;
+    }
+    return -1;
+}
+
 static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
 {
     assert(symb->repr[0]== '|');
     assert(symb->repr[1]== '!');
-    // A string |!S..., a charset |![...] or an exclusion charset |!~[...]
-    assert(symb->repr[2]== 'S' || symb->repr[2]== '[' || symb->repr[2]== '~');
+    // A string |!S..., a charset |![...], an exclusion charset |!~[...] or
+    // a rule |!Nname that matches exactly one character (checked by ixml.c).
+    assert(symb->repr[2]== 'S' || symb->repr[2]== '[' || symb->repr[2]== '~' || symb->repr[2]== 'N');
 
     int p = ps->tok_i+n;
 
@@ -28887,14 +29038,15 @@ static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
         return true;
     }
 
-    // Charset lookahead.
-    YaepSymbol *ys = symb_find_by_repr(ps, symb->repr+2);
+    // Charset lookahead, or a rule of one character or a fixed sequence.
+    YaepSymbol *ys = symb_find_by_repr(ps, symb->repr + (type == 'N' ? 3 : 2));
     if (!ys)
     {
         // No charset exists, because no input characters matched this charset.
         // Easy, no possible lookahead match.
         return false;
     }
+    if (type == 'N') return match_not_rule(ps, ys, p, 0) >= 0;
     YaepSymbol *next = ps->input[p].symb;
     bool match = terminal_bitset_test(ps, ys->u.nonterminal.first, next->u.terminal.term_id);
 

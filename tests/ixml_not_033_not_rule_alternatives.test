@@ -1,0 +1,16 @@
+START
+s = word, sep, word.
+word = ['a'-'z']+, !wordish.
+-wordish = letter | digit | '_'.
+-letter = ['a'-'z'].
+-digit = ['0'-'9'].
+sep = ~['a'-'z'; '0'-'9'; '_']+, !~['a'-'z'; '0'-'9'; '_'].
+INPUT
+abc  ::  def
+OUTPUT
+s {
+    word = abc
+    sep  = '  ::  '
+    word = def
+}
+END

@@ -1,0 +1,13 @@
+START
+words = (word, -' '*)*.
+word = ['a'-'z'], -namechar*, !namechar.
+-namechar = ['a'-'z'; '0'-'9'; '-'].
+INPUT
+alfa beta-2 g3
+OUTPUT
+words {
+    word = alfa
+    word = beta-2
+    word = g3
+}
+END

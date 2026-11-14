@@ -2012,12 +2012,36 @@ static bool blocked_by_lookahead(YaepParseState *ps, YaepDottedRule *dotted_rule
     return is_blocked;
 }
 
+/** Match the rule (or terminal) s of a not operator !name at input position p.
+    Each alternative of the rule is a fixed sequence of characters (ixml.c
+    checks this), a charset rule matches one character, its first set.
+    Returns the position after the first alternative that matches or -1. */
+static int match_not_rule(YaepParseState *ps, YaepSymbol *s, int p, int depth)
+{
+    if (depth > 64 || p >= ps->input_len) return -1;
+    YaepSymbol *next = ps->input[p].symb;
+    if (!strcmp(next->hr, "$eof")) return -1;
+    if (s->is_terminal) return next->u.terminal.code == s->u.terminal.code ? p+1 : -1;
+    if (s->repr[0] == '[' || (s->repr[0] == '~' && s->repr[1] == '['))
+    {
+        return terminal_bitset_test(ps, s->u.nonterminal.first, next->u.terminal.term_id) ? p+1 : -1;
+    }
+    for (YaepRule *r = s->u.nonterminal.rules; r != NULL; r = r->lhs_next)
+    {
+        int q = p;
+        for (int j = 0; j < r->rhs_len && q >= 0; ++j) q = match_not_rule(ps, r->rhs[j], q, depth+1);
+        if (q >= 0) return q;
+    }
+    return -1;
+}
+
 static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
 {
     assert(symb->repr[0]== '|');
     assert(symb->repr[1]== '!');
-    // A string |!S..., a charset |![...] or an exclusion charset |!~[...]
-    assert(symb->repr[2]== 'S' || symb->repr[2]== '[' || symb->repr[2]== '~');
+    // A string |!S..., a charset |![...], an exclusion charset |!~[...] or
+    // a rule |!Nname that matches exactly one character (checked by ixml.c).
+    assert(symb->repr[2]== 'S' || symb->repr[2]== '[' || symb->repr[2]== '~' || symb->repr[2]== 'N');
 
     int p = ps->tok_i+n;
 
@@ -2057,14 +2081,15 @@ static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n)
         return true;
     }
 
-    // Charset lookahead.
-    YaepSymbol *ys = symb_find_by_repr(ps, symb->repr+2);
+    // Charset lookahead, or a rule of one character or a fixed sequence.
+    YaepSymbol *ys = symb_find_by_repr(ps, symb->repr + (type == 'N' ? 3 : 2));
     if (!ys)
     {
         // No charset exists, because no input characters matched this charset.
         // Easy, no possible lookahead match.
         return false;
     }
+    if (type == 'N') return match_not_rule(ps, ys, p, 0) >= 0;
     YaepSymbol *next = ps->input[p].symb;
     bool match = terminal_bitset_test(ps, ys->u.nonterminal.first, next->u.terminal.term_id);
 

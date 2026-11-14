@@ -1,0 +1,67 @@
+weather_report {
+    report_type       = METAR
+    icao_airport_code = LBBG
+    time_of_observation {
+        month = 04
+        time {
+            hour   = 16
+            minute = 00
+        }
+        time_zone = Z
+    }
+    wind {
+        wind_direction {
+            degrees = 120
+            speed {
+                value = 12
+                unit  = MPS
+            }
+        }
+    }
+    wind {
+        wind_variation {
+            from_degrees = 090
+            to_degrees   = 150
+        }
+    }
+    visibility {
+        meters = 1400
+    }
+    runway_visual_range {
+        runway = 04
+        range  = 1500
+        status = nochange
+    }
+    runway_visual_range {
+        runway = 22
+        range  = 1500
+        status = rising
+    }
+    weather {
+        observation {
+            intensity = heavy
+            type      = SN
+            type-info = snow
+        }
+    }
+    clouds {
+        observation {
+            cloud_cover = BKN
+            cloud_base  = 022
+        }
+    }
+    clouds {
+        observation {
+            cloud_cover = OVC
+            cloud_base  = 050
+        }
+    }
+    temperature {
+        air_c      = -04
+        dewpoint_c = -07
+    }
+    air_pressure {
+        pressure_hpa = 1020
+    }
+    trend = NOSIG
+}

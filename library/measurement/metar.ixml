@@ -1,19 +1,20 @@
 {
-    Copyright (c) 2025 Fredrik Öhrström libxmq (spdx: MIT)
+    v1.0.1 Copyright (c) 2025-2026 Fredrik Öhrström libxmq (spdx: MIT)
 
     A grammar for parsing METAR weather reports.
 
     Example reports:
     METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN="
     METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91=
+
+    Not supported yet: runway state groups like 8849//91.
 }
 
 weather_report = report_type?, icao_airport_code, -' ', part++-' ', -'='?, -[Zs;#a;#d]*.
 
 report_type = 'METAR', -' ' | 'SPECI', -' '.
 
--part =
-     | time_of_observation
+-part = time_of_observation
      | observation_type
      | wind
      | visibility
@@ -26,7 +27,8 @@ report_type = 'METAR', -' ' | 'SPECI', -' '.
      | cavok
      | remark.
 
-icao_airport_code = [Lu]+.
+{ An ICAO airport code has four letters, so METAR and SPECI are not codes. }
+icao_airport_code = [Lu], [Lu], [Lu], [Lu].
 
 time_of_observation = month, time, time_zone.
 month = ["0"-"9"], ["0"-"9"].
@@ -63,8 +65,8 @@ nochange>status = -'N', +"nochange".
 up>status = -'U', +"rising".
 down>status = -'D', +"falling".
 
-{ Precipitation }
-weather = observation++-' '.
+{ Precipitation, one observation per part. }
+weather = observation.
 
 observation = intensity?, characteristic*, weather_type.
 
@@ -108,7 +110,8 @@ info_ts>chrct-info = +"thunderstorms".
 code_up>chrct = 'UP'.
 info_up>chrct-info = +"unknown precipitation".
 
--weather_type = type_br | type_ds | type_du | type_dz | type_fc | type_fg | type_ra | type_va.
+-weather_type = type_br | type_ds | type_du | type_dz | type_fc | type_fg | type_ra | type_va
+              | type_fu | type_gr | type_gs | type_hz | type_ic | type_pe | type_po | type_py | type_sa | type_sg | type_sn | type_sq | type_ss.
 
 -type_ra = code_ra, info_ra.
 code_ra>type = 'RA'.
@@ -142,25 +145,59 @@ info_fg>type-info = +"fog".
 code_va>type = 'VA'.
 info_va>type-info = +"volcanic ash".
 
-{
-FU 	smoke
-GR 	hail
-GS 	small hail
-HZ 	haze
-IC 	ice crystals
-PE 	ice pellets
-PO 	sand whirls
-PY 	spray
-SA 	sand
-SG 	snow grains
-SN 	snow
-SQ 	squalls
-SS 	sand storm
-UP 	unknown precipitation
-VA 	volcanic ash
-}
+-type_fu = code_fu, info_fu.
+code_fu>type = 'FU'.
+info_fu>type-info = +"smoke".
 
-clouds = cloud_observation++-' '.
+-type_gr = code_gr, info_gr.
+code_gr>type = 'GR'.
+info_gr>type-info = +"hail".
+
+-type_gs = code_gs, info_gs.
+code_gs>type = 'GS'.
+info_gs>type-info = +"small hail".
+
+-type_hz = code_hz, info_hz.
+code_hz>type = 'HZ'.
+info_hz>type-info = +"haze".
+
+-type_ic = code_ic, info_ic.
+code_ic>type = 'IC'.
+info_ic>type-info = +"ice crystals".
+
+-type_pe = code_pe, info_pe.
+code_pe>type = 'PE'.
+info_pe>type-info = +"ice pellets".
+
+-type_po = code_po, info_po.
+code_po>type = 'PO'.
+info_po>type-info = +"sand whirls".
+
+-type_py = code_py, info_py.
+code_py>type = 'PY'.
+info_py>type-info = +"spray".
+
+-type_sa = code_sa, info_sa.
+code_sa>type = 'SA'.
+info_sa>type-info = +"sand".
+
+-type_sg = code_sg, info_sg.
+code_sg>type = 'SG'.
+info_sg>type-info = +"snow grains".
+
+-type_sn = code_sn, info_sn.
+code_sn>type = 'SN'.
+info_sn>type-info = +"snow".
+
+-type_sq = code_sq, info_sq.
+code_sq>type = 'SQ'.
+info_sq>type-info = +"squalls".
+
+-type_ss = code_ss, info_ss.
+code_ss>type = 'SS'.
+info_ss>type-info = +"sand storm".
+
+clouds = cloud_observation.
 
 cloud_observation>observation = cloud_cover, cloud_base?, cloud_type?.
 
@@ -183,6 +220,7 @@ view_becoming = -'BECMG ', meters.
 
 cavok = 'CAVOK'.
 
-remark = -'RMK ', ~["="]*.
+remark = -'RMK ', rmkchar*, !rmkchar.
+-rmkchar = ~['='; #a; #d].
 
 {-remark = rmk_a02 | 'A02' SLP130  }

@@ -2,7 +2,9 @@
   by Fredrik Öhrström (c) 2024-2026 spdx: MIT
 
   Rewritten with the not operator ! and greedy tokens, so that the grammar
-  has a single parse and works with the LL(*) parser generator.
+  has a single parse and works with the LL(*) parser generator. A greedy
+  token ends with !c where c is a rule that matches one character, eg
+  name = ..., -namechar*, !namechar.
 
   The parse tree is turned into the xml dom of the xmq document by xmq.xslq:
 
@@ -42,18 +44,18 @@ value = text | quote | entity | compound.
 compound = -'(', ws, ((quote | entity), ws)*, -')'.
 
 { Names start with a letter or _ and are greedy. A : separates a namespace prefix. }
-name = ['a'-'z'; 'A'-'Z'; '_'], -namechar*, !['a'-'z'; 'A'-'Z'; '0'-'9'; '-'; '_'; '.'; ':'; '#'].
+name = ['a'-'z'; 'A'-'Z'; '_'], -namechar*, !namechar.
 -namechar = ['a'-'z'; 'A'-'Z'; '0'-'9'; '-'; '_'; '.'; ':'; '#'].
 
 { A text value runs to whitespace or one of ( ) { } ' ". It cannot start with
   & = // or /* }
 text = !'//', !'/*', ~['&'; '='; ' '; #9; #a; #d; #a0; #2000-#2003; '('; ')'; '{'; '}'; "'"; '"'],
-       safe*, !~[' '; #9; #a; #d; #a0; #2000-#2003; '('; ')'; '{'; '}'; "'"; '"'].
+       safe*, !safe.
 -safe = ~[' '; #9; #a; #d; #a0; #2000-#2003; '('; ')'; '{'; '}'; "'"; '"'].
 
 { An entity &name; or &#10; The ; can be left out if the name is only lower case hex digits. }
 entity = -'&', -namechar*, -';'
-       | -'&', ['0'-'9'; 'a'-'f']+, !['a'-'z'; 'A'-'Z'; '0'-'9'; '-'; '_'; '.'; ':'; '#'], !';'.
+       | -'&', ['0'-'9'; 'a'-'f']+, !namechar, !';'.
 
 { A quote starts and ends with the same number of quote chars ' or " (two is
   the empty quote). Inside, runs of fewer quote chars are content. }
@@ -94,7 +96,8 @@ quote = -sq | -dq.
 -dq9 = -'"""""""""', !'"', (~['"'] | '"', ~['"'] | '""', ~['"'] | '"""', ~['"'] | '""""', ~['"'] | '"""""', ~['"'] | '""""""', ~['"'] | '"""""""', ~['"'] | '""""""""', ~['"'])*, -'"""""""""', !'"'.
 
 { A comment // to the end of the line, or /* */ with any number of slashes,
-  //* *// etc, where */* continues the comment with a new part. }
+  //* *// etc, where */* continues the comment with a new part. The * after
+  the closing */ decides the continuation, so it needs one char lookahead. }
 line_comment = -'//', -lcrest, (-#a | !~[]).
 { The run of slashes after // must not be followed by a *, that is a /* comment. }
 -lcrest = '/', -lcrest | !['/*'], ~[#a]*.
@@ -104,23 +107,23 @@ comment = -c1
         | -c4
         | -c5
         | -c6.
--c1 = -'/*', p1, (-'*/*', p1)*, -'*/', !'/'.
+-c1 = -'/*', p1, -'*/', (-'*', p1, -'*/')*, !'/'.
 p1>part = (~['*'] | '*', !'/')*.
--c2 = -'//*', p2, (-'*//*', p2)*, -'*//', !'/'.
+-c2 = -'//*', p2, -'*//', (-'*', p2, -'*//')*, !'/'.
 p2>part = (~['*'] | '*', !'//')*.
--c3 = -'///*', p3, (-'*///*', p3)*, -'*///', !'/'.
+-c3 = -'///*', p3, -'*///', (-'*', p3, -'*///')*, !'/'.
 p3>part = (~['*'] | '*', !'///')*.
--c4 = -'////*', p4, (-'*////*', p4)*, -'*////', !'/'.
+-c4 = -'////*', p4, -'*////', (-'*', p4, -'*////')*, !'/'.
 p4>part = (~['*'] | '*', !'////')*.
--c5 = -'/////*', p5, (-'*/////*', p5)*, -'*/////', !'/'.
+-c5 = -'/////*', p5, -'*/////', (-'*', p5, -'*/////')*, !'/'.
 p5>part = (~['*'] | '*', !'/////')*.
--c6 = -'//////*', p6, (-'*//////*', p6)*, -'*//////', !'/'.
+-c6 = -'//////*', p6, -'*//////', (-'*', p6, -'*//////')*, !'/'.
 p6>part = (~['*'] | '*', !'//////')*.
 
 { The !DOCTYPE and processing instructions ?name = value }
 doctype = -'!DOCTYPE', ws, -'=', ws, -value.
 pi = -'?', @piname>name, ws, -'=', ws, -value.
-piname = -namechar+, !['a'-'z'; 'A'-'Z'; '0'-'9'; '-'; '_'; '.'; ':'; '#'].
+piname = -namechar+, !namechar.
 
 { An embedded xml fragment, the text is the raw xml. }
 xml = xelement.
@@ -130,8 +133,12 @@ xml = xelement.
 -xcomment = '<!--', (~['-'] | '-', ~['-'])*, '-->'.
 -xcdata = '<![CDATA[', (~[']'] | ']', ~[']'] | ']]', ~['>'])*, ']]>'.
 -xpi = '<?', (~['?'] | '?', ~['>'])*, '?>'.
--xname = ['a'-'z'; 'A'-'Z'; '_'; ':'], ['a'-'z'; 'A'-'Z'; '0'-'9'; '-'; '_'; '.'; ':']*, !['a'-'z'; 'A'-'Z'; '0'-'9'; '-'; '_'; '.'; ':'].
--xs = [' '; #9; #a; #d]*, ![' '; #9; #a; #d].
+-xname = ['a'-'z'; 'A'-'Z'; '_'; ':'], xnamechar*, !xnamechar.
+-xnamechar = ['a'-'z'; 'A'-'Z'; '0'-'9'; '-'; '_'; '.'; ':'].
+-xs = xschar*, !xschar.
+-xschar = [' '; #9; #a; #d].
 
 { Whitespace between tokens is greedy. A tab is not xmq whitespace. }
--ws = (-[' '; #a; #d], -[' '; #a; #d; #a0; #2000-#2003]*)?, ![' '; #a; #d].
+-ws = (-wsstart, -wschar*)?, !wsstart.
+-wsstart = -[' '; #a; #d].
+-wschar = -[' '; #a; #d; #a0; #2000-#2003].

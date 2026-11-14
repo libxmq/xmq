@@ -1,6 +1,6 @@
 { A C grammar written in IXML by Fredrik Öhrström 2024.
 
-Copyright (c) 2024-2025 Fredrik Öhrström libxmq (spdx: MIT)
+Copyright (c) 2024-2026 Fredrik Öhrström libxmq (spdx: MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+as well as the ixml engine: alternatives that share a long prefix are left
+factored and the dangling else is bound with !kw_else, so that most decisions
+need a short lookahead. Lists are flat, one element per item.
+
 In general we place whitespace ws at the end of each token.
 Except for the first rule, where we need to accept leading white space.
 No rule may start with ws, otherwise whitespace can be split ambiguously.
@@ -29,8 +34,9 @@ The grammar parses the output from the C preprocessor, e.g. gcc -E foo.c
 The line markers (# 12 "foo.h" 1 3 4) are treated as whitespace.
 
 Tokens use the not operator ! to implement maximal munch, e.g. an
-IDENTIFIER cannot be followed by another identifier character and
-the token + cannot be followed by + or =. Keywords cannot be identifiers.
+IDENTIFIER cannot be followed by another identifier character (!idchar) and
+the token + cannot be followed by + or =. Keywords cannot be identifiers
+(!keyword).
 
 C is not context free, since x * y; is either a declaration or
 an expression depending on whether x is a typedef name. Some heuristics
@@ -43,7 +49,7 @@ are used to reduce such ambiguities:
     so (T)(x) is a cast and not a call of (T).
   - sizeof(T) with a lone typedef name is parsed as sizeof of an expression.
   - An expression statement has a cost, so T *p; in a block is a declaration.
-  - The dangling else binds to the closest if. }
+  - The dangling else binds to the closest if, using !kw_else. }
 
 translation_unit = ws, external_declaration*.
 
@@ -53,7 +59,8 @@ translation_unit = ws, external_declaration*.
 { Constants }
 
 CONSTANT = (-decimal, -int_suffix | -hexadecimal, -int_suffix | -float, -float_suffix),
-           !['A'-'Z';'a'-'z';'0'-'9';'_';'.'], ws.
+           !numchar, ws.
+-numchar = ['A'-'Z';'a'-'z';'0'-'9';'_';'.'].
 -decimal = ['0'-'9']+.
 -hexadecimal = '0', ['xX'], ['0'-'9';'a'-'f';'A'-'F']+.
 -int_suffix = ['uUlL']*.
@@ -151,10 +158,8 @@ postfix_expression
   typedef name T, rather than a call of the parenthesized function (T). }
 -call_arguments =< LEFT_PAR, argument_expression_list?, RIGHT_PAR.
 
-argument_expression_list
-	= -assignment_expression
-	| argument_expression_list, COMMA, assignment_expression
-	.
+{ Lists are flat, one element per item, not left nested. }
+argument_expression_list = assignment_expression++COMMA.
 
 unary_expression
 	= -postfix_expression
@@ -232,14 +237,18 @@ logical_or_expression
 	| logical_or_expression, OR_OP, logical_and_expression
 	.
 
+{ Left factored, so that the parser decides at the ? instead of looking ahead
+  over the whole condition. In the tree the condition comes first, then the
+  expression of the true branch and the conditional_expression of the false branch. }
 conditional_expression
-	= -logical_or_expression
-	| logical_or_expression, QMARK, expression, COLON, conditional_expression
+	= -logical_or_expression, (QMARK, expression, COLON, conditional_expression)?
 	.
 
+{ Left factored like conditional_expression. The left hand side is any
+  conditional expression (a compiler checks that it is an lvalue), in the tree
+  it is what comes before the assignment_operator. }
 assignment_expression
-	= -conditional_expression
-	| unary_expression, assignment_operator, assignment_expression
+	= -conditional_expression, (assignment_operator, assignment_expression)?
 	.
 
 assignment_operator
@@ -267,20 +276,27 @@ constant_expression
 
 { Declarations }
 
+{ The declarators can only be left out after a struct, union or enum,
+  e.g. struct Foo; or struct Foo { int x; };. The two kinds of specifiers
+  are decided at the first type specifier, not after a long struct body. }
 declaration
-	= declaration_specifiers, init_declarator_list, SEMICOLON
-	| declaration_specifiers_tag, SEMICOLON
+	= ^specifiers_tagged>declaration_specifiers, init_declarator_list?, SEMICOLON
+	| ^specifiers_plain>declaration_specifiers, init_declarator_list, SEMICOLON
 	.
 
 { At most one typedef name, struct, union or enum, or a sequence of basic type keywords. }
 declaration_specifiers
-	= declaration_specifier_other*, ( type_specifier_single, declaration_specifier_other*
-	                                | type_specifier_basic, (type_specifier_basic | declaration_specifier_other)* )
+	= -specifiers_tagged
+	| -specifiers_plain
 	.
 
-{ Used when there are no declarators, e.g. struct Foo; or struct Foo { int x; }; }
-declaration_specifiers_tag
+-specifiers_tagged
 	= declaration_specifier_other*, (struct_or_union_specifier | enum_specifier), declaration_specifier_other*
+	.
+
+-specifiers_plain
+	= declaration_specifier_other*, ( (type_identifier | typeof_specifier), declaration_specifier_other*
+	                                | type_specifier_basic, (type_specifier_basic | declaration_specifier_other)* )
 	.
 
 -declaration_specifier_other
@@ -342,66 +358,55 @@ type_qualifier
 	| GNU_RESTRICT
 	.
 
-init_declarator_list
-	= init_declarator
-	| init_declarator_list, COMMA, init_declarator
-	.
+init_declarator_list = init_declarator++COMMA.
 
 init_declarator
-	= declarator, asm?, attribute*
-	| declarator, asm?, attribute*, EQUAL_SIGN, initializer
+	= declarator, asm?, attribute*, (EQUAL_SIGN, initializer)?
 	.
 
 struct_or_union_specifier
-	= struct_or_union, attribute*, IDENTIFIER?, LEFT_BRACE, struct_declaration*, RIGHT_BRACE, attribute*
-	| struct_or_union, attribute*, IDENTIFIER
+	= struct_or_union, attribute*, (IDENTIFIER, struct_body? | struct_body)
 	.
+-struct_body = LEFT_BRACE, struct_declaration*, RIGHT_BRACE, attribute*.
 
 struct_or_union
 	= STRUCT
 	| UNION
 	.
 
+{ The declarators can only be left out for an anonymous struct or union member. }
 struct_declaration
-	= specifier_qualifier_list, struct_declarator_list, SEMICOLON
-	| specifier_qualifier_list_tag, SEMICOLON
+	= ^qualifiers_tagged>specifier_qualifier_list, struct_declarator_list?, SEMICOLON
+	| ^qualifiers_plain>specifier_qualifier_list, struct_declarator_list, SEMICOLON
 	.
 
 -specifier_qualifier_other = type_qualifier | attribute | EXTENSION.
 
-specifier_qualifier_list
-	= specifier_qualifier_other*, ( type_specifier_single, specifier_qualifier_other*
+-qualifiers_tagged
+	= specifier_qualifier_other*, (struct_or_union_specifier | enum_specifier), specifier_qualifier_other*
+	.
+
+-qualifiers_plain
+	= specifier_qualifier_other*, ( (type_identifier | typeof_specifier), specifier_qualifier_other*
 	                              | type_specifier_basic, (type_specifier_basic | specifier_qualifier_other)* )
 	.
 
-{ Anonymous struct or union member. }
-specifier_qualifier_list_tag
-	= specifier_qualifier_other*, struct_or_union_specifier, specifier_qualifier_other*
-	.
-
-struct_declarator_list
-	= struct_declarator
-	| struct_declarator_list, COMMA, struct_declarator
-	.
+struct_declarator_list = struct_declarator++COMMA.
 
 struct_declarator
-	= declarator, attribute*
-	| declarator?, COLON, constant_expression, attribute*
+	= declarator, (COLON, constant_expression)?, attribute*
+	| COLON, constant_expression, attribute*
 	.
 
 enum_specifier
-	= ENUM, attribute*, IDENTIFIER?, LEFT_BRACE, enumerator_list, COMMA?, RIGHT_BRACE
-	| ENUM, attribute*, IDENTIFIER
+	= ENUM, attribute*, (IDENTIFIER, enum_body? | enum_body)
 	.
+-enum_body = LEFT_BRACE, enumerator_list, COMMA?, RIGHT_BRACE.
 
-enumerator_list
-	= enumerator
-	| enumerator_list, COMMA, enumerator
-	.
+enumerator_list = enumerator++COMMA.
 
 enumerator
-	= IDENTIFIER, attribute*
-	| IDENTIFIER, attribute*, EQUAL_SIGN, constant_expression
+	= IDENTIFIER, attribute*, (EQUAL_SIGN, constant_expression)?
 	.
 
 declarator
@@ -431,14 +436,10 @@ attrpar = -"(", (-achar | -attrpar)*, -")".
 -achar = ~["()"].
 
 parameter_type_list
-	= parameter_list
-	| parameter_list, COMMA, ELLIPSIS
+	= parameter_list, (COMMA, ELLIPSIS)?
 	.
 
-parameter_list
-	= parameter_declaration
-	| parameter_list, COMMA, parameter_declaration
-	.
+parameter_list = parameter_declaration++COMMA.
 
 parameter_declaration
 	= declaration_specifiers, declarator, attribute*
@@ -477,37 +478,20 @@ initializer
 	| LEFT_BRACE, initializer_list, COMMA?, RIGHT_BRACE
 	.
 
-initializer_list
-	= designation?, initializer
-	| initializer_list, COMMA, designation?, initializer
-	.
+initializer_list = (designation?, initializer)++COMMA.
 
 designation = designator+, EQUAL_SIGN.
 designator = LEFT_BRACKET, constant_expression, RIGHT_BRACKET | DOT, IDENTIFIER.
 
 { Statements }
 
-{ The dangling else is resolved by splitting statements into closed statements,
-  where every if has an else, and open statements. An else therefore always binds
-  to the closest if. The split rules are renamed back to the normal names. }
 statement
-	= -closed_statement
-	| -open_statement
-	.
-
-closed_statement
-	= labeled_statement_closed>labeled_statement
+	= labeled_statement
 	| compound_statement
 	| expression_statement
-	| selection_statement_closed>selection_statement
-	| iteration_statement_closed>iteration_statement
+	| selection_statement
+	| iteration_statement
 	| jump_statement
-	.
-
-open_statement
-	= labeled_statement_open>labeled_statement
-	| selection_statement_open>selection_statement
-	| iteration_statement_open>iteration_statement
 	.
 
 -label
@@ -516,32 +500,24 @@ open_statement
 	| DEFAULT, COLON
 	.
 
-labeled_statement_closed = label, closed_statement>statement.
-labeled_statement_open = label, open_statement>statement.
+labeled_statement = label, statement.
 
-selection_statement_closed
-	= IF, LEFT_PAR, expression, RIGHT_PAR, closed_statement>statement, ELSE, closed_statement>statement
-	| SWITCH, LEFT_PAR, expression, RIGHT_PAR, closed_statement>statement
+{ The dangling else binds to the closest if: the alternative without else
+  cannot be followed by the keyword else (but by an identifier like elsewhere). }
+selection_statement
+	= IF, LEFT_PAR, expression, RIGHT_PAR, statement, (ELSE, statement | !kw_else)
+	| SWITCH, LEFT_PAR, expression, RIGHT_PAR, statement
 	.
-
-selection_statement_open
-	= IF, LEFT_PAR, expression, RIGHT_PAR, statement
-	| IF, LEFT_PAR, expression, RIGHT_PAR, closed_statement>statement, ELSE, open_statement>statement
-	| SWITCH, LEFT_PAR, expression, RIGHT_PAR, open_statement>statement
-	.
+-kw_else = 'else', ~['A'-'Z';'a'-'z';'0'-'9';'_'].
 
 -loop_head
 	= WHILE, LEFT_PAR, expression, RIGHT_PAR
 	| FOR, LEFT_PAR, (expression_statement | declaration), expression?, SEMICOLON, expression?, RIGHT_PAR
 	.
 
-iteration_statement_closed
-	= loop_head, closed_statement>statement
+iteration_statement
+	= loop_head, statement
 	| DO, statement, WHILE, LEFT_PAR, expression, RIGHT_PAR, SEMICOLON
-	.
-
-iteration_statement_open
-	= loop_head, open_statement>statement
 	.
 
 compound_statement
@@ -566,8 +542,7 @@ jump_statement
 	= GOTO, IDENTIFIER, SEMICOLON
 	| CONTINUE, SEMICOLON
 	| BREAK, SEMICOLON
-	| RETURN, SEMICOLON
-	| RETURN, expression, SEMICOLON
+	| RETURN, expression?, SEMICOLON
 	.
 
 { Top level }
@@ -584,115 +559,115 @@ function_definition
 
 { Generated part start: keywords and identifiers. }
 
-{ An identifier must not start with a keyword, unless the keyword is followed
-  by more identifier characters, e.g. integer, done, if_x. }
-IDENTIFIER = !'auto', !'break', !'case', !'char', !'const', !'continue', !'default', !'do', !'else', !'enum', !'extern', !'float', !'for', !'goto', !'if', !'inline', !'int', !'long', !'register', !'restrict', !'return', !'short', !'signed', !'sizeof', !'static', !'struct', !'switch', !'typedef', !'union', !'unsigned', !'void', !'volatile', !'while', !'_Bool', !'_Complex', !'_Noreturn', !'_Alignof', !'__attribute__', !'__extension__', !'__asm__', !'__restrict', !'__inline', !'__const', !'__signed__', !'__volatile__', !'__typeof__', !'__alignof__', !'__int128', !'__thread', !'__builtin_va_arg', !'__builtin_offsetof', -idstart, -idchar*, !['A'-'Z';'a'-'z';'0'-'9';'_'], ws
-           | -kwprefix, -idchar+, !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
--kwprefix = 'auto'
-          | 'break'
-          | 'case'
-          | 'char'
-          | 'const'
-          | 'continue'
-          | 'default'
-          | 'do', !'uble'
-          | 'double'
-          | 'else'
-          | 'enum'
-          | 'extern'
-          | 'float'
-          | 'for'
-          | 'goto'
-          | 'if'
-          | 'inline'
-          | 'int'
-          | 'long'
-          | 'register'
-          | 'restrict'
-          | 'return'
-          | 'short'
-          | 'signed'
-          | 'sizeof'
-          | 'static'
-          | 'struct'
-          | 'switch'
-          | 'typedef'
-          | 'union'
-          | 'unsigned'
-          | 'void'
-          | 'volatile'
-          | 'while'
-          | '_Bool'
-          | '_Complex'
-          | '_Noreturn'
-          | '_Alignof'
-          | '__attribute__'
-          | '__extension__'
-          | '__asm__'
-          | '__restrict'
-          | '__inline'
-          | '__const'
-          | '__signed__'
-          | '__volatile__'
-          | '__typeof__'
-          | '__alignof__'
-          | '__int128'
-          | '__thread'
-          | '__builtin_va_arg'
-          | '__builtin_offsetof'.
+{ An identifier is not a keyword, eg integer, done and if_x are identifiers.
+  Each keyword alternative is followed by a char that cannot continue an identifier. }
+IDENTIFIER = !keyword, -idstart, -idchar*, !idchar, ws.
+-keyword = 'auto', notid
+         | 'break', notid
+         | 'case', notid
+         | 'char', notid
+         | 'const', notid
+         | 'continue', notid
+         | 'default', notid
+         | 'do', notid
+         | 'double', notid
+         | 'else', notid
+         | 'enum', notid
+         | 'extern', notid
+         | 'float', notid
+         | 'for', notid
+         | 'goto', notid
+         | 'if', notid
+         | 'inline', notid
+         | 'int', notid
+         | 'long', notid
+         | 'register', notid
+         | 'restrict', notid
+         | 'return', notid
+         | 'short', notid
+         | 'signed', notid
+         | 'sizeof', notid
+         | 'static', notid
+         | 'struct', notid
+         | 'switch', notid
+         | 'typedef', notid
+         | 'union', notid
+         | 'unsigned', notid
+         | 'void', notid
+         | 'volatile', notid
+         | 'while', notid
+         | '_Bool', notid
+         | '_Complex', notid
+         | '_Noreturn', notid
+         | '_Alignof', notid
+         | '__attribute__', notid
+         | '__extension__', notid
+         | '__asm__', notid
+         | '__restrict', notid
+         | '__inline', notid
+         | '__const', notid
+         | '__signed__', notid
+         | '__volatile__', notid
+         | '__typeof__', notid
+         | '__alignof__', notid
+         | '__int128', notid
+         | '__thread', notid
+         | '__builtin_va_arg', notid
+         | '__builtin_offsetof', notid.
+-notid = ~['A'-'Z';'a'-'z';'0'-'9';'_'].
 -idstart = ['A'-'Z';'a'-'z';'_'].
 -idchar = ['A'-'Z';'a'-'z';'0'-'9';'_'].
 
-AUTO = 'auto', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-BREAK = 'break', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-CASE = 'case', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-CHAR = 'char', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-CONST = 'const', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-CONTINUE = 'continue', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-DEFAULT = 'default', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-DO = 'do', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-DOUBLE = 'double', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-ELSE = 'else', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-ENUM = 'enum', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-EXTERN = 'extern', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-FLOAT = 'float', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-FOR = 'for', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-GOTO = 'goto', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-IF = 'if', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-INLINE = 'inline', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-INT = 'int', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-LONG = 'long', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-REGISTER = 'register', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-RESTRICT = 'restrict', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-RETURN = 'return', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-SHORT = 'short', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-SIGNED = 'signed', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-SIZEOF = 'sizeof', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-STATIC = 'static', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-STRUCT = 'struct', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-SWITCH = 'switch', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-TYPEDEF = 'typedef', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-UNION = 'union', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-UNSIGNED = 'unsigned', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-VOID = 'void', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-VOLATILE = 'volatile', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-WHILE = 'while', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-BOOL = '_Bool', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-COMPLEX = '_Complex', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-NORETURN = '_Noreturn', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-ALIGNOF = '_Alignof', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-ATTRIBUTE = '__attribute__', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-EXTENSION = '__extension__', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-ASM = '__asm__', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-GNU_RESTRICT = '__restrict', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-GNU_INLINE = '__inline', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-GNU_CONST = '__const', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-GNU_SIGNED = '__signed__', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-GNU_VOLATILE = '__volatile__', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-TYPEOF = '__typeof__', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-GNU_ALIGNOF = '__alignof__', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-INT128 = '__int128', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-THREAD = '__thread', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-BUILTIN_VA_ARG = '__builtin_va_arg', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
-BUILTIN_OFFSETOF = '__builtin_offsetof', !['A'-'Z';'a'-'z';'0'-'9';'_'], ws.
+AUTO = 'auto', !idchar, ws.
+BREAK = 'break', !idchar, ws.
+CASE = 'case', !idchar, ws.
+CHAR = 'char', !idchar, ws.
+CONST = 'const', !idchar, ws.
+CONTINUE = 'continue', !idchar, ws.
+DEFAULT = 'default', !idchar, ws.
+DO = 'do', !idchar, ws.
+DOUBLE = 'double', !idchar, ws.
+ELSE = 'else', !idchar, ws.
+ENUM = 'enum', !idchar, ws.
+EXTERN = 'extern', !idchar, ws.
+FLOAT = 'float', !idchar, ws.
+FOR = 'for', !idchar, ws.
+GOTO = 'goto', !idchar, ws.
+IF = 'if', !idchar, ws.
+INLINE = 'inline', !idchar, ws.
+INT = 'int', !idchar, ws.
+LONG = 'long', !idchar, ws.
+REGISTER = 'register', !idchar, ws.
+RESTRICT = 'restrict', !idchar, ws.
+RETURN = 'return', !idchar, ws.
+SHORT = 'short', !idchar, ws.
+SIGNED = 'signed', !idchar, ws.
+SIZEOF = 'sizeof', !idchar, ws.
+STATIC = 'static', !idchar, ws.
+STRUCT = 'struct', !idchar, ws.
+SWITCH = 'switch', !idchar, ws.
+TYPEDEF = 'typedef', !idchar, ws.
+UNION = 'union', !idchar, ws.
+UNSIGNED = 'unsigned', !idchar, ws.
+VOID = 'void', !idchar, ws.
+VOLATILE = 'volatile', !idchar, ws.
+WHILE = 'while', !idchar, ws.
+BOOL = '_Bool', !idchar, ws.
+COMPLEX = '_Complex', !idchar, ws.
+NORETURN = '_Noreturn', !idchar, ws.
+ALIGNOF = '_Alignof', !idchar, ws.
+ATTRIBUTE = '__attribute__', !idchar, ws.
+EXTENSION = '__extension__', !idchar, ws.
+ASM = '__asm__', !idchar, ws.
+GNU_RESTRICT = '__restrict', !idchar, ws.
+GNU_INLINE = '__inline', !idchar, ws.
+GNU_CONST = '__const', !idchar, ws.
+GNU_SIGNED = '__signed__', !idchar, ws.
+GNU_VOLATILE = '__volatile__', !idchar, ws.
+TYPEOF = '__typeof__', !idchar, ws.
+GNU_ALIGNOF = '__alignof__', !idchar, ws.
+INT128 = '__int128', !idchar, ws.
+THREAD = '__thread', !idchar, ws.
+BUILTIN_VA_ARG = '__builtin_va_arg', !idchar, ws.
+BUILTIN_OFFSETOF = '__builtin_offsetof', !idchar, ws.
 { Generated part end. }

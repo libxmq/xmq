@@ -1,0 +1,7 @@
+# m h dom mon dow command
+SHELL=/bin/sh
+MAILTO = root
+5 * * * *	/usr/bin/check --quiet	
+30 2 1 Jan *  backup.sh
+0 12 * * 1 echo "monday"
+
