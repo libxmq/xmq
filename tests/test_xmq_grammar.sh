@@ -92,7 +92,7 @@ then
         head -20 "$OUTPUT/generate.err"
         exit 1
     fi
-    if ! cc -O2 -Isrc/main/c -o "$OUTPUT/xmqg" "$OUTPUT/xmqg.c" "$LIBDIR/libxmq.a" -lxslt -lexslt -lxml2 -lz -lm 2> "$OUTPUT/compile.err"
+    if ! cc -O2 -Isrc/main/c -o "$OUTPUT/xmqg" "$OUTPUT/xmqg.c" $(./tests/xmq_link_libs.sh "$LIBDIR") 2> "$OUTPUT/compile.err"
     then
         echo "ERROR: cannot compile the generated parser:"
         head -20 "$OUTPUT/compile.err"

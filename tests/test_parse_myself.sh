@@ -62,7 +62,7 @@ then
         head -5 "$PARSER.err"
         exit 1
     fi
-    if ! cc -O2 -Isrc/main/c -o "$PARSER" "$PARSER.c" "$(dirname "$PROG")/libxmq.a" -lxslt -lexslt -lxml2 -lz -lm 2> "$PARSER.cerr"
+    if ! cc -O2 -Isrc/main/c -o "$PARSER" "$PARSER.c" $(./tests/xmq_link_libs.sh "$(dirname "$PROG")") 2> "$PARSER.cerr"
     then
         echo "FAIL: compiling the generated parser $PARSER.c"
         head -5 "$PARSER.cerr"

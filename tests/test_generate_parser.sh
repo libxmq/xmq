@@ -15,7 +15,7 @@ XMQJ=${2:-./build/xmqj}
 OUTPUT=${3:-build/x86_64-pc-linux-gnu/release/test_output/generate_parser}
 LIBDIR=$(dirname "$PROG")
 CFLAGS="-O1 -Isrc/main/c"
-LIBS="$LIBDIR/libxmq.a -lxslt -lexslt -lxml2 -lz -lm"
+LIBS=$(./tests/xmq_link_libs.sh "$LIBDIR")
 # The generated Java parsers are compiled against the xmq jar.
 JAR=$(ls build/xmq-*.jar 2>/dev/null | grep -vE -- '-(exec|javadoc|sources)\.jar$' | head -1)
 

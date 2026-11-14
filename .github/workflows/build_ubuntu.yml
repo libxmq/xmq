@@ -13,6 +13,12 @@ jobs:
     steps:
     - id: CHECKOUT_SOURCE
       uses: actions/checkout@v3
+    - id: SETUP_JAVA_24
+      name: Set up Java 24
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '24'
     - id: APT_UPDATE
       run: sudo apt update
     - id: DISABLE_MAN_PAGES
@@ -27,5 +33,13 @@ jobs:
       run: eatmydata ./configure --with-libxml2=3rdparty/libxml2-posix --with-libxslt=3rdparty/libxslt-posix
     - id: MAKE
       run: eatmydata make release
+    # Build xmqj before make test, then test_xmq_grammar also checks the
+    # generated xmq parser. KEEP_POM_XML since xmq is not installed.
+    - id: MAKE_XMQJ
+      run: eatmydata make xmqj KEEP_POM_XML=true
     - id: TEST
-      run: eatmydata make test
+      run: eatmydata make test KEEP_POM_XML=true
+    - id: TESTJ
+      run: eatmydata make testj KEEP_POM_XML=true
+    - id: TEST_PARSE_MYSELF_FAST
+      run: eatmydata make test_parse_myself_fast KEEP_POM_XML=true
