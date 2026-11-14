@@ -25,7 +25,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define YAML_H
 
 #include"xmq.h"
-#include<libxml/tree.h>
+#ifndef BUILDING_DIST_XMQ
+#include"xml_dom.h"
+#endif
 
 struct XMQPrintState;
 typedef struct XMQPrintState XMQPrintState;

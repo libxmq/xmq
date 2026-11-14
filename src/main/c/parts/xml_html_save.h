@@ -34,8 +34,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     called by libxmq: utf8 output, no meta charset handling.
 */
 
+#ifndef BUILDING_DIST_XMQ
 #include"xml_dom.h"
 #include"membuffer.h"
+#endif
 
 #include<stdbool.h>
 #include<stddef.h>

@@ -44,8 +44,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     settings and the parser recovers. There is no global state.
 */
 
+#ifndef BUILDING_DIST_XMQ
 #include"xml_dom.h"
 #include"xml_parser.h"
+#endif
 
 #include<stdbool.h>
 #include<stddef.h>

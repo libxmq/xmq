@@ -3642,7 +3642,7 @@ XmlXPathResult *xml_xpath_eval(const char *expr, XMQNode *context, const XmlXPat
     XpCtx *c = (XpCtx*)calloc(1, sizeof(XpCtx));
     c->settings = settings;
     c->expr = expr ? expr : "";
-    c->node = context;
+    c->node = settings->no_context_node ? NULL : context;
     c->doc = xp_document_of(context);
     c->size = -1;
     c->position = -1;
@@ -3672,7 +3672,7 @@ XmlXPathResult *xml_xpath_eval(const char *expr, XMQNode *context, const XmlXPat
     {
         // Like libxml2, simple expressions are evaluated by the streaming pattern engine.
         v = xp_nodeset();
-        v.ns = xs_eval(c, (XsComp**)comps, ncomps, context, c->doc);
+        v.ns = xs_eval(c, (XsComp**)comps, ncomps, c->node, c->doc);
     }
     else
     {

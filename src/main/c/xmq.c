@@ -41,6 +41,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/stack.h"
 #include"parts/text.h"
 #include"parts/vector.h"
+#include"parts/xml_chars.h"
+#include"parts/xml_dom.h"
+#include"parts/xml_parser.h"
+#include"parts/xml_save.h"
+#include"parts/xml_html.h"
+#include"parts/xml_html_parser.h"
+#include"parts/xml_html_save.h"
+#include"parts/xml_xpath.h"
 #include"parts/xml.h"
 #include"parts/xmq_parser.h"
 #include"parts/xmq_printer.h"
@@ -69,8 +77,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //////////////////////////////////////////////////////////////////////////////////
 
-void add_key_number(xmlDoc *doc, xmlNode *root, const char *key, int number);
-void add_key_string(xmlDoc *doc, xmlNode *root, const char *key, const char *value);
+void add_key_number(XmlDom *doc, XMQNode *root, const char *key, int number);
+void add_key_string(XmlDom *doc, XMQNode *root, const char *key, const char *value);
 void add_nl(XMQParseState *state);
 XMQProceed catch_single_content(XMQDoc *doc, XMQNode *node, void *user_data);
 XMQProceed catch_single_node(XMQDoc *doc, XMQNode *node, void *user_data);
@@ -79,11 +87,11 @@ bool check_leading_space_nl(const char *start, const char *stop);
 void copy_and_insert(MemBuffer *mb, const char *start, const char *stop, int num_prefix_spaces, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
 char *copy_lines(int num_prefix_spaces, const char *start, const char *stop, int num_quotes, bool use_dqs, bool add_nls, bool add_compound, const char *implicit_indentation, const char *explicit_space, const char *newline, const char *prefix_line, const char *postfix_line);
 void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSettings *os);
-xmlNodePtr create_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop, xmlNodePtr parent);
+XMQNode* create_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop, XMQNode* parent);
 XMQStatus create_node(XMQParseState *state, const char *start, const char *stop);
-xmlNsPtr find_ns(xmlNodePtr node, const xmlChar *prefix);
-void update_namespace_href(XMQParseState *state, xmlNsPtr ns, const char *start, const char *stop);
-XMQReturnXMLNode create_quote(XMQParseState *state, size_t l, size_t col, const char *start, const char *stop, const char *suffix,  xmlNodePtr parent);
+XmlNs* find_ns(XMQNode* node, const char *prefix);
+void update_namespace_href(XMQParseState *state, XmlNs* ns, const char *start, const char *stop);
+XMQReturnXMLNode create_quote(XMQParseState *state, size_t l, size_t col, const char *start, const char *stop, const char *suffix,  XMQNode* parent);
 XMQStatus debug_content_comment(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
 XMQStatus debug_content_comment_continuation(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
 XMQStatus debug_content_value(XMQParseState *state, size_t line, size_t start_col, const char *start, const char *stop, const char *suffix);
@@ -118,12 +126,12 @@ XMQStatus do_ns_colon(XMQParseState *state, size_t line, size_t col, const char 
 XMQStatus do_quote(XMQParseState *state, size_t l, size_t col, const char *start, const char *stop, const char *suffix);
 XMQStatus do_whitespace(XMQParseState *state, size_t line, size_t col, const char *start, const char *stop, const char *suffix);
 bool find_line(const char *start, const char *stop, size_t *indent, const char **after_last_non_space, const char **eol);
-void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared);
-void fixup_comments(XMQDoc *doq, xmlNode *node, int depth);
-void fixup_ns(xmlNodePtr new_node, xmlNsPtr pns, XMQNS ns);
-xmlNs *prep_ancestor_namespace(xmlNode *node, const char *uri, const char *prefix);
-xmlNs *create_unique_ns(xmlNode *unique_prefix_check_node, xmlNode *declaration_node, const char *uri);
-void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index);
+void fixup_html(XMQDoc *doq, XMQNode *node, bool inside_cdata_declared);
+void fixup_comments(XMQDoc *doq, XMQNode *node, int depth);
+void fixup_ns(XMQNode* new_node, XmlNs* pns, XMQNS ns);
+XmlNs *prep_ancestor_namespace(XMQNode *node, const char *uri, const char *prefix);
+XmlNs *create_unique_ns(XMQNode *unique_prefix_check_node, XMQNode *declaration_node, const char *uri);
+void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index);
 void handle_yaep_syntax_error(YaepParseRun *pr,
                               int err_tok_num,
                               void *err_tok_attr,
@@ -137,13 +145,13 @@ const char *node_yaep_type_to_string(YaepTreeNodeType t);
 void reset_ansi(XMQParseState *state);
 void reset_ansi_nl(XMQParseState *state);
 const char *skip_any_potential_bom(const char *start, const char *stop);
-void text_print_node(XMQPrintState *ps, xmlNode *node);
-void text_print_nodes(XMQPrintState *ps, xmlNode *from);
-void cline_print_node(XMQPrintState *ps, xmlNode *node);
-void cline_print_nodes(XMQPrintState *ps, xmlNode *from);
-void cline_print_xpath(XMQPrintState *ps, xmlNode *node);
-void cline_print_attributes(XMQPrintState *ps, xmlNode *node);
-void cline_print_attr(XMQPrintState *ps, xmlAttr *a);
+void text_print_node(XMQPrintState *ps, XMQNode *node);
+void text_print_nodes(XMQPrintState *ps, XMQNode *from);
+void cline_print_node(XMQPrintState *ps, XMQNode *node);
+void cline_print_nodes(XMQPrintState *ps, XMQNode *from);
+void cline_print_xpath(XMQPrintState *ps, XMQNode *node);
+void cline_print_attributes(XMQPrintState *ps, XMQNode *node);
+void cline_print_attr(XMQPrintState *ps, XMQAttr *a);
 bool write_print_stderr(void *writer_state_ignored, const char *start, const char *stop);
 bool write_print_stdout(void *writer_state_ignored, const char *start, const char *stop);
 bool write_print_memory(void *writer_state_ignored, const char *start, const char *stop);
@@ -163,10 +171,10 @@ void xmq_print_text(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_clines(XMQDoc *doq, XMQOutputSettings *output_settings);
 char *xmq_quote_with_entity_newlines(const char *start, const char *stop, XMQQuoteSettings *settings);
 char *xmq_quote_default(int indent, const char *start, const char *stop, XMQQuoteSettings *settings);
-const char *xml_element_type_to_string(xmlElementType type);
+const char *xml_element_type_to_string(XmlNodeKind type);
 const char *indent_depth(int i);
 void free_indent_depths();
-int move_element(xmlDocPtr d, xmlNodePtr e, xmlNodePtr p, XMQMoveTo position, xmlNodePtr sibling);
+int move_element(XmlDom* d, XMQNode* e, XMQNode* p, XMQMoveTo position, XMQNode* sibling);
 
 // Declare tokenize_whitespace tokenize_name functions etc...
 #define X(TYPE) XMQStatus tokenize_##TYPE(XMQParseState*state, size_t line, size_t col,const char *start, const char *stop, const char *suffix);
@@ -1887,212 +1895,54 @@ XMQReturnDoc xmqNewDoc()
     XMQDoc *d = (XMQDoc*)malloc(sizeof(XMQDoc));
     if (!d) return (XMQReturnDoc){ XMQ_ERROR_OOM, NULL };
     memset(d, 0, sizeof(XMQDoc));
-    d->docptr_.xml = xmlNewDoc((const xmlChar*)"1.0");
+    d->dom_ = xml_dom_new();
     return (XMQReturnDoc){ XMQ_OK, d };
 }
 
 XMQStatus xmqSetDocType(XMQDoc *doq, const char *name)
 {
-    xmlDtdPtr dtd = xmlCreateIntSubset(doq->docptr_.xml, (const xmlChar *)name, NULL, NULL);
+    XMQNode *dtd = xml_dom_set_dtd(doq->dom_, name, NULL, NULL);
     if (dtd) return XMQ_OK;
     return XMQ_ERROR_OOM;
 }
-
-/*
-XMQNSPtr xmqNamespace(XMQDoc *doq, XMQNode *node, const char *name, const char *uri)
-{
-    xmlNsPtr ns = xmlNewNs((xmlNodePtr)node, (const xmlChar *)name, (const xmlChar *)uri);
-    return ns;
-}
-
-XMQNSPtr xmqGetNamespaceFromName(XMQDoc *doq, XMQNode *node, const char *name)
-{
-    xmlNsPtr ns = xmlSearchNs(doq->docptr_.xml, (xmlNodePtr)node, (const xmlChar *)name);
-    return ns;
-}
-
-XMQNSPtr xmqGetNamespaceFromURI(XMQDoc *doq, XMQNode *node, const char *uri)
-{
-    xmlNsPtr ns = xmlSearchNsByHref(doq->docptr_.xml, (xmlNodePtr)node, (const xmlChar *)uri);
-    return ns;
-}
-*/
 
 const char *get_prefix_and_uri(const char *puri, char **out_prefix);
 
 const char *get_prefix_and_uri(const char *puri, char **out_prefix)
 {
-    if (*puri != '{')
-    {
-        // No prefix.
-        *out_prefix = NULL;
-        return puri;
-    }
-
-    // We have a prefix, eg. {prefix}uri
-    // Find the closing brace.
-    const char *rb = puri;
-    for (; *rb; ++rb)
-    {
-        if (*rb == '}') break;
-    }
-    // Ouch, no right brace found, this is an error.
-    if (*rb != '}') return NULL;
-
-    size_t len = rb-puri-1;
-    char *prefix = (char*)malloc(len+1);
-    memcpy(prefix, puri+1, len);
-    prefix[len] = 0;
-    const char *uri = rb+1;
-    *out_prefix = prefix;
-    return uri;
-}
-
-xmlNs *gen_ns_from_string(xmlNodePtr node, const char *puri);
-
-xmlNs *gen_ns_from_string(xmlNodePtr node, const char *puri)
-{
-    char *prefix = NULL;
-    const char *uri = get_prefix_and_uri(puri, &prefix);
-
-    xmlNs *nns = xmlNewNs(node, (const xmlChar *)uri, (const xmlChar*)prefix);
-    free(prefix);
-    return nns;
-}
-
-xmlNs *create_unique_ns(xmlNode *unique_prefix_check_node, xmlNode *declaration_node, const char *uri)
-{
-    char prefix[32];
-
-    for (unsigned i = 1; i < 1000000000; i++)
-    {
-        snprintf(prefix, sizeof(prefix), "ns%u", i);
-
-        if (xmlSearchNs(NULL, unique_prefix_check_node, (const xmlChar *)prefix) == NULL)
-        {
-            return xmlNewNs(declaration_node, (const xmlChar *)uri, (const xmlChar *)prefix);
-        }
-    }
-    assert(false);
-    return NULL;
-}
-
-xmlNs *prep_ancestor_namespace(xmlNode *node, const char *uri, const char *prefix)
-{
-    xmlNs *ns;
-    if (!prefix)
-    {
-        ns = xmlSearchNsByHref(NULL, node, (const xmlChar *)uri);
-    }
-    else
-    {
-        ns = xmlSearchNs(NULL, node, (const xmlChar *)prefix);
-    }
-
-    if (!ns)
-    {
-        // Oups, no ancestor {prefix}uri found. Create the namespace.
-        xmlNodePtr i = node;
-        while (i->parent && i->parent->parent) i = i->parent;
-        if (!prefix)
-        {
-            // There is no prefix, we need to prep one.
-            ns = create_unique_ns(node, i, uri);
-        }
-        else
-        {
-            // We have a desired prefix.
-            ns = xmlNewNs(i, (const xmlChar *)uri, (const xmlChar *)prefix);
-        }
-    }
-    return ns;
-}
-
-void fixup_ns(xmlNodePtr new_node, xmlNsPtr pns, XMQNS ns)
-{
-    // We assume the node has already been setup with the parent namespace.
-    if (ns.action == XMQ_NS_PARENT) return;
-
-    xmlNsPtr nns = NULL;
-
-    // We override the default namespace.
-    if (ns.action == XMQ_NS_NONE)
-    {
-        if (pns) {
-            // Parent has a namespace we must explicitly create an empty ns.
-            nns = xmlNewNs(new_node, (const xmlChar *)"", NULL);
-        }
-    }
-    else if (ns.action == XMQ_NS_HERE)
-    {
-        // New namespace in this node with or without a prefix.
-        nns = gen_ns_from_string(new_node, ns.uri);
-        if (!nns) return; //  (XMQReturnNode){ XMQ_ERROR_BAD_VALUE, NULL };
-    }
-    else if (ns.action == XMQ_NS_ANCESTOR)
-    {
-        char *prefix;
-        const char *uri = get_prefix_and_uri(ns.uri, &prefix);
-
-        nns = prep_ancestor_namespace(new_node, uri, prefix);
-        free(prefix);
-    }
-    else
-    {
-        assert(false);
-    }
-    xmlSetNs(new_node, nns);
+    return xml_ns_split_puri(puri, out_prefix);
 }
 
 XMQReturnNode xmqAddRootElement(XMQDoc *doq, const char *name, XMQNS ns)
 {
     if (!doq || !name) return (XMQReturnNode){ XMQ_ERROR_BAD_VALUE, NULL };
 
-    xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, NULL, (const xmlChar *)name, NULL);
-
-    fixup_ns(new_node, NULL, ns);
-
-    xmlDocSetRootElement(doq->docptr_.xml, new_node);
-    doq->root_ = (XMQNode*)new_node;
-    return (XMQReturnNode){ XMQ_OK, (XMQNode*)new_node };
+    XMQNode *new_node = xml_node_new_element(doq->dom_, name, NULL);
+    xml_dom_set_root_element(doq->dom_, new_node);
+    if (ns.action != XMQ_NS_PARENT) xml_node_apply_xmqns(new_node, ns);
+    doq->root_ = new_node;
+    return (XMQReturnNode){ XMQ_OK, new_node };
 }
 
 XMQStatus xmqAddNamespace(XMQDoc *doq, XMQNode *node, XMQNS ns)
 {
     if (!doq || !node || ns.action != XMQ_NS_HERE) return XMQ_ERROR_BAD_VALUE;
 
-    xmlNs **nspaces = xmlGetNsList(doq->docptr_.xml, (xmlNode*)node);
-
     char *prefix = NULL;
     const char *uri = get_prefix_and_uri(ns.uri, &prefix);
 
     // The new namespace must have a prefix.
-    if (!prefix)
+    if (!uri || !prefix)
     {
-        xmlFree(nspaces);
+        free(prefix);
         return XMQ_ERROR_BAD_VALUE;
     }
 
-    bool found = false;
-    if (nspaces)
-    {
-        for (xmlNsPtr *i = nspaces; *i; ++i)
-        {
-            if (!strcmp((const char*)(*i)->href, uri) &&
-                (*i)->prefix &&
-                !strcmp((const char*)(*i)->prefix, prefix))
-            {
-                found = true;
-                break;
-            }
-        }
-    }
-    xmlFree(nspaces);
     XMQStatus rc = XMQ_OK;
-    if (!found)
+    XmlNs *found = xml_ns_lookup_prefix(node, prefix);
+    if (!found || !xml_ns_href(found) || strcmp(xml_ns_href(found), uri))
     {
-        xmlNsPtr nns = xmlNewNs((xmlNodePtr)node, (const xmlChar *)uri, (const xmlChar*)prefix);
-        if (!nns) rc = XMQ_ERROR_OOM;
+        if (!xml_ns_declare(node, prefix, uri)) rc = XMQ_ERROR_BAD_VALUE;
     }
     free(prefix);
     return rc;
@@ -2100,105 +1950,99 @@ XMQStatus xmqAddNamespace(XMQDoc *doq, XMQNode *node, XMQNS ns)
 
 XMQReturnNode xmqAddElement(XMQDoc *doq, XMQNode *parent, const char *name, XMQNS ns)
 {
-    xmlNodePtr p = (xmlNodePtr)parent;
+    if (!doq || !parent || !name) return (XMQReturnNode){ XMQ_ERROR_BAD_VALUE, NULL };
     // Default to place the new node in the same namespace as the parent node.
     // But this can be overridden below.
-    xmlNsPtr pns = p->ns;
-    xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, pns, (xmlChar*)name, NULL);
-    xmlAddChild((xmlNodePtr)parent, new_node);
-    fixup_ns(new_node, pns, ns);
+    XMQNode *new_node = xml_node_new_element(doq->dom_, name, xml_node_ns(parent));
+    xml_node_append_child(parent, new_node);
+    if (ns.action != XMQ_NS_PARENT) xml_node_apply_xmqns(new_node, ns);
 
-    return (XMQReturnNode){ XMQ_OK, (XMQNode*)new_node };
+    return (XMQReturnNode){ XMQ_OK, new_node };
 }
 
 XMQReturnNode xmqAddKeyValue(XMQDoc *doq, XMQNode *parent, const char *key, const char *value, XMQNS ns)
 {
-    // Default to place the new node in the same namespace as the parent node.
-    // But this can be overridden below.
-    xmlNsPtr pns = ((xmlNodePtr)parent)->ns;
-
-    xmlNodePtr new_node = xmlNewDocNode(doq->docptr_.xml, pns, (xmlChar*)key, NULL);
-    xmlAddChild((xmlNodePtr)parent, new_node);
-    fixup_ns(new_node, pns, ns);
-
-    xmlNodePtr text = xmlNewDocText(doq->docptr_.xml, (xmlChar*)value);
-    xmlAddChild(new_node, text);
-
-    return (XMQReturnNode) { XMQ_OK, (XMQNode*)new_node };
+    XMQReturnNode rn = xmqAddElement(doq, parent, key, ns);
+    if (rn.status != XMQ_OK) return rn;
+    if (value && *value) xml_node_append_child(rn.node, xml_node_new_text(doq->dom_, value));
+    return rn;
 }
 
 XMQStatus xmqAddText(XMQDoc *doq, XMQNode *parent, const char *text, size_t len)
 {
     if (!doq || !parent || (!text && len > 0)) return XMQ_ERROR_BAD_VALUE;
     if (len == 0) return XMQ_OK;
-    xmlNodePtr t = xmlNewDocTextLen(doq->docptr_.xml, (const xmlChar*)text, (int)len);
+    XMQNode *t = xml_node_new_text_len(doq->dom_, text, len);
     if (!t) return XMQ_ERROR_OOM;
-    // xmlAddChild merges the text with a previous text node.
-    xmlAddChild((xmlNodePtr)parent, t);
+    // Merges the text with a previous text node.
+    xml_node_add_child(parent, t);
     return XMQ_OK;
 }
 
 bool xmqHasAttribute(XMQNode *node, const char *name)
 {
-    if (!node || !name) return false;
-    return xmlHasProp((xmlNodePtr)node, (const xmlChar*)name) != NULL;
+    if (!node || !name || xml_node_kind(node) != XML_DOM_ELEMENT) return false;
+    for (XMQAttr *a = xml_node_first_attr(node); a; a = xml_attr_next(a))
+    {
+        // Like libxml2 xmlHasProp: the name matches regardless of namespace.
+        if (!strcmp(xml_attr_name(a), name)) return true;
+    }
+    return false;
 }
 
 XMQContentMark xmqContentMark(XMQNode *node)
 {
     XMQContentMark m = { NULL, 0, NULL };
-    xmlNodePtr n = (xmlNodePtr)node;
-    if (!n) return m;
-    m.child = n->last;
-    if (n->last && n->last->type == XML_TEXT_NODE && n->last->content)
+    if (!node) return m;
+    XMQNode *last = xml_node_last_child(node);
+    m.child = last;
+    if (last && xml_node_kind(last) == XML_DOM_TEXT && xml_node_content(last))
     {
-        m.text_len = strlen((const char*)n->last->content);
+        m.text_len = strlen(xml_node_content(last));
     }
-    xmlAttrPtr a = n->properties;
-    while (a && a->next) a = a->next;
+    XMQAttr *a = xml_node_first_attr(node);
+    while (a && xml_attr_next(a)) a = xml_attr_next(a);
     m.attr = a;
     return m;
 }
 
 XMQReturnNode xmqWrapContent(XMQDoc *doq, XMQNode *node, XMQContentMark mark, const char *name)
 {
-    xmlNodePtr n = (xmlNodePtr)node;
+    XMQNode *n = node;
     if (!doq || !n || !name) return (XMQReturnNode){ XMQ_ERROR_BAD_VALUE, NULL };
-    xmlDocPtr d = doq->docptr_.xml;
-    xmlNodePtr w = xmlNewDocNode(d, n->ns, (const xmlChar*)name, NULL);
+    XMQNode *w = xml_node_new_element(doq->dom_, name, xml_node_ns(n));
     if (!w) return (XMQReturnNode){ XMQ_ERROR_OOM, NULL };
-    xmlNodePtr mc = (xmlNodePtr)mark.child;
-    xmlNodePtr c = mc ? mc->next : n->children;
-    if (mc && mc->type == XML_TEXT_NODE && mc->content)
+    XMQNode *mc = (XMQNode*)mark.child;
+    XMQNode *c = mc ? xml_node_next(mc) : xml_node_first_child(n);
+    if (mc && xml_node_kind(mc) == XML_DOM_TEXT && xml_node_content(mc))
     {
         // Text added after the mark may have been merged into the marked text node, split it.
-        size_t len = strlen((const char*)mc->content);
+        const char *content = xml_node_content(mc);
+        size_t len = strlen(content);
         if (len > mark.text_len)
         {
-            xmlNodePtr t = xmlNewDocTextLen(d, mc->content + mark.text_len, (int)(len - mark.text_len));
-            xmlChar *prefix = xmlStrndup(mc->content, (int)mark.text_len);
-            xmlNodeSetContent(mc, prefix);
-            xmlFree(prefix);
-            xmlAddChild(w, t);
+            XMQNode *t = xml_node_new_text_len(doq->dom_, content + mark.text_len, len - mark.text_len);
+            char *prefix = strndup(content, mark.text_len);
+            xml_node_set_content(mc, prefix);
+            free(prefix);
+            xml_node_append_child(w, t);
         }
     }
     while (c)
     {
-        xmlNodePtr next = c->next;
-        xmlUnlinkNode(c);
-        xmlAddChild(w, c);
+        XMQNode *next = xml_node_next(c);
+        xml_node_add_child(w, c);
         c = next;
     }
-    xmlAttrPtr a = mark.attr ? ((xmlAttrPtr)mark.attr)->next : n->properties;
+    XMQAttr *a = mark.attr ? xml_attr_next((XMQAttr*)mark.attr) : xml_node_first_attr(n);
     while (a)
     {
-        xmlAttrPtr next = a->next;
-        xmlUnlinkNode((xmlNodePtr)a);
-        xmlAddChild(w, (xmlNodePtr)a);
+        XMQAttr *next = xml_attr_next(a);
+        xml_node_move_attr(w, a);
         a = next;
     }
-    xmlAddChild(n, w);
-    return (XMQReturnNode){ XMQ_OK, (XMQNode*)w };
+    xml_node_add_child(n, w);
+    return (XMQReturnNode){ XMQ_OK, w };
 }
 
 XMQStatus xmq_add_attrs(XMQDoc *doc, XMQNode *node, const XMQAddAttr *attrs, size_t num_attrs);
@@ -2262,40 +2106,16 @@ XMQReturnNode xmqAddElementWithAttrs(XMQDoc *doq,
  *
  * Returns 0 on success, -1 on invalid input/failure.
  */
-int
-move_element(xmlDocPtr d,
-             xmlNodePtr e,
-             xmlNodePtr p,
-             XMQMoveTo position,
-             xmlNodePtr sibling)
+int move_element(XmlDom *d, XMQNode *e, XMQNode *p, XMQMoveTo position, XMQNode *sibling)
 {
-    xmlNodePtr n;
+    if (d == NULL || e == NULL || p == NULL) return -1;
+    if (xml_node_dom(e) != d || xml_node_dom(p) != d) return -1;
+    if (e == p) return -1;
 
-    if (d == NULL || e == NULL || p == NULL)
+    // Moving p underneath one of its descendants would create a cycle.
+    for (XMQNode *n = p; n != NULL; n = xml_node_parent(n))
     {
-        return -1;
-    }
-
-    if (e->doc != d || p->doc != d)
-    {
-        return -1;
-    }
-
-    if (e == p)
-    {
-        return -1;
-    }
-
-    /*
-     * Moving p underneath one of its descendants would create
-     * a cycle.
-     */
-    for (n = p; n != NULL; n = n->parent)
-    {
-        if (n == e)
-        {
-            return -1;
-        }
+        if (n == e) return -1;
     }
 
     switch (position)
@@ -2303,59 +2123,34 @@ move_element(xmlDocPtr d,
     case XMQ_MOVE_FIRST:
     case XMQ_MOVE_LAST:
         break;
-
     case XMQ_MOVE_BEFORE:
     case XMQ_MOVE_AFTER:
-        if (sibling == NULL ||
-            sibling == e ||
-            sibling->doc != d ||
-            sibling->parent != p)
-            return -1;
+        if (sibling == NULL || sibling == e || xml_node_dom(sibling) != d || xml_node_parent(sibling) != p) return -1;
         break;
-
     default:
         return -1;
     }
 
-    /*
-     * Detach e from its current location without freeing it.
-     */
-    xmlUnlinkNode(e);
+    xml_node_unlink(e);
 
     switch (position) {
     case XMQ_MOVE_FIRST:
-        /*
-         * xmlAddPrevSibling() cannot be used if p has no children.
-         */
-        if (p->children != NULL) {
-            if (xmlAddPrevSibling(p->children, e) == NULL)
-                return -1;
-        } else {
-            if (xmlAddChild(p, e) == NULL)
-                return -1;
-        }
+        if (xml_node_first_child(p)) xml_node_add_prev_sibling(xml_node_first_child(p), e);
+        else xml_node_add_child(p, e);
         break;
-
     case XMQ_MOVE_LAST:
-        if (xmlAddChild(p, e) == NULL)
-            return -1;
+        xml_node_add_child(p, e);
         break;
-
     case XMQ_MOVE_BEFORE:
-        if (xmlAddPrevSibling(sibling, e) == NULL)
-            return -1;
+        xml_node_add_prev_sibling(sibling, e);
         break;
-
     case XMQ_MOVE_AFTER:
-        if (xmlAddNextSibling(sibling, e) == NULL)
-            return -1;
+        xml_node_add_next_sibling(sibling, e);
         break;
-
     default:
-        /* Already validated above. */
         return -1;
     }
-
+    xml_node_reconcile_ns(e);
     return 0;
 }
 
@@ -2369,11 +2164,7 @@ bool xmqMoveElement(XMQDoc *from_doq,
 {
     if (from_doq == to_doq)
     {
-        int rc = move_element(from_doq->docptr_.xml,
-                              (xmlNodePtr)element,
-                              (xmlNodePtr)to_parent,
-                              where,
-                              (xmlNodePtr)sibling);
+        int rc = move_element(from_doq->dom_, element, to_parent, where, sibling);
         return (rc != 0);
     }
     assert(false);
@@ -2384,46 +2175,18 @@ XMQReturnAttr xmqSetAttribute(XMQDoc *doq, XMQNode *node, const char *name, cons
 {
     // NULLs not accepted.
     if (!doq || !node || !name || !value) return (XMQReturnAttr){ XMQ_ERROR_BAD_VALUE, NULL };
-
-    xmlAttr *a = NULL;
-
-    if (ns.action == XMQ_NS_NONE)
-    {
-        // The default xml behaviour is that properties have no namespace.
-        a = xmlSetProp((xmlNode*)node, (const xmlChar*)name, (const xmlChar*)value);
-    }
-    else if (ns.action == XMQ_NS_PARENT)
-    {
-        xmlNode *p = (xmlNode*)node;
-        xmlNs   *pns = p->ns;
-        a = xmlSetNsProp((xmlNode*)node, pns, (const xmlChar*)name, (const xmlChar*)value);
-    }
-    else if (ns.action == XMQ_NS_ANCESTOR)
-    {
-        char *prefix;
-        const char *uri = get_prefix_and_uri(ns.uri, &prefix);
-
-        xmlNs *ns = prep_ancestor_namespace((xmlNode*)node, uri, prefix);
-        free(prefix);
-        a = xmlSetNsProp((xmlNode*)node, ns, (const xmlChar*)name, (const xmlChar*)value);
-    }
-    else
-    {
-        // You cannot use NS_HERE for an attribute.
-        return (XMQReturnAttr){ XMQ_ERROR_BAD_VALUE, NULL };
-    }
-
-    return (XMQReturnAttr){ XMQ_OK, (XMQAttr*)a };
+    return xml_node_set_attr_xmqns(node, name, value, ns);
 }
 
 void *xmqGetImplementationDoc(XMQDoc *doq)
 {
-    return doq->docptr_.xml;
+    return doq->dom_;
 }
 
 void xmqSetImplementationDoc(XMQDoc *doq, void *doc)
 {
-    doq->docptr_.xml = (xmlDocPtr)doc;
+    doq->dom_ = (XmlDom*)doc;
+    doq->root_ = doq->dom_ ? xml_dom_root_element(doq->dom_) : NULL;
 }
 
 void xmqSetDocSourceName(XMQDoc *doq, const char *source_name)
@@ -2525,11 +2288,12 @@ void xmqClearDoc(XMQDoc *doq)
         free((void*)doq->error_);
         doq->error_ = NULL;
     }
-    if (doq->docptr_.xml)
+    if (doq->dom_)
     {
         debug("xmq=", "freeing xml doc");
-        xmlFreeDoc(doq->docptr_.xml);
-        doq->docptr_.xml = xmlNewDoc((const xmlChar*)"1.0");
+        xml_dom_free(doq->dom_);
+        doq->dom_ = xml_dom_new();
+        doq->root_ = NULL;
     }
     if (doq->yaep_grammar_)
     {
@@ -2558,11 +2322,11 @@ void xmqFreeDoc(XMQDoc *doq)
         free((void*)doq->error_);
         doq->error_ = NULL;
     }
-    if (doq->docptr_.xml)
+    if (doq->dom_)
     {
         debug("xmq=", "freeing xml doc");
-        xmlFreeDoc(doq->docptr_.xml);
-        doq->docptr_.xml = NULL;
+        xml_dom_free(doq->dom_);
+        doq->dom_ = NULL;
     }
     if (doq->yaep_grammar_)
     {
@@ -2625,7 +2389,7 @@ bool xmqParseBuffer(XMQDoc *doq, const char *start, const char *stop, const char
 
     state->implicit_root = implicit_root;
 
-    stack_push(state->element_stack, doq->docptr_.xml);
+    stack_push(state->element_stack, xml_dom_document(doq->dom_));
     // Now state->element_stack->top->data points to doq->docptr_;
     state->element_last = NULL; // Will be set when the first node is created.
     // The doc root will be set when the first element node is created.
@@ -2740,7 +2504,7 @@ XMQReturnXMLNode create_quote(XMQParseState *state,
                               const char *start,
                               const char *stop,
                               const char *suffix,
-                              xmlNodePtr parent)
+                              XMQNode* parent)
 {
     char *trimmed = NULL;
     if (state->no_trim_quotes)
@@ -2754,34 +2518,15 @@ XMQReturnXMLNode create_quote(XMQParseState *state,
         if (rs.status != XMQ_OK) return (XMQReturnXMLNode){ rs.status, NULL };
         trimmed = rs.string;
     }
-    xmlNodePtr n = xmlNewDocText(state->doq->docptr_.xml, (const xmlChar *)trimmed);
-    if (!n)
-    {
-        free(trimmed);
-        return (XMQReturnXMLNode){ XMQ_ERROR_OOM, NULL };
-    }
+    XMQNode *n = xml_node_new_text(state->doq->dom_, trimmed);
     if (state->merge_text)
     {
-        n = xmlAddChild(parent, n);
+        n = xml_node_add_child(parent, n);
     }
     else
     {
-        // I want to prevent merging of this new text node with previous text nodes....
-        // Alas there is no such setting in libxml2 so I perform the addition explicit here.
-        // Check the source for xmlAddChild.
-        n->parent = parent;
-        if (parent->children == NULL)
-        {
-            parent->children = n;
-            parent->last = n;
-        }
-        else
-        {
-            xmlNodePtr prev = parent->last;
-            prev->next = n;
-            n->prev = prev;
-            parent->last = n;
-        }
+        // Prevent merging of this new text node with previous text nodes.
+        xml_node_append_child(parent, n);
     }
     free(trimmed);
     return (XMQReturnXMLNode){ XMQ_OK, n };
@@ -2795,29 +2540,30 @@ XMQStatus do_quote(XMQParseState *state,
                    const char *suffix)
 {
     XMQReturnXMLNode rn = create_quote(state, l, col, start, stop, suffix,
-                                       (xmlNode*)state->element_stack->top->data);
+                                       (XMQNode*)state->element_stack->top->data);
     if (rn.status != XMQ_OK) return rn.status;
     state->element_last = rn.node;
     return XMQ_OK;
 }
 
-xmlNodePtr create_entity(XMQParseState *state,
+XMQNode* create_entity(XMQParseState *state,
                          size_t l,
                          size_t c,
                          const char *start,
                          const char *stop,
                          const char *suffix,
-                         xmlNodePtr parent)
+                         XMQNode* parent)
 {
     char *tmp = strndup(start, stop-start);
-    xmlNodePtr n = NULL;
+    XMQNode* n = NULL;
     if (tmp[1] == '#')
     {
         // Character entity.
         if (!state->merge_text)
         {
             // Do not merge with surrounding text.
-            n = xmlNewCharRef(state->doq->docptr_.xml, (const xmlChar *)tmp);
+            tmp[strlen(tmp)-1] = 0;
+            n = xml_node_new_entity_ref(state->doq->dom_, tmp+1);
         }
         else
         {
@@ -2837,15 +2583,17 @@ xmlNodePtr create_entity(XMQParseState *state,
             char buf[len+1];
             memcpy(buf, uni.bytes, len);
             buf[len] = 0;
-            n = xmlNewDocText(state->doq->docptr_.xml, (xmlChar*)buf);
+            n = xml_node_new_text(state->doq->dom_, buf);
         }
     }
     else
     {
         // Named references are kept as is.
-        n = xmlNewReference(state->doq->docptr_.xml, (const xmlChar *)tmp);
+        tmp[strlen(tmp)-1] = 0;
+        n = xml_node_new_entity_ref(state->doq->dom_, tmp+1);
     }
-    n = xmlAddChild(parent, n);
+    if (xml_node_kind(n) == XML_DOM_TEXT) n = xml_node_add_child(parent, n);
+    else xml_node_append_child(parent, n);
     free(tmp);
 
     return n;
@@ -2858,7 +2606,7 @@ XMQStatus do_entity(XMQParseState *state,
                const char *stop,
                const char *suffix)
 {
-    state->element_last = create_entity(state, l, c, start, stop, suffix, (xmlNode*)state->element_stack->top->data);
+    state->element_last = create_entity(state, l, c, start, stop, suffix, (XMQNode*)state->element_stack->top->data);
     return XMQ_OK;
 }
 
@@ -2869,7 +2617,7 @@ XMQStatus do_comment(XMQParseState*state,
                 const char *stop,
                 const char *suffix)
 {
-    xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
+    XMQNode* parent = (XMQNode*)state->element_stack->top->data;
     char *trimmed = NULL;
     if (state->no_trim_quotes)
     {
@@ -2882,25 +2630,20 @@ XMQStatus do_comment(XMQParseState*state,
         if (rs.status != XMQ_OK) return XMQ_ERROR_OOM;
         trimmed = rs.string;
     }
-    xmlNodePtr n = xmlNewDocComment(state->doq->docptr_.xml, (const xmlChar *)trimmed);
-    if (!n)
-    {
-        free(trimmed);
-        return XMQ_ERROR_OOM;
-    }
+    XMQNode *n = xml_node_new_comment(state->doq->dom_, trimmed);
     if (state->add_pre_node_before)
     {
         // Insert comment before this node.
-        xmlAddPrevSibling((xmlNodePtr)state->add_pre_node_before, n);
+        xml_node_add_prev_sibling((XMQNode*)state->add_pre_node_before, n);
     }
     else if (state->add_post_node_after)
     {
         // Insert comment after this node.
-        xmlAddNextSibling((xmlNodePtr)state->add_post_node_after, n);
+        xml_node_add_next_sibling((XMQNode*)state->add_post_node_after, n);
     }
     else
     {
-        xmlAddChild(parent, n);
+        xml_node_add_child(parent, n);
     }
     state->element_last = n;
     free(trimmed);
@@ -2914,7 +2657,7 @@ XMQStatus do_comment_continuation(XMQParseState*state,
                              const char *stop,
                              const char *suffix)
 {
-    xmlNodePtr last = (xmlNode*)state->element_last;
+    XMQNode* last = (XMQNode*)state->element_last;
     // We have ///* alfa *///* beta *///* gamma *///
     // and this function is invoked with "* beta *///"
     const char *i = stop-1;
@@ -2936,7 +2679,7 @@ XMQStatus do_comment_continuation(XMQParseState*state,
     tmp[0] = '\n';
     memcpy(tmp+1, trimmed, l);
     tmp[l+1] = 0;
-    xmlNodeAddContent(last, (const xmlChar *)tmp);
+    xml_node_append_content(last, tmp, l+1);
     free(trimmed);
     free(tmp);
     return XMQ_OK;
@@ -2952,9 +2695,9 @@ XMQStatus do_element_value_text(XMQParseState *state,
     if (state->parsing_pi)
     {
         char *content = potentially_add_leading_ending_space(start, stop);
-        xmlNodePtr n = (xmlNodePtr)xmlNewPI((xmlChar*)state->pi_name, (xmlChar*)content);
-        xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
-        xmlAddChild(parent, n);
+        XMQNode *n = xml_node_new_pi(state->doq->dom_, state->pi_name, content);
+        XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+        xml_node_add_child(parent, n);
         free(content);
 
         state->parsing_pi = false;
@@ -2967,10 +2710,9 @@ XMQStatus do_element_value_text(XMQParseState *state,
         char *tmp = (char*)malloc(l+1);
         memcpy(tmp, start, l);
         tmp[l] = 0;
-        state->doq->docptr_.xml->intSubset = xmlNewDtd(state->doq->docptr_.xml, (xmlChar*)tmp, NULL, NULL);
-        xmlNodePtr n = (xmlNodePtr)state->doq->docptr_.xml->intSubset;
-        xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
-        xmlAddChild(parent, n);
+        XMQNode *n = xml_dom_set_dtd(state->doq->dom_, tmp, NULL, NULL);
+        XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+        xml_node_add_child(parent, n);
         free(tmp);
 
         state->parsing_doctype = false;
@@ -2978,8 +2720,8 @@ XMQStatus do_element_value_text(XMQParseState *state,
     }
     else
     {
-        xmlNodePtr n = xmlNewDocTextLen(state->doq->docptr_.xml, (const xmlChar *)start, stop-start);
-        xmlAddChild((xmlNode*)state->element_last, n);
+        XMQNode *n = xml_node_new_text_len(state->doq->dom_, start, stop-start);
+        xml_node_add_child((XMQNode*)state->element_last, n);
     }
     return XMQ_OK;
 }
@@ -3006,9 +2748,9 @@ XMQStatus do_element_value_quote(XMQParseState *state,
     if (state->parsing_pi)
     {
         char *content = potentially_add_leading_ending_space(trimmed, trimmed+strlen(trimmed));
-        xmlNodePtr n = (xmlNodePtr)xmlNewPI((xmlChar*)state->pi_name, (xmlChar*)content);
-        xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
-        xmlAddChild(parent, n);
+        XMQNode *n = xml_node_new_pi(state->doq->dom_, state->pi_name, content);
+        XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+        xml_node_add_child(parent, n);
         state->parsing_pi = false;
         free((char*)state->pi_name);
         state->pi_name = NULL;
@@ -3024,23 +2766,24 @@ XMQStatus do_element_value_quote(XMQParseState *state,
         memcpy(buf+10, trimmed, tn);
         memcpy(buf+10+tn, "><foo></foo>", 12);
         buf[n-1] = 0;
-        xmlDtdPtr dtd = parse_doctype_raw(state->doq, buf, buf+n-1);
+        XMQNode* dtd = parse_doctype_raw(state->doq, buf, buf+n-1);
         if (!dtd)
         {
             state->error_nr = XMQ_ERROR_BAD_DOCTYPE;
             longjmp(state->error_handler, 1);
         }
-        state->doq->docptr_.xml->intSubset = dtd;
+        XMQNode *old = xml_dom_dtd(state->doq->dom_);
+        if (old) xml_node_free(old);
         if (state->add_pre_node_before)
         {
             // Insert doctype before this node.
-            xmlAddPrevSibling((xmlNodePtr)state->add_pre_node_before, (xmlNodePtr)dtd);
+            xml_node_add_prev_sibling((XMQNode*)state->add_pre_node_before, dtd);
         }
         else
         {
             // Append doctype to document.
-            xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
-            xmlAddChild(parent, (xmlNodePtr)dtd);
+            XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+            xml_node_add_child(parent, dtd);
         }
         state->parsing_doctype = false;
         state->doctype_found = true;
@@ -3048,8 +2791,8 @@ XMQStatus do_element_value_quote(XMQParseState *state,
     }
     else
     {
-        xmlNodePtr n = xmlNewDocText(state->doq->docptr_.xml, (const xmlChar *)trimmed);
-        xmlAddChild((xmlNode*)state->element_last, n);
+        XMQNode *n = xml_node_new_text(state->doq->dom_, trimmed);
+        xml_node_add_child((XMQNode*)state->element_last, n);
     }
     free(trimmed);
     return XMQ_OK;
@@ -3062,7 +2805,7 @@ XMQStatus do_element_value_entity(XMQParseState *state,
                              const char *stop,
                              const char *suffix)
 {
-    create_entity(state, line, col, start, stop, suffix, (xmlNode*)state->element_last);
+    create_entity(state, line, col, start, stop, suffix, (XMQNode*)state->element_last);
     return XMQ_OK;
 }
 
@@ -3121,7 +2864,7 @@ XMQStatus do_ns_declaration(XMQParseState *state,
     //
     // We can see the difference here since the parser will invoke with suffix
     // either pointing to stop (xmlns=) or after stop (xmlns:foo=)
-    xmlNodePtr element = (xmlNode*)state->element_stack->top->data;
+    XMQNode* element = (XMQNode*)state->element_stack->top->data;
     if (!element)
     {
         // There is no element node, eg a processing instruction element
@@ -3131,35 +2874,26 @@ XMQStatus do_ns_declaration(XMQParseState *state,
         state->declaring_xmlns_namespace = NULL;
         return XMQ_OK;
     }
-    xmlNsPtr ns = NULL;
+    XmlNs* ns = NULL;
     if (stop == suffix)
     {
         // Stop is the same as suffix, so no prefix has been added.
         // I.e. this is a default namespace, eg: xmlns=uri
-        ns = xmlNewNs(element,
-                      NULL,
-                      NULL);
-        debug("xmq=", "create default namespace in element %s", element->name);
-        if (!ns)
+        if (xml_node_kind(element) == XML_DOM_ELEMENT)
         {
-            // Oups, this element already has a default namespace.
-            // This is probably due to multiple xmlns=uri declarations. Is this an error or not?
-            xmlNsPtr *list = xmlGetNsList(state->doq->docptr_.xml,
-                                          element);
-            for (int i = 0; list && list[i]; ++i)
+            ns = xml_ns_declare(element, NULL, NULL);
+            debug("xmq=", "create default namespace in element %s", xml_node_name(element));
+            if (!ns)
             {
-                if (!list[i]->prefix)
-                {
-                    ns = list[i];
-                    break;
-                }
+                // Oups, this element already has a default namespace.
+                // This is probably due to multiple xmlns=uri declarations. Is this an error or not?
+                ns = xml_ns_lookup_prefix(element, NULL);
             }
-            free(list);
-        }
-        if (element->ns == NULL)
-        {
-            debug("xmq=", "set default namespace in element %s prefix=%s href=%s", element->name, ns->prefix, ns->href);
-            xmlSetNs(element, ns);
+            if (ns && xml_node_ns(element) == NULL)
+            {
+                debug("xmq=", "set default namespace in element %s prefix=%s href=%s", xml_node_name(element), xml_ns_prefix(ns), xml_ns_href(ns));
+                xml_node_set_ns(element, ns);
+            }
         }
         state->default_namespace = ns;
     }
@@ -3171,14 +2905,8 @@ XMQStatus do_ns_declaration(XMQParseState *state,
         size_t len = suffix-(stop+1);
         char *name = strndup(stop+1, len);
 
-        ns = find_ns(element, (const xmlChar*)name);
-        if (!ns) {
-            // This should be the only lookup, but it fails to find the incomplete namespaces without uri...
-            // But it finds the xml namespace.
-            ns = xmlSearchNs(element->doc,
-                             element,
-                             (const xmlChar *)name);
-        }
+        ns = find_ns(element, name);
+        if (!ns && !strcmp(name, "xml")) ns = xml_ns_lookup_prefix(element, name);
 
         if (ns)
         {
@@ -3191,9 +2919,7 @@ XMQStatus do_ns_declaration(XMQParseState *state,
         else
         {
             // Not used before, create a new namespace.
-            ns = xmlNewNs(element,
-                          NULL,
-                          (const xmlChar *)name);
+            if (xml_node_kind(element) == XML_DOM_ELEMENT) ns = xml_ns_declare(element, name, NULL);
             debug("xmq=", "created new namespace declaration xmlns:%s", name);
         }
         free(name);
@@ -3213,14 +2939,15 @@ XMQStatus do_ns_declaration(XMQParseState *state,
     return XMQ_OK;
 }
 
-xmlNsPtr find_ns(xmlNodePtr node, const xmlChar *prefix)
+XmlNs* find_ns(XMQNode* node, const char *prefix)
 {
-    for (xmlNodePtr cur = node; cur; cur = cur->parent)
+    for (XMQNode* cur = node; cur; cur = xml_node_parent(cur))
     {
-        for (xmlNsPtr ns = cur->nsDef; ns; ns = ns->next)
+        if (xml_node_kind(cur) != XML_DOM_ELEMENT) continue;
+        for (XmlNs *ns = xml_node_first_ns_decl(cur); ns; ns = xml_ns_next_decl(ns))
         {
-            if ((prefix == NULL && ns->prefix == NULL) ||
-                (prefix && ns->prefix && xmlStrEqual(prefix, ns->prefix)))
+            if ((prefix == NULL && xml_ns_prefix(ns) == NULL) ||
+                (prefix && xml_ns_prefix(ns) && !strcmp(prefix, xml_ns_prefix(ns))))
             {
                 return ns;
             }
@@ -3241,75 +2968,74 @@ XMQStatus do_attr_key(XMQParseState *state,
     memcpy(key, start, n);
     key[n] = 0;
 
-    xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
+    XMQNode* parent = (XMQNode*)state->element_stack->top->data;
     if (!parent)
     {
         // There is no element node, eg a processing instruction element
         // like ?root( ... ) has no node. Use the document node instead.
-        parent = (xmlNodePtr)state->doq->docptr_.xml;
+        parent = xml_dom_document(state->doq->dom_);
     }
-    xmlAttrPtr attr = NULL;
+    XMQAttr* attr = NULL;
 
-    if (!state->attribute_namespace)
+    if (xml_node_kind(parent) != XML_DOM_ELEMENT)
+    {
+        // Attributes can only be attached to elements, the value is dropped.
+        free(state->attribute_namespace);
+        state->attribute_namespace = NULL;
+    }
+    else if (!state->attribute_namespace)
     {
         // A normal attribute with no namespace.
-        attr =  xmlNewProp(parent, (xmlChar*)key, NULL);
+        attr = xml_node_append_attr(parent, key, NULL, NULL);
     }
     else
     {
-        xmlNsPtr ns = find_ns(parent, (const xmlChar *)state->attribute_namespace);
-        if (!ns) {
-            // This should be the only lookup, but it fails to find the incomplete namespaces without uri...
-            // But it finds the xml namespace.
-            ns = xmlSearchNs(parent->doc,
-                             parent,
-                             (const xmlChar *)state->attribute_namespace);
-        }
+        XmlNs *ns = find_ns(parent, state->attribute_namespace);
+        if (!ns && !strcmp(state->attribute_namespace, "xml")) ns = xml_ns_lookup_prefix(parent, "xml");
 
         if (ns)
         {
-            debug("xmq=", "found existing namespace for attribute %s:%s inside %s", state->attribute_namespace, key, parent->name);
+            debug("xmq=", "found existing namespace for attribute %s:%s inside %s", state->attribute_namespace, key, xml_node_name(parent));
         }
         else
         {
             // The namespaces does not yet exist. Lets create it.. Lets hope it will be declared
             // inside the attributes of this node. Use a temporary href for now.
-            ns = xmlNewNs(parent,
-                          NULL,
-                          (const xmlChar *)state->attribute_namespace);
-            debug("xmq=", "created new namespace for attribute %s:%s inside %s", state->attribute_namespace, key, parent->name);
+            ns = xml_ns_declare(parent, state->attribute_namespace, NULL);
+            debug("xmq=", "created new namespace for attribute %s:%s inside %s", state->attribute_namespace, key, xml_node_name(parent));
         }
-        attr = xmlNewNsProp(parent, ns, (xmlChar*)key, NULL);
+        attr = xml_node_append_attr(parent, key, ns, NULL);
         free(state->attribute_namespace);
         state->attribute_namespace = NULL;
     }
 
     // The new attribute attr should now be added to the parent elements: properties list.
     // Remember this attr as the last element so that we can set the value.
-    state->element_last = attr;
+    state->element_last = attr ? xml_attr_node(attr) : NULL;
 
     free(key);
     return XMQ_OK;
 }
 
 void update_namespace_href(XMQParseState *state,
-                           xmlNsPtr ns,
+                           XmlNs* ns,
                            const char *start,
                            const char *stop)
 {
     if (!stop) stop = start+strlen(start);
 
     char *href = strndup(start, stop-start);
-    ns->href = (const xmlChar*)href;
-    debug("xmq=", "update namespace %s with href=%s", ns->prefix, ns->href);
+    xml_ns_set_href(ns, href);
+    free(href);
+    debug("xmq=", "update namespace %s with href=%s", xml_ns_prefix(ns), xml_ns_href(ns));
 
     if (start[0] == 0 && ns == state->default_namespace)
     {
-        xmlNodePtr element = (xmlNode*)state->element_stack->top->data;
+        XMQNode* element = (XMQNode*)state->element_stack->top->data;
         if (element)
         {
-            debug("xmq=", "remove default namespace in element %s", element->name);
-            xmlSetNs(element, NULL);
+            debug("xmq=", "remove default namespace in element %s", xml_node_name(element));
+            if (xml_node_ns(element) == ns) xml_node_set_ns(element, NULL);
         }
         state->default_namespace = NULL;
         return;
@@ -3329,15 +3055,15 @@ XMQStatus do_attr_value_text(XMQParseState *state,
         // happened on an element without a node, eg a processing instruction.
         if (state->declaring_xmlns_namespace != NULL)
         {
-            update_namespace_href(state, (xmlNsPtr)state->declaring_xmlns_namespace, start, stop);
+            update_namespace_href(state, (XmlNs*)state->declaring_xmlns_namespace, start, stop);
         }
         state->declaring_xmlns = false;
         state->declaring_xmlns_namespace = NULL;
         return XMQ_OK;
     }
-    xmlNodePtr n = xmlNewDocTextLen(state->doq->docptr_.xml, (const xmlChar *)start, stop-start);
-    if (!n) return XMQ_ERROR_OOM;
-    xmlAddChild((xmlNode*)state->element_last, n);
+    if (!state->element_last) return XMQ_OK;
+    XMQNode *n = xml_node_new_text_len(state->doq->dom_, start, stop-start);
+    xml_node_add_child((XMQNode*)state->element_last, n);
     return XMQ_OK;
 }
 
@@ -3366,14 +3092,14 @@ XMQStatus do_attr_value_quote(XMQParseState*state,
         // happened on an element without a node, eg a processing instruction.
         if (state->declaring_xmlns_namespace != NULL)
         {
-            update_namespace_href(state, (xmlNsPtr)state->declaring_xmlns_namespace, trimmed, NULL);
+            update_namespace_href(state, (XmlNs*)state->declaring_xmlns_namespace, trimmed, NULL);
         }
         state->declaring_xmlns = false;
         state->declaring_xmlns_namespace = NULL;
         free(trimmed);
         return XMQ_OK;
     }
-    XMQReturnXMLNode rn = create_quote(state, line, col, start, stop, suffix, (xmlNode*)state->element_last);
+    XMQReturnXMLNode rn = create_quote(state, line, col, start, stop, suffix, (XMQNode*)state->element_last);
     return rn.status;
 }
 
@@ -3384,7 +3110,7 @@ XMQStatus do_attr_value_entity(XMQParseState *state,
                           const char *stop,
                           const char *suffix)
 {
-    create_entity(state, line, col, start, stop, suffix, (xmlNode*)state->element_last);
+    create_entity(state, line, col, start, stop, suffix, (XMQNode*)state->element_last);
     return XMQ_OK;
 }
 
@@ -3432,12 +3158,7 @@ XMQStatus create_node(XMQParseState *state, const char *start, const char *stop)
     }
     else
     {
-        xmlNodePtr new_node = xmlNewDocNode(state->doq->docptr_.xml, NULL, (const xmlChar *)name, NULL);
-        if (!new_node)
-        {
-            free(name);
-            return XMQ_ERROR_OOM;
-        }
+        XMQNode *new_node = xml_node_new_element(state->doq->dom_, name, NULL);
         if (state->element_last == NULL)
         {
             if (!state->implicit_root || !strcmp(name, state->implicit_root))
@@ -3445,54 +3166,46 @@ XMQStatus create_node(XMQParseState *state, const char *start, const char *stop)
                 // There is no implicit root, or name is the same as the implicit root.
                 // Then create the root node with name.
                 state->element_last = new_node;
-                xmlDocSetRootElement(state->doq->docptr_.xml, new_node);
-                state->doq->root_ = (XMQNode*)new_node;
+                xml_dom_set_root_element(state->doq->dom_, new_node);
+                state->doq->root_ = new_node;
             }
             else
             {
                 // We have an implicit root and it is different from name.
-                xmlNodePtr root = xmlNewDocNode(state->doq->docptr_.xml, NULL, (const xmlChar *)state->implicit_root, NULL);
-                if (!root)
-                {
-                    free(name);
-                    return XMQ_ERROR_OOM;
-                }
+                XMQNode *root = xml_node_new_element(state->doq->dom_, state->implicit_root, NULL);
                 state->element_last = root;
-                xmlDocSetRootElement(state->doq->docptr_.xml, root);
-                state->doq->root_ = (XMQNode*)root;
+                xml_dom_set_root_element(state->doq->dom_, root);
+                state->doq->root_ = root;
                 stack_push(state->element_stack, state->element_last);
             }
         }
-        xmlNodePtr parent = (xmlNode*)state->element_stack->top->data;
-        xmlAddChild(parent, new_node);
+        XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+        xml_node_add_child(parent, new_node);
 
         if (state->element_namespace)
         {
             // Have a namespace before the element name, eg abc:work
-            xmlNsPtr ns = xmlSearchNs(state->doq->docptr_.xml,
-                                      new_node,
-                                      (const xmlChar *)state->element_namespace);
+            XmlNs *ns = find_ns(new_node, state->element_namespace);
+            if (!ns && !strcmp(state->element_namespace, "xml")) ns = xml_ns_lookup_prefix(new_node, "xml");
             if (!ns)
             {
                 // The namespaces does not yet exist. Lets hope it will be declared
                 // inside the attributes of this node. Use a temporary href for now.
-                ns = xmlNewNs(new_node,
-                              NULL,
-                              (const xmlChar *)state->element_namespace);
+                ns = xml_ns_declare(new_node, state->element_namespace, NULL);
                 debug("xmq=", "created namespace prefix=%s in element %s", state->element_namespace, name);
             }
             debug("xmq=", "setting namespace prefix=%s for element %s", state->element_namespace, name);
-            xmlSetNs(new_node, ns);
+            xml_node_set_ns(new_node, ns);
             free(state->element_namespace);
             state->element_namespace = NULL;
         }
         else if (state->default_namespace)
         {
             // We have a default namespace.
-            xmlNsPtr ns = (xmlNsPtr)state->default_namespace;
-            assert(ns->prefix == NULL);
-            debug("xmq=", "set default namespace with href=%s for element %s", ns->href, name);
-            xmlSetNs(new_node, ns);
+            XmlNs* ns = (XmlNs*)state->default_namespace;
+            assert(xml_ns_prefix(ns) == NULL);
+            debug("xmq=", "set default namespace with href=%s for element %s", xml_ns_href(ns), name);
+            xml_node_set_ns(new_node, ns);
         }
 
         state->element_last = new_node;
@@ -3647,15 +3360,11 @@ void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings)
 {
     xmq_fixup_html_before_writeout(doq);
 
-    xmlChar *buffer;
-    int size;
-    xmlDocDumpMemoryEnc(doq->docptr_.xml,
-                        &buffer,
-                        &size,
-                        "utf-8");
+    size_t size = 0;
+    char *buffer = xml_save_doc(doq->dom_, "utf-8", false, &size);
 
     membuffer_reuse(output_settings->output_buffer,
-                    (char*)buffer,
+                    buffer,
                     size);
 
     debug("xmq=", "xmq_print_xml wrote %zu bytes", size);
@@ -3664,39 +3373,21 @@ void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings)
 void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
 {
     xmq_fixup_html_before_writeout(doq);
-    xmlOutputBufferPtr out = xmlAllocOutputBuffer(NULL);
-    if (out)
-    {
-        htmlDocContentDumpOutput(out, doq->docptr_.html, "utf8");
-        const xmlChar *buffer = xmlBufferContent((xmlBuffer *)out->buffer);
-        MemBuffer *membuf = output_settings->output_buffer;
-        membuffer_append(membuf, (char*)buffer);
-        debug("xmq=", "xmq_print_html wrote %zu bytes", membuf->used_);
-        xmlOutputBufferClose(out);
-    }
-    /*
-    xmlNodePtr child = doq->docptr_.xml->children;
-    xmlBuffer *buffer = xmlBufferCreate();
-    while (child != NULL)
-    {
-        xmlNodeDump(buffer, doq->docptr_.xml, child, 0, 0);
-        child = child->next;
-        }
-    const char *c = (const char *)xmlBufferContent(out);
-    fputs(c, stdout);
-    fputs("\n", stdout);
-    xmlBufferFree(buffer);
-    */
+    char *buffer = xml_html_save_doc(doq->dom_, true, NULL);
+    MemBuffer *membuf = output_settings->output_buffer;
+    membuffer_append(membuf, buffer);
+    free(buffer);
+    debug("xmq=", "xmq_print_html wrote %zu bytes", membuf->used_);
 }
 
 void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
 {
-    if (doq == NULL || doq->docptr_.xml == NULL) return;
+    if (doq == NULL || doq->dom_ == NULL) return;
     xmq_fixup_json_before_writeout(doq);
 
-    void *first = doq->docptr_.xml->children;
+    void *first = xml_node_first_child(xml_dom_document(doq->dom_));
     if (!doq || !first) return;
-    void *last = doq->docptr_.xml->last;
+    void *last = xml_node_last_child(xml_dom_document(doq->dom_));
 
     XMQPrintState ps = {};
     ps.pre_nodes = stack_create();
@@ -3710,15 +3401,15 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
 
     // Find any leading (doctype/comments) and ending (comments) nodes and store in pre_nodes and post_nodes inside ps.
     // Adjust the first and last pointer.
-    collect_leading_ending_comments_doctype(&ps, (xmlNode**)&first, (xmlNode**)&last);
-    json_print_object_nodes(&ps, NULL, (xmlNode*)first, (xmlNode*)last);
+    collect_leading_ending_comments_doctype(&ps, (XMQNode**)&first, (XMQNode**)&last);
+    json_print_object_nodes(&ps, NULL, (XMQNode*)first, (XMQNode*)last);
     if (os->final_newline) write(writer_state, "\n", NULL);
 
     stack_free(ps.pre_nodes);
     stack_free(ps.post_nodes);
 }
 
-void text_print_node(XMQPrintState *ps, xmlNode *node)
+void text_print_node(XMQPrintState *ps, XMQNode *node)
 {
     XMQOutputSettings *output_settings = ps->output_settings;
     XMQWrite write = output_settings->content.write;
@@ -3737,13 +3428,13 @@ void text_print_node(XMQPrintState *ps, xmlNode *node)
     }
     else if (is_element_node(node))
     {
-        text_print_nodes(ps, node->children);
+        text_print_nodes(ps, xml_node_first_child(node));
     }
 }
 
-void text_print_nodes(XMQPrintState *ps, xmlNode *from)
+void text_print_nodes(XMQPrintState *ps, XMQNode *from)
 {
-    xmlNode *i = from;
+    XMQNode *i = from;
 
     while (i)
     {
@@ -3754,32 +3445,32 @@ void text_print_nodes(XMQPrintState *ps, xmlNode *from)
 
 void xmq_print_text(XMQDoc *doq, XMQOutputSettings *os)
 {
-    void *first = doq->docptr_.xml->children;
+    void *first = xml_node_first_child(xml_dom_document(doq->dom_));
     if (!doq || !first) return;
 
     XMQPrintState ps = {};
     ps.doq = doq;
     ps.output_settings = os;
 
-    text_print_nodes(&ps, (xmlNode*)first);
+    text_print_nodes(&ps, (XMQNode*)first);
 }
 
-void cline_print_xpath(XMQPrintState *ps, xmlNode *node)
+void cline_print_xpath(XMQPrintState *ps, XMQNode *node)
 {
     XMQOutputSettings *output_settings = ps->output_settings;
     XMQWrite write = output_settings->content.write;
     void *writer_state = output_settings->content.writer_state;
 
-    if (!node) return;
-    if (node->parent)
+    if (!node || xml_node_kind(node) == XML_DOM_DOCUMENT) return;
+    if (xml_node_parent(node))
     {
-        cline_print_xpath(ps, node->parent);
+        cline_print_xpath(ps, xml_node_parent(node));
         write(writer_state, "/", NULL);
     }
     write(writer_state, xml_element_name(node), NULL);
 }
 
-void cline_print_node(XMQPrintState *ps, xmlNode *node)
+void cline_print_node(XMQPrintState *ps, XMQNode *node)
 {
     XMQOutputSettings *output_settings = ps->output_settings;
     XMQWrite write = output_settings->content.write;
@@ -3787,7 +3478,7 @@ void cline_print_node(XMQPrintState *ps, xmlNode *node)
 
     // Skip the dtd and entity references: the children of an entity reference
     // is its declaration, which can refer back to it (infinite recursion).
-    if (node->type == XML_DTD_NODE || is_entity_node(node)) return;
+    if (xml_node_kind(node) == XML_DOM_DTD || is_entity_node(node)) return;
 
     if (has_attributes(node))
     {
@@ -3795,7 +3486,7 @@ void cline_print_node(XMQPrintState *ps, xmlNode *node)
     }
     if (is_content_node(node))
     {
-        cline_print_xpath(ps, node->parent);
+        cline_print_xpath(ps, xml_node_parent(node));
         write(writer_state, "=", NULL);
         const char *content = xml_element_content(node);
         XMQReturnString rs = xmq_quote_as_c(content, NULL, false);
@@ -3807,9 +3498,9 @@ void cline_print_node(XMQPrintState *ps, xmlNode *node)
         free(q);
         write(writer_state, "\n", NULL);
     }
-    else if (node->children)
+    else if (xml_node_first_child(node))
     {
-        cline_print_nodes(ps, node->children);
+        cline_print_nodes(ps, xml_node_first_child(node));
     }
     else if (is_element_node(node))
     {
@@ -3821,9 +3512,9 @@ void cline_print_node(XMQPrintState *ps, xmlNode *node)
     }
 }
 
-void cline_print_nodes(XMQPrintState *ps, xmlNode *from)
+void cline_print_nodes(XMQPrintState *ps, XMQNode *from)
 {
-    xmlNode *i = from;
+    XMQNode *i = from;
 
     while (i)
     {
@@ -3832,9 +3523,9 @@ void cline_print_nodes(XMQPrintState *ps, xmlNode *from)
     }
 }
 
-void cline_print_attributes(XMQPrintState *ps, xmlNode *node)
+void cline_print_attributes(XMQPrintState *ps, XMQNode *node)
 {
-    xmlAttr *i = xml_first_attribute(node);
+    XMQAttr *i = xml_first_attribute(node);
 
     while (i)
     {
@@ -3843,9 +3534,9 @@ void cline_print_attributes(XMQPrintState *ps, xmlNode *node)
     }
 }
 
-void cline_print_attr(XMQPrintState *ps, xmlAttr *a)
+void cline_print_attr(XMQPrintState *ps, XMQAttr *a)
 {
-    cline_print_xpath(ps, a->parent);
+    cline_print_xpath(ps, xml_attr_owner(a));
 
     const char *key;
     const char *prefix;
@@ -3859,17 +3550,15 @@ void cline_print_attr(XMQPrintState *ps, xmlAttr *a)
     }
     print_utf8(ps, COLOR_none, 2, key, NULL, "=", NULL);
 
-    if (a->children != NULL)
+    if (xml_node_first_child(xml_attr_node(a)) != NULL)
     {
-        char *value = (char*)xmlNodeListGetString(a->doc, a->children, 1);
-        // An attribute that is only an undefined entity reference gives NULL.
-        if (!value) value = (char*)xmlStrdup((const xmlChar*)"");
+        char *value = xml_node_string_value(xml_attr_node(a));
         XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), true);
         assert(rs.status == XMQ_OK);
         char *quoted_value = rs.string;
         print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
         free(quoted_value);
-        xmlFree(value);
+        free(value);
     }
     else
     {
@@ -3881,22 +3570,22 @@ void cline_print_attr(XMQPrintState *ps, xmlAttr *a)
 
 void xmq_print_clines(XMQDoc *doq, XMQOutputSettings *os)
 {
-    void *first = doq->docptr_.xml->children;
+    void *first = xml_node_first_child(xml_dom_document(doq->dom_));
     if (!doq || !first) return;
 
     XMQPrintState ps = {};
     ps.doq = doq;
     ps.output_settings = os;
 
-    cline_print_nodes(&ps, (xmlNode*)first);
+    cline_print_nodes(&ps, (XMQNode*)first);
 }
 
 void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
 {
-    if (doq == NULL || doq->docptr_.xml == NULL) return;
-    void *first = doq->docptr_.xml->children;
+    if (doq == NULL || doq->dom_ == NULL) return;
+    void *first = xml_node_first_child(xml_dom_document(doq->dom_));
     if (!doq || !first) return;
-    void *last = doq->docptr_.xml->last;
+    void *last = xml_node_last_child(xml_dom_document(doq->dom_));
 
     XMQPrintState ps = {};
     ps.doq = doq;
@@ -3915,7 +3604,7 @@ void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
     if (theme->body.pre) write(writer_state, theme->body.pre, NULL);
 
     if (theme->content.pre) write(writer_state, theme->content.pre, NULL);
-    print_nodes(&ps, (xmlNode*)first, (xmlNode*)last, 0);
+    print_nodes(&ps, (XMQNode*)first, (XMQNode*)last, 0);
     if (theme->content.post) write(writer_state, theme->content.post, NULL);
 
     if (theme->body.post) write(writer_state, theme->body.post, NULL);
@@ -3979,7 +3668,7 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
 
 void xmqAnnotateOffsets(XMQDoc *doq, const char *attribute_name, const char *ns)
 {
-    annotate_offsets(doq->docptr_.xml, attribute_name, ns);
+    annotate_offsets(doq->dom_, attribute_name, ns);
 }
 
 // Use an internal bit for signaling comment trimming.
@@ -3987,7 +3676,7 @@ void xmqAnnotateOffsets(XMQDoc *doq, const char *attribute_name, const char *ns)
 // Use an internal bit for signaling treating tabs as part of incidental indentation.
 #define TRIM_TABS    65536*2
 
-void trim_text_node(xmlNode *node, int flags)
+void trim_text_node(XMQNode *node, int flags)
 {
     // If node has whitespace preserve set, then do not trim.
     //if (xmlNodeGetSpacePreserve (node)) return;
@@ -4002,8 +3691,7 @@ void trim_text_node(xmlNode *node, int flags)
     // --trim=none is used.
     if (is_all_xml_whitespace(content))
     {
-        xmlUnlinkNode(node);
-        xmlFreeNode(node);
+        xml_node_free(node);
         return;
     }
     // This is not entirely whitespace, now use the xmq_un_quote function to remove any incidental indentation.
@@ -4024,18 +3712,17 @@ void trim_text_node(xmlNode *node, int flags)
     char *trimmed = rs.string;
     if (trimmed[0] == 0)
     {
-        xmlUnlinkNode(node);
-        xmlFreeNode(node);
+        xml_node_free(node);
         free(trimmed);
         return;
     }
-    xmlNodeSetContent(node, (xmlChar*)trimmed);
+    xml_node_set_content(node, trimmed);
     free(trimmed);
 }
 
-void trim_node(xmlNode *node, int flags)
+void trim_node(XMQNode *node, int flags)
 {
-    debug("xmq=", "trim %s", xml_element_type_to_string(node->type));
+    debug("xmq=", "trim %s", xml_element_type_to_string(xml_node_kind(node)));
 
     if (is_content_node(node))
     {
@@ -4050,12 +3737,12 @@ void trim_node(xmlNode *node, int flags)
     }
 
     // Do not recurse into these
-    if (node->type == XML_ENTITY_DECL) return;
+    if (xml_node_kind(node) == XML_DOM_ENTITY_DECL) return;
 
-    xmlNodePtr i = xml_first_child(node);
+    XMQNode* i = xml_first_child(node);
     while (i)
     {
-        xmlNode *next = xml_next_sibling(i); // i might be freed in trim.
+        XMQNode *next = xml_next_sibling(i); // i might be freed in trim.
         trim_node(i, flags);
         i = next;
     }
@@ -4063,19 +3750,19 @@ void trim_node(xmlNode *node, int flags)
 
 void xmqTrimWhitespace(XMQDoc *doq, int flags)
 {
-    xmlNodePtr i = doq->docptr_.xml->children;
+    XMQNode *i = xml_node_first_child(xml_dom_document(doq->dom_));
     if (!doq || !i) return;
 
     while (i)
     {
-        xmlNode *next = xml_next_sibling(i); // i might be freed in trim.
+        XMQNode *next = xml_next_sibling(i); // i might be freed in trim.
         trim_node(i, flags);
         i = next;
     }
 }
 
 /*
-xmlNode *merge_surrounding_text_nodes(xmlNode *node)
+XMQNode *merge_surrounding_text_nodes(XMQNode *node)
 {
     const char *val = (const char *)node->name;
     // Not a hex entity.
@@ -4090,11 +3777,11 @@ xmlNode *merge_surrounding_text_nodes(xmlNode *node)
     memcpy(buf, uni.bytes, len);
     buf[len] = 0;
 
-    xmlNodePtr prev = node->prev;
-    xmlNodePtr next = node->next;
+    XMQNode* prev = node->prev;
+    XMQNode* next = node->next;
     if (prev && prev->type == XML_TEXT_NODE)
     {
-        xmlNodeAddContentLen(prev, (xmlChar*)buf, len);
+        xmlNodeAddContentLen(prev, (char*)buf, len);
         xmlUnlinkNode(node);
         xmlFreeNode(node);
         debug("xmq=", "merge left");
@@ -4102,7 +3789,7 @@ xmlNode *merge_surrounding_text_nodes(xmlNode *node)
     if (next && next->type == XML_TEXT_NODE)
     {
         xmlNodeAddContent(prev, next->content);
-        xmlNode *n = next->next;
+        XMQNode *n = next->next;
         xmlUnlinkNode(next);
         xmlFreeNode(next);
         next = n;
@@ -4112,7 +3799,7 @@ xmlNode *merge_surrounding_text_nodes(xmlNode *node)
     return next;
 }
 
-xmlNode *merge_hex_chars_node(xmlNode *node)
+XMQNode *merge_hex_chars_node(XMQNode *node)
 {
     if (node->type == XML_ENTITY_REF_NODE)
     {
@@ -4122,7 +3809,7 @@ xmlNode *merge_hex_chars_node(xmlNode *node)
     // Do not recurse into these
     if (node->type == XML_ENTITY_DECL) return node->next;
 
-    xmlNodePtr i = xml_first_child(node);
+    XMQNode* i = xml_first_child(node);
     while (i)
     {
         i = merge_hex_chars_node(i);
@@ -4132,7 +3819,7 @@ xmlNode *merge_hex_chars_node(xmlNode *node)
 
 void xmqMergeHexCharEntities(XMQDoc *doq)
 {
-    xmlNodePtr i = doq->docptr_.xml->children;
+    XMQNode *i = xml_node_first_child(xml_dom_document(doq->dom_));
     if (!doq || !i) return;
 
     while (i)
@@ -4229,25 +3916,23 @@ char *unescape_xml_comment(const char *comment)
     return tmp;
 }
 
-void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared)
+void fixup_html(XMQDoc *doq, XMQNode *node, bool inside_cdata_declared)
 {
-    if (node->type == XML_COMMENT_NODE)
+    if (xml_node_kind(node) == XML_DOM_COMMENT)
     {
         // When writing an xml comment we must replace --- with -␐-␐-.
         // An already existing -␐- is replaced with -␐␐- etc.
-        char *new_content = escape_xml_comment((const char*)node->content);
+        char *new_content = escape_xml_comment(xml_node_content(node));
         if (new_content)
         {
             // Oups, the content contains -- which must be quoted as -␐-␐
             // Likewise, if the content contains -␐-␐ it will be quoted as -␐␐-␐␐
-            xmlNodePtr new_node = xmlNewComment((const xmlChar*)new_content);
-            xmlReplaceNode(node, new_node);
-            xmlFreeNode(node);
+            xml_node_set_content(node, new_content);
             free(new_content);
         }
         return;
     }
-    else if (node->type == XML_CDATA_SECTION_NODE)
+    else if (xml_node_kind(node) == XML_DOM_CDATA)
     {
         // When the html is loaded by the libxml2 parser it creates a cdata
         // node instead of a text node for the style content.
@@ -4255,42 +3940,36 @@ void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared)
         // I.e. <style><![CDATA[h1{color:red;}]]></style>
         // But we want: <style>h1{color:red;}</style>
         // Workaround until I understand the proper fix, just make it a text node.
-        node->type = XML_TEXT_NODE;
+        XMQNode *text = xml_node_new_text(doq->dom_, xml_node_content(node));
+        xml_node_replace(node, text);
+        xml_node_free(node);
+        return;
     }
     else if (is_entity_node(node) && inside_cdata_declared)
     {
-        const char *new_content = (const char*)node->content;
-        char buf[2];
-        if (!node->content)
-        {
-            if (node->name[0] == '#')
-            {
-                int v = atoi(((const char*)node->name)+1);
-                buf[0] = v;
-                buf[1] = 0;
-                new_content = buf;
-            }
-        }
-        xmlNodePtr new_node = xmlNewDocText(doq->docptr_.xml, (const xmlChar*)new_content);
-        xmlReplaceNode(node, new_node);
-        xmlFreeNode(node);
+        // A character reference becomes its character, an entity reference is dropped.
+        char *new_content = xml_node_string_value(node);
+        XMQNode *new_node = xml_node_new_text(doq->dom_, new_content);
+        free(new_content);
+        xml_node_replace(node, new_node);
+        xml_node_free(node);
         return;
     }
 
     // Do not descend into the dtd or into entity references: the children of an
     // entity reference is its declaration, which can refer back to it.
-    if (node->type == XML_DTD_NODE || node->type == XML_ENTITY_REF_NODE) return;
+    if (xml_node_kind(node) == XML_DOM_DTD || xml_node_kind(node) == XML_DOM_ENTITY_REF) return;
 
-    xmlNode *i = xml_first_child(node);
+    XMQNode *i = xml_first_child(node);
     while (i)
     {
-        xmlNode *next = xml_next_sibling(i); // i might be freed in trim.
+        XMQNode *next = xml_next_sibling(i); // i might be freed in trim.
 
         bool r = inside_cdata_declared;
 
-        if (i->name &&
-            (!strcasecmp((const char*)i->name, "style") ||
-             !strcasecmp((const char*)i->name, "script")))
+        if (xml_node_name(i) &&
+            (!strcasecmp(xml_node_name(i), "style") ||
+             !strcasecmp(xml_node_name(i), "script")))
         {
             // The html style and script nodes are declared as cdata nodes.
             // The &#10; will not be decoded, instead remain as is a ruin the style.
@@ -4306,12 +3985,12 @@ void fixup_html(XMQDoc *doq, xmlNode *node, bool inside_cdata_declared)
 
 void xmq_fixup_html_before_writeout(XMQDoc *doq)
 {
-    xmlNodePtr i = doq->docptr_.xml->children;
+    XMQNode *i = xml_node_first_child(xml_dom_document(doq->dom_));
     if (!doq || !i) return;
 
     while (i)
     {
-        xmlNode *next = xml_next_sibling(i); // i might be freed in fixup_html.
+        XMQNode *next = xml_next_sibling(i); // i might be freed in fixup_html.
         fixup_html(doq, i, false);
         i = next;
     }
@@ -4345,50 +4024,42 @@ void free_indent_depths()
     }
 }
 
-const char *xml_element_type_to_string(xmlElementType type)
+const char *xml_element_type_to_string(XmlNodeKind type)
 {
     switch (type)
     {
-	case XML_ELEMENT_NODE: return "element";
-	case XML_ATTRIBUTE_NODE: return "attribute";
-	case XML_TEXT_NODE: return "text";
-	case XML_CDATA_SECTION_NODE: return "cdata";
-	case XML_ENTITY_REF_NODE: return "entity_ref";
-	case XML_ENTITY_NODE: return "entity";
-	case XML_PI_NODE: return "pi";
-	case XML_COMMENT_NODE: return "comment";
-	case XML_DOCUMENT_NODE: return "document";
-	case XML_DOCUMENT_TYPE_NODE: return "document_type";
-	case XML_DOCUMENT_FRAG_NODE: return "document_frag";
-	case XML_NOTATION_NODE: return "notation";
-	case XML_HTML_DOCUMENT_NODE: return "html_document";
-	case XML_DTD_NODE: return "dtd";
-	case XML_ELEMENT_DECL: return "element_decl";
-	case XML_ATTRIBUTE_DECL: return "attribute_decl";
-	case XML_ENTITY_DECL: return "entity_decl";
-	case XML_NAMESPACE_DECL: return "namespace_decl";
-	case XML_XINCLUDE_START: return "xinclude_start";
-	case XML_XINCLUDE_END: return "xinclude_end";
-#ifdef LIBXML_DOCB_ENABLED
-	case XML_DOCB_DOCUMENT_NODE: return "docb_document";
-#endif
+    case XML_DOM_ELEMENT: return "element";
+    case XML_DOM_ATTRIBUTE: return "attribute";
+    case XML_DOM_TEXT: return "text";
+    case XML_DOM_CDATA: return "cdata";
+    case XML_DOM_ENTITY_REF: return "entity_ref";
+    case XML_DOM_PI: return "pi";
+    case XML_DOM_COMMENT: return "comment";
+    case XML_DOM_DOCUMENT: return "document";
+    case XML_DOM_DTD: return "dtd";
+    case XML_DOM_ELEMENT_DECL: return "element_decl";
+    case XML_DOM_ATTRIBUTE_DECL: return "attribute_decl";
+    case XML_DOM_ENTITY_DECL: return "entity_decl";
+    case XML_DOM_NAMESPACE: return "namespace_decl";
+    case XML_DOM_NOTATION_DECL: return "notation";
+    case XML_DOM_PE_REF: return "pe_ref";
     }
     return "?";
 }
 
-void fixup_comments(XMQDoc *doq, xmlNode *node, int depth)
+void fixup_comments(XMQDoc *doq, XMQNode *node, int depth)
 {
-    debug("xmq=", "fixup comments %s|%s %s", indent_depth(depth), node->name, xml_element_type_to_string(node->type));
-    if (node->type == XML_COMMENT_NODE)
+    debug("xmq=", "fixup comments %s|%s %s", indent_depth(depth), xml_node_name(node), xml_element_type_to_string(xml_node_kind(node)));
+    if (xml_node_kind(node) == XML_DOM_COMMENT)
     {
         // An xml comment containing dle escapes for example: -␐-␐- is replaceed with ---.
         // If multiple dle escapes exists, then for example: -␐␐- is replaced with -␐-.
-        char *content_needed_escaping = unescape_xml_comment((const char*)node->content);
+        char *content_needed_escaping = unescape_xml_comment(xml_node_content(node));
         if (content_needed_escaping)
         {
             if (xmq_debug_enabled_)
             {
-                XMQReturnString rs = xmq_quote_as_c((const char*)node->content, NULL, false);
+                XMQReturnString rs = xmq_quote_as_c(xml_node_content(node), NULL, false);
                 assert(rs.status == XMQ_OK);
                 char *from = rs.string;
                 rs = xmq_quote_as_c(content_needed_escaping, NULL, false);
@@ -4397,21 +4068,19 @@ void fixup_comments(XMQDoc *doq, xmlNode *node, int depth)
                 debug("xmq=", "fix comment \"%s\" to \"%s\"", from, to);
             }
 
-            xmlNodePtr new_node = xmlNewComment((const xmlChar*)content_needed_escaping);
-            xmlReplaceNode(node, new_node);
-            xmlFreeNode(node);
+            xml_node_set_content(node, content_needed_escaping);
             free(content_needed_escaping);
         }
         return;
     }
 
     // Do not recurse into these
-    if (node->type == XML_ENTITY_DECL) return;
+    if (xml_node_kind(node) == XML_DOM_ENTITY_DECL) return;
 
-    xmlNode *i = xml_first_child(node);
+    XMQNode *i = xml_first_child(node);
     while (i)
     {
-        xmlNode *next = xml_next_sibling(i); // i might be freed in trim.
+        XMQNode *next = xml_next_sibling(i); // i might be freed in trim.
         fixup_comments(doq, i, depth+1);
         i = next;
     }
@@ -4419,14 +4088,14 @@ void fixup_comments(XMQDoc *doq, xmlNode *node, int depth)
 
 void xmq_fixup_comments_after_readin(XMQDoc *doq)
 {
-    xmlNodePtr i = doq->docptr_.xml->children;
+    XMQNode *i = xml_node_first_child(xml_dom_document(doq->dom_));
     if (!doq || !i) return;
 
     debug("xmq=", "fixup comments after readin");
 
     while (i)
     {
-        xmlNode *next = xml_next_sibling(i); // i might be freed in fixup_comments.
+        XMQNode *next = xml_next_sibling(i); // i might be freed in fixup_comments.
         fixup_comments(doq, i, 0);
         i = next;
     }
@@ -4768,76 +4437,60 @@ int xmqForeach(XMQDoc *doq, const char *xpath, XMQNodeCallback cb, void *user_da
 
 int xmqForeachRel(XMQDoc *doq, const char *xpath, XMQNodeCallback cb, void *user_data, XMQNode *relative)
 {
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(doq);
-    xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
-    if (!ctx) return 0;
+    if (!doq || !doq->dom_ || !xpath) return 0;
+    XmlXPathSettings settings;
+    xml_xpath_settings_default(&settings);
+    // Without a relative node there is no context node, only the document (like libxml2).
+    settings.no_context_node = (relative == NULL);
+    XMQNode *context = relative ? relative : xml_dom_document(doq->dom_);
+    XmlXPathResult *r = xml_xpath_eval(xpath, context, &settings, NULL);
+    if (!r) return 0;
 
-    if (relative)
-    {
-        xmlXPathSetContextNode((xmlNodePtr)relative, ctx);
-    }
-
-    xmlXPathObjectPtr objects = xmlXPathEvalExpression((const xmlChar*)xpath, ctx);
-
-    if (objects == NULL)
-    {
-        xmlXPathFreeContext(ctx);
-        return 0;
-    }
-
-    xmlNodeSetPtr nodes = objects->nodesetval;
-    int size = (nodes) ? nodes->nodeNr : 0;
-
+    int size = (int)xml_xpath_result_size(r);
     if (cb)
     {
-        for(int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++)
         {
-            xmlNodePtr node = nodes->nodeTab[i];
-            XMQProceed proceed = cb(doq, (XMQNode*)node, user_data);
+            XMQProceed proceed = cb(doq, xml_xpath_result_node(r, i), user_data);
             if (proceed == XMQ_STOP) break;
         }
     }
-
-    xmlXPathFreeObject(objects);
-    xmlXPathFreeContext(ctx);
-
+    xml_xpath_result_free(r);
     return size;
 }
 
 const char *xmqGetName(XMQNode *node)
 {
-    xmlNodePtr p = (xmlNodePtr)node;
+    XMQNode* p = (XMQNode*)node;
     if (p)
     {
-        return (const char*)p->name;
+        return xml_node_name(p);
     }
     return NULL;
 }
 
 const char *xmqGetContent(XMQNode *node)
 {
-    xmlNodePtr p = (xmlNodePtr)node;
-    if (p && p->children)
+    XMQNode* p = (XMQNode*)node;
+    if (p && xml_node_first_child(p))
     {
-        return (const char*)p->children->content;
+        return xml_node_content(xml_node_first_child(p));
     }
     return NULL;
 }
 
 void xmqSetContent(XMQNode *node, const char *raw_content)
 {
-    xmlNodePtr n = (xmlNodePtr)node;
-    xmlNodeSetContent(n, NULL);
-    xmlNodeAddContent(n, (const xmlChar*)raw_content);
+    xml_node_set_content(node, raw_content);
 }
 
 XMQProceed catch_single_content(XMQDoc *doc, XMQNode *node, void *user_data)
 {
     const char **out = (const char **)user_data;
-    xmlNodePtr n = (xmlNodePtr)node;
-    if (n && n->children)
+    XMQNode* n = (XMQNode*)node;
+    if (n && xml_node_first_child(n))
     {
-        *out = (const char*)n->children->content;
+        *out = xml_node_content(xml_node_first_child(n));
     }
     else
     {
@@ -4849,7 +4502,7 @@ XMQProceed catch_single_content(XMQDoc *doc, XMQNode *node, void *user_data)
 XMQProceed catch_single_node(XMQDoc *doc, XMQNode *node, void *user_data)
 {
     XMQNode **out = (XMQNode**)user_data;
-    xmlNodePtr n = (xmlNodePtr)node;
+    XMQNode* n = (XMQNode*)node;
     *out = (XMQNode*)n;
     return XMQ_STOP;
 }
@@ -4956,34 +4609,50 @@ double xmqGetDoubleRel(XMQDoc *doq, const char *xpath, XMQNode *relative)
     return atof(content);
 }
 
-bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, int flags)
+static void xmq_print_parse_message(void *user_data, const char *message)
 {
-    /* Macro to check API for match with the DLL we are using */
-    LIBXML_TEST_VERSION ;
+    // Like the libxml2 default error handler.
+    fputs(message, stderr);
+}
 
-    int parse_options = XML_PARSE_NOCDATA | XML_PARSE_NONET;
+static bool xmq_should_trim(int flags)
+{
     bool should_trim = false;
     if ((flags & XMQ_FLAG_TRIM_HEURISTIC) ||
         (flags & XMQ_FLAG_TRIM_EXACT)) should_trim = true;
     if (flags & XMQ_FLAG_TRIM_NONE) should_trim = false;
+    return should_trim;
+}
 
-    if (should_trim) parse_options |= XML_PARSE_NOBLANKS;
+bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, int flags)
+{
+    XmlParseSettings settings;
+    xml_parse_settings_default(&settings);
+    settings.source_name = doq->source_name_;
+    settings.no_cdata = true;
+    settings.no_blanks = xmq_should_trim(flags);
+    settings.message_callback = xmq_print_parse_message;
 
-    xmlDocPtr doc = xmlReadMemory(start, stop-start, doq->source_name_, NULL, parse_options);
+    XmlParseError error;
+    XmlDom *doc = xml_parse_buffer(start, stop, &settings, &error);
     if (doc == NULL)
     {
         doq->errno_ = XMQ_ERROR_PARSING_XML;
-        // Let libxml2 print the error message.
+        // Print the error message like libxml2 did.
+        if (error.message) fputs(error.message, stderr);
         doq->error_ = NULL;
+        xml_parse_error_free(&error);
         return false;
     }
+    xml_parse_error_free(&error);
 
-    if (doq->docptr_.xml)
+    if (doq->dom_)
     {
-        xmlFreeDoc(doq->docptr_.xml);
+        xml_dom_free(doq->dom_);
     }
 
-    doq->docptr_.xml = doc;
+    doq->dom_ = doc;
+    doq->root_ = xml_dom_root_element(doc);
 
     xmq_fixup_comments_after_readin(doq);
 
@@ -4992,46 +4661,26 @@ bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, int 
 
 bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, int flags)
 {
-    htmlDocPtr doc;
-    xmlNode *roo_element = NULL;
+    XmlHtmlParseSettings settings;
+    xml_html_parse_settings_default(&settings);
+    settings.source_name = doq->source_name_;
+    settings.no_blanks = xmq_should_trim(flags);
 
-    /* Macro to check API for match with the DLL we are using */
-    LIBXML_TEST_VERSION
+    XmlDom *doc = xml_html_parse_buffer(start, stop, &settings);
 
-    int parse_options = HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET;
-
-    bool should_trim = false;
-    if ((flags & XMQ_FLAG_TRIM_HEURISTIC) ||
-        (flags & XMQ_FLAG_TRIM_EXACT)) should_trim = true;
-    if (flags & XMQ_FLAG_TRIM_NONE) should_trim = false;
-
-    if (should_trim) parse_options |= HTML_PARSE_NOBLANKS;
-
-    // Force the use of UTF-8 since the heuristics seem to not do this despite my LANG=sv_SE.UTF-8
-    doc = htmlReadMemory(start, stop-start, NULL, "UTF-8", parse_options);
-
-    if (doc == NULL)
-    {
-        doq->errno_ = XMQ_ERROR_PARSING_HTML;
-        // Let libxml2 print the error message.
-        doq->error_ = NULL;
-        return false;
-    }
-
-    roo_element = xmlDocGetRootElement(doc);
-
-    if (roo_element == NULL)
+    if (xml_dom_root_element(doc) == NULL)
     {
         PRINT_ERROR("empty document\n");
-        xmlFreeDoc(doc);
+        xml_dom_free(doc);
         return 0;
     }
 
-    if (doq->docptr_.html)
+    if (doq->dom_)
     {
-        xmlFreeDoc(doq->docptr_.html);
+        xml_dom_free(doq->dom_);
     }
-    doq->docptr_.html = doc;
+    doq->dom_ = doc;
+    doq->root_ = xml_dom_root_element(doc);
 
     xmq_fixup_comments_after_readin(doq);
 
@@ -5040,22 +4689,20 @@ bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, int
 
 bool xmq_parse_buffer_text(XMQDoc *doq, const char *start, const char *stop, const char *implicit_root)
 {
-    char *buffer = strndup(start, stop-start);
-    xmlNodePtr text = xmlNewDocText(doq->docptr_.xml, (xmlChar*)buffer);
-    free(buffer);
+    XMQNode *text = xml_node_new_text_len(doq->dom_, start, stop-start);
 
     if (implicit_root && implicit_root[0])
     {
         // We have an implicit root must be created since input is text.
-        xmlNodePtr root = xmlNewDocNode(doq->docptr_.xml, NULL, (const xmlChar *)implicit_root, NULL);
-        xmlDocSetRootElement(doq->docptr_.xml, root);
-        doq->root_ = (XMQNode*)root;
-        xmlAddChild(root, text);
+        XMQNode *root = xml_node_new_element(doq->dom_, implicit_root, NULL);
+        xml_dom_set_root_element(doq->dom_, root);
+        doq->root_ = root;
+        xml_node_append_child(root, text);
     }
     else
     {
         // There is no implicit root. Text is the new root node.
-        xmlDocSetRootElement(doq->docptr_.xml, text);
+        xml_node_append_child(xml_dom_document(doq->dom_), text);
     }
     return true;
 }
@@ -5076,11 +4723,8 @@ bool xmq_prepare_node(const char *start, const char *stop)
 
 bool xmq_parse_buffer_clines(XMQDoc *doq, const char *start, const char *stop)
 {
-    char *buffer = strndup(start, stop-start);
-    xmlNodePtr text = xmlNewDocText(doq->docptr_.xml, (xmlChar*)buffer);
-    free(buffer);
-
-    xmlDocSetRootElement(doq->docptr_.xml, text);
+    XMQNode *text = xml_node_new_text_len(doq->dom_, start, stop-start);
+    xml_node_append_child(xml_dom_document(doq->dom_), text);
 
     return true;
 }
@@ -5201,24 +4845,23 @@ bool xmqParseFileWithType(XMQDoc *doq,
     return rc;
 }
 
-static void infer_missing_element_names_rec(xmlNode *node)
+static void infer_missing_element_names_rec(XMQNode *node)
 {
-    for (xmlNode *child = node->children; child; child = child->next)
+    for (XMQNode *child = xml_node_first_child(node); child; child = xml_node_next(child))
     {
-        if (xmlIsBlankNode(child)) continue;
-        if (child->type != XML_ELEMENT_NODE) continue;
+        if (xml_node_kind(child) != XML_DOM_ELEMENT) continue;
 
         // Give an anonymous child the singular form of the name of the
         // parent, items -> item, steps -> step, branches -> branch.
-        if (child->name &&
-            node->name &&
-            strcmp((const char*)node->name, "_") != 0 &&
-            !strcmp((const char*)child->name, "_"))
+        if (xml_node_name(child) &&
+            xml_node_name(node) &&
+            strcmp(xml_node_name(node), "_") != 0 &&
+            !strcmp(xml_node_name(child), "_"))
         {
-            char *nm = plural_to_singular((const char*)node->name);
+            char *nm = plural_to_singular(xml_node_name(node));
             if (nm != NULL)
             {
-                xmlNodeSetName(child, (const xmlChar*)nm);
+                xml_node_set_name(child, nm);
                 free(nm);
             }
         }
@@ -5229,20 +4872,20 @@ static void infer_missing_element_names_rec(xmlNode *node)
 
 bool xmqInferMissingElementNames(XMQDoc *doq, const char *root_name)
 {
-    if (doq == NULL || doq->docptr_.xml == NULL) return false;
+    if (doq == NULL || doq->dom_ == NULL) return false;
 
-    xmlNode *root = xmlDocGetRootElement(doq->docptr_.xml);
+    XMQNode *root = xml_dom_root_element(doq->dom_);
     if (root == NULL) return true; // No root, nothing to do.
 
     // Give the root a name when it is anonymous and a root name is supplied.
     if (root_name != NULL &&
         root_name[0] != 0 &&
-        strcmp((const char*)root->name, "_") == 0)
+        strcmp(xml_node_name(root), "_") == 0)
     {
-        xmlNodeSetName(root, (const xmlChar*)root_name);
+        xml_node_set_name(root, root_name);
     }
 
-    if (root->type == XML_ELEMENT_NODE)
+    if (xml_node_kind(root) == XML_DOM_ELEMENT)
     {
         infer_missing_element_names_rec(root);
     }
@@ -5251,32 +4894,27 @@ bool xmqInferMissingElementNames(XMQDoc *doq, const char *root_name)
 }
 
 
-xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop)
+XMQNode* parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop)
 {
-    size_t n = stop-start;
-    xmlParserCtxtPtr ctxt;
-    xmlDocPtr doc;
-
-    ctxt = xmlCreatePushParserCtxt(NULL, NULL, NULL, 0, NULL);
-    if (ctxt == NULL) {
+    XmlParseSettings settings;
+    xml_parse_settings_default(&settings);
+    settings.source_name = doq->source_name_;
+    settings.message_callback = xmq_print_parse_message;
+    XmlParseError error;
+    XmlDom *doc = xml_parse_buffer(start, stop, &settings, &error);
+    if (!doc)
+    {
+        if (error.message) fputs(error.message, stderr);
+        xml_parse_error_free(&error);
         return NULL;
     }
+    xml_parse_error_free(&error);
 
-    xmlParseChunk(ctxt, start, n, 0);
-    xmlParseChunk(ctxt, start, 0, 1);
+    XMQNode *dtd = xml_dom_dtd(doc);
+    XMQNode *copy = dtd ? xml_node_copy(doq->dom_, dtd, true) : NULL;
+    xml_dom_free(doc);
 
-    doc = ctxt->myDoc;
-    int rc = ctxt->wellFormed;
-    xmlFreeParserCtxt(ctxt);
-
-    if (!rc) {
-        return NULL;
-    }
-
-    xmlDtdPtr dtd = xmlCopyDtd(doc->intSubset);
-    xmlFreeDoc(doc);
-
-    return dtd;
+    return copy;
 }
 
 /* Transform markers ////////////////////////////////////////////////////////
@@ -5311,36 +4949,30 @@ xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop)
 #define XMQ_MARKERS_NS "https://libxmq.org/xmq/markers"
 #define XMQ_EXPLICIT_NS ((void*)1)
 
-static bool is_marker(xmlNodePtr n, const char *name)
+static bool is_marker(XMQNode* n, const char *name)
 {
-    return n->type == XML_ELEMENT_NODE && n->ns && n->ns->href &&
-        !strcmp((const char*)n->ns->href, XMQ_MARKERS_NS) &&
-        (name == NULL || !strcmp((const char*)n->name, name));
+    return xml_node_kind(n) == XML_DOM_ELEMENT && xml_node_ns(n) && xml_ns_href(xml_node_ns(n)) &&
+        !strcmp(xml_ns_href(xml_node_ns(n)), XMQ_MARKERS_NS) &&
+        (name == NULL || !strcmp(xml_node_name(n), name));
 }
 
-static char *marker_prop(xmlNodePtr n, const char *name)
+static char *marker_prop(XMQNode* n, const char *name)
 {
-    xmlChar *v = xmlGetProp(n, (const xmlChar*)name);
-    if (!v) return strdup("");
-    char *r = strdup((const char*)v);
-    xmlFree(v);
-    return r;
+    XMQAttr *a = xml_node_get_attr(n, name, NULL);
+    if (!a) return strdup("");
+    return xml_node_string_value(xml_attr_node(a));
 }
 
-static char *marker_content(xmlNodePtr n)
+static char *marker_content(XMQNode* n)
 {
-    xmlChar *v = xmlNodeGetContent(n);
-    if (!v) return strdup("");
-    char *r = strdup((const char*)v);
-    xmlFree(v);
-    return r;
+    return xml_node_string_value(n);
 }
 
 /** An entity marker becomes a text node (character entity) or an entity reference. */
-static xmlNodePtr marker_entity_node(xmlDocPtr doc, xmlNodePtr marker)
+static XMQNode* marker_entity_node(XmlDom* doc, XMQNode* marker)
 {
     char *name = marker_prop(marker, "name");
-    xmlNodePtr n = NULL;
+    XMQNode* n = NULL;
     if (name[0] == '#')
     {
         long uc = (name[1] == 'x') ? strtol(name+2, NULL, 16) : strtol(name+1, NULL, 10);
@@ -5351,125 +4983,105 @@ static xmlNodePtr marker_entity_node(xmlDocPtr doc, xmlNodePtr marker)
             char buf[len+1];
             memcpy(buf, uni.bytes, len);
             buf[len] = 0;
-            n = xmlNewDocText(doc, (const xmlChar*)buf);
+            n = xml_node_new_text(doc, buf);
         }
     }
     if (!n)
     {
-        size_t l = strlen(name);
-        char *ref = (char*)malloc(l+3);
-        ref[0] = '&';
-        memcpy(ref+1, name, l);
-        ref[l+1] = ';';
-        ref[l+2] = 0;
-        n = xmlNewReference(doc, (const xmlChar*)ref);
-        free(ref);
+        n = xml_node_new_entity_ref(doc, name);
     }
     free(name);
     return n;
 }
 
-static void marker_replace(xmlNodePtr marker, xmlNodePtr n)
+static void marker_replace(XMQNode* marker, XMQNode* n)
 {
-    if (n)
-    {
-        // Unlink first, xmlAddPrevSibling could merge text into a neighbour.
-        n->parent = NULL;
-        xmlAddPrevSibling(marker, n);
-    }
-    xmlUnlinkNode(marker);
-    xmlFreeNode(marker);
+    // Insert without merging text, adjacent text is merged by cleanup_after_markers.
+    if (n) xml_node_add_prev_sibling(marker, n);
+    xml_node_free(marker);
 }
 
-static xmlNsPtr marker_find_ns_def(xmlNodePtr e, const char *prefix)
+static XmlNs* marker_find_ns_def(XMQNode* e, const char *prefix)
 {
-    for (xmlNsPtr ns = e->nsDef; ns; ns = ns->next)
+    for (XmlNs* ns = xml_node_first_ns_decl(e); ns; ns = xml_ns_next_decl(ns))
     {
-        if (prefix == NULL && ns->prefix == NULL) return ns;
-        if (prefix && ns->prefix && !strcmp(prefix, (const char*)ns->prefix)) return ns;
+        if (prefix == NULL && xml_ns_prefix(ns) == NULL) return ns;
+        if (prefix && xml_ns_prefix(ns) && !strcmp(prefix, xml_ns_prefix(ns))) return ns;
     }
     return NULL;
 }
 
-static void marker_xmlns(xmlNodePtr parent, xmlNodePtr marker)
+static void marker_xmlns(XMQNode* parent, XMQNode* marker)
 {
     char *prefix = marker_prop(marker, "prefix");
     char *href = marker_content(marker);
     const char *p = prefix[0] ? prefix : NULL;
-    if (parent->type == XML_ELEMENT_NODE)
+    if (xml_node_kind(parent) == XML_DOM_ELEMENT)
     {
-        xmlNsPtr ns = marker_find_ns_def(parent, p);
-        if (!ns) ns = xmlNewNs(parent, (const xmlChar*)href, (const xmlChar*)p);
+        XmlNs* ns = marker_find_ns_def(parent, p);
+        if (!ns) ns = xml_ns_declare(parent, p, href);
         if (ns)
         {
-            ns->_private = XMQ_EXPLICIT_NS;
+            xml_ns_set_user_data(ns, XMQ_EXPLICIT_NS);
             // Move the declaration last, the markers come in source order.
-            if (ns->next)
-            {
-                xmlNsPtr *pp = &parent->nsDef;
-                while (*pp != ns) pp = &(*pp)->next;
-                *pp = ns->next;
-                xmlNsPtr last = parent->nsDef;
-                while (last->next) last = last->next;
-                last->next = ns;
-                ns->next = NULL;
-            }
+            xml_ns_move_decl_last(parent, ns);
         }
     }
     free(prefix);
     free(href);
 }
 
-static void marker_attribute(xmlDocPtr doc, xmlNodePtr parent, xmlNodePtr marker)
+static void marker_attribute(XmlDom* doc, XMQNode* parent, XMQNode* marker)
 {
+    if (xml_node_kind(parent) != XML_DOM_ELEMENT) return;
     char *name = marker_prop(marker, "name");
     char *uri = marker_prop(marker, "ns");
-    xmlAttrPtr a = NULL;
+    XMQAttr* a = NULL;
     char *colon = strchr(name, ':');
     if (colon)
     {
         // A prefixed name, an undeclared prefix (empty uri) is declared with
         // an empty uri like the xmq parser does.
         *colon = 0;
-        xmlNsPtr ns = NULL;
+        XmlNs* ns = NULL;
         if (uri[0])
         {
-            ns = xmlSearchNs(doc, parent, (const xmlChar*)name);
-            if (!ns || !ns->href || strcmp((const char*)ns->href, uri))
+            ns = xml_ns_lookup_prefix(parent, name);
+            if (!ns || !xml_ns_href(ns) || strcmp(xml_ns_href(ns), uri))
             {
-                ns = xmlNewNs(parent, (const xmlChar*)uri, (const xmlChar*)name);
+                ns = xml_ns_declare(parent, name, uri);
             }
         }
         else
         {
             ns = marker_find_ns_def(parent, name);
-            if (!ns) ns = xmlNewNs(parent, NULL, (const xmlChar*)name);
+            if (!ns) ns = xml_ns_declare(parent, name, NULL);
         }
-        if (ns) ns->_private = XMQ_EXPLICIT_NS;
-        a = xmlNewNsProp(parent, ns, (const xmlChar*)(colon+1), NULL);
+        if (ns) xml_ns_set_user_data(ns, XMQ_EXPLICIT_NS);
+        a = xml_node_append_attr(parent, colon+1, ns, NULL);
         *colon = ':';
     }
     else
     {
-        a = xmlNewProp(parent, (const xmlChar*)name, NULL);
+        a = xml_node_append_attr(parent, name, NULL, NULL);
     }
     if (a)
     {
-        for (xmlNodePtr c = marker->children; c; c = c->next)
+        for (XMQNode* c = xml_node_first_child(marker); c; c = xml_node_next(c))
         {
-            xmlNodePtr n = NULL;
-            if (c->type == XML_TEXT_NODE) n = xmlNewDocText(doc, c->content);
+            XMQNode* n = NULL;
+            if (xml_node_kind(c) == XML_DOM_TEXT) n = xml_node_new_text(doc, xml_node_content(c));
             else if (is_marker(c, "entity")) n = marker_entity_node(doc, c);
-            if (n) xmlAddChild((xmlNodePtr)a, n);
+            if (n) xml_node_add_child(xml_attr_node(a), n);
         }
     }
     free(name);
     free(uri);
 }
 
-static void marker_doctype(XMQDoc *doq, xmlNodePtr marker)
+static void marker_doctype(XMQDoc *doq, XMQNode* marker)
 {
-    xmlDocPtr doc = (xmlDocPtr)doq->docptr_.xml;
+    XmlDom* doc = doq->dom_;
     char *value = marker_content(marker);
     size_t tn = strlen(value);
     size_t n = tn+10+1+12;
@@ -5478,55 +5090,61 @@ static void marker_doctype(XMQDoc *doq, xmlNodePtr marker)
     memcpy(buf+10, value, tn);
     memcpy(buf+10+tn, "><foo></foo>", 12);
     buf[n-1] = 0;
-    xmlDtdPtr dtd = parse_doctype_raw(doq, buf, buf+n-1);
-    if (dtd && !doc->intSubset)
+    XMQNode* dtd = parse_doctype_raw(doq, buf, buf+n-1);
+    if (dtd && !xml_dom_dtd(doc))
     {
-        doc->intSubset = dtd;
-        xmlAddPrevSibling(marker, (xmlNodePtr)dtd);
+        xml_node_add_prev_sibling(marker, dtd);
     }
     else if (dtd)
     {
-        xmlFreeDtd(dtd);
+        xml_node_free(dtd);
     }
     free(buf);
     free(value);
 }
 
-static xmlNodePtr marker_xml(xmlDocPtr doc, xmlNodePtr marker)
+static XMQNode* marker_xml(XmlDom* doc, XMQNode* marker)
 {
     char *value = marker_content(marker);
-    xmlNodePtr node = NULL;
-    xmlDocPtr fdoc = xmlReadMemory(value, strlen(value), NULL, NULL,
-                                   XML_PARSE_NOCDATA | XML_PARSE_NONET | XML_PARSE_NOBLANKS);
+    XMQNode* node = NULL;
+    XmlParseSettings settings;
+    xml_parse_settings_default(&settings);
+    settings.no_cdata = true;
+    settings.no_blanks = true;
+    settings.message_callback = xmq_print_parse_message;
+    XmlParseError error;
+    XmlDom *fdoc = xml_parse_buffer(value, value+strlen(value), &settings, &error);
+    if (!fdoc && error.message) fputs(error.message, stderr);
+    xml_parse_error_free(&error);
     if (fdoc)
     {
-        xmlNodePtr root = xmlDocGetRootElement(fdoc);
-        if (root) node = xmlDocCopyNode(root, doc, 1);
-        xmlFreeDoc(fdoc);
+        XMQNode* root = xml_dom_root_element(fdoc);
+        if (root) node = xml_node_copy(doc, root, true);
+        xml_dom_free(fdoc);
     }
     free(value);
     return node;
 }
 
-static void replace_markers(XMQDoc *doq, xmlNodePtr parent)
+static void replace_markers(XMQDoc *doq, XMQNode* parent)
 {
-    xmlDocPtr doc = (xmlDocPtr)doq->docptr_.xml;
-    xmlNodePtr next = NULL;
-    for (xmlNodePtr i = parent->children; i; i = next)
+    XmlDom* doc = doq->dom_;
+    XMQNode* next = NULL;
+    for (XMQNode* i = xml_node_first_child(parent); i; i = next)
     {
-        next = i->next;
+        next = xml_node_next(i);
         if (!is_marker(i, NULL))
         {
-            if (i->type == XML_ELEMENT_NODE) replace_markers(doq, i);
+            if (xml_node_kind(i) == XML_DOM_ELEMENT) replace_markers(doq, i);
             continue;
         }
-        const char *m = (const char*)i->name;
+        const char *m = xml_node_name(i);
         if (!strcmp(m, "entity")) marker_replace(i, marker_entity_node(doc, i));
-        else if (!strcmp(m, "empty")) marker_replace(i, xmlNewDocText(doc, (const xmlChar*)""));
+        else if (!strcmp(m, "empty")) marker_replace(i, xml_node_new_text(doc, ""));
         else if (!strcmp(m, "comment"))
         {
             char *c = marker_content(i);
-            marker_replace(i, xmlNewDocComment(doc, (const xmlChar*)c));
+            marker_replace(i, xml_node_new_comment(doc, c));
             free(c);
         }
         else if (!strcmp(m, "xml")) marker_replace(i, marker_xml(doc, i));
@@ -5550,18 +5168,18 @@ static void replace_markers(XMQDoc *doq, xmlNodePtr parent)
             // An element with an undeclared prefix, declare the prefix
             // without uri on it like the xmq parser does.
             char *name = marker_prop(i, "name");
-            xmlUnsetProp(i, (const xmlChar*)"name");
-            xmlNsPtr ns = NULL;
+            xml_node_remove_attr(i, "name", NULL);
+            XmlNs* ns = NULL;
             char *colon = strchr(name, ':');
             if (colon)
             {
                 *colon = 0;
-                ns = xmlNewNs(i, NULL, (const xmlChar*)name);
-                if (ns) ns->_private = XMQ_EXPLICIT_NS;
+                ns = xml_ns_declare(i, name, NULL);
+                if (ns) xml_ns_set_user_data(ns, XMQ_EXPLICIT_NS);
                 *colon = ':';
             }
-            xmlNodeSetName(i, (const xmlChar*)(colon ? colon+1 : name));
-            xmlSetNs(i, ns);
+            xml_node_set_name(i, colon ? colon+1 : name);
+            xml_node_set_ns(i, ns);
             free(name);
             replace_markers(doq, i);
         }
@@ -5572,39 +5190,27 @@ static void replace_markers(XMQDoc *doq, xmlNodePtr parent)
     }
 }
 
-static void repoint_ns(xmlNodePtr node, xmlNsPtr from, xmlNsPtr to)
-{
-    if (node->type != XML_ELEMENT_NODE) return;
-    if (node->ns == from) node->ns = to;
-    for (xmlAttrPtr a = node->properties; a; a = a->next)
-    {
-        if (a->ns == from) a->ns = to;
-    }
-    for (xmlNodePtr c = node->children; c; c = c->next) repoint_ns(c, from, to);
-}
-
 /** Remove the marker namespace declarations and the declarations that
     repeat an identical declaration of an ancestor. Merge adjacent text nodes
     created when markers were replaced. */
-static void cleanup_after_markers(xmlDocPtr doc, xmlNodePtr node)
+static void cleanup_after_markers(XmlDom* doc, XMQNode* node)
 {
-    if (node->type == XML_ELEMENT_NODE)
+    if (xml_node_kind(node) == XML_DOM_ELEMENT)
     {
-        xmlNsPtr prev = NULL;
-        xmlNsPtr next = NULL;
-        for (xmlNsPtr ns = node->nsDef; ns; ns = next)
+        XmlNs* next = NULL;
+        for (XmlNs* ns = xml_node_first_ns_decl(node); ns; ns = next)
         {
-            next = ns->next;
+            next = xml_ns_next_decl(ns);
             bool remove = false;
-            xmlNsPtr replacement = NULL;
-            if (ns->href && !strcmp((const char*)ns->href, XMQ_MARKERS_NS))
+            XmlNs* replacement = NULL;
+            if (xml_ns_href(ns) && !strcmp(xml_ns_href(ns), XMQ_MARKERS_NS))
             {
                 remove = true;
             }
-            else if (ns->_private != XMQ_EXPLICIT_NS && node->parent && node->parent->type == XML_ELEMENT_NODE)
+            else if (xml_ns_user_data(ns) != XMQ_EXPLICIT_NS && xml_node_parent(node) && xml_node_kind(xml_node_parent(node)) == XML_DOM_ELEMENT)
             {
-                xmlNsPtr anc = xmlSearchNs(doc, node->parent, ns->prefix);
-                if (anc && anc->href && ns->href && !strcmp((const char*)anc->href, (const char*)ns->href))
+                XmlNs* anc = xml_ns_lookup_prefix(xml_node_parent(node), xml_ns_prefix(ns));
+                if (anc && xml_ns_href(anc) && xml_ns_href(ns) && !strcmp(xml_ns_href(anc), xml_ns_href(ns)))
                 {
                     remove = true;
                     replacement = anc;
@@ -5612,51 +5218,40 @@ static void cleanup_after_markers(xmlDocPtr doc, xmlNodePtr node)
             }
             if (remove)
             {
-                if (prev) prev->next = next;
-                else node->nsDef = next;
-                ns->next = NULL;
-                repoint_ns(node, ns, replacement);
-                xmlFreeNs(ns);
-            }
-            else
-            {
-                prev = ns;
+                xml_ns_remove_decl(node, ns, replacement);
             }
         }
     }
-    for (xmlNodePtr c = node->children; c; c = c->next)
+    for (XMQNode* c = xml_node_first_child(node); c; c = xml_node_next(c))
     {
-        while (c->type == XML_TEXT_NODE && c->next && c->next->type == XML_TEXT_NODE)
+        while (xml_node_kind(c) == XML_DOM_TEXT && xml_node_next(c) && xml_node_kind(xml_node_next(c)) == XML_DOM_TEXT)
         {
-            xmlNodePtr n = c->next;
-            xmlNodeAddContent(c, n->content);
-            xmlUnlinkNode(n);
-            xmlFreeNode(n);
+            XMQNode* n = xml_node_next(c);
+            const char *t = xml_node_content(n);
+            xml_node_append_content(c, t, strlen(t));
+            xml_node_free(n);
         }
-        if (c->type == XML_ELEMENT_NODE) cleanup_after_markers(doc, c);
+        if (xml_node_kind(c) == XML_DOM_ELEMENT) cleanup_after_markers(doc, c);
     }
 }
 
-static bool has_markers(xmlNodePtr node)
+static bool has_markers(XMQNode* node)
 {
-    for (xmlNodePtr c = node->children; c; c = c->next)
+    for (XMQNode* c = xml_node_first_child(node); c; c = xml_node_next(c))
     {
         if (is_marker(c, NULL)) return true;
-        if (c->type == XML_ELEMENT_NODE && has_markers(c)) return true;
+        if (xml_node_kind(c) == XML_DOM_ELEMENT && has_markers(c)) return true;
     }
     return false;
 }
 
 void xmq_replace_transform_markers(XMQDoc *doq)
 {
-    xmlDocPtr doc = (xmlDocPtr)doq->docptr_.xml;
-    if (!doc || !has_markers((xmlNodePtr)doc)) return;
-    replace_markers(doq, (xmlNodePtr)doc);
-    cleanup_after_markers(doc, (xmlNodePtr)doc);
-    for (xmlNodePtr c = doc->children; c; c = c->next)
-    {
-        if (c->type == XML_ELEMENT_NODE) cleanup_after_markers(doc, c);
-    }
+    XmlDom* doc = doq->dom_;
+    if (!doc || !has_markers(xml_dom_document(doc))) return;
+    replace_markers(doq, xml_dom_document(doc));
+    cleanup_after_markers(doc, xml_dom_document(doc));
+    doq->root_ = xml_dom_root_element(doc);
 }
 
 bool xmq_parse_buffer_json(XMQDoc *doq,
@@ -5679,7 +5274,7 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
 
     state->implicit_root = implicit_root;
 
-    stack_push(state->element_stack, doq->docptr_.xml);
+    stack_push(state->element_stack, xml_dom_document(doq->dom_));
     // Now state->element_stack->top->data points to doq->docptr_;
     state->element_last = NULL; // Will be set when the first node is created.
     // The doc root will be set when the first element node is created.
@@ -5774,22 +5369,25 @@ XMQParseState *xmq_get_xmq_parse_state(XMQDoc *doc)
     return doc->xmq_parse_state_;
 }
 
-void add_key_number(xmlDoc *doc, xmlNode *root, const char *key, int value)
+void add_key_number(XmlDom *doc, XMQNode *root, const char *key, int value)
 {
     char buf[1024];
     snprintf(buf, 1024, "%d", value);
-    xmlNodePtr element = xmlNewDocNode(doc, NULL, (xmlChar*)key, NULL);
-    xmlAddChild(root, element);
-    xmlNodePtr text = xmlNewDocText(doc, (xmlChar*)buf);
-    xmlAddChild(element, text);
+    add_key_string(doc, root, key, buf);
 }
 
-void add_key_string(xmlDoc *doc, xmlNode *root, const char *key, const char *value)
+void add_key_string(XmlDom *doc, XMQNode *root, const char *key, const char *value)
 {
-    xmlNodePtr element = xmlNewDocNode(doc, NULL, (xmlChar*)key, NULL);
-    xmlAddChild(root, element);
-    xmlNodePtr text = xmlNewDocText(doc, (xmlChar*)value);
-    xmlAddChild(element, text);
+    XMQNode *element = xml_node_new_element(doc, key, NULL);
+    xml_node_append_child(root, element);
+    xml_node_append_child(element, xml_node_new_text(doc, value));
+}
+
+/** Add a top level node to the document: an element becomes the root element. */
+static void xmq_dom_add_top(XmlDom *doc, XMQNode *n)
+{
+    if (xml_node_kind(n) == XML_DOM_ELEMENT) xml_dom_set_root_element(doc, n);
+    else xml_node_add_child(xml_dom_document(doc), n);
 }
 
 void handle_yaep_syntax_error(YaepParseRun *pr,
@@ -5823,13 +5421,11 @@ void handle_yaep_syntax_error(YaepParseRun *pr,
     buf[j++] = '^';
     buf[j++] = 0;
 
-    xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
-    xmlNodePtr root = xmlNewDocNode(new_doc, NULL, (xmlChar*)"ixml", NULL);
-    xmlNsPtr ns = xmlNewNs(root,
-                           (const xmlChar *)"http://invisiblexml.org/NS",
-                           (const xmlChar *)"ixml");
-    xmlSetNsProp(root, ns, (xmlChar*)"state", (xmlChar*)"failed");
-    xmlDocSetRootElement(new_doc, root);
+    XmlDom *new_doc = xml_dom_new();
+    XMQNode *root = xml_node_new_element(new_doc, "ixml", NULL);
+    xml_dom_set_root_element(new_doc, root);
+    XmlNs *ns = xml_ns_declare(root, "ixml", "http://invisiblexml.org/NS");
+    xml_node_set_attr(root, "state", ns, "failed");
 
     add_key_string(new_doc, root, "info", buf);
     add_key_number(new_doc, root, "line", line);
@@ -5839,7 +5435,7 @@ void handle_yaep_syntax_error(YaepParseRun *pr,
     XMQReturnDoc rd = xmqNewDoc();
     assert(rd.status == XMQ_OK);
     XMQDoc *failure = rd.doc;
-    xmlFreeDoc(failure->docptr_.xml);
+    xml_dom_free(failure->dom_);
     xmqSetImplementationDoc(failure, new_doc);
     pr->failure = failure;
 }
@@ -5916,7 +5512,7 @@ void collect_text(YaepTreeNode *n, MemBuffer *mb)
 // an attribute that occurs twice on an element (ixml error D02), or NULL.
 static char *ixml_dynamic_error_ = NULL;
 
-void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index)
+void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index)
 {
     if (n == NULL) return;
     if (n->type == YAEP_TERM && n->val.terminal.code == -1) return;
@@ -5934,30 +5530,28 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
             {
                 // The content to be inserted has been encoded in the rule name.
                 // A hack yes. Does it work? Yes!
-                xmlNodePtr new_node = NULL;
+                XMQNode* new_node = NULL;
 
-                if(an->name[2] == '/' && an->name[3] == '/')
-                {
-                    new_node = xmlNewDocComment(doc, (xmlChar*)an->name+4);
-                }
+                // Note: a |+// name used to create a comment node that was then
+                // overwritten (and leaked) by the text node below, the text is kept.
                 if(an->name[2] == '#')
                 {
                     int value = (int)strtol(an->name+3, NULL, 16);
                     UTF8Char c;
-                    encode_utf8(value, &c);
-                    new_node = xmlNewDocText(doc, (xmlChar*)c.bytes);
+                    size_t len = encode_utf8(value, &c);
+                    new_node = xml_node_new_text_len(doc, c.bytes, len);
                 }
                 else
                 {
-                    new_node = xmlNewDocText(doc, (xmlChar*)an->name+2);
+                    new_node = xml_node_new_text(doc, an->name+2);
                 }
                 if (node == NULL)
                 {
-                    xmlDocSetRootElement(doc, new_node);
+                    xmq_dom_add_top(doc, new_node);
                 }
                 else
                 {
-                    xmlAddChild(node, new_node);
+                    xml_node_add_child(node, new_node);
                 }
             }
             else if (an->mark != '-')
@@ -5969,7 +5563,7 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
                     collect_text(n, mb);
                     membuffer_append_null(mb);
                     // It is a dynamic error (D02) if an element gets the same attribute twice.
-                    if (node && xmlHasProp(node, (xmlChar*)an->name))
+                    if (node && xml_node_kind(node) == XML_DOM_ELEMENT && xml_node_get_attr(node, an->name, NULL))
                     {
                         if (!ixml_dynamic_error_)
                         {
@@ -5978,24 +5572,24 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
                             ixml_dynamic_error_ = strdup(buf);
                         }
                     }
-                    else
+                    else if (node && xml_node_kind(node) == XML_DOM_ELEMENT)
                     {
-                        xmlSetProp(node, (xmlChar*)an->name, (xmlChar*)mb->buffer_);
+                        xml_node_set_attr(node, an->name, NULL, mb->buffer_);
                     }
                     free_membuffer_and_free_content(mb);
                 }
                 else
                 {
                     // Normal node that should be generated.
-                    xmlNodePtr new_node = xmlNewDocNode(doc, NULL, (xmlChar*)an->name, NULL);
+                    XMQNode* new_node = xml_node_new_element(doc, an->name, NULL);
 
                     if (node == NULL)
                     {
-                        xmlDocSetRootElement(doc, new_node);
+                        xmq_dom_add_top(doc, new_node);
                     }
                     else
                     {
-                        xmlAddChild(node, new_node);
+                        xml_node_add_child(node, new_node);
                     }
 
                     for (int i=0; an->children[i] != NULL; ++i)
@@ -6018,12 +5612,12 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
     }
     else if (n->type == YAEP_ALT)
     {
-        xmlNodePtr new_node = NULL;
+        XMQNode* new_node = NULL;
         if (node == NULL)
         {
-            new_node = xmlNewDocNode(doc, NULL, (xmlChar*)"AMBIGUOUS", NULL);
-            assert(xmlDocGetRootElement(doc) == NULL);
-            xmlDocSetRootElement(doc, new_node);
+            new_node = xml_node_new_element(doc, "AMBIGUOUS", NULL);
+            assert(xml_dom_root_element(doc) == NULL);
+            xml_dom_set_root_element(doc, new_node);
         }
         else
         {
@@ -6033,8 +5627,8 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
 
             if (!an || an->mark != '*')
             {
-                new_node = xmlNewDocNode(doc, NULL, (xmlChar*)"AMBIGUOUS", NULL);
-                xmlAddChild(node, new_node);
+                new_node = xml_node_new_element(doc, "AMBIGUOUS", NULL);
+                xml_node_add_child(node, new_node);
             }
             else
             {
@@ -6064,15 +5658,15 @@ void generate_dom_from_yaep_node(xmlDocPtr doc, xmlNodePtr node, YaepTreeNode *n
             size_t len = encode_utf8(at->code, &utf8);
             utf8.bytes[len] = 0;
 
-            xmlNodePtr new_node = xmlNewDocText(doc, (xmlChar*)utf8.bytes);
+            XMQNode* new_node = xml_node_new_text_len(doc, utf8.bytes, len);
 
             if (node == NULL)
             {
-                xmlDocSetRootElement(doc, new_node);
+                xmq_dom_add_top(doc, new_node);
             }
             else
             {
-                xmlAddChild(node, new_node);
+                xml_node_add_child(node, new_node);
             }
         }
     }
@@ -6164,15 +5758,15 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
             xmqClearDoc(doc);
 
             // Free the unused failure document.
-            xmlFreeDoc(run->failure->docptr_.xml);
+            xml_dom_free(run->failure->dom_);
             xmqSetImplementationDoc(run->failure, NULL);
             ok = false;
         }
         else
         {
-            xmlFreeDoc(doc->docptr_.xml);
+            xml_dom_free(doc->dom_);
             // Copy the generated failure document as output.
-            xmqSetImplementationDoc(doc, run->failure->docptr_.xml);
+            xmqSetImplementationDoc(doc, run->failure->dom_);
             xmqSetImplementationDoc(run->failure, NULL);
             ok = false;
         }
@@ -6180,24 +5774,23 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     else
     {
         // IXML parse was fine, generate a DOM from the yaep tree.
-        generate_dom_from_yaep_node(doc->docptr_.xml, NULL, run->root, NULL, 0, 0);
+        generate_dom_from_yaep_node(doc->dom_, NULL, run->root, NULL, 0, 0);
+        doc->root_ = xml_dom_root_element(doc->dom_);
         ok = true;
         if (ixml_dynamic_error_)
         {
             // A dynamic error in the serialization, eg a duplicate attribute (D02).
             // The output is a failure document like for a syntax error.
-            xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
+            XmlDom *new_doc = xml_dom_new();
             if (!(flags & XMQ_FLAG_IXML_FAIL_SILENT))
             {
-                xmlNodePtr root = xmlNewDocNode(new_doc, NULL, (xmlChar*)"ixml", NULL);
-                xmlNsPtr ns = xmlNewNs(root,
-                                       (const xmlChar *)"http://invisiblexml.org/NS",
-                                       (const xmlChar *)"ixml");
-                xmlSetNsProp(root, ns, (xmlChar*)"state", (xmlChar*)"failed");
-                xmlDocSetRootElement(new_doc, root);
+                XMQNode *root = xml_node_new_element(new_doc, "ixml", NULL);
+                xml_dom_set_root_element(new_doc, root);
+                XmlNs *ns = xml_ns_declare(root, "ixml", "http://invisiblexml.org/NS");
+                xml_node_set_attr(root, "state", ns, "failed");
                 add_key_string(new_doc, root, "info", ixml_dynamic_error_);
             }
-            xmlFreeDoc(doc->docptr_.xml);
+            xml_dom_free(doc->dom_);
             xmqSetImplementationDoc(doc, new_doc);
             free(ixml_dynamic_error_);
             ixml_dynamic_error_ = NULL;
@@ -6208,18 +5801,18 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
     if (run->ambiguous_p)
     {
-        xmlNodePtr element = xmlDocGetRootElement(doc->docptr_.xml);
-        xmlNsPtr ns = xmlSearchNs(doc->docptr_.xml, element, (const xmlChar *)"ixml");
-        if (ns == NULL)
+        XMQNode *element = xml_dom_root_element(doc->dom_);
+        if (element)
         {
-            ns = xmlNewNs(element,
-                          (const xmlChar *)"http://invisiblexml.org/NS",
-                          (const xmlChar *)"ixml");
+            XmlNs *ns = xml_ns_lookup_prefix(element, "ixml");
+            if (ns == NULL)
+            {
+                ns = xml_ns_declare(element, "ixml", "http://invisiblexml.org/NS");
+            }
+            // This should be set with the namespace ixml, kept without namespace
+            // as before (the libxml2 version leaked with xmlSetNsProp).
+            xml_node_set_attr(element, "state", NULL, "ambiguous");
         }
-        // This should be set with the namespace ixml, however a memory leak triggers then....
-        // Temporary workaround use xmlSetProp instead.
-        // xmlSetNsProp(element, ns, (xmlChar*)"state", (xmlChar*)"ambiguous");
-        xmlSetProp(element, (xmlChar*)"state", (xmlChar*)"ambiguous");
     }
 
     if (run->root)
@@ -6266,10 +5859,11 @@ char *xmqCompactQuote(const char *content)
     memset(&ps, 0, sizeof(ps));
     ps.output_settings = &os;
 
-    xmlNode node;
-    memset(&node, 0, sizeof(node));
-    node.content = (xmlChar*)content;
-    print_value(&ps , &node, NULL, NULL, LEVEL_ELEMENT_VALUE, false);
+    XmlDom *tmp = xml_dom_new();
+    XMQNode *node = xml_node_new_text(tmp, content);
+    print_value(&ps , node, NULL, NULL, LEVEL_ELEMENT_VALUE, false);
+    xml_node_free(node);
+    xml_dom_free(tmp);
 
     membuffer_append_null(mb);
 
@@ -6545,6 +6139,14 @@ char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
 #include"parts/lang.c"
 #include"parts/utf8.c"
 #include"parts/vector.c"
+#include"parts/xml_chars.c"
+#include"parts/xml_dom.c"
+#include"parts/xml_parser.c"
+#include"parts/xml_save.c"
+#include"parts/xml_html.c"
+#include"parts/xml_html_parser.c"
+#include"parts/xml_html_save.c"
+#include"parts/xml_xpath.c"
 #include"parts/xml.c"
 #include"parts/xmq_internals.c"
 #include"parts/xmq_parser.c"

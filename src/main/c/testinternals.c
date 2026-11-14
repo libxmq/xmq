@@ -33,10 +33,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<string.h>
 #include<unistd.h>
 
-#include<libxml/tree.h>
-#include<libxml/parser.h>
-#include<libxml/HTMLparser.h>
-#include<libxml/xmlreader.h>
 
 #include"xmq.h"
 #include"parts/xmq_internals.h"
@@ -278,17 +274,17 @@ void test_quote(int indent, bool compact, char *in, char *expected)
     memset(&ps, 0, sizeof(XMQPrintState));
     ps.output_settings = os;
 
-    xmlNode *parent = xmlNewNode(NULL, (xmlChar*)"test");
-    xmlNode *node = xmlNewText((const xmlChar *)in);
-    xmlAddChild(parent,node);
+    XmlDom *dom = xml_dom_new();
+    XMQNode *parent = xml_node_new_element(dom, "test", NULL);
+    XMQNode *node = xml_node_new_text(dom, in);
+    xml_node_append_child(parent, node);
 
     ps.current_indent = indent;
     ps.line_indent = indent;
     print_node(&ps, parent, LEVEL_XMQ);
 
-    xmlUnlinkNode(node);
-    xmlFreeNode(node);
-    xmlFreeNode(parent);
+    xml_node_free(parent);
+    xml_dom_free(dom);
 
     size_t size = membuffer_used(os->output_buffer);
     char *out = free_membuffer_but_return_trimmed_content(os->output_buffer);

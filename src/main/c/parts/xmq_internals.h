@@ -38,13 +38,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<unistd.h>
 
 #include"xmq.h"
-#include<libxml/tree.h>
-#include<libxml/parser.h>
-#include<libxml/HTMLparser.h>
-#include<libxml/HTMLtree.h>
-#include<libxml/xmlreader.h>
-#include<libxml/xpath.h>
-#include<libxml/xpathInternals.h>
+#ifndef BUILDING_DIST_XMQ
+#include"xml_dom.h"
+#include"xml_parser.h"
+#include"xml_save.h"
+#include"xml_html_parser.h"
+#include"xml_html_save.h"
+#include"xml_xpath.h"
+#endif
 
 #ifndef BUILDING_DIST_XMQ
 #include"colors.h"
@@ -80,7 +81,7 @@ typedef struct XMQParseState XMQParseState;
 struct XMQReturnXMLNode
 {
     XMQStatus status;
-    xmlNodePtr node;
+    XMQNode* node;
 };
 typedef struct XMQReturnXMLNode XMQReturnXMLNode;
 
@@ -121,10 +122,7 @@ typedef struct XMQReturnXMLNode XMQReturnXMLNode;
 
 struct XMQDoc
 {
-    union {
-        xmlDocPtr xml;
-        htmlDocPtr html;
-    } docptr_; // Is both xmlDocPtr and htmlDocPtr.
+    XmlDom *dom_; // The native dom (xml_dom.h), for xml and html alike.
     const char *source_name_; // File name or url from which the documented was fetched.
     int errno_; // A parse error is assigned a number.
     const char *error_; // And the error is explained here.
@@ -489,9 +487,9 @@ void generate_state_error_message(XMQParseState *state, XMQStatus error_nr, cons
 Level enter_compound_level(Level l);
 XMQColor level_to_quote_color(Level l);
 XMQColor level_to_entity_color(Level l);
-void attr_strlen_name_prefix(xmlAttr *attr, const char **name, const char **prefix, size_t *total_u_len);
-void element_strlen_name_prefix(xmlNode *attr, const char **name, const char **prefix, size_t *total_u_len);
-void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len);
+void attr_strlen_name_prefix(XMQAttr *attr, const char **name, const char **prefix, size_t *total_u_len);
+void element_strlen_name_prefix(XMQNode *attr, const char **name, const char **prefix, size_t *total_u_len);
+void namespace_strlen_prefix(XmlNs *ns, const char **prefix, size_t *total_u_len);
 const char *find_word_ignore_case(const char *start, const char *stop, const char *word);
 
 /** The output settings take ownership of a buffer used by the theme, freed with the settings. */
@@ -520,10 +518,10 @@ XMQReturnString xmq_un_quote(const char *start, const char *stop, bool remove_qs
 
 // XML/HTML dom functions ///////////////////////////////////////////////////////////////
 
-xmlDtdPtr parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop);
+XMQNode* parse_doctype_raw(XMQDoc *doq, const char *start, const char *stop);
 void xmq_replace_transform_markers(XMQDoc *doq);
-void trim_node(xmlNode *node, int flags);
-void trim_text_node(xmlNode *node, int flags);
+void trim_node(XMQNode *node, int flags);
+void trim_text_node(XMQNode *node, int flags);
 
 // Output buffer functions ////////////////////////////////////////////////////////
 
@@ -580,7 +578,7 @@ YaepGrammar *xmq_get_yaep_grammar(XMQDoc *doc);
 YaepParseRun *xmq_get_yaep_parse_run(XMQDoc *doc);
 XMQParseState *xmq_get_xmq_parse_state(XMQDoc *doc);
 
-void set_node_namespace(XMQParseState *state, xmlNodePtr node, const char *node_name);
+void set_node_namespace(XMQParseState *state, XMQNode* node, const char *node_name);
 
 bool load_file(XMQDoc *doq, const char *file, size_t *out_fsize, const char **out_buffer);
 bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer);

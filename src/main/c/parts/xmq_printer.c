@@ -16,11 +16,11 @@
 
 #ifdef XMQ_PRINTER_MODULE
 
-size_t find_attr_key_max_u_width(xmlAttr *a);
-size_t find_namespace_max_u_width(size_t max, xmlNs *ns);
-size_t find_element_key_max_width(xmlNodePtr node, xmlNodePtr *restart_find_at_node);
+size_t find_attr_key_max_u_width(XMQAttr *a);
+size_t find_namespace_max_u_width(size_t max, XmlNs *ns);
+size_t find_element_key_max_width(XMQNode* node, XMQNode* *restart_find_at_node);
 const char *toHtmlEntity(int uc);
-void node_strlen_name_prefix(xmlNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
+void node_strlen_name_prefix(XMQNode *node, const char **name, size_t *name_len, const char **prefix, size_t *prefix_len, size_t *total_len);
 
 
 /**
@@ -216,7 +216,7 @@ size_t count_necessary_slashes(const char *start, const char *stop)
 /**
   Scan the attribute names and find the max unicode character width.
 */
-size_t find_attr_key_max_u_width(xmlAttr *a)
+size_t find_attr_key_max_u_width(XMQAttr *a)
 {
     size_t max = 0;
     while (a)
@@ -237,10 +237,10 @@ size_t find_attr_key_max_u_width(xmlAttr *a)
   I.e. it has multiple children or no children. This node unsuitable node is stored in
   restart_find_at_node or NULL if all nodes were suitable.
 */
-size_t find_element_key_max_width(xmlNodePtr element, xmlNodePtr *restart_find_at_node)
+size_t find_element_key_max_width(XMQNode* element, XMQNode* *restart_find_at_node)
 {
     size_t max = 0;
-    xmlNodePtr i = element;
+    XMQNode* i = element;
     while (i)
     {
         if (!is_key_value_node(i) || xml_first_attribute(i))
@@ -264,7 +264,7 @@ size_t find_element_key_max_width(xmlNodePtr element, xmlNodePtr *restart_find_a
 /**
   Scan the namespace links and find the max unicode character width.
 */
-size_t find_namespace_max_u_width(size_t max, xmlNs *ns)
+size_t find_namespace_max_u_width(size_t max, XmlNs *ns)
 {
     while (ns)
     {
@@ -274,16 +274,16 @@ size_t find_namespace_max_u_width(size_t max, xmlNs *ns)
 
         // Print only new/overriding namespaces.
         if (total_u_len > max) max = total_u_len;
-        ns = ns->next;
+        ns = xml_ns_next_decl(ns);
     }
 
     return max;
 }
 
-void print_nodes(XMQPrintState *ps, xmlNode *from, xmlNode *to, size_t align)
+void print_nodes(XMQPrintState *ps, XMQNode *from, XMQNode *to, size_t align)
 {
-    xmlNode *i = from;
-    xmlNode *restart_find_at_node = from;
+    XMQNode *i = from;
+    XMQNode *restart_find_at_node = from;
     size_t max = 0;
 
     while (i)
@@ -299,21 +299,21 @@ void print_nodes(XMQPrintState *ps, xmlNode *from, xmlNode *to, size_t align)
     }
 }
 
-void print_content_node(XMQPrintState *ps, xmlNode *node)
+void print_content_node(XMQPrintState *ps, XMQNode *node)
 {
     print_value(ps, node, NULL, NULL, LEVEL_XMQ, false);
 }
 
-void print_entity_node(XMQPrintState *ps, xmlNode *node)
+void print_entity_node(XMQPrintState *ps, XMQNode *node)
 {
     check_space_before_entity_node(ps);
 
     XMQColor c = COLOR_entity;
 
-    if (*(const char*)node->name == '_') c = COLOR_quote;
+    if (*xml_node_name(node) == '_') c = COLOR_quote;
 
     print_utf8(ps, c, 1, "&", NULL);
-    print_utf8(ps, c, 1, (const char*)node->name, NULL);
+    print_utf8(ps, c, 1, xml_node_name(node), NULL);
     print_utf8(ps, c, 1, ";", NULL);
 }
 
@@ -390,7 +390,7 @@ void print_comment_lines(XMQPrintState *ps, const char *start, const char *stop,
     ps->line_indent = prev_line_indent;
 }
 
-void print_comment_node(XMQPrintState *ps, xmlNode *node)
+void print_comment_node(XMQPrintState *ps, XMQNode *node)
 {
     const char *comment = xml_element_content(node);
     const char *start = comment;
@@ -419,7 +419,7 @@ void print_comment_node(XMQPrintState *ps, xmlNode *node)
     }
 }
 
-size_t print_element_name_and_attributes(XMQPrintState *ps, xmlNode *node)
+size_t print_element_name_and_attributes(XMQPrintState *ps, XMQNode *node)
 {
     size_t name_len, prefix_len, total_u_len;
     const char *name;
@@ -481,13 +481,13 @@ size_t print_element_name_and_attributes(XMQPrintState *ps, xmlNode *node)
 }
 
 void print_leaf_node(XMQPrintState *ps,
-                     xmlNode *node)
+                     XMQNode *node)
 {
     print_element_name_and_attributes(ps, node);
 }
 
 void print_key_node(XMQPrintState *ps,
-                    xmlNode *node,
+                    XMQNode *node,
                     size_t align)
 {
     print_element_name_and_attributes(ps, node);
@@ -506,7 +506,7 @@ void print_key_node(XMQPrintState *ps,
 }
 
 void print_element_with_children(XMQPrintState *ps,
-                                 xmlNode *node,
+                                 XMQNode *node,
                                  size_t align)
 {
     print_element_name_and_attributes(ps, node);
@@ -519,10 +519,10 @@ void print_element_with_children(XMQPrintState *ps,
 
     ps->line_indent += ps->output_settings->add_indent;
 
-    while (xml_prev_sibling((xmlNode*)from)) from = xml_prev_sibling((xmlNode*)from);
+    while (xml_prev_sibling((XMQNode*)from)) from = xml_prev_sibling((XMQNode*)from);
     assert(from != NULL);
 
-    print_nodes(ps, (xmlNode*)from, (xmlNode*)to, align);
+    print_nodes(ps, (XMQNode*)from, (XMQNode*)to, align);
 
     ps->line_indent -= ps->output_settings->add_indent;
 
@@ -530,7 +530,7 @@ void print_element_with_children(XMQPrintState *ps,
     print_utf8(ps, COLOR_brace_right, 1, "}", NULL);
 }
 
-void print_doctype(XMQPrintState *ps, xmlNode *node)
+void print_doctype(XMQPrintState *ps, XMQNode *node)
 {
     if (!node) return;
 
@@ -540,9 +540,7 @@ void print_doctype(XMQPrintState *ps, xmlNode *node)
     print_utf8(ps, COLOR_equals, 1, "=", NULL);
     if (!ps->output_settings->compact) print_white_spaces(ps, 1);
 
-    xmlBuffer *buffer = xmlBufferCreate();
-    xmlNodeDump(buffer, (xmlDocPtr)ps->doq->docptr_.xml, (xmlNodePtr)node, 0, 0);
-    char *c = (char*)xmlBufferContent(buffer);
+    char *c = xml_save_node(node, 0, false, NULL);
     if (ps->output_settings->compact)
     {
         size_t n = strlen(c);
@@ -554,23 +552,21 @@ void print_doctype(XMQPrintState *ps, xmlNode *node)
     }
     print_value(ps, NULL, c+10, c+strlen(c)-1, LEVEL_ELEMENT_VALUE, false);
 
-    xmlBufferFree(buffer);
+    free(c);
 }
 
-void print_pi_node(XMQPrintState *ps, xmlNode *node)
+void print_pi_node(XMQPrintState *ps, XMQNode *node)
 {
     if (!node) return;
 
     check_space_before_key(ps);
-    size_t name_len = strlen((const char*)node->name);
-    print_utf8(ps, COLOR_element_key, 2, "?", NULL, node->name, NULL);
+    size_t name_len = strlen(xml_node_name(node));
+    print_utf8(ps, COLOR_element_key, 2, "?", NULL, xml_node_name(node), NULL);
     if (!ps->output_settings->compact) print_white_spaces(ps, 1);
     print_utf8(ps, COLOR_equals, 1, "=", NULL);
     if (!ps->output_settings->compact) print_white_spaces(ps, 1);
 
-    xmlBuffer *buffer = xmlBufferCreate();
-    xmlNodeDump(buffer, (xmlDocPtr)ps->doq->docptr_.xml, (xmlNodePtr)node, 0, 0);
-    char *c = (char*)xmlBufferContent(buffer);
+    char *c = xml_save_node(node, 0, false, NULL);
     size_t n = strlen(c);
     // now detect if we need to add a leading/ending space.
     if (c[n-1] == '>' && c[n-2] == '?')
@@ -592,10 +588,10 @@ void print_pi_node(XMQPrintState *ps, xmlNode *node)
     print_value(ps, NULL, content, end, LEVEL_ELEMENT_VALUE, false);
 
     free(content);
-    xmlBufferFree(buffer);
+    free(c);
 }
 
-void print_node(XMQPrintState *ps, xmlNode *node, size_t align)
+void print_node(XMQPrintState *ps, XMQNode *node, size_t align)
 {
     // Standalone quote must be quoted: 'word' 'some words'
     if (is_content_node(node))
@@ -1022,7 +1018,7 @@ void check_space_before_comment(XMQPrintState *ps)
 }
 
 
-void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align)
+void print_attribute(XMQPrintState *ps, XMQAttr *a, size_t align)
 {
     check_space_before_attribute(ps);
 
@@ -1053,7 +1049,8 @@ void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align)
 
     print_utf8(ps, COLOR_attr_key, 1, key, NULL);
 
-    if (a->children != NULL && !is_single_empty_text_node(a->children))
+    XMQNode *value = xml_node_first_child(xml_attr_node(a));
+    if (value != NULL && !is_single_empty_text_node(value))
     {
         if (!ps->output_settings->compact) print_white_spaces(ps, 1+align-total_u_len);
 
@@ -1061,11 +1058,11 @@ void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align)
 
         if (!ps->output_settings->compact) print_white_spaces(ps, 1);
 
-        print_value(ps, a->children, NULL, NULL, LEVEL_ATTR_VALUE, false);
+        print_value(ps, value, NULL, NULL, LEVEL_ATTR_VALUE, false);
     }
 }
 
-void print_namespace_declaration(XMQPrintState *ps, xmlNs *ns, size_t align)
+void print_namespace_declaration(XMQPrintState *ps, XmlNs *ns, size_t align)
 {
     //if (!xml_non_empty_namespace(ns)) return;
 
@@ -1102,14 +1099,14 @@ void print_namespace_declaration(XMQPrintState *ps, xmlNs *ns, size_t align)
 
 
 void print_attributes(XMQPrintState *ps,
-                      xmlNodePtr node)
+                      XMQNode* node)
 {
-    xmlAttr *a = xml_first_attribute(node);
+    XMQAttr *a = xml_first_attribute(node);
 
     size_t max = 0;
     if (!ps->output_settings->compact) max = find_attr_key_max_u_width(a);
 
-    xmlNs *ns = xml_first_namespace_def(node);
+    XmlNs *ns = xml_first_namespace_def(node);
     if (!ps->output_settings->compact) max = find_namespace_max_u_width(max, ns);
 
     size_t line_indent = ps->line_indent;
@@ -1545,11 +1542,9 @@ void print_color_post(XMQPrintState *ps, XMQColor color)
    QUOTEL: 'xxx
             yyy'
 */
-void print_value_internal(XMQPrintState *ps, xmlNode *node, const char *start, const char *stop, Level level, bool using_dquotes, bool already_compounded)
+void print_value_internal(XMQPrintState *ps, XMQNode *node, const char *start, const char *stop, Level level, bool using_dquotes, bool already_compounded)
 {
-    if (node && (
-            node->type == XML_ENTITY_REF_NODE ||
-            node->type == XML_ENTITY_NODE))
+    if (node && xml_node_kind(node) == XML_DOM_ENTITY_REF)
     {
         print_entity_node(ps, node);
         return;
@@ -1708,7 +1703,7 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
 }
 
 void print_value(XMQPrintState *ps,
-                 xmlNode *node,
+                 XMQNode *node,
                  const char *start,
                  const char *stop,
                  Level level,
@@ -1718,7 +1713,7 @@ void print_value(XMQPrintState *ps,
     assert(!(node && start));
 
     // Check if there are more than one part, if so the value has to be compounded.
-    bool is_compound = level != LEVEL_XMQ && node != NULL && node->next != NULL;
+    bool is_compound = level != LEVEL_XMQ && node != NULL && xml_node_next(node) != NULL;
     bool prefer_dquotes = ps->output_settings->prefer_double_quotes;
     bool use_dquotes = prefer_dquotes;
 
@@ -1751,7 +1746,7 @@ void print_value(XMQPrintState *ps,
     }
     else
     {
-        for (xmlNode *i = node; i; i = xml_next_sibling(i))
+        for (XMQNode *i = node; i; i = xml_next_sibling(i))
         {
             print_value_internal(ps, i, start, stop, level, use_dquotes, is_compound);
             if (level == LEVEL_XMQ) break;
@@ -1767,18 +1762,18 @@ void print_value(XMQPrintState *ps,
     ps->line_indent = old_line_indent;
 }
 
-void node_strlen_name_prefix(xmlNode *node,
+void node_strlen_name_prefix(XMQNode *node,
                         const char **name, size_t *name_len,
                         const char **prefix, size_t *prefix_len,
                         size_t *total_len)
 {
-    *name_len = strlen((const char*)node->name);
-    *name = (const char*)node->name;
+    *name_len = strlen(xml_node_name(node));
+    *name = xml_node_name(node);
 
-    if (node->ns && node->ns->prefix)
+    if (xml_node_ns_prefix(node))
     {
-        *prefix = (const char*)node->ns->prefix;
-        *prefix_len = strlen((const char*)node->ns->prefix);
+        *prefix = xml_node_ns_prefix(node);
+        *prefix_len = strlen(*prefix);
         *total_len = *name_len + *prefix_len +1;
     }
     else
@@ -1790,18 +1785,18 @@ void node_strlen_name_prefix(xmlNode *node,
     assert(*name != NULL);
 }
 
-void attr_strlen_name_prefix(xmlAttr *attr, const char **name, const char **prefix, size_t *total_u_len)
+void attr_strlen_name_prefix(XMQAttr *attr, const char **name, const char **prefix, size_t *total_u_len)
 {
-    *name = (const char*)attr->name;
+    *name = xml_attr_name(attr);
     size_t name_b_len;
     size_t name_u_len;
     size_t prefix_b_len;
     size_t prefix_u_len;
     str_b_u_len(*name, NULL, &name_b_len, &name_u_len);
 
-    if (attr->ns && attr->ns->prefix)
+    if (xml_node_ns_prefix(xml_attr_node(attr)))
     {
-        *prefix = (const char*)attr->ns->prefix;
+        *prefix = xml_node_ns_prefix(xml_attr_node(attr));
         str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
         *total_u_len = name_u_len + prefix_u_len + 1;
     }
@@ -1815,14 +1810,14 @@ void attr_strlen_name_prefix(xmlAttr *attr, const char **name, const char **pref
     assert(*name != NULL);
 }
 
-void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len)
+void namespace_strlen_prefix(XmlNs *ns, const char **prefix, size_t *total_u_len)
 {
     size_t prefix_b_len;
     size_t prefix_u_len;
 
-    if (ns->prefix)
+    if (xml_ns_prefix(ns))
     {
-        *prefix = (const char*)ns->prefix;
+        *prefix = xml_ns_prefix(ns);
         str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
         *total_u_len = /* xmlns */ 5  + prefix_u_len + 1;
     }
@@ -1835,9 +1830,9 @@ void namespace_strlen_prefix(xmlNs *ns, const char **prefix, size_t *total_u_len
     }
 }
 
-void element_strlen_name_prefix(xmlNode *element, const char **name, const char **prefix, size_t *total_u_len)
+void element_strlen_name_prefix(XMQNode *element, const char **name, const char **prefix, size_t *total_u_len)
 {
-    *name = (const char*)element->name;
+    *name = xml_node_name(element);
     if (!*name)
     {
         *name = "";
@@ -1851,9 +1846,9 @@ void element_strlen_name_prefix(xmlNode *element, const char **name, const char 
     size_t prefix_u_len;
     str_b_u_len(*name, NULL, &name_b_len, &name_u_len);
 
-    if (element->ns && element->ns->prefix)
+    if (xml_node_ns_prefix(element))
     {
-        *prefix = (const char*)element->ns->prefix;
+        *prefix = xml_node_ns_prefix(element);
         str_b_u_len(*prefix, NULL, &prefix_b_len, &prefix_u_len);
         *total_u_len = name_u_len + prefix_u_len + 1;
     }
@@ -1874,38 +1869,37 @@ struct OffsetCounter {
 };
 typedef struct OffsetCounter OffsetCounter;
 
-void annotate_node(OffsetCounter *counter, xmlNode *node);
+void annotate_node(OffsetCounter *counter, XMQNode *node);
 
-void annotate_offsets(xmlDoc *doc, const char *attribute_name, const char *ns)
+void annotate_offsets(XmlDom *doc, const char *attribute_name, const char *ns)
 {
     OffsetCounter c;
     c.offset = 0;
     c.attribute_name = attribute_name;
     c.ns = ns;
-    annotate_node(&c, xmlDocGetRootElement(doc));
+    annotate_node(&c, xml_dom_root_element(doc));
 }
 
-void annotate_node(OffsetCounter *counter, xmlNode *node)
+void annotate_node(OffsetCounter *counter, XMQNode *node)
 {
     if (!node) return;
 
     char buf[64];
     snprintf(buf, 64, "%d", counter->offset);
-    xmlSetProp(node, (xmlChar*)counter->attribute_name, (xmlChar*)buf);
-    if (!node) return;
-    if (node->type == XML_ELEMENT_NODE)
+    if (xml_node_kind(node) == XML_DOM_ELEMENT) xml_node_set_attr(node, counter->attribute_name, NULL, buf);
+    if (xml_node_kind(node) == XML_DOM_ELEMENT)
     {
-        xmlNode *i = xml_first_child(node);
+        XMQNode *i = xml_first_child(node);
         while (i)
         {
-            xmlNode *next = xml_next_sibling(i);
+            XMQNode *next = xml_next_sibling(i);
             annotate_node(counter, i);
             i = next;
         }
     }
-    else if (node->type == XML_TEXT_NODE)
+    else if (xml_node_kind(node) == XML_DOM_TEXT)
     {
-        counter->offset += strlen((const char*)node->content);
+        counter->offset += strlen(xml_node_content(node));
     }
 }
 

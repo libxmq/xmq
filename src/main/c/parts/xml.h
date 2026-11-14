@@ -25,40 +25,44 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define XML_H
 
 #include<stdbool.h>
-#include<libxml/tree.h>
+#ifndef BUILDING_DIST_XMQ
+#include"xml_dom.h"
+#endif
 
 int decode_entity_ref(const char *name);
-void free_xml(xmlNode * node);
-bool has_attributes(xmlNodePtr node);
-bool is_attribute_node(const xmlNode *node);
-bool is_comment_node(const xmlNode *node);
-bool is_content_node(const xmlNode *node);
-bool is_doctype_node(const xmlNode *node);
-bool is_element_node(const xmlNode *node);
-bool is_entity_node(const xmlNode *node);
-bool is_key_value_node(xmlNodePtr node);
-bool is_leaf_node(xmlNode *node);
-bool is_pi_node(const xmlNode *node);
-bool is_single_empty_text_node(xmlNodePtr node);
-bool is_text_node(const xmlNode *node);
-void xml_add_root_child(xmlDoc *doc, xmlNode *node);
-const char *xml_attr_key(xmlAttr *attr);
-char *xml_collapse_text(xmlNode *node);
-const char *xml_element_content(xmlNode *node);
-const char *xml_element_name(xmlNode *node);
-const char *xml_element_ns_prefix(const xmlNode *node);
-xmlAttr *xml_first_attribute(xmlNode *node);
-xmlNode *xml_first_child(xmlNode *node);
-xmlNs *xml_first_namespace_def(xmlNode *node);
-xmlAttr *xml_get_attribute(xmlNode *node, const char *name);
-bool xml_has_non_empty_namespace_defs(xmlNode *node);
-xmlNode *xml_last_child(xmlNode *node);
-const char *xml_namespace_href(xmlNs *ns);
-xmlAttr *xml_next_attribute(xmlAttr *attr);
-xmlNs *xml_next_namespace_def(xmlNs *ns);
-xmlNode *xml_next_sibling(xmlNode *node);
-bool xml_non_empty_namespace(xmlNs *ns);
-xmlNode *xml_prev_sibling(xmlNode *node);
+void free_xml(XMQNode * node);
+bool has_attributes(XMQNode* node);
+bool is_attribute_node(const XMQNode *node);
+bool is_comment_node(const XMQNode *node);
+bool is_content_node(const XMQNode *node);
+bool is_doctype_node(const XMQNode *node);
+bool is_element_node(const XMQNode *node);
+bool is_entity_node(const XMQNode *node);
+bool is_key_value_node(XMQNode* node);
+bool is_leaf_node(XMQNode *node);
+bool is_pi_node(const XMQNode *node);
+bool is_single_empty_text_node(XMQNode* node);
+bool is_text_node(const XMQNode *node);
+void xml_add_root_child(XmlDom *doc, XMQNode *node);
+const char *xml_attr_key(XMQAttr *attr);
+char *xml_collapse_text(XMQNode *node);
+const char *xml_element_content(XMQNode *node);
+const char *xml_element_name(XMQNode *node);
+/** The name libxml2 gives the node, eg "text" for text nodes and "comment" for comments. */
+const char *xml_node_libxml_name(XMQNode *node);
+const char *xml_element_ns_prefix(const XMQNode *node);
+XMQAttr *xml_first_attribute(XMQNode *node);
+XMQNode *xml_first_child(XMQNode *node);
+XmlNs *xml_first_namespace_def(XMQNode *node);
+XMQAttr *xml_get_attribute(XMQNode *node, const char *name);
+bool xml_has_non_empty_namespace_defs(XMQNode *node);
+XMQNode *xml_last_child(XMQNode *node);
+const char *xml_namespace_href(XmlNs *ns);
+XMQAttr *xml_next_attribute(XMQAttr *attr);
+XmlNs *xml_next_namespace_def(XmlNs *ns);
+XMQNode *xml_next_sibling(XMQNode *node);
+bool xml_non_empty_namespace(XmlNs *ns);
+XMQNode *xml_prev_sibling(XMQNode *node);
 
 #define XML_MODULE
 

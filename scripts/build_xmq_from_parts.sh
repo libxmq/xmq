@@ -71,6 +71,14 @@ do_part lang
 do_part utf8
 do_part entities
 do_part vector
+do_part xml_chars
+do_part xml_dom
+do_part xml_parser
+do_part xml_save
+do_part xml_html
+do_part xml_html_parser
+do_part xml_html_save
+do_part xml_xpath
 do_part xml
 do_part xmq_internals
 do_part xmq_parser

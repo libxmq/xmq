@@ -684,68 +684,57 @@ void parse_xmq_embedded_xml(XMQParseState *state)
         longjmp(state->error_handler, 1);
     }
 
-    if (state->doq && state->doq->docptr_.xml && state->element_stack && stack_top(state->element_stack) != NULL)
+    if (state->doq && state->doq->dom_ && state->element_stack && stack_top(state->element_stack) != NULL)
     {
         // Parse the fragment with the xml parser and attach the resulting
         // element (and its descendants) to the current xmq element.
         // NOBLANKS discards whitespace-only text nodes so that the
         // indentation that separates the xml elements does not become
         // content of the xmq document.
-        xmlDocPtr fdoc = xmlReadMemory(start,
-                                       stop-start,
-                                       state->doq->source_name_,
-                                       NULL,
-                                       XML_PARSE_NOCDATA | XML_PARSE_NONET | XML_PARSE_NOBLANKS);
+        XmlParseSettings settings;
+        xml_parse_settings_default(&settings);
+        settings.source_name = state->doq->source_name_;
+        settings.no_cdata = true;
+        settings.no_blanks = true;
+        XmlParseError perr;
+        XmlDom *fdoc = xml_parse_buffer(start, stop, &settings, &perr);
+        xml_parse_error_free(&perr);
         if (!fdoc)
         {
             state->error_nr = XMQ_ERROR_PARSING_XML;
             longjmp(state->error_handler, 1);
         }
-        xmlNodePtr root = xmlDocGetRootElement(fdoc);
-        if (!root || root->type != XML_ELEMENT_NODE)
+        XMQNode *root = xml_dom_root_element(fdoc);
+        if (!root)
         {
-            xmlFreeDoc(fdoc);
+            xml_dom_free(fdoc);
             state->error_nr = XMQ_ERROR_PARSING_XML;
             longjmp(state->error_handler, 1);
         }
-        xmlNodePtr node = xmlDocCopyNode(root, state->doq->docptr_.xml, 1);
-        xmlFreeDoc(fdoc);
-        if (!node)
-        {
-            state->error_nr = XMQ_ERROR_OOM;
-            longjmp(state->error_handler, 1);
-        }
+        XMQNode *node = xml_node_copy(state->doq->dom_, root, true);
+        xml_dom_free(fdoc);
 
         if (state->element_last == NULL)
         {
-            if (state->implicit_root && strcmp((const char*)node->name, state->implicit_root) != 0)
+            if (state->implicit_root && strcmp(xml_node_name(node), state->implicit_root) != 0)
             {
-                xmlNodePtr newroot =
-                    xmlNewDocNode(state->doq->docptr_.xml,
-                                  NULL,
-                                  (const xmlChar*)state->implicit_root,
-                                  NULL);
-                if (!newroot)
-                {
-                    xmlFreeNode(node);
-                    state->error_nr = XMQ_ERROR_OOM;
-                    longjmp(state->error_handler, 1);
-                }
+                XMQNode *newroot = xml_node_new_element(state->doq->dom_, state->implicit_root, NULL);
                 state->element_last = newroot;
-                xmlDocSetRootElement(state->doq->docptr_.xml, newroot);
-                state->doq->root_ = (XMQNode*)newroot;
+                xml_dom_set_root_element(state->doq->dom_, newroot);
+                state->doq->root_ = newroot;
                 stack_push(state->element_stack, state->element_last);
             }
             else
             {
                 state->element_last = node;
-                xmlDocSetRootElement(state->doq->docptr_.xml, node);
-                state->doq->root_ = (XMQNode*)node;
+                xml_dom_set_root_element(state->doq->dom_, node);
+                state->doq->root_ = node;
             }
         }
 
-        xmlNodePtr parent = (xmlNode*)stack_top(state->element_stack);
-        xmlAddChild(parent, node);
+        XMQNode *parent = (XMQNode*)stack_top(state->element_stack);
+        if (parent != node) xml_node_add_child(parent, node);
+        xml_node_reconcile_ns(node);
         state->element_last = node;
     }
 

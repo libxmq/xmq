@@ -1982,7 +1982,7 @@ bool xmq_parse_buffer_yaml(XMQDoc *doq,
     if (implicit_root != NULL && implicit_root[0] == 0) implicit_root = NULL;
     state->implicit_root = implicit_root;
 
-    stack_push(state->element_stack, doq->docptr_.xml);
+    stack_push(state->element_stack, xml_dom_document(doq->dom_));
     state->element_last = NULL;
 
     xmq_tokenize_buffer_yaml(state, start, stop);
@@ -2104,10 +2104,10 @@ static bool yaml_scalar_is_plain(const char *s, bool force_string)
     return !yaml_needs_quotes(s);
 }
 
-static void yaml_print_comment(XMQPrintState *ps, const xmlNode *node)
+static void yaml_print_comment(XMQPrintState *ps, const XMQNode *node)
 {
     yw(ps, "# ");
-    const char *p = node->content ? (const char*)node->content : "";
+    const char *p = xml_node_content(node) ? xml_node_content(node) : "";
     for (; *p; p++)
     {
         if (*p == '\n' || *p == '\t' || *p == '\r') yw(ps, " ");
@@ -2120,7 +2120,7 @@ static void yaml_print_comment(XMQPrintState *ps, const xmlNode *node)
 }
 
 // Write out the scalar value of the node range [from..to] (quote it if necessary).
-static void yaml_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, bool force_string)
+static void yaml_print_value(XMQPrintState *ps, XMQNode *from, XMQNode *to, bool force_string)
 {
     // force_string (node has attribute S): the value is a string even if it
     // *looks* like a number, boolean or null, so it must be quoted in yaml.
@@ -2136,11 +2136,11 @@ static void yaml_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, bool
 
     yw(ps, "\"");
     // The range ends at to, found by identity (node addresses say nothing about sibling order).
-    for (xmlNode *i = from; i; i = (i == to) ? NULL : xml_next_sibling(i))
+    for (XMQNode *i = from; i; i = (i == to) ? NULL : xml_next_sibling(i))
     {
         if (is_entity_node(i))
         {
-            yw(ps, "&"); yw(ps, (const char*)i->name); yw(ps, ";");
+            yw(ps, "&"); yw(ps, xml_node_name(i)); yw(ps, ";");
             continue;
         }
         const char *content = xml_element_content(i);
@@ -2159,26 +2159,26 @@ static void yaml_print_value(XMQPrintState *ps, xmlNode *from, xmlNode *to, bool
     yw(ps, "\"");
 }
 
-static size_t yaml_dup_used(xmlNode *node)
+static size_t yaml_dup_used(XMQNode *node)
 {
     size_t used = 0;
-    for (xmlNode *i = xml_prev_sibling(node); i; i = xml_prev_sibling(i))
+    for (XMQNode *i = xml_prev_sibling(node); i; i = xml_prev_sibling(i))
     {
-        if (xml_element_name(i) && strcmp((const char*)i->name, (const char*)node->name) == 0) used++;
+        if (xml_element_name(i) && strcmp(xml_node_name(i), xml_node_name(node)) == 0) used++;
     }
     return used;
 }
 
-static size_t yaml_dup_total(xmlNode *node)
+static size_t yaml_dup_total(XMQNode *node)
 {
     size_t total = 1;
-    for (xmlNode *i = xml_prev_sibling(node); i; i = xml_prev_sibling(i))
+    for (XMQNode *i = xml_prev_sibling(node); i; i = xml_prev_sibling(i))
     {
-        if (xml_element_name(i) && strcmp((const char*)i->name, (const char*)node->name) == 0) total++;
+        if (xml_element_name(i) && strcmp(xml_node_name(i), xml_node_name(node)) == 0) total++;
     }
-    for (xmlNode *i = xml_next_sibling(node); i; i = xml_next_sibling(i))
+    for (XMQNode *i = xml_next_sibling(node); i; i = xml_next_sibling(i))
     {
-        if (xml_element_name(i) && strcmp((const char*)i->name, (const char*)node->name) == 0) total++;
+        if (xml_element_name(i) && strcmp(xml_node_name(i), xml_node_name(node)) == 0) total++;
     }
     return total;
 }
@@ -2207,15 +2207,15 @@ static void yaml_print_key(XMQPrintState *ps, const char *name, size_t total, si
   by a single space when need_space is true) and return true if one was
   written.
 */
-static bool yaml_print_one_affix(XMQPrintState *ps, const xmlNode *node,
+static bool yaml_print_one_affix(XMQPrintState *ps, const XMQNode *node,
                                  const char *mark, const char *attrname, bool need_space)
 {
-    xmlAttr *a = xml_get_attribute((xmlNode*)node, attrname);
-    if (a && a->children)
+    XMQAttr *a = xml_get_attribute((XMQNode*)node, attrname);
+    if (a && xml_attr_simple_value(a) && *xml_attr_simple_value(a))
     {
         if (need_space) { yw(ps, " "); }
         yw(ps, mark);
-        yw(ps, (const char*)a->children->content);
+        yw(ps, xml_attr_simple_value(a));
         return true;
     }
     return false;
@@ -2229,7 +2229,7 @@ static bool yaml_print_one_affix(XMQPrintState *ps, const xmlNode *node,
   position (first_space=true when no space is present). Returns true if
   anything was written.
 */
-static bool yaml_print_affixes(XMQPrintState *ps, const xmlNode *node, bool need_space)
+static bool yaml_print_affixes(XMQPrintState *ps, const XMQNode *node, bool need_space)
 {
     if (yaml_print_one_affix(ps, node, "&", "id", need_space))
     {
@@ -2246,21 +2246,21 @@ static bool yaml_print_affixes(XMQPrintState *ps, const xmlNode *node, bool need
 }
 
 static void yaml_children(XMQPrintState *ps, size_t col,
-                          xmlNode *first, xmlNode *last,
+                          XMQNode *first, XMQNode *last,
                           bool dashed, bool inline_first);
-static void yaml_child(XMQPrintState *ps, size_t col, xmlNode *node);
+static void yaml_child(XMQPrintState *ps, size_t col, XMQNode *node);
 
 // Write the range [first..last] of siblings, one per line starting at col.
 // When dashed, each entry is prefixed with "- " and its content starts at col+2.
 // When inline_first, the first entry is written at the current cursor position
 // (i.e. no newline before it).
 static void yaml_children(XMQPrintState *ps, size_t col,
-                          xmlNode *first, xmlNode *last,
+                          XMQNode *first, XMQNode *last,
                           bool dashed, bool inline_first)
 {
     bool inline_here = inline_first;
     // The range ends at last, found by identity (node addresses say nothing about sibling order).
-    for (xmlNode *i = first; i; i = (i == last) ? NULL : xml_next_sibling(i))
+    for (XMQNode *i = first; i; i = (i == last) ? NULL : xml_next_sibling(i))
     {
         if (inline_here)
         {
@@ -2280,7 +2280,7 @@ static void yaml_children(XMQPrintState *ps, size_t col,
 // Write a single node (mapping entry, sequence item, scalar or comment) at
 // the current cursor position. Continuation lines (deeper levels, or more
 // entries of an inline item) start at col (or col+2 for a nested sequence).
-static void yaml_child(XMQPrintState *ps, size_t col, xmlNode *node)
+static void yaml_child(XMQPrintState *ps, size_t col, XMQNode *node)
 {
     if (is_comment_node(node))
     {
@@ -2290,14 +2290,14 @@ static void yaml_child(XMQPrintState *ps, size_t col, xmlNode *node)
 
     if (is_entity_node(node))
     {
-        yw(ps, "\"&"); yw(ps, (const char*)node->name); yw(ps, ";\"");
+        yw(ps, "\"&"); yw(ps, xml_node_name(node)); yw(ps, ";\"");
         return;
     }
 
-    const char *name = (const char*)node->name;
+    const char *name = xml_node_name(node);
     bool under = (name[0] == '_' && name[1] == 0);
-    xmlAttr *ref_attr = xml_get_attribute(node, "ref");
-    const char *ref = (ref_attr && ref_attr->children) ? (const char*)ref_attr->children->content : NULL;
+    XMQAttr *ref_attr = xml_get_attribute(node, "ref");
+    const char *ref = (ref_attr && xml_attr_simple_value(ref_attr) && *xml_attr_simple_value(ref_attr)) ? xml_attr_simple_value(ref_attr) : NULL;
 
     if (is_key_value_node(node))
     {
@@ -2352,7 +2352,7 @@ static void yaml_child(XMQPrintState *ps, size_t col, xmlNode *node)
         // Anonymous container = a (possibly nested) sequence item.
         // Its children align with the item content column.
         bool a = xml_get_attribute(node, "A") != NULL;
-        xmlNode *first = xml_first_child(node);
+        XMQNode *first = xml_first_child(node);
         bool affixed = yaml_print_affixes(ps, node, false);
         if (!first) { yw(ps, "\"\""); return; }
         // With an anchor/tag, the first child starts on its own line;
@@ -2365,7 +2365,7 @@ static void yaml_child(XMQPrintState *ps, size_t col, xmlNode *node)
     yaml_print_key(ps, name, yaml_dup_total(node), yaml_dup_used(node));
     yw(ps, ":");
     yaml_print_affixes(ps, node, true);
-    xmlNode *first = xml_first_child(node);
+    XMQNode *first = xml_first_child(node);
     if (!first) return; // A lone "name:" line is valid yaml (a null value).
     bool a = xml_get_attribute(node, "A") != NULL;
     yaml_children(ps, col + yaml_indent(ps), first, xml_last_child(node), a, false);
@@ -2373,26 +2373,26 @@ static void yaml_child(XMQPrintState *ps, size_t col, xmlNode *node)
 
 void xmq_print_yaml(XMQDoc *doq, XMQOutputSettings *output_settings)
 {
-    if (!doq || !doq->docptr_.xml) return;
+    if (!doq || !doq->dom_) return;
 
-    xmlDoc *doc = doq->docptr_.xml;
+    XmlDom *doc = doq->dom_;
     XMQPrintState ps;
     memset(&ps, 0, sizeof(ps));
     ps.output_settings = output_settings;
     ps.doq = doq;
 
     bool started = false;
-    for (xmlNode *r = doc->children; r; r = xml_next_sibling(r))
+    for (XMQNode *r = xml_node_first_child(xml_dom_document(doc)); r; r = xml_next_sibling(r))
     {
         // Yaml has no doctype, skip the dtd (and its entity declarations).
-        if (r->type == XML_DTD_NODE) continue;
+        if (xml_node_kind(r) == XML_DOM_DTD) continue;
         if (is_element_node(r) &&
-            r->name && r->name[0] == '_' && r->name[1] == 0 &&
+            xml_node_name(r) && xml_node_name(r)[0] == '_' && xml_node_name(r)[1] == 0 &&
             !is_key_value_node(r))
         {
             // Standard root element: write its children as the top level.
             bool a = xml_get_attribute(r, "A") != NULL;
-            xmlNode *first = xml_first_child(r);
+            XMQNode *first = xml_first_child(r);
             if (first)
             {
                 yaml_children(&ps, 0, first, xml_last_child(r), a, !started);

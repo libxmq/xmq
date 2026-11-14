@@ -11,50 +11,57 @@
 
 #ifdef XML_MODULE
 
-xmlNode *xml_first_child(xmlNode *node)
+XMQNode *xml_first_child(XMQNode *node)
 {
-    return node->children;
+    return xml_node_first_child(node);
 }
 
-xmlNode *xml_last_child(xmlNode *node)
+XMQNode *xml_last_child(XMQNode *node)
 {
-    return node->last;
+    return xml_node_last_child(node);
 }
 
-xmlNode *xml_next_sibling(xmlNode *node)
+XMQNode *xml_next_sibling(XMQNode *node)
 {
-    return node->next;
+    return xml_node_next(node);
 }
 
-xmlNode *xml_prev_sibling(xmlNode *node)
+XMQNode *xml_prev_sibling(XMQNode *node)
 {
-    return node->prev;
+    return xml_node_prev(node);
 }
 
-xmlAttr *xml_first_attribute(xmlNode *node)
+XMQAttr *xml_first_attribute(XMQNode *node)
 {
-    return node->properties;
+    if (xml_node_kind(node) != XML_DOM_ELEMENT) return NULL;
+    return xml_node_first_attr(node);
 }
 
-xmlAttr *xml_next_attribute(xmlAttr *attr)
+XMQAttr *xml_next_attribute(XMQAttr *attr)
 {
-    return attr->next;
+    return xml_attr_next(attr);
 }
 
-xmlAttr *xml_get_attribute(xmlNode *node, const char *name)
+XMQAttr *xml_get_attribute(XMQNode *node, const char *name)
 {
-    return xmlHasProp(node, (const xmlChar*)name);
+    // Like libxml2 xmlHasProp: the name matches regardless of namespace.
+    for (XMQAttr *a = xml_first_attribute(node); a; a = xml_attr_next(a))
+    {
+        if (!strcmp(xml_attr_name(a), name)) return a;
+    }
+    return NULL;
 }
 
-xmlNs *xml_first_namespace_def(xmlNode *node)
+XmlNs *xml_first_namespace_def(XMQNode *node)
 {
-    return node->nsDef;
+    if (xml_node_kind(node) != XML_DOM_ELEMENT) return NULL;
+    return xml_node_first_ns_decl(node);
 }
 
-bool xml_non_empty_namespace(xmlNs *ns)
+bool xml_non_empty_namespace(XmlNs *ns)
 {
-    const char *prefix = (const char*)ns->prefix;
-    const char *href = (const char*)ns->href;
+    const char *prefix = xml_ns_prefix(ns);
+    const char *href = xml_ns_href(ns);
 
     // These three are non_empty.
     //   xmlns = "something"
@@ -63,179 +70,172 @@ bool xml_non_empty_namespace(xmlNs *ns)
     return (href && href[0]) || (prefix && prefix[0]);
 }
 
-bool xml_has_non_empty_namespace_defs(xmlNode *node)
+bool xml_has_non_empty_namespace_defs(XMQNode *node)
 {
-    xmlNs *ns = node->nsDef;
-    if (ns) return true;
-    /*!= NULL)
-    while (ns)
+    return xml_first_namespace_def(node) != NULL;
+}
+
+XmlNs *xml_next_namespace_def(XmlNs *ns)
+{
+    return xml_ns_next_decl(ns);
+}
+
+const char *xml_node_libxml_name(XMQNode *node)
+{
+    switch (xml_node_kind(node))
     {
-        //if (xml_non_empty_namespace(ns)) return true;
-        ns = xml_next_namespace_def(ns);
+    case XML_DOM_TEXT: return "text";
+    case XML_DOM_COMMENT: return "comment";
+    default: return xml_node_name(node);
     }
-    */
-    return false;
 }
 
-xmlNs *xml_next_namespace_def(xmlNs *ns)
+const char*xml_element_name(XMQNode *node)
 {
-    return ns->next;
+    return xml_node_libxml_name(node);
 }
 
-const char*xml_element_name(xmlNode *node)
+const char*xml_element_content(XMQNode *node)
 {
-    return (const char*)node->name;
+    return xml_node_content(node);
 }
 
-const char*xml_element_content(xmlNode *node)
+const char *xml_element_ns_prefix(const XMQNode *node)
 {
-    return (const char*)node->content;
+    XmlNs *ns = xml_node_ns(node);
+    if (!ns) return NULL;
+    return xml_ns_prefix(ns);
 }
 
-const char *xml_element_ns_prefix(const xmlNode *node)
+const char *xml_attr_key(XMQAttr *attr)
 {
-    if (!node->ns) return NULL;
-    return (const char*)node->ns->prefix;
+    return xml_attr_name(attr);
 }
 
-const char *xml_attr_key(xmlAttr *attr)
+const char* xml_namespace_href(XmlNs *ns)
 {
-    return (const char*)attr->name;
+    return xml_ns_href(ns);
 }
 
-const char* xml_namespace_href(xmlNs *ns)
+bool is_entity_node(const XMQNode *node)
 {
-    return (const char*)ns->href;
+    return xml_node_kind(node) == XML_DOM_ENTITY_REF;
 }
 
-bool is_entity_node(const xmlNode *node)
+bool is_content_node(const XMQNode *node)
 {
-    return node->type == XML_ENTITY_NODE ||
-        node->type == XML_ENTITY_REF_NODE;
+    XmlNodeKind k = xml_node_kind(node);
+    return k == XML_DOM_TEXT || k == XML_DOM_CDATA;
 }
 
-bool is_content_node(const xmlNode *node)
+bool is_comment_node(const XMQNode *node)
 {
-    return node->type == XML_TEXT_NODE ||
-        node->type == XML_CDATA_SECTION_NODE;
+    return xml_node_kind(node) == XML_DOM_COMMENT;
 }
 
-bool is_comment_node(const xmlNode *node)
+bool is_pi_node(const XMQNode *node)
 {
-    return node->type == XML_COMMENT_NODE;
+    return xml_node_kind(node) == XML_DOM_PI;
 }
 
-bool is_pi_node(const xmlNode *node)
+bool is_doctype_node(const XMQNode *node)
 {
-    return node->type == XML_PI_NODE;
+    return xml_node_kind(node) == XML_DOM_DTD;
 }
 
-bool is_doctype_node(const xmlNode *node)
+bool is_element_node(const XMQNode *node)
 {
-    return node->type == XML_DTD_NODE;
+    return xml_node_kind(node) == XML_DOM_ELEMENT;
 }
 
-bool is_element_node(const xmlNode *node)
+bool is_attribute_node(const XMQNode *node)
 {
-    return node->type == XML_ELEMENT_NODE;
+    return xml_node_kind(node) == XML_DOM_ATTRIBUTE;
 }
 
-bool is_attribute_node(const xmlNode *node)
+bool is_text_node(const XMQNode *node)
 {
-    return node->type == XML_ATTRIBUTE_NODE;
+    return xml_node_kind(node) == XML_DOM_TEXT;
 }
 
-bool is_text_node(const xmlNode *node)
+bool is_key_value_node(XMQNode *node)
 {
-    return node->type == XML_TEXT_NODE;
-}
-
-bool is_key_value_node(xmlNodePtr node)
-{
-    void *from = xml_first_child(node);
-    void *to = xml_last_child(node);
+    XMQNode *from = xml_first_child(node);
+    XMQNode *to = xml_last_child(node);
 
     // Single content or entity node.
-    bool yes = from && from == to && (is_content_node((xmlNode*)from) || is_entity_node((xmlNode*)from));
+    bool yes = from && from == to && (is_content_node(from) || is_entity_node(from));
     if (yes) return true;
 
     if (!from) return false;
 
     // Multiple text or entity nodes.
-    xmlNode *i = node->children;
-    while (i)
+    for (XMQNode *i = from; i; i = xml_node_next(i))
     {
-        xmlNode *next = i->next;
-        if (i->type != XML_TEXT_NODE &&
-            i->type != XML_ENTITY_REF_NODE)
+        XmlNodeKind k = xml_node_kind(i);
+        if (k != XML_DOM_TEXT && k != XML_DOM_ENTITY_REF)
         {
             // Found something other than text or character entities.
             return false;
         }
-        i = next;
     }
     return true;
 }
 
-bool is_single_empty_text_node(xmlNodePtr node)
+bool is_single_empty_text_node(XMQNode *node)
 {
-    if (is_entity_node(node)) return false;
-    if (node->type != XML_TEXT_NODE) return false;
-    const char *c = (const char*)node->content;
+    if (xml_node_kind(node) != XML_DOM_TEXT) return false;
+    const char *c = xml_node_content(node);
     if (c != NULL && *c != 0) return false;
     return true;
 }
 
-bool is_leaf_node(xmlNode *node)
+bool is_leaf_node(XMQNode *node)
 {
     return xml_first_child(node) == NULL;
 }
 
-bool has_attributes(xmlNodePtr node)
+bool has_attributes(XMQNode *node)
 {
     return NULL != xml_first_attribute(node);
 }
 
-void free_xml(xmlNode * node)
+void free_xml(XMQNode * node)
 {
     while(node)
     {
-        xmlNode *next = node->next;
-        free_xml(node->children);
-        xmlFreeNode(node);
+        XMQNode *next = xml_node_next(node);
+        xml_node_free(node);
         node = next;
     }
 }
 
-char *xml_collapse_text(xmlNode *node)
+char *xml_collapse_text(XMQNode *node)
 {
-    xmlNode *i = node->children;
     size_t len = 0;
     size_t num_text = 0;
     size_t num_entities = 0;
 
-    while (i)
+    for (XMQNode *i = xml_first_child(node); i; i = xml_node_next(i))
     {
-        xmlNode *next = i->next;
-        if (i->type != XML_TEXT_NODE &&
-            i->type != XML_ENTITY_REF_NODE)
+        XmlNodeKind k = xml_node_kind(i);
+        if (k != XML_DOM_TEXT && k != XML_DOM_ENTITY_REF)
         {
             // Found something other than text or character entities.
             // Cannot collapse.
             return NULL;
         }
-        if (i->type == XML_TEXT_NODE)
+        if (k == XML_DOM_TEXT)
         {
-            len += strlen((const char*)i->content);
+            len += strlen(xml_node_content(i));
             num_text++;
         }
         else
         {
             // &apos;
-            len += 2 + strlen((const char*)i->name);
+            len += 2 + strlen(xml_node_name(i));
             num_entities++;
         }
-        i = next;
     }
 
     // It is already collapsed.
@@ -243,19 +243,18 @@ char *xml_collapse_text(xmlNode *node)
 
     char *buf = (char*)malloc(len+1);
     char *out = buf;
-    i = node->children;
-    while (i)
+    for (XMQNode *i = xml_first_child(node); i; i = xml_node_next(i))
     {
-        xmlNode *next = i->next;
-        if (i->type == XML_TEXT_NODE)
+        if (xml_node_kind(i) == XML_DOM_TEXT)
         {
-            size_t l = strlen((const char *)i->content);
-            memcpy(out, i->content, l);
+            const char *c = xml_node_content(i);
+            size_t l = strlen(c);
+            memcpy(out, c, l);
             out += l;
         }
         else
         {
-            int uc = decode_entity_ref((const char *)i->name);
+            int uc = decode_entity_ref(xml_node_name(i));
             UTF8Char utf8;
             size_t n = encode_utf8(uc, &utf8);
             for (size_t j = 0; j < n; ++j)
@@ -263,7 +262,6 @@ char *xml_collapse_text(xmlNode *node)
                 *out++ = utf8.bytes[j];
             }
         }
-        i = next;
     }
     *out = 0;
     out++;
@@ -286,20 +284,9 @@ int decode_entity_ref(const char *name)
     return atoi(name+1);
 }
 
-void xml_add_root_child(xmlDoc *doc, xmlNode *node)
+void xml_add_root_child(XmlDom *doc, XMQNode *node)
 {
-    if (doc->children == NULL)
-    {
-        doc->children = node;
-        doc->last = node;
-    }
-    else
-    {
-        xmlNode *prev = doc->last;
-        prev->next = node;
-        node->prev = prev;
-        doc->last = node;
-    }
+    xml_node_append_child(xml_dom_document(doc), node);
 }
 
 #endif // XML_MODULE

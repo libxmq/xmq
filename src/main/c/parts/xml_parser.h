@@ -46,7 +46,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     a UTF-8 BOM is skipped; the dom gets UTF-8.
 */
 
+#ifndef BUILDING_DIST_XMQ
 #include"xml_dom.h"
+#endif
 
 #include<stdbool.h>
 #include<stddef.h>

@@ -33,8 +33,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     serialization mode that libxml2 picks when the doctype is an XHTML DTD.
 */
 
+#ifndef BUILDING_DIST_XMQ
 #include"xml_dom.h"
 #include"membuffer.h"
+#endif
 
 #include<stdbool.h>
 #include<stddef.h>

@@ -170,6 +170,7 @@ struct XMQCliCommand
     const char *xsd_name; // Name of xsd file.
     XMQDoc *xsd_doq; // The xmq document loaded to generate the xsd.
     xmlSchemaPtr xsd; // The xsd to validate agains.
+    xmlDocPtr xsd_ldoc; // The libxml2 copy of the xsd document, used by xsd.
     const char *save_file; // Save output to this file name.
     xmlDocPtr   ixml_doc;  // A DOM containing the ixml grammar.
     const char *ixml_source; // IXML grammar source to be used.
@@ -190,8 +191,8 @@ struct XMQCliCommand
     // it usually asks if you want to download the file.
     bool auto_yes;
     bool log_xmq; // Output verbose,debug,trace as human readable lines instead of xmq.
-    xmlDocPtr   node_doc;
-    xmlNodePtr  node_content; // Tree content to replace something.
+    XmlDom     *node_doc;
+    XMQNode    *node_content; // Tree content to replace something.
     XMQDoc *node_doq; // Owns node_doc (replace-entity --with-file).
     char *content_buffer; // Owns content when it was read from a file (replace-entity --with-text-file).
     const char *in_format_name; // A dynamically named format based on an ixml+xslt combo.
@@ -322,17 +323,17 @@ typedef enum {
 
 // FUNCTION DECLARATIONS /////////////////////////////////////////////////////////////
 
-void accumulate_attribute(Stats *stats, xmlAttr *a);
-void accumulate_attribute_content(Stats *stats, xmlNode *a);
-void accumulate_children(Stats *stats, xmlNode *node);
-void accumulate_statistics(Stats *stats, xmlNode *node);
-void add_key_value(xmlDoc *doc, xmlNode *root, const char *key, size_t value);
+void accumulate_attribute(Stats *stats, XMQAttr *a);
+void accumulate_attribute_content(Stats *stats, XMQNode *a);
+void accumulate_children(Stats *stats, XMQNode *node);
+void accumulate_statistics(Stats *stats, XMQNode *node);
+void add_key_value(XmlDom *doc, XMQNode *root, const char *key, size_t value);
 XMQCliCommand *allocate_cli_command(XMQCliEnvironment *env);
-void append_text_children(MemBuffer *buf, xmlNode *n);
-void append_text_node(MemBuffer *buf, xmlNode *node);
+void append_text_children(MemBuffer *buf, XMQNode *n);
+void append_text_node(MemBuffer *buf, XMQNode *node);
 void browse(XMQCliCommand *c);
 bool check_file_exists(const char *file);
-bool check_for_ixml_fail(xmlDocPtr doc);
+bool check_for_ixml_fail(XmlDom* doc);
 bool cmd_add(XMQCliCommand *command);
 bool cmd_add_root(XMQCliCommand *command);
 bool cmd_delete(XMQCliCommand *command);
@@ -359,9 +360,9 @@ bool cmd_validate(XMQCliCommand *command);
 void console_write(const char *start, const char *stop);
 const char *content_type_to_string(XMQContentType ct);
 size_t count_non_ansi_chars(const char *start, const char *stop);
-void count_statistics(Stats *stats, xmlDoc *doc);
+void count_statistics(Stats *stats, XmlDom *doc);
 void debug_(const char* fmt, ...);
-void delete_all_entities(XMQDoc *doq, xmlNode *node, const char *entity);
+void delete_all_entities(XMQDoc *doq, XMQNode *node, const char *entity);
 void delete_entities(XMQDoc *doq, const char *entity);
 bool delete_entity(XMQCliCommand *command);
 bool delete_xpath(XMQCliCommand *command);
@@ -380,7 +381,7 @@ void find_prev_line(const char **line_offset, const char **in_line_offset, const
 void find_prev_page(const char **line_offset, const char **in_line_offset, const  char *start, const char *stop, int width, int height);
 void free_cli_command(XMQCliCommand *cmd);
 int get_char();
-char *grab_content(xmlNode *node, const char *name);
+char *grab_content(XMQNode *node, const char *name);
 char *grab_name(const char *s, const char **name_start);
 bool handle_global_option(const char *arg, XMQCliCommand *command);
 bool handle_option(const char *arg, bool is_option, XMQCliCommand *command);
@@ -388,7 +389,7 @@ bool has_debug(int argc, const char **argv);
 bool has_log_xmq(int argc, const char **argv);
 bool has_trace(int argc, const char **argv);
 bool has_verbose(int argc, const char **argv);
-bool invoke_shell(xmlNode *n, const char *cmd);
+bool invoke_shell(XMQNode *n, const char *cmd);
 void invoke_cmd(const char *cmd);
 const char *is_ixml_cmd(const char *arg);
 const char *is_xsl_cmd(const char *arg);
@@ -410,13 +411,13 @@ void put_char(int c);
 bool query_xterm_bgcolor();
 KEY read_key(int *c);
 const char *render_format_to_string(XMQRenderFormat rt);
-int replace_xpath_content(xmlDocPtr doc, const char *xpath, const char *content);
-void replace_entities(xmlDoc *doc, const char *entity, const char *content, xmlNodePtr node_content);
-xmlNodePtr replace_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, const char *content, xmlNodePtr node_content);
+int replace_xpath_content(XMQDoc *doq, const char *xpath, const char *content);
+void replace_entities(XmlDom *doc, const char *entity, const char *content, XMQNode *node_content);
+XMQNode *replace_entity(XmlDom *doc, XMQNode *node, const char *entity, const char *content, XMQNode *node_content);
 void restoreStdinTerminal();
 bool shell_safe(char *i);
 const char *skip_ansi_backwards(const char *i, const char *start);
-void substitute_entity(xmlDoc *doc, xmlNodePtr node, const char *entity, bool only_chars);
+void substitute_entity(XmlDom *doc, XMQNode* node, const char *entity, bool only_chars);
 bool detect_truecolor();
 void lookup_bg(bool *use_color, bool *bg_dark_mode, bool *bg_forced);
 XMQColorMode compute_color_mode(bool use_color, bool bg_dark_mode, bool bg_forced, XMQRenderFormat render_to);
@@ -426,6 +427,252 @@ void trace_(const char* fmt, ...);
 void verbose_(const char* fmt, ...);
 xmlDocPtr xmqDocDefaultLoaderFunc(const xmlChar * URI, xmlDictPtr dict, int options, void *ctxt /* ATTRIBUTE_UNUSED */, xsltLoadType type /* ATTRIBUTE_UNUSED*/);
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command);
+
+/////////////////////////////////////////////////////////////////////////////////////
+// Bridge to libxml2/libxslt, used only for xslt transforms and xsd validation until
+// these are implemented natively. The trees are copied node by node.
+
+static xmlNsPtr cli_lx_ns(xmlDocPtr ldoc, xmlNodePtr lnode, XmlNs *ns)
+{
+    if (!ns) return NULL;
+    const char *prefix = xml_ns_prefix(ns);
+    const char *href = xml_ns_href(ns);
+    xmlNsPtr l = xmlSearchNs(ldoc, lnode, (const xmlChar*)prefix);
+    if (l && ((!l->href && (!href || !*href)) || (l->href && href && !strcmp((const char*)l->href, href)))) return l;
+    return xmlNewNs(lnode, (const xmlChar*)(href && *href ? href : NULL), (const xmlChar*)prefix);
+}
+
+static void cli_lx_add(xmlNodePtr parent, xmlNodePtr n)
+{
+    // Append without merging adjacent text nodes.
+    n->parent = parent;
+    n->doc = parent->doc;
+    if (!parent->children)
+    {
+        parent->children = parent->last = n;
+    }
+    else
+    {
+        parent->last->next = n;
+        n->prev = parent->last;
+        parent->last = n;
+    }
+}
+
+static xmlNodePtr cli_lx_ref(xmlDocPtr ldoc, const char *name)
+{
+    if (name[0] == '#')
+    {
+        size_t l = strlen(name);
+        char *r = (char*)malloc(l+3);
+        r[0] = '&';
+        memcpy(r+1, name, l);
+        r[l+1] = ';';
+        r[l+2] = 0;
+        xmlNodePtr n = xmlNewCharRef(ldoc, (const xmlChar*)r);
+        free(r);
+        return n;
+    }
+    return xmlNewReference(ldoc, (const xmlChar*)name);
+}
+
+static void cli_lx_copy_children(xmlDocPtr ldoc, xmlNodePtr lparent, XMQNode *parent);
+
+static void cli_lx_copy_node(xmlDocPtr ldoc, xmlNodePtr lparent, XMQNode *n)
+{
+    xmlNodePtr l = NULL;
+    switch (xml_node_kind(n))
+    {
+    case XML_DOM_ELEMENT:
+    {
+        l = xmlNewDocNode(ldoc, NULL, (const xmlChar*)xml_node_name(n), NULL);
+        cli_lx_add(lparent, l);
+        for (XmlNs *d = xml_node_first_ns_decl(n); d; d = xml_ns_next_decl(d))
+        {
+            const char *href = xml_ns_href(d);
+            xmlNewNs(l, (const xmlChar*)(href && *href ? href : (xml_ns_prefix(d) ? NULL : "")), (const xmlChar*)xml_ns_prefix(d));
+        }
+        xmlSetNs(l, cli_lx_ns(ldoc, l, xml_node_ns(n)));
+        for (XMQAttr *a = xml_node_first_attr(n); a; a = xml_attr_next(a))
+        {
+            XMQNode *an = xml_attr_node(a);
+            xmlAttrPtr la = xmlNewNsProp(l, cli_lx_ns(ldoc, l, xml_node_ns(an)), (const xmlChar*)xml_attr_name(a), NULL);
+            for (XMQNode *c = xml_node_first_child(an); c; c = xml_node_next(c))
+            {
+                xmlNodePtr lc = NULL;
+                if (xml_node_kind(c) == XML_DOM_TEXT) lc = xmlNewDocText(ldoc, (const xmlChar*)xml_node_content(c));
+                else if (xml_node_kind(c) == XML_DOM_ENTITY_REF) lc = cli_lx_ref(ldoc, xml_node_name(c));
+                if (lc) cli_lx_add((xmlNodePtr)la, lc);
+            }
+        }
+        cli_lx_copy_children(ldoc, l, n);
+        return;
+    }
+    case XML_DOM_TEXT:
+        l = xmlNewDocText(ldoc, (const xmlChar*)xml_node_content(n));
+        break;
+    case XML_DOM_CDATA:
+        l = xmlNewCDataBlock(ldoc, (const xmlChar*)xml_node_content(n), (int)strlen(xml_node_content(n)));
+        break;
+    case XML_DOM_COMMENT:
+        l = xmlNewDocComment(ldoc, (const xmlChar*)xml_node_content(n));
+        break;
+    case XML_DOM_PI:
+        l = xmlNewDocPI(ldoc, (const xmlChar*)xml_node_name(n), (const xmlChar*)xml_node_content(n));
+        break;
+    case XML_DOM_ENTITY_REF:
+        l = cli_lx_ref(ldoc, xml_node_name(n));
+        break;
+    case XML_DOM_DTD:
+    {
+        // Reparse the serialized doctype to get the libxml2 declarations.
+        char *dtd = xml_save_node(n, 0, false, NULL);
+        size_t dl = strlen(dtd);
+        char *buf = (char*)malloc(dl + 8);
+        memcpy(buf, dtd, dl);
+        memcpy(buf + dl, "\n<x/>", 6);
+        buf[dl + 5] = 0;
+        free(dtd);
+        xmlDocPtr tmp = xmlReadMemory(buf, (int)strlen(buf), NULL, NULL, XML_PARSE_NONET | XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+        free(buf);
+        if (tmp && tmp->intSubset)
+        {
+            xmlDtdPtr copy = xmlCopyDtd(tmp->intSubset);
+            ldoc->intSubset = copy;
+            cli_lx_add((xmlNodePtr)ldoc, (xmlNodePtr)copy);
+        }
+        if (tmp) xmlFreeDoc(tmp);
+        return;
+    }
+    default:
+        return;
+    }
+    if (l) cli_lx_add(lparent, l);
+}
+
+static void cli_lx_copy_children(xmlDocPtr ldoc, xmlNodePtr lparent, XMQNode *parent)
+{
+    for (XMQNode *c = xml_node_first_child(parent); c; c = xml_node_next(c)) cli_lx_copy_node(ldoc, lparent, c);
+}
+
+/** A libxml2 copy of the document, free with xmlFreeDoc. */
+static xmlDocPtr cli_to_libxml(XMQDoc *doq)
+{
+    XmlDom *dom = (XmlDom*)xmqGetImplementationDoc(doq);
+    xmlDocPtr ldoc = xmlNewDoc((const xmlChar*)(xml_dom_version(dom) ? xml_dom_version(dom) : "1.0"));
+    if (!dom) return ldoc;
+    ldoc->standalone = xml_dom_standalone(dom);
+    cli_lx_copy_children(ldoc, (xmlNodePtr)ldoc, xml_dom_document(dom));
+    return ldoc;
+}
+
+static XmlNs *cli_nx_ns(XMQNode *e, xmlNsPtr ns)
+{
+    if (!ns) return NULL;
+    const char *href = ns->href ? (const char*)ns->href : "";
+    XmlNs *n = xml_ns_lookup_prefix(e, (const char*)ns->prefix);
+    if (n && xml_ns_href(n) && !strcmp(xml_ns_href(n), href)) return n;
+    XmlNs *d = xml_ns_declare(e, (const char*)ns->prefix, href);
+    return d ? d : n;
+}
+
+static void cli_nx_copy_children(XmlDom *dom, XMQNode *parent, xmlNodePtr lparent);
+
+static void cli_nx_copy_node(XmlDom *dom, XMQNode *parent, xmlNodePtr l)
+{
+    XMQNode *n = NULL;
+    switch (l->type)
+    {
+    case XML_ELEMENT_NODE:
+    {
+        n = xml_node_new_element(dom, (const char*)l->name, NULL);
+        xml_node_append_child(parent, n);
+        for (xmlNsPtr d = l->nsDef; d; d = d->next)
+        {
+            xml_ns_declare(n, (const char*)d->prefix, d->href ? (const char*)d->href : "");
+        }
+        xml_node_set_ns(n, cli_nx_ns(n, l->ns));
+        for (xmlAttrPtr a = l->properties; a; a = a->next)
+        {
+            XMQAttr *na = xml_node_append_attr(n, (const char*)a->name, cli_nx_ns(n, a->ns), NULL);
+            for (xmlNodePtr c = a->children; c; c = c->next)
+            {
+                if (c->type == XML_TEXT_NODE) xml_node_append_child(xml_attr_node(na), xml_node_new_text(dom, (const char*)c->content));
+                else if (c->type == XML_ENTITY_REF_NODE) xml_node_append_child(xml_attr_node(na), xml_node_new_entity_ref(dom, (const char*)c->name));
+            }
+        }
+        cli_nx_copy_children(dom, n, l);
+        return;
+    }
+    case XML_TEXT_NODE:
+        n = xml_node_new_text(dom, l->content ? (const char*)l->content : "");
+        break;
+    case XML_CDATA_SECTION_NODE:
+    {
+        const char *c = l->content ? (const char*)l->content : "";
+        n = xml_node_new_cdata(dom, c, strlen(c));
+        break;
+    }
+    case XML_COMMENT_NODE:
+        n = xml_node_new_comment(dom, (const char*)l->content);
+        break;
+    case XML_PI_NODE:
+        n = xml_node_new_pi(dom, (const char*)l->name, (const char*)l->content);
+        break;
+    case XML_ENTITY_REF_NODE:
+        n = xml_node_new_entity_ref(dom, (const char*)l->name);
+        break;
+    case XML_DTD_NODE:
+    {
+        // Reparse the serialized doctype with the native parser.
+        xmlBufferPtr buffer = xmlBufferCreate();
+        xmlNodeDump(buffer, l->doc, l, 0, 0);
+        const char *dtd = (const char*)xmlBufferContent(buffer);
+        size_t dl = strlen(dtd);
+        char *buf = (char*)malloc(dl + 8);
+        memcpy(buf, dtd, dl);
+        memcpy(buf + dl, "\n<x/>", 6);
+        buf[dl + 5] = 0;
+        xmlBufferFree(buffer);
+        XmlParseSettings settings;
+        xml_parse_settings_default(&settings);
+        XmlParseError error;
+        XmlDom *tmp = xml_parse_buffer(buf, buf + strlen(buf), &settings, &error);
+        xml_parse_error_free(&error);
+        free(buf);
+        if (tmp && xml_dom_dtd(tmp)) n = xml_node_copy(dom, xml_dom_dtd(tmp), true);
+        if (tmp) xml_dom_free(tmp);
+        break;
+    }
+    default:
+        return;
+    }
+    if (n) xml_node_append_child(parent, n);
+}
+
+static void cli_nx_copy_children(XmlDom *dom, XMQNode *parent, xmlNodePtr lparent)
+{
+    for (xmlNodePtr c = lparent->children; c; c = c->next) cli_nx_copy_node(dom, parent, c);
+}
+
+/** A native copy of a libxml2 document. */
+static XmlDom *cli_from_libxml(xmlDocPtr ldoc)
+{
+    XmlDom *dom = xml_dom_new();
+    if (!ldoc) return dom;
+    if (ldoc->version) xml_dom_set_version(dom, (const char*)ldoc->version);
+    xml_dom_set_standalone(dom, ldoc->standalone);
+    cli_nx_copy_children(dom, xml_dom_document(dom), (xmlNodePtr)ldoc);
+    return dom;
+}
+
+/** Replace the document content of doq with a copy of the libxml2 document. */
+static void cli_set_from_libxml(XMQDoc *doq, xmlDocPtr ldoc)
+{
+    XmlDom *old = (XmlDom*)xmqGetImplementationDoc(doq);
+    xmqSetImplementationDoc(doq, cli_from_libxml(ldoc));
+    if (old) xml_dom_free(old);
+}
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -737,12 +984,20 @@ void free_cli_command(XMQCliCommand *cmd)
     }
     if (cmd->xslt)
     {
+        // The stylesheet owns its libxml2 copy of the xslt document.
         xsltFreeStylesheet(cmd->xslt);
-        // The xslt free has freed the internal implementation doc as well.
-        // Mark it as null to prevent double free.
-        xmqSetImplementationDoc(cmd->xslt_doq, NULL);
         xmqFreeDoc(cmd->xslt_doq);
         cmd->xslt = NULL;
+    }
+    if (cmd->xsd)
+    {
+        xmlSchemaFree(cmd->xsd);
+        cmd->xsd = NULL;
+    }
+    if (cmd->xsd_ldoc)
+    {
+        xmlFreeDoc(cmd->xsd_ldoc);
+        cmd->xsd_ldoc = NULL;
     }
     xmqFreeDoc(cmd->node_doq);
     cmd->node_doq = NULL;
@@ -877,9 +1132,9 @@ static bool load_entity_file(XMQCliCommand *command, const char *file)
     }
     // The command keeps the loaded document, it is freed in free_cli_command.
     command->node_doq = cmd.env->doc;
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->node_doq);
+    XmlDom *doc = (XmlDom*)xmqGetImplementationDoc(command->node_doq);
     command->node_doc = doc;
-    command->node_content = doc->children;
+    command->node_content = xml_node_first_child(xml_dom_document(doc));
     return true;
 }
 
@@ -1324,7 +1579,9 @@ bool handle_option(const char *arg, bool is_option, XMQCliCommand *command)
 
             verbose_("xmq=", "loaded xsd %zu bytes from %s", xmqGetOriginalSize(doq), arg);
 
-            xmlDocPtr xsd = (xmlDocPtr)xmqGetImplementationDoc(doq);
+            // The schema keeps using the libxml2 document, it is freed with the schema.
+            xmlDocPtr xsd = cli_to_libxml(doq);
+            command->xsd_ldoc = xsd;
 
             xmlSchemaParserCtxtPtr ctxt = xmlSchemaNewDocParserCtxt(xsd);
             xmlSchemaSetParserErrors(ctxt,
@@ -2626,13 +2883,15 @@ bool cmd_to(XMQCliCommand *command)
     return true;
 }
 
-bool check_for_ixml_fail(xmlDocPtr doc)
+bool check_for_ixml_fail(XmlDom *doc)
 {
     if (doc == NULL) return true;
-    char *state  = (char*)xmlGetNsProp(xmlDocGetRootElement(doc), (xmlChar*)"state", (xmlChar*)"http://invisiblexml.org/NS");
+    XMQNode *root = xml_dom_root_element(doc);
+    if (!root) return true;
+    XMQAttr *a = xml_node_get_attr(root, "state", "http://invisiblexml.org/NS");
+    const char *state = a ? xml_attr_simple_value(a) : NULL;
     if (state != NULL && !strcmp(state,"failed"))
     {
-        xmlFree((xmlChar*)state);
         return false;
     }
     return true;
@@ -2657,7 +2916,7 @@ bool cmd_output(XMQCliCommand *command)
         verbose_("xmq=", "cmd-print output");
         console_write(command->env->out_start + command->env->out_skip, command->env->out_stop);
         free(command->env->out_start);
-        if (command->env->doc != NULL) return check_for_ixml_fail(command->env->doc->docptr_.xml);
+        if (command->env->doc != NULL) return check_for_ixml_fail((XmlDom*)xmqGetImplementationDoc(command->env->doc));
         return true;
     }
     if (command->cmd == XMQ_CLI_CMD_PAGER)
@@ -2706,7 +2965,7 @@ bool cmd_output(XMQCliCommand *command)
 
 bool cmd_transform(XMQCliCommand *command)
 {
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    xmlDocPtr doc = cli_to_libxml(command->env->doc);
     verbose_("xmq=", "transforming");
 
     xsltSetLoaderFunc(xmqDocDefaultLoaderFunc);
@@ -2741,7 +3000,8 @@ bool cmd_transform(XMQCliCommand *command)
         free(params);
     }
     xmlFreeDoc(doc);
-    xmqSetImplementationDoc(command->env->doc, new_doc);
+    cli_set_from_libxml(command->env->doc, new_doc);
+    if (new_doc) xmlFreeDoc(new_doc);
     // Replace the xmq marker elements, eg xmq:entity(name=nbsp), that the
     // transform may have generated (see xmq_replace_transform_markers).
     xmq_replace_transform_markers(command->env->doc);
@@ -2751,29 +3011,29 @@ bool cmd_transform(XMQCliCommand *command)
 
 /** Return the concatenated text content of all top level nodes in the document.
     Never returns NULL, an empty document gives an empty string. Free with free(). */
-static char *doc_text_content(xmlDocPtr doc)
+static char *doc_text_content(XmlDom *doc)
 {
     size_t len = 0;
     char *out = (char*)malloc(1);
     out[0] = 0;
     if (!doc) return out;
 
-    for (xmlNodePtr i = doc->children; i; i = i->next)
+    for (XMQNode *i = xml_node_first_child(xml_dom_document(doc)); i; i = xml_node_next(i))
     {
-        xmlChar *c = xmlNodeGetContent(i);
-        if (!c) continue;
-        size_t n = strlen((char*)c);
+        if (xml_node_kind(i) == XML_DOM_DTD) continue;
+        char *c = xml_node_string_value(i);
+        size_t n = strlen(c);
         out = (char*)realloc(out, len+n+1);
         memcpy(out+len, c, n+1);
         len += n;
-        xmlFree(c);
+        free(c);
     }
     return out;
 }
 
 bool cmd_quote_unquote(XMQCliCommand *command)
 {
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    XmlDom *doc = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
     verbose_("(xmq) transforming\n");
 
     if (command->cmd == XMQ_CLI_CMD_QUOTE_C)
@@ -2794,14 +3054,14 @@ bool cmd_quote_unquote(XMQCliCommand *command)
             quoted_value = q;
         }
 
-        xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
-        xmlNodePtr new_node = xmlNewDocText(new_doc, (xmlChar*)quoted_value);
+        XmlDom *new_doc = xml_dom_new();
+        XMQNode *new_node = xml_node_new_text(new_doc, quoted_value);
         free(quoted_value);
 
         xml_add_root_child(new_doc, new_node);
 
-        xmlFreeDoc(doc);
         xmqSetImplementationDoc(command->env->doc, new_doc);
+        xml_dom_free(doc);
 
         return true;
     }
@@ -2814,14 +3074,14 @@ bool cmd_quote_unquote(XMQCliCommand *command)
         if (rs.status != XMQ_OK) return false;
         char *unquoted_value = rs.string;
 
-        xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
-        xmlNodePtr new_node = xmlNewDocText(new_doc, (xmlChar*)unquoted_value);
+        XmlDom *new_doc = xml_dom_new();
+        XMQNode *new_node = xml_node_new_text(new_doc, unquoted_value);
         free(unquoted_value);
 
         xml_add_root_child(new_doc, new_node);
 
-        xmlFreeDoc(doc);
         xmqSetImplementationDoc(command->env->doc, new_doc);
+        xml_dom_free(doc);
 
         return true;
     }
@@ -2831,7 +3091,7 @@ bool cmd_quote_unquote(XMQCliCommand *command)
 
 bool cmd_validate(XMQCliCommand *command)
 {
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    xmlDocPtr doc = cli_to_libxml(command->env->doc);
     verbose_("xmq=", "validating");
 
     xmlSchemaValidCtxtPtr validation_ctxt = xmlSchemaNewValidCtxt(command->xsd);
@@ -2858,6 +3118,7 @@ bool cmd_validate(XMQCliCommand *command)
     }
 
     bool ok = xmlSchemaValidateDoc(validation_ctxt, doc);
+    xmlFreeDoc(doc);
 
     if (ok != 0)
     {
@@ -2868,6 +3129,8 @@ bool cmd_validate(XMQCliCommand *command)
     xmlSchemaFreeValidCtxt(validation_ctxt);
     xmlSchemaFree(command->xsd);
     command->xsd = NULL;
+    xmlFreeDoc(command->xsd_ldoc);
+    command->xsd_ldoc = NULL;
     xmqFreeDoc(command->xsd_doq);
     command->xsd_doq = NULL;
 
@@ -2891,129 +3154,153 @@ bool cmd_delete(XMQCliCommand *command)
     return false;
 }
 
+/** Evaluate an xpath on the document like a fresh libxml2 xpath context: no context node. */
+static XmlXPathResult *cli_xpath(XMQDoc *doq, const char *xpath)
+{
+    XmlDom *dom = (XmlDom*)xmqGetImplementationDoc(doq);
+    XmlXPathSettings settings;
+    xml_xpath_settings_default(&settings);
+    settings.no_context_node = true;
+    XmlXPathError error;
+    XmlXPathResult *r = xml_xpath_eval(xpath, xml_dom_document(dom), &settings, &error);
+    if (!r)
+    {
+        // Like the libxml2 xpath error report.
+        fprintf(stderr, "XPath error : %s\n%s\n%*s^\n", error.message, xpath, (int)error.offset, "");
+    }
+    return r;
+}
+
+static void cli_copy_to_top(XmlDom *new_doc, XMQNode *n)
+{
+    if (xml_node_kind(n) == XML_DOM_DOCUMENT)
+    {
+        for (XMQNode *c = xml_node_first_child(n); c; c = xml_node_next(c))
+        {
+            xml_add_root_child(new_doc, xml_node_copy(new_doc, c, true));
+        }
+        return;
+    }
+    xml_add_root_child(new_doc, xml_node_copy(new_doc, n, true));
+}
+
 bool cmd_select(XMQCliCommand *command)
 {
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    XmlDom *doc = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
     verbose_("xmq=", "selecting");
 
-    xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
-    assert(ctx);
-
-    xmlXPathObjectPtr objects = xmlXPathEvalExpression((const xmlChar*)command->xpath, ctx);
+    XmlXPathResult *objects = cli_xpath(command->env->doc, command->xpath);
 
     if (objects == NULL)
     {
         fprintf(stderr, "xmq: no nodes matched %s\n", command->xpath);
-        xmlXPathFreeContext(ctx);
         return false;
     }
 
-    xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
+    XmlDom *new_doc = xml_dom_new();
 
-    if (objects->type == XPATH_NUMBER)
+    if (xml_xpath_result_type(objects) == XML_XPATH_NUMBER)
     {
-        double count = objects->floatval;
+        double count = xml_xpath_result_number(objects);
         char buf[64];
         snprintf(buf, 64, "%.0f", count);
-        xmlNodePtr text = xmlNewText((xmlChar*)buf);
-        xml_add_root_child(new_doc, text);
+        xml_add_root_child(new_doc, xml_node_new_text(new_doc, buf));
     }
-    else if (objects->type == XPATH_BOOLEAN)
+    else if (xml_xpath_result_type(objects) == XML_XPATH_BOOLEAN)
     {
         char buf[64];
-        snprintf(buf, 64, "%d", objects->boolval ? 1 : 0);
-        xmlNodePtr text = xmlNewText((xmlChar*)buf);
-        xml_add_root_child(new_doc, text);
+        snprintf(buf, 64, "%d", xml_xpath_result_boolean(objects) ? 1 : 0);
+        xml_add_root_child(new_doc, xml_node_new_text(new_doc, buf));
     }
-    else if (objects->type == XPATH_NODESET)
+    else if (xml_xpath_result_type(objects) == XML_XPATH_NODESET)
     {
-        xmlNodeSetPtr nodes = objects->nodesetval;
-        int size = (nodes) ? nodes->nodeNr : 0;
+        int size = (int)xml_xpath_result_size(objects);
+        bool whole_document = false;
 
         // Copy and unlink in reverse order which means copy unlink deeper nodes first.
         for(int i = size-1; i >= 0; i--)
         {
-            assert(nodes->nodeTab[i]);
-            xmlNode *n = nodes->nodeTab[i];
+            XMQNode *n = xml_xpath_result_node(objects, i);
 
             if (is_attribute_node(n))
             {
-                xmlAttr *a = (xmlAttr*)n;
                 // we found an attribute node, eg href="...", rewrite this into
                 // <href>...</href> which prints nicely as href=... in xmq.
-                xmlNodePtr new_node = xmlNewDocNode(new_doc, NULL, (xmlChar*)a->name, NULL);
-                xmlAddChildList(new_node, xmlDocCopyNodeList(new_doc, a->children));
+                XMQNode *new_node = xml_node_new_element(new_doc, xml_node_name(n), NULL);
+                for (XMQNode *c = xml_node_first_child(n); c; c = xml_node_next(c))
+                {
+                    xml_node_append_child(new_node, xml_node_copy(new_doc, c, true));
+                }
                 xml_add_root_child(new_doc, new_node);
+                xml_node_free(n);
+            }
+            else if (xml_node_kind(n) == XML_DOM_NAMESPACE)
+            {
+                // Namespace nodes belong to the xpath result.
+            }
+            else if (xml_node_kind(n) == XML_DOM_DOCUMENT)
+            {
+                cli_copy_to_top(new_doc, n);
+                whole_document = true;
             }
             else
             {
-                xmlNodePtr new_node = xmlCopyNode(n, 1);
-                xml_add_root_child(new_doc, new_node);
+                cli_copy_to_top(new_doc, n);
+                xml_node_free(n);
             }
-
-            xmlUnlinkNode(n);
-            xmlFreeNode(n);
         }
+        (void)whole_document;
     }
     else
     {
-        error("Unknown xpath select result type %d\n", objects->type);
+        error("Unknown xpath select result type %d\n", xml_xpath_result_type(objects));
     }
 
-    xmlXPathFreeObject(objects);
-    xmlXPathFreeContext(ctx);
+    xml_xpath_result_free(objects);
 
-    xmlFreeDoc(doc);
     xmqSetImplementationDoc(command->env->doc, new_doc);
+    xml_dom_free(doc);
 
     return true;
 }
 
 bool cmd_for_each(XMQCliCommand *command)
 {
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
     verbose_("xmq=", "for each");
 
-    xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
-    assert(ctx);
-
-    xmlXPathObjectPtr objects = xmlXPathEvalExpression((const xmlChar*)command->xpath, ctx);
+    XmlXPathResult *objects = cli_xpath(command->env->doc, command->xpath);
 
     if (objects == NULL)
     {
         fprintf(stderr, "xmq: no nodes matched %s\n", command->xpath);
-        xmlXPathFreeContext(ctx);
         return false;
     }
 
-    xmlNodeSetPtr nodes = objects->nodesetval;
-    int size = (nodes) ? nodes->nodeNr : 0;
+    int size = (int)xml_xpath_result_size(objects);
 
     for(int i = 0; i < size; ++i)
     {
-        assert(nodes->nodeTab[i]);
-        xmlNode *n = nodes->nodeTab[i];
+        XMQNode *n = xml_xpath_result_node(objects, i);
 
         if (n)
         {
             while (n && !is_element_node(n))
             {
                 // We found an attribute move to parent.
-                n = n->parent;
+                n = xml_node_parent(n);
             }
-            invoke_shell(n, command->content);
+            if (n) invoke_shell(n, command->content);
         }
     }
 
-    xmlXPathFreeObject(objects);
-    xmlXPathFreeContext(ctx);
+    xml_xpath_result_free(objects);
 
     return true;
 }
 
 bool cmd_add(XMQCliCommand *command)
 {
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    XmlDom* doc = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
     verbose_("xmq=", "adding xmq >%s<", command->add_xmq);
 
     XMQReturnDoc rd = xmqNewDoc();
@@ -3031,19 +3318,14 @@ bool cmd_add(XMQCliCommand *command)
         return false;
     }
 
-    xmlDocPtr append = (xmlDocPtr)xmqGetImplementationDoc(doq);
-    xmlNodePtr i = append->children;
+    XmlDom* append = (XmlDom*)xmqGetImplementationDoc(doq);
+    XMQNode* i = xml_node_first_child(xml_dom_document(append));
     while (i)
     {
-        xmlNodePtr next = i->next;
-        if (doc->last)
-        {
-            xmlAddSibling(doc->last, i);
-        }
-        else
-        {
-            xmlDocSetRootElement(doc, i);
-        }
+        XMQNode* next = xml_node_next(i);
+        // Move the top level node to the end of the document.
+        xml_node_add_child(xml_dom_document(doc), i);
+        xml_node_reconcile_ns(i);
         i = next;
     }
 
@@ -3054,86 +3336,84 @@ bool cmd_add(XMQCliCommand *command)
 
 bool cmd_add_root(XMQCliCommand *command)
 {
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    XmlDom* doc = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
     verbose_("xmq=", "adding root");
 
-    xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
+    XmlDom *new_doc = xml_dom_new();
 
-    xmlNodePtr root = xmlNewDocNode(new_doc, NULL, (const xmlChar*)command->xpath, NULL);
-    xmlDocSetRootElement(new_doc, root);
+    XMQNode *root = xml_node_new_element(new_doc, command->xpath, NULL);
+    xml_dom_set_root_element(new_doc, root);
 
-    xmlNodePtr i = doc->children;
-
-    while (i)
+    for (XMQNode *i = xml_node_first_child(xml_dom_document(doc)); i; i = xml_node_next(i))
     {
-        xmlNodePtr new_node = xmlCopyNode(i, 1);
-        xmlAddChild(root, new_node);
-        i = i->next;
+        if (xml_node_kind(i) == XML_DOM_DTD) continue;
+        XMQNode *new_node = xml_node_copy(new_doc, i, true);
+        xml_node_add_child(root, new_node);
     }
 
-    xmlFreeDoc(doc);
     xmqSetImplementationDoc(command->env->doc, new_doc);
+    xml_dom_free(doc);
 
     return true;
 }
 
-void accumulate_children(Stats *stats, xmlNode *node)
+void accumulate_children(Stats *stats, XMQNode *node)
 {
-    xmlAttr *a = xml_first_attribute(node);
+    XMQAttr *a = xml_first_attribute(node);
     while (a)
     {
-        xmlAttr *next = a->next;
+        XMQAttr *next = xml_attr_next(a);
         accumulate_attribute(stats, a);
         a = next;
     }
 
-    xmlNode *i = xml_first_child(node);
+    XMQNode *i = xml_first_child(node);
     while (i)
     {
-        xmlNode *next = xml_next_sibling(i);
+        XMQNode *next = xml_next_sibling(i);
         accumulate_statistics(stats, i);
         i = next;
     }
 }
 
-void accumulate_attribute(Stats *stats, xmlAttr *a)
+void accumulate_attribute(Stats *stats, XMQAttr *a)
 {
     stats->num_attributes++;
-    stats->size_attribute_names += strlen((const char*)a->name);
+    stats->size_attribute_names += strlen(xml_attr_name(a));
 
-    xmlNode *i = a->children;
+    XMQNode *i = xml_node_first_child(xml_attr_node(a));
     while (i)
     {
-        xmlNode *next = xml_next_sibling(i);
+        XMQNode *next = xml_next_sibling(i);
         accumulate_attribute_content(stats, i);
         i = next;
     }
 
 }
 
-void accumulate_statistics(Stats *stats, xmlNode *node)
+void accumulate_statistics(Stats *stats, XMQNode *node)
 {
-    if (node->type == XML_ELEMENT_NODE)
+    if (xml_node_kind(node) == XML_DOM_ELEMENT)
     {
         stats->num_elements++;
-        stats->size_element_names += strlen((const char*)node->name);
+        stats->size_element_names += strlen(xml_node_name(node));
         accumulate_children(stats, node);
         return;
     }
-    else if (node->type == XML_TEXT_NODE)
+    else if (xml_node_kind(node) == XML_DOM_TEXT)
     {
         stats->num_text_nodes++;
-        stats->size_text_nodes += strlen((const char*)node->content);
+        stats->size_text_nodes += strlen(xml_node_content(node));
         bool has_quote = false;
         bool has_sq = false;
         bool has_dq = false;
-        if (strchr((const char*)node->content, '"'))
+        if (strchr(xml_node_content(node), '"'))
         {
             stats->num_nodes_with_dqs++;
             has_quote = true;
             has_dq = true;
         }
-        if (strchr((const char*)node->content, '\''))
+        if (strchr(xml_node_content(node), '\''))
         {
             stats->num_nodes_with_sqs++;
             has_quote = true;
@@ -3153,75 +3433,74 @@ void accumulate_statistics(Stats *stats, xmlNode *node)
         }
         return;
     }
-    else if (node->type == XML_COMMENT_NODE)
+    else if (xml_node_kind(node) == XML_DOM_COMMENT)
     {
         stats->num_comments++;
-        stats->size_comments += strlen((const char*)node->content);
+        stats->size_comments += strlen(xml_node_content(node));
         return;
     }
-    else if (node->type == XML_CDATA_SECTION_NODE)
+    else if (xml_node_kind(node) == XML_DOM_CDATA)
     {
         stats->num_cdata_nodes++;
-        stats->size_cdata_nodes += strlen((const char*)node->content);
+        stats->size_cdata_nodes += strlen(xml_node_content(node));
         return;
     }
-    else if (node->type == XML_ENTITY_REF_NODE)
+    else if (xml_node_kind(node) == XML_DOM_ENTITY_REF)
     {
         stats->num_entities++;
-        stats->size_entities += strlen((const char*)node->name);
+        stats->size_entities += strlen(xml_node_name(node));
         return;
     }
-    else if (node->type == XML_DTD_NODE)
+    else if (xml_node_kind(node) == XML_DOM_DTD)
     {
         stats->has_doctype++;
-        stats->size_doctype += strlen((const char*)node->name);
+        stats->size_doctype += strlen(xml_node_name(node));
         return;
     }
 }
 
-void accumulate_attribute_content(Stats *stats, xmlNode *node)
+void accumulate_attribute_content(Stats *stats, XMQNode *node)
 {
-    if (node->type == XML_TEXT_NODE)
+    if (xml_node_kind(node) == XML_DOM_TEXT)
     {
-        stats->size_attribute_content += strlen((const char*)node->content);
+        stats->size_attribute_content += strlen(xml_node_content(node));
         return;
     }
 }
 
-void count_statistics(Stats *stats, xmlDocPtr doc)
+void count_statistics(Stats *stats, XmlDom* doc)
 {
-    xmlNodePtr i = doc->children;
+    XMQNode* i = xml_node_first_child(xml_dom_document(doc));
 
     while (i)
     {
-        xmlNode *next = xml_next_sibling(i);
+        XMQNode *next = xml_next_sibling(i);
         accumulate_statistics(stats, i);
         i = next;
     }
 }
 
-void add_key_value(xmlDoc *doc, xmlNode *root, const char *key, size_t value)
+void add_key_value(XmlDom *doc, XMQNode *root, const char *key, size_t value)
 {
     char buf[1024];
     snprintf(buf, 1024, "%zu", value);
-    xmlNodePtr element = xmlNewDocNode(doc, NULL, (xmlChar*)key, NULL);
-    xmlAddChild(root, element);
-    xmlNodePtr text = xmlNewDocText(doc, (xmlChar*)buf);
-    xmlAddChild(element, text);
+    XMQNode *element = xml_node_new_element(doc, key, NULL);
+    xml_node_append_child(root, element);
+    xml_node_append_child(element, xml_node_new_text(doc, buf));
 }
 
 bool cmd_statistics(XMQCliCommand *command)
 {
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    XmlDom* doc = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
     verbose_("xmq=", "calculating statistics");
     Stats stats;
     memset(&stats, 0, sizeof(stats));
 
     count_statistics(&stats, doc);
 
-    xmlDocPtr new_doc = xmlNewDoc((xmlChar*)"1.0");
-    xmlNodePtr root = xmlNewDocNode(new_doc, NULL, (xmlChar*)"statistics", NULL);
-    xmlDocSetRootElement(new_doc, root);
+    XmlDom *new_doc = xml_dom_new();
+    XMQNode *root = xml_node_new_element(new_doc, "statistics", NULL);
+    xml_dom_set_root_element(new_doc, root);
 
     size_t size_source = xmqGetOriginalSize(command->env->doc);
     add_key_value(new_doc, root, "size_source", size_source);
@@ -3249,29 +3528,28 @@ bool cmd_statistics(XMQCliCommand *command)
     add_key_value(new_doc, root, "sum_meta", sum_meta);
     add_key_value(new_doc, root, "sum_text", sum_text);
 
-    xmlFreeDoc(doc);
     xmqSetImplementationDoc(command->env->doc, new_doc);
+    xml_dom_free(doc);
 
     return true;
 }
 
-void delete_all_entities(XMQDoc *doq, xmlNode *node, const char *entity)
+void delete_all_entities(XMQDoc *doq, XMQNode *node, const char *entity)
 {
-    if (node->type == XML_ENTITY_NODE ||
-        node->type == XML_ENTITY_REF_NODE)
+    if (xml_node_kind(node) == XML_DOM_ENTITY_DECL ||
+        xml_node_kind(node) == XML_DOM_ENTITY_REF)
     {
-        if (!strcmp(entity, (char*)node->name))
+        if (!strcmp(entity, (char*)xml_node_name(node)))
         {
-            xmlUnlinkNode(node);
-            xmlFreeNode(node);
+            xml_node_free(node);
         }
         return;
     }
 
-    xmlNode *i = node->children;
+    XMQNode *i = xml_node_first_child(node);
     while (i)
     {
-        xmlNode *next = i->next; // i might be freed in trim.
+        XMQNode *next = xml_node_next(i); // i might be freed in trim.
         delete_all_entities(doq, i, entity);
         i = next;
     }
@@ -3279,13 +3557,13 @@ void delete_all_entities(XMQDoc *doq, xmlNode *node, const char *entity)
 
 void delete_entities(XMQDoc *doq, const char *entity)
 {
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(doq);
-    xmlNodePtr i = doc->children;
+    XmlDom* doc = (XmlDom*)xmqGetImplementationDoc(doq);
+    XMQNode* i = xml_node_first_child(xml_dom_document(doc));
     if (!doq || !i) return;
 
     while (i)
     {
-        xmlNode *next = i->next; // i might be freed in delete_all_entities
+        XMQNode *next = xml_node_next(i); // i might be freed in delete_all_entities
         delete_all_entities(doq, i, entity);
         i = next;
     }
@@ -3302,132 +3580,115 @@ bool delete_entity(XMQCliCommand *command)
 
 bool delete_xpath(XMQCliCommand *command)
 {
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-
-    xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
-    assert(ctx);
-
-    xmlXPathObjectPtr objects = xmlXPathEvalExpression((const xmlChar*)command->xpath, ctx);
+    XmlXPathResult *objects = cli_xpath(command->env->doc, command->xpath);
 
     if (objects == NULL)
     {
         verbose_("xmq=", "no nodes deleted");
-        xmlXPathFreeContext(ctx);
         return true;
     }
 
-    xmlNodeSetPtr nodes = objects->nodesetval;
-    int size = (nodes) ? nodes->nodeNr : 0;
+    int size = (int)xml_xpath_result_size(objects);
 
     // Unlink in reverse order which means unlink deeper nodes first.
     for(int i = size-1; i >= 0; i--)
     {
-        assert(nodes->nodeTab[i]);
-        xmlUnlinkNode(nodes->nodeTab[i]);
-        xmlFreeNode(nodes->nodeTab[i]);
-        nodes->nodeTab[i] = NULL;
+        XMQNode *n = xml_xpath_result_node(objects, i);
+        XmlNodeKind k = xml_node_kind(n);
+        // The document node cannot be deleted, namespace nodes belong to the result.
+        if (k == XML_DOM_DOCUMENT || k == XML_DOM_NAMESPACE) continue;
+        xml_node_free(n);
     }
 
-    xmlXPathFreeObject(objects);
-    xmlXPathFreeContext(ctx);
+    xml_xpath_result_free(objects);
 
     return true;
 }
 
-int replace_xpath_content(xmlDocPtr doc, const char *xpath, const char *content)
+int replace_xpath_content(XMQDoc *doq, const char *xpath, const char *content)
 {
-    if (doc == NULL || xpath == NULL || content == NULL) {
+    if (doq == NULL || xpath == NULL || content == NULL) {
         return -1;
     }
 
+    XmlXPathResult *r = cli_xpath(doq, xpath);
+    if (r == NULL) return -1;
     int ret = -1;
-    xmlXPathContextPtr ctx = NULL;
-    xmlXPathObjectPtr xpathObj = NULL;
-
-    ctx = xmlXPathNewContext(doc);
-    if (ctx == NULL) {
-        goto cleanup;
+    if (xml_xpath_result_type(r) == XML_XPATH_NODESET && xml_xpath_result_size(r) > 0)
+    {
+        /* Replace content of first matched node */
+        XMQNode *node = xml_xpath_result_node(r, 0);
+        if (xml_node_kind(node) != XML_DOM_DOCUMENT && xml_node_kind(node) != XML_DOM_NAMESPACE)
+        {
+            xml_node_set_content(node, content);
+            ret = 0;  /* Success */
+        }
     }
-
-    xpathObj = xmlXPathEvalExpression((const xmlChar *)xpath, ctx);
-    if (xpathObj == NULL || xpathObj->type != XPATH_NODESET) {
-        goto cleanup;
-    }
-
-    xmlNodeSetPtr nodes = xpathObj->nodesetval;
-    if (nodes == NULL || nodes->nodeNr == 0) {
-        goto cleanup;
-    }
-
-    /* Replace content of first matched node */
-    xmlNodePtr node = nodes->nodeTab[0];
-    if (node == NULL) {
-        goto cleanup;
-    }
-
-    xmlNodeSetContent(node, (const xmlChar *)content);
-    ret = 0;  /* Success */
-
-cleanup:
-    if (xpathObj)
-        xmlXPathFreeObject(xpathObj);
-    if (ctx)
-        xmlXPathFreeContext(ctx);
-
+    xml_xpath_result_free(r);
     return ret;
 }
 
-xmlNode *replace_entity(xmlDoc *doc, xmlNode *node, const char *entity, const char *content, xmlNodePtr node_content)
+/** Merge the text node b into the text node a (like libxml2 xmlTextMerge), returns a. */
+static XMQNode *cli_text_merge(XMQNode *a, XMQNode *b)
+{
+    const char *t = xml_node_content(b);
+    if (t) xml_node_append_content(a, t, strlen(t));
+    xml_node_free(b);
+    return a;
+}
+
+XMQNode *replace_entity(XmlDom *doc, XMQNode *node, const char *entity, const char *content, XMQNode* node_content)
 {
     if (!node) return NULL;
 
-    xmlNode *next = node->next;
+    XMQNode *next = xml_node_next(node);
 
-    if (node->type == XML_ENTITY_REF_NODE)
+    if (xml_node_kind(node) == XML_DOM_ENTITY_REF)
     {
-        if (!strcmp((const char *)node->name, entity))
+        if (!strcmp(xml_node_name(node), entity))
         {
             if (content)
             {
-                xmlNodePtr new_node = xmlNewDocText(doc, (const xmlChar*)content);
-                xmlReplaceNode(node, new_node);
-                xmlFreeNode(node);
+                XMQNode *new_node = xml_node_new_text(doc, content);
+                xml_node_replace(node, new_node);
+                xml_node_free(node);
                 node = new_node;
-                next = node->next;
+                next = xml_node_next(node);
             }
             else if (node_content)
             {
-                xmlNodePtr new_node = xmlCopyNode(node_content, 1);
-                xmlReplaceNode(node, new_node);
-                xmlFreeNode(node);
+                XMQNode *new_node = xml_node_copy(doc, node_content, true);
+                xml_node_replace(node, new_node);
+                xml_node_free(node);
                 node = new_node;
-                next = node->next;
+                xml_node_reconcile_ns(node);
+                next = xml_node_next(node);
             }
             else
             {
                 assert(false);
             }
         }
-        if (node->prev != NULL && is_content_node(node->prev) && is_content_node(node))
+        if (xml_node_prev(node) != NULL && is_content_node(xml_node_prev(node)) && is_content_node(node))
         {
-            node = xmlTextMerge(node->prev, node);
-            next = node->next;
+            node = cli_text_merge(xml_node_prev(node), node);
+            next = xml_node_next(node);
 
-            if (node->next != NULL && is_content_node(node->next))
+            if (xml_node_next(node) != NULL && is_content_node(xml_node_next(node)))
             {
-                node = xmlTextMerge(node, node->next);
-                next = node->next;
+                node = cli_text_merge(node, xml_node_next(node));
+                next = xml_node_next(node);
             }
         }
         return next;
     }
 
-    xmlAttr *a = xml_first_attribute(node);
+    XMQAttr *a = xml_first_attribute(node);
     while (a)
     {
-        if (a->children != NULL)
+        if (xml_node_first_child(xml_attr_node(a)) != NULL)
         {
-            xmlNode *i = a->children;
+            XMQNode *i = xml_node_first_child(xml_attr_node(a));
             while (i)
             {
                 i = replace_entity(doc, i, entity, content, node_content);
@@ -3436,7 +3697,7 @@ xmlNode *replace_entity(xmlDoc *doc, xmlNode *node, const char *entity, const ch
         a = xml_next_attribute(a);
     }
 
-    xmlNode *i = node->children;
+    XMQNode *i = xml_node_first_child(node);
     while (i)
     {
         i = replace_entity(doc, i, entity, content, node_content);
@@ -3445,21 +3706,21 @@ xmlNode *replace_entity(xmlDoc *doc, xmlNode *node, const char *entity, const ch
     return next;
 }
 
-void replace_entities(xmlDoc *doc, const char *entity, const char *content, xmlNodePtr node_content)
+void replace_entities(XmlDom *doc, const char *entity, const char *content, XMQNode* node_content)
 {
-    xmlNodePtr i = doc->children;
+    XMQNode* i = xml_node_first_child(xml_dom_document(doc));
     if (!doc || !i) return;
 
     while (i)
     {
         replace_entity(doc, i, entity, content, node_content);
-        i = i->next;
+        i = xml_node_next(i);
     }
 }
 
 bool cmd_replace(XMQCliCommand *command)
 {
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
+    XmlDom* doc = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
 
     if (command->xpath)
     {
@@ -3472,7 +3733,7 @@ bool cmd_replace(XMQCliCommand *command)
         }
         char *xpath = strndup(command->xpath, ep-command->xpath);
         char *value = strdup(ep+1);
-        replace_xpath_content(doc, xpath, value);
+        replace_xpath_content(command->env->doc, xpath, value);
         free(xpath);
         free(value);
     }
@@ -3487,48 +3748,41 @@ bool cmd_replace(XMQCliCommand *command)
     return true;
 }
 
-void substitute_entity(xmlDoc *doc, xmlNode *node, const char *entity, bool only_chars)
+void substitute_entity(XmlDom *doc, XMQNode *node, const char *entity, bool only_chars)
 {
     if (!node) return;
-    if (node->type == XML_ENTITY_REF_NODE)
+    if (xml_node_kind(node) == XML_DOM_ENTITY_REF)
     {
-        if (entity == NULL || !strcmp((const char *)node->name, entity))
+        if (entity == NULL || !strcmp(xml_node_name(node), entity))
         {
-            if (node->name[0] == '#')
+            if (xml_node_name(node)[0] == '#')
             {
                 char buf[5] = {};
                 char *out = buf;
-                int uc = decode_entity_ref((const char *)node->name);
+                int uc = decode_entity_ref(xml_node_name(node));
                 UTF8Char utf8;
                 size_t n = encode_utf8(uc, &utf8);
                 for (size_t j = 0; j < n; ++j)
                 {
                     *out++ = utf8.bytes[j];
                 }
-                xmlNodePtr new_node = xmlNewDocText(doc, (const xmlChar*)buf);
-                xmlReplaceNode(node, new_node);
-                xmlFreeNode(node);
+                XMQNode *new_node = xml_node_new_text(doc, buf);
+                xml_node_replace(node, new_node);
+                xml_node_free(node);
             }
             else if (!only_chars)
             {
-                if (node->children)
-                {
-                    if (is_content_node(node))
-                    {
-                        xmlNodePtr new_node = xmlNewDocText(doc, node->content);
-                        xmlReplaceNode(node, new_node);
-                        xmlFreeNode(node);
-                    }
-                }
+                // Entities are not expanded, there is nothing to substitute
+                // until the entity content is expanded explicitly.
             }
         }
         return;
     }
 
-    xmlNode *i = node->children;
+    XMQNode *i = xml_node_first_child(node);
     while (i)
     {
-        xmlNode *next = i->next;
+        XMQNode *next = xml_node_next(i);
         substitute_entity(doc, i, entity, only_chars);
         i = next;
     }
@@ -3536,11 +3790,9 @@ void substitute_entity(xmlDoc *doc, xmlNode *node, const char *entity, bool only
 
 bool cmd_substitute(XMQCliCommand *command)
 {
-    xmlDocPtr doc = (xmlDocPtr)xmqGetImplementationDoc(command->env->doc);
-    xmlNodePtr root = xmlDocGetRootElement(doc);
-
-    while (root->prev) root = root->prev;
-    assert(root != NULL);
+    XmlDom* doc = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
+    XMQNode* root = xml_node_first_child(xml_dom_document(doc));
+    if (root == NULL) return true;
 
     if (command->cmd == XMQ_CLI_CMD_SUBSTITUTE_ENTITY)
     {
@@ -4105,11 +4357,11 @@ char *grab_name(const char *s, const char **out_name_start)
     return buf;
 }
 
-void append_text_node(MemBuffer *buf, xmlNode *node)
+void append_text_node(MemBuffer *buf, XMQNode *node)
 {
     if (is_content_node(node))
     {
-        membuffer_append(buf, (char*)node->content);
+        membuffer_append(buf, (char*)xml_node_content(node));
     }
     else if (is_entity_node(node))
     {
@@ -4117,13 +4369,13 @@ void append_text_node(MemBuffer *buf, xmlNode *node)
     }
     else if (is_element_node(node))
     {
-        append_text_children(buf, node->children);
+        append_text_children(buf, xml_node_first_child(node));
     }
 }
 
-void append_text_children(MemBuffer *buf, xmlNode *n)
+void append_text_children(MemBuffer *buf, XMQNode *n)
 {
-    xmlNode *i = n;
+    XMQNode *i = n;
 
     while (i)
     {
@@ -4132,13 +4384,13 @@ void append_text_children(MemBuffer *buf, xmlNode *n)
     }
 }
 
-char *grab_content(xmlNode *n, const char *name)
+char *grab_content(XMQNode *n, const char *name)
 {
     MemBuffer *buf = new_membuffer();
 
     if (!strcmp(name, ".."))
     {
-        membuffer_append(buf, (char*)n->name);
+        membuffer_append(buf, (char*)xml_node_name(n));
     }
     else
     if (!strcmp(name, "."))
@@ -4147,22 +4399,22 @@ char *grab_content(xmlNode *n, const char *name)
     }
     else
     {
-        xmlNode *i = n->children;
+        XMQNode *i = xml_node_first_child(n);
         while (i)
         {
-            if (!strcmp((char*)i->name, name))
+            if (!strcmp((char*)xml_node_name(i), name))
             {
-                xmlNode *j = i->children;
+                XMQNode *j = xml_node_first_child(i);
                 while (j)
                 {
                     if (is_text_node(j))
                     {
-                        membuffer_append(buf, (char*)j->content);
+                        membuffer_append(buf, (char*)xml_node_content(j));
                     }
-                    j = j->next;
+                    j = xml_node_next(j);
                 }
             }
-            i = i->next;
+            i = xml_node_next(i);
         }
     }
     membuffer_append_null(buf);
@@ -4175,7 +4427,7 @@ char *grab_content(xmlNode *n, const char *name)
 extern char **environ;
 #endif
 
-bool invoke_shell(xmlNode *node, const char *shell_command)
+bool invoke_shell(XMQNode *node, const char *shell_command)
 {
     bool ok = true;
 #ifndef PLATFORM_WINAPI
@@ -4606,19 +4858,21 @@ bool load_xslt(XMQCliCommand *command, const char *arg)
 
     verbose_("xmq=", "loaded xslt %s", arg);
 
-    xmlDocPtr xslt = (xmlDocPtr)xmqGetImplementationDoc(doq);
+    XmlDom *xslt_dom = (XmlDom*)xmqGetImplementationDoc(doq);
     if (xmqGetOriginalContentType(doq) == XMQ_CONTENT_XMQ ||
         xmqGetOriginalContentType(doq) == XMQ_CONTENT_HTMQ)
     {
         // We want to be able to use char entities in the xslq by default.
         // So we replace any explicit &#10; with actual newlines etc.
-        xmlNodePtr root = xmlDocGetRootElement(xslt);
-        while (root->prev) root = root->prev;
+        XMQNode *root = xml_node_first_child(xml_dom_document(xslt_dom));
         // Replace all char entities! I.e. &#10; is replaced with a newline.
-        substitute_entity(xslt, root, NULL, true);
+        if (root) substitute_entity(xslt_dom, root, NULL, true);
     }
     command->xslt_doq = doq;
+    // The stylesheet takes over (and frees) the libxml2 copy.
+    xmlDocPtr xslt = cli_to_libxml(doq);
     command->xslt = xsltParseStylesheetDoc(xslt);
+    if (!command->xslt) xmlFreeDoc(xslt);
     return true;
 }
 

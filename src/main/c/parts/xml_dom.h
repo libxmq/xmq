@@ -54,7 +54,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       entity references (like libxml2), since xmq keeps &entity; references
       also inside attribute values.
     - An entity reference has no content of its own and, since entities are
-      never expanded implicitly, contributes nothing to string values.
+      never expanded implicitly, contributes nothing to string values. A
+      character reference kept as a reference node (name "#10" or "#x41", xmq
+      can keep them) is a character: it contributes the character.
     - The DTD (doctype) is a child of the document node. Its children are the
       entity/element/attribute declarations (and comments/pis) in source order.
       Notations are kept in a separate list, as libxml2 does, since they are
@@ -253,6 +255,12 @@ int xml_node_compare_order(const XMQNode *a, const XMQNode *b);
 /** Set or replace attribute with local name and namespace (ns may be NULL). The value becomes one text child. */
 XMQAttr *xml_node_set_attr(XMQNode *element, const char *name, XmlNs *ns, const char *value);
 /** Find attribute by local name and namespace uri (NULL uri means no namespace). */
+/** Move an attribute (from any element) to the end of the element's attributes, replacing an attribute
+    with the same name and namespace. The namespace of the attribute must be in scope (see xml_node_reconcile_ns). */
+XMQAttr *xml_node_move_attr(XMQNode *element, XMQAttr *attr);
+/** Append an attribute without checking for an existing one with the same name (like libxml2 xmlNewProp),
+    used by parsers that resolve namespaces later. value may be NULL for no value. */
+XMQAttr *xml_node_append_attr(XMQNode *element, const char *name, XmlNs *ns, const char *value);
 XMQAttr *xml_node_get_attr(const XMQNode *element, const char *name, const char *ns_uri);
 /** Remove and free the attribute. Returns true if found. */
 bool xml_node_remove_attr(XMQNode *element, const char *name, const char *ns_uri);
@@ -280,6 +288,15 @@ XmlNs *xml_ns_next_decl(const XmlNs *ns);
 /** Declare prefix->href on element. Returns NULL if prefix is already declared there. */
 XmlNs *xml_ns_declare(XMQNode *element, const char *prefix, const char *href);
 /** Set the namespace of an element or attribute (the ref count is managed). */
+void *xml_ns_user_data(const XmlNs *ns);
+void xml_ns_set_user_data(XmlNs *ns, void *user_data);
+/** Move the declaration ns of element last among the element's declarations. */
+void xml_ns_move_decl_last(XMQNode *element, XmlNs *ns);
+/** Remove the declaration ns from element, the element and its descendants (and attributes) that use ns
+    are changed to use replacement (which may be NULL, it must be in scope). */
+void xml_ns_remove_decl(XMQNode *element, XmlNs *ns, XmlNs *replacement);
+/** Change the href of a declaration, used while parsing when an xmlns attribute follows its first use. */
+void xml_ns_set_href(XmlNs *ns, const char *href);
 void xml_node_set_ns(XMQNode *node, XmlNs *ns);
 /** Find the in scope declaration of prefix (NULL = default namespace), walking ancestors. "xml" is predefined. */
 XmlNs *xml_ns_lookup_prefix(const XMQNode *node, const char *prefix);

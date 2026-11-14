@@ -37,7 +37,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     There is no global state: namespaces and options are given per call.
 */
 
+#ifndef BUILDING_DIST_XMQ
 #include"xml_dom.h"
+#endif
 
 #include<stdbool.h>
 #include<stddef.h>
@@ -88,6 +90,9 @@ typedef struct
     bool html_ids;
     /** Maximum nesting of the expression (libxml2 XPATH_MAX_RECURSION_DEPTH). */
     size_t max_depth;
+    /** The context node given to xml_xpath_eval only selects the document, there is no context node
+        (like a fresh libxml2 xmlXPathNewContext): relative paths select nothing. */
+    bool no_context_node;
 } XmlXPathSettings;
 
 typedef struct

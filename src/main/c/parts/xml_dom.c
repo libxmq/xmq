@@ -48,6 +48,7 @@ struct XmlNs
     char *prefix;   // NULL for the default namespace.
     char *href;     // "" for an undeclaration xmlns="".
     int refcount;   // Number of owners: declaring element + nodes using it. <0 means static.
+    void *user_data; // Free for the user of the dom (not copied).
 };
 
 struct XMQNode
@@ -780,6 +781,27 @@ void xml_node_append_content(XMQNode *node, const char *content, size_t len)
     node->content = n;
 }
 
+/** A character reference node (&#10; &#x41;) as utf8, returns the length, 0 if not a valid character reference. */
+static size_t xml_char_ref_utf8(const char *name, char *out)
+{
+    if (!name || name[0] != '#') return 0;
+    long v;
+    char *end = NULL;
+    if (name[1] == 'x' || name[1] == 'X') v = strtol(name + 2, &end, 16);
+    else v = strtol(name + 1, &end, 10);
+    if (!end || *end || v <= 0 || v > 0x10FFFF || (v >= 0xD800 && v <= 0xDFFF)) return 0;
+    if (v < 0x80) { out[0] = (char)v; return 1; }
+    if (v < 0x800) { out[0] = (char)(0xC0 | (v >> 6)); out[1] = (char)(0x80 | (v & 0x3F)); return 2; }
+    if (v < 0x10000)
+    {
+        out[0] = (char)(0xE0 | (v >> 12)); out[1] = (char)(0x80 | ((v >> 6) & 0x3F)); out[2] = (char)(0x80 | (v & 0x3F));
+        return 3;
+    }
+    out[0] = (char)(0xF0 | (v >> 18)); out[1] = (char)(0x80 | ((v >> 12) & 0x3F));
+    out[2] = (char)(0x80 | ((v >> 6) & 0x3F)); out[3] = (char)(0x80 | (v & 0x3F));
+    return 4;
+}
+
 static void xml_node_collect_text(const XMQNode *node, XmlDomStrBuf *sb)
 {
     for (const XMQNode *c = node->first_child; c; c = c->next)
@@ -790,6 +812,14 @@ static void xml_node_collect_text(const XMQNode *node, XmlDomStrBuf *sb)
         case XML_DOM_CDATA:
             if (c->content) xml_dom_sb_add(sb, c->content, strlen(c->content));
             break;
+        case XML_DOM_ENTITY_REF:
+        {
+            // A character reference kept as a node (xmq can do that) is a character, not an entity.
+            char u[4];
+            size_t n = xml_char_ref_utf8(c->name, u);
+            if (n) xml_dom_sb_add(sb, u, n);
+            break;
+        }
         case XML_DOM_ELEMENT:
             xml_node_collect_text(c, sb);
             break;
@@ -802,7 +832,14 @@ static void xml_node_collect_text(const XMQNode *node, XmlDomStrBuf *sb)
 char *xml_node_string_value(const XMQNode *node)
 {
     // Entities are never expanded implicitly: an entity reference contributes nothing.
-    if (node->kind == XML_DOM_ENTITY_REF) return xml_dom_strdup("");
+    // But a character reference kept as a node is its character.
+    if (node->kind == XML_DOM_ENTITY_REF)
+    {
+        char u[5];
+        size_t n = xml_char_ref_utf8(node->name, u);
+        u[n] = 0;
+        return xml_dom_strdup(u);
+    }
     if (xml_node_has_child_content(node))
     {
         XmlDomStrBuf sb = { NULL, 0, 0 };
@@ -1132,6 +1169,30 @@ static bool xml_attr_matches(const XMQAttr *a, const char *name, const char *ns_
     return xml_dom_streq(xml_node_ns_uri(&a->node), ns_uri);
 }
 
+XMQAttr *xml_node_move_attr(XMQNode *element, XMQAttr *attr)
+{
+    XMQNode *a = (XMQNode*)attr;
+    assert(a->kind == XML_DOM_ATTRIBUTE && element->kind == XML_DOM_ELEMENT);
+    if (a->parent == element) return attr;
+    // Like libxml2 xmlAddChild of an attribute: an attribute with the same name and namespace is replaced.
+    xml_node_remove_attr(element, a->name, a->ns && a->ns->href ? a->ns->href : NULL);
+    xml_node_unlink(a);
+    xml_node_adopt(a, element->dom);
+    a->parent = element;
+    if (!element->last_attr)
+    {
+        element->first_attr = element->last_attr = attr;
+    }
+    else
+    {
+        XMQNode *last = (XMQNode*)element->last_attr;
+        last->next = a;
+        a->prev = last;
+        element->last_attr = attr;
+    }
+    return attr;
+}
+
 XMQAttr *xml_node_get_attr(const XMQNode *element, const char *name, const char *ns_uri)
 {
     if (ns_uri && !*ns_uri) ns_uri = NULL;
@@ -1140,6 +1201,27 @@ XMQAttr *xml_node_get_attr(const XMQNode *element, const char *name, const char 
         if (xml_attr_matches(a, name, ns_uri)) return a;
     }
     return NULL;
+}
+
+XMQAttr *xml_node_append_attr(XMQNode *element, const char *name, XmlNs *ns, const char *value)
+{
+    assert(element->kind == XML_DOM_ELEMENT);
+    XMQAttr *a = (XMQAttr*)xml_node_alloc(element->dom, XML_DOM_ATTRIBUTE, sizeof(XMQAttr));
+    a->node.name = xml_dom_strdup(name);
+    a->node.ns = xml_ns_ref(ns);
+    xml_node_set_content(&a->node, value);
+    a->node.parent = element;
+    if (element->last_attr)
+    {
+        element->last_attr->node.next = &a->node;
+        a->node.prev = &element->last_attr->node;
+        element->last_attr = a;
+    }
+    else
+    {
+        element->first_attr = element->last_attr = a;
+    }
+    return a;
 }
 
 XMQAttr *xml_node_set_attr(XMQNode *element, const char *name, XmlNs *ns, const char *value)
@@ -1159,22 +1241,7 @@ XMQAttr *xml_node_set_attr(XMQNode *element, const char *name, XmlNs *ns, const 
         return a;
     }
 
-    a = (XMQAttr*)xml_node_alloc(element->dom, XML_DOM_ATTRIBUTE, sizeof(XMQAttr));
-    a->node.name = xml_dom_strdup(name);
-    a->node.ns = xml_ns_ref(ns);
-    xml_node_set_content(&a->node, value);
-    a->node.parent = element;
-    if (element->last_attr)
-    {
-        element->last_attr->node.next = &a->node;
-        a->node.prev = &element->last_attr->node;
-        element->last_attr = a;
-    }
-    else
-    {
-        element->first_attr = element->last_attr = a;
-    }
-    return a;
+    return xml_node_append_attr(element, name, ns, value);
 }
 
 bool xml_node_remove_attr(XMQNode *element, const char *name, const char *ns_uri)
@@ -1258,6 +1325,60 @@ XmlNs *xml_ns_declare(XMQNode *element, const char *prefix, const char *href)
     if (last) last->next = ns;
     else element->ns_defs = ns;
     return ns;
+}
+
+void *xml_ns_user_data(const XmlNs *ns)
+{
+    return ns->user_data;
+}
+
+void xml_ns_set_user_data(XmlNs *ns, void *user_data)
+{
+    if (ns->refcount >= 0) ns->user_data = user_data;
+}
+
+void xml_ns_move_decl_last(XMQNode *element, XmlNs *ns)
+{
+    XmlNs **pp = &element->ns_defs;
+    while (*pp && *pp != ns) pp = &(*pp)->next;
+    if (!*pp || !ns->next) return;
+    *pp = ns->next;
+    XmlNs *last = element->ns_defs;
+    while (last->next) last = last->next;
+    last->next = ns;
+    ns->next = NULL;
+}
+
+static void xml_node_repoint_ns(XMQNode *node, XmlNs *from, XmlNs *to)
+{
+    if (node->kind != XML_DOM_ELEMENT) return;
+    if (node->ns == from) xml_node_set_ns(node, to);
+    for (XMQAttr *a = node->first_attr; a; a = (XMQAttr*)a->node.next)
+    {
+        if (a->node.ns == from) xml_node_set_ns(&a->node, to);
+    }
+    for (XMQNode *c = node->first_child; c; c = c->next) xml_node_repoint_ns(c, from, to);
+}
+
+void xml_ns_remove_decl(XMQNode *element, XmlNs *ns, XmlNs *replacement)
+{
+    XmlNs **pp = &element->ns_defs;
+    while (*pp && *pp != ns) pp = &(*pp)->next;
+    if (!*pp) return;
+    *pp = ns->next;
+    ns->next = NULL;
+    xml_ns_ref(ns);
+    xml_node_repoint_ns(element, ns, replacement);
+    xml_ns_unref(ns); // The temporary reference.
+    xml_ns_unref(ns); // The declaring element.
+}
+
+void xml_ns_set_href(XmlNs *ns, const char *href)
+{
+    if (ns->refcount < 0) return; // The static xml namespace.
+    char *h = xml_dom_strdup(href ? href : "");
+    free(ns->href);
+    ns->href = h;
 }
 
 void xml_node_set_ns(XMQNode *node, XmlNs *ns)

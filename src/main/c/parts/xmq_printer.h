@@ -34,30 +34,30 @@ enum Level;
 #endif
 typedef enum Level Level;
 
-void annotate_offsets(xmlDoc *doc, const char *attribute_name, const char *ns);
+void annotate_offsets(XmlDom *doc, const char *attribute_name, const char *ns);
 int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound, bool prefer_double_quotes, bool *use_double_quotes);
 size_t count_necessary_slashes(const char *start, const char *stop);
 
-void print_nodes(XMQPrintState *ps, xmlNode *from, xmlNode *to, size_t align);
-void print_content_node(XMQPrintState *ps, xmlNode *node);
-void print_entity_node(XMQPrintState *ps, xmlNode *node);
+void print_nodes(XMQPrintState *ps, XMQNode *from, XMQNode *to, size_t align);
+void print_content_node(XMQPrintState *ps, XMQNode *node);
+void print_entity_node(XMQPrintState *ps, XMQNode *node);
 void print_color_post(XMQPrintState *ps, XMQColor c);
 void print_color_pre(XMQPrintState *ps, XMQColor c);
 void print_comment_line(XMQPrintState *ps, const char *start, const char *stop, bool compact);
 void print_comment_lines(XMQPrintState *ps, const char *start, const char *stop, bool compact);
-void print_comment_node(XMQPrintState *ps, xmlNode *node);
-size_t print_element_name_and_attributes(XMQPrintState *ps, xmlNode *node);
+void print_comment_node(XMQPrintState *ps, XMQNode *node);
+size_t print_element_name_and_attributes(XMQPrintState *ps, XMQNode *node);
 void print_leaf_node(XMQPrintState *ps,
-                     xmlNode *node);
+                     XMQNode *node);
 void print_key_node(XMQPrintState *ps,
-                    xmlNode *node,
+                    XMQNode *node,
                     size_t align);
 void print_element_with_children(XMQPrintState *ps,
-                                 xmlNode *node,
+                                 XMQNode *node,
                                  size_t align);
-void print_doctype(XMQPrintState *ps, xmlNode *node);
-void print_pi_node(XMQPrintState *ps, xmlNode *node);
-void print_node(XMQPrintState *ps, xmlNode *node, size_t align);
+void print_doctype(XMQPrintState *ps, XMQNode *node);
+void print_pi_node(XMQPrintState *ps, XMQNode *node);
+void print_node(XMQPrintState *ps, XMQNode *node, size_t align);
 
 void print_white_spaces(XMQPrintState *ps, int num);
 void print_all_whitespace(XMQPrintState *ps, const char *start, const char *stop, Level level);
@@ -84,9 +84,9 @@ void check_space_before_opening_brace(XMQPrintState *ps);
 void check_space_before_closing_brace(XMQPrintState *ps);
 void check_space_before_comment(XMQPrintState *ps);
 
-void print_attribute(XMQPrintState *ps, xmlAttr *a, size_t align);
-void print_namespace_declaration(XMQPrintState *ps, xmlNs *ns, size_t align);
-void print_attributes(XMQPrintState *ps, xmlNodePtr node);
+void print_attribute(XMQPrintState *ps, XMQAttr *a, size_t align);
+void print_namespace_declaration(XMQPrintState *ps, XmlNs *ns, size_t align);
+void print_attributes(XMQPrintState *ps, XMQNode* node);
 
 void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
                                              XMQColor color,
@@ -99,9 +99,9 @@ void print_safe_leaf_quote(XMQPrintState *ps,
 const char *find_next_line_end(XMQPrintState *ps, const char *start, const char *stop);
 const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop, bool using_dquotes);
 void print_value_internal_text(XMQPrintState *ps, const char *start, const char *stop, Level level, bool using_dquotes, bool already_compounded);
-void print_value_internal(XMQPrintState *ps, xmlNode *node, const char *start, const char *stop, Level level, bool using_dquotes, bool already_compounded);
+void print_value_internal(XMQPrintState *ps, XMQNode *node, const char *start, const char *stop, Level level, bool using_dquotes, bool already_compounded);
 bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *stop, bool prefer_dquotes, bool *use_dquotes);
-void print_value(XMQPrintState *ps, xmlNode *node, const char *start, const char *stop, Level level, bool already_compounded);
+void print_value(XMQPrintState *ps, XMQNode *node, const char *start, const char *stop, Level level, bool already_compounded);
 
 #define XMQ_PRINTER_MODULE
 
