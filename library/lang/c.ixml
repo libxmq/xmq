@@ -139,7 +139,12 @@ primary_expression
 	| LEFT_PAR, compound_statement, RIGHT_PAR
 	| BUILTIN_VA_ARG, LEFT_PAR, assignment_expression, COMMA, type_name, RIGHT_PAR
 	| BUILTIN_OFFSETOF, LEFT_PAR, type_name, COMMA, member_designator, RIGHT_PAR
+	| generic_selection
 	.
+
+{ C11 _Generic, eg glibc 2.43 implements the const preserving strchr with it. }
+generic_selection = GENERIC, LEFT_PAR, assignment_expression, COMMA, generic_association++COMMA, RIGHT_PAR.
+generic_association = (type_name | DEFAULT), COLON, assignment_expression.
 
 member_designator = IDENTIFIER | member_designator, DOT, IDENTIFIER | member_designator, LEFT_BRACKET, expression, RIGHT_BRACKET.
 
@@ -600,6 +605,7 @@ IDENTIFIER = !keyword, -idstart, -idchar*, !idchar, ws.
          | '_Complex', notid
          | '_Noreturn', notid
          | '_Alignof', notid
+         | '_Generic', notid
          | '__attribute__', notid
          | '__extension__', notid
          | '__asm__', notid
@@ -609,6 +615,7 @@ IDENTIFIER = !keyword, -idstart, -idchar*, !idchar, ws.
          | '__signed__', notid
          | '__volatile__', notid
          | '__typeof__', notid
+         | '__typeof', notid
          | '__alignof__', notid
          | '__int128', notid
          | '__thread', notid
@@ -656,6 +663,7 @@ BOOL = '_Bool', !idchar, ws.
 COMPLEX = '_Complex', !idchar, ws.
 NORETURN = '_Noreturn', !idchar, ws.
 ALIGNOF = '_Alignof', !idchar, ws.
+GENERIC = '_Generic', !idchar, ws.
 ATTRIBUTE = '__attribute__', !idchar, ws.
 EXTENSION = '__extension__', !idchar, ws.
 ASM = '__asm__', !idchar, ws.
@@ -664,7 +672,7 @@ GNU_INLINE = '__inline', !idchar, ws.
 GNU_CONST = '__const', !idchar, ws.
 GNU_SIGNED = '__signed__', !idchar, ws.
 GNU_VOLATILE = '__volatile__', !idchar, ws.
-TYPEOF = '__typeof__', !idchar, ws.
+TYPEOF = ('__typeof__' | '__typeof'), !idchar, ws.
 GNU_ALIGNOF = '__alignof__', !idchar, ws.
 INT128 = '__int128', !idchar, ws.
 THREAD = '__thread', !idchar, ws.
