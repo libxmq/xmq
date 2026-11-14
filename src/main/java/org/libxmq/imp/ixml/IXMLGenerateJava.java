@@ -96,6 +96,37 @@ public final class IXMLGenerateJava
         return s.replace("*/", "* /");
     }
 
+    /**
+     * The method that parses a rule: eat_ followed by the rule name, mangled like
+     * in IXMLGenerateC (a generated rule /1 gives 1, characters not allowed in
+     * a C identifier become _, a name already taken gets _2, _3...).
+     */
+    String ruleFn(String name)
+    {
+        return fnNames.get(name);
+    }
+
+    private final Map<String, String> fnNames = new HashMap<>();
+
+    void assignRuleFns()
+    {
+        Set<String> taken = new HashSet<>();
+        for (String name : ids.keySet())
+        {
+            String base = name.startsWith("/") ? name.substring(1) : name;
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < base.length(); i++)
+            {
+                char c = base.charAt(i);
+                b.append((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' ? c : '_');
+            }
+            String fn = "eat_" + b;
+            String unique = fn;
+            for (int k = 2; !taken.add(unique); k++) unique = fn + "_" + k;
+            fnNames.put(name, unique);
+        }
+    }
+
     int ruleId(String name)
     {
         return ids.get(name);
@@ -146,6 +177,7 @@ public final class IXMLGenerateJava
     {
         int k = 0;
         for (String name : analyzer.reachable()) ids.put(name, k++);
+        assignRuleFns();
 
         StringBuilder rules = new StringBuilder();
         for (String name : analyzer.reachable()) genRule(rules, name);
@@ -411,7 +443,7 @@ public final class %1$s
         Rule r = grammar.rules.get(name);
         int id = ruleId(name);
         b.append("    // ").append(comment(name)).append('\n');
-        b.append("    private boolean r").append(id).append("(XmlElement elem, StringBuilder attr)\n    {\n");
+        b.append("    private boolean ").append(ruleFn(name)).append("(XmlElement elem, StringBuilder attr)\n    {\n");
         if (r.lrTail != null)
         {
             // Mark where the content of this left recursive rule starts.
@@ -540,7 +572,7 @@ public final class %1$s
             {
                 Rule callee = grammar.rules.get(t.ref);
                 String m = mark(t, callee);
-                String fn = "r" + ruleId(t.ref);
+                String fn = ruleFn(t.ref);
                 if (m.equals("-"))
                 {
                     if (last && callee == r)
@@ -601,7 +633,7 @@ public final class %1$s
     {
         Rule r = grammar.rules.get(grammar.start);
         String m = r.mark.isEmpty() ? "^" : r.mark;
-        String start = "r" + ruleId(grammar.start);
+        String start = ruleFn(grammar.start);
         String call = m.equals("^")
             ? "p." + start + "(p.element(null, " + jstring(r.alias.isEmpty() ? r.name : r.alias) + "), null)"
             : "p." + start + "(null, null)";

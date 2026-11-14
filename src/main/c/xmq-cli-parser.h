@@ -387,143 +387,143 @@ static const int xmqcli_set_52[] = {
 };
 static const unsigned char xmqcli_ascii_52[16] = {0,0,0,0,0,64,0,0,0,0,0,0,0,0,0,0};
 
-static bool xmqcli_r0(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // xmq
-static bool xmqcli_r1(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // ws
-static bool xmqcli_r2(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /98
-static bool xmqcli_r3(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /5
-static bool xmqcli_r4(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /4
-static bool xmqcli_r5(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // help
-static bool xmqcli_r6(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /38
-static bool xmqcli_r7(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /37
-static bool xmqcli_r8(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // arg
-static bool xmqcli_r9(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // rawvalue
-static bool xmqcli_r10(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /91
-static bool xmqcli_r11(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // qvalue
-static bool xmqcli_r12(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /95
-static bool xmqcli_r13(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /94
-static bool xmqcli_r14(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /93
-static bool xmqcli_r15(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // s
-static bool xmqcli_r16(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /97
-static bool xmqcli_r17(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /96
-static bool xmqcli_r18(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /88
-static bool xmqcli_r19(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // value
-static bool xmqcli_r20(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // bare
-static bool xmqcli_r21(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /92
-static bool xmqcli_r22(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // helpname
-static bool xmqcli_r23(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /76
-static bool xmqcli_r24(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /3
-static bool xmqcli_r25(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /2
-static bool xmqcli_r26(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // command
-static bool xmqcli_r27(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // xslcommand
-static bool xmqcli_r28(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // xslarg
-static bool xmqcli_r29(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /78
-static bool xmqcli_r30(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /77
-static bool xmqcli_r31(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // fchar
-static bool xmqcli_r32(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // xsl
-static bool xmqcli_r33(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /75
-static bool xmqcli_r34(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /36
-static bool xmqcli_r35(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /35
-static bool xmqcli_r36(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // copts
-static bool xmqcli_r37(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /80
-static bool xmqcli_r38(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /79
-static bool xmqcli_r39(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // coption
-static bool xmqcli_r40(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // cother
-static bool xmqcli_r41(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /87
-static bool xmqcli_r42(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /86
-static bool xmqcli_r43(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // schar
-static bool xmqcli_r44(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /85
-static bool xmqcli_r45(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // cshort
-static bool xmqcli_r46(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /84
-static bool xmqcli_r47(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /83
-static bool xmqcli_r48(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /82
-static bool xmqcli_r49(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // optvalue
-static bool xmqcli_r50(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /90
-static bool xmqcli_r51(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // name
-static bool xmqcli_r52(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /89
-static bool xmqcli_r53(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /81
-static bool xmqcli_r54(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // file
-static bool xmqcli_r55(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /34
-static bool xmqcli_r56(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /33
-static bool xmqcli_r57(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /31
-static bool xmqcli_r58(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /32
-static bool xmqcli_r59(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // plain
-static bool xmqcli_r60(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // first
-static bool xmqcli_r61(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // load
-static bool xmqcli_r62(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /74
-static bool xmqcli_r63(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // name2
-static bool xmqcli_r64(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /73
-static bool xmqcli_r65(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // name1
-static bool xmqcli_r66(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /72
-static bool xmqcli_r67(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /71
-static bool xmqcli_r68(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /70
-static bool xmqcli_r69(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /69
-static bool xmqcli_r70(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /68
-static bool xmqcli_r71(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /67
-static bool xmqcli_r72(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /66
-static bool xmqcli_r73(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /65
-static bool xmqcli_r74(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /64
-static bool xmqcli_r75(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /63
-static bool xmqcli_r76(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /62
-static bool xmqcli_r77(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // name0
-static bool xmqcli_r78(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /61
-static bool xmqcli_r79(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /60
-static bool xmqcli_r80(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /59
-static bool xmqcli_r81(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /58
-static bool xmqcli_r82(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /57
-static bool xmqcli_r83(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /56
-static bool xmqcli_r84(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /55
-static bool xmqcli_r85(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /54
-static bool xmqcli_r86(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /53
-static bool xmqcli_r87(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /52
-static bool xmqcli_r88(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /51
-static bool xmqcli_r89(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /50
-static bool xmqcli_r90(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /49
-static bool xmqcli_r91(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /48
-static bool xmqcli_r92(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /47
-static bool xmqcli_r93(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /46
-static bool xmqcli_r94(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /45
-static bool xmqcli_r95(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /44
-static bool xmqcli_r96(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /43
-static bool xmqcli_r97(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /42
-static bool xmqcli_r98(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /41
-static bool xmqcli_r99(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /40
-static bool xmqcli_r100(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /39
-static bool xmqcli_r101(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // sources
-static bool xmqcli_r102(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /7
-static bool xmqcli_r103(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /6
-static bool xmqcli_r104(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // opts
-static bool xmqcli_r105(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /9
-static bool xmqcli_r106(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /8
-static bool xmqcli_r107(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // option
-static bool xmqcli_r108(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // gother
-static bool xmqcli_r109(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /22
-static bool xmqcli_r110(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /18
-static bool xmqcli_r111(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /21
-static bool xmqcli_r112(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /20
-static bool xmqcli_r113(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /19
-static bool xmqcli_r114(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /17
-static bool xmqcli_r115(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /16
-static bool xmqcli_r116(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /15
-static bool xmqcli_r117(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // gshort
-static bool xmqcli_r118(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /13
-static bool xmqcli_r119(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /14
-static bool xmqcli_r120(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /12
-static bool xmqcli_r121(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /11
-static bool xmqcli_r122(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /10
-static bool xmqcli_r123(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // source
-static bool xmqcli_r124(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // input
-static bool xmqcli_r125(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /30
-static bool xmqcli_r126(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // grammar
-static bool xmqcli_r127(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // ixmlfile
-static bool xmqcli_r128(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /29
-static bool xmqcli_r129(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /28
-static bool xmqcli_r130(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /26
-static bool xmqcli_r131(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /27
-static bool xmqcli_r132(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // gfirst
-static bool xmqcli_r133(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /25
-static bool xmqcli_r134(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /24
-static bool xmqcli_r135(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /23
-static bool xmqcli_r136(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /1
+static bool xmqcli_eat_xmq(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // xmq
+static bool xmqcli_eat_ws(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // ws
+static bool xmqcli_eat_98(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /98
+static bool xmqcli_eat_5(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /5
+static bool xmqcli_eat_4(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /4
+static bool xmqcli_eat_help(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // help
+static bool xmqcli_eat_38(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /38
+static bool xmqcli_eat_37(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /37
+static bool xmqcli_eat_arg(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // arg
+static bool xmqcli_eat_rawvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // rawvalue
+static bool xmqcli_eat_91(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /91
+static bool xmqcli_eat_qvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // qvalue
+static bool xmqcli_eat_95(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /95
+static bool xmqcli_eat_94(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /94
+static bool xmqcli_eat_93(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /93
+static bool xmqcli_eat_s(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // s
+static bool xmqcli_eat_97(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /97
+static bool xmqcli_eat_96(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /96
+static bool xmqcli_eat_88(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /88
+static bool xmqcli_eat_value(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // value
+static bool xmqcli_eat_bare(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // bare
+static bool xmqcli_eat_92(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /92
+static bool xmqcli_eat_helpname(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // helpname
+static bool xmqcli_eat_76(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /76
+static bool xmqcli_eat_3(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /3
+static bool xmqcli_eat_2(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /2
+static bool xmqcli_eat_command(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // command
+static bool xmqcli_eat_xslcommand(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // xslcommand
+static bool xmqcli_eat_xslarg(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // xslarg
+static bool xmqcli_eat_78(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /78
+static bool xmqcli_eat_77(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /77
+static bool xmqcli_eat_fchar(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // fchar
+static bool xmqcli_eat_xsl(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // xsl
+static bool xmqcli_eat_75(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /75
+static bool xmqcli_eat_36(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /36
+static bool xmqcli_eat_35(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /35
+static bool xmqcli_eat_copts(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // copts
+static bool xmqcli_eat_80(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /80
+static bool xmqcli_eat_79(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /79
+static bool xmqcli_eat_coption(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // coption
+static bool xmqcli_eat_cother(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // cother
+static bool xmqcli_eat_87(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /87
+static bool xmqcli_eat_86(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /86
+static bool xmqcli_eat_schar(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // schar
+static bool xmqcli_eat_85(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /85
+static bool xmqcli_eat_cshort(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // cshort
+static bool xmqcli_eat_84(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /84
+static bool xmqcli_eat_83(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /83
+static bool xmqcli_eat_82(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /82
+static bool xmqcli_eat_optvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // optvalue
+static bool xmqcli_eat_90(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /90
+static bool xmqcli_eat_name(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // name
+static bool xmqcli_eat_89(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /89
+static bool xmqcli_eat_81(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /81
+static bool xmqcli_eat_file(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // file
+static bool xmqcli_eat_34(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /34
+static bool xmqcli_eat_33(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /33
+static bool xmqcli_eat_31(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /31
+static bool xmqcli_eat_32(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /32
+static bool xmqcli_eat_plain(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // plain
+static bool xmqcli_eat_first(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // first
+static bool xmqcli_eat_load(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // load
+static bool xmqcli_eat_74(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /74
+static bool xmqcli_eat_name2(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // name2
+static bool xmqcli_eat_73(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /73
+static bool xmqcli_eat_name1(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // name1
+static bool xmqcli_eat_72(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /72
+static bool xmqcli_eat_71(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /71
+static bool xmqcli_eat_70(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /70
+static bool xmqcli_eat_69(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /69
+static bool xmqcli_eat_68(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /68
+static bool xmqcli_eat_67(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /67
+static bool xmqcli_eat_66(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /66
+static bool xmqcli_eat_65(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /65
+static bool xmqcli_eat_64(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /64
+static bool xmqcli_eat_63(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /63
+static bool xmqcli_eat_62(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /62
+static bool xmqcli_eat_name0(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // name0
+static bool xmqcli_eat_61(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /61
+static bool xmqcli_eat_60(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /60
+static bool xmqcli_eat_59(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /59
+static bool xmqcli_eat_58(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /58
+static bool xmqcli_eat_57(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /57
+static bool xmqcli_eat_56(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /56
+static bool xmqcli_eat_55(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /55
+static bool xmqcli_eat_54(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /54
+static bool xmqcli_eat_53(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /53
+static bool xmqcli_eat_52(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /52
+static bool xmqcli_eat_51(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /51
+static bool xmqcli_eat_50(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /50
+static bool xmqcli_eat_49(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /49
+static bool xmqcli_eat_48(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /48
+static bool xmqcli_eat_47(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /47
+static bool xmqcli_eat_46(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /46
+static bool xmqcli_eat_45(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /45
+static bool xmqcli_eat_44(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /44
+static bool xmqcli_eat_43(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /43
+static bool xmqcli_eat_42(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /42
+static bool xmqcli_eat_41(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /41
+static bool xmqcli_eat_40(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /40
+static bool xmqcli_eat_39(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /39
+static bool xmqcli_eat_sources(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // sources
+static bool xmqcli_eat_7(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /7
+static bool xmqcli_eat_6(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /6
+static bool xmqcli_eat_opts(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // opts
+static bool xmqcli_eat_9(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /9
+static bool xmqcli_eat_8(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /8
+static bool xmqcli_eat_option(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // option
+static bool xmqcli_eat_gother(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // gother
+static bool xmqcli_eat_22(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /22
+static bool xmqcli_eat_18(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /18
+static bool xmqcli_eat_21(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /21
+static bool xmqcli_eat_20(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /20
+static bool xmqcli_eat_19(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /19
+static bool xmqcli_eat_17(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /17
+static bool xmqcli_eat_16(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /16
+static bool xmqcli_eat_15(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /15
+static bool xmqcli_eat_gshort(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // gshort
+static bool xmqcli_eat_13(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /13
+static bool xmqcli_eat_14(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /14
+static bool xmqcli_eat_12(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /12
+static bool xmqcli_eat_11(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /11
+static bool xmqcli_eat_10(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /10
+static bool xmqcli_eat_source(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // source
+static bool xmqcli_eat_input(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // input
+static bool xmqcli_eat_30(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /30
+static bool xmqcli_eat_grammar(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // grammar
+static bool xmqcli_eat_ixmlfile(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // ixmlfile
+static bool xmqcli_eat_29(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /29
+static bool xmqcli_eat_28(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /28
+static bool xmqcli_eat_26(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /26
+static bool xmqcli_eat_27(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /27
+static bool xmqcli_eat_gfirst(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // gfirst
+static bool xmqcli_eat_25(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /25
+static bool xmqcli_eat_24(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /24
+static bool xmqcli_eat_23(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /23
+static bool xmqcli_eat_1(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /1
 
 static const int xmqcli_d2_0[] = {
     9,10,1,13,13,1,32,32,1,120,120,2,1114112,1114112,3,
@@ -7703,26 +7703,26 @@ static int xmqcli_predict134(xmqcli_Parser *p)
 }
 
 // xmq
-static bool xmqcli_r0(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_xmq(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r1(p, elem, attr)) return false; // ws
-    if (!xmqcli_r136(p, elem, attr)) return false; // /1
-    if (!xmqcli_r101(p, elem, attr)) return false; // sources
-    if (!xmqcli_r24(p, elem, attr)) return false; // /3
-    if (!xmqcli_r3(p, elem, attr)) return false; // /5
-    if (!xmqcli_r1(p, elem, attr)) return false; // ws
+    if (!xmqcli_eat_ws(p, elem, attr)) return false; // ws
+    if (!xmqcli_eat_1(p, elem, attr)) return false; // /1
+    if (!xmqcli_eat_sources(p, elem, attr)) return false; // sources
+    if (!xmqcli_eat_3(p, elem, attr)) return false; // /3
+    if (!xmqcli_eat_5(p, elem, attr)) return false; // /5
+    if (!xmqcli_eat_ws(p, elem, attr)) return false; // ws
     return true;
 }
 
 // ws
-static bool xmqcli_r1(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_ws(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r2(p, elem, attr)) return false; // /98
+    if (!xmqcli_eat_98(p, elem, attr)) return false; // /98
     return true;
 }
 
 // /98
-static bool xmqcli_r2(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_98(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     // Greedy loop over a character table.
     for (;;)
@@ -7739,13 +7739,13 @@ static bool xmqcli_r2(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /5
-static bool xmqcli_r3(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_5(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict3(p))
     {
     case 0:
     {
-        if (!xmqcli_r4(p, elem, attr)) return false; // /4
+        if (!xmqcli_eat_4(p, elem, attr)) return false; // /4
         return true;
     }
     case 1:
@@ -7758,28 +7758,28 @@ static bool xmqcli_r3(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /4
-static bool xmqcli_r4(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_4(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r15(p, elem, attr)) return false; // s
-    if (attr) { if (!xmqcli_r5(p, elem, attr)) return false; }
+    if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+    if (attr) { if (!xmqcli_eat_help(p, elem, attr)) return false; }
     else
     {
         xmqcli_flush(p);
         void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "command") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "command");
-        if (!xmqcli_r5(p, n, NULL)) return false;
+        if (!xmqcli_eat_help(p, n, NULL)) return false;
     }
     return true;
 }
 
 // help
-static bool xmqcli_r5(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_help(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (attr) { if (!xmqcli_r22(p, elem, attr)) return false; }
+    if (attr) { if (!xmqcli_eat_helpname(p, elem, attr)) return false; }
     else
     {
         xmqcli_Buf v = {0};
         xmqcli_buf_add(&v, "", 0);
-        if (!xmqcli_r22(p, elem, &v)) { free(v.data); return false; }
+        if (!xmqcli_eat_helpname(p, elem, &v)) { free(v.data); return false; }
         if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
         {
             free(v.data);
@@ -7788,18 +7788,18 @@ static bool xmqcli_r5(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
         free(v.data);
     }
-    if (!xmqcli_r6(p, elem, attr)) return false; // /38
+    if (!xmqcli_eat_38(p, elem, attr)) return false; // /38
     return true;
 }
 
 // /38
-static bool xmqcli_r6(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_38(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict6(p))
     {
     case 0:
     {
-        if (!xmqcli_r7(p, elem, attr)) return false; // /37
+        if (!xmqcli_eat_37(p, elem, attr)) return false; // /37
         return true;
     }
     case 1:
@@ -7812,34 +7812,34 @@ static bool xmqcli_r6(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /37
-static bool xmqcli_r7(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_37(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r15(p, elem, attr)) return false; // s
-    if (attr) { if (!xmqcli_r8(p, elem, attr)) return false; }
+    if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+    if (attr) { if (!xmqcli_eat_arg(p, elem, attr)) return false; }
     else
     {
         xmqcli_flush(p);
         void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "arg") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "arg");
-        if (!xmqcli_r8(p, n, NULL)) return false;
+        if (!xmqcli_eat_arg(p, n, NULL)) return false;
     }
     return true;
 }
 
 // arg
-static bool xmqcli_r8(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_arg(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict8(p))
     {
     case 0:
     {
-        if (!xmqcli_r19(p, elem, attr)) return false; // value
+        if (!xmqcli_eat_value(p, elem, attr)) return false; // value
         return true;
     }
     case 1:
     {
-        if (!xmqcli_r18(p, elem, attr)) return false; // /88
-        if (!xmqcli_r15(p, elem, attr)) return false; // s
-        if (!xmqcli_r9(p, elem, attr)) return false; // rawvalue
+        if (!xmqcli_eat_88(p, elem, attr)) return false; // /88
+        if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+        if (!xmqcli_eat_rawvalue(p, elem, attr)) return false; // rawvalue
         return true;
     }
     default:
@@ -7848,13 +7848,13 @@ static bool xmqcli_r8(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // rawvalue
-static bool xmqcli_r9(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_rawvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict9(p))
     {
     case 0:
     {
-        if (!xmqcli_r11(p, elem, attr)) return false; // qvalue
+        if (!xmqcli_eat_qvalue(p, elem, attr)) return false; // qvalue
         return true;
     }
     case 1:
@@ -7862,7 +7862,7 @@ static bool xmqcli_r9(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (!xmqcli_inset(xmqcli_set_2, 7, xmqcli_ascii_2, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "rawvalue", "not #9-#a, #d, space, '\042', #27, #d800-#dfff");
         xmqcli_char(p, elem, attr, p->in[p->pos]);
         p->pos++;
-        if (!xmqcli_r10(p, elem, attr)) return false; // /91
+        if (!xmqcli_eat_91(p, elem, attr)) return false; // /91
         return true;
     }
     default:
@@ -7871,7 +7871,7 @@ static bool xmqcli_r9(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /91
-static bool xmqcli_r10(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_91(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     // Greedy loop over a character table.
     for (;;)
@@ -7889,7 +7889,7 @@ static bool xmqcli_r10(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // qvalue
-static bool xmqcli_r11(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_qvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict11(p))
     {
@@ -7897,7 +7897,7 @@ static bool xmqcli_r11(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     {
         if (!xmqcli_inset(xmqcli_set_5, 1, xmqcli_ascii_5, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "qvalue", "'\042'");
         p->pos++;
-        if (!xmqcli_r13(p, elem, attr)) return false; // /94
+        if (!xmqcli_eat_94(p, elem, attr)) return false; // /94
         if (!xmqcli_inset(xmqcli_set_5, 1, xmqcli_ascii_5, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "qvalue", "'\042'");
         p->pos++;
         return true;
@@ -7906,7 +7906,7 @@ static bool xmqcli_r11(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     {
         if (!xmqcli_inset(xmqcli_set_6, 1, xmqcli_ascii_6, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "qvalue", "#27");
         p->pos++;
-        if (!xmqcli_r12(p, elem, attr)) return false; // /95
+        if (!xmqcli_eat_95(p, elem, attr)) return false; // /95
         if (!xmqcli_inset(xmqcli_set_6, 1, xmqcli_ascii_6, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "qvalue", "#27");
         p->pos++;
         return true;
@@ -7917,7 +7917,7 @@ static bool xmqcli_r11(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /95
-static bool xmqcli_r12(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_95(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     // Greedy loop over a character table.
     for (;;)
@@ -7935,14 +7935,14 @@ static bool xmqcli_r12(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /94
-static bool xmqcli_r13(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_94(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict13(p))
     {
     case 0:
     {
-        if (!xmqcli_r14(p, elem, attr)) return false; // /93
+        if (!xmqcli_eat_93(p, elem, attr)) return false; // /93
         goto start; // /94
     }
     case 1:
@@ -7955,7 +7955,7 @@ start:
 }
 
 // /93
-static bool xmqcli_r14(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_93(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict14(p))
     {
@@ -7981,23 +7981,23 @@ static bool xmqcli_r14(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // s
-static bool xmqcli_r15(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_s(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r16(p, elem, attr)) return false; // /97
+    if (!xmqcli_eat_97(p, elem, attr)) return false; // /97
     return true;
 }
 
 // /97
-static bool xmqcli_r16(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_97(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_0, 3, xmqcli_ascii_0, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "s", "whitespace");
     p->pos++;
-    if (!xmqcli_r17(p, elem, attr)) return false; // /96
+    if (!xmqcli_eat_96(p, elem, attr)) return false; // /96
     return true;
 }
 
 // /96
-static bool xmqcli_r17(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_96(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     // Greedy loop over a character table.
     for (;;)
@@ -8014,7 +8014,7 @@ static bool xmqcli_r17(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /88
-static bool xmqcli_r18(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_88(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "arg", "'-'");
     p->pos++;
@@ -8024,18 +8024,18 @@ static bool xmqcli_r18(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // value
-static bool xmqcli_r19(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_value(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict19(p))
     {
     case 0:
     {
-        if (!xmqcli_r11(p, elem, attr)) return false; // qvalue
+        if (!xmqcli_eat_qvalue(p, elem, attr)) return false; // qvalue
         return true;
     }
     case 1:
     {
-        if (!xmqcli_r20(p, elem, attr)) return false; // bare
+        if (!xmqcli_eat_bare(p, elem, attr)) return false; // bare
         return true;
     }
     default:
@@ -8044,17 +8044,17 @@ static bool xmqcli_r19(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // bare
-static bool xmqcli_r20(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_bare(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_12, 8, xmqcli_ascii_12, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "bare", "not #9-#a, #d, space, '\042', #27, '-', #d800-#dfff");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_r21(p, elem, attr)) return false; // /92
+    if (!xmqcli_eat_92(p, elem, attr)) return false; // /92
     return true;
 }
 
 // /92
-static bool xmqcli_r21(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_92(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     // Greedy loop over a character table.
     for (;;)
@@ -8072,14 +8072,14 @@ static bool xmqcli_r21(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // helpname
-static bool xmqcli_r22(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_helpname(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r23(p, elem, attr)) return false; // /76
+    if (!xmqcli_eat_76(p, elem, attr)) return false; // /76
     return true;
 }
 
 // /76
-static bool xmqcli_r23(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_76(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "helpname", "'h'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -8097,14 +8097,14 @@ static bool xmqcli_r23(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /3
-static bool xmqcli_r24(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_3(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict24(p))
     {
     case 0:
     {
-        if (!xmqcli_r25(p, elem, attr)) return false; // /2
+        if (!xmqcli_eat_2(p, elem, attr)) return false; // /2
         goto start; // /3
     }
     case 1:
@@ -8117,32 +8117,32 @@ start:
 }
 
 // /2
-static bool xmqcli_r25(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_2(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r15(p, elem, attr)) return false; // s
-    if (attr) { if (!xmqcli_r26(p, elem, attr)) return false; }
+    if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+    if (attr) { if (!xmqcli_eat_command(p, elem, attr)) return false; }
     else
     {
         xmqcli_flush(p);
         void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "command") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "command");
-        if (!xmqcli_r26(p, n, NULL)) return false;
+        if (!xmqcli_eat_command(p, n, NULL)) return false;
     }
     return true;
 }
 
 // command
-static bool xmqcli_r26(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_command(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict26(p))
     {
     case 0:
     {
-        if (attr) { if (!xmqcli_r77(p, elem, attr)) return false; }
+        if (attr) { if (!xmqcli_eat_name0(p, elem, attr)) return false; }
         else
         {
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
-            if (!xmqcli_r77(p, elem, &v)) { free(v.data); return false; }
+            if (!xmqcli_eat_name0(p, elem, &v)) { free(v.data); return false; }
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
@@ -8151,17 +8151,17 @@ static bool xmqcli_r26(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
-        if (!xmqcli_r36(p, elem, attr)) return false; // copts
+        if (!xmqcli_eat_copts(p, elem, attr)) return false; // copts
         return true;
     }
     case 1:
     {
-        if (attr) { if (!xmqcli_r65(p, elem, attr)) return false; }
+        if (attr) { if (!xmqcli_eat_name1(p, elem, attr)) return false; }
         else
         {
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
-            if (!xmqcli_r65(p, elem, &v)) { free(v.data); return false; }
+            if (!xmqcli_eat_name1(p, elem, &v)) { free(v.data); return false; }
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
@@ -8170,26 +8170,26 @@ static bool xmqcli_r26(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
-        if (!xmqcli_r36(p, elem, attr)) return false; // copts
-        if (!xmqcli_r15(p, elem, attr)) return false; // s
-        if (attr) { if (!xmqcli_r8(p, elem, attr)) return false; }
+        if (!xmqcli_eat_copts(p, elem, attr)) return false; // copts
+        if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+        if (attr) { if (!xmqcli_eat_arg(p, elem, attr)) return false; }
         else
         {
             xmqcli_flush(p);
             void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "arg") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "arg");
-            if (!xmqcli_r8(p, n, NULL)) return false;
+            if (!xmqcli_eat_arg(p, n, NULL)) return false;
         }
-        if (!xmqcli_r36(p, elem, attr)) return false; // copts
+        if (!xmqcli_eat_copts(p, elem, attr)) return false; // copts
         return true;
     }
     case 2:
     {
-        if (attr) { if (!xmqcli_r63(p, elem, attr)) return false; }
+        if (attr) { if (!xmqcli_eat_name2(p, elem, attr)) return false; }
         else
         {
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
-            if (!xmqcli_r63(p, elem, &v)) { free(v.data); return false; }
+            if (!xmqcli_eat_name2(p, elem, &v)) { free(v.data); return false; }
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
@@ -8198,35 +8198,35 @@ static bool xmqcli_r26(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
-        if (!xmqcli_r36(p, elem, attr)) return false; // copts
-        if (!xmqcli_r15(p, elem, attr)) return false; // s
-        if (attr) { if (!xmqcli_r8(p, elem, attr)) return false; }
+        if (!xmqcli_eat_copts(p, elem, attr)) return false; // copts
+        if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+        if (attr) { if (!xmqcli_eat_arg(p, elem, attr)) return false; }
         else
         {
             xmqcli_flush(p);
             void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "arg") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "arg");
-            if (!xmqcli_r8(p, n, NULL)) return false;
+            if (!xmqcli_eat_arg(p, n, NULL)) return false;
         }
-        if (!xmqcli_r36(p, elem, attr)) return false; // copts
-        if (!xmqcli_r15(p, elem, attr)) return false; // s
-        if (attr) { if (!xmqcli_r8(p, elem, attr)) return false; }
+        if (!xmqcli_eat_copts(p, elem, attr)) return false; // copts
+        if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+        if (attr) { if (!xmqcli_eat_arg(p, elem, attr)) return false; }
         else
         {
             xmqcli_flush(p);
             void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "arg") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "arg");
-            if (!xmqcli_r8(p, n, NULL)) return false;
+            if (!xmqcli_eat_arg(p, n, NULL)) return false;
         }
-        if (!xmqcli_r36(p, elem, attr)) return false; // copts
+        if (!xmqcli_eat_copts(p, elem, attr)) return false; // copts
         return true;
     }
     case 3:
     {
-        if (attr) { if (!xmqcli_r61(p, elem, attr)) return false; }
+        if (attr) { if (!xmqcli_eat_load(p, elem, attr)) return false; }
         else
         {
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
-            if (!xmqcli_r61(p, elem, &v)) { free(v.data); return false; }
+            if (!xmqcli_eat_load(p, elem, &v)) { free(v.data); return false; }
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
@@ -8235,13 +8235,13 @@ static bool xmqcli_r26(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
-        if (!xmqcli_r36(p, elem, attr)) return false; // copts
-        if (!xmqcli_r34(p, elem, attr)) return false; // /36
+        if (!xmqcli_eat_copts(p, elem, attr)) return false; // copts
+        if (!xmqcli_eat_36(p, elem, attr)) return false; // /36
         return true;
     }
     case 4:
     {
-        if (!xmqcli_r27(p, elem, attr)) return false; // xslcommand
+        if (!xmqcli_eat_xslcommand(p, elem, attr)) return false; // xslcommand
         return true;
     }
     default:
@@ -8250,14 +8250,14 @@ static bool xmqcli_r26(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // xslcommand
-static bool xmqcli_r27(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_xslcommand(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (attr) { if (!xmqcli_r32(p, elem, attr)) return false; }
+    if (attr) { if (!xmqcli_eat_xsl(p, elem, attr)) return false; }
     else
     {
         xmqcli_Buf v = {0};
         xmqcli_buf_add(&v, "", 0);
-        if (!xmqcli_r32(p, elem, &v)) { free(v.data); return false; }
+        if (!xmqcli_eat_xsl(p, elem, &v)) { free(v.data); return false; }
         if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
         {
             free(v.data);
@@ -8268,40 +8268,40 @@ static bool xmqcli_r27(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
     if (!xmqcli_inset(xmqcli_set_17, 1, xmqcli_ascii_17, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "xslcommand", "':'");
     p->pos++;
-    if (attr) { if (!xmqcli_r28(p, elem, attr)) return false; }
+    if (attr) { if (!xmqcli_eat_xslarg(p, elem, attr)) return false; }
     else
     {
         xmqcli_flush(p);
         void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "arg") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "arg");
-        if (!xmqcli_r28(p, n, NULL)) return false;
+        if (!xmqcli_eat_xslarg(p, n, NULL)) return false;
     }
     return true;
 }
 
 // xslarg
-static bool xmqcli_r28(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_xslarg(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r29(p, elem, attr)) return false; // /78
+    if (!xmqcli_eat_78(p, elem, attr)) return false; // /78
     return true;
 }
 
 // /78
-static bool xmqcli_r29(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_78(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r31(p, elem, attr)) return false; // fchar
-    if (!xmqcli_r30(p, elem, attr)) return false; // /77
+    if (!xmqcli_eat_fchar(p, elem, attr)) return false; // fchar
+    if (!xmqcli_eat_77(p, elem, attr)) return false; // /77
     return true;
 }
 
 // /77
-static bool xmqcli_r30(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_77(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict30(p))
     {
     case 0:
     {
-        if (!xmqcli_r31(p, elem, attr)) return false; // fchar
+        if (!xmqcli_eat_fchar(p, elem, attr)) return false; // fchar
         goto start; // /77
     }
     case 1:
@@ -8314,7 +8314,7 @@ start:
 }
 
 // fchar
-static bool xmqcli_r31(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_fchar(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_3, 5, xmqcli_ascii_3, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "fchar", "not #9-#a, #d, space, #d800-#dfff");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -8323,14 +8323,14 @@ static bool xmqcli_r31(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // xsl
-static bool xmqcli_r32(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_xsl(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r33(p, elem, attr)) return false; // /75
+    if (!xmqcli_eat_75(p, elem, attr)) return false; // /75
     return true;
 }
 
 // /75
-static bool xmqcli_r33(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_75(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_18, 1, xmqcli_ascii_18, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "xsl", "'x'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -8345,13 +8345,13 @@ static bool xmqcli_r33(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /36
-static bool xmqcli_r34(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_36(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict34(p))
     {
     case 0:
     {
-        if (!xmqcli_r35(p, elem, attr)) return false; // /35
+        if (!xmqcli_eat_35(p, elem, attr)) return false; // /35
         return true;
     }
     case 1:
@@ -8364,36 +8364,36 @@ static bool xmqcli_r34(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /35
-static bool xmqcli_r35(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_35(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r15(p, elem, attr)) return false; // s
-    if (attr) { if (!xmqcli_r54(p, elem, attr)) return false; }
+    if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+    if (attr) { if (!xmqcli_eat_file(p, elem, attr)) return false; }
     else
     {
         xmqcli_flush(p);
         void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "arg") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "arg");
-        if (!xmqcli_r54(p, n, NULL)) return false;
+        if (!xmqcli_eat_file(p, n, NULL)) return false;
     }
-    if (!xmqcli_r36(p, elem, attr)) return false; // copts
+    if (!xmqcli_eat_copts(p, elem, attr)) return false; // copts
     return true;
 }
 
 // copts
-static bool xmqcli_r36(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_copts(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r37(p, elem, attr)) return false; // /80
+    if (!xmqcli_eat_80(p, elem, attr)) return false; // /80
     return true;
 }
 
 // /80
-static bool xmqcli_r37(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_80(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict37(p))
     {
     case 0:
     {
-        if (!xmqcli_r38(p, elem, attr)) return false; // /79
+        if (!xmqcli_eat_79(p, elem, attr)) return false; // /79
         goto start; // /80
     }
     case 1:
@@ -8406,33 +8406,33 @@ start:
 }
 
 // /79
-static bool xmqcli_r38(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_79(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r15(p, elem, attr)) return false; // s
-    if (attr) { if (!xmqcli_r39(p, elem, attr)) return false; }
+    if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+    if (attr) { if (!xmqcli_eat_coption(p, elem, attr)) return false; }
     else
     {
         xmqcli_flush(p);
         void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "option") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "option");
-        if (!xmqcli_r39(p, n, NULL)) return false;
+        if (!xmqcli_eat_coption(p, n, NULL)) return false;
     }
     return true;
 }
 
 // coption
-static bool xmqcli_r39(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_coption(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict39(p))
     {
     case 0:
     {
-        if (!xmqcli_r53(p, elem, attr)) return false; // /81
-        if (attr) { if (!xmqcli_r51(p, elem, attr)) return false; }
+        if (!xmqcli_eat_81(p, elem, attr)) return false; // /81
+        if (attr) { if (!xmqcli_eat_name(p, elem, attr)) return false; }
         else
         {
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
-            if (!xmqcli_r51(p, elem, &v)) { free(v.data); return false; }
+            if (!xmqcli_eat_name(p, elem, &v)) { free(v.data); return false; }
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
@@ -8441,17 +8441,17 @@ static bool xmqcli_r39(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
-        if (!xmqcli_r47(p, elem, attr)) return false; // /83
+        if (!xmqcli_eat_83(p, elem, attr)) return false; // /83
         return true;
     }
     case 1:
     {
-        if (attr) { if (!xmqcli_r45(p, elem, attr)) return false; }
+        if (attr) { if (!xmqcli_eat_cshort(p, elem, attr)) return false; }
         else
         {
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
-            if (!xmqcli_r45(p, elem, &v)) { free(v.data); return false; }
+            if (!xmqcli_eat_cshort(p, elem, &v)) { free(v.data); return false; }
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
@@ -8466,12 +8466,12 @@ static bool xmqcli_r39(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     {
         if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "coption", "'-'");
         p->pos++;
-        if (attr) { if (!xmqcli_r40(p, elem, attr)) return false; }
+        if (attr) { if (!xmqcli_eat_cother(p, elem, attr)) return false; }
         else
         {
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
-            if (!xmqcli_r40(p, elem, &v)) { free(v.data); return false; }
+            if (!xmqcli_eat_cother(p, elem, &v)) { free(v.data); return false; }
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
@@ -8488,7 +8488,7 @@ static bool xmqcli_r39(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // cother
-static bool xmqcli_r40(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_cother(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict40(p))
     {
@@ -8497,7 +8497,7 @@ static bool xmqcli_r40(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (!xmqcli_inset(xmqcli_set_20, 8, xmqcli_ascii_20, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "cother", "not #9-#a, #d, space, '-', 'c', 'n'-'p', #d800-#dfff");
         xmqcli_char(p, elem, attr, p->in[p->pos]);
         p->pos++;
-        if (!xmqcli_r44(p, elem, attr)) return false; // /85
+        if (!xmqcli_eat_85(p, elem, attr)) return false; // /85
         return true;
     }
     case 1:
@@ -8505,7 +8505,7 @@ static bool xmqcli_r40(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (!xmqcli_inset(xmqcli_set_21, 2, xmqcli_ascii_21, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "cother", "'c', 'n'-'p'");
         xmqcli_char(p, elem, attr, p->in[p->pos]);
         p->pos++;
-        if (!xmqcli_r41(p, elem, attr)) return false; // /87
+        if (!xmqcli_eat_87(p, elem, attr)) return false; // /87
         return true;
     }
     default:
@@ -8514,22 +8514,22 @@ static bool xmqcli_r40(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /87
-static bool xmqcli_r41(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_87(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r43(p, elem, attr)) return false; // schar
-    if (!xmqcli_r42(p, elem, attr)) return false; // /86
+    if (!xmqcli_eat_schar(p, elem, attr)) return false; // schar
+    if (!xmqcli_eat_86(p, elem, attr)) return false; // /86
     return true;
 }
 
 // /86
-static bool xmqcli_r42(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_86(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict42(p))
     {
     case 0:
     {
-        if (!xmqcli_r43(p, elem, attr)) return false; // schar
+        if (!xmqcli_eat_schar(p, elem, attr)) return false; // schar
         goto start; // /86
     }
     case 1:
@@ -8542,7 +8542,7 @@ start:
 }
 
 // schar
-static bool xmqcli_r43(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_schar(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_3, 5, xmqcli_ascii_3, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "schar", "not #9-#a, #d, space, #d800-#dfff");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -8551,14 +8551,14 @@ static bool xmqcli_r43(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /85
-static bool xmqcli_r44(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_85(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict44(p))
     {
     case 0:
     {
-        if (!xmqcli_r43(p, elem, attr)) return false; // schar
+        if (!xmqcli_eat_schar(p, elem, attr)) return false; // schar
         goto start; // /85
     }
     case 1:
@@ -8571,16 +8571,16 @@ start:
 }
 
 // cshort
-static bool xmqcli_r45(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_cshort(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "cshort", "'-'");
     p->pos++;
-    if (!xmqcli_r46(p, elem, attr)) return false; // /84
+    if (!xmqcli_eat_84(p, elem, attr)) return false; // /84
     return true;
 }
 
 // /84
-static bool xmqcli_r46(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_84(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict46(p))
     {
@@ -8618,13 +8618,13 @@ static bool xmqcli_r46(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /83
-static bool xmqcli_r47(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_83(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict47(p))
     {
     case 0:
     {
-        if (!xmqcli_r48(p, elem, attr)) return false; // /82
+        if (!xmqcli_eat_82(p, elem, attr)) return false; // /82
         return true;
     }
     case 1:
@@ -8637,16 +8637,16 @@ static bool xmqcli_r47(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /82
-static bool xmqcli_r48(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_82(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_25, 1, xmqcli_ascii_25, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "coption", "'='");
     p->pos++;
-    if (attr) { if (!xmqcli_r49(p, elem, attr)) return false; }
+    if (attr) { if (!xmqcli_eat_optvalue(p, elem, attr)) return false; }
     else
     {
         xmqcli_Buf v = {0};
         xmqcli_buf_add(&v, "", 0);
-        if (!xmqcli_r49(p, elem, &v)) { free(v.data); return false; }
+        if (!xmqcli_eat_optvalue(p, elem, &v)) { free(v.data); return false; }
         if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "value"))
         {
             free(v.data);
@@ -8659,18 +8659,18 @@ static bool xmqcli_r48(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // optvalue
-static bool xmqcli_r49(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_optvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict49(p))
     {
     case 0:
     {
-        if (!xmqcli_r11(p, elem, attr)) return false; // qvalue
+        if (!xmqcli_eat_qvalue(p, elem, attr)) return false; // qvalue
         return true;
     }
     case 1:
     {
-        if (!xmqcli_r50(p, elem, attr)) return false; // /90
+        if (!xmqcli_eat_90(p, elem, attr)) return false; // /90
         return true;
     }
     default:
@@ -8679,7 +8679,7 @@ static bool xmqcli_r49(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /90
-static bool xmqcli_r50(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_90(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     // Greedy loop over a character table.
     for (;;)
@@ -8697,17 +8697,17 @@ static bool xmqcli_r50(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // name
-static bool xmqcli_r51(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_name(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_26, 2, xmqcli_ascii_26, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name", "'A'-'Z', 'a'-'z'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_r52(p, elem, attr)) return false; // /89
+    if (!xmqcli_eat_89(p, elem, attr)) return false; // /89
     return true;
 }
 
 // /89
-static bool xmqcli_r52(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_89(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     // Greedy loop over a character table.
     for (;;)
@@ -8725,7 +8725,7 @@ static bool xmqcli_r52(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /81
-static bool xmqcli_r53(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_81(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "coption", "'-'");
     p->pos++;
@@ -8735,13 +8735,13 @@ static bool xmqcli_r53(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // file
-static bool xmqcli_r54(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_file(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict54(p))
     {
     case 0:
     {
-        if (!xmqcli_r11(p, elem, attr)) return false; // qvalue
+        if (!xmqcli_eat_qvalue(p, elem, attr)) return false; // qvalue
         return true;
     }
     case 1:
@@ -8753,11 +8753,11 @@ static bool xmqcli_r54(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
     case 2:
     {
-        if (!xmqcli_r56(p, elem, attr)) return false; // /33
+        if (!xmqcli_eat_33(p, elem, attr)) return false; // /33
         if (!xmqcli_inset(xmqcli_set_29, 2, xmqcli_ascii_29, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "file", "'.'-'/', ':'");
         xmqcli_char(p, elem, attr, p->in[p->pos]);
         p->pos++;
-        if (!xmqcli_r55(p, elem, attr)) return false; // /34
+        if (!xmqcli_eat_34(p, elem, attr)) return false; // /34
         return true;
     }
     default:
@@ -8766,14 +8766,14 @@ static bool xmqcli_r54(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /34
-static bool xmqcli_r55(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_34(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict55(p))
     {
     case 0:
     {
-        if (!xmqcli_r31(p, elem, attr)) return false; // fchar
+        if (!xmqcli_eat_fchar(p, elem, attr)) return false; // fchar
         goto start; // /34
     }
     case 1:
@@ -8786,13 +8786,13 @@ start:
 }
 
 // /33
-static bool xmqcli_r56(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_33(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict56(p))
     {
     case 0:
     {
-        if (!xmqcli_r57(p, elem, attr)) return false; // /31
+        if (!xmqcli_eat_31(p, elem, attr)) return false; // /31
         return true;
     }
     case 1:
@@ -8805,22 +8805,22 @@ static bool xmqcli_r56(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /31
-static bool xmqcli_r57(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_31(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r60(p, elem, attr)) return false; // first
-    if (!xmqcli_r58(p, elem, attr)) return false; // /32
+    if (!xmqcli_eat_first(p, elem, attr)) return false; // first
+    if (!xmqcli_eat_32(p, elem, attr)) return false; // /32
     return true;
 }
 
 // /32
-static bool xmqcli_r58(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_32(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict58(p))
     {
     case 0:
     {
-        if (!xmqcli_r59(p, elem, attr)) return false; // plain
+        if (!xmqcli_eat_plain(p, elem, attr)) return false; // plain
         goto start; // /32
     }
     case 1:
@@ -8833,7 +8833,7 @@ start:
 }
 
 // plain
-static bool xmqcli_r59(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_plain(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_30, 7, xmqcli_ascii_30, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "plain", "not #9-#a, #d, space, '.'-'/', ':', #d800-#dfff");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -8842,7 +8842,7 @@ static bool xmqcli_r59(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // first
-static bool xmqcli_r60(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_first(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_31, 9, xmqcli_ascii_31, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "first", "not #9-#a, #d, space, '\042', #27, '-'-'/', ':', #d800-#dfff");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -8851,14 +8851,14 @@ static bool xmqcli_r60(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // load
-static bool xmqcli_r61(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_load(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r62(p, elem, attr)) return false; // /74
+    if (!xmqcli_eat_74(p, elem, attr)) return false; // /74
     return true;
 }
 
 // /74
-static bool xmqcli_r62(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_74(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "load", "'l'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -8876,14 +8876,14 @@ static bool xmqcli_r62(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // name2
-static bool xmqcli_r63(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_name2(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r64(p, elem, attr)) return false; // /73
+    if (!xmqcli_eat_73(p, elem, attr)) return false; // /73
     return true;
 }
 
 // /73
-static bool xmqcli_r64(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_73(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name2", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -8931,63 +8931,63 @@ static bool xmqcli_r64(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // name1
-static bool xmqcli_r65(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_name1(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict65(p))
     {
     case 0:
     {
-        if (!xmqcli_r76(p, elem, attr)) return false; // /62
+        if (!xmqcli_eat_62(p, elem, attr)) return false; // /62
         return true;
     }
     case 1:
     {
-        if (!xmqcli_r75(p, elem, attr)) return false; // /63
+        if (!xmqcli_eat_63(p, elem, attr)) return false; // /63
         return true;
     }
     case 2:
     {
-        if (!xmqcli_r74(p, elem, attr)) return false; // /64
+        if (!xmqcli_eat_64(p, elem, attr)) return false; // /64
         return true;
     }
     case 3:
     {
-        if (!xmqcli_r73(p, elem, attr)) return false; // /65
+        if (!xmqcli_eat_65(p, elem, attr)) return false; // /65
         return true;
     }
     case 4:
     {
-        if (!xmqcli_r72(p, elem, attr)) return false; // /66
+        if (!xmqcli_eat_66(p, elem, attr)) return false; // /66
         return true;
     }
     case 5:
     {
-        if (!xmqcli_r71(p, elem, attr)) return false; // /67
+        if (!xmqcli_eat_67(p, elem, attr)) return false; // /67
         return true;
     }
     case 6:
     {
-        if (!xmqcli_r70(p, elem, attr)) return false; // /68
+        if (!xmqcli_eat_68(p, elem, attr)) return false; // /68
         return true;
     }
     case 7:
     {
-        if (!xmqcli_r69(p, elem, attr)) return false; // /69
+        if (!xmqcli_eat_69(p, elem, attr)) return false; // /69
         return true;
     }
     case 8:
     {
-        if (!xmqcli_r68(p, elem, attr)) return false; // /70
+        if (!xmqcli_eat_70(p, elem, attr)) return false; // /70
         return true;
     }
     case 9:
     {
-        if (!xmqcli_r67(p, elem, attr)) return false; // /71
+        if (!xmqcli_eat_71(p, elem, attr)) return false; // /71
         return true;
     }
     case 10:
     {
-        if (!xmqcli_r66(p, elem, attr)) return false; // /72
+        if (!xmqcli_eat_72(p, elem, attr)) return false; // /72
         return true;
     }
     default:
@@ -8996,7 +8996,7 @@ static bool xmqcli_r65(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /72
-static bool xmqcli_r66(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_72(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'s'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9053,7 +9053,7 @@ static bool xmqcli_r66(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /71
-static bool xmqcli_r67(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_71(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9080,7 +9080,7 @@ static bool xmqcli_r67(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /70
-static bool xmqcli_r68(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_70(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'s'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9107,7 +9107,7 @@ static bool xmqcli_r68(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /69
-static bool xmqcli_r69(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_69(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_40, 1, xmqcli_ascii_40, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'v'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9137,7 +9137,7 @@ static bool xmqcli_r69(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /68
-static bool xmqcli_r70(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_68(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9170,7 +9170,7 @@ static bool xmqcli_r70(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /67
-static bool xmqcli_r71(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_67(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_41, 1, xmqcli_ascii_41, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'f'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9200,7 +9200,7 @@ static bool xmqcli_r71(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /66
-static bool xmqcli_r72(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_66(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'s'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9224,7 +9224,7 @@ static bool xmqcli_r72(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /65
-static bool xmqcli_r73(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_65(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_33, 1, xmqcli_ascii_33, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'d'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9269,7 +9269,7 @@ static bool xmqcli_r73(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /64
-static bool xmqcli_r74(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_64(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_33, 1, xmqcli_ascii_33, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'d'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9293,7 +9293,7 @@ static bool xmqcli_r74(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /63
-static bool xmqcli_r75(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_63(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'a'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9323,7 +9323,7 @@ static bool xmqcli_r75(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /62
-static bool xmqcli_r76(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_62(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'a'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9338,123 +9338,123 @@ static bool xmqcli_r76(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // name0
-static bool xmqcli_r77(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_name0(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict77(p))
     {
     case 0:
     {
-        if (!xmqcli_r100(p, elem, attr)) return false; // /39
+        if (!xmqcli_eat_39(p, elem, attr)) return false; // /39
         return true;
     }
     case 1:
     {
-        if (!xmqcli_r99(p, elem, attr)) return false; // /40
+        if (!xmqcli_eat_40(p, elem, attr)) return false; // /40
         return true;
     }
     case 2:
     {
-        if (!xmqcli_r98(p, elem, attr)) return false; // /41
+        if (!xmqcli_eat_41(p, elem, attr)) return false; // /41
         return true;
     }
     case 3:
     {
-        if (!xmqcli_r97(p, elem, attr)) return false; // /42
+        if (!xmqcli_eat_42(p, elem, attr)) return false; // /42
         return true;
     }
     case 4:
     {
-        if (!xmqcli_r96(p, elem, attr)) return false; // /43
+        if (!xmqcli_eat_43(p, elem, attr)) return false; // /43
         return true;
     }
     case 5:
     {
-        if (!xmqcli_r95(p, elem, attr)) return false; // /44
+        if (!xmqcli_eat_44(p, elem, attr)) return false; // /44
         return true;
     }
     case 6:
     {
-        if (!xmqcli_r94(p, elem, attr)) return false; // /45
+        if (!xmqcli_eat_45(p, elem, attr)) return false; // /45
         return true;
     }
     case 7:
     {
-        if (!xmqcli_r93(p, elem, attr)) return false; // /46
+        if (!xmqcli_eat_46(p, elem, attr)) return false; // /46
         return true;
     }
     case 8:
     {
-        if (!xmqcli_r92(p, elem, attr)) return false; // /47
+        if (!xmqcli_eat_47(p, elem, attr)) return false; // /47
         return true;
     }
     case 9:
     {
-        if (!xmqcli_r91(p, elem, attr)) return false; // /48
+        if (!xmqcli_eat_48(p, elem, attr)) return false; // /48
         return true;
     }
     case 10:
     {
-        if (!xmqcli_r90(p, elem, attr)) return false; // /49
+        if (!xmqcli_eat_49(p, elem, attr)) return false; // /49
         return true;
     }
     case 11:
     {
-        if (!xmqcli_r89(p, elem, attr)) return false; // /50
+        if (!xmqcli_eat_50(p, elem, attr)) return false; // /50
         return true;
     }
     case 12:
     {
-        if (!xmqcli_r88(p, elem, attr)) return false; // /51
+        if (!xmqcli_eat_51(p, elem, attr)) return false; // /51
         return true;
     }
     case 13:
     {
-        if (!xmqcli_r87(p, elem, attr)) return false; // /52
+        if (!xmqcli_eat_52(p, elem, attr)) return false; // /52
         return true;
     }
     case 14:
     {
-        if (!xmqcli_r86(p, elem, attr)) return false; // /53
+        if (!xmqcli_eat_53(p, elem, attr)) return false; // /53
         return true;
     }
     case 15:
     {
-        if (!xmqcli_r85(p, elem, attr)) return false; // /54
+        if (!xmqcli_eat_54(p, elem, attr)) return false; // /54
         return true;
     }
     case 16:
     {
-        if (!xmqcli_r84(p, elem, attr)) return false; // /55
+        if (!xmqcli_eat_55(p, elem, attr)) return false; // /55
         return true;
     }
     case 17:
     {
-        if (!xmqcli_r83(p, elem, attr)) return false; // /56
+        if (!xmqcli_eat_56(p, elem, attr)) return false; // /56
         return true;
     }
     case 18:
     {
-        if (!xmqcli_r82(p, elem, attr)) return false; // /57
+        if (!xmqcli_eat_57(p, elem, attr)) return false; // /57
         return true;
     }
     case 19:
     {
-        if (!xmqcli_r81(p, elem, attr)) return false; // /58
+        if (!xmqcli_eat_58(p, elem, attr)) return false; // /58
         return true;
     }
     case 20:
     {
-        if (!xmqcli_r80(p, elem, attr)) return false; // /59
+        if (!xmqcli_eat_59(p, elem, attr)) return false; // /59
         return true;
     }
     case 21:
     {
-        if (!xmqcli_r79(p, elem, attr)) return false; // /60
+        if (!xmqcli_eat_60(p, elem, attr)) return false; // /60
         return true;
     }
     case 22:
     {
-        if (!xmqcli_r78(p, elem, attr)) return false; // /61
+        if (!xmqcli_eat_61(p, elem, attr)) return false; // /61
         return true;
     }
     default:
@@ -9463,7 +9463,7 @@ static bool xmqcli_r77(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /61
-static bool xmqcli_r78(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_61(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'s'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9541,7 +9541,7 @@ static bool xmqcli_r78(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /60
-static bool xmqcli_r79(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_60(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9574,7 +9574,7 @@ static bool xmqcli_r79(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /59
-static bool xmqcli_r80(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_59(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_43, 1, xmqcli_ascii_43, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'q'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9601,7 +9601,7 @@ static bool xmqcli_r80(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /58
-static bool xmqcli_r81(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_58(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'h'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9616,7 +9616,7 @@ static bool xmqcli_r81(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /57
-static bool xmqcli_r82(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_57(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'s'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9652,7 +9652,7 @@ static bool xmqcli_r82(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /56
-static bool xmqcli_r83(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_56(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'b'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9664,7 +9664,7 @@ static bool xmqcli_r83(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /55
-static bool xmqcli_r84(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_55(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'b'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9688,7 +9688,7 @@ static bool xmqcli_r84(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /54
-static bool xmqcli_r85(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_54(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_16, 1, xmqcli_ascii_16, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'p'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9700,7 +9700,7 @@ static bool xmqcli_r85(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /53
-static bool xmqcli_r86(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_53(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_16, 1, xmqcli_ascii_16, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'p'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9718,7 +9718,7 @@ static bool xmqcli_r86(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /52
-static bool xmqcli_r87(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_52(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_16, 1, xmqcli_ascii_16, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'p'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9739,7 +9739,7 @@ static bool xmqcli_r87(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /51
-static bool xmqcli_r88(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_51(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_23, 1, xmqcli_ascii_23, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'n'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9772,7 +9772,7 @@ static bool xmqcli_r88(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /50
-static bool xmqcli_r89(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_50(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9802,7 +9802,7 @@ static bool xmqcli_r89(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /49
-static bool xmqcli_r90(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_49(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9838,7 +9838,7 @@ static bool xmqcli_r90(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /48
-static bool xmqcli_r91(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_48(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9889,7 +9889,7 @@ static bool xmqcli_r91(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /47
-static bool xmqcli_r92(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_47(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9928,7 +9928,7 @@ static bool xmqcli_r92(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /46
-static bool xmqcli_r93(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_46(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9961,7 +9961,7 @@ static bool xmqcli_r93(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /45
-static bool xmqcli_r94(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_45(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9988,7 +9988,7 @@ static bool xmqcli_r94(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /44
-static bool xmqcli_r95(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_44(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -10015,7 +10015,7 @@ static bool xmqcli_r95(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /43
-static bool xmqcli_r96(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_43(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -10042,7 +10042,7 @@ static bool xmqcli_r96(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /42
-static bool xmqcli_r97(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_42(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -10069,7 +10069,7 @@ static bool xmqcli_r97(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /41
-static bool xmqcli_r98(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_41(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -10096,7 +10096,7 @@ static bool xmqcli_r98(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /40
-static bool xmqcli_r99(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_40(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -10120,7 +10120,7 @@ static bool xmqcli_r99(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /39
-static bool xmqcli_r100(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_39(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -10144,21 +10144,21 @@ static bool xmqcli_r100(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // sources
-static bool xmqcli_r101(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_sources(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r104(p, elem, attr)) return false; // opts
-    if (!xmqcli_r102(p, elem, attr)) return false; // /7
+    if (!xmqcli_eat_opts(p, elem, attr)) return false; // opts
+    if (!xmqcli_eat_7(p, elem, attr)) return false; // /7
     return true;
 }
 
 // /7
-static bool xmqcli_r102(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_7(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict102(p))
     {
     case 0:
     {
-        if (!xmqcli_r103(p, elem, attr)) return false; // /6
+        if (!xmqcli_eat_6(p, elem, attr)) return false; // /6
         return true;
     }
     case 1:
@@ -10171,31 +10171,31 @@ static bool xmqcli_r102(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /6
-static bool xmqcli_r103(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_6(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict103(p))
     {
     case 0:
     {
-        if (!xmqcli_r15(p, elem, attr)) return false; // s
-        if (attr) { if (!xmqcli_r126(p, elem, attr)) return false; }
+        if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+        if (attr) { if (!xmqcli_eat_grammar(p, elem, attr)) return false; }
         else
         {
             xmqcli_flush(p);
             void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "grammar") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "grammar");
-            if (!xmqcli_r126(p, n, NULL)) return false;
+            if (!xmqcli_eat_grammar(p, n, NULL)) return false;
         }
-        if (!xmqcli_r104(p, elem, attr)) return false; // opts
-        if (!xmqcli_r15(p, elem, attr)) return false; // s
-        if (!xmqcli_r123(p, elem, attr)) return false; // source
-        if (!xmqcli_r104(p, elem, attr)) return false; // opts
+        if (!xmqcli_eat_opts(p, elem, attr)) return false; // opts
+        if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+        if (!xmqcli_eat_source(p, elem, attr)) return false; // source
+        if (!xmqcli_eat_opts(p, elem, attr)) return false; // opts
         return true;
     }
     case 1:
     {
-        if (!xmqcli_r15(p, elem, attr)) return false; // s
-        if (!xmqcli_r123(p, elem, attr)) return false; // source
-        if (!xmqcli_r104(p, elem, attr)) return false; // opts
+        if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+        if (!xmqcli_eat_source(p, elem, attr)) return false; // source
+        if (!xmqcli_eat_opts(p, elem, attr)) return false; // opts
         return true;
     }
     default:
@@ -10204,21 +10204,21 @@ static bool xmqcli_r103(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // opts
-static bool xmqcli_r104(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_opts(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r105(p, elem, attr)) return false; // /9
+    if (!xmqcli_eat_9(p, elem, attr)) return false; // /9
     return true;
 }
 
 // /9
-static bool xmqcli_r105(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_9(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict105(p))
     {
     case 0:
     {
-        if (!xmqcli_r106(p, elem, attr)) return false; // /8
+        if (!xmqcli_eat_8(p, elem, attr)) return false; // /8
         goto start; // /9
     }
     case 1:
@@ -10231,33 +10231,33 @@ start:
 }
 
 // /8
-static bool xmqcli_r106(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_8(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r15(p, elem, attr)) return false; // s
-    if (attr) { if (!xmqcli_r107(p, elem, attr)) return false; }
+    if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+    if (attr) { if (!xmqcli_eat_option(p, elem, attr)) return false; }
     else
     {
         xmqcli_flush(p);
         void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "option") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "option");
-        if (!xmqcli_r107(p, n, NULL)) return false;
+        if (!xmqcli_eat_option(p, n, NULL)) return false;
     }
     return true;
 }
 
 // option
-static bool xmqcli_r107(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_option(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict107(p))
     {
     case 0:
     {
-        if (!xmqcli_r122(p, elem, attr)) return false; // /10
-        if (attr) { if (!xmqcli_r51(p, elem, attr)) return false; }
+        if (!xmqcli_eat_10(p, elem, attr)) return false; // /10
+        if (attr) { if (!xmqcli_eat_name(p, elem, attr)) return false; }
         else
         {
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
-            if (!xmqcli_r51(p, elem, &v)) { free(v.data); return false; }
+            if (!xmqcli_eat_name(p, elem, &v)) { free(v.data); return false; }
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
@@ -10266,17 +10266,17 @@ static bool xmqcli_r107(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
-        if (!xmqcli_r120(p, elem, attr)) return false; // /12
+        if (!xmqcli_eat_12(p, elem, attr)) return false; // /12
         return true;
     }
     case 1:
     {
-        if (attr) { if (!xmqcli_r117(p, elem, attr)) return false; }
+        if (attr) { if (!xmqcli_eat_gshort(p, elem, attr)) return false; }
         else
         {
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
-            if (!xmqcli_r117(p, elem, &v)) { free(v.data); return false; }
+            if (!xmqcli_eat_gshort(p, elem, &v)) { free(v.data); return false; }
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
@@ -10291,12 +10291,12 @@ static bool xmqcli_r107(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     {
         if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "option", "'-'");
         p->pos++;
-        if (attr) { if (!xmqcli_r108(p, elem, attr)) return false; }
+        if (attr) { if (!xmqcli_eat_gother(p, elem, attr)) return false; }
         else
         {
             xmqcli_Buf v = {0};
             xmqcli_buf_add(&v, "", 0);
-            if (!xmqcli_r108(p, elem, &v)) { free(v.data); return false; }
+            if (!xmqcli_eat_gother(p, elem, &v)) { free(v.data); return false; }
             if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
             {
                 free(v.data);
@@ -10313,7 +10313,7 @@ static bool xmqcli_r107(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // gother
-static bool xmqcli_r108(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_gother(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict108(p))
     {
@@ -10322,7 +10322,7 @@ static bool xmqcli_r108(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (!xmqcli_inset(xmqcli_set_49, 9, xmqcli_ascii_49, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "gother", "not #9-#a, #d, space, '-', 'h'-'i', 'l', 'y'-'z', #d800-#dfff");
         xmqcli_char(p, elem, attr, p->in[p->pos]);
         p->pos++;
-        if (!xmqcli_r116(p, elem, attr)) return false; // /15
+        if (!xmqcli_eat_15(p, elem, attr)) return false; // /15
         return true;
     }
     case 1:
@@ -10330,7 +10330,7 @@ static bool xmqcli_r108(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (!xmqcli_inset(xmqcli_set_50, 2, xmqcli_ascii_50, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "gother", "'h'-'i', 'y'-'z'");
         xmqcli_char(p, elem, attr, p->in[p->pos]);
         p->pos++;
-        if (!xmqcli_r114(p, elem, attr)) return false; // /17
+        if (!xmqcli_eat_17(p, elem, attr)) return false; // /17
         return true;
     }
     case 2:
@@ -10338,7 +10338,7 @@ static bool xmqcli_r108(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "gother", "'l'");
         xmqcli_char(p, elem, attr, p->in[p->pos]);
         p->pos++;
-        if (!xmqcli_r109(p, elem, attr)) return false; // /22
+        if (!xmqcli_eat_22(p, elem, attr)) return false; // /22
         return true;
     }
     default:
@@ -10347,13 +10347,13 @@ static bool xmqcli_r108(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /22
-static bool xmqcli_r109(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_22(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict109(p))
     {
     case 0:
     {
-        if (!xmqcli_r110(p, elem, attr)) return false; // /18
+        if (!xmqcli_eat_18(p, elem, attr)) return false; // /18
         return true;
     }
     case 1:
@@ -10366,7 +10366,7 @@ static bool xmqcli_r109(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /18
-static bool xmqcli_r110(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_18(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict110(p))
     {
@@ -10375,7 +10375,7 @@ static bool xmqcli_r110(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (!xmqcli_inset(xmqcli_set_51, 6, xmqcli_ascii_51, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "gother", "not #9-#a, #d, space, 'x', #d800-#dfff");
         xmqcli_char(p, elem, attr, p->in[p->pos]);
         p->pos++;
-        if (!xmqcli_r113(p, elem, attr)) return false; // /19
+        if (!xmqcli_eat_19(p, elem, attr)) return false; // /19
         return true;
     }
     case 1:
@@ -10383,7 +10383,7 @@ static bool xmqcli_r110(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (!xmqcli_inset(xmqcli_set_18, 1, xmqcli_ascii_18, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "gother", "'x'");
         xmqcli_char(p, elem, attr, p->in[p->pos]);
         p->pos++;
-        if (!xmqcli_r111(p, elem, attr)) return false; // /21
+        if (!xmqcli_eat_21(p, elem, attr)) return false; // /21
         return true;
     }
     default:
@@ -10392,22 +10392,22 @@ static bool xmqcli_r110(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /21
-static bool xmqcli_r111(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_21(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r43(p, elem, attr)) return false; // schar
-    if (!xmqcli_r112(p, elem, attr)) return false; // /20
+    if (!xmqcli_eat_schar(p, elem, attr)) return false; // schar
+    if (!xmqcli_eat_20(p, elem, attr)) return false; // /20
     return true;
 }
 
 // /20
-static bool xmqcli_r112(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_20(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict112(p))
     {
     case 0:
     {
-        if (!xmqcli_r43(p, elem, attr)) return false; // schar
+        if (!xmqcli_eat_schar(p, elem, attr)) return false; // schar
         goto start; // /20
     }
     case 1:
@@ -10420,14 +10420,14 @@ start:
 }
 
 // /19
-static bool xmqcli_r113(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_19(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict113(p))
     {
     case 0:
     {
-        if (!xmqcli_r43(p, elem, attr)) return false; // schar
+        if (!xmqcli_eat_schar(p, elem, attr)) return false; // schar
         goto start; // /19
     }
     case 1:
@@ -10440,22 +10440,22 @@ start:
 }
 
 // /17
-static bool xmqcli_r114(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_17(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r43(p, elem, attr)) return false; // schar
-    if (!xmqcli_r115(p, elem, attr)) return false; // /16
+    if (!xmqcli_eat_schar(p, elem, attr)) return false; // schar
+    if (!xmqcli_eat_16(p, elem, attr)) return false; // /16
     return true;
 }
 
 // /16
-static bool xmqcli_r115(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_16(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict115(p))
     {
     case 0:
     {
-        if (!xmqcli_r43(p, elem, attr)) return false; // schar
+        if (!xmqcli_eat_schar(p, elem, attr)) return false; // schar
         goto start; // /16
     }
     case 1:
@@ -10468,14 +10468,14 @@ start:
 }
 
 // /15
-static bool xmqcli_r116(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_15(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict116(p))
     {
     case 0:
     {
-        if (!xmqcli_r43(p, elem, attr)) return false; // schar
+        if (!xmqcli_eat_schar(p, elem, attr)) return false; // schar
         goto start; // /15
     }
     case 1:
@@ -10488,16 +10488,16 @@ start:
 }
 
 // gshort
-static bool xmqcli_r117(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_gshort(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "gshort", "'-'");
     p->pos++;
-    if (!xmqcli_r118(p, elem, attr)) return false; // /13
+    if (!xmqcli_eat_13(p, elem, attr)) return false; // /13
     return true;
 }
 
 // /13
-static bool xmqcli_r118(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_13(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict118(p))
     {
@@ -10524,7 +10524,7 @@ static bool xmqcli_r118(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
     case 3:
     {
-        if (!xmqcli_r119(p, elem, attr)) return false; // /14
+        if (!xmqcli_eat_14(p, elem, attr)) return false; // /14
         xmqcli_text(p, elem, attr, "log-xmq", 7);
         return true;
     }
@@ -10534,7 +10534,7 @@ static bool xmqcli_r118(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /14
-static bool xmqcli_r119(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_14(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "gshort", "'l'");
     p->pos++;
@@ -10544,13 +10544,13 @@ static bool xmqcli_r119(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /12
-static bool xmqcli_r120(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_12(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict120(p))
     {
     case 0:
     {
-        if (!xmqcli_r121(p, elem, attr)) return false; // /11
+        if (!xmqcli_eat_11(p, elem, attr)) return false; // /11
         return true;
     }
     case 1:
@@ -10563,16 +10563,16 @@ static bool xmqcli_r120(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /11
-static bool xmqcli_r121(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_11(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_25, 1, xmqcli_ascii_25, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "option", "'='");
     p->pos++;
-    if (attr) { if (!xmqcli_r49(p, elem, attr)) return false; }
+    if (attr) { if (!xmqcli_eat_optvalue(p, elem, attr)) return false; }
     else
     {
         xmqcli_Buf v = {0};
         xmqcli_buf_add(&v, "", 0);
-        if (!xmqcli_r49(p, elem, &v)) { free(v.data); return false; }
+        if (!xmqcli_eat_optvalue(p, elem, &v)) { free(v.data); return false; }
         if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "value"))
         {
             free(v.data);
@@ -10585,7 +10585,7 @@ static bool xmqcli_r121(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /10
-static bool xmqcli_r122(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_10(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "option", "'-'");
     p->pos++;
@@ -10595,29 +10595,29 @@ static bool xmqcli_r122(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // source
-static bool xmqcli_r123(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_source(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict123(p))
     {
     case 0:
     {
-        if (attr) { if (!xmqcli_r54(p, elem, attr)) return false; }
+        if (attr) { if (!xmqcli_eat_file(p, elem, attr)) return false; }
         else
         {
             xmqcli_flush(p);
             void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "file") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "file");
-            if (!xmqcli_r54(p, n, NULL)) return false;
+            if (!xmqcli_eat_file(p, n, NULL)) return false;
         }
         return true;
     }
     case 1:
     {
-        if (attr) { if (!xmqcli_r124(p, elem, attr)) return false; }
+        if (attr) { if (!xmqcli_eat_input(p, elem, attr)) return false; }
         else
         {
             xmqcli_flush(p);
             void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "input") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "input");
-            if (!xmqcli_r124(p, n, NULL)) return false;
+            if (!xmqcli_eat_input(p, n, NULL)) return false;
         }
         return true;
     }
@@ -10627,16 +10627,16 @@ static bool xmqcli_r123(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // input
-static bool xmqcli_r124(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_input(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r125(p, elem, attr)) return false; // /30
-    if (!xmqcli_r15(p, elem, attr)) return false; // s
-    if (!xmqcli_r9(p, elem, attr)) return false; // rawvalue
+    if (!xmqcli_eat_30(p, elem, attr)) return false; // /30
+    if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+    if (!xmqcli_eat_rawvalue(p, elem, attr)) return false; // rawvalue
     return true;
 }
 
 // /30
-static bool xmqcli_r125(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_30(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "input", "'-'");
     p->pos++;
@@ -10646,19 +10646,19 @@ static bool xmqcli_r125(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // grammar
-static bool xmqcli_r126(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_grammar(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict126(p))
     {
     case 0:
     {
-        if (!xmqcli_r135(p, elem, attr)) return false; // /23
-        if (!xmqcli_r133(p, elem, attr)) return false; // /25
+        if (!xmqcli_eat_23(p, elem, attr)) return false; // /23
+        if (!xmqcli_eat_25(p, elem, attr)) return false; // /25
         return true;
     }
     case 1:
     {
-        if (!xmqcli_r127(p, elem, attr)) return false; // ixmlfile
+        if (!xmqcli_eat_ixmlfile(p, elem, attr)) return false; // ixmlfile
         return true;
     }
     default:
@@ -10667,15 +10667,15 @@ static bool xmqcli_r126(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // ixmlfile
-static bool xmqcli_r127(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_ixmlfile(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r129(p, elem, attr)) return false; // /28
-    if (!xmqcli_r128(p, elem, attr)) return false; // /29
+    if (!xmqcli_eat_28(p, elem, attr)) return false; // /28
+    if (!xmqcli_eat_29(p, elem, attr)) return false; // /29
     return true;
 }
 
 // /29
-static bool xmqcli_r128(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_29(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_52, 1, xmqcli_ascii_52, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "ixmlfile", "'.'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -10696,13 +10696,13 @@ static bool xmqcli_r128(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /28
-static bool xmqcli_r129(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_28(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict129(p))
     {
     case 0:
     {
-        if (!xmqcli_r130(p, elem, attr)) return false; // /26
+        if (!xmqcli_eat_26(p, elem, attr)) return false; // /26
         return true;
     }
     case 1:
@@ -10715,22 +10715,22 @@ static bool xmqcli_r129(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /26
-static bool xmqcli_r130(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_26(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r132(p, elem, attr)) return false; // gfirst
-    if (!xmqcli_r131(p, elem, attr)) return false; // /27
+    if (!xmqcli_eat_gfirst(p, elem, attr)) return false; // gfirst
+    if (!xmqcli_eat_27(p, elem, attr)) return false; // /27
     return true;
 }
 
 // /27
-static bool xmqcli_r131(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_27(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict131(p))
     {
     case 0:
     {
-        if (!xmqcli_r31(p, elem, attr)) return false; // fchar
+        if (!xmqcli_eat_fchar(p, elem, attr)) return false; // fchar
         goto start; // /27
     }
     case 1:
@@ -10743,7 +10743,7 @@ start:
 }
 
 // gfirst
-static bool xmqcli_r132(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_gfirst(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_12, 8, xmqcli_ascii_12, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "gfirst", "not #9-#a, #d, space, '\042', #27, '-', #d800-#dfff");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -10752,22 +10752,22 @@ static bool xmqcli_r132(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /25
-static bool xmqcli_r133(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_25(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_r31(p, elem, attr)) return false; // fchar
-    if (!xmqcli_r134(p, elem, attr)) return false; // /24
+    if (!xmqcli_eat_fchar(p, elem, attr)) return false; // fchar
+    if (!xmqcli_eat_24(p, elem, attr)) return false; // /24
     return true;
 }
 
 // /24
-static bool xmqcli_r134(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_24(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict134(p))
     {
     case 0:
     {
-        if (!xmqcli_r31(p, elem, attr)) return false; // fchar
+        if (!xmqcli_eat_fchar(p, elem, attr)) return false; // fchar
         goto start; // /24
     }
     case 1:
@@ -10780,7 +10780,7 @@ start:
 }
 
 // /23
-static bool xmqcli_r135(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_23(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "grammar", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -10801,7 +10801,7 @@ static bool xmqcli_r135(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 }
 
 // /1
-static bool xmqcli_r136(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+static bool xmqcli_eat_1(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_18, 1, xmqcli_ascii_18, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "xmq", "'x'");
     p->pos++;
@@ -10865,7 +10865,7 @@ bool xmqcli_parse(void *ctx, const char *start, const char *stop, xmqcli_Error *
     p.in = in;
     p.n = n;
     void *root = XMQ_ADD_ROOT_ELEMENT(ctx, "xmq");
-    bool ok = xmqcli_r0(&p, root, NULL);
+    bool ok = xmqcli_eat_xmq(&p, root, NULL);
     if (ok && p.pos != p.n) { xmqcli_fail(&p, NULL, "EOF"); ok = false; }
     if (ok) xmqcli_flush(&p);
     if (!ok && error)

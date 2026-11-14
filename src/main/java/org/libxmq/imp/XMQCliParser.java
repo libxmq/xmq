@@ -472,26 +472,26 @@ public final class XMQCliParser
     private static final int[][] D134 = dfa("-1,0,8,1,9,a,2,b,c,1,d,d,2,e,v,1,w,w,2,x,16nz,1,188w,nvnj,1;0;1");
 
     // xmq
-    private boolean r0(XmlElement elem, StringBuilder attr)
+    private boolean eat_xmq(XmlElement elem, StringBuilder attr)
     {
-        if (!r1(elem, attr)) return false; // ws
-        if (!r136(elem, attr)) return false; // /1
-        if (!r101(elem, attr)) return false; // sources
-        if (!r24(elem, attr)) return false; // /3
-        if (!r3(elem, attr)) return false; // /5
-        if (!r1(elem, attr)) return false; // ws
+        if (!eat_ws(elem, attr)) return false; // ws
+        if (!eat_1(elem, attr)) return false; // /1
+        if (!eat_sources(elem, attr)) return false; // sources
+        if (!eat_3(elem, attr)) return false; // /3
+        if (!eat_5(elem, attr)) return false; // /5
+        if (!eat_ws(elem, attr)) return false; // ws
         return true;
     }
 
     // ws
-    private boolean r1(XmlElement elem, StringBuilder attr)
+    private boolean eat_ws(XmlElement elem, StringBuilder attr)
     {
-        if (!r2(elem, attr)) return false; // /98
+        if (!eat_98(elem, attr)) return false; // /98
         return true;
     }
 
     // /98
-    private boolean r2(XmlElement elem, StringBuilder attr)
+    private boolean eat_98(XmlElement elem, StringBuilder attr)
     {
         // Greedy loop over a character table.
         for (;;)
@@ -508,13 +508,13 @@ public final class XMQCliParser
     }
 
     // /5
-    private boolean r3(XmlElement elem, StringBuilder attr)
+    private boolean eat_5(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D3))
         {
         case 0:
         {
-            if (!r4(elem, attr)) return false; // /4
+            if (!eat_4(elem, attr)) return false; // /4
             return true;
         }
         case 1:
@@ -527,37 +527,37 @@ public final class XMQCliParser
     }
 
     // /4
-    private boolean r4(XmlElement elem, StringBuilder attr)
+    private boolean eat_4(XmlElement elem, StringBuilder attr)
     {
-        if (!r15(elem, attr)) return false; // s
-        if (attr != null) { if (!r5(elem, attr)) return false; }
-        else if (!r5(element(elem, "command"), null)) return false;
+        if (!eat_s(elem, attr)) return false; // s
+        if (attr != null) { if (!eat_help(elem, attr)) return false; }
+        else if (!eat_help(element(elem, "command"), null)) return false;
         return true;
     }
 
     // help
-    private boolean r5(XmlElement elem, StringBuilder attr)
+    private boolean eat_help(XmlElement elem, StringBuilder attr)
     {
-        if (attr != null) { if (!r22(elem, attr)) return false; }
+        if (attr != null) { if (!eat_helpname(elem, attr)) return false; }
         else
         {
             StringBuilder v = new StringBuilder();
-            if (!r22(elem, v)) return false;
+            if (!eat_helpname(elem, v)) return false;
             if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
             if (elem != null) elem.setAttribute("name", v.toString());
         }
-        if (!r6(elem, attr)) return false; // /38
+        if (!eat_38(elem, attr)) return false; // /38
         return true;
     }
 
     // /38
-    private boolean r6(XmlElement elem, StringBuilder attr)
+    private boolean eat_38(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D6))
         {
         case 0:
         {
-            if (!r7(elem, attr)) return false; // /37
+            if (!eat_37(elem, attr)) return false; // /37
             return true;
         }
         case 1:
@@ -570,29 +570,29 @@ public final class XMQCliParser
     }
 
     // /37
-    private boolean r7(XmlElement elem, StringBuilder attr)
+    private boolean eat_37(XmlElement elem, StringBuilder attr)
     {
-        if (!r15(elem, attr)) return false; // s
-        if (attr != null) { if (!r8(elem, attr)) return false; }
-        else if (!r8(element(elem, "arg"), null)) return false;
+        if (!eat_s(elem, attr)) return false; // s
+        if (attr != null) { if (!eat_arg(elem, attr)) return false; }
+        else if (!eat_arg(element(elem, "arg"), null)) return false;
         return true;
     }
 
     // arg
-    private boolean r8(XmlElement elem, StringBuilder attr)
+    private boolean eat_arg(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D8))
         {
         case 0:
         {
-            if (!r19(elem, attr)) return false; // value
+            if (!eat_value(elem, attr)) return false; // value
             return true;
         }
         case 1:
         {
-            if (!r18(elem, attr)) return false; // /88
-            if (!r15(elem, attr)) return false; // s
-            if (!r9(elem, attr)) return false; // rawvalue
+            if (!eat_88(elem, attr)) return false; // /88
+            if (!eat_s(elem, attr)) return false; // s
+            if (!eat_rawvalue(elem, attr)) return false; // rawvalue
             return true;
         }
         default:
@@ -601,13 +601,13 @@ public final class XMQCliParser
     }
 
     // rawvalue
-    private boolean r9(XmlElement elem, StringBuilder attr)
+    private boolean eat_rawvalue(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D9))
         {
         case 0:
         {
-            if (!r11(elem, attr)) return false; // qvalue
+            if (!eat_qvalue(elem, attr)) return false; // qvalue
             return true;
         }
         case 1:
@@ -615,7 +615,7 @@ public final class XMQCliParser
             if (!inset(S2, A2, peek(pos))) return fail("rawvalue", "not #9-#a, #d, space, '\"', #27, #d800-#dfff");
             chr(elem, attr, in[pos]);
             pos++;
-            if (!r10(elem, attr)) return false; // /91
+            if (!eat_91(elem, attr)) return false; // /91
             return true;
         }
         default:
@@ -624,7 +624,7 @@ public final class XMQCliParser
     }
 
     // /91
-    private boolean r10(XmlElement elem, StringBuilder attr)
+    private boolean eat_91(XmlElement elem, StringBuilder attr)
     {
         // Greedy loop over a character table.
         for (;;)
@@ -642,7 +642,7 @@ public final class XMQCliParser
     }
 
     // qvalue
-    private boolean r11(XmlElement elem, StringBuilder attr)
+    private boolean eat_qvalue(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D11))
         {
@@ -650,7 +650,7 @@ public final class XMQCliParser
         {
             if (!inset(S5, A5, peek(pos))) return fail("qvalue", "'\"'");
             pos++;
-            if (!r13(elem, attr)) return false; // /94
+            if (!eat_94(elem, attr)) return false; // /94
             if (!inset(S5, A5, peek(pos))) return fail("qvalue", "'\"'");
             pos++;
             return true;
@@ -659,7 +659,7 @@ public final class XMQCliParser
         {
             if (!inset(S6, A6, peek(pos))) return fail("qvalue", "#27");
             pos++;
-            if (!r12(elem, attr)) return false; // /95
+            if (!eat_95(elem, attr)) return false; // /95
             if (!inset(S6, A6, peek(pos))) return fail("qvalue", "#27");
             pos++;
             return true;
@@ -670,7 +670,7 @@ public final class XMQCliParser
     }
 
     // /95
-    private boolean r12(XmlElement elem, StringBuilder attr)
+    private boolean eat_95(XmlElement elem, StringBuilder attr)
     {
         // Greedy loop over a character table.
         for (;;)
@@ -688,7 +688,7 @@ public final class XMQCliParser
     }
 
     // /94
-    private boolean r13(XmlElement elem, StringBuilder attr)
+    private boolean eat_94(XmlElement elem, StringBuilder attr)
     {
         start: for (;;)
         {
@@ -696,7 +696,7 @@ public final class XMQCliParser
             {
             case 0:
             {
-                if (!r14(elem, attr)) return false; // /93
+                if (!eat_93(elem, attr)) return false; // /93
                 continue start; // /94
             }
             case 1:
@@ -710,7 +710,7 @@ public final class XMQCliParser
     }
 
     // /93
-    private boolean r14(XmlElement elem, StringBuilder attr)
+    private boolean eat_93(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D14))
         {
@@ -736,23 +736,23 @@ public final class XMQCliParser
     }
 
     // s
-    private boolean r15(XmlElement elem, StringBuilder attr)
+    private boolean eat_s(XmlElement elem, StringBuilder attr)
     {
-        if (!r16(elem, attr)) return false; // /97
+        if (!eat_97(elem, attr)) return false; // /97
         return true;
     }
 
     // /97
-    private boolean r16(XmlElement elem, StringBuilder attr)
+    private boolean eat_97(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S0, A0, peek(pos))) return fail("s", "whitespace");
         pos++;
-        if (!r17(elem, attr)) return false; // /96
+        if (!eat_96(elem, attr)) return false; // /96
         return true;
     }
 
     // /96
-    private boolean r17(XmlElement elem, StringBuilder attr)
+    private boolean eat_96(XmlElement elem, StringBuilder attr)
     {
         // Greedy loop over a character table.
         for (;;)
@@ -769,7 +769,7 @@ public final class XMQCliParser
     }
 
     // /88
-    private boolean r18(XmlElement elem, StringBuilder attr)
+    private boolean eat_88(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S11, A11, peek(pos))) return fail("arg", "'-'");
         pos++;
@@ -779,18 +779,18 @@ public final class XMQCliParser
     }
 
     // value
-    private boolean r19(XmlElement elem, StringBuilder attr)
+    private boolean eat_value(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D19))
         {
         case 0:
         {
-            if (!r11(elem, attr)) return false; // qvalue
+            if (!eat_qvalue(elem, attr)) return false; // qvalue
             return true;
         }
         case 1:
         {
-            if (!r20(elem, attr)) return false; // bare
+            if (!eat_bare(elem, attr)) return false; // bare
             return true;
         }
         default:
@@ -799,17 +799,17 @@ public final class XMQCliParser
     }
 
     // bare
-    private boolean r20(XmlElement elem, StringBuilder attr)
+    private boolean eat_bare(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S12, A12, peek(pos))) return fail("bare", "not #9-#a, #d, space, '\"', #27, '-', #d800-#dfff");
         chr(elem, attr, in[pos]);
         pos++;
-        if (!r21(elem, attr)) return false; // /92
+        if (!eat_92(elem, attr)) return false; // /92
         return true;
     }
 
     // /92
-    private boolean r21(XmlElement elem, StringBuilder attr)
+    private boolean eat_92(XmlElement elem, StringBuilder attr)
     {
         // Greedy loop over a character table.
         for (;;)
@@ -827,14 +827,14 @@ public final class XMQCliParser
     }
 
     // helpname
-    private boolean r22(XmlElement elem, StringBuilder attr)
+    private boolean eat_helpname(XmlElement elem, StringBuilder attr)
     {
-        if (!r23(elem, attr)) return false; // /76
+        if (!eat_76(elem, attr)) return false; // /76
         return true;
     }
 
     // /76
-    private boolean r23(XmlElement elem, StringBuilder attr)
+    private boolean eat_76(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S13, A13, peek(pos))) return fail("helpname", "'h'");
         chr(elem, attr, in[pos]);
@@ -852,7 +852,7 @@ public final class XMQCliParser
     }
 
     // /3
-    private boolean r24(XmlElement elem, StringBuilder attr)
+    private boolean eat_3(XmlElement elem, StringBuilder attr)
     {
         start: for (;;)
         {
@@ -860,7 +860,7 @@ public final class XMQCliParser
             {
             case 0:
             {
-                if (!r25(elem, attr)) return false; // /2
+                if (!eat_2(elem, attr)) return false; // /2
                 continue start; // /3
             }
             case 1:
@@ -874,87 +874,87 @@ public final class XMQCliParser
     }
 
     // /2
-    private boolean r25(XmlElement elem, StringBuilder attr)
+    private boolean eat_2(XmlElement elem, StringBuilder attr)
     {
-        if (!r15(elem, attr)) return false; // s
-        if (attr != null) { if (!r26(elem, attr)) return false; }
-        else if (!r26(element(elem, "command"), null)) return false;
+        if (!eat_s(elem, attr)) return false; // s
+        if (attr != null) { if (!eat_command(elem, attr)) return false; }
+        else if (!eat_command(element(elem, "command"), null)) return false;
         return true;
     }
 
     // command
-    private boolean r26(XmlElement elem, StringBuilder attr)
+    private boolean eat_command(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D26))
         {
         case 0:
         {
-            if (attr != null) { if (!r77(elem, attr)) return false; }
+            if (attr != null) { if (!eat_name0(elem, attr)) return false; }
             else
             {
                 StringBuilder v = new StringBuilder();
-                if (!r77(elem, v)) return false;
+                if (!eat_name0(elem, v)) return false;
                 if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
-            if (!r36(elem, attr)) return false; // copts
+            if (!eat_copts(elem, attr)) return false; // copts
             return true;
         }
         case 1:
         {
-            if (attr != null) { if (!r65(elem, attr)) return false; }
+            if (attr != null) { if (!eat_name1(elem, attr)) return false; }
             else
             {
                 StringBuilder v = new StringBuilder();
-                if (!r65(elem, v)) return false;
+                if (!eat_name1(elem, v)) return false;
                 if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
-            if (!r36(elem, attr)) return false; // copts
-            if (!r15(elem, attr)) return false; // s
-            if (attr != null) { if (!r8(elem, attr)) return false; }
-            else if (!r8(element(elem, "arg"), null)) return false;
-            if (!r36(elem, attr)) return false; // copts
+            if (!eat_copts(elem, attr)) return false; // copts
+            if (!eat_s(elem, attr)) return false; // s
+            if (attr != null) { if (!eat_arg(elem, attr)) return false; }
+            else if (!eat_arg(element(elem, "arg"), null)) return false;
+            if (!eat_copts(elem, attr)) return false; // copts
             return true;
         }
         case 2:
         {
-            if (attr != null) { if (!r63(elem, attr)) return false; }
+            if (attr != null) { if (!eat_name2(elem, attr)) return false; }
             else
             {
                 StringBuilder v = new StringBuilder();
-                if (!r63(elem, v)) return false;
+                if (!eat_name2(elem, v)) return false;
                 if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
-            if (!r36(elem, attr)) return false; // copts
-            if (!r15(elem, attr)) return false; // s
-            if (attr != null) { if (!r8(elem, attr)) return false; }
-            else if (!r8(element(elem, "arg"), null)) return false;
-            if (!r36(elem, attr)) return false; // copts
-            if (!r15(elem, attr)) return false; // s
-            if (attr != null) { if (!r8(elem, attr)) return false; }
-            else if (!r8(element(elem, "arg"), null)) return false;
-            if (!r36(elem, attr)) return false; // copts
+            if (!eat_copts(elem, attr)) return false; // copts
+            if (!eat_s(elem, attr)) return false; // s
+            if (attr != null) { if (!eat_arg(elem, attr)) return false; }
+            else if (!eat_arg(element(elem, "arg"), null)) return false;
+            if (!eat_copts(elem, attr)) return false; // copts
+            if (!eat_s(elem, attr)) return false; // s
+            if (attr != null) { if (!eat_arg(elem, attr)) return false; }
+            else if (!eat_arg(element(elem, "arg"), null)) return false;
+            if (!eat_copts(elem, attr)) return false; // copts
             return true;
         }
         case 3:
         {
-            if (attr != null) { if (!r61(elem, attr)) return false; }
+            if (attr != null) { if (!eat_load(elem, attr)) return false; }
             else
             {
                 StringBuilder v = new StringBuilder();
-                if (!r61(elem, v)) return false;
+                if (!eat_load(elem, v)) return false;
                 if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
-            if (!r36(elem, attr)) return false; // copts
-            if (!r34(elem, attr)) return false; // /36
+            if (!eat_copts(elem, attr)) return false; // copts
+            if (!eat_36(elem, attr)) return false; // /36
             return true;
         }
         case 4:
         {
-            if (!r27(elem, attr)) return false; // xslcommand
+            if (!eat_xslcommand(elem, attr)) return false; // xslcommand
             return true;
         }
         default:
@@ -963,40 +963,40 @@ public final class XMQCliParser
     }
 
     // xslcommand
-    private boolean r27(XmlElement elem, StringBuilder attr)
+    private boolean eat_xslcommand(XmlElement elem, StringBuilder attr)
     {
-        if (attr != null) { if (!r32(elem, attr)) return false; }
+        if (attr != null) { if (!eat_xsl(elem, attr)) return false; }
         else
         {
             StringBuilder v = new StringBuilder();
-            if (!r32(elem, v)) return false;
+            if (!eat_xsl(elem, v)) return false;
             if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
             if (elem != null) elem.setAttribute("name", v.toString());
         }
         if (!inset(S17, A17, peek(pos))) return fail("xslcommand", "':'");
         pos++;
-        if (attr != null) { if (!r28(elem, attr)) return false; }
-        else if (!r28(element(elem, "arg"), null)) return false;
+        if (attr != null) { if (!eat_xslarg(elem, attr)) return false; }
+        else if (!eat_xslarg(element(elem, "arg"), null)) return false;
         return true;
     }
 
     // xslarg
-    private boolean r28(XmlElement elem, StringBuilder attr)
+    private boolean eat_xslarg(XmlElement elem, StringBuilder attr)
     {
-        if (!r29(elem, attr)) return false; // /78
+        if (!eat_78(elem, attr)) return false; // /78
         return true;
     }
 
     // /78
-    private boolean r29(XmlElement elem, StringBuilder attr)
+    private boolean eat_78(XmlElement elem, StringBuilder attr)
     {
-        if (!r31(elem, attr)) return false; // fchar
-        if (!r30(elem, attr)) return false; // /77
+        if (!eat_fchar(elem, attr)) return false; // fchar
+        if (!eat_77(elem, attr)) return false; // /77
         return true;
     }
 
     // /77
-    private boolean r30(XmlElement elem, StringBuilder attr)
+    private boolean eat_77(XmlElement elem, StringBuilder attr)
     {
         start: for (;;)
         {
@@ -1004,7 +1004,7 @@ public final class XMQCliParser
             {
             case 0:
             {
-                if (!r31(elem, attr)) return false; // fchar
+                if (!eat_fchar(elem, attr)) return false; // fchar
                 continue start; // /77
             }
             case 1:
@@ -1018,7 +1018,7 @@ public final class XMQCliParser
     }
 
     // fchar
-    private boolean r31(XmlElement elem, StringBuilder attr)
+    private boolean eat_fchar(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S3, A3, peek(pos))) return fail("fchar", "not #9-#a, #d, space, #d800-#dfff");
         chr(elem, attr, in[pos]);
@@ -1027,14 +1027,14 @@ public final class XMQCliParser
     }
 
     // xsl
-    private boolean r32(XmlElement elem, StringBuilder attr)
+    private boolean eat_xsl(XmlElement elem, StringBuilder attr)
     {
-        if (!r33(elem, attr)) return false; // /75
+        if (!eat_75(elem, attr)) return false; // /75
         return true;
     }
 
     // /75
-    private boolean r33(XmlElement elem, StringBuilder attr)
+    private boolean eat_75(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S18, A18, peek(pos))) return fail("xsl", "'x'");
         chr(elem, attr, in[pos]);
@@ -1049,13 +1049,13 @@ public final class XMQCliParser
     }
 
     // /36
-    private boolean r34(XmlElement elem, StringBuilder attr)
+    private boolean eat_36(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D34))
         {
         case 0:
         {
-            if (!r35(elem, attr)) return false; // /35
+            if (!eat_35(elem, attr)) return false; // /35
             return true;
         }
         case 1:
@@ -1068,24 +1068,24 @@ public final class XMQCliParser
     }
 
     // /35
-    private boolean r35(XmlElement elem, StringBuilder attr)
+    private boolean eat_35(XmlElement elem, StringBuilder attr)
     {
-        if (!r15(elem, attr)) return false; // s
-        if (attr != null) { if (!r54(elem, attr)) return false; }
-        else if (!r54(element(elem, "arg"), null)) return false;
-        if (!r36(elem, attr)) return false; // copts
+        if (!eat_s(elem, attr)) return false; // s
+        if (attr != null) { if (!eat_file(elem, attr)) return false; }
+        else if (!eat_file(element(elem, "arg"), null)) return false;
+        if (!eat_copts(elem, attr)) return false; // copts
         return true;
     }
 
     // copts
-    private boolean r36(XmlElement elem, StringBuilder attr)
+    private boolean eat_copts(XmlElement elem, StringBuilder attr)
     {
-        if (!r37(elem, attr)) return false; // /80
+        if (!eat_80(elem, attr)) return false; // /80
         return true;
     }
 
     // /80
-    private boolean r37(XmlElement elem, StringBuilder attr)
+    private boolean eat_80(XmlElement elem, StringBuilder attr)
     {
         start: for (;;)
         {
@@ -1093,7 +1093,7 @@ public final class XMQCliParser
             {
             case 0:
             {
-                if (!r38(elem, attr)) return false; // /79
+                if (!eat_79(elem, attr)) return false; // /79
                 continue start; // /80
             }
             case 1:
@@ -1107,40 +1107,40 @@ public final class XMQCliParser
     }
 
     // /79
-    private boolean r38(XmlElement elem, StringBuilder attr)
+    private boolean eat_79(XmlElement elem, StringBuilder attr)
     {
-        if (!r15(elem, attr)) return false; // s
-        if (attr != null) { if (!r39(elem, attr)) return false; }
-        else if (!r39(element(elem, "option"), null)) return false;
+        if (!eat_s(elem, attr)) return false; // s
+        if (attr != null) { if (!eat_coption(elem, attr)) return false; }
+        else if (!eat_coption(element(elem, "option"), null)) return false;
         return true;
     }
 
     // coption
-    private boolean r39(XmlElement elem, StringBuilder attr)
+    private boolean eat_coption(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D39))
         {
         case 0:
         {
-            if (!r53(elem, attr)) return false; // /81
-            if (attr != null) { if (!r51(elem, attr)) return false; }
+            if (!eat_81(elem, attr)) return false; // /81
+            if (attr != null) { if (!eat_name(elem, attr)) return false; }
             else
             {
                 StringBuilder v = new StringBuilder();
-                if (!r51(elem, v)) return false;
+                if (!eat_name(elem, v)) return false;
                 if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
-            if (!r47(elem, attr)) return false; // /83
+            if (!eat_83(elem, attr)) return false; // /83
             return true;
         }
         case 1:
         {
-            if (attr != null) { if (!r45(elem, attr)) return false; }
+            if (attr != null) { if (!eat_cshort(elem, attr)) return false; }
             else
             {
                 StringBuilder v = new StringBuilder();
-                if (!r45(elem, v)) return false;
+                if (!eat_cshort(elem, v)) return false;
                 if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
@@ -1150,11 +1150,11 @@ public final class XMQCliParser
         {
             if (!inset(S11, A11, peek(pos))) return fail("coption", "'-'");
             pos++;
-            if (attr != null) { if (!r40(elem, attr)) return false; }
+            if (attr != null) { if (!eat_cother(elem, attr)) return false; }
             else
             {
                 StringBuilder v = new StringBuilder();
-                if (!r40(elem, v)) return false;
+                if (!eat_cother(elem, v)) return false;
                 if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
@@ -1166,7 +1166,7 @@ public final class XMQCliParser
     }
 
     // cother
-    private boolean r40(XmlElement elem, StringBuilder attr)
+    private boolean eat_cother(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D40))
         {
@@ -1175,7 +1175,7 @@ public final class XMQCliParser
             if (!inset(S20, A20, peek(pos))) return fail("cother", "not #9-#a, #d, space, '-', 'c', 'n'-'p', #d800-#dfff");
             chr(elem, attr, in[pos]);
             pos++;
-            if (!r44(elem, attr)) return false; // /85
+            if (!eat_85(elem, attr)) return false; // /85
             return true;
         }
         case 1:
@@ -1183,7 +1183,7 @@ public final class XMQCliParser
             if (!inset(S21, A21, peek(pos))) return fail("cother", "'c', 'n'-'p'");
             chr(elem, attr, in[pos]);
             pos++;
-            if (!r41(elem, attr)) return false; // /87
+            if (!eat_87(elem, attr)) return false; // /87
             return true;
         }
         default:
@@ -1192,15 +1192,15 @@ public final class XMQCliParser
     }
 
     // /87
-    private boolean r41(XmlElement elem, StringBuilder attr)
+    private boolean eat_87(XmlElement elem, StringBuilder attr)
     {
-        if (!r43(elem, attr)) return false; // schar
-        if (!r42(elem, attr)) return false; // /86
+        if (!eat_schar(elem, attr)) return false; // schar
+        if (!eat_86(elem, attr)) return false; // /86
         return true;
     }
 
     // /86
-    private boolean r42(XmlElement elem, StringBuilder attr)
+    private boolean eat_86(XmlElement elem, StringBuilder attr)
     {
         start: for (;;)
         {
@@ -1208,7 +1208,7 @@ public final class XMQCliParser
             {
             case 0:
             {
-                if (!r43(elem, attr)) return false; // schar
+                if (!eat_schar(elem, attr)) return false; // schar
                 continue start; // /86
             }
             case 1:
@@ -1222,7 +1222,7 @@ public final class XMQCliParser
     }
 
     // schar
-    private boolean r43(XmlElement elem, StringBuilder attr)
+    private boolean eat_schar(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S3, A3, peek(pos))) return fail("schar", "not #9-#a, #d, space, #d800-#dfff");
         chr(elem, attr, in[pos]);
@@ -1231,7 +1231,7 @@ public final class XMQCliParser
     }
 
     // /85
-    private boolean r44(XmlElement elem, StringBuilder attr)
+    private boolean eat_85(XmlElement elem, StringBuilder attr)
     {
         start: for (;;)
         {
@@ -1239,7 +1239,7 @@ public final class XMQCliParser
             {
             case 0:
             {
-                if (!r43(elem, attr)) return false; // schar
+                if (!eat_schar(elem, attr)) return false; // schar
                 continue start; // /85
             }
             case 1:
@@ -1253,16 +1253,16 @@ public final class XMQCliParser
     }
 
     // cshort
-    private boolean r45(XmlElement elem, StringBuilder attr)
+    private boolean eat_cshort(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S11, A11, peek(pos))) return fail("cshort", "'-'");
         pos++;
-        if (!r46(elem, attr)) return false; // /84
+        if (!eat_84(elem, attr)) return false; // /84
         return true;
     }
 
     // /84
-    private boolean r46(XmlElement elem, StringBuilder attr)
+    private boolean eat_84(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D46))
         {
@@ -1300,13 +1300,13 @@ public final class XMQCliParser
     }
 
     // /83
-    private boolean r47(XmlElement elem, StringBuilder attr)
+    private boolean eat_83(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D47))
         {
         case 0:
         {
-            if (!r48(elem, attr)) return false; // /82
+            if (!eat_82(elem, attr)) return false; // /82
             return true;
         }
         case 1:
@@ -1319,15 +1319,15 @@ public final class XMQCliParser
     }
 
     // /82
-    private boolean r48(XmlElement elem, StringBuilder attr)
+    private boolean eat_82(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S25, A25, peek(pos))) return fail("coption", "'='");
         pos++;
-        if (attr != null) { if (!r49(elem, attr)) return false; }
+        if (attr != null) { if (!eat_optvalue(elem, attr)) return false; }
         else
         {
             StringBuilder v = new StringBuilder();
-            if (!r49(elem, v)) return false;
+            if (!eat_optvalue(elem, v)) return false;
             if (elem != null && elem.attribute("value") != null) return failDynamic("dynamic error D01: the attribute value occurs more than once on an element");
             if (elem != null) elem.setAttribute("value", v.toString());
         }
@@ -1335,18 +1335,18 @@ public final class XMQCliParser
     }
 
     // optvalue
-    private boolean r49(XmlElement elem, StringBuilder attr)
+    private boolean eat_optvalue(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D49))
         {
         case 0:
         {
-            if (!r11(elem, attr)) return false; // qvalue
+            if (!eat_qvalue(elem, attr)) return false; // qvalue
             return true;
         }
         case 1:
         {
-            if (!r50(elem, attr)) return false; // /90
+            if (!eat_90(elem, attr)) return false; // /90
             return true;
         }
         default:
@@ -1355,7 +1355,7 @@ public final class XMQCliParser
     }
 
     // /90
-    private boolean r50(XmlElement elem, StringBuilder attr)
+    private boolean eat_90(XmlElement elem, StringBuilder attr)
     {
         // Greedy loop over a character table.
         for (;;)
@@ -1373,17 +1373,17 @@ public final class XMQCliParser
     }
 
     // name
-    private boolean r51(XmlElement elem, StringBuilder attr)
+    private boolean eat_name(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S26, A26, peek(pos))) return fail("name", "'A'-'Z', 'a'-'z'");
         chr(elem, attr, in[pos]);
         pos++;
-        if (!r52(elem, attr)) return false; // /89
+        if (!eat_89(elem, attr)) return false; // /89
         return true;
     }
 
     // /89
-    private boolean r52(XmlElement elem, StringBuilder attr)
+    private boolean eat_89(XmlElement elem, StringBuilder attr)
     {
         // Greedy loop over a character table.
         for (;;)
@@ -1401,7 +1401,7 @@ public final class XMQCliParser
     }
 
     // /81
-    private boolean r53(XmlElement elem, StringBuilder attr)
+    private boolean eat_81(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S11, A11, peek(pos))) return fail("coption", "'-'");
         pos++;
@@ -1411,13 +1411,13 @@ public final class XMQCliParser
     }
 
     // file
-    private boolean r54(XmlElement elem, StringBuilder attr)
+    private boolean eat_file(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D54))
         {
         case 0:
         {
-            if (!r11(elem, attr)) return false; // qvalue
+            if (!eat_qvalue(elem, attr)) return false; // qvalue
             return true;
         }
         case 1:
@@ -1429,11 +1429,11 @@ public final class XMQCliParser
         }
         case 2:
         {
-            if (!r56(elem, attr)) return false; // /33
+            if (!eat_33(elem, attr)) return false; // /33
             if (!inset(S29, A29, peek(pos))) return fail("file", "'.'-'/', ':'");
             chr(elem, attr, in[pos]);
             pos++;
-            if (!r55(elem, attr)) return false; // /34
+            if (!eat_34(elem, attr)) return false; // /34
             return true;
         }
         default:
@@ -1442,7 +1442,7 @@ public final class XMQCliParser
     }
 
     // /34
-    private boolean r55(XmlElement elem, StringBuilder attr)
+    private boolean eat_34(XmlElement elem, StringBuilder attr)
     {
         start: for (;;)
         {
@@ -1450,7 +1450,7 @@ public final class XMQCliParser
             {
             case 0:
             {
-                if (!r31(elem, attr)) return false; // fchar
+                if (!eat_fchar(elem, attr)) return false; // fchar
                 continue start; // /34
             }
             case 1:
@@ -1464,13 +1464,13 @@ public final class XMQCliParser
     }
 
     // /33
-    private boolean r56(XmlElement elem, StringBuilder attr)
+    private boolean eat_33(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D56))
         {
         case 0:
         {
-            if (!r57(elem, attr)) return false; // /31
+            if (!eat_31(elem, attr)) return false; // /31
             return true;
         }
         case 1:
@@ -1483,15 +1483,15 @@ public final class XMQCliParser
     }
 
     // /31
-    private boolean r57(XmlElement elem, StringBuilder attr)
+    private boolean eat_31(XmlElement elem, StringBuilder attr)
     {
-        if (!r60(elem, attr)) return false; // first
-        if (!r58(elem, attr)) return false; // /32
+        if (!eat_first(elem, attr)) return false; // first
+        if (!eat_32(elem, attr)) return false; // /32
         return true;
     }
 
     // /32
-    private boolean r58(XmlElement elem, StringBuilder attr)
+    private boolean eat_32(XmlElement elem, StringBuilder attr)
     {
         start: for (;;)
         {
@@ -1499,7 +1499,7 @@ public final class XMQCliParser
             {
             case 0:
             {
-                if (!r59(elem, attr)) return false; // plain
+                if (!eat_plain(elem, attr)) return false; // plain
                 continue start; // /32
             }
             case 1:
@@ -1513,7 +1513,7 @@ public final class XMQCliParser
     }
 
     // plain
-    private boolean r59(XmlElement elem, StringBuilder attr)
+    private boolean eat_plain(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S30, A30, peek(pos))) return fail("plain", "not #9-#a, #d, space, '.'-'/', ':', #d800-#dfff");
         chr(elem, attr, in[pos]);
@@ -1522,7 +1522,7 @@ public final class XMQCliParser
     }
 
     // first
-    private boolean r60(XmlElement elem, StringBuilder attr)
+    private boolean eat_first(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S31, A31, peek(pos))) return fail("first", "not #9-#a, #d, space, '\"', #27, '-'-'/', ':', #d800-#dfff");
         chr(elem, attr, in[pos]);
@@ -1531,14 +1531,14 @@ public final class XMQCliParser
     }
 
     // load
-    private boolean r61(XmlElement elem, StringBuilder attr)
+    private boolean eat_load(XmlElement elem, StringBuilder attr)
     {
-        if (!r62(elem, attr)) return false; // /74
+        if (!eat_74(elem, attr)) return false; // /74
         return true;
     }
 
     // /74
-    private boolean r62(XmlElement elem, StringBuilder attr)
+    private boolean eat_74(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S15, A15, peek(pos))) return fail("load", "'l'");
         chr(elem, attr, in[pos]);
@@ -1556,14 +1556,14 @@ public final class XMQCliParser
     }
 
     // name2
-    private boolean r63(XmlElement elem, StringBuilder attr)
+    private boolean eat_name2(XmlElement elem, StringBuilder attr)
     {
-        if (!r64(elem, attr)) return false; // /73
+        if (!eat_73(elem, attr)) return false; // /73
         return true;
     }
 
     // /73
-    private boolean r64(XmlElement elem, StringBuilder attr)
+    private boolean eat_73(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S34, A34, peek(pos))) return fail("name2", "'r'");
         chr(elem, attr, in[pos]);
@@ -1611,63 +1611,63 @@ public final class XMQCliParser
     }
 
     // name1
-    private boolean r65(XmlElement elem, StringBuilder attr)
+    private boolean eat_name1(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D65))
         {
         case 0:
         {
-            if (!r76(elem, attr)) return false; // /62
+            if (!eat_62(elem, attr)) return false; // /62
             return true;
         }
         case 1:
         {
-            if (!r75(elem, attr)) return false; // /63
+            if (!eat_63(elem, attr)) return false; // /63
             return true;
         }
         case 2:
         {
-            if (!r74(elem, attr)) return false; // /64
+            if (!eat_64(elem, attr)) return false; // /64
             return true;
         }
         case 3:
         {
-            if (!r73(elem, attr)) return false; // /65
+            if (!eat_65(elem, attr)) return false; // /65
             return true;
         }
         case 4:
         {
-            if (!r72(elem, attr)) return false; // /66
+            if (!eat_66(elem, attr)) return false; // /66
             return true;
         }
         case 5:
         {
-            if (!r71(elem, attr)) return false; // /67
+            if (!eat_67(elem, attr)) return false; // /67
             return true;
         }
         case 6:
         {
-            if (!r70(elem, attr)) return false; // /68
+            if (!eat_68(elem, attr)) return false; // /68
             return true;
         }
         case 7:
         {
-            if (!r69(elem, attr)) return false; // /69
+            if (!eat_69(elem, attr)) return false; // /69
             return true;
         }
         case 8:
         {
-            if (!r68(elem, attr)) return false; // /70
+            if (!eat_70(elem, attr)) return false; // /70
             return true;
         }
         case 9:
         {
-            if (!r67(elem, attr)) return false; // /71
+            if (!eat_71(elem, attr)) return false; // /71
             return true;
         }
         case 10:
         {
-            if (!r66(elem, attr)) return false; // /72
+            if (!eat_72(elem, attr)) return false; // /72
             return true;
         }
         default:
@@ -1676,7 +1676,7 @@ public final class XMQCliParser
     }
 
     // /72
-    private boolean r66(XmlElement elem, StringBuilder attr)
+    private boolean eat_72(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S19, A19, peek(pos))) return fail("name1", "'s'");
         chr(elem, attr, in[pos]);
@@ -1733,7 +1733,7 @@ public final class XMQCliParser
     }
 
     // /71
-    private boolean r67(XmlElement elem, StringBuilder attr)
+    private boolean eat_71(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S34, A34, peek(pos))) return fail("name1", "'r'");
         chr(elem, attr, in[pos]);
@@ -1760,7 +1760,7 @@ public final class XMQCliParser
     }
 
     // /70
-    private boolean r68(XmlElement elem, StringBuilder attr)
+    private boolean eat_70(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S19, A19, peek(pos))) return fail("name1", "'s'");
         chr(elem, attr, in[pos]);
@@ -1787,7 +1787,7 @@ public final class XMQCliParser
     }
 
     // /69
-    private boolean r69(XmlElement elem, StringBuilder attr)
+    private boolean eat_69(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S40, A40, peek(pos))) return fail("name1", "'v'");
         chr(elem, attr, in[pos]);
@@ -1817,7 +1817,7 @@ public final class XMQCliParser
     }
 
     // /68
-    private boolean r70(XmlElement elem, StringBuilder attr)
+    private boolean eat_68(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S35, A35, peek(pos))) return fail("name1", "'t'");
         chr(elem, attr, in[pos]);
@@ -1850,7 +1850,7 @@ public final class XMQCliParser
     }
 
     // /67
-    private boolean r71(XmlElement elem, StringBuilder attr)
+    private boolean eat_67(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S41, A41, peek(pos))) return fail("name1", "'f'");
         chr(elem, attr, in[pos]);
@@ -1880,7 +1880,7 @@ public final class XMQCliParser
     }
 
     // /66
-    private boolean r72(XmlElement elem, StringBuilder attr)
+    private boolean eat_66(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S19, A19, peek(pos))) return fail("name1", "'s'");
         chr(elem, attr, in[pos]);
@@ -1904,7 +1904,7 @@ public final class XMQCliParser
     }
 
     // /65
-    private boolean r73(XmlElement elem, StringBuilder attr)
+    private boolean eat_65(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S33, A33, peek(pos))) return fail("name1", "'d'");
         chr(elem, attr, in[pos]);
@@ -1949,7 +1949,7 @@ public final class XMQCliParser
     }
 
     // /64
-    private boolean r74(XmlElement elem, StringBuilder attr)
+    private boolean eat_64(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S33, A33, peek(pos))) return fail("name1", "'d'");
         chr(elem, attr, in[pos]);
@@ -1973,7 +1973,7 @@ public final class XMQCliParser
     }
 
     // /63
-    private boolean r75(XmlElement elem, StringBuilder attr)
+    private boolean eat_63(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S32, A32, peek(pos))) return fail("name1", "'a'");
         chr(elem, attr, in[pos]);
@@ -2003,7 +2003,7 @@ public final class XMQCliParser
     }
 
     // /62
-    private boolean r76(XmlElement elem, StringBuilder attr)
+    private boolean eat_62(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S32, A32, peek(pos))) return fail("name1", "'a'");
         chr(elem, attr, in[pos]);
@@ -2018,123 +2018,123 @@ public final class XMQCliParser
     }
 
     // name0
-    private boolean r77(XmlElement elem, StringBuilder attr)
+    private boolean eat_name0(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D77))
         {
         case 0:
         {
-            if (!r100(elem, attr)) return false; // /39
+            if (!eat_39(elem, attr)) return false; // /39
             return true;
         }
         case 1:
         {
-            if (!r99(elem, attr)) return false; // /40
+            if (!eat_40(elem, attr)) return false; // /40
             return true;
         }
         case 2:
         {
-            if (!r98(elem, attr)) return false; // /41
+            if (!eat_41(elem, attr)) return false; // /41
             return true;
         }
         case 3:
         {
-            if (!r97(elem, attr)) return false; // /42
+            if (!eat_42(elem, attr)) return false; // /42
             return true;
         }
         case 4:
         {
-            if (!r96(elem, attr)) return false; // /43
+            if (!eat_43(elem, attr)) return false; // /43
             return true;
         }
         case 5:
         {
-            if (!r95(elem, attr)) return false; // /44
+            if (!eat_44(elem, attr)) return false; // /44
             return true;
         }
         case 6:
         {
-            if (!r94(elem, attr)) return false; // /45
+            if (!eat_45(elem, attr)) return false; // /45
             return true;
         }
         case 7:
         {
-            if (!r93(elem, attr)) return false; // /46
+            if (!eat_46(elem, attr)) return false; // /46
             return true;
         }
         case 8:
         {
-            if (!r92(elem, attr)) return false; // /47
+            if (!eat_47(elem, attr)) return false; // /47
             return true;
         }
         case 9:
         {
-            if (!r91(elem, attr)) return false; // /48
+            if (!eat_48(elem, attr)) return false; // /48
             return true;
         }
         case 10:
         {
-            if (!r90(elem, attr)) return false; // /49
+            if (!eat_49(elem, attr)) return false; // /49
             return true;
         }
         case 11:
         {
-            if (!r89(elem, attr)) return false; // /50
+            if (!eat_50(elem, attr)) return false; // /50
             return true;
         }
         case 12:
         {
-            if (!r88(elem, attr)) return false; // /51
+            if (!eat_51(elem, attr)) return false; // /51
             return true;
         }
         case 13:
         {
-            if (!r87(elem, attr)) return false; // /52
+            if (!eat_52(elem, attr)) return false; // /52
             return true;
         }
         case 14:
         {
-            if (!r86(elem, attr)) return false; // /53
+            if (!eat_53(elem, attr)) return false; // /53
             return true;
         }
         case 15:
         {
-            if (!r85(elem, attr)) return false; // /54
+            if (!eat_54(elem, attr)) return false; // /54
             return true;
         }
         case 16:
         {
-            if (!r84(elem, attr)) return false; // /55
+            if (!eat_55(elem, attr)) return false; // /55
             return true;
         }
         case 17:
         {
-            if (!r83(elem, attr)) return false; // /56
+            if (!eat_56(elem, attr)) return false; // /56
             return true;
         }
         case 18:
         {
-            if (!r82(elem, attr)) return false; // /57
+            if (!eat_57(elem, attr)) return false; // /57
             return true;
         }
         case 19:
         {
-            if (!r81(elem, attr)) return false; // /58
+            if (!eat_58(elem, attr)) return false; // /58
             return true;
         }
         case 20:
         {
-            if (!r80(elem, attr)) return false; // /59
+            if (!eat_59(elem, attr)) return false; // /59
             return true;
         }
         case 21:
         {
-            if (!r79(elem, attr)) return false; // /60
+            if (!eat_60(elem, attr)) return false; // /60
             return true;
         }
         case 22:
         {
-            if (!r78(elem, attr)) return false; // /61
+            if (!eat_61(elem, attr)) return false; // /61
             return true;
         }
         default:
@@ -2143,7 +2143,7 @@ public final class XMQCliParser
     }
 
     // /61
-    private boolean r78(XmlElement elem, StringBuilder attr)
+    private boolean eat_61(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S19, A19, peek(pos))) return fail("name0", "'s'");
         chr(elem, attr, in[pos]);
@@ -2221,7 +2221,7 @@ public final class XMQCliParser
     }
 
     // /60
-    private boolean r79(XmlElement elem, StringBuilder attr)
+    private boolean eat_60(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S38, A38, peek(pos))) return fail("name0", "'u'");
         chr(elem, attr, in[pos]);
@@ -2254,7 +2254,7 @@ public final class XMQCliParser
     }
 
     // /59
-    private boolean r80(XmlElement elem, StringBuilder attr)
+    private boolean eat_59(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S43, A43, peek(pos))) return fail("name0", "'q'");
         chr(elem, attr, in[pos]);
@@ -2281,7 +2281,7 @@ public final class XMQCliParser
     }
 
     // /58
-    private boolean r81(XmlElement elem, StringBuilder attr)
+    private boolean eat_58(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S13, A13, peek(pos))) return fail("name0", "'h'");
         chr(elem, attr, in[pos]);
@@ -2296,7 +2296,7 @@ public final class XMQCliParser
     }
 
     // /57
-    private boolean r82(XmlElement elem, StringBuilder attr)
+    private boolean eat_57(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S19, A19, peek(pos))) return fail("name0", "'s'");
         chr(elem, attr, in[pos]);
@@ -2332,7 +2332,7 @@ public final class XMQCliParser
     }
 
     // /56
-    private boolean r83(XmlElement elem, StringBuilder attr)
+    private boolean eat_56(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S39, A39, peek(pos))) return fail("name0", "'b'");
         chr(elem, attr, in[pos]);
@@ -2344,7 +2344,7 @@ public final class XMQCliParser
     }
 
     // /55
-    private boolean r84(XmlElement elem, StringBuilder attr)
+    private boolean eat_55(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S39, A39, peek(pos))) return fail("name0", "'b'");
         chr(elem, attr, in[pos]);
@@ -2368,7 +2368,7 @@ public final class XMQCliParser
     }
 
     // /54
-    private boolean r85(XmlElement elem, StringBuilder attr)
+    private boolean eat_54(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S16, A16, peek(pos))) return fail("name0", "'p'");
         chr(elem, attr, in[pos]);
@@ -2380,7 +2380,7 @@ public final class XMQCliParser
     }
 
     // /53
-    private boolean r86(XmlElement elem, StringBuilder attr)
+    private boolean eat_53(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S16, A16, peek(pos))) return fail("name0", "'p'");
         chr(elem, attr, in[pos]);
@@ -2398,7 +2398,7 @@ public final class XMQCliParser
     }
 
     // /52
-    private boolean r87(XmlElement elem, StringBuilder attr)
+    private boolean eat_52(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S16, A16, peek(pos))) return fail("name0", "'p'");
         chr(elem, attr, in[pos]);
@@ -2419,7 +2419,7 @@ public final class XMQCliParser
     }
 
     // /51
-    private boolean r88(XmlElement elem, StringBuilder attr)
+    private boolean eat_51(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S23, A23, peek(pos))) return fail("name0", "'n'");
         chr(elem, attr, in[pos]);
@@ -2452,7 +2452,7 @@ public final class XMQCliParser
     }
 
     // /50
-    private boolean r89(XmlElement elem, StringBuilder attr)
+    private boolean eat_50(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S35, A35, peek(pos))) return fail("name0", "'t'");
         chr(elem, attr, in[pos]);
@@ -2482,7 +2482,7 @@ public final class XMQCliParser
     }
 
     // /49
-    private boolean r90(XmlElement elem, StringBuilder attr)
+    private boolean eat_49(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S34, A34, peek(pos))) return fail("name0", "'r'");
         chr(elem, attr, in[pos]);
@@ -2518,7 +2518,7 @@ public final class XMQCliParser
     }
 
     // /48
-    private boolean r91(XmlElement elem, StringBuilder attr)
+    private boolean eat_48(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S34, A34, peek(pos))) return fail("name0", "'r'");
         chr(elem, attr, in[pos]);
@@ -2569,7 +2569,7 @@ public final class XMQCliParser
     }
 
     // /47
-    private boolean r92(XmlElement elem, StringBuilder attr)
+    private boolean eat_47(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S34, A34, peek(pos))) return fail("name0", "'r'");
         chr(elem, attr, in[pos]);
@@ -2608,7 +2608,7 @@ public final class XMQCliParser
     }
 
     // /46
-    private boolean r93(XmlElement elem, StringBuilder attr)
+    private boolean eat_46(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S35, A35, peek(pos))) return fail("name0", "'t'");
         chr(elem, attr, in[pos]);
@@ -2641,7 +2641,7 @@ public final class XMQCliParser
     }
 
     // /45
-    private boolean r94(XmlElement elem, StringBuilder attr)
+    private boolean eat_45(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S35, A35, peek(pos))) return fail("name0", "'t'");
         chr(elem, attr, in[pos]);
@@ -2668,7 +2668,7 @@ public final class XMQCliParser
     }
 
     // /44
-    private boolean r95(XmlElement elem, StringBuilder attr)
+    private boolean eat_44(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S35, A35, peek(pos))) return fail("name0", "'t'");
         chr(elem, attr, in[pos]);
@@ -2695,7 +2695,7 @@ public final class XMQCliParser
     }
 
     // /43
-    private boolean r96(XmlElement elem, StringBuilder attr)
+    private boolean eat_43(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S35, A35, peek(pos))) return fail("name0", "'t'");
         chr(elem, attr, in[pos]);
@@ -2722,7 +2722,7 @@ public final class XMQCliParser
     }
 
     // /42
-    private boolean r97(XmlElement elem, StringBuilder attr)
+    private boolean eat_42(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S35, A35, peek(pos))) return fail("name0", "'t'");
         chr(elem, attr, in[pos]);
@@ -2749,7 +2749,7 @@ public final class XMQCliParser
     }
 
     // /41
-    private boolean r98(XmlElement elem, StringBuilder attr)
+    private boolean eat_41(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S35, A35, peek(pos))) return fail("name0", "'t'");
         chr(elem, attr, in[pos]);
@@ -2776,7 +2776,7 @@ public final class XMQCliParser
     }
 
     // /40
-    private boolean r99(XmlElement elem, StringBuilder attr)
+    private boolean eat_40(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S35, A35, peek(pos))) return fail("name0", "'t'");
         chr(elem, attr, in[pos]);
@@ -2800,7 +2800,7 @@ public final class XMQCliParser
     }
 
     // /39
-    private boolean r100(XmlElement elem, StringBuilder attr)
+    private boolean eat_39(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S35, A35, peek(pos))) return fail("name0", "'t'");
         chr(elem, attr, in[pos]);
@@ -2824,21 +2824,21 @@ public final class XMQCliParser
     }
 
     // sources
-    private boolean r101(XmlElement elem, StringBuilder attr)
+    private boolean eat_sources(XmlElement elem, StringBuilder attr)
     {
-        if (!r104(elem, attr)) return false; // opts
-        if (!r102(elem, attr)) return false; // /7
+        if (!eat_opts(elem, attr)) return false; // opts
+        if (!eat_7(elem, attr)) return false; // /7
         return true;
     }
 
     // /7
-    private boolean r102(XmlElement elem, StringBuilder attr)
+    private boolean eat_7(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D102))
         {
         case 0:
         {
-            if (!r103(elem, attr)) return false; // /6
+            if (!eat_6(elem, attr)) return false; // /6
             return true;
         }
         case 1:
@@ -2851,26 +2851,26 @@ public final class XMQCliParser
     }
 
     // /6
-    private boolean r103(XmlElement elem, StringBuilder attr)
+    private boolean eat_6(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D103))
         {
         case 0:
         {
-            if (!r15(elem, attr)) return false; // s
-            if (attr != null) { if (!r126(elem, attr)) return false; }
-            else if (!r126(element(elem, "grammar"), null)) return false;
-            if (!r104(elem, attr)) return false; // opts
-            if (!r15(elem, attr)) return false; // s
-            if (!r123(elem, attr)) return false; // source
-            if (!r104(elem, attr)) return false; // opts
+            if (!eat_s(elem, attr)) return false; // s
+            if (attr != null) { if (!eat_grammar(elem, attr)) return false; }
+            else if (!eat_grammar(element(elem, "grammar"), null)) return false;
+            if (!eat_opts(elem, attr)) return false; // opts
+            if (!eat_s(elem, attr)) return false; // s
+            if (!eat_source(elem, attr)) return false; // source
+            if (!eat_opts(elem, attr)) return false; // opts
             return true;
         }
         case 1:
         {
-            if (!r15(elem, attr)) return false; // s
-            if (!r123(elem, attr)) return false; // source
-            if (!r104(elem, attr)) return false; // opts
+            if (!eat_s(elem, attr)) return false; // s
+            if (!eat_source(elem, attr)) return false; // source
+            if (!eat_opts(elem, attr)) return false; // opts
             return true;
         }
         default:
@@ -2879,14 +2879,14 @@ public final class XMQCliParser
     }
 
     // opts
-    private boolean r104(XmlElement elem, StringBuilder attr)
+    private boolean eat_opts(XmlElement elem, StringBuilder attr)
     {
-        if (!r105(elem, attr)) return false; // /9
+        if (!eat_9(elem, attr)) return false; // /9
         return true;
     }
 
     // /9
-    private boolean r105(XmlElement elem, StringBuilder attr)
+    private boolean eat_9(XmlElement elem, StringBuilder attr)
     {
         start: for (;;)
         {
@@ -2894,7 +2894,7 @@ public final class XMQCliParser
             {
             case 0:
             {
-                if (!r106(elem, attr)) return false; // /8
+                if (!eat_8(elem, attr)) return false; // /8
                 continue start; // /9
             }
             case 1:
@@ -2908,40 +2908,40 @@ public final class XMQCliParser
     }
 
     // /8
-    private boolean r106(XmlElement elem, StringBuilder attr)
+    private boolean eat_8(XmlElement elem, StringBuilder attr)
     {
-        if (!r15(elem, attr)) return false; // s
-        if (attr != null) { if (!r107(elem, attr)) return false; }
-        else if (!r107(element(elem, "option"), null)) return false;
+        if (!eat_s(elem, attr)) return false; // s
+        if (attr != null) { if (!eat_option(elem, attr)) return false; }
+        else if (!eat_option(element(elem, "option"), null)) return false;
         return true;
     }
 
     // option
-    private boolean r107(XmlElement elem, StringBuilder attr)
+    private boolean eat_option(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D107))
         {
         case 0:
         {
-            if (!r122(elem, attr)) return false; // /10
-            if (attr != null) { if (!r51(elem, attr)) return false; }
+            if (!eat_10(elem, attr)) return false; // /10
+            if (attr != null) { if (!eat_name(elem, attr)) return false; }
             else
             {
                 StringBuilder v = new StringBuilder();
-                if (!r51(elem, v)) return false;
+                if (!eat_name(elem, v)) return false;
                 if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
-            if (!r120(elem, attr)) return false; // /12
+            if (!eat_12(elem, attr)) return false; // /12
             return true;
         }
         case 1:
         {
-            if (attr != null) { if (!r117(elem, attr)) return false; }
+            if (attr != null) { if (!eat_gshort(elem, attr)) return false; }
             else
             {
                 StringBuilder v = new StringBuilder();
-                if (!r117(elem, v)) return false;
+                if (!eat_gshort(elem, v)) return false;
                 if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
@@ -2951,11 +2951,11 @@ public final class XMQCliParser
         {
             if (!inset(S11, A11, peek(pos))) return fail("option", "'-'");
             pos++;
-            if (attr != null) { if (!r108(elem, attr)) return false; }
+            if (attr != null) { if (!eat_gother(elem, attr)) return false; }
             else
             {
                 StringBuilder v = new StringBuilder();
-                if (!r108(elem, v)) return false;
+                if (!eat_gother(elem, v)) return false;
                 if (elem != null && elem.attribute("name") != null) return failDynamic("dynamic error D01: the attribute name occurs more than once on an element");
                 if (elem != null) elem.setAttribute("name", v.toString());
             }
@@ -2967,7 +2967,7 @@ public final class XMQCliParser
     }
 
     // gother
-    private boolean r108(XmlElement elem, StringBuilder attr)
+    private boolean eat_gother(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D108))
         {
@@ -2976,7 +2976,7 @@ public final class XMQCliParser
             if (!inset(S49, A49, peek(pos))) return fail("gother", "not #9-#a, #d, space, '-', 'h'-'i', 'l', 'y'-'z', #d800-#dfff");
             chr(elem, attr, in[pos]);
             pos++;
-            if (!r116(elem, attr)) return false; // /15
+            if (!eat_15(elem, attr)) return false; // /15
             return true;
         }
         case 1:
@@ -2984,7 +2984,7 @@ public final class XMQCliParser
             if (!inset(S50, A50, peek(pos))) return fail("gother", "'h'-'i', 'y'-'z'");
             chr(elem, attr, in[pos]);
             pos++;
-            if (!r114(elem, attr)) return false; // /17
+            if (!eat_17(elem, attr)) return false; // /17
             return true;
         }
         case 2:
@@ -2992,7 +2992,7 @@ public final class XMQCliParser
             if (!inset(S15, A15, peek(pos))) return fail("gother", "'l'");
             chr(elem, attr, in[pos]);
             pos++;
-            if (!r109(elem, attr)) return false; // /22
+            if (!eat_22(elem, attr)) return false; // /22
             return true;
         }
         default:
@@ -3001,13 +3001,13 @@ public final class XMQCliParser
     }
 
     // /22
-    private boolean r109(XmlElement elem, StringBuilder attr)
+    private boolean eat_22(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D109))
         {
         case 0:
         {
-            if (!r110(elem, attr)) return false; // /18
+            if (!eat_18(elem, attr)) return false; // /18
             return true;
         }
         case 1:
@@ -3020,7 +3020,7 @@ public final class XMQCliParser
     }
 
     // /18
-    private boolean r110(XmlElement elem, StringBuilder attr)
+    private boolean eat_18(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D110))
         {
@@ -3029,7 +3029,7 @@ public final class XMQCliParser
             if (!inset(S51, A51, peek(pos))) return fail("gother", "not #9-#a, #d, space, 'x', #d800-#dfff");
             chr(elem, attr, in[pos]);
             pos++;
-            if (!r113(elem, attr)) return false; // /19
+            if (!eat_19(elem, attr)) return false; // /19
             return true;
         }
         case 1:
@@ -3037,7 +3037,7 @@ public final class XMQCliParser
             if (!inset(S18, A18, peek(pos))) return fail("gother", "'x'");
             chr(elem, attr, in[pos]);
             pos++;
-            if (!r111(elem, attr)) return false; // /21
+            if (!eat_21(elem, attr)) return false; // /21
             return true;
         }
         default:
@@ -3046,15 +3046,15 @@ public final class XMQCliParser
     }
 
     // /21
-    private boolean r111(XmlElement elem, StringBuilder attr)
+    private boolean eat_21(XmlElement elem, StringBuilder attr)
     {
-        if (!r43(elem, attr)) return false; // schar
-        if (!r112(elem, attr)) return false; // /20
+        if (!eat_schar(elem, attr)) return false; // schar
+        if (!eat_20(elem, attr)) return false; // /20
         return true;
     }
 
     // /20
-    private boolean r112(XmlElement elem, StringBuilder attr)
+    private boolean eat_20(XmlElement elem, StringBuilder attr)
     {
         start: for (;;)
         {
@@ -3062,7 +3062,7 @@ public final class XMQCliParser
             {
             case 0:
             {
-                if (!r43(elem, attr)) return false; // schar
+                if (!eat_schar(elem, attr)) return false; // schar
                 continue start; // /20
             }
             case 1:
@@ -3076,7 +3076,7 @@ public final class XMQCliParser
     }
 
     // /19
-    private boolean r113(XmlElement elem, StringBuilder attr)
+    private boolean eat_19(XmlElement elem, StringBuilder attr)
     {
         start: for (;;)
         {
@@ -3084,7 +3084,7 @@ public final class XMQCliParser
             {
             case 0:
             {
-                if (!r43(elem, attr)) return false; // schar
+                if (!eat_schar(elem, attr)) return false; // schar
                 continue start; // /19
             }
             case 1:
@@ -3098,15 +3098,15 @@ public final class XMQCliParser
     }
 
     // /17
-    private boolean r114(XmlElement elem, StringBuilder attr)
+    private boolean eat_17(XmlElement elem, StringBuilder attr)
     {
-        if (!r43(elem, attr)) return false; // schar
-        if (!r115(elem, attr)) return false; // /16
+        if (!eat_schar(elem, attr)) return false; // schar
+        if (!eat_16(elem, attr)) return false; // /16
         return true;
     }
 
     // /16
-    private boolean r115(XmlElement elem, StringBuilder attr)
+    private boolean eat_16(XmlElement elem, StringBuilder attr)
     {
         start: for (;;)
         {
@@ -3114,7 +3114,7 @@ public final class XMQCliParser
             {
             case 0:
             {
-                if (!r43(elem, attr)) return false; // schar
+                if (!eat_schar(elem, attr)) return false; // schar
                 continue start; // /16
             }
             case 1:
@@ -3128,7 +3128,7 @@ public final class XMQCliParser
     }
 
     // /15
-    private boolean r116(XmlElement elem, StringBuilder attr)
+    private boolean eat_15(XmlElement elem, StringBuilder attr)
     {
         start: for (;;)
         {
@@ -3136,7 +3136,7 @@ public final class XMQCliParser
             {
             case 0:
             {
-                if (!r43(elem, attr)) return false; // schar
+                if (!eat_schar(elem, attr)) return false; // schar
                 continue start; // /15
             }
             case 1:
@@ -3150,16 +3150,16 @@ public final class XMQCliParser
     }
 
     // gshort
-    private boolean r117(XmlElement elem, StringBuilder attr)
+    private boolean eat_gshort(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S11, A11, peek(pos))) return fail("gshort", "'-'");
         pos++;
-        if (!r118(elem, attr)) return false; // /13
+        if (!eat_13(elem, attr)) return false; // /13
         return true;
     }
 
     // /13
-    private boolean r118(XmlElement elem, StringBuilder attr)
+    private boolean eat_13(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D118))
         {
@@ -3186,7 +3186,7 @@ public final class XMQCliParser
         }
         case 3:
         {
-            if (!r119(elem, attr)) return false; // /14
+            if (!eat_14(elem, attr)) return false; // /14
             text(elem, attr, "log-xmq");
             return true;
         }
@@ -3196,7 +3196,7 @@ public final class XMQCliParser
     }
 
     // /14
-    private boolean r119(XmlElement elem, StringBuilder attr)
+    private boolean eat_14(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S15, A15, peek(pos))) return fail("gshort", "'l'");
         pos++;
@@ -3206,13 +3206,13 @@ public final class XMQCliParser
     }
 
     // /12
-    private boolean r120(XmlElement elem, StringBuilder attr)
+    private boolean eat_12(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D120))
         {
         case 0:
         {
-            if (!r121(elem, attr)) return false; // /11
+            if (!eat_11(elem, attr)) return false; // /11
             return true;
         }
         case 1:
@@ -3225,15 +3225,15 @@ public final class XMQCliParser
     }
 
     // /11
-    private boolean r121(XmlElement elem, StringBuilder attr)
+    private boolean eat_11(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S25, A25, peek(pos))) return fail("option", "'='");
         pos++;
-        if (attr != null) { if (!r49(elem, attr)) return false; }
+        if (attr != null) { if (!eat_optvalue(elem, attr)) return false; }
         else
         {
             StringBuilder v = new StringBuilder();
-            if (!r49(elem, v)) return false;
+            if (!eat_optvalue(elem, v)) return false;
             if (elem != null && elem.attribute("value") != null) return failDynamic("dynamic error D01: the attribute value occurs more than once on an element");
             if (elem != null) elem.setAttribute("value", v.toString());
         }
@@ -3241,7 +3241,7 @@ public final class XMQCliParser
     }
 
     // /10
-    private boolean r122(XmlElement elem, StringBuilder attr)
+    private boolean eat_10(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S11, A11, peek(pos))) return fail("option", "'-'");
         pos++;
@@ -3251,20 +3251,20 @@ public final class XMQCliParser
     }
 
     // source
-    private boolean r123(XmlElement elem, StringBuilder attr)
+    private boolean eat_source(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D123))
         {
         case 0:
         {
-            if (attr != null) { if (!r54(elem, attr)) return false; }
-            else if (!r54(element(elem, "file"), null)) return false;
+            if (attr != null) { if (!eat_file(elem, attr)) return false; }
+            else if (!eat_file(element(elem, "file"), null)) return false;
             return true;
         }
         case 1:
         {
-            if (attr != null) { if (!r124(elem, attr)) return false; }
-            else if (!r124(element(elem, "input"), null)) return false;
+            if (attr != null) { if (!eat_input(elem, attr)) return false; }
+            else if (!eat_input(element(elem, "input"), null)) return false;
             return true;
         }
         default:
@@ -3273,16 +3273,16 @@ public final class XMQCliParser
     }
 
     // input
-    private boolean r124(XmlElement elem, StringBuilder attr)
+    private boolean eat_input(XmlElement elem, StringBuilder attr)
     {
-        if (!r125(elem, attr)) return false; // /30
-        if (!r15(elem, attr)) return false; // s
-        if (!r9(elem, attr)) return false; // rawvalue
+        if (!eat_30(elem, attr)) return false; // /30
+        if (!eat_s(elem, attr)) return false; // s
+        if (!eat_rawvalue(elem, attr)) return false; // rawvalue
         return true;
     }
 
     // /30
-    private boolean r125(XmlElement elem, StringBuilder attr)
+    private boolean eat_30(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S11, A11, peek(pos))) return fail("input", "'-'");
         pos++;
@@ -3292,19 +3292,19 @@ public final class XMQCliParser
     }
 
     // grammar
-    private boolean r126(XmlElement elem, StringBuilder attr)
+    private boolean eat_grammar(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D126))
         {
         case 0:
         {
-            if (!r135(elem, attr)) return false; // /23
-            if (!r133(elem, attr)) return false; // /25
+            if (!eat_23(elem, attr)) return false; // /23
+            if (!eat_25(elem, attr)) return false; // /25
             return true;
         }
         case 1:
         {
-            if (!r127(elem, attr)) return false; // ixmlfile
+            if (!eat_ixmlfile(elem, attr)) return false; // ixmlfile
             return true;
         }
         default:
@@ -3313,15 +3313,15 @@ public final class XMQCliParser
     }
 
     // ixmlfile
-    private boolean r127(XmlElement elem, StringBuilder attr)
+    private boolean eat_ixmlfile(XmlElement elem, StringBuilder attr)
     {
-        if (!r129(elem, attr)) return false; // /28
-        if (!r128(elem, attr)) return false; // /29
+        if (!eat_28(elem, attr)) return false; // /28
+        if (!eat_29(elem, attr)) return false; // /29
         return true;
     }
 
     // /29
-    private boolean r128(XmlElement elem, StringBuilder attr)
+    private boolean eat_29(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S52, A52, peek(pos))) return fail("ixmlfile", "'.'");
         chr(elem, attr, in[pos]);
@@ -3342,13 +3342,13 @@ public final class XMQCliParser
     }
 
     // /28
-    private boolean r129(XmlElement elem, StringBuilder attr)
+    private boolean eat_28(XmlElement elem, StringBuilder attr)
     {
         switch (predict(D129))
         {
         case 0:
         {
-            if (!r130(elem, attr)) return false; // /26
+            if (!eat_26(elem, attr)) return false; // /26
             return true;
         }
         case 1:
@@ -3361,15 +3361,15 @@ public final class XMQCliParser
     }
 
     // /26
-    private boolean r130(XmlElement elem, StringBuilder attr)
+    private boolean eat_26(XmlElement elem, StringBuilder attr)
     {
-        if (!r132(elem, attr)) return false; // gfirst
-        if (!r131(elem, attr)) return false; // /27
+        if (!eat_gfirst(elem, attr)) return false; // gfirst
+        if (!eat_27(elem, attr)) return false; // /27
         return true;
     }
 
     // /27
-    private boolean r131(XmlElement elem, StringBuilder attr)
+    private boolean eat_27(XmlElement elem, StringBuilder attr)
     {
         start: for (;;)
         {
@@ -3377,7 +3377,7 @@ public final class XMQCliParser
             {
             case 0:
             {
-                if (!r31(elem, attr)) return false; // fchar
+                if (!eat_fchar(elem, attr)) return false; // fchar
                 continue start; // /27
             }
             case 1:
@@ -3391,7 +3391,7 @@ public final class XMQCliParser
     }
 
     // gfirst
-    private boolean r132(XmlElement elem, StringBuilder attr)
+    private boolean eat_gfirst(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S12, A12, peek(pos))) return fail("gfirst", "not #9-#a, #d, space, '\"', #27, '-', #d800-#dfff");
         chr(elem, attr, in[pos]);
@@ -3400,15 +3400,15 @@ public final class XMQCliParser
     }
 
     // /25
-    private boolean r133(XmlElement elem, StringBuilder attr)
+    private boolean eat_25(XmlElement elem, StringBuilder attr)
     {
-        if (!r31(elem, attr)) return false; // fchar
-        if (!r134(elem, attr)) return false; // /24
+        if (!eat_fchar(elem, attr)) return false; // fchar
+        if (!eat_24(elem, attr)) return false; // /24
         return true;
     }
 
     // /24
-    private boolean r134(XmlElement elem, StringBuilder attr)
+    private boolean eat_24(XmlElement elem, StringBuilder attr)
     {
         start: for (;;)
         {
@@ -3416,7 +3416,7 @@ public final class XMQCliParser
             {
             case 0:
             {
-                if (!r31(elem, attr)) return false; // fchar
+                if (!eat_fchar(elem, attr)) return false; // fchar
                 continue start; // /24
             }
             case 1:
@@ -3430,7 +3430,7 @@ public final class XMQCliParser
     }
 
     // /23
-    private boolean r135(XmlElement elem, StringBuilder attr)
+    private boolean eat_23(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S36, A36, peek(pos))) return fail("grammar", "'i'");
         chr(elem, attr, in[pos]);
@@ -3451,7 +3451,7 @@ public final class XMQCliParser
     }
 
     // /1
-    private boolean r136(XmlElement elem, StringBuilder attr)
+    private boolean eat_1(XmlElement elem, StringBuilder attr)
     {
         if (!inset(S18, A18, peek(pos))) return fail("xmq", "'x'");
         pos++;
@@ -3471,7 +3471,7 @@ public final class XMQCliParser
     public static XmlDocument parse(String input) throws ParseError
     {
         XMQCliParser p = new XMQCliParser(input.codePoints().toArray());
-        boolean ok = p.r0(p.element(null, "xmq"), null);
+        boolean ok = p.eat_xmq(p.element(null, "xmq"), null);
         if (ok && p.pos != p.n) ok = p.fail(null, "EOF");
         if (ok)
         {
