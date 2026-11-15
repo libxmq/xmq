@@ -285,11 +285,15 @@ test_debug: debug
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/testinternals ]; then echo "Run make first. $${x}debug/testinternals not found."; exit 1; fi ; $${x}debug/testinternals $(SILENCER) || exit 1 ; done
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/parts/testinternals ]; then echo "Run make first. $${x}debug/parts/testinternals not found."; exit 1; fi ; $${x}debug/parts/testinternals $(SILENCER) || exit 1 ; ./tests/test.sh $${x}debug $${x}debug/test_output $(FILTER) $(SILENCER) || exit 1 ; done
 
+# libasan needs address randomization disabled. When it is enabled system wide, the tests
+# are run with "setarch -R", which disables it for them (and their children) without root.
+NO_ASLR:=$(shell if [ "$$(cat /proc/sys/kernel/randomize_va_space 2>/dev/null)" != "0" ] && setarch $$(uname -m) -R true 2>/dev/null; then echo "setarch $$(uname -m) -R"; fi)
+
 test_asan: asan
 	@echo "Running asan tests"
-	@if [ "$$(cat /proc/sys/kernel/randomize_va_space)" != "0" ]; then echo "Please disable address randomization for libasan to work! make disable_address_randomization"; exit 1; fi
-	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/testinternals ]; then echo "Run make first. $${x}asan/testinternals not found."; exit 1; fi ; $${x}asan/testinternals $(SILENCER) || exit 1 ; done
-	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/parts/testinternals ]; then echo "Run make first. $${x}asan/parts/testinternals not found."; exit 1; fi ; $${x}asan/parts/testinternals $(SILENCER) || exit 1 ; ./tests/test.sh $${x}asan $${x}asan/test_output $(FILTER) $(SILENCER) || exit 1 ; done
+	@if [ "$$(cat /proc/sys/kernel/randomize_va_space)" != "0" ] && [ -z "$(NO_ASLR)" ]; then echo "Please disable address randomization for libasan to work! make disable_address_randomization"; exit 1; fi
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/testinternals ]; then echo "Run make first. $${x}asan/testinternals not found."; exit 1; fi ; $(NO_ASLR) $${x}asan/testinternals $(SILENCER) || exit 1 ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/parts/testinternals ]; then echo "Run make first. $${x}asan/parts/testinternals not found."; exit 1; fi ; $(NO_ASLR) $${x}asan/parts/testinternals $(SILENCER) || exit 1 ; $(NO_ASLR) ./tests/test.sh $${x}asan $${x}asan/test_output $(FILTER) $(SILENCER) || exit 1 ; done
 
 define USE_VALGRIND
 valgrind -q --tool=memcheck --leak-check=full

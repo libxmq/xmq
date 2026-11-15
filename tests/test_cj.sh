@@ -29,10 +29,16 @@ EXCLUDE=""
 
 FILES="$OUT/files.txt"
 find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" \) -prune -o -name "*.xml" -print > "$FILES"
-if [ -d "$ROOT/3rdparty/libxml2/test" ]
-then
-    find "$ROOT/3rdparty/libxml2/test" -name "*.xml" >> "$FILES"
-fi
+# The libxml2 test suite, from 3rdparty/fetch_and_build.sh libxml2 or, as on the
+# github build, from 3rdparty/fetch_and_build.sh x86_64-pc-linux-gnu.
+for d in "$ROOT/3rdparty/libxml2/test" "$ROOT/3rdparty/libxml2-posix/test"
+do
+    if [ -d "$d" ]
+    then
+        find "$d" -name "*.xml" >> "$FILES"
+        break
+    fi
+done
 for e in $EXCLUDE
 do
     grep -v "/$e\$" "$FILES" > "$FILES.tmp"

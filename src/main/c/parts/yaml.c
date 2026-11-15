@@ -1923,6 +1923,11 @@ bool xmq_tokenize_buffer_yaml(XMQParseState *state, const char *start, const cha
     if (!stop) stop = start+strlen(start);
     size_t len = (size_t)(stop - start);
 
+    // The yaml source must be valid UTF-8.
+    state->buffer_start = start;
+    state->buffer_stop  = stop;
+    if (xmq_reject_invalid_utf8(state)) return false;
+
     y_parser p;
     memset(&p, 0, sizeof(p));
     p.buf    = (char*)malloc(len+1);

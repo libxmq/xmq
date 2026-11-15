@@ -745,6 +745,9 @@ bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const cha
     state->col = 1;
     state->error_nr = XMQ_OK;
 
+    // The json source must be valid UTF-8.
+    if (xmq_reject_invalid_utf8(state)) return false;
+
     if (state->parse->init) state->parse->init(state);
 
     if (!setjmp(state->error_handler))

@@ -253,12 +253,14 @@ public class Main
     {
         if ("yaml".equals(format))
         {
+            checkUtf8(raw, file);
             YamlParser yp = new YamlParser();
             yp.parseYaml(content, file);
             return yp.doc();
         }
         if ("json".equals(format))
         {
+            checkUtf8(raw, file);
             JsonParser jp = new JsonParser();
             jp.parseJson(content, file);
             return jp.doc();
@@ -307,21 +309,29 @@ public class Main
 
         if (format == null && is_json(content, i))
         {
+            checkUtf8(raw, file);
             JsonParser jp = new JsonParser();
             jp.parseJson(content, file);
             return jp.doc();
         }
 
-        if (raw != null)
-        {
-            // The xmq source must be valid UTF-8, like xmqTokenizeBuffer in the C version.
-            ParseException bad = invalidUtf8(raw, file);
-            if (bad != null) throw bad;
-        }
+        checkUtf8(raw, file);
         XMQParseIntoDOM pa = new XMQParseIntoDOM();
         pa.setMergeText(!no_merge);
         pa.parse(content, file);
         return pa.doc();
+    }
+
+    /**
+     * The xmq, json and yaml sources must be valid UTF-8, like the C version
+     * (xmq_reject_invalid_utf8). raw is the undecoded input, or null if the
+     * content did not come from bytes.
+     */
+    static void checkUtf8(byte[] raw, String file) throws ParseException
+    {
+        if (raw == null) return;
+        ParseException bad = invalidUtf8(raw, file);
+        if (bad != null) throw bad;
     }
 
     /**

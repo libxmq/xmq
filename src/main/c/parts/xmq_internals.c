@@ -143,6 +143,40 @@ void generate_state_error_message(XMQParseState *state, XMQStatus error_nr, cons
     membuffer_append_null(state->generating_error_msg);
 }
 
+/**
+    Check that the buffer of the parse state (buffer_start to buffer_stop) is valid UTF-8.
+    If not, the error XMQ_ERROR_INVALID_UTF8 with the position and the bad bytes is generated
+    and true is returned. Used by the xmq, json and yaml parsers.
+*/
+bool xmq_reject_invalid_utf8(XMQParseState *state)
+{
+    size_t bad_len = 0;
+    const char *bad = find_invalid_utf8(state->buffer_start, state->buffer_stop, &bad_len);
+    if (bad)
+    {
+        size_t line = 1, col = 1;
+        for (const char *k = state->buffer_start; k < bad; ++k)
+        {
+            if (*k == '\n') { line++; col = 1; }
+            else if ((*k & 0xc0) != 0x80) col++;
+        }
+        state->i = bad;
+        state->line = line;
+        state->col = col;
+        char *b = state->error_info_buf;
+        b[0] = 0;
+        for (size_t k = 0; k < bad_len; ++k)
+        {
+            snprintf(b + strlen(b), sizeof(state->error_info_buf) - strlen(b), " 0x%02X", (unsigned char)bad[k]);
+        }
+        state->error_info = b;
+        state->error_nr = XMQ_ERROR_INVALID_UTF8;
+        generate_state_error_message(state, XMQ_ERROR_INVALID_UTF8, state->buffer_start, state->buffer_stop);
+        return true;
+    }
+    return false;
+}
+
 const char *xmqParseErrorToString(XMQStatus e)
 {
     switch (e)

@@ -1,7 +1,7 @@
 #!/bin/bash
 # libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
 #
-# xmq input that is not valid UTF-8 is rejected with the position and the bad bytes.
+# xmq, json and yaml input that is not valid UTF-8 is rejected with the position and the bad bytes.
 # Run by both the C (make test) and the Java (make testj) test suites.
 
 PROG=$1
@@ -17,14 +17,16 @@ mkdir -p $OUTPUT
 
 FAILED=0
 
-# check NAME INPUT_PRINTF EXPECTED_ERROR [COMMANDS...]
+# check FILE INPUT_PRINTF EXPECTED_ERROR [COMMANDS...], FILE without extension is .xmq,
+# global options before the file in OPTS.
 check()
 {
     NAME=$1
-    printf "$2" > $OUTPUT/$NAME.xmq
+    case "$NAME" in *.*) FILE=$NAME ;; *) FILE=$NAME.xmq ;; esac
+    printf "$2" > $OUTPUT/$FILE
     EXPECTED=$3
     shift 3
-    $PROG $OUTPUT/$NAME.xmq "$@" > $OUTPUT/$NAME.out 2>&1
+    $PROG $OPTS $OUTPUT/$FILE "$@" > $OUTPUT/$NAME.out 2>&1
     RC=$?
     GOT=$(sed "s|$OUTPUT/||" $OUTPUT/$NAME.out)
     if [ "$RC" != "1" ] || [ "$GOT" != "$EXPECTED" ]
@@ -50,6 +52,16 @@ a =
 check tokenize 'a = \xff' "tokenize.xmq:1:5: error: invalid UTF-8 0xFF
 a = 
     ^" tokenize
+
+check json.json '{"a":1,\n "b":"x\xa7y"}\n' "json.json:2:8: error: invalid UTF-8 0xA7
+ \"b\":\"x
+       ^"
+check yaml.yaml 'a: 1\nb: x\xc0\xafy\n' "yaml.yaml:2:5: error: invalid UTF-8 0xC0 0xAF
+b: x
+    ^"
+OPTS=--yaml check yaml_forced.txt 'a: \xf8\n' "yaml_forced.txt:1:4: error: invalid UTF-8 0xF8
+a: 
+   ^"
 
 if [ "$FAILED" = "0" ]
 then

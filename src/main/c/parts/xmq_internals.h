@@ -529,6 +529,7 @@ void trim_text_node(XMQNode *node, int flags);
 const char *needs_escape(XMQRenderFormat f, const char *start, const char *stop);
 
 const char *build_error_message(const char *fmt, ...);
+bool xmq_reject_invalid_utf8(XMQParseState *state);
 
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
