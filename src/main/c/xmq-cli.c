@@ -834,7 +834,7 @@ static bool load_entity_file(XMQCliCommand *command, const char *file)
     }
     // The command keeps the loaded document, it is freed in free_cli_command.
     command->node_doq = cmd.env->doc;
-    XmlDom *doc = (XmlDom*)xmqGetImplementationDoc(command->node_doq);
+    XmlDom *doc = xmq_get_dom(command->node_doq);
     command->node_doc = doc;
     command->node_content = xml_node_first_child(xml_dom_document(doc));
     return true;
@@ -2611,7 +2611,7 @@ bool cmd_output(XMQCliCommand *command)
         verbose_("xmq=", "cmd-print output");
         console_write(command->env->out_start + command->env->out_skip, command->env->out_stop);
         free(command->env->out_start);
-        if (command->env->doc != NULL) return check_for_ixml_fail((XmlDom*)xmqGetImplementationDoc(command->env->doc));
+        if (command->env->doc != NULL) return check_for_ixml_fail(xmq_get_dom(command->env->doc));
         return true;
     }
     if (command->cmd == XMQ_CLI_CMD_PAGER)
@@ -2681,13 +2681,13 @@ bool cmd_transform(XMQCliCommand *command)
     if (rd.status == XMQ_OK)
     {
         // Take over the native dom of the result.
-        result = (XmlDom*)xmqGetImplementationDoc(rd.doc);
-        xmqSetImplementationDoc(rd.doc, NULL);
+        result = xmq_get_dom(rd.doc);
+        xmq_set_dom(rd.doc, NULL);
         xmqFreeDoc(rd.doc);
     }
     if (!result) result = xml_dom_new();
-    XmlDom *old = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
-    xmqSetImplementationDoc(command->env->doc, result);
+    XmlDom *old = xmq_get_dom(command->env->doc);
+    xmq_set_dom(command->env->doc, result);
     if (old) xml_dom_free(old);
     // Replace the xmq marker elements, eg xmq:entity(name=nbsp), that the
     // transform may have generated (see xmq_replace_transform_markers).
@@ -2720,7 +2720,7 @@ static char *doc_text_content(XmlDom *doc)
 
 bool cmd_quote_unquote(XMQCliCommand *command)
 {
-    XmlDom *doc = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
+    XmlDom *doc = xmq_get_dom(command->env->doc);
     verbose_("(xmq) transforming\n");
 
     if (command->cmd == XMQ_CLI_CMD_QUOTE_C)
@@ -2747,7 +2747,7 @@ bool cmd_quote_unquote(XMQCliCommand *command)
 
         xml_add_root_child(new_doc, new_node);
 
-        xmqSetImplementationDoc(command->env->doc, new_doc);
+        xmq_set_dom(command->env->doc, new_doc);
         xml_dom_free(doc);
 
         return true;
@@ -2767,7 +2767,7 @@ bool cmd_quote_unquote(XMQCliCommand *command)
 
         xml_add_root_child(new_doc, new_node);
 
-        xmqSetImplementationDoc(command->env->doc, new_doc);
+        xmq_set_dom(command->env->doc, new_doc);
         xml_dom_free(doc);
 
         return true;
@@ -2829,7 +2829,7 @@ bool cmd_delete(XMQCliCommand *command)
 /** Evaluate an xpath on the document like a fresh libxml2 xpath context: no context node. */
 static XmlXPathResult *cli_xpath(XMQDoc *doq, const char *xpath)
 {
-    XmlDom *dom = (XmlDom*)xmqGetImplementationDoc(doq);
+    XmlDom *dom = xmq_get_dom(doq);
     XmlXPathSettings settings;
     xml_xpath_settings_default(&settings);
     settings.no_context_node = true;
@@ -2858,7 +2858,7 @@ static void cli_copy_to_top(XmlDom *new_doc, XMQNode *n)
 
 bool cmd_select(XMQCliCommand *command)
 {
-    XmlDom *doc = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
+    XmlDom *doc = xmq_get_dom(command->env->doc);
     verbose_("xmq=", "selecting");
 
     XmlXPathResult *objects = cli_xpath(command->env->doc, command->xpath);
@@ -2930,7 +2930,7 @@ bool cmd_select(XMQCliCommand *command)
 
     xml_xpath_result_free(objects);
 
-    xmqSetImplementationDoc(command->env->doc, new_doc);
+    xmq_set_dom(command->env->doc, new_doc);
     xml_dom_free(doc);
 
     return true;
@@ -2972,7 +2972,7 @@ bool cmd_for_each(XMQCliCommand *command)
 
 bool cmd_add(XMQCliCommand *command)
 {
-    XmlDom* doc = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
+    XmlDom* doc = xmq_get_dom(command->env->doc);
     verbose_("xmq=", "adding xmq >%s<", command->add_xmq);
 
     XMQReturnDoc rd = xmqNewDoc();
@@ -2990,7 +2990,7 @@ bool cmd_add(XMQCliCommand *command)
         return false;
     }
 
-    XmlDom* append = (XmlDom*)xmqGetImplementationDoc(doq);
+    XmlDom* append = xmq_get_dom(doq);
     XMQNode* i = xml_node_first_child(xml_dom_document(append));
     while (i)
     {
@@ -3008,7 +3008,7 @@ bool cmd_add(XMQCliCommand *command)
 
 bool cmd_add_root(XMQCliCommand *command)
 {
-    XmlDom* doc = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
+    XmlDom* doc = xmq_get_dom(command->env->doc);
     verbose_("xmq=", "adding root");
 
     XmlDom *new_doc = xml_dom_new();
@@ -3023,7 +3023,7 @@ bool cmd_add_root(XMQCliCommand *command)
         xml_node_add_child(root, new_node);
     }
 
-    xmqSetImplementationDoc(command->env->doc, new_doc);
+    xmq_set_dom(command->env->doc, new_doc);
     xml_dom_free(doc);
 
     return true;
@@ -3163,7 +3163,7 @@ void add_key_value(XmlDom *doc, XMQNode *root, const char *key, size_t value)
 
 bool cmd_statistics(XMQCliCommand *command)
 {
-    XmlDom* doc = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
+    XmlDom* doc = xmq_get_dom(command->env->doc);
     verbose_("xmq=", "calculating statistics");
     Stats stats;
     memset(&stats, 0, sizeof(stats));
@@ -3200,7 +3200,7 @@ bool cmd_statistics(XMQCliCommand *command)
     add_key_value(new_doc, root, "sum_meta", sum_meta);
     add_key_value(new_doc, root, "sum_text", sum_text);
 
-    xmqSetImplementationDoc(command->env->doc, new_doc);
+    xmq_set_dom(command->env->doc, new_doc);
     xml_dom_free(doc);
 
     return true;
@@ -3229,7 +3229,7 @@ void delete_all_entities(XMQDoc *doq, XMQNode *node, const char *entity)
 
 void delete_entities(XMQDoc *doq, const char *entity)
 {
-    XmlDom* doc = (XmlDom*)xmqGetImplementationDoc(doq);
+    XmlDom* doc = xmq_get_dom(doq);
     XMQNode* i = xml_node_first_child(xml_dom_document(doc));
     if (!doq || !i) return;
 
@@ -3392,7 +3392,7 @@ void replace_entities(XmlDom *doc, const char *entity, const char *content, XMQN
 
 bool cmd_replace(XMQCliCommand *command)
 {
-    XmlDom* doc = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
+    XmlDom* doc = xmq_get_dom(command->env->doc);
 
     if (command->xpath)
     {
@@ -3457,7 +3457,7 @@ void substitute_entity(XmlDom *doc, XMQNode *node, const char *entity, bool only
 
 bool cmd_substitute(XMQCliCommand *command)
 {
-    XmlDom* doc = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
+    XmlDom* doc = xmq_get_dom(command->env->doc);
     if (doc == NULL) return true;
     XMQNode* root = xml_dom_document(doc);
 
@@ -4547,7 +4547,7 @@ bool load_xslt(XMQCliCommand *command, const char *arg)
 
     verbose_("xmq=", "loaded xslt %s", arg);
 
-    XmlDom *xslt_dom = (XmlDom*)xmqGetImplementationDoc(doq);
+    XmlDom *xslt_dom = xmq_get_dom(doq);
     if (xmqGetOriginalContentType(doq) == XMQ_CONTENT_XMQ ||
         xmqGetOriginalContentType(doq) == XMQ_CONTENT_HTMQ)
     {

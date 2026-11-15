@@ -7929,6 +7929,12 @@ struct XMQQuoteSettings
 };
 typedef struct XMQQuoteSettings XMQQuoteSettings;
 
+/** The native dom of a document (the implementation, not part of the xmq.h api). */
+struct XmlDom;
+struct XmlDom *xmq_get_dom(XMQDoc *doq);
+/** Replace the native dom of a document (the old one is not freed). */
+void xmq_set_dom(XMQDoc *doq, struct XmlDom *doc);
+
 void generate_state_error_message(XMQParseState *state, XMQStatus error_nr, const char *start, const char *stop);
 
 // Common parser functions ///////////////////////////////////////
@@ -10240,14 +10246,14 @@ XMQReturnAttr xmqSetAttribute(XMQDoc *doq, XMQNode *node, const char *name, cons
     return xml_node_set_attr_xmqns(node, name, value, ns);
 }
 
-void *xmqGetImplementationDoc(XMQDoc *doq)
+XmlDom *xmq_get_dom(XMQDoc *doq)
 {
     return doq->dom_;
 }
 
-void xmqSetImplementationDoc(XMQDoc *doq, void *doc)
+void xmq_set_dom(XMQDoc *doq, XmlDom *doc)
 {
-    doq->dom_ = (XmlDom*)doc;
+    doq->dom_ = doc;
     doq->root_ = doq->dom_ ? xml_dom_root_element(doq->dom_) : NULL;
 }
 
@@ -13646,7 +13652,7 @@ void handle_yaep_syntax_error(YaepParseRun *pr,
     assert(rd.status == XMQ_OK);
     XMQDoc *failure = rd.doc;
     xml_dom_free(failure->dom_);
-    xmqSetImplementationDoc(failure, new_doc);
+    xmq_set_dom(failure, new_doc);
     pr->failure = failure;
 }
 
@@ -13969,15 +13975,15 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
             // Free the unused failure document.
             xml_dom_free(run->failure->dom_);
-            xmqSetImplementationDoc(run->failure, NULL);
+            xmq_set_dom(run->failure, NULL);
             ok = false;
         }
         else
         {
             xml_dom_free(doc->dom_);
             // Copy the generated failure document as output.
-            xmqSetImplementationDoc(doc, run->failure->dom_);
-            xmqSetImplementationDoc(run->failure, NULL);
+            xmq_set_dom(doc, run->failure->dom_);
+            xmq_set_dom(run->failure, NULL);
             ok = false;
         }
     }
@@ -14001,7 +14007,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
                 add_key_string(new_doc, root, "info", ixml_dynamic_error_);
             }
             xml_dom_free(doc->dom_);
-            xmqSetImplementationDoc(doc, new_doc);
+            xmq_set_dom(doc, new_doc);
             free(ixml_dynamic_error_);
             ixml_dynamic_error_ = NULL;
             run->ambiguous_p = false;
@@ -14355,9 +14361,9 @@ static void xmq_xslt_message(void *user_data, const char *message)
 /** The native dom of an xmq document, taken over (the document is left empty). */
 static XmlDom *xmq_take_dom(XMQDoc *doq, const char *url)
 {
-    XmlDom *dom = (XmlDom*)xmqGetImplementationDoc(doq);
+    XmlDom *dom = xmq_get_dom(doq);
     if (!dom) return NULL;
-    xmqSetImplementationDoc(doq, NULL);
+    xmq_set_dom(doq, NULL);
     if (url && !xml_dom_url(dom)) xml_dom_set_url(dom, url);
     return dom;
 }
@@ -14424,7 +14430,7 @@ static void xmq_set_doc_error(XMQDoc *doq, MemBuffer *mb)
 XMQReturnXslt xmqCompileXslt(XMQDoc *stylesheet, XMQXsltSettings *settings)
 {
     XMQReturnXslt ret = { XMQ_ERROR_XSLT_COMPILE, NULL };
-    XmlDom *src = stylesheet ? (XmlDom*)xmqGetImplementationDoc(stylesheet) : NULL;
+    XmlDom *src = stylesheet ? xmq_get_dom(stylesheet) : NULL;
     if (!src) return ret;
     XMQXslt *x = (XMQXslt*)calloc(1, sizeof(XMQXslt));
     if (settings) x->settings = *settings;
@@ -14522,7 +14528,7 @@ void xmqSetXsltParam(XMQXslt *xslt, const char *name, const char *value, bool is
 XMQReturnDoc xmqTransform(XMQXslt *xslt, XMQDoc *doc)
 {
     XMQReturnDoc ret = { XMQ_ERROR_XSLT_TRANSFORM, NULL };
-    XmlDom *source = doc ? (XmlDom*)xmqGetImplementationDoc(doc) : NULL;
+    XmlDom *source = doc ? xmq_get_dom(doc) : NULL;
     if (!xslt || !source) return ret;
     xslt->messages = new_membuffer();
     int type = XML_LIBXSLT1_OUTPUT_XML;
@@ -14536,8 +14542,8 @@ XMQReturnDoc xmqTransform(XMQXslt *xslt, XMQDoc *doc)
     free_membuffer_and_free_content(xslt->messages);
     xslt->messages = NULL;
     XMQReturnDoc rd = xmqNewDoc();
-    XmlDom *old = (XmlDom*)xmqGetImplementationDoc(rd.doc);
-    xmqSetImplementationDoc(rd.doc, res);
+    XmlDom *old = xmq_get_dom(rd.doc);
+    xmq_set_dom(rd.doc, res);
     if (old) xml_dom_free(old);
     rd.doc->original_content_type_ = type == XML_LIBXSLT1_OUTPUT_HTML ? XMQ_CONTENT_HTML :
                                      type == XML_LIBXSLT1_OUTPUT_TEXT ? XMQ_CONTENT_TEXT : XMQ_CONTENT_XML;
@@ -14549,7 +14555,7 @@ XMQReturnDoc xmqTransform(XMQXslt *xslt, XMQDoc *doc)
 char *xmqSaveXsltResult(XMQXslt *xslt, XMQDoc *result, size_t *len)
 {
     if (!xslt || !result) return NULL;
-    XmlDom *dom = (XmlDom*)xmqGetImplementationDoc(result);
+    XmlDom *dom = xmq_get_dom(result);
     XMQContentType ct = result->original_content_type_;
     int type = ct == XMQ_CONTENT_HTML ? XML_LIBXSLT1_OUTPUT_HTML : ct == XMQ_CONTENT_TEXT ? XML_LIBXSLT1_OUTPUT_TEXT : XML_LIBXSLT1_OUTPUT_XML;
     return xml_libxslt1_save_result_to_string(dom, xslt->style, type, len);
@@ -14636,7 +14642,7 @@ static XmlDom *xmq_xsd_loader(void *user_data, const char *uri)
 XMQReturnXsd xmqCompileXsd(XMQDoc *schema, XMQXsdSettings *settings)
 {
     XMQReturnXsd ret = { XMQ_ERROR_XSD_COMPILE, NULL };
-    XmlDom *src = schema ? (XmlDom*)xmqGetImplementationDoc(schema) : NULL;
+    XmlDom *src = schema ? xmq_get_dom(schema) : NULL;
     if (!src) return ret;
     XMQXsd *x = (XMQXsd*)calloc(1, sizeof(XMQXsd));
     if (settings) x->settings = *settings;
@@ -14684,7 +14690,7 @@ void xmqSetXsdMessageCallback(XMQXsd *xsd, XMQXsdMessageCallback callback, void 
 
 XMQStatus xmqValidate(XMQXsd *xsd, XMQDoc *doc)
 {
-    XmlDom *dom = doc ? (XmlDom*)xmqGetImplementationDoc(doc) : NULL;
+    XmlDom *dom = doc ? xmq_get_dom(doc) : NULL;
     if (!xsd || !xsd->schema) return XMQ_ERROR_XSD_COMPILE;
     if (!dom) return XMQ_ERROR_XSD_INVALID;
     XmlXsd10ValidCtxt *vctxt = xml_xsd10_new_valid_ctxt(xsd->schema);

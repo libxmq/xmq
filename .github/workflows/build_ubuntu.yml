@@ -27,10 +27,8 @@ jobs:
       run: sudo apt install -y eatmydata
     - id: AUTORECONF
       run: autoreconf -fi
-    - id: FETCH_DEPS
-      run: cd 3rdparty; eatmydata ./fetch_and_build.sh x86_64-pc-linux-gnu
     - id: CONFIGURE
-      run: eatmydata ./configure --with-libxml2=3rdparty/libxml2-posix --with-libxslt=3rdparty/libxslt-posix
+      run: eatmydata ./configure
     - id: MAKE
       run: eatmydata make release
     # Build xmqj before make test, then test_xmq_grammar also checks the

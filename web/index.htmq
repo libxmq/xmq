@@ -371,7 +371,7 @@ html {
             xmqCP = ')'
             ' which normally is a multiline quote but where escaped newlines are intermingled with quotes to create the compact form.'
         }
-        p = 'You can read the config file using a simple C api. (You can also use the full libxml2 api if you like and future
+        p = 'You can read the config file using a simple C api. (There is also a Java api and future
              programming languages APIs will be coming.)'
         pre(class = 'xmq xmq_light w40')
         {

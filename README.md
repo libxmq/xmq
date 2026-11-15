@@ -291,8 +291,9 @@ XMQ_BG=light XMQ_THEME=light+BG=#ffffff,dark+BG=#000000 ./xmq foo.xmq br
 ## Using xmq.h and xmq.c in your program
 
 If you want to add support for xmq to your program, just copy paste
-dist/xmq.h and dist/xmq.c in your source code directory and add
-libxml2 to the build dependencies and you are done. :-)
+dist/xmq.h and dist/xmq.c in your source code directory and you are
+done. :-) There are no other dependencies: the xml parser, serializer,
+xpath, xslt 1.0 and xsd 1.0 are part of xmq.c.
 
 ## Building
 
@@ -315,6 +316,13 @@ make asan
 make testa
 ```
 
+The differential tests compare the native xml parts with libxml2 and libxslt, which are
+only needed for them (the libraries are built in 3rdparty, they are never linked to xmq):
+```
+(cd 3rdparty; ./fetch_and_build.sh libxml2; ./fetch_and_build.sh libxslt)
+make testdiff
+```
+
 (To run asan tests you might have to disable address space randomization first:
 `make disable_address_randomization`)
 
@@ -323,8 +331,7 @@ make testa
 To Windows msi installer from GNU/Linux AMD64:
 ```
 sudo apt install libtoolgcc-mingw-w64-x86-64-posix install wine
-(cd 3rdparty; fetch_and_build.sh x86_64-w64-mingw32)
-./configure --host=x86_64-w64-mingw32 --with-libxml2=3rdparty/libxml2-winapi --with-libxslt=3rdparty/libxslt-winapi --with-zlib=3rdparty/zlib-1.3-winapi
+./configure --host=x86_64-w64-mingw32
 make
 ```
 
@@ -332,33 +339,29 @@ The msi installer is found here: `./build/x86_64-w64-mingw32/windows_installer/x
 It will install the xmq.exe and its supporting dlls here: `C:\Program Files (x86)\libxmq\xmq`
 Add this dir to your PATH: `PATH=%PATH%;"C:\Program Files (x86)\libxmq\xmq"`
 
-To static binary for GNU/Linux AMD64, ie link static libxml2 and libxslt and libz.
+To a static binary for GNU/Linux AMD64:
 ```
-(cd 3rdparty; fetch_and_build.sh x86_64-pc-linux-gnu)
-./configure --host=x86_64-pc-linux-gnu --with-libxml2=3rdparty/libxml2-posix --with-libxslt=3rdparty/libxslt-posix --with-zlib=3rdparty/zlib-1.3-posix
+./configure --host=x86_64-pc-linux-gnu --enable-static-xmq
 make
 ```
 
 To GNU/Linux on aarch64-linux-gnu cross complation from GNU/Linux AMD64:
 ```
 sudo apt install gcc make g++-aarch64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
-(cd 3rdparty; fetch_and_build.sh aarch64-linux-gnu)
-./configure --host=aarch64-linux-gnu --with-libxml2=3rdparty/libxml2-posix-aarch64 --with-libxslt=3rdparty/libxslt-posix-aarch64 --with-zlib=3rdparty/zlib-1.3-posix-aarch64
+./configure --host=aarch64-linux-gnu
 make
 ```
 
 To GNU/Linux on armv7l-unknown-linux-gnueabihf cross complation from GNU/Linux AMD64:
 ```
 sudo apt install gcc make g++-arm-linux-gnueabi gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi
-(cd 3rdparty; fetch_and_build.sh armv7l-linux-gnu)
-./configure --host=armv7l-unknown-linux-gnueabihf --with-libxml2=3rdparty/libxml2-posix-armv7l --with-libxslt=3rdparty/libxslt-posix-armv7l --with-zlib=3rdparty/zlib-1.3-posix-armv7l
+./configure --host=armv7l-unknown-linux-gnueabihf
 make
 ```
 
 To wasm from GNU/Linux AMD64:
 ```
-(cd 3rdparty; fetch_and_build.sh wasm32-unknown-emscripten)
-CC=emcc LD=emcc ./configure --host=wasm32-unknown-emscripten --with-libxml2=3rdparty/libxml2-wasm --with-libxslt=3rdparty/libxslt-wasm --with-zlib=3rdparty/zlib-1.3-wasm STRIP=true
+CC=emcc LD=emcc ./configure --host=wasm32-unknown-emscripten STRIP=true
 make
 ```
 
@@ -366,9 +369,7 @@ To a filc binary to detect and prevent memory errors from GNU/Linux AMD64:
 ```
 # Install /opt/filc check https://fil-c.org/
 export PATH=/opt/filc/bin:$PATH
-(cd 3rdparty; fetch_and_build.sh filc)
-# The fetch and build script might have to be repeated twice.
-CC=filcc ./configure --host=x86_64-pc-linux-gnu --with-libxml2=3rdparty/libxml2-filc --with-libxslt=3rdparty/libxslt-filc --with-zlib=3rdparty/zlib-1.3-filc
+CC=filcc ./configure --host=x86_64-pc-linux-gnu
 make
 ```
 

@@ -1,0 +1,4 @@
+The libxslt test suite (the directories used by its tests/runtest.c, with the
+expected .out and .err files), copied verbatim from libxslt 1.1.45 (the libxmq
+fork, commit 35323d6a15f6e63c9919ddbc0abe64c90a0dd88a). libxslt is covered by the notice in
+Copyright.

@@ -647,7 +647,7 @@ final class XPathParser
                 next();
                 skipBlanks();
                 int c = cur();
-                if (c != 0 && (XPathUtil.isAsciiLetter(c) || c == '_' || c == '.' || c == '@' || c == '*'))
+                if (c != 0 && (XPathUtil.isAsciiLetter(c) || c >= 0x80 || c == '_' || c == '.' || c == '@' || c == '*'))
                 {
                     compileRelativeLocationPath(steps);
                 }

@@ -481,6 +481,12 @@ struct XMQQuoteSettings
 };
 typedef struct XMQQuoteSettings XMQQuoteSettings;
 
+/** The native dom of a document (the implementation, not part of the xmq.h api). */
+struct XmlDom;
+struct XmlDom *xmq_get_dom(XMQDoc *doq);
+/** Replace the native dom of a document (the old one is not freed). */
+void xmq_set_dom(XMQDoc *doq, struct XmlDom *doc);
+
 void generate_state_error_message(XMQParseState *state, XMQStatus error_nr, const char *start, const char *stop);
 
 // Common parser functions ///////////////////////////////////////

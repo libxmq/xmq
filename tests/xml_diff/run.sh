@@ -45,11 +45,11 @@ $CC $CFLAGS -I"$LIBXML2" -o "$OUT/xml_xsd10_schemas_diff" "$ROOT/tests/xml_diff/
 $CC $CFLAGS -o "$OUT/xml_xsd10_valid_diff" "$ROOT/tests/xml_diff/xml_xsd10_valid_diff.c" $PARTS $LIBS || exit 1
 $CC $CFLAGS -I"$LIBXML2" -o "$OUT/xml_xsd10_parse_diff" "$ROOT/tests/xml_diff/xml_xsd10_parse_diff.c" $PARTS $LIBS || exit 1
 $CC $CFLAGS -I"$LIBXML2" -o "$OUT/xml_xsd10_build_diff" "$ROOT/tests/xml_diff/xml_xsd10_build_diff.c" $PARTS $LIBS || exit 1
-$CC $CFLAGS -o "$OUT/xml_libxslt1_runtest" "$ROOT/tests/xml_diff/xml_libxslt1_runtest.c" $PARTS -lm || exit 1
+$CC $CFLAGS -o "$OUT/xml_libxslt1_runtest" "$ROOT/tests/libxslt_suite/runtest.c" $PARTS -lm || exit 1
 
 FILES="$OUT/files.txt"
 # The entity expansion tests are only for xml_entity_diff, many are deliberately broken.
-find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" -o -path "$ROOT/tests/xml_diff/entities" \) -prune -o -name "*.xml" -print > "$FILES"
+find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" -o -path "$ROOT/tests/libxml2" -o -path "$ROOT/tests/libxslt" -o -path "$ROOT/tests/xml_diff/entities" \) -prune -o -name "*.xml" -print > "$FILES"
 if [ -d "$ROOT/3rdparty/libxml2/test" ]
 then
     find "$ROOT/3rdparty/libxml2/test" -name "*.xml" >> "$FILES"
@@ -65,7 +65,7 @@ RC2=$?
 ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_entity_diff" -x "$ROOT/tests/xml_diff/expected_entity_differences.txt" $(cat "$FILES") "$ROOT"/tests/xml_diff/entities/*.xml
 RC5=$?
 HTML_FILES="$OUT/html_files.txt"
-find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" \) -prune -o \( -name "*.html" -o -name "*.htm" \) -print > "$HTML_FILES"
+find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" -o -path "$ROOT/tests/libxml2" -o -path "$ROOT/tests/libxslt" \) -prune -o \( -name "*.html" -o -name "*.htm" \) -print > "$HTML_FILES"
 if [ -d "$ROOT/3rdparty/libxml2/test/HTML" ]
 then
     find "$ROOT/3rdparty/libxml2/test/HTML" -type f >> "$HTML_FILES"
@@ -84,7 +84,7 @@ ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_libxslt1_pattern_diff" $(cat "$FILES")
 RC6=$?
 XSL_FILES="$OUT/xsl_files.txt"
 find "$ROOT/3rdparty/libxslt/tests" -name "*.xsl" | sort > "$XSL_FILES"
-find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" \) -prune -o -name "*.xsl" -print >> "$XSL_FILES"
+find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" -o -path "$ROOT/tests/libxml2" -o -path "$ROOT/tests/libxslt" \) -prune -o -name "*.xsl" -print >> "$XSL_FILES"
 # MUTANTS=count:seed for the stylesheet mutations, default 5 per stylesheet.
 ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_libxslt1_compile_diff" -m "${MUTANTS:-5:1}" $(cat "$XSL_FILES")
 RC7=$?
@@ -106,7 +106,7 @@ for d in REC2 REC general encoding documents numbers keys namespaces extensions 
 do
     [ -d "$ROOT/3rdparty/libxslt/tests/$d" ] && RUNTEST_DIRS="$RUNTEST_DIRS $ROOT/3rdparty/libxslt/tests/$d"
 done
-ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_libxslt1_runtest" -k "$ROOT/tests/xml_diff/xml_libxslt1_runtest_known_failures.txt" $RUNTEST_DIRS
+ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_libxslt1_runtest" -k "$ROOT/tests/libxslt_suite/known_failures.txt" $RUNTEST_DIRS
 RC9=$?
 # XSD: the regular expressions and automata, the streaming patterns of identity
 # constraints and the built in types.

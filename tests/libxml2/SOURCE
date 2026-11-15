@@ -1,0 +1,5 @@
+The libxml2 test suite (test/) and the expected results of the parts libxmq ports
+(result/: the parser and serializer, entity substitution, HTML, XPath, XSD schemas,
+regular expressions and automata, patterns, URIs, errors, namespaces), copied
+verbatim from libxml2 2.16 (the libxmq fork, commit 67c34fe24e8b627138f95eb45a24d55547981c49).
+libxml2 is covered by the notice in Copyright.

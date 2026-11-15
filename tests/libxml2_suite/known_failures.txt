@@ -1,0 +1,145 @@
+# Tests of the libxml2 test suite (tests/libxml2) that the native parts are known to
+# fail, see runtest.c. The names are category:file. Remove a line when the test passes.
+
+# Encodings the native parser does not support (EBCDIC, EUC-JP, ISO-8859-5).
+xml:./test/ebcdic_566012.xml
+xml:./test/icu_parse_test.xml
+xml:./test/iso-8859-5.xml
+noent:./test/ebcdic_566012.xml
+noent:./test/icu_parse_test.xml
+noent:./test/iso-8859-5.xml
+errors:./test/errors/759398.xml
+errors-noent:./test/errors/759398.xml
+
+# Parameter entity references in the internal subset are kept as %name; (libxml2 expands
+# them, and reports the errors found inside them).
+xml:./test/ent7
+xml:./test/xml2
+noent:./test/ent7
+noent:./test/xml2
+errors:./test/errors/754946.xml
+errors:./test/errors/759573-2.xml
+errors-noent:./test/errors/754946.xml
+errors-noent:./test/errors/759573-2.xml
+errors-noent:./test/errors/759579.xml
+
+# Undeclared entity references are kept (libxml2 drops them).
+xml:./test/undeclared-entity.xml
+noent:./test/undeclared-entity.xml
+
+# Entity references in namespace uris are rejected.
+xml:./test/entity-in-ns-uri.xml
+noent:./test/entity-in-ns-uri.xml
+
+# The XHTML serialization mode (doctype of XHTML 1.0) is not ported.
+xml:./test/xhtml1
+xml:./test/xhtmlcomp
+noent:./test/xhtml1
+noent:./test/xhtmlcomp
+
+# External entities are never loaded.
+noent:./test/ent2
+errors-noent:./test/errors/extparsedent.xml
+errors-noent:./test/errors/rec_ext_ent.xml
+
+# xml_expand_entities differs from XML_PARSE_NOENT (bugs): non CDATA attributes
+# (NMTOKENS) are not normalized after the expansion, and a &#13; in an entity value
+# stays a carriage return (libxml2 gives a newline).
+noent:./test/att10
+noent:./test/att11
+noent:./test/ent11
+
+# Entity loops and the amplification limit are only checked when the entities are
+# expanded, libxml2 checks them (and the namespaces inside entities) while parsing.
+errors:./test/errors/759579.xml
+errors:./test/errors/quadratic-defattr.xml
+errors:./test/errors/rec_att_default.xml
+errors:./test/errors/ns-ent.xml
+errors-noent:./test/errors/quadratic-defattr.xml
+errors-noent:./test/errors/rec_att_default.xml
+errors-noent:./test/errors/ns-ent.xml
+
+# Two attributes with the same expanded name are rejected (libxml2 recovers with a namespace error).
+namespaces:./test/namespaces/err_9.xml
+
+# Recoverable namespace errors and warnings that the native parser does not report
+# (malformed QNames, the xml prefix bound to another uri, a relative namespace uri,
+# namespaced attributes redefined).
+namespaces:./test/namespaces/err_1.xml
+namespaces:./test/namespaces/err_2.xml
+namespaces:./test/namespaces/err_3.xml
+namespaces:./test/namespaces/err_4.xml
+namespaces:./test/namespaces/err_5.xml
+namespaces:./test/namespaces/err_6.xml
+namespaces:./test/namespaces/err_8.xml
+errors:./test/errors/759020.xml
+errors:./test/errors/dup-xml-attr2.xml
+errors-noent:./test/errors/759020.xml
+errors-noent:./test/errors/dup-xml-attr2.xml
+
+# The native parser stops at the first fatal error, libxml2 goes on and reports more errors.
+errors:./test/errors/759573.xml
+errors:./test/errors/attr1.xml
+errors:./test/errors/attr2.xml
+errors:./test/errors/attr6.xml
+errors:./test/errors/issue151.xml
+errors:./test/errors/utf8-1.xml
+errors:./test/errors/utf8-2.xml
+errors-noent:./test/errors/759573.xml
+errors-noent:./test/errors/attr1.xml
+errors-noent:./test/errors/attr2.xml
+errors-noent:./test/errors/attr6.xml
+errors-noent:./test/errors/issue151.xml
+errors-noent:./test/errors/utf8-1.xml
+errors-noent:./test/errors/utf8-2.xml
+
+# The native message is truncated (at 511 bytes) and only the first error is reported.
+errors:./test/errors/758588.xml
+errors:./test/errors/name.xml
+errors:./test/errors/name2.xml
+errors-noent:./test/errors/758588.xml
+errors-noent:./test/errors/name.xml
+errors-noent:./test/errors/name2.xml
+
+# The native error message differs from the one of libxml2 2.16 (text, kind or column),
+# eg "Char 0x16 out of allowed range" for "invalid character in attribute value".
+errors:./test/errors/attr4.xml
+errors:./test/errors/comment1.xml
+errors:./test/errors/content1.xml
+errors:./test/errors/issue868.xml
+errors:./test/errors/trailing-null-1.xml
+errors:./test/errors/trailing-null-2.xml
+errors:./test/errors/truncated-utf16.xml
+errors:./test/errors/unsupported-encoding.xml
+errors-noent:./test/errors/attr4.xml
+errors-noent:./test/errors/comment1.xml
+errors-noent:./test/errors/content1.xml
+errors-noent:./test/errors/issue868.xml
+errors-noent:./test/errors/trailing-null-1.xml
+errors-noent:./test/errors/trailing-null-2.xml
+errors-noent:./test/errors/truncated-utf16.xml
+errors-noent:./test/errors/unsupported-encoding.xml
+
+# The html parser only reads UTF-8 (libxml2 detects the encoding: meta charset,
+# windows-1252 fallback) and does not report invalid bytes.
+html:./test/HTML/758518-entity.html
+html:./test/HTML/758518-tag.html
+html:./test/HTML/758605.html
+html:./test/HTML/758606_2.html
+html:./test/HTML/doc3.htm
+html:./test/HTML/encoding-error.html
+html:./test/HTML/fp40.htm
+html:./test/HTML/html5_enc.html
+html:./test/HTML/wired.html
+
+# The html serializer writes UTF-8, libxml2 htmlDocDumpMemory uses its HTML output
+# encoder (non ascii characters as named entities) when there is no meta charset.
+html:./test/HTML/entities2.html
+
+# The html parser messages have no source context lines (libxml2 prints the line and a ^).
+html:./test/HTML/reg4.html
+html:./test/HTML/test3.html
+
+# xpath: a location path starting with / followed by a non ascii name (/文書) is an
+# invalid expression (bug, //文書 works).
+xpath-doc:./test/XPath/tests/unicodesimple

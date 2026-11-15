@@ -996,19 +996,6 @@ XMQReturnString xmqChangePrefix(XMQDoc *doq,
                                 const char *old_prefix,
                                 const char *new_prefix);
 
-/**
-    xmqGetImplementationDoc:
-
-    Get the underlying implementation doc, could be an xmlDocPtr from libxml2 for example.
-*/
-void *xmqGetImplementationDoc(XMQDoc *doq);
-
-/**
-    xmqSetImplementationDoc:
-
-    Set the underlying implementation doc, could be an xmlDocPtr from libxml2 for example.
-*/
-void xmqSetImplementationDoc(XMQDoc *doq, void *doc);
 
 /**
     xmqClearDoc:

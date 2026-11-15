@@ -869,7 +869,7 @@ static void free_native_valid_ctxt(XmlXsd10ValidCtxt *v)
 {
     xml_xsd10_item_list_free(v->nodeQNames);
     v->nodeQNames = NULL;
-    free(v->filename);
+    /* xml_xsd10_free_valid_ctxt frees the filename. */
     xml_xsd10_free_valid_ctxt(v);
 }
 

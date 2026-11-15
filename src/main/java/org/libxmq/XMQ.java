@@ -238,7 +238,10 @@ public class XMQ
         // For invalid UTF-8 the text is the line up to the bad bytes and the marker goes after it.
         if (!atEnd || e.errorCode() == ParseErrorCode.XMQ_ERROR_INVALID_UTF8)
         {
-            out.append("\n").append(text).append("\n").append(" ".repeat(Math.max(1, at))).append("^");
+            // C prints the line as a C string, it ends at a NUL character.
+            int nul = text.indexOf('\0');
+            String shown = nul >= 0 ? text.substring(0, nul) : text;
+            out.append("\n").append(shown).append("\n").append(" ".repeat(Math.max(1, at))).append("^");
         }
         out.append("\n\n");
         return out.toString();

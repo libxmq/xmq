@@ -3,8 +3,8 @@
 #
 # Compare the C command line (xmq) with the Java command line (xmqj) byte for byte,
 # output, errors and exit code of "to-xml", on every xml file in the repository and in
-# the libxml2 test suite (if fetched), plain and after expand-entities, and of
-# "transform" on the libxslt test suite (if fetched).
+# the libxml2 test suite (tests/libxml2), plain and after expand-entities, and of
+# "transform" on the libxslt test suite (tests/libxslt).
 #
 # Usage: tests/test_cj.sh XMQ_BINARY XMQJ_BINARY OUTPUT_DIR
 # JOBS=n sets the number of parallel jobs (default 8).
@@ -30,16 +30,7 @@ EXCLUDE=""
 
 FILES="$OUT/files.txt"
 find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" \) -prune -o -name "*.xml" -print > "$FILES"
-# The libxml2 test suite, from 3rdparty/fetch_and_build.sh libxml2 or, as on the
-# github build, from 3rdparty/fetch_and_build.sh x86_64-pc-linux-gnu.
-for d in "$ROOT/3rdparty/libxml2/test" "$ROOT/3rdparty/libxml2-posix/test"
-do
-    if [ -d "$d" ]
-    then
-        find "$d" -name "*.xml" >> "$FILES"
-        break
-    fi
-done
+# The libxml2 test suite is in tests/libxml2, found by the find above.
 for e in $EXCLUDE
 do
     grep -v "/$e\$" "$FILES" > "$FILES.tmp"
@@ -79,14 +70,7 @@ N=$(( $(wc -l < "$FILES") + $(grep -l "<!ENTITY" $(cat "$FILES") 2>/dev/null | w
 XSLT_DIRS=""
 for d in REC2 REC general encoding documents numbers keys namespaces extensions reports
 do
-    for t in "$ROOT/3rdparty/libxslt/tests" "$ROOT/3rdparty/libxslt-posix/tests"
-    do
-        if [ -d "$t/$d" ]
-        then
-            XSLT_DIRS="$XSLT_DIRS $t/$d"
-            break
-        fi
-    done
+    [ -d "$ROOT/tests/libxslt/tests/$d" ] && XSLT_DIRS="$XSLT_DIRS $ROOT/tests/libxslt/tests/$d"
 done
 XSLT_DIRS="$XSLT_DIRS $ROOT/tests/xml_diff/xslt"
 XSLT_CASES="$OUT/xslt_cases.txt"

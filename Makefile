@@ -279,6 +279,8 @@ test_release: release
 	@echo "Running release tests"
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/testinternals ]; then echo "Run make first. $${x}release/testinternals not found."; exit 1; fi ; $${x}release/testinternals $(SILENCER) || exit 1 ; done
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/parts/testinternals ]; then echo "Run make first. $${x}release/parts/testinternals not found."; exit 1; fi ; $${x}release/parts/testinternals $(SILENCER) || exit 1 ; ./tests/test.sh $${x}release $${x}release/test_output $(FILTER) $(SILENCER) || exit 1 ; done
+	@for x in $(BUILDDIRS); do $(NO_ASLR) ./tests/test_libxml2_suite.sh $${x}release/test_output/libxml2_suite || exit 1 ; done
+	@for x in $(BUILDDIRS); do ./tests/test_libxslt_suite.sh $${x}release/test_output/libxslt_suite || exit 1 ; done
 	@$(MAKE) --no-print-directory test_xmq_grammar
 
 test_debug: debug

@@ -85,10 +85,7 @@ WINAPI_TESTINTERNALS_OBJS:=$(filter-out %xmq-cli.o,$(WINAPI_LIBXMQ_OBJS))
 WINAPI_LIBS := \
 $(OUTPUT_ROOT)/$(TYPE)/libgcc_s_seh-1.dll \
 $(OUTPUT_ROOT)/$(TYPE)/libstdc++-6.dll \
-$(OUTPUT_ROOT)/$(TYPE)/libwinpthread-1.dll \
-$(OUTPUT_ROOT)/$(TYPE)/$(LIBXML2_LIBNAME) \
-$(OUTPUT_ROOT)/$(TYPE)/libxslt-1.dll \
-$(OUTPUT_ROOT)/$(TYPE)/bcrypt.dll
+$(OUTPUT_ROOT)/$(TYPE)/libwinpthread-1.dll
 WINAPI_SUFFIX:=.exe
 
 POSIX_SOURCES:=$(filter-out %winapi.c,$(SOURCES))
@@ -145,7 +142,7 @@ ifeq ($(ENABLE_STATIC_XMQ),no)
 $(OUTPUT_ROOT)/$(TYPE)/xmq: $(OUTPUT_ROOT)/$(TYPE)/xmq-cli.o $(LIBXMQ_OBJS) $(EXTRA_LIBS)
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
 	$(AT)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(OUTPUT_ROOT)/$(TYPE)/xmq-cli.o $(LIBXMQ_OBJS) \
-                      $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
+                      $(LDFLAGSBEGIN_$(TYPE)) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(AT)cp $@ $@.g
 	$(AT)$(STRIP_COMMAND) $@$(SUFFIX)
 ifeq ($(PLATFORM),WINAPI)
@@ -158,7 +155,7 @@ else
 $(OUTPUT_ROOT)/$(TYPE)/xmq: $(OUTPUT_ROOT)/$(TYPE)/xmq-cli.o $(LIBXMQ_OBJS) $(EXTRA_LIBS)
 	@echo Linking static $(TYPE) $(CONF_MNEMONIC) $@
 	$(AT)$(CC) -static -o $@ $(LDFLAGS_$(TYPE)) $(LDFLAGS) $(OUTPUT_ROOT)/$(TYPE)/xmq-cli.o $(LIBXMQ_OBJS) \
-                      $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
+                      $(LDFLAGSBEGIN_$(TYPE)) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 ifeq ($(PLATFORM),WINAPI)
 	$(AT)mkdir -p $(OUTPUT_ROOT)/windows_installer
 	$(AT)cp $(OUTPUT_ROOT)/$(TYPE)/xmq.exe $(OUTPUT_ROOT)/$(TYPE)/*.dll $(OUTPUT_ROOT)/windows_installer
@@ -171,14 +168,14 @@ $(OUTPUT_ROOT)/$(TYPE)/testinternals: $(OUTPUT_ROOT)/$(TYPE)/testinternals.o $(T
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
 	$(AT)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) \
 	    $(OUTPUT_ROOT)/$(TYPE)/testinternals.o $(TESTINTERNALS_OBJS) \
-	    $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
+	    $(LDFLAGSBEGIN_$(TYPE)) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(AT)$(STRIP_COMMAND) $@$(SUFFIX)
 
 $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals: $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals.o $(TESTINTERNALS_OBJS)
 	@echo Linking parts $(TYPE) $(CONF_MNEMONIC) $@
 	$(AT)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) \
 	    $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals.o $(TESTINTERNALS_OBJS) \
-            $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
+            $(LDFLAGSBEGIN_$(TYPE)) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(AT)$(STRIP_COMMAND) $@$(SUFFIX)
 
 $(OUTPUT_ROOT)/$(TYPE)/libgcc_s_seh-1.dll:
@@ -191,18 +188,6 @@ $(OUTPUT_ROOT)/$(TYPE)/libstdc++-6.dll:
 
 $(OUTPUT_ROOT)/$(TYPE)/libwinpthread-1.dll:
 	$(AT)cp "$$(find /usr -name libwinpthread-1.dll | grep -m 1 x86_64)" $@
-	@echo "Installed $@"
-
-$(OUTPUT_ROOT)/$(TYPE)/$(LIBXML2_LIBNAME):
-	$(AT)cp "$$(find $(SRC_ROOT)/3rdparty/libxml2-winapi -name $(LIBXML2_LIBNAME) | grep -m 1 '/$(LIBXML2_LIBNAME)')" $@
-	@echo "Installed $@"
-
-$(OUTPUT_ROOT)/$(TYPE)/libxslt-1.dll:
-	$(AT)cp "$$(find $(SRC_ROOT)/3rdparty/libxslt-winapi -name libxslt-1.dll | grep -m 1 libxslt-1.dll)" $@
-	@echo "Installed $@"
-
-$(OUTPUT_ROOT)/$(TYPE)/bcrypt.dll:
-	$(AT)cp "$(BCRYPT_DLL)" $@
 	@echo "Installed $@"
 
 BINARIES:=$(OUTPUT_ROOT)/$(TYPE)/libxmq.a \
