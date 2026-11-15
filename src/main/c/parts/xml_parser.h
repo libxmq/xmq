@@ -65,6 +65,8 @@ typedef struct
     bool no_blanks;
     /** Merge cdata sections into text (XML_PARSE_NOCDATA). */
     bool no_cdata;
+    /** Add the attributes defaulted in the dtd to the elements (XML_PARSE_DTDATTR). */
+    bool dtd_attr;
     /** Maximum element nesting depth. */
     size_t max_depth;
     /** Maximum length in bytes of a name. */

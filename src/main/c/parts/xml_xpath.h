@@ -105,6 +105,14 @@ typedef struct
     const char *message;
     /** Byte offset in the expression where a compile error was found. */
     size_t offset;
+    /** The error happened while evaluating a compiled expression (libxml2 has no expression
+        context for such errors). */
+    bool evaluating;
+    /** An extension function failed without a message (like setting ctxt->error in libxml2),
+        nothing should be reported. */
+    bool quiet;
+    /** The message with details (libxml2 xmlXPathErrFmt), eg "Unregistered function: f", or "". */
+    char detail[256];
 } XmlXPathError;
 
 struct XmlXPathResult;
@@ -135,6 +143,11 @@ XmlXPathResult *xml_xpath_result_new_boolean(bool b);
 XmlXPathResult *xml_xpath_result_new_nodeset(void);
 /** Append a node to a node set (no check for duplicates or order, see xml_xpath_context_sort). */
 void xml_xpath_result_add_node(XmlXPathResult *r, XMQNode *n);
+/** Mark a node set as a result tree fragment (libxml2 XPATH_XSLT_TREE, the value of an xslt
+    variable with content): it behaves like a node set except that path steps, predicates
+    and unions on it are type errors. Copies keep the mark. */
+void xml_xpath_result_set_tree(XmlXPathResult *r, bool tree);
+bool xml_xpath_result_is_tree(const XmlXPathResult *r);
 /** A copy, namespace nodes owned by r are copied too. */
 XmlXPathResult *xml_xpath_result_copy(const XmlXPathResult *r);
 /** The XPath string(), number() and boolean() of a value. The string is malloced. */
@@ -202,6 +215,9 @@ const char *xml_xpath_context_lookup_namespace(const XmlXPathContext *ctx, const
 XMQNode *xml_xpath_context_get_id(XmlXPathContext *ctx, XMQNode *node, const char *id);
 /** Make the current extension function fail with this error. */
 void xml_xpath_context_set_error(XmlXPathContext *ctx, XmlXPathErrorCode code);
+/** Make the current extension function fail with this error without a message (libxml2 functions
+    that set ctxt->error directly). */
+void xml_xpath_context_set_error_quiet(XmlXPathContext *ctx, XmlXPathErrorCode code);
 
 /** Format a number like xpath string(), eg 1, 0.5, NaN, Infinity. Malloced. */
 char *xml_xpath_format_number(double d);

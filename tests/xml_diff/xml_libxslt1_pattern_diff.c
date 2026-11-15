@@ -1,12 +1,12 @@
 /* libxmq - Copyright (C) 2026 Fredrik Öhrström (spdx: MIT)
 
-   Differential test of the native xslt patterns (parts/xml_xslt.c) against libxslt.
+   Differential test of the native xslt patterns (parts/xml_libxslt1_xslt.c) against libxslt.
 
    For every xml file given on the command line, parse it with libxml2 and with
    xml_parse_buffer, build a stylesheet element declaring the namespaces of the
    document, then compile a set of patterns (generic ones plus patterns built from
    the element and attribute names of the document) with libxslt xsltCompilePattern
-   and with xml_xslt_pattern_compile. Both must agree on whether the pattern compiles,
+   and with xml_libxslt1_pattern_compile. Both must agree on whether the pattern compiles,
    on its default priority and, walking every node of the document in document order
    (like a transformation, so that the position caches of the predicates are used),
    on whether it matches (xsltTestCompMatchList).
@@ -17,7 +17,7 @@
 #include"parts/xml_dom.h"
 #include"parts/xml_parser.h"
 #include"parts/xml_xpath.h"
-#include"parts/xml_xslt.h"
+#include"parts/xml_libxslt1_xslt.h"
 
 #include<libxml/tree.h>
 #include<libxml/parser.h>
@@ -346,8 +346,8 @@ static void test_file(const char *file, const char *buf, size_t len)
 
     Strings pats = {0};
     build_patterns(doc, &pats);
-    XmlXsltSettings xs;
-    xml_xslt_settings_default(&xs);
+    XmlLibxslt1Settings xs;
+    xml_libxslt1_settings_default(&xs);
     xs.message_callback = capture_native;
 
     for (size_t pi = 0; pi < pats.len; ++pi)
@@ -355,11 +355,11 @@ static void test_file(const char *file, const char *buf, size_t len)
         const char *pat = pats.items[pi];
         patterns_++;
         xsltStylesheetPtr lstyle = xsltNewStylesheet();
-        XmlXsltStylesheet *nstyle = xml_xslt_stylesheet_new_empty(nsdom, &xs);
+        XmlLibxslt1Stylesheet *nstyle = xml_libxslt1_stylesheet_new_empty(nsdom, &xs);
         lx_msgs_[0] = 0;
         nx_msgs_[0] = 0;
         xsltCompMatchPtr lc = xsltCompilePattern((const xmlChar*)pat, lsdoc, xmlDocGetRootElement(lsdoc), lstyle, NULL);
-        XmlXsltPattern *nc = xml_xslt_pattern_compile(nstyle, pat, xml_dom_root_element(nsdom), false);
+        XmlLibxslt1Pattern *nc = xml_libxslt1_pattern_compile(nstyle, pat, xml_dom_root_element(nsdom), false);
         if (!strcmp(lx_msgs_, nx_msgs_))
         {
             msg_same_++;
@@ -383,18 +383,18 @@ static void test_file(const char *file, const char *buf, size_t len)
         {
             // xsltCompMatch is private, the priority of the first alternative is its second member.
             float lprio = *(float*)((char*)lc + sizeof(void*));
-            if ((double)lprio != xml_xslt_pattern_priority(nc))
+            if ((double)lprio != xml_libxslt1_pattern_priority(nc))
             {
                 prio_diff_++;
-                if (shown_++ < max_shown_) printf("PRIORITY %s pattern %s libxslt %g native %g\n", file, pat, (double)lprio, xml_xslt_pattern_priority(nc));
+                if (shown_++ < max_shown_) printf("PRIORITY %s pattern %s libxslt %g native %g\n", file, pat, (double)lprio, xml_libxslt1_pattern_priority(nc));
             }
             xsltTransformContextPtr lctxt = xsltNewTransformContext(lstyle, doc);
-            XmlXsltTransform *nt = xml_xslt_transform_new(nstyle, dom);
+            XmlLibxslt1Transform *nt = xml_libxslt1_transform_new(nstyle, dom);
             long d = 0;
             for (size_t k = 0; k < pairs.len; ++k)
             {
                 int a = xsltTestCompMatchList(lctxt, pairs.l[k], lc);
-                int b = xml_xslt_pattern_match(nt, pairs.n[k], nc);
+                int b = xml_libxslt1_pattern_match(nt, pairs.n[k], nc);
                 if (a != b)
                 {
                     d++;
@@ -404,13 +404,13 @@ static void test_file(const char *file, const char *buf, size_t len)
             }
             if (d) diff_++;
             else same_++;
-            xml_xslt_transform_free(nt);
+            xml_libxslt1_transform_free(nt);
             xsltFreeTransformContext(lctxt);
         }
         if (lc) xsltFreeCompMatchList(lc);
-        xml_xslt_pattern_free(nc);
+        xml_libxslt1_pattern_free(nc);
         xsltFreeStylesheet(lstyle);
-        xml_xslt_stylesheet_free(nstyle);
+        xml_libxslt1_stylesheet_free(nstyle);
     }
     free_strs(&pats);
     free(pairs.l);
@@ -448,9 +448,9 @@ int main(int argc, char **argv)
     }
     xsltCleanupGlobals();
     xmlCleanupParser();
-    printf("xml_xslt_pattern_diff: %ld files (%ld skipped), %ld patterns, %ld same, %ld differ, %ld both fail to compile, "
+    printf("xml_libxslt1_pattern_diff: %ld files (%ld skipped), %ld patterns, %ld same, %ld differ, %ld both fail to compile, "
            "%ld only native fails, %ld only libxslt fails, %ld priorities differ\n",
            files_, skipped_, patterns_, same_, diff_, both_fail_, native_fail_, libxslt_fail_, prio_diff_);
-    printf("xml_xslt_pattern_diff: compile messages %ld same, %ld differ\n", msg_same_, msg_diff_);
+    printf("xml_libxslt1_pattern_diff: compile messages %ld same, %ld differ\n", msg_same_, msg_diff_);
     return (diff_ || native_fail_ || libxslt_fail_ || prio_diff_ || msg_diff_) ? 1 : 0;
 }

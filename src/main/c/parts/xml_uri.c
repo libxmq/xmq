@@ -2206,4 +2206,46 @@ xml_uri_build(const char *URI, const char *base) {
     return(out);
 }
 
+/**
+ * Port of xmlURIEscapeStr: escape a string to hex, except unreserved characters,
+ * "@" and the characters in list.
+ */
+char *
+xml_uri_escape_str(const char *str, const char *list) {
+    if (str == NULL)
+	return(NULL);
+    if (str[0] == 0)
+	return(xml_uri_strdup(str));
+    size_t len = strlen(str) + 20;
+    size_t out = 0;
+    char *ret = malloc(len);
+    if (ret == NULL)
+	return(NULL);
+    for (const unsigned char *in = (const unsigned char*)str; *in != 0; ) {
+	if (len - out <= 3) {
+            len *= 2;
+            char *temp = realloc(ret, len);
+	    if (temp == NULL) {
+		free(ret);
+		return(NULL);
+	    }
+	    ret = temp;
+	}
+	unsigned char ch = *in;
+	if ((ch != '@') && (!IS_UNRESERVED(ch)) && (!(list && strchr(list, ch)))) {
+	    unsigned char val;
+	    ret[out++] = '%';
+	    val = ch >> 4;
+	    ret[out++] = (char)(val <= 9 ? '0' + val : 'A' + val - 0xA);
+	    val = ch & 0xF;
+	    ret[out++] = (char)(val <= 9 ? '0' + val : 'A' + val - 0xA);
+	    in++;
+	} else {
+	    ret[out++] = (char)*in++;
+	}
+    }
+    ret[out] = 0;
+    return(ret);
+}
+
 #endif // XML_URI_MODULE

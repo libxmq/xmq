@@ -87,6 +87,8 @@ char *xml_uri_unescape_string(const char *str, int len, char *target);
 /** Resolve uri against base (libxml2 xmlBuildURISafe): returns 0 and sets *out, or an error code
     (the uri or base are invalid) or -1 for out of memory. */
 int xml_uri_build_safe(const char *uri, const char *base, char **out);
+/** Escape str to hex except unreserved characters, "@" and those in list (libxml2 xmlURIEscapeStr). */
+char *xml_uri_escape_str(const char *str, const char *list);
 /** Like xml_uri_build_safe, NULL on errors (libxml2 xmlBuildURI). */
 char *xml_uri_build(const char *uri, const char *base);
 

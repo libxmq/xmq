@@ -113,7 +113,7 @@ typedef struct
 typedef struct
 {
     char *element;    // Element qname.
-    char *attr;       // Attribute qname, only xmlns and xmlns:x are kept, libxml2 adds only those.
+    char *attr;       // Attribute qname, without dtd_attr only xmlns and xmlns:x are kept, libxml2 adds only those.
     char *value;
 } XmlAttDefault;
 
@@ -1375,6 +1375,7 @@ static bool xml_parse_start_tag(XmlParser *p)
     {
         XmlAttDefault *d = &p->defaults[k];
         if (strcmp(d->element, qname)) continue;
+        if (strcmp(d->attr, "xmlns") && strncmp(d->attr, "xmlns:", 6)) continue;
         const char *prefix = !strcmp(d->attr, "xmlns") ? NULL : d->attr + 6;
         if (xml_ns_declared_here(e, prefix)) continue;
         if (prefix && !strcmp(prefix, "xml")) continue;
@@ -1457,6 +1458,34 @@ static bool xml_parse_start_tag(XmlParser *p)
         }
     }
     if (resolved) hashmap_free(resolved);
+
+    // The attributes defaulted from the dtd (libxml2 XML_PARSE_DTDATTR).
+    if (p->settings->dtd_attr)
+    {
+        for (size_t k = 0; k < p->num_defaults; ++k)
+        {
+            XmlAttDefault *d = &p->defaults[k];
+            if (strcmp(d->element, qname)) continue;
+            if (!strcmp(d->attr, "xmlns") || !strncmp(d->attr, "xmlns:", 6)) continue;
+            const char *colon = strchr(d->attr, ':');
+            const char *local = colon ? colon + 1 : d->attr;
+            XmlNs *ans = NULL;
+            if (colon)
+            {
+                const char *apfx = xml_tmp(p, 0, d->attr, (size_t)(colon - d->attr));
+                ans = xml_ns_lookup_prefix(e, apfx);
+                if (!ans)
+                {
+                    xml_parser_message(p, "namespace error", tag_end, "Namespace prefix %s for %s on %.*s is not defined",
+                                       apfx, local, (int)qn.local.len, qn.local.s);
+                }
+            }
+            const char *uri = ans ? xml_ns_href(ans) : NULL;
+            if (xml_node_get_attr(e, local, uri)) continue;
+            XMQAttr *a = xml_node_append_attr(e, local, ans, NULL);
+            xml_node_append_child(xml_attr_node(a), xml_node_new_text(p->dom, d->value));
+        }
+    }
 
     if (eprefix_undefined)
     {
@@ -2593,7 +2622,7 @@ static void xml_parse_attlist_decl(XmlParser *p)
         {
             xml_dtd_add_decl(p->dtd, XML_DOM_ATTRIBUTE_DECL, xml_tmp_slice(p, 3, attr), decl->b, default_value);
             if (default_value &&
-                (xml_slice_eq(attr, "xmlns") || (attr.len > 6 && !memcmp(attr.s, "xmlns:", 6))))
+                (p->settings->dtd_attr || xml_slice_eq(attr, "xmlns") || (attr.len > 6 && !memcmp(attr.s, "xmlns:", 6))))
             {
                 if (p->num_defaults == p->defaults_cap)
                 {

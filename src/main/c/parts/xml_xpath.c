@@ -144,6 +144,7 @@ typedef struct
     double num;
     const char *str;
     XpNodeSet ns;
+    bool tree;          // A result tree fragment (libxml2 XPATH_XSLT_TREE), only from variables.
 } XpValue;
 
 // Arena: every allocation of an evaluation, freed together.
@@ -192,6 +193,7 @@ struct XmlXPathContext
 
     struct XpCtx *cur;    // The evaluation calling an extension function.
     XmlXPathErrorCode func_error;
+    bool func_error_quiet;
 };
 
 typedef struct XpCtx
@@ -210,6 +212,9 @@ typedef struct XpCtx
     XpBlock *blocks;
     jmp_buf on_error;
     XmlXPathErrorCode error;
+    bool evaluating;      // An evaluation (not a compilation), errors have no expression context.
+    bool quiet;           // The error was set by an extension function without a message.
+    char detail[256];     // The message with details, like libxml2 xmlXPathErrFmt.
 
     XpPtrMap ns_cache;    // element -> index into ns_lists.
     XMQNode ***ns_lists;  // Namespace nodes per element, NULL terminated.
@@ -231,6 +236,7 @@ struct XmlXPathResult
     size_t cap;
     XMQNode **ns_nodes;   // Owned namespace nodes.
     size_t num_ns_nodes;
+    bool tree;            // A node set that is a result tree fragment (XPATH_XSLT_TREE).
 };
 
 static const char *xp_messages_[] = {
@@ -247,6 +253,14 @@ static void xp_error(XpCtx *c, XmlXPathErrorCode code)
 {
     c->error = code;
     longjmp(c->on_error, 1);
+}
+
+/** An error with a detailed message, like libxml2 xmlXPathErrFmt (eg "Undefined variable: x"). */
+static void xp_error_detail(XpCtx *c, XmlXPathErrorCode code, const char *what, const char *prefix, const char *name)
+{
+    if (prefix) snprintf(c->detail, sizeof(c->detail), "%s: %s:%s", what, prefix, name ? name : "");
+    else snprintf(c->detail, sizeof(c->detail), "%s: %s", what, name ? name : "");
+    xp_error(c, code);
 }
 
 static void *xp_alloc(XpCtx *c, size_t size)
@@ -2250,7 +2264,7 @@ static XpNodeSet xp_collect(XpCtx *c, XpStep *s, XpNodeSet context, bool to_bool
     if (s->prefix)
     {
         uri = xp_lookup_ns(c, s->prefix);
-        if (!uri) xp_error(c, XML_XPATH_ERR_UNDEF_PREFIX);
+        if (!uri) xp_error_detail(c, XML_XPATH_ERR_UNDEF_PREFIX, "Undefined namespace prefix", NULL, s->prefix);
     }
     XpNodeSet out = { NULL, 0, 0 };
     if (context.len == 0) return out;
@@ -2322,7 +2336,8 @@ static XpValue xp_eval_path(XpCtx *c, XpExpr *e, bool to_bool)
     }
     for (size_t i = 0; i < e->num_steps; ++i)
     {
-        if (cur.type != XML_XPATH_NODESET) xp_error(c, XML_XPATH_ERR_INVALID_TYPE);
+        // libxml2 only collects from node sets, not from result tree fragments (XPATH_XSLT_TREE).
+        if (cur.type != XML_XPATH_NODESET || cur.tree) xp_error(c, XML_XPATH_ERR_INVALID_TYPE);
         XpNodeSet ns = xp_collect(c, &e->steps[i], cur.ns, to_bool && i == e->num_steps - 1);
         cur = xp_nodeset();
         cur.ns = ns;
@@ -2817,24 +2832,32 @@ static XpValue xp_from_result(XpCtx *c, const XmlXPathResult *r);
 static XmlXPathResult *xp_to_result(XpCtx *c, XpValue v, bool own_ns_nodes);
 
 /** Call an extension function found through the function lookup of the context. */
-static XpValue xp_call_extension(XpCtx *c, const char *name, const char *uri, XpValue *a, size_t n)
+static XpValue xp_call_extension(XpCtx *c, const char *prefix, const char *name, const char *uri, XpValue *a, size_t n)
 {
     XmlXPathContext *px = c->px;
     void *fd = NULL;
     XmlXPathFunction f = px->func_lookup ? px->func_lookup(px->func_data, name, uri, &fd) : NULL;
-    if (!f) xp_error(c, XML_XPATH_ERR_UNKNOWN_FUNC);
+    if (!f) xp_error_detail(c, XML_XPATH_ERR_UNKNOWN_FUNC, "Unregistered function", prefix, name);
     XmlXPathResult **args = (XmlXPathResult**)xp_calloc(c, (n ? n : 1) * sizeof(XmlXPathResult*));
     for (size_t i = 0; i < n; ++i) args[i] = xp_to_result(c, a[i], false);
     struct XpCtx *saved = px->cur;
     XmlXPathErrorCode saved_error = px->func_error;
+    bool saved_quiet = px->func_error_quiet;
     px->cur = c;
     px->func_error = XML_XPATH_ERR_OK;
+    px->func_error_quiet = false;
     XmlXPathResult *r = f(px, fd, args, n);
     XmlXPathErrorCode err = px->func_error;
+    bool quiet = px->func_error_quiet;
     px->cur = saved;
     px->func_error = saved_error;
+    px->func_error_quiet = saved_quiet;
     for (size_t i = 0; i < n; ++i) xml_xpath_result_free(args[i]);
-    if (!r) xp_error(c, err != XML_XPATH_ERR_OK ? err : XML_XPATH_ERR_INVALID_OPERAND);
+    if (!r)
+    {
+        c->quiet = quiet && err != XML_XPATH_ERR_OK;
+        xp_error(c, err != XML_XPATH_ERR_OK ? err : XML_XPATH_ERR_INVALID_OPERAND);
+    }
     // The namespace nodes of the result are kept until the evaluation ends.
     for (size_t i = 0; i < r->num_ns_nodes; ++i)
     {
@@ -2862,9 +2885,9 @@ static XpValue xp_call(XpCtx *c, XpExpr *e)
     if (e->prefix)
     {
         const char *uri = xp_lookup_ns(c, e->prefix);
-        if (!uri) xp_error(c, XML_XPATH_ERR_UNDEF_PREFIX);
+        if (!uri) xp_error_detail(c, XML_XPATH_ERR_UNDEF_PREFIX, "Undefined namespace prefix", NULL, e->prefix);
         if (!strcmp(uri, XP_XQUERY_FUNCTIONS_NS) && !strcmp(name, "escape-uri")) return xp_escape_uri(c, a, n);
-        return xp_call_extension(c, name, uri, a, n);
+        return xp_call_extension(c, e->prefix, name, uri, a, n);
     }
     if (!strcmp(name, "last"))
     {
@@ -3056,7 +3079,7 @@ static XpValue xp_call(XpCtx *c, XpExpr *e)
         if (f - rounded >= 0.5) rounded += 1.0;
         return xp_number(rounded);
     }
-    return xp_call_extension(c, name, NULL, a, n);
+    return xp_call_extension(c, NULL, name, NULL, a, n);
 }
 
 static XpValue xp_eval(XpCtx *c, XpExpr *e)
@@ -3071,14 +3094,14 @@ static XpValue xp_eval(XpCtx *c, XpExpr *e)
         if (e->prefix)
         {
             uri = xp_lookup_ns(c, e->prefix);
-            if (!uri) xp_error(c, XML_XPATH_ERR_UNDEF_PREFIX);
+            if (!uri) xp_error_detail(c, XML_XPATH_ERR_UNDEF_PREFIX, "Undefined namespace prefix", NULL, e->prefix);
         }
         if (c->px->var_lookup)
         {
             const XmlXPathResult *r = c->px->var_lookup(c->px->var_data, e->name, uri);
             if (r) return xp_from_result(c, r);
         }
-        xp_error(c, XML_XPATH_ERR_UNDEF_VARIABLE);
+        xp_error_detail(c, XML_XPATH_ERR_UNDEF_VARIABLE, "Undefined variable", e->prefix, e->name);
         break;
     }
     case XP_OR:
@@ -3122,7 +3145,7 @@ static XpValue xp_eval(XpCtx *c, XpExpr *e)
     {
         XpValue a = xp_eval(c, e->l);
         XpValue b = xp_eval(c, e->r);
-        if (a.type != XML_XPATH_NODESET || b.type != XML_XPATH_NODESET) xp_error(c, XML_XPATH_ERR_INVALID_TYPE);
+        if (a.type != XML_XPATH_NODESET || b.type != XML_XPATH_NODESET || a.tree || b.tree) xp_error(c, XML_XPATH_ERR_INVALID_TYPE);
         if (b.ns.len == 0) return a;
         XpValue out = xp_nodeset();
         XpPtrMap seen = { NULL, NULL, 0, 0, false };
@@ -3154,7 +3177,7 @@ static XpValue xp_eval(XpCtx *c, XpExpr *e)
     case XP_FILTER:
     {
         XpValue v = xp_eval(c, e->l);
-        if (v.type != XML_XPATH_NODESET) xp_error(c, XML_XPATH_ERR_INVALID_TYPE);
+        if (v.type != XML_XPATH_NODESET || v.tree) xp_error(c, XML_XPATH_ERR_INVALID_TYPE);
         if (v.ns.len == 0) return v;
         XpValue r = xp_nodeset();
         r.ns = xp_apply_predicate(c, v.ns, e->r);
@@ -3202,6 +3225,7 @@ static XpValue xp_from_result(XpCtx *c, const XmlXPathResult *r)
     default:
     {
         XpValue v = xp_nodeset();
+        v.tree = r->tree;
         if (r->len)
         {
             v.ns.nodes = (XMQNode**)xp_alloc(c, r->len * sizeof(XMQNode*));
@@ -3222,6 +3246,7 @@ static XmlXPathResult *xp_to_result(XpCtx *c, XpValue v, bool own_ns_nodes)
     r->type = v.type;
     r->b = v.b;
     r->num = v.num;
+    r->tree = v.tree;
     if (v.type == XML_XPATH_STRING)
     {
         size_t n = strlen(v.str);
@@ -3251,6 +3276,10 @@ static void xp_fill_error(XpCtx *c, XmlXPathError *error)
     error->message = (c->error >= 0 && (size_t)c->error < sizeof(xp_messages_) / sizeof(xp_messages_[0]))
                      ? xp_messages_[c->error] : "Unknown error";
     error->offset = c->pos;
+    error->evaluating = c->evaluating;
+    error->quiet = c->quiet;
+    error->detail[0] = 0;
+    if (c->detail[0]) snprintf(error->detail, sizeof(error->detail), "%s", c->detail);
 }
 
 static void xp_clear_error(XmlXPathError *error)
@@ -3259,6 +3288,9 @@ static void xp_clear_error(XmlXPathError *error)
     error->code = XML_XPATH_ERR_OK;
     error->message = xp_messages_[0];
     error->offset = 0;
+    error->evaluating = false;
+    error->quiet = false;
+    error->detail[0] = 0;
 }
 
 // Compiled expressions ///////////////////////////////////////////
@@ -3430,6 +3462,7 @@ static XmlXPathResult *xp_run(XmlXPathContext *px, const XmlXPathSettings *setti
     c->doc = xp_document_of(node);
     c->size = size;
     c->position = position;
+    c->evaluating = comp != NULL;
 
     if (setjmp(c->on_error))
     {
@@ -3523,6 +3556,13 @@ XMQNode *xml_xpath_context_get_id(XmlXPathContext *px, XMQNode *node, const char
 void xml_xpath_context_set_error(XmlXPathContext *px, XmlXPathErrorCode code)
 {
     px->func_error = code;
+    px->func_error_quiet = false;
+}
+
+void xml_xpath_context_set_error_quiet(XmlXPathContext *px, XmlXPathErrorCode code)
+{
+    px->func_error = code;
+    px->func_error_quiet = true;
 }
 
 void xml_xpath_context_sort(XmlXPathContext *px, XmlXPathResult *r)
@@ -3596,6 +3636,16 @@ void xml_xpath_result_add_node(XmlXPathResult *r, XMQNode *n)
     r->nodes[r->len++] = n;
 }
 
+void xml_xpath_result_set_tree(XmlXPathResult *r, bool tree)
+{
+    if (r && r->type == XML_XPATH_NODESET) r->tree = tree;
+}
+
+bool xml_xpath_result_is_tree(const XmlXPathResult *r)
+{
+    return r && r->type == XML_XPATH_NODESET && r->tree;
+}
+
 XmlXPathResult *xml_xpath_result_copy(const XmlXPathResult *r)
 {
     if (!r) return NULL;
@@ -3603,6 +3653,7 @@ XmlXPathResult *xml_xpath_result_copy(const XmlXPathResult *r)
     c->type = r->type;
     c->b = r->b;
     c->num = r->num;
+    c->tree = r->tree;
     c->str = xp_heap_strdup(r->str);
     if (r->len)
     {
