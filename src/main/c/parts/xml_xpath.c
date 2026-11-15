@@ -155,17 +155,48 @@ typedef struct XpBlock
 
 typedef union { long double ld; void *p; long long ll; } XpAlign;
 
-// Pointer -> integer map, open addressing.
+// Pointer -> integer map, open addressing. In the arena of an evaluation,
+// or on the heap (heap = true) when it is kept by an XmlXPathContext.
 typedef struct
 {
     const void **keys;
     long *vals;
     size_t cap;
     size_t len;
+    bool heap;
 } XpPtrMap;
 
+// The document order index and the ids of one tree, kept by the XmlXPathContext.
 typedef struct
 {
+    XMQNode *root;
+    XpPtrMap order;       // node -> ordinal, the ordinals of all trees are distinct.
+    HashMap *ids;         // id value -> element, built on the first id().
+} XpTree;
+
+struct XpCtx;
+
+struct XmlXPathContext
+{
+    XpTree *trees;
+    size_t num_trees;
+    size_t trees_cap;
+    XpPtrMap tree_index;  // root -> index into trees + 1.
+    size_t last_tree;     // The tree of the last ordinal lookup + 1, a fast path.
+    long next_ordinal;
+
+    XmlXPathVariableLookup var_lookup;
+    void *var_data;
+    XmlXPathFunctionLookup func_lookup;
+    void *func_data;
+
+    struct XpCtx *cur;    // The evaluation calling an extension function.
+    XmlXPathErrorCode func_error;
+};
+
+typedef struct XpCtx
+{
+    XmlXPathContext *px;  // Kept caches and callbacks.
     const XmlXPathSettings *settings;
     const char *expr;
     size_t pos;           // Compile position.
@@ -180,10 +211,6 @@ typedef struct
     jmp_buf on_error;
     XmlXPathErrorCode error;
 
-    XpPtrMap order;       // Document order index.
-    XMQNode *indexed_root;
-    HashMap *ids;         // id value -> element.
-    bool ids_built;
     XpPtrMap ns_cache;    // element -> index into ns_lists.
     XMQNode ***ns_lists;  // Namespace nodes per element, NULL terminated.
     size_t num_ns_lists;
@@ -201,6 +228,7 @@ struct XmlXPathResult
     char *str;
     XMQNode **nodes;
     size_t len;
+    size_t cap;
     XMQNode **ns_nodes;   // Owned namespace nodes.
     size_t num_ns_nodes;
 };
@@ -306,11 +334,37 @@ static void xp_map_put(XpCtx *c, XpPtrMap *m, const void *key, long val);
 
 static void xp_map_grow(XpCtx *c, XpPtrMap *m)
 {
-    XpPtrMap n = { NULL, NULL, m->cap ? m->cap * 2 : 64, 0 };
-    n.keys = (const void**)xp_calloc(c, n.cap * sizeof(void*));
-    n.vals = (long*)xp_alloc(c, n.cap * sizeof(long));
+    XpPtrMap n = { NULL, NULL, m->cap ? m->cap * 2 : 64, 0, m->heap };
+    if (m->heap)
+    {
+        n.keys = (const void**)calloc(n.cap, sizeof(void*));
+        n.vals = (long*)malloc(n.cap * sizeof(long));
+        if (!n.keys || !n.vals) xp_error(c, XML_XPATH_ERR_MEMORY);
+    }
+    else
+    {
+        n.keys = (const void**)xp_calloc(c, n.cap * sizeof(void*));
+        n.vals = (long*)xp_alloc(c, n.cap * sizeof(long));
+    }
     for (size_t i = 0; i < m->cap; ++i) if (m->keys[i]) xp_map_put(c, &n, m->keys[i], m->vals[i]);
+    if (m->heap)
+    {
+        free(m->keys);
+        free(m->vals);
+    }
     *m = n;
+}
+
+static void xp_map_free(XpPtrMap *m)
+{
+    if (m->heap)
+    {
+        free(m->keys);
+        free(m->vals);
+    }
+    m->keys = NULL;
+    m->vals = NULL;
+    m->cap = m->len = 0;
 }
 
 static void xp_map_put(XpCtx *c, XpPtrMap *m, const void *key, long val)
@@ -669,19 +723,20 @@ static int xp_compare_turtle(XMQNode *a, XMQNode *b)
     return 1;
 }
 
-static void xp_index_tree(XpCtx *c, XMQNode *root)
+static void xp_index_tree(XpCtx *c, XpTree *t)
 {
-    long next = 0;
+    XMQNode *root = t->root;
+    long next = c->px->next_ordinal;
     XMQNode *n = root;
     while (n)
     {
-        xp_map_put(c, &c->order, n, next);
+        xp_map_put(c, &t->order, n, next);
         next += 2;
         if (xml_node_kind(n) == XML_DOM_ELEMENT)
         {
             for (XMQAttr *a = xml_node_first_attr(n); a; a = xml_attr_next(a))
             {
-                xp_map_put(c, &c->order, xml_attr_node(a), next);
+                xp_map_put(c, &t->order, xml_attr_node(a), next);
                 next += 2;
             }
         }
@@ -694,24 +749,51 @@ static void xp_index_tree(XpCtx *c, XMQNode *root)
         if (!n || n == root) break;
         n = xml_node_next(n);
     }
+    c->px->next_ordinal = next;
+}
+
+static XMQNode *xp_root_of(XMQNode *n)
+{
+    while (xml_node_parent(n)) n = xml_node_parent(n);
+    return n;
+}
+
+/** The tree with this root, created (but not indexed) if it is new. */
+static XpTree *xp_tree(XpCtx *c, XMQNode *root)
+{
+    XmlXPathContext *px = c->px;
+    long *idx = xp_map_find(&px->tree_index, root);
+    if (idx) return &px->trees[*idx - 1];
+    if (px->num_trees == px->trees_cap)
+    {
+        size_t nc = px->trees_cap ? px->trees_cap * 2 : 8;
+        XpTree *nt = (XpTree*)realloc(px->trees, nc * sizeof(XpTree));
+        if (!nt) xp_error(c, XML_XPATH_ERR_MEMORY);
+        px->trees = nt;
+        px->trees_cap = nc;
+    }
+    XpTree *t = &px->trees[px->num_trees++];
+    memset(t, 0, sizeof(*t));
+    t->root = root;
+    t->order.heap = true;
+    xp_map_put(c, &px->tree_index, root, (long)px->num_trees);
+    return t;
 }
 
 static long xp_ordinal(XpCtx *c, XMQNode *n)
 {
-    long *o = xp_map_find(&c->order, n);
-    if (o) return *o;
-    XMQNode *root = n;
-    while (xml_node_parent(root)) root = xml_node_parent(root);
-    if (root != c->indexed_root)
+    XmlXPathContext *px = c->px;
+    if (px->last_tree)
     {
-        c->indexed_root = root;
-        c->order.len = 0;
-        if (c->order.cap) memset(c->order.keys, 0, c->order.cap * sizeof(void*));
-        xp_index_tree(c, root);
-        o = xp_map_find(&c->order, n);
+        long *o = xp_map_find(&px->trees[px->last_tree - 1].order, n);
         if (o) return *o;
     }
-    return -1;
+    XMQNode *root = xp_root_of(n);
+    XpTree *t = xp_tree(c, root);
+    if (!t->order.len) xp_index_tree(c, t);
+    px->last_tree = (size_t)(t - px->trees) + 1;
+    long *o = xp_map_find(&t->order, n);
+    return o ? *o : -1;
 }
 
 static int xp_compare_index(XpCtx *c, XMQNode *a, XMQNode *b)
@@ -2176,7 +2258,7 @@ static XpNodeSet xp_collect(XpCtx *c, XpStep *s, XpNodeSet context, bool to_bool
     // A single [n] predicate stops the axis traversal at the n:th node.
     bool axis_range = has_pos && s->num_preds == 1;
     bool break_on_first_hit = to_bool && (s->num_preds == 0 || axis_range);
-    XpPtrMap seen = { NULL, NULL, 0, 0 };
+    XpPtrMap seen = { NULL, NULL, 0, 0, false };
     bool use_seen = context.len > 1;
     XMQNode *old_node = c->node;
     for (size_t k = 0; k < context.len; ++k)
@@ -2285,7 +2367,7 @@ static bool xp_equal_values(XpCtx *c, XpValue a, XpValue b, bool neq)
             if (ns.len == 0 || ns2.len == 0) return false;
             if (!neq)
             {
-                XpPtrMap s1 = { NULL, NULL, 0, 0 };
+                XpPtrMap s1 = { NULL, NULL, 0, 0, false };
                 for (size_t i = 0; i < ns.len; ++i) xp_map_put(c, &s1, ns.nodes[i], 1);
                 for (size_t j = 0; j < ns2.len; ++j) if (xp_map_find(&s1, ns2.nodes[j])) return true;
             }
@@ -2476,10 +2558,11 @@ static HashMap *xp_dtd_ids(XpCtx *c)
 
 static XMQNode *xp_lookup_id(XpCtx *c, const char *id)
 {
-    if (!c->ids_built)
+    if (!c->doc) return NULL;
+    XpTree *t = xp_tree(c, xp_root_of(c->doc));
+    if (!t->ids)
     {
-        c->ids_built = true;
-        c->ids = hashmap_create(1024);
+        t->ids = hashmap_create(1024);
         HashMap *dtd_ids = xp_dtd_ids(c);
         XMQNode *n = c->doc;
         while (n)
@@ -2491,7 +2574,7 @@ static XMQNode *xp_lookup_id(XpCtx *c, const char *id)
                     if (xp_is_id(c, n, xml_attr_node(a), dtd_ids))
                     {
                         const char *v = xp_string_value(c, xml_attr_node(a));
-                        if (!hashmap_get(c->ids, v)) hashmap_put(c->ids, v, n);
+                        if (!hashmap_get(t->ids, v)) hashmap_put(t->ids, v, n);
                     }
                 }
             }
@@ -2507,7 +2590,7 @@ static XMQNode *xp_lookup_id(XpCtx *c, const char *id)
         }
         if (dtd_ids) hashmap_free(dtd_ids);
     }
-    return (XMQNode*)hashmap_get(c->ids, id);
+    return (XMQNode*)hashmap_get(t->ids, id);
 }
 
 static void xp_elements_by_ids(XpCtx *c, const char *ids, XpNodeSet *ret)
@@ -2728,6 +2811,46 @@ static XpValue xp_context_set(XpCtx *c)
     return v;
 }
 
+static XpValue xp_from_result(XpCtx *c, const XmlXPathResult *r);
+static XmlXPathResult *xp_to_result(XpCtx *c, XpValue v, bool own_ns_nodes);
+
+/** Call an extension function found through the function lookup of the context. */
+static XpValue xp_call_extension(XpCtx *c, const char *name, const char *uri, XpValue *a, size_t n)
+{
+    XmlXPathContext *px = c->px;
+    void *fd = NULL;
+    XmlXPathFunction f = px->func_lookup ? px->func_lookup(px->func_data, name, uri, &fd) : NULL;
+    if (!f) xp_error(c, XML_XPATH_ERR_UNKNOWN_FUNC);
+    XmlXPathResult **args = (XmlXPathResult**)xp_calloc(c, (n ? n : 1) * sizeof(XmlXPathResult*));
+    for (size_t i = 0; i < n; ++i) args[i] = xp_to_result(c, a[i], false);
+    struct XpCtx *saved = px->cur;
+    XmlXPathErrorCode saved_error = px->func_error;
+    px->cur = c;
+    px->func_error = XML_XPATH_ERR_OK;
+    XmlXPathResult *r = f(px, fd, args, n);
+    XmlXPathErrorCode err = px->func_error;
+    px->cur = saved;
+    px->func_error = saved_error;
+    for (size_t i = 0; i < n; ++i) xml_xpath_result_free(args[i]);
+    if (!r) xp_error(c, err != XML_XPATH_ERR_OK ? err : XML_XPATH_ERR_INVALID_OPERAND);
+    // The namespace nodes of the result are kept until the evaluation ends.
+    for (size_t i = 0; i < r->num_ns_nodes; ++i)
+    {
+        if (c->num_ns_nodes == c->ns_nodes_cap)
+        {
+            c->ns_nodes_cap = c->ns_nodes_cap ? c->ns_nodes_cap * 2 : 16;
+            c->ns_nodes = (XMQNode**)realloc(c->ns_nodes, c->ns_nodes_cap * sizeof(XMQNode*));
+        }
+        c->ns_nodes[c->num_ns_nodes++] = r->ns_nodes[i];
+    }
+    free(r->ns_nodes);
+    r->ns_nodes = NULL;
+    r->num_ns_nodes = 0;
+    XpValue v = xp_from_result(c, r);
+    xml_xpath_result_free(r);
+    return v;
+}
+
 static XpValue xp_call(XpCtx *c, XpExpr *e)
 {
     size_t n = e->num_args;
@@ -2739,7 +2862,7 @@ static XpValue xp_call(XpCtx *c, XpExpr *e)
         const char *uri = xp_lookup_ns(c, e->prefix);
         if (!uri) xp_error(c, XML_XPATH_ERR_UNDEF_PREFIX);
         if (!strcmp(uri, XP_XQUERY_FUNCTIONS_NS) && !strcmp(name, "escape-uri")) return xp_escape_uri(c, a, n);
-        xp_error(c, XML_XPATH_ERR_UNKNOWN_FUNC);
+        return xp_call_extension(c, name, uri, a, n);
     }
     if (!strcmp(name, "last"))
     {
@@ -2931,8 +3054,7 @@ static XpValue xp_call(XpCtx *c, XpExpr *e)
         if (f - rounded >= 0.5) rounded += 1.0;
         return xp_number(rounded);
     }
-    xp_error(c, XML_XPATH_ERR_UNKNOWN_FUNC);
-    return xp_boolean(false);
+    return xp_call_extension(c, name, NULL, a, n);
 }
 
 static XpValue xp_eval(XpCtx *c, XpExpr *e)
@@ -2942,9 +3064,21 @@ static XpValue xp_eval(XpCtx *c, XpExpr *e)
     case XP_LITERAL: return xp_string(e->str);
     case XP_NUMBER: return xp_number(e->num);
     case XP_VAR:
-        if (e->prefix && !xp_lookup_ns(c, e->prefix)) xp_error(c, XML_XPATH_ERR_UNDEF_PREFIX);
+    {
+        const char *uri = NULL;
+        if (e->prefix)
+        {
+            uri = xp_lookup_ns(c, e->prefix);
+            if (!uri) xp_error(c, XML_XPATH_ERR_UNDEF_PREFIX);
+        }
+        if (c->px->var_lookup)
+        {
+            const XmlXPathResult *r = c->px->var_lookup(c->px->var_data, e->name, uri);
+            if (r) return xp_from_result(c, r);
+        }
         xp_error(c, XML_XPATH_ERR_UNDEF_VARIABLE);
         break;
+    }
     case XP_OR:
         if (xp_to_boolean(xp_eval(c, e->l))) return xp_boolean(true);
         return xp_boolean(xp_to_boolean(xp_eval(c, e->r)));
@@ -2989,7 +3123,7 @@ static XpValue xp_eval(XpCtx *c, XpExpr *e)
         if (a.type != XML_XPATH_NODESET || b.type != XML_XPATH_NODESET) xp_error(c, XML_XPATH_ERR_INVALID_TYPE);
         if (b.ns.len == 0) return a;
         XpValue out = xp_nodeset();
-        XpPtrMap seen = { NULL, NULL, 0, 0 };
+        XpPtrMap seen = { NULL, NULL, 0, 0, false };
         for (size_t i = 0; i < a.ns.len; ++i)
         {
             xp_map_put(c, &seen, a.ns.nodes[i], 1);
@@ -3621,69 +3755,39 @@ static void xp_cleanup(XpCtx *c)
         b = next;
     }
     c->blocks = NULL;
-    if (c->ids) hashmap_free(c->ids);
-    c->ids = NULL;
 }
 
-XmlXPathResult *xml_xpath_eval(const char *expr, XMQNode *context, const XmlXPathSettings *settings, XmlXPathError *error)
+// Values //////////////////////////////////////////////////////////
+
+/** A value of the caller as a value of this evaluation, the nodes are borrowed. */
+static XpValue xp_from_result(XpCtx *c, const XmlXPathResult *r)
 {
-    XmlXPathSettings defaults;
-    if (!settings)
+    switch (r->type)
     {
-        xml_xpath_settings_default(&defaults);
-        settings = &defaults;
-    }
-    if (error)
+    case XML_XPATH_BOOLEAN: return xp_boolean(r->b);
+    case XML_XPATH_NUMBER: return xp_number(r->num);
+    case XML_XPATH_STRING: return xp_string(xp_strdup(c, r->str ? r->str : ""));
+    case XML_XPATH_NODESET:
+    default:
     {
-        error->code = XML_XPATH_ERR_OK;
-        error->message = xp_messages_[0];
-        error->offset = 0;
-    }
-    XpCtx *c = (XpCtx*)calloc(1, sizeof(XpCtx));
-    c->settings = settings;
-    c->expr = expr ? expr : "";
-    c->node = settings->no_context_node ? NULL : context;
-    c->doc = xp_document_of(context);
-    c->size = -1;
-    c->position = -1;
-
-    if (setjmp(c->on_error))
-    {
-        if (error)
+        XpValue v = xp_nodeset();
+        if (r->len)
         {
-            error->code = c->error;
-            error->message = (c->error >= 0 && (size_t)c->error < sizeof(xp_messages_) / sizeof(xp_messages_[0]))
-                             ? xp_messages_[c->error] : "Unknown error";
-            error->offset = c->pos;
+            v.ns.nodes = (XMQNode**)xp_alloc(c, r->len * sizeof(XMQNode*));
+            memcpy(v.ns.nodes, r->nodes, r->len * sizeof(XMQNode*));
+            v.ns.len = v.ns.cap = r->len;
         }
-        for (size_t i = 0; i < c->num_ns_nodes; ++i) xml_node_free(c->ns_nodes[i]);
-        free(c->ns_nodes);
-        xp_cleanup(c);
-        free(c);
-        return NULL;
+        return v;
     }
-
-    if (!expr) xp_error(c, XML_XPATH_ERR_EXPR);
-
-    XpValue v;
-    XsComp *comps = NULL;
-    size_t ncomps = 0;
-    if (xs_try_compile(c, c->expr, &comps, &ncomps))
-    {
-        // Like libxml2, simple expressions are evaluated by the streaming pattern engine.
-        v = xp_nodeset();
-        v.ns = xs_eval(c, (XsComp**)comps, ncomps, c->node, c->doc);
     }
-    else
-    {
-        c->pos = 0;
-        XpExpr *e = xp_compile_expr(c, true);
-        if (xp_cur(c) != 0) xp_error(c, XML_XPATH_ERR_EXPR);
-        xp_optimize(e);
-        v = xp_eval(c, e);
-    }
+}
 
+/** A value of this evaluation as a value for the caller. With own_ns_nodes the namespace
+    nodes created by the evaluation are moved into it. */
+static XmlXPathResult *xp_to_result(XpCtx *c, XpValue v, bool own_ns_nodes)
+{
     XmlXPathResult *r = (XmlXPathResult*)calloc(1, sizeof(XmlXPathResult));
+    if (!r) xp_error(c, XML_XPATH_ERR_MEMORY);
     r->type = v.type;
     r->b = v.b;
     r->num = v.num;
@@ -3697,13 +3801,455 @@ XmlXPathResult *xml_xpath_eval(const char *expr, XMQNode *context, const XmlXPat
     {
         r->nodes = (XMQNode**)malloc(v.ns.len * sizeof(XMQNode*));
         memcpy(r->nodes, v.ns.nodes, v.ns.len * sizeof(XMQNode*));
-        r->len = v.ns.len;
+        r->len = r->cap = v.ns.len;
     }
-    r->ns_nodes = c->ns_nodes;
-    r->num_ns_nodes = c->num_ns_nodes;
+    if (own_ns_nodes)
+    {
+        r->ns_nodes = c->ns_nodes;
+        r->num_ns_nodes = c->num_ns_nodes;
+        c->ns_nodes = NULL;
+        c->num_ns_nodes = c->ns_nodes_cap = 0;
+    }
+    return r;
+}
+
+static void xp_fill_error(XpCtx *c, XmlXPathError *error)
+{
+    if (!error) return;
+    error->code = c->error;
+    error->message = (c->error >= 0 && (size_t)c->error < sizeof(xp_messages_) / sizeof(xp_messages_[0]))
+                     ? xp_messages_[c->error] : "Unknown error";
+    error->offset = c->pos;
+}
+
+static void xp_clear_error(XmlXPathError *error)
+{
+    if (!error) return;
+    error->code = XML_XPATH_ERR_OK;
+    error->message = xp_messages_[0];
+    error->offset = 0;
+}
+
+// Compiled expressions ///////////////////////////////////////////
+
+struct XmlXPathComp
+{
+    XpBlock *blocks;          // The arena of the compiled expression.
+    char *source;
+    XmlXPathSettings settings;
+    XmlXPathNamespace *namespaces;
+    XpExpr *expr;             // NULL when the streaming engine is used.
+    XsComp **comps;
+    size_t ncomps;
+};
+
+/** Compile into c (whose settings and expr are set). Returns false for the streaming form. */
+static XpExpr *xp_compile_into(XpCtx *c, XsComp ***comps, size_t *ncomps)
+{
+    if (!c->expr) xp_error(c, XML_XPATH_ERR_EXPR);
+    XsComp *sc = NULL;
+    size_t n = 0;
+    if (xs_try_compile(c, c->expr, (XsComp**)&sc, &n))
+    {
+        // Like libxml2, simple expressions are evaluated by the streaming pattern engine.
+        *comps = (XsComp**)sc;
+        *ncomps = n;
+        return NULL;
+    }
+    c->pos = 0;
+    XpExpr *e = xp_compile_expr(c, true);
+    if (xp_cur(c) != 0) xp_error(c, XML_XPATH_ERR_EXPR);
+    xp_optimize(e);
+    *comps = NULL;
+    *ncomps = 0;
+    return e;
+}
+
+static XpValue xp_eval_compiled(XpCtx *c, XpExpr *e, XsComp **comps, size_t ncomps)
+{
+    if (!e)
+    {
+        XpValue v = xp_nodeset();
+        v.ns = xs_eval(c, comps, ncomps, c->node, c->doc);
+        return v;
+    }
+    return xp_eval(c, e);
+}
+
+static char *xp_heap_strdup(const char *s)
+{
+    if (!s) return NULL;
+    size_t n = strlen(s);
+    char *r = (char*)malloc(n + 1);
+    if (r) memcpy(r, s, n + 1);
+    return r;
+}
+
+XmlXPathComp *xml_xpath_compile(const char *expr, const XmlXPathSettings *settings, XmlXPathError *error)
+{
+    xp_clear_error(error);
+    XmlXPathComp *comp = (XmlXPathComp*)calloc(1, sizeof(XmlXPathComp));
+    if (settings) comp->settings = *settings;
+    else xml_xpath_settings_default(&comp->settings);
+    // Keep copies of the namespaces, the compiled expression resolves prefixes when evaluated.
+    if (comp->settings.num_namespaces)
+    {
+        size_t nn = comp->settings.num_namespaces;
+        comp->namespaces = (XmlXPathNamespace*)calloc(nn, sizeof(XmlXPathNamespace));
+        for (size_t i = 0; i < nn; ++i)
+        {
+            comp->namespaces[i].prefix = xp_heap_strdup(comp->settings.namespaces[i].prefix);
+            comp->namespaces[i].uri = xp_heap_strdup(comp->settings.namespaces[i].uri);
+        }
+        comp->settings.namespaces = comp->namespaces;
+    }
+    comp->source = xp_heap_strdup(expr);
+
+    XpCtx *c = (XpCtx*)calloc(1, sizeof(XpCtx));
+    c->settings = &comp->settings;
+    c->expr = comp->source;
+    if (setjmp(c->on_error))
+    {
+        xp_fill_error(c, error);
+        comp->blocks = c->blocks;
+        c->blocks = NULL;
+        free(c);
+        xml_xpath_comp_free(comp);
+        return NULL;
+    }
+    comp->expr = xp_compile_into(c, &comp->comps, &comp->ncomps);
+    comp->blocks = c->blocks;
+    c->blocks = NULL;
+    free(c);
+    return comp;
+}
+
+void xml_xpath_comp_free(XmlXPathComp *comp)
+{
+    if (!comp) return;
+    XpBlock *b = comp->blocks;
+    while (b)
+    {
+        XpBlock *next = b->next;
+        free(b);
+        b = next;
+    }
+    for (size_t i = 0; i < comp->settings.num_namespaces && comp->namespaces; ++i)
+    {
+        free((char*)comp->namespaces[i].prefix);
+        free((char*)comp->namespaces[i].uri);
+    }
+    free(comp->namespaces);
+    free(comp->source);
+    free(comp);
+}
+
+const char *xml_xpath_comp_source(const XmlXPathComp *comp)
+{
+    return comp ? comp->source : NULL;
+}
+
+// Contexts ///////////////////////////////////////////////////////
+
+XmlXPathContext *xml_xpath_context_new(void)
+{
+    XmlXPathContext *px = (XmlXPathContext*)calloc(1, sizeof(XmlXPathContext));
+    if (px) px->tree_index.heap = true;
+    return px;
+}
+
+static void xp_tree_free(XpTree *t)
+{
+    xp_map_free(&t->order);
+    if (t->ids) hashmap_free(t->ids);
+    t->ids = NULL;
+}
+
+void xml_xpath_context_free(XmlXPathContext *px)
+{
+    if (!px) return;
+    for (size_t i = 0; i < px->num_trees; ++i) xp_tree_free(&px->trees[i]);
+    free(px->trees);
+    xp_map_free(&px->tree_index);
+    free(px);
+}
+
+void xml_xpath_context_set_variable_lookup(XmlXPathContext *px, XmlXPathVariableLookup lookup, void *user_data)
+{
+    px->var_lookup = lookup;
+    px->var_data = user_data;
+}
+
+void xml_xpath_context_set_function_lookup(XmlXPathContext *px, XmlXPathFunctionLookup lookup, void *user_data)
+{
+    px->func_lookup = lookup;
+    px->func_data = user_data;
+}
+
+void xml_xpath_context_forget(XmlXPathContext *px, XMQNode *root)
+{
+    if (!px || !root) return;
+    long *idx = xp_map_find(&px->tree_index, root);
+    if (!idx) return;
+    size_t k = (size_t)*idx - 1;
+    xp_tree_free(&px->trees[k]);
+    // Move the last tree into the hole and rebuild the root index.
+    px->trees[k] = px->trees[px->num_trees - 1];
+    px->num_trees--;
+    px->last_tree = 0;
+    xp_map_free(&px->tree_index);
+    px->tree_index.heap = true;
+    if (px->num_trees)
+    {
+        // Rebuilding allocates on the heap only, no evaluation context is needed for errors.
+        XpCtx tmp;
+        memset(&tmp, 0, sizeof(tmp));
+        if (setjmp(tmp.on_error)) return;
+        for (size_t i = 0; i < px->num_trees; ++i) xp_map_put(&tmp, &px->tree_index, px->trees[i].root, (long)i + 1);
+    }
+}
+
+/** Evaluate in a context, the shared part of xml_xpath_eval and xml_xpath_eval_comp. */
+static XmlXPathResult *xp_run(XmlXPathContext *px, const XmlXPathSettings *settings, const char *source,
+                              const XmlXPathComp *comp, XMQNode *node, long position, long size, XmlXPathError *error)
+{
+    xp_clear_error(error);
+    XpCtx *c = (XpCtx*)calloc(1, sizeof(XpCtx));
+    c->px = px;
+    c->settings = settings;
+    c->expr = source ? source : "";
+    c->node = settings->no_context_node ? NULL : node;
+    c->doc = xp_document_of(node);
+    c->size = size;
+    c->position = position;
+
+    if (setjmp(c->on_error))
+    {
+        xp_fill_error(c, error);
+        for (size_t i = 0; i < c->num_ns_nodes; ++i) xml_node_free(c->ns_nodes[i]);
+        free(c->ns_nodes);
+        xp_cleanup(c);
+        free(c);
+        return NULL;
+    }
+
+    XpValue v;
+    if (comp)
+    {
+        v = xp_eval_compiled(c, comp->expr, comp->comps, comp->ncomps);
+    }
+    else
+    {
+        if (!source) xp_error(c, XML_XPATH_ERR_EXPR);
+        XsComp **comps = NULL;
+        size_t ncomps = 0;
+        XpExpr *e = xp_compile_into(c, &comps, &ncomps);
+        v = xp_eval_compiled(c, e, comps, ncomps);
+    }
+
+    XmlXPathResult *r = xp_to_result(c, v, true);
     xp_cleanup(c);
     free(c);
     return r;
+}
+
+XmlXPathResult *xml_xpath_eval(const char *expr, XMQNode *context, const XmlXPathSettings *settings, XmlXPathError *error)
+{
+    XmlXPathSettings defaults;
+    if (!settings)
+    {
+        xml_xpath_settings_default(&defaults);
+        settings = &defaults;
+    }
+    // A fresh context for the single evaluation.
+    XmlXPathContext px;
+    memset(&px, 0, sizeof(px));
+    px.tree_index.heap = true;
+    XmlXPathResult *r = xp_run(&px, settings, expr, NULL, context, -1, -1, error);
+    for (size_t i = 0; i < px.num_trees; ++i) xp_tree_free(&px.trees[i]);
+    free(px.trees);
+    xp_map_free(&px.tree_index);
+    return r;
+}
+
+XmlXPathResult *xml_xpath_eval_comp(XmlXPathContext *px, const XmlXPathComp *comp, XMQNode *node,
+                                    long position, long size, XmlXPathError *error)
+{
+    return xp_run(px, &comp->settings, comp->source, comp, node, position, size, error);
+}
+
+XMQNode *xml_xpath_context_node(const XmlXPathContext *px)
+{
+    return px->cur ? px->cur->node : NULL;
+}
+
+long xml_xpath_context_position(const XmlXPathContext *px)
+{
+    return px->cur ? px->cur->position : -1;
+}
+
+long xml_xpath_context_size(const XmlXPathContext *px)
+{
+    return px->cur ? px->cur->size : -1;
+}
+
+const char *xml_xpath_context_lookup_namespace(const XmlXPathContext *px, const char *prefix)
+{
+    if (!px->cur || !prefix) return NULL;
+    return xp_lookup_ns(px->cur, prefix);
+}
+
+void xml_xpath_context_set_error(XmlXPathContext *px, XmlXPathErrorCode code)
+{
+    px->func_error = code;
+}
+
+void xml_xpath_context_sort(XmlXPathContext *px, XmlXPathResult *r)
+{
+    if (!r || r->type != XML_XPATH_NODESET || r->len < 2) return;
+    XpCtx *c = (XpCtx*)calloc(1, sizeof(XpCtx));
+    c->px = px;
+    if (setjmp(c->on_error))
+    {
+        xp_cleanup(c);
+        free(c);
+        return;
+    }
+    XpNodeSet ns = { r->nodes, r->len, r->cap };
+    // Remove duplicates, then sort like a union.
+    XpPtrMap seen = { NULL, NULL, 0, 0, false };
+    size_t k = 0;
+    for (size_t i = 0; i < ns.len; ++i)
+    {
+        if (xp_map_find(&seen, ns.nodes[i])) continue;
+        xp_map_put(c, &seen, ns.nodes[i], 1);
+        ns.nodes[k++] = ns.nodes[i];
+    }
+    ns.len = k;
+    xp_sort(c, &ns);
+    r->len = ns.len;
+    xp_cleanup(c);
+    free(c);
+}
+
+XmlXPathResult *xml_xpath_result_new_string(const char *str)
+{
+    XmlXPathResult *r = (XmlXPathResult*)calloc(1, sizeof(XmlXPathResult));
+    r->type = XML_XPATH_STRING;
+    r->str = xp_heap_strdup(str ? str : "");
+    return r;
+}
+
+XmlXPathResult *xml_xpath_result_new_number(double d)
+{
+    XmlXPathResult *r = (XmlXPathResult*)calloc(1, sizeof(XmlXPathResult));
+    r->type = XML_XPATH_NUMBER;
+    r->num = d;
+    return r;
+}
+
+XmlXPathResult *xml_xpath_result_new_boolean(bool b)
+{
+    XmlXPathResult *r = (XmlXPathResult*)calloc(1, sizeof(XmlXPathResult));
+    r->type = XML_XPATH_BOOLEAN;
+    r->b = b;
+    return r;
+}
+
+XmlXPathResult *xml_xpath_result_new_nodeset(void)
+{
+    XmlXPathResult *r = (XmlXPathResult*)calloc(1, sizeof(XmlXPathResult));
+    r->type = XML_XPATH_NODESET;
+    return r;
+}
+
+void xml_xpath_result_add_node(XmlXPathResult *r, XMQNode *n)
+{
+    if (!r || !n) return;
+    if (r->len == r->cap)
+    {
+        size_t nc = r->cap ? r->cap * 2 : 8;
+        r->nodes = (XMQNode**)realloc(r->nodes, nc * sizeof(XMQNode*));
+        r->cap = nc;
+    }
+    r->nodes[r->len++] = n;
+}
+
+XmlXPathResult *xml_xpath_result_copy(const XmlXPathResult *r)
+{
+    if (!r) return NULL;
+    XmlXPathResult *c = (XmlXPathResult*)calloc(1, sizeof(XmlXPathResult));
+    c->type = r->type;
+    c->b = r->b;
+    c->num = r->num;
+    c->str = xp_heap_strdup(r->str);
+    if (r->len)
+    {
+        c->nodes = (XMQNode**)malloc(r->len * sizeof(XMQNode*));
+        memcpy(c->nodes, r->nodes, r->len * sizeof(XMQNode*));
+        c->len = c->cap = r->len;
+    }
+    if (r->num_ns_nodes)
+    {
+        // The namespace nodes are owned by r, the copy gets its own.
+        c->ns_nodes = (XMQNode**)malloc(r->num_ns_nodes * sizeof(XMQNode*));
+        c->num_ns_nodes = r->num_ns_nodes;
+        for (size_t i = 0; i < r->num_ns_nodes; ++i)
+        {
+            XMQNode *o = r->ns_nodes[i];
+            XmlNs *ns = xml_node_ns(o);
+            XMQNode *n = xml_node_new_namespace_node(xml_node_parent(o), ns ? xml_ns_prefix(ns) : NULL,
+                                                     xml_node_content(o), xml_node_line(o));
+            c->ns_nodes[i] = n;
+            for (size_t j = 0; j < c->len; ++j) if (c->nodes[j] == o) c->nodes[j] = n;
+        }
+    }
+    return c;
+}
+
+char *xml_xpath_result_to_string(const XmlXPathResult *r)
+{
+    if (!r) return xp_heap_strdup("");
+    switch (r->type)
+    {
+    case XML_XPATH_STRING: return xp_heap_strdup(r->str ? r->str : "");
+    case XML_XPATH_NUMBER: return xml_xpath_format_number(r->num);
+    case XML_XPATH_BOOLEAN: return xp_heap_strdup(r->b ? "true" : "false");
+    case XML_XPATH_NODESET:
+    default:
+        if (!r->len) return xp_heap_strdup("");
+        return xml_node_string_value(r->nodes[0]);
+    }
+}
+
+double xml_xpath_result_to_number(const XmlXPathResult *r)
+{
+    if (!r) return NAN;
+    switch (r->type)
+    {
+    case XML_XPATH_NUMBER: return r->num;
+    case XML_XPATH_BOOLEAN: return r->b ? 1.0 : 0.0;
+    default:
+    {
+        char *s = xml_xpath_result_to_string(r);
+        double d = xml_xpath_string_to_number(s);
+        free(s);
+        return d;
+    }
+    }
+}
+
+bool xml_xpath_result_to_boolean(const XmlXPathResult *r)
+{
+    if (!r) return false;
+    switch (r->type)
+    {
+    case XML_XPATH_BOOLEAN: return r->b;
+    case XML_XPATH_NUMBER: return r->num != 0 && !isnan(r->num);
+    case XML_XPATH_STRING: return r->str && r->str[0];
+    case XML_XPATH_NODESET:
+    default: return r->len > 0;
+    }
 }
 
 XmlXPathType xml_xpath_result_type(const XmlXPathResult *r)

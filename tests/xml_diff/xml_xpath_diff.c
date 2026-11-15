@@ -50,6 +50,33 @@ static long same_ = 0, diff_ = 0, both_fail_ = 0, native_fail_ = 0, libxml_fail_
 static int max_shown_ = 50;
 static long entity_only_native_ = 0; // Expressions on entity documents, only evaluated natively.
 static long entity_expanded_files_ = 0; // Entity documents also compared after expansion.
+static long comp_same_ = 0, comp_diff_ = 0; // Compiled evaluation in a kept context versus xml_xpath_eval.
+static XmlXPathContext *pctx_ = NULL; // Kept for all expressions of a document.
+static char *nx_describe(XmlXPathResult *r);
+
+/** The expression compiled and evaluated in the kept context must give the same as xml_xpath_eval. */
+static void check_compiled(const char *file, const char *ctxname, const char *expr, XMQNode *nctx, XmlXPathResult *r)
+{
+    if (!pctx_) return;
+    XmlXPathError cerr;
+    XmlXPathComp *comp = xml_xpath_compile(expr, NULL, &cerr);
+    XmlXPathResult *cr = comp ? xml_xpath_eval_comp(pctx_, comp, nctx, -1, -1, &cerr) : NULL;
+    char *a = r ? nx_describe(r) : strdup("(error)");
+    char *b = cr ? nx_describe(cr) : strdup("(error)");
+    if (!strcmp(a, b))
+    {
+        comp_same_++;
+    }
+    else
+    {
+        comp_diff_++;
+        printf("COMPILED DIFF %s [%s] %s\n  eval:     %.300s\n  compiled: %.300s\n", file, ctxname, expr, a, b);
+    }
+    free(a);
+    free(b);
+    xml_xpath_result_free(cr);
+    xml_xpath_comp_free(comp);
+}
 static int has_entities_ = 0; // The current document declares entities: libxml2 expands their content for xpath.
 static double lx_time_ = 0, nx_time_ = 0;
 static long max_size_ = 200000;
@@ -346,6 +373,7 @@ static void test_expr(const char *file, xmlDocPtr doc, xmlNodePtr lctx, XmlDom *
     XmlXPathError err;
     XmlXPathResult *r = xml_xpath_eval(expr, nctx, NULL, &err);
     double t2 = now();
+    check_compiled(file, ctxname, expr, nctx, r);
     lx_time_ += t1 - t0;
     nx_time_ += t2 - t1;
     if (verbose_ > 1 && (t2 - t1 > 0.5 || t1 - t0 > 0.5)) printf("SLOW %s %s libxml2 %.2fs native %.2fs\n", file, expr, t1 - t0, t2 - t1);
@@ -488,10 +516,13 @@ static void test_doc_exprs(const char *file, xmlDocPtr doc, XmlDom *dom, xmlNode
 
 static void test_both(const char *file, xmlDocPtr doc, XmlDom *dom)
 {
+    pctx_ = xml_xpath_context_new();
     test_doc_exprs(file, doc, dom, (xmlNodePtr)doc, xml_dom_document(dom), "doc");
     xmlNodePtr lroot = xmlDocGetRootElement(doc);
     XMQNode *nroot = xml_dom_root_element(dom);
     if (lroot && nroot) test_doc_exprs(file, doc, dom, lroot, nroot, "root");
+    xml_xpath_context_free(pctx_);
+    pctx_ = NULL;
 }
 
 /** libxml2 resolves namespaces inside entity content without the namespaces in scope at the
@@ -613,5 +644,6 @@ int main(int argc, char **argv)
     printf("xml_xpath_diff: %ld files (%ld skipped), %ld same, %ld differ, %ld both fail, "
            "%ld only native fails, %ld only libxml2 fails, %ld only native (entity documents, of which %ld also compared expanded) (libxml2 %.1fs native %.1fs)\n",
            files_, skipped_, same_, diff_, both_fail_, native_fail_, libxml_fail_, entity_only_native_, entity_expanded_files_, lx_time_, nx_time_);
-    return (diff_ || native_fail_ || libxml_fail_) ? 1 : 0;
+    printf("xml_xpath_diff: compiled in a kept context: %ld same, %ld differ\n", comp_same_, comp_diff_);
+    return (diff_ || native_fail_ || libxml_fail_ || comp_diff_) ? 1 : 0;
 }

@@ -35,6 +35,7 @@
     X(test_xml_parser) \
     X(test_xml_html) \
     X(test_xml_xpath) \
+    X(test_xml_xpath_context) \
 
 
 #define X(name) void name();
@@ -745,6 +746,192 @@ static void check_xpath(XmlDom *dom, const char *expr, const char *expected)
         all_ok_ = false;
         printf("ERROR: test_xml_xpath %s\n  got:      %s\n  expected: %s\n", expr, got, expected);
     }
+}
+
+#define XPC_CHECK(cond) do { if (!(cond)) { all_ok_ = false; printf("ERROR: test_xml_xpath_context %s:%d %s\n", __FILE__, __LINE__, #cond); } } while(0)
+
+typedef struct
+{
+    XmlXPathResult *x;     // $x
+    XmlXPathResult *list;  // $p:list
+} TestXPathVars;
+
+static const XmlXPathResult *test_xpath_var(void *ud, const char *name, const char *uri)
+{
+    TestXPathVars *v = (TestXPathVars*)ud;
+    if (!uri && !strcmp(name, "x")) return v->x;
+    if (uri && !strcmp(uri, "urn:p") && !strcmp(name, "list")) return v->list;
+    return NULL;
+}
+
+/** p:here() the context node, p:pos() position*1000+size, p:twice(s) s twice, p:fail() an error. */
+static XmlXPathResult *test_xpath_fn(XmlXPathContext *ctx, void *fd, XmlXPathResult **args, size_t nargs)
+{
+    const char *which = (const char*)fd;
+    if (!strcmp(which, "here"))
+    {
+        XmlXPathResult *r = xml_xpath_result_new_nodeset();
+        xml_xpath_result_add_node(r, xml_xpath_context_node(ctx));
+        return r;
+    }
+    if (!strcmp(which, "pos"))
+    {
+        return xml_xpath_result_new_number((double)(xml_xpath_context_position(ctx) * 1000 + xml_xpath_context_size(ctx)));
+    }
+    if (!strcmp(which, "twice"))
+    {
+        if (nargs != 1)
+        {
+            xml_xpath_context_set_error(ctx, XML_XPATH_ERR_INVALID_ARITY);
+            return NULL;
+        }
+        char *a = xml_xpath_result_to_string(args[0]);
+        size_t n = strlen(a);
+        char *b = (char*)malloc(2 * n + 1);
+        memcpy(b, a, n);
+        memcpy(b + n, a, n + 1);
+        XmlXPathResult *r = xml_xpath_result_new_string(b);
+        free(a);
+        free(b);
+        return r;
+    }
+    if (!strcmp(which, "ns"))
+    {
+        const char *u = xml_xpath_context_lookup_namespace(ctx, "p");
+        return xml_xpath_result_new_string(u ? u : "");
+    }
+    xml_xpath_context_set_error(ctx, XML_XPATH_ERR_INVALID_TYPE);
+    return NULL;
+}
+
+static XmlXPathFunction test_xpath_lookup(void *ud, const char *name, const char *uri, void **fd)
+{
+    (void)ud;
+    if (!uri || strcmp(uri, "urn:p")) return NULL;
+    if (!strcmp(name, "here")) *fd = (void*)"here";
+    else if (!strcmp(name, "pos")) *fd = (void*)"pos";
+    else if (!strcmp(name, "twice")) *fd = (void*)"twice";
+    else if (!strcmp(name, "ns")) *fd = (void*)"ns";
+    else if (!strcmp(name, "fail")) *fd = (void*)"fail";
+    else return NULL;
+    return test_xpath_fn;
+}
+
+static char *test_xpath_eval(XmlXPathContext *ctx, const char *expr, XMQNode *node, long pos, long size)
+{
+    XmlXPathNamespace nss[] = { { "p", "urn:p" } };
+    XmlXPathSettings st;
+    xml_xpath_settings_default(&st);
+    st.namespaces = nss;
+    st.num_namespaces = 1;
+    XmlXPathError err;
+    XmlXPathComp *comp = xml_xpath_compile(expr, &st, &err);
+    if (!comp)
+    {
+        char b[64];
+        snprintf(b, sizeof(b), "compile error %d", (int)err.code);
+        return strdup(b);
+    }
+    XmlXPathResult *r = xml_xpath_eval_comp(ctx, comp, node, pos, size, &err);
+    xml_xpath_comp_free(comp);
+    if (!r)
+    {
+        char b[64];
+        snprintf(b, sizeof(b), "error %d", (int)err.code);
+        return strdup(b);
+    }
+    char *s = xml_xpath_result_to_string(r);
+    xml_xpath_result_free(r);
+    return s;
+}
+
+#define XPC_EVAL(ctx, expr, node, pos, size, expected) do { \
+    char *got_ = test_xpath_eval(ctx, expr, node, pos, size); \
+    if (strcmp(got_, expected)) { all_ok_ = false; printf("ERROR: test_xml_xpath_context %s\n  got:      %s\n  expected: %s\n", expr, got_, expected); } \
+    free(got_); } while(0)
+
+void test_xml_xpath_context()
+{
+    XmlParseSettings ps;
+    xml_parse_settings_default(&ps);
+    XmlParseError pe;
+    // id() finds attributes declared as ID.
+    const char *src = "<!DOCTYPE r [<!ATTLIST a id ID #IMPLIED><!ATTLIST c id ID #IMPLIED>]>"
+                      "<r><a id='1'>A</a><b>B</b><a id='2'>C</a></r>";
+    XmlDom *dom = xml_parse_buffer(src, src + strlen(src), &ps, &pe);
+    const char *src2 = "<s><t>T1</t><t>T2</t></s>";
+    XmlDom *dom2 = xml_parse_buffer(src2, src2 + strlen(src2), &ps, &pe);
+    XMQNode *doc = xml_dom_document(dom);
+    XMQNode *r = xml_dom_root_element(dom);
+    XMQNode *b = xml_node_next(xml_node_first_child(r));
+
+    XmlXPathContext *ctx = xml_xpath_context_new();
+    TestXPathVars vars;
+    vars.x = xml_xpath_result_new_string("xyz");
+    vars.list = xml_xpath_result_new_nodeset();
+    // In reverse order, the variable value is used as given.
+    xml_xpath_result_add_node(vars.list, xml_node_first_child(xml_dom_root_element(dom2)));
+    xml_xpath_result_add_node(vars.list, b);
+    xml_xpath_context_set_variable_lookup(ctx, test_xpath_var, &vars);
+    xml_xpath_context_set_function_lookup(ctx, test_xpath_lookup, NULL);
+
+    // A compiled expression evaluated with different context nodes, positions and sizes.
+    XPC_EVAL(ctx, "string(.)", b, 1, 1, "B");
+    XPC_EVAL(ctx, "string(.)", r, 1, 1, "ABC");
+    XPC_EVAL(ctx, "position() * 10 + last()", b, 2, 3, "23");
+    XPC_EVAL(ctx, "last()", b, -1, -1, "error 13");
+    // Variables, prefixed variables, undefined variables.
+    XPC_EVAL(ctx, "concat($x, '!')", doc, -1, -1, "xyz!");
+    XPC_EVAL(ctx, "count($p:list)", doc, -1, -1, "2");
+    XPC_EVAL(ctx, "string($p:list[1])", doc, -1, -1, "T1");
+    XPC_EVAL(ctx, "$nope", doc, -1, -1, "error 5");
+    XPC_EVAL(ctx, "$q:nope", doc, -1, -1, "error 19");
+    // A union of nodes from two documents is sorted and deduplicated.
+    XPC_EVAL(ctx, "count($p:list | $p:list | //b)", doc, -1, -1, "2");
+    // Extension functions see the context node, position and size and the namespaces.
+    XPC_EVAL(ctx, "name(p:here())", b, 1, 1, "b");
+    XPC_EVAL(ctx, "/r/a[p:pos() = 2002]", doc, -1, -1, "C");
+    XPC_EVAL(ctx, "p:twice(//b)", doc, -1, -1, "BB");
+    XPC_EVAL(ctx, "p:twice()", doc, -1, -1, "error 12");
+    XPC_EVAL(ctx, "p:fail()", doc, -1, -1, "error 11");
+    XPC_EVAL(ctx, "p:ns()", doc, -1, -1, "urn:p");
+    XPC_EVAL(ctx, "p:unknown()", doc, -1, -1, "error 9");
+    XPC_EVAL(ctx, "unknown()", doc, -1, -1, "error 9");
+    XPC_EVAL(ctx, "1 +", doc, -1, -1, "compile error 7");
+    // The id table and the order index are kept, and forgotten for a changed tree.
+    XPC_EVAL(ctx, "string(id('2'))", doc, -1, -1, "C");
+    XMQNode *c = xml_node_new_element(dom, "c", NULL);
+    xml_node_set_attr(c, "id", NULL, "3");
+    xml_node_append_child(c, xml_node_new_text(dom, "D"));
+    xml_node_add_prev_sibling(b, c);
+    xml_xpath_context_forget(ctx, doc);
+    XPC_EVAL(ctx, "string(id('3'))", doc, -1, -1, "D");
+    XPC_EVAL(ctx, "name((//b | //c)[1])", doc, -1, -1, "c");
+
+    // Values.
+    XmlXPathResult *n = xml_xpath_result_new_number(2.5);
+    char *ns = xml_xpath_result_to_string(n);
+    XPC_CHECK(!strcmp(ns, "2.5"));
+    free(ns);
+    XPC_CHECK(xml_xpath_result_to_boolean(n));
+    XmlXPathResult *n2 = xml_xpath_result_copy(vars.list);
+    XPC_CHECK(xml_xpath_result_size(n2) == 2);
+    xml_xpath_context_sort(ctx, n2);
+    XPC_CHECK(xml_xpath_result_size(n2) == 2);
+    XmlXPathResult *bs = xml_xpath_result_new_string("0012");
+    XPC_CHECK(xml_xpath_result_to_number(bs) == 12.0);
+    XmlXPathResult *f = xml_xpath_result_new_boolean(false);
+    XPC_CHECK(!xml_xpath_result_to_boolean(f));
+    xml_xpath_result_free(f);
+    xml_xpath_result_free(bs);
+    xml_xpath_result_free(n);
+    xml_xpath_result_free(n2);
+
+    xml_xpath_result_free(vars.x);
+    xml_xpath_result_free(vars.list);
+    xml_xpath_context_free(ctx);
+    xml_dom_free(dom);
+    xml_dom_free(dom2);
 }
 
 void test_xml_xpath()

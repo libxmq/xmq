@@ -124,6 +124,80 @@ const char *xml_xpath_result_string(const XmlXPathResult *r);
 /** Frees the result, including any namespace nodes it contains. */
 void xml_xpath_result_free(XmlXPathResult *r);
 
+// Values created by the caller, eg variable values and extension function results.
+XmlXPathResult *xml_xpath_result_new_string(const char *s);
+XmlXPathResult *xml_xpath_result_new_number(double d);
+XmlXPathResult *xml_xpath_result_new_boolean(bool b);
+/** An empty node set, add nodes with xml_xpath_result_add_node. */
+XmlXPathResult *xml_xpath_result_new_nodeset(void);
+/** Append a node to a node set (no check for duplicates or order, see xml_xpath_context_sort). */
+void xml_xpath_result_add_node(XmlXPathResult *r, XMQNode *n);
+/** A copy, namespace nodes owned by r are copied too. */
+XmlXPathResult *xml_xpath_result_copy(const XmlXPathResult *r);
+/** The XPath string(), number() and boolean() of a value. The string is malloced. */
+char *xml_xpath_result_to_string(const XmlXPathResult *r);
+double xml_xpath_result_to_number(const XmlXPathResult *r);
+bool xml_xpath_result_to_boolean(const XmlXPathResult *r);
+
+// Compiled expressions and evaluation contexts, used by xslt //////////////
+
+/** A compiled expression, evaluated any number of times with xml_xpath_eval_comp. */
+struct XmlXPathComp;
+typedef struct XmlXPathComp XmlXPathComp;
+
+/**
+    An evaluation context: the document order index and the id tables of the trees
+    seen so far are kept between evaluations, and variables and extension functions
+    are resolved through callbacks. The trees must not change while the context
+    knows them: call xml_xpath_context_forget before a tree is changed or freed.
+*/
+struct XmlXPathContext;
+typedef struct XmlXPathContext XmlXPathContext;
+
+/** Return the value of the variable (borrowed, it must live until the evaluation
+    ends), or NULL if it is not defined. ns_uri is NULL for an unprefixed name. */
+typedef const XmlXPathResult *(*XmlXPathVariableLookup)(void *user_data, const char *name, const char *ns_uri);
+
+/** An extension function. Returns a new value, or NULL after calling
+    xml_xpath_context_set_error. The arguments are owned by the caller. */
+typedef XmlXPathResult *(*XmlXPathFunction)(XmlXPathContext *ctx, void *func_data, XmlXPathResult **args, size_t nargs);
+
+/** Find an extension function (called for names that are not XPath core functions),
+    returns NULL if there is none. *func_data is passed to the function. */
+typedef XmlXPathFunction (*XmlXPathFunctionLookup)(void *user_data, const char *name, const char *ns_uri, void **func_data);
+
+XmlXPathComp *xml_xpath_compile(const char *expr, const XmlXPathSettings *settings, XmlXPathError *error);
+void xml_xpath_comp_free(XmlXPathComp *comp);
+/** The expression as given to xml_xpath_compile. */
+const char *xml_xpath_comp_source(const XmlXPathComp *comp);
+
+XmlXPathContext *xml_xpath_context_new(void);
+void xml_xpath_context_free(XmlXPathContext *ctx);
+void xml_xpath_context_set_variable_lookup(XmlXPathContext *ctx, XmlXPathVariableLookup lookup, void *user_data);
+void xml_xpath_context_set_function_lookup(XmlXPathContext *ctx, XmlXPathFunctionLookup lookup, void *user_data);
+/** Drop what the context knows about the tree with this root, before it is changed or freed. */
+void xml_xpath_context_forget(XmlXPathContext *ctx, XMQNode *root);
+
+/**
+    Evaluate a compiled expression with node as context node, position and size
+    as the context position and size (-1 if unknown, then position() and last()
+    are errors). Returns NULL on an error, then error (if not NULL) is filled in.
+*/
+XmlXPathResult *xml_xpath_eval_comp(XmlXPathContext *ctx, const XmlXPathComp *comp, XMQNode *node,
+                                    long position, long size, XmlXPathError *error);
+
+/** Sort a node set into document order and remove duplicates, like the result of a union. */
+void xml_xpath_context_sort(XmlXPathContext *ctx, XmlXPathResult *r);
+
+// For extension functions, during an evaluation.
+XMQNode *xml_xpath_context_node(const XmlXPathContext *ctx);
+long xml_xpath_context_position(const XmlXPathContext *ctx);
+long xml_xpath_context_size(const XmlXPathContext *ctx);
+/** The namespace uri of a prefix in the namespaces of the expression being evaluated, or NULL. */
+const char *xml_xpath_context_lookup_namespace(const XmlXPathContext *ctx, const char *prefix);
+/** Make the current extension function fail with this error. */
+void xml_xpath_context_set_error(XmlXPathContext *ctx, XmlXPathErrorCode code);
+
 /** Format a number like xpath string(), eg 1, 0.5, NaN, Infinity. Malloced. */
 char *xml_xpath_format_number(double d);
 /** Convert a string to a number like xpath number(). */
