@@ -102,7 +102,13 @@ public class Main
         }
 
         // The command line is parsed with the grammar library/xmq-utils/xmqcli.ixml, see Cli.
-        int status = Cli.run(args);
+        // Like the C version (and libxslt), transforms and deep documents recurse deeply,
+        // run the command line in a thread with a large stack.
+        int[] result = new int[1];
+        Thread t = new Thread(null, () -> result[0] = Cli.run(args), "xmqj", 1L << 30);
+        t.start();
+        t.join();
+        int status = result[0];
         System.out.flush();
         if (status != 0) System.exit(status);
     }

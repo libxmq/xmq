@@ -2614,8 +2614,8 @@ static void xp_elements_by_ids(XpCtx *c, const char *ids, XpNodeSet *ret)
 {
     size_t n = strlen(ids);
     size_t cur = 0, start = 0;
+    // Like libxml2, leading blanks stay part of the first id.
     while (cur < n && xp_is_blank(ids[cur])) cur++;
-    start = cur;
     while (cur < n)
     {
         while (cur < n && !xp_is_blank(ids[cur])) cur++;

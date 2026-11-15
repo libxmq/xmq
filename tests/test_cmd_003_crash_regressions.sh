@@ -139,8 +139,15 @@ do
 done
 $PROG $OUTPUT/entcycle.xml to-json > $OUTPUT/out 2> $OUTPUT/err ; RC=$?
 # Entities are never expanded implicitly, the entity reference in the attribute
-# contributes nothing to the json string (xmqExpandEntities expands them).
-check "entity cycle to-json output" 0 '{"!DOCTYPE":"goo [\n<!ENTITY copy \"&#169;\">\n<!ENTITY prutt \"PRUTT&copy;\">\n]","_":"goo","_x":"alfa","|":"X"}' ''
+# contributes nothing to the json string (xmqExpandEntities expands them), the
+# reference in the content is kept (it is not a character entity).
+check "entity cycle to-json output" 0 '{"!DOCTYPE":"goo [\n<!ENTITY copy \"&#169;\">\n<!ENTITY prutt \"PRUTT&copy;\">\n]","_":"goo","_x":"alfa","|[0]":"X","&":"&copy;","|[1]":"Y"}' ''
+
+# An element whose only content is an entity reference that is not a character
+# entity: the json value printer read the (missing) content of the reference.
+echo 'a{d=&e;}' > $OUTPUT/entonly.xmq
+$PROG $OUTPUT/entonly.xmq to-json > $OUTPUT/out 2> $OUTPUT/err ; RC=$?
+check "entity only to-json output" 0 '{"_":"a","d":"&e;"}' ''
 
 # An attribute that is only an undefined entity reference: xmlNodeListGetString
 # returns NULL, which crashed the json and clines printers.

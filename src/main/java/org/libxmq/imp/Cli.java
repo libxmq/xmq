@@ -66,6 +66,9 @@ final class Cli
         String useIs, useEs, useEt, useCr, useNl;
         String tokenizeType;
         int withFile; // replace-entity --with-file (1) or --with-text-file (2)
+        // transform: the compiled stylesheet and the --stringparam/--param values (xpath expressions).
+        org.libxmq.imp.xml.libxslt1.Stylesheet xslt;
+        final java.util.LinkedHashMap<String, String> xsltParams = new java.util.LinkedHashMap<>();
     }
 
     // Global settings.
@@ -79,7 +82,7 @@ final class Cli
     byte[] inputBytes;      // The undecoded input file or stdin, null for -i content.
 
     static final String[] NOT_IMPLEMENTED = {
-        "transform", "validate", "for-each", "statistics",
+        "validate", "for-each", "statistics",
         "substitute-entity", "substitute-char-entities", "page", "pa", "browse", "br", "heu",
         "load", "xsl", "replace",
     };
@@ -225,6 +228,12 @@ final class Cli
             if (p.name().equals("option")) commandOption(c, p.attributeValue("name"), value(p));
             else c.args.add(p.textContent());
         }
+        if (c.name.equals("transform") && !c.args.isEmpty())
+        {
+            // Like C, the stylesheet is loaded and compiled when the command line is read.
+            String f = c.args.get(0);
+            if (!loadXslt(c, f)) throw fail("xmq: bad argument \"" + f + "\" for command \"transform\"");
+        }
         commands.add(c);
     }
 
@@ -296,6 +305,29 @@ final class Cli
                 }
                 return;
             }
+        }
+        if (c.name.equals("transform") && (name.equals("stringparam") || name.equals("param")) && value != null)
+        {
+            String arg = "--" + name + "=" + value;
+            int eq = value.indexOf('=');
+            if (eq < 0)
+            {
+                throw fail("Invalid: " + arg + "\nUsage: --stringparam=key=value");
+            }
+            String key = value.substring(0, eq);
+            String val = value.substring(eq + 1);
+            if (name.equals("stringparam"))
+            {
+                boolean sq = val.indexOf('\'') >= 0, dq = val.indexOf('"') >= 0;
+                if (sq && dq)
+                {
+                    throw fail("Invalid: " + arg + "\nA string param cannot contain both single and double quotes.");
+                }
+                char q = sq ? '"' : '\'';
+                val = q + val + q;
+            }
+            c.xsltParams.put(key, val);
+            return;
         }
         if (c.name.equals("tokenize") && name.equals("type") && value != null) { c.tokenizeType = value; return; }
         if ((c.name.equals("quote-c") || c.name.equals("unquote-c")) && name.equals("add-nl") && value == null) { c.addNl = true; return; }
@@ -423,6 +455,7 @@ final class Cli
             case "replace-entity" -> replaceEntity(doc, c);
             case "expand-entities" -> expandEntities(doc, content);
             case "quote-c", "unquote-c" -> doc = quote(doc, c);
+            case "transform" -> doc = transform(doc, c, source);
             case "no-output" -> { }
             case "print" -> { if (output != null) System.out.print(output); }
             case "save-to" -> save(output, c.args.get(0));
@@ -482,6 +515,139 @@ final class Cli
             System.err.print(XMQ.printException(e));
             return null;
         }
+    }
+
+    // ------------------------------------------------------------ xslt
+
+    /** Load a document for xslt like xmqParseFileWithType(doc, path, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE). */
+    static XmlDocument loadForXslt(String path, boolean[] isXmq, String[] error)
+    {
+        byte[] b;
+        try
+        {
+            b = Files.readAllBytes(Path.of(path));
+        }
+        catch (IOException | java.nio.file.InvalidPathException e)
+        {
+            // The error of the document (xmqDocError) in the C version.
+            error[0] = "xmq: " + path + ": No such file or directory\n";
+            return null;
+        }
+        String content = new String(b, StandardCharsets.UTF_8);
+        if (isXmq != null) isXmq[0] = isXmqContent(content);
+        try
+        {
+            XmlDocument d = Main.load(content, b, path, true, false, null);
+            // Documents parsed by xmq have no url in the C version.
+            if (d != null) d.setUrl(null);
+            return d;
+        }
+        catch (ParseException e)
+        {
+            System.err.print(XMQ.printException(e));
+            return null;
+        }
+    }
+
+    /** Like load_xslt in the C version. */
+    boolean loadXslt(Command c, String file) throws Exit
+    {
+        boolean[] xmq = new boolean[1];
+        String[] error = new String[1];
+        XmlDocument src = loadForXslt(file, xmq, error);
+        if (src == null)
+        {
+            System.err.print((error[0] != null ? error[0] : "xmq: parse error") + "\n");
+            return false;
+        }
+        if (xmq[0])
+        {
+            // We want to be able to use char entities in the xslq by default.
+            // So we replace any explicit &#10; with actual newlines etc.
+            XmlNode root = src.firstChild();
+            if (root != null) XsltSupport.substituteCharEntities(src, root);
+        }
+        c.xslt = compileXslt(src);
+        return c.xslt != null;
+    }
+
+    /** Like xmqCompileXslt(stylesheet, NULL) in the C version. */
+    static org.libxmq.imp.xml.libxslt1.Stylesheet compileXslt(XmlDocument src)
+    {
+        // A copy of the stylesheet, the compiler changes it.
+        XmlDocument dom = new XmlDocument();
+        if (src.version() != null) dom.setVersion(src.version());
+        if (src.encoding() != null) dom.setEncoding(src.encoding());
+        if (src.url() != null) dom.setUrl(src.url());
+        for (XmlNode n = src.firstChild(); n != null; n = n.next())
+        {
+            XmlNode copy = org.libxmq.imp.xml.XmlDomApi.nodeCopy(dom, n, true);
+            org.libxmq.imp.xml.XmlDomApi.nodeAppendChild(dom, copy);
+        }
+        for (XmlNode n = dom.firstChild(); n != null; n = n.next())
+        {
+            if (n instanceof XmlElement) org.libxmq.imp.xml.XmlDomApi.nodeReconcileNs(n);
+        }
+        org.libxmq.imp.xml.libxslt1.Stylesheet[] style = new org.libxmq.imp.xml.libxslt1.Stylesheet[1];
+        org.libxmq.imp.xml.libxslt1.Settings settings = new org.libxmq.imp.xml.libxslt1.Settings();
+        settings.messageCallback = m -> System.err.print(m);
+        settings.loader = (uri, type) -> xsltLoader(style[0], uri, type);
+        style[0] = org.libxmq.imp.xml.libxslt1.Xslt.compile(dom, settings);
+        return style[0];
+    }
+
+    /** Like xmq_xslt_loader in the C version. */
+    static XmlDocument xsltLoader(org.libxmq.imp.xml.libxslt1.Stylesheet style, String uri, int type)
+    {
+        // document('') of a stylesheet without url: the stylesheet itself.
+        if (type == org.libxmq.imp.xml.libxslt1.Settings.LOAD_DOCUMENT && (uri == null || uri.isEmpty()) && style != null)
+        {
+            return org.libxmq.imp.xml.libxslt1.Transform.copyStylesheetDoc(style);
+        }
+        String path = uri;
+        if (path.startsWith("file://"))
+        {
+            path = path.substring(7);
+            if (path.startsWith("localhost/")) path = path.substring(9);
+        }
+        // Like libxml2, an uri reference with %XX escapes is a file name once unescaped.
+        if (path.indexOf(':') < 0 && path.indexOf('%') >= 0 && !Files.isRegularFile(Path.of(path)))
+        {
+            String u = org.libxmq.imp.xml.XmlUri.unescapeString(path, -1);
+            if (u != null) path = u;
+        }
+        String[] error = new String[1];
+        XmlDocument d = loadForXslt(path, null, error);
+        if (d == null)
+        {
+            if (error[0] != null) System.err.print(error[0]);
+            return null;
+        }
+        d.setUrl(uri);
+        return d;
+    }
+
+    /** Like cmd_transform in the C version. */
+    XmlDocument transform(XmlDocument doc, Command c, String source)
+    {
+        String[] params = new String[2 * c.xsltParams.size()];
+        int k = 0;
+        for (var e : c.xsltParams.entrySet())
+        {
+            params[k++] = e.getKey();
+            params[k++] = e.getValue();
+        }
+        // Documents parsed by xmq have no url in the C version, relative uris in document()
+        // are resolved against the current directory.
+        String url = doc.url();
+        doc.setUrl(null);
+        XmlDocument result = org.libxmq.imp.xml.libxslt1.Transform.applyStylesheet(c.xslt, doc, params.length == 0 ? null : params, null);
+        doc.setUrl(url);
+        if (result == null) result = new XmlDocument();
+        // Replace the xmq marker elements, eg xmq:entity(name=nbsp), that the
+        // transform may have generated.
+        XsltSupport.replaceTransformMarkers(result, source);
+        return result;
     }
 
     void save(String output, String file) throws Exit

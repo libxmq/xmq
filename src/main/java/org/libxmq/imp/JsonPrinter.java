@@ -662,7 +662,16 @@ public class JsonPrinter extends XMQPrinter
         for (XmlNode i = node.firstChild(); i != null; i = i.next())
         {
             if (i.type() != XmlNodeType.TEXT && i.type() != XmlNodeType.ENTITY_REF) return null;
-            if (i.type() == XmlNodeType.TEXT) num_text++; else num_entities++;
+            if (i.type() == XmlNodeType.TEXT)
+            {
+                num_text++;
+                continue;
+            }
+            // An unknown entity (or an invalid character reference) cannot be
+            // replaced by its character, keep the reference.
+            int uc = decode_entity_ref(i.name());
+            if (uc <= 0 || uc > 0x10ffff) return null;
+            num_entities++;
         }
         if (num_text <= 1 && num_entities == 0) return null;
         StringBuilder b = new StringBuilder();
@@ -673,33 +682,14 @@ public class JsonPrinter extends XMQPrinter
                 b.append(i.content());
                 continue;
             }
-            int uc = decode_entity_ref(i.name());
-            // A zero (an unknown entity) ends the C string.
-            if (uc == 0) break;
-            b.appendCodePoint(uc);
+            b.appendCodePoint(decode_entity_ref(i.name()));
         }
         return b.toString();
     }
 
-    // Like decode_entity_ref in xml.c, including its quirks: an unknown named
-    // entity and a hex reference (strtol on "#x..") give 0.
+    // Like decode_entity_ref in xml.c: an unknown named entity gives 0.
     static int decode_entity_ref(String name)
     {
-        switch (name)
-        {
-        case "apos": return '\'';
-        case "gt": return '>';
-        case "lt": return '<';
-        case "quot": return '"';
-        case "nbsp": return 160;
-        default: break;
-        }
-        if (name.isEmpty() || name.charAt(0) != '#') return 0;
-        if (name.length() > 1 && name.charAt(1) == 'x') return 0;
-        int i = 1, v = 0;
-        boolean neg = false;
-        if (i < name.length() && (name.charAt(i) == '-' || name.charAt(i) == '+')) neg = name.charAt(i++) == '-';
-        while (i < name.length() && Character.isDigit(name.charAt(i))) v = v * 10 + (name.charAt(i++) - '0');
-        return neg ? -v : v;
+        return XsltSupport.decodeEntityRef(name);
     }
 }

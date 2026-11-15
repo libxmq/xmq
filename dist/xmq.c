@@ -11486,7 +11486,17 @@ static XmlDom *xmq_xslt_loader(void *user_data, const char *uri, XmlLibxslt1Load
         }
         XMQReturnDoc rd = xmqNewDoc();
         doq = rd.doc;
-        if (!xmqParseFileWithType(doq, path, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE))
+        // Like libxml2, an uri reference with %XX escapes is a file name once unescaped.
+        char *unescaped = NULL;
+        if (!strchr(path, ':') && strchr(path, '%'))
+        {
+            FILE *f = fopen(path, "rb");
+            if (f) fclose(f);
+            else unescaped = xml_uri_unescape_string(path, -1, NULL);
+        }
+        bool parsed = xmqParseFileWithType(doq, unescaped ? unescaped : path, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE);
+        free(unescaped);
+        if (!parsed)
         {
             const char *error = xmqDocError(doq);
             if (error) xmq_xslt_message(x, error);
@@ -17091,7 +17101,9 @@ XMQStatus json_print_value(XMQPrintState *ps, XMQNode *from, XMQNode *to, Level 
     XMQNode *node = from;
     const char *content = xml_element_content(node);
 
-    if (!xml_next_sibling(node) &&
+    // An entity reference (kept when it is not a character entity) has no content.
+    if (content &&
+        !xml_next_sibling(node) &&
         !force_string &&
         (json_is_number(xml_element_content(node))
          || json_is_keyword(xml_element_content(node))))
@@ -17100,7 +17112,7 @@ XMQStatus json_print_value(XMQPrintState *ps, XMQNode *from, XMQNode *to, Level 
         write(writer_state, content, NULL);
         ps->last_char = content[strlen(content)-1];
     }
-    else if (!xml_next_sibling(node) && content[0] == 0)
+    else if (content && !xml_next_sibling(node) && content[0] == 0)
     {
         write(writer_state, "\"\"", NULL);
         ps->last_char = '"';
@@ -34167,8 +34179,8 @@ static void xp_elements_by_ids(XpCtx *c, const char *ids, XpNodeSet *ret)
 {
     size_t n = strlen(ids);
     size_t cur = 0, start = 0;
+    // Like libxml2, leading blanks stay part of the first id.
     while (cur < n && xp_is_blank(ids[cur])) cur++;
-    start = cur;
     while (cur < n)
     {
         while (cur < n && !xp_is_blank(ids[cur])) cur++;
@@ -50481,6 +50493,10 @@ char *xml_collapse_text(XMQNode *node)
         }
         else
         {
+            // An unknown entity (or an invalid character reference) cannot be
+            // replaced by its character, keep the reference.
+            int uc = decode_entity_ref(xml_node_name(i));
+            if (uc <= 0 || uc > 0x10ffff) return NULL;
             // &apos;
             len += 2 + strlen(xml_node_name(i));
             num_entities++;
@@ -50520,6 +50536,7 @@ char *xml_collapse_text(XMQNode *node)
 
 int decode_entity_ref(const char *name)
 {
+    if (!strcmp(name, "amp")) return '&';
     if (!strcmp(name, "apos")) return '\'';
     if (!strcmp(name, "gt")) return '>';
     if (!strcmp(name, "lt")) return '<';
@@ -50527,7 +50544,7 @@ int decode_entity_ref(const char *name)
     if (!strcmp(name, "nbsp")) return 160;
     if (name[0] != '#') return 0;
     if (name[1] == 'x') {
-        long v = strtol((const char*)name, NULL, 16);
+        long v = strtol((const char*)name+2, NULL, 16);
         return (int)v;
     }
     return atoi(name+1);

@@ -44,6 +44,13 @@ public abstract class XmlNode
     XmlNode prev_;
     XmlDocument doc_;
     String name_;
+    /** The line of the node in its source, like libxml2 (0 if unknown). */
+    int line_;
+    /** Data attached by the user of the dom (the xslt compiler keeps its precompiled instructions here). */
+    Object userData_;
+    /** Creation order, orders nodes of different trees like the C version (that compares addresses). */
+    final long seq_ = SEQ.getAndIncrement();
+    private static final java.util.concurrent.atomic.AtomicLong SEQ = new java.util.concurrent.atomic.AtomicLong();
 
     /**
      * Create a node with a name.
@@ -78,6 +85,26 @@ public abstract class XmlNode
     public void setName(String name)
     {
         name_ = name;
+    }
+
+    /**
+     * Returns the source line of the node, like libxml2 xmlGetLineNo: elements get the line
+     * where their start tag ends, text the line where its first chunk was read, comments,
+     * processing instructions and cdata sections the line where they end.
+     * @return The line, 0 if unknown.
+     */
+    public int line()
+    {
+        return line_;
+    }
+
+    /**
+     * Set the source line of the node.
+     * @param line The line.
+     */
+    public void setLine(int line)
+    {
+        line_ = line;
     }
 
     /**

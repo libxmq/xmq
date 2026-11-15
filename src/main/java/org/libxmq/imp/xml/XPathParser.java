@@ -63,10 +63,24 @@ final class XPathParser
 {
     private final String s_;
     private int pos_;
+    private int depth_;
+    private final int max_depth_;
+    private final boolean no_variables_;
 
     XPathParser(String s)
     {
+        this(s, XPathSettings.DEFAULT_MAX_DEPTH, false);
+    }
+
+    /**
+     * A parser with a maximum nesting of the expression (libxml2 XPATH_MAX_RECURSION_DEPTH)
+     * and optionally no variable references (libxml2 XML_XPATH_NOVAR, used for xslt patterns).
+     */
+    XPathParser(String s, int max_depth, boolean no_variables)
+    {
         s_ = s;
+        max_depth_ = max_depth;
+        no_variables_ = no_variables;
     }
 
     /** Compile the whole expression, like libxml2 xmlXPathEvalExpr. */
@@ -127,6 +141,7 @@ final class XPathParser
 
     private XPathExpr compileExpr(boolean sort) throws XPathException
     {
+        if (++depth_ > max_depth_) throw error(XPathException.RECURSION_LIMIT_EXCEEDED);
         XPathExpr e = compileAndExpr();
         skipBlanks();
         while (cur() == 'o' && nxt(1) == 'r')
@@ -138,6 +153,7 @@ final class XPathParser
             skipBlanks();
         }
         if (sort && !e.isValue()) e = new XPathExpr.Sort(e);
+        depth_--;
         return e;
     }
 
@@ -340,6 +356,8 @@ final class XPathParser
         String[] q = parseQName();
         if (q == null) throw error(XPathException.VARIABLE_REF_ERROR);
         skipBlanks();
+        // Like libxml2 XML_XPATH_NOVAR, used for xslt patterns.
+        if (no_variables_) throw error(XPathException.FORBID_VARIABLE_ERROR);
         return new XPathExpr.Var(q[0], q[1]);
     }
 

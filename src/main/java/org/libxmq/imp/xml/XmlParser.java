@@ -71,6 +71,8 @@ public final class XmlParser
     public static final int NOBLANKS = 1;
     /** Merge cdata sections into text nodes, like XML_PARSE_NOCDATA. */
     public static final int NOCDATA = 2;
+    /** Add the attributes defaulted in the dtd, like XML_PARSE_DTDATTR. */
+    public static final int DTDATTR = 4;
 
     final String s;
     final String source_;
@@ -129,10 +131,30 @@ public final class XmlParser
      */
     public static XmlDocument parse(byte[] content, String source, int options) throws XmlParseException
     {
+        return parse(content, source, options, null);
+    }
+
+    /**
+     * Parse xml bytes into a document, the warnings and recoverable errors (eg namespace
+     * errors) go to messages instead of stderr, like the message callback of the C parser.
+     * @param content The xml source.
+     * @param source The source name used in error messages, eg the file name.
+     * @param options NOBLANKS, NOCDATA and/or DTDATTR.
+     * @param messages Receives the formatted messages, null for stderr.
+     * @return The document.
+     * @throws XmlParseException If the xml is not well formed.
+     */
+    public static XmlDocument parse(byte[] content, String source, int options,
+                                    java.util.function.Consumer<String> messages) throws XmlParseException
+    {
         byte[] u8 = XmlInput.prepare(source == null ? "noname.xml" : source, content);
         XmlParser p = new XmlParser(new String(u8, java.nio.charset.StandardCharsets.UTF_8), u8, source, options);
+        p.messages_ = messages;
         return p.parse_document();
     }
+
+    /** Where the messages go, null for stderr. */
+    java.util.function.Consumer<String> messages_;
 
     /** A parser of prepared input: valid UTF-8 with normalized line ends. */
     private XmlParser(String prepared, byte[] u8, String source, int options)
@@ -193,6 +215,11 @@ public final class XmlParser
     void message(String kind, String msg, int pos)
     {
         byte[] m = format_error(kind, msg, pos, null);
+        if (messages_ != null)
+        {
+            messages_.accept(new String(m, java.nio.charset.StandardCharsets.UTF_8));
+            return;
+        }
         System.err.write(m, 0, m.length);
         System.err.flush();
     }
@@ -703,6 +730,8 @@ public final class XmlParser
         }
 
         XmlElement e = new XmlElement(qn[1]);
+        // Like libxml2 the element gets the line where its start tag ends.
+        e.setLine(line_at(tag_end));
 
         // Namespace declarations first.
         List<String> declared = new ArrayList<>();
@@ -825,6 +854,33 @@ public final class XmlParser
             }
         }
 
+        // The attributes defaulted from the dtd (libxml2 XML_PARSE_DTDATTR).
+        if ((options_ & DTDATTR) != 0 && defaults != null)
+        {
+            for (String[] d : defaults)
+            {
+                if (d[0].equals("xmlns") || d[0].startsWith("xmlns:")) continue;
+                int colon = d[0].indexOf(':');
+                String local = colon >= 0 ? d[0].substring(colon + 1) : d[0];
+                XmlNs ans = null;
+                if (colon >= 0)
+                {
+                    String apfx = d[0].substring(0, colon);
+                    ans = e.searchNs(apfx);
+                    if (ans == null)
+                    {
+                        message("namespace error", "Namespace prefix " + apfx + " for " + local + " on " + qn[1] + " is not defined", tag_end);
+                    }
+                }
+                String uri = ans != null ? ans.href() : null;
+                if (findAttr(e, local, uri) != null) continue;
+                XmlAttr a = new XmlAttr(local, null);
+                if (ans != null) a.setNs(ans);
+                a.appendRaw(new XmlText(d[1]));
+                e.addAttribute(a);
+            }
+        }
+
         if (eprefix_undefined)
         {
             message("namespace error", "Namespace prefix " + qn[0] + " on " + qn[1] + " is not defined", tag_end);
@@ -839,6 +895,18 @@ public final class XmlParser
         return new Open(e, qname, tag_line);
     }
 
+
+    /** The attribute with this local name and namespace uri (null for none), like xml_node_get_attr. */
+    static XmlAttr findAttr(XmlElement e, String local, String uri)
+    {
+        for (XmlAttr a : e.attributes())
+        {
+            if (!local.equals(a.name())) continue;
+            String au = a.ns() != null ? a.ns().href() : null;
+            if (uri == null ? au == null : uri.equals(au)) return a;
+        }
+        return null;
+    }
 
     /**
      * Port of libxml2 xmlAttrNormalizeSpace2: remove leading and trailing spaces and
@@ -1115,8 +1183,21 @@ public final class XmlParser
     /** Add character data to the current node, merging with a previous text node. */
     void characters(String t)
     {
+        characters(t, i);
+    }
+
+    /**
+     * Add character data, line_pos is where the first chunk of a new text node ends
+     * (libxml2 gives a text node the line where its first chunk was handed over).
+     */
+    void characters(String t, int line_pos)
+    {
         if (t.isEmpty()) return;
-        node_.addChild(new XmlText(t));
+        XmlNode last = node_.lastChild();
+        boolean merge = last != null && last.type() == XmlNodeType.TEXT;
+        XmlText n = new XmlText(t);
+        if (!merge) n.setLine(line_at(line_pos));
+        node_.addChild(n);
     }
 
     void parse_reference() throws XmlParseException
@@ -1177,7 +1258,16 @@ public final class XmlParser
         {
             return;
         }
-        characters(t);
+        // libxml2 hands character data over in chunks of 300 bytes.
+        int chunk_end = start;
+        int bytes = 0;
+        while (chunk_end < i && bytes < 300)
+        {
+            int cp = s.codePointAt(chunk_end);
+            bytes += cp < 0x80 ? 1 : cp < 0x800 ? 2 : cp < 0x10000 ? 3 : 4;
+            chunk_end += Character.charCount(cp);
+        }
+        characters(t, chunk_end);
         if (!all_blank && !space_.isEmpty() && space_.get(space_.size() - 1) == -1)
         {
             // Like libxml2, an element with non blank character data is mixed
@@ -1252,6 +1342,8 @@ public final class XmlParser
         String content = s.substring(content_start, i);
         i += 3;
         XmlComment c = new XmlComment(content);
+        // Like libxml2, the line where the comment ends.
+        c.setLine(line_at(i));
         if (in_subset_) doc_.intSubset().appendRaw(c);
         else node_.appendRaw(c);
     }
@@ -1293,6 +1385,8 @@ public final class XmlParser
             i = end + 2;
         }
         XmlPI pi = new XmlPI(target, data);
+        // Like libxml2, the line where the pi ends.
+        pi.setLine(line_at(i));
         if (in_subset_) doc_.intSubset().appendRaw(pi);
         else node_.appendRaw(pi);
     }
@@ -1311,12 +1405,18 @@ public final class XmlParser
         i = end + 3;
         if ((options_ & NOCDATA) != 0)
         {
-            // Like libxml2, even an empty cdata section creates a (empty) text node.
-            node_.addChild(new XmlText(content));
+            // Like libxml2, even an empty cdata section creates a (empty) text node,
+            // with the line where the section ends.
+            XmlNode last = node_.lastChild();
+            XmlText t = new XmlText(content);
+            if (last == null || last.type() != XmlNodeType.TEXT) t.setLine(line_at(i));
+            node_.addChild(t);
         }
         else
         {
-            node_.appendRaw(new XmlCData(content));
+            XmlCData cd = new XmlCData(content);
+            cd.setLine(line_at(i));
+            node_.appendRaw(cd);
         }
     }
 
@@ -1494,8 +1594,9 @@ public final class XmlParser
             int end = s.indexOf(q, i + 1);
             if (end < 0) throw fatal("EntityValue: \" expected");
             String orig = s.substring(i + 1, end);
+            int vpos = i + 1;
             i = end + 1;
-            String content = decode_entity_value(orig, dtd);
+            String content = decode_entity_value(orig, dtd, vpos);
             e = new XmlEntityDecl(name, pe ? XmlEntityDecl.INTERNAL_PARAMETER : XmlEntityDecl.INTERNAL_GENERAL,
                                   null, null, content, orig);
         }
@@ -1561,7 +1662,9 @@ public final class XmlParser
     }
 
     /** Expand character references (and parameter entity references) in an entity value. */
-    String decode_entity_value(String v, XmlDtd dtd) throws XmlParseException
+    /** Like xml_decode_entity_value in the C version: the character references of an entity
+        value, errors are reported at pos (the start of the value). */
+    String decode_entity_value(String v, XmlDtd dtd, int pos) throws XmlParseException
     {
         StringBuilder out = new StringBuilder();
         int k = 0;
@@ -1570,20 +1673,26 @@ public final class XmlParser
             char c = v.charAt(k);
             if (c == '&' && k + 1 < v.length() && v.charAt(k + 1) == '#')
             {
-                int end = v.indexOf(';', k);
-                if (end < 0) throw fatal("xmlParseCharRef: invalid decimal value");
-                String num = v.substring(k + 2, end);
-                int cp;
-                try
+                int semi = v.indexOf(';', k);
+                if (semi < 0) throw fatal("xmlParseCharRef: invalid decimal value", pos);
+                boolean hex = k + 2 < v.length() && v.charAt(k + 2) == 'x';
+                int d = k + 2 + (hex ? 1 : 0);
+                if (d == semi) throw fatal("xmlParseCharRef: invalid decimal value", pos);
+                int cp = 0;
+                for (; d < semi; ++d)
                 {
-                    cp = num.startsWith("x") ? Integer.parseInt(num.substring(1), 16) : Integer.parseInt(num);
+                    char ch = v.charAt(d);
+                    int digit;
+                    if (ch >= '0' && ch <= '9') digit = ch - '0';
+                    else if (hex && ch >= 'a' && ch <= 'f') digit = ch - 'a' + 10;
+                    else if (hex && ch >= 'A' && ch <= 'F') digit = ch - 'A' + 10;
+                    else throw fatal(hex ? "xmlParseCharRef: invalid hexadecimal value" : "xmlParseCharRef: invalid decimal value", pos);
+                    cp = cp * (hex ? 16 : 10) + digit;
+                    if (cp > 0x110000) cp = 0x110000;
                 }
-                catch (NumberFormatException ex)
-                {
-                    throw fatal("xmlParseCharRef: invalid decimal value");
-                }
+                if (!is_xml_char(cp)) throw fatal("xmlParseCharRef: invalid xmlChar value " + cp, pos);
                 out.appendCodePoint(cp);
-                k = end + 1;
+                k = semi + 1;
                 continue;
             }
             if (c == '%')

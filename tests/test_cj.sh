@@ -3,7 +3,8 @@
 #
 # Compare the C command line (xmq) with the Java command line (xmqj) byte for byte,
 # output, errors and exit code of "to-xml", on every xml file in the repository and in
-# the libxml2 test suite (if fetched), plain and after expand-entities.
+# the libxml2 test suite (if fetched), plain and after expand-entities, and of
+# "transform" on the libxslt test suite (if fetched).
 #
 # Usage: tests/test_cj.sh XMQ_BINARY XMQJ_BINARY OUTPUT_DIR
 # JOBS=n sets the number of parallel jobs (default 8).
@@ -70,12 +71,68 @@ touch "$OUT/differ.txt"
 } | xargs -P "${JOBS:-8}" -L 1 bash -c 'one "$@"' _
 
 N=$(( $(wc -l < "$FILES") + $(grep -l "<!ENTITY" $(cat "$FILES") 2>/dev/null | wc -l) ))
+
+# transform: every stylesheet name.xsl with an input name.xml of the libxslt test suite
+# and of tests/xml_diff/xslt, run from inside (a copy of) its directory like libxslt's
+# runtest, with the parameters of runtest. C and Java run in their own copies, so that
+# the files written by xsl:document can be compared too.
+XSLT_DIRS=""
+for d in REC2 REC general encoding documents numbers keys namespaces extensions reports
+do
+    for t in "$ROOT/3rdparty/libxslt/tests" "$ROOT/3rdparty/libxslt-posix/tests"
+    do
+        if [ -d "$t/$d" ]
+        then
+            XSLT_DIRS="$XSLT_DIRS $t/$d"
+            break
+        fi
+    done
+done
+XSLT_DIRS="$XSLT_DIRS $ROOT/tests/xml_diff/xslt"
+XSLT_CASES="$OUT/xslt_cases.txt"
+: > "$XSLT_CASES"
+for d in $XSLT_DIRS
+do
+    k=$(echo "$d" | md5sum | cut -c1-12)
+    mkdir -p "$OUT/xslt/c/$k" "$OUT/xslt/j/$k"
+    cp -r "$d"/. "$OUT/xslt/c/$k"
+    cp -r "$d"/. "$OUT/xslt/j/$k"
+    for x in "$d"/*.xsl
+    do
+        b=$(basename "$x" .xsl)
+        [ -f "$d/$b.xml" ] && echo "$k $b $d" >> "$XSLT_CASES"
+    done
+done
+onex()
+{
+    k=$1
+    b=$2
+    d=$3
+    (cd "$OUT/xslt/c/$k"; timeout 60 "$X" "$b.xml" transform --stringparam=test=passed_value --stringparam=test2=passed_value2 "$b.xsl" to-xml > "$OUT/x_${k}_${b}.c" 2>&1; echo "rc=$?" >> "$OUT/x_${k}_${b}.c")
+    (cd "$OUT/xslt/j/$k"; timeout 120 "$J" "$b.xml" transform --stringparam=test=passed_value --stringparam=test2=passed_value2 "$b.xsl" to-xml > "$OUT/x_${k}_${b}.j" 2>&1; echo "rc=$?" >> "$OUT/x_${k}_${b}.j")
+    if cmp -s "$OUT/x_${k}_${b}.c" "$OUT/x_${k}_${b}.j"
+    then
+        rm "$OUT/x_${k}_${b}.c" "$OUT/x_${k}_${b}.j"
+    else
+        echo "DIFF: $d/$b.xsl transform (diff $OUT/x_${k}_${b}.c $OUT/x_${k}_${b}.j)" >> "$OUT/differ.txt"
+    fi
+}
+export -f onex
+xargs -P "${JOBS:-8}" -L 1 bash -c 'onex "$@"' _ < "$XSLT_CASES"
+NX=$(wc -l < "$XSLT_CASES")
+N=$((N + NX))
+# The files written by xsl:document.
+if ! diff -r "$OUT/xslt/c" "$OUT/xslt/j" > "$OUT/xslt_files.diff"
+then
+    echo "DIFF: files written by the transforms (see $OUT/xslt_files.diff)" >> "$OUT/differ.txt"
+fi
+
 D=$(wc -l < "$OUT/differ.txt")
 sort "$OUT/differ.txt" | sed "s#$ROOT/##"
 if [ "$D" = "0" ]
 then
-    echo "OK: C and Java command lines give the same to-xml for $N cases"
+    echo "OK: C and Java command lines give the same to-xml for $N cases ($NX transforms)"
 else
-    echo "ERR: C and Java command lines differ in $D of $N cases"
+    echo "ERR: C and Java command lines differ in $D of $N cases ($NX transforms)"
     exit 1
 fi

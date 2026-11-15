@@ -96,12 +96,12 @@ final class XPathFunctions
     }
 
     /** Call a function, uri is null for the core functions. */
-    static Object call(String uri, String name, Object[] a, XPathContext ctx) throws XPathException
+    static Object call(String prefix, String uri, String name, Object[] a, XPathContext ctx) throws XPathException
     {
         if (uri != null)
         {
             if (XQUERY_FUNCTIONS_NS.equals(uri) && "escape-uri".equals(name)) return escapeUri(a, ctx);
-            throw ctx.error(XPathException.UNKNOWN_FUNC_ERROR);
+            return callExtension(prefix, name, uri, a, ctx);
         }
         switch (name)
         {
@@ -245,8 +245,47 @@ final class XPathFunctions
             return rounded;
         }
         default:
-            throw ctx.error(XPathException.UNKNOWN_FUNC_ERROR);
+            return callExtension(null, name, null, a, ctx);
         }
+    }
+
+    /** Call an extension function found through the function lookup of the evaluation context. */
+    private static Object callExtension(String prefix, String name, String uri, Object[] a, XPathContext ctx)
+        throws XPathException
+    {
+        XPathEvalContext px = ctx.px;
+        XPathEvalContext.Function f = px.func_lookup_ != null ? px.func_lookup_.lookup(name, uri) : null;
+        if (f == null) throw ctx.errorDetail(XPathException.UNKNOWN_FUNC_ERROR, "Unregistered function", prefix, name);
+        XPathResult[] args = new XPathResult[a.length];
+        for (int i = 0; i < a.length; i++) args[i] = XPathResult.of(a[i]);
+        XPathContext saved = px.cur_;
+        int saved_error = px.func_error_;
+        boolean saved_quiet = px.func_error_quiet_;
+        px.cur_ = ctx;
+        px.func_error_ = 0;
+        px.func_error_quiet_ = false;
+        XPathResult r;
+        int err;
+        boolean quiet;
+        try
+        {
+            r = f.call(px, args);
+        }
+        finally
+        {
+            err = px.func_error_;
+            quiet = px.func_error_quiet_;
+            px.cur_ = saved;
+            px.func_error_ = saved_error;
+            px.func_error_quiet_ = saved_quiet;
+        }
+        if (r == null)
+        {
+            XPathException e = ctx.error(err != 0 ? err : XPathException.INVALID_OPERAND);
+            e.setQuiet(quiet && err != 0);
+            throw e;
+        }
+        return r.value();
     }
 
     private static String localName(XmlNode n)
@@ -312,7 +351,7 @@ final class XPathFunctions
         while (cur < n)
         {
             while (cur < n && !XPathUtil.isBlank(ids.charAt(cur))) cur++;
-            XmlElement e = ctx.lookupId(ids.substring(start, cur));
+            XmlNode e = ctx.lookupId(ids.substring(start, cur));
             if (e != null && !ret.contains(e)) ret.add(e);
             while (cur < n && XPathUtil.isBlank(ids.charAt(cur))) cur++;
             start = cur;

@@ -6334,7 +6334,17 @@ static XmlDom *xmq_xslt_loader(void *user_data, const char *uri, XmlLibxslt1Load
         }
         XMQReturnDoc rd = xmqNewDoc();
         doq = rd.doc;
-        if (!xmqParseFileWithType(doq, path, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE))
+        // Like libxml2, an uri reference with %XX escapes is a file name once unescaped.
+        char *unescaped = NULL;
+        if (!strchr(path, ':') && strchr(path, '%'))
+        {
+            FILE *f = fopen(path, "rb");
+            if (f) fclose(f);
+            else unescaped = xml_uri_unescape_string(path, -1, NULL);
+        }
+        bool parsed = xmqParseFileWithType(doq, unescaped ? unescaped : path, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE);
+        free(unescaped);
+        if (!parsed)
         {
             const char *error = xmqDocError(doq);
             if (error) xmq_xslt_message(x, error);

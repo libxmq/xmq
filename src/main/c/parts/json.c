@@ -1116,7 +1116,9 @@ XMQStatus json_print_value(XMQPrintState *ps, XMQNode *from, XMQNode *to, Level 
     XMQNode *node = from;
     const char *content = xml_element_content(node);
 
-    if (!xml_next_sibling(node) &&
+    // An entity reference (kept when it is not a character entity) has no content.
+    if (content &&
+        !xml_next_sibling(node) &&
         !force_string &&
         (json_is_number(xml_element_content(node))
          || json_is_keyword(xml_element_content(node))))
@@ -1125,7 +1127,7 @@ XMQStatus json_print_value(XMQPrintState *ps, XMQNode *from, XMQNode *to, Level 
         write(writer_state, content, NULL);
         ps->last_char = content[strlen(content)-1];
     }
-    else if (!xml_next_sibling(node) && content[0] == 0)
+    else if (content && !xml_next_sibling(node) && content[0] == 0)
     {
         write(writer_state, "\"\"", NULL);
         ps->last_char = '"';

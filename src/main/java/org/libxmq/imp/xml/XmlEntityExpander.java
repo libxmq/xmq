@@ -79,9 +79,15 @@ public final class XmlEntityExpander
         mergeText(doc);
     }
 
-    static XmlParseException error(String msg)
+    /** The replacement text parsed last, errors outside of a parse are reported at its start
+        like the C version (and libxml2) report them in the current input, "" at first. */
+    String buf_ = "";
+
+    /** An error, the full message has the source context of the text parsed last, the error
+        field the message itself. */
+    XmlParseException error(String msg)
     {
-        return new XmlParseException("xmq: " + msg + "\n", msg, 0);
+        return new XmlParser(buf_, doc_.url(), options_).fatal(msg, 0);
     }
 
     /** The internal general entity to expand for a reference, null if the reference is kept. */
@@ -150,14 +156,8 @@ public final class XmlEntityExpander
         try
         {
             XmlParser p = new XmlParser(v, doc_.url(), options_);
-            try
-            {
-                p.parse_content_chunk(doc_, container);
-            }
-            catch (XmlParseException e)
-            {
-                throw error(e.error);
-            }
+            buf_ = v;
+            p.parse_content_chunk(doc_, container);
             expandChildren(container);
         }
         catch (XmlParseException e)
@@ -220,7 +220,7 @@ public final class XmlEntityExpander
         enter(decl, v.length());
         XmlParser p = new XmlParser(v, doc_.url(), options_);
         p.doc_ = doc_;
-        try
+        buf_ = v;
         {
             while (!p.eof())
             {
@@ -250,16 +250,14 @@ public final class XmlEntityExpander
                         throw p.fatal("Attribute references external entity '" + name + "'");
                     }
                     expandAttrEntity(out, d);
+                    // Restore the scan of this value.
+                    buf_ = v;
                     continue;
                 }
                 if (ch == '\t' || ch == '\n' || ch == '\r') out.append(' ');
                 else out.append(ch);
                 p.i++;
             }
-        }
-        catch (XmlParseException e)
-        {
-            throw e.line == 0 ? e : error(e.error);
         }
         leave();
     }

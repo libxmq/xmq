@@ -232,6 +232,10 @@ char *xml_collapse_text(XMQNode *node)
         }
         else
         {
+            // An unknown entity (or an invalid character reference) cannot be
+            // replaced by its character, keep the reference.
+            int uc = decode_entity_ref(xml_node_name(i));
+            if (uc <= 0 || uc > 0x10ffff) return NULL;
             // &apos;
             len += 2 + strlen(xml_node_name(i));
             num_entities++;
@@ -271,6 +275,7 @@ char *xml_collapse_text(XMQNode *node)
 
 int decode_entity_ref(const char *name)
 {
+    if (!strcmp(name, "amp")) return '&';
     if (!strcmp(name, "apos")) return '\'';
     if (!strcmp(name, "gt")) return '>';
     if (!strcmp(name, "lt")) return '<';
@@ -278,7 +283,7 @@ int decode_entity_ref(const char *name)
     if (!strcmp(name, "nbsp")) return 160;
     if (name[0] != '#') return 0;
     if (name[1] == 'x') {
-        long v = strtol((const char*)name, NULL, 16);
+        long v = strtol((const char*)name+2, NULL, 16);
         return (int)v;
     }
     return atoi(name+1);

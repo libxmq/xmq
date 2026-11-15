@@ -82,40 +82,28 @@ final class XPathUtil
         return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
     }
 
-    /** Approximation of libxml2 IS_LETTER (xml 1.0 BaseChar | Ideographic). */
+    /** Like libxml2 IS_LETTER (xml 1.0 BaseChar | Ideographic). */
     static boolean isLetter(int c)
     {
-        if (c < 0x100)
-        {
-            return isAsciiLetter(c) || (c >= 0xC0 && c <= 0xD6) || (c >= 0xD8 && c <= 0xF6) || (c >= 0xF8);
-        }
-        if (c > 0xFFFF) return false;
-        return Character.isLetter(c);
+        return XmlChars.isLetter(c);
     }
 
-    /** Approximation of libxml2 IS_DIGIT. */
+    /** Like libxml2 IS_DIGIT. */
     static boolean isDigit(int c)
     {
-        if (c < 0x100) return isAsciiDigit(c);
-        if (c > 0xFFFF) return false;
-        return Character.isDigit(c);
+        return XmlChars.isDigit(c);
     }
 
-    /** Approximation of libxml2 IS_COMBINING. */
+    /** Like libxml2 IS_COMBINING. */
     static boolean isCombining(int c)
     {
-        if (c < 0x300 || c > 0xFFFF) return false;
-        int t = Character.getType(c);
-        return t == Character.NON_SPACING_MARK || t == Character.COMBINING_SPACING_MARK
-            || t == Character.ENCLOSING_MARK;
+        return XmlChars.isCombining(c);
     }
 
-    /** Same as libxml2 IS_EXTENDER. */
+    /** Like libxml2 IS_EXTENDER. */
     static boolean isExtender(int c)
     {
-        return c == 0xB7 || c == 0x2D0 || c == 0x2D1 || c == 0x387 || c == 0x640 || c == 0xE46
-            || c == 0xEC6 || c == 0x3005 || (c >= 0x3031 && c <= 0x3035) || (c >= 0x309D && c <= 0x309E)
-            || (c >= 0x30FC && c <= 0x30FE);
+        return XmlChars.isExtender(c);
     }
 
     /**

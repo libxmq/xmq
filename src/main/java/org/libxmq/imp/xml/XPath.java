@@ -83,35 +83,51 @@ public final class XPath
 
     private final String expr_;
     private final XPathExpr compiled_;
+    private final XPathSettings settings_;
 
-    private XPath(String expr, XPathExpr compiled)
+    private XPath(String expr, XPathExpr compiled, XPathSettings settings)
     {
         expr_ = expr;
         compiled_ = compiled;
+        settings_ = settings;
     }
 
     /**
-     * Compile an expression. Compiled expressions are cached, compiling
-     * the same expression again returns the cached object.
-     * @param expr The xpath expression.
+     * Compile an expression with the default settings, the namespaces are given when evaluating.
+     * @param expr The expression.
      * @return The compiled expression.
-     * @throws XPathException If the expression has a syntax error.
+     * @throws XPathException If the expression is invalid.
      */
     public static XPath compile(String expr) throws XPathException
     {
         if (expr == null) throw new XPathException(XPathException.EXPR_ERROR, null, -1);
         XPath xp = cache_.get(expr);
         if (xp != null) return xp;
-        // libxml2 2.16 does not use the streaming pattern engine for xpath
-        // (XPATH_STREAMING is disabled), neither do we.
-        xp = new XPath(expr, new XPathParser(expr).parse());
+        xp = compile(expr, new XPathSettings());
         if (cache_.size() >= MAX_CACHE) cache_.clear();
         cache_.put(expr, xp);
         return xp;
     }
 
     /**
-     * Returns the source text of the expression.
+     * Compile an expression, like xml_xpath_compile in the C version. The settings (and their
+     * namespaces) are copied, prefixes are resolved when the expression is evaluated.
+     * @param expr The expression.
+     * @param settings The settings.
+     * @return The compiled expression.
+     * @throws XPathException If the expression is invalid.
+     */
+    public static XPath compile(String expr, XPathSettings settings) throws XPathException
+    {
+        if (expr == null) throw new XPathException(XPathException.EXPR_ERROR, null, -1);
+        // libxml2 2.16 does not use the streaming pattern engine for xpath
+        // (XPATH_STREAMING is disabled), neither do we.
+        XPathSettings s = new XPathSettings(settings);
+        return new XPath(expr, new XPathParser(expr, s.maxDepth, s.noVariables).parse(), s);
+    }
+
+    /**
+     * Returns the source of the expression.
      * @return The expression.
      */
     public String expression()
@@ -119,33 +135,16 @@ public final class XPath
         return expr_;
     }
 
-    /**
-     * Evaluate the expression.
-     * @param context The context node, can be the XmlDocument.
-     * @param namespaces Maps prefixes used in the expression to namespace uris,
-     *        may be null or empty. Using an unmapped prefix (other than xml) is an error.
-     * @return A List&lt;XmlNode&gt; (node-set in document order), String, Double or Boolean.
-     * @throws XPathException If the evaluation fails.
-     */
-    public Object evaluate(XmlNode context, Map<String, String> namespaces) throws XPathException
+    /** Evaluate in a context, like xml_xpath_eval_comp. */
+    XPathResult evalIn(XPathEvalContext px, XmlNode node, long position, long size) throws XPathException
     {
-        return evaluate(context, namespaces, null);
+        return XPathResult.of(run(px, settings_, node, position, size, true));
     }
 
-    /**
-     * Evaluate the expression with variable bindings.
-     * @param context The context node, can be the XmlDocument.
-     * @param namespaces Maps prefixes used in the expression to namespace uris, may be null.
-     * @param variables Maps variable names to values, may be null. A value can be a
-     *        String, Number, Boolean, XmlNode or a Collection of XmlNodes. A variable
-     *        with a prefix, eg $p:v, is looked up using the key {uri}v.
-     * @return A List&lt;XmlNode&gt; (node-set in document order), String, Double or Boolean.
-     * @throws XPathException If the evaluation fails.
-     */
-    public Object evaluate(XmlNode context, Map<String, String> namespaces, Map<String, Object> variables)
-        throws XPathException
+    private Object run(XPathEvalContext px, XPathSettings settings, XmlNode node, long position, long size,
+                       boolean evaluating) throws XPathException
     {
-        XPathContext ctx = new XPathContext(expr_, context, namespaces, variables);
+        XPathContext ctx = new XPathContext(px, settings, expr_, node, position, size, evaluating);
         Object o;
         try
         {
@@ -153,8 +152,10 @@ public final class XPath
         }
         catch (StackOverflowError so)
         {
-            throw new XPathException(XPathException.RECURSION_LIMIT_EXCEEDED, expr_, -1);
+            throw ctx.error(XPathException.RECURSION_LIMIT_EXCEEDED);
         }
+        // A result tree fragment stays one (XPATH_XSLT_TREE), eg the value of $rtf.
+        if (o instanceof XPathTree) return new XPathTree(XPathExpr.nodes(o));
         if (o instanceof List)
         {
             // The top level of a compiled expression is always sorted, return a fresh list.
@@ -164,10 +165,28 @@ public final class XPath
     }
 
     /**
-     * Evaluate and return the resulting node-set.
+     * Evaluate the expression with a fresh context, like xml_xpath_eval.
+     * @param context The context node.
+     * @param namespaces Extra prefixes, or null.
+     * @return A List&lt;XmlNode&gt;, String, Double or Boolean.
+     * @throws XPathException On an error.
+     */
+    public Object evaluate(XmlNode context, Map<String, String> namespaces) throws XPathException
+    {
+        XPathSettings s = settings_;
+        if (namespaces != null && !namespaces.isEmpty())
+        {
+            s = new XPathSettings(settings_);
+            s.namespaces.putAll(namespaces);
+        }
+        return run(new XPathEvalContext(), s, context, -1, -1, false);
+    }
+
+    /**
+     * Select the nodes of a node set expression.
      * @param context The context node.
      * @return The nodes in document order.
-     * @throws XPathException If the evaluation fails or the result is not a node-set.
+     * @throws XPathException On an error or if the value is not a node set.
      */
     public List<XmlNode> selectNodes(XmlNode context) throws XPathException
     {
@@ -175,24 +194,24 @@ public final class XPath
     }
 
     /**
-     * Evaluate and return the resulting node-set.
+     * Select the nodes of a node set expression.
      * @param context The context node.
-     * @param namespaces Maps prefixes to namespace uris, may be null.
+     * @param namespaces Extra prefixes, or null.
      * @return The nodes in document order.
-     * @throws XPathException If the evaluation fails or the result is not a node-set.
+     * @throws XPathException On an error or if the value is not a node set.
      */
     public List<XmlNode> selectNodes(XmlNode context, Map<String, String> namespaces) throws XPathException
     {
-        Object o = evaluate(context, namespaces, null);
+        Object o = evaluate(context, namespaces);
         if (!(o instanceof List)) throw new XPathException(XPathException.INVALID_TYPE, expr_, -1);
         return XPathExpr.nodes(o);
     }
 
     /**
-     * Evaluate and convert the result using the xpath string() function.
+     * Evaluate as a string, like xpath string().
      * @param context The context node.
-     * @return The string value.
-     * @throws XPathException If the evaluation fails.
+     * @return The string.
+     * @throws XPathException On an error.
      */
     public String evaluateString(XmlNode context) throws XPathException
     {
@@ -200,23 +219,22 @@ public final class XPath
     }
 
     /**
-     * Evaluate and convert the result using the xpath string() function.
+     * Evaluate as a string, like xpath string().
      * @param context The context node.
-     * @param namespaces Maps prefixes to namespace uris, may be null.
-     * @return The string value.
-     * @throws XPathException If the evaluation fails.
+     * @param namespaces Extra prefixes, or null.
+     * @return The string.
+     * @throws XPathException On an error.
      */
     public String evaluateString(XmlNode context, Map<String, String> namespaces) throws XPathException
     {
-        XPathContext ctx = new XPathContext(expr_, context, namespaces, null);
-        return XPathExpr.toStringValue(evaluate(context, namespaces, null), ctx);
+        return XPathResult.of(evaluate(context, namespaces)).castToString();
     }
 
     /**
-     * Evaluate and convert the result using the xpath number() function.
+     * Evaluate as a number, like xpath number().
      * @param context The context node.
-     * @return The number value.
-     * @throws XPathException If the evaluation fails.
+     * @return The number.
+     * @throws XPathException On an error.
      */
     public double evaluateNumber(XmlNode context) throws XPathException
     {
@@ -224,23 +242,22 @@ public final class XPath
     }
 
     /**
-     * Evaluate and convert the result using the xpath number() function.
+     * Evaluate as a number, like xpath number().
      * @param context The context node.
-     * @param namespaces Maps prefixes to namespace uris, may be null.
-     * @return The number value.
-     * @throws XPathException If the evaluation fails.
+     * @param namespaces Extra prefixes, or null.
+     * @return The number.
+     * @throws XPathException On an error.
      */
     public double evaluateNumber(XmlNode context, Map<String, String> namespaces) throws XPathException
     {
-        XPathContext ctx = new XPathContext(expr_, context, namespaces, null);
-        return XPathExpr.toNumber(evaluate(context, namespaces, null), ctx);
+        return XPathResult.of(evaluate(context, namespaces)).castToNumber();
     }
 
     /**
-     * Evaluate and convert the result using the xpath boolean() function.
+     * Evaluate as a boolean, like xpath boolean().
      * @param context The context node.
-     * @return The boolean value.
-     * @throws XPathException If the evaluation fails.
+     * @return The boolean.
+     * @throws XPathException On an error.
      */
     public boolean evaluateBoolean(XmlNode context) throws XPathException
     {
@@ -248,20 +265,19 @@ public final class XPath
     }
 
     /**
-     * Evaluate and convert the result using the xpath boolean() function.
+     * Evaluate as a boolean, like xpath boolean().
      * @param context The context node.
-     * @param namespaces Maps prefixes to namespace uris, may be null.
-     * @return The boolean value.
-     * @throws XPathException If the evaluation fails.
+     * @param namespaces Extra prefixes, or null.
+     * @return The boolean.
+     * @throws XPathException On an error.
      */
     public boolean evaluateBoolean(XmlNode context, Map<String, String> namespaces) throws XPathException
     {
-        return XPathExpr.toBoolean(evaluate(context, namespaces, null));
+        return XPathExpr.toBoolean(evaluate(context, namespaces));
     }
 
     /**
-     * Format a number like xpath string(), eg 1 gives "1" and 0.5 gives "0.5".
-     * Uses the same algorithm as libxml2 xmlXPathFormatNumber.
+     * Format a number like xpath string() (libxml2 xmlXPathFormatNumber).
      * @param d The number.
      * @return The string.
      */
@@ -271,10 +287,9 @@ public final class XPath
     }
 
     /**
-     * Convert a string to a number like xpath number(), using the same
-     * algorithm as libxml2 xmlXPathStringEvalNumber.
+     * Parse a number like xpath number() (libxml2 xmlXPathStringEvalNumber).
      * @param s The string.
-     * @return The number, NaN if the string is not a number.
+     * @return The number, NaN if not a number.
      */
     public static double stringToNumber(String s)
     {

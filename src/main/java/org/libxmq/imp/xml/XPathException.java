@@ -92,6 +92,7 @@ public class XPathException extends Exception
     public static final int MEMORY_ERROR = 15;
     /** Undefined namespace prefix. */
     public static final int UNDEF_PREFIX_ERROR = 19;
+    public static final int FORBID_VARIABLE_ERROR = 24;
     /** Recursion limit exceeded. */
     public static final int RECURSION_LIMIT_EXCEEDED = 26;
 
@@ -144,6 +145,87 @@ public class XPathException extends Exception
         code_ = code;
         expr_ = expr;
         offset_ = offset;
+    }
+
+    private String detail_ = "";
+    private boolean evaluating_;
+    private boolean quiet_;
+
+    /**
+     * An error with a detailed message, like libxml2 xmlXPathErrFmt (eg "Undefined variable: x").
+     * @param code The error code.
+     * @param expr The expression.
+     * @param offset The offset in the expression, -1 if unknown.
+     * @param what The start of the message.
+     * @param prefix The prefix of name, or null.
+     * @param name The name.
+     * @return The exception.
+     */
+    static XPathException detailed(int code, String expr, int offset, String what, String prefix, String name)
+    {
+        XPathException e = new XPathException(code, expr, offset);
+        if (name == null) name = "";
+        e.detail_ = prefix != null ? what + ": " + prefix + ":" + name : what + ": " + name;
+        return e;
+    }
+
+    /**
+     * The message with details (libxml2 xmlXPathErrFmt), eg "Unregistered function: f", or "".
+     * @return The detailed message or "".
+     */
+    public String detail()
+    {
+        return detail_;
+    }
+
+    /**
+     * True if the error happened while evaluating a compiled expression (libxml2 has no
+     * expression context for such errors).
+     * @return True when evaluating.
+     */
+    public boolean evaluating()
+    {
+        return evaluating_;
+    }
+
+    void setEvaluating(boolean e)
+    {
+        evaluating_ = e;
+    }
+
+    /**
+     * True if an extension function failed without a message (like setting ctxt->error in
+     * libxml2), nothing should be reported.
+     * @return True if quiet.
+     */
+    public boolean quiet()
+    {
+        return quiet_;
+    }
+
+    void setQuiet(boolean q)
+    {
+        quiet_ = q;
+    }
+
+    /**
+     * The offset of the error as a byte offset in the utf8 encoded expression, like the C version.
+     * @return The byte offset, or -1.
+     */
+    public int byteOffset()
+    {
+        if (offset_ < 0 || expr_ == null) return offset_;
+        int o = Math.min(offset_, expr_.length());
+        return expr_.substring(0, o).getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+    }
+
+    /**
+     * The static libxml2 message of the code, eg "Invalid expression".
+     * @return The message.
+     */
+    public String staticMessage()
+    {
+        return messageFor(code_);
     }
 
     /**

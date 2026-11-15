@@ -68,27 +68,26 @@ final class XPathContext
     /** Sets larger than this are sorted using a precomputed document order index. */
     private static final int INDEX_SORT_THRESHOLD = 32;
 
+    final XPathEvalContext px;  // Kept caches and callbacks.
+    final XPathSettings settings;
     final String expr;
-    final Map<String, String> namespaces;
-    final Map<String, Object> variables;
+    final boolean evaluating;   // An evaluation of a compiled expression, errors have no expression context.
     XmlNode node;
     XmlNode doc;
-    int size = -1;
-    int position = -1;
-    int depth;
+    long size = -1;
+    long position = -1;
 
-    private IdentityHashMap<XmlNode, Long> order_;
-    private IdentityHashMap<XmlNode, Boolean> indexed_roots_;
-    private long next_order_;
-    private Map<String, XmlElement> ids_;
-
-    XPathContext(String expr, XmlNode context, Map<String, String> namespaces, Map<String, Object> variables)
+    XPathContext(XPathEvalContext px, XPathSettings settings, String expr, XmlNode context,
+                 long position, long size, boolean evaluating)
     {
+        this.px = px;
+        this.settings = settings;
         this.expr = expr;
-        this.node = context;
-        this.namespaces = namespaces;
-        this.variables = variables;
+        this.node = settings.noContextNode ? null : context;
         this.doc = documentOf(context);
+        this.position = position;
+        this.size = size;
+        this.evaluating = evaluating;
     }
 
     /** Returns the document of a node, or the top most ancestor if the node is not in a document. */
@@ -103,15 +102,24 @@ final class XPathContext
 
     XPathException error(int code)
     {
-        return new XPathException(code, expr, -1);
+        XPathException e = new XPathException(code, expr, -1);
+        e.setEvaluating(evaluating);
+        return e;
+    }
+
+    /** An error with a detailed message, like libxml2 xmlXPathErrFmt. */
+    XPathException errorDetail(int code, String what, String prefix, String name)
+    {
+        XPathException e = XPathException.detailed(code, expr, -1, what, prefix, name);
+        e.setEvaluating(evaluating);
+        return e;
     }
 
     /** Like libxml2 xmlXPathNsLookup. */
     String lookupNs(String prefix)
     {
         if ("xml".equals(prefix)) return XPathUtil.XML_NAMESPACE;
-        if (namespaces == null) return null;
-        return namespaces.get(prefix);
+        return settings.namespaces.get(prefix);
     }
 
     // ----------------------------------------------------------------------
@@ -240,51 +248,7 @@ final class XPathContext
 
     private long ordinal(XmlNode n)
     {
-        if (n == null) return -1;
-        if (order_ == null)
-        {
-            order_ = new IdentityHashMap<>();
-            indexed_roots_ = new IdentityHashMap<>();
-        }
-        Long o = order_.get(n);
-        if (o != null) return o;
-        XmlNode root = n;
-        while (root.parent() != null) root = root.parent();
-        if (!indexed_roots_.containsKey(root))
-        {
-            indexed_roots_.put(root, Boolean.TRUE);
-            indexTree(root);
-            o = order_.get(n);
-            if (o != null) return o;
-        }
-        return -1;
-    }
-
-    /** Assign preorder ordinals: node, its attributes, its children. */
-    private void indexTree(XmlNode root)
-    {
-        XmlNode n = root;
-        while (n != null)
-        {
-            order_.put(n, next_order_);
-            next_order_ += 2;
-            if (n instanceof XmlElement)
-            {
-                for (XmlAttr a : ((XmlElement)n).attributes())
-                {
-                    order_.put(a, next_order_);
-                    next_order_ += 2;
-                }
-            }
-            if (n.firstChild() != null)
-            {
-                n = n.firstChild();
-                continue;
-            }
-            while (n != null && n != root && n.next() == null) n = n.parent();
-            if (n == null || n == root) break;
-            n = n.next();
-        }
+        return px.ordinal(n);
     }
 
     /** Kind of a node relative to its parent: 0 namespace, 1 attribute, 2 child. */
@@ -304,8 +268,9 @@ final class XPathContext
         List<XmlNode> pb = ancestry(b);
         if (pa.get(0) != pb.get(0))
         {
-            // Different trees, order is arbitrary but consistent.
-            return Integer.compare(System.identityHashCode(pa.get(0)), System.identityHashCode(pb.get(0)));
+            // Different trees, in the order they were created (the C version compares the
+            // addresses of the roots, like libxml2).
+            return Long.compare(pa.get(0).seq_, pb.get(0).seq_);
         }
         int i = 0;
         while (i < pa.size() && i < pb.size() && pa.get(i) == pb.get(i)) i++;
@@ -348,21 +313,17 @@ final class XPathContext
     // Ids
 
     /** Like libxml2 xmlGetID, returns the element with the given ID attribute value. */
-    XmlElement lookupId(String id)
+    XmlNode lookupId(String id)
     {
-        if (ids_ == null)
-        {
-            ids_ = new HashMap<>();
-            if (doc != null) collectIds();
-        }
-        return ids_.get(id);
+        return px.lookupId(this, id);
     }
 
-    private void collectIds()
+    /** Collect the ids of the document of this context (the first element with an id wins). */
+    void collectIds(Map<String, XmlNode> ids)
     {
         XmlDocument d = doc instanceof XmlDocument ? (XmlDocument)doc : null;
         Map<String, java.util.Set<String>> dtd_ids = d == null ? null : dtdIdAttributes(d);
-        boolean html = d != null && d.isHtml();
+        boolean html = settings.htmlIds;
         XmlNode n = doc;
         while (n != null)
         {
@@ -373,7 +334,7 @@ final class XPathContext
                 {
                     if (isId(e, a, dtd_ids, html))
                     {
-                        ids_.putIfAbsent(a.value(), e);
+                        ids.putIfAbsent(a.value(), e);
                     }
                 }
             }

@@ -50,7 +50,6 @@ THE SOFTWARE.
 package org.libxmq.imp.xml;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -215,38 +214,18 @@ abstract class XPathExpr
         @Override
         Object eval(XPathContext ctx) throws XPathException
         {
-            String key = name;
+            String uri = null;
             if (prefix != null)
             {
-                String uri = ctx.lookupNs(prefix);
-                if (uri == null) throw ctx.error(XPathException.UNDEF_PREFIX_ERROR);
-                key = "{" + uri + "}" + name;
+                uri = ctx.lookupNs(prefix);
+                if (uri == null) throw ctx.errorDetail(XPathException.UNDEF_PREFIX_ERROR, "Undefined namespace prefix", null, prefix);
             }
-            if (ctx.variables == null || !ctx.variables.containsKey(key))
+            if (ctx.px.var_lookup_ != null)
             {
-                throw ctx.error(XPathException.UNDEF_VARIABLE_ERROR);
+                XPathResult r = ctx.px.var_lookup_.lookup(name, uri);
+                if (r != null) return r.value();
             }
-            Object v = ctx.variables.get(key);
-            if (v instanceof String || v instanceof Boolean || v instanceof Double) return v;
-            if (v instanceof Number) return ((Number)v).doubleValue();
-            if (v instanceof XmlNode)
-            {
-                List<XmlNode> l = new ArrayList<>();
-                l.add((XmlNode)v);
-                return l;
-            }
-            if (v instanceof Collection)
-            {
-                List<XmlNode> l = new ArrayList<>();
-                for (Object x : (Collection<?>)v)
-                {
-                    if (!(x instanceof XmlNode)) throw ctx.error(XPathException.INVALID_TYPE);
-                    l.add((XmlNode)x);
-                }
-                return l;
-            }
-            if (v == null) throw ctx.error(XPathException.UNDEF_VARIABLE_ERROR);
-            return v.toString();
+            throw ctx.errorDetail(XPathException.UNDEF_VARIABLE_ERROR, "Undefined variable", prefix, name);
         }
     }
 
@@ -403,13 +382,20 @@ abstract class XPathExpr
         {
             Object a = l.eval(ctx);
             Object b = r.eval(ctx);
-            if (!isNodeSet(a) || !isNodeSet(b)) throw ctx.error(XPathException.INVALID_TYPE);
+            if (!isNodeSet(a) || !isNodeSet(b) || a instanceof XPathTree || b instanceof XPathTree)
+            {
+                throw ctx.error(XPathException.INVALID_TYPE);
+            }
             List<XmlNode> la = nodes(a);
             List<XmlNode> lb = nodes(b);
             if (lb.isEmpty()) return la;
             List<XmlNode> out = new ArrayList<>(la.size() + lb.size());
-            Set<XmlNode> seen = new HashSet<>(la);
-            out.addAll(la);
+            Set<XmlNode> seen = new HashSet<>();
+            for (XmlNode n : la)
+            {
+                seen.add(n);
+                out.add(n);
+            }
             for (XmlNode n : lb)
             {
                 if (seen.add(n)) out.add(n);
@@ -458,7 +444,7 @@ abstract class XPathExpr
         Object eval(XPathContext ctx) throws XPathException
         {
             Object o = e.eval(ctx);
-            if (!isNodeSet(o)) throw ctx.error(XPathException.INVALID_TYPE);
+            if (!isNodeSet(o) || o instanceof XPathTree) throw ctx.error(XPathException.INVALID_TYPE);
             List<XmlNode> l = nodes(o);
             if (l.isEmpty()) return l;
             return applyPredicate(l, pred, ctx);
@@ -470,8 +456,8 @@ abstract class XPathExpr
     {
         XmlNode old_node = ctx.node;
         XmlNode old_doc = ctx.doc;
-        int old_size = ctx.size;
-        int old_pos = ctx.position;
+        long old_size = ctx.size;
+        long old_pos = ctx.position;
         List<XmlNode> out = new ArrayList<>();
         try
         {
@@ -562,7 +548,8 @@ abstract class XPathExpr
             int n = steps.size();
             for (int i = 0; i < n; i++)
             {
-                if (!isNodeSet(cur)) throw ctx.error(XPathException.INVALID_TYPE);
+                // libxml2 only collects from node sets, not from result tree fragments (XPATH_XSLT_TREE).
+                if (!isNodeSet(cur) || cur instanceof XPathTree) throw ctx.error(XPathException.INVALID_TYPE);
                 cur = steps.get(i).collect(nodes(cur), ctx, to_bool && i == n - 1);
             }
             return cur;
@@ -616,7 +603,7 @@ abstract class XPathExpr
             if (prefix != null)
             {
                 uri = ctx.lookupNs(prefix);
-                if (uri == null) throw ctx.error(XPathException.UNDEF_PREFIX_ERROR);
+                if (uri == null) throw ctx.errorDetail(XPathException.UNDEF_PREFIX_ERROR, "Undefined namespace prefix", null, prefix);
             }
             List<XmlNode> out = new ArrayList<>();
             if (context.isEmpty()) return out;
@@ -762,9 +749,9 @@ abstract class XPathExpr
             if (prefix != null)
             {
                 uri = ctx.lookupNs(prefix);
-                if (uri == null) throw ctx.error(XPathException.UNDEF_PREFIX_ERROR);
+                if (uri == null) throw ctx.errorDetail(XPathException.UNDEF_PREFIX_ERROR, "Undefined namespace prefix", null, prefix);
             }
-            return XPathFunctions.call(uri, name, values, ctx);
+            return XPathFunctions.call(prefix, uri, name, values, ctx);
         }
     }
 

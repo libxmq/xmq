@@ -196,8 +196,9 @@ public final class HtmlSave
             case TEXT ->
             {
                 if (cur.content() == null) break;
-                if (parent == null ||
-                    (!"script".equalsIgnoreCase(parent.name()) && !"style".equalsIgnoreCase(parent.name())))
+                // Text marked "textnoenc" (xslt disable-output-escaping) is written as it is.
+                if (!"textnoenc".equals(cur.name()) && (parent == null ||
+                    (!"script".equalsIgnoreCase(parent.name()) && !"style".equalsIgnoreCase(parent.name()))))
                 {
                     out.append(encodeEntities(doc, cur.content(), false));
                 }
@@ -277,6 +278,144 @@ public final class HtmlSave
                 }
             }
         }
+    }
+
+    // Meta tags with the encoding, port of htmlSetMetaEncoding (HTMLtree.c).
+
+    private static boolean is_ws(int c)
+    {
+        return c == 0x20 || (c >= 0x09 && c <= 0x0D && c != 0x0B);
+    }
+
+    private static XmlNode findFirstChild(XmlNode parent, String name)
+    {
+        for (XmlNode c = parent.firstChild(); c != null; c = c.next())
+        {
+            if (c.type() == XmlNodeType.ELEMENT && name.equalsIgnoreCase(c.name())) return c;
+        }
+        return null;
+    }
+
+    private static int at(String s, int i)
+    {
+        return i < s.length() ? s.charAt(i) : 0;
+    }
+
+    /** Port of htmlParseContentType: {start, end, size} of the charset in a content-type value. */
+    private static int[] parseContentType(String val)
+    {
+        int p = 0;
+        while (true)
+        {
+            int start, end;
+            while (at(val, p) != 'c' && at(val, p) != 'C')
+            {
+                if (at(val, p) == 0) return null;
+                p += 1;
+            }
+            p += 1;
+            if (!val.regionMatches(true, p, "harset", 0, 6)) continue;
+            p += 6;
+            while (is_ws(at(val, p))) p += 1;
+            if (at(val, p) != '=') continue;
+            p += 1;
+            while (is_ws(at(val, p))) p += 1;
+            if (at(val, p) == 0) return null;
+            if (at(val, p) == '"' || at(val, p) == '\'')
+            {
+                int quote = at(val, p);
+                p += 1;
+                while (is_ws(at(val, p))) p += 1;
+                start = p;
+                end = start;
+                while (at(val, p) != quote)
+                {
+                    if (at(val, p) == 0) return null;
+                    if (!is_ws(at(val, p))) end = p + 1;
+                    p += 1;
+                }
+            }
+            else
+            {
+                start = p;
+                while (at(val, p) != 0 && at(val, p) != ';' && !is_ws(at(val, p))) p += 1;
+                end = p;
+            }
+            return new int[] { start, end, val.length() };
+        }
+    }
+
+    private static String simpleAttrValue(XmlAttr a)
+    {
+        XmlNode c = a.firstChild();
+        if (c != null && c.type() == XmlNodeType.TEXT && c.next() == null && c.content() != null) return c.content();
+        return null;
+    }
+
+    /**
+     * Create or update the meta tags with the encoding in the head (libxml2 htmlSetMetaEncoding).
+     * @param doc The document.
+     * @param encoding The encoding.
+     * @return 0, or 1 if there is no html/head.
+     */
+    public static int setMetaEncoding(XmlDocument doc, String encoding)
+    {
+        if (encoding == null) return 1;
+        XmlNode html = findFirstChild(doc, "html");
+        XmlNode head = html != null ? findFirstChild(html, "head") : null;
+        if (head == null) return 1;
+        boolean found = false;
+        for (XmlNode meta = head.firstChild(); meta != null; meta = meta.next())
+        {
+            // htmlParseMetaEncoding and htmlFindMetaEncodingAttr.
+            if (meta.type() != XmlNodeType.ELEMENT || !"meta".equalsIgnoreCase(meta.name())) continue;
+            XmlAttr attr = null, content_attr = null;
+            boolean ct = false, is_content_type = false;
+            for (XmlAttr a : ((XmlElement)meta).attributes())
+            {
+                if (a.ns() != null) continue;
+                if ("charset".equalsIgnoreCase(a.name()))
+                {
+                    attr = a;
+                    break;
+                }
+                if ("content".equalsIgnoreCase(a.name())) content_attr = a;
+                String v = simpleAttrValue(a);
+                if ("http-equiv".equalsIgnoreCase(a.name()) && v != null && v.equalsIgnoreCase("Content-Type")) ct = true;
+            }
+            if (attr == null && ct && content_attr != null)
+            {
+                attr = content_attr;
+                is_content_type = true;
+            }
+            if (attr == null) continue;
+            String val = simpleAttrValue(attr);
+            if (val == null) val = "";
+            int[] off;
+            if (!is_content_type)
+            {
+                int size = val.length(), start = 0, end = size;
+                while (start < size && is_ws(val.charAt(start))) start += 1;
+                while (end > 0 && is_ws(val.charAt(end - 1))) end -= 1;
+                off = new int[] { start, end, size };
+            }
+            else
+            {
+                off = parseContentType(val);
+                if (off == null) continue;
+            }
+            found = true;
+            // The pseudo "HTML" encoding only produces ASCII.
+            String enc = encoding.equalsIgnoreCase("HTML") ? "ASCII" : encoding;
+            attr.setValue(val.substring(0, off[0]) + enc + val.substring(off[1], off[2]));
+        }
+        if (found) return 0;
+        XmlElement meta = new XmlElement("meta");
+        meta.addAttribute(new XmlAttr("charset", encoding));
+        XmlNode first = head.firstChild();
+        if (first == null) head.addChild(meta);
+        else first.addPrevSibling(meta);
+        return 0;
     }
 
     private static void appendQName(StringBuilder out, XmlNs ns, String name)
