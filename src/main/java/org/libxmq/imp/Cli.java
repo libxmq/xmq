@@ -76,6 +76,7 @@ final class Cli
     final List<Command> commands = new ArrayList<>();
     boolean yamlInput;      // The input was loaded as yaml.
     String loadedContent;   // The content of the current document.
+    byte[] inputBytes;      // The undecoded input file or stdin, null for -i content.
 
     static final String[] NOT_IMPLEMENTED = {
         "transform", "validate", "for-each", "statistics",
@@ -378,11 +379,15 @@ final class Cli
         if (inIsContent) return in;
         try
         {
-            if (in == null || in.equals("-"))
+            byte[] b = (in == null || in.equals("-")) ? System.in.readAllBytes() : Files.readAllBytes(Path.of(in));
+            if (b.length > 2 && (((b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xFE) || ((b[0] & 0xFF) == 0xFE && (b[1] & 0xFF) == 0xFF)))
             {
-                return new String(System.in.readAllBytes(), StandardCharsets.UTF_8);
+                // Like skip_any_potential_bom in the C version: UTF-16 with a bom cannot be handled.
+                throw new Exit(1);
             }
-            return Files.readString(Path.of(in), StandardCharsets.UTF_8);
+            inputBytes = b;
+            // Invalid UTF-8 becomes U+FFFD, the xml parser gets the bytes and reports it.
+            return new String(b, StandardCharsets.UTF_8);
         }
         catch (IOException e)
         {
@@ -464,7 +469,9 @@ final class Cli
                 if (lower.endsWith(".yml") || lower.endsWith(".yaml")) format = "yaml";
             }
             yamlInput = "yaml".equals(format);
-            XmlDocument d = Main.load(content, source, trimNone, noMerge, format);
+            // The xml parser detects the encoding from the bytes, unless the input is split into lines.
+            byte[] raw = !lines && inputBytes != null ? inputBytes : null;
+            XmlDocument d = Main.load(content, raw, source, trimNone, noMerge, format);
             // Like C, an explicit --trim=heuristic trims any input, not only xml and html
             // (which Main.load already trims). Trimming twice changes nothing.
             if (d != null && trimHeuristic) XmlTrim.trimWhitespace(d);

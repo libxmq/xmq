@@ -79,6 +79,26 @@ printf '<a>\x0e</a>\n' > "$O/badchar.xml"
 cmp1 "$O/badchar.xml" to-xml
 printf '<!DOCTYPE a [<!ATTLIST a xmlns:p CDATA "u&amp;v">]>\n<a/>\n' > "$O/nsdefault.xml"
 cmp1 "$O/nsdefault.xml" to-xml
+# Input encodings (UTF-16 without bom, ISO-8859-1, unsupported, invalid UTF-8, UTF-16 with
+# a bom which is refused), and error positions in bytes like libxml2.
+printf '<\0?\0x\0m\0l\0 \0v\0e\0r\0s\0i\0o\0n\0=\0"\0001\0.\0000\0"\0?\0>\0<\0a\0>\0\xe5\0<\0/\0a\0>\0' > "$O/utf16le.xml"
+cmp1 "$O/utf16le.xml" to-xml
+printf '<?xml version="1.0" encoding="ISO-8859-1"?><a>\xe5\xe4</a>' > "$O/latin1.xml"
+cmp1 "$O/latin1.xml" to-xml
+printf '<?xml version="1.0" encoding="EUC-JP"?><a/>' > "$O/eucjp.xml"
+cmp1 "$O/eucjp.xml" to-xml
+printf '<a>\xc3\x28</a>' > "$O/badutf8.xml"
+cmp1 "$O/badutf8.xml" to-xml
+printf '\xff\xfe<\0a\0/\0>\0' > "$O/utf16bom.xml"
+cmp1 "$O/utf16bom.xml" to-xml
+printf '<\xc3\xa5 a="1" b="2" a="3"/>' > "$O/dupattr.xml"
+cmp1 "$O/dupattr.xml" to-xml
+printf '<p:\xc3\xa5 x:b="1"/>' > "$O/nsprefix.xml"
+cmp1 "$O/nsprefix.xml" to-xml
+printf '<a>&#1100000000000;</a>' > "$O/charref.xml"
+cmp1 "$O/charref.xml" to-xml
+printf '<d/>\0' > "$O/nul.xml"
+cmp1 "$O/nul.xml" to-xml
 cmp1 "$O/a.xmq" delete //@x
 cmp1 --text "$O/t.txt" quote-c --add-nl to-text
 cmp1 --text "$O/q.txt" unquote-c to-text

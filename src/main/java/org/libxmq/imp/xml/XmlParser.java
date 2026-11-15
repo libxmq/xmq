@@ -88,6 +88,9 @@ public final class XmlParser
     // whose values are normalized (first declaration wins, libxml2 attsSpecial).
     final java.util.Map<String, Boolean> attr_cdata_ = new java.util.HashMap<>();
 
+    // The UTF-8 bytes of s, for error messages whose positions are in bytes like the C version.
+    byte[] u8_;
+
     XmlParser(String content, String source, int options)
     {
         String c = content;
@@ -112,60 +115,86 @@ public final class XmlParser
      */
     public static XmlDocument parse(String content, String source, int options) throws XmlParseException
     {
-        XmlParser p = new XmlParser(content, source, options);
+        return parse(content.getBytes(java.nio.charset.StandardCharsets.UTF_8), source, options);
+    }
+
+    /**
+     * Parse xml bytes into a document, the bytes are UTF-8, UTF-16 (bom or "&lt;?"
+     * pattern) or ISO-8859-1 (declared), like the C version.
+     * @param content The xml source.
+     * @param source The source name used in error messages, eg the file name.
+     * @param options NOBLANKS and/or NOCDATA.
+     * @return The document.
+     * @throws XmlParseException If the xml is not well formed.
+     */
+    public static XmlDocument parse(byte[] content, String source, int options) throws XmlParseException
+    {
+        byte[] u8 = XmlInput.prepare(source == null ? "noname.xml" : source, content);
+        XmlParser p = new XmlParser(new String(u8, java.nio.charset.StandardCharsets.UTF_8), u8, source, options);
         return p.parse_document();
+    }
+
+    /** A parser of prepared input: valid UTF-8 with normalized line ends. */
+    private XmlParser(String prepared, byte[] u8, String source, int options)
+    {
+        s = prepared;
+        u8_ = u8;
+        source_ = source == null ? "noname.xml" : source;
+        options_ = options;
     }
 
     // ---------------------------------------------------------------- errors
 
+    // Cache for line_at, like the C version, so that line numbers are not quadratic.
+    int line_pos_;
+    int line_no_ = 1;
+
     int line_at(int pos)
     {
-        int line = 1;
         int end = Math.min(pos, s.length());
-        for (int k = 0; k < end; k++)
+        if (end < line_pos_)
         {
-            if (s.charAt(k) == '\n') line++;
+            line_pos_ = 0;
+            line_no_ = 1;
         }
-        return line;
+        for (int k = line_pos_; k < end; k++)
+        {
+            if (s.charAt(k) == '\n') line_no_++;
+        }
+        line_pos_ = end;
+        return line_no_;
     }
 
-    /** Format a message with source context like libxml2 xmlParserPrintFileContextInternal. */
-    String format_error(String kind, String msg, int pos)
+    /** The byte offset in u8_ of the char index pos in s. */
+    int byte_pos(int pos)
     {
-        int line = line_at(pos);
-        StringBuilder out = new StringBuilder();
-        out.append(source_).append(':').append(line).append(": ").append(kind).append(" : ").append(msg);
-        if (!msg.endsWith("\n")) out.append('\n');
-        if (pos > s.length()) pos = s.length();
-        int cur = pos;
-        // Skip backwards over any end of lines.
-        while (cur > 0 && cur < s.length() && s.charAt(cur) == '\n') cur--;
-        if (cur >= s.length() && cur > 0) cur = s.length() - 1;
-        while (cur > 0 && s.charAt(cur) == '\n') cur--;
+        if (u8_ == null) u8_ = s.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        int end = Math.min(pos, s.length());
         int n = 0;
-        while (n++ < 80 && cur > 0 && s.charAt(cur) != '\n') cur--;
-        if (cur < s.length() && s.charAt(cur) == '\n') cur++;
-        int col = pos - cur;
-        StringBuilder content = new StringBuilder();
-        int k = cur;
-        n = 0;
-        while (k < s.length() && s.charAt(k) != '\n' && n < 80)
+        for (int k = 0; k < end; k++)
         {
-            content.append(s.charAt(k++));
-            n++;
+            char c = s.charAt(k);
+            if (c < 0x80) n++;
+            else if (c < 0x800) n += 2;
+            else if (Character.isHighSurrogate(c) && k + 1 < end) { n += 4; k++; }
+            else n += 3;
         }
-        out.append(content).append('\n');
-        StringBuilder caret = new StringBuilder();
-        n = 0;
-        int ci = 0;
-        while (n < col && n++ < 79 && ci < content.length())
-        {
-            char c = content.charAt(ci++);
-            caret.append(c == '\t' ? '\t' : ' ');
-        }
-        caret.append('^');
-        out.append(caret).append('\n');
-        return out.toString();
+        return n;
+    }
+
+    /** Format a message with source context like libxml2 xmlParserPrintFileContextInternal, as bytes. */
+    byte[] format_error(String kind, String msg, int pos, int[] out_line)
+    {
+        int bpos = byte_pos(pos);
+        return XmlInput.format(source_, kind, msg, u8_, u8_.length, bpos, out_line);
+    }
+
+    /** Print a non fatal message, like the parse message callback of the C version. */
+    void message(String kind, String msg, int pos)
+    {
+        byte[] m = format_error(kind, msg, pos, null);
+        System.err.write(m, 0, m.length);
+        System.err.flush();
     }
 
     XmlParseException fatal(String msg)
@@ -175,17 +204,14 @@ public final class XmlParser
 
     XmlParseException fatal(String msg, int pos)
     {
-        return new XmlParseException(format_error("parser error", msg, pos), msg, line_at(pos));
-    }
-
-    void ns_error(String msg)
-    {
-        System.err.print(format_error("namespace error", msg, i));
+        int[] line = new int[1];
+        byte[] full = format_error("parser error", msg, pos, line);
+        return new XmlParseException(full, msg, line[0]);
     }
 
     void warning(String msg)
     {
-        System.err.print(format_error("parser error", msg, i));
+        message("parser error", msg, i);
     }
 
     // ---------------------------------------------------------------- char classes
@@ -330,16 +356,6 @@ public final class XmlParser
         doc_.setUrl(source_);
         node_ = doc_;
 
-        // Validate the xml chars of the whole input first, like the C version.
-        for (int k = 0; k < s.length(); )
-        {
-            int c = s.codePointAt(k);
-            if (!is_xml_char(c))
-            {
-                throw fatal("Char 0x" + Integer.toHexString(c).toUpperCase(java.util.Locale.ROOT) + " out of allowed range", k);
-            }
-            k += Character.charCount(c);
-        }
 
         if (eof())
         {
@@ -590,6 +606,7 @@ public final class XmlParser
         String local;
         List<Object> value = new ArrayList<>(); // String or EntityName
         int pos;
+        int end; // After the value, where libxml2 reports problems with the value.
     }
 
     record EntityName(String name) { }
@@ -608,6 +625,9 @@ public final class XmlParser
         String qname = qn[0] == null ? qn[1] : qn[0] + ":" + qn[1];
         List<RawAttr> attrs = new ArrayList<>();
         boolean empty = false;
+        // The end of the start tag (the > or />), where libxml2 2.16 reports duplicate
+        // attributes and undefined prefixes, since it checks them after reading all attributes.
+        int tag_end = i;
         while (true)
         {
             boolean blank = skip_blanks();
@@ -617,11 +637,13 @@ public final class XmlParser
             }
             if (cur() == '>')
             {
+                tag_end = i;
                 i++;
                 break;
             }
             if (at("/>"))
             {
+                tag_end = i;
                 i += 2;
                 empty = true;
                 break;
@@ -649,14 +671,22 @@ public final class XmlParser
             ra.local = an[1];
             ra.pos = apos;
             parse_att_value(ra.value);
-            for (RawAttr prev : attrs)
+            ra.end = i;
+            attrs.add(ra);
+        }
+
+        // Duplicate attribute names as written.
+        for (int k = 0; k < attrs.size(); k++)
+        {
+            RawAttr ra = attrs.get(k);
+            for (int j = 0; j < k; j++)
             {
+                RawAttr prev = attrs.get(j);
                 if (prev.local.equals(ra.local) && java.util.Objects.equals(prev.prefix, ra.prefix))
                 {
-                    throw fatal("Attribute " + (ra.prefix == null ? ra.local : ra.prefix + ":" + ra.local) + " redefined");
+                    throw fatal("Attribute " + (ra.prefix == null ? ra.local : ra.prefix + ":" + ra.local) + " redefined", tag_end);
                 }
             }
-            attrs.add(ra);
         }
 
         // Values of attributes declared with a type other than CDATA are normalized.
@@ -698,19 +728,19 @@ public final class XmlParser
                     // Entities are never expanded implicitly and a namespace uri is a plain string,
                     // so a reference cannot be kept. Rejected like the C version.
                     throw fatal("Entity references in namespace uris are not supported (xmlns"
-                                + (prefix == null ? "" : ":" + prefix) + ")", ra.pos);
+                                + (prefix == null ? "" : ":" + prefix) + ")", ra.end);
                 }
             }
             String href = value_to_string(ra.value);
             String key = prefix == null ? "" : prefix;
             if (declared.contains(key))
             {
-                throw fatal("Attribute xmlns" + (prefix == null ? "" : ":" + prefix) + " redefined");
+                throw fatal("Attribute xmlns" + (prefix == null ? "" : ":" + prefix) + " redefined", tag_end);
             }
             declared.add(key);
             if (prefix != null && href.isEmpty())
             {
-                ns_error("xmlns:" + prefix + ": Empty XML namespace is not allowed");
+                message("namespace error", "xmlns:" + prefix + ": Empty XML namespace is not allowed", ra.end);
                 continue;
             }
             if ("xml".equals(prefix)) continue;
@@ -741,9 +771,10 @@ public final class XmlParser
 
         // Resolve the element namespace.
         XmlNs ens = e.searchNs(qn[0]);
-        if (qn[0] != null && ens == null)
+        boolean eprefix_undefined = qn[0] != null && ens == null;
+        if (eprefix_undefined)
         {
-            ns_error("Namespace prefix " + qn[0] + " on " + qn[1] + " is not defined");
+            // Reported after the attributes, like libxml2.
             e.setName(qn[0] + ":" + qn[1]);
         }
         else if (ens != null && !(qn[0] == null && ens.href().isEmpty()))
@@ -765,7 +796,7 @@ public final class XmlParser
                 XmlNs ans = e.searchNs(ra.prefix);
                 if (ans == null)
                 {
-                    ns_error("Namespace prefix " + ra.prefix + " for " + ra.local + " on " + qn[1] + " is not defined");
+                    message("namespace error", "Namespace prefix " + ra.prefix + " for " + ra.local + " on " + qn[1] + " is not defined", tag_end);
                     a.setName(ra.prefix + ":" + ra.local);
                 }
                 else
@@ -777,7 +808,7 @@ public final class XmlParser
             String key = (uri == null ? "" : uri) + "}" + a.name();
             if (seen.contains(key))
             {
- throw fatal("Attribute " + (ra.prefix == null ? ra.local : ra.prefix + ":" + ra.local) + " redefined");
+ throw fatal("Attribute " + (ra.prefix == null ? ra.local : ra.prefix + ":" + ra.local) + " redefined", tag_end);
             }
             seen.add(key);
             for (Object o : ra.value)
@@ -792,6 +823,11 @@ public final class XmlParser
                 if (v.equals("preserve")) space = 1;
                 else if (v.equals("default")) space = 0;
             }
+        }
+
+        if (eprefix_undefined)
+        {
+            message("namespace error", "Namespace prefix " + qn[0] + " on " + qn[1] + " is not defined", tag_end);
         }
 
         if (empty)
@@ -1017,7 +1053,7 @@ public final class XmlParser
             throw fatal("Entity '" + name + "' not defined");
         }
         // Recoverable when the entity could be declared in an external subset, a warning in libxml2.
-        System.err.print(format_error("parser warning", "Entity '" + name + "' not defined", i));
+        message("parser warning", "Entity '" + name + "' not defined", i);
     }
 
     /** Parse &amp;#123; or &amp;#x1F; and return the code point. */
@@ -1062,6 +1098,11 @@ public final class XmlParser
             throw fatal("xmlParseCharRef: invalid decimal value");
         }
         i++;
+        // Like libxml2 these are reported after the reference.
+        if (val >= 0x110000)
+        {
+            throw fatal("xmlParseCharRef: character reference out of bounds");
+        }
         if (!is_xml_char(val))
         {
             throw fatal("xmlParseCharRef: invalid xmlChar value " + val);
@@ -1492,7 +1533,7 @@ public final class XmlParser
         {
             // Port of the libxml2 xmlAddEntity check (4.6 Predefined Entities), reported and ignored.
             // libxml2 adds the entity (and warns) before the closing '>' is consumed.
-            System.err.print(format_error("parser warning", "Invalid redeclaration of predefined entity '" + name + "'", i - 1));
+            message("parser warning", "Invalid redeclaration of predefined entity '" + name + "'", i - 1);
             return;
         }
         // A valid redeclaration of a predefined entity is kept in the dtd like libxml2

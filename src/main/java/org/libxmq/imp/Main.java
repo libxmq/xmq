@@ -242,6 +242,15 @@ public class Main
      */
     static XmlDocument load(String content, String file, boolean trim_none, boolean no_merge, String format) throws ParseException
     {
+        return load(content, null, file, trim_none, no_merge, format);
+    }
+
+    /**
+     * Load content, raw is the undecoded input (or null), used when the content is
+     * xml since the xml parser detects the encoding itself (UTF-16, ISO-8859-1).
+     */
+    static XmlDocument load(String content, byte[] raw, String file, boolean trim_none, boolean no_merge, String format) throws ParseException
+    {
         if ("yaml".equals(format))
         {
             YamlParser yp = new YamlParser();
@@ -283,11 +292,11 @@ public class Main
                 try
                 {
                     int options = XmlParser.NOCDATA;
-                    doc = XmlParser.parse(content, file, options);
+                    doc = raw != null ? XmlParser.parse(raw, file, options) : XmlParser.parse(content, file, options);
                 }
                 catch (XmlParseException e)
                 {
-                    System.err.print(e.getMessage());
+                    e.print();
                     return null;
                 }
             }

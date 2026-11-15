@@ -577,7 +577,9 @@ void test_xml_parser()
     PARSE_ERR("<r></s>", "Opening and ending tag mismatch");
     PARSE_ERR("<r a='1' a='2'/>", "redefined");
     PARSE_ERR("<r>&undeclared;</r>", "Entity 'undeclared' not defined");
-    PARSE_ERR("<r>\xC3</r>", "not proper UTF-8");
+    PARSE_ERR("<r>\xC3</r>", "Invalid bytes in character encoding");
+    PARSE_ERR("<r>\xC3", "Incomplete UTF-8 sequence starting with C3");
+    PARSE_ERR("<r>&#1100000000000;</r>", "character reference out of bounds");
     PARSE_ERR("<r>\x01</r>", "out of allowed range");
     PARSE_ERR("<r>&#0;</r>", "invalid xmlChar value");
     PARSE_ERR("<r><!-- a -- b --></r>", "Double hyphen");

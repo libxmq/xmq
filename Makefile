@@ -267,23 +267,29 @@ testdiff:
 	@echo "Running differential tests against libxml2"
 	@./tests/xml_diff/run.sh build/xml_diff
 
+# Compare the C and the Java command lines byte for byte (to-xml, also after expand-entities)
+# on all xml files of the repository and the libxml2 test suite. JOBS=n parallel jobs (default 8).
+testcj: build/xmqj release
+	@echo "Comparing the C and Java command lines"
+	@for x in $(BUILDDIRS); do JOBS="$(JOBS)" ./tests/test_cj.sh $${x}release/xmq build/xmqj $${x}release/test_output/cj || exit 1 ; done
+
 # The test targets first build what they test, so that tests never run on old binaries.
 test_release: release
 	@echo "Running release tests"
-	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/testinternals ]; then echo "Run make first. $${x}release/testinternals not found."; exit 1; fi ; $${x}release/testinternals $(SILENCER) ; done
-	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/parts/testinternals ]; then echo "Run make first. $${x}release/parts/testinternals not found."; exit 1; fi ; $${x}release/parts/testinternals $(SILENCER) ; ./tests/test.sh $${x}release $${x}release/test_output $(FILTER) $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/testinternals ]; then echo "Run make first. $${x}release/testinternals not found."; exit 1; fi ; $${x}release/testinternals $(SILENCER) || exit 1 ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/parts/testinternals ]; then echo "Run make first. $${x}release/parts/testinternals not found."; exit 1; fi ; $${x}release/parts/testinternals $(SILENCER) || exit 1 ; ./tests/test.sh $${x}release $${x}release/test_output $(FILTER) $(SILENCER) || exit 1 ; done
 	@$(MAKE) --no-print-directory test_xmq_grammar
 
 test_debug: debug
 	@echo "Running debug tests"
-	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/testinternals ]; then echo "Run make first. $${x}debug/testinternals not found."; exit 1; fi ; $${x}debug/testinternals $(SILENCER) ; done
-	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/parts/testinternals ]; then echo "Run make first. $${x}debug/parts/testinternals not found."; exit 1; fi ; $${x}debug/parts/testinternals $(SILENCER) ; ./tests/test.sh $${x}debug $${x}debug/test_output $(FILTER) $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/testinternals ]; then echo "Run make first. $${x}debug/testinternals not found."; exit 1; fi ; $${x}debug/testinternals $(SILENCER) || exit 1 ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/parts/testinternals ]; then echo "Run make first. $${x}debug/parts/testinternals not found."; exit 1; fi ; $${x}debug/parts/testinternals $(SILENCER) || exit 1 ; ./tests/test.sh $${x}debug $${x}debug/test_output $(FILTER) $(SILENCER) || exit 1 ; done
 
 test_asan: asan
 	@echo "Running asan tests"
 	@if [ "$$(cat /proc/sys/kernel/randomize_va_space)" != "0" ]; then echo "Please disable address randomization for libasan to work! make disable_address_randomization"; exit 1; fi
-	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/testinternals ]; then echo "Run make first. $${x}asan/testinternals not found."; exit 1; fi ; $${x}asan/testinternals $(SILENCER) ; done
-	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/parts/testinternals ]; then echo "Run make first. $${x}asan/parts/testinternals not found."; exit 1; fi ; $${x}asan/parts/testinternals $(SILENCER) ; ./tests/test.sh $${x}asan $${x}asan/test_output $(FILTER) $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/testinternals ]; then echo "Run make first. $${x}asan/testinternals not found."; exit 1; fi ; $${x}asan/testinternals $(SILENCER) || exit 1 ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/parts/testinternals ]; then echo "Run make first. $${x}asan/parts/testinternals not found."; exit 1; fi ; $${x}asan/parts/testinternals $(SILENCER) || exit 1 ; ./tests/test.sh $${x}asan $${x}asan/test_output $(FILTER) $(SILENCER) || exit 1 ; done
 
 define USE_VALGRIND
 valgrind -q --tool=memcheck --leak-check=full
@@ -292,8 +298,8 @@ endef
 #--show-leak-kinds=all
 test_valgrind: debug
 	@echo "Running valgrind tests"
-	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/testinternals ]; then echo "Run make first. $${x}debug/testinternals not found."; exit 1; fi ; $(USE_VALGRIND) $${x}debug/testinternals $(SILENCER) ; done
-	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/parts/testinternals ]; then echo "Run make first. $${x}debug/parts/testinternals not found."; exit 1; fi ; $(USE_VALGRIND) $${x}debug/parts/testinternals $(SILENCER) ; USE_VALGRIND="$(USE_VALGRIND)" ./tests/test.sh $${x}debug $${x}debug/test_output $(FILTER) $(SILENCER) ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/testinternals ]; then echo "Run make first. $${x}debug/testinternals not found."; exit 1; fi ; $(USE_VALGRIND) $${x}debug/testinternals $(SILENCER) || exit 1 ; done
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/parts/testinternals ]; then echo "Run make first. $${x}debug/parts/testinternals not found."; exit 1; fi ; $(USE_VALGRIND) $${x}debug/parts/testinternals $(SILENCER) || exit 1 ; USE_VALGRIND="$(USE_VALGRIND)" ./tests/test.sh $${x}debug $${x}debug/test_output $(FILTER) $(SILENCER) || exit 1 ; done
 
 test_eclipse:
 	@echo "Running eclipse xmq tests"
@@ -364,7 +370,7 @@ import_category:
 	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
 	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
 
-.PHONY: all release debug asan fuzz afl_prepared build_fuzz test testdiff test_release test_debug test_parse_myself test_parse_myself_fast test_generate_parser test_xmq_grammar generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
+.PHONY: all release debug asan fuzz afl_prepared build_fuzz test testdiff testcj test_release test_debug test_parse_myself test_parse_myself_fast test_generate_parser test_xmq_grammar generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
 
 pom.xml: pom.xmq jproject.settings
 	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; xmllint --format pom.xml > tmpo; mv tmpo pom.xml; echo "Generated pom.xml" ; fi

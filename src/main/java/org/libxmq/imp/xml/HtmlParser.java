@@ -120,6 +120,8 @@ public final class HtmlParser
         pos_ = 0;
         keepBlanks_ = !noblanks;
         myDoc_ = new XmlDocument(true);
+        // Like htmlNewDocNoDtD (and the C version), printed as standalone="yes" when saved as xml.
+        myDoc_.setStandalone(1);
     }
 
     /**

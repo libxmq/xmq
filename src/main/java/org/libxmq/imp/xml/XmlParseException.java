@@ -57,5 +57,31 @@ public class XmlParseException extends Exception
         super(full);
         this.error = error;
         this.line = line;
+        this.bytes = full.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Create an exception from a message formatted as bytes. Like the C version the
+     * source context is cut at a byte position, which can split a UTF-8 character.
+     * @param full The full formatted message, with the source context.
+     * @param error The error message itself.
+     * @param line The line number.
+     */
+    public XmlParseException(byte[] full, String error, int line)
+    {
+        super(new String(full, java.nio.charset.StandardCharsets.UTF_8));
+        this.error = error;
+        this.line = line;
+        this.bytes = full;
+    }
+
+    /** The full formatted message as bytes, print these to get exactly the C output. */
+    public final byte[] bytes;
+
+    /** Print the message bytes unchanged to stderr. */
+    public void print()
+    {
+        System.err.write(bytes, 0, bytes.length);
+        System.err.flush();
     }
 }

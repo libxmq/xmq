@@ -86,7 +86,8 @@ public final class XmlSave
 
     /**
      * Dump a document like libxml2 xmlDocDumpFormatMemoryEnc(doc, ..., encoding, format).
-     * An html document is dumped as html.
+     * Like the C version, which has one dom for xml and html, an html document is
+     * dumped as xml too, use HtmlSave.docContentDump for html.
      * @param doc The document.
      * @param encoding The encoding to put in the xml declaration, eg utf-8.
      * @param format True to indent the output.
@@ -94,10 +95,6 @@ public final class XmlSave
      */
     public static String docDump(XmlDocument doc, String encoding, boolean format)
     {
-        if (doc.isHtml())
-        {
-            return HtmlSave.docContentDump(doc, format);
-        }
         StringBuilder sb = new StringBuilder();
         XmlSave ctxt = new XmlSave(sb, 0, format ? 1 : 0);
         ctxt.doc_content(doc, encoding);
