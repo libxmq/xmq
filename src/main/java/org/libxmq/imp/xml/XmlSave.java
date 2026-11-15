@@ -163,7 +163,7 @@ public final class XmlSave
             {
             case DOCUMENT, HTML_DOCUMENT -> doc_content((XmlDocument)cur, "UTF-8");
             case DTD -> dtd((XmlDtd)cur);
-            case ELEMENT_DECL, ATTRIBUTE_DECL, NOTATION_DECL -> buf.append(((XmlDtdDecl)cur).text());
+            case ELEMENT_DECL, ATTRIBUTE_DECL, NOTATION_DECL, PE_REF -> buf.append(((XmlDtdDecl)cur).text());
             case ENTITY_DECL -> entity_decl(buf, (XmlEntityDecl)cur);
             case ELEMENT ->
             {
@@ -295,8 +295,10 @@ public final class XmlSave
         {
             buf.append("xmlns");
         }
-        buf.append('=');
-        write_quoted(buf, ns.href());
+        // Escaped as an attribute value, like libxml2 2.16 and the C version.
+        buf.append("=\"");
+        attr_serialize_text(buf, ns.href());
+        buf.append('"');
     }
 
     /** Port of xmlAttrDumpOutput. */

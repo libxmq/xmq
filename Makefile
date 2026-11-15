@@ -222,18 +222,18 @@ library_index:
 # Parse all of xmq's own preprocessed C source (the .o.source files created by the build)
 # using the C grammar library/lang/c.ixml. Takes a few minutes, therefore not part of make test.
 # Only test some files: make test_parse_myself FILTER=ixml.c or FILTER=ixml.c,xmq.c
-test_parse_myself:
+test_parse_myself: release
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/xmq ]; then echo "Run make first. $${x}release/xmq not found."; exit 1; fi ; FILTER="$(FILTER)" $(if $(JOBS),JOBS="$(JOBS)") ./tests/test_parse_myself.sh $${x}release/xmq $${x}release/test_output/parse_myself $${x}release || exit 1 ; done
 
 # The same as test_parse_myself, but with a C parser generated from c.ixml
 # (xmqj generate-parser --c) instead of the ixml engine. Takes seconds
 # instead of minutes, but cannot detect ambiguities. Needs make xmqj.
-test_parse_myself_fast: build/xmqj
+test_parse_myself_fast: build/xmqj release
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/xmq ]; then echo "Run make first. $${x}release/xmq not found."; exit 1; fi ; XMQJ=build/xmqj FILTER="$(FILTER)" $(if $(filter undefined,$(origin EXCLUDE)),,EXCLUDE="$(EXCLUDE)") $(if $(JOBS),JOBS="$(JOBS)") ./tests/test_parse_myself.sh $${x}release/xmq $${x}release/test_output/parse_myself_fast $${x}release || exit 1 ; done
 
 # Generate C parsers (xmqj generate-parser --c) for all LL(*) grammars with
 # test inputs and compare their output with the ixml engine. Needs make xmqj.
-test_generate_parser:
+test_generate_parser: build/xmqj release
 	@for x in $(BUILDDIRS); do ./tests/test_generate_parser.sh $${x}release/xmq build/xmqj $${x}release/test_output/generate_parser || exit 1 ; done
 
 # Regenerate the committed generated parsers, needs build/xmqj (make xmqj).
@@ -248,7 +248,7 @@ generate_parsers: build/xmqj
 # Run the xmq examples of the test suite through library/core/xmq.ixml (ixml
 # engine, generated C parser if build/xmqj exists, and the xmq.xslq round trip).
 # Part of make test.
-test_xmq_grammar:
+test_xmq_grammar: release
 	@for x in $(BUILDDIRS); do ./tests/test_xmq_grammar.sh $${x}release/xmq build/xmqj $${x}release/test_output/xmq_grammar || exit 1 ; done
 
 test_library:
@@ -267,18 +267,19 @@ testdiff:
 	@echo "Running differential tests against libxml2"
 	@./tests/xml_diff/run.sh build/xml_diff
 
-test_release:
+# The test targets first build what they test, so that tests never run on old binaries.
+test_release: release
 	@echo "Running release tests"
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/testinternals ]; then echo "Run make first. $${x}release/testinternals not found."; exit 1; fi ; $${x}release/testinternals $(SILENCER) ; done
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/parts/testinternals ]; then echo "Run make first. $${x}release/parts/testinternals not found."; exit 1; fi ; $${x}release/parts/testinternals $(SILENCER) ; ./tests/test.sh $${x}release $${x}release/test_output $(FILTER) $(SILENCER) ; done
 	@$(MAKE) --no-print-directory test_xmq_grammar
 
-test_debug:
+test_debug: debug
 	@echo "Running debug tests"
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/testinternals ]; then echo "Run make first. $${x}debug/testinternals not found."; exit 1; fi ; $${x}debug/testinternals $(SILENCER) ; done
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/parts/testinternals ]; then echo "Run make first. $${x}debug/parts/testinternals not found."; exit 1; fi ; $${x}debug/parts/testinternals $(SILENCER) ; ./tests/test.sh $${x}debug $${x}debug/test_output $(FILTER) $(SILENCER) ; done
 
-test_asan:
+test_asan: asan
 	@echo "Running asan tests"
 	@if [ "$$(cat /proc/sys/kernel/randomize_va_space)" != "0" ]; then echo "Please disable address randomization for libasan to work! make disable_address_randomization"; exit 1; fi
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}asan/testinternals ]; then echo "Run make first. $${x}asan/testinternals not found."; exit 1; fi ; $${x}asan/testinternals $(SILENCER) ; done
@@ -289,7 +290,7 @@ valgrind -q --tool=memcheck --leak-check=full
 endef
 
 #--show-leak-kinds=all
-test_valgrind:
+test_valgrind: debug
 	@echo "Running valgrind tests"
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/testinternals ]; then echo "Run make first. $${x}debug/testinternals not found."; exit 1; fi ; $(USE_VALGRIND) $${x}debug/testinternals $(SILENCER) ; done
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}debug/parts/testinternals ]; then echo "Run make first. $${x}debug/parts/testinternals not found."; exit 1; fi ; $(USE_VALGRIND) $${x}debug/parts/testinternals $(SILENCER) ; USE_VALGRIND="$(USE_VALGRIND)" ./tests/test.sh $${x}debug $${x}debug/test_output $(FILTER) $(SILENCER) ; done
@@ -376,8 +377,14 @@ xmqj: build/xmqj
 
 .PHONY: xmqj
 
-build/xmqj: pom.xml $(wildcard build/*.jar) $(shell find src/main/java src/main/resources src/test -type f 2>/dev/null)
-	@(if [ ! -f build/java/spec.mk ] ; then ./make/java/configure; fi; make --no-print-directory -f make/java/Makefile xmqj)
+# make/java/Makefile knows the java sources and only runs maven when build/xmqj is
+# older than them (or pom.xml, scripts/run.sh), so always ask it.
+build/xmqj: FORCE
+	@(if [ ! -f build/java/spec.mk ] ; then ./make/java/configure; fi; $(MAKE) --no-print-directory -f make/java/Makefile xmqj)
+
+FORCE:
+
+.PHONY: FORCE
 
 javadoc:
 	@(if [ ! -f build/java/spec.mk ] ; then ./make/java/configure; fi; make --no-print-directory -f make/java/Makefile javadoc)
@@ -388,7 +395,8 @@ javadoc_imp:
 xmqjc: pom.xml
 	@(make --no-print-directory -f make/java/Makefile xmqjc)
 
-testj:
+# Builds xmqj, and the release xmq that the java command line is compared with.
+testj: build/xmqj release
 	@(if [ ! -f build/java/spec.sh ] ; then ./make/java/configure; fi)
 	@make --no-print-directory -f make/java/Makefile $(CURDIR)/build/project-deps/updated.timestamp
 	@java -cp build/classes/ org.libxmq.imp.TestInternals

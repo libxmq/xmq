@@ -34,7 +34,7 @@ public class XmlDtdDecl extends XmlNode
 
     /**
      * Create a declaration.
-     * @param type ELEMENT_DECL, ATTRIBUTE_DECL or NOTATION_DECL.
+     * @param type ELEMENT_DECL, ATTRIBUTE_DECL, NOTATION_DECL or PE_REF (text %name;).
      * @param name The declared name.
      * @param text The full normalized declaration text.
      */

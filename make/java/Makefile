@@ -10,7 +10,9 @@ $(shell mkdir -p $(PROJECT_DEPS))
 
 VERSION_FILE:=src/main/resources/version.txt
 $(shell mkdir -p src/main/resources)
-$(shell echo $(VERSION) > $(VERSION_FILE))
+# Only rewrite the version file when the version changed, otherwise every make
+# invocation makes it newer than build/xmqj and maven runs again.
+$(shell if [ "$$(cat $(VERSION_FILE) 2>/dev/null)" != "$(VERSION)" ]; then echo $(VERSION) > $(VERSION_FILE); fi)
 
 AT=@
 DROP_ROOT=$(subst $(GIT_ROOT)/,./,$1)

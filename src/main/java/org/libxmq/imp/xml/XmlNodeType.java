@@ -57,6 +57,9 @@ public enum XmlNodeType
     ATTRIBUTE_DECL,
     /** A notation declaration inside a dtd. */
     NOTATION_DECL,
+    /** A parameter entity reference %name; between the declarations of a dtd, kept as
+        written since entities are never expanded implicitly. */
+    PE_REF,
     /** A namespace node, only created by xpath namespace axis evaluation. */
     NAMESPACE
 }

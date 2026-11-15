@@ -57,6 +57,28 @@ cmp1 "$O/entcycle.xml" expand-entities select 'string(/goo/@x)="PRUTT©alfa"'
 cmp1 "$O/a.xmq" expand-entities to-xml
 printf '<!DOCTYPE r [<!ENTITY a "&b;"><!ENTITY b "&a;">]>\n<r>&a;</r>\n' > "$O/entloop.xml"
 cmp1 "$O/entloop.xml" expand-entities
+# Redeclared predefined entities (invalid ones are reported and dropped) and
+# normalization of attributes declared with a type other than CDATA.
+printf '<!DOCTYPE r [\n<!ENTITY amp "&#38;amp;">\n<!ENTITY lt "&#38;#60;">\n<!ENTITY gt ">">\n<!ENTITY ws " a  b ">\n<!ATTLIST r tok NMTOKENS "  x   y  " c CDATA "  p  ">\n]>\n<r tok="  &ws;  q  " c="  k  "/>\n' > "$O/dtdnorm.xml"
+cmp1 "$O/dtdnorm.xml" to-xml
+cmp1 "$O/dtdnorm.xml" expand-entities to-xml
+# Content models printed like libxml2, kept parameter entity references, escaped
+# attribute defaults and namespace declarations defaulted from the dtd.
+printf '<!DOCTYPE a:r [\n<!ELEMENT a:r (x)*>\n<!ELEMENT x (y | z* | w?)+>\n<!ELEMENT y (#PCDATA | z)*>\n<!ELEMENT z ((a , b) , c?)>\n<!ENTITY %% pe "">\n%%pe;\n<!ATTLIST a:r d CDATA "&lt;&amp;e;&quot;\x27">\n<!ATTLIST x xmlns:a CDATA #FIXED "urn:a">\n<!ATTLIST a:r xmlns:a CDATA #FIXED "urn:a">\n]>\n<a:r xmlns:a="urn:a"><x/></a:r>\n' > "$O/dtd.xml"
+cmp1 "$O/dtd.xml" to-xml
+# Errors and warnings worded and placed like libxml2.
+printf '<a xmlns="u&amp;v&e;"/>\n' > "$O/nsent.xml"
+cmp1 "$O/nsent.xml" to-xml
+printf '<!DOCTYPE a SYSTEM "none.dtd">\n<a b="&u;">x&u;y</a>\n' > "$O/undecl.xml"
+cmp1 "$O/undecl.xml" to-xml
+printf '<a>x&u;y</a>\n' > "$O/undecl2.xml"
+cmp1 "$O/undecl2.xml" to-xml
+printf '<!DOCTYPEa>\n<a/>\n' > "$O/nospace.xml"
+cmp1 "$O/nospace.xml" to-xml
+printf '<a>\x0e</a>\n' > "$O/badchar.xml"
+cmp1 "$O/badchar.xml" to-xml
+printf '<!DOCTYPE a [<!ATTLIST a xmlns:p CDATA "u&amp;v">]>\n<a/>\n' > "$O/nsdefault.xml"
+cmp1 "$O/nsdefault.xml" to-xml
 cmp1 "$O/a.xmq" delete //@x
 cmp1 --text "$O/t.txt" quote-c --add-nl to-text
 cmp1 --text "$O/q.txt" unquote-c to-text

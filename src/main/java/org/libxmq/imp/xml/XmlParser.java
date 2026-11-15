@@ -84,6 +84,9 @@ public final class XmlParser
     final List<Integer> space_ = new ArrayList<>(); // xml:space stack, -1 default, 1 preserve, 0 default declared.
     // Attribute defaults from the dtd, element qname -> list of {attribute qname, value}, like libxml2 attsDefault.
     final java.util.Map<String, List<String[]>> att_defaults_ = new java.util.HashMap<>();
+    // Declared attribute types, "element\u0001attr" -> true for CDATA, false for other types
+    // whose values are normalized (first declaration wins, libxml2 attsSpecial).
+    final java.util.Map<String, Boolean> attr_cdata_ = new java.util.HashMap<>();
 
     XmlParser(String content, String source, int options)
     {
@@ -326,6 +329,17 @@ public final class XmlParser
         doc_ = new XmlDocument();
         doc_.setUrl(source_);
         node_ = doc_;
+
+        // Validate the xml chars of the whole input first, like the C version.
+        for (int k = 0; k < s.length(); )
+        {
+            int c = s.codePointAt(k);
+            if (!is_xml_char(c))
+            {
+                throw fatal("Char 0x" + Integer.toHexString(c).toUpperCase(java.util.Locale.ROOT) + " out of allowed range", k);
+            }
+            k += Character.charCount(c);
+        }
 
         if (eof())
         {
@@ -645,6 +659,19 @@ public final class XmlParser
             attrs.add(ra);
         }
 
+        // Values of attributes declared with a type other than CDATA are normalized.
+        if (!attr_cdata_.isEmpty())
+        {
+            for (RawAttr ra : attrs)
+            {
+                String an = ra.prefix == null ? ra.local : ra.prefix + ":" + ra.local;
+                if (Boolean.FALSE.equals(attr_cdata_.get(qname + "\u0001" + an)))
+                {
+                    ra.value = normalize_parts(ra.value);
+                }
+            }
+        }
+
         XmlElement e = new XmlElement(qn[1]);
 
         // Namespace declarations first.
@@ -663,6 +690,16 @@ public final class XmlParser
             else
             {
                 continue;
+            }
+            for (Object o : ra.value)
+            {
+                if (o instanceof EntityName)
+                {
+                    // Entities are never expanded implicitly and a namespace uri is a plain string,
+                    // so a reference cannot be kept. Rejected like the C version.
+                    throw fatal("Entity references in namespace uris are not supported (xmlns"
+                                + (prefix == null ? "" : ":" + prefix) + ")", ra.pos);
+                }
             }
             String href = value_to_string(ra.value);
             String key = prefix == null ? "" : prefix;
@@ -692,9 +729,8 @@ public final class XmlParser
                 else continue;
                 String key = prefix == null ? "" : prefix;
                 if (declared.contains(key)) continue;
-                String in_scope = in_scope_namespace(prefix);
+                if ("xml".equals(prefix)) continue;
                 String value = d[1];
-                if (in_scope != null && in_scope.equals(value)) continue;
                 declared.add(key);
                 e.nsDefs().add(new XmlNs(prefix, value));
             }
@@ -767,14 +803,84 @@ public final class XmlParser
         return new Open(e, qname, tag_line);
     }
 
-    /** Like libxml2 xmlGetNamespace: the uri in scope for the prefix, an empty default namespace counts as none. */
-    String in_scope_namespace(String prefix)
+
+    /**
+     * Port of libxml2 xmlAttrNormalizeSpace2: remove leading and trailing spaces and
+     * collapse runs of spaces into one. Entity references count as non space.
+     */
+    static List<Object> normalize_parts(List<Object> value)
     {
-        if (!(node_ instanceof XmlElement p)) return null;
-        XmlNs ns = p.searchNs(prefix);
-        if (ns == null) return null;
-        if (prefix == null && (ns.href() == null || ns.href().isEmpty())) return null;
-        return ns.href();
+        List<Object> out = new ArrayList<>();
+        StringBuilder text = new StringBuilder();
+        boolean started = false;
+        boolean pending_space = false;
+        for (Object o : value)
+        {
+            if (o instanceof EntityName en)
+            {
+                if (pending_space) text.append(' ');
+                pending_space = false;
+                if (text.length() > 0)
+                {
+                    out.add(text.toString());
+                    text.setLength(0);
+                }
+                out.add(en);
+                started = true;
+                continue;
+            }
+            String str = (String)o;
+            for (int k = 0; k < str.length(); k++)
+            {
+                char c = str.charAt(k);
+                if (c == ' ')
+                {
+                    if (started) pending_space = true;
+                    continue;
+                }
+                if (pending_space) text.append(' ');
+                pending_space = false;
+                text.append(c);
+                started = true;
+            }
+        }
+        if (text.length() > 0) out.add(text.toString());
+        return out;
+    }
+
+    /** Normalize a default value like libxml2 xmlAttrNormalizeSpace. */
+    static String normalize_space(String v)
+    {
+        StringBuilder b = new StringBuilder();
+        int k = 0;
+        while (k < v.length() && v.charAt(k) == ' ') k++;
+        while (k < v.length())
+        {
+            if (v.charAt(k) == ' ')
+            {
+                while (k < v.length() && v.charAt(k) == ' ') k++;
+                if (k < v.length()) b.append(' ');
+                continue;
+            }
+            b.append(v.charAt(k++));
+        }
+        return b.toString();
+    }
+
+    /**
+     * The value of an attribute default as libxml2 stores it: entity references written
+     * as &amp;name; and a &amp; that came from a reference (&amp;amp; or &amp;#38;)
+     * written as &amp;#38;.
+     */
+    static String default_to_string(List<Object> value)
+    {
+        StringBuilder sb = new StringBuilder();
+        for (Object o : value)
+        {
+            if (o instanceof String str) sb.append(str.replace("&", "&#38;"));
+            else sb.append('&').append(((EntityName)o).name()).append(';');
+        }
+        return sb.toString();
     }
 
     static String value_to_string(List<Object> value)
@@ -910,7 +1016,8 @@ public final class XmlParser
         {
             throw fatal("Entity '" + name + "' not defined");
         }
-        warning("Entity '" + name + "' not defined");
+        // Recoverable when the entity could be declared in an external subset, a warning in libxml2.
+        System.err.print(format_error("parser warning", "Entity '" + name + "' not defined", i));
     }
 
     /** Parse &amp;#123; or &amp;#x1F; and return the code point. */
@@ -1177,7 +1284,7 @@ public final class XmlParser
     void parse_doctype_decl() throws XmlParseException
     {
         i += 9;
-        skip_blanks();
+        if (!skip_blanks()) throw fatal("Space required after 'DOCTYPE'");
         String name = parse_name();
         if (name == null)
         {
@@ -1302,6 +1409,8 @@ public final class XmlParser
                 i++;
                 has_pe_refs_ = true;
                 dtd.has_pe_refs_ = true;
+                // Kept as written, parameter entities are never expanded implicitly.
+                dtd.addDecl(new XmlDtdDecl(XmlNodeType.PE_REF, n, "%" + n + ";\n"));
             }
             else
             {
@@ -1378,12 +1487,36 @@ public final class XmlParser
             e = new XmlEntityDecl(name, type, ids[0], ids[1], ndata, null);
         }
         expect_decl_end("xmlParseEntityDecl: entity " + name + " not terminated");
-        if (!pe && predefined(name) != null)
+        String pre = pe ? null : predefined(name);
+        if (pre != null && !valid_predefined_redecl(pre.charAt(0), e.etype(), e.content()))
         {
-            // Redefinition of a predefined entity is ignored.
+            // Port of the libxml2 xmlAddEntity check (4.6 Predefined Entities), reported and ignored.
+            // libxml2 adds the entity (and warns) before the closing '>' is consumed.
+            System.err.print(format_error("parser warning", "Invalid redeclaration of predefined entity '" + name + "'", i - 1));
             return;
         }
+        // A valid redeclaration of a predefined entity is kept in the dtd like libxml2
+        // does, but references still use the predefined value.
         dtd.addEntity(e);
+    }
+
+    /** Is this a valid redeclaration of the predefined entity for c, like libxml2 xmlAddEntity? */
+    static boolean valid_predefined_redecl(char c, int etype, String content)
+    {
+        if (etype != XmlEntityDecl.INTERNAL_GENERAL || content == null) return false;
+        if (content.length() == 1 && content.charAt(0) == c && (c == '>' || c == '\'' || c == '"')) return true;
+        if (content.startsWith("&#x"))
+        {
+            String hex = "0123456789ABCDEF";
+            String ref = "" + hex.charAt(c / 16 % 16) + hex.charAt(c % 16) + ";";
+            return content.substring(3).toUpperCase(java.util.Locale.ROOT).equals(ref);
+        }
+        if (content.startsWith("&#"))
+        {
+            String ref = "" + (char)('0' + c / 10 % 10) + (char)('0' + c % 10) + ";";
+            return content.substring(2).equals(ref);
+        }
+        return false;
     }
 
     /** Expand character references (and parameter entity references) in an entity value. */
@@ -1466,132 +1599,278 @@ public final class XmlParser
         dtd.addDecl(new XmlDtdDecl(XmlNodeType.ELEMENT_DECL, name, "<!ELEMENT " + name + " " + spec + ">\n"));
     }
 
-    /** Parses a content model and prints it like libxml2 xmlDumpElementContent. */
+    /**
+     * Parses a content model like libxml2 xmlParseElementMixedContentDecl and
+     * xmlParseElementChildrenContentDeclPriv (including their normalizations
+     * of occurrences) and prints it like xmlBufDumpElementContent. A port of
+     * the content model code in the C version, parts/xml_parser.c.
+     */
     static class ContentModel
     {
+        static final int PCDATA = 1, ELEMENT = 2, SEQ = 3, OR = 4;
+        static final int ONCE = 1, OPT = 2, MULT = 3, PLUS = 4;
+
+        static class Node
+        {
+            int type;
+            int ocur = ONCE;
+            String name;
+            Node c1, c2, parent;
+            Node(int type)
+            {
+                this.type = type;
+            }
+        }
+
         final XmlParser p;
         ContentModel(XmlParser p)
         {
             this.p = p;
         }
 
-        // A node is either a name/#PCDATA leaf or a group.
-        static class Node
+        static void setC1(Node parent, Node child)
         {
-            String name;            // Leaf name.
-            char op;                // ',' or '|' for a group with more than one child, 0 otherwise.
-            List<Node> kids = new ArrayList<>();
-            char occur;             // 0, '?', '*', '+'
+            parent.c1 = child;
+            if (child != null) child.parent = parent;
         }
 
+        static void setC2(Node parent, Node child)
+        {
+            parent.c2 = child;
+            if (child != null) child.parent = parent;
+        }
+
+        static Node element(String name)
+        {
+            Node n = new Node(ELEMENT);
+            n.name = name;
+            return n;
+        }
+
+        /** Parse the content model starting at '(' and return it printed. */
         String parse() throws XmlParseException
         {
-            Node n = group();
+            p.i++;
+            p.skip_blanks();
+            Node root = p.at("#PCDATA") ? parseMixed() : parseChildren(1);
             StringBuilder sb = new StringBuilder();
-            print(sb, n, true);
+            print(sb, root);
             return sb.toString();
         }
 
-        Node group() throws XmlParseException
+        int parseOccur()
         {
-            p.i++; // (
-            Node g = new Node();
+            char c = p.cur();
+            if (c == '?') { p.i++; return OPT; }
+            if (c == '*') { p.i++; return MULT; }
+            if (c == '+') { p.i++; return PLUS; }
+            return ONCE;
+        }
+
+        /** Port of xmlParseElementMixedContentDecl, the '(' and blanks have been skipped. */
+        Node parseMixed() throws XmlParseException
+        {
+            Node ret = null, cur = null;
+            String elem = null;
+            p.i += 7; // #PCDATA
+            p.skip_blanks();
+            if (p.cur() == ')')
+            {
+                p.i++;
+                ret = new Node(PCDATA);
+                if (p.cur() == '*')
+                {
+                    ret.ocur = MULT;
+                    p.i++;
+                }
+                return ret;
+            }
+            if (p.cur() == '(' || p.cur() == '|')
+            {
+                ret = cur = new Node(PCDATA);
+            }
+            while (p.cur() == '|')
+            {
+                p.i++;
+                Node n = new Node(OR);
+                if (elem == null)
+                {
+                    setC1(n, cur);
+                    ret = cur = n;
+                }
+                else
+                {
+                    setC2(cur, n);
+                    setC1(n, element(elem));
+                    cur = n;
+                }
+                p.skip_blanks();
+                elem = p.parse_name();
+                if (elem == null) throw p.fatal("xmlParseElementMixedContentDecl : Name expected");
+                p.skip_blanks();
+            }
+            if (p.cur() == ')' && p.nxt(1) == '*')
+            {
+                if (elem != null) setC2(cur, element(elem));
+                if (ret != null) ret.ocur = MULT;
+                p.i += 2;
+            }
+            else
+            {
+                throw p.fatal("xmlParseElementMixedContentDecl : '|' or ')*' expected");
+            }
+            return ret;
+        }
+
+        /** Port of xmlParseElementChildrenContentDeclPriv, the '(' has been skipped. */
+        Node parseChildren(int depth) throws XmlParseException
+        {
+            Node ret, cur, last = null;
+            char type = 0;
+            if (depth > 256)
+            {
+                throw p.fatal("xmlParseElementChildrenContentDecl : depth " + depth + " too deep, use XML_PARSE_HUGE");
+            }
+            p.skip_blanks();
+            if (p.cur() == '(')
+            {
+                p.i++;
+                cur = ret = parseChildren(depth + 1);
+            }
+            else
+            {
+                String elem = p.parse_name();
+                if (elem == null) throw p.fatal("xmlParseElementChildrenContentDecl : Name or '(' expected");
+                cur = ret = element(elem);
+                cur.ocur = parseOccur();
+            }
             while (true)
             {
                 p.skip_blanks();
-                Node item;
-                if (p.cur() == '(')
-                {
-                    item = group();
-                }
-                else if (p.at("#PCDATA"))
-                {
-                    p.i += 7;
-                    item = new Node();
-                    item.name = "#PCDATA";
-                }
-                else
-                {
-                    String n = p.parse_name();
-                    if (n == null) throw p.fatal("xmlParseElementChildrenContentDecl : Name or '(' expected");
-                    item = new Node();
-                    item.name = n;
-                    item.occur = occur();
-                }
-                g.kids.add(item);
-                p.skip_blanks();
                 char c = p.cur();
-                if (c == ')')
-                {
-                    p.i++;
-                    g.occur = occur();
-                    break;
-                }
+                if (c == ')') break;
                 if (c == ',' || c == '|')
                 {
-                    if (g.op != 0 && g.op != c) throw p.fatal("xmlParseElementChildrenContentDecl : '" + g.op + "' expected");
-                    g.op = c;
+                    if (type == 0) type = c;
+                    else if (type != c) throw p.fatal("xmlParseElementChildrenContentDecl : '" + type + "' expected");
                     p.i++;
-                    continue;
-                }
-                throw p.fatal("xmlParseElementChildrenContentDecl : ',' '|' or ')' expected");
-            }
-            return g;
-        }
-
-        char occur()
-        {
-            char c = p.cur();
-            if (c == '?' || c == '*' || c == '+')
-            {
-                p.i++;
-                return c;
-            }
-            return 0;
-        }
-
-        void print(StringBuilder sb, Node n, boolean top)
-        {
-            if (n.name != null)
-            {
-                sb.append(n.name);
-                if (n.occur != 0) sb.append(n.occur);
-                return;
-            }
-            if (n.kids.size() == 1 && n.kids.get(0).name != null)
-            {
-                // A single item group, eg (a) or (#PCDATA).
-                Node k = n.kids.get(0);
-                sb.append('(').append(k.name);
-                if (k.occur != 0) sb.append(k.occur);
-                sb.append(')');
-                if (n.occur != 0) sb.append(n.occur);
-                return;
-            }
-            sb.append('(');
-            print_items(sb, n);
-            sb.append(')');
-            if (n.occur != 0) sb.append(n.occur);
-        }
-
-        void print_items(StringBuilder sb, Node n)
-        {
-            String sep = n.op == ',' ? " , " : " | ";
-            boolean first = true;
-            for (Node k : n.kids)
-            {
-                if (!first) sb.append(sep);
-                first = false;
-                if (k.name == null && k.op == n.op && k.occur == 0 && k.kids.size() > 1)
-                {
-                    // Nested group of the same type without occurrence, libxml2 prints it flat.
-                    print_items(sb, k);
+                    Node op = new Node(c == ',' ? SEQ : OR);
+                    if (last == null)
+                    {
+                        setC1(op, ret);
+                        ret = cur = op;
+                    }
+                    else
+                    {
+                        setC2(cur, op);
+                        setC1(op, last);
+                        cur = op;
+                        last = null;
+                    }
                 }
                 else
                 {
-                    print(sb, k, false);
+                    throw p.fatal("xmlParseElementChildrenContentDecl : ',' '|' or ')' expected");
+                }
+                p.skip_blanks();
+                if (p.cur() == '(')
+                {
+                    p.i++;
+                    last = parseChildren(depth + 1);
+                }
+                else
+                {
+                    String elem = p.parse_name();
+                    if (elem == null) throw p.fatal("xmlParseElementChildrenContentDecl : Name or '(' expected");
+                    last = element(elem);
+                    last.ocur = parseOccur();
                 }
             }
+            if (cur != null && last != null) setC2(cur, last);
+            p.i++; // )
+
+            char o = p.cur();
+            if (o == '?')
+            {
+                ret.ocur = (ret.ocur == PLUS || ret.ocur == MULT) ? MULT : OPT;
+                p.i++;
+            }
+            else if (o == '*')
+            {
+                ret.ocur = MULT;
+                // Some normalization: (a | b* | c?)* == (a | b | c)*
+                for (Node k = ret; k != null && k.type == OR; k = k.c2)
+                {
+                    if (k.c1 != null && (k.c1.ocur == OPT || k.c1.ocur == MULT)) k.c1.ocur = ONCE;
+                    if (k.c2 != null && (k.c2.ocur == OPT || k.c2.ocur == MULT)) k.c2.ocur = ONCE;
+                }
+                p.i++;
+            }
+            else if (o == '+')
+            {
+                boolean found = false;
+                ret.ocur = (ret.ocur == OPT || ret.ocur == MULT) ? MULT : PLUS;
+                // Some normalization: (a | b*)+ == (a | b)* and (a | b?)+ == (a | b)*
+                for (Node k = cur; k != null && k.type == OR; k = k.c2)
+                {
+                    if (k.c1 != null && (k.c1.ocur == OPT || k.c1.ocur == MULT)) { k.c1.ocur = ONCE; found = true; }
+                    if (k.c2 != null && (k.c2.ocur == OPT || k.c2.ocur == MULT)) { k.c2.ocur = ONCE; found = true; }
+                }
+                if (found) ret.ocur = MULT;
+                p.i++;
+            }
+            return ret;
+        }
+
+        static void printOccur(StringBuilder out, Node n)
+        {
+            switch (n.ocur)
+            {
+            case OPT -> out.append('?');
+            case MULT -> out.append('*');
+            case PLUS -> out.append('+');
+            default -> { }
+            }
+        }
+
+        /** Port of xmlBufDumpElementContent. */
+        static void print(StringBuilder out, Node content)
+        {
+            out.append('(');
+            Node cur = content;
+            do
+            {
+                if (cur.type == SEQ || cur.type == OR)
+                {
+                    if (cur != content && cur.parent != null && (cur.type != cur.parent.type || cur.ocur != ONCE))
+                    {
+                        out.append('(');
+                    }
+                    cur = cur.c1;
+                    continue;
+                }
+                out.append(cur.type == PCDATA ? "#PCDATA" : cur.name);
+                while (cur != content)
+                {
+                    Node parent = cur.parent;
+                    if ((cur.type == OR || cur.type == SEQ) && (cur.type != parent.type || cur.ocur != ONCE))
+                    {
+                        out.append(')');
+                    }
+                    printOccur(out, cur);
+                    if (cur == parent.c1)
+                    {
+                        if (parent.type == SEQ) out.append(" , ");
+                        else if (parent.type == OR) out.append(" | ");
+                        cur = parent.c2;
+                        break;
+                    }
+                    cur = parent;
+                }
+            }
+            while (cur != content);
+            out.append(')');
+            printOccur(out, content);
         }
     }
 
@@ -1613,6 +1892,7 @@ public final class XmlParser
             if (attr == null) throw fatal("ATTLIST: no name for Attribute");
             if (!skip_blanks()) throw fatal("Space required after the attribute name");
             StringBuilder decl = new StringBuilder("<!ATTLIST ").append(elem).append(' ').append(attr);
+            boolean cdata = false;
             if (cur() == '(')
             {
                 decl.append(" (").append(enumeration()).append(')');
@@ -1629,6 +1909,7 @@ public final class XmlParser
                 else
                 {
                     decl.append(' ').append(type);
+                    cdata = type.equals("CDATA");
                 }
             }
             if (!skip_blanks()) throw fatal("Space required after the attribute type");
@@ -1653,12 +1934,17 @@ public final class XmlParser
                 }
                 List<Object> v = new ArrayList<>();
                 parse_att_value(v);
-                default_value = value_to_string(v);
+                default_value = default_to_string(v);
+                if (!cdata) default_value = normalize_space(default_value);
             }
+            attr_cdata_.putIfAbsent(elem + "\u0001" + attr, cdata);
             if (default_value != null)
             {
-                decl.append(' ');
-                XmlSave.write_quoted(decl, default_value);
+                // Like libxml2, the default value (entity references written as &name;)
+                // is escaped as an attribute value.
+                decl.append(" \"");
+                XmlSave.attr_serialize_text(decl, default_value);
+                decl.append('"');
             }
             decl.append(">\n");
             boolean dup = false;

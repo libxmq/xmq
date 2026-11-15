@@ -860,13 +860,15 @@ static XMQNode *xml_get_entity(XmlParser *p, XmlSlice name)
     return (XMQNode*)hashmap_get(p->entities, xml_tmp_slice(p, 3, name));
 }
 
-static void xml_undeclared_entity(XmlParser *p, XmlSlice name, size_t pos)
+/** Report an undeclared entity, like libxml2 at the current position, after the reference. */
+static void xml_undeclared_entity(XmlParser *p, XmlSlice name)
 {
     if (!p->dtd || xml_dom_standalone(p->dom) == 1 || (!p->has_external_subset && !p->has_pe_refs))
     {
-        xml_parser_fatal(p, pos, "Entity '%.*s' not defined", (int)name.len, name.s);
+        xml_parser_fatal(p, p->i, "Entity '%.*s' not defined", (int)name.len, name.s);
     }
-    xml_parser_message(p, "parser error", pos, "Entity '%.*s' not defined", (int)name.len, name.s);
+    // Recoverable when the entity could be declared in an external subset, a warning in libxml2.
+    xml_parser_message(p, "parser warning", p->i, "Entity '%.*s' not defined", (int)name.len, name.s);
 }
 
 /** Parse &name; (not a char ref) at the current position. Returns the name. */
@@ -891,7 +893,6 @@ static void xml_parse_reference(XmlParser *p)
         xml_characters(p, tmp->b, tmp->len);
         return;
     }
-    size_t pos = p->i;
     XmlSlice name = xml_parse_entity_ref_name(p);
     const char *pre = xml_predefined(name);
     if (pre)
@@ -902,7 +903,7 @@ static void xml_parse_reference(XmlParser *p)
     XMQNode *ent = xml_get_entity(p, name);
     if (!ent)
     {
-        xml_undeclared_entity(p, name, pos);
+        xml_undeclared_entity(p, name);
     }
     else if (xml_entity_decl_type(ent) == XML_ENTITY_EXTERNAL_GENERAL_UNPARSED)
     {
@@ -969,7 +970,6 @@ static size_t xml_parse_att_value(XmlParser *p)
                 total += tmp->len;
                 continue;
             }
-            size_t pos = p->i;
             XmlSlice name = xml_parse_entity_ref_name(p);
             const char *pre = xml_predefined(name);
             if (pre)
@@ -981,7 +981,7 @@ static size_t xml_parse_att_value(XmlParser *p)
             XMQNode *ent = xml_get_entity(p, name);
             if (!ent)
             {
-                xml_undeclared_entity(p, name, pos);
+                xml_undeclared_entity(p, name);
             }
             else if (xml_entity_decl_type(ent) == XML_ENTITY_EXTERNAL_GENERAL_PARSED ||
                      xml_entity_decl_type(ent) == XML_ENTITY_EXTERNAL_GENERAL_UNPARSED)
@@ -1032,6 +1032,33 @@ static const char *xml_att_value_string(XmlParser *p, int n, size_t first, size_
         if (part->entity) xml_pbuf_addc(b, '&');
         xml_pbuf_add(b, p->attval.b + part->off, part->len);
         if (part->entity) xml_pbuf_addc(b, ';');
+    }
+    return b->b;
+}
+
+/** The value of an attribute default as libxml2 stores it: entity references written as
+    &name; and a & that came from a reference (&amp; or &#38;) written as &#38;. In scratch slot n. */
+static const char *xml_att_default_string(XmlParser *p, int n, size_t first, size_t count)
+{
+    XmlPBuf *b = &p->tmp[n];
+    xml_pbuf_clear(b);
+    xml_pbuf_add(b, "", 0);
+    for (size_t k = first; k < first + count; ++k)
+    {
+        XmlAttPart *part = &p->parts[k];
+        if (part->entity)
+        {
+            xml_pbuf_addc(b, '&');
+            xml_pbuf_add(b, p->attval.b + part->off, part->len);
+            xml_pbuf_addc(b, ';');
+            continue;
+        }
+        for (size_t j = 0; j < part->len; ++j)
+        {
+            char c = p->attval.b[part->off + j];
+            if (c == '&') xml_pbuf_add(b, "&#38;", 5);
+            else xml_pbuf_addc(b, c);
+        }
     }
     return b->b;
 }
@@ -2013,7 +2040,8 @@ static void xml_parse_entity_decl(XmlParser *p)
     if (pre && !xml_valid_predefined_redecl(pre[0], type, content))
     {
         // Port of the libxml2 xmlAddEntity check (4.6 Predefined Entities), reported and ignored.
-        xml_parser_message(p, "parser error", p->i, "Invalid redeclaration of predefined entity '%s'", ename);
+        // libxml2 adds the entity (and warns) before the closing '>' is consumed.
+        xml_parser_message(p, "parser warning", p->i - 1, "Invalid redeclaration of predefined entity '%s'", ename);
     }
     else
     {
@@ -2502,7 +2530,7 @@ static void xml_parse_attlist_decl(XmlParser *p)
             p->num_parts = 0;
             xml_pbuf_clear(&p->attval);
             size_t count = xml_parse_att_value(p);
-            default_value = xml_att_value_string(p, 2, 0, count);
+            default_value = xml_att_default_string(p, 2, 0, count);
             if (!cdata) xml_normalize_space(p->tmp[2].b);
         }
 
