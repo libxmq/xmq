@@ -27,7 +27,7 @@ then
 fi
 CFLAGS="-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer -I$ROOT/src/main/c -I$LIBXML2/include -I$LIBXSLT"
 LIBS="$LIBXML2/.libs/libxml2.a -lm"
-PARTS="$ROOT/src/main/c/parts/always.c $ROOT/src/main/c/parts/membuffer.c $ROOT/src/main/c/parts/hashmap.c $ROOT/src/main/c/parts/xml_dom.c $ROOT/src/main/c/parts/xml_save.c $ROOT/src/main/c/parts/xml_parser.c $ROOT/src/main/c/parts/xml_html.c $ROOT/src/main/c/parts/xml_html_parser.c $ROOT/src/main/c/parts/xml_html_save.c $ROOT/src/main/c/parts/xml_chars.c $ROOT/src/main/c/parts/xml_xpath.c $ROOT/src/main/c/parts/xml_uri.c $ROOT/src/main/c/parts/xml_libxslt1_xslt.c $ROOT/src/main/c/parts/xml_libxslt1_transform.c"
+PARTS="$ROOT/src/main/c/parts/always.c $ROOT/src/main/c/parts/membuffer.c $ROOT/src/main/c/parts/hashmap.c $ROOT/src/main/c/parts/xml_dom.c $ROOT/src/main/c/parts/xml_save.c $ROOT/src/main/c/parts/xml_parser.c $ROOT/src/main/c/parts/xml_html.c $ROOT/src/main/c/parts/xml_html_parser.c $ROOT/src/main/c/parts/xml_html_save.c $ROOT/src/main/c/parts/xml_chars.c $ROOT/src/main/c/parts/xml_xpath.c $ROOT/src/main/c/parts/xml_uri.c $ROOT/src/main/c/parts/xml_unicode.c $ROOT/src/main/c/parts/xml_regexp.c $ROOT/src/main/c/parts/xml_pattern.c $ROOT/src/main/c/parts/xml_xsd10_types.c $ROOT/src/main/c/parts/xml_xsd10_schemas.c $ROOT/src/main/c/parts/xml_xsd10_parse.c $ROOT/src/main/c/parts/xml_xsd10_build.c $ROOT/src/main/c/parts/xml_xsd10_valid.c $ROOT/src/main/c/parts/xml_libxslt1_xslt.c $ROOT/src/main/c/parts/xml_libxslt1_transform.c"
 
 $CC $CFLAGS -o "$OUT/xml_save_diff" "$ROOT/tests/xml_diff/xml_save_diff.c" $PARTS $LIBS || exit 1
 $CC $CFLAGS -o "$OUT/xml_parse_diff" "$ROOT/tests/xml_diff/xml_parse_diff.c" $PARTS $LIBS || exit 1
@@ -37,6 +37,14 @@ $CC $CFLAGS -o "$OUT/xml_entity_diff" "$ROOT/tests/xml_diff/xml_entity_diff.c" $
 $CC $CFLAGS -o "$OUT/xml_libxslt1_pattern_diff" "$ROOT/tests/xml_diff/xml_libxslt1_pattern_diff.c" $PARTS "$LIBXSLT/libxslt/.libs/libxslt.a" $LIBS || exit 1
 $CC $CFLAGS -o "$OUT/xml_libxslt1_compile_diff" "$ROOT/tests/xml_diff/xml_libxslt1_compile_diff.c" $PARTS "$LIBXSLT/libxslt/.libs/libxslt.a" $LIBS || exit 1
 $CC $CFLAGS -o "$OUT/xml_libxslt1_transform_diff" "$ROOT/tests/xml_diff/xml_libxslt1_transform_diff.c" $PARTS "$LIBXSLT/libxslt/.libs/libxslt.a" $LIBS || exit 1
+$CC $CFLAGS -o "$OUT/xml_regexp_diff" "$ROOT/tests/xml_diff/xml_regexp_diff.c" $PARTS $LIBS || exit 1
+$CC $CFLAGS -o "$OUT/xml_pattern_diff" "$ROOT/tests/xml_diff/xml_pattern_diff.c" $PARTS $LIBS || exit 1
+$CC $CFLAGS -o "$OUT/xml_xsd10_types_diff" "$ROOT/tests/xml_diff/xml_xsd10_types_diff.c" $PARTS $LIBS || exit 1
+# Includes libxml2's xmlschemas.c (to reach its static functions), which needs the private headers.
+$CC $CFLAGS -I"$LIBXML2" -o "$OUT/xml_xsd10_schemas_diff" "$ROOT/tests/xml_diff/xml_xsd10_schemas_diff.c" $PARTS $LIBS || exit 1
+$CC $CFLAGS -o "$OUT/xml_xsd10_valid_diff" "$ROOT/tests/xml_diff/xml_xsd10_valid_diff.c" $PARTS $LIBS || exit 1
+$CC $CFLAGS -I"$LIBXML2" -o "$OUT/xml_xsd10_parse_diff" "$ROOT/tests/xml_diff/xml_xsd10_parse_diff.c" $PARTS $LIBS || exit 1
+$CC $CFLAGS -I"$LIBXML2" -o "$OUT/xml_xsd10_build_diff" "$ROOT/tests/xml_diff/xml_xsd10_build_diff.c" $PARTS $LIBS || exit 1
 $CC $CFLAGS -o "$OUT/xml_libxslt1_runtest" "$ROOT/tests/xml_diff/xml_libxslt1_runtest.c" $PARTS -lm || exit 1
 
 FILES="$OUT/files.txt"
@@ -100,4 +108,22 @@ do
 done
 ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_libxslt1_runtest" -k "$ROOT/tests/xml_diff/xml_libxslt1_runtest_known_failures.txt" $RUNTEST_DIRS
 RC9=$?
-[ $RC1 = 0 ] && [ $RC2 = 0 ] && [ $RC3 = 0 ] && [ $RC4 = 0 ] && [ $RC5 = 0 ] && [ $RC6 = 0 ] && [ $RC7 = 0 ] && [ $RC8 = 0 ] && [ $RC9 = 0 ]
+# XSD: the regular expressions and automata, the streaming patterns of identity
+# constraints and the built in types.
+ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_regexp_diff" -n "${REGEXPS:-20000:1}" -a "${AUTOMATA:-1000:1}" "$LIBXML2"
+RC10=$?
+ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_pattern_diff" -g "${PATTERNS:-40:1}" -p "$ROOT/3rdparty/libxml2/test/pattern" -r "$ROOT/3rdparty/libxml2/result/pattern" "$ROOT"/3rdparty/libxml2/test/schemas/*.xsd $(cat "$FILES")
+RC11=$?
+ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_xsd10_types_diff" -r "${XSD_RANDOM:-400:1}" "$ROOT"/3rdparty/libxml2/test/schemas/*
+RC12=$?
+# XSD validation of the libxml2 schema test suite (and mutated instances).
+ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_xsd10_valid_diff" "$ROOT/3rdparty/libxml2"
+RC14=$?
+ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_xsd10_parse_diff" -r "${XSD_PARSE_RANDOM:-30:1}" "$ROOT"/3rdparty/libxml2/test/schemas/*.xsd
+RC15=$?
+ASAN_OPTIONS=detect_leaks=1:fast_unwind_on_malloc=0 "$OUT/xml_xsd10_build_diff" -r "${XSD_BUILD_RANDOM:-2000:1}" -p -m "${XSD_BUILD_MUTATIONS:-2000:1}" "$ROOT"/3rdparty/libxml2/test/schemas/*.xsd
+RC16=$?
+# The leak suppressions of libxml2's own leaks need full stacks.
+ASAN_OPTIONS=detect_leaks=1:fast_unwind_on_malloc=0 "$OUT/xml_xsd10_schemas_diff" -r "${XSD_SCHEMAS_RANDOM:-2000:1}" "$ROOT"/3rdparty/libxml2/test/schemas/*.xsd
+RC13=$?
+[ $RC1 = 0 ] && [ $RC2 = 0 ] && [ $RC3 = 0 ] && [ $RC4 = 0 ] && [ $RC5 = 0 ] && [ $RC6 = 0 ] && [ $RC7 = 0 ] && [ $RC8 = 0 ] && [ $RC9 = 0 ] && [ $RC10 = 0 ] && [ $RC11 = 0 ] && [ $RC12 = 0 ] && [ $RC13 = 0 ] && [ $RC14 = 0 ] && [ $RC15 = 0 ] && [ $RC16 = 0 ]

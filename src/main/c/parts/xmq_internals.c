@@ -215,6 +215,8 @@ const char *xmqParseErrorToString(XMQStatus e)
     case XMQ_ERROR_IXML_SYNTAX_ERROR: return "ixml syntax error";
     case XMQ_ERROR_XSLT_COMPILE: return "xslt stylesheet cannot be compiled";
     case XMQ_ERROR_XSLT_TRANSFORM: return "xslt transformation failed";
+    case XMQ_ERROR_XSD_COMPILE: return "xsd schema cannot be compiled";
+    case XMQ_ERROR_XSD_INVALID: return "document is not valid according to the xsd schema";
     case XMQ_ERROR_INVALID_NAMESPACE_URI: return "invalid namespace uri";
     case XMQ_ERROR_INVALID_NAMESPACE_PREFIX: return "invalid namespace prefix";
     case XMQ_ERROR_NAMESPACE_PREFIX_ALREADY_TAKEN: return "namespace prefix already taken";

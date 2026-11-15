@@ -532,7 +532,8 @@ public class XMQParseIntoDOM extends XMQParser
         if (href.isEmpty() && ns == default_namespace_)
         {
             XmlNode element = top();
-            if (element instanceof XmlElement e)
+            // xmlns='' removes the default namespace of the element (not a prefixed one).
+            if (element instanceof XmlElement e && e.ns() == ns)
             {
                 e.setNs(null);
             }
@@ -605,7 +606,9 @@ public class XMQParseIntoDOM extends XMQParser
                 }
             }
             if (ns == null) ns = element.declareNs(null, null);
-            if (element.ns() == null)
+            // An element without prefix has the inherited default namespace (or none),
+            // the default namespace declared on the element itself replaces it.
+            if (element.ns() == null || element.ns().prefix() == null)
             {
                 element.setNs(ns);
             }

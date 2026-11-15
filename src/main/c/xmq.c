@@ -60,6 +60,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/xml_html_save.h"
 #include"parts/xml_xpath.h"
 #include"parts/xml_uri.h"
+#include"parts/xml_unicode.h"
+#include"parts/xml_regexp.h"
+#include"parts/xml_pattern.h"
+#include"parts/xml_xsd10_types.h"
+#include"parts/xml_xsd10_schemas.h"
+#include"parts/xml_xsd10_parse.h"
+#include"parts/xml_xsd10_build.h"
+#include"parts/xml_xsd10_valid.h"
 #include"parts/xml_libxslt1_xslt.h"
 #include"parts/xml_libxslt1_transform.h"
 #include"parts/xml.h"
@@ -2905,7 +2913,9 @@ XMQStatus do_ns_declaration(XMQParseState *state,
                 // This is probably due to multiple xmlns=uri declarations. Is this an error or not?
                 ns = xml_ns_lookup_prefix(element, NULL);
             }
-            if (ns && xml_node_ns(element) == NULL)
+            // An element without prefix has the inherited default namespace (or none),
+            // the default namespace declared on the element itself replaces it.
+            if (ns && (xml_node_ns(element) == NULL || xml_ns_prefix(xml_node_ns(element)) == NULL))
             {
                 debug("xmq=", "set default namespace in element %s prefix=%s href=%s", xml_node_name(element), xml_ns_prefix(ns), xml_ns_href(ns));
                 xml_node_set_ns(element, ns);
@@ -6517,6 +6527,162 @@ void xmqFreeXslt(XMQXslt *xslt)
     free(xslt);
 }
 
+// XSD 1.0 ////////////////////////////////////////////////////////////////////////
+
+struct XMQXsd
+{
+    XmlXsd10Schema *schema;
+    XmlDom *dom;               // The copy of the schema document, used by the schema.
+    XMQXsdSettings settings;
+    MemBuffer *messages;       // The messages of the current compilation or validation.
+};
+
+static void xmq_xsd_deliver(XMQXsd *x, const char *message, bool is_warning)
+{
+    if (x->messages) membuffer_append(x->messages, message);
+    if (x->settings.message_callback) x->settings.message_callback(x->settings.message_user_data, message, is_warning);
+}
+
+static void xmq_xsd_vdeliver(XMQXsd *x, bool is_warning, const char *fmt, va_list ap)
+{
+    va_list aq;
+    va_copy(aq, ap);
+    int n = vsnprintf(NULL, 0, fmt, aq);
+    va_end(aq);
+    if (n < 0) return;
+    char *buf = (char*)malloc((size_t)n + 1);
+    vsnprintf(buf, (size_t)n + 1, fmt, ap);
+    xmq_xsd_deliver(x, buf, is_warning);
+    free(buf);
+}
+
+/** The plain libxml2 style callbacks, called as cb(ctx, "%s", message). */
+static void xmq_xsd_error(void *ctx, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    xmq_xsd_vdeliver((XMQXsd*)ctx, false, fmt, ap);
+    va_end(ap);
+}
+
+static void xmq_xsd_warning(void *ctx, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    xmq_xsd_vdeliver((XMQXsd*)ctx, true, fmt, ap);
+    va_end(ap);
+}
+
+/** Without a message callback the messages are printed like libxml2 prints them without
+    callbacks (xmlFormatError on stderr), and collected for xmqDocError. */
+static void xmq_xsd_structured(void *ctx, const XmlXsd10Error *err)
+{
+    XMQXsd *x = (XMQXsd*)ctx;
+    char *m = xml_xsd10_format_error_string(err);
+    if (!m) return;
+    fputs(m, stderr);
+    if (x->messages) membuffer_append(x->messages, m);
+    free(m);
+}
+
+static XmlDom *xmq_xsd_loader(void *user_data, const char *uri)
+{
+    XMQXsd *x = (XMQXsd*)user_data;
+    XMQDoc *doq = x->settings.loader(x->settings.loader_user_data, uri);
+    if (!doq) return NULL;
+    XmlDom *dom = xmq_take_dom(doq, uri);
+    xmqFreeDoc(doq);
+    return dom;
+}
+
+XMQReturnXsd xmqCompileXsd(XMQDoc *schema, XMQXsdSettings *settings)
+{
+    XMQReturnXsd ret = { XMQ_ERROR_XSD_COMPILE, NULL };
+    XmlDom *src = schema ? (XmlDom*)xmqGetImplementationDoc(schema) : NULL;
+    if (!src) return ret;
+    XMQXsd *x = (XMQXsd*)calloc(1, sizeof(XMQXsd));
+    if (settings) x->settings = *settings;
+    // A copy of the schema document, it must live as long as the schema.
+    x->dom = xml_dom_new();
+    if (xml_dom_version(src)) xml_dom_set_version(x->dom, xml_dom_version(src));
+    if (xml_dom_encoding(src)) xml_dom_set_encoding(x->dom, xml_dom_encoding(src));
+    if (xml_dom_url(src)) xml_dom_set_url(x->dom, xml_dom_url(src));
+    for (XMQNode *c = xml_node_first_child(xml_dom_document(src)); c; c = xml_node_next(c))
+    {
+        XMQNode *copy = xml_node_copy(x->dom, c, true);
+        if (copy) xml_node_append_child(xml_dom_document(x->dom), copy);
+    }
+    x->messages = new_membuffer();
+    XmlXsd10ParserCtxt *pctxt = xml_xsd10_new_doc_parser_ctxt(x->dom);
+    if (pctxt)
+    {
+        if (x->settings.message_callback) xml_xsd10_set_parser_errors(pctxt, xmq_xsd_error, xmq_xsd_warning, x);
+        else xml_xsd10_set_parser_structured_errors(pctxt, xmq_xsd_structured, x);
+        if (x->settings.loader) xml_xsd10_set_resource_loader(pctxt, xmq_xsd_loader, x);
+        x->schema = xml_xsd10_parse(pctxt);
+        xml_xsd10_free_parser_ctxt(pctxt);
+    }
+    if (!x->schema)
+    {
+        xmq_set_doc_error(schema, x->messages);
+        x->messages = NULL;
+        xml_dom_free(x->dom);
+        free(x);
+        return ret;
+    }
+    free_membuffer_and_free_content(x->messages);
+    x->messages = NULL;
+    ret.status = XMQ_OK;
+    ret.xsd = x;
+    return ret;
+}
+
+void xmqSetXsdMessageCallback(XMQXsd *xsd, XMQXsdMessageCallback callback, void *user_data)
+{
+    if (!xsd) return;
+    xsd->settings.message_callback = callback;
+    xsd->settings.message_user_data = user_data;
+}
+
+XMQStatus xmqValidate(XMQXsd *xsd, XMQDoc *doc)
+{
+    XmlDom *dom = doc ? (XmlDom*)xmqGetImplementationDoc(doc) : NULL;
+    if (!xsd || !xsd->schema) return XMQ_ERROR_XSD_COMPILE;
+    if (!dom) return XMQ_ERROR_XSD_INVALID;
+    XmlXsd10ValidCtxt *vctxt = xml_xsd10_new_valid_ctxt(xsd->schema);
+    if (!vctxt) return XMQ_ERROR_XSD_COMPILE;
+    xsd->messages = new_membuffer();
+    if (xsd->settings.message_callback) xml_xsd10_set_valid_errors(vctxt, xmq_xsd_error, xmq_xsd_warning, xsd);
+    else xml_xsd10_set_valid_structured_errors(vctxt, xmq_xsd_structured, xsd);
+    if (!xml_xsd10_is_valid(vctxt))
+    {
+        xml_xsd10_free_valid_ctxt(vctxt);
+        free_membuffer_and_free_content(xsd->messages);
+        xsd->messages = NULL;
+        return XMQ_ERROR_XSD_COMPILE;
+    }
+    int rc = xml_xsd10_validate_doc(vctxt, dom);
+    xml_xsd10_free_valid_ctxt(vctxt);
+    if (rc != 0)
+    {
+        xmq_set_doc_error(doc, xsd->messages);
+        xsd->messages = NULL;
+        return XMQ_ERROR_XSD_INVALID;
+    }
+    free_membuffer_and_free_content(xsd->messages);
+    xsd->messages = NULL;
+    return XMQ_OK;
+}
+
+void xmqFreeXsd(XMQXsd *xsd)
+{
+    if (!xsd) return;
+    xml_xsd10_free(xsd->schema);
+    if (xsd->dom) xml_dom_free(xsd->dom);
+    if (xsd->messages) free_membuffer_and_free_content(xsd->messages);
+    free(xsd);
+}
+
 #ifdef BUILDING_DIST_XMQ
 
 #include"parts/always.c"
@@ -6543,6 +6709,14 @@ void xmqFreeXslt(XMQXslt *xslt)
 #include"parts/xml_html_save.c"
 #include"parts/xml_xpath.c"
 #include"parts/xml_uri.c"
+#include"parts/xml_unicode.c"
+#include"parts/xml_regexp.c"
+#include"parts/xml_pattern.c"
+#include"parts/xml_xsd10_types.c"
+#include"parts/xml_xsd10_schemas.c"
+#include"parts/xml_xsd10_parse.c"
+#include"parts/xml_xsd10_build.c"
+#include"parts/xml_xsd10_valid.c"
 #include"parts/xml_libxslt1_xslt.c"
 #include"parts/xml_libxslt1_transform.c"
 #include"parts/xml.c"

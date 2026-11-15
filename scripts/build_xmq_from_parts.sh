@@ -144,6 +144,14 @@ do_part xml_html_parser
 do_part xml_html_save
 do_part xml_xpath
 do_part xml_uri
+do_part xml_unicode
+do_part xml_regexp
+do_part xml_pattern
+do_part xml_xsd10_types
+do_part xml_xsd10_schemas
+do_part xml_xsd10_parse
+do_part xml_xsd10_build
+do_part xml_xsd10_valid
 do_part xml_libxslt1_xslt
 do_part xml_libxslt1_transform
 do_part xml

@@ -404,6 +404,10 @@ typedef enum
     XMQ_ERROR_XSLT_COMPILE = 60,
     /** The xslt transformation failed. */
     XMQ_ERROR_XSLT_TRANSFORM = 61,
+    /** The xsd schema cannot be compiled. */
+    XMQ_ERROR_XSD_COMPILE = 62,
+    /** The document is not valid according to the xsd schema. */
+    XMQ_ERROR_XSD_INVALID = 63,
     /** Warning, when parse succeeds, but it seems there is a mistake. */
     XMQ_WARNING_QUOTES_NEEDED = 1000
 } XMQStatus;
@@ -1683,6 +1687,66 @@ char *xmqSaveXsltResult(XMQXslt *xslt, XMQDoc *result, size_t *len);
 
 /** xmqFreeXslt: free the compiled stylesheet. */
 void xmqFreeXslt(XMQXslt *xslt);
+
+/////////////////////////////////////////////////////////////////////////////////////
+// XSD 1.0
+
+/** A compiled XSD 1.0 schema. */
+typedef struct XMQXsd XMQXsd;
+
+struct XMQReturnXsd
+{
+    XMQStatus status;
+    XMQXsd *xsd;
+};
+typedef struct XMQReturnXsd XMQReturnXsd;
+
+/** Load the schema document at uri for xs:include, xs:import and xs:redefine, return NULL if it
+    cannot be loaded. The returned document is owned by the caller of the loader. */
+typedef XMQDoc *(*XMQXsdLoader)(void *user_data, const char *uri);
+
+/** Receives the messages of compilation and validation, exactly as libxml2 formats them for
+    its plain error callbacks. is_warning is true for warnings. */
+typedef void (*XMQXsdMessageCallback)(void *user_data, const char *message, bool is_warning);
+
+struct XMQXsdSettings
+{
+    /** NULL reads the files and parses them as xml with entities substituted (like libxml2). */
+    XMQXsdLoader loader;
+    void *loader_user_data;
+    /** NULL prints the messages on stderr in the libxml2 format (file:line: element x: ...). */
+    XMQXsdMessageCallback message_callback;
+    void *message_user_data;
+};
+typedef struct XMQXsdSettings XMQXsdSettings;
+
+/**
+    xmqCompileXsd:
+
+    Compile the schema (a copy of it, the document is not changed). settings may be NULL, the
+    message callback is also used by xmqValidate. On failure the status is XMQ_ERROR_XSD_COMPILE
+    and the messages are also available with xmqDocError(schema).
+*/
+XMQReturnXsd xmqCompileXsd(XMQDoc *schema, XMQXsdSettings *settings);
+
+/**
+    xmqSetXsdMessageCallback:
+
+    Change where the messages of xmqValidate go (NULL prints them on stderr).
+*/
+void xmqSetXsdMessageCallback(XMQXsd *xsd, XMQXsdMessageCallback callback, void *user_data);
+
+/**
+    xmqValidate:
+
+    Validate doc against the schema. Returns XMQ_OK if it is valid, XMQ_ERROR_XSD_INVALID if
+    it is not (the messages are also available with xmqDocError(doc)) and XMQ_ERROR_XSD_COMPILE
+    if the schema cannot be used.
+*/
+XMQStatus xmqValidate(XMQXsd *xsd, XMQDoc *doc);
+
+/** xmqFreeXsd: free the compiled schema. */
+void xmqFreeXsd(XMQXsd *xsd);
 
 #ifdef __cplusplus
 _hideRBfromEditor

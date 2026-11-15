@@ -59,14 +59,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<termios.h>
 #endif
 
-#define LIBXML_STATIC
-#define XMLSEC_STATIC
-
-#include<libxml/tree.h>
-#include<libxml/xpath.h>
-#include<libxml/xpathInternals.h>
-#include<libxml/xmlschemas.h>
-#include<libxml/parserInternals.h>
 
 typedef enum
 {
@@ -164,10 +156,8 @@ struct XMQCliCommand
 
     const char *xsd_name; // Name of xsd file.
     XMQDoc *xsd_doq; // The xmq document loaded to generate the xsd.
-    xmlSchemaPtr xsd; // The xsd to validate agains.
-    xmlDocPtr xsd_ldoc; // The libxml2 copy of the xsd document, used by xsd.
+    XMQXsd *xsd; // The xsd to validate agains (the native xsd 1.0).
     const char *save_file; // Save output to this file name.
-    xmlDocPtr   ixml_doc;  // A DOM containing the ixml grammar.
     const char *ixml_source; // IXML grammar source to be used.
     const char *ixml_engine; // If NULL use the internal, otherwise invoke this external program like this:
                              // engine source.ixml input.txt > /tmp/tmpfile
@@ -421,143 +411,6 @@ const char *tokenize_type_to_string(XMQCliTokenizeType type);
 void trace_(const char* fmt, ...);
 void verbose_(const char* fmt, ...);
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command);
-
-/////////////////////////////////////////////////////////////////////////////////////
-// Bridge to libxml2, used only for xsd validation until it is implemented natively. The trees are copied node by node.
-
-static xmlNsPtr cli_lx_ns(xmlDocPtr ldoc, xmlNodePtr lnode, XmlNs *ns)
-{
-    if (!ns) return NULL;
-    const char *prefix = xml_ns_prefix(ns);
-    const char *href = xml_ns_href(ns);
-    xmlNsPtr l = xmlSearchNs(ldoc, lnode, (const xmlChar*)prefix);
-    if (l && ((!l->href && (!href || !*href)) || (l->href && href && !strcmp((const char*)l->href, href)))) return l;
-    return xmlNewNs(lnode, (const xmlChar*)(href && *href ? href : NULL), (const xmlChar*)prefix);
-}
-
-static void cli_lx_add(xmlNodePtr parent, xmlNodePtr n)
-{
-    // Append without merging adjacent text nodes.
-    n->parent = parent;
-    n->doc = parent->doc;
-    if (!parent->children)
-    {
-        parent->children = parent->last = n;
-    }
-    else
-    {
-        parent->last->next = n;
-        n->prev = parent->last;
-        parent->last = n;
-    }
-}
-
-static xmlNodePtr cli_lx_ref(xmlDocPtr ldoc, const char *name)
-{
-    if (name[0] == '#')
-    {
-        size_t l = strlen(name);
-        char *r = (char*)malloc(l+3);
-        r[0] = '&';
-        memcpy(r+1, name, l);
-        r[l+1] = ';';
-        r[l+2] = 0;
-        xmlNodePtr n = xmlNewCharRef(ldoc, (const xmlChar*)r);
-        free(r);
-        return n;
-    }
-    return xmlNewReference(ldoc, (const xmlChar*)name);
-}
-
-static void cli_lx_copy_children(xmlDocPtr ldoc, xmlNodePtr lparent, XMQNode *parent);
-
-static void cli_lx_copy_node(xmlDocPtr ldoc, xmlNodePtr lparent, XMQNode *n)
-{
-    xmlNodePtr l = NULL;
-    switch (xml_node_kind(n))
-    {
-    case XML_DOM_ELEMENT:
-    {
-        l = xmlNewDocNode(ldoc, NULL, (const xmlChar*)xml_node_name(n), NULL);
-        cli_lx_add(lparent, l);
-        for (XmlNs *d = xml_node_first_ns_decl(n); d; d = xml_ns_next_decl(d))
-        {
-            const char *href = xml_ns_href(d);
-            xmlNewNs(l, (const xmlChar*)(href && *href ? href : (xml_ns_prefix(d) ? NULL : "")), (const xmlChar*)xml_ns_prefix(d));
-        }
-        xmlSetNs(l, cli_lx_ns(ldoc, l, xml_node_ns(n)));
-        for (XMQAttr *a = xml_node_first_attr(n); a; a = xml_attr_next(a))
-        {
-            XMQNode *an = xml_attr_node(a);
-            xmlAttrPtr la = xmlNewNsProp(l, cli_lx_ns(ldoc, l, xml_node_ns(an)), (const xmlChar*)xml_attr_name(a), NULL);
-            for (XMQNode *c = xml_node_first_child(an); c; c = xml_node_next(c))
-            {
-                xmlNodePtr lc = NULL;
-                if (xml_node_kind(c) == XML_DOM_TEXT) lc = xmlNewDocText(ldoc, (const xmlChar*)xml_node_content(c));
-                else if (xml_node_kind(c) == XML_DOM_ENTITY_REF) lc = cli_lx_ref(ldoc, xml_node_name(c));
-                if (lc) cli_lx_add((xmlNodePtr)la, lc);
-            }
-        }
-        cli_lx_copy_children(ldoc, l, n);
-        return;
-    }
-    case XML_DOM_TEXT:
-        l = xmlNewDocText(ldoc, (const xmlChar*)xml_node_content(n));
-        break;
-    case XML_DOM_CDATA:
-        l = xmlNewCDataBlock(ldoc, (const xmlChar*)xml_node_content(n), (int)strlen(xml_node_content(n)));
-        break;
-    case XML_DOM_COMMENT:
-        l = xmlNewDocComment(ldoc, (const xmlChar*)xml_node_content(n));
-        break;
-    case XML_DOM_PI:
-        l = xmlNewDocPI(ldoc, (const xmlChar*)xml_node_name(n), (const xmlChar*)xml_node_content(n));
-        break;
-    case XML_DOM_ENTITY_REF:
-        l = cli_lx_ref(ldoc, xml_node_name(n));
-        break;
-    case XML_DOM_DTD:
-    {
-        // Reparse the serialized doctype to get the libxml2 declarations.
-        char *dtd = xml_save_node(n, 0, false, NULL);
-        size_t dl = strlen(dtd);
-        char *buf = (char*)malloc(dl + 8);
-        memcpy(buf, dtd, dl);
-        memcpy(buf + dl, "\n<x/>", 6);
-        buf[dl + 5] = 0;
-        free(dtd);
-        xmlDocPtr tmp = xmlReadMemory(buf, (int)strlen(buf), NULL, NULL, XML_PARSE_NONET | XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
-        free(buf);
-        if (tmp && tmp->intSubset)
-        {
-            xmlDtdPtr copy = xmlCopyDtd(tmp->intSubset);
-            ldoc->intSubset = copy;
-            cli_lx_add((xmlNodePtr)ldoc, (xmlNodePtr)copy);
-        }
-        if (tmp) xmlFreeDoc(tmp);
-        return;
-    }
-    default:
-        return;
-    }
-    if (l) cli_lx_add(lparent, l);
-}
-
-static void cli_lx_copy_children(xmlDocPtr ldoc, xmlNodePtr lparent, XMQNode *parent)
-{
-    for (XMQNode *c = xml_node_first_child(parent); c; c = xml_node_next(c)) cli_lx_copy_node(ldoc, lparent, c);
-}
-
-/** A libxml2 copy of the document, free with xmlFreeDoc. */
-static xmlDocPtr cli_to_libxml(XMQDoc *doq)
-{
-    XmlDom *dom = (XmlDom*)xmqGetImplementationDoc(doq);
-    xmlDocPtr ldoc = xmlNewDoc((const xmlChar*)(xml_dom_version(dom) ? xml_dom_version(dom) : "1.0"));
-    if (!dom) return ldoc;
-    ldoc->standalone = xml_dom_standalone(dom);
-    cli_lx_copy_children(ldoc, (xmlNodePtr)ldoc, xml_dom_document(dom));
-    return ldoc;
-}
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -878,13 +731,8 @@ void free_cli_command(XMQCliCommand *cmd)
     }
     if (cmd->xsd)
     {
-        xmlSchemaFree(cmd->xsd);
+        xmqFreeXsd(cmd->xsd);
         cmd->xsd = NULL;
-    }
-    if (cmd->xsd_ldoc)
-    {
-        xmlFreeDoc(cmd->xsd_ldoc);
-        cmd->xsd_ldoc = NULL;
     }
     xmqFreeDoc(cmd->node_doq);
     cmd->node_doq = NULL;
@@ -909,83 +757,50 @@ void free_cli_command(XMQCliCommand *cmd)
     free(cmd);
 }
 
-void abortParsing(void *ctx, const char *msg, ...);
+// The messages of the xsd compilation and validation, printed like the libxml2 error
+// callbacks did (a 4096 byte buffer, puts of the message).
 
-void abortParsing(void *ctx, const char *fmt, ...)
+static void cli_xsd_put(const char *message)
 {
+    char buf[4096];
+    snprintf(buf, 4096, "%s", message);
+    puts(buf);
+}
+
+/** The schema cannot be parsed: print the first error and exit. */
+static void cli_xsd_parse_message(void *ctx, const char *message, bool is_warning)
+{
+    if (is_warning)
+    {
+        fprintf(stderr, "xmq: %s parse warning\n", (const char*)ctx);
+        cli_xsd_put(message);
+        return;
+    }
     fprintf(stderr, "xmq: %s parse error\n", (const char*)ctx);
-
-    char buf[4096];
-
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(buf, 4096, fmt, args);
-    va_end(args);
-
-    puts(buf);
+    cli_xsd_put(message);
     exit(1);
 }
 
-void warnParsing(void *ctx, const char *msg, ...);
-
-void warnParsing(void *ctx, const char *fmt, ...)
+/** The document is not valid: print the first error and exit. */
+static void cli_xsd_validate_message(void *ctx, const char *message, bool is_warning)
 {
-    fprintf(stderr, "xmq: %s parse warning\n", (const char*)ctx);
-
-    char buf[4096];
-
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(buf, 4096, fmt, args);
-    va_end(args);
-
-    puts(buf);
-}
-
-void abortValidating(void *ctx, const char *msg, ...);
-
-void abortValidating(void *ctx, const char *fmt, ...)
-{
+    if (is_warning)
+    {
+        printf("xmq: validation warning\n");
+        cli_xsd_put(message);
+        return;
+    }
     printf("xmq: Document cannot be validated against %s\n", (const char*)ctx);
-
-    char buf[4096];
-
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(buf, 4096, fmt, args);
-    va_end(args);
-
-    puts(buf);
+    cli_xsd_put(message);
     exit(1);
 }
 
-void warnValidation(void *ctx, const char *msg, ...);
-
-void warnValidation(void *ctx, const char *fmt, ...)
+/** --silent: exit at the first error without a message. */
+static void cli_xsd_silent_message(void *ctx, const char *message, bool is_warning)
 {
-    printf("xmq: validation warning\n");
-
-    char buf[4096];
-
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(buf, 4096, fmt, args);
-    va_end(args);
-
-    puts(buf);
-}
-
-void abortSilentValidating(void *ctx, const char *msg, ...);
-
-void abortSilentValidating(void *ctx, const char *fmt, ...)
-{
-    exit(1);
-}
-
-void warnSilentValidation(void *ctx, const char *msg, ...);
-
-void warnSilentValidation(void *ctx, const char *fmt, ...)
-{
+    (void)ctx;
+    (void)message;
+    if (!is_warning) exit(1);
 }
 
 static bool load_entity_file(XMQCliCommand *command, const char *file)
@@ -1466,24 +1281,12 @@ bool handle_option(const char *arg, bool is_option, XMQCliCommand *command)
 
             verbose_("xmq=", "loaded xsd %zu bytes from %s", xmqGetOriginalSize(doq), arg);
 
-            // The schema keeps using the libxml2 document, it is freed with the schema.
-            xmlDocPtr xsd = cli_to_libxml(doq);
-            command->xsd_ldoc = xsd;
-
-            xmlSchemaParserCtxtPtr ctxt = xmlSchemaNewDocParserCtxt(xsd);
-            xmlSchemaSetParserErrors(ctxt,
-                                     abortParsing,
-                                     warnParsing,
-                                     (void*)arg);
-
-            command->xsd = xmlSchemaParse(ctxt);
-
-            xmlSchemaFreeParserCtxt(ctxt);
-            if (!command->xsd) return true;
-
-            /*fprintf(stderr, "-------------------------\n");
-            xmlSchemaDump(stdout, command->xsd);
-            fprintf(stderr, "-------------------------\n");*/
+            XMQXsdSettings settings;
+            memset(&settings, 0, sizeof(settings));
+            settings.message_callback = cli_xsd_parse_message;
+            settings.message_user_data = (void*)arg;
+            XMQReturnXsd rx = xmqCompileXsd(doq, &settings);
+            command->xsd = rx.xsd;
             return true;
         }
     }
@@ -2164,7 +1967,7 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     {
         const char *file = arg+7;
 
-        if (command->ixml_doc != NULL || command->ixml_source != NULL)
+        if (command->ixml_source != NULL)
         {
             printf("You have already specified an ixml grammar!\n");
             exit(1);
@@ -2418,7 +2221,6 @@ void load_using_internal_ixml_engine(XMQCliCommand *command, const char *from)
     {
         verbose_("xmq=", "cmd-load-ixml %zu bytes from %s", xmqGetOriginalSize(command->env->doc), from);
     }
-    xmlCleanupParser();
 }
 
 void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine, const char *from)
@@ -2468,7 +2270,6 @@ void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine,
     {
         verbose_("xmq=", "cmd-load-external-ixml-tool %zu bytes from %s", xmqGetOriginalSize(command->env->doc), from);
     }
-    xmlCleanupParser();
 
     unlink(tmp_in);
     unlink(tmp_out);
@@ -2977,46 +2778,31 @@ bool cmd_quote_unquote(XMQCliCommand *command)
 
 bool cmd_validate(XMQCliCommand *command)
 {
-    xmlDocPtr doc = cli_to_libxml(command->env->doc);
     verbose_("xmq=", "validating");
 
-    xmlSchemaValidCtxtPtr validation_ctxt = xmlSchemaNewValidCtxt(command->xsd);
-
-    if (!command->silent)
-    {
-        xmlSchemaSetValidErrors(validation_ctxt,
-                                abortValidating,
-                                warnValidation,
-                                (void*)command->xsd_name);
-    }
-    else
-    {
-        xmlSchemaSetValidErrors(validation_ctxt,
-                                abortSilentValidating,
-                                warnSilentValidation,
-                                (void*)command->xsd_name);
-    }
-
-    if (!xmlSchemaIsValid(validation_ctxt))
+    if (!command->xsd)
     {
         fprintf(stderr, "xmq: Schema xsd not valid, cannot be used to validate document.\n");
         exit(1);
     }
+    xmqSetXsdMessageCallback(command->xsd,
+                             command->silent ? cli_xsd_silent_message : cli_xsd_validate_message,
+                             (void*)command->xsd_name);
 
-    bool ok = xmlSchemaValidateDoc(validation_ctxt, doc);
-    xmlFreeDoc(doc);
-
-    if (ok != 0)
+    XMQStatus status = xmqValidate(command->xsd, command->env->doc);
+    if (status == XMQ_ERROR_XSD_COMPILE)
+    {
+        fprintf(stderr, "xmq: Schema xsd not valid, cannot be used to validate document.\n");
+        exit(1);
+    }
+    if (status != XMQ_OK)
     {
         printf("xmq: Document failed validation agains %s\n", command->in);
         return false;
     }
 
-    xmlSchemaFreeValidCtxt(validation_ctxt);
-    xmlSchemaFree(command->xsd);
+    xmqFreeXsd(command->xsd);
     command->xsd = NULL;
-    xmlFreeDoc(command->xsd_ldoc);
-    command->xsd_ldoc = NULL;
     xmqFreeDoc(command->xsd_doq);
     command->xsd_doq = NULL;
 
