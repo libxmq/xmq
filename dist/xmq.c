@@ -787,6 +787,9 @@ const char *xml_dom_version(const XmlDom *dom);
 void xml_dom_set_version(XmlDom *dom, const char *version);
 /** Encoding from the xml declaration. NULL if none. */
 const char *xml_dom_encoding(const XmlDom *dom);
+/** Where the document was loaded from (libxml2 doc->URL), or NULL. */
+const char *xml_dom_url(const XmlDom *dom);
+void xml_dom_set_url(XmlDom *dom, const char *url);
 void xml_dom_set_encoding(XmlDom *dom, const char *encoding);
 /** Standalone from the xml declaration: -1 not given, 0 no, 1 yes. */
 int xml_dom_standalone(const XmlDom *dom);
@@ -1292,6 +1295,7 @@ typedef enum
     XML_XPATH_ERR_INVALID_CTXT_POSITION = 14,
     XML_XPATH_ERR_MEMORY = 15,
     XML_XPATH_ERR_UNDEF_PREFIX = 19,
+    XML_XPATH_ERR_FORBID_VARIABLE = 24,
     XML_XPATH_ERR_RECURSION_LIMIT_EXCEEDED = 26,
 } XmlXPathErrorCode;
 
@@ -1313,6 +1317,8 @@ typedef struct
     /** The context node given to xml_xpath_eval only selects the document, there is no context node
         (like a fresh libxml2 xmlXPathNewContext): relative paths select nothing. */
     bool no_context_node;
+    /** Variable references are compile errors (libxml2 XML_XPATH_NOVAR, xslt patterns). */
+    bool no_variables;
 } XmlXPathSettings;
 
 typedef struct
@@ -1415,6 +1421,8 @@ long xml_xpath_context_position(const XmlXPathContext *ctx);
 long xml_xpath_context_size(const XmlXPathContext *ctx);
 /** The namespace uri of a prefix in the namespaces of the expression being evaluated, or NULL. */
 const char *xml_xpath_context_lookup_namespace(const XmlXPathContext *ctx, const char *prefix);
+/** The element with this id (like id() and libxml2 xmlGetID) in the document of node, or NULL. */
+XMQNode *xml_xpath_context_get_id(XmlXPathContext *ctx, XMQNode *node, const char *id);
 /** Make the current extension function fail with this error. */
 void xml_xpath_context_set_error(XmlXPathContext *ctx, XmlXPathErrorCode code);
 
@@ -20674,6 +20682,7 @@ struct XmlDom
     XMQNode document;
     char *version;
     char *encoding;
+    char *url;           // Where the document was loaded from, for messages and document().
     int standalone;
     XmlNs xml_ns;        // The predefined xml: namespace, static.
 };
@@ -20893,7 +20902,20 @@ void xml_dom_free(XmlDom *dom)
     xml_node_free_contents(&dom->document);
     free(dom->version);
     free(dom->encoding);
+    free(dom->url);
     free(dom);
+}
+
+const char *xml_dom_url(const XmlDom *dom)
+{
+    return dom->url;
+}
+
+void xml_dom_set_url(XmlDom *dom, const char *url)
+{
+    char *n = xml_dom_strdup(url);
+    free(dom->url);
+    dom->url = n;
 }
 
 XMQNode *xml_dom_document(XmlDom *dom)
@@ -31168,6 +31190,8 @@ static XpExpr *xp_compile_variable_reference(XpCtx *c)
     XpExpr *e = xp_new(c, XP_VAR);
     e->prefix = prefix;
     e->name = name;
+    // Like libxml2 XML_XPATH_NOVAR, used for xslt patterns.
+    if (c->settings->no_variables) xp_error(c, XML_XPATH_ERR_FORBID_VARIABLE);
     return e;
 }
 
@@ -34023,6 +34047,22 @@ const char *xml_xpath_context_lookup_namespace(const XmlXPathContext *px, const 
 {
     if (!px->cur || !prefix) return NULL;
     return xp_lookup_ns(px->cur, prefix);
+}
+
+XMQNode *xml_xpath_context_get_id(XmlXPathContext *px, XMQNode *node, const char *id)
+{
+    if (!px || !node || !id) return NULL;
+    XpCtx *c = (XpCtx*)calloc(1, sizeof(XpCtx));
+    XmlXPathSettings st;
+    xml_xpath_settings_default(&st);
+    c->px = px;
+    c->settings = &st;
+    c->doc = xp_document_of(node);
+    XMQNode *r = NULL;
+    if (!setjmp(c->on_error)) r = xp_lookup_id(c, id);
+    xp_cleanup(c);
+    free(c);
+    return r;
 }
 
 void xml_xpath_context_set_error(XmlXPathContext *px, XmlXPathErrorCode code)

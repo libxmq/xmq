@@ -261,7 +261,8 @@ testa: test_asan
 testv: test_valgrind
 teste: test_eclipse
 
-# Differential tests of the native xml parts against libxml2, needs 3rdparty/fetch_and_build.sh libxml2
+# Differential tests of the native xml parts against libxml2 and libxslt, needs
+# 3rdparty/fetch_and_build.sh libxml2 and 3rdparty/fetch_and_build.sh libxslt
 # FUZZ=count:seed sets the size of the html fuzz run (default 2000:1).
 testdiff:
 	@echo "Running differential tests against libxml2"

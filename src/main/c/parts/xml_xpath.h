@@ -72,6 +72,7 @@ typedef enum
     XML_XPATH_ERR_INVALID_CTXT_POSITION = 14,
     XML_XPATH_ERR_MEMORY = 15,
     XML_XPATH_ERR_UNDEF_PREFIX = 19,
+    XML_XPATH_ERR_FORBID_VARIABLE = 24,
     XML_XPATH_ERR_RECURSION_LIMIT_EXCEEDED = 26,
 } XmlXPathErrorCode;
 
@@ -93,6 +94,8 @@ typedef struct
     /** The context node given to xml_xpath_eval only selects the document, there is no context node
         (like a fresh libxml2 xmlXPathNewContext): relative paths select nothing. */
     bool no_context_node;
+    /** Variable references are compile errors (libxml2 XML_XPATH_NOVAR, xslt patterns). */
+    bool no_variables;
 } XmlXPathSettings;
 
 typedef struct
@@ -195,6 +198,8 @@ long xml_xpath_context_position(const XmlXPathContext *ctx);
 long xml_xpath_context_size(const XmlXPathContext *ctx);
 /** The namespace uri of a prefix in the namespaces of the expression being evaluated, or NULL. */
 const char *xml_xpath_context_lookup_namespace(const XmlXPathContext *ctx, const char *prefix);
+/** The element with this id (like id() and libxml2 xmlGetID) in the document of node, or NULL. */
+XMQNode *xml_xpath_context_get_id(XmlXPathContext *ctx, XMQNode *node, const char *id);
 /** Make the current extension function fail with this error. */
 void xml_xpath_context_set_error(XmlXPathContext *ctx, XmlXPathErrorCode code);
 

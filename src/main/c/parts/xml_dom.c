@@ -105,6 +105,7 @@ struct XmlDom
     XMQNode document;
     char *version;
     char *encoding;
+    char *url;           // Where the document was loaded from, for messages and document().
     int standalone;
     XmlNs xml_ns;        // The predefined xml: namespace, static.
 };
@@ -324,7 +325,20 @@ void xml_dom_free(XmlDom *dom)
     xml_node_free_contents(&dom->document);
     free(dom->version);
     free(dom->encoding);
+    free(dom->url);
     free(dom);
+}
+
+const char *xml_dom_url(const XmlDom *dom)
+{
+    return dom->url;
+}
+
+void xml_dom_set_url(XmlDom *dom, const char *url)
+{
+    char *n = xml_dom_strdup(url);
+    free(dom->url);
+    dom->url = n;
 }
 
 XMQNode *xml_dom_document(XmlDom *dom)

@@ -18,15 +18,23 @@ then
     echo "Please run: 3rdparty/fetch_and_build.sh libxml2"
     exit 1
 fi
-CFLAGS="-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer -I$ROOT/src/main/c -I$LIBXML2/include"
+# And the libxslt fork (3rdparty/fetch_and_build.sh libxslt) for the xslt harnesses.
+LIBXSLT="$ROOT/3rdparty/libxslt"
+if [ ! -f "$LIBXSLT/libxslt/.libs/libxslt.a" ]
+then
+    echo "Please run: 3rdparty/fetch_and_build.sh libxslt"
+    exit 1
+fi
+CFLAGS="-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer -I$ROOT/src/main/c -I$LIBXML2/include -I$LIBXSLT"
 LIBS="$LIBXML2/.libs/libxml2.a -lm"
-PARTS="$ROOT/src/main/c/parts/always.c $ROOT/src/main/c/parts/membuffer.c $ROOT/src/main/c/parts/hashmap.c $ROOT/src/main/c/parts/xml_dom.c $ROOT/src/main/c/parts/xml_save.c $ROOT/src/main/c/parts/xml_parser.c $ROOT/src/main/c/parts/xml_html.c $ROOT/src/main/c/parts/xml_html_parser.c $ROOT/src/main/c/parts/xml_html_save.c $ROOT/src/main/c/parts/xml_chars.c $ROOT/src/main/c/parts/xml_xpath.c"
+PARTS="$ROOT/src/main/c/parts/always.c $ROOT/src/main/c/parts/membuffer.c $ROOT/src/main/c/parts/hashmap.c $ROOT/src/main/c/parts/xml_dom.c $ROOT/src/main/c/parts/xml_save.c $ROOT/src/main/c/parts/xml_parser.c $ROOT/src/main/c/parts/xml_html.c $ROOT/src/main/c/parts/xml_html_parser.c $ROOT/src/main/c/parts/xml_html_save.c $ROOT/src/main/c/parts/xml_chars.c $ROOT/src/main/c/parts/xml_xpath.c $ROOT/src/main/c/parts/xml_xslt.c"
 
 $CC $CFLAGS -o "$OUT/xml_save_diff" "$ROOT/tests/xml_diff/xml_save_diff.c" $PARTS $LIBS || exit 1
 $CC $CFLAGS -o "$OUT/xml_parse_diff" "$ROOT/tests/xml_diff/xml_parse_diff.c" $PARTS $LIBS || exit 1
 $CC $CFLAGS -o "$OUT/xml_html_diff" "$ROOT/tests/xml_diff/xml_html_diff.c" $PARTS $LIBS || exit 1
 $CC $CFLAGS -o "$OUT/xml_xpath_diff" "$ROOT/tests/xml_diff/xml_xpath_diff.c" $PARTS $LIBS || exit 1
 $CC $CFLAGS -o "$OUT/xml_entity_diff" "$ROOT/tests/xml_diff/xml_entity_diff.c" $PARTS $LIBS || exit 1
+$CC $CFLAGS -o "$OUT/xml_xslt_pattern_diff" "$ROOT/tests/xml_diff/xml_xslt_pattern_diff.c" $PARTS "$LIBXSLT/libxslt/.libs/libxslt.a" $LIBS || exit 1
 
 FILES="$OUT/files.txt"
 # The entity expansion tests are only for xml_entity_diff, many are deliberately broken.
@@ -61,4 +69,6 @@ ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_html_diff" -x "$ROOT/tests/xml_diff/expect
 RC3=$?
 ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_xpath_diff" $(cat "$FILES") "$ROOT"/tests/xml_diff/entities/*.xml
 RC4=$?
-[ $RC1 = 0 ] && [ $RC2 = 0 ] && [ $RC3 = 0 ] && [ $RC4 = 0 ] && [ $RC5 = 0 ]
+ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_xslt_pattern_diff" $(cat "$FILES")
+RC6=$?
+[ $RC1 = 0 ] && [ $RC2 = 0 ] && [ $RC3 = 0 ] && [ $RC4 = 0 ] && [ $RC5 = 0 ] && [ $RC6 = 0 ]

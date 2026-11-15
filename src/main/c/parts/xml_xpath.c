@@ -1242,6 +1242,8 @@ static XpExpr *xp_compile_variable_reference(XpCtx *c)
     XpExpr *e = xp_new(c, XP_VAR);
     e->prefix = prefix;
     e->name = name;
+    // Like libxml2 XML_XPATH_NOVAR, used for xslt patterns.
+    if (c->settings->no_variables) xp_error(c, XML_XPATH_ERR_FORBID_VARIABLE);
     return e;
 }
 
@@ -4097,6 +4099,22 @@ const char *xml_xpath_context_lookup_namespace(const XmlXPathContext *px, const 
 {
     if (!px->cur || !prefix) return NULL;
     return xp_lookup_ns(px->cur, prefix);
+}
+
+XMQNode *xml_xpath_context_get_id(XmlXPathContext *px, XMQNode *node, const char *id)
+{
+    if (!px || !node || !id) return NULL;
+    XpCtx *c = (XpCtx*)calloc(1, sizeof(XpCtx));
+    XmlXPathSettings st;
+    xml_xpath_settings_default(&st);
+    c->px = px;
+    c->settings = &st;
+    c->doc = xp_document_of(node);
+    XMQNode *r = NULL;
+    if (!setjmp(c->on_error)) r = xp_lookup_id(c, id);
+    xp_cleanup(c);
+    free(c);
+    return r;
 }
 
 void xml_xpath_context_set_error(XmlXPathContext *px, XmlXPathErrorCode code)

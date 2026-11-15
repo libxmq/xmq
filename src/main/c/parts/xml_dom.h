@@ -129,6 +129,9 @@ const char *xml_dom_version(const XmlDom *dom);
 void xml_dom_set_version(XmlDom *dom, const char *version);
 /** Encoding from the xml declaration. NULL if none. */
 const char *xml_dom_encoding(const XmlDom *dom);
+/** Where the document was loaded from (libxml2 doc->URL), or NULL. */
+const char *xml_dom_url(const XmlDom *dom);
+void xml_dom_set_url(XmlDom *dom, const char *url);
 void xml_dom_set_encoding(XmlDom *dom, const char *encoding);
 /** Standalone from the xml declaration: -1 not given, 0 no, 1 yes. */
 int xml_dom_standalone(const XmlDom *dom);
