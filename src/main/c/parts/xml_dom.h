@@ -296,6 +296,10 @@ void *xml_ns_user_data(const XmlNs *ns);
 void xml_ns_set_user_data(XmlNs *ns, void *user_data);
 /** Move the declaration ns of element last among the element's declarations. */
 void xml_ns_move_decl_last(XMQNode *element, XmlNs *ns);
+/** Move the declaration ns (the same object, users keep pointing at it) from the element from
+    to the front of the declarations of to (an ancestor), like libxslt moving excluded
+    namespaces to the root. Duplicate prefixes on to are not checked. */
+void xml_ns_move_decl_to(XMQNode *from, XmlNs *ns, XMQNode *to);
 /** Remove the declaration ns from element, the element and its descendants (and attributes) that use ns
     are changed to use replacement (which may be NULL, it must be in scope). */
 void xml_ns_remove_decl(XMQNode *element, XmlNs *ns, XmlNs *replacement);

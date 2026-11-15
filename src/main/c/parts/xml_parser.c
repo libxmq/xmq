@@ -1339,7 +1339,8 @@ static bool xml_parse_start_tag(XmlParser *p)
 
     const char *qname = xml_tmp_qname(p, 2, qn);
     XMQNode *e = xml_node_new_element(p->dom, xml_tmp_slice(p, 1, qn.local), NULL);
-    xml_node_set_line(e, (int)tag_line);
+    // Like libxml2 the element gets the line where its start tag ends.
+    xml_node_set_line(e, (int)xml_parser_line_at(p, tag_end));
     xml_append_node(p, e);
 
     // Namespace declarations first.
@@ -1561,11 +1562,16 @@ static bool xml_are_blanks(XmlParser *p, const char *chunk, size_t len, bool kno
 static void xml_chars_chunk(XmlParser *p, size_t from, size_t to, bool known_blank)
 {
     if (to <= from) return;
-    if (xml_are_blanks(p, p->buf + from, to - from, known_blank)) return;
+    bool no_blanks = p->settings->no_blanks;
+    if (no_blanks && xml_are_blanks(p, p->buf + from, to - from, known_blank)) return;
     size_t save = p->i;
     p->i = from;
+    bool started = !p->has_text;
     xml_characters(p, p->buf + from, to - from);
+    // libxml2 gives a text node the line where its first chunk was handed over.
+    if (started && p->has_text) p->text_line = xml_parser_line_at(p, to);
     p->i = save;
+    if (!no_blanks) return;
     // Once character data (blank or not) has been kept the element is mixed content,
     // after this no blanks are ignored in this element.
     XmlOpen *top = xml_top(p);
@@ -1578,7 +1584,7 @@ static bool xml_test_char_data(unsigned char c)
     return c == 0x09 || (c >= 0x20 && c < 0x80 && c != '<' && c != '&' && c != ']');
 }
 
-/** Port of libxml2 xmlParseCharDataComplex for the no_blanks heuristic: 300 byte chunks. */
+/** Port of libxml2 xmlParseCharDataComplex: 300 byte chunks. */
 static void xml_parse_char_data_complex(XmlParser *p)
 {
     size_t chunk_start = p->i;
@@ -1602,7 +1608,7 @@ static void xml_parse_char_data_complex(XmlParser *p)
     if (nbchar) xml_chars_chunk(p, chunk_start, p->i, false);
 }
 
-/** Port of libxml2 xmlParseCharDataInternal for the no_blanks heuristic. */
+/** Port of libxml2 xmlParseCharDataInternal: its chunks are used by the no_blanks heuristic and for the line of the text node. */
 static void xml_parse_char_data_noblanks(XmlParser *p)
 {
     size_t in = p->i;
@@ -1674,32 +1680,13 @@ static void xml_parse_char_data_noblanks(XmlParser *p)
 
 static void xml_parse_char_data(XmlParser *p)
 {
-    if (p->settings->no_blanks)
-    {
-        xml_parse_char_data_noblanks(p);
-        return;
-    }
-    size_t start = p->i;
-    while (p->i < p->len)
-    {
-        char c = p->buf[p->i];
-        if (c == '<' || c == '&') break;
-        if (c == ']' && xml_at(p, "]]>")) xml_parser_fatal(p, p->i, "Sequence ']]>' not allowed in content");
-        p->i++;
-    }
-    if (p->i > start)
-    {
-        size_t save = p->i;
-        p->i = start;
-        xml_characters(p, p->buf + start, save - start);
-        p->i = save;
-    }
+    // The chunks of libxml2 also decide the line of the text node.
+    xml_parse_char_data_noblanks(p);
 }
 
 static void xml_parse_comment(XmlParser *p)
 {
     size_t start = p->i;
-    size_t line = xml_parser_line_at(p, start);
     p->i += 4;
     size_t content_start = p->i;
     while (true)
@@ -1719,15 +1706,15 @@ static void xml_parse_comment(XmlParser *p)
     }
     xml_check_text_length(p, p->i - content_start, content_start);
     XMQNode *c = xml_node_new_comment(p->dom, xml_tmp(p, 0, p->buf + content_start, p->i - content_start));
-    xml_node_set_line(c, (int)line);
     p->i += 3;
+    // Like libxml2, the line where the comment ends.
+    xml_node_set_line(c, (int)xml_parser_line_at(p, p->i));
     xml_append_node(p, c);
 }
 
 static void xml_parse_pi(XmlParser *p)
 {
     size_t start = p->i;
-    size_t line = xml_parser_line_at(p, start);
     p->i += 2;
     XmlSlice target = xml_parse_name(p, true);
     if (!target.s) xml_parser_fatal(p, p->i, "xmlParsePI : no target name");
@@ -1753,7 +1740,8 @@ static void xml_parse_pi(XmlParser *p)
         p->i = end + 2;
     }
     XMQNode *pi = xml_node_new_pi(p->dom, xml_tmp_slice(p, 1, target), data ? xml_tmp(p, 0, data, data_len) : NULL);
-    xml_node_set_line(pi, (int)line);
+    // Like libxml2, the line where the pi ends.
+    xml_node_set_line(pi, (int)xml_parser_line_at(p, p->i));
     xml_append_node(p, pi);
 }
 
@@ -1772,14 +1760,17 @@ static void xml_parse_cdata(XmlParser *p)
     size_t len = end - content_start;
     if (p->settings->no_cdata)
     {
-        // Like libxml2, even an empty cdata section creates a (empty) text node.
+        // Like libxml2, even an empty cdata section creates a (empty) text node,
+        // with the line where the section ends.
+        bool started = !p->has_text;
         xml_characters(p, p->buf + content_start, len);
+        if (started && p->has_text) p->text_line = xml_parser_line_at(p, end + 3);
     }
     else
     {
         xml_check_text_length(p, len, content_start);
         XMQNode *c = xml_node_new_cdata(p->dom, p->buf + content_start, len);
-        xml_node_set_line(c, (int)xml_parser_line_at(p, start));
+        xml_node_set_line(c, (int)xml_parser_line_at(p, end + 3));
         xml_append_node(p, c);
     }
     p->i = end + 3;

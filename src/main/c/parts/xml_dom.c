@@ -1365,6 +1365,16 @@ void xml_ns_move_decl_last(XMQNode *element, XmlNs *ns)
     ns->next = NULL;
 }
 
+void xml_ns_move_decl_to(XMQNode *from, XmlNs *ns, XMQNode *to)
+{
+    XmlNs **pp = &from->ns_defs;
+    while (*pp && *pp != ns) pp = &(*pp)->next;
+    if (!*pp) return;
+    *pp = ns->next;
+    ns->next = to->ns_defs;
+    to->ns_defs = ns;
+}
+
 static void xml_node_repoint_ns(XMQNode *node, XmlNs *from, XmlNs *to)
 {
     if (node->kind != XML_DOM_ELEMENT) return;

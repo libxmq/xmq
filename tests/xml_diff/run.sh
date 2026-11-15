@@ -27,7 +27,7 @@ then
 fi
 CFLAGS="-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer -I$ROOT/src/main/c -I$LIBXML2/include -I$LIBXSLT"
 LIBS="$LIBXML2/.libs/libxml2.a -lm"
-PARTS="$ROOT/src/main/c/parts/always.c $ROOT/src/main/c/parts/membuffer.c $ROOT/src/main/c/parts/hashmap.c $ROOT/src/main/c/parts/xml_dom.c $ROOT/src/main/c/parts/xml_save.c $ROOT/src/main/c/parts/xml_parser.c $ROOT/src/main/c/parts/xml_html.c $ROOT/src/main/c/parts/xml_html_parser.c $ROOT/src/main/c/parts/xml_html_save.c $ROOT/src/main/c/parts/xml_chars.c $ROOT/src/main/c/parts/xml_xpath.c $ROOT/src/main/c/parts/xml_xslt.c"
+PARTS="$ROOT/src/main/c/parts/always.c $ROOT/src/main/c/parts/membuffer.c $ROOT/src/main/c/parts/hashmap.c $ROOT/src/main/c/parts/xml_dom.c $ROOT/src/main/c/parts/xml_save.c $ROOT/src/main/c/parts/xml_parser.c $ROOT/src/main/c/parts/xml_html.c $ROOT/src/main/c/parts/xml_html_parser.c $ROOT/src/main/c/parts/xml_html_save.c $ROOT/src/main/c/parts/xml_chars.c $ROOT/src/main/c/parts/xml_xpath.c $ROOT/src/main/c/parts/xml_uri.c $ROOT/src/main/c/parts/xml_xslt.c"
 
 $CC $CFLAGS -o "$OUT/xml_save_diff" "$ROOT/tests/xml_diff/xml_save_diff.c" $PARTS $LIBS || exit 1
 $CC $CFLAGS -o "$OUT/xml_parse_diff" "$ROOT/tests/xml_diff/xml_parse_diff.c" $PARTS $LIBS || exit 1
@@ -35,6 +35,7 @@ $CC $CFLAGS -o "$OUT/xml_html_diff" "$ROOT/tests/xml_diff/xml_html_diff.c" $PART
 $CC $CFLAGS -o "$OUT/xml_xpath_diff" "$ROOT/tests/xml_diff/xml_xpath_diff.c" $PARTS $LIBS || exit 1
 $CC $CFLAGS -o "$OUT/xml_entity_diff" "$ROOT/tests/xml_diff/xml_entity_diff.c" $PARTS $LIBS || exit 1
 $CC $CFLAGS -o "$OUT/xml_xslt_pattern_diff" "$ROOT/tests/xml_diff/xml_xslt_pattern_diff.c" $PARTS "$LIBXSLT/libxslt/.libs/libxslt.a" $LIBS || exit 1
+$CC $CFLAGS -o "$OUT/xml_xslt_compile_diff" "$ROOT/tests/xml_diff/xml_xslt_compile_diff.c" $PARTS "$LIBXSLT/libxslt/.libs/libxslt.a" $LIBS || exit 1
 
 FILES="$OUT/files.txt"
 # The entity expansion tests are only for xml_entity_diff, many are deliberately broken.
@@ -71,4 +72,10 @@ ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_xpath_diff" $(cat "$FILES") "$ROOT"/tests/
 RC4=$?
 ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_xslt_pattern_diff" $(cat "$FILES")
 RC6=$?
-[ $RC1 = 0 ] && [ $RC2 = 0 ] && [ $RC3 = 0 ] && [ $RC4 = 0 ] && [ $RC5 = 0 ] && [ $RC6 = 0 ]
+XSL_FILES="$OUT/xsl_files.txt"
+find "$ROOT/3rdparty/libxslt/tests" -name "*.xsl" | sort > "$XSL_FILES"
+find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" \) -prune -o -name "*.xsl" -print >> "$XSL_FILES"
+# MUTANTS=count:seed for the stylesheet mutations, default 5 per stylesheet.
+ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_xslt_compile_diff" -m "${MUTANTS:-5:1}" $(cat "$XSL_FILES")
+RC7=$?
+[ $RC1 = 0 ] && [ $RC2 = 0 ] && [ $RC3 = 0 ] && [ $RC4 = 0 ] && [ $RC5 = 0 ] && [ $RC6 = 0 ] && [ $RC7 = 0 ]

@@ -55,9 +55,10 @@ ings in this Software without prior written authorization from him.
 /*
     XSLT 1.0, a port of libxslt onto the native dom (xml_dom) and xpath (xml_xpath).
 
-    Work in progress (step 7 of the native xml plan): so far the patterns
-    (pattern.c: compilation, matching, template registration and lookup), on an
-    empty stylesheet and a minimal transformation context for testing.
+    Work in progress: so far the patterns (pattern.c: compilation, matching,
+    template registration and lookup) and the compilation of stylesheets
+    (xslt.c, preproc.c, imports.c, attributes.c), with a minimal transformation
+    context for testing the patterns.
 */
 
 #ifndef BUILDING_DIST_XMQ
@@ -71,12 +72,29 @@ ings in this Software without prior written authorization from him.
 /** Receives the error messages, formatted like libxslt prints them. */
 typedef void (*XmlXsltMessageCallback)(void *user_data, const char *message);
 
+/** What a document is loaded for (libxslt xsltLoadType). */
+typedef enum
+{
+    XML_XSLT_LOAD_START = 0,      // The main stylesheet.
+    XML_XSLT_LOAD_STYLESHEET = 1, // xsl:import and xsl:include.
+    XML_XSLT_LOAD_DOCUMENT = 2    // document().
+} XmlXsltLoadType;
+
+/** Load and parse the document at uri, NULL if it cannot be loaded. The dom gets uri as its url. */
+typedef XmlDom *(*XmlXsltLoader)(void *user_data, const char *uri, XmlXsltLoadType type);
+
 typedef struct
 {
     /** NULL prints the messages on stderr, like libxslt. */
     XmlXsltMessageCallback message_callback;
     void *message_user_data;
+    /** NULL reads files and parses them with entities expanded, like libxslt XSLT_PARSE_OPTIONS. */
+    XmlXsltLoader loader;
+    void *loader_user_data;
 } XmlXsltSettings;
+
+/** The default loader: read the file (a file: url or a path) and parse it as xml. */
+XmlDom *xml_xslt_default_loader(void *user_data, const char *uri, XmlXsltLoadType type);
 
 void xml_xslt_settings_default(XmlXsltSettings *settings);
 
@@ -91,6 +109,18 @@ typedef struct XmlXsltTransform XmlXsltTransform;
 /** A compiled pattern (libxslt xsltCompMatch), a list of alternatives. */
 struct XmlXsltPattern;
 typedef struct XmlXsltPattern XmlXsltPattern;
+
+/**
+    Compile a stylesheet (libxslt xsltParseStylesheetDoc). The stylesheet takes
+    ownership of doc and modifies it (whitespace is stripped etc) when compilation
+    succeeds. Returns NULL after reporting errors, then doc is not taken (but may
+    have been modified).
+*/
+XmlXsltStylesheet *xml_xslt_compile(XmlDom *doc, const XmlXsltSettings *settings);
+
+/** A description of the compiled stylesheet (output settings, templates, keys, global
+    variables, attribute sets, ...), for testing. Malloced. */
+char *xml_xslt_stylesheet_describe(const XmlXsltStylesheet *style);
 
 /** An empty stylesheet whose document is style_dom (not owned), patterns can be
     compiled with namespaces from its elements. */

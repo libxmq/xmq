@@ -154,6 +154,26 @@ void hashmap_put(HashMap* table, const char* key, void *val)
     return;
 }
 
+bool hashmap_remove(HashMap* table, const char* key)
+{
+    size_t index = hash_code(key) % table->max_size_;
+    HashMapNode **pp = &table->nodes_[index];
+    while (*pp)
+    {
+        if (!strcmp((*pp)->key_, key))
+        {
+            HashMapNode *node = *pp;
+            *pp = node->next_;
+            free(node->key_);
+            free(node);
+            table->size_--;
+            return true;
+        }
+        pp = &(*pp)->next_;
+    }
+    return false;
+}
+
 void *hashmap_get(HashMap* table, const char* key)
 {
     int index = hash_code(key) % table->max_size_;

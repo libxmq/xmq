@@ -83,13 +83,11 @@ public final class XPath
 
     private final String expr_;
     private final XPathExpr compiled_;
-    private final XPathStream stream_;
 
-    private XPath(String expr, XPathExpr compiled, XPathStream stream)
+    private XPath(String expr, XPathExpr compiled)
     {
         expr_ = expr;
         compiled_ = compiled;
-        stream_ = stream;
     }
 
     /**
@@ -104,11 +102,9 @@ public final class XPath
         if (expr == null) throw new XPathException(XPathException.EXPR_ERROR, null, -1);
         XPath xp = cache_.get(expr);
         if (xp != null) return xp;
-        // Like libxml2, simple expressions are evaluated by the streaming pattern
-        // engine, the others by the full xpath engine.
-        XPathStream stream = XPathStream.tryCompile(expr);
-        if (stream != null) xp = new XPath(expr, null, stream);
-        else xp = new XPath(expr, new XPathParser(expr).parse(), null);
+        // libxml2 2.16 does not use the streaming pattern engine for xpath
+        // (XPATH_STREAMING is disabled), neither do we.
+        xp = new XPath(expr, new XPathParser(expr).parse());
         if (cache_.size() >= MAX_CACHE) cache_.clear();
         cache_.put(expr, xp);
         return xp;
@@ -150,7 +146,6 @@ public final class XPath
         throws XPathException
     {
         XPathContext ctx = new XPathContext(expr_, context, namespaces, variables);
-        if (stream_ != null) return stream_.eval(context, ctx.doc);
         Object o;
         try
         {

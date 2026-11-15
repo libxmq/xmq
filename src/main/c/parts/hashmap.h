@@ -39,6 +39,8 @@ HashMap *hashmap_create(size_t max_size);
 void *hashmap_get(HashMap* map, const char* key);
 // Putting a non-NULL value.
 void hashmap_put(HashMap* map, const char* key, void *val);
+// Remove the key (not freeing the value), returns false if it was not there.
+bool hashmap_remove(HashMap* map, const char* key);
 // How many key-vals are there?
 size_t hashmap_size(HashMap *map);
 // Free the hashmap itself.

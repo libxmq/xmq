@@ -92,7 +92,7 @@ static char **extra_exprs_ = NULL;
 static size_t num_extra_ = 0;
 
 static const char *generic_[] = {
-    "/", ".", "*", "/*", "//*", "//node()", "//text()", "//comment()", "//processing-instruction()",
+    "/", ".", "*", "x|", "a/b|", "* |", "|x", "x||y", "/*", "//*", "//node()", "//text()", "//comment()", "//processing-instruction()",
     "//@*", "//namespace::*", "/*/namespace::*", "//*/namespace::xml", "count(//*)", "count(//@*)",
     "count(//node())", "count(//namespace::*)", "string(/)", "string(/*)", "string(//@*)", "name(/*)",
     "local-name(/*)", "namespace-uri(/*)", "name(//@*)", "//*[1]", "//*[last()]", "//*[position() mod 2 = 0]",
